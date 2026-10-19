@@ -82,7 +82,7 @@ check("an account's points are its devices' credited work", a.points === 8 && a.
 check("...and this month's, the days before it left out", a.recent === 5, JSON.stringify(a));
 check("...and its page never sees a device's whole id", a.devices.every((d) => d.id.length === 6));
 check("an account is on the ranking once it claims a device, ANONYMOUS and not yet asked",
-  a.named === false && a.decided === false && JSON.stringify((await ranking()).map(({ key, ...e }) => e)) === JSON.stringify([{ name: null, points: 8, recent: 5, week: 2,
+  a.named === false && a.decided === false && JSON.stringify((await ranking()).map(({ key, ...e }) => e)) === JSON.stringify([{ name: null, points: 8, recent: 5, week: 2, last_week: 3,
     contributor_rank: { rank: 0, xp: 0, xp_at_rank: 0, xp_at_next: 2500 } }]),
   JSON.stringify(await ranking()));
 
@@ -146,7 +146,11 @@ check("this week ranks by its days from Monday, a week ago already outside them"
   week.period === "week" && week.contributors.map((e) => `${e.name}:${e.week}`).join(" ") === "null:2", JSON.stringify(week));
 check("...and the answer says each period's ends, Monday to Monday and the 1st to the 1st, in UTC",
   JSON.stringify(week.windows) === JSON.stringify({ week: { from: "2026-10-12T00:00:00.000Z", until: "2026-10-19T00:00:00.000Z" },
-    recent: { from: "2026-10-01T00:00:00.000Z", until: "2026-11-01T00:00:00.000Z" } }), JSON.stringify(week.windows));
+    recent: { from: "2026-10-01T00:00:00.000Z", until: "2026-11-01T00:00:00.000Z" },
+    last_week: { from: "2026-10-05T00:00:00.000Z", until: "2026-10-12T00:00:00.000Z" } }), JSON.stringify(week.windows));
+const lastWeek = await call("/api/contributors?period=last_week");
+check("last week ranks by the seven days before this Monday alone, neither this week's nor older",
+  lastWeek.period === "last_week" && lastWeek.contributors.map((e) => `${e.name}:${e.last_week}`).join(" ") === "bob:3", JSON.stringify(lastWeek));
 check("a week turns at Monday 00:00 UTC and a month at the 1st, a year's end included",
   periodStarts(UnpinnedDate.parse("2026-10-18T23:59:59Z")).week === "2026-10-12" && periodStarts(UnpinnedDate.parse("2026-10-19T00:00:00Z")).week === "2026-10-19"
   && periodStarts(UnpinnedDate.parse("2026-11-01T00:00:00Z")).month === "2026-11-01"

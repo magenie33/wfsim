@@ -22,7 +22,8 @@
 //   GET  /api/board/demand           → `demandOf`'s body as the settler last wrote it (`DEMAND_KEY`): { v, at, computing, owed: { new_builds, sweeps, rescores, refreshes }, riven_gains,
 //        surveys: [{ weapon, ruler, shapes, agreed, started, clear_hours }] (unfinished), per_hour: { volunteers, official }, clear_hours }
 //   GET  /api/board/tally            → { totals: { volunteers, official }, per_hour: { volunteers, official }, computing } — the home hero's
-//   GET  /api/contributors[?period=recent|week][&limit=n] → { period, computing, total, contributors: [{ key, name, points, recent, week, contributor_rank, mark?, volunteer?, you? }], windows: { week, recent: { from, until } } }
+//   GET  /api/contributors[?period=recent|week|last_week][&limit=n] → { period, computing, total, contributors: [{ key, name, points, recent, week, last_week, contributor_rank, mark?, volunteer?, you? }], windows: { week, recent, last_week: { from, until } } }
+//        — `last_week` is the calendar week before this one, closed: the weekly summary's.
 //        — the first `limit` rows (default `PAGE`, at most `MOST`) of `total`; `key` is the row's
 //        own for the page to follow it as it moves, and says nothing of the account behind it.
 //   GET  /api/contributors?name=<public name>  → { computing, person: { name, points, recent, week, ranks, contributor_rank, mark?, volunteer? } | null }
@@ -54,14 +55,15 @@ const WORK_PER_POINT = 1e9;
 export function periodStarts(at = Date.now()) {
   const d = new Date(at);
   const monday = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
-  return { week: iso(monday).slice(0, 10), month: iso(at).slice(0, 8) + "01" };
+  return { week: iso(monday).slice(0, 10), month: iso(at).slice(0, 8) + "01", last_week: iso(monday - 7 * 86_400_000).slice(0, 10) };
 }
 /// …AND EACH ONE'S ENDS as instants, served beside the ranking so the page says
 /// them in the reader's time without a second copy of the rule.
 export function periodWindows(at = Date.now()) {
   const { week, month } = periodStarts(at), w = Date.parse(week + "T00:00:00Z"), m = new Date(month + "T00:00:00Z");
   return { week: { from: iso(w), until: iso(w + 7 * 86_400_000) },
-    recent: { from: iso(m.getTime()), until: iso(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1)) } };
+    recent: { from: iso(m.getTime()), until: iso(Date.UTC(m.getUTCFullYear(), m.getUTCMonth() + 1, 1)) },
+    last_week: { from: iso(w - 7 * 86_400_000), until: iso(w) } };
 }
 /// THE RANKING IS EVERYONE, served `PAGE` rows at a time as the page scrolls,
 /// and asked again whole each minute, so `MOST` bounds what one answer carries.
@@ -113,18 +115,19 @@ async function workOf(env, ids) {
   const out = new Map();
   const db = env.LIBRARY;
   if (!db || !ids.length) return out;
-  const { month: from, week } = periodStarts();
+  const { month: from, week, last_week } = periodStarts();
   // ONE STATEMENT for every id: the ranking asks for all of them, and ninety
   // at a time was a round trip each while a page waited.
   const { results } = await db.prepare(`SELECT v.id, v.work, v.consent_at,
       (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?1::text) AS recent,
-      (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?2::text) AS week
+      (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?2::text) AS week,
+      (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?4::text AND d.hour < ?2::text) AS last_week
     FROM verifiers v WHERE v.banned = 0 AND v.id IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))`)
-    .bind(from, week, JSON.stringify(ids)).all();
-  for (const r of results) out.set(r.id, { work: r.work || 0, recent: r.recent || 0, week: r.week || 0, consent_at: r.consent_at || null });
+    .bind(from, week, JSON.stringify(ids), last_week).all();
+  for (const r of results) out.set(r.id, { work: r.work || 0, recent: r.recent || 0, week: r.week || 0, last_week: r.last_week || 0, consent_at: r.consent_at || null });
   return out;
 }
-const NONE = { work: 0, recent: 0, week: 0, consent_at: null };
+const NONE = { work: 0, recent: 0, week: 0, last_week: 0, consent_at: null };
 
 // ---- Spans ---------------------------------------------------------------------
 //
@@ -148,17 +151,18 @@ async function spanWork(env, spans) {
   const cut = spans.map((s, i) => [s, i]).filter(([s]) => !spanAll(s));
   const db = env.LIBRARY;
   if (!db || !cut.length) return out;
-  const { month: from, week } = periodStarts();
+  const { month: from, week, last_week } = periodStarts();
   const list = cut.map(([sp], k) => ({ k, v: sp.verifier, f: sp.from_hour, u: sp.until_hour }));
   const { results } = await db.prepare(`SELECT s.k, SUM(h.work) AS work, SUM(CASE WHEN h.hour >= ?1::text THEN h.work ELSE 0 END) AS recent,
-      SUM(CASE WHEN h.hour >= ?2::text THEN h.work ELSE 0 END) AS week
+      SUM(CASE WHEN h.hour >= ?2::text THEN h.work ELSE 0 END) AS week,
+      SUM(CASE WHEN h.hour >= ?4::text AND h.hour < ?2::text THEN h.work ELSE 0 END) AS last_week
     FROM jsonb_to_recordset((?3::text)::jsonb) AS s(k bigint, v text, f text, u text)
     LEFT JOIN verifier_hours h ON h.verifier = s.v COLLATE "C" AND h.hour >= s.f COLLATE "C" AND (s.u IS NULL OR h.hour < s.u COLLATE "C")
-    GROUP BY s.k`).bind(from, week, JSON.stringify(list)).all();
+    GROUP BY s.k`).bind(from, week, JSON.stringify(list), last_week).all();
   for (const r of results) {
     const [sp, k] = cut[r.k];
     // A REFUSED CLIENT counts for nothing, as `workOf` says by leaving it out.
-    out[k] = whole.has(sp.verifier) ? { ...out[k], work: r.work || 0, recent: r.recent || 0, week: r.week || 0 } : { ...NONE };
+    out[k] = whole.has(sp.verifier) ? { ...out[k], work: r.work || 0, recent: r.recent || 0, week: r.week || 0, last_week: r.last_week || 0 } : { ...NONE };
   }
   return out;
 }
@@ -257,7 +261,7 @@ async function devices(request, env, account) {
     points: points(sum("work")), recent: points(sum("recent")), week: points(sum("week")), ranks,
     contributor_rank: contributorRank(points(sum("work"))),
     removed: { count: gone.length, points: points(gone.reduce((t, w) => t + w.work, 0)) },
-    devices: list.map(({ work: w, recent: r, week: k, consent_at: _c, ...d }) => ({ ...d, points: points(w), recent: points(r), week: points(k) })) });
+    devices: list.map(({ work: w, recent: r, week: k, last_week: _l, consent_at: _c, ...d }) => ({ ...d, points: points(w), recent: points(r), week: points(k) })) });
 }
 
 /// WHAT ONE BROWSER HOLDS, asked by the browser itself: its id is a secret only
@@ -442,16 +446,17 @@ export async function standings(env, day = keyDay()) {
   const work = await spanWork(env, results);
   const by = new Map();
   for (const [i, r] of results.entries()) {
-    const e = by.get(r.id) || { id: r.id, named: !!r.named, name: shownName(r.display_name, r.username, r.held_name ? { display_name: r.held_name, reason: r.held_reason } : null), work: 0, recent: 0, week: 0, ws: [] };
+    const e = by.get(r.id) || { id: r.id, named: !!r.named, name: shownName(r.display_name, r.username, r.held_name ? { display_name: r.held_name, reason: r.held_reason } : null), work: 0, recent: 0, week: 0, last_week: 0, ws: [] };
     const w = work[i];
     e.work += w.work;
     e.recent += w.recent;
     e.week += w.week;
+    e.last_week += w.last_week;
     e.ws.push(w);
     by.set(r.id, e);
   }
   return Promise.all([...by.values()].map(async (e) => ({ id: e.id, key: await rowKey(env, e.id, day), named: e.named, name: e.name,
-    points: points(e.work), recent: points(e.recent), week: points(e.week), volunteer: !!volunteerSince(e.ws) })));
+    points: points(e.work), recent: points(e.recent), week: points(e.week), last_week: points(e.last_week), volunteer: !!volunteerSince(e.ws) })));
 }
 /// ONE RANKING: everyone with any of `key`, most first, a tie by the row key
 /// so every answer and every place agree.
@@ -497,13 +502,17 @@ async function poolOf(env) {
     deleted_account: by.deleted_account || 0, refused: by.refused || 0 };
 }
 
+/// …and the week before this one, closed, which no page ranks: the weekly
+/// summary posted elsewhere reads it, so its numbers are the page's.
+const RANKED = { ...PERIODS, last_week: "last_week" };
+
 async function ranking(request, env, period, limit, me) {
-  const key = PERIODS[period] || "points";
+  const key = RANKED[period] || "points";
   const { everyone, computing, day, pool, merit } = await kept(request, env);
   const mine = me && await rowKey(env, me, day);
   const all = ordered(everyone, key);
   const contributors = all.slice(0, limit).map((e) => ({ ...e, ...(e.key === mine ? { you: true } : {}) }));
-  return json({ ok: true, period: Object.keys(PERIODS).find((p) => PERIODS[p] === key), computing, total: all.length, contributors, pool: pool || null, merit: merit || null,
+  return json({ ok: true, period: Object.keys(RANKED).find((p) => RANKED[p] === key), computing, total: all.length, contributors, pool: pool || null, merit: merit || null,
     windows: periodWindows() });
 }
 
@@ -573,7 +582,7 @@ async function everyoneOf(env, wait = false) {
   const marks = await marksOfNamed(env, rows.filter((e) => e.named).map((e) => e.id), wait);
   if (!marks) return null;
   const everyone = rows.map((e) => ({ key: e.key, name: e.named ? e.name : null,
-    points: e.points, recent: e.recent, week: e.week, contributor_rank: contributorRank(e.points),
+    points: e.points, recent: e.recent, week: e.week, last_week: e.last_week, contributor_rank: contributorRank(e.points),
     // THE HONOUR travels with a name only: an anonymous row says nothing more.
     ...(e.named && e.volunteer ? { volunteer: true } : {}), ...(e.named && marks[e.id] ? { mark: marks[e.id] } : {}) }));
   return { everyone, day, computing: await computingNow(env), pool: await poolOf(env), merit: await meritTotals(env).catch(() => null) };
