@@ -337,7 +337,13 @@ const SELFTEST_PROBE: &str = r#"
       try {
         const t0 = performance.now();
         const ok = await nativeBoardReady();
-        check('native engine', ok, ok ? 'bit for bit with the wasm in ' + Math.round(performance.now() - t0) + 'ms' : nativeWhy);
+        // THE RELEASE CARRIES A WINDOWS LIBRARY: elsewhere the property is that
+        // the shell refuses it and the page computes on wasm.
+        if (/Windows/.test(navigator.userAgent)) {
+          check('native engine', ok, ok ? 'bit for bit with the wasm in ' + Math.round(performance.now() - t0) + 'ms' : nativeWhy);
+        } else {
+          check('native engine', !ok && /Windows only/.test(nativeWhy), 'refused, on wasm: ' + nativeWhy);
+        }
       } catch (e) { check('native engine', false, e.message); }
       const nodes = document.querySelectorAll('*').length;
       const txt = document.body.innerText || '';
@@ -391,9 +397,10 @@ const SELFTEST_PROBE: &str = r#"
         const steps = computeSteps();
         const top = steps[steps.length - 1];
         const cores = navigator.hardwareConcurrency;
-        // 100% must buy EVERY logical processor. Under the old cap this reads
-        // 16 on any machine larger than that.
-        check('no lane ceiling', top.pct === 100 && top.lanes === cores,
+        // The last step must buy EVERY logical processor; under the old cap it
+        // reads 16 on any machine larger than that. Not `pct === 100`: on four
+        // cores 90% already buys all four, and the steps keep the cheapest.
+        check('no lane ceiling', top.lanes === cores,
               'at ' + top.pct + '% the page buys ' + top.lanes + ' of ' + cores + ' cores');
       } catch (e) { check('lane ceiling', false, e.message); }
       try {
