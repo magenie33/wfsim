@@ -12,6 +12,7 @@
 //   POST /api/board/ask    { batch, rows: [{ identity, ruler, mode }] }  → { asked, skipped }   (factory token)
 //                          { backfill: true }                           → { asked, left }: owed rows nobody asked for
 //   POST /api/board/adopt  {}                                                      → { adopted, left }   (factory token)
+import { BOARD_KINDS } from "./board_kinds.js";
 import { iso } from "./instant.js";
 import { witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, VERBS, factoryAuthed } from "./factory.js";
@@ -77,7 +78,7 @@ const boardProducer = {
     ]);
   },
 };
-export const BOARD_PRODUCERS = { new_build: boardProducer, survey_build: boardProducer, refresh: boardProducer, sweep: boardProducer };
+export const BOARD_PRODUCERS = Object.fromEntries(BOARD_KINDS.map((kind) => [kind, boardProducer]));
 /// THE BOARD'S KINDS as an SQL list, for a query over its demands.
 export const BOARD_KINDS_SQL = `(${Object.keys(BOARD_PRODUCERS).map((k) => `'${k}'`).join(", ")})`;
 

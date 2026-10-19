@@ -123,6 +123,48 @@ process.env.WFSIM_BOARD = file("rulers.sh","#!/bin/sh\necho standard_single_targ
 chmodSync(process.env.WFSIM_BOARD, 0o755);
 check("a ruler the repo no longer has is purged", await run("purge_queue.sh") === 0
   && (await query("SELECT count(*) AS n FROM queue"))[0].n === 0);
+// THE LIVE BOARD'S FACTS FILE IS STREAMED AND APPENDED TO (scripts/live_publish.mjs),
+// never read whole: it is every row of `scores`, past what one string can hold.
+{
+  const live = join(dir, "live");
+  mkdirSync(live);
+  const facts = join(live, "facts-known.ndjson");
+  const old = `${JSON.stringify({ identity: "gone", ruler: "standard_single_target", mode: "base", measured_by: "m", score: 1,
+    cost_seconds: 0, started_at: "2020-01-01T00:00:00.000Z", finished_at: "2020-01-01T00:00:00.000Z" })}\n`;
+  writeFileSync(facts, old);
+  writeFileSync(join(live, "facts-cursor.txt"), "2020-01-01T00:00:00.000Z\n");
+  const text = (p) => { try { return readFileSync(p, "utf8"); } catch (_) { return ""; } };
+  const publish = async (...args) => {
+    await close();
+    return spawnSync(process.execPath, [new URL("./live_publish.mjs", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), ...args],
+      { encoding: "utf8", env: process.env });
+  };
+  const rows = (await query("SELECT identity, ruler, mode FROM scores")).length;
+  const first = await publish("delta", live);
+  const grown = readFileSync(facts, "utf8");
+  check("a delta appends every row that moved and keeps what the file held",
+    first.status === 0 && rows > 0 && grown.startsWith(old) && grown.split("\n").filter(Boolean).length === 1 + rows,
+    `exit ${first.status}, ${grown.split("\n").filter(Boolean).length} line(s) for ${rows} row(s) ${first.stderr.slice(0, 300)}`);
+  const again = await publish("delta", live);
+  check("...and the next, with nothing new, moves nothing", again.status === 3 && readFileSync(facts, "utf8") === grown,
+    `exit ${again.status} ${again.stderr.slice(0, 300)}`);
+  const [known] = await query("SELECT identity, ruler, mode FROM scores LIMIT 1");
+  const waiting = { identity: "b1", ruler: "no_fact_yet", mode: "base", score: 2 };
+  writeFileSync(join(live, "unverified.ndjson"), `${JSON.stringify({ ...known, score: 3 })}\n${JSON.stringify(waiting)}\n`);
+  const opened = await publish("open", live, join(live, "unverified.ndjson"), join(live, "open.ndjson"));
+  check("a client result a fact answers is dropped, and one none does is kept",
+    opened.status === 0 && text(join(live, "open.ndjson")) === `${JSON.stringify(waiting)}\n`,
+    text(join(live, "open.ndjson")).slice(0, 300));
+  writeFileSync(join(live, "library-ids.ndjson"), `${JSON.stringify({ k: "b1", v: { weapon: "torid" } })}\n`);
+  writeFileSync(join(live, "library-live.json"), JSON.stringify([{ id: "b1", weapon: "torid" }, { id: "b9", weapon: "braton" }]));
+  writeFileSync(join(live, "ids.txt"), "b1\n");
+  const cut = await publish("subset", live, join(live, "ids.txt"), join(live, "sub.json"), facts, join(live, "open.ndjson"));
+  const cutFacts = text(join(live, "sub.json.facts")).split("\n").filter(Boolean).map((l) => JSON.parse(l));
+  check("a subset holds its weapon's builds and their facts from every file it is given",
+    cut.status === 0 && JSON.parse(text(join(live, "sub.json")) || "[]").length === 1
+      && cutFacts.length > 1 && cutFacts.every((f) => f.identity === "b1") && cutFacts.some((f) => f.ruler === "no_fact_yet"),
+    `exit ${cut.status} ${cut.stderr.slice(0, 300)}`);
+}
 // NOTHING A SCRIPT MADE OUTLIVES IT (scripts/db.sh `DB_TMP`): the live board
 // runs them all day on a server whose /tmp is memory.
 const left = readdirSync(scratch);

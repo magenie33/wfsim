@@ -3,15 +3,23 @@
 // by `live_board.sh`.
 //
 //   node live_publish.mjs delta <work-dir>                verified facts since the last read
-//   node live_publish.mjs subset <work-dir> <ids> <out> <facts>   the weapons <ids> touch: library, facts
+//   node live_publish.mjs subset <work-dir> <ids> <out> <facts>...   the weapons <ids> touch: library, facts
+//   node live_publish.mjs open <work-dir> <results> <out>   the client results no fact answers
 //   node live_publish.mjs push <work-dir> <dir>           the files that moved, to R2
 //
-// `delta` folds into `facts-known.ndjson` every `scores` row finished in the
-// last two hours of what it has seen: a scorer ships a row minutes after it
-// finishes, so a cursor on the clock alone would step over it. Exit 3 means
-// nothing moved. `push` sends a file only when its bytes differ from the last
-// push (`pushed.json`), through the worker's `/api/board/live/`.
-import { readFileSync, writeFileSync, existsSync, readdirSync } from "node:fs";
+// `delta` appends to `facts-known.ndjson` every `scores` row finished in the
+// last two hours of what it has seen that moved: a scorer ships a row minutes
+// after it finishes, so a cursor on the clock alone would step over it. Exit 3
+// means nothing moved. `push` sends a file only when its bytes differ from the
+// last push (`pushed.json`), through the worker's `/api/board/live/`.
+//
+// THE FACTS FILE IS NEVER HELD WHOLE: it is every row of `scores`, past what
+// one string can be and past what the bot server's memory can hold as a map.
+// It is streamed a line at a time, and appended to rather than rewritten —
+// `wfsim-board` keeps the newest line of a key (`load_facts`), and the hourly
+// read writes the file afresh.
+import { readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync, createReadStream } from "node:fs";
+import { createInterface } from "node:readline";
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { query, close } from "./db.mjs";
@@ -22,45 +30,56 @@ const [mode, work, dir] = process.argv.slice(2);
 
 const key = (f) => `${f.identity}|${f.ruler}|${f.mode}`;
 
+/// Each non-empty line of a file, read a line at a time; none when it is missing.
+async function* eachLine(p) {
+  if (!existsSync(p)) return;
+  for await (const l of createInterface({ input: createReadStream(p), crlfDelay: Infinity })) if (l) yield l;
+}
+/// A FACT LINE'S KEY without parsing the line: every writer of the file puts
+/// identity, ruler and mode first, in that order (`fetch_facts.sh`, `delta`).
+const HEAD = /^\{"identity":"([^"]*)","ruler":"([^"]*)","mode":"([^"]*)"/;
+const factHead = (l) => { const m = HEAD.exec(l); if (m) return { identity: m[1], ruler: m[2], mode: m[3] }; const f = JSON.parse(l); return f; };
+
 async function delta() {
   const factsPath = join(work, "facts-known.ndjson");
   const cursorPath = join(work, "facts-cursor.txt");
-  const lines = readFileSync(factsPath, "utf8").split("\n").filter(Boolean);
+  const recentPath = join(work, "facts-recent.json");
   let seen = existsSync(cursorPath) ? readFileSync(cursorPath, "utf8").trim() : "";
-  if (!seen) for (const l of lines) { const f = JSON.parse(l); if (f.finished_at > seen) seen = f.finished_at; }
+  if (!seen) for await (const l of eachLine(factsPath)) { const at = JSON.parse(l).finished_at; if (at > seen) seen = at; }
   const since = new Date(Date.parse(seen || "1970-01-01T00:00:00Z") - OVERLAP_SECONDS * 1000).toISOString();
   const rows = await query(`SELECT identity, ruler, mode, measured_by, score, cost_seconds, started_at, finished_at
                          FROM scores WHERE finished_at > ? ORDER BY finished_at`, [since]);
   await close();
-  const byKey = new Map(lines.map((l) => [key(JSON.parse(l)), l]));
-  // COMPARED AS VALUES: the hourly read writes its lines through jq and this
-  // through JSON.stringify, and two spellings of one fact are not a change.
-  const same = (a, b) => a && a.score === b.score && a.measured_by === b.measured_by && a.finished_at === b.finished_at;
-  let moved = 0;
-  const movedIds = [];
+  // A ROW MOVED IS ONE THE LAST WINDOW DID NOT HOLD AS IT IS NOW — the window
+  // overlaps the next, so a row unchanged since is not a move. Compared as
+  // values: two spellings of one fact are not a change.
+  const recent = existsSync(recentPath) ? JSON.parse(readFileSync(recentPath, "utf8")) : {};
+  const same = (a, r) => a && a[0] === r.score && a[1] === r.measured_by && a[2] === r.finished_at;
+  const window = {}, moved = [], movedIds = [];
   for (const r of rows) {
-    const had = byKey.get(key(r));
-    if (!same(had && JSON.parse(had), r)) { byKey.set(key(r), JSON.stringify(r)); moved += 1; movedIds.push(r.identity); }
+    if (!same(recent[key(r)], r)) { moved.push(JSON.stringify(r)); movedIds.push(r.identity); }
+    window[key(r)] = [r.score, r.measured_by, r.finished_at];
     if (r.finished_at > seen) seen = r.finished_at;
   }
+  if (moved.length) appendFileSync(factsPath, moved.join("\n") + "\n");
+  writeFileSync(recentPath, JSON.stringify(window));
   writeFileSync(cursorPath, seen + "\n");
   writeFileSync(join(work, "moved-ids.txt"), movedIds.map((id) => id + "\n").join(""));
-  if (!moved) process.exit(3);
-  writeFileSync(factsPath, [...byKey.values()].join("\n") + "\n");
-  console.error(`live: ${moved} fact(s) moved since ${since}`);
+  if (!moved.length) process.exit(3);
+  console.error(`live: ${moved.length} fact(s) moved since ${since}`);
 }
 
 /// THE BUILDS OF EVERY WEAPON A SET OF BUILD IDS TOUCHES — a weapon is ranked
 /// whole or not at all (`wfsim-board --subset`). Exit 3 when it names none.
-function subset(idsPath, out, factsIn) {
-  const lines = (p) => (existsSync(p) ? readFileSync(p, "utf8").split("\n").filter(Boolean) : []);
-  const want = new Set(lines(idsPath));
+async function subset(idsPath, out, factsIn) {
+  const want = new Set();
+  for await (const l of eachLine(idsPath)) want.add(l);
   const weaponOf = new Map();
-  for (const l of lines(join(work, "library-ids.ndjson"))) {
+  for await (const l of eachLine(join(work, "library-ids.ndjson"))) {
     const x = JSON.parse(l);
     if (want.has(x.k)) weaponOf.set(x.k, x.v.weapon);
   }
-  for (const l of lines(join(work, "new-builds.ndjson"))) {
+  for await (const l of eachLine(join(work, "new-builds.ndjson"))) {
     const x = JSON.parse(l);
     if (want.has(x.id)) weaponOf.set(x.id, x.record.weapon);
   }
@@ -71,10 +90,31 @@ function subset(idsPath, out, factsIn) {
   // …AND ONLY THOSE WEAPONS' FACTS: reading every row of `scores` three times
   // is most of what a subset pass costs.
   const ids = new Set();
-  for (const l of lines(join(work, "library-ids.ndjson"))) { const x = JSON.parse(l); if (weapons.has(x.v.weapon)) ids.add(x.k); }
-  for (const l of lines(join(work, "new-builds.ndjson"))) { const x = JSON.parse(l); if (weapons.has(x.record.weapon)) ids.add(x.id); }
-  writeFileSync(`${out}.facts`, lines(factsIn).filter((l) => ids.has(JSON.parse(l).identity)).map((l) => l + "\n").join(""));
+  for await (const l of eachLine(join(work, "library-ids.ndjson"))) { const x = JSON.parse(l); if (weapons.has(x.v.weapon)) ids.add(x.k); }
+  for await (const l of eachLine(join(work, "new-builds.ndjson"))) { const x = JSON.parse(l); if (weapons.has(x.record.weapon)) ids.add(x.id); }
+  writeFileSync(`${out}.facts`, "");
+  let kept = [];
+  for (const p of factsIn) {
+    for await (const l of eachLine(p)) {
+      if (!ids.has(factHead(l).identity)) continue;
+      kept.push(l);
+      if (kept.length >= 10_000) { appendFileSync(`${out}.facts`, kept.join("\n") + "\n"); kept = []; }
+    }
+  }
+  if (kept.length) appendFileSync(`${out}.facts`, kept.join("\n") + "\n");
   console.error(`live: re-ranking ${weapons.size} weapon(s), ${lib.length} build(s)`);
+}
+
+/// THE CLIENT RESULTS NO FACT HAS ANSWERED YET, out of `results` — a few
+/// hundred lines, held — against the facts file streamed once.
+async function open(resultsPath, out) {
+  const waiting = new Map();
+  for await (const l of eachLine(resultsPath)) waiting.set(key(JSON.parse(l)), l);
+  for await (const l of eachLine(join(work, "facts-known.ndjson"))) {
+    if (!waiting.size) break;
+    waiting.delete(key(factHead(l)));
+  }
+  writeFileSync(out, [...waiting.values()].map((l) => l + "\n").join(""));
 }
 
 async function push() {
@@ -109,5 +149,6 @@ async function push() {
 
 if (mode === "delta") await delta();
 else if (mode === "push") await push();
-else if (mode === "subset") subset(dir, process.argv[5], process.argv[6]);
-else { console.error("usage: live_publish.mjs delta|subset|push <work-dir> ..."); process.exit(2); }
+else if (mode === "subset") await subset(dir, process.argv[5], process.argv.slice(6));
+else if (mode === "open") await open(dir, process.argv[5]);
+else { console.error("usage: live_publish.mjs delta|subset|open|push <work-dir> ..."); process.exit(2); }

@@ -110,6 +110,31 @@ LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/was
                 "scripts/ship_queue.sh", "scripts/db.sh", "scripts/db.mjs", "scripts/pgq.mjs"]
 
 
+# A RELATIVE IMPORT, static or dynamic, in a script the live board runs.
+IMPORT = re.compile(r"""^\s*(?:import|export)\s[^;]*?from\s+["'](\.[^"']+)["']|import\(\s*["'](\.[^"']+)["']\s*\)""",
+                    re.M | re.S)
+
+
+def imported(roots: list) -> list:
+    """EVERY REPO FILE THE LIVE SCRIPTS REACH, walked from their imports: the
+    server holds only what is sent, so a module a script starts importing is
+    shipped with it rather than failing there on every cycle."""
+    seen, todo = set(), [ROOT / r for r in roots if r.endswith((".mjs", ".js"))]
+    while todo:
+        f = todo.pop().resolve()
+        if f in seen or "node_modules" in f.parts:
+            continue
+        seen.add(f)
+        for m in IMPORT.finditer(f.read_text(encoding="utf-8")):
+            todo.append(f.parent / (m.group(1) or m.group(2)))
+    return sorted(p.relative_to(ROOT).as_posix() for p in seen)
+
+
+def unshipped(roots: list) -> list:
+    """A script a live script imports that `LIVE_SCRIPTS` leaves out."""
+    return [p for p in imported(roots) if p.startswith("scripts/") and p not in roots]
+
+
 def toolchain() -> str:
     m = re.search(r'^rust = "([0-9.]+)"', (ROOT / "mise.toml").read_text(encoding="utf-8"), re.M)
     return m.group(1) if m else "1"
@@ -159,7 +184,10 @@ def deploy_live(t: dict) -> None:
     # worker, and the client, installed there. /etc/wfsim-live.env's PG_URL
     # moves the live board onto it (deploy/wfsim-live.service).
     run(["ssh", *o, host, f"mkdir -p {root}/worker {root}/scripts/pg"])
-    send(t, ["worker/placeholders.js"], f"{root}/worker")
+    missing = unshipped(LIVE_SCRIPTS)
+    if missing:
+        sys.exit(f"ship_bot: the live scripts import {missing}, which LIVE_SCRIPTS does not send")
+    send(t, [p for p in imported(LIVE_SCRIPTS) if p.startswith("worker/")], f"{root}/worker")
     send(t, ["scripts/pg/package.json", "scripts/pg/package-lock.json"], f"{root}/scripts/pg")
     # INSTALLED ONLY WHEN THE LOCK MOVED: the server has node and no npm, so an
     # install it does not need must not be what fails the deploy.
@@ -251,6 +279,15 @@ def self_test() -> int:
         ok = got is None if want is None else (got is not None and want in got)
         bad += 0 if ok else 1
         print(f"  {'ok  ' if ok else 'FAIL'}  {what}" + ("" if ok else f"   {got}"))
+    # THE LIVE SCRIPTS' IMPORTS ARE ALL SENT: a worker module is shipped by the
+    # walk, a script only by being listed.
+    for ok, what in [
+        (not unshipped(LIVE_SCRIPTS), f"every script a live script imports is sent {unshipped(LIVE_SCRIPTS)}"),
+        ("worker/placeholders.js" in imported(LIVE_SCRIPTS), "the walk reaches the worker module db.mjs imports"),
+        ("scripts/db.mjs" in unshipped(["scripts/live_publish.mjs"]), "...and names a script left out of the list"),
+    ]:
+        bad += 0 if ok else 1
+        print(f"  {'ok  ' if ok else 'FAIL'}  {what}")
     print()
     print("a hand-run deploy is guarded" if not bad else f"{bad} failed")
     return 1 if bad else 0

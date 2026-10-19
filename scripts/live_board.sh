@@ -120,6 +120,9 @@ project_into() {
     flag="--subset"
   else
     mkdir "$out.next"
+    # A WHOLE PASS STARTS THE LOG AFRESH: it is what the last pass refused,
+    # and appended to for good it grew past the facts themselves.
+    : > "$WORK/project.log"
   fi
   for r in $("$BIN/wfsim-board" --rulers); do
     code=0
@@ -140,9 +143,10 @@ library_live() {
 }
 
 # THE BUILDS OF THE WEAPONS A LIST OF BUILD IDS TOUCHES, into `$2`, and their
-# facts out of `$3` into `$2.facts` — or a failure when the list names none.
+# facts out of the files after it into `$2.facts` — or a failure when the list
+# names none.
 subset_of() {
-  node "$HERE/live_publish.mjs" subset "$WORK" "$1" "$2" "$3" >&2
+  node "$HERE/live_publish.mjs" subset "$WORK" "$@" >&2
 }
 
 # THE SITE'S BOARD: `scores` alone, stamped by `board_meta.py` and pushed to
@@ -155,18 +159,16 @@ publish_verified() {
 }
 
 # THE OWNER'S BOARD: the facts, and every client result no fact has answered
-# yet — `facts-live.ndjson`, which a subset pass also cuts its facts from.
+# yet (`unverified-open.ndjson`), which a subset pass cuts its facts from too.
 open_results() {
-  jq -r '"\(.identity)|\(.ruler)|\(.mode)"' < facts-known.ndjson | sort -u > known-keys.txt
-  jq -n -c --rawfile known known-keys.txt \
-    '($known | split("\n") | map({key: ., value: true}) | from_entries) as $s
-     | inputs | select($s["\(.identity)|\(.ruler)|\(.mode)"] | not)' \
-    < unverified.ndjson > unverified-open.ndjson
-  cat facts-known.ndjson unverified-open.ndjson > facts-live.ndjson
+  node "$HERE/live_publish.mjs" open "$WORK" unverified.ndjson unverified-open.ndjson
 }
 
 project_private() {
-  [ -n "${1:-}" ] || open_results
+  if [ -z "${1:-}" ]; then
+    open_results || return 1
+    cat facts-known.ndjson unverified-open.ndjson > facts-live.ndjson
+  fi
   project_into board facts-live.ndjson . "${1:-}" || return 1
   echo "live: projected $(wc -l < unverified-open.ndjson) client result(s) beside $(wc -l < facts-known.ndjson) fact(s)" >&2
 }
@@ -238,8 +240,7 @@ while true; do
     if [ "$whole" = 1 ] || [ ! -d board ]; then
       project_private || echo "live: the projection failed; the last board stands" >&2
     elif [ -s touched-ids.txt ]; then
-      open_results
-      if subset_of touched-ids.txt private-subset.json facts-live.ndjson; then
+      if open_results && subset_of touched-ids.txt private-subset.json facts-known.ndjson unverified-open.ndjson; then
         project_private private-subset.json || echo "live: the projection failed; the last board stands" >&2
       fi
     fi

@@ -190,14 +190,24 @@ impl FactLog {
 ///
 /// THE SCORER NEVER SPEAKS TO THE DATABASE. It reads a file, and the network
 /// lives in a script a stub `curl` can drive.
+/// A FACTS FILE A LINE AT A TIME, never held whole: it is every row of
+/// `scores`, and a run per ruler that read it into one string held the whole
+/// store in memory sixteen times over on the live board's small server.
+fn fact_lines(path: &str) -> Option<impl Iterator<Item = String>> {
+    use std::io::BufRead;
+    let file = std::fs::File::open(path).ok()?;
+    Some(std::io::BufReader::new(file).lines().map_while(Result::ok))
+}
+
 pub(crate) fn load_facts(spec: Option<String>, bench_id: &str) -> Facts {
     let mut facts = Facts::default();
     let Some(path) = spec else { return facts };
-    let Ok(text) = std::fs::read_to_string(&path) else {
+    let Some(lines) = fact_lines(&path) else {
         eprintln!("facts: cannot read {path}");
         return facts;
     };
-    for line in text.lines() {
+    for line in lines {
+        let line = line.as_str();
         let Ok(v) = serde_json::from_str::<Value>(line) else { continue };
         if v.get("ruler").and_then(Value::as_str) != Some(bench_id) {
             continue;
@@ -274,12 +284,13 @@ pub(crate) fn load_cross_facts(spec: Option<String>) -> Vec<CrossFact> {
         .iter()
         .map(|b| family(&b.id).to_string())
         .collect();
-    let Ok(text) = std::fs::read_to_string(&path) else {
+    let Some(lines) = fact_lines(&path) else {
         eprintln!("entry line: cannot read {path}");
         return Vec::new();
     };
     let mut out = Vec::new();
-    for line in text.lines() {
+    for line in lines {
+        let line = line.as_str();
         let Ok(v) = serde_json::from_str::<Value>(line) else { continue };
         let (Some(id), Some(ruler), Some(score)) = (
             v.get("identity").and_then(Value::as_str),

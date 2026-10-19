@@ -480,6 +480,8 @@ jobs:
         run: bash scripts/each_ruler.sh --self-test
       - name: ...and what intake made of it reaches the library
         run: bash scripts/ship_builds.sh --self-test
+      - name: The bot server is sent every module the live board's scripts import
+        run: python3 scripts/ship_bot.py --self-test
       # A REFRESH ASKS WHAT THE FACTORY HAS ROOM FOR, and a row near its fifteen
       # days whatever the room: the oldest first, never more than an hour's.
       - name: A refresh asks the oldest rows the room allows, and the forced ones
