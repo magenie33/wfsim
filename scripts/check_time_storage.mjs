@@ -86,9 +86,9 @@ function writers(path) {
 for (const f of sources("worker/pg", /\.sql$/)) schema(f);
 for (const f of [...sources("worker", /\.js$/), ...sources("scripts", /\.(mjs|sh)$/)]) writers(f);
 // THE PRIVATE WORKER is checked wherever it is checked out; CI has no copy.
-if (existsSync(resolve(ROOT, "private/cloud/schema"))) {
-  for (const f of sources("private/cloud/schema", /\.sql$/)) schema(f);
-  for (const f of sources("private/cloud/src", /\.js$/)) writers(f);
+if (existsSync(resolve(ROOT, "../wfsim-cloud/schema"))) {
+  for (const f of sources("../wfsim-cloud/schema", /\.sql$/)) schema(f);
+  for (const f of sources("../wfsim-cloud/src", /\.js$/)) writers(f);
 }
 
 if (failures.length) {

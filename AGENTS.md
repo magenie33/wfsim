@@ -65,11 +65,9 @@ Read the row for what you are about to touch before the code, not after.
 - `tests/golden/` — golden tests calibrated against in-game measurements.
 - `.handoff.md` — ignored shared work state. Read it first when present, keep
   it current, reset it to `idle` when done.
-- `private/` — **gitignored, and `git add -A` silently skips it.** Never report
-  a change under it as shipped, and never let something the repo needs live only
-  there. `private/agents/README.md` is the standing notes for ANY agent: read it
-  first. A lesson goes there or to `docs/`, never only into one tool's memory.
-- **ANYTHING ABOUT MONEY LIVES IN THE PRIVATE WORKER** (`private/cloud`): here
+- `private/` — **its own repo (`wfsim-private`)**, shipped by its own commits;
+  nothing this repo needs may live only there. Read `private/agents/README.md`.
+- **ANYTHING ABOUT MONEY LIVES IN THE PRIVATE WORKER** (`../wfsim-cloud`): here
   is the calculator, reaching it via `worker/cloud.js` alone.
 
 ## Tripwires
@@ -78,6 +76,9 @@ Each of these fails silently. That is why it is here and not in a document.
 
 ### Building and shipping
 
+- **NEVER LINK INTO A CHECKOUT.** Removing a worktree, or `rm -rf` on Windows,
+  follows a junction and deletes its TARGET. Copy; remove a worktree with
+  `scripts/remove_worktree.mjs`.
 - **Static files are `include_str!`'d into `wfsim-web.exe`.** After ANY edit
   under `web/src/static/`: stop the server (it holds the exe), `cargo build -p
   wfsim-web`, restart. `cargo test` does NOT refresh the exe.

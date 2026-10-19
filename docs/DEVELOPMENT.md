@@ -348,6 +348,14 @@ See [`CORE.md`](CORE.md) §4 for the full architecture. In short:
 The multi-session working process (worktrees, staging, shipping from the main
 checkout) is in `private/agents` — read its README first.
 
+**NO LINKS IN A CHECKOUT.** A worktree that needs `private/`, `vendor/` or
+`web/cache` gets a COPY: `git worktree remove --force` and `rm -rf` on Windows
+follow a junction and delete what it points to. `node
+scripts/remove_worktree.mjs <worktree>` refuses while a link is inside, and
+`--scan <dir>...` lists them. `private/` is its own repo, `wfsim-private`, and
+the private worker is its own checkout beside this one, `../wfsim-cloud`;
+`private/README.md` states how both are backed up and restored.
+
 **A BUILD HOLDS THE CHECKOUT.** `build_site_app.py` and `ship.py` hold
 `.build.lock` while they run (`scripts/checkout_lock.py`), and `ship_bot.py` run
 by hand refuses while another process holds it, while `site/` or

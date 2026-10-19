@@ -1,6 +1,6 @@
 -- THE ACCOUNTS (database `wfsim_accounts`, owned by the role `wfsim_accounts`;
 -- docs/ACCOUNTS.md), apart from the library's `wfsim` so the library's role and
--- backups never reach personal data. The paid half's tables (private/cloud)
+-- backups never reach personal data. The paid half's tables (wfsim-cloud)
 -- live here too. Every text column is COLLATE "C": it compares byte by byte,
 -- whatever the database's locale. Every whole number is BIGINT. Applied by its
 -- owner:
@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS merit_codes (
 CREATE OR REPLACE FUNCTION merit_room(bigint, bigint, bigint, bigint, bigint, bigint) RETURNS bigint
 LANGUAGE sql IMMUTABLE AS $$ SELECT GREATEST(0, LEAST($1 - $2, $3 - $4, $5 - $6)) $$;
 
--- THE PAID HALF'S TABLES (private/cloud), read and written there alone.
+-- THE PAID HALF'S TABLES (wfsim-cloud), read and written there alone.
 CREATE TABLE IF NOT EXISTS account_titles (
   account    TEXT COLLATE "C" NOT NULL REFERENCES accounts (id) ON DELETE CASCADE,
   title      TEXT COLLATE "C" NOT NULL,
