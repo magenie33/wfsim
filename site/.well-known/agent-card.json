@@ -1,7 +1,7 @@
 {
   "name": "WFSim",
   "description": "WFSim is a Warframe weapon calculator. It builds a loadout, simulates the fight against a named enemy, and searches for the best mods. Every formula cites its source, and every golden test is calibrated against a real in-game run. A board score belongs to its ruler, the named benchmark fight: compare scores only under one ruler, quote the ruler with the number, and give the reader the row's link, which opens the build in the calculator.",
-  "version": "c50837c9586f",
+  "version": "3aefdeca1d7a",
   "provider": {
     "organization": "WFSim",
     "url": "https://wfsim.app"
@@ -61,7 +61,7 @@
     {
       "id": "builder.board.read",
       "name": "builder_board_read",
-      "description": "Read a weapon's leaderboard: the measured best builds per ruler (the benchmark fight), mode, and with or without a riven, ranked. Each row carries the link that opens it, and a riven-free row its `build`, which the stats read takes. Send a data part {\"skill\": \"builder.board.read\", \"args\": {...}}; args: {\"weapon\":{\"type\":\"string\",\"description\":\"weapon id; on the page, the one open when omitted\"},\"riven\":{\"type\":\"string\",\"description\":\"\\\"without\\\" (default), \\\"with\\\" or \\\"any\\\"\",\"enum\":[\"without\",\"with\",\"any\"]},\"mode\":{\"type\":\"string\",\"description\":\"only this mode id\"},\"limit\":{\"type\":\"number\",\"description\":\"rows per group, default 3\"},\"distinct\":{\"type\":\"boolean\",\"description\":\"one row per score; `limit` counts scores\"},\"pooled\":{\"type\":\"boolean\",\"description\":\"rank a ruler's modes together\"}}.",
+      "description": "Read a weapon's leaderboard: the measured best builds per ruler (the benchmark fight), mode, and with or without a riven, ranked. Each row carries the link that opens it, and a riven-free row its `build`, which the stats read takes. Send a data part {\"skill\": \"builder.board.read\", \"args\": {...}}; args: {\"weapon\":{\"type\":\"string\",\"description\":\"weapon id; on the page, the one open when omitted\"},\"riven\":{\"type\":\"string\",\"description\":\"\\\"without\\\" (default), \\\"with\\\" or \\\"any\\\"\",\"enum\":[\"without\",\"with\",\"any\"]},\"mode\":{\"type\":\"string\",\"description\":\"only this mode id\"},\"limit\":{\"type\":\"number\",\"description\":\"rows per group, default 3\"},\"distinct\":{\"type\":\"boolean\",\"description\":\"one row per place, its cheapest build; `limit` counts places\"},\"pooled\":{\"type\":\"boolean\",\"description\":\"rank a ruler's modes together\"}}.",
       "tags": [
         "warframe",
         "builder",
