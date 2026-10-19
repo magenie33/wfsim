@@ -403,8 +403,34 @@ ORDER THE BUILD WAS SAVED, the exilus last: elements combine in slot order, so
 a row sorted any other way can read as another element build. The riven rides
 in the mods as its stats.
 
+**A TIE IS ONE ROW.** Builds on one exact score share a place (BOARD.md §"A
+place is a score"), and the finder lists a place once (`tieGroups`): its
+cheapest build, a badge saying how many builds tie, and the POSITIONS they
+differ in with the alternatives at each — the mod set, the exilus, each arcane
+slot and each evolution tier is a position, so two tier-2 evolutions are
+alternatives and a tier-2 and a tier-4 never are (`boardRowParts`). When
+several positions vary, the line says whether the measured builds are every
+combination of those alternatives or only some of them, because a tie is known
+only between builds that were measured. The tie opens into every exact build,
+each an ordinary row with what it changes against the first marked. "Show more"
+counts places.
+
+**A TRIGGER CAN BE REFUSED.** Under the search box, the triggers the scope's
+builds ask for, in the fight's own words and groups (`/api/meta.buff_triggers`,
+the switches a scenario turns off): refusing one drops every build with a part
+that asks for it, and a group header refuses all of its own. Which parts ask is
+`/api/meta.part_triggers` — a part's buff cards by the panel's own reading, a
+`trigger:` or `condition:` its data states, or an effect that fires on an event
+and draws no card (`EVENT_KINDS`, `webapi/src/buffs.rs`, ratcheted by
+`every_event_kind_is_read`). The words are precise: refusing weak-point kills
+keeps every card fired by any kill. Each toggle counts the builds here that
+carry it and names their parts on hover. The refusal is the reader's and is kept
+across weapons (`wfsim-finder-triggers-off`): it says how somebody plays.
+A card that is only stronger on a weak point (a headshot multiplier) asks for no
+trigger and is never refused this way.
+
 **A BOARD BUILD IN THE BAR IS KEPT BY WHAT IT IS.** A builtin id ends in its
-rank, and a rescore renumbers the board, so the bar stores the build's identity
+position, and a rescore renumbers the board, so the bar stores the build's identity
 (`boardRowIdentity`) plus its cell, per weapon (`wfsim-opened-board-<weapon>`),
 and the OPEN board build is recorded the same way beside the active pointer
 (`wfsim-opened-board-active-<weapon>`) — a page reopens on the build, never on

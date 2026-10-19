@@ -22,6 +22,17 @@ const r = await evaluate(`(async () => {
   const box = () => document.getElementById('build-finder');
   const bar = () => document.getElementById('preset-bar-builder-builds');
   const listed = () => Array.from(box().querySelectorAll('tr.fr[data-frow]')).map((t) => t.dataset.frow);
+  // EVERY BUILD LISTED, ONCE: each tie opened, and an opened tie's head left
+  // out, since its first member is the same build.
+  const everyBuild = async () => {
+    finder.shown = 1e4; renderBuildFinder(); await sleep(100);
+    for (;;) {
+      const b = [...box().querySelectorAll('[data-ftie]')].find((x) => !finder.ties.has(x.dataset.ftie));
+      if (!b) break;
+      b.click(); await sleep(60);
+    }
+    return Array.from(box().querySelectorAll('tr.fr[data-frow]:not(.tie)')).map((t) => byId(t.dataset.frow));
+  };
   const byId = (id) => builtinBuilds().find((p) => presetId(p) === id);
   const selChip = () => bar().querySelector('.pchip.sel');
   const roChips = () => Array.from(bar().querySelectorAll('.pchip.ro')).map((c) => c.dataset.name);
@@ -218,14 +229,59 @@ const r = await evaluate(`(async () => {
     allSeg.click(); await sleep(300);
     const more = () => box().querySelector('[data-fmore]');
     while (more()) { more().click(); await sleep(150); }
-    const rows = listed().map(byId);
+    const rows = await everyBuild();
     const sc = (p) => (p.board || {}).score || 0;
     const want = builtinBuilds().filter((p) => p.benchmark === finder.b);
     out.allCount = rows.length + '/' + want.length;
     out.allModes = new Set(rows.map((p) => p.mode)).size;
     out.allSorted = rows.every((p, i) => i === 0 || sc(rows[i - 1]) >= sc(p));
-    out.allNamed = [...box().querySelectorAll('tr.fr')].every((tr, i) =>
+    out.allNamed = [...box().querySelectorAll('tr.fr:not(.tie)')].every((tr, i) =>
       tr.querySelector('.fd-sd').textContent.includes(rows[i].modeName));
+  }
+
+  // A TIE IS ONE PLACE: builds on one exact score share a rank, the next score
+  // is the next rank, a place is one row, and it opens into every exact build.
+  await open('Felarx');
+  Object.assign(finder, { b: 'standard_single_target', mo: 'cycle', rv: 'plain', shown: 500 });
+  renderBuildFinder(); await sleep(200);
+  const cell = builtinBuilds().filter((p) => p.benchmark === finder.b && p.mode === finder.mo && !p.riven);
+  const scores = [...new Set(cell.map((p) => p.board.score))].sort((a, b) => b - a);
+  out.tiePlaces = cell.length > 0 && cell.every((p) => p.rank === scores.indexOf(p.board.score) + 1);
+  out.tieRows = box().querySelectorAll('tr.fr').length + '/' + scores.length;
+  const tie = box().querySelector('tr.fr.tie');
+  out.tieHeads = box().querySelectorAll('tr.fr.tie').length;
+  if (tie) {
+    const n = cell.filter((p) => p.rank === byId(tie.dataset.frow).rank).length;
+    out.tieFree = !!tie.querySelector('.fd-free .sb-chip');
+    tie.querySelector('[data-ftie]').click(); await sleep(200);
+    const mem = [...box().querySelectorAll('tr.fr.mem')].map((t) => byId(t.dataset.frow));
+    out.tieMembers = mem.length + '/' + n;
+    out.tieExact = new Set(mem.map((p) => boardRowIdentity(p.board))).size === n
+      && mem.every((p) => p.board.score === mem[0].board.score);
+  }
+
+  // REFUSING A TRIGGER IS PRECISE: refusing weak-point kills drops every build
+  // with a part that asks for one and keeps every other, those whose parts ask
+  // for any kill included; a group refuses all of its own; the refusal is the
+  // reader's and is stored.
+  const pt = META.part_triggers || {};
+  const asks = (p, t) => boardRowParts(p.board).some((x) =>
+    ((pt[x.axis] || {})[x.axis === 'mods' ? splitRank(x.id)[0] : x.id] || []).includes(t));
+  const hk = box().querySelector('[data-ftrg="headshot_kill"]');
+  out.trgBtn = !!hk;
+  if (hk) {
+    hk.click(); await sleep(200);
+    const kept = await everyBuild();
+    const want = cell.filter((p) => !asks(p, 'headshot_kill'));
+    out.trgCount = kept.length + '/' + want.length + ' of ' + cell.length;
+    out.trgPrecise = kept.length === want.length && kept.every((p) => !asks(p, 'headshot_kill'))
+      && want.length < cell.length && kept.some((p) => asks(p, 'kill'));
+    out.trgStored = JSON.parse(localStorage.getItem('wfsim-finder-triggers-off') || '[]').includes('headshot_kill');
+    box().querySelector('[data-ftrgg="kill"]').click(); await sleep(200);
+    const none = await everyBuild();
+    out.trgGroup = none.every((p) => !['kill', 'headshot_kill', 'melee_kill'].some((t) => asks(p, t)))
+      && none.length === cell.filter((p) => !['kill', 'headshot_kill', 'melee_kill'].some((t) => asks(p, t))).length;
+    localStorage.removeItem('wfsim-finder-triggers-off'); renderBuildFinder(); await sleep(150);
   }
 
   // Left SHUT, for the cross-weapon half below — which needs a real page load,
@@ -270,6 +326,14 @@ check("...listing every mode's builds in one list, best first",
   r.allSeg && r.allCount.split('/')[0] === r.allCount.split('/')[1] && r.allModes > 1 && r.allSorted,
   `${r.allCount} rows, ${r.allModes} modes, sorted ${r.allSorted}`);
 check("...each row naming its mode", r.allNamed === true);
+check("a tie is one place: one exact score, one rank, and the next score the next rank", r.tiePlaces === true);
+check("...one row per place", r.tieHeads > 0 && r.tieRows.split('/')[0] === r.tieRows.split('/')[1], `${r.tieRows} rows/places, ${r.tieHeads} ties`);
+check("...naming the positions its builds differ in", r.tieFree === true);
+check("...and opening into every exact build it stands for", r.tieExact === true && r.tieMembers.split('/')[0] === r.tieMembers.split('/')[1],
+  r.tieMembers);
+check("refusing weak-point kills drops every build that asks for one, and only those", r.trgBtn && r.trgPrecise === true, r.trgCount);
+check("...the reader's refusal is stored", r.trgStored === true);
+check("...and the kill group refuses every kill", r.trgGroup === true);
 check("Open makes the build current", r.opened === true);
 check("...and puts it in the build bar, read-only and selected", r.inBar && r.chipSel);
 check("...and the finder says it is already there", /\bin\b/.test(r.finderSays), r.finderSays);

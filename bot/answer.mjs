@@ -143,7 +143,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const shown = rows.length;
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=pz&ruler=${encodeURIComponent(ruler.id)}&n=${shown}${said ? "&rv=1" : ""}`;
     const text = [`${weaponName(hit.w)} · ${rulerShort(ruler)}`]
-      .concat(rows.map((x) => `#${x.rank} ${x.score}  ${(x.build ? x.build.mods.map(modName) : x.mods).join("、")}${
+      .concat(rows.map((x) => `#${x.rank}${x.tied > 1 ? `（${t("{n} builds tie", { n: x.tied })}）` : ""} ${x.score}  ${(x.build ? x.build.mods.map(modName) : x.mods).join("、")}${
         x.build && x.build.arcane.length ? ` | ${t("Arcane")}: ${x.build.arcane.map(arcaneName).join("、")}` : ""}${
         x.build && x.build.evolutions.length ? ` | ${t("Evolutions")}: ${x.build.evolutions.map(evoName).join("、")}` : ""}`))
       .join("\n");
@@ -165,7 +165,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     if (r.ok === false || !r.groups.length) return t(NOT_MEASURED);
     const g = r.groups.find((x) => x.rivens.length);
     if (!g) return t("No riven on the board has these stats yet. (￣^￣)");
-    const top = headless.distinctTop(g.rivens, n || 3, () => "", (x) => x.score);
+    const top = headless.distinctTop(g.rivens, n || 3, () => "");
     const shown = top.length;
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=zk&ruler=${encodeURIComponent(g.ruler_id)}&n=${shown}`
       + (ask.bonuses.length ? `&has=${ask.bonuses.map(encodeURIComponent).join(",")}` : "")

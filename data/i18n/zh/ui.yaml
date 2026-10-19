@@ -1839,6 +1839,14 @@ ui:
   "Its cost is not paid per cast and is not entered; see its page.": 它的消耗不是每次施放支付，尚未录入；见其页面。
   "this works, and its own card describes it wrongly — the simulation follows the game": "这一条是生效的，但它自己的卡面描述有误 —— 模拟按游戏实际行为计算"
   "tied": 并列
+  "tied · {n} builds": 并列 · {n} 种
+  "{n} builds tie": "{n} 种配装并列"
+  "Interchangeable here: every build of this place scores exactly the same": 以下位置可替换：这一名次的每种配装分数完全相同
+  "any combination": 可任意组合
+  "only these {n} combinations are measured": 只实测过这 {n} 种组合
+  "Show the {n} exact builds": 展开 {n} 种精确配装
+  "Hide the exact builds": 收起精确配装
+  "refuse builds with a part triggered by": 排除含有以下触发部件的配装
   "total": 合计
   typical: 通常
   "undo (Ctrl+Z)": 撤销（Ctrl+Z）

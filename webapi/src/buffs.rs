@@ -652,6 +652,122 @@ pub(crate) fn buffs_json(list: &[BuffMeta]) -> Vec<Value> {
         .collect()
 }
 
+/// WHAT FIRES EACH PART, per board axis (`mods`, `arcanes`, `evolutions`),
+/// keyed by id, in the trigger vocabulary of `engine::buff_events`. A part asks
+/// for a trigger when one of its buff cards does (`card_trigger`, the panel's
+/// own reading), when its data names it as a `trigger:` or `condition:`, or
+/// when its effect is one of [`EVENT_KINDS`].
+///
+/// A PART, NOT A BUILD: a card held behind a player condition (Argon Scope's
+/// aiming) still names its trigger and no stat is locked — the finder asks
+/// "could this card ask for a weak-point kill", not "does it in this fight".
+/// A part nothing fires is absent, which is a claim, not a gap.
+pub(crate) fn part_triggers() -> &'static Value {
+    static MEMO: std::sync::OnceLock<Value> = std::sync::OnceLock::new();
+    MEMO.get_or_init(|| {
+        use std::collections::{BTreeMap, BTreeSet, HashSet};
+        use crate::registry::{evo_group, weapons};
+        type Map = BTreeMap<String, BTreeSet<&'static str>>;
+        let tenno = wfsim_engine::data::tenno::default_tenno().clone();
+        let none = wfsim_engine::data::arcanes::ArcaneFx::none();
+        let mut axes: BTreeMap<&str, Map> = ["mods", "arcanes", "evolutions"].into_iter().map(|a| (a, Map::new())).collect();
+        let mut put = |axis: &str, id: &str, t: &'static str| {
+            axes.get_mut(axis).unwrap().entry(id.to_string()).or_default().insert(t);
+        };
+        let mut seen = HashSet::new();
+        for info in weapons().iter().filter(|i| !i.sentinel) {
+            // THE WEAPON'S OWN CARDS (Frenzy, the shot combo) are no part's.
+            let mine: Vec<String> = enumerate_buffs(&[], &[], &none, info, &tenno).into_iter().map(|b| b.id).collect();
+            for mut m in wfsim_engine::data::mods::pool_for_weapon(&info.id) {
+                if !seen.insert(format!("mods:{}", m.id)) {
+                    continue;
+                }
+                m.effects = m.effects.into_iter().map(|e| match e {
+                    ModEffect::WhileTenno(_, inner) => *inner,
+                    e => e,
+                }).collect();
+                for b in enumerate_buffs(&[&m], &[], &none, info, &tenno).into_iter().filter(|b| !mine.contains(&b.id)) {
+                    b.trigger.into_iter().for_each(|t| put("mods", m.id, t));
+                }
+            }
+            let base = arcane_base(info);
+            for pool in &info.arcane_pools {
+                for a in wfsim_engine::data::arcanes::pool_for_weapon(&info.id, pool) {
+                    if !seen.insert(format!("arcanes:{}", a.id)) {
+                        continue;
+                    }
+                    let fx = a.fx(a.max_rank, StackPolicy::Emergent, base.traits, &tenno);
+                    for b in enumerate_buffs(&[], &[], &fx, info, &tenno).into_iter().filter(|b| b.id.starts_with("arcane:")) {
+                        b.trigger.into_iter().for_each(|t| put("arcanes", &a.id, t));
+                    }
+                }
+            }
+            let group = evo_group(info);
+            for d in (1..=wfsim_engine::data::evolutions::tier_count(group))
+                .flat_map(|t| wfsim_engine::data::evolutions::options(group, t))
+            {
+                if seen.insert(format!("evolutions:{}", d.id)) {
+                    for b in evo_buffs(std::slice::from_ref(&d.id)) {
+                        b.trigger.into_iter().for_each(|t| put("evolutions", &d.id, t));
+                    }
+                }
+            }
+        }
+        for (axis, id, t) in declared_triggers() {
+            put(axis, &id, t);
+        }
+        json!(axes)
+    })
+}
+
+/// EFFECTS THAT WAIT FOR AN EVENT AND DRAW NO CARD, and the event: an instant
+/// reload, a magazine that grows, a corpse that explodes. A field on the effect
+/// (`condition: headshot_kill` on the Phenmor's reload) overrides the kind's.
+const EVENT_KINDS: &[(&str, &str)] = &[
+    ("instant_reload_on_kill", "kill"),
+    ("instant_reload_on_headshot", "headshot"),
+    ("explosion_on_kill", "kill"),
+    ("strip_on_kill_in_range", "kill"),
+    ("crit_per_kill", "kill"),
+    ("round_restore_on_status_hit", "hit_enemy_with_status"),
+    ("combo_count_on_status_hit", "hit_enemy_with_status"),
+    ("magazine_growth_on_empty_reload", "reload_from_empty"),
+    ("field_duration_on_empty_reload", "reload_from_empty"),
+    ("flat_damage_on_status", "status_applied"),
+    ("consecutive_hit_damage", "hit"),
+];
+
+/// Every `(axis, id, trigger)` a part's DATA states: a `trigger:` or
+/// `condition:` naming a word of `buff_events::ALL`, or an [`EVENT_KINDS`] kind.
+fn declared_triggers() -> Vec<(&'static str, String, &'static str)> {
+    use serde_norway::Value as Y;
+    let word = |w: &str| wfsim_engine::data::buff_events::ALL.iter().map(|(id, _)| *id).find(|id| *id == w);
+    let mut out = Vec::new();
+    for (axis, dir) in [("mods", "mods/"), ("arcanes", "arcanes/"), ("evolutions", "evolutions/")] {
+        for (_, text) in wfsim_engine::data::files_under(dir) {
+            let Ok(doc) = serde_norway::from_str::<Y>(text) else { continue };
+            let Some(id) = doc.get("id").and_then(Y::as_str) else { continue };
+            let mut stack: Vec<&Y> = doc.get("effects").into_iter().collect();
+            while let Some(v) = stack.pop() {
+                match v {
+                    Y::Mapping(m) => {
+                        let field = |k: &str| m.get(k).and_then(Y::as_str);
+                        let named = field("trigger").and_then(word).or_else(|| field("condition").and_then(word));
+                        let kind = field("kind").and_then(|k| EVENT_KINDS.iter().find(|(x, _)| *x == k).map(|(_, t)| *t));
+                        if let Some(t) = named.or(kind) {
+                            out.push((axis, id.to_string(), t));
+                        }
+                        stack.extend(m.values());
+                    }
+                    Y::Sequence(s) => stack.extend(s.iter()),
+                    _ => {}
+                }
+            }
+        }
+    }
+    out
+}
+
 // The build's resolved arcane fx (buff specs are policy-independent in shape);
 // used for buff enumeration. `none` when the weapon can't equip arcanes.
 /// THE WEAPON AN ARCANE READS: the Incarnon form where there is one, since an
@@ -1268,5 +1384,56 @@ mod secondary_outburst {
         let (six, thirteen) = (set(6), set(13));
         assert!(bare < six && six < thirteen, "{bare} -> {six} -> {thirteen}");
         assert_eq!(set(20), thirteen, "13x is the cap");
+    }
+}
+
+#[cfg(test)]
+mod part_trigger_tests {
+    fn of(axis: &str, id: &str) -> Vec<String> {
+        super::part_triggers()[axis][id].as_array()
+            .map(|a| a.iter().map(|x| x.as_str().unwrap().to_string()).collect())
+            .unwrap_or_default()
+    }
+
+    /// A WEAK-POINT KILL IS NOT A KILL, on a part as in a fight: refusing one
+    /// must leave the other's cards standing, so each is answered on its own.
+    #[test]
+    fn each_part_names_its_own_trigger() {
+        assert_eq!(of("arcanes", "primary_deadhead"), ["headshot_kill"]);
+        assert_eq!(of("arcanes", "primary_merciless"), ["kill"]);
+        assert_eq!(of("arcanes", "primary_crux"), ["weakpoint_hit"]);
+        // Held behind AIMING, and still a weak-point hit.
+        assert_eq!(of("mods", "argon_scope"), ["headshot"]);
+        assert_eq!(of("mods", "galvanized_scope"), ["headshot", "headshot_kill"]);
+        // No card at all: an instant reload. The Phenmor's copy states a
+        // KILL, which overrides what its kind fires on for the Furis.
+        assert_eq!(of("evolutions", "lato_exact_penance"), ["kill"]);
+        assert_eq!(of("evolutions", "furis_executioners_fortune"), ["headshot"]);
+        assert_eq!(of("evolutions", "phenmor_executioners_fortune"), ["headshot_kill"]);
+        assert!(super::part_triggers()["mods"].get("serration").is_none());
+    }
+
+    /// AN EFFECT NAMED FOR AN EVENT HAS ONE. A new kind that fires on a kill,
+    /// a weak point, a status or a reload and is neither a card nor in
+    /// `EVENT_KINDS` would let a refused trigger through the finder unseen.
+    #[test]
+    fn every_event_kind_is_read() {
+        use serde_norway::Value as Y;
+        let marks = ["on_kill", "per_kill", "on_headshot", "headshot_kill", "on_status", "status_hit", "empty_reload", "on_reload"];
+        let mut missed = Vec::new();
+        for (axis, dir) in [("mods", "mods/"), ("arcanes", "arcanes/"), ("evolutions", "evolutions/")] {
+            for (path, text) in wfsim_engine::data::files_under(dir) {
+                let Ok(doc) = serde_norway::from_str::<Y>(text) else { continue };
+                let Some(id) = doc.get("id").and_then(Y::as_str) else { continue };
+                let kinds: Vec<String> = serde_norway::to_string(doc.get("effects").unwrap_or(&Y::Null)).unwrap()
+                    .lines().filter_map(|l| l.trim_start_matches(['-', ' ']).strip_prefix("kind: ").map(str::to_string)).collect();
+                for k in kinds.iter().filter(|k| !k.starts_with("unmodelled") && marks.iter().any(|m| k.contains(m))) {
+                    if of(axis, id).is_empty() {
+                        missed.push(format!("{path}: {k}"));
+                    }
+                }
+            }
+        }
+        assert!(missed.is_empty(), "event kinds that name no trigger:\n{}", missed.join("\n"));
     }
 }

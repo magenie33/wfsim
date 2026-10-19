@@ -412,6 +412,31 @@ body.on-wbench [data-module="builder"]{display:none}
 .fd-more button{height:28px;border-radius:8px;border:1px dashed var(--line);background:transparent;padding:0 14px;cursor:pointer;color:var(--text-2);font:inherit;font-size:12px}
 .fd-empty{padding:22px 14px;text-align:center;color:var(--muted);font-size:13px}
 .fd-conds{padding:9px 12px;border-bottom:1px solid var(--line)}
+/* REFUSING A TRIGGER: the fight's own switches, as toggles; a group header refuses its members. */
+.fd-trig{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:8px}
+.fd-trig .h{font-size:11px;color:var(--muted)}
+.fd-tg{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}
+.fd-tg button{height:24px;padding:0 8px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:11.5px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.fd-tg button em{font-style:normal;color:var(--muted);font-size:10.5px;font-variant-numeric:tabular-nums}
+.fd-tg button.g{font-weight:600;color:var(--text-2)}
+.fd-tg button:hover{border-color:var(--critical)}
+.fd-tg button.on{border-color:var(--critical);background:color-mix(in srgb,var(--critical) 12%,var(--surface));text-decoration:line-through}
+.fd-tg button.some{border-style:dashed;border-color:var(--critical)}
+/* A TIE: the place's badge, the positions that change nothing, its exact builds. */
+.fd-tie{display:inline-block;margin-top:2px;font-size:10.5px;font-weight:600;color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 50%,var(--line));border-radius:5px;padding:0 5px;white-space:nowrap}
+.fd-free{margin-top:6px;border:1px dashed color-mix(in srgb,var(--gold) 45%,var(--line));border-radius:8px;padding:5px 8px;display:grid;gap:4px}
+.fd-free .t{font-size:11px;color:var(--gold);font-weight:600}
+.fd-free-r{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:8px;align-items:center}
+.fd-free-r > span{font-size:10.5px;color:var(--muted);letter-spacing:.04em}
+.fd-free .sb-chips{gap:4px;align-items:center}
+.fd-free .sb-chip{padding:1px 7px 1px 3px;gap:4px;font-size:11.5px}
+.fd-free .sb-chip img{width:20px;height:20px}
+.fd-free .sb-chip.fd-none{padding-left:7px;border-style:dashed;color:var(--muted)}
+.fd-free .or{color:var(--muted);font-size:11px}
+.fd-tiex{margin-top:6px;height:24px;padding:0 10px;border-radius:7px;border:1px dashed var(--line);background:transparent;color:var(--text-2);cursor:pointer;font:inherit;font-size:12px}
+.fd-tiex:hover{border-color:var(--gold);color:var(--gold)}
+.fd-main tr.fr.mem td{background:color-mix(in srgb,var(--gold) 4%,var(--surface))}
+.fd-main tr.fr.mem td:first-child{box-shadow:inset 3px 0 0 color-mix(in srgb,var(--gold) 55%,transparent)}
 .fd-ov{padding:8px 12px;border-bottom:1px solid var(--line)}
 .fd-ov>.fold-h{margin:0;font-size:12.5px}
 .fd-ov-body{display:grid;gap:10px;padding-top:8px}

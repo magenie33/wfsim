@@ -1181,6 +1181,9 @@ pub fn meta_json() -> Value {
         "buff_triggers": wfsim_engine::data::buff_events::ALL.iter()
             .map(|(id, group)| json!({ "id": id, "group": group }))
             .collect::<Vec<_>>(),
+        // …AND WHICH OF THEM EACH PART'S BUFFS ASK FOR, so the build finder can
+        // refuse every card a reader will not play around by the same words.
+        "part_triggers": crate::buffs::part_triggers(),
         // WHAT A RUN CAN BE JUDGED BY, from the one table that declares it
         // (`engine::metrics`). A vocabulary rather than a list on the page:
         // the Measure control, the headline's unit and the gain scan's label

@@ -4,7 +4,7 @@
 // read-only. The bar is the one place that says which build is open.
 //
 // KEPT BY WHAT THE BUILD IS, NEVER BY ITS RANK. A board build's `builtin` id
-// ends in its rank, and a rescore renumbers the board — a remembered "#3" would
+// ends in its position, and a rescore renumbers the board — a remembered "#3" would
 // reopen somebody else's build. So an entry is the build's identity
 // (`boardRowIdentity`) plus the cell it was ranked in; its rank and score are
 // read fresh, and a build that has left the board stops resolving. Nothing is
@@ -55,7 +55,35 @@ const finder = {
   weapon: null, sc: "", b: null, mo: null, rv: "all",
   req: new Set(), exc: new Set(),
   open: null, ref: null, shown: FINDER_FIRST, hi: 0,
+  // The ties opened to their exact builds, by `tieGroups` key.
+  ties: new Set(),
 };
+
+/// THE TRIGGERS A READER REFUSES, kept across weapons and visits: "no weak-point
+/// kills" is how somebody plays, not a question about one weapon. The words are
+/// the fight's own (`/api/meta.buff_triggers`), so refusing a weak-point kill
+/// leaves every card fired by any kill standing.
+const FINDER_OFF_KEY = "wfsim-finder-triggers-off";
+function finderOff() {
+  try { return new Set(JSON.parse(localStorage.getItem(FINDER_OFF_KEY) || "[]")); } catch (_) { return new Set(); }
+}
+function setFinderOff(set) {
+  try { localStorage.setItem(FINDER_OFF_KEY, JSON.stringify([...set])); } catch (_) { /* a private window keeps none */ }
+}
+/// WHAT FIRES A BUILD'S PARTS: trigger -> the names of the parts asking for it,
+/// read from `/api/meta.part_triggers` by each part's build axis.
+function finderTriggers(p) {
+  const pt = (META && META.part_triggers) || {};
+  const out = new Map();
+  for (const x of boardRowParts(p.board || {})) {
+    const id = x.axis === "mods" ? splitRank(x.id)[0] : x.id;
+    for (const t of (pt[x.axis] || {})[id] || []) {
+      const name = x.axis === "mods" ? ((modById(id) || {}).name || prettify(id)) : x.axis === "arcanes" ? arcName(id) : evoName(id);
+      out.set(t, [...(out.get(t) || []), name]);
+    }
+  }
+  return out;
+}
 
 /// A RULER'S NAME, SHORT: its first clause and the unit off its last one.
 /// "Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM" ->
@@ -144,7 +172,7 @@ function renderBuildFinder() {
     const act = all.find((p) => presetId(p) === activePreset) || all[0];
     Object.assign(finder, { weapon: w.id, b: act ? act.benchmark : null, mo: act ? act.mode : null,
       sc: act ? benchSceneOf((META.benchmarks || []).find((b) => b.id === act.benchmark)) : "",
-      rv: "all", req: new Set(), exc: new Set(), open: null, ref: null, shown: FINDER_FIRST, hi: 0,
+      rv: "all", req: new Set(), exc: new Set(), open: null, ref: null, shown: FINDER_FIRST, hi: 0, ties: new Set(),
       ships_open: !loadPresetList(BUILDS).length });
   }
   box.hidden = false;
@@ -182,10 +210,18 @@ function renderBuildFinder() {
   const inScope = (p) => inMo(p)
     && (finder.rv === "all" || (finder.rv === "riven") === !!p.riven);
   const toks = new Map(all.map((p) => [p, finderTokens(p)]));
+  const off = finderOff();
+  const trigs = new Map(all.map((p) => [p, finderTriggers(p)]));
   const passes = (p) => [...finder.req].every((t) => toks.get(p).includes(t))
-    && ![...finder.exc].some((t) => toks.get(p).includes(t));
+    && ![...finder.exc].some((t) => toks.get(p).includes(t))
+    && ![...trigs.get(p).keys()].some((t) => off.has(t));
   const score = (p) => (p.board || {}).score || 0;
-  const list = all.filter((p) => inScope(p) && passes(p)).sort((a, b) => score(b) - score(a) || a.rank - b.rank);
+  // A TIE IS ONE PLACE OF ONE RANKING (`placed`): consecutive, so builds of two
+  // modes on one score stay two answers.
+  const tieKey = (p) => `${p.benchmark}#${p.mode}#${p.riven ? "r" : "p"}#${p.rank}`;
+  const list = all.filter((p) => inScope(p) && passes(p))
+    .sort((a, b) => score(b) - score(a) || (tieKey(a) < tieKey(b) ? -1 : tieKey(a) > tieKey(b) ? 1 : 0));
+  const ties = tieGroups(list, tieKey, (p) => p.board || {});
   const scopeTotal = all.filter(inMo).length;
   const updated = measuredText(boardMeasuredAt(all.filter((p) => p.benchmark === finder.b).map((p) => p.board)));
   const unit = rulerUnit(tr(benchOf(finder.b).name));
@@ -305,23 +341,54 @@ function renderBuildFinder() {
       `</div></td></tr>`;
   };
 
+  // ---- A TIE: one row, its alternatives, and its exact builds on request ----
+  const posName = (pos) => {
+    const [axis, i] = pos.split("#");
+    if (axis === "arcanes") return (w.arcane_slots || 0) > 1 ? `${tr("Arcane")} ${Number(i) + 1}` : tr("Arcane");
+    if (axis === "evolutions") return `${tr("Evolution")} · ${trF("tier {n}", { n: Number(i) + 1 })}`;
+    return ({ mods: tr("Mods"), exilus: "Exilus", riven: tr("Riven"), assembly: tr("Parts"), valence: tr("Valence") })[axis] || pos;
+  };
+  const altChip = (x) => {
+    if (!x) return `<span class="sb-chip fd-none"><span>${escHtml(tr("empty"))}</span></span>`;
+    if (x.axis === "rivens") {
+      const [bonuses, malus] = JSON.parse(x.id);
+      return `<span class="sb-chip rv"><span>${escHtml(rivenStats({ bonuses, malus }))}</span></span>`;
+    }
+    const t = ({ mods: "mod:", arcanes: "arc:", evolutions: "evo:", assembly: "part:", valence: "val:" })[x.axis] + x.id;
+    const m = x.axis === "mods" ? modById(splitRank(x.id)[0]) : null, a = x.axis === "arcanes" ? arcaneById(x.id) : null;
+    const e = x.axis === "evolutions" ? evoChipsOf([x.id], w.id)[0] : null;
+    const img = m ? IMG(m.image) : a ? IMG(a.image) : e ? e.img : null;
+    return `<span class="sb-chip${finder.req.has(t) ? " hit" : ""}">${img ? imgTag(img, "sb-img") : ""}<span>${escHtml(finderTokenName(t))}</span></span>`;
+  };
+  const freeHtml = (g) => !g.free.length ? "" : `<div class="fd-free"><div class="t">${escHtml(tr("Interchangeable here: every build of this place scores exactly the same"))}${
+    g.free.length > 1 ? ` · ${escHtml(g.every ? tr("any combination") : trF("only these {n} combinations are measured", { n: g.members.length }))}` : ""}</div>` +
+    g.free.map(([pos, alts]) => `<div class="fd-free-r"><span>${escHtml(posName(pos))}</span><div class="sb-chips">${
+      alts.map(altChip).join(`<span class="or">/</span>`)}</div></div>`).join("") + `</div>`;
+  const rowHtml = (p, maxScore, g, lead) => {
+    const n = g ? g.members.length : 1;
+    const opened = g && finder.ties.has(g.key);
+    const d = ref && ref !== p ? gap(p, ref) : null;
+    return `<tr class="fr${lead ? " mem" : ""}${n > 1 ? " tie" : ""}${finder.open === presetId(p) && !opened ? " x" : ""}${ref === p ? " ref" : ""}" data-frow="${escHtml(presetId(p))}">` +
+      `<td><div class="fd-sv"><span class="fd-rank">#${p.rank}</span><b>${escHtml(shown(p))}</b></div>` +
+      (n > 1 ? `<div class="fd-tie">${escHtml(trF("tied · {n} builds", { n }))}</div>` : "") +
+      `<div class="fd-sd">${ref === p ? escHtml(tr("reference")) : d != null ? `<span class="${sgn(d)}">${escHtml(pct(d))}</span>` : escHtml(unit)}` +
+      `${everyMode ? ` · ${escHtml(p.modeName || "")}` : ""}</div>` +
+      `<div class="fd-sbar"><i style="width:${(score(p) / maxScore * 100).toFixed(1)}%"></i></div></td>` +
+      `<td>${card(p, ref && ref !== p ? ref : lead && lead !== p ? lead : null)}${n > 1 ? freeHtml(g) +
+        `<button type="button" class="fd-tiex" data-ftie="${escHtml(g.key)}">${escHtml(opened ? tr("Hide the exact builds") : trF("Show the {n} exact builds", { n }))}</button>` : ""}</td>` +
+      `<td>${openBtn(p)}</td></tr>` +
+      (finder.open === presetId(p) && !opened ? detail(p) : "") +
+      (opened ? g.members.map((m) => rowHtml(m, maxScore, null, g.members[0])).join("") : "");
+  };
+
   const listHtml = () => {
     if (!list.length) return `<div class="fd-empty">${escHtml(tr("No build matches — remove a condition"))}</div>`;
     const maxScore = Math.max(...list.map(score), 0) || 1;
-    const rows = list.slice(0, finder.shown).map((p) => {
-      const g = ref && ref !== p ? gap(p, ref) : null;
-      return `<tr class="fr${finder.open === presetId(p) ? " x" : ""}${ref === p ? " ref" : ""}" data-frow="${escHtml(presetId(p))}">` +
-        `<td><div class="fd-sv"><span class="fd-rank">#${p.rank}</span><b>${escHtml(shown(p))}</b></div>` +
-        `<div class="fd-sd">${ref === p ? escHtml(tr("reference")) : g != null ? `<span class="${sgn(g)}">${escHtml(pct(g))}</span>` : escHtml(unit)}` +
-        `${everyMode ? ` · ${escHtml(p.modeName || "")}` : ""}</div>` +
-        `<div class="fd-sbar"><i style="width:${(score(p) / maxScore * 100).toFixed(1)}%"></i></div></td>` +
-        `<td>${card(p, ref && ref !== p ? ref : null)}</td><td>${openBtn(p)}</td></tr>` +
-        (finder.open === presetId(p) ? detail(p) : "");
-    }).join("");
-    const more = list.length > finder.shown || finder.shown > FINDER_FIRST
+    const rows = ties.slice(0, finder.shown).map((g) => rowHtml(g.members[0], maxScore, g, null)).join("");
+    const more = ties.length > finder.shown || finder.shown > FINDER_FIRST
       ? `<div class="fd-more">` +
-        (list.length > finder.shown
-          ? `<button type="button" data-fmore="1">${escHtml(trF("Show {k} more of {n}", { k: Math.min(FINDER_STEP, list.length - finder.shown), n: list.length }))}</button>`
+        (ties.length > finder.shown
+          ? `<button type="button" data-fmore="1">${escHtml(trF("Show {k} more of {n}", { k: Math.min(FINDER_STEP, ties.length - finder.shown), n: ties.length }))}</button>`
           : "") +
         (finder.shown > FINDER_FIRST
           ? `<button type="button" data-fless="1">${escHtml(trF("Back to the top {n}", { n: FINDER_FIRST }))}</button>`
@@ -360,6 +427,26 @@ function renderBuildFinder() {
       ` <span class="sim-hint">${escHtml(trF("what the {n} builds here carry: how many carry each piece, and the best of them", { n }))}</span></h3>` +
       `<div class="fd-ov-body fold-b">${body}<p class="fd-hint">${escHtml(tr("click: must have · again: I don't have · again: clear"))}</p></div></div>`;
   };
+  // ---- REFUSE A TRIGGER --------------------------------------------------------
+  // Every trigger a build here asks for, grouped as the fight's own switches are;
+  // a group refuses its members. Each says how many builds here carry it, and
+  // names the parts that do.
+  const inScopeAll = all.filter(inScope);
+  const trigHtml = () => {
+    const groups = buffTriggerGroups().map((g) => ({ ...g, shown: g.ids.filter((id) => off.has(id) || inScopeAll.some((p) => trigs.get(p).has(id))) }))
+      .filter((g) => g.shown.length);
+    if (!groups.length) return "";
+    return `<div class="fd-trig"><span class="h">${escHtml(tr("refuse builds with a part triggered by"))}</span>` + groups.map((g) => {
+      const on = g.ids.filter((id) => off.has(id)).length;
+      return `<span class="fd-tg"><button type="button" class="g${on === g.ids.length ? " on" : on ? " some" : ""}" data-ftrgg="${escHtml(g.id)}" aria-pressed="${on === g.ids.length}">${
+        escHtml(tr(BUFF_GROUP_NAME[g.id] || g.id))}</button>${g.shown.map((id) => {
+        const carriers = inScopeAll.filter((p) => trigs.get(p).has(id));
+        const names = [...new Set(carriers.flatMap((p) => trigs.get(p).get(id)))];
+        return `<button type="button" class="${off.has(id) ? "on" : ""}" data-ftrg="${escHtml(id)}" aria-pressed="${off.has(id)}" title="${escHtml(names.join(" · "))}">${
+          escHtml(tr(BUFF_TRIGGER_NAME[id] || id))}<em>${carriers.length}</em></button>`;
+      }).join("")}</span>`;
+    }).join("") + `</div>`;
+  };
   const segBtn = (key, v, text, n, hint) => `<button type="button" data-fseg="${key}" data-v="${escHtml(v)}" class="${finder[key] === v ? "on" : ""}"${n ? "" : " disabled"}${hint ? ` title="${escHtml(hint)}"` : ""}>${escHtml(text)}<em>${n}</em></button>`;
   const rulers = [...new Set(all.filter((p) => sceneOfId(p.benchmark) === finder.sc).map((p) => p.benchmark))];
   const modes = [...new Set(all.filter((p) => p.benchmark === finder.b).map((p) => p.mode))];
@@ -388,7 +475,7 @@ function renderBuildFinder() {
     [...finder.exc].map((t) => `<span class="fd-tok exc"><i>${escHtml(tr("I don't have"))}</i> <b>${escHtml(finderTokenName(t))}</b><button type="button" data-funtok="${escHtml(t)}" aria-label="${escHtml(tr("remove"))}">×</button></span>`).join("") +
     [...finder.req].map((t) => `<span class="fd-tok req"><i>${escHtml(tr("must have"))}</i> <b>${escHtml(finderTokenName(t))}</b><button type="button" data-funtok="${escHtml(t)}" aria-label="${escHtml(tr("remove"))}">×</button></span>`).join("") +
     `<input id="fd-input" type="text" autocomplete="off" placeholder="${escHtml(tr("what you don't have, or must have — mods, arcanes, evolutions, riven stats"))}">` +
-    `<div class="fd-sugg" id="fd-sugg" hidden></div></div></div>` +
+    `<div class="fd-sugg" id="fd-sugg" hidden></div></div>${trigHtml()}</div>` +
     overviewHtml() + `<div class="fd-main">${listHtml()}</div>`;
 
   // ---- wiring --------------------------------------------------------------
@@ -464,6 +551,22 @@ function renderBuildFinder() {
       return rerender();
     }
     if ((el = g("[data-fref]"))) { finder.ref = finder.ref === el.dataset.fref ? null : el.dataset.fref; return rerender(); }
+    if ((el = g("[data-ftie]"))) {
+      if (!finder.ties.delete(el.dataset.ftie)) finder.ties.add(el.dataset.ftie);
+      return rerender();
+    }
+    if ((el = g("[data-ftrg]"))) {
+      if (!off.delete(el.dataset.ftrg)) off.add(el.dataset.ftrg);
+      setFinderOff(off); finder.shown = FINDER_FIRST;
+      return rerender();
+    }
+    if ((el = g("[data-ftrgg]"))) {
+      const ids = (buffTriggerGroups().find((x) => x.id === el.dataset.ftrgg) || { ids: [] }).ids;
+      const full = ids.every((id) => off.has(id));
+      ids.forEach((id) => (full ? off.delete(id) : off.add(id)));
+      setFinderOff(off); finder.shown = FINDER_FIRST;
+      return rerender();
+    }
     if ((el = g("[data-fdepth]"))) return setFinderDepth(Number(el.dataset.fdepth));
     if ((el = g("[data-fseg]"))) {
       finder[el.dataset.fseg] = el.dataset.v;

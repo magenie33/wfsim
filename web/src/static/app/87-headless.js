@@ -82,13 +82,99 @@ function headlessNo(reason, detail = {}) {
   return { ok: false, reason, ...detail };
 }
 
-/// THE BOARD IN ITS READING ORDER, each row with its rank inside its group.
+// ---- places: a tie is one place --------------------------------------------
+
+/// A PLACE IS A SCORE, NOT A ROW. Builds on one exact score are tied — what
+/// tells them apart moved no number in that fight, an exilus or an evolution
+/// the ruler never reaches — so they share a place and the next score is the
+/// next place: 1, 1, 2, never 1, 1, 3. `list` is best first and `group` names
+/// the ranking an entry is in; each entry comes back with its `rank`. EVERY
+/// RANKING OF BUILDS COUNTS THIS WAY, which is why it is one function.
+function placed(list, score, group = () => "") {
+  const last = new Map();
+  return list.map((x) => {
+    const g = group(x), s = score(x), was = last.get(g);
+    const rank = !was ? 1 : was.s === s ? was.rank : was.rank + 1;
+    last.set(g, { s, rank });
+    return { ...x, rank };
+  });
+}
+/// Where a score not yet on a ranking would stand: one past every higher score.
+const placeAmong = (scores, s) => new Set(scores.filter((x) => x > s)).size + 1;
+
+/// A BOARD ROW AS POSITIONS: where each part sits, so two tied builds can be
+/// told apart by WHERE they differ. The mods are one position (a set); the
+/// exilus, each arcane slot and each evolution tier are one each — two tier-2
+/// evolutions are alternatives, a tier-2 and a tier-4 are not. `axis` is the
+/// part's `/api/meta.build_axes` id; `id` keeps a mod's rank (`id@3`).
+function boardRowParts(r) {
+  const ex = r.exilus && r.exilus !== "none" ? r.exilus : null;
+  const out = (r.mods || []).filter((id) => id && id !== ex)
+    .map((id) => (id === BOARD_RIVEN_SLOT
+      ? { axis: "rivens", pos: "riven", id: JSON.stringify([((r.riven || {}).bonuses || []).slice().sort(), (r.riven || {}).malus || ""]) }
+      : { axis: "mods", pos: "mods", id }));
+  if (ex) out.push({ axis: "mods", pos: "exilus", id: ex });
+  (r.arcanes || []).forEach((id, i) => { if (id && id !== "none") out.push({ axis: "arcanes", pos: `arcanes#${i}`, id }); });
+  (r.evolutions || []).forEach((id, i) => { if (id) out.push({ axis: "evolutions", pos: `evolutions#${i}`, id }); });
+  if (r.grip) out.push({ axis: "assembly", pos: "assembly#grip", id: r.grip }, { axis: "assembly", pos: "assembly#loader", id: r.loader });
+  if (r.valence) out.push({ axis: "valence", pos: "valence", id: r.valence });
+  return out;
+}
+
+/// THE CHEAPER OF TWO TIED BUILDS, which is the one a tie shows first: fewer
+/// parts, then more cards below their full rank, then the earlier measured.
+function cheaperBuild(a, b) {
+  const parts = (r) => boardRowParts(r).length;
+  const low = (r) => (r.mods || []).filter((id) => String(id).includes("@")).length;
+  return parts(a) - parts(b) || low(b) - low(a) || String(a.measured_at || "").localeCompare(String(b.measured_at || ""));
+}
+
+/// TIED BUILDS AS ONE ANSWER. Consecutive entries of `list` sharing a `key`
+/// (the ranking and the place) are one group: `members` cheapest first, `core`
+/// the parts every member carries (as `pos=id`), `free` per position the
+/// alternatives the members take there (`null`: the position left empty), and
+/// `every` whether the members are every combination of those alternatives —
+/// when not, only the members themselves are known to tie.
+function tieGroups(list, key, rowOf = (x) => x.row) {
+  const out = [];
+  for (const x of list) {
+    const last = out[out.length - 1];
+    if (last && last.key === key(x)) last.members.push(x);
+    else out.push({ key: key(x), members: [x] });
+  }
+  return out.map((g) => {
+    const members = g.members.slice().sort((a, b) => cheaperBuild(rowOf(a), rowOf(b)));
+    const each = members.map((x) => boardRowParts(rowOf(x)));
+    const k = (p) => `${p.pos}=${p.id}`;
+    const count = new Map();
+    each.forEach((ps) => new Set(ps.map(k)).forEach((x) => count.set(x, (count.get(x) || 0) + 1)));
+    const core = new Set([...count].filter(([, c]) => c === each.length).map(([x]) => x));
+    const free = [];
+    let multi = false;
+    for (const pos of [...new Set(each.flat().map((p) => p.pos))]) {
+      const alts = new Map();
+      for (const ps of each) {
+        const here = ps.filter((p) => p.pos === pos && !core.has(k(p)));
+        if (here.length > 1) multi = true;
+        if (here.length) here.forEach((p) => alts.set(p.id, p));
+        else alts.set("", null);
+      }
+      if ([...alts.keys()].some(Boolean)) free.push([pos, [...alts.values()]]);
+    }
+    const product = free.reduce((t, [, v]) => t * v.length, 1);
+    return { key: g.key, members, core, free, every: !multi && product === members.length };
+  });
+}
+
+/// THE BOARD IN ITS READING ORDER, each row with its place inside its group.
 ///
 /// Rulers in their declared order (the primary first), then modes and kinds by
 /// their best row, strongest first — each is a control on the build bar and a
 /// control's order is its own answer — then best first inside a group. A group
 /// is one ruler, one mode, riven or not: those compete with each other for
 /// nothing. `benchIds` is `META.benchmarks` in order; `modes` the weapon's own.
+/// `rank` is the PLACE (`placed`), shared by a tie; `key` counts rows, so it
+/// stays unique.
 function rankBoard(rows, benchIds, modes) {
   const order = (id) => {
     const i = benchIds.indexOf(id);
@@ -114,11 +200,11 @@ function rankBoard(rows, benchIds, modes) {
     || (riven(a) ? 1 : 0) - (riven(b) ? 1 : 0)
     || (b.score || 0) - (a.score || 0));
   const seen = {};
-  return sorted.map((row) => {
+  return placed(sorted.map((row) => {
     const k = kindKey(row);
     seen[k] = (seen[k] || 0) + 1;
-    return { row, mode: row.mode || "base", riven: riven(row), rank: seen[k], key: `${k}#${seen[k]}` };
-  });
+    return { row, mode: row.mode || "base", riven: riven(row), key: `${k}#${seen[k]}` };
+  }), (x) => x.row.score || 0, (x) => kindKey(x.row));
 }
 
 /// A weapon by id, or the refusal naming the ones a caller may have meant.
@@ -452,8 +538,8 @@ function pooledRanking(ranked) {
     if (!by.has(g)) by.set(g, []);
     by.get(g).push(x);
   }
-  return [...by.values()].flatMap((list) => list.slice()
-    .sort((a, b) => (b.row.score || 0) - (a.row.score || 0)).map((x, i) => ({ ...x, rank: i + 1 })));
+  return [...by.values()].flatMap((list) => placed(list.slice()
+    .sort((a, b) => (b.row.score || 0) - (a.row.score || 0)), (x) => x.row.score || 0));
 }
 
 /// …AND ITS RIVENS: one row per riven shape, at the mode it scores best in,
@@ -462,31 +548,35 @@ function pooledRivens(meta, w, rows, ruler) {
   const ranked = pooledRanking(rankBoard(rows.filter((r) => r.benchmark === ruler), [ruler], w.modes));
   const top = ranked.find((x) => !x.riven) || null;
   const seen = new Set();
-  const rivens = ranked.filter((x) => {
+  const rivens = placed(ranked.filter((x) => {
     if (!x.riven) return false;
     const k = JSON.stringify([x.row.riven.bonuses.slice().sort(), x.row.riven.malus || ""]);
     if (seen.has(k)) return false;
     seen.add(k);
     return true;
-  }).map((x) => ({ ...x, gain: top ? x.row.score / top.row.score - 1 : null }));
+  }), (x) => x.row.score || 0).map((x) => ({ ...x, gain: top ? x.row.score / top.row.score - 1 : null }));
   return { ruler_id: ruler, top, rivens };
 }
 
 // ---- the top N, one per score ------------------------------------------------
 
-/// THE FIRST `n` SCORES of each ranking, one row each: rows that tie are one
-/// answer, so a tie shows its first build and the next row shown is the next
-/// score — ranks 1, 4 and 5 when the first three tie. `list` is in rank order;
-/// `group` names the ranking a row is in and `shown` the score as printed.
-function distinctTop(list, n, group, shown) {
-  const seen = new Map();
-  return list.filter((x) => {
-    const g = seen.get(group(x)) || new Set();
-    seen.set(group(x), g);
-    if (g.size >= n || g.has(shown(x))) return false;
-    g.add(shown(x));
-    return true;
-  });
+/// THE FIRST `n` PLACES of each ranking, one entry each: a tie is one answer,
+/// shown by its cheapest build (`cheaperBuild`), with `tied` saying how many
+/// builds share it. `list` carries `placed` ranks; `group` names the ranking.
+function distinctTop(list, n, group) {
+  const pick = new Map();
+  for (const x of list) {
+    if (x.rank > n) continue;
+    const k = `${group(x)}#${x.rank}`;
+    const had = pick.get(k);
+    if (!had) pick.set(k, { x, tied: 1 });
+    else {
+      had.tied += 1;
+      if (x.row && had.x.row && cheaperBuild(x.row, had.x.row) < 0) had.x = x;
+    }
+  }
+  const won = new Map([...pick.values()].map((p) => [p.x, p.tied]));
+  return list.filter((x) => won.has(x)).map((x) => ({ ...x, tied: won.get(x) }));
 }
 
 // ---- when a number was measured ---------------------------------------------
@@ -597,7 +687,7 @@ const HEADLESS_QUERIES = [
       riven: { kind: "string", what: "\"without\" (default), \"with\" or \"any\"", enum: () => ["without", "with", "any"] },
       mode: { kind: "string", what: "only this mode id" },
       limit: { kind: "number", min: 1, max: 20, what: "rows per group, default 3" },
-      distinct: { kind: "boolean", what: "one row per score; `limit` counts scores" },
+      distinct: { kind: "boolean", what: "one row per place, its cheapest build; `limit` counts places" },
       pooled: { kind: "boolean", what: "rank a ruler's modes together" },
     },
     async run({ weapon, riven = "without", mode: m, limit = 3, distinct = false, pooled = false }, host) {
@@ -613,15 +703,14 @@ const HEADLESS_QUERIES = [
       const scoped = (pooled ? pooledRanking(ranked) : ranked)
         .filter((x) => (riven === "any" || x.riven === (riven === "with")) && (!m || x.mode === m));
       const picked = distinct
-        ? distinctTop(scoped, limit, (x) => `${x.row.benchmark}#${pooled ? "" : x.mode}#${x.riven}`,
-          (x) => String(x.row.shown != null ? x.row.shown : x.row.score))
+        ? distinctTop(scoped, limit, (x) => `${x.row.benchmark}#${pooled ? "" : x.mode}#${x.riven}`)
         : scoped.filter((x) => x.rank <= limit);
       return {
         weapon: w.id,
-        rows: picked.map(({ row: r, mode, riven: rv, rank, key }) => {
+        rows: picked.map(({ row: r, mode, riven: rv, rank, key, tied }) => {
           const bench = benches.find((b) => b.id === r.benchmark);
           return {
-            key, rank, ruler: bench ? host.tr(bench.name) : r.benchmark, ruler_id: r.benchmark,
+            key, rank, ...(tied > 1 ? { tied } : {}), ruler: bench ? host.tr(bench.name) : r.benchmark, ruler_id: r.benchmark,
             mode, riven: rv, score: String(r.shown != null ? r.shown : (r.score || 0).toFixed(4)),
             ...(r.measured_at ? { measured_at: r.measured_at } : {}), ...(r.measured_by ? { measured_by: r.measured_by } : {}),
             mods: (r.mods || []).filter((x) => x && x !== BOARD_RIVEN_SLOT).map(name),
@@ -706,8 +795,8 @@ const HEADLESS_QUERIES = [
             ruler: host.tr((benches.find((b) => b.id === g.ruler_id) || { name: g.ruler_id }).name),
             ruler_id: g.ruler_id, mode: g.mode,
             riven_free: g.top ? { score: shown(g.top.row), mods: mods(g.top.row), link: link(g.top.row, false) } : null,
-            rivens: g.rivens.filter((x) => rivenMatches(x.row.riven, { bonuses, malus })).map((x, i) => ({
-              rank: i + 1, mode: x.row.mode || "base",
+            rivens: placed(g.rivens.filter((x) => rivenMatches(x.row.riven, { bonuses, malus })), (x) => x.row.score || 0).map((x) => ({
+              rank: x.rank, mode: x.row.mode || "base",
               bonuses: x.row.riven.bonuses.map(stat), malus: x.row.riven.malus ? stat(x.row.riven.malus) : null,
               stat_ids: { bonuses: x.row.riven.bonuses, malus: x.row.riven.malus || null },
               score: shown(x.row), gain: x.gain, mods: mods(x.row), link: link(x.row, true),

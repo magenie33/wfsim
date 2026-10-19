@@ -21,7 +21,7 @@ const wbenchRank = (benchmark, mode, score, exalted) => {
   const index = benchIndexOf(benchList().find((b) => b.id === benchmark)).index;
   if (!index || score == null) return null;
   let total = 0;
-  let above = 0;
+  const bests = [];
   for (const [wid, rows] of Object.entries(index)) {
     // AMONG ITS OWN KIND. An Exalted weapon's numbers are its Warframe's
     // ability's — it seats no capacity of its own and scales with strength —
@@ -36,9 +36,9 @@ const wbenchRank = (benchmark, mode, score, exalted) => {
     }
     if (best == null) continue;
     total += 1;
-    if (best > score) above += 1;
+    bests.push(best);
   }
-  return total ? { rank: above + 1, total } : null;
+  return total ? { rank: placeAmong(bests, score), total } : null;
 };
 
 /// Every (ruler, mode) this weapon has a riven-free row for, in the order the

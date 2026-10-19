@@ -1061,6 +1061,14 @@ answer is what gets stored, the stored answer
 carries to the next weapon in both directions, a redraw keeps it, a click in
 its search box does not fold it, and the jump menu lists it by name.
 
+**A TIE IS ONE PLACE, AND A REFUSED TRIGGER IS PRECISE.** On Felarx's plain
+cycle board every build's rank is its score's place among the distinct scores,
+one row stands for each place, a tie names a position its builds differ in and
+opens into exactly its builds, each a different build on that one score.
+Refusing weak-point kills lists exactly the builds with no part that asks for
+one — and still some whose parts ask for any kill — the refusal is stored, and
+the kill group refuses all three kill triggers. Counted with every tie opened.
+
 **KEPT BY WHAT THE BUILD IS.** A board build's id ends in its rank, so the check
 drops the opened build's score to renumber it, leaves the weapon and comes back:
 the bar must hold that same build once and the page must reopen on it — not on

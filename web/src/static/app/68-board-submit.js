@@ -636,11 +636,10 @@ function boardProjection() {
     x.benchmark === body.benchmark
     && (x.mode || "base") === (body.mode || "base")
     && !rowHasRiven(x));
-  const ahead = rows.filter((x) => (x.score || 0) > mine).length;
   return {
     text: fmtScore(mine)
       + " " + metricLabel(met),
-    place: ahead + 1,
+    place: placeAmong(rows.map((x) => x.score || 0), mine),
     of: rows.length + 1,
     group: `${benchmarkName(body.benchmark)} · ${modeLabel(w, body.mode || "base")}`,
   };

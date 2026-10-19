@@ -1857,12 +1857,23 @@ and its markdown, and the headless rows — with one line beside a list saying a
 older record may be behind (`measuredRecordHtml`, `measuredNote`). A weapon's
 "updated" time is its newest row under that ruler.
 
-**A SHORT LIST RANKS EVERY MODE TOGETHER AND COUNTS SCORES, NOT ROWS** (the
+**A PLACE IS A SCORE, NOT A ROW.** Builds on one exact score are tied — what
+tells them apart moved no number under that ruler, an exilus or an evolution
+the fight never reaches — so they share a place and the next score is the next
+place: 1, 1, 2, never 1, 1, 3. Every ranking of builds counts this way through
+one function (`placed`, `87-headless.js`): the board, the build bar, the
+finder, the long image, the bots, the agent door, and where a submitted run or
+a weapon would stand (`placeAmong`). A row's `builtin` id still counts ROWS, so
+it stays unique; it was never a durable reference to a build (§UI "kept by what
+it is").
+
+**A SHORT LIST RANKS EVERY MODE TOGETHER AND COUNTS PLACES, NOT ROWS** (the
 long image, the bots): it answers "the best ways to play this weapon", so a
 ruler's modes are one ranking (`pooledRanking`; a riven at its best mode,
-against the best riven-free build of any mode), and builds that tie are one
-answer — the first of a tie is shown and the next row is the next score
-(`distinctTop`). The board and the build finder still rank per mode.
+against the best riven-free build of any mode), and a tie is one answer shown
+by its cheapest build — fewest parts, then most cards below full rank — saying
+how many builds share it (`distinctTop`, `cheaperBuild`). The board and the
+build finder still rank per mode.
 
 A GROUP IS ONE WEAPON, IN ONE MODE, UNDER ONE RULER, and riven builds are a
 group of their own. A riven build and a plain one compete with each other for
