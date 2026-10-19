@@ -624,7 +624,7 @@ async function showcaseStanding() {
   await loadDevices();
   const d = devicesState;
   return d && d.named && d.points > 0
-    ? { name: accountName(accountState.account), volunteer: !!d.volunteer, points: d.points, ranks: d.ranks || {},
+    ? { name: accountName(accountState.account), points: d.points, ranks: d.ranks || {},
       contributor_rank: d.contributor_rank || null } : null;
 }
 /// THE SHARER'S PICK, or the default: their rank, their points and their best
@@ -647,7 +647,7 @@ function showcaseOf(st, pick, mark) {
       : st.ranks[k] ? [`#${st.ranks[k]}`, tr(label)] : null))
     .filter(Boolean);
   const rank = pick.items.includes("rank") && st.contributor_rank ? st.contributor_rank.rank : null;
-  return { name: st.name, volunteer: st.volunteer, mark: mark || "", rank, stats };
+  return { name: st.name, mark: mark || "", rank, stats };
 }
 
 /// THE CARD: a picture of this build, to paste into a chat window — with the

@@ -601,8 +601,7 @@ const contributorsOrdered = () => (contributorsState || []).map((c, i) => ({ c, 
 function contributorRowInner(c, at, shown) {
   const who = c.name === null ? `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`
     : `<span class="rank-name">${escHtml(c.name)}</span>${extHookNow("contributorMark", c.mark) || ""}`;
-  const honour = c.volunteer ? `<span class="contrib-volunteer">${aT("WFSim Volunteer")}</span>` : "";
-  return `<span class="rank-n">${at + 1}</span><span class="rank-who">${contributorRankBadge(c.contributor_rank)}${who}${honour}${
+  return `<span class="rank-n">${at + 1}</span><span class="rank-who">${contributorRankBadge(c.contributor_rank)}${who}${
     c.you ? `<span class="rank-you">${aT("(you)")}</span>` : ""}</span><span class="rank-pts">${escHtml(shown.toLocaleString(accountLocale()))}</span>`;
 }
 const contributorRowClass = (c, at) => `rank-row${at < 3 ? " top" : ""}${c.you ? " you" : ""}`;

@@ -344,7 +344,7 @@ check("a yes and work credited is the honour, since that yes — a yes with noth
 await library.run("UPDATE verifiers SET work = ? WHERE id = ?", 1 * POINT, Q);
 await choose(ed, true);
 const withEd = await ranking();
-check("...shown beside a name on the ranking", withEd.some((e) => e.name === "ed" && e.volunteer === true), JSON.stringify(withEd));
+check("...carried by a named row on the ranking", withEd.some((e) => e.name === "ed" && e.volunteer === true), JSON.stringify(withEd));
 await choose(ed, false);
 check("...and never on an anonymous row", (await ranking()).every((e) => e.name !== null || !("volunteer" in e)));
 

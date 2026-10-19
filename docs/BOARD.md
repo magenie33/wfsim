@@ -1302,8 +1302,9 @@ yes, since each ask again is a reader interrupted. Eight rules:
    whose answers agree.
    A device that said yes and has been credited makes its account a
    **WFSim Volunteer** — an honour earned by computing, never sold — shown on
-   the account page, the compute page, and beside a name on the ranking, never
-   on an anonymous row.
+   the account page and the compute page. The ranking's named rows carry it but
+   the page does not draw it there: nearly everyone on the ranking has computed,
+   so it tells nobody apart.
    Every account also holds a **CONTRIBUTOR RANK**, Warframe's Mastery Rank
    curve on its all-time points: ten points are one experience, rank n is
    reached at 2,500·n² up to 30, and every 147,500 past that is one rank more,
