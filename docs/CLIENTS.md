@@ -177,12 +177,15 @@ and a download is all that costs.
 - `GET https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com/engine/latest.json`
   (or `engine/<engine>.json` for one engine) → `{ sig, signed }`. `signed` is
   JSON text `{ engine, commit, abi, files, data }`, `files` by target
-  (`x86_64-windows`, `x86_64-linux`) each `{ path, sha256, size }`, the library
+  (`x86_64-windows`, `x86_64-linux`, `aarch64-macos`, `x86_64-macos`) each
+  `{ path, sha256, size }`, the library
   at `<bucket>/<path>`, and `data` the official data pack the same way. `sig` is the hex Ed25519 signature of the bytes of
   `signed` under the key the desktop client verifies
   (`b488481177cb0a459a685c5d66f646768e7f66c405b92ecde81025581419a95e`). Verify
   the signature, then the SHA-256, before loading; refuse either mismatch.
-- The Linux library needs glibc 2.31 or newer.
+- The Linux library needs glibc 2.31 or newer; the macOS ones, macOS 11. A
+  target is published only when its build matched the wasm bit for bit, so an
+  engine may lack one: compute that engine on the wasm.
 - `abi: 2` is three C functions: `wfsim_install_data(body, body_len, &len) ->
   ptr`, the wasm module's `install_data`, called once before the first call;
   `wfsim_api(path, path_len, body, body_len, &len) -> ptr`, UTF-8 in and out,
@@ -398,6 +401,9 @@ checks. Protocol 7 stays served while anyone uses it.
 
 ## Changelog
 
+- **2026-10-19 — macOS in the engine library.** `files` may name
+  `aarch64-macos` and `x86_64-macos`, from the first engine shipped after this;
+  a target is published only once it matched the wasm bit for bit.
 - **2026-10-18 — the official data pack.** `/release.json` names `data` and
   `data_format`; the engine library is `abi: 2`, its signed body names `data`,
   and it gains `wfsim_install_data`, as the wasm module gains `install_data`.

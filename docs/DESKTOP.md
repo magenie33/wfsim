@@ -442,6 +442,10 @@ What differs from Windows, each where the reader expects it:
   what else to remove.
 - **WKWebView ignores `data_directory`**, so a selftest gets a fresh data store
   by identifier (macOS 14 and later) instead of a throwaway profile directory.
-- **No native engine** yet: the release carries a Windows library, the shell
-  refuses to load it elsewhere, and the page computes the board on wasm — the
-  same answer, slower.
+- **The native engine comes from the official engine library**
+  (docs/CLIENTS.md), the one every other client reads: the release carries a
+  Windows library only. `native::official` verifies the signed manifest, takes
+  this machine's `<arch>-<os>` build and its data pack, and caches both by
+  hash. ship.yml's `engine-mac` job builds the two Mac slices and holds each to
+  the shipped wasm (`check_gas.mjs`) first; an engine without one computes on
+  wasm. A Linux shell takes the same road.
