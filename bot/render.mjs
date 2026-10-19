@@ -1,60 +1,129 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE LONG IMAGE, TAKEN — docs/AGENT.md §"The QQ bot". One headless Chrome
-// stays up; each render opens the site's card page (45-card-page.js) in
+// THE LONG IMAGE, TAKEN — docs/AGENT.md §"The QQ bot". A headless Chrome, up
+// while renders come; each opens the site's card page (45-card-page.js) in
 // Chinese, waits for `data-card-ready`, and screenshots that element alone.
 // `--no-sandbox`: Ubuntu 26.04 denies the namespaces Chrome's sandbox needs,
 // and this browser only ever opens wfsim.app.
 import { spawn } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const CHROME = process.env.CHROME || "chrome-headless-shell";
-const PORT = 9333;
 const READY_MS = 30_000;
+/// A BROWSER IS KEPT ONLY WHILE IT IS USED: closed once no page has been open
+/// this long, and retired after this many pages, so a renderer's growth is given
+/// back — on a small server a browser kept for days is what the kernel kills.
+const IDLE_CLOSE_MS = 300_000;
+const PAGES_PER_BROWSER = 50;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-let chrome = null;
-async function browser() {
-  if (chrome && chrome.exitCode === null) return;
-  chrome = spawn(CHROME, ["--no-sandbox", "--lang=zh-CN", `--remote-debugging-port=${PORT}`,
+/// EACH BROWSER HAS ITS OWN PROFILE AND A PORT THE SYSTEM PICKS: a fixed port
+/// let this process drive a browser some earlier run left behind, which nothing
+/// then ever closed. Every browser it starts dies with it.
+const browsers = new Set();
+let chrome = null, starting = null;
+const alive = (c) => c.proc.exitCode === null && c.proc.signalCode === null;
+const quit = (c) => { clearTimeout(c.idle); if (alive(c)) c.proc.kill(); };
+process.once("exit", () => { for (const c of browsers) { quit(c); try { rmSync(c.dir, { recursive: true, force: true }); } catch (_) {} } });
+for (const sig of ["SIGINT", "SIGTERM"]) process.once(sig, () => process.exit(128 + (sig === "SIGINT" ? 2 : 15)));
+
+async function launch() {
+  if (chrome && !chrome.retired) { chrome.retired = true; if (!chrome.open) quit(chrome); }
+  const dir = mkdtempSync(join(tmpdir(), "wfsim-chrome-"));
+  const proc = spawn(CHROME, ["--no-sandbox", "--lang=zh-CN", "--remote-debugging-port=0", `--user-data-dir=${dir}`,
     "--hide-scrollbars", "--disable-gpu", "about:blank"], { stdio: "ignore" });
-  for (let i = 0; i < 50; i++) {
-    try { if ((await fetch(`http://127.0.0.1:${PORT}/json/version`)).ok) return; } catch (_) {}
+  proc.unref();
+  const c = { proc, dir, base: "", pages: 0, open: 0, idle: null, retired: false };
+  browsers.add(c);
+  proc.once("exit", () => { browsers.delete(c); rmSync(dir, { recursive: true, force: true }); });
+  for (let i = 0; i < 50 && alive(c); i++) {
+    try {
+      const port = readFileSync(join(dir, "DevToolsActivePort"), "utf8").split("\n")[0].trim();
+      if (port && (await fetch(`http://127.0.0.1:${port}/json/version`)).ok) {
+        c.base = `127.0.0.1:${port}`;
+        return (chrome = c);
+      }
+    } catch (_) {}
     await sleep(200);
   }
+  quit(c);
   throw new Error("chrome did not come up");
 }
 
+async function browser() {
+  if (chrome && !chrome.retired && alive(chrome)) return chrome;
+  if (!starting) starting = launch().finally(() => { starting = null; });
+  return starting;
+}
+
+function release(c) {
+  if (--c.open) return;
+  if (c.retired) quit(c);
+  else c.idle = setTimeout(() => { c.retired = true; quit(c); }, IDLE_CLOSE_MS).unref();
+}
+
+/// A page opened by `open(browser)`, counted against its browser until closed.
+async function use(open) {
+  const c = await browser();
+  clearTimeout(c.idle);
+  c.open++;
+  if (++c.pages >= PAGES_PER_BROWSER) c.retired = true;
+  let p;
+  try { p = await open(c); } catch (e) { release(c); throw e; }
+  return { send: p.send, close: async () => { try { await p.close(); } finally { release(c); } } };
+}
+
 /// One page over the DevTools protocol: `send(method, params)` and close.
-async function page() {
-  await browser();
-  const t = await (await fetch(`http://127.0.0.1:${PORT}/json/new?about:blank`, { method: "PUT" })).json();
-  return attach(t.webSocketDebuggerUrl, () => fetch(`http://127.0.0.1:${PORT}/json/close/${t.id}`).catch(() => {}));
+function page() {
+  return use(async (c) => {
+    const t = await (await fetch(`http://${c.base}/json/new?about:blank`, { method: "PUT" })).json();
+    return attach(t.webSocketDebuggerUrl, () => fetch(`http://${c.base}/json/close/${t.id}`).catch(() => {}));
+  });
 }
 
 /// A PAGE IN A BROWSER CONTEXT OF ITS OWN — no storage any earlier page left —
 /// opened through the browser's own target, and the context dropped on close.
-async function cleanPage() {
-  await browser();
-  const v = await (await fetch(`http://127.0.0.1:${PORT}/json/version`)).json();
-  const b = await attach(v.webSocketDebuggerUrl, async () => {});
-  const ctx = (await b.send("Target.createBrowserContext", { disposeOnDetach: true })).result.browserContextId;
-  const target = (await b.send("Target.createTarget", { url: "about:blank", browserContextId: ctx })).result.targetId;
-  const p = await attach(`ws://127.0.0.1:${PORT}/devtools/page/${target}`, async () => {
-    await b.send("Target.disposeBrowserContext", { browserContextId: ctx }).catch(() => {});
-    await b.close();
+function cleanPage() {
+  return use(async (c) => {
+    const v = await (await fetch(`http://${c.base}/json/version`)).json();
+    const b = await attach(v.webSocketDebuggerUrl, async () => {});
+    const ctx = (await b.send("Target.createBrowserContext", { disposeOnDetach: true })).result.browserContextId;
+    const target = (await b.send("Target.createTarget", { url: "about:blank", browserContextId: ctx })).result.targetId;
+    return attach(`ws://${c.base}/devtools/page/${target}`, async () => {
+      await b.send("Target.disposeBrowserContext", { browserContextId: ctx }).catch(() => {});
+      await b.close();
+    });
   });
-  return p;
 }
+
+/// EVERY COMMAND ANSWERS OR FAILS: a renderer the kernel kills under memory
+/// pressure never replies, and an unbounded wait stops the bot reading any chat.
+const SEND_MS = 30_000;
 
 async function attach(url, closed) {
   const ws = new WebSocket(url);
   await new Promise((ok, no) => { ws.onopen = ok; ws.onerror = no; });
   let seq = 0;
   const waiting = new Map();
+  const settle = (id, m, error) => {
+    const w = waiting.get(id);
+    if (!w) return;
+    waiting.delete(id);
+    clearTimeout(w.timer);
+    if (error) w.no(error); else w.ok(m);
+  };
   ws.onmessage = (e) => {
     const m = JSON.parse(e.data);
-    if (m.id && waiting.has(m.id)) { waiting.get(m.id)(m); waiting.delete(m.id); }
+    if (m.id) settle(m.id, m);
   };
-  const send = (method, params = {}) => new Promise((ok) => { const id = ++seq; waiting.set(id, ok); ws.send(JSON.stringify({ id, method, params })); });
+  ws.onclose = () => { for (const id of [...waiting.keys()]) settle(id, null, new Error("devtools connection closed")); };
+  const send = (method, params = {}) => new Promise((ok, no) => {
+    const id = ++seq;
+    const timer = setTimeout(() => settle(id, null, new Error(`${method}: no answer in ${SEND_MS / 1000} s`)), SEND_MS);
+    waiting.set(id, { ok, no, timer });
+    ws.send(JSON.stringify({ id, method, params }));
+  });
   const close = async () => { ws.close(); await closed(); };
   return { send, close };
 }

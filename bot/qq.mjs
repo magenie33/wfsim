@@ -15,6 +15,8 @@ const env = Object.fromEntries(readFileSync(ENV_FILE, "utf8").split(/\r?\n/)
   .filter((l) => l.includes("=") && !l.startsWith("#")).map((l) => [l.slice(0, l.indexOf("=")).trim(), l.slice(l.indexOf("=") + 1).trim()]));
 const API = env.QQ_API || "https://api.sgroup.qq.com";
 const IDLE_MS = 1000;
+/// A call to QQ or the site that has not answered in this has failed: the chat loop never waits unbounded.
+const FETCH_MS = 30_000;
 /// How long an appraisal's answer may take to draw: a replay is a whole fight.
 const REPLAY_MS = 300_000;
 
@@ -22,7 +24,8 @@ let token = null;
 async function accessToken() {
   if (token && Date.now() < token.until) return token.value;
   const r = await fetch("https://bots.qq.com/app/getAppAccessToken", { method: "POST",
-    headers: { "content-type": "application/json" }, body: JSON.stringify({ appId: env.QQ_APP_ID, clientSecret: env.QQ_APP_SECRET }) });
+    headers: { "content-type": "application/json" }, body: JSON.stringify({ appId: env.QQ_APP_ID, clientSecret: env.QQ_APP_SECRET }),
+    signal: AbortSignal.timeout(FETCH_MS) });
   const j = await r.json();
   if (!j.access_token) throw new Error(`token: ${JSON.stringify(j).slice(0, 200)}`);
   // RENEWED A MINUTE EARLY, so a reply never carries one that just expired.
@@ -44,7 +47,8 @@ function chatPath(row) {
 
 async function qq(path, body) {
   const r = await fetch(API + path, { method: "POST", headers: { "content-type": "application/json",
-    authorization: `QQBot ${await accessToken()}`, "x-union-appid": env.QQ_APP_ID }, body: JSON.stringify(body) });
+    authorization: `QQBot ${await accessToken()}`, "x-union-appid": env.QQ_APP_ID }, body: JSON.stringify(body),
+    signal: AbortSignal.timeout(FETCH_MS) });
   const text = await r.text();
   if (!r.ok) throw new Error(`${path}: ${r.status} ${text.slice(0, 300)}`);
   return text ? JSON.parse(text) : {};
@@ -218,7 +222,8 @@ async function tellHeld(row) {
 
 async function claim(done) {
   const r = await fetch(`${SITE}/api/qq/claim`, { method: "POST", headers: { "content-type": "application/json",
-    authorization: `Bearer ${env.BOT_RELAY_TOKEN}` }, body: JSON.stringify({ done }) });
+    authorization: `Bearer ${env.BOT_RELAY_TOKEN}` }, body: JSON.stringify({ done }),
+    signal: AbortSignal.timeout(FETCH_MS) });
   if (!r.ok) throw new Error(`claim: ${r.status}`);
   return (await r.json()).rows;
 }
@@ -232,8 +237,18 @@ relayWorld(env.BOT_RELAY_TOKEN);
     await new Promise((r) => setTimeout(r, 3000));
   }
 })();
+/// THE CHAT LOOP MUST MOVE: one that has not in this long is stuck on something
+/// no timeout covers, and exiting hands it to systemd's restart.
+const STALL_MS = 300_000;
+let beat = Date.now();
+setInterval(() => {
+  if (Date.now() - beat < STALL_MS) return;
+  console.error(`chat loop stalled ${Math.round((Date.now() - beat) / 1000)} s, exiting for a restart`);
+  process.exit(1);
+}, 30_000);
 let done = [];
 for (;;) {
+  beat = Date.now();
   let rows = [];
   try {
     rows = await claim(done);
@@ -242,6 +257,7 @@ for (;;) {
     console.error(String(e));
   }
   for (const row of rows) {
+    beat = Date.now();
     try {
       await send(row, await answer(row.body.content, { openAppraisal: (ask) => openAppraisal(row, ask) }));
       await tellHeld(row);

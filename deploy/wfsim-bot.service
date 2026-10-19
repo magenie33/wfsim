@@ -14,6 +14,13 @@ ExecStart=/usr/bin/node bot/qq.mjs
 Environment=WFSIM_LIVE_BOARD=/opt/wfsim-bot/live/board
 Restart=always
 RestartSec=5
+# THE BOT'S MEMORY IS ITS OWN: past MemoryHigh the kernel reclaims from this
+# unit first, and past MemoryMax it kills inside it, never across the server.
+# A killed renderer costs one card (bot/render.mjs answers in words instead).
+MemoryHigh=1200M
+MemoryMax=1600M
+# Each browser's profile lives under /tmp, dropped with the unit.
+PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
