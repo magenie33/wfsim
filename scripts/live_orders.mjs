@@ -18,7 +18,7 @@ import { execFileSync } from "node:child_process";
 import { cpus } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { official, tell, BOARD_KINDS } from "./order_credit.mjs";
+import { official, tell, unverifiedRows, BOARD_KINDS } from "./order_credit.mjs";
 import { witness } from "./wasm_witness.mjs";
 
 const SETTLE_PER_CYCLE = 3;
@@ -83,7 +83,7 @@ async function settle() {
 /// to each open board question.
 async function unverified() {
   // THE FACTORY SAYS, from whichever database holds it (worker/factory.js `report`).
-  const { rows } = await official("report", { report: "unverified" });
+  const rows = await unverifiedRows(official);
   const at = new Date().toISOString();
   writeFileSync(arg, rows.map((r) => {
     const p = JSON.parse(r.payload), res = JSON.parse(r.result);

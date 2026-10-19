@@ -30,6 +30,17 @@ export async function official(what, body) {
   return j;
 }
 
+/// THE FACTORY'S OPEN FIRST ANSWERS (`report: "unverified"`), every page of them.
+export async function unverifiedRows(call = official, limit) {
+  const rows = [];
+  for (let after = null; ;) {
+    const page = await call("report", { report: "unverified", after, limit });
+    rows.push(...page.rows);
+    if (!page.next) return rows;
+    after = page.next;
+  }
+}
+
 /// EVERY FACT LINE AS AN OFFICIAL ANSWER: the row's score, its metric and the
 /// work the scorer counted. Returns how many questions it made facts of.
 export async function tell(facts, engine, call = official) {

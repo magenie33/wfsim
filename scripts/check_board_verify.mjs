@@ -20,7 +20,7 @@ import { boardTasksRoute, BOARD_PRODUCERS } from "../worker/board_tasks.js";
 import { officialRoute, refusalsFor } from "../worker/factory.js";
 refusalsFor(true);
 import { coolDownMs } from "../worker/tasks.js";
-import { tell } from "./order_credit.mjs";
+import { tell, unverifiedRows } from "./order_credit.mjs";
 import { testDb } from "./pg/test_db.mjs";
 import { execFileSync } from "node:child_process";
 
@@ -347,6 +347,12 @@ console.log("\npacks");
     && await L.get("SELECT 1 FROM answers WHERE question = ? AND device = ?", rows[2].question, P)
     && await every(rows.slice(3), async (t) => (await question(t.identity)).leased_to === null));
   check("one owner's pack makes no fact alone", await every(rows.slice(0, 3), async (t) => (await question(t.identity)).state === "open" && !await fact(t.identity)));
+  // THE OPEN FIRST ANSWERS (scripts/live_orders.mjs `unverified`), a page at a
+  // time: a demand a page reads exactly what one page of them all does.
+  const scorer = (what, body) => post(officialRoute, `/api/tasks/official/${what}`, { ...body, witness: "official:scorer" }, TOKEN);
+  const whole = await unverifiedRows(scorer), paged = await unverifiedRows(scorer, 1);
+  check("the open first answers read a demand a page are the ones read at once",
+    whole.length >= 3 && JSON.stringify(paged) === JSON.stringify(whole), `${paged.length} paged, ${whole.length} at once`);
   const p2 = await work(Q, { ip: "198.51.100.61", pace: 20_000 });
   check("another owner's pack starts with the rows still waiting for a second witness",
     p2.pack && rows.slice(0, 3).every((t) => p2.pack.tasks.some((u) => u.question === t.question)), JSON.stringify(p2));
