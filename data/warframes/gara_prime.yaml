@@ -10,7 +10,9 @@ shield: 370
 polarities: [madurai, madurai, naramon]
 aura_polarity: vazarin
 
-passive: "A chance to create a radial blind lasting 10s when exposed to bright light."
+# Gara's own line: the wiki's Gara page and DE's export state it for both,
+# and the wiki's data module alone still gives this one a bright-light trigger.
+passive: "A chance to create a radial blind lasting 10s when Gara casts abilities."
 passive_unmodelled: frame
 abilities: [shattered_lash, splinter_storm, spectrorage, mass_vitrify]
 
