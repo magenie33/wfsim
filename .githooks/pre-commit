@@ -1,0 +1,10 @@
+#!/bin/sh
+# site/ is built by CI and published by ship.yml (AGENTS.md §"Shipping"): a
+# hand-committed site/ is a release no channel follows. Only ship.py commits it.
+[ -n "$WFSIM_SHIP" ] && exit 0
+staged=$(git diff --cached --name-only -- site | head -5)
+[ -z "$staged" ] && exit 0
+echo "refused: site/ is built by CI, never committed by hand. Unstage it:" >&2
+echo "  git restore --staged site" >&2
+echo "$staged" | sed 's/^/  /' >&2
+exit 1

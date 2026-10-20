@@ -157,9 +157,11 @@ export async function openApp(o = {}) {
   const profile = join(process.env.TEMP || "/tmp", `${name}-${process.pid}`);
   sweepStaleProfiles();
   // An EXTERNAL base skips the server entirely, so a check can be pointed at
-  // wfsim.app (or a preview deploy) and assert the same things about it.
-  const srv = o.base ? null : await serveSite(root, o.delay);
-  const BASE = o.base || `http://127.0.0.1:${srv.address().port}`;
+  // wfsim.app, a preview deploy, or the dev server (`WFSIM_BASE`, for every
+  // check that serves `site/`: testing a change never waits on a site build).
+  const base = o.base || (o.root ? null : process.env.WFSIM_BASE);
+  const srv = base ? null : await serveSite(root, o.delay);
+  const BASE = base || `http://127.0.0.1:${srv.address().port}`;
 
   const proc = spawn(CHROME, [
     "--remote-debugging-port=0", "--headless=new", "--disable-gpu",

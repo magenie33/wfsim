@@ -207,6 +207,8 @@ def main() -> None:
         # `mcp/engine.js` names the wasm `site/pkg/` holds, so it moves with it.
         if git("status", "--porcelain", "--", "site", "desktop/payload", "mcp/engine.js"):
             run("git", "add", "site", "desktop/payload", "mcp/engine.js")
+            # The one commit `.githooks/pre-commit` lets carry site/.
+            os.environ["WFSIM_SHIP"] = "1"
             run("git", "commit", "-m", "site: regenerate, and the desktop channel with it")
         else:
             print("\nsite/ is unchanged — nothing to commit")

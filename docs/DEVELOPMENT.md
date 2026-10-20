@@ -97,9 +97,13 @@ checked by driving headless Chrome — Node >= 22 has a global `WebSocket`, and
 Chrome is expected at its default install path (override with `CHROME=`).
 
 ```sh
-python scripts/build_site_app.py   # the checks read site/, so build it first
-node scripts/check_parity.mjs      # builder vs optimizer, every weapon
+cargo run -p wfsim-web                                        # the dev server
+WFSIM_BASE=http://127.0.0.1:8787 node scripts/check_parity.mjs  # a check against it
 ```
+
+A check serves `site/` itself unless `WFSIM_BASE` names a server, and CI runs
+every check on the `site/` it builds — so a change is tested against the dev
+server and `site/` is never built for it.
 
 ### THE SLOW STEP GOES LAST
 
@@ -114,12 +118,10 @@ trip at a time costs an afternoon.
   pass. A riven's identity moving from its name to its own id touched fifteen —
   the autosave, the undo restore, the board card, the open pointer, the share
   encode and its import — and each one found the slow way cost a full cycle.
-- **Debug against the dev server.** `cargo build -p wfsim-web` is a couple of
-  seconds. A throwaway probe reaches it with
-  `openApp({ base: "http://127.0.0.1:8799" })`; only the committed checks under
-  `scripts/` read `site/`, because that is what CI has.
-- **Then build `site/` once and run the real checks.** Same order a commit
-  wants anyway.
+- **Debug and check against the dev server.** `cargo build -p wfsim-web` is a
+  couple of seconds, and every check reaches it through `WFSIM_BASE`.
+- **Leave `site/` to CI.** It builds it on every push and runs every check on
+  it; in a worktree a local build fails anyway (no image cache).
 
 On Windows the site build sometimes fails with `OSError: Errno 22` writing one
 of the prerendered pages. It is environment flake rather than the code — the

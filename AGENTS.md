@@ -4,14 +4,68 @@ The ultimate Warframe **calculator**. Core goal: **match in-game
 measurements**. Rust workspace + YAML game data + a dependency-free web UI,
 deployed as WASM on Cloudflare (wfsim.app).
 
-Three verbs — **BUILD, SIMULATE, SOLVE**. Nothing else is a peer of them;
+Three verbs — **build, simulate, solve**. Nothing else is a peer of them;
 anything new either feeds one or reports from one (`docs/CORE.md`).
 
-**This file is the tripwires and the routing table, and nothing else.** A rule
-is here only if breaking it fails SILENTLY on a task that never opens the
-relevant file. Everything else lives in `docs/`, next to the constant it
-explains, or in the commit message. §"Maintaining this file" is the budget, and
-it is enforced.
+This file is what every session needs before it knows its task: how to start,
+the commands, how a change ships, and the tripwires — rules whose breaking
+fails **silently**. Everything else is routed to `docs/` (§"Read first").
+§"Maintaining this file" says what may be added, and a check enforces it.
+
+## Before you start
+
+- Read `.handoff.md` (shared work state; keep it current, reset it to `idle`
+  when done) and `private/agents/README.md` — again after a context reset.
+- **One worktree per task**, from `origin/main`: several sessions share the
+  main checkout, so never build, stage or commit there (`docs/DEVELOPMENT.md`
+  §"Sharing the checkout").
+- **The machine is shared.** Stop your server with `scripts/stop_server.mjs
+  <port>`, never by process name: that stops every session's server. A bare
+  `python -` hangs as a REPL; write a file. Shell traps: `docs/DEVELOPMENT.md`.
+- Once per clone, `git config core.hooksPath .githooks`: the hooks refuse a
+  commit carrying `site/` and strip AI credit from a message.
+- **Never link into a checkout.** Removing a worktree, or `rm -rf` on Windows,
+  follows a junction and deletes its target. Copy; remove a worktree with
+  `scripts/remove_worktree.mjs`.
+
+## Commands
+
+| to | run |
+| --- | --- |
+| serve the page | `cargo run -p wfsim-web` (`WFSIM_PORT` picks the port) |
+| stop it | `node scripts/stop_server.mjs <port>` |
+| match CI | `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` |
+| the cheap checks | `node scripts/check_page_bodies.mjs`, `check_comment_style.mjs` |
+| a page check | `WFSIM_BASE=http://127.0.0.1:<port> node scripts/check_<name>.mjs` |
+| CI on a branch | `gh workflow run ci.yml --ref <branch>` |
+| engine cost | `cargo run --release --bin one_fight` (`-- save` first) |
+| optimizer accuracy | `cargo run --release --bin wfsim-truth -- pool=<ids>` |
+| are all channels on one release | `python scripts/ship.py --verify` |
+
+## Shipping
+
+1. Commit on a branch: an all-lowercase subject, `area: what changed and why it
+   is right`, no AI credit (`check_commit_trailers`).
+2. Run CI on the branch. Green, it is ready for `main`: whoever ships
+   (`private/agents`) rebases and pushes it, and the branch is deleted only
+   after that push lands.
+3. `ship.yml` builds `site/` and publishes it with the desktop channel, the MCP
+   server and the bot as one. An engine change also builds the mac engine
+   first. Wait in the background, and confirm the live `app.<hash>.js`.
+
+- **Never commit `site/`.** A hand-committed `site/` is a release no channel
+  follows. Never build it to test a change either: it takes minutes and fails
+  in a worktree. Run the checks against the dev server; CI runs them all.
+- **Never rescore the board locally.** `scores.yml` does it from the `scores`
+  table; running `wfsim-board` here rewrites `data/board_state.yaml` and the
+  published files.
+- **Static files and `data/` are compiled in** (`include_str!`,
+  `engine::data::files_under`). After editing either, stop the server (it holds
+  the exe), `cargo build -p wfsim-web`, restart — and a test run reads the data
+  of the previous build until a `.rs` in that crate is touched.
+- **Images are same-origin.** `site/img/` holds every file `data/assets.yaml`
+  names and the build fails on a missing one. Never hotlink a CDN: it is
+  unreliable to blocked from mainland China.
 
 ## Read first
 
@@ -40,95 +94,57 @@ Read the row for what you are about to touch before the code, not after.
 | the worker fleet, sharding, the wasm build | `docs/WASM.md` |
 | capacity and Forma | `docs/INVESTMENT.md` |
 | the update channel, mirrors, shells | `docs/DISTRIBUTION.md` |
-| the Windows client | `docs/DESKTOP.md` |
-| setup, profiling | `docs/DEVELOPMENT.md` |
+| the desktop client | `docs/DESKTOP.md` |
+| setup, profiling, sharing the checkout | `docs/DEVELOPMENT.md` |
 | how usage is counted | `docs/ANALYTICS.md` |
 | accounts, privacy, billing | `docs/ACCOUNTS.md` |
 
 ## Map
 
-- `engine/` — all game mechanics, and it knows NO weapon names: weapons, mods
+- `engine/` — all game mechanics, and it knows no weapon names: weapons, mods
   and the rest load from `data/`. Layered `rules/ model/ data/ build/` fight
   `board/`, each naming only those below (`docs/CORE.md` §4).
-  `engine::arena::Arena` is BOTH actors of a fight, built by the web api and
+  `engine::arena::Arena` is both actors of a fight, built by the web api and
   the optimizer through one constructor. Every formula cites its source.
-- `optimizer/` — build search. It only ever CALLS the engine — never add a
+- `optimizer/` — build search. It only ever calls the engine — never add a
   simplified damage formula here.
 - `webapi/` — endpoint logic shared by `web/` (native) and `wasm/`.
-- `web/` — the native dev server (`cargo run -p wfsim-web`, port 8787).
-  `web/src/static/` holds the UI: vanilla JS/CSS, no framework, no deps.
-- `wasm/` + `site/` — the static deployment. **`site/` is GENERATED by
-  `scripts/build_site_app.py` — never hand-edit it.**
-- `desktop/` — the Windows client, an INDEPENDENT cargo workspace depending on
+- `web/src/static/` — the UI: vanilla JS/CSS, no framework, no deps.
+- `wasm/` + `site/` — the static deployment; `site/` is generated
+  (`scripts/build_site_app.py`).
+- `desktop/` — the desktop client, an independent cargo workspace depending on
   nothing in `engine/`. The updater lives in `app.js`, not in the shell.
-- `data/` — versioned game data; `data/README.md` is the reference graph.
+- `data/` — versioned game data, each thing defined once and referenced by its
+  `id`; `data/README.md` is the reference graph.
 - `tests/golden/` — golden tests calibrated against in-game measurements.
-- `.handoff.md` — ignored shared work state. Read it first when present, keep
-  it current, reset it to `idle` when done.
-- `private/` — **its own repo (`wfsim-private`)**, shipped by its own commits;
-  nothing this repo needs may live only there. Read `private/agents/README.md`.
-- **ANYTHING ABOUT MONEY LIVES IN THE PRIVATE WORKER** (`../wfsim-cloud`): here
-  is the calculator, reaching it via `worker/cloud.js` alone.
+- `private/` — its own repo (`wfsim-private`); nothing this repo needs may live
+  only there.
+- **Anything about money lives in the private worker** (`../wfsim-cloud`):
+  here is the calculator, reaching it via `worker/cloud.js` alone.
 
 ## Tripwires
 
-Each of these fails silently. That is why it is here and not in a document.
-
-### Building and shipping
-
-- **NEVER LINK INTO A CHECKOUT.** Removing a worktree, or `rm -rf` on Windows,
-  follows a junction and deletes its TARGET. Copy; remove a worktree with
-  `scripts/remove_worktree.mjs`.
-- **Static files are `include_str!`'d into `wfsim-web.exe`.** After ANY edit
-  under `web/src/static/`: stop the server (it holds the exe), `cargo build -p
-  wfsim-web`, restart. `cargo test` does NOT refresh the exe.
-- **`data/` is embedded at COMPILE TIME too** (`engine::data::files_under`), so
-  a yaml edit needs the same rebuild — **including for TESTS**: cargo does not
-  treat a yaml as a source dependency, so a test run right after a yaml edit
-  reads the data compiled into the previous binary. When proving a check bites,
-  revert the data, `touch` any `.rs` in that crate, then run.
-- **SHIPPING IS A PUSH OF SOURCE TO `main`. NEVER COMMIT `site/`.** CI's `site`
-  job builds it and the page checks run on that build; once CI passes,
-  `ship.yml` publishes that very build — `site/`, the desktop channel, the MCP
-  server, the bot — as one (`ship.py --built`). A `site/` committed by hand is
-  a release no channel follows. `ship.py --verify`: do all four agree now?
-- **CI is `cargo clippy --workspace --all-targets -- -D warnings` + `cargo test
-  --workspace`.** Run both before pushing.
-- **NEVER RESCORE THE BOARD LOCALLY.** `.github/workflows/scores.yml` does it and
-  the bot commits `site/board/`; the numbers come from the `scores` table and
-  nothing local may write one. Running `wfsim-board` by hand in the repo
-  rewrites `data/board_state.yaml` and the published files under it.
-- **Images are SAME-ORIGIN.** `site/img/` holds every file `data/assets.yaml`
-  references and the build FAILS on a missing one. Never hotlink a CDN: it
-  is unreliable to blocked from mainland China.
-
 ### Correctness
 
-- **THE SIMULATOR IS THE TRUTH; THE OPTIMIZER OBEYS IT.** A search's winner is
-  replayed under the simulator's fight, so the optimizer must CALL the
-  simulator's code and add only its own scope and budget. `parse_fight` is the
-  shared parse, and anything that is a property of the FIGHT goes in it. A
-  shared helper is not enough — the DECISIONS around it have to be shared too.
-- **EVERY FACT HAS ONE AUTHORITATIVE SOURCE.** A second copy — a cache, a prior
+- **The simulator is the truth; the optimizer obeys it.** A search's winner is
+  replayed under the simulator's fight, so the optimizer calls the simulator's
+  code and adds only its own scope and budget. `parse_fight` is the shared
+  parse; anything that is a property of the fight goes in it. A shared helper
+  is not enough — the decisions around it have to be shared too.
+- **Every fact has one authoritative source.** A second copy — a cache, a prior
   output read back as input, an artifact carrying data — needs a rule for which
-  wins, and that rule is where this repo's defects have lived. `docs/BOARD.md`.
-- **Golden values only change with an in-game measurement** justifying it. New
-  mechanics need golden tests; a faithful-looking implementation without a
-  measurement is not correct.
-- **MEASUREMENT > WIKI > DE's PUBLIC EXPORT**, on every conflict. The export
-  (`scripts/de_export.py`) fills what the wiki does not state — `uniqueName`,
-  card text, textures — and its `levelStats` is rounded display, never a
-  number's source. Join by `internal_name` == `uniqueName`, **never by name**.
-  WFCD is not a source.
-- **A DATA FILE STATES ONLY RULES THE ENGINE APPLIES.** Stating one it does not
-  is worse than omitting it: to anyone auditing it reads as applied. WHOSE
-  condition it is decides nothing — `docs/UNMODELLED.md` is the register.
-- **A BUILD'S AXES ARE DECLARED ONCE**, in `engine::board::builds::BUILD_AXES`, served
-  at `/api/meta.build_axes`. Every surface declares which axis its own fields
-  cover; `buildState()` REQUIRES a value for every state key.
-- **Data discipline** (`data/`): define once, reference by `id` (stable English
-  slugs, never translated); yaml fields are consumed data and narrative belongs
-  in comments. Violations fail the build.
+  wins, and that rule is where this repo's defects have lived (`docs/BOARD.md`).
+- **Golden values change only with an in-game measurement.** New mechanics need
+  golden tests; a faithful-looking implementation without one is not correct.
+- **Measurement > wiki > DE's public export**, on every conflict. The export
+  (`scripts/de_export.py`) fills what the wiki does not state; its `levelStats`
+  is rounded display, never a number's source. Join by `internal_name` ==
+  `uniqueName`, **never by name**. WFCD is not a source.
+- **A data file states only rules the engine applies.** One it does not apply
+  reads as applied to anyone auditing it; `docs/UNMODELLED.md` is the register.
+- **A build's axes are declared once**, in `engine::board::builds::BUILD_AXES`
+  (`/api/meta.build_axes`). Every surface declares which axis its fields cover;
+  `buildState()` requires a value for every state key.
 
 ### The page
 
@@ -138,97 +154,59 @@ Each of these fails silently. That is why it is here and not in a document.
   `/weapons/<Wiki_Name>`, where a relative path resolves into the fallback HTML.
 - **`api()` transport**: `/api/meta` and `/api/i18n` are GET, everything else is
   POST — the native server matches on exact (method, path).
-- **A check's page-side body is a TEMPLATE LITERAL.** An unescaped backtick in
-  it, including inside a comment, ends the literal early. `check_page_bodies`
-  runs `node --check` over every script and is first in CI.
+- **A check's page-side body is a template literal.** A backtick in it, even in
+  a comment, ends it early, and `\b` in it is a backspace.
 
-### Language
+### Language and prose
 
-- **i18n is an overlay.** English is the source everywhere — code, comments,
-  data, UI strings — and ids are never translated. **A STRING IS TRANSCRIBED,
-  NEVER TRANSLATED**: DE's Chinese is routinely non-literal, so a name derived
-  from the English is wrong more often than not. If a source cannot be reached,
-  LEAVE IT EMPTY AND SAY SO. Wiki URLs are ALWAYS built from the English name.
-- **A NAME MAY BE LONG; IT MAY NOT BE VAGUE** —
-  `[scope_]<subject>_<aspect>[_<unit>]`, one spelling per unit, no abbreviations
-  except where DE abbreviates on a card. What is FROZEN is the WIRE: a field
-  inside a saved preset, a share link or a board record keeps the name it has
-  (`naming::FROZEN`, which may only shrink).
-- English everywhere in the repo. All-lowercase commit subjects, `area: what
-  changed and why it is right`. No marketing copy — the one
-  exception is the home hero, which may make a CHECKABLE bold claim.
-- **No attributions and no dated decisions** in prose (`check_comment_style`),
-  nor AI credit in a commit (`check_commit_trailers`); `docs/MEASUREMENTS.md`
-  is the one exception, where the provenance IS the data.
+- **A string is transcribed, never translated.** English is the source
+  everywhere and ids are never translated; i18n is an overlay. DE's Chinese is
+  routinely non-literal, so a name derived from the English is wrong more often
+  than not: if a source cannot be reached, leave it empty and say so. Wiki URLs
+  are always built from the English name.
+- **What is frozen is the wire.** A field inside a saved preset, a share link
+  or a board record keeps its name (`naming::FROZEN`, which may only shrink).
+  New names: `docs/NAMING.md`.
 - The product name is **WFSim**, wordmark never translated; in Chinese prose
   **WF模拟**. 沃肥模拟 is the community nickname and stays out of the product.
+- **Prose states the current rule and nothing else** — no history, no
+  attributions, no dated decisions (`docs/MEASUREMENTS.md` excepted, where the
+  provenance is the data). A comment is a constraint, evidence or a design
+  rule, twelve lines at most; a subject goes to `docs/`. A sourcing note that
+  repeats is an id in `data/notes.yaml`. `check_comment_style` enforces it.
+- No marketing copy; the home hero alone may make a checkable bold claim.
+  Match the surrounding code's comment density and idiom.
 
-### What you write
+### Checks
 
-- **Prose in this repository states the current rule and nothing else.** Git
-  holds what it used to be, who asked for it and how it was found. A doc that
-  retells that buries the one thing a reader needs.
-- **Four kinds of comment**, and the test for a sentence is *"if I delete this,
-  what does the next agent get wrong?"* — answer "nothing", delete it. A
-  **constraint** is an imperative plus the consequence, ≤3 lines. **Evidence**
-  is the value plus its source, quoted verbatim where the wording is
-  load-bearing. **Design** is the rule plus the one sentence that makes the
-  wrong alternative visibly wrong. Both ≤12 lines. Everything else: delete.
-- **TWELVE LINES IS THE CEILING FOR A COMMENT.** Past a dozen lines a block has
-  stopped stating a rule and started explaining a subject, which is what `docs/`
-  is for — and a subject explained twice is two explanations that drift. Move
-  it, and leave one line naming the section. `check_comment_style.mjs` ratchets
-  what is left.
-- **A NOTE THAT REPEATS IS AN ID.** `data/notes.yaml` holds each shared sourcing
-  note once and a file that would repeat it carries `# see notes: <id>`, the
-  same rule `data/unmodelled/reasons.yaml` states for admissions.
-- Match the surrounding code's comment density and idiom.
-
-## Verify
-
-- **THE SLOW STEP GOES LAST.** `build_site_app.py` is minutes and each browser
-  check is another, so running that loop to DISCOVER the next thing to fix is
-  how an afternoon goes. Enumerate the call sites by READING first, debug
-  against the dev server (`openApp({base})`), build `site/` once (never commit
-  it), then run the checks — `docs/DEVELOPMENT.md`. **The dev server reads `site/` for the
-  board**, so a board check there is only as current as the last build.
-- Run the checks a change touches — `docs/CHECKS.md` lists what each asserts.
-  They drive headless Chrome over CDP through `scripts/cdp.mjs`.
-- **Engine cost**: `cargo run --release --bin one_fight` (`-- save` first). A
-  moved answer is a non-zero exit, because an optimisation that changes a number
-  is a bug. It compares two BINARIES, not two moments — `docs/DEVELOPMENT.md`.
-- **Optimizer accuracy**: `cargo run --release --bin wfsim-truth -- pool=<ids>`.
-  A search cannot vouch for itself. Run it after ANY change to enumeration,
-  scheduling or scoring — `docs/OPTIMIZER.md` §Accuracy.
 - **A ratchet that cannot fail is not a ratchet.** A new check is trusted only
-  once it has FAILED on the broken input; for a data-driven one that means
-  forcing the rebuild above.
+  once it has failed on the broken input — on data that can make it fail; for a
+  data-driven one, after forcing the rebuild above.
+- Run the checks a change touches; `docs/CHECKS.md` lists what each asserts.
+  Run `wfsim-truth` after any change to the search's enumeration, scheduling
+  or scoring: a search cannot vouch for itself.
 
 ## Maintaining this file
-
-**BUDGET: 13,800 characters, and no entry over 8 lines.**
-`scripts/check_comment_style.mjs` enforces both. The character ceiling is a
-RATCHET — lower it when a pass removes some, never raise it to make a red run
-green — and it is set CLOSE to the current size on purpose: a ratchet with
-slack in it does not bite, so adding a tripwire should cost removing one or
-moving something out.
 
 **The test for a sentence is not "is it true".** It is:
 
 > **Would an agent that never read this sentence do the wrong thing, on a task
 > where it never opens the relevant file?**
 
-- **Yes** → it is a tripwire. Keep it here: an imperative plus the consequence
-  of breaking it, ≤3 lines.
+- **Yes** → a tripwire: an imperative plus the consequence, three lines or so.
 - **No — it would open that file anyway** → it belongs in that document, and
   here only as a row in §"Read first".
-- **It explains one constant** → it belongs in a comment beside that constant,
-  where it cannot drift.
+- **It explains one constant** → a comment beside that constant.
+- **A check already fails on it** → one line naming the check, at most.
+- **It can be enforced by a check** → write the check instead.
 
-**A NUMBER, AN IDENTIFIER OR A MEASUREMENT IS A SYMPTOM.** They are state, they
-go stale, and this file cannot be where they are stored. Name the document that
-owns them instead.
+**Emphasis is a budget too.** Bold or capitals mark the one phrase a reader must
+not miss; on every line they mark nothing.
 
-**IF A NORMAL FEATURE COMMIT WOULD NEED TO EDIT THIS FILE, THE CONTENT IS IN
-THE WRONG PLACE.** That is the property to protect: this file says what must
-stay true, and shipping a feature does not change what must stay true.
+**A number, an identifier or a measurement is a symptom**: state that goes
+stale. Name the document that owns it. **If a normal feature commit would need
+to edit this file, the content is in the wrong place.**
+
+The size is a ratchet in `scripts/check_comment_style.mjs`, set close to the
+file on purpose: adding a rule costs removing one. Lower it when a pass removes
+some; never raise it to make a red run green.
