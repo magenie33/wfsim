@@ -5,9 +5,8 @@
 # translation is always safe. Every key must be a real id (machine-enforced
 # by engine::data::i18n tests — a typo fails the build).
 #
-# Canonical reference: the official CN client (DE's Public Export in Chinese,
-# joined on internal_name), cross-checked against the community wiki's 对照 table
-# https://warframe.huijiwiki.com/wiki/Project:中英名称对照
+# Source: the official CN client (DE's Public Export in Chinese, joined on
+# internal_name). A name DE's export cannot supply says so beside it.
 #
 # A locale is a DIRECTORY and its files are merged (engine::data::i18n):
 #   names.yaml         this file — hand-written
@@ -337,7 +336,6 @@ weapons:
   zylok_incarnon: 席尔火枪 (灵化形态)
   zylok_prime: 席尔火枪 Prime
   zylok_prime_incarnon: 席尔火枪 Prime (灵化形态)
-  # 野猪, PrimeBoar -> 野猪 Prime). Checked rather than recalled: the CN wiki
   akbronco: 野马双枪
   akbronco_prime: 野马双枪 Prime
   akjagara_prime: 觉醒双枪 Prime
@@ -417,9 +415,9 @@ weapons:
   hikou_prime: 飞扬 Prime
   knell: 丧钟
   kraken: 北海巨妖
-  # 执法者 — DE 自己的译名（灰机 wiki / 游戏内）。七个条目共用一个名字，
-  # 因为它们是同一把武器的七种挥法，不是七件东西：形态由 Mode 控件命名，
-  # 而那个名字是从架势的连段名推导出来的，不在这里。
+  # 执法者 — DE's own string, joined on internal name (PaladinMaceWeapon).
+  # Seven entries share one name because they are seven swings of one weapon:
+  # the Mode control names the form, from the stance's combo names, not here.
   magistar: 执法者
   magistar_forward: 执法者
   magistar_block: 执法者
@@ -562,9 +560,10 @@ weapons:
   trumna_prime: 灭杀者 Prime
   zarr: 沙皇
   zymos: 邪莫斯
-  # THE KITGUN CHAMBERS, off the CN wiki's own 组合枪 article (its chamber table
-  # links `[[Catchmoon|捕月]]` and so on). One chamber is one weapon and two
-  # entries, so both slots carry the one name; the Slot control says which.
+  # THE KITGUN CHAMBERS — DE's own strings, joined on internal name (the
+  # chamber's barrel part, e.g. SUModularSecondaryBarrelAPart → 捕月). One
+  # chamber is one weapon and two entries, so both slots carry the one name;
+  # the Slot control says which.
   catchmoon_primary: 捕月
   catchmoon_secondary: 捕月
   gaze_primary: 凝目
@@ -2071,8 +2070,11 @@ enemies:
   demolisher_devourer: 爆破型吞噬者
   thrax_centurion: 凶魂百夫长
   corrupted_heavy_gunner: 堕落重型机枪手
-  # The Stalker's six 追随者 (Acolytes), CN names per the Chinese wiki's
-  # 追随者 page — the same source and the same terminology as 凶魂百夫长.
+  # The Stalker's six 追随者 (Acolytes). DE exports no enemy, so these are
+  # read off DE's own strings that name each one: the Noggle Statue of each
+  # (`/Lotus/Types/Items/ShipDecos/Acolyte*BobbleHead`, "Noggle Statue - Angst"
+  # → 焦虑摇头娃娃, its description "Stalker's Acolyte, Angst" → 追猎者追随者焦虑).
+  # 凶魂百夫长 has no DE source: no exported string names the Thrax Centurion.
   angst: 焦虑
   malice: 怨恨
   mania: 躁狂
@@ -2104,7 +2106,7 @@ damage_types:
 # `python scripts/de_i18n.py fill --section mods --section arcanes` from
 # DE's own client strings — the same source as descriptions.yaml, so a card's
 # name and its text always come from one place. Hand-edit only to correct a
-# name the community wiki's 对照 table disagrees with, and say so in a comment.
+# name the client shows differently, and say so in a comment.
 mods:
   accelerated_blast: 加速冲击
   accelerated_isotope: 迅发核素
@@ -2710,11 +2712,8 @@ abilities:
   eclipse_helminth: 黯然失色（Helminth）
   nourish: 消化滋养
   nourish_helminth: 消化滋养（Helminth）
-  # 真理密语, off the CN wiki's own ability page (`?action=raw` via the API —
-  # DATA_SOURCES §"The CN wiki").
-  # IT IS NOT AN ITEM DE EXPORTS AT ALL, unlike the seven above, so a derived
-  # name was not an option: nothing about "Xata's Whisper" would have
-  # produced 真理密语.
+  # 真理密语 — DE's own string: Xaku's `abilities` list in ExportWarframes,
+  # joined on the ability's internal_name (BrokenRotAbility).
   xatas_whisper: 真理密语
   xatas_whisper_helminth: 真理密语（Helminth）
   shock_trooper: 电击奇兵
@@ -2781,10 +2780,11 @@ auras:
   worthy_comradery: 可靠战友
 
 # ARCHON SHARDS — a colour's name is DE's (ExportResources ArchonCrystal*). A
-# socket's line is the CN wiki's phrasing in DE's stat words, read off DE's mod
-# cards: 护盾容量 (Redirection), 最大能量 (Flow), 施放速度 (Natural Talent),
-# and the damage types as the arcane cards write them (毒素, 腐蚀, 爆炸, 火焰,
-# 辐射, 电击).
+# socket's line has NO DE SOURCE: DE's export carries no shard effect text. Each
+# line is ours, written in DE's stat words as DE's mod cards print them:
+# 护盾容量 (Redirection), 最大能量 (Flow), 施放速度 (Natural Talent), and the
+# damage types as the arcane cards write them (毒素, 腐蚀, 爆炸, 火焰, 辐射,
+# 电击).
 #
 # Keys are `<shard>` for the colour and `<shard>/<effect>` for one socket's
 # line. The numbers are NOT in these strings: the page prints them from the

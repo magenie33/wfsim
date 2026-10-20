@@ -33,10 +33,10 @@ value: 0.75
 duration_seconds: 5
 
 # ABILITY STRENGTH DOES NOT MOVE IT. The page's `misc` row states the 75% with
-# no Strength icon, where its duration row carries the Duration one — and the
-# Chinese wiki says it outright ("弹药效率不受技能强度影响"). So the page's
-# strength knob is inert here and the card says so, rather than quietly showing
-# a number the game never gives.
+# no Strength icon, where its duration row carries the Duration one; no page
+# says it in words and it is unmeasured. So the page's strength knob is inert
+# here and the card says so, rather than quietly showing a number the game
+# never gives.
 scales_with: none
 
 effect:

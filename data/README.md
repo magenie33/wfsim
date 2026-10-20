@@ -43,13 +43,11 @@ item  ──references──▶  perk (trigger + grants)
 - Referential integrity is machine-enforced (`engine::data::i18n` tests):
   every overlay key must be a real id — a translator's typo fails CI, so a
   translation PR can never break the app.
-- **Dual verification**: every localized name should be witnessed by BOTH
-  sources — (1) DE's official client strings via their Public Export
-  (`python scripts/de_i18n.py check` automates this arm, joining our
-  `internal_name` to their `uniqueName`), and (2) the community wiki's
-  对照 table (https://warframe.huijiwiki.com/wiki/Project:中英名称对照,
-  human cross-check in PR review). `de_i18n.py fill` bulk-seeds a
-  section from source (1).
+- **One source**: every localized name is DE's official client string via
+  their Public Export (`python scripts/de_i18n.py check` joins our
+  `internal_name` to their `uniqueName`; `de_i18n.py fill` bulk-seeds a
+  section from it). A string the export cannot supply is read off the
+  client, or left empty and listed (docs/DATA_SOURCES.md §"Chinese text").
 - **A card is not a bag of terms.** Mod and arcane descriptions are NOT
   assembled by substituting terms into our English line — they are DE's own
   localized sentence, per rank, taken whole

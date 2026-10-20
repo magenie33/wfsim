@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 """Localized names and card text from DE's Public Export (`scripts/de_export.py`).
 
-The dual-verification setup (data/README.md "i18n"): every zh display name
-should be witnessed by BOTH sources —
-  1. DE's Public Export in that language (`Export*_zh.json`) — this script
-     automates that arm, joining by internal_name == uniqueName;
-  2. the community wiki's 对照 table
-     (https://warframe.huijiwiki.com/wiki/Project:中英名称对照) — human
-     cross-check, tracked in CONTRIBUTING/PR review.
+The source of every zh display name (data/README.md "i18n") is DE's Public
+Export in that language (`Export*_zh.json`), joined by internal_name ==
+uniqueName. A string it cannot supply is read off the client or left empty.
 
 A locale is a DIRECTORY (`data/i18n/<locale>/`) whose files are merged:
 `names.yaml` and `ui.yaml` are hand-written, `descriptions.yaml` is written
@@ -300,8 +296,8 @@ FAMILIES = {
     "evolutions": ("data/evolutions/**/*.yaml", "evolutions.yaml", "evolutions", False),
 }
 HAND_SOURCE = (
-    "hand-transcribe from the CN wiki's API — never translate "
-    "(docs/DATA_SOURCES.md §The CN wiki)"
+    "read off the Chinese client — never translate "
+    "(docs/DATA_SOURCES.md §Chinese text)"
 )
 
 

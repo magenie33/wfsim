@@ -7,9 +7,7 @@
 # THE FOURTH KIND, and the first that is not a multiplier on the weapon's own
 # number: an EXTRA HIT (wiki `Extra_Hit`). The weapon deals what it deals, and
 # then a SECOND damage instance lands worth 26% of it, entirely Void, rolling
-# its own status. Two numbers pop, not one — DE's own words for it, from the CN
-# card: "武器每一次攻击命中都会显示出武器本身命中和附加的虚空伤害命中两方的伤害
-# 数字".
+# its own status. Two numbers pop, not one.
 #
 # That structure is where every one of its oddities comes from, so MECHANICS §7
 # §"Extra Hit" states the formula once and this file only names the numbers:
@@ -17,9 +15,10 @@
 # - FACTION TWICE. The instance it copies already carried the bonus, and being
 #   a damage instance it takes it again — the wiki's formula puts
 #   `(1 + Faction)` outside `Weapon Hit Damage`, which has it inside.
-# - BODY PART TWICE, for the same reason and stated in the same breath (CN
-#   card: "同理，弱点倍率也会被计算两次"). A headshot is therefore worth more to
-#   this ability than to any multiplier that merely scales the hit.
+# - BODY PART TWICE, for the same reason and stated in the same breath (wiki
+#   `Xata's Whisper`: "The ability double dips on faction damage, and body part
+#   weaknesses"). A headshot is therefore worth more to this ability than to any
+#   multiplier that merely scales the hit.
 # - IT NEVER CRITS OF ITS OWN, but it inherits the crit of the hit it copied,
 #   which is why Vital Sense is listed as affecting it and why the number is
 #   still orange-sized behind an orange hit.
@@ -70,9 +69,8 @@ helminth: false
 
 # see notes: at_max_rank_100
 #
-# 26%. The two wikis disagree about the ladder BELOW max — EN reads
-# 17/23/23/26, CN reads 17/20/23/26, and CN's is the one that is monotone — and
-# agree about the only rank this file has.
+# 26%, the max rank and the only rank this file has; the ladder below it
+# (17/23/23/26) is not read.
 value: 0.26
 # see notes: max_rank_at_100
 duration_seconds: 35

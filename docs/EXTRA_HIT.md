@@ -213,13 +213,13 @@ faction layer, a crit multiplier and a body-part multiplier.
 - **Faction, again.** One `faction_at_time` on top of however many the trigger
   already carried. A direct hit is at depth 1, so its extra hit is at 2; a Blast
   detonation is at depth 2, so ITS extra hit is at 3 — which is the "triple dip"
-  both wikis name, and it is not hardcoded anywhere.
+  the wiki names, and it is not hardcoded anywhere.
 - **The body part, again — Xata's Whisper only** (`body_part_again`), and the
   CALLER is what knows. A direct headshot
   passes its `part_factor`; a radial, a field tick and a Blast detonation pass
-  1.0, since none of them struck a body part. DE's CN card states both halves:
-  「同理，弱点倍率也会被计算两次」for a hit, 「弱点倍率只会被计算一次」off a
-  Blast detonation.
+  1.0, since none of them struck a body part. The ability's page states the
+  first half ("double dips on … body part weaknesses"); the second is
+  unmeasured — M40's capture is a body shot and cannot tell.
 - **Crit, once and inherited.** The extra hit rolls no crit of its own (the EN
   wiki files "Xata's Whisper's Extra Hits cannot crit" under Bugs), but
   `trigger_raw` critted — so the number behind an orange hit is orange-sized,

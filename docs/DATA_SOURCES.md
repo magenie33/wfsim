@@ -15,16 +15,14 @@ It has to be said out loud because SEARCH DOES NOT AGREE: the Fandom copy
 outranks the official wiki for most weapon queries, so "search for the wiki
 page" lands there by default.
 
-The one other host that is a source is `warframe.huijiwiki.com`, and only for
-one thing: DE's own CHINESE card text, which the English wiki does not carry.
-See the transcription rule in AGENTS.md.
+No other host is a source. Chinese text is DE's own, from its Public Export
+(§"Chinese text").
 
 ## MEASUREMENT > WIKI > DE's PUBLIC EXPORT
 
 ONE ORDER, FOR EVERY FIELD, whenever two sources disagree: an **in-game
 measurement** (`docs/MEASUREMENTS.md`), then **the wiki** — its pages over its
-data modules (§"INSIDE THE WIKI"), and the CN wiki for Chinese names — then
-**DE's Public Export**.
+data modules (§"INSIDE THE WIKI") — then **DE's Public Export**.
 
 **The export fills what the wiki does not state.** `scripts/de_export.py`
 downloads it (English and Chinese) into `vendor/public-export/`: `uniqueName`
@@ -253,32 +251,33 @@ Our field names follow the wiki concept words (snake_case + unit suffixes):
   [`../data/README.md`](../data/README.md)): fields are structured data a
   program consumes; human narrative is a `#` comment. No prose in fields.
 
-### The CN wiki
+### Chinese text
 
-`warframe.huijiwiki.com` is the ONLY source for Incarnon evolution strings —
-DE's export carries none. WEAPON names do not need it: DE's export in Chinese
-(`Export*_zh.json`) carries `name` per `uniqueName`, so those are DE's own
-strings joined on internal name. The evolution pages are `<武器>灵化之源`
-(伯斯顿灵化之源, 盗贼灵化之源); a weapon page transcludes them with
-`{{#lst:…|Incarnon}}`, so the weapon page's section reads EMPTY and the names
-are one hop away.
+DE's Public Export in Chinese (`Export*_zh.json`) is the source of every
+official Chinese string: `name` and card text per `uniqueName`, joined on our
+`internal_name` — never by name. No wiki is a source of Chinese text. A string
+the export does not carry is read off the Chinese client; until it is, it is
+left EMPTY and the page falls back to English, or, where a line already
+exists, it is kept and listed below as having no DE source. A string is never
+derived from its English — DE's Chinese is routinely non-literal (Commodore's
+Fortune is 准将沐福). `python scripts/de_i18n.py check` reports what is
+unnamed.
 
-`scripts/cn_evolution_names.py` reads every family's page and transcribes both
-the perk NAME and its CARD TEXT.
+**A string inside another item can be the source**, when that item's key
+provably identifies the same thing: the six Acolytes are named by their Noggle
+Statues (`…/ShipDecos/Acolyte*BobbleHead`, "Noggle Statue - Angst" →
+焦虑摇头娃娃), and 组合枪 by the Kitgun Riven Mod
+(`RawModularPistolRandomMod`, 组合枪裂罅 Mod).
 
-**The join is by NUMBERS, never by position.** Both pages list a tier's perks
-in the same order, so position would usually work, and "usually" is how a tier
-ends up silently shifted by one: our perks are read in FILENAME order.
+**Strings with no DE source**, kept until read off the client:
 
-**A page can be wrong about its own weapon, and the other pages say so.** The
-script runs until it stops moving: each round counts what each English perk
-name was called, and a name read on two or more pages beats a one-off.
-
-A name that cannot be read is left EMPTY and asked for, never derived from the
-English — DE's Chinese names are routinely non-literal (Commodore's Fortune is
-准将沐福). `python scripts/de_i18n.py check` reports what is unnamed. The
-Felarx's Kinetic Baffle and Frictionless Flight are empty for that reason and
-say why in the file.
+- **Incarnon evolution names and card text**
+  (`data/i18n/zh/evolutions.yaml`): the export carries no evolution string in
+  any language. A card's numbers are our English description's.
+- **Archon shard socket lines** (`shards` in `data/i18n/zh/names.yaml`): the
+  export names the colours only; each socket's line is ours, in DE's stat
+  words.
+- **凶魂百夫长** (Thrax Centurion): no exported string names it.
 
 ### A card is TWO fields, and we were reading one
 
@@ -322,9 +321,8 @@ what it is worth: community research with a stated method > first-party data
 (game files, Codex, Arsenal) > developer communications > third-party content >
 anecdote. A page carrying a worked example with numbers sits near the top of
 that; a page carrying an adjective sits near the bottom, and both look the same
-in a quote. When two wiki pages disagree — the EN and CN cards for Xata's
-Whisper disagree about its rank ladder and about the body-part double dip
-(M40) — this is the tiebreak to apply: prefer the one that shows its arithmetic.
+in a quote. When two wiki pages disagree, this is the tiebreak to apply:
+prefer the one that shows its arithmetic.
 
 **The toolbox is the protocol library `docs/MEASUREMENTS.md` keeps reaching
 for**, and several entries are things worth knowing exist before designing an
@@ -393,10 +391,6 @@ it as an anomaly of that card.** `Extra_Hit`, `Faction_Damage_Bonus`,
 `Multishot`, `Condition_Overload_(Mechanic)` and the per-type
 `Damage/<Type>_Damage` pages are the ones this engine has needed so far, and
 each is cited at its formula in MECHANICS.
-
-**And the CN wiki is a second opinion on mechanics, not only on names.** Its
-真理密语 page carries three worked examples, an IPS-distribution rule and a Blast
-clause that the EN page has none of — see M40 for what it settled.
 
 ## FETCH THE MODULE WITH `curl`, not through a summarising reader
 
@@ -987,8 +981,7 @@ the object the game spawns — and the other one is explainable:
 
 - DE's note is the patch-note figure; the wiki editor entered 2500/1500 in
   the same revision that carried the U40 changes (rev 2731762, health
-  550→2500, shield 200→1500), i.e. after seeing both. The CN wiki still
-  carries the pre-U40 350/200/50.
+  550→2500, shield 200→1500), i.e. after seeing both.
 
 Unresolved until measured in-game. Recorded so a measurement can settle it.
 
@@ -997,7 +990,7 @@ Unresolved until measured in-game. Recorded so a measurement can settle it.
 page on the wiki that says 3 — `insource:"which can stack up to 6 times"`
 hits Bosses, Adversary System, Kuva Lich, Sisters of Parvos, Void Angel,
 Necramech and Technocyte Coda, and DE's own U27.3 note (the origin of the
-rule, extended to the Acolytes in U29.5.4) reads 6. The CN wiki reads 6 too.
+rule, extended to the Acolytes in U29.5.4) reads 6.
 Since the ordinary Impact cap is 5, the exception is inert either way — what
 bites is the 4 on everything else.
 

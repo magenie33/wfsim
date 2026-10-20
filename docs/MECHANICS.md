@@ -2064,8 +2064,9 @@ so an extra hit is worth `pct × (1 + faction)` of the hit rather than `pct` —
 writes a 2: it multiplies the finished instance and applies
 `faction_at_time` once more, and the layer count follows from what triggered it.
 
-**And the body part twice ON XATA'S WHISPER ONLY**, which the EN formula does
-not show and DE's own CN card states outright — 同理，弱点倍率也会被计算两次. A
+**And the body part twice ON XATA'S WHISPER ONLY**, which the `Extra_Hit`
+formula does not show and the ability's own page states outright — *"The
+ability double dips on faction damage, and body part weaknesses"*. A
 3× headshot is 3× on the hit and 3× again on Xata's extra hit off it. Every
 other member's instance is a forced 1× weak point — Xata's is *"the only extra
 hit that does not have a forced 1x weakpoint multiplier"* — so Toxic Lash and
@@ -2078,10 +2079,9 @@ because only the caller knows whether its instance struck a body part at all.
 the two readings apart).
 
 **The percentage's bracket is the BASE ATTACK's, not the triggering
-instance's.** `Unmodded Impact Distribution` is the phrase that says so, and the
-CN card works it out for the Heliocor: a slam whose own damage is 100% Impact
-still scales its extra hit by `1 + 0.6 + 1.2×0.85 + 1.2×0.1`, the IPS shares of
-the ORDINARY attack. `FightParams::extra_hit_bracket` is that number, and each
+instance's.** `Unmodded Impact Distribution` is the phrase that says so: a
+Heliocor slam whose own damage is 100% Impact still scales its extra hit by
+`1 + 0.6 + 1.2×0.85 + 1.2×0.1`, the IPS shares of the ORDINARY attack. `FightParams::extra_hit_bracket` is that number, and each
 call site passes the ratio between it and its own instance's bracket — exactly
 1 on a direct hit, and the whole correction on an explosion or a detonation.
 
@@ -2125,8 +2125,8 @@ and Resupply are implemented — docs/EXTRA_HIT.md §"The members"): Toxic Lash
 25% Heat; Melee Duplicate 100%; Primary Debilitate's 0-damage status application
 — which this engine already models, from the other end, as MEASUREMENTS M33/M37.
 
-**Source:** wiki `Extra_Hit` + `Xata's Whisper` (EN and CN, which disagree in
-detail and are reconciled in M40) + a supplied player capture. **Status:**
+**Source:** wiki `Extra_Hit` + `Xata's Whisper` (M40) + a supplied player
+capture. **Status:**
 implemented and unit-tested; the Blast chain is measured, the lingering-field
 trigger is an open question stated in M40.
 

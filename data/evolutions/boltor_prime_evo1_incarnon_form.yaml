@@ -14,9 +14,9 @@ effects:
   # boltor_prime_incarnon entry, not perk payload.
   #
   # NO BASE-DAMAGE ADD HERE. The EN table renders this row with Hunter's
-  # Mantra's "+4" attached to it; the CN page gives that number to Hunter's
-  # Mantra alone, and its own summary table agrees (base + 4 under 猎者密咒,
-  # nothing under 灵化形态). The CN reading is the one followed.
+  # Mantra's "+4" attached to it; that number is Hunter's Mantra's own X, in
+  # its effect cell (boltor_prime_hunters_mantra.yaml), and this row's effect text states
+  # no base-damage add — so it is paid once, there.
   - kind: unlocks_weapon
     weapon: boltor_prime_incarnon
 

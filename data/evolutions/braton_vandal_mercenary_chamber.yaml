@@ -13,13 +13,9 @@ effects:
   # and the sim's scenario carries an `infinite_ammo` switch that is on by
   # default. It is a SET-TO rather than an add, which is why the value is the
   # new capacity rather than the difference.
-  # THE TWO WIKIS DISAGREE HERE, alone among this family's 36 values: the EN
-  # table reads 750 and the CN page reads 755. Kept at the EN number because
-  # that is the page the effect text above was transcribed from, and recorded
-  # rather than reconciled — neither is derivable (the four variants' set-to
+  # The EN table's number. It is not derivable: the four variants' set-to
   # values are 675/600/750/1125 against base reserves of 540/540/550/600, which
-  # is no ratio at all). It decides nothing today: the arena's `infinite_ammo`
-  # is on by default.
+  # is no ratio at all.
   - kind: ammo_reserve_set
     value: 750
 

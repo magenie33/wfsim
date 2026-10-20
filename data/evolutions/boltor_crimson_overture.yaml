@@ -24,10 +24,8 @@ effects:
   # from: "Increase Base Damage by +12"
   - kind: flat_base_damage
     value: 12.0
-  # THE STACK CAP IS THE ONE THING THE TWO WIKIS DISAGREE ON in this family: the
-  # EN table reads 4x for the Boltor and 3x for the other two, the CN page reads
-  # 3x for all three. Kept at the EN number, being the page the effect text came
-  # from. It is also the only value in the family where they differ at all.
+  # THE STACK CAP is the EN table's: 4x for the Boltor, 3x for the Telos Boltor
+  # and the Boltor Prime.
   #
   # The ammo-efficiency half of the same bullet cannot pay out here: the arena
   # runs on infinite ammo (UNMODELLED.md). It is declared below rather than

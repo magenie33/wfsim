@@ -1728,11 +1728,8 @@ impl FightParams {
     ///
     /// The wiki's `Weapon Hit Damage` term `Unmodded Impact Distribution ×
     /// Impact Bonuses` is why this reads the BASE ATTACK rather than whichever
-    /// instance triggered the extra hit, and DE's CN card states the
-    /// consequence: a slam whose own damage is 100% Blast still scales its
-    /// extra hit by the gun's Impact and Puncture mods ("即使该武器的其它攻击方
-    /// 式的初始伤害不包含该物理伤害……依然会根据基本攻击方式的初始伤害受到物理伤
-    /// 害MOD加成").
+    /// instance triggered the extra hit, so a slam whose own damage is 100%
+    /// Blast still scales its extra hit by the gun's Impact and Puncture mods.
     ///
     /// A RATIO, so the base-damage bucket needs no special handling: `damage`
     /// is `base × (1 + damage mods)` expanded by the element hierarchy and

@@ -2111,15 +2111,10 @@ ui:
   "{n} could not be sent": "{n} 个发送失败"
   "refused": "被拒绝"
   "board": "榜单"
-  # THE KITGUN FAMILY, off the CN wiki's own page (`组合枪`, reached through its
-  # MediaWiki API — DATA_SOURCES §"The CN wiki").
-  # DE's own export carries the PART names in Chinese (Haymaker is 重拳) and
-  # none of the category words, so this is the same path the evolution
-  # strings came down.
-  #
-  # It was 组装枪 for a day, with no source behind it — the CN wiki's article
-  # says 组合枪 in its title and in every sentence of its body, and a name that
-  # can be read is never derived.
+  # THE KITGUN FAMILY — DE's own word: the Kitgun Riven Mod
+  # (/Lotus/Upgrades/Mods/Randomized/RawModularPistolRandomMod) is 组合枪裂罅 Mod,
+  # and the "On Kitgun Kill:" arcanes (…/CosmeticEnhancers/Utility/*OnKill) open
+  # 用组合枪击杀时.
   "Kitguns": "组合枪"
   "Kitgun": "组合枪"
   "Type": "类型"

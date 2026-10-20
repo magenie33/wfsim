@@ -10,13 +10,6 @@ selection: choose_one
 
 effects:
   # PERCENTAGE POINTS on the BASE, the layer mods multiply.
-  # THE TWO WIKIS SWAP THIS VALUE between the Braton and the MK1-Braton: the EN
-  # table reads Braton +10% / MK1 +12% crit chance, the CN page reads Braton
-  # +12% / MK1 +10%. They agree on everything else in the row, and on all 34
-  # other values this family carries. Kept at the EN numbers because that is the
-  # page the effect text was transcribed from; recorded because a swap is the
-  # one kind of disagreement that looks like agreement if you only check the
-  # multiset.
   - kind: flat_base_crit_chance
     value: 0.12
   - kind: flat_base_status_chance

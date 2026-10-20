@@ -62,8 +62,8 @@ pub struct LocaleSpec {
     /// one map because they are one family and the effect has no id of its own
     /// outside its colour.
     ///
-    /// Hand-written: a colour's name is DE's resource name, a socket's line
-    /// the CN wiki's phrasing in DE's stat words (`data/i18n/zh/names.yaml`).
+    /// Hand-written: a colour's name is DE's resource name; a socket's line has
+    /// no DE source and is ours, in DE's stat words (`data/i18n/zh/names.yaml`).
     #[serde(default)]
     pub shards: BTreeMap<String, String>,
     /// THE WARFRAME BUILDER'S cards — `data/warframe_mods/`,

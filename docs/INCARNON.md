@@ -78,9 +78,9 @@ mined for its numbers, because reading "On Kill: +30 damage" as an unconditional
 **Still pending on a bulk weapon, and worth knowing before trusting one:**
 
 - **zh perk names and card text.** The weapon names come from DE's export; the
-  EVOLUTION strings need the CN wiki one adapter at a time, and the bulk pass
-  does not do it. A Chinese session shows English perk names on a bulk weapon
-  until its family is transcribed.
+  EVOLUTION strings are in no export, so a Chinese session shows English perk
+  names on a bulk weapon until its family is read off the Chinese client
+  (DATA_SOURCES §"Chinese text").
 - **CO catalog rows** — read and applied for every weapon in the program:
 
   | weapon | row | what it means here |

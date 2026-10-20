@@ -595,7 +595,8 @@ fn the_extra_hit_takes_the_faction_bonus_a_second_time() {
 }
 
 /// …AND THE BODY PART, TWICE, for the same reason and stated in the same
-/// breath (DE's CN card: "同理，弱点倍率也会被计算两次"). On a 3x head the
+/// breath (wiki `Xata's Whisper`: "double dips on faction damage, and body
+/// part weaknesses"). On a 3x head the
 /// hit is tripled once and the extra hit off it is tripled again, so the
 /// RATIO between them moves — which is the only way to see a double dip
 /// without trusting an absolute number.

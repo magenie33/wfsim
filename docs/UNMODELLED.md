@@ -474,7 +474,7 @@ published duration and are left off their card — Gleaming Talon's block combo
 and Wise Razor's — so that mode is refused under that card
 (`STANCE_LACKS_COMBO`). Gunblade and glaive rows the module marks `Ranged` are
 played as swings (`notes: stance_ranged_rows`). **Clashing Forest** is not in
-DE's export, so its Chinese name is EMPTY — the CN wiki was unreachable — and
+DE's export, so its Chinese name is EMPTY until read off the client — and
 its art is the wiki's.
 
 **Mods the new pools expose and nobody has transcribed**: eleven glaive throw
