@@ -72,6 +72,19 @@ pub trait QuickSpace: Sync {
     fn keep_ratio(&self) -> f64 {
         1.0
     }
+    /// OF TWO BUILDS THAT SCORE AS ONE ([`one_build`]), the one kept: `Less` =
+    /// `a` (`wfsim_engine::board::builds::preferred`). The default prefers
+    /// neither, which keeps the first one offered.
+    fn prefer(&self, _a: &Self::Build, _b: &Self::Build) -> std::cmp::Ordering {
+        std::cmp::Ordering::Equal
+    }
+    /// A BUILD THAT DOES NOT FIT, made to fit by lowering only the parts at
+    /// `free` — positions whose part was chosen where every candidate scored as
+    /// one, so lowering it moves no number the step could see. `None` = it does
+    /// not fit that way either. The repaired build is scored like any other.
+    fn repair(&self, _b: &Self::Build, _free: &[Position]) -> Option<Self::Build> {
+        None
+    }
 }
 
 /// Where a descent begins, what it may never change, and what it did not name.
@@ -146,9 +159,31 @@ struct Run<'a, S: QuickSpace> {
     sweeping: bool,
     stats: QuickStats,
     now: StartProgress,
+    /// The descent's positions whose part was chosen where every candidate
+    /// scored as one: what [`QuickSpace::repair`] may lower.
+    free: Vec<Position>,
+    /// The last screen dropped nothing that did not score as one with the rest.
+    screen_tied: bool,
 }
 
 impl<S: QuickSpace> Run<'_, S> {
+    /// Does `b` scoring `s` replace `x` scoring `xs`? A tie is the space's
+    /// preference, never the last bit of a sum.
+    fn wins(&self, b: &S::Build, s: Score, x: &S::Build, xs: Score) -> bool {
+        if one_build(s, xs) {
+            self.space.prefer(b, x).is_lt()
+        } else {
+            better(s, xs)
+        }
+    }
+
+    fn set_free(&mut self, p: Position, free: bool) {
+        self.free.retain(|q| *q != p);
+        if free {
+            self.free.push(p);
+        }
+    }
+
     fn out_of_budget(&self) -> bool {
         (self.cfg.max_evals > 0 && self.stats.evals >= self.cfg.max_evals)
             || self.cfg.stop.iter().any(|s| s.load(Ordering::Relaxed))
@@ -210,24 +245,43 @@ impl<S: QuickSpace> Run<'_, S> {
             }
         }
         let mut ranked = fresh.clone();
-        ranked.sort_by(|&a, &b| {
-            let (sa, sb) = (self.rough[&keys[a]], self.rough[&keys[b]]);
-            if better(sa, sb) { std::cmp::Ordering::Less } else if better(sb, sa) { std::cmp::Ordering::Greater } else { a.cmp(&b) }
-        });
+        let head = self.rough[&keys[fresh[0]]];
+        self.screen_tied = fresh.iter().all(|&i| one_build(self.rough[&keys[i]], head));
+        rank_ties(&mut ranked, |&i| self.rough[&keys[i]], |&a, &b| self.space.prefer(&alts[a], &alts[b]).then(a.cmp(&b)));
         let keep = ((self.space.keep_ratio() * fresh.len() as f64).ceil() as usize).clamp(1, fresh.len());
         let dropped: std::collections::HashSet<&String> = ranked[keep..].iter().map(|&i| &keys[i]).collect();
         Some(alts.iter().zip(&keys).filter(|(_, k)| !dropped.contains(k)).map(|(b, _)| b.clone()).collect())
     }
 
-    /// The best LEGAL candidate of `alts`. Legality is asked before anything is
-    /// simulated: dropping first and taking the best of the rest is the same
-    /// answer as simulating all and walking down the ranking, for less.
-    fn best(&mut self, alts: Vec<S::Build>) -> Option<Option<(S::Build, Score)>> {
-        let alts: Vec<S::Build> = alts.into_iter().filter(|b| self.space.legal(b)).collect();
-        if alts.is_empty() {
+    /// The best LEGAL candidate of `alts` at `p`, and whether every candidate
+    /// scored as one. Legality is asked before anything is simulated: dropping
+    /// first and taking the best of the rest is the same answer as simulating
+    /// all and walking down the ranking, for less. A candidate that does not
+    /// fit is first offered to [`QuickSpace::repair`] over the other free
+    /// positions: a riven that only fits once a utility exilus is a smaller
+    /// one is that riven, not a refusal.
+    fn best(&mut self, alts: Vec<S::Build>, p: Position) -> Option<Option<(S::Build, Score, bool)>> {
+        let free: Vec<Position> = self.free.iter().copied().filter(|q| *q != p).collect();
+        let mut keys = std::collections::HashSet::new();
+        let mut fit: Vec<S::Build> = Vec::new();
+        for b in alts {
+            let b = if self.space.legal(&b) {
+                b
+            } else {
+                match self.space.repair(&b, &free) {
+                    Some(r) if self.space.legal(&r) => r,
+                    _ => continue,
+                }
+            };
+            if keys.insert(self.space.key(&b)) {
+                fit.push(b);
+            }
+        }
+        if fit.is_empty() {
             return Some(None);
         }
-        let alts = self.screened(alts)?;
+        self.screen_tied = true;
+        let alts = self.screened(fit)?;
         let scores = self.score(&alts)?;
         if self.sweeping {
             for b in &alts {
@@ -235,12 +289,16 @@ impl<S: QuickSpace> Run<'_, S> {
             }
         }
         let mut best: Option<(S::Build, Score)> = None;
-        for (b, s) in alts.iter().zip(scores) {
-            if best.as_ref().is_none_or(|(_, x)| better(s, *x)) {
-                best = Some((b.clone(), s));
+        for (b, s) in alts.iter().zip(&scores) {
+            if best.as_ref().is_none_or(|(x, xs)| self.wins(b, *s, x, *xs)) {
+                best = Some((b.clone(), *s));
             }
         }
-        Some(best)
+        // EVERY CANDIDATE AS ONE, the screen's dropped ones included.
+        let tied = keys.len() > 1
+            && self.screen_tied
+            && best.as_ref().is_some_and(|(_, bs)| scores.iter().all(|s| one_build(*s, *bs)));
+        Some(best.map(|(b, s)| (b, s, tied)))
     }
 
     /// Fill, then sweep to a fixed point. `Err` = the start has no answer.
@@ -270,10 +328,10 @@ impl<S: QuickSpace> Run<'_, S> {
         self.now = StartProgress { settled: false, round: 0, at: 0, of: fill.len() };
         for (k, p) in fill.into_iter().enumerate() {
             self.now.at = k;
-            let Some(found) = self.best(self.space.candidates(&cur, p)) else {
+            let Some(found) = self.best(self.space.candidates(&cur, p), p) else {
                 return Ok((cur, None, None, moves, true));
             };
-            let Some((b, s)) = found else { continue };
+            let Some((b, s, tied)) = found else { continue };
             let take = empty.contains(&p) || {
                 if !self.space.legal(&cur) {
                     true
@@ -281,12 +339,13 @@ impl<S: QuickSpace> Run<'_, S> {
                     let Some(now) = self.score(std::slice::from_ref(&cur)) else {
                         return Ok((cur, None, None, moves, true));
                     };
-                    better(s, now[0])
+                    self.wins(&b, s, &cur, now[0])
                 }
             };
             if take {
                 cur = b;
                 moves += 1;
+                self.set_free(p, tied);
             }
         }
         if !self.space.legal(&cur) {
@@ -299,21 +358,28 @@ impl<S: QuickSpace> Run<'_, S> {
         let mut cur_score = from;
         self.sweeping = true;
         self.seen.entry(self.space.key(&cur)).or_insert_with(|| cur.clone());
+        // A TIE MOVES ONLY TOWARD THE PREFERRED, but "as one" is a tolerance
+        // and not an order, so a build the sweep has stood on is never a move.
+        let mut visited = std::collections::HashSet::from([self.space.key(&cur)]);
         'sweep: loop {
             let positions: Vec<Position> =
                 self.space.positions(&cur).into_iter().filter(|p| !fixed(p)).collect();
             self.now = StartProgress { settled: false, round: self.now.round + 1, at: 0, of: positions.len() };
             for (k, &p) in positions.iter().enumerate() {
                 self.now.at = k;
-                match self.best(self.space.candidates(&cur, p)) {
+                match self.best(self.space.candidates(&cur, p), p) {
                     None => return Ok((cur, cur_score, from, moves, true)),
-                    Some(Some((b, s))) if better(s, cur_score) => {
+                    Some(Some((b, s, tied)))
+                        if self.wins(&b, s, &cur, cur_score) && visited.insert(self.space.key(&b)) =>
+                    {
                         cur = b;
                         cur_score = s;
                         moves += 1;
+                        self.set_free(p, tied);
                         continue 'sweep;
                     }
-                    Some(_) => {}
+                    Some(Some((_, s, tied))) => self.set_free(p, tied && one_build(s, cur_score)),
+                    Some(None) => {}
                 }
             }
             self.now.settled = true;
@@ -353,12 +419,15 @@ pub fn quick_descent<S: QuickSpace>(
         sweeping: false,
         stats: QuickStats::default(),
         now: StartProgress::default(),
+        free: Vec::new(),
+        screen_tied: true,
     };
     let mut answers: Vec<QuickAnswer<S::Build>> = Vec::new();
     let mut failures = Vec::new();
     let mut progress = Vec::with_capacity(starts.len());
     for (i, start) in starts.iter().enumerate() {
         run.stats.starts += 1;
+        run.free.clear();
         let out = run.descend(start);
         progress.push(StartProgress { settled: out.is_err() || run.now.settled, ..run.now });
         match out {
@@ -377,7 +446,7 @@ pub fn quick_descent<S: QuickSpace>(
             }
         }
     }
-    answers.sort_by(|a, b| best_first(a.score, b.score));
+    rank_ties(&mut answers, |a| a.score, |a, b| space.prefer(&a.build, &b.build));
     // THE SAME SCORE ON THE PAIRED STREAM IS THE SAME BUILD for the list
     // ([`one_build`]): a utility exilus, or an evolution the engine does not
     // load, swapped — Boar Prime's Mercenary Chamber and Practiced Grip filled
@@ -394,7 +463,7 @@ pub fn quick_descent<S: QuickSpace>(
             Some((k, answer_ids.contains(&space.identity(&b)), b, Some(s)))
         })
         .collect();
-    pool.sort_by(|a, b| best_first(a.3, b.3).then(b.1.cmp(&a.1)).then(a.0.cmp(&b.0)));
+    rank_ties(&mut pool, |x| x.3, |a, b| b.1.cmp(&a.1).then_with(|| space.prefer(&a.2, &b.2)).then(a.0.cmp(&b.0)));
     let mut ids = std::collections::HashSet::new();
     let mut last: Score = None;
     pool.retain(|(_, _, b, s)| {
@@ -413,6 +482,20 @@ pub fn quick_descent<S: QuickSpace>(
 pub fn one_build(a: Score, b: Score) -> bool {
     let near = |x: f64, y: f64| (x - y).abs() <= 1e-9 * x.abs().max(y.abs());
     matches!((a, b), (Some((ak, ae)), Some((bk, be))) if near(ak, bk) && near(ae, be))
+}
+
+/// BEST FIRST, and each run that scores as one with its first ([`one_build`])
+/// in `tie`'s order. Two passes, because "as one" is a tolerance: a comparator
+/// built on it is not an order, and a sort may panic on one that is not.
+fn rank_ties<T>(v: &mut [T], score: impl Fn(&T) -> Score, tie: impl Fn(&T, &T) -> std::cmp::Ordering) {
+    v.sort_by(|a, b| best_first(score(a), score(b)).then_with(|| tie(a, b)));
+    let mut at = 0;
+    while at < v.len() {
+        let head = score(&v[at]);
+        let end = (at + 1..v.len()).find(|&j| !one_build(score(&v[j]), head)).unwrap_or(v.len());
+        v[at..end].sort_by(&tie);
+        at = end;
+    }
 }
 
 fn best_first(a: Score, b: Score) -> std::cmp::Ordering {
@@ -480,5 +563,52 @@ mod tests {
         assert_eq!(answers[0].build, [Some(8), Some(9), Some(9)]);
         assert_eq!(answers[0].starts, vec![0, 1], "two starts settle on one build");
         assert_eq!(answers[1].build, [Some(0), Some(9), Some(9)], "a fixed position never moves");
+    }
+
+    /// Two slots under a capacity of 10, each digit costing itself: slot 0
+    /// moves no number, slot 1 scores its digit. The fill seats a 9 in slot 0
+    /// by preference, so slot 1's 9 fits only once slot 0 is lowered — and the
+    /// answer keeps the costliest slot 0 that still fits.
+    struct Capacity;
+    impl QuickSpace for Capacity {
+        type Build = [Option<u8>; 2];
+        fn positions(&self, _: &Self::Build) -> Vec<Position> {
+            (0..2).map(|idx| Position { kind: "d", idx }).collect()
+        }
+        fn empty(&self, b: &Self::Build) -> Vec<Position> {
+            (0..2).filter(|&i| b[i].is_none()).map(|idx| Position { kind: "d", idx }).collect()
+        }
+        fn candidates(&self, b: &Self::Build, p: Position) -> Vec<Self::Build> {
+            Digits.candidates(&[b[0], b[1], None], p).into_iter().map(|n| [n[0], n[1]]).collect()
+        }
+        fn legal(&self, b: &Self::Build) -> bool {
+            b.iter().flatten().map(|&d| u32::from(d)).sum::<u32>() <= 10
+        }
+        fn score(&self, bs: &[Self::Build]) -> Vec<Score> {
+            bs.iter().map(|b| Some((f64::from(b[1].unwrap_or(0)), 0.0))).collect()
+        }
+        fn key(&self, b: &Self::Build) -> String {
+            format!("{b:?}")
+        }
+        fn prefer(&self, a: &Self::Build, b: &Self::Build) -> std::cmp::Ordering {
+            let cost = |x: &Self::Build| x.iter().flatten().map(|&d| u32::from(d)).sum::<u32>();
+            cost(b).cmp(&cost(a))
+        }
+        fn repair(&self, b: &Self::Build, free: &[Position]) -> Option<Self::Build> {
+            let p = free.first()?;
+            (0..b[p.idx]?).rev().map(|d| {
+                let mut n = *b;
+                n[p.idx] = Some(d);
+                n
+            }).find(|n| self.legal(n))
+        }
+    }
+
+    #[test]
+    fn a_tie_keeps_the_preferred_and_a_free_part_is_lowered_to_fit() {
+        let starts = vec![QuickStart { build: [None, None], fixed: vec![], unnamed: vec![] }];
+        let cfg = QuickConfig { max_evals: 0, stop: Vec::new() };
+        let QuickRun { answers, .. } = quick_descent(&Capacity, &starts, &cfg);
+        assert_eq!(answers[0].build, [Some(1), Some(9)]);
     }
 }

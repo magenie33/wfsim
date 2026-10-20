@@ -29,6 +29,7 @@ mod canonical;
 mod element_order;
 mod validate;
 mod identity;
+mod prefer;
 #[cfg(test)]
 mod tests;
 
@@ -37,3 +38,4 @@ pub use canonical::*;
 pub use element_order::*;
 pub use validate::*;
 pub use identity::*;
+pub use prefer::*;

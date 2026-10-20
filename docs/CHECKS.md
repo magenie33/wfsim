@@ -1064,7 +1064,8 @@ its search box does not fold it, and the jump menu lists it by name.
 **A TIE IS ONE PLACE, AND A REFUSED TRIGGER IS PRECISE.** On Felarx's plain
 cycle board every build's rank is its score's place among the distinct scores,
 one row stands for each place, a tie names a position its builds differ in and
-opens into exactly its builds, each a different build on that one score.
+opens into exactly its builds, each a different build on that one score and
+the costliest shown.
 Refusing weak-point kills lists exactly the builds with no part that asks for
 one — and still some whose parts ask for any kill — the refusal is stored, and
 the kill group refuses all three kill triggers. Counted with every tie opened.

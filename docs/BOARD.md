@@ -1873,9 +1873,10 @@ it is").
 long image, the bots): it answers "the best ways to play this weapon", so a
 ruler's modes are one ranking (`pooledRanking`; a riven at its best mode,
 against the best riven-free build of any mode), and a tie is one answer shown
-by its cheapest build — fewest parts, then most cards below full rank — saying
-how many builds share it (`distinctTop`, `cheaperBuild`). The board and the
-build finder still rank per mode.
+by its preferred build — the search's own order, more mod drain first
+(OPTIMIZER.md §"A tie keeps the preferred build") — saying how many builds
+share it (`distinctTop`, `preferredBuild`). The board and the build finder
+still rank per mode.
 
 A GROUP IS ONE WEAPON, IN ONE MODE, UNDER ONE RULER, and riven builds are a
 group of their own. A riven build and a plain one compete with each other for

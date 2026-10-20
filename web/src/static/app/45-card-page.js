@@ -162,7 +162,7 @@ async function renderCardPage(w, ask) {
       + `<p class="sb-empty">${escHtml(link.replace(/^https?:\/\//, ""))}</p>`);
   } else if (kind === "pz") {
     const ranked = pooledRanking(rankBoard(rows.filter((r) => r.benchmark === ruler && !r.riven === !withRiven), [ruler], w.modes));
-    const shown = distinctTop(ranked, n, () => "");
+    const shown = distinctTop(ranked, n, () => "", META);
     const mode = (shown[0] || {}).mode;
     title = trF(withRiven ? "{w} · top {n} riven builds" : "{w} · top {n} builds", { w: w.name, n: shown.length });
     link = `${LIVE_ORIGIN}${weaponPath(w.id)}?bench=${encodeURIComponent(ruler)}&mode=${encodeURIComponent(mode || "base")}&riven=${withRiven ? 1 : 0}`;
@@ -175,7 +175,7 @@ async function renderCardPage(w, ask) {
     link = `${LIVE_ORIGIN}${weaponPath(w.id)}/riven-analyst`;
     body = () => !g.rivens.length ? "" : (g.top ? cardBox(`<span class="sb-h">${escHtml(tr("The board's best riven-free build"))}</span><b class="lc-score">${escHtml(cardShown(g.top.row))}</b>${cardRecord(g.top.row)}`,
       cardOfState(boardRowState(w, g.top.row), w)) : "")
-      + distinctTop(placed(g.rivens.filter((x) => rivenMatches(x.row.riven, rivenAsk)), (x) => x.row.score || 0), n, () => "")
+      + distinctTop(placed(g.rivens.filter((x) => rivenMatches(x.row.riven, rivenAsk)), (x) => x.row.score || 0), n, () => "", META)
         .map((x) => cardBox(`<b class="lc-rank">#${x.rank}</b><b class="lc-score">${escHtml(cardShown(x.row))}</b>${
         x.gain == null ? "" : `<b class="lc-gain">${pct(x.gain)}</b>`}${cardRecord(x.row)}`, cardOfState(boardRowState(w, x.row), w))).join("");
   }

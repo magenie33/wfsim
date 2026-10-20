@@ -260,6 +260,27 @@ const r = await evaluate(`(async () => {
       && mem.every((p) => p.board.score === mem[0].board.score);
   }
 
+  // A TIE IS SHOWN BY ITS COSTLIEST BUILD, the search's own order: Acceltra's
+  // ties hold the same cards at different ranks.
+  await open('Acceltra');
+  Object.assign(finder, { b: 'standard_single_target', mo: 'base', rv: 'plain', shown: 500 });
+  renderBuildFinder(); await sleep(200);
+  const cards = Object.values(META.mod_pools || {}).flat();
+  const drain = (b) => (b.mods || []).reduce((s, id) => {
+    const [c, at] = String(id).split('@');
+    const m = cards.find((x) => x.id === c);
+    return s + (!m ? 0 : at == null ? m.drain : m.drain - m.max_rank + Number(at));
+  }, 0);
+  const plain = builtinBuilds().filter((p) => p.benchmark === finder.b && p.mode === finder.mo && !p.riven)
+    .sort((a, b) => b.board.score - a.board.score);
+  const groups = tieGroups(plain, (p) => p.board.score, (p) => p.board, META).filter((g) => g.members.length > 1);
+  const apart = groups.filter((g) => new Set(g.members.map((p) => drain(p.board))).size > 1);
+  out.tieApart = apart.length;
+  out.tieHeavy = apart.every((g) => g.members.every((p) => drain(g.members[0].board) >= drain(p.board)));
+  await open('Felarx');
+  Object.assign(finder, { b: 'standard_single_target', mo: 'cycle', rv: 'plain', shown: 500 });
+  renderBuildFinder(); await sleep(200);
+
   // REFUSING A TRIGGER IS PRECISE: refusing weak-point kills drops every build
   // with a part that asks for one and keeps every other, those whose parts ask
   // for any kill included; a group refuses all of its own; the refusal is the
@@ -331,6 +352,7 @@ check("...one row per place", r.tieHeads > 0 && r.tieRows.split('/')[0] === r.ti
 check("...naming the positions its builds differ in", r.tieFree === true);
 check("...and opening into every exact build it stands for", r.tieExact === true && r.tieMembers.split('/')[0] === r.tieMembers.split('/')[1],
   r.tieMembers);
+check("...shown by its costliest build, as the search keeps one", r.tieApart > 0 && r.tieHeavy === true, `${r.tieApart} ties of unequal drain`);
 check("refusing weak-point kills drops every build that asks for one, and only those", r.trgBtn && r.trgPrecise === true, r.trgCount);
 check("...the reader's refusal is stored", r.trgStored === true);
 check("...and the kill group refuses every kill", r.trgGroup === true);

@@ -590,13 +590,35 @@ above runs only when a tool asks for it by name.
 1. LEGALITY FIRST: a candidate whose build Forma cannot fit (the auto-Forma
    planner, through the enumerator) is dropped before it is simulated —
    the same answer as simulating all and walking down the ranking, for less.
+   Before it is dropped it is REPAIRED where it can be (`repair`): the descent
+   remembers each position whose part it chose where every candidate scored as
+   one, and lowers those, costliest first, each to the costliest card that
+   makes the build fit or to nothing, until it does. A riven that fits once a
+   utility exilus is a smaller one is that riven and that exilus, not a riven
+   refused; the repaired build is scored like any other candidate.
 2. Score the rest on ONE paired stream, `candidate_runs` each — **10 by
    default**, the quick calc's count. With one answer per start no funnel sits
    behind a step to undo a noisy one: at 1 run, Viral + Heat on Boar Prime lost
    to Magnetic + Heat 5% below it and the answer came 13th. 1 is the fast
    option.
 3. The best legal candidate that beats the build replaces it, and the sweep
-   restarts at the first position.
+   restarts at the first position. A candidate that scores AS ONE with the
+   build (`one_build`) replaces it when it is preferred (below), and never
+   with a build the sweep has stood on.
+
+### A tie keeps the preferred build
+
+Where the fight cannot tell two builds apart, the order is not left to whichever
+the candidate list offered first. One order, `engine::board::builds::preferred`:
+**more mod drain** (at the ranks equipped, exilus and riven included), then the
+cards' English names, then the arcanes' English names, then each evolution
+tier's own order, its default first; the quick descent adds the mode and the
+valence as the plan lists them. More drain because a card that costs more is the
+stronger card where the fight reads neither, and Forma is not counted: a tie
+that keeps the cheaper keeps a weaker build for no reason the fight can see. The
+step, the fill, the screen's cut, the answers and the pool's twins all ask it;
+the finder's, the board's and the bots' representative of a tie is the page's
+twin (`preferredBuild`, `87-headless.js`), the same order over a board row.
 
 ### Each step is screened
 
@@ -646,8 +668,8 @@ the work from 6,569 builds to 1,876 and reached the same build.
   list (`one_build`: both counts within a relative 1e-9 on the paired stream)
   — a utility exilus, an evolution the engine does not load, Serration for
   Heavy Caliber whose accuracy penalty the arena does not read — and the
-  answer is the one kept: re-measured on separate streams, such twins pushed
-  the answer itself off the list.
+  answer is the one kept, then the preferred: re-measured on separate streams,
+  such twins pushed the answer itself off the list.
 - **THE CONTENDERS** are the pool's best N and every one below that ties the
   N-th — `tied_at_the_line`, the funnel's own cut: ±3·SE from the pooled σ of
   kill progress, capped at 2N. They go STRAIGHT TO THE SIMULATOR: each one's

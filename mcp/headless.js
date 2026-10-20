@@ -123,21 +123,61 @@ function boardRowParts(r) {
   return out;
 }
 
-/// THE CHEAPER OF TWO TIED BUILDS, which is the one a tie shows first: fewer
-/// parts, then more cards below their full rank, then the earlier measured.
-function cheaperBuild(a, b) {
-  const parts = (r) => boardRowParts(r).length;
-  const low = (r) => (r.mods || []).filter((id) => String(id).includes("@")).length;
-  return parts(a) - parts(b) || low(b) - low(a) || String(a.measured_at || "").localeCompare(String(b.measured_at || ""));
+/// What the order below reads of `meta`: each card's drain at its full rank,
+/// rank and name, each arcane's name, each evolution's tier and place in it.
+let preferMemo = null;
+function preferTables(meta) {
+  if (!preferMemo || preferMemo.meta !== meta) {
+    const mods = new Map(), arcanes = new Map(), evolutions = new Map();
+    for (const pool of Object.values((meta && meta.mod_pools) || {})) for (const m of pool || []) mods.set(m.id, m);
+    for (const a of (meta && meta.arcanes) || []) arcanes.set(a.id, a.name);
+    for (const w of (meta && meta.weapons) || []) {
+      for (const t of w.evolutions || []) (t.options || []).forEach((o, i) => evolutions.set(o.id, [t.tier, i + 1]));
+    }
+    preferMemo = { meta, mods, arcanes, evolutions };
+  }
+  return preferMemo;
+}
+
+/// OF TWO BUILDS ON ONE SCORE, the one a tie shows: the engine's order
+/// (`engine::board::builds::preferred`, docs/OPTIMIZER.md §"A tie keeps the
+/// preferred build") — more mod drain, then the cards' English names, the
+/// arcanes' names and each evolution tier's own order — then the earlier
+/// measured. Negative = `a`.
+function preferredBuild(a, b, meta) {
+  const t = preferTables(meta);
+  const read = (r) => {
+    const parts = boardRowParts(r);
+    const cards = parts.filter((p) => p.axis === "mods").map((p) => {
+      const [id, rank] = String(p.id).split("@");
+      const m = t.mods.get(id);
+      return { name: m ? m.name : id, drain: !m ? 0 : rank == null ? m.drain : m.drain - m.max_rank + Number(rank) };
+    });
+    const names = (xs) => xs.slice().sort();
+    return {
+      drain: cards.reduce((s, c) => s + c.drain, 0),
+      cards: names(cards.map((c) => c.name)),
+      arcanes: names(parts.filter((p) => p.axis === "arcanes").map((p) => t.arcanes.get(String(p.id).split("@")[0]) || p.id)),
+      evolutions: parts.filter((p) => p.axis === "evolutions").map((p) => t.evolutions.get(p.id) || [0, 0])
+        .sort((x, y) => x[0] - y[0]).map((x) => x[1]),
+    };
+  };
+  const list = (x, y) => {
+    for (let i = 0; i < Math.min(x.length, y.length); i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1;
+    return x.length - y.length;
+  };
+  const x = read(a), y = read(b);
+  return y.drain - x.drain || list(x.cards, y.cards) || list(x.arcanes, y.arcanes) || list(x.evolutions, y.evolutions)
+    || String(a.measured_at || "").localeCompare(String(b.measured_at || ""));
 }
 
 /// TIED BUILDS AS ONE ANSWER. Consecutive entries of `list` sharing a `key`
-/// (the ranking and the place) are one group: `members` cheapest first, `core`
+/// (the ranking and the place) are one group: `members` preferred first, `core`
 /// the parts every member carries (as `pos=id`), `free` per position the
 /// alternatives the members take there (`null`: the position left empty), and
 /// `every` whether the members are every combination of those alternatives —
 /// when not, only the members themselves are known to tie.
-function tieGroups(list, key, rowOf = (x) => x.row) {
+function tieGroups(list, key, rowOf, meta) {
   const out = [];
   for (const x of list) {
     const last = out[out.length - 1];
@@ -145,7 +185,7 @@ function tieGroups(list, key, rowOf = (x) => x.row) {
     else out.push({ key: key(x), members: [x] });
   }
   return out.map((g) => {
-    const members = g.members.slice().sort((a, b) => cheaperBuild(rowOf(a), rowOf(b)));
+    const members = g.members.slice().sort((a, b) => preferredBuild(rowOf(a), rowOf(b), meta));
     const each = members.map((x) => boardRowParts(rowOf(x)));
     const k = (p) => `${p.pos}=${p.id}`;
     const count = new Map();
@@ -563,9 +603,9 @@ function pooledRivens(meta, w, rows, ruler) {
 // ---- the top N, one per score ------------------------------------------------
 
 /// THE FIRST `n` PLACES of each ranking, one entry each: a tie is one answer,
-/// shown by its cheapest build (`cheaperBuild`), with `tied` saying how many
+/// shown by its preferred build (`preferredBuild`), with `tied` saying how many
 /// builds share it. `list` carries `placed` ranks; `group` names the ranking.
-function distinctTop(list, n, group) {
+function distinctTop(list, n, group, meta) {
   const pick = new Map();
   for (const x of list) {
     if (x.rank > n) continue;
@@ -574,7 +614,7 @@ function distinctTop(list, n, group) {
     if (!had) pick.set(k, { x, tied: 1 });
     else {
       had.tied += 1;
-      if (x.row && had.x.row && cheaperBuild(x.row, had.x.row) < 0) had.x = x;
+      if (x.row && had.x.row && preferredBuild(x.row, had.x.row, meta) < 0) had.x = x;
     }
   }
   const won = new Map([...pick.values()].map((p) => [p.x, p.tied]));
@@ -689,7 +729,7 @@ const HEADLESS_QUERIES = [
       riven: { kind: "string", what: "\"without\" (default), \"with\" or \"any\"", enum: () => ["without", "with", "any"] },
       mode: { kind: "string", what: "only this mode id" },
       limit: { kind: "number", min: 1, max: 20, what: "rows per group, default 3" },
-      distinct: { kind: "boolean", what: "one row per place, its cheapest build; `limit` counts places" },
+      distinct: { kind: "boolean", what: "one row per place, its preferred build; `limit` counts places" },
       pooled: { kind: "boolean", what: "rank a ruler's modes together" },
     },
     async run({ weapon, riven = "without", mode: m, limit = 3, distinct = false, pooled = false }, host) {
@@ -705,7 +745,7 @@ const HEADLESS_QUERIES = [
       const scoped = (pooled ? pooledRanking(ranked) : ranked)
         .filter((x) => (riven === "any" || x.riven === (riven === "with")) && (!m || x.mode === m));
       const picked = distinct
-        ? distinctTop(scoped, limit, (x) => `${x.row.benchmark}#${pooled ? "" : x.mode}#${x.riven}`)
+        ? distinctTop(scoped, limit, (x) => `${x.row.benchmark}#${pooled ? "" : x.mode}#${x.riven}`, host.meta())
         : scoped.filter((x) => x.rank <= limit);
       return {
         weapon: w.id,

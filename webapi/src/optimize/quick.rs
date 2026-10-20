@@ -611,6 +611,68 @@ impl QuickSpace for QuickCtx<'_> {
         self.keep_ratio
     }
 
+    /// The board's own order (`wfsim_engine::board::builds::preferred`), then
+    /// the mode and the valence as the plan lists them.
+    fn prefer(&self, a: &QBuild, b: &QBuild) -> std::cmp::Ordering {
+        wfsim_engine::board::builds::preferred(&self.preference(a), &self.preference(b))
+            .then(a.mode.cmp(&b.mode))
+            .then(a.val.cmp(&b.val))
+    }
+
+    /// Each free card slot, costliest card first, takes the costliest card
+    /// that makes the build fit — or nothing — and the next is lowered only
+    /// while it still does not. One card per drain is tried, since every card
+    /// scored as one there.
+    fn repair(&self, b: &QBuild, free: &[Position]) -> Option<QBuild> {
+        let mut slots: Vec<usize> = free.iter().filter(|p| p.kind == "mods").map(|p| p.idx).collect();
+        slots.sort_by_key(|&i| std::cmp::Reverse(self.slot_drain(b, i)));
+        let mut cur = b.clone();
+        for i in slots {
+            let now = self.slot_drain(&cur, i);
+            if now == 0 {
+                continue;
+            }
+            let mut tried = std::collections::HashSet::new();
+            let mut lower: Vec<QBuild> = Vec::new();
+            for (pi, m) in self.pool.iter().enumerate() {
+                if i < 8 && self.usable[pi] && m.base_drain < now && !self.clashes(&cur, i, m) {
+                    let mut n = cur.clone();
+                    n.mods[i] = Some(pi);
+                    lower.push(n);
+                }
+            }
+            if i == 8 {
+                for (xi, m) in self.exilus_defs.iter().enumerate() {
+                    if m.as_ref().is_some_and(|m| m.base_drain < now && !self.clashes(&cur, 8, m)) {
+                        let mut n = cur.clone();
+                        n.exilus = xi;
+                        lower.push(n);
+                    }
+                }
+            }
+            lower.sort_by(|x, y| self.prefer(x, y));
+            lower.retain(|n| tried.insert(self.slot_drain(n, i)));
+            let mut bare = cur.clone();
+            if i < 8 {
+                bare.mods[i] = None;
+            } else {
+                bare.exilus = self.exilus_defs.iter().position(Option::is_none).unwrap_or(cur.exilus);
+            }
+            lower.push(bare);
+            match lower.into_iter().find(|n| self.legal(n)) {
+                Some(n) => return Some(n),
+                None => {
+                    if i < 8 {
+                        cur.mods[i] = None;
+                    } else {
+                        cur.exilus = self.exilus_defs.iter().position(Option::is_none).unwrap_or(cur.exilus);
+                    }
+                }
+            }
+        }
+        None
+    }
+
     /// ORDER-BLIND: the cards as a set, since a build scores at its best order.
     fn key(&self, b: &QBuild) -> String {
         let mut mods: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
@@ -635,6 +697,58 @@ impl QuickSpace for QuickCtx<'_> {
 }
 
 impl QuickCtx<'_> {
+    /// What the board's order reads of a build.
+    fn preference(&self, b: &QBuild) -> wfsim_engine::board::builds::Preference<'static> {
+        let cards: Vec<&ModDef> = b
+            .mods
+            .iter()
+            .flatten()
+            .map(|&i| &self.pool[i])
+            .chain(self.exilus_defs.get(b.exilus).and_then(Option::as_ref))
+            .collect();
+        let arcanes = self.arcane_sets.get(b.arcane).map_or_else(Vec::new, |s| {
+            s.iter()
+                .filter_map(|id| {
+                    let card = id.split('@').next().unwrap_or(id);
+                    let slot = wfsim_engine::data::arcanes::slot_of(card)?;
+                    wfsim_engine::data::arcanes::for_slot(slot, card).map(|a| a.name.as_str())
+                })
+                .collect()
+        });
+        let mut evolutions: Vec<(u32, u32)> = self.evo_sets.get(b.evo).map_or_else(Vec::new, |s| {
+            s.iter()
+                .filter_map(|id| wfsim_engine::data::evolutions::get(id).map(|e| (e.tier, e.position_in_tier)))
+                .collect()
+        });
+        evolutions.sort_unstable();
+        wfsim_engine::board::builds::Preference {
+            drain: cards.iter().map(|m| m.base_drain).sum(),
+            cards: cards.iter().map(|m| m.name).collect(),
+            arcanes,
+            evolutions: evolutions.into_iter().map(|(_, p)| p).collect(),
+        }
+    }
+
+    /// The drain of the card in slot `i` (8 = the exilus).
+    fn slot_drain(&self, b: &QBuild, i: usize) -> u32 {
+        let m = if i < 8 { b.mods[i].map(|pi| &self.pool[pi]) } else { self.exilus_defs.get(b.exilus).and_then(Option::as_ref) };
+        m.map_or(0, |m| m.base_drain)
+    }
+
+    /// Would `m` in slot `i` repeat a card or a family the build holds elsewhere?
+    fn clashes(&self, b: &QBuild, i: usize, m: &ModDef) -> bool {
+        let fam = |m: &ModDef| m.family.unwrap_or_else(|| m.id.split('@').next().unwrap_or(m.id));
+        let mine = fam(m);
+        let others = b
+            .mods
+            .iter()
+            .enumerate()
+            .filter(|&(j, _)| j != i)
+            .filter_map(|(_, x)| x.map(|pi| &self.pool[pi]))
+            .chain(if i == 8 { None } else { self.exilus_defs.get(b.exilus).and_then(Option::as_ref) });
+        others.map(fam).any(|f| f == mine)
+    }
+
     fn candidates_now(&self, b: &QBuild, p: Position) -> Vec<QBuild> {
         let res = crate::candidates::candidates_json(&self.candidate_request(b, p));
         let list = res.get("candidates").and_then(Value::as_array).cloned().unwrap_or_default();

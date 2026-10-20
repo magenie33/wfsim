@@ -405,8 +405,8 @@ in the mods as its stats.
 
 **A TIE IS ONE ROW.** Builds on one exact score share a place (BOARD.md §"A
 place is a score"), and the finder lists a place once (`tieGroups`): its
-cheapest build, a badge saying how many builds tie, and the POSITIONS they
-differ in with the alternatives at each — the mod set, the exilus, each arcane
+preferred build (`preferredBuild`), a badge saying how many builds tie, and
+the POSITIONS they differ in with the alternatives at each — the mod set, the exilus, each arcane
 slot and each evolution tier is a position, so two tier-2 evolutions are
 alternatives and a tier-2 and a tier-4 never are (`boardRowParts`). When
 several positions vary, the line says whether the measured builds are every

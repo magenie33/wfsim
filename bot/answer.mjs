@@ -165,7 +165,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     if (r.ok === false || !r.groups.length) return t(NOT_MEASURED);
     const g = r.groups.find((x) => x.rivens.length);
     if (!g) return t("No riven on the board has these stats yet. (￣^￣)");
-    const top = headless.distinctTop(g.rivens, n || 3, () => "");
+    const top = headless.distinctTop(g.rivens, n || 3, () => "", meta);
     const shown = top.length;
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=zk&ruler=${encodeURIComponent(g.ruler_id)}&n=${shown}`
       + (ask.bonuses.length ? `&has=${ask.bonuses.map(encodeURIComponent).join(",")}` : "")

@@ -221,7 +221,7 @@ function renderBuildFinder() {
   const tieKey = (p) => `${p.benchmark}#${p.mode}#${p.riven ? "r" : "p"}#${p.rank}`;
   const list = all.filter((p) => inScope(p) && passes(p))
     .sort((a, b) => score(b) - score(a) || (tieKey(a) < tieKey(b) ? -1 : tieKey(a) > tieKey(b) ? 1 : 0));
-  const ties = tieGroups(list, tieKey, (p) => p.board || {});
+  const ties = tieGroups(list, tieKey, (p) => p.board || {}, META);
   const scopeTotal = all.filter(inMo).length;
   const updated = measuredText(boardMeasuredAt(all.filter((p) => p.benchmark === finder.b).map((p) => p.board)));
   const unit = rulerUnit(tr(benchOf(finder.b).name));
