@@ -18,7 +18,11 @@ riven_words:
   伤害: [damage, melee_damage]
   触发: [status_chance]
   触发率: [status_chance]
-  异常: [status_chance]
+  # 异常 is Status Damage, never Status Chance: players say 触发 for the chance.
+  异常: [status_damage]
+  异常伤害: [status_damage]
+  异常状态伤害: [status_damage]
+  触发伤害: [status_damage]
   触发时间: [status_duration]
   射速: [fire_rate, attack_speed]
   攻速: [fire_rate, attack_speed]
