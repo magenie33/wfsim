@@ -35,9 +35,9 @@ sniper_combo:
 # ITS SCOPE GRANTS A CRITICAL MULTIPLIER, not headshot damage — +35% at 3.5x
 # and +50% at 6x. On a weapon whose base multiplier is 3.0x that is the whole
 # reason it is a Rubico.
-scope:
-  magnification: 6.0
-  crit_multiplier: 0.5
+scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Combo Stats)
+  - { magnification: 3.5, crit_multiplier: 0.35 }
+  - { magnification: 6.0, crit_multiplier: 0.5 }
 attack:
   # see notes: cone_half_angle_from
   spread:

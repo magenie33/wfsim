@@ -49,9 +49,10 @@ sniper_combo:
 # after mods." So it is NOT a bucket term — a relative +50% would be half of
 # this weapon's 25% base, five points; this is fifty. It lands on the post-mod
 # layer, which is a different arithmetic and a different field.
-scope:
-  magnification: 8.0
-  crit_chance_post_mod: 0.5
+scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Combo Stats)
+  - { magnification: 3.0, crit_chance_post_mod: 0.2 }
+  - { magnification: 5.0, crit_chance_post_mod: 0.3 }
+  - { magnification: 8.0, crit_chance_post_mod: 0.5 }
 attack:
   extra_hit_reads: { impact: 1, slash: 0, puncture: 0 }   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from

@@ -25,9 +25,9 @@ unmodeled:
 # ordinary Vectis gets for one, which at a 2-round magazine is two reloads.
 sniper_combo:
   min: 5
-scope:
-  magnification: 6.0
-  headshot_damage: 0.6
+scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Combo Stats)
+  - { magnification: 3.5, headshot_damage: 0.4 }
+  - { magnification: 6.0, headshot_damage: 0.6 }
 
 accuracy: 13.3
 disposition: 1

@@ -581,13 +581,20 @@ pub fn base_panel_assembled(
         tendril_range_m: s.tendrils.as_ref().map_or(0.0, |t| t.range_m),
         tendril_acquire_deg: s.tendrils.as_ref().map_or(0.0, |t| t.acquire_deg),
         sniper_combo: s.sniper_combo,
-        // The scope's bonus rides HERE unconditionally and is spent by
-        // `resolve`, which is the only layer that knows whether the Tenno is
-        // aiming — and the only one that knows a form cannot zoom.
-        scope_headshot_damage: s.scope.map_or(0.0, |z| z.headshot_damage),
-        scope_crit_chance: s.scope.map_or(0.0, |z| z.crit_chance),
-        scope_crit_multiplier: s.scope.map_or(0.0, |z| z.crit_multiplier),
-        scope_crit_chance_post_mod: s.scope.map_or(0.0, |z| z.crit_chance_post_mod),
+        // Every zoom level rides HERE and `resolve` spends one, the only layer
+        // that knows whether the Tenno is aiming, at which level — and that a
+        // form cannot zoom.
+        scope: s
+            .scope
+            .iter()
+            .map(|z| crate::model::ZoomLevel {
+                magnification: z.magnification,
+                headshot_damage: z.headshot_damage,
+                crit_chance: z.crit_chance,
+                crit_multiplier: z.crit_multiplier,
+                crit_chance_post_mod: z.crit_chance_post_mod,
+            })
+            .collect(),
         // The DEFAULT lives with the ramp it belongs to, so "most weapons"
         // is stated once rather than copied into a second file that is free
         // to drift from it.

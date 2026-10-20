@@ -617,6 +617,7 @@ function renderScenarioFields(ids, opts = {}) {
   if (ids.technique) {
     $(ids.technique).innerHTML = `
       ${aimField(w, sim)}
+      ${zoomField(w, sim)}
       ${headshotField(w, sim)}
       ${chargingHeadshotField(w, sim)}
       <label class="check" title="${escHtml(tr("the wielder's state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off"))}"><input type="checkbox" data-k="invisible"${sim.invisible ? " checked" : ""}> ${escHtml(tr("Invisible"))}</label>

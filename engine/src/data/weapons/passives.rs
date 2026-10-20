@@ -105,37 +105,39 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
             c.seconds
         ));
     }
-    if let Some(z) = s.scope {
-        // THE SENTENCE NAMES WHAT THE SCOPE ACTUALLY PAYS. It printed
-        // `headshot_damage` whatever the grant was, so eight of the ten scoped
-        // weapons in the roster read "+0% headshot damage" on a scope granting
-        // +50% critical damage. A scope grants exactly ONE of the
-        // four fields — that is why they are four fields — so the first
-        // non-zero one is the grant.
-        let (fraction, granted) = if z.headshot_damage != 0.0 {
-            (z.headshot_damage, "headshot damage, additive with headshot mods")
-        } else if z.crit_multiplier != 0.0 {
-            (z.crit_multiplier, "critical damage")
-        } else if z.crit_chance != 0.0 {
-            (z.crit_chance, "critical chance, relative to the unmodded base")
+    if let Some(top) = s.scope.last() {
+        // THE SENTENCE NAMES WHAT THE SCOPE ACTUALLY PAYS. A level grants
+        // exactly ONE of the four fields — that is why they are four fields —
+        // so the top level's first non-zero one is the kind, and each level is
+        // quoted at its own value of it (a lower level may grant nothing).
+        let (kind, granted): (fn(&ScopeSpec) -> f64, &str) = if top.headshot_damage != 0.0 {
+            (|z| z.headshot_damage, "headshot damage, additive with headshot mods")
+        } else if top.crit_multiplier != 0.0 {
+            (|z| z.crit_multiplier, "critical damage")
+        } else if top.crit_chance != 0.0 {
+            (|z| z.crit_chance, "critical chance, relative to the unmodded base")
         } else {
-            (
-                z.crit_chance_post_mod,
-                "critical chance, applied after mods",
-            )
+            (|z| z.crit_chance_post_mod, "critical chance, applied after mods")
         };
         // A MAGNIFICATION IS ONLY QUOTED WHEN THE PAGE PUBLISHES ONE. The
         // Vesper 77's aim bonus rides a laser sight and its page states no zoom
-        // level at all, so the clause about trading field of view for
-        // magnification has nothing to be about.
-        out.push(match z.magnification {
-            Some(magnification) => format!(
-                "Its scope's top zoom ({magnification:.1}x) grants +{:.0}% {granted} while aiming. This fight has no field of view to trade for magnification, so the scope is always at that level.",
-                fraction * 100.0
+        // level at all, so there is no level to pick.
+        out.push(match top.magnification {
+            Some(m) if s.scope.len() == 1 => format!(
+                "While aiming its scope ({m:.1}x) grants +{:.0}% {granted}.",
+                kind(top) * 100.0
+            ),
+            Some(_) => format!(
+                "While aiming its scope grants {granted}: {}. The top level unless another is picked.",
+                s.scope
+                    .iter()
+                    .map(|z| format!("+{:.0}% at {:.1}x", kind(z) * 100.0, z.magnification.unwrap_or(0.0)))
+                    .collect::<Vec<_>>()
+                    .join(", "),
             ),
             None => format!(
                 "Aiming grants +{:.0}% {granted}. The page publishes no zoom level for it, and this arena aims by default.",
-                fraction * 100.0
+                kind(top) * 100.0
             ),
         });
     }

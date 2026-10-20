@@ -1505,7 +1505,9 @@ The fight's PLAYER reaches the panel, the sim and a share
 link, so an arcane that scales off a Warframe is worth nothing with no frame
 and +500% with one. The frame is picked in the build bar's Wielder control and
 read off the floor the server resolves; the overrides and the extra stats are
-the scenario's. Runs in CI beside `check_parity`.
+the scenario's. A sniper's zoom levels are offered where it has more than one,
+the top one as 0, and a lower one lands on the fight and pays its smaller buff.
+Runs in CI beside `check_parity`.
 
 ## `check_squad`
 

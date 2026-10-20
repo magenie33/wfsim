@@ -61,9 +61,9 @@ fn the_roster_declares_them_where_the_wiki_does() {
     assert_eq!(combo("vectis_prime").map(|c| c.min), Some(5));
     // 2 s unless the weapon says otherwise (the Lanka, which is not here).
     assert_eq!(combo("vectis_prime").map(|c| c.seconds), Some(2.0));
-    let scope = |id: &str| spec(id).and_then(|w| w.scope);
-    assert_eq!(scope("vectis").map(|z| z.headshot_damage), Some(0.5));
-    assert_eq!(scope("vectis_prime").map(|z| z.headshot_damage), Some(0.6));
+    let scope = |id: &str| spec(id).map(|w| w.scope.iter().map(|z| (z.magnification, z.headshot_damage)).collect::<Vec<_>>());
+    assert_eq!(scope("vectis"), Some(vec![(Some(3.0), 0.3), (Some(4.5), 0.5)]));
+    assert_eq!(scope("vectis_prime"), Some(vec![(Some(3.5), 0.4), (Some(6.0), 0.6)]));
     // THE COMBO IS THE SNIPER'S; THE SCOPE IS NOT. A Shot Combo Counter is
     // keyed on the class in game — the wiki's rule opens "Scoped in" and
     // the mechanic exists on no other family — so a combo outside the class
@@ -79,12 +79,15 @@ fn the_roster_declares_them_where_the_wiki_does() {
     // …and every scope is either a sniper's or names itself in prose, so a
     // scope that turns up on an ordinary weapon by accident is still caught.
     for w in all() {
-        if let Some(z) = w.scope {
+        for z in &w.scope {
             assert!(
                 w.class == "sniper" || z.magnification.is_none(),
                 "{}: a non-sniper scope must be an aim bonus with no published zoom",
                 w.id
             );
         }
+        // …LISTED LOWEST FIRST, which is what makes the last one the top.
+        let mags: Vec<f64> = w.scope.iter().filter_map(|z| z.magnification).collect();
+        assert!(mags.windows(2).all(|p| p[0] < p[1]), "{}: zoom levels out of order: {mags:?}", w.id);
     }
 }

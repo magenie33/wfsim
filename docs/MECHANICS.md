@@ -2005,15 +2005,19 @@ which are intrinsic to the weapon and cannot be modified, generally stack
 additively with similar buffs from mods"*. The Vectis Incarnon Genesis table
 confirms the bracket from the other side, calling Sharpshooter's +25% headshot
 damage "additive with Target Acquired, Vectis's Scope bonus, and similar
-bonuses". Only the headshot kind is declared (`ScopeSpec`), because it is the
-only kind the roster's snipers grant; the Lanka's and Komorex's are named by
-the same section as exceptions and get their own field when either arrives.
+bonuses". A scope declares every level, lowest first (`ScopeSpec`), each with
+the one kind it grants — headshot damage, a relative crit chance or multiplier,
+or the Lanka's flat crit chance applied after mods.
 
-The arena has no field of view and no distance, so nothing is traded for
-magnification and the top zoom level is not a choice — the scope always sits
-there while aiming, which is on the card.
+**The level is the player's.** *"Sniper Rifles can adjust the magnification of
+their zoom by tapping the alt fire key"*, so the fight carries `scope_zoom` — a
+magnification, 0 for the top level — and `resolve` pays that level's buff
+while aiming. The arena has no field of view, so nothing is traded for the
+magnification; the top level is what every ruler fights at, and a level the
+scope does not have reads as the top one.
 
-**Roster:** Vectis (min 1, 4.5x / +50%), Vectis Prime (min 5, 6.0x / +60%).
+**Roster:** every sniper's levels from the wiki's Zoom and Minimum Combo table —
+the Vectis 3x / +30% and 4.5x / +50%, the Vectis Prime 3.5x / +40% and 6x / +60%.
 
 **Status:** implemented and unit-tested against the wiki. NOT yet confirmed by
 an in-game measurement — see docs/MEASUREMENTS.md.

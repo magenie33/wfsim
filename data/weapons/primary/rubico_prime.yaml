@@ -31,9 +31,9 @@ co_behavior: additive_with_base_damage
 # crit chance, its fire rate and its reload, not its scope.
 sniper_combo:
   min: 1
-scope:
-  magnification: 5.0
-  crit_multiplier: 0.5
+scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Combo Stats)
+  - { magnification: 2.5, crit_multiplier: 0.35 }
+  - { magnification: 5.0, crit_multiplier: 0.5 }
 attack:
   # see notes: cone_half_angle_from
   spread:

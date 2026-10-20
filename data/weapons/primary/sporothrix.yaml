@@ -29,9 +29,8 @@ co_behavior: additive_with_base_damage
 # ONE HIT ARMS THE COUNTER, which suits a weapon this slow.
 sniper_combo:
   min: 1
-scope:
-  magnification: 2.7
-  headshot_damage: 0.5
+scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Combo Stats)
+  - { magnification: 2.7, headshot_damage: 0.5 }
 attack:
   extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from

@@ -434,9 +434,10 @@ pub struct WeaponSpec {
     /// `class: sniper`, because the Minimum Combo is per weapon.
     #[serde(default)]
     pub sniper_combo: Option<SniperCombo>,
-    /// ...and its scope's own buff — see [`ScopeSpec`].
+    /// ...and its scope's zoom levels, LOWEST FIRST — see [`ScopeSpec`]. Empty
+    /// on a weapon with no scope.
     #[serde(default)]
-    pub scope: Option<ScopeSpec>,
+    pub scope: Vec<ScopeSpec>,
     /// Where this CONTINUOUS weapon's damage ramp starts, as a fraction of
     /// full damage. Omitted means the wiki's "for most weapons" 20%; state it
     /// only for a weapon whose page gives a different number.
@@ -568,27 +569,22 @@ pub(super) fn tendril_cone_default() -> f64 {
     40.0
 }
 
-/// THE SCOPE, as the only part of zoom that is a damage number.
+/// ONE ZOOM LEVEL OF A SCOPE, as the only part of zoom that is a damage number.
 ///
-/// A sniper's zoom levels each carry a buff (wiki `Sniper Rifle` §Zoom Buffs),
-/// and the arena models the BUFF while modelling none of the optics: it has no
-/// distance and no field of view (docs/UNMODELLED.md), so nothing here is
-/// traded for the magnification and the highest level is not a choice — it is
-/// strictly better and free. The scope therefore sits at its top level
-/// whenever the Tenno is aiming, and that is stated on the weapon's card.
-///
-/// Only the headshot-damage kind is declared, because it is the only kind the
-/// roster's snipers grant. The Lanka's and Komorex's are called out by the same
-/// section as exceptions to the additive rule, so a weapon that grants crit
-/// chance or a critical multiplier gets its own field when one is added rather
-/// than this one reinterpreted.
+/// A sniper's zoom levels each carry a buff (wiki `Sniper Rifle` §Zoom Buffs) —
+/// *"Sniper Rifles can adjust the magnification of their zoom by tapping the
+/// alt fire key"* — and the arena models the BUFF while modelling none of the
+/// optics: it has no field of view (docs/UNMODELLED.md), so nothing is traded
+/// for the magnification. The Tenno picks the level
+/// (`TennoState::scope_zoom`), the top one unless they say otherwise.
 ///
 /// *"These zoom buffs, which are intrinsic to the weapon and cannot be
-/// modified, generally stack additively with similar buffs from mods"* — so it
-/// joins the headshot bracket rather than multiplying it.
+/// modified, generally stack additively with similar buffs from mods"* — so the
+/// headshot kind joins the headshot bracket rather than multiplying it.
 #[derive(Debug, Clone, Copy, PartialEq, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ScopeSpec {
-    /// The top zoom level's magnification, carried for the card's sentence.
+    /// This zoom level's magnification, carried for the card and the picker.
     ///
     /// `None` where the page publishes none — the Vesper 77's laser sight is an
     /// aim bonus with no stated zoom level, and inventing a 1.0 for it would put

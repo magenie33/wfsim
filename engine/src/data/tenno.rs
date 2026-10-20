@@ -362,6 +362,11 @@ pub struct TennoState {
     /// was configurable, so no stored scenario changes meaning.
     #[serde(default = "yes")]
     pub aiming: bool,
+    /// WHICH ZOOM LEVEL, by its magnification — 3.5 for a Vectis Prime's lower
+    /// one. 0 is the top level, the default: a scope this weapon does not have
+    /// reads as 0 too (`WeaponBase::zoom_level`).
+    #[serde(default)]
+    pub scope_zoom: f64,
     /// Spectral Serration: "+330% Damage while Invisible".
     #[serde(default)]
     pub invisible: bool,
@@ -528,6 +533,7 @@ impl Default for TennoState {
             melee_equipped: true,
             solo_weapon: false,
             energy_pct: 1.0,
+            scope_zoom: 0.0,
         }
     }
 }

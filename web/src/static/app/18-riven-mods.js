@@ -376,6 +376,22 @@ const aimField = (w, state) => {
     : tr("mods that only work while aiming (Galvanized Crosshairs, Argon Scope, Sharpened Bullets…) grant nothing when this is off");
   return `<label class="check" title="${escHtml(why)}"><input type="checkbox" data-k="aiming"${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Aiming"))}</label>`;
 };
+/// …AND AT WHICH ZOOM LEVEL. A sniper's scope has two or three, each with its
+/// own buff, and the top one is what every ruler fights at — stored as 0, so a
+/// fight that never touched this keeps meaning the top level on every weapon.
+/// Shown only where there is a level to pick (`settledAxis`).
+const zoomField = (w, state) => {
+  const levels = (w && w.zoom_levels) || [];
+  if (settledAxis(w, "scope_zoom") || levels.length < 2) return "";
+  const top = levels[levels.length - 1];
+  const cur = levels.includes(state.scope_zoom) && state.scope_zoom !== top ? state.scope_zoom : 0;
+  const options = levels.map((m) => {
+    const v = m === top ? 0 : m;
+    return `<option value="${v}"${v === cur ? " selected" : ""}>${m.toFixed(1)}x</option>`;
+  }).join("");
+  const why = tr("the scope's zoom level: each grants its own buff while aiming, and the top one is what every ruler fights at");
+  return `<label title="${escHtml(why)}">${escHtml(tr("Zoom"))} <select data-k="scope_zoom" data-num="1">${options}</select></label>`;
+};
 /// …AND ITS HEADSHOT RATE IS 0 AND NOT YOURS.
 ///
 /// The VALUE was already right from both ends — `defaultHeadshotPct` opens a

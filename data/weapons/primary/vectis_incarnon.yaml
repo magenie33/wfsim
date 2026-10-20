@@ -14,9 +14,9 @@ transforms_from: vectis
 # and the scope carry over from the base form.
 sniper_combo:
   min: 1
-scope:
-  magnification: 4.5
-  headshot_damage: 0.5
+scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Combo Stats)
+  - { magnification: 3.0, headshot_damage: 0.3 }
+  - { magnification: 4.5, headshot_damage: 0.5 }
 
 gauge_form:
   gauge:

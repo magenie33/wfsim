@@ -429,4 +429,35 @@ if (canShare) {
   console.log("  --  sharing is off; the share half of this check is waiting for it");
 }
 
+// THE ZOOM LEVEL IS THE READER'S. A sniper with two levels offers both, the
+// top one as 0; picking the lower one lands on the fight and the fight pays its
+// smaller buff — and a weapon with no levels offers nothing.
+const zoom = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const open = async (w) => {
+    history.pushState({}, '', '/weapons/' + w + '/simulator'); route(); await sleep(3000);
+    document.querySelector('#preset-bar-simulator-scenarios .pchip.add').click();
+    await sleep(1500);
+    return document.querySelector('#sim-technique select[data-k="scope_zoom"]');
+  };
+  const torid = await open('Torid');
+  const sel = await open('Vectis_Prime');
+  if (!sel) return { torid: !!torid, offered: [] };
+  const offered = [...sel.options].map(o => o.textContent.trim() + '=' + o.value);
+  const dps = async (z) => {
+    const f = theFight(); f.scope_zoom = z; f.runs = 12; f.headshot_pct = 100; f.aiming = true;
+    const r = await api('/api/simulate', { ...f, weapon: document.getElementById('weapon').value,
+      mods: [], build_size: 0 });
+    return r && r.dps;
+  };
+  sel.value = '3.5'; sel.dispatchEvent(new Event('change')); await sleep(600);
+  return { torid: !!torid, offered, stored: sim.scope_zoom, top: await dps(0), low: await dps(3.5) };
+})()`);
+check("a sniper offers its zoom levels, the top one as 0",
+  zoom.offered.join(",") === "3.5x=3.5,6.0x=0", JSON.stringify(zoom.offered));
+check("...a weapon without them offers none", zoom.torid === false);
+check("...the pick lands on the fight", zoom.stored === 3.5, String(zoom.stored));
+check("...and the lower level pays its smaller buff", zoom.low < zoom.top,
+  `3.5x ${zoom.low} vs top ${zoom.top}`);
+
 await app.finish("the Tenno is on the field, and the page knows it");

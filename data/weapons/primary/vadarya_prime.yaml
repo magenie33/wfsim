@@ -33,9 +33,9 @@ sniper_combo:
 # ITS SCOPED zoom is the 8x one; the FIRST is ordinary aim-down-sights and the
 # page says it does not build combo at all. Only the scoped level is carried,
 # which is also the only one that pays.
-scope:
-  magnification: 8.0
-  crit_multiplier: 0.5
+scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Combo Stats)
+  - { magnification: 2.5 }   # the table lists no buff at this level
+  - { magnification: 8.0, crit_multiplier: 0.5 }
 attack:
   # see notes: cone_half_angle_from
   spread:

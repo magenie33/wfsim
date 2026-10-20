@@ -186,18 +186,17 @@ pub fn resolve_for(
     // factor. Added HERE, above the lock site, so a mod that pins crit chance
     // wipes this too: "set to its default ignoring other bonuses" does not make
     // an exception for where the bonus came from.
-    if tenno.state.aiming {
-        cc += base.scope_crit_chance;
-        cd += base.scope_crit_multiplier;
-    }
+    // THE LEVEL THE TENNO IS ON, and nothing at all from the hip.
+    let zoom = if tenno.state.aiming { base.zoom_level(tenno.state.scope_zoom) } else { crate::model::ZoomLevel::default() };
+    cc += zoom.crit_chance;
+    cd += zoom.crit_multiplier;
     // …and the Lanka's, which is NOT a bucket term. Its bonus is "a flat
     // +20/30/50 critical chance, applied after mods", so it lands on the
     // post-mod layer beside the other flat grants rather than being multiplied
     // by the weapon's unmodded 25%.
     // THE FIGHT'S FLAT CRIT CHANCE joins the same post-mod layer: an ability's
     // "+X% critical chance" is percentage points, never scaled by the base.
-    let post_mod_cc_extra = if tenno.state.aiming { base.scope_crit_chance_post_mod } else { 0.0 }
-        + fb.flat_crit_chance;
+    let post_mod_cc_extra = zoom.crit_chance_post_mod + fb.flat_crit_chance;
     // RELOAD STARTS AT THE EVOLUTION'S BONUS, not at zero. Rapid Reinforcement
     // and its family feed the SAME additive bucket the mods do — one bucket, so
     // an evolution's +60% and Primed Fast Hands' +55% sum rather than
@@ -1859,7 +1858,7 @@ pub fn resolve_for(
         // that cannot zoom pays nothing without knowing why.
         headshot_damage_bonus: base.headshot_damage_bonus
             + headshot_damage
-            + if tenno.state.aiming { base.scope_headshot_damage } else { 0.0 },
+            + zoom.headshot_damage,
         noncrit_bonus: base.noncrit_bonus,
         stacking_buffs: base
             .stacking_buffs

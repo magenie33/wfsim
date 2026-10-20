@@ -80,6 +80,9 @@ pub enum Capability {
     /// "with the melee weapon DRAWN" a question worth asking of a build: a card
     /// that says *"With Melee Weapon Equipped"* pays on one and not the other.
     CanQuickMelee,
+    /// Its scope has more than one zoom level to pick from — every sniper
+    /// rifle but the Sporothrix pair (`data::weapons::ScopeSpec`).
+    PicksZoom,
 }
 
 impl Capability {
@@ -93,7 +96,9 @@ impl Capability {
             | Capability::HasReserve
             // A gun really cannot be quick-melee'd with, and a melee weapon
             // really can be swung without being drawn.
-            | Capability::CanQuickMelee => Absence::GameFact,
+            | Capability::CanQuickMelee
+            // A scope with one level really has nothing to pick.
+            | Capability::PicksZoom => Absence::GameFact,
             // …but whether an unrefillable reserve should be SCORED as running
             // dry is our question, not the game's: the game removes the weapon
             // and the sim has no pickups either way. A scenario may pick.
@@ -121,6 +126,7 @@ impl Capability {
             Capability::HasReserve => spec.ammo_max.is_some_and(|a| a > 0.0),
             Capability::CanResupply => !spec.no_resupply,
             Capability::CanQuickMelee => spec.rules_slot() == "melee",
+            Capability::PicksZoom => spec.scope.iter().filter(|z| z.magnification.is_some()).count() > 1,
         }
     }
 
@@ -165,6 +171,7 @@ impl Capability {
             Capability::CanResupply => {
                 "this weapon cannot be resupplied — once its reserve is gone it is removed for five minutes, so the setting has nothing to stand in for"
             }
+            Capability::PicksZoom => "this weapon has no scope with more than one zoom level, so there is no level to pick",
         }
     }
 }
@@ -310,6 +317,14 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
         // stop. Same axis, opposite values, two capabilities — which is the
         // case one rule per axis could not express.
         requires: &[Requirement { cap: Capability::ChoosesAim, absent: AxisValue::Flag(true) }],
+    },
+    // WHICH ZOOM LEVEL, by its magnification; 0 is the top one, which every
+    // ruler fights at. `TennoState::scope_zoom`.
+    ScenarioAxis {
+        id: "scope_zoom",
+        kind: AxisKind::Number { min: 0.0, max: 20.0 },
+        group: Group::Wielder,
+        requires: &[Requirement { cap: Capability::PicksZoom, absent: AxisValue::Number(0.0) }],
     },
     ScenarioAxis {
         id: "headshot_pct",

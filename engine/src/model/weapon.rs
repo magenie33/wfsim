@@ -753,6 +753,18 @@ impl SniperCombo {
     }
 }
 
+/// ONE ZOOM LEVEL'S BUFF — see `data::weapons::ScopeSpec`. A level grants one
+/// kind, so the other fields stay zero; each lands in a different bucket.
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct ZoomLevel {
+    pub magnification: Option<f64>,
+    pub headshot_damage: f64,
+    pub crit_chance: f64,
+    pub crit_multiplier: f64,
+    /// The Lanka's kind — see `data::weapons::ScopeSpec::crit_chance_post_mod`.
+    pub crit_chance_post_mod: f64,
+}
+
 /// A weapon's unmodded panel (fixed evolutions folded in — they alter the
 /// weapon's BASE stats before mods).
 #[derive(Debug, Clone)]
@@ -942,16 +954,9 @@ pub struct WeaponBase {
     /// The sniper's Shot Combo Counter, before `resolve` asks whether the
     /// Tenno is aiming — see `data::weapons::SniperCombo`.
     pub sniper_combo: Option<crate::model::SniperCombo>,
-    /// ...and the scope's headshot bonus at its top zoom level, likewise
-    /// unspent until `resolve` (0.0 = no scope).
-    pub scope_headshot_damage: f64,
-    /// ...or the scope's CRIT bonuses, for the weapons whose zoom grants those
-    /// instead. Spent by `resolve`, like the headshot one, and only while
-    /// aiming. See `data::weapons::ScopeSpec`.
-    pub scope_crit_chance: f64,
-    pub scope_crit_multiplier: f64,
-    /// The Lanka's kind — see `data::weapons::ScopeSpec::crit_chance_post_mod`.
-    pub scope_crit_chance_post_mod: f64,
+    /// ...and the scope's zoom levels, lowest first, likewise unspent until
+    /// `resolve` picks one (empty = no scope). See [`WeaponBase::zoom_level`].
+    pub scope: Vec<ZoomLevel>,
     /// ...and can it NOT be refilled mid-fight? See `WeaponSpec::no_resupply`.
     /// Separate from the above on purpose — most weapons have a reserve AND a
     /// way to top it up.

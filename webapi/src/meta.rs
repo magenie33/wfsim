@@ -319,6 +319,11 @@ pub fn meta_json() -> Value {
                     .is_some_and(|a| a > 0.0),
                 "no_resupply": wfsim_engine::data::weapons::spec(&w.id)
                     .is_some_and(|s| s.no_resupply),
+                // THE SCOPE'S ZOOM LEVELS, by magnification, lowest first — what the
+                // zoom picker offers (`scope_zoom`). Empty without a scope.
+                "zoom_levels": wfsim_engine::data::weapons::spec(&w.id)
+                    .map(|s| s.scope.iter().filter_map(|z| z.magnification).collect::<Vec<_>>())
+                    .unwrap_or_default(),
                 // …AND THE CONSEQUENCE, so the page stops deriving it. The two
                 // flags above stay because the roster grid reads them, but a
                 // CONTROL now asks this. A SETTLED axis is one the weapon

@@ -122,6 +122,8 @@ function defaultScenario() {
     // enemy, and this changes the ENEMY, never the number of guns.
     squad_size: d.squad_size || 1,
     headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
+    // THE TOP ZOOM LEVEL unless a level was picked — see `zoomField`.
+    scope_zoom: Number(d.scope_zoom) || 0,
     // WHERE THE TWO OF THEM STAND, metres. Contact by default — as close as
     // two bodies can be, which is what point blank means once they have a size.
     player_at: [...(d.player_at || [0, 0])],
@@ -212,7 +214,7 @@ const empowermentOf = (s) => (s.empowered === "archimedea" || s.empowered === "i
 
 let sim = { enemy: "thrax_centurion", level: 9999, steel_path: true, eximus: null,
   guardian_aura: false, ancient_protector_aura: false,
-  headshot_pct: 100, aiming: true,
+  headshot_pct: 100, aiming: true, scope_zoom: 0,
   // THE FIGHT'S GEOMETRY: where the two of them stand, in metres. CONTACT by
   // default (0.5 m, twice a body's radius) — the closest they can be, which is
   // what point blank means once a body has a size, and what both official

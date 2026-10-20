@@ -31,9 +31,10 @@ co_behavior: additive_with_base_damage
 # "Vulkar / Vulkar Wraith" cell means.
 sniper_combo:
   min: 2
-scope:
-  magnification: 8.0
-  headshot_damage: 0.7
+scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Combo Stats)
+  - { magnification: 2.5, headshot_damage: 0.35 }
+  - { magnification: 4.0, headshot_damage: 0.55 }
+  - { magnification: 8.0, headshot_damage: 0.7 }
 attack:
   # see notes: cone_half_angle_from
   spread:

@@ -92,7 +92,7 @@ function renderMods() {
 // NO `frame` AND NO `shards`: the wielder is the BUILD's (`buildWielder`), and
 // what the fight keeps is what others hand it — the squad's auras, its own stat
 // bonuses — and the ticked overrides.
-const TENNO_KEYS = ["aiming", "invisible", "airborne", "sliding", "aim_gliding", "overshields", "channeling", "melee_equipped", "solo_weapon", "wf_health", "wf_shield", "wf_armor", "wf_energy", "wf_sprint", "extra_stats", "auras"];
+const TENNO_KEYS = ["aiming", "scope_zoom", "invisible", "airborne", "sliding", "aim_gliding", "overshields", "channeling", "melee_equipped", "solo_weapon", "wf_health", "wf_shield", "wf_armor", "wf_energy", "wf_sprint", "extra_stats", "auras"];
 
 // THE FIGHT'S OWN STAT BONUSES: what this weapon is handed by something that is
 // not its build — a squad buff, a Warframe ability, an arcane on another weapon.

@@ -2,6 +2,18 @@ use super::*;
 
 /// The Evolution II choice — a SEARCH DIMENSION. A
 impl WeaponBase {
+    /// THE ZOOM LEVEL A TENNO AT `zoom` IS ON: the level of that magnification,
+    /// or the top one — for 0, and for a magnification this scope does not have
+    /// (a choice carried over from another weapon). No scope, no buff.
+    pub fn zoom_level(&self, zoom: f64) -> crate::model::ZoomLevel {
+        self.scope
+            .iter()
+            .copied()
+            .find(|l| zoom > 0.0 && l.magnification.is_some_and(|m| (m - zoom).abs() < 1e-6))
+            .or_else(|| self.scope.last().copied())
+            .unwrap_or_default()
+    }
+
     /// Apply an arbitrary equipped-evolution set (data ids) from
     /// data/evolutions/*.yaml onto the raw base. An EMPTY list = nothing
     /// installed at any choosable tier.

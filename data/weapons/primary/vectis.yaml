@@ -24,9 +24,9 @@ unmodeled:
 # The Vectis has the SMALLEST minimum combo in the game: one hit arms 1.5x.
 sniper_combo:
   min: 1
-scope:
-  magnification: 4.5
-  headshot_damage: 0.5
+scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Combo Stats)
+  - { magnification: 3.0, headshot_damage: 0.3 }
+  - { magnification: 4.5, headshot_damage: 0.5 }
 
 accuracy: 13.3
 disposition: 1.15

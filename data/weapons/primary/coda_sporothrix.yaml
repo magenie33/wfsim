@@ -28,9 +28,8 @@ co_behavior: additive_with_base_damage
 
 sniper_combo:
   min: 1
-scope:
-  magnification: 2.7
-  headshot_damage: 0.5
+scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Combo Stats)
+  - { magnification: 2.7, headshot_damage: 0.5 }
 
 # THE PROGENITOR ELEMENT — mandatory on an adversary weapon: every copy comes
 # out of a Lich with one, so there is no "none" to pick.

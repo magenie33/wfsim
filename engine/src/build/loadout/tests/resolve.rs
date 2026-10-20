@@ -2615,3 +2615,23 @@ fn an_evolutions_combo_terms_land_in_the_mods_buckets() {
     let (bare, quick) = (panel("hate", &[]), panel("hate", &["hate_swordsmans_flourish"]));
     assert!((quick.combo_count_chance - bare.combo_count_chance - 1.0).abs() < 1e-9);
 }
+
+/// THE TENNO PICKS THE ZOOM LEVEL, the top one by default. A Vectis Prime at
+/// 3.5x takes +40% headshot damage where 6x takes +60% (wiki `Sniper_Rifle`);
+/// a magnification its scope does not have reads as the top level, and the
+/// hip as none.
+#[test]
+fn a_picked_zoom_level_pays_its_own_buff() {
+    let base = WeaponBase::from_data("vectis_prime", false, &[]);
+    let refs: Vec<&ModDef> = Vec::new();
+    let at = |zoom: f64, aiming: bool| {
+        let mut t = crate::data::tenno::default_tenno().clone();
+        t.state.scope_zoom = zoom;
+        t.state.aiming = aiming;
+        resolve_for(&base, &refs, StackPolicy::Emergent, &t).headshot_damage_bonus
+    };
+    let hip = at(0.0, false);
+    assert!((at(0.0, true) - hip - 0.6).abs() < 1e-12, "the top level by default");
+    assert!((at(3.5, true) - hip - 0.4).abs() < 1e-12, "the lower level when picked");
+    assert!((at(4.0, true) - hip - 0.6).abs() < 1e-12, "a level it lacks is the top");
+}

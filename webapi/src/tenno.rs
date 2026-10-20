@@ -107,6 +107,9 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
 pub(crate) fn tenno_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::tenno::Tenno {
     let mut t = wielder_from(v, info);
     t.state.aiming = info.sentinel || get_bool(v, "aiming", true);
+    // WHICH ZOOM LEVEL, by magnification; 0 (and anything this scope lacks)
+    // is the top one, which every ruler fights at.
+    t.state.scope_zoom = get_f64(v, "scope_zoom", 0.0).clamp(0.0, 20.0);
     t.state.invisible = get_bool(v, "invisible", t.state.invisible);
     t.state.airborne = get_bool(v, "airborne", t.state.airborne);
     t.state.sliding = get_bool(v, "sliding", t.state.sliding);

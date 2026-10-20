@@ -744,8 +744,16 @@ ui:
   "Its fire rate SPOOLS UP while the trigger is held — from 25% of the listed rate, full from the 4th shot. This is simulated, and it rebuilds after every reload.": 持续按住扳机时射速会往上爬——从标称射速的 25% 起步，到第 4发拉满。这条已经建模，每次换弹后重新爬。
   "Its fire rate SPOOLS UP while the trigger is held — from 25% of the listed rate, full from the 6th shot. This is simulated, and it rebuilds after every reload.": 持续按住扳机时射速会往上爬——从标称射速的 25% 起步，到第 6发拉满。这条已经建模，每次换弹后重新爬。
   "Its innate headshot bonus MULTIPLIES the headshot bracket instead of joining it, so it compounds with Deadhead and Target Acquired rather than adding to them.": 它自带的爆头加成是乘在爆头加算区上，而不是并入其中——所以它与首领终结、锁定目标是相乘而非相加。
-  "Its scope's top zoom (4.5x) grants +50% headshot damage while aiming, additive with headshot mods. This fight has no field of view to trade for magnification, so the scope is always at that level.": "它瞄准镜的最高倍率（4.5x）在瞄准时提供 +50% 爆头伤害，与爆头 MOD 加算。这场战斗没有视野概念，倍率不需要用视野去换，所以瞄准镜始终停在这一档。"
-  "Its scope's top zoom (6.0x) grants +60% headshot damage while aiming, additive with headshot mods. This fight has no field of view to trade for magnification, so the scope is always at that level.": "它瞄准镜的最高倍率（6.0x）在瞄准时提供 +60% 爆头伤害，与爆头 MOD 加算。这场战斗没有视野概念，倍率不需要用视野去换，所以瞄准镜始终停在这一档。"
+  "While aiming its scope grants headshot damage, additive with headshot mods: +30% at 2.5x, +50% at 6.0x. The top level unless another is picked.": 瞄准时瞄准镜提供爆头伤害（与爆头 mod 相加）：2.5x 时 +30%，6.0x 时 +50%。默认最高档，可另选。
+  "While aiming its scope grants headshot damage, additive with headshot mods: +30% at 3.0x, +50% at 4.5x. The top level unless another is picked.": 瞄准时瞄准镜提供爆头伤害（与爆头 mod 相加）：3.0x 时 +30%，4.5x 时 +50%。默认最高档，可另选。
+  "While aiming its scope grants headshot damage, additive with headshot mods: +35% at 2.5x, +55% at 4.0x, +70% at 8.0x. The top level unless another is picked.": 瞄准时瞄准镜提供爆头伤害（与爆头 mod 相加）：2.5x 时 +35%，4.0x 时 +55%，8.0x 时 +70%。默认最高档，可另选。
+  "While aiming its scope grants headshot damage, additive with headshot mods: +40% at 3.5x, +60% at 6.0x. The top level unless another is picked.": 瞄准时瞄准镜提供爆头伤害（与爆头 mod 相加）：3.5x 时 +40%，6.0x 时 +60%。默认最高档，可另选。
+  "While aiming its scope grants critical damage: +0% at 2.5x, +50% at 8.0x. The top level unless another is picked.": 瞄准时瞄准镜提供暴击伤害：2.5x 时 +0%，8.0x 时 +50%。默认最高档，可另选。
+  "While aiming its scope grants critical damage: +20% at 2.0x, +40% at 4.0x. The top level unless another is picked.": 瞄准时瞄准镜提供暴击伤害：2.0x 时 +20%，4.0x 时 +40%。默认最高档，可另选。
+  "While aiming its scope grants critical damage: +35% at 2.5x, +50% at 5.0x. The top level unless another is picked.": 瞄准时瞄准镜提供暴击伤害：2.5x 时 +35%，5.0x 时 +50%。默认最高档，可另选。
+  "While aiming its scope grants critical damage: +35% at 3.5x, +50% at 6.0x. The top level unless another is picked.": 瞄准时瞄准镜提供暴击伤害：3.5x 时 +35%，6.0x 时 +50%。默认最高档，可另选。
+  "While aiming its scope grants critical chance, applied after mods: +20% at 3.0x, +30% at 5.0x, +50% at 8.0x. The top level unless another is picked.": 瞄准时瞄准镜提供暴击几率（在 mod 之后直接相加）：3.0x 时 +20%，5.0x 时 +30%，8.0x 时 +50%。默认最高档，可另选。
+  "While aiming its scope (2.7x) grants +50% headshot damage, additive with headshot mods.": 瞄准时瞄准镜（2.7x）提供 +50% 爆头伤害，与爆头 mod 相加。
   "Join the Discord": 加入官方 Discord
   "Join the QQ group — 995078378": 加入 QQ 群 —— 995078378
   "KPM": KPM
@@ -893,6 +901,9 @@ ui:
   "Scenarios": 场景
   "Scoped in, consecutive hits build a Shot Combo Counter: 1 landing hit multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit and for every miss while scoped, and a hip-fired shot builds nothing but still pays it.": 瞄准状态下连续命中会累积射击连击：命中 1 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中、或瞄准时每打空一枪，都会掉 1 层；腰射不累积连击，但照样享受倍率。
   "Scoped in, consecutive hits build a Shot Combo Counter: 5 landing hits multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit and for every miss while scoped, and a hip-fired shot builds nothing but still pays it.": 瞄准状态下连续命中会累积射击连击：命中 5 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中、或瞄准时每打空一枪，都会掉 1 层；腰射不累积连击，但照样享受倍率。
+  "Scoped in, consecutive hits build a Shot Combo Counter: 2 landing hits multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit and for every miss while scoped, and a hip-fired shot builds nothing but still pays it.": 瞄准状态下连续命中会累积射击连击：命中 2 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中、或瞄准时每打空一枪，都会掉 1 层；腰射不累积连击，但照样享受倍率。
+  "Scoped in, consecutive hits build a Shot Combo Counter: 2 landing hits multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 6 s without a hit and for every miss while scoped, and a hip-fired shot builds nothing but still pays it.": 瞄准状态下连续命中会累积射击连击：命中 2 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 6 秒没有命中、或瞄准时每打空一枪，都会掉 1 层；腰射不累积连击，但照样享受倍率。
+  "Scoped in, consecutive hits build a Shot Combo Counter: 3 landing hits multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit and for every miss while scoped, and a hip-fired shot builds nothing but still pays it.": 瞄准状态下连续命中会累积射击连击：命中 3 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中、或瞄准时每打空一枪，都会掉 1 层；腰射不累积连击，但照样享受倍率。
   "Scored in kills per minute, counting the fraction of the current target already gone. A weapon that removes 3% of one Thrax in 180 seconds scores 0.03 and still has a rank.": 以每分钟击杀计分，并计入当前目标已被打掉的那一部分。一把 180 秒只能削掉一只凶魂 3% 的武器得 0.03 分，它仍然有名次。
   "Search a target…": 搜索目标…
   "Searches": 搜索方案
@@ -1825,6 +1836,8 @@ ui:
   "This weapon cannot equip Concealed Explosives, the thrown-exclusive mod, which is not offered here either way.": "这把武器不能装备投掷专属的 Concealed Explosives，这里本来也不提供这张卡。"
   "This weapon does not self-stagger, unlike other explosives; the sim charges none of them for it, so this changes nothing here.": "这把武器不会造成自身踉跄，这一点不同于其他爆炸武器；模拟对它们都不计这项代价，所以这里没有影响。"
   "this weapon has no ammo reserve to run out of": 这把武器没有会耗尽的备弹
+  "the scope's zoom level: each grants its own buff while aiming, and the top one is what every ruler fights at": 瞄准镜倍率档位：每一档在瞄准时有各自的加成，所有榜单尺子都按最高档计算
+  "this weapon has no scope with more than one zoom level, so there is no level to pick": 这把武器的瞄准镜没有多个倍率档位，没有可选的档
   "this weapon is never holstered during the fight": 战斗中这把武器从不收起
   "Unmeasured: when in the reload the grenade lands. The page says it is thrown mid-reload without a time, so it lands halfway through; the throw itself takes no time.": "未实测：榴弹在换弹的哪个时刻落地。页面只说在换弹中途扔出，没有给时间，所以按换弹进行到一半时落地；投掷本身不占时间。"
   "The explosion's self-stagger, which costs the wielder time when the target stands inside the blast, is not modelled.": "爆炸造成的自身踉跄未建模；目标在爆炸范围内时，它会让使用者损失时间。"

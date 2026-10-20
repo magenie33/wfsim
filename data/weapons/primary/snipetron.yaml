@@ -28,9 +28,9 @@ co_behavior: additive_with_base_damage
 
 sniper_combo:
   min: 3
-scope:
-  magnification: 6.0
-  headshot_damage: 0.5
+scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Combo Stats)
+  - { magnification: 2.5, headshot_damage: 0.3 }
+  - { magnification: 6.0, headshot_damage: 0.5 }
 attack:
   # see notes: cone_half_angle_from
   spread:
