@@ -68,7 +68,9 @@ jobs:
     # hung call costs every tick behind it rather than only its own. The
     # reconciliation reads the queue twice and walks every ruler at once, which a
     # queue of 1.3 million rows took 46 minutes to do; a tick that finds it running waits.
-    timeout-minutes: 75
+    # A RESCORE IS THAT AND ONE RULER MORE, which took 22 minutes and was still
+    # going, so a dispatched one gets the room an hourly tick does not.
+    timeout-minutes: ${{ inputs.rescore != '' && 120 || 75 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -187,8 +189,11 @@ jobs:
       #
       # AND IT OBEYS THE ENTRY LINE (`--gate`): a build nothing would publish
       # is not re-measured every few days for the life of the board.
+      #
+      # NOT ON A RESCORE: the ruler asked for is the run's work, and the next
+      # hourly tick asks for what is three days old.
       - name: ask for what was measured three days ago
-        if: steps.wired.outputs.yes == 'true'
+        if: steps.wired.outputs.yes == 'true' && inputs.rescore == ''
         env:
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
           REFRESH_PER_HOUR: 10000
