@@ -4,7 +4,7 @@ Chinese name: 西诺斯
 
 Bow · Primary · Mastery Rank 6. 380 base damage (impact 342, puncture 19, slash 19), 36% crit chance, 2x crit multiplier, 18% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-20
+## Best riven-free build on the WFSim board, as of 2026-10-21
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

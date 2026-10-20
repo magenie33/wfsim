@@ -2,7 +2,7 @@
 
 Bow · Primary · Mastery Rank 0. 900 base damage (puncture 648, slash 252), 60% crit chance, 2.4x crit multiplier, 50% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-20
+## Best riven-free build on the WFSim board, as of 2026-10-21
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

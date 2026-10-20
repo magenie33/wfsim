@@ -4,7 +4,7 @@ Chinese name: 夜语者 77
 
 Pistol · Secondary · Mastery Rank 14. 180 base damage (impact 72, puncture 108), 24% crit chance, 2.6x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-20
+## Best riven-free build on the WFSim board, as of 2026-10-21
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

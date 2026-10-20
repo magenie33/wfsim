@@ -4,7 +4,7 @@ Chinese name: 侍刃 Prime
 
 Nikana · Melee · Mastery Rank 12. 198 base damage (impact 9.9, puncture 9.9, slash 178.2), 28% crit chance, 2.4x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-20
+## Best riven-free build on the WFSim board, as of 2026-10-21
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

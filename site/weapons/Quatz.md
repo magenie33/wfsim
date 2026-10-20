@@ -4,7 +4,7 @@ Chinese name: 夸兹
 
 Pistol · Secondary · Mastery Rank 9. 29 base damage (electricity 11, impact 9, puncture 2, slash 7), 13% crit chance, 1.5x crit multiplier, 27% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-20
+## Best riven-free build on the WFSim board, as of 2026-10-21
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

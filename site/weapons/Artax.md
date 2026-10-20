@@ -4,7 +4,7 @@ Chinese name: 阿塔克斯
 
 Sentinel Weapon · Sentinel · Mastery Rank 0. 5 base damage (cold 5), 2% crit chance, 1.5x crit multiplier, 35% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-20
+## Best riven-free build on the WFSim board, as of 2026-10-21
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

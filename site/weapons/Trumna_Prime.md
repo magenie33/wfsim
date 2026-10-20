@@ -4,7 +4,7 @@ Chinese name: 灭杀者 Prime
 
 Rifle · Primary · Mastery Rank 15. 85 base damage (heat 53, impact 32), 24% crit chance, 2.4x crit multiplier, 34% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-20
+## Best riven-free build on the WFSim board, as of 2026-10-21
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

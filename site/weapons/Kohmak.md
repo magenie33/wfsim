@@ -4,7 +4,7 @@ Chinese name: 寇恩霰机枪
 
 Shotgun Sidearm · Secondary · Mastery Rank 5. 30 base damage x5 multishot (impact 6, puncture 6, slash 18), 11% crit chance, 2x crit multiplier, 13.8% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-20
+## Best riven-free build on the WFSim board, as of 2026-10-21
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

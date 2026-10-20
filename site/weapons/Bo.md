@@ -4,7 +4,7 @@ Chinese name: 玻之武杖
 
 Staff · Melee · Mastery Rank 0. 140 base damage (impact 126, puncture 14), 12.5% crit chance, 2x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-20
+## Best riven-free build on the WFSim board, as of 2026-10-21
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

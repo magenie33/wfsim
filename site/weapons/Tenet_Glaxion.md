@@ -4,7 +4,7 @@ Chinese name: 信条·冷冻光束步枪
 
 Rifle · Primary · Mastery Rank 16. 34 base damage (cold 34), 20% crit chance, 2.2x crit multiplier, 40% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-20
+## Best riven-free build on the WFSim board, as of 2026-10-21
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
