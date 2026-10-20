@@ -33,6 +33,8 @@ pub fn i18n_json() -> Value {
                 "warframe_arcane_descriptions": l.warframe_arcane_descriptions,
                 "warframe_ability_descriptions": l.warframe_ability_descriptions,
                 "warframe_passives": l.warframe_passives,
+                "companion_mods": l.companion_mods,
+                "companion_mod_descriptions": l.companion_mod_descriptions,
                 "catalogue": l.catalogue,
                 "catalogue_descriptions": l.catalogue_descriptions,
                 "ui": l.ui,

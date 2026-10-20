@@ -55,6 +55,7 @@ SECTIONS = {
     "warframe_mods": "data/warframe_mods/*.yaml",
     "warframe_arcanes": "data/warframe_arcanes/*.yaml",
     "artifact_mods": "data/artifact_mods/*.yaml",
+    "companion_mods": "data/companion_mods/*.yaml",
 }
 
 
@@ -382,7 +383,9 @@ def main() -> int:
         # An AURA is a Warframe mod on the builder's page (`mod_by_id` holds
         # both), so its card shares the mods' table.
         for sections, table in [(["warframe_mods", "auras"], "warframe_mod_descriptions"),
-                                (["warframe_arcanes"], "warframe_arcane_descriptions")]:
+                                (["warframe_arcanes"], "warframe_arcane_descriptions"),
+                                # The companion builder's cards: the same builder over another pool.
+                                (["companion_mods"], "companion_mod_descriptions")]:
             hits, missing, ranks = {}, [], {}
             for section in sections:
                 h, m = export_descriptions(export, args.locale, section)

@@ -44,6 +44,7 @@ async function loadWarframeCatalog() {
   c.abilities.forEach((a) => over(a, "warframe_abilities"));
   c.artifact_mods.forEach((m) => over(m, "artifact_mods"));
   c.artifact_arcanes.forEach((a) => over(a, "artifact_arcanes"));
+  (c.companion_mods || []).forEach((m) => over(m, "companion_mods"));
   WFCAT = c;
   return c;
 }

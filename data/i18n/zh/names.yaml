@@ -3510,3 +3510,79 @@ artifact_mods:
   vik_anam: 维南
   vikla_safor: 维萨
   yar_dal: 亚达
+
+companion_mods:
+  accelerated_deflection: 加速充能
+  aerial_bond: 空中连结
+  ammo_case: 弹药储转箱
+  animal_instinct: 动物本能
+  anti_grav_array: 反重力阵列
+  anti_grav_grenade: 反重力榴弹
+  arc_coil: 电弧线圈
+  assault_mode: 突击模式
+  astral_bond: 星界连结
+  auto_omni: 万用自修
+  blast_shield: 爆破护盾
+  botanist: 植物学家
+  calculated_redirection: 精算蓄能
+  calculated_shot: 精算射击
+  contagious_bond: 传染连结
+  coolant_leak: 冷却液外泄
+  cordon: 防线封锁
+  covert_bond: 隐蔽连结
+  crowd_dispersion: 人群驱散
+  detect_vulnerability: 弱点侦测
+  duplex_bond: 双影连结
+  electro_pulse: 电光脉冲
+  energy_generator: 能量产生器
+  enhanced_vitality: 构造强化
+  fatal_attraction: 致命诱惑
+  fired_up: 过热射击
+  ghost: 幽灵
+  guardian: 守护者
+  hard_engage: 以硬碰硬
+  investigator: 侦察
+  link_fiber: 链接纤维
+  link_redirection: 链接蓄能
+  link_vitality: 链接生命力
+  looter: 搜刮者
+  loyal_companion: 忠实搭档
+  manifold_bond: 多种连结
+  medi_pet_kit: 宠物治疗套件
+  medi_ray: 医疗射线
+  metal_fiber: 金属纤维
+  molecular_conversion: 分子转化
+  momentous_bond: 重大连结
+  mystic_bond: 神秘连结
+  negate: 抵消
+  odomedic: 气息疗愈
+  pack_leader: 领袖
+  primed_animal_instinct: 动物本能 Prime
+  primed_pack_leader: 领袖 Prime
+  primed_regen: 重生 Prime
+  reawaken: 再启动
+  regen: 重生
+  reinforced_bond: 强固连结
+  repair_kit: 修补套件
+  restorative_bond: 恢复连结
+  revenge: 复仇
+  sacrifice: 牺牲
+  sanctuary: 守护光罩
+  scan_matter: 扫描物质
+  security_override: 协议覆盖
+  seismic_bond: 震撼连结
+  self_destruct: 自爆
+  shield_charger: 护盾充能
+  shockwave_actuators: 震波驱动器
+  spare_parts: 残余
+  stasis_field: 静态力场
+  synth_deconstruct: 合成 解构
+  synth_fiber: 合成 纤维
+  targeting_receptor: 目标感应
+  tenacious_bond: 坚韧连结
+  thumper: 重击者
+  tractor_beam: 牵引光束
+  vacuum: 吸取
+  vaporize: 汽化
+  vicious_bond: 凶恶连结
+  whiplash_mine: 牵绳机雷

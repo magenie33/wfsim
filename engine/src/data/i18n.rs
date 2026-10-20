@@ -93,6 +93,14 @@ pub struct LocaleSpec {
     /// filled from our English (`scripts/de_i18n.py frame_passives`).
     #[serde(default)]
     pub warframe_passives: BTreeMap<String, String>,
+    /// THE COMPANION BUILDER'S cards (`data/companion_mods/`), joined on
+    /// `internal_name`: a name, and DE's card text one entry per rank. No
+    /// table for a host: `data/companions/` names a kind, and DE's export has
+    /// no entry for one.
+    #[serde(default)]
+    pub companion_mods: BTreeMap<String, String>,
+    #[serde(default)]
+    pub companion_mod_descriptions: BTreeMap<String, Vec<String>>,
     /// THE ROUGH CATALOGUE (`data/catalogue/`), keyed `<slot>/<id>`: a card's
     /// name, and its top-rank card text as one string. Generated with it.
     #[serde(default)]
@@ -190,6 +198,8 @@ impl LocaleSpec {
         lists(&mut self.warframe_arcane_descriptions, other.warframe_arcane_descriptions, path, "warframe_arcane_descriptions");
         maps(&mut self.warframe_ability_descriptions, other.warframe_ability_descriptions, path, "warframe_ability_descriptions");
         maps(&mut self.warframe_passives, other.warframe_passives, path, "warframe_passives");
+        maps(&mut self.companion_mods, other.companion_mods, path, "companion_mods");
+        lists(&mut self.companion_mod_descriptions, other.companion_mod_descriptions, path, "companion_mod_descriptions");
         maps(&mut self.catalogue, other.catalogue, path, "catalogue");
         maps(&mut self.catalogue_descriptions, other.catalogue_descriptions, path, "catalogue_descriptions");
 
@@ -567,6 +577,17 @@ mod tests {
                     "i18n/{code}: unknown Warframe id '{id}'"
                 );
             }
+            for id in spec.companion_mods.keys() {
+                assert!(
+                    crate::data::companions::companion_mod(id).is_some(),
+                    "i18n/{code}: unknown companion mod id '{id}'"
+                );
+            }
+            for (id, ranks) in &spec.companion_mod_descriptions {
+                let m = crate::data::companions::companion_mod(id)
+                    .unwrap_or_else(|| panic!("i18n/{code}: unknown companion mod id '{id}'"));
+                assert_eq!(ranks.len() as u32, m.max_rank + 1, "i18n/{code}: {id} ranks");
+            }
             for key in spec.catalogue.keys().chain(spec.catalogue_descriptions.keys()) {
                 assert!(
                     crate::data::catalogue::by_key(key).is_some(),
@@ -643,6 +664,23 @@ mod tests {
             .filter(|id| !zh.warframe_mod_descriptions.contains_key(*id))
             .collect();
         assert!(missing.is_empty(), "auras with no zh card text: {missing:?}");
+    }
+
+    /// EVERY COMPANION CARD READS DE'S NAME AND CARD on a zh page: DE's export
+    /// joins every one by `internal_name`, so a missing entry is a generator
+    /// that stopped reading `data/companion_mods/`.
+    #[test]
+    fn every_companion_card_has_its_localized_card() {
+        let (_, zh) = locales().iter().find(|(c, _)| c == "zh").expect("zh locale");
+        let missing: Vec<String> = crate::data::companions::companion_mods()
+            .iter()
+            .flat_map(|m| {
+                let name = (!zh.companion_mods.contains_key(&m.id)).then(|| format!("{} name", m.id));
+                let text = (!zh.companion_mod_descriptions.contains_key(&m.id)).then(|| format!("{} text", m.id));
+                name.into_iter().chain(text)
+            })
+            .collect();
+        assert!(missing.is_empty(), "companion cards with no zh overlay: {missing:?}");
     }
 
     /// Every INDIRECT stat label is translated.

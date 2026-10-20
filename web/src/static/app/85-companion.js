@@ -31,6 +31,12 @@ const compPool = (host) => ((WFCAT && WFCAT.companion_mods) || [])
 const compPaysChip = (m) => (m.pays
   ? ` <span class="exchip" title="${escHtml(tr("its weapon's fight runs this card, at the rank seated"))}">${escHtml(tr("In the fight"))}</span>`
   : ` <span class="wf-adm unmodelled" title="${escHtml(tr("not computed by this panel yet"))}">⊘</span>`);
+/// DE'S OWN CARD at a rank in the display language when there is one, else ours.
+const compLines = (m, r) => {
+  const zh = I18N && (I18N.companion_mod_descriptions || {})[m.id];
+  if (zh && zh.length) return String(zh[Math.max(0, Math.min(zh.length - 1, r))]).split("\n").filter(Boolean);
+  return m.effects;
+};
 /// The innate polarities every companion has, served beside the slot count.
 const compInnate = () => (WFCAT && WFCAT.companion_polarities) || [];
 
@@ -134,9 +140,9 @@ function compSlotEl(i) {
     const eff = slotDrain(base, m.polarity, s.pol);
     const matched = s.pol === m.polarity || (s.pol === "Omni" && m.polarity !== "Umbra");
     const fit = !s.pol ? "" : matched ? " matched" : " mismatched";
-    el.innerHTML = polBtn(s.pol, i) + `<div class="info"><div class="mn">${wl(m.name, m.url || wikiUrl(m.name))}${
+    el.innerHTML = polBtn(s.pol, i) + `<div class="info"><div class="mn">${wl(m.name, m.url || wikiUrl(m.name_en || m.name))}${
       m.precept ? ` <span class="exchip">${escHtml(tr("Precept"))}</span>` : ""}${compPaysChip(m)}</div>`
-      + `<div class="me">${m.effects.map((x) => `<div>${escHtml(x)}</div>`).join("")}</div>`
+      + `<div class="me">${compLines(m, r).map((x) => `<div>${escHtml(x)}</div>`).join("")}</div>`
       + `<div class="drow"><div class="dr${fit}"><span class="mpol">${polGlyph(m.polarity)}</span>${eff} drain${
         eff !== base ? ` (base ${base})` : ""}</div>${wfRank(r, m.max_rank)}</div></div>`
       + `<button class="dots" title="options">⋯</button>`;
@@ -205,7 +211,7 @@ function renderCompMenu(idx, query) {
       placed >= 0 ? ` title="${escHtml(tr("seated in another slot — picking it swaps the two"))}"` : ""}>
       <div class="info"><div class="mn">${escHtml(m.name)}${placed >= 0 ? ` <span class="exchip">${escHtml(tr("seated"))}</span>` : ""}${
         m.precept ? ` <span class="exchip">${escHtml(tr("Precept"))}</span>` : ""}${compPaysChip(m)}</div>
-      ${effLines(m.effects.map(escHtml))}
+      ${effLines(compLines(m, m.max_rank).map(escHtml))}
       <div class="dr"><span class="mpol">${polGlyph(m.polarity)}</span>${m.drain} drain</div></div></div>`;
   }).join("") : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;
   menu.querySelectorAll(".opt[data-id]").forEach((o) => o.addEventListener("click", () => {
