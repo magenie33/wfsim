@@ -963,7 +963,7 @@ ui:
   Stalker: 追猎者
   "Stats": 属性
   "Status Chance": 触发几率
-  "Status Damage": 触发伤害
+  "Status Damage": 异常状态伤害
   "Status Duration": 触发时间
   "Status Spread Chance": 异常扩散几率
   "Status immunity": 异常免疫
@@ -1373,7 +1373,7 @@ ui:
   "stored damage seeds": 已存入的伤害种子
   "modified base": 修正后基础伤害
   "status coefficient": 异常系数
-  "status damage": 异常伤害加成
+  "status damage": 异常状态伤害
   "where the tick lands": 跳伤落点
   "burn (sum of Heat procs)": 燃烧值（各次火焰异常之和）
   "target's own multiplier": 目标自身的伤害倍率

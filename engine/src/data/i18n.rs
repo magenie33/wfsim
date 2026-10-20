@@ -276,16 +276,19 @@ mod tests {
         }
     }
 
-    /// 异常 IS STATUS DAMAGE AND 触发 STATUS CHANCE, as players say them; a
-    /// `<word>伤害` spelling is one stat, not the word AND Damage.
+    /// 异常 IS STATUS DAMAGE, 触发 STATUS CHANCE AND 触时 ITS DURATION, as players
+    /// say them; a `<word>伤害` spelling is one stat, not the word AND Damage.
     #[test]
-    fn status_words_name_damage_and_chance_apart() {
+    fn status_words_name_damage_chance_and_duration_apart() {
         let zh = &locales().iter().find(|(c, _)| c == "zh").expect("a zh locale").1;
         for word in ["异常", "异常伤害", "异常状态伤害", "触发伤害"] {
             assert_eq!(zh.riven_words.get(word), Some(&vec!["status_damage".to_string()]), "zh: '{word}'");
         }
-        for word in ["触发", "触发率"] {
+        for word in ["触发", "触发率", "触率"] {
             assert_eq!(zh.riven_words.get(word), Some(&vec!["status_chance".to_string()]), "zh: '{word}'");
+        }
+        for word in ["触发时间", "触时"] {
+            assert_eq!(zh.riven_words.get(word), Some(&vec!["status_duration".to_string()]), "zh: '{word}'");
         }
     }
 
