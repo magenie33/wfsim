@@ -332,6 +332,8 @@ jobs:
         run: node scripts/check_calc_recovers.mjs
       - name: Protocol 8 on the page keeps every result and holds to the signal and next_ms
         run: node scripts/check_compute_queue.mjs
+      - name: A new release is taken at once, and the reload loses the reader nothing
+        run: node scripts/check_release_follow.mjs
       - name: The home tally and the ranking are CDN files first, the worker their fallback
         run: node scripts/check_stats_files.mjs
       # A WORKER THAT LIVES IN EVERY READER'S BROWSER is wrong for weeks: it falls

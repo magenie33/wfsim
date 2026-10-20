@@ -161,7 +161,8 @@ already multiplied by the owner's `sync_scale_pct`.
     when none does. Such answers alone never make a fact.
   Any other engine gets `stale: true` and nothing, and `/answers` naming it
   releases the lease and drops the answers. Every `/work`
-  answer carries `release`; the page reloads into a newer one when idle.
+  answer carries `release`; the official page reloads into a newer one as
+  soon as that loses its reader nothing.
 - WHEN ENGINES MOVE: whenever a change is ready, any day and as often as it
   comes — there is no release schedule. A client on the official library
   (§"The official engine library") follows each one by itself; one built from a

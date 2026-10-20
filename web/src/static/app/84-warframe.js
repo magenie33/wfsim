@@ -675,16 +675,14 @@ function wfBarCfg() {
 const renderWfPresetBar = () => renderPresetBarIn($("preset-bar-warframes"), wfBarCfg());
 function wfApply(st) {
   wf = wfNormalize(st, wf.frame);
-  clearTimeout(wfSaveTimer);
+  dropSave("warframes");
   renderWarframe();
 }
 
 /// A BUILD IS BORN ON THE FIRST EDIT, as a weapon build is (`markPresetDirty`).
-let wfSaveTimer = null;
 function wfMarkDirty() {
   if (presetApplying) return;
-  clearTimeout(wfSaveTimer);
-  wfSaveTimer = setTimeout(() => {
+  deferSave("warframes", () => {
     if (presetApplying || !wf) return;
     const cfg = wfBarCfg();
     const ps = cfg.load();

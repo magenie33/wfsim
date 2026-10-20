@@ -48,6 +48,15 @@ export function createAgent(door) {
   function append(m) {
     s.conv.messages.push(m);
     emit({ type: "append", message: m, index: s.conv.messages.length - 1 });
+    holdUnsaved();
+  }
+  // AN INCOGNITO CONVERSATION IS NEVER WRITTEN, so the page is held while one
+  // has anything in it: a new release must not reload it away (the door's `hold`).
+  let unsaved = null;
+  function holdUnsaved() {
+    const want = !!(s.conv && s.conv.incognito && s.conv.messages.length);
+    if (want && !unsaved && door.hold) unsaved = door.hold();
+    else if (!want && unsaved) { unsaved(); unsaved = null; }
   }
   const say = (kind, text, raw = false) => emit({ type: "say", kind, text, raw });
 
@@ -71,6 +80,7 @@ export function createAgent(door) {
     s.conv = c ? JSON.parse(JSON.stringify(c))
       : record.newConversation({ id: uid("c"), now: Date.now(), weapon: (door.observe().route || {}).weapon });
     s.owned = new Set(s.conv.made || []);
+    holdUnsaved();
     emit({ type: "open" });
   }
 
@@ -240,6 +250,8 @@ export function createAgent(door) {
     if (door.usage) door.usage.count("nona.ask", "", c.messages.filter((m) => m.role === "user").length);
     const asked = s.conv.messages.length;
     s.busy = true; s.abort = new AbortController(); emit({ type: "busy" });
+    // …AND WHILE SHE ANSWERS: a reload would cut the reply and waste its tokens.
+    const released = door.hold ? door.hold() : () => {};
     const signal = s.abort.signal;
     let nudged = false;
     const seen = [];
@@ -311,7 +323,7 @@ export function createAgent(door) {
     } finally {
       // A conversation opened meanwhile aborted this one, and is not its to write.
       if (s.conv.id === c.id) { await card(asked); await save(); }
-      s.busy = false; s.abort = null; emit({ type: "busy" });
+      s.busy = false; s.abort = null; released(); emit({ type: "busy" });
       emit({ type: "done" });
     }
   }
@@ -325,7 +337,7 @@ export function createAgent(door) {
     ask,
     refreshList,
     stop: () => { if (s.abort) s.abort.abort(); },
-    setIncognito: (on) => { s.conv.incognito = !!on; },
+    setIncognito: (on) => { s.conv.incognito = !!on; holdUnsaved(); },
     pin: async () => { s.conv.pinned = !s.conv.pinned; await save(); },
     remove: async (id) => { await store.deleteConversation(id); await refreshList(); open(null); },
   };

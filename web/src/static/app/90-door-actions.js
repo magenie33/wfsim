@@ -1246,6 +1246,10 @@ window.wfsim = {
   usage: {
     count: (event, subject, n) => trackNona(event, subject, n),
   },
+  // WORK A PANEL HAS IN PROGRESS — a reply being written, a chat kept nowhere
+  // else: the page does not reload into a new release over it. Returns the
+  // release, which ends the hold.
+  hold: () => holdPage(),
   get actions() {
     return AGENT_ACTIONS.map((a) => ({ id: a.id, what: a.what, anchor: a.anchor, query: !!a.query,
       writes: a.writes || null, hand: !!a.hand }));

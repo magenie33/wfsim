@@ -6,7 +6,6 @@
 const OPS = "operators";
 let op = null;
 let opActive = "";
-let opSaveTimer = null;
 /// A LIST WHOSE `id`s A LINK MAY STORE — a Warframe build links an Operator
 /// build by it. Every list is minted at load (`mintStoredPresetIds`); this
 /// covers one written since by an older tab, straight to storage and past
@@ -69,13 +68,12 @@ function opBarCfg() {
 const renderOpPresetBar = () => renderPresetBarIn($("preset-bar-operators"), opBarCfg());
 function opApply(st) {
   op = opNormalize(st);
-  clearTimeout(opSaveTimer);
+  dropSave("operators");
   renderOperator();
 }
 function opMarkDirty() {
   if (presetApplying) return;
-  clearTimeout(opSaveTimer);
-  opSaveTimer = setTimeout(() => {
+  deferSave("operators", () => {
     if (presetApplying || !op) return;
     const cfg = opBarCfg();
     const ps = cfg.load();

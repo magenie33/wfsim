@@ -476,6 +476,15 @@ taken since is dropped unanswered, another engine's fold never renewed, and
 turning computing off drops it. These board-order cases run on protocol 7, the
 one a page falls back to.
 
+## `check_release_follow`
+
+A page told of a newer release, on the dev server or the built site: not
+reloaded while the reader was here in the last two minutes, a row is
+mid-measure, a field has focus or a panel holds it (`window.wfsim.hold`);
+reloaded at once when none is so. A write in flight is counted until it ends.
+The stash for an open start is the build it was opened over, and an appraisal
+stashes none; a search's ranking on screen is drawn again after the reload.
+
 ## `check_compute_queue`
 
 Protocol 8 on the page (docs/CLIENTS.md §"The cycle, protocol 8"), the server and
@@ -1341,8 +1350,9 @@ in, no chip carries one.
 ## `check_desktop_idle_restart`
 
 The page made to look like the client, its updater saying an update is ready:
-not applied while the window was touched in the last ten minutes, nor while a
-row is mid-measure; applied by itself once idle with nothing running.
+not applied while the window was touched in the last two minutes, nor while a
+row is mid-measure, a field has focus or a panel holds the page; applied by
+itself once none of these is so.
 
 ## `check_desktop_shell_notice`
 

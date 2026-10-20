@@ -19,6 +19,7 @@ window.wfsim.tools()            // the table as tool definitions a model can be 
 window.wfsim.actions            // the table as ids, descriptions and anchors
 window.wfsim.skills             // the table by module: what each is for, and its actions
 window.wfsim.ui                 // the page's tr, dropdown and escaping, for a panel on the page
+window.wfsim.hold()             // work a panel has in progress; no release reloads over it; returns the release
 ```
 
 The door answers from the moment `app.js` has run, but only a booted page has

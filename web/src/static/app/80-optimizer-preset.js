@@ -491,6 +491,29 @@ const evoName = (id) => {
 /// The ranking on screen, which the agent door reads. Cleared with the results
 /// themselves when the weapon changes.
 let optLast = null;
+/// …AND KEPT FOR THIS TAB (sessionStorage), so a reload — a release, a language
+/// switch — draws it again rather than throwing away a search's hours. What
+/// the load found is drawn whenever its weapon is applied (the boot applies it
+/// several times, each clearing the panel) until a ranking is drawn anew or
+/// another weapon opens.
+const OPT_KEPT_KEY = "wfsim-opt-results";
+let optKept = (() => { try { return JSON.parse(sessionStorage.getItem(OPT_KEPT_KEY) || "null"); } catch (_) { return null; } })();
+function keepOptResults(r) {
+  if (!optKept || optKept.result !== r) optKept = null;
+  try { sessionStorage.setItem(OPT_KEPT_KEY, JSON.stringify({ weapon: $("weapon").value, result: r })); } catch (_) { /* too big: not kept */ }
+}
+/// …FORGOTTEN when another weapon opens.
+function forgetOptResults(weapon) {
+  if (optKept && optKept.weapon === weapon) {
+    setTimeout(() => {
+      if (!optKept || optLast || $("weapon").value !== weapon) return;
+      try { renderOptResults(optKept.result); } catch (_) { /* a ranking this page cannot draw is not kept */ }
+    }, 0);
+    return;
+  }
+  optKept = null;
+  try { sessionStorage.removeItem(OPT_KEPT_KEY); } catch (_) { /* nothing kept */ }
+}
 
 /// ③ THE RESULTS: the best N builds the search scored. A row a start settled on
 /// names its starts, what each scored before and how many changes it took; any
@@ -498,6 +521,7 @@ let optLast = null;
 /// start that reached no legal build is said so rather than left out.
 function renderOptResults(r) {
   optLast = r;
+  keepOptResults(r);
   const w = weaponInfo($("weapon").value) || {};
   const d = r.duration;
   const rows = r.results || [];

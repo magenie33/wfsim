@@ -252,17 +252,15 @@ function compBarCfg() {
 const renderCompPresetBar = () => renderPresetBarIn($("preset-bar-companions"), compBarCfg());
 function compApply(st) {
   comp = compNormalize(st, comp.companion);
-  clearTimeout(compSaveTimer);
+  dropSave("companions");
   renderCompanion();
 }
 
 /// A BUILD IS BORN ON THE FIRST EDIT, as a Warframe build is (`wfMarkDirty`), and
 /// one edited back to the blank is deleted.
-let compSaveTimer = null;
 function compMarkDirty() {
   if (presetApplying) return;
-  clearTimeout(compSaveTimer);
-  compSaveTimer = setTimeout(() => {
+  deferSave("companions", () => {
     if (presetApplying || !comp) return;
     const cfg = compBarCfg();
     const ps = cfg.load();

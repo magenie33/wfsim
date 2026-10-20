@@ -13,8 +13,9 @@
 // A NO-OP IN A BROWSER. `__WFSIM_DESKTOP__` is set by the shell and by nothing
 // else, so this costs the web build one comparison at boot.
 //
-// A RESTART IS ASKED FOR, AND TAKEN ONLY ONCE IDLE. A download is silent; the
-// restart waits for a click, or for ten untouched minutes with nothing running
+// A RESTART IS ASKED FOR, AND TAKEN AS SOON AS IT LOSES NOTHING. A download is
+// silent; the restart waits for a click, or for the moment a reload loses the
+// reader nothing (`readerWouldLose`) and no row is mid-measure
 // (`restartWhenIdle`) — never mid-search or mid-row, which it would throw away.
 const DESKTOP_POLL_MS = 700;
 /// Hourly. The client is not a page a reader refreshes, so it has to look on
@@ -339,7 +340,7 @@ function mountDesktopUpdater() {
         await invoke("update_apply");
         // The swap is done; the page is now serving files from a directory
         // that no longer matches what this document was loaded from.
-        location.reload();
+        reloadForRelease();
       } catch (err) {
         render({ phase: "failed", message: String(err), version: "" });
       }
@@ -395,16 +396,15 @@ function mountDesktopUpdater() {
     look();
   };
   setInterval(restartWhenIdle, DESKTOP_IDLE_LOOK_MS);
-  // A READY UPDATE IS APPLIED BY ITSELF once nobody has touched the window for
-  // `IDLE_RELOAD_MS` and nothing runs — no reader's job, no row mid-measure (a
-  // row cut short resumes anyway) — the terms a browser tab reloads on. A client
+  // A READY UPDATE IS APPLIED BY ITSELF once a reload loses the reader nothing
+  // and no row is mid-measure — the terms a browser tab reloads on. A client
   // left computing in the tray otherwise stays on the old engine, handed nothing.
   async function restartWhenIdle() {
-    if (Date.now() - lastTouched < IDLE_RELOAD_MS || readerBusy() || computeNow) return;
+    if (readerWouldLose() || computeNow) return;
     try {
       const s = await invoke("update_status");
       if (s.phase !== "ready" || s.version === await invoke("app_version")) return;
-      if (Date.now() - lastTouched < IDLE_RELOAD_MS || readerBusy() || computeNow) return;
+      if (readerWouldLose() || computeNow) return;
       await invoke("update_apply");
       reloadForRelease("idle");
     } catch (_) { /* the notice still offers the restart */ }

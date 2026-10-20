@@ -161,7 +161,8 @@ function initWeaponSearch() {
       items: [{ value: "en", label: "English" }, { value: "zh", label: "中文" }],
       onPick: (v) => {
         localStorage.setItem("wfsim-lang", v);
-        try { sessionStorage.setItem("wfsim-lang-stash", JSON.stringify(snapshotState())); } catch (_) {}
+        flushPresetSaves();
+        stashForReload();
         location.reload();
       },
     });
@@ -447,11 +448,12 @@ async function init() {
   wireJump();
   bootRouted = true;
   route();
-  // A language switch reloads the page; the pre-switch build is stashed in
-  // sessionStorage and restored here so nothing is lost.
+  // A language switch or a release reloads the page; what it stashed
+  // (`stashForReload`) is restored here so nothing is lost.
   const stash = sessionStorage.getItem("wfsim-lang-stash");
   if (stash) {
     sessionStorage.removeItem("wfsim-lang-stash");
     try { restoreState(JSON.parse(stash)); } catch (_) {}
   }
+  restoreReloadScroll();
 }

@@ -274,6 +274,7 @@ function applyWeaponInner(id, presetMods) {
   // A weapon's search is its own: `renderOpt` seeds one blank start.
   opt = { starts: [], limits: null }; optSeeded = false;
   optLast = null;
+  forgetOptResults(id);
   // ...and how it RUNS, for the same reason the scenario resets: a weapon that
   // has never been searched must not inherit the last weapon's finalists or
   // thread count into the "search 1" it is about to be given.

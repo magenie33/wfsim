@@ -287,26 +287,29 @@ async function offerOptBoardSubmit(r) {
   let failed = 0;
   // ONE AT A TIME. The door is a real request and so is the store's; a search
   // with fifty finalists firing fifty of each at once is a burst nobody asked
-  // for, and nothing here is waiting on the answer.
-  for (const res of rows) {
-    const body = boardPayloadFromResult(res);
-    try {
-      const verdict = await boardVerdict(body);
-      if (verdict && verdict.ok && verdict.accepted === false) {
-        const why = verdict.reason || tr("refused");
-        refused.set(why, (refused.get(why) || 0) + 1);
-        continue;
+  // for, and nothing here is waiting on the answer. A reload waits for the last.
+  const releasePage = holdPage();
+  try {
+    for (const res of rows) {
+      const body = boardPayloadFromResult(res);
+      try {
+        const verdict = await boardVerdict(body);
+        if (verdict && verdict.ok && verdict.accepted === false) {
+          const why = verdict.reason || tr("refused");
+          refused.set(why, (refused.get(why) || 0) + 1);
+          continue;
+        }
+        const ok = await fetch("/api/board/submit", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        }).then((x) => x.ok).catch(() => false);
+        if (ok) { sent += 1; track("board.submit", body.weapon); } else failed += 1;
+      } catch (_) {
+        failed += 1;
       }
-      const ok = await fetch("/api/board/submit", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      }).then((x) => x.ok).catch(() => false);
-      if (ok) { sent += 1; track("board.submit", body.weapon); } else failed += 1;
-    } catch (_) {
-      failed += 1;
     }
-  }
+  } finally { releasePage(); }
   // AGGREGATE, because the reader asked one question and got twenty answers.
   // The REASONS are counted rather than listed: twenty rows off one search
   // differ in mods and not in why the board would not take them.
