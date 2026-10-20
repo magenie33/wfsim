@@ -116,6 +116,9 @@ pub struct FightParams {
     /// See [`crate::build::loadout::ResolvedPanel::resting`]. Every shot picks
     /// between the two by [`super::state::CardWindows::frenzy`].
     pub resting: Option<crate::build::loadout::ResolvedResting>,
+    /// See [`crate::build::loadout::ResolvedPanel::per_hit_element`]: every
+    /// shot picks the vector its pile has reached ([`super::state::ElementPile`]).
+    pub per_hit_element: Option<crate::build::loadout::ResolvedPerHitElement>,
     /// RESOLVED (modded) crit chance of the DIRECT part — the name is
     /// historical; `unmodded_crit_chance` below is the real base.
     pub base_crit_chance: f64,

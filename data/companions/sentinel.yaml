@@ -1,0 +1,7 @@
+# A SENTINEL AS A HOST: any of the Sentinels, which carry a robotic weapon and
+# seat the cards whose `compatName` is `Sentinel` beside the universal ones
+# (Fired Up, Assault Mode). Its stat block is the floor's,
+# `data/tenno/sentinel.yaml`, stated once: no robotic weapon reads a holder's
+# stat, so one Sentinel stands for all of them.
+id: sentinel
+name: Sentinel

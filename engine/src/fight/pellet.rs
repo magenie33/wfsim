@@ -892,7 +892,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             modified_base: slam.modified_base * k,
             ..slam
         }),
-        _ => active.radial,
+        // …AND THE EXPLOSION CARRIES A COMPANION'S PILE as the hit does.
+        _ => active.radial.map(|r| active.piled_radial(r, &windows.element_pile, t)),
     };
     let radial_stage = match attack_radial {
         Some(r) if !r.takes_multishot && pellet_idx > 0 => None,

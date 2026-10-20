@@ -1058,7 +1058,8 @@ pub fn resolve_for(
     let build_in =|base_vector: &DamageVector,
                      elem_bonus: Option<&mut Vec<(DamageType, f64)>>,
                      base_damage: f64,
-                     inject: bool|
+                     inject: bool,
+                     piled: f64|
      -> (DamageVector, f64) {
         let modified_base = base_vector.total() * (1.0 + base_damage);
         let scale = 1.0 + base_damage;
@@ -1141,10 +1142,20 @@ pub fn resolve_for(
                 }
             }
         }
+        // …AND A COMPANION'S PILE (Fired Up), LAST: *"Heat applied by this mod
+        // will combine with elements on the weapon"* (W`Fired_Up`) states no
+        // order; the owner's rule puts it after every element on the weapon,
+        // pooling where a mod of its element sits. Unmeasured — MEASUREMENTS
+        // §Open. Its DoT share is read per tick (`FightParams::element_at`).
+        if piled > 0.0 {
+            if let Some(e) = tenno.element_per_hit {
+                input.injected.push((e.element, modified_base * piled));
+            }
+        }
         (elements::combine(&physical, &input), modified_base)
     };
     let build = |base_vector: &DamageVector, elem_bonus: Option<&mut Vec<(DamageType, f64)>>| {
-        build_in(base_vector, elem_bonus, base_damage, true)
+        build_in(base_vector, elem_bonus, base_damage, true, 0.0)
     };
 
     // THE SAME HIT WITH FRENZY DOWN. The injection rides a timed buff, so the
@@ -1153,7 +1164,7 @@ pub fn resolve_for(
     let resting = (!base.injected_elements.is_empty()).then(|| {
         let mut bonus = elem_bonus.clone();
         let (damage, _) =
-            build_in(&base.base_vector.scale(charge_scale), Some(&mut bonus), base_damage, false);
+            build_in(&base.base_vector.scale(charge_scale), Some(&mut bonus), base_damage, false, 0.0);
         crate::build::loadout::ResolvedResting {
             damage,
             elem_dot_bonus: bonus.into_iter().map(|(t, v)| (t, 1.0 + v)).collect(),
@@ -1185,7 +1196,7 @@ pub fn resolve_for(
         // is directly proportional to the amount of ammo consumed" — the bomb
         // IS the explosion on this weapon, and the direct hit is the smaller
         // half of it.
-        let (rd, rmb) = build_in(&r.base_vector.scale(charge_scale), None, base_damage, true);
+        let (rd, rmb) = build_in(&r.base_vector.scale(charge_scale), None, base_damage, true, 0.0);
         ResolvedRadial {
             blast_kind: r.blast_kind,
             damage: rd,
@@ -1235,6 +1246,20 @@ pub fn resolve_for(
         }
     };
     let a_resolved = |r: &RadialBase| a_resolved_in(r, base_damage);
+    // THE PILE AT EVERY COUNT, for the direct hit and the explosion beside it.
+    // Every other attack part — bomblets, grenades, a blob, an orb — is on no
+    // robotic weapon, and takes none of it.
+    let per_hit_element = tenno.element_per_hit.filter(|e| e.max_stacks() > 0).map(|spec| {
+        let at = |v: &DamageVector, k: u32| {
+            build_in(&v.scale(charge_scale), None, base_damage, true, spec.bonus(k)).0
+        };
+        let n = spec.max_stacks();
+        crate::build::loadout::ResolvedPerHitElement {
+            spec,
+            damage: (1..=n).map(|k| at(&base.base_vector, k)).collect(),
+            radial: base.radial.as_ref().map_or_else(Vec::new, |r| (1..=n).map(|k| at(&r.base_vector, k)).collect()),
+        }
+    });
     // THE SPECTRAL DAGGER, through every bucket but the base-damage one — see
     // `build_in` — and only on a panel whose Genesis tier makes them.
     let spectral_dagger = base.spectral_dagger.as_ref().zip(base.spectral_dagger_rules).map(|(g, rules)| {
@@ -1559,6 +1584,7 @@ pub fn resolve_for(
         range_m: if base.form.is_throw() { beam_range_m * ps } else { beam_range_m },
         damage,
         resting,
+        per_hit_element,
         radial,
         cluster,
         reload_grenade,

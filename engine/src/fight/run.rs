@@ -649,6 +649,23 @@ pub fn run_once_traced(
             Some(down) if t >= me.windows.frenzy => down,
             _ => qvec,
         };
+        // …AND A COMPANION'S PILE, settled on the hits landed so far and read
+        // for this shot: the vector its count resolved to. No robotic weapon
+        // has Frenzy, so the two never meet.
+        let piled_q;
+        let qvec = match &active.per_hit_element {
+            Some(p) => {
+                me.windows.element_pile.settle(&p.spec, r.pellets, me.last_shot_t);
+                match me.windows.element_pile.stacks_at(&p.spec, t) {
+                    0 => qvec,
+                    k => {
+                        piled_q = p.damage[k as usize - 1].quantized_against(modded_base);
+                        &piled_q
+                    }
+                }
+            }
+            None => qvec,
+        };
         // ---- THE MELEE SWING THIS SHOT IS — see [`swing_this_shot`] ------
         let Swung {
             swing,

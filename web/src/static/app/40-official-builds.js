@@ -55,14 +55,19 @@ function defaultWielder(weaponId, v) {
 /// while nothing is written for it: that is the floor every ruler scores in, and
 /// the wire keeps saying it as no wielder, so no stored link or board row moves.
 ///
-/// ABSENT FOR A COMPANION HOST TOO, and for the same reason it is a host: it is
-/// not a Warframe, so it seats no mod the engine reads. The server answers a
-/// robotic weapon with the companion floor (`sentinel_wielder`).
+/// A COMPANION HOST SENDS ITS CARDS, `{companion, mods}`, and nothing while it
+/// seats none: the server reads what of them the fight runs (Fired Up) and
+/// answers the rest with the companion floor (`sentinel_wielder`). No ruler
+/// keeps it (`board::builds::carries_wielder`).
 /// WHO IS HOLDING A WEAPON, as request fields — from a LINK rather than from
 /// the editor, because a fight holds a seat per build and only one of them is
 /// open (`seatPayload`).
 function wielderPayloadOf(v) {
-  if (isHostId(v.frame)) return undefined;
+  if (isHostId(v.frame)) {
+    const slots = ((wielderBuild(v) || {}).state || {}).slots || [];
+    const mods = slots.filter((s) => s && s.mod).map((s) => (s.rank == null ? { id: s.mod } : { id: s.mod, rank: s.rank }));
+    return mods.length ? { companion: v.frame, mods } : undefined;
+  }
   const b = wielderBuild(v);
   if (b) return wfPayloadOf({ ...b.state, frame: v.frame });
   // THE BLANK BUILD STILL HAS AN OPERATOR: its link is unset, which is the first

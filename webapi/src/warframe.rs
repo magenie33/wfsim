@@ -88,7 +88,8 @@ pub fn warframe_catalog_json() -> Value {
         })).collect::<Vec<_>>(),
         // THE COMPANION POOL, in the same catalogue the Warframe builder reads:
         // a companion page is the same builder over a different pool, and one
-        // fetch serves both. Every card is unmodelled — `data/companion_mods/`.
+        // fetch serves both. A card pays only where `pays` says so — the
+        // one line a fight runs on the companion's weapon (`data/companion_mods/`).
         "companion_slots": wfsim_engine::data::companions::COMPANION_MOD_SLOTS,
         "companion_polarities": std::iter::repeat_n(
             polarity_label(wfsim_engine::data::companions::COMPANION_POLARITY),
@@ -103,6 +104,7 @@ pub fn warframe_catalog_json() -> Value {
             "max_rank": m.max_rank,
             "compat": m.compat,
             "precept": m.precept,
+            "pays": m.pays(),
             "description": m.description,
             "effects": m.effects,
             "url": m.url,

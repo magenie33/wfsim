@@ -9,8 +9,15 @@ compat: sentinel
 precept: false
 description: "5% <DT_FIRE_COLOR>Heat Damage on weapon per hit. Stacks up to 100%. Resets after 5s with no hits."
 
+# AT MAX RANK; a lower rank takes `(rank + 1) / 6` of both numbers, which the
+# wiki's ladder (0.8/1.7/2.5/3.4/4.2/5% a hit, 16/33/50/67/84/100% at most)
+# matches to its rounding — so every rank reaches its ceiling on the 20th hit.
 effects:
-  - kind: unmodelled
+  - kind: element_per_hit
+    element: heat
+    per_hit: 0.05
+    max_bonus: 1.0
+    reset_seconds: 5.0
     text: "5% <DT_FIRE_COLOR>Heat Damage on weapon per hit. Stacks up to 100%. Resets after 5s with no hits."
 
 source:

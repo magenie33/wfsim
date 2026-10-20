@@ -1435,17 +1435,25 @@ untouched.
 ## `check_companion_mods`
 
 The companion builder draws ten general slots with four innate Penjaga
-polarities, offers the universal pool and no model's own card, says plainly that
-none of it pays, and seating one through the picker spends capacity and is born
+polarities, offers the universal pool and no model's own card, says plainly
+what of it pays, and seating one through the picker spends capacity and is born
 as a build; a rank down costs a point less.
 
 ## `check_companion_host`
 
-A robotic weapon is held by the companion host and sends no wielder; its picker
-offers the hosts and never a Warframe, and its block frames the host's own page,
+A robotic weapon is held by the companion host and, while the host seats no
+card, sends no wielder; its picker offers the hosts and never a Warframe, and its block frames the host's own page,
 which frames nothing further. A build of the host is what the weapon holds, and
 an ordinary weapon still holds a Warframe. The floor is the Sentinels' and the
 MOA's lowest (367 / 130 / 80).
+
+## `check_fired_up`
+
+A Sentinel offers Fired Up and the floor host does not; seated, it is marked as
+the card the fight runs and Enhanced Vitality as not computed. A Verglas linking
+that Sentinel sends its cards with their ranks as the wielder, and its score
+climbs from no card to rank 0 to max rank; on the floor host the card pays
+nothing, and the floor host with no build sends no wielder.
 
 ## `check_embed_chrome`
 

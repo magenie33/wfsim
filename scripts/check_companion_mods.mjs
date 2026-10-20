@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE COMPANION BUILDER SEATS THE POOL IT IS ALLOWED, and says plainly that none
-// of it pays: ten general slots, four innate Penjaga polarities, capacity and
+// THE COMPANION BUILDER SEATS THE POOL IT IS ALLOWED, and says plainly what of
+// it pays: ten general slots, four innate Penjaga polarities, capacity and
 // Forma answered, a card that names a model this host is not never offered.
 //
 //   node scripts/check_companion_mods.mjs
@@ -50,10 +50,10 @@ check("ten general slots, with four innate Penjaga polarities",
 check("the pool is every companion's, never a model's own",
   r.offered.onlyUniversal && r.offered.hasVitality && !r.offered.hasAssault
   && r.offered.pool < r.offered.all, JSON.stringify(r.offered));
-check("...and the page says plainly that none of it pays", r.says === true);
+check("...and the page says plainly what of it pays", r.says === true);
 check("seating one through the picker spends capacity and is born as a build",
   r.seated.mod === "enhanced_vitality" && r.seated.cap !== r.capBefore && r.seated.stored === 1,
   JSON.stringify(r.seated));
 check("...and a rank down costs a point less", r.ranked.used === r.ranked.before - 1,
   JSON.stringify(r.ranked));
-await app.finish("a companion seats its pool, and none of it pays");
+await app.finish("a companion seats its pool");

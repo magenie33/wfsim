@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // A ROBOTIC WEAPON IS HELD BY A COMPANION, not a Warframe: its Wielder offers the
 // companion hosts and no frame, its block frames the companion's own page, and
-// the request carries no wielder — the server answers with the companion floor,
-// which spans the Sentinels and the MOA.
+// a host seating no card sends no wielder — the server answers with the
+// companion floor, which spans the Sentinels and the MOA.
 //
 //   node scripts/check_companion_host.mjs
 import { openApp } from "./cdp.mjs";
@@ -44,7 +44,8 @@ check("the floor spans the Sentinels and the MOA: the MOA's 367 health",
 check("a robotic weapon is held by the companion host, and sends no wielder",
   r.start.link === '{"frame":"prototype_companion","preset":null}' && r.start.payload, JSON.stringify(r.start));
 check("...and its picker offers the hosts, never a Warframe",
-  r.offered.length === 1 && r.offered[0] === "prototype_companion", JSON.stringify(r.offered));
+  r.offered.length === 2 && r.offered.includes("sentinel") && r.offered.includes("prototype_companion"),
+  JSON.stringify(r.offered));
 check("its Wielder frames the companion's own page, which frames nothing further",
   /^\/companions\/Prototype_Companion\?embed=1/.test(r.framed.src) && r.framed.bar && !r.framed.nested,
   JSON.stringify(r.framed));

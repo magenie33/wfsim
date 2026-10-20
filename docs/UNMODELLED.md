@@ -443,6 +443,27 @@ the explosion's rolled statuses. What is left:
 - **Edges, not gaps**: Sprint Speed, Parkour Velocity, Swordsman's Celerity and
   the held 5% Movement Speed (`no_movement`), Standoff (`no_holster`).
 
+## FIRED UP — what its pile does not take
+
+The pile is modelled (docs/MECHANICS.md §3 rule 8): a stack a landed direct
+hit, read at the start of the next shot, 20 to the ceiling, emptied by 5 s
+with no hit, on the direct hit's vector and its explosion's. What is left:
+
+- **Where its Heat combines is unmeasured** — the owner's rule, pending the
+  readings in MEASUREMENTS §The queue.
+- **A DoT tick builds no stack.** W`Fired_Up`: ticks of a source that can
+  trigger it build one each, Electricity and Gas one per enemy hit. Ticks are
+  settled on a path that does not write the pile, so only direct hits count.
+- **An explosion's hits build none**: the pile counts landed direct pellets
+  (`RunResult::pellets`), as Hata-Satya's does — across every seat of a fight.
+- **A hit is dated by the shot that fired it**, so a projectile's landing is
+  read at its own shot's time for the 5 s pause.
+- **Abilities and other Sentinel weapons** trigger it in game; no precept is
+  run, so only the weapon in this fight does. Duplex Bond's clones neither
+  benefit nor contribute and Manifold Bond is a precept card: none is run.
+- **Other attack parts** — bomblets, grenades, a blob, an orb, a field — take
+  no pile; no robotic weapon has one.
+
 ## THE MELEE ROSTER — what the pages describe and the engine does not apply
 
 Every non-Exalted melee weapon in `Module:Weapons/data/melee` is in the roster,

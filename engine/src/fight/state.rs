@@ -351,6 +351,54 @@ pub(super) struct CardWindows {
     /// one), written only by [`Self::sync_frenzy`], because the tick paths that
     /// read it are not handed the bar.
     pub(super) frenzy: f64,
+    /// A COMPANION'S PER-HIT PILE (Fired Up) — here because the tick paths
+    /// read it too ([`FightParams::element_at`]).
+    pub(super) element_pile: ElementPile,
+}
+
+/// A PER-HIT ELEMENT PILE (`model::ElementPerHit`): the stacks, the landed
+/// hits already counted, and when the last of them landed.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct ElementPile {
+    pub(super) hit_mark: u32,
+    pub(super) stacks: u32,
+    pub(super) last_hit: f64,
+}
+
+#[wfsim_gas_macro::metered]
+impl Default for ElementPile {
+    fn default() -> Self {
+        Self { hit_mark: 0, stacks: 0, last_hit: f64::NEG_INFINITY }
+    }
+}
+
+#[wfsim_gas_macro::metered]
+impl ElementPile {
+    /// The stacks standing at `t` — none once the card's pause has passed
+    /// without a hit: *"Resets after 5s with no hits"*.
+    pub(super) fn stacks_at(&self, spec: &crate::model::ElementPerHit, t: f64) -> u32 {
+        if t - self.last_hit >= spec.reset_seconds { 0 } else { self.stacks }
+    }
+
+    /// What the pile is worth at `t`.
+    pub(super) fn bonus_at(&self, spec: &crate::model::ElementPerHit, t: f64) -> f64 {
+        spec.bonus(self.stacks_at(spec, t))
+    }
+
+    /// MARK-AND-DIFF ON THE LANDED HITS, read at the START of a shot so the
+    /// hit that earns a stack does not carry it — the rule Hata-Satya's pile
+    /// follows ([`CritPerHit::settle`]). The hits since the last read are
+    /// dated at `fired_at`, the shot that fired them; a pile past its pause
+    /// starts again from them.
+    pub(super) fn settle(&mut self, spec: &crate::model::ElementPerHit, landed: u32, fired_at: f64) {
+        let new = landed.saturating_sub(self.hit_mark);
+        self.hit_mark = landed;
+        if new == 0 {
+            return;
+        }
+        self.stacks = (self.stacks_at(spec, fired_at) + new).min(spec.max_stacks());
+        self.last_hit = fired_at;
+    }
 }
 
 #[wfsim_gas_macro::metered]

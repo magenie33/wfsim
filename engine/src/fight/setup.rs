@@ -632,7 +632,29 @@ impl FightParams {
             .as_ref()
             .filter(|_| t < w.frenzy)
             .map_or(0.0, |r| r.injected.iter().filter(|(e, _)| *e == ty).map(|(_, v)| v).sum());
-        weakpoint + frenzy + self.scheduled_element_at(ty, t)
+        // …AND A COMPANION'S PILE, worth what it holds until it lapses.
+        let piled = self
+            .per_hit_element
+            .as_ref()
+            .filter(|p| p.spec.element == ty)
+            .map_or(0.0, |p| w.element_pile.bonus_at(&p.spec, t));
+        weakpoint + frenzy + piled + self.scheduled_element_at(ty, t)
+    }
+
+    /// THE RADIAL PART AT THE PILE'S COUNT — [`Self::per_hit_element`].
+    pub(super) fn piled_radial(
+        &self,
+        r: crate::build::loadout::ResolvedRadial,
+        pile: &ElementPile,
+        t: f64,
+    ) -> crate::build::loadout::ResolvedRadial {
+        match &self.per_hit_element {
+            Some(p) if !p.radial.is_empty() => match pile.stacks_at(&p.spec, t) {
+                0 => r,
+                k => crate::build::loadout::ResolvedRadial { damage: p.radial[k as usize - 1], ..r },
+            },
+            _ => r,
+        }
     }
 
     /// The share the ABILITIES and the arcane add, which is a pure function of
@@ -1136,6 +1158,7 @@ impl FightParams {
             form: panel.form,
             damage: panel.damage,
             resting: panel.resting.clone(),
+            per_hit_element: panel.per_hit_element.clone(),
             radial: compressed_radial,
             cluster: panel.cluster,
             reload_grenade: panel.reload_grenade,
@@ -1753,6 +1776,11 @@ impl FightParams {
         self.damage = self.damage.scale(k);
         if let Some(r) = self.resting.as_mut() {
             r.damage = r.damage.scale(k);
+        }
+        if let Some(p) = self.per_hit_element.as_mut() {
+            for v in &mut p.damage {
+                *v = v.scale(k);
+            }
         }
         if let Some(d) = self.dot_modified_base.as_mut() {
             *d *= k;

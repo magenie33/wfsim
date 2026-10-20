@@ -63,12 +63,11 @@ pub enum Compat {
 
 /// A CARD A COMPANION SEATS (`data/companion_mods/`).
 ///
-/// **EVERY LINE IS UNMODELLED, AND THAT IS THE FACT RATHER THAN A GAP.** No mod,
-/// evolution or arcane in any of the 21 robotic weapon pools reads a wielder's
-/// stat, and no precept is run, so a card here moves no damage figure. It is
-/// filed so the builder can seat it, plan its Forma and say what it does — and
-/// so the first mechanic that reads one configures a card instead of inventing
-/// the pool.
+/// **ALMOST EVERY LINE IS UNMODELLED, AND THAT IS THE FACT RATHER THAN A GAP.**
+/// No mod, evolution or arcane in any of the 21 robotic weapon pools reads a
+/// wielder's stat, and no precept is run, so a card moves no damage figure —
+/// except a line stating what it does to the companion's WEAPON: Fired Up's
+/// heat per hit (`element_per_hit`), which the fight runs.
 #[derive(Debug, Clone)]
 pub struct CompanionMod {
     pub id: String,
@@ -85,8 +84,10 @@ pub struct CompanionMod {
     pub precept: bool,
     pub internal_name: Option<String>,
     pub description: String,
-    /// The card's lines, verbatim. None of them pays — see the type's note.
+    /// The card's lines, verbatim.
     pub effects: Vec<String>,
+    /// WHAT THE FIGHT RUNS, at max rank: the one kind of line that pays.
+    pub element_per_hit: Option<crate::model::ElementPerHit>,
     pub url: Option<String>,
 }
 
@@ -98,6 +99,20 @@ impl CompanionMod {
             "robotic" => Compat::Robotic,
             _ => Compat::Only,
         }
+    }
+    /// Does any line of it pay in a fight?
+    pub fn pays(&self) -> bool {
+        self.element_per_hit.is_some()
+    }
+    /// Its per-hit element at a rank, on the ladder every ranked card climbs
+    /// (`data::warframes::at_rank`): rate and ceiling both, so the pile is the
+    /// same count of hits at every rank.
+    pub fn element_per_hit_at(&self, rank: u32) -> Option<crate::model::ElementPerHit> {
+        self.element_per_hit.map(|e| crate::model::ElementPerHit {
+            per_stack: crate::data::warframes::at_rank(e.per_stack, rank, self.max_rank),
+            max_bonus: crate::data::warframes::at_rank(e.max_bonus, rank, self.max_rank),
+            ..e
+        })
     }
     /// Drain at a rank: one more point per rank over the rank-0 cost.
     pub fn drain_at(&self, rank: u32) -> u32 {
@@ -129,6 +144,16 @@ struct RawMod {
 struct RawEffect {
     kind: String,
     text: String,
+    /// `element_per_hit` only: the element, its share per hit and its ceiling
+    /// at max rank, and the pause that empties it.
+    #[serde(default)]
+    element: Option<String>,
+    #[serde(default)]
+    per_hit: Option<f64>,
+    #[serde(default)]
+    max_bonus: Option<f64>,
+    #[serde(default)]
+    reset_seconds: Option<f64>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -138,6 +163,17 @@ struct RawSource {
     url: Option<String>,
 }
 
+fn element_per_hit_of(p: &str, e: &RawEffect) -> crate::model::ElementPerHit {
+    let need = |v: Option<f64>, k: &str| v.unwrap_or_else(|| panic!("{p}: element_per_hit needs `{k}:`"));
+    let el = e.element.as_deref().unwrap_or_else(|| panic!("{p}: element_per_hit needs `element:`"));
+    crate::model::ElementPerHit {
+        element: crate::rules::damage::DamageType::from_name(el).unwrap_or_else(|| panic!("{p}: element `{el}`")),
+        per_stack: need(e.per_hit, "per_hit"),
+        max_bonus: need(e.max_bonus, "max_bonus"),
+        reset_seconds: need(e.reset_seconds, "reset_seconds"),
+    }
+}
+
 /// The pool, parsed once, in name order.
 pub fn companion_mods() -> &'static [CompanionMod] {
     static M: OnceLock<Vec<CompanionMod>> = OnceLock::new();
@@ -145,8 +181,15 @@ pub fn companion_mods() -> &'static [CompanionMod] {
         let mut out: Vec<CompanionMod> = crate::data::files_under("companion_mods/")
             .map(|(p, text)| {
                 let r: RawMod = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
+                // TWO KINDS: a line the fight runs on the companion's weapon,
+                // and one it does not. Anything else is refused.
+                let mut element_per_hit = None;
                 for e in &r.effects {
-                    assert_eq!(e.kind, "unmodelled", "{p}: a companion card pays nothing yet");
+                    match e.kind.as_str() {
+                        "unmodelled" => {}
+                        "element_per_hit" => element_per_hit = Some(element_per_hit_of(p, e)),
+                        k => panic!("{p}: a companion card's line is `unmodelled` or `element_per_hit`, not `{k}`"),
+                    }
                 }
                 CompanionMod {
                     id: r.id,
@@ -160,6 +203,7 @@ pub fn companion_mods() -> &'static [CompanionMod] {
                     internal_name: r.internal_name,
                     description: r.description,
                     effects: r.effects.into_iter().map(|e| e.text).collect(),
+                    element_per_hit,
                     url: r.source.url,
                 }
             })
@@ -171,6 +215,30 @@ pub fn companion_mods() -> &'static [CompanionMod] {
 
 pub fn companion_mod(id: &str) -> Option<&'static CompanionMod> {
     companion_mods().iter().find(|m| m.id == id)
+}
+
+/// A COMPANION BUILD as a robotic weapon's `wielder` sends it: the host and
+/// the cards it seats, each at its rank (`None` = max).
+#[derive(Debug, Clone, Default, Deserialize, PartialEq)]
+pub struct CompanionBuild {
+    pub companion: String,
+    #[serde(default)]
+    pub mods: Vec<crate::data::warframes::SlotPick>,
+}
+
+impl CompanionBuild {
+    /// WHAT ITS CARDS PILE ON THE WEAPON per hit — the first seated card that
+    /// states one, at its rank. A host nobody files, a card it cannot seat or
+    /// one past the ten slots is no card at all.
+    pub fn element_per_hit(&self) -> Option<crate::model::ElementPerHit> {
+        if !companions().iter().any(|c| c.id == self.companion) {
+            return None;
+        }
+        self.mods.iter().take(COMPANION_MOD_SLOTS).find_map(|p| {
+            let m = seatable_by(&self.companion).find(|m| m.id == p.id)?;
+            m.element_per_hit_at(p.rank.unwrap_or(m.max_rank))
+        })
+    }
 }
 
 /// The cards a host seats: the universal ones, plus those naming it.
@@ -188,14 +256,16 @@ mod tests {
     #[test]
     fn a_companion_host_is_named_and_its_stats_are_the_floors() {
         let c = companions();
-        assert_eq!(c.len(), 1);
+        assert_eq!(c.len(), 2);
         assert_eq!(c.last().map(|x| x.id.as_str()), Some(PROTOTYPE_COMPANION), "the floor host ends the list");
-        assert_eq!(c[0].name, crate::data::tenno::sentinel_wielder().name);
+        assert_eq!(c[1].name, crate::data::tenno::sentinel_wielder().name);
+        assert_eq!(c[0].id, "sentinel");
     }
 
-    /// THE POOL LOADS, AND NOTHING IN IT CLAIMS TO PAY.
+    /// THE POOL LOADS, AND ONE CARD PAYS: Fired Up, the only line about the
+    /// companion's weapon.
     #[test]
-    fn every_card_loads_and_pays_nothing() {
+    fn every_card_loads_and_only_fired_up_pays() {
         let m = companion_mods();
         assert!(m.len() > 70, "{}", m.len());
         let mut ids: Vec<&str> = m.iter().map(|x| x.id.as_str()).collect();
@@ -210,6 +280,24 @@ mod tests {
         // A PRECEPT IS THE BULK OF THE POOL, and it is the half that is a
         // behaviour rather than a stat.
         assert!(m.iter().filter(|x| x.precept).count() > m.len() / 2);
+        let paying: Vec<&str> = m.iter().filter(|x| x.pays()).map(|x| x.id.as_str()).collect();
+        assert_eq!(paying, ["fired_up"]);
+    }
+
+    /// A BUILD BRINGS ITS PILE ONLY FROM A HOST THAT SEATS THE CARD, at the
+    /// rank seated; the floor host seats no Sentinel's own card.
+    #[test]
+    fn a_sentinel_build_brings_fired_up_at_its_rank() {
+        use crate::data::warframes::SlotPick;
+        let pick = |rank| SlotPick { id: "fired_up".into(), rank, stacks: None };
+        let on = |host: &str, mods: Vec<SlotPick>| CompanionBuild { companion: host.into(), mods }.element_per_hit();
+        let max = on("sentinel", vec![pick(None)]).expect("a Sentinel seats it");
+        assert!((max.per_stack - 0.05).abs() < 1e-12 && (max.max_bonus - 1.0).abs() < 1e-12);
+        let r2 = on("sentinel", vec![SlotPick { id: "enhanced_vitality".into(), ..Default::default() }, pick(Some(2))]).expect("rank 2");
+        assert!((r2.per_stack - 0.025).abs() < 1e-12 && (r2.max_bonus - 0.5).abs() < 1e-12);
+        assert_eq!(on(PROTOTYPE_COMPANION, vec![pick(None)]), None, "the floor host cannot seat it");
+        assert_eq!(on("nobody", vec![pick(None)]), None);
+        assert_eq!(on("sentinel", vec![]), None);
     }
 
     /// THE FLOOR HOST SEATS WHAT EVERY COMPANION SEATS, and no model's own card:

@@ -5,9 +5,10 @@
 // weapon links a Warframe. Its stat block is the wielder floor
 // (`META.sentinel_floor`) and its pool is `data/companion_mods/`.
 //
-// EVERY CARD HERE PAYS NOTHING, and the page says so once rather than on each:
-// no robotic weapon pool reads a wielder's stat and no precept is run, so what
-// this builder answers is capacity and Forma. docs/WARFRAMES.md §Companions.
+// ONE CARD PAYS, and each seated card says which it is: Fired Up piles heat on
+// the robotic weapon a build holds (`pays`); no robotic weapon pool reads a
+// wielder's stat and no precept is run, so every other card is capacity and
+// Forma. docs/WARFRAMES.md §Companions.
 const COMP_BUILDS = "companions";
 // TEN GENERAL SLOTS AND NO SPECIAL ONE — W`Mod`. Served rather than assumed
 // (`companion_slots`), with this as the value before the catalogue lands.
@@ -25,6 +26,11 @@ const compMod = (id) => (WFCAT && id && WFCAT.companion_mods.find((m) => m.id ==
 /// `data::companions::seatable_by`.
 const compPool = (host) => ((WFCAT && WFCAT.companion_mods) || [])
   .filter((m) => m.compat === "companion" || m.compat === "robotic" || m.compat === host);
+/// WHETHER A CARD MOVES THE FIGHT, as a chip: the one kind that does, or the
+/// panel's own ⊘ for a card nothing computes.
+const compPaysChip = (m) => (m.pays
+  ? ` <span class="exchip" title="${escHtml(tr("its weapon's fight runs this card, at the rank seated"))}">${escHtml(tr("In the fight"))}</span>`
+  : ` <span class="wf-adm unmodelled" title="${escHtml(tr("not computed by this panel yet"))}">⊘</span>`);
 /// The innate polarities every companion has, served beside the slot count.
 const compInnate = () => (WFCAT && WFCAT.companion_polarities) || [];
 
@@ -129,7 +135,7 @@ function compSlotEl(i) {
     const matched = s.pol === m.polarity || (s.pol === "Omni" && m.polarity !== "Umbra");
     const fit = !s.pol ? "" : matched ? " matched" : " mismatched";
     el.innerHTML = polBtn(s.pol, i) + `<div class="info"><div class="mn">${wl(m.name, m.url || wikiUrl(m.name))}${
-      m.precept ? ` <span class="exchip">${escHtml(tr("Precept"))}</span>` : ""}</div>`
+      m.precept ? ` <span class="exchip">${escHtml(tr("Precept"))}</span>` : ""}${compPaysChip(m)}</div>`
       + `<div class="me">${m.effects.map((x) => `<div>${escHtml(x)}</div>`).join("")}</div>`
       + `<div class="drow"><div class="dr${fit}"><span class="mpol">${polGlyph(m.polarity)}</span>${eff} drain${
         eff !== base ? ` (base ${base})` : ""}</div>${wfRank(r, m.max_rank)}</div></div>`
@@ -198,7 +204,7 @@ function renderCompMenu(idx, query) {
     return `<div class="opt ${m.id === (own && own.id) ? "cur" : ""} rar-${m.rarity}" data-id="${m.id}"${
       placed >= 0 ? ` title="${escHtml(tr("seated in another slot — picking it swaps the two"))}"` : ""}>
       <div class="info"><div class="mn">${escHtml(m.name)}${placed >= 0 ? ` <span class="exchip">${escHtml(tr("seated"))}</span>` : ""}${
-        m.precept ? ` <span class="exchip">${escHtml(tr("Precept"))}</span>` : ""}</div>
+        m.precept ? ` <span class="exchip">${escHtml(tr("Precept"))}</span>` : ""}${compPaysChip(m)}</div>
       ${effLines(m.effects.map(escHtml))}
       <div class="dr"><span class="mpol">${polGlyph(m.polarity)}</span>${m.drain} drain</div></div></div>`;
   }).join("") : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`;

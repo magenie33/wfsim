@@ -34,6 +34,16 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
     } else {
         wfsim_engine::data::tenno::default_tenno().clone()
     };
+    // A ROBOTIC WEAPON'S LINK NAMES A COMPANION BUILD — `{companion, mods}`,
+    // which no Warframe build parses as — and what its cards pile on the
+    // weapon comes with it. The board never reads it: no ruler keeps a wielder
+    // for a weapon that is not Exalted (`board::builds::carries_wielder`).
+    if info.sentinel {
+        t.element_per_hit = v
+            .get("wielder")
+            .and_then(|x| serde_json::from_value::<wfsim_engine::data::companions::CompanionBuild>(x.clone()).ok())
+            .and_then(|b| b.element_per_hit());
+    }
     let allowed: &[String] = wfsim_engine::data::weapons::spec(&info.id).map_or(&[], |s| s.wielders.as_slice());
     let asked: Option<wf::Build> = v.get("wielder").and_then(|x| serde_json::from_value(x.clone()).ok());
     let build = match asked {
@@ -275,6 +285,38 @@ mod wielder_tests {
         })));
         assert!(earned > prototype, "Rage bought nothing: {earned} against {prototype}");
         assert!(held > earned, "a full meter held bought nothing: {held} against {earned}");
+    }
+
+    /// A ROBOTIC WEAPON'S COMPANION BUILD REACHES THE FIGHT: a Sentinel seating
+    /// Fired Up piles heat on a Verglas and the score moves; the floor host,
+    /// which cannot seat the card, and no wielder at all are the floor.
+    #[test]
+    fn a_sentinel_seating_fired_up_reaches_a_verglas_fight() {
+        let verglas = weapon("verglas");
+        let link = |host: &str| json!({"wielder": {"companion": host, "mods": [{"id": "fired_up", "rank": 5}]}});
+        let piled = tenno_from(&link("sentinel"), verglas).element_per_hit.expect("Fired Up");
+        assert!((piled.max_bonus - 1.0).abs() < 1e-12);
+        assert_eq!(tenno_from(&link("prototype_companion"), verglas).element_per_hit, None);
+        assert_eq!(tenno_from(&json!({}), verglas).element_per_hit, None);
+        // …ON A ROBOTIC WEAPON ONLY: a Warframe's gun is not the companion's.
+        assert_eq!(tenno_from(&link("sentinel"), weapon("praedos")).element_per_hit, None);
+        // THE SIMULATOR AND THE OPTIMIZER READ ONE FIGHT (`parse_fight`).
+        let mut v = link("sentinel");
+        v["weapon"] = json!("verglas");
+        let f = crate::fight::parse_fight(&v).expect("a fight");
+        assert_eq!(f.arena.tenno.element_per_hit, Some(piled));
+
+        let score = |mut v: serde_json::Value| {
+            v["weapon"] = json!("verglas");
+            v["runs"] = json!(4);
+            let r = simulate_json(&v);
+            assert!(r.get("error").is_none(), "{r}");
+            r["score"].as_f64().expect("a score")
+        };
+        let floor = score(json!({}));
+        assert_eq!(score(link("prototype_companion")), floor, "the floor host seats no Fired Up");
+        let fired = score(link("sentinel"));
+        assert!(fired > floor, "Fired Up bought nothing: {fired} against {floor}");
     }
 
     #[test]

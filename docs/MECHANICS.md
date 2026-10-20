@@ -253,6 +253,17 @@ authoritative rules):
    one Frenzy's clock says, and a DoT reads it per tick (`element_at`).
    A Violet Archon Shard's Primary Electricity enters the same way, after
    any buff's, on every hit (docs/BUFFS.md §What the Warframe brings).
+   A companion's **Fired Up** pile enters last of all: +5% Heat a landed hit
+   (rank 5), 20 hits to its +100% ceiling, emptied by 5 s with no hit
+   (W`Fired_Up`). The wiki says the Heat "will combine with elements on the
+   weapon" and gives no order; **after every element on the weapon,
+   pooling into a Heat mod's position, is the owner's rule pending an
+   in-game reading** (MEASUREMENTS §The queue). So a bare Verglas reads
+   Blast, behind Stormbringer it reads Magnetic and pure Heat, and beside
+   Hellfire one Blast with the pile in it. The fight resolves the hit at
+   every count (`ResolvedPanel::per_hit_element`) and each shot takes the
+   one its pile has reached at its start; the explosion beside the hit takes
+   it too, and a Heat DoT reads it per tick (`element_at`).
 
 Worked example (Load Order): Prova/Lecta (innate Electricity) + Cold(1)
 Toxin(2) Heat(3) → Cold+Toxin = **Viral**, then Heat pairs with the

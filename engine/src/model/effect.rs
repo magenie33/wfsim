@@ -1369,6 +1369,43 @@ impl CritPerHit {
     }
 }
 
+/// AN ELEMENT PER HIT, PILED TO A CEILING AND LOST TO A PAUSE — Fired Up's
+/// kind: *"Each hit by the Sentinel's weapon adds +5% Heat ... stacking up to
+/// +100%"*, reset *"after 5s with no hits"* (W`Fired_Up`).
+///
+/// AN ELEMENTAL MOD'S BUCKET: a share of the attack's modified base, additive
+/// with the element's mods, entering the hierarchy LAST — after the mods and
+/// the innate elements — and pooling where a mod of the same element already
+/// sits (docs/MECHANICS.md §3 rule 8). Unlike [`CritPerHit`] the COUNT is
+/// capped, because the pile is what the fight resolves a vector for.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ElementPerHit {
+    pub element: DamageType,
+    /// The share one hit adds, at the equipped rank.
+    pub per_stack: f64,
+    /// The ceiling on the pile's share, at the equipped rank.
+    pub max_bonus: f64,
+    /// Seconds without a hit that empty the pile.
+    pub reset_seconds: f64,
+}
+
+#[wfsim_gas_macro::metered]
+impl ElementPerHit {
+    /// The stacks that reach the ceiling — 20 at every rank of Fired Up, whose
+    /// rate and ceiling climb together.
+    pub fn max_stacks(&self) -> u32 {
+        if self.per_stack <= 0.0 {
+            return 0;
+        }
+        (self.max_bonus / self.per_stack - 1e-9).ceil() as u32
+    }
+
+    /// What `stacks` hits are worth.
+    pub fn bonus(&self, stacks: u32) -> f64 {
+        (self.per_stack * f64::from(stacks)).min(self.max_bonus)
+    }
+}
+
 /// A non-stacking timed buff (a single refreshable window) handed to the sim:
 /// Galvanized Crosshairs' on-headshot crit, Sharpened Bullets' on-kill crit
 /// damage, Pressurized Magazine's on-reload fire rate. One shape rather than a

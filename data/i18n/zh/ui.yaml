@@ -2671,7 +2671,9 @@ ui:
   "seated": 已装在别的槽位
   "empty slot": 空槽位
   "seated in another slot — picking it swaps the two": 已装在别的槽位 —— 选它会和这个槽位对调
-  "Nothing a companion seats moves a weapon's numbers yet: no robotic weapon reads its wielder's stats, and no precept is run. What this answers is capacity and Forma.": 守护装上的任何 MOD 目前都不会改变武器的数字：机械武器不读持有者的属性，指令也不会运行。这里能算的是容量和 Forma。
+  "Only a card marked In the fight moves a weapon's numbers: Fired Up piles Heat on the robotic weapon this build holds, at the rank seated. No robotic weapon reads its wielder's stats and no precept is run, so for every other card this answers capacity and Forma.": 只有标着“战斗中生效”的 MOD 会改变武器的数字：过热射击会给这个配装所持的机械武器叠加火焰伤害，按所装的等级计算。机械武器不读持有者的属性，指令也不会运行，所以其余 MOD 这里只算容量和 Forma。
+  "In the fight": 战斗中生效
+  "its weapon's fight runs this card, at the rank seated": 它所持武器的战斗会运行这张 MOD，按所装的等级计算
 
   # PART VALUE ANALYSIS (docs/SHAPLEY.md). Never 贡献: that word is the open-
   # source contribution and the damage meter's share, and this is a multiplier.

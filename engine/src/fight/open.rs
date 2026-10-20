@@ -432,6 +432,8 @@ pub(super) fn open<'a>(
         base_damage_eximus: params
             .base_damage_on_eximus_weakpoint
             .map_or(0.0, |b| if b.initial_active { b.duration } else { 0.0 }),
+        // EARNED from nothing: a companion's pile opens empty.
+        element_pile: ElementPile::default(),
     };
     // DEATH KNELL — the weak-point pile. `LiveStacks`'s default decay is this
     // buff's: one stack off on the clock, and it restarts for the rest.

@@ -363,6 +363,9 @@ pub struct ResolvedPanel {
     /// The hit with that buff DOWN, when the panel injects anything. The fight
     /// picks one of the two per shot by the buff's own clock.
     pub resting: Option<ResolvedResting>,
+    /// The hit at every count of a per-hit element pile (Fired Up), when the
+    /// wielder brings one. The fight picks one per shot by its own pile.
+    pub per_hit_element: Option<ResolvedPerHitElement>,
     /// The resolved radial (AoE) part, when the weapon has one.
     pub radial: Option<ResolvedRadial>,
     /// The resolved bomblets, when the weapon's explosion throws any.
@@ -926,6 +929,20 @@ pub struct ProcConv {
     /// Chance ×`low_rate_multiplier` while LIVE fire rate < this (strictly).
     pub low_rate_threshold: f64,
     pub low_rate_multiplier: f64,
+}
+
+/// A PER-HIT ELEMENT PILE, resolved at every count — [`ResolvedPanel::per_hit_element`].
+///
+/// The element enters the hierarchy LAST, so its count changes what pairs, not
+/// only how much: a vector per count is the answer, not a vector and a slope.
+#[derive(Debug, Clone)]
+pub struct ResolvedPerHitElement {
+    pub spec: crate::model::ElementPerHit,
+    /// The direct hit with `k + 1` stacks at index `k`; zero stacks is
+    /// [`ResolvedPanel::damage`].
+    pub damage: Vec<DamageVector>,
+    /// …and the radial part's, index for index, when the weapon has one.
+    pub radial: Vec<DamageVector>,
 }
 
 /// THE DIRECT HIT WITHOUT THE PASSIVE'S INJECTION — [`ResolvedPanel::resting`].

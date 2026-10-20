@@ -17,6 +17,7 @@ mod dot_ticks_measured;
 mod damage_floor;
 mod elements_arcanes_weakpoints;
 mod every_form_runs;
+mod fired_up;
 mod formation_and_spread;
 mod glaive;
 mod fortifier_tick;
@@ -79,6 +80,7 @@ impl Default for FightParams {
             range_m: f64::INFINITY,
             damage: Self::dual_toxocyst_base_vector(),
             resting: None,
+            per_hit_element: None,
             radial: None,
             cluster: None,
             reload_grenade: None,
@@ -420,6 +422,7 @@ pub(super) fn windows_for(_p: &FightParams) -> crate::fight::state::CardWindows 
         streak: f64::NEG_INFINITY,
         base_damage_after_reload: 0.0,
         base_damage_eximus: 0.0,
+        element_pile: crate::fight::state::ElementPile::default(),
     }
 }
 
