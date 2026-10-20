@@ -19,7 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- A missed shot drops the combo counter. This entry cannot miss, so only its 2 s timer removes a stack, and the number is the ceiling.
+- A miss while scoped drops the combo counter by one. This entry cannot miss, so only its 2 s timer removes a stack, and the number is the ceiling.
 - The second zoom level is not modelled. On this weapon it is a trade, not a buff: 3.5x gives +100% damage, +3 m explosion radius and -75% fire rate, half the sustained DPS for a much bigger single hit. This entry is the first level.
 - The first zoom's -50% recoil and +2 m punch through are not read here.
 

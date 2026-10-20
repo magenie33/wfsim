@@ -19,7 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- A missed shot drops the combo counter. This entry cannot miss, so only its 2 s timer removes a stack, and the number is the ceiling.
+- A miss while scoped drops the combo counter by one. This entry cannot miss, so only its 2 s timer removes a stack, and the number is the ceiling.
 - Lower zoom levels are not modelled: the scope always sits at its top level and its best buff.
 - Chain lightning is not modelled, and it is a third of the weapon: each hit rolls 0-3 extra strikes (30/35/17.5/17.5%), guaranteed after three failures, chaining twice within 10 m. There is one target here, so the number reads low against a crowd.
 
