@@ -39,24 +39,28 @@ stats:
   overguard: 0
   affinity: 1500
 
-# NO WEAK POINT IS PUBLISHED. The page carries no Multis table and names no
-# hitbox, so this is one body at 1x and nothing to aim at — see `unmodeled`,
-# because a reader whose build is built on headshots has to be told.
+# The page's infobox: "Head (3x, but no headcrit bonus)<br>Arm CRT Monitor (3x,
+# with +1 Crit Tier)". The module's commented-out Multis line is the Babau's,
+# copied under "-- confirm", and is not a source.
 body_parts:
   - name: body
     multiplier: 1.0
     is_head: false
     crit_bonus: false
+  - name: head
+    multiplier: 3.0
+    is_head: true
+    crit_bonus: false
 
 unmodeled:
   - "Its damage attenuation is not applied, and it is this unit's main defence: the game caps damage per instance and per second as a share of its max health. A build here removes far more of it than in game, so the number reads high. The caps are unpublished."
   - "Its capped status vulnerability is not applied: the game gives it partial status immunity, and the sim supports only full immunity, so each status type either lands or does not."
-  - "No weak point is published for it, so it has no head here: a headshot build scores as if every shot were a body shot."
+  - "Its left-arm CRT monitor is a second weak point the sim never aims at; it takes 3x and raises a hit's crit tier by one."
   - "Each generation gains random abilities from a pool of more than twenty; the Legacyte here is the same every time."
 
 source:
   url: https://wiki.warframe.com/w/Legacyte
   # note: >-
-  # Stats and the damage-modifier rows from the page's infobox; the attenuation
+  # Stats, body parts and the damage-modifier rows from the page's infobox; the attenuation
   # and the capped status vulnerability from its Tips; the Eximus answer from
   # the Eximus §Compatibilities table, where it does not appear.

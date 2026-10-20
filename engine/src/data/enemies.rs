@@ -624,6 +624,22 @@ body_parts: [{ name: body, multiplier: 1.0 }]
         );
     }
 
+    /// No Corpus head takes the critical-headshot bonus: Enemy Body Parts says
+    /// the flag "excludes the heads of all Corpus humanoids and ground units".
+    #[test]
+    fn a_corpus_head_never_headcrits() {
+        let corpus: Vec<EnemySpec> = all()
+            .into_iter()
+            .filter(|s| s.combat_faction.as_deref() == Some("corpus"))
+            .collect();
+        assert!(!corpus.is_empty(), "the roster has a Corpus unit to check");
+        for s in &corpus {
+            for p in s.body_parts.iter().filter(|p| p.is_head) {
+                assert!(!p.crit_bonus, "{} {}", s.id, p.name);
+            }
+        }
+    }
+
     #[test]
     fn thrax_eximus_is_rejected_as_nonexistent() {
         let spec = EnemySpec::load(&data_enemies().join("thrax_centurion.yaml")).unwrap();

@@ -566,6 +566,9 @@ Exceptions:
   critical-headshot bonus.
 - Some parts take location damage but no crit bonus at all (e.g. MOA "fanny
   pack": 3.0x, no crit interaction).
+- Some weak points raise a hit's crit tier by one (Rogue Culverin's canisters,
+  Scaldra backpacks, much of Techrot). Not modelled: an enemy that has one says
+  so in its `unmodeled`.
 
 **Where a pellet lands** is rolled **per pellet**, not per trigger pull: the
 sim's `headshot_pct` is a per-pellet aim weight, because aiming at the head
@@ -1007,8 +1010,9 @@ headshots can crit are known edge cases.
 Targets are made of **body parts**, each with its own damage multiplier. A
 part carries four independent properties:
 1. **Location multiplier** — humanoid head 3.0x (almost all Grineer / Corpus /
-   Infested), body 1x. Outliers: Nox helmet 3x / exposed head 4x, Amalgam
-   Machinist head 0.5x, MOA "fanny pack" 3x, Bursa riot shield 0x / front
+   Infested), body 1x; the Murmur and Techrot sit nearer 1.5x. Outliers: Nox
+   helmet 2x / exposed head 3x, Machinist head 1x, Drahk head 1.875x, MOA
+   "fanny pack" 3x, Bursa riot shield 0x / front
    0.4x, boss weak points on a 0x body (Sargas Ruk vents 1x, Lephantis
    mouths 1x, Jordas engines 1x).
 2. **Head** (`is_head`) — **what the hit is WORTH.** The part's own

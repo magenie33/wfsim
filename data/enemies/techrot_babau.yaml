@@ -43,9 +43,10 @@ stats:
   overguard: 0
   affinity: 500
 
-# Module Multis: "Head: 1.5x", "Tendril Bulbs: 1.5x". `crit_bonus` on the head
-# is assumed — no wiki exception is listed for this unit — which is the same
-# assumption every other humanoid here carries.
+# Module Multis: "Head: 1.5x", "Tendril Bulbs: 1.5x", and the page's Notes: "The
+# Babau's head and tendril bulbs have 2x Critical Damage multiplier", which is
+# `crit_bonus`. Enemy Body Parts' table reads "Phone Head (1x)" that promotes a
+# hit's crit tier; the unit's own page outranks the overview table.
 body_parts:
   - name: body
     multiplier: 1.0
@@ -58,6 +59,7 @@ body_parts:
 
 unmodeled:
   - "Its tendril bulbs are a third hitbox the sim never aims at; they take 1.5x from guns and 0.1x from melee."
+  - "The flat +100% critical chance its head and tendril bulbs give a hit is not applied, so a headshot here crits less often than in game."
   - "It burrows, attacks from underground and drains health from what it hits. There is no movement and no player health here, so neither applies."
 
 source:

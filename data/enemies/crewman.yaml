@@ -43,9 +43,10 @@ stats:
   overguard: 0
   affinity: 50
 
-# Module Multis: "Head: 3.0x". Standard humanoid layout; crit_bonus on the head
-# is assumed (no wiki exception listed) — unverified, the same standing
-# assumption the other three units carry.
+# Module Multis: "Head: 3.0x". NO CRITICAL HEADSHOT: Enemy Body Parts lists the
+# Crewman as "Head (3x)*", where * is "No critical headshot bonus", and says the
+# flag "excludes the heads of all Corpus humanoids". The unit's own page is
+# silent on it.
 body_parts:
   - name: body
     multiplier: 1.0
@@ -54,7 +55,7 @@ body_parts:
   - name: head
     multiplier: 3.0
     is_head: true
-    crit_bonus: true
+    crit_bonus: false
 
 unmodeled:
   # THE HELMET, and it is the reason a headshot measurement on this unit does

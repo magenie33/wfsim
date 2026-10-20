@@ -95,6 +95,11 @@ in the prose is not a disagreement; a different NUMBER is.
 Between two module answers, the weapon's OWN page and infobox module beat a
 family overview table — see `data/notes.yaml` `kitgun_disposition_source`.
 
+An enemy is the same: its own page and infobox beat `Enemy_Body_Parts` and every
+other cross-unit table. The overview fills what the unit's page never states
+(the Crewman's headcrit flag); where it gives a different number (the Babau's
+head, 1.5x on its page and 1x there), the unit's page wins.
+
 ## Primary source: wiki Lua data modules (`?action=raw`)
 
 The wiki stores stats in `Module:*/data*` pages. Append `?action=raw` to fetch
