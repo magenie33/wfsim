@@ -42,6 +42,7 @@ The export is read from vendor/public-export/ — `python scripts/de_export.py f
 """
 
 import argparse
+import difflib
 import json
 import re
 import sys
@@ -191,6 +192,53 @@ def export_descriptions(export: dict, locale: str, section: str) -> tuple[dict, 
     return hits, missing
 
 
+SLOT = re.compile(r"\|([A-Z_0-9]+)\|")
+
+
+def frame_passives(en: dict, export: dict, locale: str) -> tuple[dict, list]:
+    """frame id -> DE's passive in `locale`, its `|SLOT|`s filled from OUR English.
+
+    DE's `passiveDescription` is a template in every language. A slot takes the
+    number our passive states in the same place of DE's English template, and a
+    frame is filled only when that English, so filled, IS our passive: every
+    number lines up with the characters either side of it, and the prose differs
+    by no more than a word (Bleed / Slash Status). Anything else stays English.
+    """
+    norm = lambda s: " ".join(s.split())
+    out, left = {}, []
+    for f in sorted(ROOT.glob("data/warframes/*.yaml")):
+        text = f.read_text(encoding="utf-8")
+        idv = re.search(r"^id: (\S+)", text, re.M).group(1)
+        iname = re.search(r"^internal_name: (\S+)", text, re.M)
+        ours = re.search(r"^passive: (\".*\")$", text, re.M)
+        uniq = iname.group(1) if iname else ""
+        en_t = en.get(uniq, {}).get("passiveDescription")
+        loc_t = export.get(uniq, {}).get(locale, {}).get("passiveDescription")
+        if not (ours and en_t and loc_t):
+            left.append(idv)
+            continue
+        ours, en_t = norm(json.loads(ours.group(1))), norm(clean_line(en_t))
+        tokens = list(re.finditer(r"\|([A-Z_0-9]+)\||\d+(?:\.\d+)?", en_t))
+        nums = list(re.finditer(r"\d+(?:\.\d+)?", ours))
+        vals, ok = {}, len(tokens) == len(nums)
+        for t, n in zip(tokens, nums) if ok else []:
+            v = n.group(0)
+            if t.group(1):
+                ok &= vals.setdefault(t.group(1), v) == v
+            else:
+                ok &= t.group(0) == v
+            ok &= en_t[t.start() - 1:t.start()].lower() == ours[n.start() - 1:n.start()].lower()
+            ok &= en_t[t.end():t.end() + 1].lower() == ours[n.end():n.end() + 1].lower()
+        filled = SLOT.sub(lambda m: vals.get(m.group(1), m.group(0)), en_t)
+        ok = ok and difflib.SequenceMatcher(None, filled.lower(), ours.lower()).ratio() >= 0.9
+        loc = SLOT.sub(lambda m: vals.get(m.group(1), m.group(0)), clean_line(loc_t))
+        if ok and not SLOT.search(loc):
+            out[idv] = loc
+        else:
+            left.append(idv)
+    return out, left
+
+
 def write_descriptions(path: Path, locale: str, tables: dict[str, dict]) -> None:
     out = [
         f"# {locale} — mod and arcane card text, in DE's OWN words.",
@@ -335,18 +383,30 @@ def main() -> int:
         print(f"wrote {locale_dir / 'descriptions.yaml'}")
         # THE WARFRAME BUILDER'S, in a file of its own: same source, same join.
         wf_tables = {}
-        for section, table in [("warframe_mods", "warframe_mod_descriptions"),
-                               ("warframe_arcanes", "warframe_arcane_descriptions")]:
-            hits, missing = export_descriptions(export, args.locale, section)
-            # A LADDER OF ANOTHER LENGTH IS LEFT OUT, never trimmed: the wiki's
-            # `max_rank` is the one we state, and a card of DE's with a different
-            # count would show one rank's numbers on another. It falls back to
-            # English, and the report names it.
-            ranks = {i: int(re.search(r"^max_rank: (\d+)", (ROOT / p).read_text(encoding="utf-8"), re.M).group(1))
-                     for p in [str(x.relative_to(ROOT)) for x in ROOT.glob(SECTIONS[section])]
-                     for i in [Path(p).stem]}
+        # An AURA is a Warframe mod on the builder's page (`mod_by_id` holds
+        # both), so its card shares the mods' table.
+        for sections, table in [(["warframe_mods", "auras"], "warframe_mod_descriptions"),
+                                (["warframe_arcanes"], "warframe_arcane_descriptions")]:
+            hits, missing, ranks = {}, [], {}
+            for section in sections:
+                h, m = export_descriptions(export, args.locale, section)
+                # A LADDER OF ANOTHER LENGTH IS LEFT OUT, never trimmed: the wiki's
+                # `max_rank` is the one we state, and a card of DE's with a different
+                # count would show one rank's numbers on another. It falls back to
+                # English, and the report names it.
+                ranks.update({x.stem: int(re.search(r"^max_rank: (\d+)", x.read_text(encoding="utf-8"), re.M).group(1))
+                              for x in ROOT.glob(SECTIONS[section])})
+                # A card with NO numbers (Peculiar Bloom) has no `levelStats`,
+                # only its `description`: the one sentence reads at every rank.
+                for i in list(m):
+                    rule = card_text(export.get(our_ids(SECTIONS[section])[i], {}).get(args.locale, {}).get("description") or [])
+                    if rule:
+                        h[i] = [rule] * (ranks[i] + 1)
+                        m.remove(i)
+                hits.update(h)
+                missing += m
             off = sorted(i for i, r in hits.items() if len(r) != ranks.get(i, -1) + 1)
-            wf_tables[table] = {i: r for i, r in hits.items() if i not in off}
+            wf_tables[table] = dict(sorted((i, r) for i, r in hits.items() if i not in off))
             print(f"{table}: {len(wf_tables[table])} entries"
                   + (f" — NO localized text for {missing}" if missing else "")
                   + (f" — rank count differs from ours, left out: {off}" if off else ""))
@@ -366,6 +426,11 @@ def main() -> int:
             fh.write("warframe_ability_descriptions:\n")
             fh.writelines(f"  {i}: {json.dumps(t, ensure_ascii=False)}\n" for i, t in abilities.items())
         print(f"warframe_ability_descriptions: {len(abilities)} entries")
+        passives, left = frame_passives(de_export.items("en"), export, args.locale)
+        with open(locale_dir / "warframe_descriptions.yaml", "a", encoding="utf-8", newline="\n") as fh:
+            fh.write("warframe_passives:\n")
+            fh.writelines(f"  {i}: {json.dumps(t, ensure_ascii=False)}\n" for i, t in passives.items())
+        print(f"warframe_passives: {len(passives)} entries — left English: {left}")
         return 0
 
     # `check` / `fill` operate on the hand-written NAMES file.

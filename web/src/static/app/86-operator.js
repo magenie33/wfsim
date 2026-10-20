@@ -349,7 +349,8 @@ function renderWarframe() {
   $("wf-name").textContent = f.name;
   $("wf-tags").innerHTML = [["Health", f.health], ["Shield", f.shield], ["Armor", f.armor], ["Energy", f.energy], ["Sprint", f.sprint]]
     .map(([k, v]) => `<span class="tag">${escHtml(tr(k))} ${wfNum(v)}</span>`).join("");
-  $("wf-passive").innerHTML = f.passive ? `<div>${escHtml(f.passive)}${wfTagChips(f.passive_tags)}</div>` : "";
+  const passive = (I18N && (I18N.warframe_passives || {})[f.id]) || f.passive;
+  $("wf-passive").innerHTML = passive ? `<div>${escHtml(passive)}${wfTagChips(f.passive_tags)}</div>` : "";
   renderWfPresetBar();
   renderWfMods();
   renderWfArcanes();

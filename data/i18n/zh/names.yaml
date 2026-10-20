@@ -2780,9 +2780,11 @@ auras:
   toxin_resistance: 毒素抵抗
   worthy_comradery: 可靠战友
 
-# ARCHON SHARDS — transcribed from the CN wiki (执刑官源力石), which is the
-# second source data/README.md names and the only one that has these: a shard
-# is a RESOURCE and DE's export carries no entity for it.
+# ARCHON SHARDS — a colour's name is DE's (ExportResources ArchonCrystal*). A
+# socket's line is the CN wiki's phrasing in DE's stat words, read off DE's mod
+# cards: 护盾容量 (Redirection), 最大能量 (Flow), 施放速度 (Natural Talent),
+# and the damage types as the arcane cards write them (毒素, 腐蚀, 爆炸, 火焰,
+# 辐射, 电击).
 #
 # Keys are `<shard>` for the colour and `<shard>/<effect>` for one socket's
 # line. The numbers are NOT in these strings: the page prints them from the
@@ -2802,23 +2804,23 @@ shards:
   amber_archon_shard/energy_on_spawn: 初始能量
   amber_archon_shard/health_orbs: 生命球效果
   amber_archon_shard/energy_orbs: 能量球效果
-  amber_archon_shard/casting_speed: 技能施放速度
+  amber_archon_shard/casting_speed: 施放速度
   amber_archon_shard/parkour_velocity: 跑酷速度
   azure_archon_shard/max_health: 生命值
-  azure_archon_shard/shield_capacity: 护盾值
-  azure_archon_shard/energy_max: 能量上限
+  azure_archon_shard/shield_capacity: 护盾容量
+  azure_archon_shard/energy_max: 最大能量
   azure_archon_shard/armor: 护甲
   azure_archon_shard/health_regen: 每秒生命回复
-  emerald_archon_shard/toxin_status_damage: Toxin 异常状态伤害
-  emerald_archon_shard/toxin_health_steal: 每次 Toxin 异常伤害恢复生命值
-  emerald_archon_shard/corrosion_ability_damage: 对 Corrosive 异常敌人的技能伤害
-  emerald_archon_shard/corrosion_stack_cap: Corrosive 异常最高堆叠层数
-  topaz_archon_shard/blast_kill_health: 每次 Blast 击杀增加生命上限
-  topaz_archon_shard/blast_kill_shield: 每次 Blast 击杀恢复护盾
-  topaz_archon_shard/heat_kill_crit: 每次 Heat 异常击杀增加次要武器暴击几率
-  topaz_archon_shard/radiation_ability_damage: 对 Radiation 异常敌人的技能伤害
-  violet_archon_shard/electricity_ability_damage: 对 Electricity 异常敌人的技能伤害
-  violet_archon_shard/primary_electricity_damage: 主要武器 Electricity 伤害
+  emerald_archon_shard/toxin_status_damage: 毒素异常状态伤害
+  emerald_archon_shard/toxin_health_steal: 每次毒素异常伤害恢复生命值
+  emerald_archon_shard/corrosion_ability_damage: 对腐蚀异常敌人的技能伤害
+  emerald_archon_shard/corrosion_stack_cap: 腐蚀异常最高堆叠层数
+  topaz_archon_shard/blast_kill_health: 每次爆炸击杀增加生命上限
+  topaz_archon_shard/blast_kill_shield: 每次爆炸击杀恢复护盾
+  topaz_archon_shard/heat_kill_crit: 每次火焰异常击杀增加次要武器暴击几率
+  topaz_archon_shard/radiation_ability_damage: 对辐射异常敌人的技能伤害
+  violet_archon_shard/electricity_ability_damage: 对电击异常敌人的技能伤害
+  violet_archon_shard/primary_electricity_damage: 主要武器电击伤害
   violet_archon_shard/melee_crit_damage: 近战暴击伤害
   violet_archon_shard/orb_conversion: 拾取生命球得能量、拾取能量球得生命
 
@@ -2907,7 +2909,7 @@ warframe_abilities:
   wrathful_advance: "暴怒突进"
   wyrd_scythes: "命定镰刃"
   xatas_whisper: "真理密语"
-  # remedium: NOT IN DE's EXPORT — falls back to English
+  remedium: "恶魔再生"
   absorb: "聚合吸收"
   aegis_storm: "神盾风暴"
   amp: "强音增幅"
@@ -3419,6 +3421,7 @@ warframe_mods:
   warding_thurible: 庇护焚炉
   wrath_of_ukko: 乌戈之怒
   wrecking_wall: 粉碎壁垒
+  primed_redirection: 蓄能重划 Prime
 
 warframe_arcanes:
   arcane_acceleration: 赋能·加速

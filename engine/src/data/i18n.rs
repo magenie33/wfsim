@@ -62,9 +62,8 @@ pub struct LocaleSpec {
     /// one map because they are one family and the effect has no id of its own
     /// outside its colour.
     ///
-    /// TRANSCRIBED FROM THE CN WIKI, which is the source `data/README.md`
-    /// names for what DE's export has no entity for — a shard is a RESOURCE
-    /// and `i18n.json` carries none of them.
+    /// Hand-written: a colour's name is DE's resource name, a socket's line
+    /// the CN wiki's phrasing in DE's stat words (`data/i18n/zh/names.yaml`).
     #[serde(default)]
     pub shards: BTreeMap<String, String>,
     /// THE WARFRAME BUILDER'S cards — `data/warframe_mods/`,
@@ -90,6 +89,10 @@ pub struct LocaleSpec {
     pub warframe_arcane_descriptions: BTreeMap<String, Vec<String>>,
     #[serde(default)]
     pub warframe_ability_descriptions: BTreeMap<String, String>,
+    /// A frame's passive, keyed by frame id: DE's template with its slots
+    /// filled from our English (`scripts/de_i18n.py frame_passives`).
+    #[serde(default)]
+    pub warframe_passives: BTreeMap<String, String>,
     /// THE ROUGH CATALOGUE (`data/catalogue/`), keyed `<slot>/<id>`: a card's
     /// name, and its top-rank card text as one string. Generated with it.
     #[serde(default)]
@@ -186,6 +189,7 @@ impl LocaleSpec {
         lists(&mut self.warframe_mod_descriptions, other.warframe_mod_descriptions, path, "warframe_mod_descriptions");
         lists(&mut self.warframe_arcane_descriptions, other.warframe_arcane_descriptions, path, "warframe_arcane_descriptions");
         maps(&mut self.warframe_ability_descriptions, other.warframe_ability_descriptions, path, "warframe_ability_descriptions");
+        maps(&mut self.warframe_passives, other.warframe_passives, path, "warframe_passives");
         maps(&mut self.catalogue, other.catalogue, path, "catalogue");
         maps(&mut self.catalogue_descriptions, other.catalogue_descriptions, path, "catalogue_descriptions");
 
@@ -557,6 +561,12 @@ mod tests {
                     "i18n/{code}: unknown Warframe ability id '{id}'"
                 );
             }
+            for id in spec.warframe_passives.keys() {
+                assert!(
+                    crate::data::warframes::warframe(id).is_some(),
+                    "i18n/{code}: unknown Warframe id '{id}'"
+                );
+            }
             for key in spec.catalogue.keys().chain(spec.catalogue_descriptions.keys()) {
                 assert!(
                     crate::data::catalogue::by_key(key).is_some(),
@@ -619,6 +629,20 @@ mod tests {
                 );
             }
         }
+    }
+
+    /// EVERY AURA READS DE'S CARD on a zh page: DE's export has every one, so
+    /// a missing entry is a generator that stopped reading `data/auras/`, and
+    /// the card falls back to English run through the phrase table.
+    #[test]
+    fn every_aura_has_its_localized_card() {
+        let (_, zh) = locales().iter().find(|(c, _)| c == "zh").expect("zh locale");
+        let missing: Vec<&str> = crate::data::auras::all()
+            .iter()
+            .map(|a| a.id.as_str())
+            .filter(|id| !zh.warframe_mod_descriptions.contains_key(*id))
+            .collect();
+        assert!(missing.is_empty(), "auras with no zh card text: {missing:?}");
     }
 
     /// Every INDIRECT stat label is translated.

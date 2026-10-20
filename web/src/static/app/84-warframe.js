@@ -558,6 +558,12 @@ const WF_ADMIT = {
   inert: ["⚠", "seated, and paying nothing in this build"],
 };
 
+/// A frame's unmodelled passive reads in DE's words when the overlay has them.
+const wfAdmitText = (x) => {
+  const zh = I18N && (I18N.warframe_passives || {})[x.from];
+  return zh && x.text.startsWith("Passive not modelled: ") ? `${tr("passive not modelled")}: ${zh}` : tr(x.text);
+};
+
 function renderWfStats(r) {
   const fmt = (l, v) => (l.ratio ? wfPct(v) : l.id === "sprint_speed" ? wfNum(v) : String(Math.round(v)));
   $("wf-stats").innerHTML = (r.refused || []).map((x) => `<div class="error">${escHtml(x)}</div>`).join("")
@@ -569,7 +575,7 @@ function renderWfStats(r) {
   $("wf-admissions").innerHTML = by.size
     ? `<div class="sdmg-title">${escHtml(tr("What this panel does not compute"))}</div>` + [...by].map(([from, list]) =>
       `<div class="scond"><b>${escHtml(wfSourceName(from))}</b>: ${list.map((x) => `<span class="wf-adm ${x.kind}" title="${
-        escHtml(tr(WF_ADMIT[x.kind][1]))}">${WF_ADMIT[x.kind][0]} ${escHtml(tr(x.text))}</span>`).join(" ")}</div>`).join("")
+        escHtml(tr(WF_ADMIT[x.kind][1]))}">${WF_ADMIT[x.kind][0]} ${escHtml(wfAdmitText(x))}</span>`).join(" ")}</div>`).join("")
     : "";
 }
 

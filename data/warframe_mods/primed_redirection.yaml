@@ -5,7 +5,7 @@ polarity: vazarin
 base_drain: 6
 max_rank: 10
 family: redirection
-internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarShieldMaxModExpert
+internal_name: /Lotus/Upgrades/Mods/Warframe/Expert/AvatarShieldMaxModExpert
 description: "+180% Shield Capacity"
 
 effects:
