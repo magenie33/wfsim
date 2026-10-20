@@ -1313,7 +1313,8 @@ yes, since each ask again is a reader interrupted. Eight rules:
    derive it, so a curve change is one edit.
 7. **A MARK NEVER MOVES A PLACE.** A named row carries the mark its account
    carries on a signed share, proved by the paid half and attached by the
-   server (`cloudMarks`), drawn by the extension (`contributorMark`); the order
+   server (`cloudMarks`), drawn by the extension beside the name and on the whole row
+   (`contributorMark`, `contributorRow`); the order
    is the points alone, and nothing paid adds a point or puts an order in a
    device's hands sooner.
 

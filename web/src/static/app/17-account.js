@@ -604,7 +604,13 @@ function contributorRowInner(c, at, shown) {
   return `<span class="rank-n">${at + 1}</span><span class="rank-who">${contributorRankBadge(c.contributor_rank)}${who}${
     c.you ? `<span class="rank-you">${aT("(you)")}</span>` : ""}</span><span class="rank-pts">${escHtml(shown.toLocaleString(accountLocale()))}</span>`;
 }
-const contributorRowClass = (c, at) => `rank-row${at < 3 ? " top" : ""}${c.you ? " you" : ""}`;
+/// …AND THE ROW'S OWN LOOK, from the same mark (`contributorRow`): a class the
+/// extension names, which restyles a named row and never moves it.
+const contributorRowMark = (c) => {
+  const k = c.name === null ? "" : extHookNow("contributorRow", c.mark);
+  return typeof k === "string" && /^[a-z0-9 -]+$/.test(k) ? ` ${k}` : "";
+};
+const contributorRowClass = (c, at) => `rank-row${at < 3 ? " top" : ""}${c.you ? " you" : ""}${contributorRowMark(c)}`;
 
 async function contributorsLoad() {
   if (contributorsLoading) return;

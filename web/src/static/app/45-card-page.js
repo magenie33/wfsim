@@ -237,7 +237,7 @@ async function renderContributorsCard() {
     body = periods.map(([, key, label], i) => {
       const rows = ((all[i] && all[i].contributors) || []).slice(0, n);
       return cardBox(`<span class="sb-h">${aT(label)}</span>`, rows.length
-        ? `<ol class="rank-list">${rows.map((c, k) => `<li class="rank-row${k < 3 ? " top" : ""}"><span class="rank-n">${k + 1}</span>`
+        ? `<ol class="rank-list">${rows.map((c, k) => `<li class="rank-row${k < 3 ? " top" : ""}${contributorRowMark(c)}"><span class="rank-n">${k + 1}</span>`
           + `<span class="rank-who">${contributorRankBadge(c.contributor_rank)}${who(c)}</span><span class="rank-pts">${num(c[key])}</span></li>`).join("")}</ol>`
         : `<p class="sb-empty">${aT("Nobody yet.")}</p>`);
     }).join("");

@@ -636,6 +636,7 @@ extension is there.
 | `EXT.hooks.deleteNote()` | what else deleting the account ends, under the danger zone |
 | `EXT.hooks.support(slot)` | the support page's `#ext-support` |
 | `EXT.hooks.shareSigner()`, `shareWho(id, sig)` | signing a short link, and naming who signed one |
+| `EXT.hooks.contributorMark(mark)`, `contributorRow(mark)` | a named ranking row's mark, and the class its row takes (lowercase words only) |
 
 A hook that throws is a hook that is not there (`extHook`). `route` and
 `loadAccount` wait for the mount only until it has settled, so an extension's
