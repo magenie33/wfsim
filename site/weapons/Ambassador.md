@@ -4,7 +4,7 @@ Chinese name: 使节
 
 Rifle · Primary · Mastery Rank 10. 29 base damage (electricity 29), 14% crit chance, 2.8x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

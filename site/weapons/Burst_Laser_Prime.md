@@ -4,7 +4,7 @@ Chinese name: 激光点发 Prime
 
 Sentinel Weapon · Sentinel · Mastery Rank 0. 25 base damage (impact 2.5, puncture 21.25, slash 1.25), 20% crit chance, 2.3x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

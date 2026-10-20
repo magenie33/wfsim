@@ -4,7 +4,7 @@ Chinese name: 刺吸西诺斯
 
 Bow · Primary · Mastery Rank 15. 279 base damage (impact 103.23, puncture 30.69, slash 145.08), 7% crit chance, 1.9x crit multiplier, 43% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

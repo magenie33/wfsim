@@ -4,7 +4,7 @@ Chinese name: 布莱顿·破坏者
 
 Rifle · Primary · Mastery Rank 4. 35 base damage (impact 12.25, puncture 1.75, slash 21), 16% crit chance, 2x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

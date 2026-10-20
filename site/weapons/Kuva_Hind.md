@@ -4,7 +4,7 @@ Chinese name: 赤毒·雌鹿
 
 Rifle · Primary · Mastery Rank 15. 30 base damage (impact 7.5, puncture 7.5, slash 15), 25% crit chance, 2.1x crit multiplier, 33% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,7 +12,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | semi auto | 7.1972 | Primed Cryo Rounds, Infected Clip, Hellfire, Thermite Rounds, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-13 17:33 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | semi auto | 7.1972 | Primed Cryo Rounds, Infected Clip, Hellfire, Thermite Rounds, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-19 07:59 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 29.6360 | Hellfire, Thermite Rounds, Primary Acuity, Primed Shred, Serration, Hammer Shot, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-18 12:31 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.9523 | Hellfire, Thermite Rounds, Primary Acuity, Primed Bane of Grineer, Serration, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-16 07:50 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 4.1092 | Primed Cryo Rounds, Infected Clip, Hellfire, Thermite Rounds, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-14 19:17 UTC |

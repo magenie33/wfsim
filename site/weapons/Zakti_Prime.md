@@ -4,7 +4,7 @@ Chinese name: 毒芽 Prime
 
 Pistol · Secondary · Mastery Rank 14. 30 base damage (impact 12, puncture 18), 8% crit chance, 1.8x crit multiplier, 42% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 终幕·异化者
 
 Pistol · Secondary · Mastery Rank 17. 56 base damage (corrosive 56), 11% crit chance, 2.9x crit multiplier, 50% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

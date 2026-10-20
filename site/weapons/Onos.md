@@ -4,7 +4,7 @@ Chinese name: 赘骨
 
 Pistol · Secondary · Mastery Rank 14. 220 base damage (puncture 220), 26% crit chance, 2.4x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

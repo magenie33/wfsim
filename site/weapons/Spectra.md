@@ -4,7 +4,7 @@ Chinese name: 光谱切割器
 
 Pistol · Secondary · Mastery Rank 4. 18 base damage (puncture 7.56, slash 10.44), 14% crit chance, 2x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

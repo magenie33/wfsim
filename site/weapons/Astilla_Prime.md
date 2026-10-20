@@ -4,7 +4,7 @@ Chinese name: 碎裂者 Prime
 
 Shotgun · Primary · Mastery Rank 14. 100 base damage (impact 100), 21% crit chance, 1.9x crit multiplier, 37% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

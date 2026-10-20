@@ -4,7 +4,7 @@ Chinese name: 雷霆 Prime
 
 Rifle · Primary · Mastery Rank 12. 33 base damage (electricity 25, puncture 8), 34% crit chance, 2.4x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

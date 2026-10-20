@@ -4,7 +4,7 @@ Chinese name: 金工火神
 
 Sniper · Primary · Mastery Rank 3. 225 base damage (impact 180, puncture 33.8, slash 11.2), 20% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

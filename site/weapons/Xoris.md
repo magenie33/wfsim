@@ -4,7 +4,7 @@ Chinese name: 驱魔之刃
 
 Glaive · Melee · Mastery Rank 4. 120 base damage (impact 24, puncture 40.8, slash 55.2), 20% crit chance, 2.4x crit multiplier, 18% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-19
+## Best riven-free build on the WFSim board, as of 2026-10-20
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
