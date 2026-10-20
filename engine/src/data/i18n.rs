@@ -816,8 +816,8 @@ mod tests {
         /// is right and ours is the gap; only the rank-0 comparison is waived.
         /// SHRINK-ONLY: an entry whose card now ranks fails below.
         const ENGLISH_CARD_DOES_NOT_RANK: &[&str] = &[
-            "dispatch_overdrive", "energy_channel", "finishing_touch", "focused_defense", "guardian_derision",
-            "healing_return", "life_strike", "motus_impact", "parry", "proton_snap",
+            "combo_fury", "dispatch_overdrive", "energy_channel", "finishing_touch", "focused_defense", "guardian_derision",
+            "healing_return", "life_strike", "mark_of_the_beast", "motus_impact", "parry", "proton_snap",
             "relentless_combination", "shattering_impact", "strain_infection", "tek_gravity", "truths_flame",
         ];
 
