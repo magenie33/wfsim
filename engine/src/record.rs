@@ -127,6 +127,9 @@ pub enum Origin {
     /// A PILE OF BLOBS going off — the Stug's, when its stacks reach the cap or
     /// its lifespan runs out (`fight::blobs`).
     Blob,
+    /// AN EMBEDDED ORB's hit or its explosion — the Vectis Incarnon's, left in
+    /// the body each projectile lands in (`fight::entities`).
+    Embed,
 }
 
 #[wfsim_gas_macro::metered]
@@ -150,6 +153,7 @@ impl Origin {
             Origin::ReloadGrenade => "reload_grenade",
             Origin::SpectralDagger => "spectral_dagger",
             Origin::Blob => "blob",
+            Origin::Embed => "embed",
         }
     }
 }

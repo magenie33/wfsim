@@ -449,7 +449,10 @@ cd_total = (base_cd + Σ weapon_flat_cd)           ← Critical Parallel-type
 ```
 (Evidence: §Quantization ordering for the first two layers' relative
 positions; the Cold page's Kunai example `1.6 × 2.1 + 0.5` for the
-receiver layer.) The first layer is quantized —
+receiver layer.) The receiver layer reaches no Area of Effect damage — an
+explosion, a field: Cold "does not apply to Area of Effect damage" (wiki
+`Damage/Cold_Damage`), measured on the Vectis Prime Incarnon's embed and
+explosion and the Akarius Prime's explosion (M117). The first layer is quantized —
 `quantize(base_cd + Σ weapon_flat_cd)`, see §Quantization below. The tier
 and headshot formulas below consume `cd_total`.
 
@@ -483,7 +486,8 @@ numbers.
 > Implemented: `DamageVector::quantized_against(modded_base)` (per-hit
 > vector, BEFORE crits/type-modifiers/faction multipliers — those
 > multiply quantized values) and `rules::damage::quantize_base_crit_damage`
-> (wired into the CD bucket when mod resolution lands). The page's
+> (wired into the CD bucket in `build::loadout::resolve`; M117 matched it to
+> the digit on three crits). The page's
 > flagged "conflicting info" is a mathematical pseudo-conflict: for pure
 > multipliers, `Round(v/s)·s·k ≡ Round(kv/ks)·ks` — the two descriptions
 > differ only when elemental mods change the vector's composition.
@@ -1584,7 +1588,8 @@ reloads keep the pile up.
 Every Stug shot embeds in the body it hits and adds its stacks to the pile
 there. Declared as `blob:` in the attack (`data::weapons::BlobSpec`: `cap`,
 `lifespan_seconds`, one stack's `explosion:`, `radius_at_cap_m`), resolved
-through the beam's buckets (`ResolvedBlob`), and set off by `fight::blobs`.
+through the beam's buckets (`ResolvedBlob`), and set off by `fight::blobs` on
+the entity clock (§7.4).
 
 | entry | cap | one stack | a full pile |
 | --- | --- | --- | --- |
@@ -1607,6 +1612,52 @@ through the beam's buckets (`ResolvedBlob`), and set off by `fight::blobs`.
    over its 30% table.
 5. **NOT MODELLED**: the charged alternate fire and the Incarnon form's bounce
    explosions (`unmodeled` on both entries).
+
+### Entities — one list, one order (§7.4)
+
+An ENTITY is what an attack or an event puts into the fight to act on a clock
+of its own: a Torid's cloud, a Stug's pile, a Grimoire's orb, an Okina's
+spectral dagger, a Catabolyst's reload volley, a Vectis Incarnon's embedded
+orb. `fight::entities` holds them in ONE list and settles them in ONE order:
+whatever is due first acts first, whatever its kind, ties in the order they
+were made, because each event changes what the next one sees.
+
+- **What each deals** goes through `field_tick`, the one settlement for a timed
+  damage instance — its own crit and status roll, Area of Effect rules where it
+  is one.
+- **How each exists and what it does** is its kind's own step: a cloud ticks on
+  the body it is stuck to and everyone standing in it; a pile waits for its
+  fuse; an orb flies and strikes one body in reach; a dagger orbits, seeks and
+  strikes; a volley lands where it was thrown; an embedded orb follows the
+  timeline below.
+- **Whose it is.** Each carries the seat that made it and is settled under that
+  seat's live windows.
+- **When it is settled.** Before every landing and every pull of its seat, and
+  at the end of the engagement — so a pile whose fuse ran out goes off before
+  the round that would have fed it lands. Nothing acts at or after the end.
+
+### The embedded orb — the Vectis Incarnon's (§7.5)
+
+Every landed Incarnon round leaves an orb in the body it hit (wiki
+`Vectis_Incarnon_Genesis`; measured M117). Declared as `embed:` in the attack
+(`data::weapons::EmbedSpec`: a `hit:`, what it does in a body, what it does in
+a head, and an `explosion:`).
+
+| landed in | what the orb does | +200 base, Serration, x1 combo |
+| --- | --- | --- |
+| a body | hits at once, then twice more a second apart | 596, 596, 596 |
+| a head | hits at once, then 0.4 s later explodes in two simultaneous hits | 596; 1484 + 1484 scoped |
+
+1. **IT CARRIES THE SHOT** to every hit: the chamber's first round and the shot
+   combo counter as they stood when it was fired (835 x 3 off a first round,
+   1193 at x2).
+2. **THE EXPLOSION TAKES THE HEADSHOT BRACKET, NOT THE HEAD.** It reads `1 +`
+   the additive headshot bonuses — the scope's +60%, Deadhead — and not the
+   head's location multiplier: 1484 = 927.5 x 1.6 scoped, 1762 with Deadhead,
+   927.5 from the hip.
+3. **IT IS AREA OF EFFECT DAMAGE**: no Cold crit damage, no Puncture crit
+   chance, its own crit roll per hit (5195 beside 1484 off one headshot).
+4. **ONE ORB PER LANDED ROUND**, each its own; several in one body never merge.
 
 ### Continuous (beam) weapons
 
@@ -1888,9 +1939,9 @@ the status-payload exclusion are recorded modeling choices.
 
 **Reference:** [`Sniper Rifle`](https://wiki.warframe.com/w/Sniper_Rifle)
 (§Shot Combo Counter, §Zoom Buffs), cached at `vendor/wiki/sniper_rifle.wiki`.
-Both mechanics belong to the WEAPON rather than the build, both are paid only
-while scoped in, and neither is a stat on the panel — which is why they are
-stated on the weapon's card.
+Both mechanics belong to the WEAPON rather than the build, the counter is
+built only while scoped in and the zoom buff paid only there, and neither is a
+stat on the panel — which is why they are stated on the weapon's card.
 
 **The Shot Combo Counter.** Every sniper rifle has a *Minimum Combo*, the number
 of landing hits before the counter pays anything:
@@ -1928,24 +1979,25 @@ shot pays is the one that was under the reticle when it was fired.
 successful hits have been made, or if the player misses a shot. All sniper
 rifles have a 2 second combo duration, with the exception of the Lanka, which
 has a 6 second combo duration."* Decay is by ONE and never a reset, which is
-why a sniper that keeps firing never loses it. The MISS half cannot be modelled
-here — this arena has no distance and every shot lands (docs/UNMODELLED.md) —
-so the counter runs slightly generous, and each sniper says so on its card.
+why a sniper that keeps firing never loses it. A miss takes one point too, and
+only while scoped in: a miss from the hip takes nothing (M117). A shot misses
+only past point blank (docs/UNMODELLED.md), and a sniper that cannot miss says
+on its card that its counter is the ceiling.
 
-**Where the gate is.** *"Building combo and benefiting from its multiplier
-requires being scoped in."* `build::loadout::resolve` empties `sniper_combo` when the
-Tenno is not aiming, and it is the only place that decides — so the simulator
-and the optimizer agree without either of them knowing what a sniper is. It is
-also the one mechanic where not aiming changes what a weapon HAS rather than
-what it hits.
+**Where the gate is.** Measured (M117): only a scoped hit BUILDS the counter,
+and the multiplier is paid scoped or not — the wiki's "building combo and
+benefiting from its multiplier requires being scoped in" holds for the first
+half only. `build::loadout::resolve` carries `sniper_combo` either way and sets
+`sniper_combo_builds` from the Tenno's aiming, the one place that decides, so
+the simulator and the optimizer agree without either knowing what a sniper is.
 
-**In an Incarnon cycle** the counter is the base form's. `FightParams` for a
-cycle is built from the INCARNON panel with the base form hung off
-`cycle.base_form`, so the loop reads the SPEC from whichever form declares one
-(the count survives the transform) and reads whether a hit counts and pays off
-the ACTIVE form. The Vectis Incarnon forms declare no combo: nothing published
-says whether it survives, and the page's only remark on zoom in that form is
-that you must unzoom to enter it. That is on their cards.
+**In an Incarnon cycle** the counter is the WEAPON's. `FightParams` for a cycle
+is built from the INCARNON panel with the base form hung off `cycle.base_form`,
+so the loop reads the SPEC from whichever form declares one and reads whether a
+hit counts and pays off the ACTIVE form. Measured on the Vectis Prime (M117):
+the count carries across the transform both ways, the Incarnon form builds it
+with its direct hits only, and every part of its shot pays it — so both Vectis
+Incarnon forms declare the counter and the scope their base forms carry.
 
 **The scope.** Each zoom level carries a buff — crit chance, critical
 multiplier or headshot damage depending on the weapon — and *"these zoom buffs,
@@ -2169,9 +2221,9 @@ describes the grenade ARMING; reading it as a delayed first tick cost a full
 tenth of the field's damage.
 
 **How the sim runs it** (`engine::fight`): every landed direct pellet spawns a
-`FieldState` — per PELLET, since each multishot projectile is its own grenade
+cloud entity — per PELLET, since each multishot projectile is its own grenade
 and its own cloud — whose first tick is due immediately. Ticks are settled
-by `process_field_ticks`, INTERLEAVED with the status settlement so that each
+on the entity clock (§7.4), INTERLEAVED with the status settlement so that each
 tick sees the statuses its predecessors applied (that is what makes the live CO
 read meaningful) and its own procs still burn afterwards. Each tick runs
 `settle_procs`, the same status machinery a pellet and a radial stage use — one

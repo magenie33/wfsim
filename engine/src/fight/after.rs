@@ -53,18 +53,16 @@ pub(super) fn after_the_landing(
     rs_armed: &mut bool,
     opening_closed: &mut bool,
     field_duration_boost: &mut bool,) {
-        // A SHOT THAT HIT NOTHING DROPS THE SHOT COMBO COUNTER.
-        //
-        // A counter that decays only through its own timer runs slightly
-        // generous, and is the right model only in an arena where nothing can
-        // miss. This one can, so the other half of the mechanic is here.
+        // A SCOPED SHOT THAT HIT NOTHING TAKES ONE OFF THE SHOT COMBO COUNTER
+        // (M117): by one, not to zero; the decay timer keeps its own clock; and a
+        // miss from the hip takes nothing.
         //
         // PER SHOT, not per pellet: the counter counts trigger pulls that
         // connected, and a multishot pull that lands one pellet connected.
         // Nothing happens on a weapon with no combo, and nothing happens at
         // point blank — `landed_this_shot` cannot be false there.
-        if active.sniper_combo.is_some() && !landed_this_shot {
-            sniper_combo.count = 0;
+        if active.sniper_combo.is_some() && params.combo_builds && !landed_this_shot {
+            sniper_combo.count = sniper_combo.count.saturating_sub(1);
         }
 
         // THE SPEAR PLANTS ITS FIELD, and the shot that planted it does not

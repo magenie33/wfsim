@@ -891,8 +891,8 @@ ui:
   "The mode locks up to 8 enemies within 60 m and fires a 2-round burst at each; this entry fires the burst one enemy receives. Right against one enemy; against a crowd up to eight times low.": "这个模式会锁定 60 米内最多 8 个敌人，并对每个打出一轮 2 发连射；本条目只计一个敌人承受的那一轮。对单个敌人是准确的；面对人群最多偏低八倍。"
   "Scenario": 场景
   "Scenarios": 场景
-  "Scoped in, consecutive hits build a Shot Combo Counter: 1 landing hit multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit, and it pays nothing at all from the hip.": 瞄准状态下连续命中会累积射击连击：命中 1 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中就掉 1 层，腰射则完全不生效。
-  "Scoped in, consecutive hits build a Shot Combo Counter: 5 landing hits multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit, and it pays nothing at all from the hip.": 瞄准状态下连续命中会累积射击连击：命中 5 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中就掉 1 层，腰射则完全不生效。
+  "Scoped in, consecutive hits build a Shot Combo Counter: 1 landing hit multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit and for every miss while scoped, and a hip-fired shot builds nothing but still pays it.": 瞄准状态下连续命中会累积射击连击：命中 1 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中、或瞄准时每打空一枪，都会掉 1 层；腰射不累积连击，但照样享受倍率。
+  "Scoped in, consecutive hits build a Shot Combo Counter: 5 landing hits multiply damage by 1.5x, and every threefold count past that adds another 0.5x. It drops by one for every 2 s without a hit and for every miss while scoped, and a hip-fired shot builds nothing but still pays it.": 瞄准状态下连续命中会累积射击连击：命中 5 次即让伤害 ×1.5，此后每当连击数翻到三倍就再 +0.5。每 2 秒没有命中、或瞄准时每打空一枪，都会掉 1 层；腰射不累积连击，但照样享受倍率。
   "Scored in kills per minute, counting the fraction of the current target already gone. A weapon that removes 3% of one Thrax in 180 seconds scores 0.03 and still has a rank.": 以每分钟击杀计分，并计入当前目标已被打掉的那一部分。一把 180 秒只能削掉一只凶魂 3% 的武器得 0.03 分，它仍然有名次。
   "Search a target…": 搜索目标…
   "Searches": 搜索方案
@@ -1033,7 +1033,7 @@ ui:
   "How to check it": "如何核对"
   "Zazvat-Kar, the Akstiletto Prime-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Zazvat-Kar」，Akstiletto Prime 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Zoom": 变焦
-  "A missed shot drops the combo counter. This entry cannot miss, so only its {seconds} s timer removes a stack, and the number is the ceiling.": "打空一枪会掉连击。这个条目不会打空，所以只有 {seconds} 秒计时会掉层，数字是上限。"
+  "A miss while scoped drops the combo counter by one. This entry cannot miss, so only its {seconds} s timer removes a stack, and the number is the ceiling.": "瞄准时打空一枪会掉 1 层连击。这个条目不会打空，所以只有 {seconds} 秒计时会掉层，数字是上限。"
   "a benchmark build — measured under": 基准配装 —— 测试标准
   "a bigger magazine makes the reload LONGER here and the sim does not know it — shells are loaded one at a time, so Ammo Stock buys capacity and pays for it in reload": 弹匣越大装填越慢，模拟不知道这件事 —— 子弹是一发一发上的，所以弹药储存换来的容量要拿装填时间去付
   "A partly charged shot is not modelled: an early release multiplies the Normal Shot's own base by (1 + charge) and adds the evolution's flat damage outside that, so 50% is 40 x 1.5 + 3, not 43 x 1.5. Only the two ends are carried: no charge, and the full charge.": "半蓄力射击未建模：提前松手时，乘以 (1 + 蓄力进度) 的是普通射击自己的基数，进化的固定伤害加在倍率之外，所以 50% 蓄力是 40 × 1.5 + 3，不是 43 × 1.5。这里只有两端：不蓄力和满蓄力。"

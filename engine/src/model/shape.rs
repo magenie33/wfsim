@@ -169,6 +169,17 @@ pub struct BlobBase {
     pub radius_at_cap_m: f64,
 }
 
+/// See [`crate::data::weapons::EmbedSpec`].
+#[derive(Debug, Clone)]
+pub struct EmbedBase {
+    pub hit: RadialBase,
+    pub body_every_seconds: f64,
+    pub body_more_hits: u32,
+    pub head_after_seconds: f64,
+    pub head_explosion_hits: u32,
+    pub explosion: RadialBase,
+}
+
 /// One throw's grenade, the bomblet's shape.
 #[derive(Debug, Clone)]
 pub struct GrenadeThrowBase {

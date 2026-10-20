@@ -97,6 +97,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     if let Some(f) = base.lingering.as_mut() {
                         f.base_crit_chance += v;
                     }
+                    if let Some(e) = base.embed.as_mut() {
+                        e.hit.base_crit_chance += v;
+                        e.explosion.base_crit_chance += v;
+                    }
                     if let Some(g) = base.spectral_dagger.as_mut() {
                         g.strike.base_crit_chance += v;
                         g.blast.base_crit_chance += v;
@@ -196,6 +200,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     if let Some(f) = base.lingering.as_mut() {
                         f.base_status_chance += v;
                     }
+                    if let Some(e) = base.embed.as_mut() {
+                        e.hit.base_status_chance += v;
+                        e.explosion.base_status_chance += v;
+                    }
                     if let Some(g) = base.spectral_dagger.as_mut() {
                         g.strike.base_status_chance += v;
                         g.blast.base_status_chance += v;
@@ -213,6 +221,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     if let Some(f) = base.lingering.as_mut() {
                         f.base_status_chance += v;
                     }
+                    if let Some(e) = base.embed.as_mut() {
+                        e.hit.base_status_chance += v;
+                        e.explosion.base_status_chance += v;
+                    }
                     if let Some(g) = base.spectral_dagger.as_mut() {
                         g.strike.base_status_chance += v;
                         g.blast.base_status_chance += v;
@@ -225,6 +237,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     }
                     if let Some(f) = base.lingering.as_mut() {
                         f.base_crit_damage += v;
+                    }
+                    if let Some(e) = base.embed.as_mut() {
+                        e.hit.base_crit_damage += v;
+                        e.explosion.base_crit_damage += v;
                     }
                     if let Some(g) = base.spectral_dagger.as_mut() {
                         g.strike.base_crit_damage += v;

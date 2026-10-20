@@ -309,6 +309,16 @@ pub fn base_panel_assembled(
         explosion: a_radial(&RadialSpec { takes_multishot: false, ..b.explosion.clone() }),
         radius_at_cap_m: b.radius_at_cap_m,
     });
+    // THE EMBEDDED ORB, both parts through the same builder. One orb per landed
+    // projectile, so neither part takes multishot again.
+    let embed = s.attack.embed.as_ref().map(|e| crate::model::EmbedBase {
+        hit: a_radial(&RadialSpec { takes_multishot: false, ..e.hit.clone() }),
+        body_every_seconds: e.body_every_seconds,
+        body_more_hits: e.body_more_hits,
+        head_after_seconds: e.head_after_seconds,
+        head_explosion_hits: e.head_explosion_hits,
+        explosion: a_radial(&RadialSpec { takes_multishot: false, ..e.explosion.clone() }),
+    });
 
     // THE BOMBLETS, both halves through the same builder — see `ClusterSpec`.
     // The CONTACT hit is a radial of one BODY RADIUS: the smallest sphere that
@@ -620,6 +630,7 @@ pub fn base_panel_assembled(
         cluster,
         reload_grenade,
         blob,
+        embed,
         reload_from_empty_speed: s.reload_from_empty_speed.unwrap_or(0.0),
         slam,
         shockwave: s.attack.shockwave,

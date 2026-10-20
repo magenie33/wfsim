@@ -31,21 +31,21 @@ pub(super) struct BlobPile {
 /// lifespan, so a pile fed faster than it expires does not detonate at all.
 #[wfsim_gas_macro::metered]
 pub(super) fn embed_blob(
-    piles: &mut Vec<BlobPile>,
+    entities: &mut Vec<Entity>,
     part: crate::build::loadout::ResolvedBlob,
     owner: Seat,
     body: usize,
     stacks: u32,
     t: f64,
 ) -> Option<BlobPile> {
-    let i = match piles.iter().position(|p| p.owner == owner && p.body == body) {
+    let i = match entities.iter().position(|e| matches!(e, Entity::Pile(p) if p.owner == owner && p.body == body)) {
         Some(i) => i,
         None => {
-            piles.push(BlobPile { owner, body, part, stacks: 0, fuse_at: t });
-            piles.len() - 1
+            entities.push(Entity::Pile(BlobPile { owner, body, part, stacks: 0, fuse_at: t }));
+            entities.len() - 1
         }
     };
-    let pile = &mut piles[i];
+    let Entity::Pile(pile) = &mut entities[i] else { unreachable!() };
     pile.part = part;
     pile.fuse_at = t + part.lifespan_seconds;
     if stacks > part.cap {
@@ -58,40 +58,9 @@ pub(super) fn embed_blob(
     }
     // "Blobs which reach 10 stacks now immediately explode" — and a pile does
     // not hold more than the cap, so a shot that crosses it pays the cap.
-    let mut done = piles.remove(i);
+    let Entity::Pile(mut done) = entities.remove(i) else { unreachable!() };
     done.stacks = part.cap;
     Some(done)
-}
-
-/// EVERY PILE WHOSE LIFESPAN RUNS OUT BEFORE `until`, in the order they do.
-#[allow(clippy::too_many_arguments)]
-#[wfsim_gas_macro::metered]
-pub(super) fn process_blobs(
-    // See `process_ticks`.
-    w: &CardWindows,
-    piles: &mut Vec<BlobPile>,
-    gal: &mut GalStacks,
-    arc: &mut ArcRuntime,
-    until: f64,
-    params: &FightParams,
-    active: &FightParams,
-    ctx: &FieldCtx,
-    r: &mut RunResult,
-    rec: &mut crate::record::Record,
-    d: &mut crate::rules::rng::Draws,
-    bodies: &mut [Body],
-) {
-    while let Some(i) = piles
-        .iter()
-        .enumerate()
-        .filter(|(_, p)| p.fuse_at < until)
-        .min_by(|a, b| a.1.fuse_at.total_cmp(&b.1.fuse_at))
-        .map(|(i, _)| i)
-    {
-        let pile = piles.remove(i);
-        let at = pile.fuse_at;
-        detonate_blob(w, pile, at, gal, arc, params, active, ctx, r, rec, d, bodies);
-    }
 }
 
 /// A PILE GOES OFF at `at`: one stack's explosion times the stacks, on every

@@ -22,10 +22,8 @@ effects:
   # NOT "WHEN AIMING" ANY MORE, and the card was changed to say so: "Updated
   # Harkonar Scope's Mod description to read '+Xs Combo Duration' (removed the
   # 'when Aiming' bit) as the Mod extends Combo Duration outside of aiming"
-  # (Update 38). The COUNTER is still the aimed fight's — `resolve` drops the
-  # whole spec from the hip, which is the mechanic's own gate and not this
-  # mod's — so a hip-fired build is offered this card and it moves nothing,
-  # exactly as the weapon's own combo does.
+  # (Update 38). It agrees with M117: from the hip the counter still pays and
+  # still decays on this window, and only a scoped hit builds it.
   # SECONDS, so it is written as a duration and not as a rank ladder: the
   # card's placeholder is "+Xs", which the fill answers from `duration_seconds`
   # (and `duration_rank0` for the other end of the ladder) exactly as Argon

@@ -469,6 +469,9 @@ pub struct AttackSpec {
     /// A BLOB THAT EMBEDS AND DETONATES LATER — see [`BlobSpec`].
     #[serde(default)]
     pub blob: Option<Box<BlobSpec>>,
+    /// AN ORB THAT EMBEDS IN WHAT IT HITS and acts on its own — see [`EmbedSpec`].
+    #[serde(default)]
+    pub embed: Option<Box<EmbedSpec>>,
     /// PRIMARY COMPRESSION's row for this attack — see [`CompressionSpec`].
     /// `None` means the weapon is absent from the table, which is not the same
     /// as 0%: absent is untested or inapplicable (every secondary, since the
@@ -878,6 +881,30 @@ pub struct BlobSpec {
     /// The radius of a full pile; between one stack and `cap` it grows
     /// linearly — *"0.3 - 2.8 meter radius, scaling with the number of stacks"*.
     pub radius_at_cap_m: f64,
+}
+
+/// AN ORB EVERY LANDED PROJECTILE LEAVES IN THE BODY IT HIT — the Vectis
+/// Incarnon's (MEASUREMENTS M117). It hits at once, and then what it does
+/// depends on where it landed: in a BODY it stays and hits again on a clock; in
+/// a HEAD it hits no more and, after a delay, explodes.
+///
+/// Every part of it is Area of Effect damage, so Cold's crit damage and
+/// Puncture's crit chance reach none of it. Each landing makes its own orb,
+/// carrying the shot's first-round and shot combo multipliers to every hit.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct EmbedSpec {
+    /// What the orb deals each time it hits, at its own small radius.
+    pub hit: RadialSpec,
+    /// In a body: seconds between hits after the first, and how many more.
+    pub body_every_seconds: f64,
+    pub body_more_hits: u32,
+    /// In a head: seconds until it explodes, and how many hits the explosion
+    /// lands. The explosion takes the additive headshot bracket (the scope,
+    /// Deadhead) and not the head's location multiplier.
+    pub head_after_seconds: f64,
+    pub head_explosion_hits: u32,
+    pub explosion: RadialSpec,
 }
 
 /// ONE THROW'S GRENADE: a contact hit and an explosion, laid out like a bomblet.

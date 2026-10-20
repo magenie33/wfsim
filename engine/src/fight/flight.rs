@@ -108,10 +108,7 @@ pub(super) struct Ground<'w> {
     pub(super) rec: &'w mut crate::record::Record,
     pub(super) rng: &'w mut Rng,
     pub(super) bodies: &'w mut [Body],
-    pub(super) fields: &'w mut Vec<FieldState>,
-    pub(super) orbs: &'w mut Vec<OrbState>,
-    pub(super) blobs: &'w mut Vec<BlobPile>,
-    pub(super) daggers: &'w mut Vec<DaggerState>,
+    pub(super) entities: &'w mut Vec<Entity>,
     pub(super) body_at: &'w [crate::rules::space::Vec2],
     pub(super) bounce_bodies: &'w [crate::rules::space::Vec2],
     pub(super) area_near: &'w crate::rules::space::Neighbours,
@@ -226,8 +223,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             sniper_combo: &mut me.sniper_combo,
             weakpoint_pile: &mut me.weakpoint_pile,
             strike_spread: &mut strike_spread,
-            fields: g.fields,
-            orbs: g.orbs,
+            entities: g.entities,
             any_big: &mut any_big,
             any_head: &mut any_head,
             beam_merge: &mut beam_merge,
@@ -245,7 +241,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     // THE BLOB EMBEDS in the body the shot struck, and a pile this shot takes
     // to its cap goes off now (`fight::blobs`).
     if let Some(part) = active.blob.filter(|_| landed_this_shot) {
-        if let Some(pile) = embed_blob(g.blobs, part, me.seat, 0, l.blob_stacks, t) {
+        if let Some(pile) = embed_blob(g.entities, part, me.seat, 0, l.blob_stacks, t) {
             detonate_blob(
                 &me.windows, pile, t, &mut me.gal, &mut me.arc,
                 me.params, active, &me.field_ctx, g.r, g.rec, d, g.bodies,
@@ -296,7 +292,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
 
     // A KILL THIS SWING OR ANYTHING BEFORE IT MADE is a spectral dagger, if the
     // form that makes them was up when it swung.
-    make_daggers(me.seat, me.params, active, t, g.r, &mut me.dagger_kill_mark, g.daggers);
+    make_daggers(me.seat, me.params, active, t, g.r, &mut me.dagger_kill_mark, g.entities);
 
     let mut t = t;
     after_the_landing(

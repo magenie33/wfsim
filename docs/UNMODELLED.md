@@ -88,7 +88,7 @@ What it turned on:
   WEAPON and therefore cannot describe a form at all;
 - **radial falloff**, because a missed projectile detonates beside the target
   and the explosion finally has an epicentre distance to read. 10 admissions;
-- **the shot combo counter dropping on a miss**, which is the other half of a
+- **the shot combo counter dropping by one on a scoped miss** (M117), the other half of a
   mechanic that otherwise only decays on its timer;
 - **projectile flight**: a projectile's hit, and everything keyed off it, lands
   `gap / speed` after the pull, and a Projectile Speed bonus shortens it

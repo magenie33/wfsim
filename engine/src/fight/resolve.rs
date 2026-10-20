@@ -149,6 +149,11 @@ pub(super) fn resolve_the_shot(
         // every single shot. That is the wiki's Vulkar example, and it is the
         // reason this cannot be `mag_left == mag_max` at the top of the pull.
         //
+        // THE COUNTER IS THE ONE THE HUD DRAWS, a fraction rounded up. Measured
+        // (M117): a Vectis Prime under Energized Munitions (a round costs 0.25)
+        // pays rounds 4 to 7 — 1.0, 0.75, 0.5, 0.25 left all read 1 — and not
+        // round 8, which empties it.
+        //
         // The cost is `round_cost`, the one the spend below pays.
         let mag_max = if incarnon.in_base_form {
             params.cycle.as_ref().map_or(0.0, |c| c.base_form.magazine_size)
@@ -156,7 +161,7 @@ pub(super) fn resolve_the_shot(
             ammo.cap
         };
         let first_round = active.first_round_damage > 0.0
-            && ((mag_left - round_cost) - (mag_max - 1.0)).abs() < 1e-9;
+            && ((mag_left - round_cost - 1e-9).ceil() - (mag_max - 1.0)).abs() < 1e-9;
         // The round itself is spent BELOW, once the multishot roll is known:
         // Plentiful Mayhem makes the extra projectiles cost ammo too, so the
         // draw cannot be settled before the roll.

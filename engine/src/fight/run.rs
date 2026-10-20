@@ -429,10 +429,7 @@ pub fn run_once_traced(
         mut next_frame,
         mut bodies,
         mut r,
-        mut fields,
-        mut orbs,
-        mut daggers,
-        mut blobs,
+        mut entities,
         mut ghost_pile,
         body_at,
         area_near,
@@ -462,26 +459,6 @@ pub fn run_once_traced(
         }
         let (_, other) = open(also, Seat(i + 1), rng, rec, &None);
         seats.push(other);
-    }
-
-    /// THE ENTRIES ONE SEAT LEFT BEHIND, taken out of the list IN ORDER.
-    ///
-    /// In order because the list is settled in it: two orbs of the same seat
-    /// strike in the sequence they were thrown, and a filter that reversed them
-    /// would roll their crits the other way round. What is left behind keeps
-    /// its own order too, so the next seat's share is the one it would have had.
-    fn owned_by<T>(list: &mut Vec<T>, seat: Seat, owner: impl Fn(&T) -> Seat) -> Vec<T> {
-        let mut mine = Vec::new();
-        let mut rest = Vec::with_capacity(list.len());
-        for x in list.drain(..) {
-            if owner(&x) == seat {
-                mine.push(x);
-            } else {
-                rest.push(x);
-            }
-        }
-        *list = rest;
-        mine
     }
 
     /// WHO ACTS NEXT — the earliest `next_t`, and a TIE GOES TO THE LOWER
@@ -537,11 +514,9 @@ pub fn run_once_traced(
                 &me.windows, &mut bodies[0], &mut me.gal, &mut me.arc, l.t + 1e-9,
                 me.params, active, &mut r, rec, &mut me.d.status, &me.params.foe, 0,
             );
-            process_field_ticks(
-                &me.windows, &mut fields, &mut me.gal, &mut me.arc, l.t,
-                me.params, me.fixed.field_active, &me.field_ctx, &mut r, rec, &mut me.d,
-                &mut bodies,
-            );
+            // …AND EVERY ENTITY OF THIS SEAT DUE BEFORE IT: a pile whose fuse ran
+            // out goes off before the round that would have fed it lands.
+            process_entities(&mut entities, l.t, &mut turn!(me, active, &mut me.d), &mut r, rec, &mut bodies);
             l.pellets_before = r.pellets;
             l.headshots_before = r.weakpoint_hits + r.headshots_on_others;
             // WHAT IT DEALS POINTS BACK AT THE PULL THAT FIRED IT, not at
@@ -555,10 +530,7 @@ pub fn run_once_traced(
                     rec,
                     rng,
                     bodies: &mut bodies,
-                    fields: &mut fields,
-                    orbs: &mut orbs,
-                    blobs: &mut blobs,
-                    daggers: &mut daggers,
+                    entities: &mut entities,
                     body_at: &body_at,
                     bounce_bodies: &bounce_bodies,
                     area_near: &area_near,
@@ -893,43 +865,20 @@ pub fn run_once_traced(
             head_landing: shot_head_landing,
         };
         settle_what_is_in_the_air(
-            &me.windows,
-            me.params,
-            active,
-            me.fixed.field_active,
+            &mut turn!(me, active, &mut *d),
             rec,
-            d,
             &mut t,
-            &me.field_ctx,
-            &mut fields,
-            &mut orbs,
+            &mut entities,
             &mut me.meter,
-            me.seat,
             &mut me.ammo,
             &mut bodies,
-            &mut me.gal,
-            &mut me.arc,
             &mut r,
             &mut me.strip_kills_seen,
         );
-        // …AND THE DAGGERS DUE BEFORE THIS SWING, which fly on a clock of their
-        // own and never hold one up — the kills since the last swing made first,
-        // each at its own time.
-        make_daggers(me.seat, me.params, active, t, &mut r, &mut me.dagger_kill_mark, &mut daggers);
-        process_daggers(
-            &me.windows, &mut daggers, &mut me.gal, &mut me.arc, t,
-            me.params, me.params, &me.field_ctx, &mut r, rec, d, &mut bodies,
-            &mut me.dagger_kill_mark, &mut me.influence_until,
-        );
-        // …AND THIS SEAT'S BLOBS whose lifespan ran out before this shot.
-        {
-            let mut mine = owned_by(&mut blobs, me.seat, |p| p.owner);
-            process_blobs(
-                &me.windows, &mut mine, &mut me.gal, &mut me.arc, t,
-                me.params, active, &me.field_ctx, &mut r, rec, d, &mut bodies,
-            );
-            blobs.append(&mut mine);
-        }
+        // …AND THE DAGGERS THE KILLS SINCE THE LAST SWING MADE, each at its own
+        // kill's time — they fly on a clock of their own and never hold one up.
+        make_daggers(me.seat, me.params, active, t, &mut r, &mut me.dagger_kill_mark, &mut entities);
+        process_entities(&mut entities, t, &mut turn!(me, active, &mut *d), &mut r, rec, &mut bodies);
         r.shots += 1;
         r.body_shots += bodies.len() as u32;
 
@@ -948,7 +897,7 @@ pub fn run_once_traced(
         // throw. Without one, the trigger deploys, which is what the form's own
         // `transformed` mode shows.
         if let Some(o) = active.orb.filter(|_| active.meter.is_none()) {
-            throw_orb(o, me.seat, me.params, t, &mut orbs);
+            throw_orb(o, me.seat, me.params, t, &mut entities);
         }
 
         // WHAT THE PULL DECIDED, owned by the hit it becomes (`fight::flight`).
@@ -1026,10 +975,7 @@ pub fn run_once_traced(
                     rec,
                     rng,
                     bodies: &mut bodies,
-                    fields: &mut fields,
-                    orbs: &mut orbs,
-                    blobs: &mut blobs,
-                    daggers: &mut daggers,
+                    entities: &mut entities,
                     body_at: &body_at,
                     bounce_bodies: &bounce_bodies,
                     area_near: &area_near,
@@ -1073,87 +1019,34 @@ pub fn run_once_traced(
             // every other — which is what happened the day the replace rule
             // landed. Settling up to the throw is the same order
             // the shot loop settles them in.
-            process_orbs(
-                &me.windows,
-                &mut orbs, &mut me.gal, &mut me.arc, at,
-                params, me.fixed.field_active, &me.field_ctx, &mut r, rec, d, &mut bodies,
-            );
-            throw_orb(o, me.seat, params, at, &mut orbs);
+            let active = me.fixed.field_active;
+            process_entities(&mut entities, at, &mut turn!(me, active, &mut *d), &mut r, rec, &mut bodies);
+            throw_orb(o, me.seat, params, at, &mut entities);
         }
     }
     }
 
-    // EACH OWNER SETTLES ITS OWN. An orb and a cloud each carry the seat that
-    // left it, and each reads the SHOOTER's live windows — so draining the
-    // whole list under one seat's cards pays a second seat's leavings out of
-    // the wielder's build. `owned_by` takes one seat's share in order, so a
-    // fight with one seat hands the same list to the same call it always did.
-    //
-    // THE ORDER IS THE FIGHT'S, NOT THE ROSTER'S: every orb, then every cloud,
-    // then the drain. Each settles what preceded it and pushes procs of its
-    // own, so looping a seat through all three would reorder how status
-    // settles — a golden-value change rather than an attribution one.
+    // EACH OWNER SETTLES ITS OWN, up to the end of the engagement: an entity
+    // carries the seat that left it and reads that SHOOTER's live windows, so
+    // draining the whole list under one seat's cards would pay a second seat's
+    // leavings out of the wielder's build. What would act after the end never
+    // does — a pile whose fuse outlasts it, a volley thrown too late — and the
+    // clouds still burning tick with the buff snapshot of the last shot.
     let end = params.duration_seconds;
-    // A MAGAZINE THROWN BY A RELOAD NO SHOT FOLLOWED — the engagement ended
-    // inside it — lands if it left before the clock ran out, and not otherwise.
     for me in seats.iter_mut() {
-        if let Some((at, from_empty)) = me.ammo.grenade_thrown_at.take().filter(|(at, _)| *at < end) {
-            let active = me.params.cycle.as_ref().map_or(me.params, |cy| &cy.base_form);
-            throw_reload_grenades(
-                &me.windows, me.seat, at, from_empty, &me.field_ctx, &mut me.gal, &mut me.arc,
-                me.params, active, &mut r, rec, &mut me.d, &mut bodies,
-            );
-        }
-    }
-    // A PILE WHOSE LIFESPAN RUNS OUT INSIDE THE ENGAGEMENT goes off; one that
-    // would go off after it never does.
-    for (si, me) in seats.iter_mut().enumerate() {
         let active = match &me.params.cycle {
             Some(cy) if me.incarnon.in_base_form => &cy.base_form,
             _ => me.params,
         };
-        let mut mine = owned_by(&mut blobs, Seat(si), |p| p.owner);
-        process_blobs(
-            &me.windows, &mut mine, &mut me.gal, &mut me.arc, end,
-            params, active, &me.field_ctx, &mut r, rec, &mut me.d, &mut bodies,
-        );
-        blobs.append(&mut mine);
-    }
-    for (si, me) in seats.iter_mut().enumerate() {
-        let mut mine = owned_by(&mut orbs, Seat(si), |o| o.owner);
-        process_orbs(
-            &me.windows, &mut mine, &mut me.gal, &mut me.arc, end,
-            params, me.fixed.field_active, &me.field_ctx, &mut r, rec, &mut me.d,
-            &mut bodies,
-        );
-        orbs.append(&mut mine);
-    }
-    for (si, me) in seats.iter_mut().enumerate() {
+        // A MAGAZINE THROWN BY A RELOAD NO SHOT FOLLOWED — the engagement ended
+        // inside it.
+        if let Some((at, from_empty)) = me.ammo.grenade_thrown_at.take() {
+            entities.push(Entity::Volley(Volley { owner: me.seat, at, from_empty }));
+        }
         // THE KILLS SINCE THE LAST SWING still make their daggers, and one made
         // in time lands inside the engagement.
-        let active = match &me.params.cycle {
-            Some(cy) if me.incarnon.in_base_form => &cy.base_form,
-            _ => me.params,
-        };
-        make_daggers(me.seat, me.params, active, end, &mut r, &mut me.dagger_kill_mark, &mut daggers);
-        let mut mine = owned_by(&mut daggers, Seat(si), |g| g.owner);
-        process_daggers(
-            &me.windows, &mut mine, &mut me.gal, &mut me.arc, end,
-            me.params, me.params, &me.field_ctx, &mut r, rec, &mut me.d, &mut bodies,
-            &mut me.dagger_kill_mark, &mut me.influence_until,
-        );
-        daggers.append(&mut mine);
-    }
-    // The clouds still burning after the last shot, with the buff snapshot from
-    // that shot (nothing refreshes it once firing stops).
-    for (si, me) in seats.iter_mut().enumerate() {
-        let mut mine = owned_by(&mut fields, Seat(si), |f| f.owner);
-        process_field_ticks(
-            &me.windows, &mut mine, &mut me.gal, &mut me.arc, end,
-            params, me.fixed.field_active, &me.field_ctx, &mut r, rec, &mut me.d,
-            &mut bodies,
-        );
-        fields.append(&mut mine);
+        make_daggers(me.seat, me.params, active, end, &mut r, &mut me.dagger_kill_mark, &mut entities);
+        process_entities(&mut entities, end, &mut turn!(me, active, &mut me.d), &mut r, rec, &mut bodies);
     }
     // …then drain what is left up to the end of the engagement — EVERY BODY,
     // not just the aimed one. A neighbour a chain hop or a splash set burning

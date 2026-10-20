@@ -223,6 +223,8 @@ pub struct FightParams {
     /// THE BLOB EACH SHOT EMBEDS — see
     /// [`crate::build::loadout::ResolvedBlob`] and `fight::blobs`.
     pub blob: Option<crate::build::loadout::ResolvedBlob>,
+    /// See [`crate::build::loadout::ResolvedEmbed`].
+    pub embed: Option<crate::build::loadout::ResolvedEmbed>,
     /// DIRECT-hit damage falloff, when this attack lists one. Read against the
     /// distance the shot travelled; `None` = full damage wherever it lands.
     ///
@@ -626,8 +628,8 @@ pub struct FightParams {
     pub pellet_damage: Vec<(crate::rules::damage::DamageVector, crate::rules::damage::DamageVector)>,
     /// See `data::weapons::AttackSpec::multishot_adds_damage`.
     pub multishot_adds_damage: bool,
-    /// THE SHOT COMBO COUNTER, or `None` — which is what a sniper fired from
-    /// the hip already resolved to, so nothing here asks about aiming.
+    /// THE SHOT COMBO COUNTER, or `None` on a weapon that has none. Aiming is
+    /// `combo_builds`, since from the hip the counter still pays (M117).
     pub sniper_combo: Option<crate::model::SniperCombo>,
     /// The counter the run OPENS with. Seeded like every other stack count,
     /// and it matters more than most: the counter costs LANDING HITS and a
@@ -636,6 +638,9 @@ pub struct FightParams {
     pub combo_initial: u32,
     /// ...and the card's "no timeout": the counter never decays.
     pub combo_held: bool,
+    /// Whether a landing hit adds to the counter: only scoped in (M117). From
+    /// the hip the counter still pays and still decays, and a hit builds nothing.
+    pub combo_builds: bool,
     /// The Ocucor's tendril cap (0 = no tendrils). Their own damage is not
     /// modelled and should not be — see `data::weapons::TendrilSpec`; the COUNT
     /// is what Sentient Surge reads.

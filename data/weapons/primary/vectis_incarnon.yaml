@@ -9,9 +9,14 @@ transform_group: vectis
 transforms_from: vectis
 
 # see notes: bulk_intake_stats_are
-unmodeled:
-  - "The Incarnon Form Embed AoE is not modelled; this form has more parts than this entry carries."
-  - "The sniper combo counter and the scope's headshot bonus are not modelled in this form. Both are on the base form, and no source says whether either survives the transform."
+
+# THE FORM IS STILL A SNIPER, as the Prime's is (M117): the shot combo counter
+# and the scope carry over from the base form.
+sniper_combo:
+  min: 1
+scope:
+  magnification: 4.5
+  headshot_damage: 0.5
 
 gauge_form:
   gauge:
@@ -55,8 +60,9 @@ attack:
   # Overload's count.
   forced_procs: [cold]
   punch_through_m: 0.0
-  damage: { cold: 5 }   # total 5
-  # The radial part — rules in MECHANICS §7.
+  # 150 COLD, the figure the Genesis page gives the form on both variants — only
+  # the base-damage evolutions differ between them.
+  damage: { cold: 150 }   # total 150
   # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): FOUR PER CENT: 0.1 m -> +8%, because it "uses embed radial instead of headshot explosion".
   # …AND ITS STACKING COLUMN READS `N/A`, which is not an answer. Verbatim:
   #   Vectis (Prime) | Incarnon Form + AoE | 4% | N/A | Snapshot | 0.1 m | +8%
@@ -69,24 +75,38 @@ attack:
     stacking: multiplies
     radius_calculation: snapshot
     # THE ROW READS A RADIUS THIS WEAPON DOES NOT HAVE. Its Base Radius column
-    # is 0.1 m against the 6.7 m explosion below, and the wiki's note says which
-    # one that is: the arcane takes the EMBED radial, not the headshot
-    # explosion. 4% is the row's account of how far off that is, and it does not
+    # is 0.1 m against the 6.7 m headshot explosion below, and the wiki's note
+    # says which one that is: the arcane takes the EMBED radial, not the
+    # headshot explosion. 4% is the row's account of how far off that is, and it does not
     # reconstruct 0.1 from 6.7 — so the metres are declared and the percentage
     # stays the transcribed column it is. 0.8 x 0.1 = the table's +8%.
     reads_radius_m: 0.1
 
-  radial:
-    damage: { cold: 5 }   # total 5
-    radius_m: 6.7
-    falloff_start_m: 0
-    falloff_reduction: 0
-    # Guaranteed COLD on the explosion (wiki module).
-    forced_procs: [cold]
-    crit_chance: 0.3
-    crit_multiplier: 2.5
-    status_chance: 0.3
-    # see notes: declared_no_co_catalog
+  # THE ORB EVERY LANDED ROUND LEAVES IN THE BODY IT HIT — the Prime's, whose
+  # file carries the readings (M117); the Genesis page gives one set of numbers
+  # for both variants.
+  embed:
+    hit:
+      damage: { cold: 25 }   # total 25
+      radius_m: 0.5
+      forced_procs: [cold]
+      crit_chance: 0.3
+      crit_multiplier: 2.5
+      status_chance: 0.3
+    body_every_seconds: 1.0
+    body_more_hits: 2
+    head_after_seconds: 0.4
+    head_explosion_hits: 2
+    explosion:
+      damage: { cold: 150 }   # total 150
+      radius_m: 6.7
+      falloff_start_m: 0
+      falloff_reduction: 0.7
+      forced_procs: [cold]
+      crit_chance: 0.3
+      crit_multiplier: 2.5
+      status_chance: 0.3
+      # see notes: declared_no_co_catalog
 
 # incarnon_evolutions: see data/weapons/primary/vectis.yaml (shared group)
 

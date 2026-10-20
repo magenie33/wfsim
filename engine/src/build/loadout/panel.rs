@@ -254,6 +254,17 @@ pub struct ResolvedBlob {
     pub radius_at_cap_m: f64,
 }
 
+/// See [`crate::data::weapons::EmbedSpec`] — its two parts through the mods.
+#[derive(Debug, Clone, Copy)]
+pub struct ResolvedEmbed {
+    pub hit: ResolvedRadial,
+    pub body_every_seconds: f64,
+    pub body_more_hits: u32,
+    pub head_after_seconds: f64,
+    pub head_explosion_hits: u32,
+    pub explosion: ResolvedRadial,
+}
+
 impl ResolvedBlob {
     /// HOW FAR A PILE OF `stacks` REACHES — linear from one stack to `cap`.
     pub fn radius_at(&self, stacks: u32) -> f64 {
@@ -360,6 +371,7 @@ pub struct ResolvedPanel {
     pub reload_grenade: Option<ResolvedReloadGrenade>,
     /// The resolved blob, when every shot embeds one.
     pub blob: Option<ResolvedBlob>,
+    pub embed: Option<ResolvedEmbed>,
     /// THE CONE, accuracy mods applied. A zero-width one lands on the reticle;
     /// `None` = this entry's spread is not transcribed, so no shot of it is
     /// allowed to miss and the entry admits that.
@@ -619,13 +631,13 @@ pub struct ResolvedPanel {
     /// weapon that has no tendrils.
     pub tendril_range_m: f64,
     pub tendril_acquire_deg: f64,
-    /// THE SHOT COMBO COUNTER, or `None` — and `None` is what a sniper fired
-    /// from the hip resolves to, because *"building combo and benefiting from
-    /// its multiplier requires being scoped in"* (wiki `Sniper Rifle`). That is
-    /// the whole gate: it is answered once, here, so the simulator and the
-    /// optimizer get the same answer for a hip-fired scenario without either of
-    /// them knowing what a sniper is.
+    /// THE SHOT COMBO COUNTER, or `None` on a weapon that has none. It is
+    /// carried whether or not the Tenno aims: from the hip the counter still
+    /// pays its multiplier, and only scoped in does a hit add to it (M117).
     pub sniper_combo: Option<crate::model::SniperCombo>,
+    /// Scoped in: whether a landing hit builds the counter. Answered once,
+    /// here, so the simulator and the optimizer read the same gate.
+    pub sniper_combo_builds: bool,
     /// Sentient Surge: crit chance added PER ACTIVE TENDRIL, relative to the
     /// unmodded base — "Additive to other crit chance and status chance mods"
     /// (wiki), so it joins the same bucket Pistol Gambit does rather than

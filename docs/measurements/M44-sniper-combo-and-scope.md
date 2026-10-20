@@ -9,6 +9,10 @@ exists: the repo's rule is that a faithful-looking implementation without a
 measurement is not correct, and nothing here should be read as calibrated
 until it is.
 
+**M117 ANSWERED QUESTIONS 1 AND 2** on the Vectis Prime: the counter reaches
+the status tick, and an Incarnon form keeps it — its direct hits build it, every
+part of its shot pays it, and the count carries across the transform.
+
 ### What a capture would settle
 
 Four questions the wiki does not answer, in the order they matter:

@@ -25,6 +25,7 @@ mod incarnon_reload_route;
 mod m102_latron_prime;
 mod m103_latron_punch_through;
 mod m111_dual_toxocyst_neurotoxin;
+mod m117_vectis_prime_chamber;
 mod melee;
 mod okina;
 mod orbs_fields_beams;
@@ -82,6 +83,7 @@ impl Default for FightParams {
             cluster: None,
             reload_grenade: None,
             blob: None,
+            embed: None,
             // POINT BLANK, and no falloff to notice it with — every golden
             // value in this file was measured with the two of them standing on
             // the same spot, so the fixture keeps them there.
@@ -228,6 +230,7 @@ impl Default for FightParams {
             sniper_combo: None,
             combo_initial: 0,
             combo_held: false,
+            combo_builds: true,
             tendril_max: 0,
             tendril_range_m: 0.0,
             tendril_acquire_deg: 0.0,

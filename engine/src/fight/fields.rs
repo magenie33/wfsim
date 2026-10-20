@@ -2,7 +2,7 @@ use super::*;
 
 /// One live LINGERING FIELD attached to the target — one entity per grenade
 /// that stuck, since each multishot projectile is its own grenade and its own
-/// cloud. `FieldStacking::Refresh` keeps this list at length 1.
+/// cloud. `FieldStacking::Reresh` keeps this list at length 1.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct FieldState {
     /// WHOSE CLOUD IT IS. A field outlives the pull that left it and burns
@@ -115,148 +115,6 @@ impl FightParams {
         // `ResolvedOrb` rather than beside this.
         d
     }
-}
-
-/// Settle every FIELD tick due strictly before `until`, oldest first.
-///
-/// A separate pass from [`process_ticks`] on purpose — a field tick is weapon
-/// damage that rolls its own crit and its own status, not a status settlement —
-/// but the two are INTERLEAVED here: every status event preceding a field tick
-/// is settled before it. That matters in both directions. A field tick's own
-/// procs become DoTs that must still burn — an end-of-run drain running before
-/// the last clouds tick pushes those procs and never settles them — and the CO
-/// bonus a tick reads has to include the statuses its predecessors applied.
-#[allow(clippy::too_many_arguments)]
-#[wfsim_gas_macro::metered]
-pub(super) fn process_field_ticks(
-    // See `process_ticks` — a cloud reads the shooter's live windows.
-    w: &CardWindows,
-    fields: &mut Vec<FieldState>,
-    gal: &mut GalStacks,
-    arc: &mut ArcRuntime,
-    until: f64,
-    params: &FightParams,
-    active: &FightParams,
-    ctx: &FieldCtx,
-    r: &mut RunResult,
-    rec: &mut crate::record::Record,
-    // A field tick decides BOTH a crit and its procs, so it takes the whole
-    // set of streams rather than one of them.
-    d: &mut crate::rules::rng::Draws,
-    // EVERY BODY. A cloud is an AREA, so everyone standing in it burns — which
-    // is the base form's half of what a radius mod buys, and the half a grenade
-    // lives on.
-    bodies: &mut [Body],
-) {
-    // Oldest due tick first, re-scanned each time: a tick's own procs change
-    // what the NEXT tick sees, so the order has to be resolved live.
-    while let Some((i, at)) = fields
-        .iter()
-        .enumerate()
-        .filter(|(_, f)| f.ticks_left > 0 && f.next_tick < until)
-        .min_by(|a, b| a.1.next_tick.total_cmp(&b.1.next_tick))
-        .map(|(i, f)| (i, f.next_tick))
-    {
-        // Status events strictly before this tick land first.
-        process_ticks(
-            w,
-            &mut bodies[0],
-            gal,
-            arc,
-            at + 1e-9,
-            params,
-            active,
-            r,
-            rec,
-            &mut d.status,
-            &params.foe,
-            0,
-        );
-        let part = fields[i].part;
-        let damage_multiplier = fields[i].damage_multiplier;
-        let owner = fields[i].owner;
-        fields[i].next_tick += 1.0 / part.tick_rate;
-        fields[i].ticks_left -= 1;
-        let killed = field_tick(
-            w,
-            owner,
-            &part,
-            damage_multiplier,
-            at,
-            ctx,
-            &mut bodies[0],
-            0,
-            gal,
-            arc,
-            params,
-            active,
-            r,
-            rec,
-            d,
-            &params.foe,
-            crate::record::Origin::Field,
-            None,
-            false,
-        );
-        // …AND EVERY OTHER BODY STANDING IN IT. The cloud is stuck to the body
-        // it was left on, so that is its centre, and the three blast rules
-        // decide the rest: any body touching it burns, at its own falloff
-        // distance measured to its own nearest point (`engine::space`).
-        //
-        // A KILL HERE DOES NOT CLEAR THE CLOUD, which is the one asymmetry: the
-        // clouds belong to the body they are stuck to, so only THAT one dying
-        // takes them with it. Another body dying inside one is just a body
-        // dying inside it.
-        // FROM BODY 1: the one the cloud is stuck to took its tick above.
-        for (b, foe) in bodies.iter_mut().enumerate().skip(1) {
-            let Some(spec) = params.body(b) else { continue };
-            let dist = spec.at.distance(params.target_at);
-            if !crate::rules::space::caught_by_blast(dist, part.radius_m) {
-                continue;
-            }
-            field_tick(
-                w,
-                owner,
-                &part,
-                damage_multiplier * part.falloff_at(crate::rules::space::blast_reach(dist)),
-                at,
-                ctx,
-                foe,
-                b,
-                gal,
-                arc,
-                params,
-                active,
-                r,
-                rec,
-                d,
-                spec.params,
-                crate::record::Origin::Field,
-                None,
-                false,
-            );
-        }
-        if killed {
-            // A CLOUD IS A PLACE, AND IT OUTLIVES WHAT IT STUCK TO.
-            //
-            // The fields are NOT cleared with the corpse they stuck to. The
-            // weapon's own page says so, verbatim: "Torid projectiles can
-            // also attach to corpses and will remain at their position even if
-            // they disintegrate, granting a fixed position mid-air and allowing
-            // a greater spread of toxin damage onto enemies" — and the
-            // respawned individual stands where the dead one did, so the cloud
-            // is on it (asking the same question of the GAS
-            // proc, which the Gas page answers the same way).
-            //
-            // IT MOVES SCORES, and that is the point: the cloud was wiped on
-            // every respawn, which on a fight with instant respawns is most of
-            // its uptime. `one_fight`'s three shapes do not see it because
-            // their Thrax never dies.
-            bodies[0].debuffs.on_death(owner, params.acid_shells, &params.foe);
-            return;
-        }
-    }
-    fields.retain(|f| f.ticks_left > 0);
 }
 
 /// ONE tick of a lingering field, resolved as a full damage INSTANCE — returns
@@ -402,9 +260,11 @@ pub(super) fn field_tick_seeded(
         + gal.mutation.bonus
         + ctx.crit_damage_relative_mods
         + params.arcane.crit_damage_relative;
+    // NO COLD: a field is Area of Effect damage, which Cold's crit damage
+    // "does not apply to" (wiki `Damage/Cold_Damage`, measured M117) — the
+    // same exclusion that keeps Puncture's flat crit chance off it.
     let cd = f.crit_damage
         + f.base_crit_damage * crit_damage_relative
-        + debuffs.cold_cd_bonus(at)
         + crate::data::abilities::final_crit_damage_at(&params.abilities_now(), at);
     // …AND THE CRIT-HEADSHOT FOLD-IN, on a tick that found an eligible head.
     // No exception is invented for it: a strike that can hit a weak point is a

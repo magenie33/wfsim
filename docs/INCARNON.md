@@ -250,7 +250,6 @@ Boar Prime cost nothing to verify). New sessions are needed for:
 - **spool** — rounds-to-full-rate against sustained DPS, one Gorgon;
 - **by-round reload** — Strun, interrupted and uninterrupted;
 - **duplex cadence** — Zylok, shots per second at the listed fire rate;
-- **sniper combo + zoom** — the Vectis session (MECHANICS §"THE SNIPER RIFLE");
 - **Vectis's gauge** — 5 hits × 10 rounds should be 50, the page says 45;
 - **Stug** — everything about it.
 

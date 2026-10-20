@@ -152,15 +152,11 @@ fn harkonar_scope_extends_each_snipers_own_combo_window() {
     assert_eq!(with.sniper_combo.map(|c| c.min), base.sniper_combo.map(|c| c.min));
 }
 
-/// …AND FROM THE HIP IT ADDS SECONDS TO NOTHING.
-///
-/// The counter is the AIMED fight's — "building combo and benefiting from
-/// its multiplier requires being scoped in" — so `resolve` drops the whole
-/// spec, and a card that extended a window that does not exist would be the
-/// plainest kind of lie a panel can tell. The mod is still OFFERED, which
-/// is right: the weapon can hold it and the fight is what decides.
+/// …AND FROM THE HIP THE WINDOW IS STILL THERE. The counter pays from the
+/// hip and decays on its clock there; only an aimed hit builds it (M117).
+/// So the scope's seconds still hold a count that was built scoped in.
 #[test]
-fn a_hip_fired_sniper_has_no_window_for_the_scope_to_extend() {
+fn a_hip_fired_sniper_keeps_the_window_and_builds_nothing() {
     let scope = crate::data::mods::pool_for_build("vectis_prime", &[])
         .into_iter()
         .find(|m| m.id == "harkonar_scope")
@@ -169,7 +165,8 @@ fn a_hip_fired_sniper_has_no_window_for_the_scope_to_extend() {
     let mut tenno = crate::data::tenno::default_tenno().clone();
     tenno.state.aiming = false;
     let hip = super::resolve_for(&base, &[&scope], super::StackPolicy::Emergent, &tenno);
-    assert!(hip.sniper_combo.is_none(), "no counter from the hip, and none to extend");
+    assert_eq!(hip.sniper_combo.map(|c| c.seconds), Some(14.0));
+    assert!(!hip.sniper_combo_builds, "a hip-fired hit adds nothing to the counter");
 }
 
 /// BEAM LENGTH: a flat mod adds AFTER a percentage, and the wiki says so
@@ -1228,10 +1225,12 @@ fn a_scopes_three_kinds_land_in_three_buckets() {
         )
     };
 
-    // THE RUBICO: +50% critical multiplier, relative, so 3.0x -> 4.5x.
+    // THE RUBICO: +50% critical multiplier, relative, so 3.0x -> 4.5x — on the
+    // quantized base, 3.0007x (MECHANICS §Quantization).
     let (aim, no) = pair("rubico");
-    assert!((no.crit_damage - 3.0).abs() < 1e-9, "hip: {}", no.crit_damage);
-    assert!((aim.crit_damage - 4.5).abs() < 1e-9, "scoped: {}", aim.crit_damage);
+    let q = crate::rules::damage::quantize_base_crit_damage(3.0);
+    assert!((no.crit_damage - q).abs() < 1e-9, "hip: {}", no.crit_damage);
+    assert!((aim.crit_damage - q * 1.5).abs() < 1e-9, "scoped: {}", aim.crit_damage);
 
     // THE LANKA: fifty POINTS of crit chance, not half of its 25%.
     let (aim, no) = pair("lanka");
@@ -1251,13 +1250,14 @@ fn a_scopes_three_kinds_land_in_three_buckets() {
     assert!((aim.crit_damage - no.crit_damage).abs() < 1e-9);
 }
 
-/// BOTH SNIPER MECHANICS ARE THE SCOPE'S. *"Building combo and benefiting
-/// from its multiplier requires being scoped in"* (wiki `Sniper Rifle`),
-/// and the zoom buff is a property of a zoom level — so a hip-fired
-/// scenario gets neither, and it is `resolve` that says so, once, for the
-/// simulator and the optimizer alike.
+/// FROM THE HIP: THE COUNTER PAYS AND DOES NOT BUILD, AND THE SCOPE IS GONE.
+/// Measured (M117): a counter built scoped in pays its multiplier on an
+/// unscoped shot, and only scoped hits add to it — against the wiki's
+/// "building combo and benefiting from its multiplier requires being scoped
+/// in". The zoom buff is a property of a zoom level, so the hip has none.
+/// `resolve` says both, once, for the simulator and the optimizer alike.
 #[test]
-fn a_sniper_fired_from_the_hip_has_no_combo_and_no_scope() {
+fn a_sniper_fired_from_the_hip_keeps_its_combo_and_loses_its_scope() {
     let base = WeaponBase::from_data("vectis_prime", false, &[]);
     let refs: Vec<&ModDef> = Vec::new();
     let mut hip = crate::data::tenno::default_tenno().clone();
@@ -1267,7 +1267,8 @@ fn a_sniper_fired_from_the_hip_has_no_combo_and_no_scope() {
     let from_hip = resolve_for(&base, &refs, StackPolicy::Emergent, &hip);
 
     assert_eq!(aimed.sniper_combo.map(|c| c.min), Some(5), "scoped in, it has one");
-    assert!(from_hip.sniper_combo.is_none(), "from the hip it has none");
+    assert_eq!(from_hip.sniper_combo, aimed.sniper_combo, "from the hip it still pays");
+    assert!(aimed.sniper_combo_builds && !from_hip.sniper_combo_builds, "only scoped in does it build");
     // ...and the scope's headshot bonus travels with it, in the additive
     // bracket the wiki puts it in.
     assert!(
@@ -1650,9 +1651,9 @@ fn dual_toxocyst_panel_resolves_by_hand() {
     assert!((p.damage.get(Magnetic) - 480.0).abs() < 1e-9);
     assert!((p.damage.get(Puncture) - 200.0).abs() < 1e-9);
     assert!((p.damage.total() - 880.0).abs() < 1e-9);
-    // cc 0.31 × 2.87; cd 3 × 2.1; sc 0.43 × 3.0; fr 4.5 × 1.6.
+    // cc 0.31 × 2.87; cd 3 (quantized) × 2.1; sc 0.43 × 3.0; fr 4.5 × 1.6.
     assert!((p.crit_chance - 0.8897).abs() < 1e-9);
-    assert!((p.crit_damage - 6.3).abs() < 1e-9);
+    assert!((p.crit_damage - crate::rules::damage::quantize_base_crit_damage(3.0) * 2.1).abs() < 1e-9);
     assert!((p.status_chance - 1.29).abs() < 1e-9);
     assert!((p.fire_rate - 7.2).abs() < 1e-9);
     // MS: 1 × (1 + 1.0 Fevered + 0.6 + 1.1 + 1.2 stacks) = 4.9.

@@ -9,9 +9,12 @@ description: "+25% Headshot Damage."
 selection: choose_one
 
 effects:
-  # from: "+25% Headshot Damage"
+  # MEASURED +30%, against the card's and the wiki's "+25%" (M117): with the
+  # scope's +60% a Vectis Prime headshot reads x1.9 on the base form's direct
+  # hit (10125 = 1776.33 x 3 x 1.9) and on the Incarnon explosion (1762 =
+  # 927.5 x 1.9). One Genesis ladder serves both variants.
   - kind: headshot_damage
-    value: 0.25
+    value: 0.30
 
 source:
   url: https://wiki.warframe.com/w/Vectis_Incarnon_Genesis

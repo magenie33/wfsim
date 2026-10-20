@@ -38,15 +38,10 @@ pub(super) struct Fight {
     /// it a second time.
     pub(super) bodies: Vec<Body>,
     pub(super) r: RunResult,
-    /// THINGS STANDING IN THE WORLD rather than carried by a shooter: a cloud
-    /// burns whoever walks into it, and it outlives the trigger pull that left
-    /// it. Each one will name its owner when a second combatant can leave one.
-    pub(super) fields: Vec<FieldState>,
-    pub(super) orbs: Vec<OrbState>,
-    /// …AND SPECTRAL DAGGERS on their way to a body (`fight::daggers`).
-    pub(super) daggers: Vec<DaggerState>,
-    /// …AND BLOBS embedded in a body, waiting to go off (`fight::blobs`).
-    pub(super) blobs: Vec<BlobPile>,
+    /// THINGS ACTING IN THE WORLD rather than carried by a shooter — clouds,
+    /// piles, orbs, daggers, volleys, embedded orbs (`fight::entities`). Each
+    /// outlives the pull that made it and names the seat that did.
+    pub(super) entities: Vec<Entity>,
     /// What the fight LEFT STANDING — the fight's, not any one shooter's.
     pub(super) ghost_pile: Ghosts,
     /// WHERE EVERYTHING STANDS, constant for the engagement. In the world
@@ -502,22 +497,16 @@ pub(super) fn open<'a>(
     // field. The sim always reloads from empty (it fires until dry), so on the
     // Torid this is the first shot of every magazine after the first.
     let field_duration_boost = false;
-    // Live lingering FIELDS (Torid's clouds), one entry per grenade that stuck.
-    let fields: Vec<FieldState> = Vec::new();
-    // …AND LIVE ORBS, which are not fields: entities with a
-    // place of their own that move, strike ONE body inside their reach, and
-    // detonate where they have got to.
-    let orbs: Vec<OrbState> = Vec::new();
-    let daggers: Vec<DaggerState> = Vec::new();
-    let blobs: Vec<BlobPile> = Vec::new();
+    // EVERYTHING ACTING ON A CLOCK OF ITS OWN — `fight::entities`.
+    let entities: Vec<Entity> = Vec::new();
     let field_ctx = FieldCtx::default();
 
-    // The form whose panel SPAWNED the fields. Only one form of a transform
-    // group has a lingering part (Torid's cloud belongs to the base form; its
-    // Incarnon beam leaves none), so this is unambiguous - and it is the right
-    // answer even after a transmute, because a cloud outlives one.
+    // The form whose panel SPAWNED the clouds and embedded orbs. Only one form of
+    // a transform group has either (Torid's cloud belongs to the base form, the
+    // Vectis orb to the Incarnon), so this is unambiguous — and it is the right
+    // answer even after a transmute, because both outlive one.
     let field_active: &FightParams = match &params.cycle {
-        Some(cy) if cy.base_form.lingering.is_some() => &cy.base_form,
+        Some(cy) if cy.base_form.lingering.is_some() || cy.base_form.embed.is_some() => &cy.base_form,
         _ => params,
     };
 
@@ -643,10 +632,9 @@ pub(super) fn open<'a>(
     // the decay period — comes from whichever form declares one, so a cycle
     // that spends half the engagement in a form with no combo does not lose
     // the count it built. What the form DOES decide is whether a hit in it
-    // counts and whether it pays, which is read off `active` at the hit itself:
-    // the Incarnon forms declare no combo (nothing published says whether it
-    // survives the transform — see their `unmodeled:`), so their hits do
-    // neither while the two-second clock keeps running.
+    // counts and whether it pays, which is read off `active` at the hit itself.
+    // The Vectis Incarnon forms declare it, and the count carries across the
+    // transform both ways (M117).
     let combo_spec = params
         .sniper_combo
         .or_else(|| params.cycle.as_ref().and_then(|c| c.base_form.sniper_combo));
@@ -693,10 +681,7 @@ pub(super) fn open<'a>(
             next_frame,
             bodies,
             r,
-            fields,
-            orbs,
-            daggers,
-            blobs,
+            entities,
             ghost_pile,
             body_at,
             area_near,

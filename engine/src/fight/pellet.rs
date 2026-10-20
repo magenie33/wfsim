@@ -98,8 +98,7 @@ pub(super) struct Live<'a> {
     pub(super) sniper_combo: &'a mut SniperComboCount,
     pub(super) weakpoint_pile: &'a mut LiveStacks,
     pub(super) strike_spread: &'a mut Option<SpreadStrike>,
-    pub(super) fields: &'a mut Vec<FieldState>,
-    pub(super) orbs: &'a mut Vec<OrbState>,
+    pub(super) entities: &'a mut Vec<Entity>,
     pub(super) any_big: &'a mut bool,
     pub(super) any_head: &'a mut bool,
     pub(super) beam_merge: &'a mut f64,
@@ -233,8 +232,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     let sniper_combo = &mut *live.sniper_combo;
     let weakpoint_pile = &mut *live.weakpoint_pile;
     let strike_spread = &mut *live.strike_spread;
-    let fields = &mut *live.fields;
-    let _orbs = &mut *live.orbs;
+    let entities = &mut *live.entities;
     let any_big = &mut *live.any_big;
     let any_head = &mut *live.any_head;
     let beam_merge = &mut *live.beam_merge;
@@ -307,7 +305,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         }
         _ => 0.0,
     };
-    let cd_abs = bodies[0].debuffs.cold_cd_bonus(t)
+    // COLD'S SHARE IS KEPT APART: it "does not apply to Area of Effect damage"
+    // (wiki `Damage/Cold_Damage`, measured M117), so the radial takes it back off.
+    let cold_cd = bodies[0].debuffs.cold_cd_bonus(t);
+    let cd_abs = cold_cd
         + spiteful
         + weakpoint_cd
         + crate::data::abilities::final_crit_damage_at(&params.abilities_now(), t);
@@ -1199,7 +1200,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             Some(r) => {
                 // No `part.crit_bonus` doubling: that is the crit-
                 // HEADSHOT rule and an explosion has no hit location.
-                let rcd = r.crit_damage + r.base_crit_damage * crit_damage_relative + cd_abs;
+                // No Cold either: Area of Effect damage (M117).
+                let rcd = r.crit_damage + r.base_crit_damage * crit_damage_relative + cd_abs - cold_cd;
                 1.0 + tier as f64 * (rcd - 1.0)
             }
         };
@@ -1845,8 +1847,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             // shot instances"* — and per enemy under Punch Through,
             // which this arena has only one of. Counted here so the
             // NEXT instance sees it, which is the order the previous
-            // paragraph reads it in.
-            if active.sniper_combo.is_some() {
+            // paragraph reads it in. Scoped in only (M117): from the hip a
+            // hit pays the counter and adds nothing to it.
+            if active.sniper_combo.is_some() && params.combo_builds {
                 sniper_combo.count = combo_now + 1;
                 sniper_combo.last_hit = t;
             }
@@ -1948,13 +1951,23 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                     // most of this weapon's damage.
                     damage_multiplier: pm_mult,
                 };
-                match fp.stacking {
-                    crate::model::FieldStacking::Stack => fields.push(fresh),
-                    crate::model::FieldStacking::Refresh => {
-                        fields.clear();
-                        fields.push(fresh);
-                    }
+                if fp.stacking == crate::model::FieldStacking::Refresh {
+                    entities.retain(|e| !matches!(e, Entity::Cloud(_)));
                 }
+                entities.push(Entity::Cloud(fresh));
+            }
+            // …AND A LANDED VECTIS INCARNON ROUND LEAVES ITS ORB in the body,
+            // carrying this shot's first round and shot combo with it (M117).
+            if let Some(e) = active.embed {
+                entities.push(Entity::Embed(EmbedState::new(
+                    seat,
+                    e,
+                    0,
+                    t,
+                    head_direct,
+                    pm_mult * cc_mult * combo_multiplier,
+                    landing,
+                )));
             }
         }
         if direct {

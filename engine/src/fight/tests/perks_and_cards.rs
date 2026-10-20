@@ -750,7 +750,7 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
     let modded = crate::build::loadout::resolve(&base, &[&vs], crate::model::StackPolicy::Emergent);
     let zm = modded.stacking_buffs.iter()
         .find(|b| b.grant == crate::model::BuffGrant::BaseCritDamage).expect("still there");
-    let cd_mod = modded.crit_damage / base.base_crit_damage;
+    let cd_mod = modded.crit_damage / crate::rules::damage::quantize_base_crit_damage(base.base_crit_damage);
     assert!((zm.per_stack - cd_mod).abs() < 1e-6,
         "+1x BASE through a x{cd_mod} crit-damage bucket is worth that much: {}", zm.per_stack);
 
@@ -1878,7 +1878,10 @@ fn a_gated_perk_pays_only_the_frames_that_open_it() {
     energetic.energy = 1000.0;
     let off = panel("atomos", &["atomos_paladin_virtue"], &slow);
     let on = panel("atomos", &["atomos_paladin_virtue"], &energetic);
-    assert!((on.crit_damage - off.crit_damage - 1.0).abs() < 1e-9,
+    // It joins the base before the base is quantized (MECHANICS §Quantization).
+    let q = crate::rules::damage::quantize_base_crit_damage;
+    let raw = crate::model::WeaponBase::from_data("atomos", true, &["atomos_paladin_virtue"]).base_crit_damage;
+    assert!((on.crit_damage - q(raw + 1.0)).abs() < 1e-9 && (off.crit_damage - q(raw)).abs() < 1e-9,
         "+1x with max energy over 700: {} against {}", on.crit_damage, off.crit_damage);
 
     // PROJECTILE SPEED, on sprint — a different bucket again.

@@ -9,7 +9,7 @@ use super::*;
 ///
 /// Lingering-FIELD ticks are NOT here — they are weapon damage that rolls its
 /// own crit and its own status, so they get their own pass
-/// ([`process_field_ticks`]).
+/// ([`process_entities`]).
 /// `rng` is the STATUS stream, and it is here for exactly one payload: a Blast
 /// detonation triggers an EXTRA HIT, which rolls a status of its own. Every
 /// other event this function settles is a payload already decided.
@@ -643,8 +643,8 @@ pub(super) fn process_ticks(
     debuffs.dots_due = Some(debuffs.dots.iter().map(|d| d.next_tick).fold(f64::INFINITY, f64::min));
 }
 
-/// WHAT IS STILL IN THE AIR, settled up to this shot — the clouds and the
-/// orbs already out there, the armour the kills since the last shot stripped,
+/// WHAT IS STILL IN THE AIR, settled up to this shot — every entity already
+/// out there, the armour the kills since the last shot stripped,
 /// and the packs they dropped.
 ///
 /// A SHOT BOUNDARY IS THE CLOCK every one of these is read on. None of them
@@ -653,47 +653,24 @@ pub(super) fn process_ticks(
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn settle_what_is_in_the_air(
-    // See `process_ticks`.
-    w: &CardWindows,
-    params: &FightParams,
-    active: &FightParams,
-    field_active: &FightParams,
+    // Whose entities, under whose cards, and the state they move — the orb its
+    // meter throws is that seat's too.
+    turn: &mut Turn,
     rec: &mut crate::record::Record,
-    d: &mut crate::rules::rng::Draws,
     t: &mut f64,
-    field_ctx: &FieldCtx,
-    fields: &mut Vec<FieldState>,
-    orbs: &mut Vec<OrbState>,
+    entities: &mut Vec<Entity>,
     meter: &mut Meter,
-    // Whose seat all of this belongs to — the orb its meter throws, and the
-    // ticks of a cloud it already left.
-    owner: Seat,
     ammo: &mut Ammo,
     bodies: &mut [Body],
-    gal: &mut GalStacks,
-    arc: &mut ArcRuntime,
     r: &mut RunResult,
     strip_kills_seen: &mut u32,) {
+        let (params, active, owner) = (turn.params, turn.active, turn.seat);
         // A MAGAZINE THROWN BY THE RELOAD BEFORE THIS SHOT, settled at the
-        // instant it left — the clouds due before it burn first, the rest after.
+        // instant it left — what is due before it acts first, the rest after.
         if let Some((at, from_empty)) = ammo.grenade_thrown_at.take() {
-            process_field_ticks(w, fields, gal, arc, at, params, field_active, field_ctx, r, rec, d, bodies);
-            throw_reload_grenades(w, owner, at, from_empty, field_ctx, gal, arc, params, active, r, rec, d, bodies);
+            entities.push(Entity::Volley(Volley { owner, at, from_empty }));
         }
-        process_field_ticks(
-            w,
-            fields,
-            gal,
-            arc,
-            *t,
-            params,
-            field_active,
-            field_ctx,
-            r,
-            rec,
-            d,
-            bodies,
-        );
+        process_entities(entities, *t, turn, r, rec, bodies);
         // JAHU CANTICLE. Every kill takes a share off the armour of every enemy
         // inside Affinity Range — which is measured from the PLAYER, not from
         // the corpse (wiki `Affinity`: the squad shares within a 50 m radius),
@@ -730,7 +707,7 @@ pub(super) fn settle_what_is_in_the_air(
                 params.squad_size,
                 params.landscape,
                 params.foe.eximus,
-                &mut d.drops,
+                &mut turn.d.drops,
             );
             dropped_primary += p;
             dropped_secondary += s;
@@ -745,24 +722,11 @@ pub(super) fn settle_what_is_in_the_air(
         // read, and the meter is coarse enough not to care: it is 45 seconds
         // long and the fastest thing that fills it is worth one.
         if let Some(m) = active.meter {
-            meter.tick(m, owner, active, params, dropped_secondary, t, orbs);
+            meter.tick(m, owner, active, params, dropped_secondary, t, entities);
         }
-        // …AND EVERY ORB EVENT DUE BEFORE THIS SHOT. Same boundary and the same
-        // buff snapshot the field walk takes; an orb's clock is its own and no
-        // fire-rate bucket reaches it, which is the wiki's *"Tick rate is not
-        // affected by Fire Rate"* holding by construction.
-        process_orbs(
-            w,
-            orbs,
-            gal,
-            arc,
-            *t,
-            params,
-            field_active,
-            field_ctx,
-            r,
-            rec,
-            d,
-            bodies,
-        );
+        // …AND WHAT THE METER THREW, on the same boundary and the same buff
+        // snapshot. An orb's clock is its own and no fire-rate bucket reaches it,
+        // which is the wiki's *"Tick rate is not affected by Fire Rate"* holding
+        // by construction.
+        process_entities(entities, *t, turn, r, rec, bodies);
 }

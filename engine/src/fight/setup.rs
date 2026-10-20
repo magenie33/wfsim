@@ -112,10 +112,9 @@ impl FightParams {
         // gives no ceiling — the eighth is 11025 hits, which no fight reaches
         // and which is not a reason to invent a maximum.
         //
-        // It is rostered only when the fight can BUILD one, and `resolve` has
-        // already emptied it for a hip-fired scenario — so a hip-fired fight
-        // shows a sniper no card at all, which is the one place in the app
-        // where not aiming changes what a weapon HAS rather than what it hits.
+        // A hip-fired fight shows it too: the counter pays from the hip and
+        // only an aimed hit builds it (M117), so a seeded count is still worth
+        // its multiplier there while it decays.
         // BOTH FORMS ARE ASKED. In an Incarnon cycle the OUTER params are the
         // Incarnon panel's — `incarnon_cycle_from_panels` builds it that way —
         // so a counter declared on the base form is invisible from here, and
@@ -1141,6 +1140,7 @@ impl FightParams {
             cluster: panel.cluster,
             reload_grenade: panel.reload_grenade,
             blob: panel.blob,
+            embed: panel.embed,
             falloff: panel.falloff,
             spread: panel.spread,
             // Straight off the ARENA, like `abilities` and `duration_seconds`.
@@ -1184,7 +1184,7 @@ impl FightParams {
             // arithmetic of a damage instance on a clock of its own is the same
             // whichever mechanism produced it. What is NOT shared is who it
             // lands on, and that is the whole difference between an orb and a
-            // field — decided in `process_orbs`, not here.
+            // field — decided where the orb strikes (`fight::entities`), not here.
             orb_strike: panel.orb.map(|_| crate::build::loadout::ResolvedLingering {
                 damage: panel.damage,
                 modified_base: panel.modified_base,
@@ -1468,6 +1468,7 @@ impl FightParams {
             // same reason it starts with no tendrils up — the card moves it.
             combo_initial: 0,
             combo_held: false,
+            combo_builds: panel.sniper_combo_builds,
             tendril_max: panel.tendril_max,
             target_id,
             punch_through_m: panel.punch_through_m,

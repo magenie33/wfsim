@@ -54,7 +54,7 @@ reasons:
   dual_daggers_heavy_unmeasured:
     text: "The heavy attack is 2x, from this weapon's infobox; the wiki's class table and stance module say 5x. Unmeasured."
   sniper_combo_miss:
-    text: "A missed shot drops the combo counter. This entry cannot miss, so only its {seconds} s timer removes a stack, and the number is the ceiling."
+    text: "A miss while scoped drops the combo counter by one. This entry cannot miss, so only its {seconds} s timer removes a stack, and the number is the ceiling."
   # NO `radial_falloff` — IT IS MODELLED. The explosion reads the
   # distance from its own epicentre, which is where the projectile actually
   # landed, so a pellet that missed detonates beside the target and the target

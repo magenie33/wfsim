@@ -19,7 +19,7 @@ pub(super) fn throw_orb(
     owner: Seat,
     params: &FightParams,
     t: f64,
-    live: &mut Vec<OrbState>,
+    live: &mut Vec<Entity>,
 ) {
     // ONE ORB AT A TIME. Throw again while the previous orb is alive and the one
     // already out vanishes at once, with no detonation and no strikes it had
@@ -31,7 +31,7 @@ pub(super) fn throw_orb(
     // it is the difference between thirty orbs living out six-second fuses on
     // top of each other and one orb that gets a single strike before the next
     // one replaces it.
-    live.clear();
+    live.retain(|e| !matches!(e, Entity::Orb(_)));
     let aim = params.aim_point();
     let muzzle = crate::rules::space::muzzle(params.player_at, aim);
     let (dx, dy) = (aim.x - muzzle.x, aim.y - muzzle.y);
@@ -45,7 +45,7 @@ pub(super) fn throw_orb(
     // you pressed; the orb exists `throw_seconds` later and its strike clock
     // starts there.
     let t = t + o.throw_seconds;
-    live.push(OrbState {
+    live.push(Entity::Orb(OrbState {
         owner,
         part: o,
         at: muzzle,
@@ -60,7 +60,7 @@ pub(super) fn throw_orb(
         strikes_left: (o.fuse_seconds / o.strike_interval_seconds).round() as u32,
         fuse_at: t + o.fuse_seconds,
         damage_multiplier: 1.0,
-    });
+    }));
 }
 
 /// AN ORB IN THE AIR — a position, a heading, a clock and what is left of a
@@ -144,137 +144,6 @@ impl OrbState {
                     self.at_time = to;
                 }
             }
-        }
-    }
-}
-
-/// SETTLE EVERY ORB EVENT DUE STRICTLY BEFORE `until`, oldest first.
-///
-/// The same shape as [`process_field_ticks`] and for the same reason: an event
-/// changes what the next one sees, so the order is resolved live rather than
-/// planned. Everything that differs is about WHO —
-///
-///   * the orb is MOVED to the event's time first, because where it is decides
-///     who is a candidate at all
-///   * a STRIKE takes ONE body inside the reach, at random — *"Orb will shock 1
-///     enemy within 6 meters of it every 1 second"* — and chains from it
-///   * the last event is the DETONATION: the attack's own explosion, fired
-///     from wherever the orb had got to
-///
-/// A TICK WITH NOBODY IN REACH STRIKES NOBODY AND IS SPENT, which is what makes
-/// the measured count fall out of the geometry rather than being written down.
-/// Six ticks over a six second fuse: a throw that connects in under a second
-/// loses none of them, one that takes 2.5 s lands four, and against a body at
-/// contact it is always six — the owner's `ceil(6 - flight)` arriving on its
-/// own (MEASUREMENTS M63).
-#[allow(clippy::too_many_arguments)]
-#[wfsim_gas_macro::metered]
-pub(super) fn process_orbs(
-    // See `process_ticks`.
-    w: &CardWindows,
-    orbs: &mut Vec<OrbState>,
-    gal: &mut GalStacks,
-    arc: &mut ArcRuntime,
-    until: f64,
-    params: &FightParams,
-    active: &FightParams,
-    ctx: &FieldCtx,
-    r: &mut RunResult,
-    rec: &mut crate::record::Record,
-    d: &mut crate::rules::rng::Draws,
-    bodies: &mut [Body],
-) {
-    if orbs.is_empty() {
-        return;
-    }
-    // WHERE EVERY BODY STANDS, hoisted: an orb drifts every strike and asks
-    // this of the whole formation each time.
-    let body_at = params.body_positions();
-
-    while let Some((i, at, is_strike)) = orbs
-        .iter()
-        .enumerate()
-        .filter_map(|(i, o)| {
-            let strike_due = o.strikes_left > 0 && o.next_strike <= o.fuse_at;
-            let next = if strike_due { o.next_strike } else { o.fuse_at };
-            (next < until).then_some((i, next, strike_due))
-        })
-        .min_by(|a, b| a.1.total_cmp(&b.1))
-    {
-        // Status events strictly before this one land first, exactly as they do
-        // before a field tick.
-        process_ticks(
-            w,
-            &mut bodies[0], gal, arc, at + 1e-9, params, active, r, rec, &mut d.status,
-            &params.foe, 0,
-        );
-        orbs[i].advance(at, &body_at);
-        let orb = orbs[i];
-        if !is_strike {
-            orbs.remove(i);
-            orb_detonation(w, &orb, at, ctx, gal, arc, params, active, r, rec, d, bodies, &body_at);
-            continue;
-        }
-        orbs[i].next_strike += orb.part.strike_interval_seconds;
-        orbs[i].strikes_left -= 1;
-
-        // WHO IS IN REACH. Any part of a body touching is enough — the rule
-        // every sphere in this engine uses.
-        let in_reach: Vec<usize> = (0..body_at.len())
-            .filter(|&b| {
-                crate::rules::space::caught_by_blast(body_at[b].distance(orb.at), orb.part.strike_radius_m)
-            })
-            .collect();
-        if in_reach.is_empty() {
-            continue;
-        }
-        // ONE OF THEM, AT RANDOM. The page says the orb picks and does not say
-        // how; a uniform draw is the only reading that invents no preference.
-        let pick = ((d.spine.next_f64() * in_reach.len() as f64) as usize).min(in_reach.len() - 1);
-        let seed = in_reach[pick];
-
-        // …AND THE CHAIN OFF IT. `chain_bodies` is the TOTAL a strike reaches,
-        // the struck body included, with multishot already inside it — which is
-        // what *"Number of chains is affected by Multishot"* buys on this
-        // weapon instead of a second orb.
-        //
-        // NO DRAW. The count is `floor(3 x multishot)` and it is exact, so a
-        // strike reaches the same number of bodies every time (M63).
-        let reached = orb.part.chain_bodies.max(1) as usize;
-        let mut path = vec![seed];
-        if reached > 1 {
-            let mut rest: Vec<usize> = in_reach.into_iter().filter(|&b| b != seed).collect();
-            // Nearest first from wherever the path has got to, ties by index —
-            // the same walk `rules::chain::Layout` does, and nobody twice.
-            while path.len() < reached {
-                let from = *path.last().expect("seeded");
-                let Some((k, _)) = rest
-                    .iter()
-                    .enumerate()
-                    .map(|(k, &b)| (k, body_at[from].distance(body_at[b])))
-                    .filter(|(_, dist)| *dist <= orb.part.chain_range_m + 1e-9)
-                    .min_by(|a, b| a.1.total_cmp(&b.1))
-                else {
-                    break;
-                };
-                path.push(rest.remove(k));
-            }
-        }
-
-        let mut aimed_died = false;
-        let mut share = 1.0;
-        for (hop, &b) in path.iter().enumerate() {
-            if hop > 0 {
-                share *= orb.part.chain_damage_per_hop;
-            }
-            let killed = orb_strike(
-                w, &orb, share, at, ctx, b, gal, arc, params, active, r, rec, d, bodies,
-            );
-            aimed_died |= killed && b == 0;
-        }
-        if aimed_died {
-            bodies[0].debuffs.on_death(orb.owner, params.acid_shells, &params.foe);
-            return;
         }
     }
 }

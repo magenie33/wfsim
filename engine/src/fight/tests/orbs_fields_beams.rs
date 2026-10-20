@@ -656,7 +656,7 @@ fn a_kill_that_drops_secondary_ammo_fills_the_meter() {
         p.foe.base_level = 1;
         // A WEAPON THAT KEEPS FIRING, so the orb walk is settled shot by
         // shot rather than in one block at the end. A kill ends the walk
-        // for that call — the rule `process_field_ticks` has always had —
+        // for that call — the rule the cloud tick has always had —
         // so a fixture that pulls the trigger once would abandon every orb
         // after the first body dropped.
         p.magazine_size = 1e9;

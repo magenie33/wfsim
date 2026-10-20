@@ -28,12 +28,14 @@ fn cd_with(mods: &[&str], evos: &[&str]) -> f64 {
 fn prelude_of_might_raises_the_base_multiplier_not_the_final_one() {
     let evo = ["furis_evo1_incarnon_form", "furis_prelude_of_might"];
     let bare = ["furis_evo1_incarnon_form"];
-    // 3.4 base, +3 = 6.4 with no crit-damage mod either way.
-    assert!((cd_with(&[], &evo) - 6.4).abs() < 1e-9, "{}", cd_with(&[], &evo));
+    // 3.4 base, +3 = 6.4 with no crit-damage mod either way — each base
+    // quantized as the game does (MECHANICS §Quantization).
+    let q = crate::rules::damage::quantize_base_crit_damage;
+    assert!((cd_with(&[], &evo) - q(6.4)).abs() < 1e-9, "{}", cd_with(&[], &evo));
     // With +110%: (3.4 + 3.0) x 2.1 = 13.44, NOT 3.4 x 2.1 + 3.0 = 10.14.
     let modded = cd_with(&["primed_target_cracker"], &evo);
-    assert!((modded - 13.44).abs() < 1e-6, "expected 13.44x, got {modded}");
-    assert!((cd_with(&["primed_target_cracker"], &bare) - 7.14).abs() < 1e-6);
+    assert!((modded - q(6.4) * 2.1).abs() < 1e-9, "expected 13.44x, got {modded}");
+    assert!((cd_with(&["primed_target_cracker"], &bare) - q(3.4) * 2.1).abs() < 1e-9);
 }
 
 /// ...and it is CONDITIONAL: the perk pays only while the build's own crit
@@ -42,9 +44,10 @@ fn prelude_of_might_raises_the_base_multiplier_not_the_final_one() {
 fn prelude_of_might_switches_off_above_the_threshold() {
     let evo = ["furis_evo1_incarnon_form", "furis_prelude_of_might"];
     // The form's own 26% is under the line; Primed Pistol Gambit clears it.
-    assert!((cd_with(&[], &evo) - 6.4).abs() < 1e-9);
+    let q = crate::rules::damage::quantize_base_crit_damage;
+    assert!((cd_with(&[], &evo) - q(6.4)).abs() < 1e-9);
     let over = cd_with(&["primed_pistol_gambit"], &evo);
-    assert!((over - 3.4).abs() < 1e-9, "over 40% crit it must pay nothing, got {over}");
+    assert!((over - q(3.4)).abs() < 1e-9, "over 40% crit it must pay nothing, got {over}");
 }
 
 /// Headcracker is a LIVE buff, so it is asserted on the loaded spec rather

@@ -587,7 +587,7 @@ impl Meter {
         params: &FightParams,
         dropped_secondary: u32,
         t: &mut f64,
-        orbs: &mut Vec<OrbState>,
+        entities: &mut Vec<Entity>,
     ) {
         let meter = self;
         meter.seconds += *t - meter.clocked;
@@ -610,7 +610,7 @@ impl Meter {
         if meter.seconds >= m.seconds_to_fill {
             meter.seconds -= m.seconds_to_fill;
             if let Some(o) = active.orb {
-                throw_orb(o, owner, params, *t, orbs);
+                throw_orb(o, owner, params, *t, entities);
                 // …AND THE PRIMARY FIRE STOPS FOR THE ANIMATION. A throw is
                 // a wind-up and a recovery, and the weapon can do nothing
                 // else until both are over — which is the cycle's whole

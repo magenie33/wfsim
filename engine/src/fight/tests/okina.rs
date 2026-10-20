@@ -289,7 +289,8 @@ fn a_dagger_is_born_at_its_kills_own_time_and_six_is_the_most() {
     assert_eq!(live.len(), 6, "up to six at once");
     for (k, born) in [3.0, 3.25, 3.5, 3.75, 4.0, 4.1].into_iter().enumerate() {
         let due = born + g.rules.orbit_seconds + flight;
-        assert!((live[k].strikes_at - due).abs() < 1e-9, "dagger {k}: {} against {due}", live[k].strikes_at);
+        let at = live[k].due().expect("a dagger strikes");
+        assert!((at - due).abs() < 1e-9, "dagger {k}: {at} against {due}");
     }
     assert_eq!((mark, r.kill_clock_len), (8, 0), "every kill is spent and the clock is emptied");
 }

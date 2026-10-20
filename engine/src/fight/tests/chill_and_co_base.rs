@@ -446,3 +446,20 @@ fn a_respawned_body_in_the_formation_starts_with_no_statuses() {
         by[0], by[1], by[1] / by[0]
     );
 }
+
+/// M51 — THE FLAT ADD REACHES THE CLOUD. Both tier-2 perks land on both attack
+/// parts: the cloud's 40 is 91 under Final Fusillade's +51 and 71 under
+/// Plentiful Mayhem's +31, the bases its measured 460 and 359 are 5.05 times.
+#[test]
+fn m51_the_torid_cloud_takes_the_tier_two_flat_add() {
+    let cloud = |evo: &[&str]| {
+        crate::model::WeaponBase::from_data("torid", false, evo)
+            .lingering
+            .expect("the cloud")
+            .base_vector
+            .total()
+    };
+    assert!((cloud(&[]) - 40.0).abs() < 1e-9);
+    assert!((cloud(&["torid_final_fusillade"]) - 91.0).abs() < 1e-9, "{}", cloud(&["torid_final_fusillade"]));
+    assert!((cloud(&["torid_plentiful_mayhem"]) - 71.0).abs() < 1e-9, "{}", cloud(&["torid_plentiful_mayhem"]));
+}

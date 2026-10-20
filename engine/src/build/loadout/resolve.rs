@@ -1,4 +1,5 @@
 use super::*;
+use crate::rules::damage::quantize_base_crit_damage;
 
 /// HOW MUCH BIGGER A SLAM IS FOR HAVING BEEN DROPPED FROM HEIGHT.
 ///
@@ -1198,9 +1199,9 @@ pub fn resolve_for(
                     + if r.blast_kind == crate::model::BlastKind::InFlight { cc_heavy_again } else { 0.0 })
                 + (base.post_mod_crit_chance + post_mod_cc_extra))
                 .max(0.0),
-            crit_damage: r.base_crit_damage * (1.0 + cd) + fb.final_crit_damage,
+            crit_damage: quantize_base_crit_damage(r.base_crit_damage) * (1.0 + cd) + fb.final_crit_damage,
             base_crit_chance: r.base_crit_chance,
-            base_crit_damage: r.base_crit_damage,
+            base_crit_damage: quantize_base_crit_damage(r.base_crit_damage),
             status_chance: (r.base_status_chance * (1.0 + sc) + base.post_mod_status_chance
                 + post_mod_status_chance)
                 .max(0.0),
@@ -1298,6 +1299,15 @@ pub fn resolve_for(
         explosion: a_resolved(&b.explosion),
         radius_at_cap_m: b.radius_at_cap_m * if b.explosion.takes_blast_radius_mods { 1.0 + br } else { 1.0 },
     });
+    // THE EMBEDDED ORB, both parts through the same buckets as any explosion.
+    let embed = base.embed.as_ref().map(|e| crate::build::loadout::ResolvedEmbed {
+        hit: a_resolved(&e.hit),
+        body_every_seconds: e.body_every_seconds,
+        body_more_hits: e.body_more_hits,
+        head_after_seconds: e.head_after_seconds,
+        head_explosion_hits: e.head_explosion_hits,
+        explosion: a_resolved(&e.explosion),
+    });
 
     // The lingering FIELD (Torid's Toxin cloud): its own base vector, crit and
     // status stats, through the SAME mod buckets — three patch notes settle
@@ -1363,7 +1373,7 @@ pub fn resolve_for(
             } else {
                 0.0
             },
-            crit_damage: if f.can_crit { f.base_crit_damage * (1.0 + cd) + fb.final_crit_damage } else { 1.0 },
+            crit_damage: if f.can_crit { quantize_base_crit_damage(f.base_crit_damage) * (1.0 + cd) + fb.final_crit_damage } else { 1.0 },
             status_chance: if f.status_mods_apply {
                 (f.base_status_chance * (1.0 + sc) + base.post_mod_status_chance
                     + post_mod_status_chance).max(0.0)
@@ -1371,7 +1381,7 @@ pub fn resolve_for(
                 f.base_status_chance
             },
             base_crit_chance: f.base_crit_chance,
-            base_crit_damage: f.base_crit_damage,
+            base_crit_damage: quantize_base_crit_damage(f.base_crit_damage),
             base_status_chance: f.base_status_chance,
             tick_rate: f.tick_rate,
             duration_seconds: f.duration_seconds,
@@ -1554,6 +1564,7 @@ pub fn resolve_for(
         cluster,
         reload_grenade,
         blob,
+        embed,
         spread,
         falloff,
         lingering,
@@ -1755,7 +1766,9 @@ pub fn resolve_for(
         // A GATED "+Nx Base Critical Damage Multiplier" joins the BASE, so the
         // crit-damage mods multiply it — which is what "Base" earns on the card.
         // …AND THE FIGHT'S FINAL CRIT DAMAGE after every relative bonus.
-        crit_damage: (base.base_crit_damage + prelude_cd + gate(GatedGrant::BaseCritDamage))
+        // QUANTIZED where the flat grants have joined and before the relative
+        // mods (MECHANICS §Quantization, M117).
+        crit_damage: quantize_base_crit_damage(base.base_crit_damage + prelude_cd + gate(GatedGrant::BaseCritDamage))
             * (1.0 + cd)
             + fb.final_crit_damage,
         // What the line above added, in the same post-mod units, so the sim
@@ -1764,14 +1777,18 @@ pub fn resolve_for(
         crit_multiplier_below_crit_chance: base
             .crit_multiplier_below_crit_chance
             .filter(|_| prelude_cd > 0.0)
-            .map(|(_, below)| (prelude_cd * (1.0 + cd), below)),
+            .map(|(_, below)| {
+                let without = base.base_crit_damage + gate(GatedGrant::BaseCritDamage);
+                let granted = quantize_base_crit_damage(without + prelude_cd) - quantize_base_crit_damage(without);
+                (granted * (1.0 + cd), below)
+            }),
         // No upper clamp: status chance ABOVE 100% is meaningful (a
         // guaranteed proc plus an extra roll) — DT resolves to 129%.
         status_chance: ((base.base_status_chance + sc_from_cc) * (1.0 + sc)
             + base.post_mod_status_chance + post_mod_status_chance)
             .max(0.0),
         base_crit_chance: base.base_crit_chance,
-        base_crit_damage: base.base_crit_damage,
+        base_crit_damage: quantize_base_crit_damage(base.base_crit_damage),
         base_status_chance: base.base_status_chance,
         fire_rate: base.base_fire_rate * (1.0 + fr + evo_fr_bonus),
         // A charged weapon's fire-rate bonuses DIVIDE the draw instead of
@@ -1971,19 +1988,14 @@ pub fn resolve_for(
         tendril_max: base.tendril_max,
         tendril_range_m: base.tendril_range_m,
         tendril_acquire_deg: base.tendril_acquire_deg,
-        // THE COUNTER IS THE AIMED FIGHT'S, and the mod's seconds ride the
-        // weapon's own window — see `ModEffect::ComboDuration`. A hip-fired
-        // build has no counter at all, so a Harkonar Scope on one adds seconds
-        // to nothing, which is what the mechanic's own gate says and not this
-        // mod's doing.
-        sniper_combo: if tenno.state.aiming {
-            base.sniper_combo.map(|c| crate::model::SniperCombo {
-                seconds: c.seconds + combo_seconds_bonus,
-                ..c
-            })
-        } else {
-            None
-        },
+        // The mod's seconds ride the weapon's own window — see
+        // `ModEffect::ComboDuration`. The counter is carried from the hip too:
+        // it pays there, and only an aimed hit builds it (M117).
+        sniper_combo: base.sniper_combo.map(|c| crate::model::SniperCombo {
+            seconds: c.seconds + combo_seconds_bonus,
+            ..c
+        }),
+        sniper_combo_builds: tenno.state.aiming,
         crit_chance_per_tendril: per_tendril_cc,
         crit_chance_per_hit,
         acid_shells: acid_seen.then_some(acid),

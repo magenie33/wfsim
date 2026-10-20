@@ -9,9 +9,15 @@ transform_group: vectis_prime
 transforms_from: vectis_prime
 
 # see notes: bulk_intake_stats_are
-unmodeled:
-  - "The Incarnon Form Embed AoE is not modelled; this form has more parts than this entry carries."
-  - "The sniper combo counter and the scope's headshot bonus are not modelled in this form. Both are on the base form, and no source says whether either survives the transform."
+
+# THE FORM IS STILL A SNIPER (M117): its direct hit builds the shot combo
+# counter it shares with the base form, every part of the shot pays it, and a
+# scoped headshot takes the scope's +60% — 4452 = 927.5 x 3 x 1.6.
+sniper_combo:
+  min: 5
+scope:
+  magnification: 6.0
+  headshot_damage: 0.6
 
 gauge_form:
   gauge:
@@ -56,7 +62,6 @@ attack:
   forced_procs: [cold]
   punch_through_m: 0.0
   damage: { cold: 150 }   # total 150
-  # The radial part — rules in MECHANICS §7.
   # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): FOUR PER CENT: 0.1 m -> +8%, "uses embed radial instead of headshot explosion".
   # …AND ITS STACKING COLUMN READS `N/A`, which is not an answer. Verbatim:
   #   Vectis (Prime) | Incarnon Form + AoE | 4% | N/A | Snapshot | 0.1 m | +8%
@@ -69,24 +74,41 @@ attack:
     stacking: multiplies
     radius_calculation: snapshot
     # THE ROW READS A RADIUS THIS WEAPON DOES NOT HAVE. Its Base Radius column
-    # is 0.1 m against the 6.7 m explosion below, and the wiki's note says which
-    # one that is: the arcane takes the EMBED radial, not the headshot
-    # explosion. 4% is the row's account of how far off that is, and it does not
+    # is 0.1 m against the 6.7 m headshot explosion below, and the wiki's note
+    # says which one that is: the arcane takes the EMBED radial, not the
+    # headshot explosion. 4% is the row's account of how far off that is, and it does not
     # reconstruct 0.1 from 6.7 — so the metres are declared and the percentage
     # stays the transcribed column it is. 0.8 x 0.1 = the table's +8%.
     reads_radius_m: 0.1
 
-  radial:
-    damage: { cold: 150 }   # total 150
-    radius_m: 6.7
-    falloff_start_m: 0
-    falloff_reduction: 0
-    # Guaranteed COLD on the explosion (wiki module).
-    forced_procs: [cold]
-    crit_chance: 0.35
-    crit_multiplier: 3
-    status_chance: 0.3
-    # see notes: declared_no_co_catalog
+  # THE ORB EVERY LANDED ROUND LEAVES IN THE BODY IT HIT (wiki; measured M117).
+  # It hits at once for 25 Cold with a guaranteed Cold proc; in a body it stays
+  # 2.5 s and hits twice more, a second apart; in a head it hits no more and
+  # explodes 0.4 s later in two simultaneous hits of 150 Cold. +200 base damage
+  # reads 596 / 596 / 596 on a body and 1484 x 2 on a scoped head.
+  embed:
+    hit:
+      damage: { cold: 25 }   # total 25
+      radius_m: 0.5
+      forced_procs: [cold]
+      crit_chance: 0.35
+      crit_multiplier: 3
+      status_chance: 0.3
+    body_every_seconds: 1.0
+    body_more_hits: 2
+    head_after_seconds: 0.4
+    head_explosion_hits: 2
+    explosion:
+      damage: { cold: 150 }   # total 150
+      radius_m: 6.7
+      # "Headshot AoE has 70% damage falloff, dealing 30% damage at the edge".
+      falloff_start_m: 0
+      falloff_reduction: 0.7
+      forced_procs: [cold]
+      crit_chance: 0.35
+      crit_multiplier: 3
+      status_chance: 0.3
+      # see notes: declared_no_co_catalog
 
 # incarnon_evolutions: see data/weapons/primary/vectis_prime.yaml (shared group)
 

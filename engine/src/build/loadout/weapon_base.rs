@@ -90,6 +90,10 @@ impl WeaponBase {
         if let Some(sl) = self.slam.as_mut() {
             sl.base_vector = sl.base_vector.scale(by);
         }
+        if let Some(e) = self.embed.as_mut() {
+            e.hit.base_vector = e.hit.base_vector.scale(by);
+            e.explosion.base_vector = e.explosion.base_vector.scale(by);
+        }
     }
 
     pub fn add_flat_base_damage(&mut self, flat: f64, into_co: f64) {
@@ -138,6 +142,22 @@ impl WeaponBase {
         // attack seen from a different swing and was taking no flat add at all.
         if let Some(sl) = self.slam.as_mut() {
             flat_added(sl);
+        }
+        // …AND BOTH PARTS OF AN EMBEDDED ORB: measured, +200 takes the Vectis
+        // Prime Incarnon's orb from 25 to 225 and its explosion from 150 to 350
+        // (M117).
+        if let Some(e) = self.embed.as_mut() {
+            flat_added(&mut e.hit);
+            flat_added(&mut e.explosion);
+        }
+        // …AND A LINGERING FIELD, measured: the Torid's cloud reads 460 under
+        // Final Fusillade's +51 and 359 under Plentiful Mayhem's +31 — 91 and 71
+        // times the one multiplier its impact reads (M51).
+        if let Some(f) = self.lingering.as_mut() {
+            let total = f.base_vector.total();
+            if total > 0.0 {
+                f.base_vector = f.base_vector.scale((total + flat) / total);
+            }
         }
     }
 
