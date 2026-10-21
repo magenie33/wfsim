@@ -21,8 +21,8 @@ effects:
   # THIS FILE HAD X AS THE PER-STACK VALUE. The Boltor's card read "On Kill:
   # Increase Base Damage by +12 … Stacks up to 4x", which is its X of 12 in the
   # place of the bullet's +2, and its unconditional +12 was missing entirely. The other two were right by luck — their X is 0.
-  # THE STACK CAP is the EN table's: 4x for the Boltor, 3x for the Telos Boltor
-  # and the Boltor Prime.
+  # THE STACK CAP is 3x on every variant: the card has one cap for both
+  # halves, and DE's Dev Workshop sets it at 3x (see notes: ammo_efficiency_cap).
   #
   # The ammo-efficiency half of the same bullet cannot pay out here: the arena
   # runs on infinite ammo (UNMODELLED.md). It is declared below rather than

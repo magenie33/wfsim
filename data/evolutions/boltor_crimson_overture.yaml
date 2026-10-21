@@ -4,7 +4,7 @@ weapon: boltor
 tier: 2
 position_in_tier: 2
 icon: DamageAmmoEfficiencyOnKill(xWhite).png
-description: "Increase Base Damage by +12. On Kill: Increase Base Damage by +2 for 5 seconds, stacks up to 4x, and +25% Ammo Efficiency for 5 seconds, stacks up to 3x."
+description: "Increase Base Damage by +12. On Kill: Increase Base Damage by +2 and +25% Ammo Efficiency for 5 seconds. Stacks up to 3x."
 # see notes: genesis_family_s_boltor
 selection: choose_one
 
@@ -24,8 +24,8 @@ effects:
   # from: "Increase Base Damage by +12"
   - kind: flat_base_damage
     value: 12.0
-  # THE STACK CAP is the EN table's: 4x for the Boltor, 3x for the Telos Boltor
-  # and the Boltor Prime.
+  # THE STACK CAP is 3x on every variant: the card has one cap for both
+  # halves, and DE's Dev Workshop sets it at 3x (see notes: ammo_efficiency_cap).
   #
   # The ammo-efficiency half of the same bullet cannot pay out here: the arena
   # runs on infinite ammo (UNMODELLED.md). It is declared below rather than
@@ -33,7 +33,7 @@ effects:
   - kind: stacking_buff
     grants: flat_base_damage
     per_stack: 2.0
-    max_stacks: 4
+    max_stacks: 3
     duration_seconds: 5.0
     trigger: kill
   # see notes: ammo_efficiency_cap
