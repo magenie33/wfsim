@@ -230,6 +230,16 @@ console.log("\nthe cases that failed in production");
   await db.run("UPDATE demands SET state = 'withdrawn' WHERE ref = 'orphan'");
   const orphan = await questionId("simulate", { row: 4 });
   const after = await f.nextPack(env, { device: "a" }, "e1", { n: 1, lease_ms: 60_000 }, NOW);
+  // A FACT A PLAYER WAITED ON, its demand served, asked again by a sweep on a
+  // new engine: the question opens again, and nobody waits on it.
+  await f.demand(env, { producer: "p", ref: "waited", verb: "simulate", request: { row: 6 }, due_in_ms: 1000, waits: true }, "e1", NOW);
+  const waited = await questionId("simulate", { row: 6 });
+  await db.run("UPDATE questions SET state = 'fact', fact_engine = 'e1' WHERE id = ?", waited);
+  await db.run("UPDATE demands SET state = 'served' WHERE ref = 'waited'");
+  await f.demand(env, { producer: "p", ref: "swept", verb: "simulate", request: { row: 6 }, due_in_ms: 1000 }, "e2", NOW);
+  const reopened = await db.get("SELECT state, waits FROM questions WHERE id = ?", waited);
+  check("a fact of another engine asked again opens waited on only if a live demand waits — a served one's wait is over",
+    reopened.state === "open" && Number(reopened.waits) === 0, JSON.stringify(reopened));
   check("an open question no demand asks for any more is withdrawn by the pack that picks it, which is the row behind",
     (await db.get("SELECT state FROM questions WHERE id = ?", orphan)).state === "withdrawn"
       && after && after.questions.length === 1 && after.questions[0].demands[0].ref === "behind", JSON.stringify(after));
@@ -862,7 +872,11 @@ console.log("many asks in two statements a chunk leave every table as one write 
     const facts = await db.all(`SELECT * FROM questions WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
         AND state IN ('fact', 'spot')`, JSON.stringify([...new Set(ids)]));
     for (const q of facts) {
-      if (q.fact_engine !== engine) { await db.run("UPDATE questions SET state = 'open', opened_at = ? WHERE id = ? AND state = ?", at, q.id, q.state); continue; }
+      if (q.fact_engine !== engine) {
+        await db.run(`UPDATE questions SET state = 'open', opened_at = ?,
+            waits = (SELECT COALESCE(max(l.waits), 0) FROM demands l WHERE l.question = questions.id AND l.state = 'live') WHERE id = ? AND state = ?`, at, q.id, q.state);
+        continue;
+      }
       const a = await db.get("SELECT * FROM answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1", q.id, q.canon);
       const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon, result: a ? JSON.parse(a.result) : null,
         work: a ? a.work : 0, engine: a ? a.engine : null, official: !!(a && a.official) };

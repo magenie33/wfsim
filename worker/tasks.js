@@ -227,9 +227,14 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       .bind(JSON.stringify([...new Set(ids)])).all();
     // A FACT OF ANOTHER ENGINE answers nothing now: the question opens again,
     // its answers carried for the served engine to reproduce or replace.
+    // WAITED ON ONLY IF A LIVE DEMAND WAITS: a question's `waits` is its live
+    // demands' (`factory_restate`), never a served one's. Kept from a demand
+    // long served, a re-asked row goes alone to a free computer as though a
+    // player waited, and a fleet handed one row a sync idles out the floor.
     const stale = results.filter((q) => q.fact_engine !== engine);
     if (stale.length) {
-      await db.prepare(`UPDATE questions SET state = 'open', opened_at = ?1::text
+      await db.prepare(`UPDATE questions SET state = 'open', opened_at = ?1::text,
+          waits = (SELECT COALESCE(max(l.waits), 0) FROM demands l WHERE l.question = questions.id AND l.state = 'live')
           FROM jsonb_to_recordset((?2::text)::jsonb) AS x(id text, state text) WHERE questions.id = x.id AND questions.state = x.state`)
         .bind(at, JSON.stringify(stale.map((q) => ({ id: q.id, state: q.state })))).run();
     }
