@@ -68,22 +68,22 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "da5a5ec3";
+const BUILD_ID = "3937082c";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "83aada7e+";
+const BUILD_SHA = "8a00c91e+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "9eb2f2ddb318";
+const RELEASE_ID = "02dbc33a25f6";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
-const ENGINE_ID = "e23b92e38c0b";
+const ENGINE_ID = "872e90ffaf0d";
 
 /// WHAT THIS REPOSITORY HOLDS, COUNTED BY THE BUILD.
 ///
@@ -874,17 +874,17 @@ const LOAD_CAUSES = ["glue", "network", "http", "cut", "compile", "memory", "dat
 /// THE ENGINE IS DOWNLOADED AND COMPILED ONCE A PAGE, and every worker is handed
 /// the compiled module — docs/WASM.md §"One engine a page". `build_site_app.py`
 /// writes in the hashed names and the size; the dev server serves no workers.
-const ENGINE_WASM = "/pkg/wfsim_wasm_bg.d6e1b013af69.wasm";
+const ENGINE_WASM = "/pkg/wfsim_wasm_bg.3b94b29dbc45.wasm";
 /// …AND ITS DATA: the module is code, and these packs are installed into every
 /// instance before its first call (docs/WASM.md §"Code and data"), so a data
 /// edit is a new pack and the module stays cached.
 const ENGINE_PACKS = [];
 /// The module's and the packs' bytes together, for the boot screen.
-const ENGINE_WASM_BYTES = 10467692;
+const ENGINE_WASM_BYTES = 10467660;
 /// THE ANSWERS THE BUILD ALREADY KNOWS, path to file (scripts/engine_views.mjs):
 /// a page reads its catalog from these and draws before the engine has
 /// downloaded, which then only has to be there by the first computation.
-const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.5617d91763af.json", "/api/i18n": "/pkg/i18n.1bc388a5bf21.json", "/api/warframe/catalog": "/pkg/warframes.d154f005124d.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
+const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.a9bcae434e26.json", "/api/i18n": "/pkg/i18n.a2d0e51dcbfe.json", "/api/warframe/catalog": "/pkg/warframes.d154f005124d.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
 /// A DOWNLOAD THAT RECEIVES NOTHING FOR THIS LONG IS CUT, so a stalled line ends
 /// in a failure the lanes can report rather than in lanes that wait for ever.
 const ENGINE_STALL_MS = 60_000;
@@ -995,7 +995,7 @@ async function enginePack(url) {
 /// is sent as its address instead, and that worker fetches its own; the packs
 /// always travel as bytes.
 function spawnEngine() {
-  const w = new Worker("/asset/worker.5ca0d9ff9be0.js");
+  const w = new Worker("/asset/worker.22a3085a750f.js");
   engineLoad().then(({ module, packs }) => {
     try {
       w.postMessage({ kind: "engine", module, packs });
@@ -29346,7 +29346,7 @@ function computeDemandHtml() {
       <div class="demand-bar"><div style="width:${share}%"></div></div>
       <div class="set-note"><span class="demand-key on">■</span> ${escHtml(tr("volunteers {n} ({p}%)").replace("{n}", n(d.per_hour.volunteers)).replace("{p}", share))}
         &nbsp; <span class="demand-key">■</span> ${escHtml(tr("official machines {n} ({p}%)").replace("{n}", n(d.per_hour.official)).replace("{p}", 100 - share))}
-        · ${aT("the last six hours' average")}</div></dd></div>
+        · ${aT("the last 24 hours' average")}</div></dd></div>
     ${eta ? `<div class="kv"><dt>${aT("Cleared in")}</dt><dd>${big(eta)}<div class="set-note" style="margin-top:4px">${aT("at the recent compute pace")}</div></dd></div>` : ""}
   </dl></div></div>`;
 }
