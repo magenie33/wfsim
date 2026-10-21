@@ -3,5 +3,6 @@
 //! row is measured by (`benchmarks`).
 
 pub mod benchmarks;
+mod describe;
 pub mod builds;
 pub mod groups;

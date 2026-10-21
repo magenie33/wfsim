@@ -4,12 +4,12 @@
 // one where a number is made:
 // 1. a field of that name is a `Prose`, never a `String`;
 // 2. a loader walking raw `Value`s names one only through `Prose::read`;
-// 3. `Prose::shown` is not called in the metered sources, the build layer or
-//    the optimizer.
+// 3. `Prose::shown` is called only in a `describe` module, the web api or a
+//    test — what a reader is shown — so code anywhere else, a loader that
+//    parses a card included, cannot reach the text.
 //   node scripts/check_prose.mjs
 import fs from "node:fs";
 import path from "node:path";
-import { METERED } from "./metered.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, "$1")), "..");
 let failures = 0;
@@ -42,9 +42,29 @@ const literal = new RegExp(`"(${keys.join("|")})"`);
 check("…and read off a raw map only through Prose::read",
   engine.filter((x) => literal.test(x.code) && !/Prose::read\(/.test(x.code)).map((x) => `${x.at}: ${x.l.trim()}`));
 
-const computing = lines([...METERED, "engine/src/build", "optimizer/src"].flatMap(rust));
-check("…and never shown where a number is computed",
-  computing.filter((x) => /\.shown\(\)/.test(x.code)).map((x) => `${x.at}: ${x.l.trim()}`));
+// A `#[cfg(test)] mod … { … }` block, by its braces: a test may read anything.
+const outsideTests = (f) => {
+  const src = fs.readFileSync(path.join(ROOT, f), "utf8").split(/\r?\n/);
+  const out = [];
+  for (let i = 0; i < src.length; i++) {
+    if (/^\s*#\[cfg\(test\)\]/.test(src[i]) && /^\s*(pub(\([^)]*\))?\s+)?mod\s+\w+\s*\{/.test(src[i + 1] || "")) {
+      let depth = 0, j = i + 1;
+      for (; j < src.length; j++) {
+        const code = src[j].replace(/\/\/.*$/, "");
+        depth += (code.match(/\{/g) || []).length - (code.match(/\}/g) || []).length;
+        if (depth === 0 && j > i + 1) break;
+      }
+      i = j;
+      continue;
+    }
+    out.push({ at: `${f}:${i + 1}`, l: src[i], code: src[i].replace(/\/\/.*$/, "") });
+  }
+  return out;
+};
+const shownAnywhere = ["engine/src", "wasm/src", "native/src", "cli/src", "optimizer/src"].flatMap(rust)
+  .filter((f) => !f.endsWith("/describe.rs") && !f.endsWith("_tests.rs") && f !== "engine/src/prose.rs");
+check("…and shown only in a describe module, the web api or a test",
+  shownAnywhere.flatMap(outsideTests).filter((x) => /\.shown\(\)/.test(x.code)).map((x) => `${x.at}: ${x.l.trim()}`));
 
 console.log(failures ? `\n${failures} failed` : "\nprose is read only as prose");
 process.exit(failures ? 1 : 0);

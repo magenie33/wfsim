@@ -31,6 +31,7 @@ use crate::model::Scale;
 mod parse;
 mod fx;
 mod def;
+mod describe;
 mod pools;
 #[cfg(test)]
 mod tests;

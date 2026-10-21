@@ -276,16 +276,14 @@ fn expand_ladder(b: Benchmark, axes: &[Axis]) -> Result<Vec<Benchmark>, String> 
             }
             let hole = format!("{{{}}}", axis.id);
             c.name = c.name.replace(&hole, &r.short);
-            c.standard = c.standard.shown().replace(&hole, &r.long).into();
-            c.rules = c.rules.iter().map(|t| t.shown().replace(&hole, &r.long).into()).collect();
+            c.standard = c.standard.map(|t| t.replace(&hole, &r.long));
+            c.rules = c.rules.iter().map(|t| t.map(|s| s.replace(&hole, &r.long))).collect();
         }
         if !c.cell.is_empty() {
             c.primary = false;
         }
-        for text in std::iter::once(c.name.as_str()).chain(c.rules.iter().map(|t| t.shown())).chain([c.standard.shown()]) {
-            if let Some(hole) = unfilled(text) {
-                return Err(format!("says `{{{hole}}}`, which is not an axis it spans"));
-            }
+        if let Some(hole) = super::describe::unfilled(&c) {
+            return Err(format!("says `{{{hole}}}`, which is not an axis it spans"));
         }
         out.push(c);
         let mut i = lines.len();
@@ -301,20 +299,6 @@ fn expand_ladder(b: Benchmark, axes: &[Axis]) -> Result<Vec<Benchmark>, String> 
             pick[i] = 0;
         }
     }
-}
-
-/// The first `{word}` hole left in `text`, if any.
-fn unfilled(text: &str) -> Option<&str> {
-    let mut rest = text;
-    while let Some(open) = rest.find('{') {
-        let after = &rest[open + 1..];
-        let word = after.split('}').next().unwrap_or("");
-        if after.contains('}') && !word.is_empty() && word.chars().all(|c| c.is_ascii_lowercase() || c == '_') {
-            return Some(word);
-        }
-        rest = after;
-    }
-    None
 }
 
 impl Benchmark {

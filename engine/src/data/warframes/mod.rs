@@ -21,6 +21,7 @@ mod cards;
 mod abilities;
 mod frames;
 mod resolve;
+mod describe;
 #[cfg(test)]
 mod tests;
 

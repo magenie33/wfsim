@@ -4,8 +4,8 @@
 //! A data key named in `data/prose.yaml` is read only as a [`Prose`], and the
 //! engine id leaves it out (`scripts/build_site_app.py` `engine_files`), so
 //! rewording a card moves no engine. What keeps that true is that the text is
-//! reachable only through [`Prose::shown`], and `check_prose` refuses a call to
-//! it anywhere a number is computed.
+//! reachable only through [`Prose::shown`], and `check_prose` allows a call to
+//! it only in a `describe` module or the web api — what a reader is shown.
 
 use serde::{Deserialize, Serialize};
 use serde_norway::Value;
@@ -18,6 +18,12 @@ impl Prose {
     /// The text, for a page, a card or a message.
     pub fn shown(&self) -> &str {
         &self.0
+    }
+
+    /// New prose made from this one — a template filled, a sentence framed.
+    /// What comes out is still prose, so it may be made anywhere.
+    pub fn map(&self, f: impl FnOnce(&str) -> String) -> Prose {
+        Prose(f(&self.0))
     }
 
     pub fn is_empty(&self) -> bool {

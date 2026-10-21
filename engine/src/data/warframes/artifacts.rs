@@ -52,15 +52,6 @@ impl ArtifactMod {
         }
     }
 
-    /// The card with `seated` on the artifact: its last line is the bonus paid out.
-    pub fn card_with(&self, seated: &[&ArtifactMod]) -> Vec<String> {
-        let mut lines: Vec<String> = self.description.shown().lines().map(str::to_string).collect();
-        if let (Some(b), Some(last)) = (&self.bonus, lines.last_mut()) {
-            let total = b.value * f64::from(self.bonus_count(seated));
-            *last = format!("+{total}{} {}", b.unit, b.stat);
-        }
-        lines
-    }
 }
 
 /// Why an artifact cannot hold `a`, one reason per problem.

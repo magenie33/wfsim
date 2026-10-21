@@ -287,9 +287,10 @@ its file list.
 
 Plain node over the Rust: every struct field named a key of `data/prose.yaml`
 is a `Prose`, never a `String`; a loader walking raw `Value`s names one only
-through `Prose::read`; and `Prose::shown` is never called in the metered
-sources (`scripts/metered.mjs`), engine/src/build or optimizer/src. It failed on
-the fields and raw reads it was written against. `check_engine_grace.py` holds
+through `Prose::read`; and `Prose::shown` is called only in a `describe.rs`,
+webapi/src or a test, so a loader that parses a card cannot reach the text. It
+failed on the fields and raw reads it was written against, and on one
+`shown()` put in data/mods/parse.rs. `check_engine_grace.py` holds
 the other half: a reworded prose value moves no engine, a number beside it
 does, and a prose word inside another key's block or a flow collection is kept.
 

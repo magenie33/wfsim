@@ -135,10 +135,10 @@ kilobytes, and the module a reader already holds stays cached.
   pack's, file for file, and fails the build where they part.
 - **…and only what a number is computed from.** A data file is read less its
   prose (the keys of `data/prose.yaml`, which the engine holds only as
-  `prose::Prose` and `check_prose` keeps out of every computing layer); Rust as
-  its tokens (`scripts/rust_tokens.py`), so comments, layout and test-only items
-  move nothing; the overlay's code and `data/surveys/` not at all
-  (`ENGINE_ID_NOT`). Rewording a card, a rule or a comment moves no engine.
+  `prose::Prose` and `check_prose` lets be read only in a `describe` module or
+  the web api); Rust as its tokens (`scripts/rust_tokens.py`), so comments,
+  layout and test-only items move nothing; the overlay's code and
+  `data/surveys/` not at all (`ENGINE_ID_NOT`). Rewording a card, a rule or a comment moves no engine.
 
 ## Answers the build already knows
 
@@ -231,7 +231,7 @@ split of the runs gives the same count. Work is `gas · GAS_PRICE_PER_MILLION /
 10^6 + runs · RUN_PRICE` (docs/BOARD.md §"Contribution").
 
 - **WHAT COUNTS IS WHAT A RUN EXECUTES IN THE METERED SOURCES** (`METERED` in
-  `scripts/metered.mjs`): fight, rules, model, the target, formations, the
+  `scripts/check_gas.mjs`): fight, rules, model, the target, formations, the
   record. Parsing, folding, data loading and the allocator are outside them
   and never count.
 - **A NEW FUNCTION THERE CARRIES THE ATTRIBUTE**, or `check_gas` fails —

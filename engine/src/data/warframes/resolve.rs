@@ -268,7 +268,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
     if frame.passive_unmodelled.is_some() {
         admissions.push(Admission {
             from: frame.id.clone(),
-            text: format!("Passive not modelled: {}", frame.passive.shown()),
+            text: super::describe::passive_not_modelled(frame),
             kind: AdmissionKind::Unmodelled,
         });
     }

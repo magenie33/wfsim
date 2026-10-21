@@ -212,7 +212,7 @@ fn parse(path: &str, text: &str) -> EvolutionDef {
         .filter_map(|v| {
             let note = crate::prose::Prose::read(v, "misprint")?;
             let kind = v.get("kind").and_then(Value::as_str).unwrap_or("");
-            Some(format!("{} — {}", kind.replace('_', " "), note.shown()).into())
+            Some(note.map(|n| format!("{} — {n}", kind.replace('_', " "))))
         })
         .collect();
     EvolutionDef {
