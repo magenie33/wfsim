@@ -222,6 +222,18 @@ console.log("\nthe cases that failed in production");
     (await f2.next(env, { device: "a" }, "e1", NOW)) === null);
   const id = await questionId("simulate", { row: 2 });
   check("...which is withdrawn there", (await db.get("SELECT state FROM questions WHERE id = ?", id)).state === "withdrawn");
+  // AN OPEN QUESTION WITH NO LIVE DEMAND — its demands withdrawn, the question
+  // left open — heads the order: a pack that picks it withdraws it, and the next
+  // pack is handed the row behind it rather than the same dead head for ever.
+  await f.demand(env, { producer: "p", ref: "orphan", verb: "simulate", request: { row: 4 }, due_in_ms: 1000 }, "e1", NOW);
+  await f.demand(env, { producer: "p", ref: "behind", verb: "simulate", request: { row: 5 }, due_in_ms: 2000 }, "e1", NOW);
+  await db.run("UPDATE demands SET state = 'withdrawn' WHERE ref = 'orphan'");
+  const orphan = await questionId("simulate", { row: 4 });
+  await f.nextPack(env, { device: "a" }, "e1", { n: 1, lease_ms: 60_000 }, NOW);
+  const after = await f.nextPack(env, { device: "a" }, "e1", { n: 1, lease_ms: 60_000 }, NOW);
+  check("an open question no demand asks for any more is withdrawn by the pack that picks it, and the next pack is the row behind",
+    (await db.get("SELECT state FROM questions WHERE id = ?", orphan)).state === "withdrawn"
+      && after && after.questions.length === 1 && after.questions[0].demands[0].ref === "behind", JSON.stringify(after));
 }
 {
   const db = await testDb("library"), env = { LIBRARY: db };

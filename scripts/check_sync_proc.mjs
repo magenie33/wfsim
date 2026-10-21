@@ -87,6 +87,8 @@ async function books(w, rand, n) {
   const some = rows.filter((_, i) => i % 3 === 0);
   for (const r of some) await w.L.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, ?, 'base')", again, r.identity, r.ruler);
   await post(w.env, boardTasksRoute, "/api/board/ask", { batch: again, rows: some });
+  // …AND A FEW LEFT OPEN WITH EVERY DEMAND WITHDRAWN, which a pack must withdraw.
+  await w.L.run("UPDATE demands SET state = 'withdrawn' WHERE ref IN (SELECT ref FROM demands ORDER BY ref LIMIT 3)");
 }
 
 const SORT = {

@@ -588,6 +588,9 @@ BEGIN
   IF jsonb_array_length(v_gone) > 0 THEN
     UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
       WHERE id IN (SELECT id FROM questions WHERE id IN (SELECT jsonb_array_elements_text(v_gone)) AND lease = v_lease ORDER BY id FOR UPDATE);
+    -- A ROW LEFT WITH NO LIVE DEMAND is withdrawn, not only given back: still
+    -- open, it heads every pack's pick again and every sync is handed nothing.
+    PERFORM factory_restate(g.id) FROM (SELECT jsonb_array_elements_text(v_gone) AS id ORDER BY 1) g;
   END IF;
   v_got := COALESCE((SELECT jsonb_agg(jsonb_build_object('question', t ->> 'id', 'verb', t ->> 'verb', 'request', t ->> 'request',
       'due_at', t ->> 'due_at', 'demands', (SELECT COALESCE(jsonb_agg(jsonb_build_object('producer', e ->> 'producer', 'ref', e ->> 'ref',

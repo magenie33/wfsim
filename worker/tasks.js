@@ -340,6 +340,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     if (gone.length) {
       await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
           WHERE ${inIdOrder(`id IN ${listOf(db, "?")} AND lease = ?`)}`).bind(JSON.stringify(gone), lease).run();
+      // A ROW LEFT WITH NO LIVE DEMAND is withdrawn, not only given back: still
+      // open, it heads every pack's pick again and every ask is handed nothing.
+      for (const id of [...gone].sort()) await restate(db, id);
     }
     for (const d of wanted) {
       const p = producerOf(d.producer);
