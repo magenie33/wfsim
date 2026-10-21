@@ -10,6 +10,7 @@
 import { syncRoute } from "../worker/sync.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { facts } from "../worker/factory.js";
+import { PICK_ROUNDS } from "../worker/tasks.js";
 import { forgetDials } from "../worker/dials.js";
 import { readFileSync } from "node:fs";
 import { testDb } from "./pg/test_db.mjs";
@@ -282,6 +283,9 @@ for (const name of reached) {
 const writers = [...reached].filter((n) => /UPDATE producer_use|producer_use[^;]*FOR UPDATE/.test(bodies[n]));
 check(`a sync's steps (${reached.size} functions) neither lock nor write producer_use, which board_sync does last`,
   reached.size > 10 && writers.length === 0, writers.join(", "));
+// …AND A PACK PICKS AS OFTEN THROUGH EITHER PATH (worker/tasks.js `PICK_ROUNDS`).
+const rounds = /FOR v_round IN 1\.\.(\d+) LOOP/.exec(bodies.board_sync_steps || "");
+check(`the procedure picks a pack at most PICK_ROUNDS (${PICK_ROUNDS}) times`, !!rounds && Number(rounds[1]) === PICK_ROUNDS, rounds ? rounds[0] : "no pick loop");
 
 console.log(failures ? `\n${failures} failed` : "\nthe procedure answers and writes what the statements do, in one call");
 process.exit(failures ? 1 : 0);

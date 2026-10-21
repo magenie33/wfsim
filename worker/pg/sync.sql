@@ -562,7 +562,7 @@ BEGIN
   v_size := GREATEST(1, LEAST((p #>> '{pack,max}')::bigint, (p #>> '{pack,by_pace}')::bigint, v_fair.open / GREATEST(1, v_fair.asking)));
   -- A PICK THAT WAS DEAD IS PICKED AGAIN, under the same lease, as
   -- worker/tasks.js `nextPack` does (`PICK_ROUNDS`): until the pack is full, a
-  -- pick finds nothing dead, or eight picks. A row of the pick no longer owed
+  -- pick finds nothing dead, or PICK_ROUNDS picks. A row of the pick no longer owed
   -- is withdrawn where it is found and left out, its question restated once
   -- all are (`sift`). Each pick is charged as its own (`board_sync`).
   FOR v_round IN 1..8 LOOP
