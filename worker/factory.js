@@ -11,19 +11,9 @@ import { idleFindings } from "./idle_devices.js";
 import { iso } from "./instant.js";
 import { fairShadow, settleBatch } from "./settler.js";
 
-/// HOW LONG EACH ASK MAY WAIT — THE WHOLE DISPATCH POLICY. Hand-outs go
-/// earliest deadline first, and a question past its deadline is the official
-/// machines' too, whatever its kind. A kind is only when it is asked and this;
-/// a refresh is due when its row turns `REFRESH_WITHIN_MS` old, not a span after
-/// its ask, so idle volunteers take it early and a busy fleet lets it wait.
-export const DEADLINE_MS = {
-  chat: 2 * 60_000,
-  new_build: 6 * 3_600_000,
-  survey_build: 3 * 86_400_000,
-  survey: 86_400_000,
-  refresh: 12 * 86_400_000,
-  sweep: 7 * 86_400_000,
-};
+/// HOW LONG EACH ASK MAY WAIT — THE WHOLE DISPATCH POLICY, stated in
+/// worker/deadlines.js.
+export { DEADLINE_MS } from "./deadlines.js";
 /// THE OLDEST A BOARD ROW MAY GROW: its refresh is due when its fact is this old
 /// (`.github/workflows/queue.yml` asks from three days on). `DEADLINE_MS.refresh`
 /// is only for a row with no fact time.
