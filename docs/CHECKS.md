@@ -283,6 +283,12 @@ and that engine is accepted to join the served one (`join`). Tests are never
 compared. An engine replaced more than `ENGINE_GRACE_DAYS` ago is dropped with
 its file list.
 
+## `rust_tokens.py --self-test`
+
+The engine id's reading of Rust: a comment, a doc comment, layout and a
+`#[cfg(test)]` item move nothing; a changed number, operator or string literal
+moves it; raw strings, char literals and lifetimes lex as one token each.
+
 ## `check_engine_apart.py`
 
 The engine is its code (docs/WASM.md §"Code and data"). The shipped module

@@ -133,6 +133,9 @@ kilobytes, and the module a reader already holds stays cached.
 - **The engine id reads the same files** (`lean_yaml`), so a source note moves
   no engine; `ship_data_packs` holds its list and its stripping to the `data`
   pack's, file for file, and fails the build where they part.
+- **…and only what a number is computed from.** Rust is read as its tokens
+  (`scripts/rust_tokens.py`), so comments, layout and test-only items move
+  nothing; the overlay's code and `data/surveys/` not at all (`ENGINE_ID_NOT`).
 
 ## Answers the build already knows
 
@@ -225,7 +228,7 @@ split of the runs gives the same count. Work is `gas · GAS_PRICE_PER_MILLION /
 10^6 + runs · RUN_PRICE` (docs/BOARD.md §"Contribution").
 
 - **WHAT COUNTS IS WHAT A RUN EXECUTES IN THE METERED SOURCES** (`METERED` in
-  `scripts/check_gas.mjs`): fight, rules, model, the target, formations, the
+  `scripts/metered.mjs`): fight, rules, model, the target, formations, the
   record. Parsing, folding, data loading and the allocator are outside them
   and never count.
 - **A NEW FUNCTION THERE CARRIES THE ATTRIBUTE**, or `check_gas` fails —

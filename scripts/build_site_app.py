@@ -62,6 +62,7 @@ def yload(text: str):
 # this gate refuses anything it would have rejected.
 from fetch_images import is_image
 import data_packs
+import rust_tokens
 
 ROOT = Path(__file__).resolve().parent.parent
 STATIC = ROOT / "web" / "src" / "static"
@@ -666,6 +667,9 @@ def quote_attr(path: str) -> str:
 ENGINE_SOURCES = ("engine/src", "webapi/src", "wasm/src", "native/src", "tools/gas-macro", "data")
 ENGINE_SOURCES_NOT = ("data/i18n/", "data/board_state.yaml", "data/market.yaml",
                       "data/assets.yaml", "data/notes.yaml")
+# …and what the engine carries but no number is computed from: the overlay's
+# own code, and the surveys only a test reads.
+ENGINE_ID_NOT = ("engine/src/data/i18n.rs", "webapi/src/i18n.rs", "data/surveys/")
 
 
 def is_test_source(rel: str) -> bool:
@@ -702,14 +706,21 @@ def lean_yaml(text: str) -> str:
 def engine_files() -> dict:
     """What `engine_id` reads, as the grace compares it: each weapon and kitgun
     part file by its own digest, and every other file but a test as one, `rest`.
-    Data is read lean (`lean_yaml`); code as it is."""
+    Data is read lean (`lean_yaml`); Rust as its tokens (`rust_tokens`)."""
     out, rest = {}, hashlib.sha256()
     files = sorted(p for d in ENGINE_SOURCES for p in (ROOT / d).rglob("*") if p.is_file())
+    code, tests = {}, []
+    for p in files:
+        rel = p.relative_to(ROOT).as_posix()
+        if rel.endswith(".rs"):
+            code[rel], mods = rust_tokens.digest_text(p.read_text(encoding="utf-8"))
+            tests += rust_tokens.test_module_paths(rel, mods)
     for p in files + [ROOT / "Cargo.lock"]:
         rel = p.relative_to(ROOT).as_posix()
-        if is_test_source(rel) or (rel.startswith("data/") and not is_engine_data(rel)):
+        if (is_test_source(rel) or rel.startswith(ENGINE_ID_NOT) or rel in tests or rel.startswith(tuple(tests))
+                or (rel.startswith("data/") and not is_engine_data(rel))):
             continue
-        body = p.read_bytes().replace(bytes([13, 10]), bytes([10]))
+        body = code[rel].encode("utf-8") if rel in code else p.read_bytes().replace(bytes([13, 10]), bytes([10]))
         if rel.startswith("data/"):
             body = lean_yaml(body.decode("utf-8")).encode("utf-8")
         if rel.startswith(("data/weapons/", "data/kitguns/")) and rel.endswith(".yaml"):

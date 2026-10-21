@@ -493,6 +493,10 @@ jobs:
       # days whatever the room: the oldest first, never more than an hour's.
       - name: A refresh asks the oldest rows the room allows, and the forced ones
         run: python3 scripts/oldest_rows.py --self-test
+      # AN EDIT THAT LEAVES THE TOKENS ALONE MOVES NO ENGINE: comments, layout
+      # and test-only items are not what a number is computed from.
+      - name: Rust is read as its tokens for the engine id
+        run: python3 scripts/rust_tokens.py --self-test
       # AN OLDER ENGINE IS ACCEPTED WHERE ITS BITS ARE THE SERVED ONE'S, and
       # nowhere else: a weapon's data and its linked forms, never mechanics.
       - name: An older engine is accepted exactly on the weapons its data matches
