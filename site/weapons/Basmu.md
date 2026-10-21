@@ -4,7 +4,7 @@ Chinese name: 巴什穆
 
 Rifle · Primary · Mastery Rank 11. 39 base damage (electricity 39), 15% crit chance, 2x crit multiplier, 29% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

@@ -4,7 +4,7 @@ Chinese name: 阿利乌双枪
 
 Dual Pistols · Secondary · Mastery Rank 8. 68 base damage (impact 68), 6% crit chance, 1.8x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

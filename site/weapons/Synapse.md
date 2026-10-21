@@ -4,7 +4,7 @@ Chinese name: 突触生化枪
 
 Rifle · Primary · Mastery Rank 11. 20 base damage (corrosive 20), 39% crit chance, 2.7x crit multiplier, 13% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

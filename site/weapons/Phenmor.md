@@ -4,7 +4,7 @@ Chinese name: 凤殁
 
 Rifle · Primary · Mastery Rank 14. 140 base damage (puncture 42, slash 98), 20% crit chance, 2x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

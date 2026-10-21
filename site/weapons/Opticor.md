@@ -4,7 +4,7 @@ Chinese name: 奥堤克光子枪
 
 Rifle · Primary · Mastery Rank 14. 1000 base damage (impact 100, puncture 850, slash 50), 20% crit chance, 2.5x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

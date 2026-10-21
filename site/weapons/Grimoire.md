@@ -4,7 +4,7 @@ Chinese name: 魔典
 
 Pistol · Secondary · Mastery Rank 10. 100 base damage (electricity 100), 20% crit chance, 2x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

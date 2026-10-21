@@ -4,7 +4,7 @@ Chinese name: 棱晶·安格斯壮
 
 Pistol · Secondary · Mastery Rank 8. 200 base damage (blast 200), 18% crit chance, 2.2x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

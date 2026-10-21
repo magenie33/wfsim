@@ -4,7 +4,7 @@ Chinese name: 欧特鲁斯 Prime
 
 Polearm · Melee · Mastery Rank 12. 234 base damage (impact 35.1, puncture 35.1, slash 163.8), 24% crit chance, 2.2x crit multiplier, 36% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

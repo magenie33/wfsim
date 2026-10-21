@@ -4,7 +4,7 @@ Chinese name: 圣英 Prime
 
 Rifle · Primary · Mastery Rank 13. 200 base damage (impact 40, puncture 120, slash 40), 26% crit chance, 2.6x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

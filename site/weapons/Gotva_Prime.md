@@ -4,7 +4,7 @@ Chinese name: 骨葬 Prime
 
 Rifle · Primary · Mastery Rank 14. 25 base damage (puncture 25), 23% crit chance, 2.5x crit multiplier, 27% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

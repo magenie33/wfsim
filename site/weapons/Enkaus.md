@@ -4,7 +4,7 @@ Chinese name: 绘墨
 
 Rifle · Primary · Mastery Rank 12. 28 base damage (corrosive 20, puncture 8), 16% crit chance, 1.8x crit multiplier, 32% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

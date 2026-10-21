@@ -4,7 +4,7 @@ Chinese name: 食人鱼
 
 Shotgun Sidearm · Secondary · Mastery Rank 12. 22 base damage x12 multishot (impact 2.2, puncture 2.2, slash 17.6), 20% crit chance, 2x crit multiplier, 2.5% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-21
+## Best riven-free build on the WFSim board, as of 2026-10-22
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
