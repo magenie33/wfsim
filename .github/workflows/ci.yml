@@ -38,7 +38,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v4
         with:
-          node-version: "22.20.0"
+          node-version: "22.23.4"
       - name: Native and wasm give the same gas, work and score
         run: |
           bindgen=$(awk '/^name = "wasm-bindgen"$/ {getline; gsub(/version = |"/, ""); print; exit}' Cargo.lock)
