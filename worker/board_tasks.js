@@ -13,7 +13,7 @@
 //                          { backfill: true }                           → { asked, left }: owed rows nobody asked for
 //   POST /api/board/adopt  {}                                                      → { adopted, left }   (factory token)
 import { BOARD_KINDS } from "./board_kinds.js";
-import { iso } from "./instant.js";
+import { iso, PACE_HOURS } from "./instant.js";
 import { witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, VERBS, factoryAuthed } from "./factory.js";
 import { holdPriority } from "./merit.js";
@@ -84,20 +84,23 @@ export const BOARD_KINDS_SQL = `(${Object.keys(BOARD_PRODUCERS).map((k) => `'${k
 
 /// A SCENE'S RULERS STILL FILLING, for the watchdog: per cell ruler (an id with
 /// `__`, docs/BOARD.md §"A ruler's ladder"), the rows measured, those measured
-/// in the last `since_ms`, and the rows still owed (a measured row leaves the
-/// queue). Scans of the tables, so read only when it is to be said.
+/// in the last `since_ms` (a cell silent that long is stalled), those measured
+/// over the pace window (`paced`, what its time left is worked from), and the
+/// rows still owed (a measured row leaves the queue). Scans of the tables, so
+/// read only when it is to be said.
 export async function cellsFilling(env, now = Date.now(), since_ms = 6 * 3_600_000) {
   const db = env.LIBRARY;
   const { results: owed } = await db.prepare(
     `SELECT ruler, count(DISTINCT build_id || '|' || mode) AS owed FROM queue WHERE ruler LIKE '%!_!_%' ESCAPE '!' GROUP BY ruler`).all();
   if (!owed.length) return [];
   const { results: measured } = await db.prepare(
-    `SELECT ruler, count(*) AS measured, sum(CASE WHEN finished_at > ? THEN 1 ELSE 0 END) AS recent FROM scores
+    `SELECT ruler, count(*) AS measured, sum(CASE WHEN finished_at > ?1::text THEN 1 ELSE 0 END) AS recent,
+       sum(CASE WHEN finished_at > ?2::text THEN 1 ELSE 0 END) AS paced FROM scores
        WHERE ruler LIKE '%!_!_%' ESCAPE '!' GROUP BY ruler`)
-    .bind(iso(now - since_ms)).all();
+    .bind(iso(now - since_ms), iso(now - PACE_HOURS * 3_600_000)).all();
   const m = new Map(measured.map((r) => [r.ruler, r]));
   return owed.map((r) => ({ ruler: r.ruler, measured: m.get(r.ruler)?.measured || 0, recent: m.get(r.ruler)?.recent || 0,
-    recent_hours: since_ms / 3_600_000, owed: r.owed }));
+    recent_hours: since_ms / 3_600_000, paced: m.get(r.ruler)?.paced || 0, pace_hours: PACE_HOURS, owed: r.owed }));
 }
 
 /// THE TASK THE FACTORY LEASED, in the shape the page fights a board row in.

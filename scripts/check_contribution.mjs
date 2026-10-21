@@ -8,9 +8,10 @@
 // ask what it earned by its own id; nothing works signed out or from another
 // site; deleting the account releases its devices.
 //   node scripts/check_contribution.mjs
-import { contributionRoute, contributorRank, demandOf, DEMAND_KEY, DEMAND_PACE_HOURS, publishContributors, CONTRIBUTORS_KEY, tallyOf, tallyBase, periodStarts, periodWindows } from "../worker/contribution.js";
+import { contributionRoute, contributorRank, demandOf, DEMAND_KEY, publishContributors, CONTRIBUTORS_KEY, tallyOf, tallyBase, periodStarts, periodWindows } from "../worker/contribution.js";
 import { sha256 } from "../worker/accounts.js";
 import { testDb } from "./pg/test_db.mjs";
+import { PACE_HOURS } from "../worker/instant.js";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -231,15 +232,16 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   for (let i = 0; i < 10; i++) await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
     VALUES (?, 'r', 'base', 'verified:e1', 1, 'kpm', 0, 'T', ?)`, `v${i}`, ago(3_600_000));
   for (const [id, by, ms] of [["o1", "abc", 3_600_000], ["o2", "abc", 3_600_000], ["o3", "abc", 3_600_000], ["o4", "abc", 3_600_000],
-    ["late-v", "verified:e1", (DEMAND_PACE_HOURS + 1) * 3_600_000], ["late-o", "abc", (DEMAND_PACE_HOURS + 1) * 3_600_000]]) {
+    ["late-v", "verified:e1", (PACE_HOURS + 1) * 3_600_000], ["late-o", "abc", (PACE_HOURS + 1) * 3_600_000]]) {
     await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
       VALUES (?, 'r', 'base', ?, 1, 'kpm', 0, 'T', ?)`, id, by, ago(ms));
   }
   // THE HOME TALLY: the settler's file and the worker's answer are one body.
   const told = await call("/api/board/tally"), at = Date.parse(told.at);
   const filed = await tallyOf(env, await tallyBase(L, at), at);
-  check("the home tally counts every score by who computed it, and the last hour's",
-    JSON.stringify([told.totals, told.per_hour]) === JSON.stringify([{ volunteers: 13, official: 7 }, { volunteers: 1, official: 2 }]), JSON.stringify(told));
+  check("the home tally counts every score by who computed it, and per hour over the pace window",
+    JSON.stringify([told.totals, told.per_hour]) === JSON.stringify([{ volunteers: 13, official: 7 },
+      { volunteers: Math.round(12 / PACE_HOURS), official: Math.round(6 / PACE_HOURS) }]), JSON.stringify(told));
   check("...and the settler's file of it is the endpoint's answer, field for field",
     JSON.stringify({ status: 200, ...filed }) === JSON.stringify(told), JSON.stringify({ filed, told }));
   const base = await tallyBase(L, now - 1000);
@@ -260,17 +262,17 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   }
   const hourOf = (ms) => new Date(now - ms).toISOString().slice(0, 13);
   await L.run("INSERT INTO verifier_hours (verifier, hour, ms) VALUES ('vh1', ?, 300000), ('vh2', ?, 72000), ('vh3', ?, 999000), ('vh4', ?, 999000)",
-    hourOf(2 * 3_600_000), hourOf(5 * 3_600_000), hourOf(0), hourOf((DEMAND_PACE_HOURS + 1) * 3_600_000));
+    hourOf(2 * 3_600_000), hourOf(5 * 3_600_000), hourOf(0), hourOf((PACE_HOURS + 1) * 3_600_000));
   const kept = { LIBRARY: L }, d = await demandOf(kept, now);
   check("each survey is a goal: its shapes, how many are agreed and begun, a lapsed one and a finished one gone, none counted as a chat's riven gain",
     JSON.stringify(d.surveys.map(({ clear_hours, ...g }) => g)) === JSON.stringify([{ weapon: "furis", ruler: "x", shapes: 3, agreed: 1, started: 2 }]), JSON.stringify(d.surveys));
-  check("...and its hours to reach at its own pace: one agreed in three hours, two to go", Math.abs(d.surveys[0].clear_hours - 6) < 1e-9, JSON.stringify(d.surveys));
-  const paced = (n) => Math.round(n / DEMAND_PACE_HOURS);
+  check("...and its hours to reach over the pace window: one agreed in it, two to go", Math.abs(d.surveys[0].clear_hours - 2 * PACE_HOURS) < 1e-9, JSON.stringify(d.surveys));
+  const paced = (n) => Math.round(n / PACE_HOURS);
   check("the demand counts owed rows by why, one row once, the pace window's scores per hour by who, and riven gains of the last day",
     JSON.stringify([d.owed, d.per_hour, d.riven_gains]) === JSON.stringify([{ new_builds: 1, rescores: 2, sweeps: 1, refreshes: 1 }, { volunteers: paced(12), official: paced(6) }, 1]),
     JSON.stringify(d));
   check("hours to clear are the open work's compute over the compute answered per hour, a refresh left out",
-    Math.abs(d.clear_hours - 128 / (372 / DEMAND_PACE_HOURS)) < 1e-9, String(d.clear_hours));
+    Math.abs(d.clear_hours - 128 / (372 / PACE_HOURS)) < 1e-9, String(d.clear_hours));
   await L.run("UPDATE questions SET fact_at = NULL WHERE id = 'fo'");
   // Kept, a price is a number although a verb has since no fact; the hour may turn meanwhile.
   check("...the day's price kept ten minutes, priced again after", (await demandOf(kept, now + 60_000)).clear_hours > 0

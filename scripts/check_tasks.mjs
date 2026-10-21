@@ -476,13 +476,13 @@ console.log("\nthe watchdog");
   const found = (await watchdog(env, NOW)).find((x) => x.kind === "cells_filling");
   const said = (await db.all("SELECT said FROM watchdog_said")).map((x) => x.said);
   check("a scene still filling is said: measured and owed, per cell ruler",
-    found && JSON.stringify(found.cells) === JSON.stringify([{ ruler: "sst__sp200", measured: 1, recent: 0, recent_hours: 6, owed: 2 }])
+    found && JSON.stringify(found.cells) === JSON.stringify([{ ruler: "sst__sp200", measured: 1, recent: 0, recent_hours: 6, paced: 1, pace_hours: 24, owed: 2 }])
       && said.some((x) => /cells_filling/.test(x)), JSON.stringify(found));
   check("...and a cell that measured nothing in six hours is said as needing someone",
     said.some((x) => x.includes("🔴 要处理") && x.includes("sst · sp200")), JSON.stringify(said));
   const { watchdogText } = await import("../worker/watchdog_say.js");
-  const moving = watchdogText({ kind: "cells_filling", cells: [{ ruler: "sst__sp200", measured: 30, recent: 12, recent_hours: 6, owed: 60 }] }, NOW);
-  check("...a cell that is moving is progress, with its pace and time left",
+  const moving = watchdogText({ kind: "cells_filling", cells: [{ ruler: "sst__sp200", measured: 30, recent: 12, recent_hours: 6, paced: 48, pace_hours: 24, owed: 60 }] }, NOW);
+  check("...a cell that is moving is progress, with its pace and time left over the day's pace",
     moving.includes("🟢 进度") && moving.includes("30/90") && moving.includes("+12/6h") && moving.includes("约 30 小时"), moving);
   check("every finding the audit makes has its own words, none the fallback",
     ["stalled:p", "nondeterministic", "unsettled", "overdue", "disagreeing"].every((kind) => !watchdogText({ kind, producer: "p", questions: 1,

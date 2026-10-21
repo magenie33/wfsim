@@ -676,7 +676,8 @@ deadline and what only they may settle.
   the served engine (thirty answers and 3% of them, by owner) are found every
   round. So is a scene still
   filling, its cell rulers' rows measured, measured in six hours, and owed —
-  a cell that measured none is said as needing someone. Each is said with a
+  a cell that measured none is said as needing someone, and its time left is
+  worked from the last 24 hours (`PACE_HOURS`). Each is said with a
   level, what it means and what to do (`worker/watchdog_say.js`). **COMPUTERS ON
   BUT IDLE** (`worker/idle_devices.js`): an id that asked in the last half hour
   yet holds no row and answered nothing in it — on an old engine, asking more
@@ -1385,7 +1386,13 @@ see two.
   comes back every three days and never clears. Null where a verb with work
   formed no fact that day.
 - a survey's `clear_hours`: its shapes left over its shapes agreed per hour
-  in the last three hours; null when none were.
+  in the last 24 hours; null when none were.
+
+EVERY SPEED THE SITE STATES IS OVER THE LAST 24 HOURS (`PACE_HOURS`,
+`worker/instant.js`): the demand's pace and hours to clear, a survey's, the
+home tally's per-hour count and the watchdog's time left on a filling cell.
+The compute page prints the hours to clear as days, hours and minutes, to the
+minute, over a note that says what it rests on.
 
 ### The public stats
 

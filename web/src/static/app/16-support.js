@@ -130,7 +130,7 @@ async function loadHomeTally() {
     || await fetch("/api/board/tally", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || !r.totals) return;
   const next = { volunteers: r.totals.volunteers, official: r.totals.official, computing: r.computing | 0 };
-  // THE FIRST ANSWER WALKS FROM A MINUTE BEFORE IT, at the last hour's pace,
+  // THE FIRST ANSWER WALKS FROM A MINUTE BEFORE IT, at the day's pace per hour,
   // so a count moves the moment the page opens and shows only what it held.
   const back = (k) => Math.max(0, next[k] - Math.round((r.per_hour?.[k] | 0) / 60));
   tallyFrom = tallyShown || { volunteers: back("volunteers"), official: back("official"), computing: next.computing };

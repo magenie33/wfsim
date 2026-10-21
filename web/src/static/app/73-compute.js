@@ -719,11 +719,14 @@ async function loadComputeDemand() {
   if (!(r && r.ok)) r = await accountCall("GET", "/api/board/demand");
   computeDemand = r && r.ok ? r : null;
 }
-/// HOURS AS A READER COUNTS THEM: under one, whole hours, then whole days.
+/// HOURS AS A COUNTDOWN: days, hours and minutes, to the minute, the larger
+/// units dropped while they are zero. The pace beside it says what it rests on.
 function demandHours(h) {
-  if (h < 1) return tr("under an hour");
-  return h < 48 ? tr("about {n} hours").replace("{n}", Math.round(h).toLocaleString(accountLocale()))
-    : tr("about {n} days").replace("{n}", Math.round(h / 24).toLocaleString(accountLocale()));
+  const all = Math.round(h * 60), d = Math.floor(all / 1440), hh = Math.floor((all % 1440) / 60), m = all % 60;
+  const n = (x) => x.toLocaleString(accountLocale());
+  if (!all) return tr("under a minute");
+  if (d) return tr("{d} d {h} h {m} min").replace("{d}", n(d)).replace("{h}", n(hh)).replace("{m}", n(m));
+  return hh ? tr("{h} h {m} min").replace("{h}", n(hh)).replace("{m}", n(m)) : tr("{m} min").replace("{m}", n(m));
 }
 function computeDemandHtml() {
   const d = computeDemand;
@@ -760,7 +763,7 @@ function computeDemandHtml() {
       <div class="set-note"><span class="demand-key on">■</span> ${escHtml(tr("volunteers {n} ({p}%)").replace("{n}", n(d.per_hour.volunteers)).replace("{p}", share))}
         &nbsp; <span class="demand-key">■</span> ${escHtml(tr("official machines {n} ({p}%)").replace("{n}", n(d.per_hour.official)).replace("{p}", 100 - share))}
         · ${aT("the last 24 hours' average")}</div></dd></div>
-    ${eta ? `<div class="kv"><dt>${aT("Cleared in")}</dt><dd>${big(eta)}<div class="set-note" style="margin-top:4px">${aT("at the recent compute pace")}</div></dd></div>` : ""}
+    ${eta ? `<div class="kv"><dt>${aT("Cleared in")}</dt><dd>${big(eta)}<div class="set-note" style="margin-top:4px">${aT("at the last 24 hours' average compute")}</div></dd></div>` : ""}
   </dl></div></div>`;
 }
 

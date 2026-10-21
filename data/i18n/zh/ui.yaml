@@ -2795,12 +2795,13 @@ ui:
   "volunteers {n} ({p}%)": "志愿者 {n}（{p}%）"
   "official machines {n} ({p}%)": "官方服务器 {n}（{p}%）"
   "Cleared in": 预计清空
-  "under an hour": 不到 1 小时
-  "about {n} hours": "约 {n} 小时"
-  "about {n} days": "约 {n} 天"
+  "under a minute": 不到 1 分钟
+  "{d} d {h} h {m} min": "{d} 天 {h} 小时 {m} 分"
+  "{h} h {m} min": "{h} 小时 {m} 分"
+  "{m} min": "{m} 分"
   "done in {t}": "{t}后完成"
   "the last 24 hours' average": 近 24 小时平均
-  "at the recent compute pace": 按最近的算力估算
+  "at the last 24 hours' average compute": 按近 24 小时平均算力
   "Nothing yet.": 还没有。
   "{name}'s contribution": "{name} 的贡献"
   "Contributor rank": 贡献段位

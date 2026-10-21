@@ -57,7 +57,7 @@ function describe(f, now) {
     const still = f.cells.filter((c) => c.owed > 0 && !c.recent);
     const lines = f.cells.map((c) => {
       const done = c.measured + c.owed, pct = done ? Math.round((100 * c.measured) / done) : 100;
-      const eta = c.recent ? `约 ${fmtHours((c.owed / c.recent) * c.recent_hours)}` : "没在动";
+      const eta = !c.recent ? "没在动" : c.paced ? `约 ${fmtHours((c.owed / c.paced) * c.pace_hours)}（按近 ${c.pace_hours} 小时）` : "—";
       return `${cellName(c.ruler)}  ${c.measured}/${done}  ${pct}%  +${c.recent}/${c.recent_hours}h  ${eta}`;
     });
     const verdict = still.length

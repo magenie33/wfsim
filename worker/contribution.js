@@ -37,7 +37,7 @@
 // three, for the showcase a share card draws (`31-share-card.js`).
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
-import { iso } from "./instant.js";
+import { iso, PACE_HOURS } from "./instant.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
 import { kindOf } from "./factory.js";
 import { shownName } from "./names.js";
@@ -634,12 +634,6 @@ async function publishedContributors(env, now = Date.now()) {
 /// object and `/api/board/demand` serves the same bytes. Worked out per request,
 /// each isolate and each edge would keep its own minute, and readers disagree.
 export const DEMAND_KEY = "demand.json", DEMAND_CACHE = "public, max-age=30";
-/// THE PACE IS A WHOLE DAY, in whole hours: one hour swings five-fold between two
-/// quiet ones, a stopped hour says "never", and who is online follows the clock
-/// round the world, so any window shorter than a day reads the time of day.
-export const DEMAND_PACE_HOURS = 24;
-/// …A SURVEY'S OWN PACE, its shapes agreed in this long.
-export const SURVEY_PACE_MS = 3 * 3_600_000;
 /// …AND WHAT A FACT COSTS, over a day: every witness's fight, the ones that
 /// agreed and the ones that did not, over the facts formed. Shorter, a few
 /// hours of one bad release price every row at what that release wasted.
@@ -669,7 +663,7 @@ export async function demandOf(env, now = Date.now()) {
   const costs = kept && now - kept.at < DEMAND_COST_EVERY_MS ? kept : null;
   const [done, gains, surveys, answered, owed, open, spent, facts] = await db.batch([
     db.prepare(`SELECT SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official
-                FROM scores WHERE finished_at >= ?`).bind(iso(now - DEMAND_PACE_HOURS * 3_600_000)),
+                FROM scores WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000)),
     db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?")
       .bind(iso(now - 86_400_000), SURVEY_CHANNEL),
     // EACH SURVEY AS A GOAL: every riven shape of one weapon on one ruler, how
@@ -679,10 +673,10 @@ export async function demandOf(env, now = Date.now()) {
                 SUM(CASE WHEN agreed_at >= ?3::text THEN 1 ELSE 0 END) AS lately
                 FROM appraisals WHERE channel = ?1::text AND request IS NOT NULL AND at > ?2::text GROUP BY weapon, ruler
                 HAVING SUM(CASE WHEN agreed_at IS NULL THEN 0 ELSE 1 END) < COUNT(*) ORDER BY MIN(at), weapon`)
-      .bind(SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - SURVEY_PACE_MS)),
+      .bind(SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - PACE_HOURS * 3_600_000)),
     // THE LAST WHOLE HOURS, the one under way left out.
     db.prepare("SELECT COALESCE(SUM(ms), 0) AS ms FROM verifier_hours WHERE hour >= ?1::text AND hour < ?2::text")
-      .bind(iso(now - DEMAND_PACE_HOURS * 3_600_000).slice(0, 13), iso(now).slice(0, 13)),
+      .bind(iso(now - PACE_HOURS * 3_600_000).slice(0, 13), iso(now).slice(0, 13)),
     ...(costs ? [] : [
       // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
       // demands are read once and joined whole: looked up a queue row at a time,
@@ -704,11 +698,11 @@ export async function demandOf(env, now = Date.now()) {
     openOf: open.results.map((r) => ({ verb: r.verb, n: Number(r.n) })) };
   const by = counted.by;
   const h = done.results[0] || {};
-  const perHour = (x) => Math.round(Number(x || 0) / DEMAND_PACE_HOURS);
+  const perHour = (x) => Math.round(Number(x || 0) / PACE_HOURS);
   const { msOf, factsOf } = costs || { msOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.ms)])),
     factsOf: Object.fromEntries(facts.results.map((r) => [r.verb, Number(r.n)])) };
   if (!costs) demandCosts.set(env, { at: now, msOf, factsOf, by, openOf: counted.openOf });
-  const msPerHour = Number((answered.results[0] || {}).ms || 0) / DEMAND_PACE_HOURS;
+  const msPerHour = Number((answered.results[0] || {}).ms || 0) / PACE_HOURS;
   // THE BOARD'S ROWS are the queue's, a refresh's left out; every other verb's
   // open questions are its work.
   const left = { simulate: (by[0] || 0) + (by[1] || 0) + (by[2] || 0) };
@@ -725,7 +719,7 @@ export async function demandOf(env, now = Date.now()) {
     riven_gains: Number((gains.results[0] || {}).n || 0),
     surveys: surveys.results.map(({ lately, ...g }) => {
       const s = { weapon: g.weapon, ruler: g.ruler, shapes: Number(g.shapes), agreed: Number(g.agreed), started: Number(g.started) };
-      const pace = Number(lately || 0) / (SURVEY_PACE_MS / 3_600_000);
+      const pace = Number(lately || 0) / (PACE_HOURS);
       return { ...s, clear_hours: pace > 0 ? (s.shapes - s.agreed) / pace : null };
     }),
     per_hour: { volunteers: perHour(h.volunteers), official: perHour(h.official) }, clear_hours: clearHours };
@@ -740,7 +734,7 @@ async function demand(env) {
 }
 
 /// THE HOME HERO'S TALLY: every score the board holds, by who computed it, and
-/// the last hour's. Counting the whole table costs a scan, so that count is a
+/// how many an hour over the pace window (`PACE_HOURS`). Counting the whole table costs a scan, so that count is a
 /// BASE kept `TALLY_BASE_MS` at the edge and each answer adds the rows finished
 /// since it, read on `scores_oldest`. A row replaced since the base is counted
 /// again until the next base; the volunteers' count stays exact either way.
@@ -759,11 +753,12 @@ export async function tallyOf(env, base, now = Date.now()) {
   if (db && base) {
     const [since, hour] = await db.batch([
       db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at > ?`).bind(base.at),
-      db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`).bind(iso(now - 3_600_000)),
+      db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000)),
     ]);
     const s = split(since.results[0]);
     totals = { volunteers: base.volunteers + s.volunteers, official: base.official + s.official };
-    perHour = split(hour.results[0]);
+    const h = split(hour.results[0]);
+    perHour = { volunteers: Math.round(h.volunteers / PACE_HOURS), official: Math.round(h.official / PACE_HOURS) };
   }
   return { ok: true, v: 1, at: iso(now), totals, per_hour: perHour, computing: await computingNow(env) };
 }
