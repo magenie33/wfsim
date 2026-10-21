@@ -10,7 +10,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const CHROME = process.env.CHROME || "chrome-headless-shell";
-const READY_MS = 30_000;
+/// A CARD TAKES 20–35 s on the bot's server: the page ranks the weapon's whole
+/// board before it draws the card. QQ holds a reply open for minutes.
+const READY_MS = 60_000;
+/// THE SITE'S FILES OUTLIVE A BROWSER: every browser starts with a fresh profile,
+/// so without a cache kept apart from it each one fetches the wasm and app.js
+/// again. Hashed files never change. A cache serves one browser at a time, so a
+/// browser takes the first slot no live one holds.
+const CACHE_ROOT = join(tmpdir(), "wfsim-chrome-cache");
+const CACHE_BYTES = 256 << 20;
 /// A BROWSER IS KEPT ONLY WHILE IT IS USED: closed once no page has been open
 /// this long, and retired after this many pages, so a renderer's growth is given
 /// back — on a small server a browser kept for days is what the kernel kills.
@@ -31,10 +39,14 @@ for (const sig of ["SIGINT", "SIGTERM"]) process.once(sig, () => process.exit(12
 async function launch() {
   if (chrome && !chrome.retired) { chrome.retired = true; if (!chrome.open) quit(chrome); }
   const dir = mkdtempSync(join(tmpdir(), "wfsim-chrome-"));
+  const held = new Set([...browsers].map((b) => b.slot));
+  let slot = 0;
+  while (held.has(slot)) slot++;
   const proc = spawn(CHROME, ["--no-sandbox", "--lang=zh-CN", "--remote-debugging-port=0", `--user-data-dir=${dir}`,
+    `--disk-cache-dir=${join(CACHE_ROOT, String(slot))}`, `--disk-cache-size=${CACHE_BYTES}`,
     "--hide-scrollbars", "--disable-gpu", "about:blank"], { stdio: "ignore" });
   proc.unref();
-  const c = { proc, dir, base: "", pages: 0, open: 0, idle: null, retired: false };
+  const c = { proc, dir, slot, base: "", pages: 0, open: 0, idle: null, retired: false };
   browsers.add(c);
   proc.once("exit", () => { browsers.delete(c); rmSync(dir, { recursive: true, force: true }); });
   for (let i = 0; i < 50 && alive(c); i++) {
