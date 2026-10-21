@@ -258,10 +258,10 @@ const step = (name) => {
 const reconcile = readFileSync(resolve(ROOT, "scripts/reconcile_queue.sh"), "utf8");
 check(passesGate(reconcile), "the arrivals reconciliation obeys the entry line",
   "every build that ever arrives would be asked for every ruler and every mode");
-check(passesGate(step("ask for what was measured three days ago")),
-  "…and so does the refresh",
-  "a build nothing would publish is re-measured every few days for ever, "
-    + "which is the recurring half of the bill the line exists to stop");
+check(!/--queue-older/.test(queueWf),
+  "no measured row is asked for again on the clock",
+  "the engine id moves on edits that move no number, so an hourly re-ask "
+    + "rescores the whole board after a wording change");
 const rescore = step("ask for every row of one ruler again");
 check(rescore !== null && !passesGate(rescore),
   "…and the rescore button overrides it",

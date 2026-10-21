@@ -283,32 +283,11 @@ open at the head of the order, where every pick withdraws it at a pack's worth
 an ask. A row the library still owes is queued again by the next
 reconciliation, so a cancel that should hold stops that writer first.
 
-**AND EVERY HOUR, WHAT WAS MEASURED THREE DAYS AGO IS ASKED FOR AGAIN** — the
-`refresh` producer (`queue.yml`, `wfsim-board --queue-older`). Nothing here
-retires a fact on its own: a board is a claim about what the code computes
-TODAY, and a row is wrong the moment its engine moves. A refresh says nothing
-about whether a number is WRONG — it says nobody has looked since.
-
-- **ROW BY ROW, by its own age**, so a weapon's file may rank two engines for
-  the days between rather than wait for its oldest row.
-- **A ROW IS REFRESHED BETWEEN THREE AND FIFTEEN DAYS OLD.** It may be asked
-  from three days on, and is DUE WHEN ITS FACT IS FIFTEEN DAYS OLD however late
-  it was asked (worker/factory.js `REFRESH_WITHIN_MS`), so it is handed only
-  when nothing due sooner is open: idle machines keep the board three days
-  fresh, busy ones let it age, and past fifteen days the official machines
-  measure it like any question past its deadline.
-- **ASKED ONLY WHILE THE FACTORY HAS ROOM**: live refresh asks stay under
-  `REFRESH_LIVE_CAP`, so a second scene's rows wait their turn rather than
-  flooding the open questions every hand-out sorts; a row `REFRESH_FORCE_DAYS`
-  old is asked whatever the room, three days before it is due
-  (`scripts/oldest_rows.py`).
-- **A ROW ON THE ENGINE THAT MADE ITS FACT COSTS NOTHING**: the factory answers
-  it from that fact at once, and the row counts as measured now.
-- **THE OLDEST FIRST, `REFRESH_PER_HOUR` an hour**, so an hour's asks fit the
-  job's clock; what is left is asked the next hour.
-- **IT LANDS IN ITS OWN BATCH**, `refresh-<day>`, which is what makes its rows
-  the `refresh` producer's and lets a person drop it — `DELETE FROM batches
-  WHERE id = ?`.
+**NOTHING ASKS FOR A MEASURED ROW AGAIN ON THE CLOCK.** A row is measured again
+only when a person asks — the rescore button, or a batch by hand. The engine id
+moves on edits that move no number, so a re-ask driven by age or by the engine
+id would rescore the whole board after a wording change. `queue.yml` holds no
+such step, and `check_rescore_paths` fails on one.
 
 **THE PUBLISH DOES NOT CARE WHAT IS BEING COMPUTED.** It reads the table, ranks
 it, writes the files and commits if they moved. A scoring run may be halfway

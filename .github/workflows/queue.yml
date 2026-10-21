@@ -23,11 +23,10 @@
 # is an hour's lump once a day and two or three minutes on the hour. The same
 # work, paid in a size that fits beside everything else.
 #
-# AND EVERY HOUR IT REFRESHES. A board is a claim about what the code computes
-# TODAY, so a row measured three days ago may be asked for again, and is due
-# when it is fifteen days old (worker/factory.js `REFRESH_WITHIN_MS`): the
-# volunteers take it when nothing due sooner is open, and the official
-# machines when it is past due.
+# NOTHING HERE ASKS FOR A MEASURED ROW AGAIN ON THE CLOCK. The engine id moves
+# on edits that move no number, so a re-ask on the clock would rescore the whole
+# board after a wording change. A row is measured again only when a person asks
+# (`rescore` below).
 name: queue
 
 on:
@@ -174,67 +173,11 @@ jobs:
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
-      # ---- …AND WHAT WAS MEASURED THREE DAYS AGO ------------------------
-      #
-      # ROW BY ROW, by each row's own age (`--queue-older`), so a weapon's file
-      # may rank two engines for the days between. ITS OWN BATCH, NAMED FOR
-      # THE DAY, which is what makes its rows the `refresh` producer's.
-      #
-      # THE OLDEST FIRST, `REFRESH_PER_HOUR` an hour: an hour's asks have to
-      # fit the job's clock, and what is left is asked the next hour. AND ONLY
-      # WHILE THE FACTORY HAS ROOM: live refresh asks stay under
-      # `REFRESH_LIVE_CAP`, so a fleet with spare time refreshes a row at three
-      # days and a busy one lets it wait — except a row `REFRESH_FORCE_DAYS`
-      # old, asked whatever the room, three days before it is due.
-      #
-      # AND IT OBEYS THE ENTRY LINE (`--gate`): a build nothing would publish
-      # is not re-measured every few days for the life of the board.
-      #
-      # NOT ON A RESCORE: the ruler asked for is the run's work, and the next
-      # hourly tick asks for what is three days old.
-      - name: ask for what was measured three days ago
-        if: steps.wired.outputs.yes == 'true' && inputs.rescore == ''
-        env:
-          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
-          REFRESH_PER_HOUR: 10000
-          REFRESH_LIVE_CAP: 40000
-          REFRESH_FORCE_DAYS: 12
-        run: |
-          set -euo pipefail
-          older=$(date -u -d '3 days ago' +'%Y-%m-%dT%H:%M:%S.000Z')
-          : > refresh-all.ndjson
-          # THE RULERS AT ONCE (scripts/each_ruler.sh), joined in roster order.
-          export older
-          bash scripts/each_ruler.sh './target/release/wfsim-board "$id" --dry-run --gate --facts-in facts-known.ndjson --queue-in queue.ndjson --queue-older "$older" --queue-missing "refresh-$id.ndjson" < library.json > /dev/null'
-          for id in $(./target/release/wfsim-board --rulers); do
-            cat "refresh-$id.ndjson" >> refresh-all.ndjson
-          done
-          live=$(curl -s --connect-timeout 15 --max-time 120 -X POST -H "Authorization: Bearer $FACTORY_TOKEN" -H "content-type: application/json" -H "user-agent: wfsim-scorer" --data-binary '{"witness":"official:queue","report":"refresh_live"}' "$FACTORY_ORIGIN/api/tasks/official/report" | jq -r '.n // empty') || live=""
-          # NOT KNOWING THE ROOM ASKS ONLY WHAT IS FORCED: a flood is the worse mistake.
-          room=$(( ${REFRESH_LIVE_CAP} - ${live:-$REFRESH_LIVE_CAP} ))
-          force=$(date -u -d "$REFRESH_FORCE_DAYS days ago" +'%Y-%m-%dT%H:%M:%S.000Z')
-          echo "refresh: ${live:-?} live of $REFRESH_LIVE_CAP, room $room, forced before $force"
-          python3 scripts/oldest_rows.py facts-known.ndjson refresh-all.ndjson "$REFRESH_PER_HOUR" "$room" "$force" > refresh.ndjson
-          if [ ! -s refresh.ndjson ]; then
-            echo "::notice::refresh: nothing measured before $older"
-            exit 0
-          fi
-          bash scripts/ship_queue.sh "refresh-$(date -u +'%Y-%m-%d')"             "rows measured before $older, asked again" refresh.ndjson
-          echo "::notice::refresh: $(grep -c . refresh.ndjson) of $(grep -c . refresh-all.ndjson) row(s) measured before $older"
-
-      - name: the databases
-        if: steps.wired.outputs.yes == 'true'
-        uses: ./.github/actions/databases
-        with:
-          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          pg_url: ${{ secrets.PG_PIPELINE_URL }}
       # ---- …AND A RULER WHOSE MODEL MOVED --------------------------------
       #
       # A MEASUREMENT CORRECTS THE MODEL AND EVERY ROW UNDER IT IS OWED AGAIN,
       # and nothing else asks for those. A stored score is reused because it
-      # EXISTS — no clock, no fingerprint, no binary in the key — and the
-      # refresh only reaches a row three days after it was measured. This is
+      # EXISTS — no clock, no fingerprint, no binary in the key. This is
       # the button docs/BOARD.md means by "what retires a fact is a person",
       # and its rows are due in a week like any rescore's.
       #
