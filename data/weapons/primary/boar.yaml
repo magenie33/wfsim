@@ -17,9 +17,7 @@ max_rank: 30
 # Weapon-level metadata (wiki `Module:Weapons/data/primary`).
 
 accuracy: 5                  # the page prints "Very Low" for this number
-disposition: 1.45            # riven disposition (●●●●●) — HIGHER than the
-                             # Prime's 1.34, which is the usual shape: the
-                             # weaker weapon gets the bigger riven
+disposition: 1.2
 polarities: []               # no innate main polarities (no `Polarities` key
                              # in the module's block) — the same as the Prime
 exilus_polarity: madurai

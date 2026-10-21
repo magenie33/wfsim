@@ -267,8 +267,6 @@ pub struct WeaponSpec {
     /// roster entry that restated it would be the same number written twice.
     #[serde(skip)]
     pub recharge_per_second: Option<f64>,
-    /// Riven disposition — the multiplier every riven stat on this weapon is
-    /// scaled by. It belongs to the WEAPON, not to the riven, which is why
     /// **AN UNEXPLAINED, MEASURED COEFFICIENT ON SECONDARY IRRADIATE'S ECHO.**
     ///
     /// The echo is `1.8 × the hit` at max rank on every pure single-target
@@ -287,7 +285,9 @@ pub struct WeaponSpec {
     /// weapons. NOT INHERITED, because the base Laetum measures 1.8.
     #[serde(default = "one")]
     pub echo_multiplier: f64,
-    /// one riven reads differently on two guns.
+    /// Riven disposition — the multiplier every riven stat on this weapon is
+    /// scaled by. Every weapon states [`crate::build::rivens::DISPOSITION`]
+    /// (see notes: riven_disposition_one), and one that states none reads it.
     #[serde(default)]
     pub disposition: Option<f64>,
     /// Which RIVEN this weapon takes, by the family's English name — one

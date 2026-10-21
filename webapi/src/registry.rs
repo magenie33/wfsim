@@ -89,8 +89,8 @@ pub(crate) struct WeaponInfo {
     /// Continuous (beam) weapon, from the BASE form's trigger — what the
     /// beam-only mods gate on.
     pub(crate) continuous: bool,
-    /// Riven disposition. 1.0 when the data does not say, so a weapon with no
-    /// disposition yet reads as neutral rather than as zero.
+    /// Riven disposition, the one every riven reads when the data does not say
+    /// (see notes: riven_disposition_one).
     pub(crate) disposition: f64,
     /// WHOSE RIVEN THIS IS — the weapon FAMILY, never the entry. A weapon that
     /// declares none is its own family. See the meta field for the wiki's own
@@ -224,7 +224,7 @@ pub(crate) fn weapons() -> &'static [WeaponInfo] {
                         s.mod_pools.clone()
                     },
                     continuous: s.attack.trigger == "held",
-                    disposition: s.disposition.unwrap_or(1.0),
+                    disposition: s.disposition.unwrap_or(wfsim_engine::build::rivens::DISPOSITION),
                     riven_family: s.riven_family.clone().unwrap_or_else(|| s.id.to_string()),
                     // The BASE entry's gaps and its Incarnon form's, together:
                     // a reader is looking at one weapon and both halves are

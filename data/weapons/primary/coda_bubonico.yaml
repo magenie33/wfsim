@@ -24,9 +24,7 @@ max_rank: 40
 
 # Weapon-level metadata (wiki Module:Weapons/data/primary).
 accuracy: 25.0
-disposition: 0.60            # riven disposition (●○○○○) — wiki Coda_Bubonico's
-                              # Disposition column and DE's Public Export
-                              # `omegaAttenuation` (0.60000002) agree.
+disposition: 1.2
 polarities: [naramon, madurai, naramon]
 exilus_polarity: madurai
 riven_family: Bubonico

@@ -20,7 +20,7 @@ max_rank: 30
 # the wiki's figure; `scripts/audit_weapon_stats.py` carries the divergence
 # with its reason so it cannot be mistaken for a transcription error.
 accuracy: 100.0
-disposition: 1.55            # riven disposition — the highest in this batch
+disposition: 1.2
 polarities: []               # the infobox states none
 exilus_polarity: naramon
 riven_family: Flux Rifle

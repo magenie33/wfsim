@@ -36,9 +36,7 @@ kitgun: tombfinger_primary
 
 transform_group: tombfinger_primary
 
-# THE SAME RIVEN, A DIFFERENT DISPOSITION: 1.0 here against the secondary's 0.85.
-# see notes: kitgun_disposition_source
-disposition: 1.0
+disposition: 1.2
 riven_family: Tombfinger
 # see notes: kitgun_riven_is_the_chambers
 riven_class: pistol

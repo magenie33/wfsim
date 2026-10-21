@@ -14,7 +14,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 100.0
-disposition: 1.5            # riven disposition
+disposition: 1.2
 polarities: [vazarin]
 exilus_polarity: madurai
 riven_family: Mutalist Quanta

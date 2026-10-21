@@ -10,7 +10,7 @@ mastery_rank: 17
 max_rank: 40
 
 accuracy: 100.0
-disposition: 0.95
+disposition: 1.2
 polarities: [vazarin]
 exilus_polarity: madurai
 riven_family: Sporothrix

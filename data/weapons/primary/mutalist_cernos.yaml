@@ -15,7 +15,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 16.7
-disposition: 1.35           # riven disposition
+disposition: 1.2
 polarities: [naramon]
 exilus_polarity: madurai
 riven_family: Mutalist Cernos

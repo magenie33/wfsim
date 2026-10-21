@@ -118,9 +118,8 @@ for (const [i, [wiki]] of CASES.entries()) {
 // ---------------------------------------------------------------------------
 // THE LIST SHOWS A CARD'S NUMBERS THE MOMENT THE CARD EXISTS.
 //
-// Its values are the ENGINE's — a roll against this weapon's disposition, asked
-// for over `/api/riven` — and they were keyed by NAME and fetched only at boot.
-// So a card that had just been copied, or one whose name had just changed, had
+// Its values are the ENGINE's, asked for over `/api/riven` — and they were
+// keyed by NAME and fetched only at boot. So a card that had just been copied, or one whose name had just changed, had
 // no entry: the row drew its shape and its capacity and no stats at all, until
 // something else happened to refresh. Dragging a value was doing that
 // invisibly, which is why it looked like the numbers needed a nudge.

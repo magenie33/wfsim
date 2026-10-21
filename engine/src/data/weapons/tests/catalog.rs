@@ -1770,3 +1770,25 @@ fn every_weapon_tag_is_carried_by_some_weapon() {
         assert!(all().iter().any(|w| w.tags().contains(id)), "tag {id} matches no weapon");
     }
 }
+
+/// EVERY RIVEN DISPOSITION IS 1.2, on every weapon, form and kitgun chamber
+/// (see notes: riven_disposition_one). A weapon that takes a riven states it,
+/// so a new one copied from an old entry cannot carry an old value unseen.
+#[test]
+fn every_riven_disposition_is_one_two() {
+    let want = crate::build::rivens::DISPOSITION;
+    assert_eq!(want, 1.2);
+    let off: Vec<String> = all()
+        .iter()
+        .filter(|w| w.riven_family.is_some() || w.disposition.is_some())
+        .filter(|w| w.disposition != Some(want))
+        .map(|w| format!("{} {:?}", w.id, w.disposition))
+        .chain(
+            crate::data::weapons::kitguns::chambers()
+                .iter()
+                .filter(|c| c.riven_disposition != want)
+                .map(|c| format!("chamber {} {}", c.id, c.riven_disposition)),
+        )
+        .collect();
+    assert!(off.is_empty(), "a riven disposition other than {want}: {off:?}");
+}

@@ -23,7 +23,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 7.7
-disposition: 0.95
+disposition: 1.2
 # "Innate Madurai and Naramon polarities" — the page states them as a
 # Characteristic and the module's order is Naramon first.
 polarities: [naramon, madurai]

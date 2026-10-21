@@ -18,7 +18,7 @@ unmodeled:
   - "The Uncharged Shot is not modelled; this entry carries only the Charged Shot."
   - reason: spread_not_transcribed
 accuracy: 100
-disposition: 1.5
+disposition: 1.2
 polarities: [naramon]
 exilus_polarity: madurai
 riven_family: Miter

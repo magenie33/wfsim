@@ -13,7 +13,7 @@ max_rank: 30
 
 accuracy: ~
 riven_family: Ankyros
-disposition: 1.45
+disposition: 1.2
 polarities: [madurai, madurai]
 stance_polarity: unairu
 introduced: "Update 12.4"

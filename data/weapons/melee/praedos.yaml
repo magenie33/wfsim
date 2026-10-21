@@ -26,7 +26,7 @@ max_rank: 30
 # the weapon, and one of them (Shockwave Synergy) is the only card in the game
 # that earns combo points on a HEAVY mode.
 accuracy: ~
-disposition: 0.6
+disposition: 1.2
 polarities: [madurai, naramon]
 # THE STANCE SLOT'S OWN POLARITY, and it decides a capacity GRANT rather than a
 # discount: 10 on a matching slot, 5 on a bare one, 4 on the wrong colour

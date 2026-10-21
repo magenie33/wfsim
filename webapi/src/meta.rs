@@ -219,7 +219,6 @@ pub fn meta_json() -> Value {
                 // form is a beam and the weapon still is not a continuous one
                 // for modding purposes.
                 "continuous": w.continuous,
-                "disposition": w.disposition,
                 // WHAT WARFRAME.MARKET CALLS THIS WEAPON'S RIVEN AUCTIONS, so
                 // the riven card can offer the one price we do not compute.
                 // Absent where no riven exists for it — see `data::market`.
@@ -234,11 +233,9 @@ pub fn meta_json() -> Value {
                 // WHOSE RIVEN THIS IS. A riven belongs to a weapon FAMILY, not
                 // to one entry in it: *"Riven mods can be used on variants of a
                 // particular weapon, including MK1, Prime, Vandal, Wraith, Dex,
-                // Prisma, Mara, and Syndicate variants"* — and each variant
-                // carries its OWN disposition, so the same card reads different
-                // numbers on each (wiki `Riven Mods`). A weapon that declares
-                // none is its own family, which is what an entry with no
-                // variants means.
+                // Prisma, Mara, and Syndicate variants"* (wiki `Riven Mods`).
+                // A weapon that declares none is its own family, which is what
+                // an entry with no variants means.
                 "riven_family": w.riven_family,
                 // The riven stat pool this weapon draws from — not always its
                 // mod class (a bow's mods are `bow`, its rivens are `rifle`).

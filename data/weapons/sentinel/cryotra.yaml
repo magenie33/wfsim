@@ -16,7 +16,7 @@ max_rank: 30
 # companion rows carry — a default that was never replaced. Only three
 # companions are not 100: both Sweepers at 3.33, and this.
 accuracy: 2.5
-disposition: 1.0
+disposition: 1.2
 polarities: [madurai]
 riven_family: Cryotra
 internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon

@@ -24,7 +24,7 @@ max_rank: 30
 # reason so a future rank of the module cannot be mistaken for a
 # transcription error.
 accuracy: 100.0
-disposition: 0.6            # riven disposition
+disposition: 1.2
 polarities: [madurai, naramon]
 # NO EXILUS POLARITY — the module states none.
 riven_family: Grimoire

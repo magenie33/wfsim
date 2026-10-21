@@ -14,7 +14,7 @@ max_rank: 30
 # THE HEAVY ATTACK IS THE DISC, not a swing (page, ==Mechanics==), so there is
 # no heavy form; the module's `HeavyAttack` 1788 is the class's 6x, not this.
 accuracy: ~
-disposition: 1.15
+disposition: 1.2
 polarities: [madurai]
 stance_polarity: madurai
 introduced: "Specters of the Rail 1"

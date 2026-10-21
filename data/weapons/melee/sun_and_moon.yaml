@@ -12,7 +12,7 @@ mastery_rank: 0
 max_rank: 30
 
 accuracy: ~
-disposition: 0.8
+disposition: 1.2
 polarities: [madurai]
 stance_polarity: naramon
 introduced: "Update 33"

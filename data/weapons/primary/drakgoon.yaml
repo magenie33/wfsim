@@ -15,7 +15,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 1.4
-disposition: 1.4            # riven disposition
+disposition: 1.2
 polarities: []               # the infobox states none
 exilus_polarity: naramon
 riven_family: Drakgoon

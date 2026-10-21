@@ -23,8 +23,7 @@ ammo_max: 130
 ammo_pickup: 20
 trigger: "Semi-Auto"
 shot_type: "Projectile"
-# see notes: kitgun_disposition_source
-riven_disposition: 0.6
+riven_disposition: 1.2
 silent: false
 # NO FALLOFF STATED, deliberately. The page gives "100% to ?% from 13m to 26m",
 # the module's 0.9 carries its author's own "TODO: Unknown falloff reduction",

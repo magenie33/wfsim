@@ -13,7 +13,7 @@ max_rank: 40
 
 accuracy: ~
 riven_family: Ghoulsaw
-disposition: 0.8
+disposition: 1.2
 polarities: [madurai, naramon]
 stance_polarity: naramon
 introduced: "Update 42"

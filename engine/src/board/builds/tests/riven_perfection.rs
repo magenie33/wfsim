@@ -53,7 +53,7 @@ fn at(shape: &RivenShape, malus_roll: f64) -> RivenSpec {
 
 fn fight(weapon: &str, evos: &[&str], spec: &RivenSpec) -> f64 {
     let disposition =
-        crate::data::weapons::spec(weapon).and_then(|s| s.disposition).unwrap_or(1.0);
+        crate::data::weapons::spec(weapon).and_then(|s| s.disposition).unwrap_or(crate::build::rivens::DISPOSITION);
     let riven = spec.to_mod_def(
         Box::leak(format!("riven:{weapon}").into_boxed_str()), disposition);
     let base = crate::model::WeaponBase::from_data(weapon, true, evos);

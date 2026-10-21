@@ -17,7 +17,7 @@ transforms_to: felarx_incarnon
 unmodeled:
   - reason: reload_never_interrupted
 accuracy: 7.69
-disposition: 0.6
+disposition: 1.2
 polarities: [madurai]
 exilus_polarity: madurai
 riven_family: Felarx

@@ -17,7 +17,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 40.0
-disposition: 1.1
+disposition: 1.2
 polarities: [madurai, madurai]
 exilus_polarity: naramon
 riven_family: Quartakk

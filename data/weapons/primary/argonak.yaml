@@ -16,7 +16,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 28.6
-disposition: 1.25           # riven disposition
+disposition: 1.2
 polarities: [madurai, naramon]
 exilus_polarity: madurai
 riven_family: Argonak

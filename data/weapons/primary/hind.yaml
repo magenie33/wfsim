@@ -14,7 +14,7 @@ mastery_rank: 0
 max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_4
-disposition: 1.42           # riven disposition
+disposition: 1.2
 polarities: [madurai]
 exilus_polarity: naramon
 riven_family: Hind

@@ -421,7 +421,7 @@ fn corrupt_charge_buys_the_floor_and_sells_the_clock() {
 /// counter"*, which is a harder stop than the 0.1 s floor beside it.
 ///
 /// Nothing in the mod pool reaches it and a melee RIVEN does: Combo
-/// Duration's malus is -8.2 s at the Magistar's 1.35 disposition, against a
+/// Duration's malus is -7.3 s at the one riven disposition, 1.2, against a
 /// weapon whose own clock is five seconds. So the rule is asserted where it
 /// is visible — Blood Rush reads the counter and nothing else, so a build
 /// carrying it pays exactly the same as one that does not.
@@ -429,7 +429,8 @@ fn corrupt_charge_buys_the_floor_and_sells_the_clock() {
 fn a_zero_combo_clock_stops_the_counter_rather_than_shortening_it() {
     let riven = |malus: &str| crate::build::rivens::RivenSpec {
         class: "melee".to_string(),
-        bonuses: vec![crate::build::rivens::RolledStat { id: "melee_damage".into(), roll: 1.0 }],
+        bonuses: ["melee_damage", "critical_chance", "critical_damage"].iter()
+            .map(|id| crate::build::rivens::RolledStat { id: (*id).into(), roll: 1.0 }).collect(),
         malus: Some(crate::build::rivens::RolledStat { id: malus.to_string(), roll: 1.0 }),
         rank: 8,
         polarity: crate::rules::capacity::Polarity::Madurai,
@@ -437,7 +438,7 @@ fn a_zero_combo_clock_stops_the_counter_rather_than_shortening_it() {
     let fight = |malus: &str, mods: &[&str]| {
         let base = crate::model::WeaponBase::from_data("magistar", false, &[]);
         let pool = crate::data::mods::pool_for_weapon("magistar");
-        let rv = riven(malus).to_mod_def("riven:test", 1.35);
+        let rv = riven(malus).to_mod_def("riven:test", crate::build::rivens::DISPOSITION);
         let mut refs: Vec<&crate::model::ModDef> =
             mods.iter().filter_map(|id| pool.iter().find(|m| m.id == *id)).collect();
         refs.push(&rv);
@@ -448,10 +449,10 @@ fn a_zero_combo_clock_stops_the_counter_rather_than_shortening_it() {
         (panel.combo_frozen, panel.combo_duration_seconds, monte_carlo(&p, 24, 909).mean_damage)
     };
 
-    // -8.2 s on a 5 s weapon: the seconds floor at 0.1 and the COUNTER is
+    // -7.3 s on a 5 s weapon: the seconds floor at 0.1 and the COUNTER is
     // the thing that stops.
     let (frozen, clock, with_rush) = fight("combo_duration", &["blood_rush"]);
-    assert!(frozen, "a -8.2 s malus on a 5 s clock must freeze the counter");
+    assert!(frozen, "a -7.3 s malus on a 5 s clock must freeze the counter, clock {clock}");
     assert!((clock - 0.1).abs() < 1e-9, "the seconds still floor at 0.1, got {clock}");
     let (_, _, without) = fight("combo_duration", &[]);
     assert!(

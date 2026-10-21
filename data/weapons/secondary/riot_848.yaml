@@ -15,7 +15,7 @@ max_rank: 30
 
 # Weapon-level metadata (wiki Module:Weapons/data/secondary).
 accuracy: 23.53
-disposition: 1              # riven disposition
+disposition: 1.2
 polarities: [madurai]
 # NO EXILUS POLARITY — the module states none.
 riven_family: Riot-848

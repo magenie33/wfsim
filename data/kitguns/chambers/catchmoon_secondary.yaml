@@ -24,8 +24,7 @@ ammo_max: 70
 ammo_pickup: 20
 trigger: "Semi-Auto"
 shot_type: "Projectile"
-# see notes: kitgun_disposition_source
-riven_disposition: 0.75
+riven_disposition: 1.2
 silent: false
 range_m: 20
 spread:

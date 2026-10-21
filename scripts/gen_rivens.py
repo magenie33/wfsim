@@ -307,9 +307,11 @@ def main():
                 "#",
                 "# `base` is DE's own per-stat number. The value a riven SHOWS is",
                 "#   base x 10 x (rank + 1) x disposition x config multiplier x roll",
-                "# where roll is 0.9-1.1. At rank 8 that is base x 90, which lands on",
+                "# where roll is 0.9-1.1 and disposition is 1.2 on every riven.",
+                "# see notes: riven_disposition_one",
+                "# At rank 8, base x 90 lands on",
                 f"# this class's canonical values exactly: {example}",
-                "# at disposition 1.0.",
+                "# before the disposition.",
                 "#",
                 # FIVE FILES SAY THESE, so they are ids rather than five copies
                 # (AGENTS.md, `data/notes.yaml`).

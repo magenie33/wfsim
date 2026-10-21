@@ -13,7 +13,7 @@ max_rank: 30
 
 accuracy: ~
 riven_family: Glaive
-disposition: 0.7
+disposition: 1.2
 polarities: [madurai, naramon]
 stance_polarity: naramon
 introduced: "Update 11"

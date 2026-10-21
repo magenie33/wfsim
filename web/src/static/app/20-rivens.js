@@ -139,7 +139,7 @@ const rivenComplete = () =>
   riven && riven.bonuses.every((s) => s.id) && (!riven.malus || riven.malus.id);
 
 /// THE SAME CARD ON EVERY OTHER WEAPON IT FITS — a Prime and its base, a
-/// Kitgun's other slot — each read at its own disposition.
+/// Kitgun's other slot.
 const rivenKin = (w) => ((META && META.weapons) || []).filter((x) =>
   w && x.riven_family && x.riven_family === w.riven_family && x.id !== w.id
   // …AND THE SAME CARD, which a family whose members took two kinds of riven
@@ -149,8 +149,6 @@ const rivenKin = (w) => ((META && META.weapons) || []).filter((x) =>
 /// (a Kitgun's two entries are both the chamber).
 const kinName = (x) => (((META && META.weapons) || []).filter((y) => y.name === x.name).length > 1
   ? `${x.name} (${tr(x.slot === "secondary" ? "Secondary" : "Primary")})` : x.name);
-/// The open card as each kin weapon reads it, filled beside `rivenResolved`.
-let rivenKinResolved = [];
 
 async function resolveRiven(pending) {
   if (!riven) return;
@@ -183,11 +181,6 @@ async function resolveRiven(pending) {
     if (riven !== mine) return;
     rivenResolved = { ok: false, illegal: [String(e)], stats: [] };
   }
-  const kin = rivenComplete() ? rivenKin(weaponInfo($("weapon").value)) : [];
-  const kinResolved = await Promise.all(kin.map((x) =>
-    api("/api/riven", { ...mine, weapon: x.id }).then((r) => ({ w: x, r }), () => null)));
-  if (riven !== mine) return;
-  rivenKinResolved = kinResolved;
   renderRivenCard();
 }
 
@@ -278,17 +271,14 @@ function renderRivens() {
   const w = weaponInfo($("weapon").value);
   const ps = ensureRivenList();
   const open = ps.find((p) => p.id === activeRivenId());
-  // The weapon and its disposition, and nothing else: that the values below
-  // are scaled by it is what a disposition IS, so saying it was noise.
+  // The weapon, and nothing else.
   //
   // …AND WHOSE RIVEN IT IS, once a family has more than one member on the
   // roster. A card is the FAMILY's, so a riven the player
   // built on the Burston is in the Burston Prime's list — and silent sharing
   // reads as a bug the first time a riven you never made here turns up. It
   // names the other variants rather than counting them, because "also fits 1
-  // other" is the one thing a reader cannot act on, and it states the
-  // disposition rule, since that is why the same card shows two sets of
-  // numbers.
+  // other" is the one thing a reader cannot act on.
   const kin = rivenKin(w);
   // THE FAMILY IS NAMED IN THE READER'S LANGUAGE, by borrowing the localized
   // name of its BASE member rather than printing the family string. That
@@ -299,9 +289,9 @@ function renderRivens() {
   const base = [w, ...kin].find((x) => x.id === (w.riven_family || "").toLowerCase()
     .replace(/[^a-z0-9]+/g, "_"));
   $("riven-sub").textContent =
-    `${w.name} · ${tr("disposition")} ${(w.disposition || 1).toFixed(2)}`
+    w.name
     + (kin.length
-      ? ` · ${tr("a {family} riven — it fits {others} too, each at its own disposition")
+      ? ` · ${tr("a {family} riven — it fits {others} too")
           .replace("{family}", (base && base.name) || w.riven_family)
           .replace("{others}", kin.map(kinName).join(", "))}`
       : "");
@@ -577,7 +567,7 @@ function renderRivenCard() {
       num.title = `legal range ${u(num.min)} … ${u(num.max)}`;
     }
     if (pct) {
-      // How good the ROLL is, with disposition, shape and base divided out —
+      // How good the ROLL is, with shape and base divided out —
       // so two stats on one card compare, and so do two cards.
       const q = Math.round(s.percentile ?? 50);
       // A bare number in ANGLE brackets. An ordinal suffix read as clutter, and parentheses were taken — DE's own stat text
@@ -619,14 +609,10 @@ function renderRivenCard() {
   $("riven-card").innerHTML = bad.length
     ? `<div class="error"><b>${escHtml(tr("not a legal riven"))}</b><ul>${bad.map((x) => `<li>${escHtml(x)}</li>`).join("")}</ul></div>`
     : `<div class="rv-name">${escHtml(r.name)}</div>
-       <div class="rv-meta">${r.drain} ${escHtml(tr("capacity"))} · ${escHtml(tr(r.class))} ${escHtml(tr("riven"))} · ${escHtml(tr("disposition"))} ${Number(r.disposition).toFixed(2)}</div>`
+       <div class="rv-meta">${r.drain} ${escHtml(tr("capacity"))} · ${escHtml(tr(r.class))} ${escHtml(tr("riven"))}</div>`
       // LEGAL AND SAID SO: no card of the family settles these either way.
       + ((r.unconfirmed || []).length ? `<div class="rv-meta">${escHtml(tr("unconfirmed on this weapon: {stats}")
-        .replace("{stats}", r.unconfirmed.map((id) => { const d = rivenStat(id); return d ? rivenStatName(d) : id; }).join(", ")))}</div>` : "")
-      + rivenKinResolved.filter((k) => k && k.r && k.r.ok && !(k.r.illegal || []).length).map((k) =>
-        `<div class="rv-kin"><span class="rv-meta">${escHtml(kinName(k.w))} · ${escHtml(tr("disposition"))} ${
-          Number(k.r.disposition).toFixed(2)}</span><div class="rv-all-s">${(k.r.stats || []).map((x) =>
-          `<span class="rv-chip ${x.slot === "malus" ? "neg" : ""}">${escHtml(tf(x.text))}</span>`).join("")}</div></div>`).join("");
+        .replace("{stats}", r.unconfirmed.map((id) => { const d = rivenStat(id); return d ? rivenStatName(d) : id; }).join(", ")))}</div>` : "");
 }
 
 // Rivens are a PRESET COLLECTION, on the same bar as builds and the

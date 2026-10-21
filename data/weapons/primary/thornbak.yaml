@@ -13,7 +13,7 @@ max_rank: 30
 
 # Weapon-level metadata (wiki Module:Weapons/data/primary).
 accuracy: 25.0
-disposition: 1.2              # riven disposition (●●●●○), wiki module `Disposition`
+disposition: 1.2
 polarities: [naramon]
 # NO EXILUS POLARITY — the module states none, which is a fact rather than a
 # gap: most of the roster carries one and this weapon does not.

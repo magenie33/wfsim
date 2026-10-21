@@ -15,7 +15,7 @@ transforms_to: dera_incarnon
 
 # see notes: bulk_intake_stats_are
 accuracy: 100
-disposition: 1.4
+disposition: 1.2
 polarities: []
 exilus_polarity: naramon
 riven_family: Dera

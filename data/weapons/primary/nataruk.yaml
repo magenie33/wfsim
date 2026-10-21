@@ -18,7 +18,7 @@ max_rank: 30
 # carries the divergence with its reason so it cannot be mistaken for a
 # transcription error.
 accuracy: 16.7
-disposition: 0.65           # riven disposition
+disposition: 1.2
 polarities: [madurai, madurai, madurai, madurai]
 exilus_polarity: naramon
 riven_family: Nataruk

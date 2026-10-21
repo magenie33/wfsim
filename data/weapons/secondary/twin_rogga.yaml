@@ -14,7 +14,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 8.0
-disposition: 1.3            # riven disposition
+disposition: 1.2
 polarities: [naramon, madurai]
 exilus_polarity: madurai
 riven_family: Twin Rogga

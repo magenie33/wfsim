@@ -15,7 +15,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 12.5
-disposition: 1.1            # riven disposition
+disposition: 1.2
 polarities: []               # the infobox states none
 exilus_polarity: madurai
 riven_family: Tenora

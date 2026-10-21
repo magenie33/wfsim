@@ -23,8 +23,7 @@ ammo_max: 60
 ammo_pickup: 15
 trigger: "Auto"
 shot_type: "Projectile"
-# see notes: kitgun_disposition_source
-riven_disposition: 1.15
+riven_disposition: 1.2
 silent: false
 # "Linear Damage Falloff from 100% to ~7.8% from 8m to 16m" (page). DE's
 # `Reduction` is the fraction REMOVED; the module flags its own number as

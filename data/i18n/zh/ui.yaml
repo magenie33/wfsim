@@ -2011,7 +2011,7 @@ ui:
   "“{word}” says positive and negative at once; give one. (・_・;)": "「{word}」又说是正面又说是负面，只能选一个。(・_・;)"
   "A riven has two or three positive stats and at most one negative. (・_・;)": "裂罅是两到三条正面词条，最多一条负面。(・_・;)"
   "This riven is not a legal one: {why} (＞﹏＜)": "这不是一张合法的裂罅：{why} (＞﹏＜)"
-  "{stat} {value} is outside this weapon's range ({lo}–{hi}); the card may be from before a disposition change. (￣^￣)": "{stat} {value} 超出了这把武器裂罅的范围（{lo}–{hi}）；可能是倾向调整之前的旧卡。(￣^￣)"
+  "{stat} {value} is outside this weapon's range ({lo}–{hi}). (￣^￣)": "{stat} {value} 超出了这把武器裂罅的范围（{lo}–{hi}）。(￣^￣)"
   "Nona is still busy with your earlier ones. Try again in a while. (´；ω；`)": "九九还在忙你之前发的那几张，过一会儿再来吧。(´；ω；`)"
   "Nona could not start the riven gain just now. Try again in a moment. (＞﹏＜)": "九九刚才没能开始计算裂罅收益，稍等一下再试试。(＞﹏＜)"
   "Nona read it. The volunteers' devices are computing it together — usually a minute or two — and Nona will post the answer here. Can't wait? Scan the code to run it on your own device, riven gain {code}. (๑•̀ㅂ•́)و✧": "九九认出来了，志愿者的设备正在一起算，一般一两分钟，算完九九直接发到这里。等不及也可以扫码用自己的设备算，收益码 {code}。(๑•̀ㅂ•́)و✧"
@@ -2207,10 +2207,9 @@ ui:
   # of the "not modelled" banner above it.
   "measured on this weapon and unexplained — the engine reproduces what the game does, and a hotfix could change it": 在这把武器上实测到、但无人能解释——引擎忠实还原游戏的行为，而一次热修可能会改掉它
   "Secondary Irradiate's echo is measured at 3.6x the hit on this form, not the 1.8x on its card and on every other single-target weapon. The engine follows the measurement; it is unexplained, and a fix could change it.": "Secondary Irradiate 的回响在这个形态上实测为命中的 3.6 倍，而不是卡面以及其他所有单体武器上的 1.8 倍。引擎按实测计算；原因不明，修复后可能会变。"
-  "disposition": 倾向
   # A riven belongs to a weapon FAMILY, so the same card is in every variant's
-  # list and reads that variant's own disposition.
-  "a {family} riven — it fits {others} too, each at its own disposition": "{family}裂罅 —— 同样可以装在{others}上，各按各自的倾向计算"
+  # list.
+  "a {family} riven — it fits {others} too": "{family}裂罅 —— 同样可以装在{others}上"
   "choose a stat": 选择词条
   "no matching stat": 没有匹配的词条
   "Search a riven stat…": 搜索裂罅词条…

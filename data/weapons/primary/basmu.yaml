@@ -19,7 +19,7 @@ max_rank: 30
 # `scripts/audit_weapon_stats.py` carries the divergence with its reason
 # so it cannot be mistaken for a transcription error.
 accuracy: 20.0
-disposition: 1.2            # riven disposition
+disposition: 1.2
 polarities: [madurai]
 exilus_polarity: madurai
 riven_family: Basmu

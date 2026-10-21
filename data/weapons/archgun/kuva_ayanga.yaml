@@ -31,7 +31,7 @@ mastery_rank: 13
 max_rank: 40
 
 accuracy: 25.0               # "Medium"
-disposition: 0.95
+disposition: 1.2
 polarities: [naramon]
 riven_family: Kuva Ayanga
 traits: [kuva_lich, adversary, grineer]

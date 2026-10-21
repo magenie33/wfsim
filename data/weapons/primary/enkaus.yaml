@@ -14,7 +14,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 1.0
-disposition: 0.8            # riven disposition
+disposition: 1.2
 # THE PAGE SAYS "Innate Madurai polarity"; the module says Naramon, kept
 # until the arsenal is read.
 polarities: [naramon]

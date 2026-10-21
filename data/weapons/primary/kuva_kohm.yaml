@@ -18,7 +18,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 8.0
-disposition: 0.9
+disposition: 1.2
 polarities: [vazarin]
 exilus_polarity: madurai
 riven_family: Kohm

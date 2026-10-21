@@ -14,7 +14,7 @@ max_rank: 30
 
 # Weapon-level metadata (wiki Module:Weapons/data/primary, `Magazine: 80`).
 accuracy: 80.0
-disposition: 1.25           # riven disposition
+disposition: 1.2
 polarities: [madurai, naramon]
 exilus_polarity: madurai
 riven_family: Panthera

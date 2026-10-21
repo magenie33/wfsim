@@ -7,11 +7,10 @@
 // twice — two cards for one riven, free to drift apart.
 //
 // THE NUMBERS FOLLOW BY THEMSELVES, which is why the fix is a storage scope
-// rather than a feature: a saved riven holds ROLLS and the shown value is the
-// roll against THIS weapon's disposition, so one card reads 1.45's worth on a
-// Burston and 1.35's on its Prime. That RATIO is asserted here, because a list
-// sharing a card and showing the wrong numbers is worse than one sharing
-// nothing.
+// rather than a feature: a saved riven holds ROLLS and every riven reads one
+// disposition, so one card shows the same numbers on a Burston and its Prime.
+// That is asserted here, because a list sharing a card and showing other
+// numbers is worse than one sharing nothing.
 //
 // THREE NEGATIVE CONTROLS, because "one big list" passes every positive above:
 // an unrelated weapon does not see it; a KITGUN's two slots see ONE card (a
@@ -67,7 +66,6 @@ const r = await evaluate(`(async () => {
   out.picked = await pick('0', 'damage');
   out.name = activeRivenId();
   out.burstonStat = firstStat();
-  out.burstonDisposition = weaponInfo('burston').disposition;
   out.scopes = {
     burston: rivenScope('burston'),
     burston_prime: rivenScope('burston_prime'),
@@ -76,13 +74,12 @@ const r = await evaluate(`(async () => {
   await backToList();
   out.burstonList = listed();
 
-  // ---- 2. IS ON THE BURSTON PRIME, AT THE PRIME'S DISPOSITION ------------
+  // ---- 2. IS ON THE BURSTON PRIME, WITH THE SAME NUMBERS ------------------
   await go('/weapons/Burston_Prime/rivens');
   await backToList();
   out.primeList = listed();
   out.primeOpened = await openFirst(out.name);
   out.primeStat = firstStat();
-  out.primeDisposition = weaponInfo('burston_prime').disposition;
   out.primeSub = (document.getElementById('riven-sub') || {}).textContent || '';
   out.burstonName = weaponInfo('burston').name;
 
@@ -228,23 +225,16 @@ check("...and it is in the Burston Prime's list without being made again",
   `${JSON.stringify(r.primeList)} vs made ${JSON.stringify(r.burstonList)}`);
 check("...and it opens there", r.primeOpened === true);
 
-// THE NUMBERS ARE THE VARIANT'S OWN. Same roll, two dispositions, and the shown
-// value has to move by exactly their ratio — the whole reason this is a storage
-// change and not a conversion. A list that shares a card and shows the maker's
-// numbers on the other weapon passes every assertion above and is wrong.
+// ONE DISPOSITION FOR EVERY RIVEN: the same roll shows the same value on both
+// variants, with nothing converted on the way.
 const a = r.burstonStat || {};
 const b = r.primeStat || {};
 const va = a.value ?? a.shown;
 const vb = b.value ?? b.shown;
-check("the two variants carry DIFFERENT dispositions, so the ratio means something",
-  r.burstonDisposition !== r.primeDisposition,
-  `${r.burstonDisposition} vs ${r.primeDisposition}`);
-check("...the same roll travelled", Math.abs((a.roll ?? 0) - (b.roll ?? -1)) < 1e-9,
+check("the same roll travelled", Math.abs((a.roll ?? 0) - (b.roll ?? -1)) < 1e-9,
   `${a.roll} vs ${b.roll}`);
-check("...and the value follows the Prime's disposition "
-  + `(${va} -> ${vb}, expected x${(r.primeDisposition / r.burstonDisposition).toFixed(4)})`,
-  Number.isFinite(va) && Number.isFinite(vb) && va > 0
-    && Math.abs((vb / va) - (r.primeDisposition / r.burstonDisposition)) < 0.02,
+check(`...and shows the same value on the Prime (${va} -> ${vb})`,
+  Number.isFinite(va) && Number.isFinite(vb) && va > 0 && Math.abs(vb - va) < 1e-9,
   `${va} -> ${vb}`);
 
 // SILENT SHARING READS AS A BUG. A riven the player never made on this weapon

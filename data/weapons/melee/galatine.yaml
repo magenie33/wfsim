@@ -13,7 +13,7 @@ max_rank: 30
 
 accuracy: ~
 riven_family: Galatine
-disposition: 1.05
+disposition: 1.2
 polarities: [naramon]
 stance_polarity: vazarin
 introduced: "Update 10.2"

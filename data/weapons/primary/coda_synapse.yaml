@@ -21,7 +21,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 100.0
-disposition: 0.9             # riven disposition
+disposition: 1.2
 polarities: [madurai]
 exilus_polarity: naramon
 riven_family: Synapse

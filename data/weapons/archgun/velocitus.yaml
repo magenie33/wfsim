@@ -26,7 +26,7 @@ mastery_rank: 0
 max_rank: 30
 
 accuracy: 100.0              # "Very High"
-disposition: 1.10
+disposition: 1.2
 polarities: []
 riven_family: Velocitus
 internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/Railgun/ArchRailgun

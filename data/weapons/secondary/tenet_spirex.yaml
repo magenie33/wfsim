@@ -14,7 +14,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 12.5
-disposition: 1.05            # riven disposition
+disposition: 1.2
 polarities: [madurai, madurai]
 # NO EXILUS POLARITY — the module reads `ExilusPolarity: 'None'`, which is the
 # absence of one rather than a polarity called none, so the field is omitted.

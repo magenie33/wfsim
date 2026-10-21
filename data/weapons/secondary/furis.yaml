@@ -22,15 +22,11 @@ max_rank: 30
 # Weapon-level metadata: wiki `Module:Weapons/data/secondary` (Mastery 2,
 # attacks[0] Damage Impact 3 / Puncture 14 / Slash 3).
 accuracy: 22.22              # "Very High"; module Accuracy 22.2
-disposition: 1.35            # riven disposition (●●●●●) — LOWER than the
-                             # MK1's 1.40, which is the usual direction: the
-                             # weaker variant is the better riven platform.
+disposition: 1.2
 polarities: [naramon]
 exilus_polarity: madurai     # the MK1's is Naramon — they differ, so it is
                              # read per weapon rather than shared.
-riven_family: Furis          # module `Family` — SHARED with the MK1-Furis,
-                             # which is why the two dispositions above can
-                             # differ while one riven fits both.
+riven_family: Furis          # module `Family` — SHARED with the MK1-Furis
 traits: [tenno, incarnon]
 introduced: "Vanilla"        # in the game at launch
 internal_name: /Lotus/Weapons/Tenno/Pistol/AutoPistol

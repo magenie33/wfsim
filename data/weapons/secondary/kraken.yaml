@@ -2,9 +2,8 @@ id: kraken
 name: Kraken
 slot: secondary
 weapon_type: secondary
-# A TWO-ROUND BURST FROM A GRINEER HEAVY PISTOL, 49 damage a round, and the
-# highest riven disposition in the roster's secondaries alongside the Magnus and
-# the Seer. Mastery Rank 0.
+# A TWO-ROUND BURST FROM A GRINEER HEAVY PISTOL, 49 damage a round. Mastery
+# Rank 0.
 class: pistol
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -14,7 +13,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 16.0
-disposition: 1.53           # riven disposition
+disposition: 1.2
 polarities: []               # the infobox states none
 exilus_polarity: madurai
 riven_family: Kraken

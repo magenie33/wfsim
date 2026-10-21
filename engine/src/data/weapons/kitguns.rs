@@ -625,8 +625,6 @@ mod tests {
         let p = chamber("catchmoon_primary").unwrap();
         let s = chamber("catchmoon_secondary").unwrap();
         assert_eq!(p.chamber, s.chamber, "one weapon");
-        assert_ne!(p.riven_disposition, s.riven_disposition,
-            "disposition is per SLOT — 1.1 against 0.75");
         assert_ne!(p.accuracy, s.accuracy);
         assert_ne!(p.range_m, s.range_m);
         // …AND THE POOL KEY MOVES WITH IT, which is what the builder's lock and

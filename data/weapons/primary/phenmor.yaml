@@ -22,7 +22,7 @@ transforms_to: phenmor_incarnon
 
 # Weapon-level metadata (wiki infobox).
 accuracy: 28.6               # wiki module `Accuracy`; the page prints it as "High"
-disposition: 0.6             # riven disposition (●○○○○), wiki module `Disposition`
+disposition: 1.2
 polarities: [madurai, naramon]
 exilus_polarity: madurai
 riven_family: Phenmor

@@ -10,7 +10,7 @@ mastery_rank: 14
 max_rank: 30
 
 accuracy: 833.3
-disposition: 0.8
+disposition: 1.2
 polarities: [madurai, madurai, madurai]
 exilus_polarity: madurai
 riven_family: Perigale

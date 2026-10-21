@@ -29,7 +29,7 @@ mastery_rank: 5
 max_rank: 30
 
 accuracy: 50.0
-disposition: 0.95
+disposition: 1.2
 polarities: [madurai]
 riven_family: Imperator
 traits: [vandal, tenno]

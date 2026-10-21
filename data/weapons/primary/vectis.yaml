@@ -29,7 +29,7 @@ scope:   # zoom levels, lowest first (wiki `Sniper_Rifle` §Zoom and Minimum Com
   - { magnification: 4.5, headshot_damage: 0.5 }
 
 accuracy: 13.3
-disposition: 1.15
+disposition: 1.2
 polarities: [madurai]
 exilus_polarity: madurai
 riven_family: Vectis

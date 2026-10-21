@@ -14,7 +14,7 @@ max_rank: 30
 
 accuracy: 100.0
 # See the ordinary Deth Machine Rifle.
-disposition: 1.455
+disposition: 1.2
 polarities: []
 riven_family: Deth Machine Rifle
 traits: [prime]

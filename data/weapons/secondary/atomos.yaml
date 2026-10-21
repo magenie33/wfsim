@@ -15,7 +15,7 @@ transforms_to: atomos_incarnon
 
 # see notes: bulk_intake_stats_are
 accuracy: 12.5
-disposition: 0.95
+disposition: 1.2
 polarities: [vazarin]
 exilus_polarity: madurai
 riven_family: Atomos

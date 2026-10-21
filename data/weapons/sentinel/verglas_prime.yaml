@@ -22,7 +22,7 @@ max_rank: 30
 
 # Weapon-level metadata (wiki page).
 accuracy: 100                  # hit-scan; the wiki page prints N/A for that
-disposition: 1.3               # riven disposition (●●●●○)
+disposition: 1.2
 polarities: [naramon]          # one innate Naramon
 riven_family: Verglas
 traits: [prime, tenno]

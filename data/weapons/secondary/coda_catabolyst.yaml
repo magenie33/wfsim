@@ -15,7 +15,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 6.3
-disposition: 0.7             # riven disposition (module `Disposition`)
+disposition: 1.2
 polarities: [madurai]
 exilus_polarity: madurai
 riven_family: Catabolyst

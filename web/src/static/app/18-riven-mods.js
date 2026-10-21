@@ -3,8 +3,8 @@
 // preset name ("riven 1"), by its generated name ("Visican"), or by any value
 // printed on it.
 //
-// It is NOT put in `META.mod_pools`: a riven is the visitor's own item, built
-// against this weapon's disposition, so it travels WITH the request. The
+// It is NOT put in `META.mod_pools`: a riven is the visitor's own item, so it
+// travels WITH the request. The
 // engine adds it to the pool for that build only, which is why one shared
 // pool can still serve everyone.
 //

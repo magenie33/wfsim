@@ -17,7 +17,7 @@ transforms_to: zylok_prime_incarnon
 unmodeled:
   - "The duplex trigger is not modelled: one pull fires two rounds in game, and this entry paces one per pull."
 accuracy: 23.53
-disposition: 0.95
+disposition: 1.2
 polarities: [naramon, madurai]
 exilus_polarity: madurai
 riven_family: Zylok

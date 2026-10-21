@@ -2,8 +2,7 @@ id: afentis_prime
 name: Afentis Prime
 slot: primary
 weapon_type: primary
-# THE AFENTIS WITH A 5.5-METRE BLAST rather than three, and the lowest riven
-# disposition in the primary roster.
+# THE AFENTIS WITH A 5.5-METRE BLAST rather than three.
 class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -14,7 +13,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 100.0
-disposition: 0.65            # riven disposition
+disposition: 1.2
 polarities: [naramon, madurai, madurai]
 exilus_polarity: madurai
 riven_family: Afentis

@@ -17,7 +17,7 @@ transforms_to: mk1_braton_incarnon
 
 # see notes: weapon_level_metadata_wiki_3
 accuracy: 40.0
-disposition: 1.35
+disposition: 1.2
 polarities: []
 exilus_polarity: naramon
 riven_family: Braton

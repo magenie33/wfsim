@@ -65,7 +65,7 @@ except ImportError:
 # COMPANION WEAPONS ARE IN. A header saying they are
 # "unverified for the same reason and left out until somebody reads their
 # module's shape" — so somebody read it: `Module:Weapons/data/companion` carries
-# ONE stat column (Accuracy, AmmoMax, Magazine, Reload, Disposition, Mastery and
+# ONE stat column (Accuracy, AmmoMax, Magazine, Reload, Mastery and
 # one Attacks list), which is the primary/secondary shape and not the Arch-Gun's
 # two. There is nothing here for a checker to pick the wrong column of, which is
 # the whole of the exclusion above.
@@ -128,7 +128,7 @@ def module_row(name, internal=None):
     return MOD[key] if key else None
 
 # (our field, the module's) — weapon level, then attack level.
-WEAPON_FIELDS = [('mastery_rank', 'Mastery'), ('disposition', 'Disposition'),
+WEAPON_FIELDS = [('mastery_rank', 'Mastery'),
                  ('magazine', 'Magazine'), ('reload_seconds', 'Reload'),
                  ('ammo_max', 'AmmoMax'), ('ammo_pickup', 'AmmoPickup'),
                  ('accuracy', 'Accuracy')]
@@ -332,7 +332,7 @@ def main(only):
             # module key. The module carries the form as an ATTACK on the parent
             # ("Incarnon Form" in Torid's Attacks list), so stripping the
             # parenthetical finds the right row — and only the ATTACK fields may
-            # be compared, because magazine, reload and disposition belong to
+            # be compared, because magazine and reload belong to
             # the weapon and the form only restates what differs.
             #
             # This rescued 59 of the 106 names that were reported UNCHECKED on
@@ -455,7 +455,7 @@ EXPECTED_EXPORT = {
     ('grimoire', 'reload_seconds'): "a Tome does not reload; the export's 0.01 is a floor",
 }
 
-EXPORT_FIELDS = [('mastery_rank', 'masteryReq'), ('disposition', 'omegaAttenuation'),
+EXPORT_FIELDS = [('mastery_rank', 'masteryReq'),
                ('magazine', 'magazineSize'), ('reload_seconds', 'reloadTime')]
 
 

@@ -21,7 +21,7 @@ transforms_to: scourge_prime_thrown
 # attacks there — Projectile Impact, Explosion, Spear Throw Impact, Spear
 # Throw Explosion — and the first two are this entry.
 accuracy: 100
-disposition: 1.10            # wiki module `Disposition`
+disposition: 1.2
 polarities: [naramon, madurai, madurai, madurai]
 exilus_polarity: madurai
 riven_family: Scourge

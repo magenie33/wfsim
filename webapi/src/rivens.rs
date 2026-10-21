@@ -51,8 +51,8 @@ pub(crate) fn riven_stat_ids_ok(v: &Value, info: &WeaponInfo) -> Result<(), Stri
 }
 
 /// The rivens a request carries, as ordinary [`ModDef`]s — the visitor's own
-/// items, built against THIS weapon's disposition, so they travel with the
-/// request and join the pool only for the build being resolved.
+/// items, so they travel with the request and join the pool only for the
+/// build being resolved.
 ///
 /// An INCOMPLETE riven is fine and resolves to whatever it does say. An
 /// UNKNOWN stat id is an ERROR: `resolved_slots` drops a stat it cannot find,
@@ -247,7 +247,6 @@ pub fn riven_json(v: &Value) -> Value {
     json!({
         "ok": true,
         "class": class,
-        "disposition": disposition,
         "name": spec.name(disposition),
         "drain": spec.drain(),
         "stats": stats,
@@ -297,5 +296,36 @@ mod riven_stat_id_tests {
             "and it actually grants multishot: {:?}",
             good["panel"]
         );
+    }
+}
+
+#[cfg(test)]
+mod one_disposition_tests {
+    use super::*;
+
+    /// EVERY WEAPON'S RIVEN READS 1.2 (see notes: riven_disposition_one): a
+    /// two-stat card at roll 1 shows base x 90 x 0.99 x 1.2 on every weapon
+    /// that takes a riven, variants, chambers and archguns alike.
+    #[test]
+    fn every_weapon_s_riven_reads_one_disposition() {
+        let mut checked = 0;
+        for w in crate::registry::weapons() {
+            let class = riven_class(w);
+            let pool = wfsim_engine::build::rivens::pool(&class);
+            let two: Vec<_> = pool.iter().filter(|s| s.bonus).take(2).collect();
+            if two.len() < 2 {
+                continue;
+            }
+            let r = riven_json(&json!({
+                "weapon": w.id, "rank": 8, "polarity": "madurai",
+                "bonuses": [{"id": two[0].id, "roll": 1.0}, {"id": two[1].id, "roll": 1.0}],
+                "malus": null,
+            }));
+            let got = r["stats"][0]["value"].as_f64().unwrap_or(f64::NAN);
+            let want = two[0].base * 90.0 * 0.99 * 1.2;
+            assert!((got - want).abs() < 1e-9, "{}: {got} against {want}", w.id);
+            checked += 1;
+        }
+        assert!(checked > 500, "only {checked} weapons take a riven");
     }
 }

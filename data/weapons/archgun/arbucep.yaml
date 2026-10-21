@@ -29,7 +29,7 @@ mastery_rank: 0
 max_rank: 30
 
 accuracy: 12.5               # "Low"
-disposition: 0.70
+disposition: 1.2
 polarities: [madurai, naramon]
 riven_family: Arbucep
 internal_name: /Lotus/Weapons/Tenno/Archwing/Primary/NokkoArchGun/NokkoArchGun

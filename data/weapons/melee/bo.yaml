@@ -13,7 +13,7 @@ max_rank: 30
 
 accuracy: ~
 riven_family: Bo
-disposition: 1.35
+disposition: 1.2
 polarities: [vazarin]
 stance_polarity: unairu
 introduced: "Vanilla"

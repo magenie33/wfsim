@@ -24,10 +24,8 @@ kitgun: tombfinger_secondary
 transform_group: tombfinger_secondary
 
 # ONE RIVEN FITS BOTH SLOTS — DE's weekly trade dump lists `Tombfinger` with no
-# slot suffix — but the DISPOSITION does not: 0.85 here where the primary gets
-# 1.0, so the same riven reads differently depending on which grip is on it.
-# see notes: kitgun_disposition_source
-disposition: 0.9
+# slot suffix.
+disposition: 1.2
 riven_family: Tombfinger
 
 polarities: []

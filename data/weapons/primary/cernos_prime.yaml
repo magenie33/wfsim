@@ -24,7 +24,7 @@ max_rank: 30
 # Weapon-level metadata (wiki Module:Weapons/data/primary; the module also
 # carries AmmoMax/AmmoPickup, the spread cone and ExtraHeadshotDmg).
 accuracy: 16.7               # the page prints "Very High" for this number
-disposition: 1.25            # riven disposition (●●●●○)
+disposition: 1.2
 polarities: [madurai, madurai]
 exilus_polarity: naramon
 # Cernos, Rakta Cernos and this. NOT the Mutalist or the Proboscis: the wiki is
@@ -129,6 +129,6 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Cernos_Prime
   # note: every number is from wiki Module:Weapons/data/primary — both
-  # attacks, the polarities, the exilus, disposition, mastery, magazine and
+  # attacks, the polarities, the exilus, mastery, magazine and
   # reload; the CO row is from Condition_Overload_(Mechanic).
 

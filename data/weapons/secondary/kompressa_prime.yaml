@@ -3,8 +3,7 @@ name: Kompressa Prime
 slot: secondary
 weapon_type: secondary
 # THE KOMPRESSA AT NEARLY TRIPLE THE CRIT CHANCE, a 46-damage bubble and a 2.8 m
-# radius. The lowest riven disposition in the secondary roster, which is the
-# game's own verdict on it.
+# radius.
 class: pistol
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -14,7 +13,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 3.8
-disposition: 0.6            # riven disposition
+disposition: 1.2
 polarities: [vazarin, naramon]
 exilus_polarity: madurai
 riven_family: Kompressa

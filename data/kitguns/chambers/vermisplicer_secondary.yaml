@@ -22,8 +22,7 @@ ammo_max: 90
 ammo_pickup: 20
 trigger: "Held"
 shot_type: "Hit-Scan"
-# see notes: kitgun_disposition_source
-riven_disposition: 1.15
+riven_disposition: 1.2
 silent: false
 punch_through_m: 1
 spread:

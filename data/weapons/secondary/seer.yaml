@@ -3,8 +3,7 @@ name: Seer
 slot: secondary
 weapon_type: secondary
 # EQUAL PHYSICAL DAMAGE, three times 33.67, on a projectile at 200 m/s. A
-# Mastery Rank 0 Grineer pistol, and one of the three highest riven dispositions
-# in the roster's secondaries.
+# Mastery Rank 0 Grineer pistol.
 class: pistol
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -14,7 +13,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 16.0
-disposition: 1.5            # riven disposition
+disposition: 1.2
 polarities: []               # the infobox states none
 exilus_polarity: madurai
 riven_family: Seer

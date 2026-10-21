@@ -17,8 +17,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_5
 accuracy: 100                # "Pinpoint accuracy" — the page's own advantage
-disposition: 0.8             # riven disposition (●○○○○) — a strong weapon gets
-                             # the small one; the base Phantasma has 1.1
+disposition: 1.2
 polarities: [madurai, madurai, naramon]
 exilus_polarity: madurai
 riven_family: Phantasma

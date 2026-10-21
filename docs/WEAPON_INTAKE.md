@@ -46,7 +46,7 @@ composes the chosen grip and loader over it, so the slot — and with it the mod
 pool — is settled before any part is picked. A chamber is TWO files in
 `data/kitguns/chambers/` (off `Module:Modular/data`) and two entries here (off
 the chamber page and its infobox module, `Module:Weapons/data/modular`, which is
-where the disposition, the class and the child attacks live). What the module
+where the class and the child attacks live). What the module
 leaves out — an explosion's radius, a chain, a guaranteed proc, the CO and
 Primary Compression rows — is read off the chamber's own page and the catalogs,
 exactly as for any weapon. `every_modular_entry_matches_its_chamber` holds the
@@ -294,7 +294,7 @@ adds nothing new; when it does, that is the interesting half of the intake.
 | Chinese name | `data/i18n/zh/names.yaml` via `scripts/de_i18n.py` | **transcribed from DE, never translated**; unreachable ⇒ leave empty and say so |
 | riven family | `riven_family:` | the editor offers the wrong stat pool |
 | innate polarities | `polarities:`, `exilus_polarity:` | every Forma plan is wrong |
-| disposition | the infobox | every riven is wrong |
+| disposition | `disposition: 1.2` on every weapon (`data/notes.yaml` `riven_disposition_one`) | `every_riven_disposition_is_one_two` fails |
 | `internal_name` | DE's export `uniqueName` (`python scripts/de_export.py show <path>`) | the join key for every future cross-check |
 | tests | `cargo test --workspace` | a data file that does not parse fails the build, not the test |
 | checks | `check_parity`, `check_equip_rules`, `check_disclosure` | per-weapon by construction; run the ones the weapon can reach |

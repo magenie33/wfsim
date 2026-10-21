@@ -217,9 +217,9 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   /// FX: THE ASKER'S OWN RIVEN, appraised by whoever opens its link — docs/AGENT.md
   /// §"Riven appraisal". Each stat is a word and the number on the card; the
   /// roll is that number over the engine's own value at roll 1, and a number the
-  /// card could not show at this weapon's disposition is refused, not clamped.
+  /// card could not show is refused, not clamped.
   async function fx(rest, ctx) {
-    const example = "fx 托里德 暴伤160.9 多重120.7 腐蚀120.7 负弹匣43.9";
+    const example = "fx 托里德 暴伤148.5 多重111.3 腐蚀111.3 负弹匣40.5";
     if (!rest) return t(NO_WEAPON, { e: example });
     const hit = weaponOf(rest);
     if (!hit) return t(NOT_FOUND);
@@ -253,7 +253,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
       if (roll < 0.9 - slack || roll > 1.1 + slack) {
         const show = (x) => Math.abs(Number(x)).toFixed(st.decimals ?? 1);
         const [lo, hi] = [show(st.min), show(st.max)].sort((a, b) => a - b);
-        return t("{stat} {value} is outside this weapon's range ({lo}–{hi}); the card may be from before a disposition change. (￣^￣)",
+        return t("{stat} {value} is outside this weapon's range ({lo}–{hi}). (￣^￣)",
           { stat: statZh(cls, sl.id), value: sl.value, lo, hi });
       }
       rolled.push({ id: sl.id, roll: Math.round(Math.min(1.1, Math.max(0.9, roll)) * 1000) / 1000, malus: sl.slot === "malus" });

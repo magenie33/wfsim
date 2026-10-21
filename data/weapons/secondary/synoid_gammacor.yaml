@@ -15,7 +15,7 @@ transforms_to: synoid_gammacor_incarnon
 
 # see notes: bulk_intake_stats_are
 accuracy: 100
-disposition: 1.1
+disposition: 1.2
 polarities: [vazarin, naramon]
 exilus_polarity: madurai
 riven_family: Gammacor

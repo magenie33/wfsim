@@ -189,8 +189,8 @@ def by_internal(rows, key="InternalName"):
 def weapon_level(rows, field):
     """A field's value when every attack row agrees, else `None`.
 
-    The module carries Mastery, Magazine, Reload, AmmoMax, Accuracy and
-    Disposition once per WEAPON and the CSV repeats them on each attack row —
+    The module carries Mastery, Magazine, Reload, AmmoMax and Accuracy once
+    per WEAPON and the CSV repeats them on each attack row —
     but not always: a charged form can print its own magazine. A disagreement is
     therefore not something to average or to pick from; it is a field this tool
     cannot ask about, and it goes to the unchecked count where it can be seen.
@@ -303,7 +303,6 @@ FIELDS = [
     ("reload_seconds", "Reload", 0.05),
     ("ammo_max", "AmmoMax", 0),
     ("accuracy", "Accuracy", 0.5),
-    ("riven_disposition", "Disposition", 0.005),
 ]
 
 

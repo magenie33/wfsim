@@ -17,7 +17,7 @@ max_rank: 40
 
 # Weapon-level metadata (wiki Module:Weapons/data/secondary).
 accuracy: 100.0
-disposition: 0.75            # riven disposition
+disposition: 1.2
 polarities: [madurai]
 exilus_polarity: madurai
 riven_family: Tenet Diplos

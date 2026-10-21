@@ -12,7 +12,7 @@ mastery_rank: 12
 max_rank: 30
 
 accuracy: ~
-disposition: 0.85
+disposition: 1.2
 polarities: [madurai]
 stance_polarity: zenurik
 introduced: "Update 39"

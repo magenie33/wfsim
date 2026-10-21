@@ -17,7 +17,7 @@ transforms_to: gorgon_incarnon
 unmodeled:
   - reason: spool_rebuilds_after_reload
 accuracy: 12.5
-disposition: 1.4
+disposition: 1.2
 polarities: []
 exilus_polarity: madurai
 riven_family: Gorgon

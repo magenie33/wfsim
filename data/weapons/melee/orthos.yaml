@@ -13,7 +13,7 @@ max_rank: 30
 
 accuracy: ~
 riven_family: Orthos
-disposition: 1.0
+disposition: 1.2
 polarities: []
 stance_polarity: naramon
 introduced: "Update 8.1"

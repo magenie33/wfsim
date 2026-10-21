@@ -228,7 +228,7 @@ pub fn validate_with(
     // both of those are the mod's own answer rather than a special case here.
     let riven_def = riven.map(|shape| {
         crate::build::rivens::god_roll(shape, riven_class(weapon))
-            .to_mod_def(RIVEN_SLOT, spec.disposition.unwrap_or(1.0))
+            .to_mod_def(RIVEN_SLOT, spec.disposition.unwrap_or(crate::build::rivens::DISPOSITION))
     });
     let (multishot, evos) = normalize_with(weapon, mods, evolutions, riven);
     if multishot.len() != mods.len() {

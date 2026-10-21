@@ -21,7 +21,7 @@ max_rank: 30
 # attack each one carries; the evolution says when they are made.
 accuracy: ~
 riven_family: Okina      # module `Family` — SHARED by the Okina and the Okina Prime
-disposition: 1.4
+disposition: 1.2
 polarities: [madurai]
 # THE STANCE SLOT'S OWN POLARITY, and it decides a capacity GRANT rather than a
 # discount (`rules::capacity::stance_capacity`). Vazarin, so Spinning Needle

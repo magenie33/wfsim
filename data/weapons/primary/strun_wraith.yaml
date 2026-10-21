@@ -17,7 +17,7 @@ transforms_to: strun_wraith_incarnon
 unmodeled:
   - reason: reload_never_interrupted
 accuracy: 6.7
-disposition: 1.35
+disposition: 1.2
 polarities: [naramon]
 exilus_polarity: madurai
 riven_family: Strun

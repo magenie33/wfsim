@@ -18,7 +18,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 100.0
-disposition: 0.55            # riven disposition
+disposition: 1.2
 polarities: [naramon]
 exilus_polarity: madurai
 riven_family: Dual Coda Torxica

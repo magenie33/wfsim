@@ -17,7 +17,7 @@ transforms_to: angstrum_incarnon
 unmodeled:
   - "The Single Rocket Explosion is not modelled; this entry carries only the Single Rocket Impact."
 accuracy: 26.67
-disposition: 1.35
+disposition: 1.2
 polarities: [vazarin]
 # no exilus polarity slot
 riven_family: Angstrum

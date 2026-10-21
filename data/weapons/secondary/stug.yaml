@@ -25,7 +25,7 @@ unmodeled:
   - "Unmeasured: the explosion's falloff is read as 70%, from the page's bug note, rather than the 30% in its table."
   - "Unmeasured: when a body dies, its pile is read as staying where it stood and going off on whoever is there."
 accuracy: 100
-disposition: 1.48
+disposition: 1.2
 polarities: [vazarin]
 exilus_polarity: madurai
 riven_family: Stug

@@ -8,9 +8,14 @@ pub struct RolledStat {
     pub roll: f64,
 }
 
-/// A riven, as constructed. `disposition` belongs to the WEAPON, not here —
-/// it is passed in, so one riven spec reads differently on two weapons
-/// exactly as it does in game.
+/// EVERY RIVEN READS ONE DISPOSITION, on every weapon, chamber and slot alike
+/// (see notes: riven_disposition_one). Every weapon and chamber STATES it in
+/// its data, which a test holds, and a weapon that states none reads it.
+pub const DISPOSITION: f64 = 1.2;
+
+/// A riven, as constructed. The value functions take the disposition as an
+/// argument: the weapon's, or the one a card was read at when a measurement
+/// replays at the disposition it was taken at.
 #[derive(Debug, Clone)]
 pub struct RivenSpec {
     pub class: String,

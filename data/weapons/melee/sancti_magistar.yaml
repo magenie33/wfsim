@@ -13,8 +13,8 @@ max_rank: 30
 
 # THE SYNDICATE MAGISTAR — the same hammer, swung the same seven ways, with
 # every number a step up: 240 base against 210, 30% critical chance against 20%,
-# 20% status against 10%, and 1.0 attack speed against 0.833. Its disposition
-# pays for that (1.25 against 1.35) and so does its mastery rank.
+# 20% status against 10%, and 1.0 attack speed against 0.833. Its mastery
+# rank pays for that.
 #
 # THE SEVEN ENTRIES ARE THE MAGISTAR'S SEVEN, and they must stay that way: the
 # stance scripts are Crushing Ruin's, which is a HAMMER stance and knows nothing
@@ -31,7 +31,7 @@ max_rank: 30
 # attack and is not it.
 accuracy: ~
 riven_family: Magistar      # module `Family` — SHARED with the Magistar
-disposition: 1.25
+disposition: 1.2
 polarities: [madurai]
 # THE STANCE SLOT'S OWN POLARITY, and it decides a capacity GRANT rather than a
 # discount: 10 on a matching slot, 5 on a bare one, 4 on the wrong colour

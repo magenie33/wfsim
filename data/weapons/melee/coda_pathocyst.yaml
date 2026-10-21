@@ -13,7 +13,7 @@ max_rank: 40
 
 accuracy: ~
 riven_family: Pathocyst
-disposition: 0.65
+disposition: 1.2
 polarities: [madurai, vazarin]
 stance_polarity: naramon
 introduced: "Update 38.5"

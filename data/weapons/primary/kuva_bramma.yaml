@@ -16,7 +16,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 16.7
-disposition: 0.7
+disposition: 1.2
 # "Innate Madurai polarity."
 polarities: [madurai]
 exilus_polarity: naramon

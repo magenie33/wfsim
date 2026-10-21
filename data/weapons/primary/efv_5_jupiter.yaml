@@ -15,7 +15,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 133.33
-disposition: 1.05           # riven disposition
+disposition: 1.2
 polarities: [madurai, madurai]
 exilus_polarity: madurai
 riven_family: EFV-5 Jupiter

@@ -1,6 +1,6 @@
 use super::*;
 use crate::build::loadout::resolve;
-use crate::build::rivens::{RivenSpec, RolledStat, MAX_RANK};
+use crate::build::rivens::{RivenSpec, RolledStat, DISPOSITION, MAX_RANK};
 use crate::model::{StackPolicy, WeaponBase};
 use crate::rules::capacity::Polarity;
 
@@ -70,8 +70,8 @@ fn a_spliced_techrot_bonus_lands_on_a_techrot_unit() {
 }
 
 /// THE AKARIUS PRIME NEVER RELOADS on a 2+1 spliced Ammo Efficiency card with
-/// Akimbo Slip Shot while sliding: 0.005 x 90 x 1.2375 x 0.65 disposition is
-/// 36.2%, and +65% takes it past the 100% cap. One magazine and no reserve, so
+/// Akimbo Slip Shot while sliding: 0.005 x 90 x 1.2375 x 1.2 disposition is
+/// 66.8%, and +65% takes it past the 100% cap. One magazine and no reserve, so
 /// a single reload would end the fight at 8 shots.
 #[test]
 fn a_sliding_akarius_on_a_spliced_card_never_reloads() {
@@ -83,7 +83,7 @@ fn a_sliding_akarius_on_a_spliced_card_never_reloads() {
         rank: MAX_RANK,
         polarity: Polarity::Madurai,
     }
-    .to_mod_def("riven:akarius", 0.65);
+    .to_mod_def("riven:akarius", DISPOSITION);
     let mut tenno = crate::data::tenno::default_tenno().clone();
     tenno.state.sliding = true;
     let spec = crate::data::weapons::spec("akarius_prime").unwrap();

@@ -17,7 +17,7 @@ max_rank: 30
 
 # Weapon-level metadata (wiki `Module:Weapons/data/secondary`).
 accuracy: 100                # "Pinpoint accuracy" — the page's own advantage
-disposition: 1.2             # riven disposition
+disposition: 1.2
 polarities: []               # no innate main polarities in either source
 exilus_polarity: madurai
 riven_family: Ocucor

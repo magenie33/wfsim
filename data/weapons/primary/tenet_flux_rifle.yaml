@@ -21,7 +21,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 200.0
-disposition: 1.2             # riven disposition
+disposition: 1.2
 # NO INNATE POLARITIES — "Polarities: None", which on a weapon that reaches
 # rank 40 is less of a drawback than it looks.
 polarities: []

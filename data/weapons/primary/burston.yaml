@@ -14,8 +14,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_5
 accuracy: 25
-disposition: 1.45            # riven disposition — HIGHER than the Prime's 1.35,
-                             # the usual shape, and the same 1.45 the Boar has
+disposition: 1.2
 polarities: [madurai]
 exilus_polarity: naramon
 riven_family: Burston        # module `Family` — SHARED with the Burston Prime

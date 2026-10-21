@@ -18,7 +18,7 @@ max_rank: 30
 # missing), the accuracy (100 for the page's "Very High", where the wiki
 # module's own scale reads 28.6) and the update it shipped in.
 accuracy: 28.6                # wiki module `Accuracy`; the page prints it as "Very High"
-disposition: 0.75             # ●●○○○, wiki module `Disposition`
+disposition: 1.2
 polarities: [madurai, madurai]
 # NO `exilus_polarity:` — the wiki module states `ExilusPolarity: "None"` and
 # the page does not print one, so the field is LEFT OUT rather than guessed. It

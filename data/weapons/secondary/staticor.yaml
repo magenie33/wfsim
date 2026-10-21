@@ -15,7 +15,7 @@ max_rank: 30
 # Weapon-level metadata (wiki Module:Weapons/data/secondary; `magazine: 48`
 # is rounds, not the 12-shot count some sources display it as).
 accuracy: 16.7
-disposition: 0.9            # riven disposition
+disposition: 1.2
 polarities: [naramon]
 exilus_polarity: madurai
 riven_family: Staticor

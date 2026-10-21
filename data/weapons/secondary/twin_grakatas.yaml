@@ -15,7 +15,7 @@ max_rank: 30
 # Weapon-level metadata (wiki Module:Weapons/data/secondary; `magazine: 120`
 # is rounds, not the 60-shot count some sources display it as).
 accuracy: 28.6
-disposition: 1.2            # riven disposition
+disposition: 1.2
 polarities: [naramon]
 exilus_polarity: madurai
 riven_family: Twin Grakatas

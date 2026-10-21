@@ -29,9 +29,8 @@ and the page's Slot control does it without changing the address.
 page and URL (the lower id keeps `/weapons/<Chamber>`, the other lives at its
 id), its mastery track and its riven family. A chamber has ONE riven, which fits
 either slot and rolls the pistol pool (`riven_class: pistol` on the primary,
-`data/notes.yaml` `kitgun_riven_is_the_chambers`); its DISPOSITION is per slot,
-and the chamber infobox module states both. The riven editor shows the open card
-at the other slot's disposition too.
+`data/notes.yaml` `kitgun_riven_is_the_chambers`), and both slots state the one
+disposition every riven reads, 1.2.
 
 ## THE ASSEMBLY IS A BUILD AXIS
 

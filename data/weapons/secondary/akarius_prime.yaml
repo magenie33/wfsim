@@ -22,7 +22,7 @@ unmodeled:
   - "Self-stagger is not modelled: an explosion at the wielder's feet can interrupt the 2-round burst so only one rocket fires (wiki)."
   - "The rockets aim for the torso, so a high headshot rate is not reachable in play, though this entry uses whatever is set."
 accuracy: 26.7
-disposition: 0.65
+disposition: 1.2
 polarities: [naramon, naramon, madurai]
 exilus_polarity: madurai
 riven_family: Akarius

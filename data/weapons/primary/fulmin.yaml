@@ -20,7 +20,7 @@ max_rank: 30
 # the divergence with its reason so it cannot be mistaken for a
 # transcription error.
 accuracy: 9.1
-disposition: 1              # riven disposition
+disposition: 1.2
 polarities: []               # the infobox states none
 exilus_polarity: madurai
 riven_family: Fulmin

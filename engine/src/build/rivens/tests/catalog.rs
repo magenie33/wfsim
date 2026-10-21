@@ -261,8 +261,8 @@ fn the_wikis_melee_base_column_agrees() {
 /// contrast that makes the rule visible: both bases are negative and only
 /// one of them flips in the malus slot.
 ///
-/// The band comes from live Magistar listings (disposition 1.35, rank 8,
-/// three bonuses and a malus), which read -96.8 to -112.4 across eight
+/// The band comes from live Magistar listings (rank 8, three bonuses and a
+/// malus, read at 1.35, the Magistar's disposition when they were listed), which read -96.8 to -112.4 across eight
 /// cards — `0.01165 x 90 x 1.35 x 0.75` is 106.2% at roll 1.0, so the
 /// whole 0.9-1.1 band is 95.6 to 116.8 and every card sits inside it.
 #[test]
@@ -396,13 +396,15 @@ fn the_shape_moves_every_stat() {
     assert!((c + 0.90 * 0.495).abs() < 5e-4);
 }
 
-/// Disposition is the WEAPON's, so one riven reads differently on two.
+/// The disposition multiplies the whole riven, and every riven reads one,
+/// 1.2 (see notes: riven_disposition_one).
 #[test]
 fn disposition_scales_the_whole_riven() {
+    assert_eq!(DISPOSITION, 1.2);
     let by = |id: &str| pool("rifle").iter().find(|x| x.id == id).unwrap();
     let s = spec(&["damage", "multishot"], None, 8);
-    let torid = s.value_of(by("damage"), 1.0, true, 1.3);
-    assert!((torid - 1.65 * 0.99 * 1.3).abs() < 5e-4, "Torid at 1.3: {torid:.3}");
+    let v = s.value_of(by("damage"), 1.0, true, DISPOSITION);
+    assert!((v - 1.65 * 0.99 * 1.2).abs() < 5e-4, "damage at 1.2: {v:.3}");
 }
 
 #[test]
@@ -1068,8 +1070,8 @@ fn the_reading_is_the_cards_precision_and_the_maths_is_not() {
 }
 
 /// The percentile is the roll's place in its own band, so it compares two
-/// stats on one card and two cards on different weapons — disposition,
-/// shape and base all divide out.
+/// stats on one card and two cards — disposition, shape and base all divide
+/// out.
 #[test]
 fn the_percentile_is_where_the_roll_landed_in_its_band() {
     assert!((percentile(ROLL_MIN) - 0.0).abs() < 1e-9);

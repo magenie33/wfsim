@@ -13,7 +13,7 @@ max_rank: 30
 
 accuracy: ~
 riven_family: Venka
-disposition: 0.85
+disposition: 1.2
 polarities: [naramon, madurai]
 stance_polarity: madurai
 introduced: "Update 19.0.7"

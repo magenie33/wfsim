@@ -112,9 +112,8 @@ pub fn spec_assembled<'a>(
     out.reload_seconds = Some(built.reload_seconds);
     out.ammo_max = Some(built.ammo_max);
     out.ammo_pickup = Some(built.ammo_pickup);
-    // THE DISPOSITION IS THE ENTRY'S, not the assembly's: it is per chamber AND
-    // per slot, and this entry already is one chamber in one slot. Restating it
-    // from the parts would be the same number written twice.
+    // THE DISPOSITION IS THE ENTRY'S, not the assembly's: restating it from the
+    // parts would be the same number written twice.
     Some(std::borrow::Cow::Owned(out))
 }
 

@@ -14,7 +14,7 @@ max_rank: 30
 
 accuracy: 100.0
 # The module's figure; 1.25 is the card's two places.
-disposition: 1.245
+disposition: 1.2
 polarities: []
 riven_family: Vulklok
 internal_name: /Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun

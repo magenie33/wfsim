@@ -18,7 +18,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 100
-disposition: 0.85            # riven disposition
+disposition: 1.2
 polarities: [madurai, madurai, naramon]
 exilus_polarity: naramon
 riven_family: Gotva Prime
@@ -101,6 +101,6 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Gotva_Prime
   # Stats from the wiki Lua module via private/scripts/wiki_weapons.py:
-  # magazine, reload, mastery, accuracy, disposition, crit, status, fire
+  # magazine, reload, mastery, accuracy, crit, status, fire
   # rate and the per-attack damage are all the module's own attack record —
   # never a flat per-weapon damage summary (docs/DATA_SOURCES.md).

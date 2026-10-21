@@ -47,7 +47,7 @@ two-column infobox. Every Arch-Gun page has an `Archwing` tab and an
 pool instead of a regenerating magazine, has a real reload, and drops the
 falloff. The export has one number per field and no idea a second column
 exists. It AGREES with the wiki on crit chance, crit multiplier, status chance,
-fire rate, magazine, polarities, disposition, mastery and internal name, which
+fire rate, magazine, polarities, mastery and internal name, which
 is every field a cross-check would look at — so a cross-check passes, and the
 Larkspur Prime posted 112 board rows at half its ground damage that way.
 **An export cannot tell you that a question has two answers.** A page can,
@@ -91,7 +91,7 @@ punch-through), a modular chamber's per-grip tables, and a flag like
 in the prose is not a disagreement; a different NUMBER is.
 
 Between two module answers, the weapon's OWN page and infobox module beat a
-family overview table — see `data/notes.yaml` `kitgun_disposition_source`.
+family overview table.
 
 An enemy is the same: its own page and infobox beat `Enemy_Body_Parts` and every
 other cross-unit table. The overview fills what the unit's page never states
@@ -133,7 +133,7 @@ cloned the repo, where `scripts/audit_weapon_stats.py` needs the gitignored
 
 The columns are the ones a weapon entry needs: every damage type, crit chance
 and multiplier, status chance, forced procs, multishot, fire rate, burst count
-and delay, charge time, disposition, mastery, magazine, ammo pickup/max/**cost**,
+and delay, charge time, mastery, magazine, ammo pickup/max/**cost**,
 reload, shot type, shot speed, punch through, accuracy, slot, class, ammo type,
 range, falloff start/end/reduction, spread, and `IsSilent`.
 
@@ -466,7 +466,7 @@ cross-checked, and the table says where each field is read.
 | `base_drain`, `max_rank` | the wiki PAGE's rank table | `Module:Mods/data` is wrong for ~20 mods; the page and the export agreed 8 of 8 (Point Strike, Split Chamber, Metal Auger, Barrel Diffusion, Convulsion, Deep Freeze, Gunslinger, Suppress) |
 | `internal_name` | DE's Public Export `uniqueName` | the wiki's `InternalName` wins if it disagrees, and the split is a finding |
 | `polarity`, `rarity`, `exilus` | wiki module | `crosscheck.py` reports a split with the export |
-| per-rank effect VALUES, dispositions | the wiki page | the export's `levelStats` is rounded display (Argon Scope 2 s for 1.5 s), and its dispositions can disagree with the wiki's — the wiki wins until measured |
+| per-rank effect VALUES | the wiki page | the export's `levelStats` is rounded display (Argon Scope 2 s for 1.5 s) — the wiki wins until measured |
 | card text, English and localized | DE's Public Export | the wiki's module can lag a patch (Update 44.0's weak-point cards); the page's own prose saying so is the wiki winning over its module |
 | everything mechanical | wiki | a disagreement is itself the finding — `crosscheck.py` reports SOURCE-SPLIT |
 
@@ -490,7 +490,7 @@ Incarnon weapon has four attacks, and only the module tells them apart.
 | damage split, crit, status, fire rate, multishot, punch-through, per ATTACK | **wiki `Attacks[]`** |
 | `Zoom`, `SniperComboMin`, `SniperComboReset`, `CompatibilityTags`, `IncarnonCharges`, `Falloff`, `ForcedProcs` | **wiki only** — the export carries none of them |
 | `InternalName` | **DE's export** `uniqueName` — the join key; the module's is cross-checked against it |
-| magazine, reload, mastery, accuracy, disposition | **wiki**, cross-checked against the export. Its `magazineSize` is in SHOTS where ours is ROUNDS, and `reloadTime` is sometimes the partial reload — `scripts/audit_weapon_stats.py` names each case |
+| magazine, reload, mastery, accuracy | **wiki**, cross-checked against the export. Its `magazineSize` is in SHOTS where ours is ROUNDS, and `reloadTime` is sometimes the partial reload — `scripts/audit_weapon_stats.py` names each case |
 
 ### `private/scripts/wiki_weapons.py`
 
@@ -508,7 +508,7 @@ python private/scripts/wiki_weapons.py --slot primary --list   # every name + Cl
 ```
 
 `--check` joins by the module's `InternalName` and compares magazine / reload /
-mastery / accuracy / disposition, and the first attack's crit / status / fire
+mastery / accuracy, and the first attack's crit / status / fire
 rate / damage against the export's one record. A damage split on a weapon with
 several attacks is the export's blend, and the line says so.
 
@@ -1097,9 +1097,9 @@ pin down what the mechanism is:
    `Rakta Ballistica`, `Lex` with no `Lex Prime`. The wiki says the same in
    words (*"assigned to a single weapon (and its variants) per Riven mod"*) and
    DE treats compatibility narrowing to one variant as a bug they reverted.
-   `data/rivens/de_families.yaml` is that list. DISPOSITION IS THE EXCEPTION AND
-   PROVES IT: it is per VARIANT (the Boltor is 1.30, its Prime and the Telos are
-   1.20) while compatibility is per family — two different keys on one card.
+   `data/rivens/de_families.yaml` is that list. Every weapon's disposition is
+   1.2 (`build::rivens::DISPOSITION`, `data/notes.yaml`
+   `riven_disposition_one`), so a card reads the same on every variant.
 2. **DE maintains the pool per family, by hand.** *"Fixed issue where weapons
    could end up with Rivens that aren't compatible (ex: Projectile Flight Speed
    on Vadarya Prime Rivens)"* — an incompatible stat is a bug DE fixes per

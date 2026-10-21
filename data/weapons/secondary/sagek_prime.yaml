@@ -15,7 +15,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 15.33
-disposition: 0.9             # riven disposition
+disposition: 1.2
 polarities: [madurai, naramon]
 exilus_polarity: naramon
 # THE MODULE STATES NO RIVEN FAMILY for this weapon (`Family: nil`), which on a

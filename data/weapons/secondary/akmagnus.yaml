@@ -14,7 +14,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 11.1
-disposition: 1.35           # riven disposition
+disposition: 1.2
 polarities: []               # the infobox states none
 exilus_polarity: madurai
 riven_family: Akmagnus

@@ -16,7 +16,7 @@ transforms_to: latron_prime_incarnon
 
 # see notes: weapon_level_metadata_wiki_3
 accuracy: 28.57
-disposition: 1.3
+disposition: 1.2
 polarities: [madurai, naramon]
 exilus_polarity: madurai
 riven_family: Latron

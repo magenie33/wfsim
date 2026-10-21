@@ -3,8 +3,7 @@ name: Aklato
 slot: secondary
 weapon_type: secondary
 # THE STARTER AKIMBO. Forty damage a shot, mostly Slash, out of the widest cone
-# in the family — and the highest riven disposition in the roster's secondaries,
-# which is the game's own verdict on it.
+# in the family.
 class: dual_pistols
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -14,7 +13,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 11.1
-disposition: 1.52           # riven disposition
+disposition: 1.2
 polarities: []               # the infobox states none
 exilus_polarity: madurai
 riven_family: Aklato

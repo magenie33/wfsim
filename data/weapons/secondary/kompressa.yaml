@@ -14,7 +14,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 3.8
-disposition: 1.15           # riven disposition
+disposition: 1.2
 polarities: [vazarin]
 exilus_polarity: madurai
 riven_family: Kompressa

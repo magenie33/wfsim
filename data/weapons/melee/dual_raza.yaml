@@ -12,7 +12,7 @@ mastery_rank: 6
 max_rank: 30
 
 accuracy: ~
-disposition: 1.4
+disposition: 1.2
 polarities: []
 stance_polarity: naramon
 introduced: "Update 16.3"

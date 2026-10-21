@@ -14,7 +14,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 200.0
-disposition: 0.85           # riven disposition
+disposition: 1.2
 polarities: []               # the infobox states none
 exilus_polarity: naramon
 riven_family: Trumna

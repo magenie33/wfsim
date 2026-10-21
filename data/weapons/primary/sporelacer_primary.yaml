@@ -26,8 +26,7 @@ internal_name: /Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelEgg/In
 kitgun: sporelacer_primary
 transform_group: sporelacer_primary
 
-# see notes: kitgun_disposition_source
-disposition: 1.15
+disposition: 1.2
 riven_family: Sporelacer
 # see notes: kitgun_riven_is_the_chambers
 riven_class: pistol

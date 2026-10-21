@@ -39,7 +39,7 @@ wielder_names:
 exalted: true
 summoned_by: hysteria
 accuracy: ~
-# NO DISPOSITION AND NO RIVEN FAMILY: "Riven Mods are not generated for Valkyr
+# NO RIVEN FAMILY: "Riven Mods are not generated for Valkyr
 # Talons" (W`Hysteria`).
 polarities: [madurai, naramon, naramon]
 stance_polarity: zenurik

@@ -259,8 +259,8 @@ const wl = (text, url) => `<a class="wl" href="${url || wikiUrl(text)}" target="
 /// Every other mod is one published card with one page. A riven is generated:
 /// "Argon Critacan" is a name a drop invented, the wiki has no page by it, and
 /// building the URL from the name the way the rest do gives a link that always
-/// 404s. What a reader clicking a riven wants is the mechanic — disposition,
-/// rolling, the stat pools — which is `Riven Mods`.
+/// 404s. What a reader clicking a riven wants is the mechanic — rolling,
+/// the stat pools — which is `Riven Mods`.
 const modWikiUrl = (m) => (m.riven ? wikiUrl("Riven Mods") : wikiUrl(m.name_en || m.name));
 
 /// THE ONE NUMBER THIS APP DOES NOT COMPUTE — what a card costs to buy.

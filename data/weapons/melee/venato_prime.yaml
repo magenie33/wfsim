@@ -13,7 +13,7 @@ max_rank: 30
 
 accuracy: ~
 riven_family: Venato
-disposition: 0.65
+disposition: 1.2
 polarities: [madurai]
 stance_polarity: zenurik
 introduced: "Update 39.1"

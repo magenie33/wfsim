@@ -16,7 +16,7 @@ transforms_to: paris_prime_incarnon
 
 # see notes: bulk_intake_stats_are
 accuracy: 16.67
-disposition: 1.35
+disposition: 1.2
 polarities: [naramon, madurai]
 exilus_polarity: naramon
 riven_family: Paris

@@ -30,7 +30,7 @@ mastery_rank: 15
 max_rank: 40
 
 accuracy: 25.0               # "Medium"
-disposition: 0.70
+disposition: 1.2
 polarities: [madurai, madurai, madurai]
 riven_family: Grattler
 traits: [kuva_lich, adversary, grineer]

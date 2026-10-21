@@ -340,7 +340,7 @@ notes:
   melee_from_the_modules: |
     A MELEE ENTRY'S NUMBERS FROM THE TWO WIKI MODULES, where its own page states
     nothing else (docs/MELEE.md §9):
-    - the swing, reach, follow through, polarities, disposition and combo
+    - the swing, reach, follow through, polarities and combo
       clock are `Module:Weapons/data/melee`'s infobox fields;
     - the four ground combos carry NO script: a stance supplies it, and an
       empty slot is refused (`combo_needs_a_stance`);
@@ -812,18 +812,10 @@ notes:
   inherited_co_catalog_gives_4: |
     NOT INHERITED — the CO catalog gives a class PER ATTACK, and neither of
     this weapon's is named. Absence means ORDINARY.
-  kitgun_disposition_source: |
-    RIVEN DISPOSITION is `Module:Weapons/data/modular`'s — the module behind the
-    chamber page's OWN infobox, one record per (chamber, slot). The wiki has two
-    other answers: `Module:Modular/data` (Tombfinger's secondary 0.7 against the
-    infobox's 0.9), and the Kitgun page's overview table, last edited in 39.1,
-    lower on four secondaries (Catchmoon 0.70, Gaze 0.95, Rattleguts 0.90,
-    Vermisplicer 1.10). The weapon's own page wins; a riven reading settles it.
   kitgun_riven_is_the_chambers: |
     ONE RIVEN PER CHAMBER, on either slot. VERBATIM (Kitgun, Kitgun Riven Mods):
     "Kitgun Riven mods for a specific chamber can be equipped on both the
-    primary and secondary versions. Note that the riven disposition changes
-    based on the type." One card is one set of stats, so both slots roll one
+    primary and secondary versions." One card is one set of stats, so both slots roll one
     pool: the PISTOL one — the chamber is a secondary part in DE's data (its
     `internal_name`), and "Riven mods for Kitguns will use images of Secondary
     mods even when equipped on Primary Kitguns" (Riven Mods).
@@ -974,6 +966,16 @@ notes:
     `order` is DE's own index in upgradeEntries. Stats that share a base
     are worth exactly the same at the same roll, so the name's magnitude
     ordering ties between them. This is what breaks it.
+  riven_disposition_one: |
+    ONE DISPOSITION, 1.2, FOR EVERY RIVEN ON EVERY WEAPON. VERBATIM (DE, Dev
+    Workshop "Ammo Efficiency Changes & Riven Disposition Retirement",
+    forums.warframe.com/topic/1529475): "Rivens no longer have varying
+    Dispositions, meaning all Rivens share the same range for stat values (the
+    equivalent to a Disposition of 1.2). Rivens have pre-set ranges for each
+    stat roll generated, and Disposition is applied as a multiplier to each
+    stat." Every weapon and chamber states 1.2, and a new one does too. A card
+    keeps its rolls, so its shown values move to 1.2 with nothing converted.
+    Unmeasured: the queue in docs/MEASUREMENTS.md holds it.
   spliced_riven_stat: |
     `spliced: true` is a stat a Riven Splicer makes out of two rolled ones
     (wiki Riven_Mods §"Spliced Values"). It is never rolled, it is always a

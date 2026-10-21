@@ -19,7 +19,7 @@ max_rank: 30
 # divergence with its reason so it cannot be mistaken for a transcription
 # error.
 accuracy: 100.0
-disposition: 1.4            # riven disposition
+disposition: 1.2
 polarities: [naramon]
 exilus_polarity: madurai
 riven_family: Panthera

@@ -13,7 +13,7 @@ max_rank: 40
 
 accuracy: ~
 riven_family: Hirudo
-disposition: 0.75
+disposition: 1.2
 polarities: [madurai]
 stance_polarity: naramon
 introduced: "Update 38.5"

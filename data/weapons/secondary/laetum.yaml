@@ -21,7 +21,7 @@ transforms_to: laetum_incarnon
 
 # Weapon-level metadata (wiki data module).
 accuracy: 16
-disposition: 0.5             # riven disposition (●○○○○)
+disposition: 1.2
 polarities: [madurai]
 exilus_polarity: naramon
 riven_family: Laetum

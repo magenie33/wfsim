@@ -15,7 +15,7 @@ transforms_to: sicarus_prime_incarnon
 
 # see notes: bulk_intake_stats_are
 accuracy: 25
-disposition: 1.15
+disposition: 1.2
 polarities: [madurai]
 exilus_polarity: naramon
 riven_family: Sicarus

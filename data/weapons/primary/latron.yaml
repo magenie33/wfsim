@@ -16,7 +16,7 @@ transforms_to: latron_incarnon
 
 # see notes: weapon_level_metadata_wiki_3
 accuracy: 28.57
-disposition: 1.4
+disposition: 1.2
 polarities: [madurai]
 # NO EXILUS POLARITY — the page shows an empty slot rather than a symbol.
 riven_family: Latron

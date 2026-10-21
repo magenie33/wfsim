@@ -13,7 +13,7 @@ max_rank: 30
 
 accuracy: ~
 riven_family: Gram
-disposition: 0.8
+disposition: 1.2
 polarities: [madurai, madurai]
 stance_polarity: vazarin
 introduced: "Update 23.9"

@@ -2,8 +2,7 @@ id: tenet_tetra
 name: Tenet Tetra
 slot: primary
 weapon_type: primary
-# THE HIGHEST DISPOSITION IN THIS BATCH (1.25x) on an ordinary auto rifle, whose
-# alternate fire spends the WHOLE REMAINING MAGAZINE on one 1000-damage grenade
+# AN ORDINARY AUTO RIFLE whose alternate fire spends the WHOLE REMAINING MAGAZINE on one 1000-damage grenade
 # — see the alt-fire entry, and note that its damage scales with how full the
 # magazine was, which is the one thing that entry cannot hold.
 class: rifle
@@ -17,7 +16,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki
 accuracy: 18.2
-disposition: 1.25            # riven disposition
+disposition: 1.2
 polarities: []               # the infobox states none
 exilus_polarity: madurai
 riven_family: Tetra

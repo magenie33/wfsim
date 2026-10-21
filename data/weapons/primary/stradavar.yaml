@@ -14,7 +14,7 @@ mastery_rank: 8
 max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_4
-disposition: 1.1            # riven disposition
+disposition: 1.2
 polarities: [madurai, madurai]
 exilus_polarity: naramon
 riven_family: Stradavar

@@ -14,7 +14,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 32.0
-disposition: 0.85            # riven disposition
+disposition: 1.2
 polarities: [madurai, madurai]
 exilus_polarity: madurai
 riven_family: Knell

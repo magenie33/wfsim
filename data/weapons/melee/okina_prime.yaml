@@ -13,12 +13,11 @@ max_rank: 30
 
 # THE PRIME OF THE OKINA — the same sai, swung the same seven ways, with every
 # number a step up: 184 base against 140, 30% / 2.6x critical against 16% /
-# 2.0x, 24% status against 20%, 1.17 attack speed against 1.08. It pays for
-# that in disposition (0.7 against 1.4) and in its Genesis column, which is
-# smaller on every tier that has two.
+# 2.0x, 24% status against 20%, 1.17 attack speed against 1.08. Its Genesis
+# column is smaller on every tier that has two.
 accuracy: ~
 riven_family: Okina      # module `Family` — SHARED by the Okina and the Okina Prime
-disposition: 0.7
+disposition: 1.2
 polarities: [madurai, madurai]
 # THE STANCE SLOT'S OWN POLARITY, and it decides a capacity GRANT rather than a
 # discount (`rules::capacity::stance_capacity`). Vazarin, so Spinning Needle

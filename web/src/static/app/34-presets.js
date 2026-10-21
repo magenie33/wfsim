@@ -139,12 +139,12 @@ const isSharedDomain = (d) => SHARED_DOMAINS.has(d);
 /// gives them two cards free to drift apart.
 ///
 /// THE NUMBERS FOLLOW BY THEMSELVES, which is why this is a storage change
-/// rather than a feature: a saved riven holds ROLLS on 0..1 and the shown value
-/// is `roll` against THIS weapon's disposition, computed by `/api/riven` on
-/// every render. So one card reads 1.45's worth on a Burston and 1.35's on its
-/// Prime with nothing converted — *"the cycling screen allows players to view
-/// the Riven stats on every owned variant of said weapon"*. A weapon that
-/// declares no family is its own and keeps the key it already had.
+/// rather than a feature: a saved riven holds ROLLS and the shown value is
+/// computed from them by `/api/riven` on every render, so one card reads the
+/// same on a Burston and its Prime with nothing converted — *"the cycling
+/// screen allows players to view the Riven stats on every owned variant of
+/// said weapon"*. A weapon that declares no family is its own and keeps the
+/// key it already had.
 ///
 /// THE RIVEN CLASS IS PART OF THE SCOPE, so a family whose members took two
 /// kinds of card would keep them apart. A KITGUN does not: its two slots take

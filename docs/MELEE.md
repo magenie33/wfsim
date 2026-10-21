@@ -146,7 +146,7 @@ paid zero there. With it, a crowd build carrying Galvanized Reflex's +80 holds
 
 **A ZERO OR NEGATIVE DURATION IS ITS OWN RULE** — *"prevents increasing the
 combo counter"* — which is a harder stop than the 0.1 s floor, and a MELEE RIVEN
-is what reaches it: Combo Duration's malus is -8.2 s at disposition 1.35 against
+is what reaches it: Combo Duration's malus is -7.3 s at disposition 1.2 against
 a five-second weapon. `ResolvedWeapon::combo_frozen` carries it and the counter
 is cleared where it is read, so no swing has to remember; the initial-combo
 floor still pays, because a floor is not an increase.
@@ -839,7 +839,7 @@ melee_from_the_modules`), then were audited against their own page's
 
 | form | where its numbers come from |
 | --- | --- |
-| neutral (the weapon) | the infobox: swing damage, crit, status, attack speed, reach, Follow Through, combo clock, polarities, disposition; its slam is `Slam Attack` at 100%, and every form that states none reads this one |
+| neutral (the weapon) | the infobox: swing damage, crit, status, attack speed, reach, Follow Through, combo clock, polarities; its slam is `Slam Attack` at 100%, and every form that states none reads this one |
 | forward / block / block_forward | the same attack and NO script — the stance supplies it, and an empty slot is refused |
 | heavy | the CLASS's heavy block from the module, scaled so one heavy totals the infobox's `HeavyAttack`; wind-up split by `heavy_charge_share_assumed` |
 | slide | the class's slide block, each hit at the infobox's `SlideAttack`, timed by the block's `Duration` |

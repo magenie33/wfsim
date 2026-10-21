@@ -16,7 +16,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_uncrosschecked
 accuracy: 23.5
-disposition: 0.5            # riven disposition
+disposition: 1.2
 polarities: [naramon]
 exilus_polarity: madurai
 # NO `riven_family`. It is DE's own `compatibility` string and the only

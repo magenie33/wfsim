@@ -28,8 +28,7 @@ traits: []
 kitgun: catchmoon_primary
 transform_group: catchmoon_primary
 
-# see notes: kitgun_disposition_source
-disposition: 1.1
+disposition: 1.2
 riven_family: Catchmoon
 # see notes: kitgun_riven_is_the_chambers
 riven_class: pistol

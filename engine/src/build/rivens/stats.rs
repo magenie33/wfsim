@@ -169,7 +169,7 @@ impl RivenStat {
 /// Where in its 0.9-1.1 band a roll landed, as 0-100.
 ///
 /// This is the number riven traders read first: it says how good the ROLL is
-/// with the stat, the weapon's disposition and the shape all divided out, so
+/// with the stat, the disposition and the shape all divided out, so
 /// two stats on one card are comparable and so are two cards. 100 is the top
 /// of the band for a bonus AND for a malus — it is the size of the roll, not
 /// a judgement about it.

@@ -17,7 +17,7 @@ transforms_to: ballistica_incarnon
 unmodeled:
   - "The Burst Shot is not modelled; this entry carries only the Charged Shot."
 accuracy: 4
-disposition: 1.25
+disposition: 1.2
 polarities: [vazarin]
 exilus_polarity: madurai
 riven_family: Ballistica

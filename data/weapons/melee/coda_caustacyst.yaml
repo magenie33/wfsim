@@ -13,7 +13,7 @@ max_rank: 40
 
 accuracy: ~
 riven_family: Caustacyst
-disposition: 0.85
+disposition: 1.2
 polarities: [madurai]
 stance_polarity: zenurik
 introduced: "Update 38.5"

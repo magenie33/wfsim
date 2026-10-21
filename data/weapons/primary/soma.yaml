@@ -17,7 +17,7 @@ transforms_to: soma_incarnon
 unmodeled:
   - reason: spool_rebuilds_after_reload
 accuracy: 28.57
-disposition: 1.15
+disposition: 1.2
 polarities: [madurai, madurai]
 exilus_polarity: madurai
 riven_family: Soma

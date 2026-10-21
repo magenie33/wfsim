@@ -1115,10 +1115,10 @@ A riven is a card for a weapon FAMILY, not an entry:
 Prime, Vandal, Wraith, Dex, Prisma, Mara, and Syndicate variants"*. The scope
 is (FAMILY, RIVEN CLASS) rather than the family, because a KITGUN chamber
 built as a primary takes a RIFLE riven and as a secondary a PISTOL one. A
-saved riven holds ROLLS and the shown value is that roll against THIS weapon's
-disposition, recomputed by `/api/riven` on every render, so one card reads
-1.45's worth on a Burston and 1.35's on its Prime. It holds the shared list,
-the disposition RATIO (2.243 → 2.088 = 1.35/1.45), three negative controls,
+saved riven holds ROLLS and the shown value is recomputed from them by
+`/api/riven` on every render at the one disposition every riven reads, so one
+card reads the same on a Burston and its Prime. It holds the shared list, the
+same value on both variants, three negative controls,
 the migration, and the rename/delete sweep with a same-named card in another
 family as its control. A RENAME AND A DELETE REACH EVERY BUILD THAT NAMES THE
 CARD (`repointRivenInBuilds`, whose SCOPE IS PASSED IN because rename and

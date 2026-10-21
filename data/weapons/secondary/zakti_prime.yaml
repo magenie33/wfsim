@@ -14,7 +14,7 @@ max_rank: 30
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 26.7
-disposition: 1.1            # riven disposition
+disposition: 1.2
 polarities: [naramon, naramon, madurai]
 exilus_polarity: madurai
 riven_family: Zakti

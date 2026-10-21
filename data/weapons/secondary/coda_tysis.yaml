@@ -16,7 +16,7 @@ max_rank: 40
 
 # see notes: weapon_level_metadata_wiki_2
 accuracy: 100.0
-disposition: 1.0             # riven disposition
+disposition: 1.2
 polarities: [vazarin]
 exilus_polarity: madurai
 riven_family: Tysis

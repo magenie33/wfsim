@@ -13,7 +13,7 @@ mastery_rank: 0
 max_rank: 30
 
 accuracy: 100.0
-disposition: 1.0
+disposition: 1.2
 polarities: [madurai]
 riven_family: Helstrum
 internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon

@@ -1696,7 +1696,7 @@ pub fn resolve_for(
         // ZERO IS ITS OWN RULE: *"A zero or negative combo duration PREVENTS
         // INCREASING the combo counter"*, which is a harder stop than a 0.1 s
         // clock and is reported beside it in `combo_frozen`. A melee riven's
-        // Combo Duration malus is what reaches it — -8.2 s at disposition 1.35
+        // Combo Duration malus is what reaches it — -7.3 s at disposition 1.2
         // against a five-second weapon.
         combo_duration_seconds: ((base.combo_duration_seconds + combo_duration_add)
             * combo_duration_mult)
