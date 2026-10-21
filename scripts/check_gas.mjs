@@ -14,6 +14,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadEngine } from "./wasm_engine.mjs";
+import { METERED, NOT_METERED } from "./metered.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, "$1")), "..");
 const arg = (k, d) => { const a = process.argv.find((x) => x.startsWith(`${k}=`)); return a ? a.slice(k.length + 1) : d; };
@@ -23,14 +24,6 @@ const check = (what, ok, detail = "") => {
   if (!ok) failures++;
 };
 
-/// THE METERED SOURCES: what a fight runs. A module a new verb's work runs in
-/// is added here, and this check then asks every item in it for the attribute.
-export const METERED = ["engine/src/fight", "engine/src/rules", "engine/src/model", "engine/src/target.rs",
-  "engine/src/formation.rs", "engine/src/record.rs"];
-/// …less the code around the runs, which must not count: the loop that reads
-/// the count, the counter itself, and the maths that stands in for std's,
-/// which was never counted either.
-const NOT_METERED = ["engine/src/fight/monte_carlo.rs", "engine/src/fight/gas.rs", "engine/src/rules/math.rs"];
 const ATTR = "#[wfsim_gas_macro::metered]";
 const ITEM = /^(pub(\([^)]*\))? )?(unsafe )?(fn |impl[ <]|trait )/;
 

@@ -198,7 +198,7 @@ fn a_broken_evolution_changes_nothing_whatever_it_grants() {
         tier: 9,
         position_in_tier: 1,
         icon: None,
-        description: String::new(),
+        description: Default::default(),
         currently_broken: broken,
         co_base_excludes_this_evolution: None,
         co_base_excludes_only_form: None,

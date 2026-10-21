@@ -283,6 +283,16 @@ and that engine is accepted to join the served one (`join`). Tests are never
 compared. An engine replaced more than `ENGINE_GRACE_DAYS` ago is dropped with
 its file list.
 
+## `check_prose`
+
+Plain node over the Rust: every struct field named a key of `data/prose.yaml`
+is a `Prose`, never a `String`; a loader walking raw `Value`s names one only
+through `Prose::read`; and `Prose::shown` is never called in the metered
+sources (`scripts/metered.mjs`), engine/src/build or optimizer/src. It failed on
+the fields and raw reads it was written against. `check_engine_grace.py` holds
+the other half: a reworded prose value moves no engine, a number beside it
+does, and a prose word inside another key's block or a flow collection is kept.
+
 ## `rust_tokens.py --self-test`
 
 The engine id's reading of Rust: a comment, a doc comment, layout and a

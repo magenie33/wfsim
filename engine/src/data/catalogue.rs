@@ -27,7 +27,7 @@ pub struct Card {
     pub base_drain: Option<i32>,
     pub max_rank: u32,
     /// DE's card at its top rank, verbatim.
-    pub description: String,
+    pub description: crate::prose::Prose,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

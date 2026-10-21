@@ -9,6 +9,7 @@
 //! rulers. `scripts/check_engine_layers.mjs` fails a module that reaches up.
 
 pub mod naming;
+pub mod prose;
 
 pub mod rules;
 

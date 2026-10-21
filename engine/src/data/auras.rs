@@ -65,7 +65,7 @@ struct RawAura {
     #[serde(default)]
     internal_name: Option<String>,
     #[serde(default)]
-    description: Option<String>,
+    description: Option<crate::prose::Prose>,
     #[serde(default)]
     squad_stacking: bool,
     effects: Vec<RawEffect>,
@@ -86,7 +86,7 @@ pub struct AuraDef {
     /// it is seated in the EXILUS slot like any other exilus mod.
     pub exilus: bool,
     pub internal_name: Option<String>,
-    pub description: String,
+    pub description: crate::prose::Prose,
     /// Each `out_of_scope` effect's own reason, in card order.
     pub out_of_scope: Vec<String>,
     /// Shields granted per energy spent casting, at max rank (Brief Respite).

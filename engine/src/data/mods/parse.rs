@@ -11,7 +11,7 @@ pub(super) struct ModFile {
     pub(super) max_rank: u32,
     /// Verbatim in-game text, rank-varying numbers as `X` (schema).
     #[serde(default)]
-    pub(super) description: Option<String>,
+    pub(super) description: Option<crate::prose::Prose>,
     #[serde(default)]
     pub(super) exilus: bool,
     /// The card cannot be simulated below max rank: a number on its ladder is

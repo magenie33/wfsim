@@ -698,7 +698,7 @@ pub fn meta_json() -> Value {
                                 // DISPLAYS is to be noted).
                                 "misprints": e.misprints(),
                                 "fully_unmodeled": e.fully_unmodeled(),
-                                "desc": e.description.split('\n').collect::<Vec<_>>(),
+                                "desc": e.description.shown().split('\n').collect::<Vec<_>>(),
                                 "effects": e.describe(),
                             }))
                             .collect::<Vec<_>>(),

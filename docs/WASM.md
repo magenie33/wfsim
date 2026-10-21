@@ -133,9 +133,12 @@ kilobytes, and the module a reader already holds stays cached.
 - **The engine id reads the same files** (`lean_yaml`), so a source note moves
   no engine; `ship_data_packs` holds its list and its stripping to the `data`
   pack's, file for file, and fails the build where they part.
-- **…and only what a number is computed from.** Rust is read as its tokens
-  (`scripts/rust_tokens.py`), so comments, layout and test-only items move
-  nothing; the overlay's code and `data/surveys/` not at all (`ENGINE_ID_NOT`).
+- **…and only what a number is computed from.** A data file is read less its
+  prose (the keys of `data/prose.yaml`, which the engine holds only as
+  `prose::Prose` and `check_prose` keeps out of every computing layer); Rust as
+  its tokens (`scripts/rust_tokens.py`), so comments, layout and test-only items
+  move nothing; the overlay's code and `data/surveys/` not at all
+  (`ENGINE_ID_NOT`). Rewording a card, a rule or a comment moves no engine.
 
 ## Answers the build already knows
 

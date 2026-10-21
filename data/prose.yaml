@@ -1,0 +1,5 @@
+# TEXT, NOT DATA. A key named here is what a reader is shown, wherever it
+# appears under data/, and no number is computed from it: the engine reads it
+# only as `prose::Prose` (scripts/check_prose.mjs), and `engine_id` leaves it
+# out, so rewording one moves no engine.
+keys: [description, passive, clause, misprint, introduced, standard, rules]

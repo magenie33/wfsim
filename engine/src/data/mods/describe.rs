@@ -7,7 +7,7 @@ use super::*;
 /// acrobatic speed — and are correctly left unconsumed at the tail).
 #[derive(Debug, Clone)]
 pub struct ModDescInfo {
-    pub description: String,
+    pub description: crate::prose::Prose,
     pub xvals: Vec<(f64, f64)>,
     pub max_rank: u32,
 }
@@ -19,7 +19,7 @@ impl ModDescInfo {
         let r = rank.min(self.max_rank) as f64;
         let m = self.max_rank.max(1) as f64;
         let vals: Vec<f64> = self.xvals.iter().map(|(a, b)| a + (b - a) * r / m).collect();
-        crate::model::fill_x(&self.description, &vals)
+        crate::model::fill_x(self.description.shown(), &vals)
     }
 }
 
@@ -159,12 +159,12 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
             // The card's own lines, lowercased once: a `Value` placeholder asks
             // about the effect its LINE names, and only falls back to position
             // when the line names nothing.
-            let lines: Vec<String> = desc.lines().map(str::to_lowercase).collect();
-            let x_line = crate::model::x_lines(&desc);
+            let lines: Vec<String> = desc.shown().lines().map(str::to_lowercase).collect();
+            let x_line = crate::model::x_lines(desc.shown());
             let mut xvals: Vec<(f64, f64)> = Vec::new();
             let mut ei: Option<usize> = None; // the effect the sentence is on
             let mut used: Vec<usize> = Vec::new();
-            for (xi, kind) in crate::model::x_kinds(&desc).into_iter().enumerate() {
+            for (xi, kind) in crate::model::x_kinds(desc.shown()).into_iter().enumerate() {
                 use crate::model::XKind;
                 // Seek forward to an effect that can answer this placeholder;
                 // a `Value` always moves on, the others stay put once the

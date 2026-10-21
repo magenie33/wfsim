@@ -46,7 +46,7 @@ pub struct Ability {
     pub helminth_damage_buff: bool,
     pub augments: Vec<String>,
     pub icon: String,
-    pub description: String,
+    pub description: crate::prose::Prose,
     pub drain_per_second: Option<f64>,
     pub stats: Vec<AbilityStat>,
     pub unmodelled: Vec<String>,
@@ -103,7 +103,7 @@ pub(super) struct RawAbility {
     #[serde(default)]
     pub(super) icon: String,
     #[serde(default)]
-    pub(super) description: String,
+    pub(super) description: crate::prose::Prose,
     #[serde(default)]
     pub(super) drain_per_second: Option<f64>,
     #[serde(default)]

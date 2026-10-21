@@ -189,7 +189,7 @@ pub struct WarframeMod {
     /// The ability this augments; it pays nothing without that ability.
     pub augments: Option<String>,
     pub internal_name: Option<String>,
-    pub description: String,
+    pub description: crate::prose::Prose,
     pub effects: Vec<FrameEffect>,
     pub tags: Vec<TagGrant>,
     pub url: Option<String>,
@@ -218,7 +218,7 @@ pub(super) struct RawMod {
     #[serde(default)]
     pub(super) internal_name: Option<String>,
     #[serde(default)]
-    pub(super) description: String,
+    pub(super) description: crate::prose::Prose,
     pub(super) effects: Vec<RawEffect>,
     #[serde(default)]
     pub(super) source: SourceFile,
@@ -295,7 +295,7 @@ impl WarframeMod {
     /// The card at `rank`: a modelled bonus restated at that rank, every other
     /// line the card's own max-rank text.
     pub fn card_at(&self, rank: u32) -> Vec<String> {
-        card_lines(&self.effects, &self.description, rank, self.max_rank)
+        card_lines(&self.effects, self.description.shown(), rank, self.max_rank)
     }
 }
 
@@ -332,7 +332,7 @@ pub struct WarframeArcane {
     pub rarity: String,
     pub max_rank: u32,
     pub internal_name: Option<String>,
-    pub description: String,
+    pub description: crate::prose::Prose,
     pub effects: Vec<FrameEffect>,
     pub tags: Vec<TagGrant>,
     pub url: Option<String>,
@@ -349,7 +349,7 @@ pub(super) struct RawArcane {
     #[serde(default)]
     pub(super) internal_name: Option<String>,
     #[serde(default)]
-    pub(super) description: String,
+    pub(super) description: crate::prose::Prose,
     pub(super) effects: Vec<RawEffect>,
     #[serde(default)]
     pub(super) source: SourceFile,
@@ -379,7 +379,7 @@ pub fn arcanes() -> &'static [WarframeArcane] {
 
 impl WarframeArcane {
     pub fn card_at(&self, rank: u32) -> Vec<String> {
-        card_lines(&self.effects, &self.description, rank, self.max_rank)
+        card_lines(&self.effects, self.description.shown(), rank, self.max_rank)
     }
 }
 

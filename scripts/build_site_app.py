@@ -703,10 +703,51 @@ def lean_yaml(text: str) -> str:
     return "".join(f"{l}\n" for l in out)
 
 
+PROSE_QUOTED = re.compile(r'"(?:\\.|[^"\\])*"' + r"|'[^']*'")
+
+
+@functools.cache
+def prose_keys() -> tuple:
+    """data/prose.yaml: the keys that are text wherever they appear."""
+    return tuple(yaml.safe_load((ROOT / "data" / "prose.yaml").read_text(encoding="utf-8"))["keys"])
+
+
+def without_prose(text: str) -> str:
+    """A lean data file less every block-style entry of a prose key, value and
+    all (engine/src/prose.rs). Inside a block scalar or a flow collection no
+    line is taken for a key, so what this does not understand stays in."""
+    key = re.compile(r"^( *)(- )?(" + "|".join(map(re.escape, prose_keys())) + r"):( |$)")
+    out, skip, block, flow = [], None, None, 0
+    for line in text.split("\n"):
+        indent = len(line) - len(line.lstrip(" "))
+        if skip is not None:
+            if not line.strip() or indent > skip:
+                continue
+            skip = None
+        if block is not None:
+            if not line.strip() or indent > block:
+                out.append(line)
+                continue
+            block = None
+        m = key.match(line) if not flow else None
+        if m:
+            skip = len(m.group(1)) + (2 if m.group(2) else 0)
+            if m.group(2):
+                out.append(m.group(1) + "-")
+            continue
+        out.append(line)
+        bare = PROSE_QUOTED.sub("", line)
+        flow = max(0, flow + bare.count("[") + bare.count("{") - bare.count("]") - bare.count("}"))
+        if not flow and bare.rstrip().rstrip("-+0123456789").endswith(("|", ">")):
+            block = indent
+    return "\n".join(out)
+
+
 def engine_files() -> dict:
     """What `engine_id` reads, as the grace compares it: each weapon and kitgun
     part file by its own digest, and every other file but a test as one, `rest`.
-    Data is read lean (`lean_yaml`); Rust as its tokens (`rust_tokens`)."""
+    Data is read lean (`lean_yaml`) and less its prose (`without_prose`); Rust as
+    its tokens (`rust_tokens`)."""
     out, rest = {}, hashlib.sha256()
     files = sorted(p for d in ENGINE_SOURCES for p in (ROOT / d).rglob("*") if p.is_file())
     code, tests = {}, []
@@ -722,7 +763,7 @@ def engine_files() -> dict:
             continue
         body = code[rel].encode("utf-8") if rel in code else p.read_bytes().replace(bytes([13, 10]), bytes([10]))
         if rel.startswith("data/"):
-            body = lean_yaml(body.decode("utf-8")).encode("utf-8")
+            body = without_prose(lean_yaml(body.decode("utf-8"))).encode("utf-8")
         if rel.startswith(("data/weapons/", "data/kitguns/")) and rel.endswith(".yaml"):
             out[rel] = hashlib.sha256(body).hexdigest()[:12]
         else:

@@ -58,10 +58,10 @@ fn every_file_loads_and_names_what_exists() {
 #[test]
 fn every_card_restates_itself_at_max_rank() {
     for m in mods() {
-        assert_eq!(m.card_at(m.max_rank).join("\n"), m.description, "{}", m.id);
+        assert_eq!(m.card_at(m.max_rank).join("\n"), m.description.shown(), "{}", m.id);
     }
     for a in arcanes() {
-        assert_eq!(a.card_at(a.max_rank).join("\n"), a.description, "{}", a.id);
+        assert_eq!(a.card_at(a.max_rank).join("\n"), a.description.shown(), "{}", a.id);
     }
     assert_eq!(mod_by_id("intensify").unwrap().card_at(0), vec!["+5% Ability Strength"]);
 }
@@ -316,7 +316,7 @@ fn the_artifact_seats_five_known_mods_once_and_one_arcane() {
         assert!(focus_school(&m.school).is_some(), "{}: school {}", m.id, m.school);
         if let Some(b) = &m.bonus {
             assert!(b.per == "unique_school" || focus_school(&b.per).is_some(), "{}: bonus per {}", m.id, b.per);
-            assert_eq!(m.description.lines().count(), 2, "{}: the bonus is the second line", m.id);
+            assert_eq!(m.description.shown().lines().count(), 2, "{}: the bonus is the second line", m.id);
         }
     }
 

@@ -495,7 +495,7 @@ pub enum EvoEffect {
     /// It stays OFF the ratchet in `unmodeled_effects` — nothing about this
     /// engine will ever close it — and ON the page, which is where the
     /// difference is for.
-    OutOfScope { clause: String, reason: Scope },
+    OutOfScope { clause: crate::prose::Prose, reason: Scope },
     /// THE GAME DOES NOT DO IT. The card states a clause, the clause pays
     /// nothing when measured, and a hotfix restores it.
     ///
@@ -510,7 +510,7 @@ pub enum EvoEffect {
     /// The `clause` is the effect's own kind, so the line names WHICH half of
     /// a two-clause perk is dead — Carnage Reign's +60 base damage works and
     /// its "+33% per Status Type" does not (MEASUREMENTS M49).
-    LiveBug { clause: String, note: String },
+    LiveBug { clause: crate::prose::Prose, note: String },
     /// A clause that QUALIFIES a neighbouring effect rather than being one —
     /// "Stacks up to 4x" on a card whose stacking bonus is the effect above it.
     ///

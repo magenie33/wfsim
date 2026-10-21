@@ -29,6 +29,20 @@ check("...a grip moves every kitgun", {"gaze_primary", "catchmoon_primary"} <= (
 check("mechanics move everything", w(["engine/src/fight/run.rs", "data/weapons/archgun/arbucep.yaml"]) is None)
 check("...and so does shared data", w(["data/mods/serration.yaml"]) is None)
 
+# PROSE MOVES NO ENGINE (engine/src/prose.rs), and nothing else is taken for it.
+lean = lambda t: b.without_prose(b.lean_yaml(t))
+card = "id: x\ndescription: +X% Damage\neffects:\n  - kind: damage\n    value: 0.9\n"
+check("a reworded description moves nothing", lean(card) == lean(card.replace("+X% Damage", "+X% Base Damage")))
+check("...nor one written as a block", lean(card) == lean(card.replace("description: +X% Damage", "description: >\n  +X% Base\n  Damage")))
+check("a number beside it still moves it", lean(card) != lean(card.replace("0.9", "1.0")))
+item = "effects:\n  - clause: Gains X\n    kind: damage\n    value: 0.9\n"
+check("a prose key opening a list item takes only itself", lean(item) == lean(item.replace("Gains X", "Gets X"))
+      and lean(item) != lean(item.replace("damage", "crit")))
+check("a prose word inside another key's block is kept",
+      lean("note: |\n  description: a\nvalue: 1\n") != lean("note: |\n  description: b\nvalue: 1\n"))
+check("...and inside a flow collection", lean("x: [a,\n  description: a]\n") != lean("x: [a,\n  description: b]\n"))
+check("a key that only starts like one is kept", lean("descriptions: a\n") != lean("descriptions: b\n"))
+
 files = b.engine_files()
 with tempfile.TemporaryDirectory() as d:
     b.ENGINES_DIR = Path(d)

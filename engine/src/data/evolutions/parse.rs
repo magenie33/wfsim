@@ -15,7 +15,7 @@ pub(super) struct EvoFile {
     /// Verbatim in-game/wiki effect text (evolutions have no ranks, so no
     /// X templating).
     #[serde(default)]
-    pub(super) description: Option<String>,
+    pub(super) description: Option<crate::prose::Prose>,
     /// Wiki-flagged non-functional evolutions apply NOTHING.
     #[serde(default)]
     pub(super) currently_broken: bool,
@@ -79,7 +79,7 @@ pub(super) fn effect(v: &Value) -> Option<EvoEffect> {
     // belongs to the perk's card rather than to the effect's arithmetic.
     if let Some(note) = v.get("live_bug").and_then(Value::as_str) {
         return Some(EvoEffect::LiveBug {
-            clause: kind.replace('_', " "),
+            clause: kind.replace('_', " ").into(),
             note: note.to_string(),
         });
     }
@@ -431,11 +431,7 @@ pub(super) fn effect(v: &Value) -> Option<EvoEffect> {
                 return Some(EvoEffect::Inert("out_of_scope without a known `reason:`".into()));
             };
             EvoEffect::OutOfScope {
-                clause: v
-                    .get("clause")
-                    .and_then(Value::as_str)
-                    .unwrap_or("(no clause)")
-                    .to_string(),
+                clause: crate::prose::Prose::read(v, "clause").unwrap_or_else(|| "(no clause)".into()),
                 reason,
             }
         }

@@ -47,7 +47,7 @@ pub struct ArcaneDef {
     /// two directories was never an option.
     pub seats: Vec<&'static str>,
     /// Verbatim in-game text with rank-varying numbers as `X`.
-    pub description: String,
+    pub description: crate::prose::Prose,
     /// WHAT THIS ARCANE DOES IN THE LIVE GAME THAT DE DID NOT MEAN IT TO.
     ///
     /// A FOURTH admission, and the only one that is not a shortfall: the sim
@@ -414,7 +414,7 @@ impl ArcaneDef {
                 | ArcEffect::Inert(_) | ArcEffect::Elsewhere(_) => {}
             }
         }
-        let xs = count_x(&self.description);
+        let xs = count_x(self.description.shown());
         // Outburst: cc + cd share the single "by X% per Combo" number.
         while vals.len() > xs {
             let before = vals.len();
@@ -424,7 +424,7 @@ impl ArcaneDef {
             }
         }
         // Cascadia Flare: the trailing stack cap is per_stack × max_stacks.
-        if vals.len() + 1 == xs && self.description.contains("Stacks up to X%") {
+        if vals.len() + 1 == xs && self.description.shown().contains("Stacks up to X%") {
             if let Some(ArcEffect::Buff { scale, max_stacks, .. }) = self
                 .effects
                 .iter()
@@ -433,7 +433,7 @@ impl ArcaneDef {
                 vals.push(at(scale) * *max_stacks as f64);
             }
         }
-        fill_x(&self.description, &vals)
+        fill_x(self.description.shown(), &vals)
     }
 
     /// Display lines at a rank — OUR statement of what the model computes

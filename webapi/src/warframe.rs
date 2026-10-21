@@ -58,7 +58,7 @@ pub fn warframe_catalog_json() -> Value {
                 a.warframe_mods.get(&m.id)
             },
             "description": m.description,
-            "effects": m.description.lines().collect::<Vec<_>>(),
+            "effects": m.description.shown().lines().collect::<Vec<_>>(),
             "desc_ranks": (0..=m.max_rank).map(|r| m.card_at(r).join("\n")).collect::<Vec<_>>(),
             "tags": tags(&m.tags),
         })).collect::<Vec<_>>(),
@@ -69,7 +69,7 @@ pub fn warframe_catalog_json() -> Value {
             "max_rank": x.max_rank,
             "image": a.warframe_arcanes.get(&x.id),
             "description": x.description,
-            "effects": x.description.lines().collect::<Vec<_>>(),
+            "effects": x.description.shown().lines().collect::<Vec<_>>(),
             "desc_ranks": (0..=x.max_rank).map(|r| x.card_at(r).join("\n")).collect::<Vec<_>>(),
             "tags": tags(&x.tags),
             // WHAT A FIGHT DOES WITH IT, so the simulator offers the one setting
@@ -118,7 +118,7 @@ pub fn warframe_catalog_json() -> Value {
             "max_rank": m.max_rank,
             "bonus": m.bonus.as_ref().map(|b| json!({ "per": b.per })),
             "image": a.artifact_mods.get(&m.id),
-            "effects": m.description.lines().collect::<Vec<_>>(),
+            "effects": m.description.shown().lines().collect::<Vec<_>>(),
             "url": m.url,
         })).collect::<Vec<_>>(),
         "artifact_arcanes": wf::artifact_arcanes().iter().map(|x| json!({
@@ -127,7 +127,7 @@ pub fn warframe_catalog_json() -> Value {
             "rarity": x.rarity,
             "max_rank": x.max_rank,
             "image": a.artifact_arcanes.get(&x.id),
-            "effects": x.description.lines().collect::<Vec<_>>(),
+            "effects": x.description.shown().lines().collect::<Vec<_>>(),
             "url": x.url,
         })).collect::<Vec<_>>(),
         // **THE SCHOOL A BUILD THAT LINKS NOTHING IS READ AS** — the engine's

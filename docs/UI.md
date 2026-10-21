@@ -922,7 +922,7 @@ what this line just wrote over it.
 **A RUN IS A RECORD, WRITTEN ONCE** (`35-results.js`): the build and the fight
 as they were (`build`, `fight`, and `key`, which joins them), the engine that
 measured them (`engine`: a digest of the code and data a number is computed
-from, translations and comments excluded — `engine_id` in the site build), which preset and scenario it came
+from, translations, prose and comments excluded — `engine_id` in the site build), which preset and scenario it came
 from, and the summary `r`. A preset holds no result: "this build's number" is
 its newest record (`resultLatest`), so a second run does not erase the first.
 Every run is recorded; each build keeps its newest `RESULT_KEEP` unpinned

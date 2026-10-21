@@ -111,12 +111,12 @@ pub struct Benchmark {
     /// A LIST, one claim per entry: it translates as sentences rather than as
     /// a wall, and the page can lay it out.
     #[serde(default)]
-    pub rules: Vec<String>,
+    pub rules: Vec<crate::prose::Prose>,
     /// WHAT THIS RULER STANDS FOR, in one sentence of idea and no detail — on a
     /// `standard_` ruler, what the prefix rests on. The detail belongs in
     /// `rules`, one claim each. Consumed data: the page renders it above them.
     #[serde(default)]
-    pub standard: String,
+    pub standard: crate::prose::Prose,
     /// What a build must look like to be admitted. Absent = admit anything
     /// legal, which is a real answer for a benchmark that wants one.
     #[serde(default)]
@@ -276,13 +276,13 @@ fn expand_ladder(b: Benchmark, axes: &[Axis]) -> Result<Vec<Benchmark>, String> 
             }
             let hole = format!("{{{}}}", axis.id);
             c.name = c.name.replace(&hole, &r.short);
-            c.standard = c.standard.replace(&hole, &r.long);
-            c.rules = c.rules.iter().map(|t| t.replace(&hole, &r.long)).collect();
+            c.standard = c.standard.shown().replace(&hole, &r.long).into();
+            c.rules = c.rules.iter().map(|t| t.shown().replace(&hole, &r.long).into()).collect();
         }
         if !c.cell.is_empty() {
             c.primary = false;
         }
-        for text in std::iter::once(&c.name).chain(&c.rules).chain([&c.standard]) {
+        for text in std::iter::once(c.name.as_str()).chain(c.rules.iter().map(|t| t.shown())).chain([c.standard.shown()]) {
             if let Some(hole) = unfilled(text) {
                 return Err(format!("says `{{{hole}}}`, which is not an axis it spans"));
             }
@@ -698,7 +698,7 @@ mod tests {
             } else {
                 format!("{spacing}")
             };
-            let prose = format!("{} {}", b.name, b.rules.join(" "));
+            let prose = format!("{} {}", b.name, b.rules.iter().map(|r| r.shown()).collect::<Vec<_>>().join(" "));
             assert!(
                 prose.contains(&format!("{token} m")) || prose.contains(&format!("{token} metres")),
                 "{id}: the grid is {spacing} m and neither the name nor the rules say so.\n  \
@@ -714,7 +714,7 @@ mod tests {
                 "{id}: the grid is {cols}x{rows} and the name does not say so.\n  name:  {}",
                 b.name
             );
-            let body = b.rules.join(" ");
+            let body = b.rules.iter().map(|r| r.shown()).collect::<Vec<_>>().join(" ");
             assert!(
                 body.contains(&format!("{cols} by {rows}")) && body.contains(&format!(" {} ", cols * rows)),
                 "{id}: the grid is {cols} by {rows}, {} bodies, and the rules do not say both.",
@@ -767,7 +767,7 @@ mod tests {
         assert_eq!(get("squad_size").and_then(|v| v.as_u64()), Some(6));
         assert_eq!(get("metric").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("kpm"), "a field no rung sets is the file's");
         assert_eq!(c.name, "Lv 1000 Icebind · half heads");
-        assert_eq!(c.rules, ["one target at level 1000 in The Icebind, half on the head"]);
+        assert_eq!(c.rules.iter().map(|r| r.shown()).collect::<Vec<_>>(), ["one target at level 1000 in The Icebind, half on the head"]);
         assert!(cells[0].primary && cells[0].cell.is_empty() && cells[0].name == "Lv 9999 SP · all heads");
 
         let why = |r| expand_ladder(r, &axes).expect_err("refused");
@@ -818,7 +818,7 @@ mod tests {
                 let first = &axes().iter().find(|a| &a.id == id).expect("validated at load").values[0];
                 // Its words, and every number it sets standing alone.
                 let numbers: Vec<String> = first.set.values().filter_map(|v| v.as_u64()).map(|n| n.to_string()).collect();
-                for line in std::iter::once(&b.name).chain(&b.rules).chain([&b.standard]) {
+                for line in std::iter::once(b.name.as_str()).chain(b.rules.iter().map(|r| r.shown())).chain([b.standard.shown()]) {
                     let words: Vec<&str> = line.split(|c: char| !c.is_ascii_alphanumeric()).collect();
                     let written = [&first.short, &first.long].into_iter().find(|w| line.contains(w.as_str()))
                         .or_else(|| numbers.iter().find(|n| words.contains(&n.as_str())));

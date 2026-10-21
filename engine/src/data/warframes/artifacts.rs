@@ -16,7 +16,7 @@ pub struct ArtifactMod {
     #[serde(default)]
     pub internal_name: Option<String>,
     /// The card at max rank; a card with a `bonus` states it on the last line.
-    pub description: String,
+    pub description: crate::prose::Prose,
     #[serde(default)]
     pub bonus: Option<ArtifactBonus>,
     #[serde(default, rename = "source", deserialize_with = "source_url")]
@@ -54,7 +54,7 @@ impl ArtifactMod {
 
     /// The card with `seated` on the artifact: its last line is the bonus paid out.
     pub fn card_with(&self, seated: &[&ArtifactMod]) -> Vec<String> {
-        let mut lines: Vec<String> = self.description.lines().map(str::to_string).collect();
+        let mut lines: Vec<String> = self.description.shown().lines().map(str::to_string).collect();
         if let (Some(b), Some(last)) = (&self.bonus, lines.last_mut()) {
             let total = b.value * f64::from(self.bonus_count(seated));
             *last = format!("+{total}{} {}", b.unit, b.stat);
@@ -90,7 +90,7 @@ pub struct ArtifactArcane {
     pub max_rank: u32,
     #[serde(default)]
     pub internal_name: Option<String>,
-    pub description: String,
+    pub description: crate::prose::Prose,
     #[serde(default, rename = "source", deserialize_with = "source_url")]
     pub url: Option<String>,
 }

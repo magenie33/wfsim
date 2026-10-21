@@ -16,7 +16,7 @@ pub struct WarframeDef {
     pub polarities: Vec<String>,
     pub aura_polarity: Option<String>,
     pub exilus_polarity: Option<String>,
-    pub passive: String,
+    pub passive: crate::prose::Prose,
     /// What the passive grants, as tags.
     pub passive_tags: Vec<TagGrant>,
     /// A passive that is a meter on melee damage, simulated (`crate::data::rage`).
@@ -82,7 +82,7 @@ pub(super) struct RawFrame {
     #[serde(default)]
     pub(super) exilus_polarity: Option<String>,
     #[serde(default)]
-    pub(super) passive: String,
+    pub(super) passive: crate::prose::Prose,
     #[serde(default)]
     pub(super) passive_tags: Vec<RawTag>,
     #[serde(default)]

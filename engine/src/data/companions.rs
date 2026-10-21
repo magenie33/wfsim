@@ -83,7 +83,7 @@ pub struct CompanionMod {
     /// A behaviour the companion runs, as against a stat on a card.
     pub precept: bool,
     pub internal_name: Option<String>,
-    pub description: String,
+    pub description: crate::prose::Prose,
     /// The card's lines, verbatim.
     pub effects: Vec<String>,
     /// WHAT THE FIGHT RUNS, at max rank: the one kind of line that pays.
@@ -133,7 +133,7 @@ struct RawMod {
     precept: bool,
     #[serde(default)]
     internal_name: Option<String>,
-    description: String,
+    description: crate::prose::Prose,
     effects: Vec<RawEffect>,
     #[serde(default)]
     source: RawSource,

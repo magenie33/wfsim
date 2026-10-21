@@ -50,7 +50,7 @@ fn effects_are_listed_in_the_order_the_card_says_them() {
     for (path, text) in crate::data::files_under("mods/") {
         let Ok(mf) = serde_norway::from_str::<ModFile>(text) else { continue };
         let Some(desc) = mf.description.as_ref() else { continue };
-        let hay = desc.to_lowercase();
+        let hay = desc.shown().to_lowercase();
         let mut seen: Vec<(usize, String, usize)> = Vec::new(); // (position, phrase, effect index)
         for (i, e) in mf.effects.iter().enumerate() {
             if let Some((at, p)) = spoken_at(e, &hay) {

@@ -12,7 +12,7 @@ pub struct EvolutionDef {
     /// Wiki `File:` name for the evolution's icon.
     pub icon: Option<String>,
     /// Verbatim effect text — what the cards display (like mods/arcanes).
-    pub description: String,
+    pub description: crate::prose::Prose,
     pub currently_broken: bool,
     /// What this perk DECLARES about feeding the weapon's GunCO term, or
     /// `None` for "nobody has said" — which is the common case and means the
@@ -44,7 +44,7 @@ pub struct EvolutionDef {
     /// Owner: anything that differs from what the game DISPLAYS is
     /// to be noted. It rides beside the effect rather than short-circuiting it,
     /// which is the whole difference from `live_bug` in the same position.
-    pub(super) misprints: Vec<String>,
+    pub(super) misprints: Vec<crate::prose::Prose>,
     pub(super) effects: Vec<EvoEffect>,
 }
 
@@ -206,13 +206,13 @@ fn parse(path: &str, text: &str) -> EvolutionDef {
     // …AND THE CLAUSES WHOSE CARD IS WRONG. Read off the same effect
     // maps and kept beside them: `misprint:` names the disagreement and
     // changes nothing about how the effect is loaded.
-    let misprints: Vec<String> = ef
+    let misprints: Vec<crate::prose::Prose> = ef
         .effects
         .iter()
         .filter_map(|v| {
-            let note = v.get("misprint").and_then(Value::as_str)?;
+            let note = crate::prose::Prose::read(v, "misprint")?;
             let kind = v.get("kind").and_then(Value::as_str).unwrap_or("");
-            Some(format!("{} — {note}", kind.replace('_', " ")))
+            Some(format!("{} — {}", kind.replace('_', " "), note.shown()).into())
         })
         .collect();
     EvolutionDef {

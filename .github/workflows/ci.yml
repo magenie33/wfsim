@@ -236,6 +236,8 @@ jobs:
         run: node scripts/check_board_sync.mjs
       - name: Every item on a fight's path is metered
         run: node scripts/check_gas.mjs
+      - name: Prose is never read where a number is computed
+        run: node scripts/check_prose.mjs
       - name: The clients' contract states the values the code holds
         run: node scripts/check_clients_doc.mjs
       - name: A dial is set within its bounds, logged, and told to the clients

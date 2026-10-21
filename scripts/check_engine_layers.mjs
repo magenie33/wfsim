@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 // modules; the rest are named here one by one.
 const LAYERS = [
   // RULES: primitives and the game's formulas, pure functions over numbers.
-  ["rules", "naming alive"],
+  ["rules", "naming alive prose"],
   // MODEL: the vocabulary — what a card, a buff, a weapon IS.
   ["model", "model"],
   // DATA: the catalogs, yaml read into the vocabulary.

@@ -53,7 +53,7 @@ impl EvolutionDef {
             .iter()
             .filter_map(|e| match e {
                 EvoEffect::OutOfScope { clause, reason } => {
-                    Some(format!("{clause} — {}", reason.why()))
+                    Some(format!("{} — {}", clause.shown(), reason.why()))
                 }
                 _ => None,
             })
@@ -105,7 +105,7 @@ impl EvolutionDef {
     /// live bugs: a perk whose card misstates a threshold is fully modelled and
     /// fully working, and filing it with the broken ones would tell a reader to
     /// avoid the one thing they should be told to trust.
-    pub fn misprints(&self) -> &[String] {
+    pub fn misprints(&self) -> &[crate::prose::Prose] {
         &self.misprints
     }
 
@@ -113,7 +113,7 @@ impl EvolutionDef {
         self.effects
             .iter()
             .filter_map(|e| match e {
-                EvoEffect::LiveBug { clause, note } => Some(format!("{clause} — {note}")),
+                EvoEffect::LiveBug { clause, note } => Some(format!("{} — {note}", clause.shown())),
                 _ => None,
             })
             .collect()
@@ -455,14 +455,14 @@ impl EvolutionDef {
                     format!("{} (no single-target DPS effect)", what.replace('_', " "))
                 }
                 EvoEffect::OutOfScope { clause, reason } => {
-                    format!("{clause} — {}", reason.why())
+                    format!("{} — {}", clause.shown(), reason.why())
                 }
                 // NAMED AS DEAD ON THE CARD ITSELF. A reader comparing two
                 // tier-2 options must see which half of this one pays nothing
                 // — printing it like a working clause is the one thing this
                 // line must never do.
                 EvoEffect::LiveBug { clause, note } => {
-                    format!("{clause} — DOES NOT WORK IN GAME: {note}")
+                    format!("{} — DOES NOT WORK IN GAME: {note}", clause.shown())
                 }
                 // Said as what it is — a cap on the line above, not a line of
                 // its own claiming the perk does less than it does.

@@ -42,7 +42,7 @@ fn brain_storm_and_skull_shots_are_a_chance_for_infinite_ammo() {
 /// and their cards say the new numbers.
 #[test]
 fn enough_for_everyone_and_crimson_overture_read_the_new_numbers() {
-    let text = |id: &str| crate::data::evolutions::get(id).unwrap_or_else(|| panic!("{id}")).description.clone();
+    let text = |id: &str| crate::data::evolutions::get(id).unwrap_or_else(|| panic!("{id}")).description.shown().to_string();
     for id in ["bronco_enough_for_everyone", "bronco_prime_enough_for_everyone"] {
         assert!(text(id).starts_with("+75% Ammo Efficiency"), "{id}: {}", text(id));
     }

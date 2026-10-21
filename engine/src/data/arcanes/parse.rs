@@ -28,7 +28,7 @@ pub(super) struct ArcaneFile {
     pub(super) perk: Option<String>,
     /// Verbatim in-game text, rank-varying numbers as `X` (schema).
     #[serde(default)]
-    pub(super) description: Option<String>,
+    pub(super) description: Option<crate::prose::Prose>,
     /// See [`ArcaneDef::live_bugs`].
     #[serde(default)]
     pub(super) live_bugs: Vec<String>,
