@@ -478,6 +478,11 @@ jobs:
         run: bash scripts/purge_queue.sh --self-test
       - name: A row no build can pay is forgotten, and nothing else
         run: bash scripts/purge_orphans.sh --self-test
+      # A CANCEL NAMES ITS ROWS, BOUND, AND NEVER WAITS ON A SYNC: the selector
+      # and the statements are built without a database; check_pg_scripts runs
+      # the cancel itself.
+      - name: A cancel names its rows and skips what a sync holds
+        run: bash scripts/cancel_queue.sh --self-test
       - name: Every ruler's walk runs once, at once, its log in roster order
         run: bash scripts/each_ruler.sh --self-test
       - name: ...and what intake made of it reaches the library

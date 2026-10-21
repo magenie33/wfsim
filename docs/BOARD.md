@@ -270,6 +270,19 @@ measuring" is otherwise a floor no run can lower. A fight that RAN and dealt
 nothing is a measurement and is banked as 0 (the entry line keeps it off the
 page); only a fight that did not run is refused.
 
+**AN ORDER IS CANCELLED WITH `cancel_queue.sh`, NEVER A BARE DELETE.**
+`--all`, `--batch <prefix>` and/or `--ruler <id>` name the queue rows
+(`--dry-run` counts them). Each row was asked of the factory, so the cancel
+deletes the rows, withdraws each board demand whose row no batch owes any more
+(`board_owed`), and withdraws each question left with no live demand. It
+works in slices of `CANCEL_SLICE` (20 000) demands, the head of the factory's
+order first, each write its own transaction taking rows with SKIP LOCKED so a
+sync is never waited on; a final pass takes what a lock skipped and the queue
+rows no open question asks for. A queue row deleted alone leaves its question
+open at the head of the order, where every pick withdraws it at a pack's worth
+an ask. A row the library still owes is queued again by the next
+reconciliation, so a cancel that should hold stops that writer first.
+
 **AND EVERY HOUR, WHAT WAS MEASURED THREE DAYS AGO IS ASKED FOR AGAIN** — the
 `refresh` producer (`queue.yml`, `wfsim-board --queue-older`). Nothing here
 retires a fact on its own: a board is a claim about what the code computes
@@ -1073,7 +1086,11 @@ questions, never a heavier client.
   still takes the most, but a small one is never starved while work is short.
   While work is plentiful none of this runs. A question
   someone waits on, and a riven gain, goes ALONE, to a computer free now. A row
-  no longer owed is withdrawn where it is found. A CLIENT THAT ASKS IS WORKING
+  no longer owed is withdrawn where it is found, and A PICK THAT FOUND DEAD ROWS
+  PICKS AGAIN (`PICK_ROUNDS`, eight picks, under the one lease) until the pack
+  is full or a pick finds none: rows cancelled at the head of the order cost an
+  ask a slower answer, never an empty one, and each ask withdraws a pack's
+  worth of them. The official machines' claim does the same. A CLIENT THAT ASKS IS WORKING
   ON NOTHING: a browser computes in one tab (a Web Lock) and asks only between
   packs, so whatever its id still holds was lost — a crash, a reload, an old
   page — and is taken back as it asks, never waited out. UNLESS IT ASKS AHEAD:

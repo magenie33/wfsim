@@ -306,7 +306,11 @@ The board's pipeline scripts themselves, not their stubs, on an on-disk PGlite
 through `PG_URL` (`scripts/db.sh`, `scripts/db.mjs`): the inbox read, a build
 shipped twice as one row, a batch asked for twice counting both, the queue read
 in order, a fact shipped and overwritten with its row spent, the facts and the
-library read, an orphan and a dead ruler purged. Bites: an upsert's unqualified
+library read, an orphan and a dead ruler purged, and a cancel
+(`cancel_queue.sh`) by batch and of everything: its queue rows deleted, the
+board demands and questions no row is owed for any more withdrawn, a row
+another batch still owes kept, a row never asked deleted, and a cancel naming
+nothing refused. Bites: an upsert's unqualified
 column, which Postgres calls ambiguous — it fails three of them.
 
 ## `check_dials`
@@ -348,8 +352,11 @@ docs/BOARD.md §"The sync in the database").
   first handed out and an answer by its place, not its number. The books hold
   rows two producers ask, rows the scorer stops owing, a row someone waits on,
   a row a riven chat asks too, clients on older engines, an account over its
-  fair share, held and claimed devices, and clients that name a row done and
-  held at once.
+  fair share, held and claimed devices, clients that name a row done and
+  held at once, and a dozen rows cancelled at the head of the order.
+- A sync behind four packs' worth of rows cancelled at the head is handed the
+  pack it is handed with none cancelled, none of them a cancelled row, through
+  either path. Bites: a pack that picks once — it is handed nothing.
 - The runs went through the call, and some came back to the worker (WS001).
 - Through the procedure a sync with results, renewals, states and points is at
   most two waits on a database; through the statements it is more.
@@ -540,7 +547,10 @@ turn, and no honest witness is refused. Then the production cases one each:
 nine answered-out questions do not starve a tenth, three answers differing
 only in work are an engine fault and refuse nobody, two producers asking one
 thing share one computation credited once, a fact is told at once to a later
-ask and opens again on another engine, a withdrawn ask is handed to nobody.
+ask and opens again on another engine, a withdrawn ask is handed to nobody,
+and one pack — and the official machines' claim — behind four packs' worth of
+cancelled rows is a full one of the live rows behind them, every dead row its
+picks found withdrawn.
 A pack's answers sent together, in two parts, make every state, fact, credit
 and hour that each alone makes, and two settlings of one question at once pay
 each witness once. The watchdog says a stalled kind, a dispute nobody settled,

@@ -66,7 +66,7 @@ const post = (env, route, path, body, ip = "") => route(new Request(`https://x${
   headers: { authorization: "Bearer ft", ...(ip ? { "cf-connecting-ip": ip } : {}) }, body: JSON.stringify(body) }), env, path).then((r) => r.json());
 
 /// THE SAME BOOKS IN EVERY WORLD: rows owed and asked, some waited on, one asked by a riven chat too.
-async function books(w, rand, n) {
+async function books(w, rand, n, dead = 0) {
   const batch = "arrivals-2026-10-14";
   await w.L.run("INSERT INTO batches (id, at, why, total) VALUES (?, ?, 'test', 0)", batch, batch);
   const ids = [];
@@ -89,6 +89,14 @@ async function books(w, rand, n) {
   await post(w.env, boardTasksRoute, "/api/board/ask", { batch: again, rows: some });
   // …AND A FEW LEFT OPEN WITH EVERY DEMAND WITHDRAWN, which a pack must withdraw.
   await w.L.run("UPDATE demands SET state = 'withdrawn' WHERE ref IN (SELECT ref FROM demands ORDER BY ref LIMIT 3)");
+  if (dead) await cancelHead(w, dead);
+}
+/// ORDERS CANCELLED AT THE HEAD: the queue rows of the first `n` open questions
+/// in the order deleted, their demands and questions left as they were.
+async function cancelHead(w, n) {
+  await w.L.run(`DELETE FROM queue WHERE (build_id, ruler, mode) IN (SELECT d.payload::jsonb ->> 'identity', d.payload::jsonb ->> 'ruler',
+      d.payload::jsonb ->> 'mode' FROM demands d WHERE d.state = 'live' AND d.question IN (SELECT id FROM questions WHERE state = 'open'
+      ORDER BY waits DESC, due_at, id LIMIT ?))`, n);
 }
 
 const SORT = {
@@ -131,7 +139,7 @@ async function run(seed, settle, steps) {
   const rand = rng(seed), pick = (xs) => xs[Math.floor(rand() * xs.length)];
   T = Date.parse("2026-10-14T06:00:00.000Z");
   const worlds = [await world(0, settle), await world(1, settle)], names = [namer(), namer()];
-  for (const w of worlds) await books(w, rng(seed), 24);
+  for (const w of worlds) await books(w, rng(seed), 24, 12);
   // A ROW SOMEONE WAITS ON goes alone; a row a riven chat asks too is judged in JS.
   for (const w of worlds) {
     await w.L.run("UPDATE questions SET waits = 1 WHERE id = (SELECT id FROM questions ORDER BY id OFFSET 3 LIMIT 1)");
@@ -214,6 +222,29 @@ async function run(seed, settle, steps) {
 console.log("the procedure and the statements, on random books");
 for (const settle of [0, 1]) for (const seed of [11, 29, 47]) await run(seed, settle, 160);
 check(`the runs went through the call (${CALLS.made}) and, where it needs JS, through the worker (${CALLS.js})`, CALLS.made > 500 && CALLS.js > 0);
+
+// A SYNC BEHIND MANY CANCELLED ROWS is handed the pack it would have been
+// handed with none cancelled, of live rows alone, on either path.
+console.log("\ncancelled rows at the head");
+for (const proc of [1, 0]) {
+  const handed = async (dead) => {
+    T = Date.parse("2026-10-15T06:00:00.000Z");
+    forgetDials();
+    const w = await world(proc, 1);
+    await books(w, rng(5), 60);
+    const owedNow = async () => new Set((await w.L.all("SELECT build_id, ruler, mode FROM queue")).map((r) => `${r.build_id}|${r.ruler}|${r.mode}`));
+    const before = (await owedNow()).size;
+    await cancelHead(w, dead);
+    const owed = await owedNow();
+    const r = await post(w.env, syncRoute, "/api/board/sync", { verifier: DEVICES[3], engine: "e1", protocol: 8,
+      consent: { v: 1, at: "2026-10-08T08:00:00.000Z" }, lanes: 4, want_ms: 600_000, pace_ms: 60_000 }, IPS[3]);
+    const tasks = r.pack ? r.pack.tasks : [];
+    return { n: tasks.length, dead: tasks.filter((t) => !owed.has(`${t.identity}|${t.ruler}|${t.mode}`)).length, cancelled: before - owed.size };
+  };
+  const none = await handed(0), many = await handed(40);
+  check(`${proc ? "through the procedure" : "through the statements"}, a sync behind ${many.cancelled} cancelled rows is handed a full pack (${many.n} of ${none.n}), none of them cancelled`,
+    none.n > 0 && many.cancelled > 3 * none.n && many.n === none.n && many.dead === 0, JSON.stringify({ none, many }));
+}
 
 console.log("\nround trips");
 async function measured(proc) {

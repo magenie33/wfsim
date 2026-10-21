@@ -223,17 +223,53 @@ console.log("\nthe cases that failed in production");
   const id = await questionId("simulate", { row: 2 });
   check("...which is withdrawn there", (await db.get("SELECT state FROM questions WHERE id = ?", id)).state === "withdrawn");
   // AN OPEN QUESTION WITH NO LIVE DEMAND — its demands withdrawn, the question
-  // left open — heads the order: a pack that picks it withdraws it, and the next
-  // pack is handed the row behind it rather than the same dead head for ever.
+  // left open — heads the order: the pack that picks it withdraws it and is
+  // handed the row behind it, rather than nothing for ever.
   await f.demand(env, { producer: "p", ref: "orphan", verb: "simulate", request: { row: 4 }, due_in_ms: 1000 }, "e1", NOW);
   await f.demand(env, { producer: "p", ref: "behind", verb: "simulate", request: { row: 5 }, due_in_ms: 2000 }, "e1", NOW);
   await db.run("UPDATE demands SET state = 'withdrawn' WHERE ref = 'orphan'");
   const orphan = await questionId("simulate", { row: 4 });
-  await f.nextPack(env, { device: "a" }, "e1", { n: 1, lease_ms: 60_000 }, NOW);
   const after = await f.nextPack(env, { device: "a" }, "e1", { n: 1, lease_ms: 60_000 }, NOW);
-  check("an open question no demand asks for any more is withdrawn by the pack that picks it, and the next pack is the row behind",
+  check("an open question no demand asks for any more is withdrawn by the pack that picks it, which is the row behind",
     (await db.get("SELECT state FROM questions WHERE id = ?", orphan)).state === "withdrawn"
       && after && after.questions.length === 1 && after.questions[0].demands[0].ref === "behind", JSON.stringify(after));
+}
+{
+  // ORDERS CANCELLED AT THE HEAD (`DELETE FROM queue`): three packs' worth of
+  // board rows no longer owed, and orphans with every demand withdrawn, ahead
+  // of the live rows. One ask withdraws what its picks find and is handed a
+  // full pack of live rows; so is the official machines' claim.
+  const { BOARD_PRODUCERS, rowRef } = await import("../worker/board_tasks.js");
+  const db = await testDb("library"), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: { ...PRODUCERS, ...BOARD_PRODUCERS } });
+  const board = Object.keys(BOARD_PRODUCERS)[0], N = 5;
+  await db.run("INSERT INTO batches (id, at, why, total) VALUES ('b', 'x', 'test', 0)");
+  const row = (i) => ({ identity: `r${String(i).padStart(3, "0")}`, ruler: "sst", mode: "base" });
+  const asks = [];
+  for (let i = 0; i < 4 * N + 2 * N; i++) {
+    const r = row(i);
+    await db.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('b', ?, ?, ?)", r.identity, r.ruler, r.mode);
+    asks.push({ producer: board, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate", request: r, due_in_ms: 1000 + i, payload: r });
+  }
+  await f.demandAll(env, asks, "e1", NOW);
+  await db.run("DELETE FROM queue WHERE build_id < ?", row(3 * N).identity);
+  await db.run("UPDATE demands SET state = 'withdrawn' WHERE ref IN (SELECT ref FROM demands ORDER BY ref OFFSET ? LIMIT ?)", 3 * N, N);
+  const live = asks.slice(4 * N, 5 * N).map((a) => a.ref);
+  const p = await f.nextPack(env, { device: "a" }, "e1", { n: N, lease_ms: 60_000 }, NOW);
+  const got = p ? p.questions.map((q) => q.demands[0].ref) : [];
+  check("a pack asked behind four packs' worth of cancelled rows is a full pack of the live ones",
+    JSON.stringify(got) === JSON.stringify(live), JSON.stringify(got));
+  check("...and every dead row its picks found is withdrawn",
+    (await db.get("SELECT count(*) AS n FROM questions WHERE state = 'withdrawn'")).n === 4 * N
+      && (await db.get("SELECT count(*) AS n FROM demands WHERE state = 'live'")).n === 2 * N);
+  // …THE PACK'S ROWS CANCELLED TOO, its lease run out: the official machines'
+  // claim past its deadline picks past them to the rows still owed.
+  await db.run("DELETE FROM queue WHERE build_id < ?", row(5 * N).identity);
+  const claimed = await f.claim(env, { device: "official" }, { states: ["open"], max: N }, "e1", NOW + 3_600_000);
+  const refs = claimed.map((t) => t.demands.map((x) => x.ref).join());
+  check("the official machines' claim behind cancelled rows is the live ones, and the dead are withdrawn",
+    JSON.stringify(refs) === JSON.stringify(asks.slice(5 * N).map((a) => a.ref))
+      && (await db.get("SELECT count(*) AS n FROM questions WHERE state = 'withdrawn'")).n === 5 * N, JSON.stringify(refs));
 }
 {
   const db = await testDb("library"), env = { LIBRARY: db };

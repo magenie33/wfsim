@@ -3,7 +3,7 @@
 // worker/pg — an arrival read from the inbox, shipped as a build, asked for,
 // read back from the queue, measured, its fact shipped and the row spent, the
 // facts and the library read, a backup restored, the orphans and dead rulers
-// purged — and each table must hold what the pass says it wrote.
+// purged, a batch cancelled — and each table must hold what the pass says it wrote.
 //   npm ci --prefix scripts/pg && node scripts/check_pg_scripts.mjs
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync, chmodSync } from "node:fs";
@@ -30,7 +30,7 @@ async function run(script, ...args) {
   return r.status;
 }
 
-const schema = ["schema.sql", "library.sql"].map((f) => readFileSync(new URL(`worker/pg/${f}`, ROOT), "utf8")).join("\n");
+const schema = ["schema.sql", "library.sql", "sync.sql"].map((f) => readFileSync(new URL(`worker/pg/${f}`, ROOT), "utf8")).join("\n");
 {
   const { PGlite } = await import("./pg/node_modules/@electric-sql/pglite/dist/index.js");
   const pg = new PGlite(join(dir, "db"));
@@ -123,6 +123,42 @@ process.env.WFSIM_BOARD = file("rulers.sh","#!/bin/sh\necho standard_single_targ
 chmodSync(process.env.WFSIM_BOARD, 0o755);
 check("a ruler the repo no longer has is purged", await run("purge_queue.sh") === 0
   && (await query("SELECT count(*) AS n FROM queue"))[0].n === 0);
+// A CANCEL WITHDRAWS WHAT WAS ASKED, not only the queue rows: b1 is cancelled
+// whole, b2 stays owed by its refresh row, b3 is not named, b4 was never asked.
+{
+  const at = "2026-10-02T00:00:00.000Z";
+  for (const [batch, b] of [["arrivals-2026-10-02", "b1"], ["arrivals-2026-10-02", "b2"], ["refresh-2026-10-02", "b2"], ["refresh-2026-10-02", "b3"],
+    ["arrivals-2026-10-02", "b4"]]) {
+    await query("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, 'sst', 'base')", [batch, b]);
+  }
+  for (const [q, b, producers, due] of [["q1", "b1", ["new_build", "sweep"], "2026-10-02T01"], ["q2", "b2", ["new_build", "refresh"], "2026-10-02T02"],
+    ["q3", "b3", ["refresh"], "2026-10-02T03"]]) {
+    await query("INSERT INTO questions (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', 'open', ?, ?)", [q, due, at]);
+    for (const producer of producers) {
+      await query("INSERT INTO demands (producer, ref, question, state, asked_at, due_at, payload) VALUES (?, ?, ?, 'live', ?, ?, ?)",
+        [producer, `${b}|sst|base`, q, at, due, JSON.stringify({ identity: b, ruler: "sst", mode: "base" })]);
+    }
+  }
+  const state = async () => ({
+    queue: (await query("SELECT batch || ':' || build_id AS k FROM queue ORDER BY 1")).map((r) => r.k).join(),
+    live: (await query("SELECT producer || ':' || question AS k FROM demands WHERE state = 'live' ORDER BY 1")).map((r) => r.k).join(),
+    open: (await query("SELECT id FROM questions WHERE state = 'open' ORDER BY id")).map((r) => r.id).join() });
+  process.env.CANCEL_SLICE = "1";
+  process.env.CANCEL_PAUSE = "0";
+  const named = await run("cancel_queue.sh", "--batch", "arrivals-", "--dry-run") === 0;
+  const cut = await run("cancel_queue.sh", "--batch", "arrivals-") === 0;
+  const after = await state();
+  check("a cancel by batch deletes its rows, withdraws the demands and questions no row is owed for, and nothing else",
+    named && cut
+      && after.queue === "refresh-2026-10-02:b2,refresh-2026-10-02:b3"
+      && after.live === "new_build:q2,refresh:q2,refresh:q3" && after.open === "q2,q3", JSON.stringify(after));
+  const all = await run("cancel_queue.sh", "--all") === 0;
+  check("...and a cancel of everything leaves nothing owed, asked or open", all && JSON.stringify(await state()) === JSON.stringify({ queue: "", live: "", open: "" }),
+    JSON.stringify(await state()));
+  check("...and a cancel naming nothing is refused", await run("cancel_queue.sh") !== 0);
+  delete process.env.CANCEL_SLICE;
+  delete process.env.CANCEL_PAUSE;
+}
 // THE LIVE BOARD'S FACTS FILE IS STREAMED AND APPENDED TO (scripts/live_publish.mjs),
 // never read whole: it is every row of `scores`, past what one string can hold.
 {

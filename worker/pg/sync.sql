@@ -429,6 +429,9 @@ DECLARE
   v_gone jsonb;
   v_x record;
   v_learn jsonb := '[]'::jsonb;
+  v_have jsonb := '[]'::jsonb;
+  v_charges jsonb := '[]'::jsonb;
+  v_round bigint;
 BEGIN
   -- ONE DEVICE'S SENDS ARE TAKEN ONE AT A TIME (worker/tasks.js `recordMany`).
   PERFORM pg_advisory_xact_lock(hashtextextended(v_dev, 0));
@@ -557,46 +560,54 @@ BEGIN
     RETURN;
   END IF;
   v_size := GREATEST(1, LEAST((p #>> '{pack,max}')::bigint, (p #>> '{pack,by_pace}')::bigint, v_fair.open / GREATEST(1, v_fair.asking)));
-  v_got := COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM factory_take_pack(v_at, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling,
-    v_grace_s, (p -> 'packable')::text, p #>> '{grace,exclude}', p #>> '{grace,join}', CASE WHEN v_packable THEN v_head.producer END, v_size,
-    v_lease, CASE WHEN v_short THEN p #>> '{pack,short_until}' ELSE p #>> '{pack,long_until}' END, v_dev, (p ->> 'packs_held')::bigint) t),
-    '[]'::jsonb);
-  r := jsonb_set(r, '{use,charge}', COALESCE((SELECT jsonb_agg(jsonb_build_object('p', c.p, 'n', c.n) ORDER BY c.p)
-    FROM (SELECT t ->> 'producer' AS p, count(*) AS n FROM jsonb_array_elements(v_got) t GROUP BY 1) c), '[]'::jsonb));
-
-  -- THE PACK'S DEMANDS, in worker/tasks.js `nextPack`'s order: a row no longer
-  -- owed is withdrawn where it is found, producer by producer, and left out.
-  v_ds := COALESCE((SELECT jsonb_agg(to_jsonb(d) ORDER BY d.k) FROM (
-      SELECT d.question, d.producer, d.ref, d.payload, row_number() OVER (ORDER BY d.question, d.producer, d.ref) AS k
-      FROM demands d JOIN questions q ON q.id = d.question WHERE q.lease = v_lease AND q.leased_to = v_dev AND d.state = 'live') d), '[]'::jsonb);
-  IF jsonb_array_length(v_got) > 0 AND EXISTS (SELECT 1 FROM jsonb_array_elements(v_ds) e WHERE NOT (p -> 'owed') ? (e ->> 'producer')) THEN
-    RAISE EXCEPTION 'board_sync: a pack demand of a producer not owed in sql' USING ERRCODE = 'WS001';
-  END IF;
-  FOR v_x IN SELECT u.producer, u.ref, u.question FROM (
-      SELECT e ->> 'producer' AS producer, e ->> 'ref' AS ref, e ->> 'question' AS question, (e ->> 'payload')::jsonb AS payload,
-        (e ->> 'k')::bigint AS k, min((e ->> 'k')::bigint) OVER (PARTITION BY e ->> 'producer') AS first
-      FROM jsonb_array_elements(v_ds) e) u
-    WHERE NOT board_owed(u.payload ->> 'identity', u.payload ->> 'ruler', u.payload ->> 'mode') ORDER BY u.first, u.k LOOP
-    UPDATE demands SET state = 'withdrawn' WHERE producer = v_x.producer AND ref = v_x.ref;
-    PERFORM factory_restate(v_x.question);
-    v_unwanted := v_unwanted || jsonb_build_array(jsonb_build_array(v_x.producer, v_x.ref));
+  -- A PICK THAT WAS DEAD IS PICKED AGAIN, under the same lease, as
+  -- worker/tasks.js `nextPack` does (`PICK_ROUNDS`): until the pack is full, a
+  -- pick finds nothing dead, or eight picks. A row of the pick no longer owed
+  -- is withdrawn where it is found and left out, its question restated once
+  -- all are (`sift`). Each pick is charged as its own (`board_sync`).
+  FOR v_round IN 1..8 LOOP
+    EXIT WHEN jsonb_array_length(v_have) >= v_size;
+    v_got := COALESCE((SELECT jsonb_agg(to_jsonb(t)) FROM factory_take_pack(v_at, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL, v_ceiling,
+      v_grace_s, (p -> 'packable')::text, p #>> '{grace,exclude}', p #>> '{grace,join}', CASE WHEN v_packable THEN v_head.producer END,
+      v_size - jsonb_array_length(v_have), v_lease, CASE WHEN v_short THEN p #>> '{pack,short_until}' ELSE p #>> '{pack,long_until}' END, v_dev,
+      (p ->> 'packs_held')::bigint) t), '[]'::jsonb);
+    EXIT WHEN jsonb_array_length(v_got) = 0;
+    v_charges := v_charges || jsonb_build_array((SELECT jsonb_agg(jsonb_build_object('p', c.p, 'n', c.n) ORDER BY c.p)
+      FROM (SELECT t ->> 'producer' AS p, count(*) AS n FROM jsonb_array_elements(v_got) t GROUP BY 1) c));
+    v_ds := COALESCE((SELECT jsonb_agg(to_jsonb(d) ORDER BY d.k) FROM (
+        SELECT d.question, d.producer, d.ref, d.payload, row_number() OVER (ORDER BY d.question, d.producer, d.ref) AS k
+        FROM demands d JOIN questions q ON q.id = d.question WHERE q.lease = v_lease AND q.leased_to = v_dev AND d.state = 'live'
+          AND q.id IN (SELECT t ->> 'id' FROM jsonb_array_elements(v_got) t)) d), '[]'::jsonb);
+    IF EXISTS (SELECT 1 FROM jsonb_array_elements(v_ds) e WHERE NOT (p -> 'owed') ? (e ->> 'producer')) THEN
+      RAISE EXCEPTION 'board_sync: a pack demand of a producer not owed in sql' USING ERRCODE = 'WS001';
+    END IF;
+    v_unwanted := COALESCE((SELECT jsonb_agg(jsonb_build_array(e ->> 'producer', e ->> 'ref', e ->> 'question')) FROM jsonb_array_elements(v_ds) e
+      WHERE NOT board_owed((e ->> 'payload')::jsonb ->> 'identity', (e ->> 'payload')::jsonb ->> 'ruler', (e ->> 'payload')::jsonb ->> 'mode')),
+      '[]'::jsonb);
+    IF jsonb_array_length(v_unwanted) > 0 THEN
+      UPDATE demands SET state = 'withdrawn' WHERE (producer, ref) IN (SELECT d.producer, d.ref FROM demands d
+        JOIN jsonb_array_elements(v_unwanted) u ON d.producer = u ->> 0 AND d.ref = u ->> 1 ORDER BY d.producer, d.ref FOR UPDATE OF d);
+      PERFORM factory_restate(g.id) FROM (SELECT DISTINCT u ->> 2 AS id FROM jsonb_array_elements(v_unwanted) u ORDER BY 1) g;
+    END IF;
+    v_wanted := COALESCE((SELECT jsonb_agg(e ORDER BY (e ->> 'k')::bigint) FROM jsonb_array_elements(v_ds) e
+      WHERE NOT v_unwanted @> jsonb_build_array(jsonb_build_array(e ->> 'producer', e ->> 'ref', e ->> 'question'))), '[]'::jsonb);
+    v_gone := COALESCE((SELECT jsonb_agg(t ->> 'id') FROM jsonb_array_elements(v_got) t
+      WHERE NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_wanted) e WHERE e ->> 'question' = t ->> 'id')), '[]'::jsonb);
+    IF jsonb_array_length(v_gone) > 0 THEN
+      UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+        WHERE id IN (SELECT id FROM questions WHERE id IN (SELECT jsonb_array_elements_text(v_gone)) AND lease = v_lease ORDER BY id FOR UPDATE);
+      -- A ROW LEFT WITH NO LIVE DEMAND is withdrawn, not only given back: still
+      -- open, it heads every pack's pick again and every sync is handed nothing.
+      PERFORM factory_restate(g.id) FROM (SELECT DISTINCT jsonb_array_elements_text(v_gone) AS id ORDER BY 1) g;
+    END IF;
+    v_have := v_have || COALESCE((SELECT jsonb_agg(jsonb_build_object('question', t ->> 'id', 'verb', t ->> 'verb', 'request', t ->> 'request',
+        'due_at', t ->> 'due_at', 'demands', (SELECT COALESCE(jsonb_agg(jsonb_build_object('producer', e ->> 'producer', 'ref', e ->> 'ref',
+          'payload', e ->> 'payload') ORDER BY (e ->> 'k')::bigint), '[]'::jsonb) FROM jsonb_array_elements(v_wanted) e WHERE e ->> 'question' = t ->> 'id')))
+      FROM jsonb_array_elements(v_got) t WHERE NOT v_gone ? (t ->> 'id')), '[]'::jsonb);
+    EXIT WHEN jsonb_array_length(v_gone) = 0;
   END LOOP;
-  v_wanted := COALESCE((SELECT jsonb_agg(e ORDER BY (e ->> 'k')::bigint) FROM jsonb_array_elements(v_ds) e
-    WHERE NOT v_unwanted @> jsonb_build_array(jsonb_build_array(e ->> 'producer', e ->> 'ref'))), '[]'::jsonb);
-  v_gone := COALESCE((SELECT jsonb_agg(t ->> 'id') FROM jsonb_array_elements(v_got) t
-    WHERE NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_wanted) e WHERE e ->> 'question' = t ->> 'id')), '[]'::jsonb);
-  IF jsonb_array_length(v_gone) > 0 THEN
-    UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
-      WHERE id IN (SELECT id FROM questions WHERE id IN (SELECT jsonb_array_elements_text(v_gone)) AND lease = v_lease ORDER BY id FOR UPDATE);
-    -- A ROW LEFT WITH NO LIVE DEMAND is withdrawn, not only given back: still
-    -- open, it heads every pack's pick again and every sync is handed nothing.
-    PERFORM factory_restate(g.id) FROM (SELECT jsonb_array_elements_text(v_gone) AS id ORDER BY 1) g;
-  END IF;
-  v_got := COALESCE((SELECT jsonb_agg(jsonb_build_object('question', t ->> 'id', 'verb', t ->> 'verb', 'request', t ->> 'request',
-      'due_at', t ->> 'due_at', 'demands', (SELECT COALESCE(jsonb_agg(jsonb_build_object('producer', e ->> 'producer', 'ref', e ->> 'ref',
-        'payload', e ->> 'payload') ORDER BY (e ->> 'k')::bigint), '[]'::jsonb) FROM jsonb_array_elements(v_wanted) e WHERE e ->> 'question' = t ->> 'id'))
-      ORDER BY t ->> 'due_at' COLLATE "C", t ->> 'id' COLLATE "C")
-    FROM jsonb_array_elements(v_got) t WHERE NOT v_gone ? (t ->> 'id')), '[]'::jsonb);
+  r := jsonb_set(r, '{use,charge}', v_charges);
+  v_got := COALESCE((SELECT jsonb_agg(t ORDER BY t ->> 'due_at' COLLATE "C", t ->> 'question' COLLATE "C") FROM jsonb_array_elements(v_have) t), '[]'::jsonb);
   IF jsonb_array_length(v_got) = 0 THEN
     UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
     r := r || jsonb_build_object('outcome', 'idle');
@@ -623,5 +634,7 @@ BEGIN
   FOR v_x IN SELECT l FROM jsonb_array_elements(v_use -> 'learn') WITH ORDINALITY x(l, k) ORDER BY k LOOP
     PERFORM factory_learn(v_x.l::text, (p ->> 'share')::double precision);
   END LOOP;
-  IF jsonb_array_length(v_use -> 'charge') > 0 THEN PERFORM factory_charge((v_use -> 'charge')::text); END IF;
+  FOR v_x IN SELECT c FROM jsonb_array_elements(v_use -> 'charge') WITH ORDINALITY x(c, k) ORDER BY k LOOP
+    PERFORM factory_charge(v_x.c::text);
+  END LOOP;
 END $$;

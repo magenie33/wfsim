@@ -75,6 +75,10 @@ const UNSETTLED_MS = 2 * 3_600_000;
 /// …AND OF CLIENTS DISAGREEING: this many answers in the hour, and this share
 /// of all of them. A healthy hour runs under one in a hundred.
 const DISAGREE_MIN = 30, DISAGREE_SHARE = 0.03;
+/// HOW MANY PICKS A HAND-OUT MAKES past rows found dead (`next`, `nextPack`,
+/// `claim`): each withdraws what it found, so a cancelled head costs a client
+/// one slower ask, never an empty one. worker/pg/sync.sql `board_sync_steps`.
+export const PICK_ROUNDS = 8;
 const sansWork = (c) => { const v = JSON.parse(c); delete v.work; return canon(v); };
 /// AN ANSWER EQUAL TO `lead`: byte for byte on its engine, by everything but
 /// `work` on another (`decide`, and the settler's shadow).
@@ -255,7 +259,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// handed; `before` keeps to questions due before then.
   async function next(env, w, engine, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), most = w.most ?? 1, d = await dialsOf(env, now);
-    for (let tries = 0; tries < 8; tries++) {
+    for (let tries = 0; tries < PICK_ROUNDS; tries++) {
       const q = await db.prepare(HEAD).bind(...eligibleArgs(w, engine, at, d)).first();
       if (!q) return null;
       // A ROW NOBODY OWES ANY MORE is withdrawn where it is found, and the next
@@ -309,50 +313,74 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   async function nextPack(env, w, engine, { n, lease_ms, most = 1, exclude = null, join = null, producer = null }, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), lease = newLease(), d = await dialsOf(env, now);
     const [, , , , , , , , ceiling, grace] = eligibleArgs(w, engine, at, d);
-    const [taken, ds] = await db.batch([
-      db.prepare(`SELECT * FROM factory_lease_pack(?1::text, ?2::bigint, ?3::text, ?4::text, ?5::text, ?6::text, ?7::text, ?8::bigint, ?9::bigint,
-          ?10::text, ?11::text, ?12::text, ?13::text, ?14::bigint, ?15::text, ?16::text, ?17::text, ?18::bigint)`)
-        .bind(at, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || "", w.before ?? null, ceiling, grace,
-          PACKABLE, exclude ? JSON.stringify(exclude) : null, join, producer, n, lease, iso(now + lease_ms), w.device, most),
-      // IN ONE ORDER, which the sync's procedure walks too (`board_sync`).
-      db.prepare(`SELECT d.question, d.producer, d.ref, d.payload FROM demands d JOIN questions q ON q.id = d.question
-          WHERE q.lease = ? AND q.leased_to = ? AND d.state = 'live' ORDER BY d.question, d.producer, d.ref`).bind(lease, w.device),
-    ]);
-    if (!taken.results.length) return null;
-    const demands = ds.results.map((d) => ({ ...d, payload: JSON.parse(d.payload) }));
-    // A ROW NOBODY OWES ANY MORE, asked of its producer for the whole pack at once.
-    const unwanted = new Set();
-    for (const name of new Set(demands.map((d) => d.producer))) {
-      const p = producerOf(name), mine = demands.filter((d) => d.producer === name);
-      if (p.wanted_many) {
-        const keep = await p.wanted_many(env, mine);
-        for (const d of mine) if (!keep.has(d.ref)) unwanted.add(d);
-      } else if (p.still_wanted) {
-        for (const d of mine) if (!(await p.still_wanted(env, d))) unwanted.add(d);
+    const kept = [], wanted = [];
+    // A PICK THAT WAS DEAD IS PICKED AGAIN, under the same lease, until the pack
+    // is full, a pick finds nothing dead, or `PICK_ROUNDS` picks: rows cancelled
+    // at the head of the order are withdrawn a pack's worth a pick, and the
+    // client is handed the live rows behind them, never nothing.
+    for (let round = 0; round < PICK_ROUNDS && kept.length < n; round++) {
+      const [taken, ds] = await db.batch([
+        db.prepare(`SELECT * FROM factory_lease_pack(?1::text, ?2::bigint, ?3::text, ?4::text, ?5::text, ?6::text, ?7::text, ?8::bigint, ?9::bigint,
+            ?10::text, ?11::text, ?12::text, ?13::text, ?14::bigint, ?15::text, ?16::text, ?17::text, ?18::bigint)`)
+          .bind(at, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || "", w.before ?? null, ceiling, grace,
+            PACKABLE, exclude ? JSON.stringify(exclude) : null, join, producer, n - kept.length, lease, iso(now + lease_ms), w.device, most),
+        // IN ONE ORDER, which the sync's procedure walks too (`board_sync`).
+        db.prepare(`SELECT d.question, d.producer, d.ref, d.payload FROM demands d JOIN questions q ON q.id = d.question
+            WHERE q.lease = ? AND q.leased_to = ? AND d.state = 'live' ORDER BY d.question, d.producer, d.ref`).bind(lease, w.device),
+      ]);
+      if (!taken.results.length) break;
+      const ids = new Set(taken.results.map((q) => q.id));
+      const owed = await sift(env, ds.results.filter((x) => ids.has(x.question)).map((x) => ({ ...x, payload: JSON.parse(x.payload) })));
+      const gone = taken.results.filter((q) => !owed.some((x) => x.question === q.id)).map((q) => q.id);
+      if (gone.length) {
+        await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+            WHERE ${inIdOrder(`id IN ${listOf(db, "?")} AND lease = ?`)}`).bind(JSON.stringify(gone), lease).run();
+        // A ROW LEFT WITH NO LIVE DEMAND is withdrawn, not only given back: still
+        // open, it heads every pack's pick again and every ask is handed nothing.
+        await restateAll(db, gone);
       }
+      kept.push(...taken.results.filter((q) => !gone.includes(q.id)));
+      wanted.push(...owed);
+      if (!gone.length) break;
     }
-    for (const d of unwanted) {
-      await db.prepare("UPDATE demands SET state = 'withdrawn' WHERE producer = ? AND ref = ?").bind(d.producer, d.ref).run();
-      await restate(db, d.question);
+    for (const x of wanted) {
+      const p = producerOf(x.producer);
+      if (p.on_lease) await p.on_lease(env, x, now);
     }
-    const wanted = demands.filter((d) => !unwanted.has(d));
-    const gone = taken.results.filter((q) => !wanted.some((d) => d.question === q.id)).map((q) => q.id);
-    if (gone.length) {
-      await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
-          WHERE ${inIdOrder(`id IN ${listOf(db, "?")} AND lease = ?`)}`).bind(JSON.stringify(gone), lease).run();
-      // A ROW LEFT WITH NO LIVE DEMAND is withdrawn, not only given back: still
-      // open, it heads every pack's pick again and every ask is handed nothing.
-      for (const id of [...gone].sort()) await restate(db, id);
-    }
-    for (const d of wanted) {
-      const p = producerOf(d.producer);
-      if (p.on_lease) await p.on_lease(env, d, now);
-    }
-    const questions = taken.results.filter((q) => !gone.includes(q.id))
+    const questions = kept
       .sort((a, b) => (a.due_at < b.due_at ? -1 : a.due_at > b.due_at ? 1 : a.id < b.id ? -1 : 1))
       .map((q) => ({ question: q.id, verb: q.verb, request: JSON.parse(q.request), due_at: q.due_at,
-        demands: wanted.filter((d) => d.question === q.id).map(({ producer, ref, payload }) => ({ producer, ref, payload })) }));
+        demands: wanted.filter((x) => x.question === q.id).map(({ producer, ref, payload }) => ({ producer, ref, payload })) }));
     return questions.length ? { lease, lease_ms, questions } : null;
+  }
+
+  /// THE LIVE DEMANDS `ds` (payload parsed) STILL OWED, asked of each producer
+  /// for all of its at once; the rest withdrawn where they are found, in key
+  /// order as an ask writes them, and their questions restated.
+  async function sift(env, ds) {
+    const db = env.LIBRARY, unwanted = new Set();
+    for (const name of new Set(ds.map((x) => x.producer))) {
+      const p = producerOf(name), mine = ds.filter((x) => x.producer === name);
+      if (p.wanted_many) {
+        const keep = await p.wanted_many(env, mine);
+        for (const x of mine) if (!keep.has(x.ref)) unwanted.add(x);
+      } else if (p.still_wanted) {
+        for (const x of mine) if (!(await p.still_wanted(env, x))) unwanted.add(x);
+      }
+    }
+    if (unwanted.size) {
+      await db.prepare(`UPDATE demands SET state = 'withdrawn' WHERE (producer, ref) IN (SELECT d.producer, d.ref FROM demands d
+          JOIN jsonb_to_recordset((?::text)::jsonb) AS x(producer text, ref text) ON d.producer = x.producer AND d.ref = x.ref
+          ORDER BY d.producer, d.ref FOR UPDATE OF d)`)
+        .bind(JSON.stringify([...unwanted].map(({ producer, ref }) => ({ producer, ref })))).run();
+      await restateAll(db, [...unwanted].map((x) => x.question));
+    }
+    return ds.filter((x) => !unwanted.has(x));
+  }
+  /// …AND MANY QUESTIONS RESTATED in one statement, in id order.
+  async function restateAll(db, ids) {
+    await db.prepare(`SELECT factory_restate(g.id) FROM (SELECT DISTINCT value AS id FROM jsonb_array_elements_text((?::text)::jsonb) ORDER BY 1) g`)
+      .bind(JSON.stringify(ids)).run();
   }
 
   /// A LEASE KEPT while its witness is still at it, or given back.
@@ -910,7 +938,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
             AND (?6::text IS NULL OR EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
                                        AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?6::text)::jsonb))))
             AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.device = ?2::text AND a.engine = ?7::text)`;
-    const { results } = await db.prepare(`WITH c AS (
+    const take = (max) => db.prepare(`WITH c AS (
           (SELECT q.id FROM questions q WHERE ?3::bigint = 1 AND q.state = 'open' AND q.due_at < ?4::text AND ${takeable}
             ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?9::bigint)
           UNION ALL
@@ -924,6 +952,25 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
           ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?8::bigint FOR UPDATE OF q SKIP LOCKED)
         RETURNING id, verb, request, state, lease, waits, due_at`)
       .bind(iso(now + lease_ms), w.device, open, at, JSON.stringify(theirs), producers ? JSON.stringify(producers) : null, engine, max, max * CLAIM_SPARE, `{${theirs.join(",")}}`).all();
+    // AN OPEN ROW NOBODY OWES ANY MORE is withdrawn where it is found and the
+    // claim picks again (`PICK_ROUNDS`), as a pack does.
+    const results = [];
+    for (let round = 0; round < PICK_ROUNDS && results.length < max; round++) {
+      const { results: got } = await take(max - results.length);
+      if (!got.length) break;
+      const opened = got.filter((q) => q.state === "open").map((q) => q.id);
+      const { results: live } = opened.length ? await db.prepare(`SELECT question, producer, ref, payload FROM demands
+          WHERE question IN ${listOf(db, "?")} AND state = 'live' ORDER BY question, producer, ref`).bind(JSON.stringify(opened)).all() : { results: [] };
+      const owed = await sift(env, live.map((x) => ({ ...x, payload: JSON.parse(x.payload) })));
+      const gone = opened.filter((id) => !owed.some((x) => x.question === id));
+      if (gone.length) {
+        await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+            WHERE ${inIdOrder(`id IN ${listOf(db, "?")} AND leased_to = ?`)}`).bind(JSON.stringify(gone), w.device).run();
+        await restateAll(db, gone);
+      }
+      results.push(...got.filter((q) => !gone.includes(q.id)));
+      if (!gone.length) break;
+    }
     if (!results.length) return [];
     // IN THE ORDER IT WAS CHOSEN: an UPDATE returns its rows in none.
     results.sort((a, b) => b.waits - a.waits || (a.due_at < b.due_at ? -1 : a.due_at > b.due_at ? 1 : a.id < b.id ? -1 : 1));
