@@ -141,29 +141,14 @@ pub(super) fn reload_draw(capacity: f64, current: f64) -> f64 {
     (capacity - current).floor().max(0.0)
 }
 
-/// The ammo efficiency in force right now: the sum of every source, CAPPED.
-///
-/// Sources stack ADDITIVELY — VERBATIM (wiki `Ammo`): *"Sources of ammo
-/// efficiency stack additively with each other except for Energized Munitions,
-/// which stacks multiplicatively."* Energized Munitions is a Warframe ability
-/// and out of scope; if it is ever modelled it must MULTIPLY, not join this sum.
-///
-/// **The cap is 100% and it is a real ceiling, not a clamp of convenience**: a shot can cost nothing, never less. Stacking past 100%
-/// buys nothing and in particular never starts REFUNDING ammo, so the magazine
-/// cannot climb while firing.
-///
-/// Charge-backed magazines are outside the ammo economy entirely and take no
-/// efficiency at all, which is why `applies` short-circuits to zero.
-/// Death Knell's ammo half: the efficiency it grants while ANY stack is up.
+/// Death Knell's ammo half: INFINITE AMMO while ANY stack is up.
 #[wfsim_gas_macro::metered]
 pub(super) fn weakpoint_ammo(
     spec: Option<crate::model::WeakpointStacksSpec>,
     pile: &mut LiveStacks,
     t: f64,
-) -> f64 {
-    spec.map_or(0.0, |w| {
-        if pile.current(t, w.duration_seconds) > 0 { w.ammo_efficiency } else { 0.0 }
-    })
+) -> bool {
+    spec.is_some_and(|w| w.infinite_ammo && pile.current(t, w.duration_seconds) > 0)
 }
 
 /// DOES A KILL HERE LEAVE ONE STANDING? The weapon has to say so, and the body
@@ -174,6 +159,20 @@ pub(super) fn leaves_one(active: &FightParams, from: crate::rules::space::Vec2, 
         .is_some_and(|g| (body.x - from.x).hypot_portable(body.y - from.y) <= g.range_m)
 }
 
+/// The share of a shot's cost waived right now: 1 under INFINITE AMMO, else
+/// the efficiency of every source combined and CAPPED.
+///
+/// Sources stack ADDITIVELY — VERBATIM (wiki `Ammo`): *"Sources of ammo
+/// efficiency stack additively with each other except for Energized Munitions,
+/// which stacks multiplicatively."* The cap
+/// (`rules::ammo::EFFICIENCY_CAP`) applies to the combined stat, the ability's
+/// share included, so stacking past it buys nothing and never refunds ammo.
+///
+/// INFINITE AMMO IS ITS OWN STATE (Frenzy, Death Knell, Skull Shots, Brain
+/// Storm): a shot under it costs nothing, and the cap does not reach it.
+///
+/// Charge-backed magazines are outside the ammo economy entirely and take
+/// neither, which is why `applies` short-circuits to zero.
 #[wfsim_gas_macro::metered]
 pub(super) fn ammo_efficiency(
     applies: bool,
@@ -181,16 +180,18 @@ pub(super) fn ammo_efficiency(
     arcane_static: f64,
     arcane_live: f64,
     ability: f64,
+    infinite: bool,
 ) -> f64 {
     if !applies {
         return 0.0;
+    }
+    if infinite {
+        return 1.0;
     }
     let others = (bar + arcane_static + arcane_live).clamp(0.0, 1.0);
     // A WARFRAME ABILITY'S SHARE MULTIPLIES, it does not add: "Stacks
     // multiplicatively with other sources of Ammo Efficiency" (wiki, Energized
     // Munitions). The thing that multiplies is the COST, so 75% on top of 50%
-    // is 1 - 0.25 x 0.5 = 87.5% and not the 125% adding would have produced.
-    // Everything else here adds, which is what those sources do among
-    // themselves and what this function was written for.
-    (1.0 - (1.0 - others) * (1.0 - ability)).clamp(0.0, 1.0)
+    // is 1 - 0.25 x 0.5 = 87.5% before the cap takes it to 75%.
+    (1.0 - (1.0 - others) * (1.0 - ability)).clamp(0.0, crate::rules::ammo::EFFICIENCY_CAP)
 }

@@ -20,7 +20,7 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
         out.push(format!(
             "A WEAK-POINT HIT grants a stack, up to {}, each lasting {:.0}s from the last one — worth +{:.1}x on the finished crit multiplier and +{:.0}% on the finished status chance apiece{}. Per pellet, so one shot can fill the pile.",
             w.max_stacks, w.duration_seconds, w.crit_multiplier, w.status_chance * 100.0,
-            if w.ammo_efficiency >= 1.0 { ", and the shot costs no ammo at all" } else { "" },
+            if w.infinite_ammo { ", and infinite ammo while any stack is up" } else { "" },
         ));
     }
     if let Some(sc) = s.super_crit_on_status {

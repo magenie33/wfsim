@@ -9,6 +9,19 @@
 # an entry from being orphaned.
 
 notes:
+  ammo_efficiency_cap: |
+    AMMO EFFICIENCY STOPS AT 75%, and INFINITE AMMO is its own state. DE's Dev
+    Workshop "Ammo Efficiency Changes & Riven Disposition Retirement"
+    (forums.warframe.com/topic/1529475): "Ammo Efficiency is capped at 75% …
+    This applies to Ammo Efficiency increases from multiple sources", Energized
+    Munitions included; the sources that gave 100% "give Infinite Ammo" instead,
+    uncapped (Void Relic buffs, Chamber Cascade, Overdrive, Frenzy, Death Knell,
+    Gale Force, the Vasto's Reaper's Plenty). Brain Storm and Skull Shots become
+    "On Headshot: 40% (10% at Unranked) Chance for Infinite Ammo for 2s (0.5s at
+    Unranked)"; Arcane Pistoleer "60% (10% at Unranked) Chance for Infinite Ammo
+    for 12s"; Enough for Everyone +75%; Crimson Overture +25% a stack, up to 3x,
+    its base damage unchanged. The numbers are the post's until the wiki and
+    DE's export carry them.
   focus_waybound: |
     THE TWO WAYBOUNDS — unbound from this school and permanent, so they are
     shown at max rank and nobody edits them: "Unlike all other Ways, these can
@@ -186,8 +199,8 @@ notes:
   death_knell_weakpoint_stacks: |
     DEATH KNELL. A weak-point hit grants a stack: +0.5x on the FINISHED
     critical multiplier and +20% on the FINISHED status chance apiece, plus
-    100% ammo efficiency while any stack is up — which on a one-round magazine
-    is the reload never happening. Three stacks, 2 s from the last hit, and
+    infinite ammo while any stack is up — which on a one-round magazine is the
+    reload never happening. Three stacks, 2 s from the last hit, and
     when the clock falls due ONE is lost and it restarts for the rest. The page
     writes the crit bracket itself: `2 x (1 + Crit Damage Mods) + 0.5 x Number
     of Stacks`. PER PELLET — "individual Multishot bullets can proc Death Knell

@@ -124,7 +124,8 @@ combination (§3) depends on the order. An Effect can inject a modifier at a
 defined position (Frenzy appends "+100% Toxin" at the **end** of the order).
 
 **Ammo efficiency.** `shots_per_ammo = 1 / (1 - e)`; sources add (except
-Energized Munitions, multiplicative); `e = 1.0` → infinite ammo.
+Energized Munitions, multiplicative) and the combined stat is capped at 75%.
+A free shot is **infinite ammo**, its own state, which the cap does not reach.
 
 **Mod restrictions & conditional-buff activation** (`build::loadout::resolve`).
 - **`requires: <trait>`** (ModDef): a mod whose required weapon trait
@@ -2885,16 +2886,27 @@ positive remainder fires).
 
 **Stacking is ADDITIVE, with one named exception.** *"Sources of ammo efficiency
 stack additively with each other except for Energized Munitions, which stacks
-multiplicatively."* The engine sums its sources (Frenzy, Akimbo Slip Shot,
-Primary Crux) in `engine::fight::ammo_efficiency` — correct for everything
-modelled, since Energized Munitions is a Warframe ability and out of scope. **If
-it is ever added it must multiply, not join the sum.**
+multiplicatively."* `engine::fight::ammo_efficiency` sums the additive sources
+(mods, a spliced riven, Akimbo Slip Shot, Primary Crux, a card's timed buff)
+and multiplies the COST by Energized Munitions' share: 75% on top of 50% is
+`1 − 0.5 × 0.25` = 87.5% before the cap.
 
-**100% is a real ceiling**: a shot can cost nothing, never
-less. Stacking past the cap buys nothing, and in particular efficiency never
-starts *refunding* — the magazine cannot climb while the weapon fires. So the
-per-shot cost is `max(0, ammo_cost × (1 − min(1, Σ efficiency)))`, and "free" is
-the floor rather than a waypoint.
+**The combined stat is CAPPED AT 75%** (`rules::ammo::EFFICIENCY_CAP`) — one
+shot in four pays, however much is stacked: *"Ammo Efficiency is capped at 75%
+… This applies to Ammo Efficiency increases from multiple sources"* (DE, Dev
+Workshop "Ammo Efficiency Changes"; `data/notes.yaml` `ammo_efficiency_cap`).
+Energized Munitions is capped with the rest. So the per-shot cost is
+`ammo_cost × (1 − min(0.75, combined))`, and efficiency never makes a shot free
+or starts *refunding* — the magazine cannot climb while the weapon fires.
+
+**INFINITE AMMO is its own state**, and the cap does not reach it: while it is
+up a shot costs nothing. The engine's sources are Frenzy (Dual Toxocyst, on the
+buff bar), Death Knell (`weakpoint_stacks.infinite_ammo`, while any stack is
+up), and the `infinite_ammo` stacking-buff grant — Brain Storm and Skull Shots,
+a 40% chance on a headshot for 2 s at max rank (10% and 0.5 s unranked,
+linear between). Void Relic buffs, Chamber Cascade, Overdrive, Gale Force,
+the Vasto's Reaper's Plenty and Arcane Pistoleer are not modelled
+(`docs/UNMODELLED.md`).
 
 **Charge-backed magazines are exempt**, per weapon data
 (`unaffected_by_ammo_efficiency`): *"Incarnon Form is not affected by Ammo
@@ -2929,9 +2941,9 @@ test in one direction: the magazine gate is *anything left* rather than *enough
 to pay* (M14 — a 0.25 remainder fires a full-cost shot), and a shot that costs
 **nothing** needs no round at all. The Dual Toxocyst hits the
 second exactly: its last round headshots, the magazine lands on 0, and that same
-kill arms Frenzy's +100% efficiency — so the next shot is free and fires instead
+kill arms Frenzy's infinite ammo — so the next shot is free and fires instead
 of forcing a reload. A charge-backed magazine can never take that branch, since
-it is exempt from efficiency entirely.
+it is exempt from efficiency and infinite ammo alike.
 
 **The question is asked before each shot, not after the last one** — measured
 in game. The last round is followed by the ordinary fire interval, and that
@@ -2947,10 +2959,11 @@ where a clean 5.00 magazine would have stayed at 5. Worth knowing before
 comparing any sim ammo number against a screenshot — and if the UI ever displays
 a live magazine, it must ceil, not round or truncate.
 
-**Source:** wiki `Ammo` + `Ammo Efficiency` + `Energized Munitions` +
-MEASUREMENTS M14. **Status:** formula, fraction-keeping, the partial-round gate
-and the stacking rule are sourced; the overdraw debt, its survival across a
-reload, and the ceiling display are **measured** (M14).
+**Source:** wiki `Ammo` + `Ammo Efficiency` + `Energized Munitions` + DE's Dev
+Workshop + MEASUREMENTS M14. **Status:** formula, fraction-keeping, the
+partial-round gate, the stacking rule and the 75% cap are sourced, the cap
+**unverified** in game (MEASUREMENTS queue); the overdraw debt, its survival
+across a reload, and the ceiling display are **measured** (M14).
 
 ---
 

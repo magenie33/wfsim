@@ -274,6 +274,11 @@ applying either unconditionally overstates the build. Both also land on the
 Laetum's Incarnon magazine, which is charge-backed and takes no efficiency at
 all.
 
+Every perk's efficiency joins the 75% cap (`docs/MECHANICS.md` §"Ammo
+Efficiency"): Enough for Everyone is +75%, Crimson Overture +25% a stack up to
+3x. The Vasto's Reaper's Plenty grants infinite ammo, which the cap does not
+reach. All three are `out_of_scope` here, the arena running on infinite ammo.
+
 ### The Furis Genesis
 
 Five of its eight perks, each written under a kind this loader does not know.

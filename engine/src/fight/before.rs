@@ -94,16 +94,19 @@ pub(super) fn before_the_shot(
                     }
                 }
             }
-            // Does the next shot cost anything? Feeds `can_fire` below. Capped
-            // at 100%, so this is "exactly free", never "more than free".
+            // Does the next shot cost anything? Feeds `can_fire` below. Only
+            // infinite ammo makes it free; efficiency stops at its cap.
+            let contribs = bar.total_contributions();
             let eff = ammo_efficiency(
                 active.ammo_efficiency_applies,
-                bar.total_contributions().ammo_efficiency
-                    + weakpoint_ammo(params.weakpoint_stacks, weakpoint_pile, t)
+                contribs.ammo_efficiency
                     + buff_total(active, crate::model::BuffGrant::AmmoEfficiency, buff_stacks, t),
                 params.arcane.ammo_efficiency,
                 arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
                 crate::data::abilities::ammo_efficiency_at(&params.abilities_now(), t),
+                contribs.infinite_ammo
+                    || weakpoint_ammo(params.weakpoint_stacks, weakpoint_pile, t)
+                    || buff_total(active, crate::model::BuffGrant::InfiniteAmmo, buff_stacks, t) > 0.0,
             );
             // `active` already picks the form whose magazine is about to be
             // checked, so this is THAT form's cost.

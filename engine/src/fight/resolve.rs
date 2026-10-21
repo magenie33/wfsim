@@ -99,19 +99,22 @@ pub(super) fn resolve_the_shot(
         // (MEASUREMENTS M14): the shot fires at full cost off whatever is left,
         // the counter goes NEGATIVE, and the reload carries that debt into the
         // fresh magazine (see the `+=` above).
-        // BuffBar (Frenzy) + static arcane (Akimbo Slip Strike, assumed-max) +
-        // live arcane stacks (Primary Crux). Summed and capped by
-        // `ammo_efficiency`, which is also what `next_cost` above reads — one
-        // definition, so the two cannot drift apart.
-        // …AND DEATH KNELL'S: on a one-round magazine, the reload not happening.
+        // Static arcane (Akimbo Slip Strike, assumed-max) + live arcane stacks
+        // (Primary Crux) + card buffs, summed and capped by `ammo_efficiency`,
+        // which is also what `next_cost` above reads — one definition, so the
+        // two cannot drift apart. INFINITE AMMO beside them: Frenzy on the
+        // bar, Death Knell's stacks (on a one-round magazine, the reload not
+        // happening), and a card's chance-for-infinite window.
         let efficiency = ammo_efficiency(
             active.ammo_efficiency_applies,
             contribs.ammo_efficiency
-                + weakpoint_ammo(params.weakpoint_stacks, weakpoint_pile, t)
                 + buff_total(active, crate::model::BuffGrant::AmmoEfficiency, buff_stacks, t),
             params.arcane.ammo_efficiency,
             arc.total(&params.arcane.buffs, ArcGrant::AmmoEfficiency, t),
             crate::data::abilities::ammo_efficiency_at(&params.abilities_now(), t),
+            contribs.infinite_ammo
+                || weakpoint_ammo(params.weakpoint_stacks, weakpoint_pile, t)
+                || buff_total(active, crate::model::BuffGrant::InfiniteAmmo, buff_stacks, t) > 0.0,
         );
         // The cost of one round, the expression the spend below pays — one
         // spelling, so the last-round gate and the payment cannot drift.

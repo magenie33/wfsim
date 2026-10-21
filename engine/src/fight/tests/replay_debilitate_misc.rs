@@ -926,7 +926,7 @@ fn death_knell_adds_its_stacks_to_the_finished_crit_multiplier() {
         duration_seconds: 2.0,
         crit_multiplier: 0.5,
         status_chance: 0.20,
-        ammo_efficiency: 1.0,
+        infinite_ammo: true,
     };
     let build = |cd: f64, passive: bool, head: bool| FightParams {
         damage: DamageVector::new().with(DamageType::Impact, 100.0),

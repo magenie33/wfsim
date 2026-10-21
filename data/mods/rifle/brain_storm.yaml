@@ -5,15 +5,17 @@ polarity: madurai
 base_drain: 10
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/GrakataUnlimitedAmmo
-description: "On Headshot:\n+100% Ammo Efficiency for 0.5s"
+description: "On Headshot:\nX% Chance for Infinite Ammo for Xs"
 exclusive_to: [grakata, prisma_grakata]
-lower_ranks_unmodelled: true
 effects:
+  # see notes: ammo_efficiency_cap
   - kind: stacking_buff
     trigger: headshot
-    grants: ammo_efficiency
-    rankMax: 1.0
+    grants: infinite_ammo
     max_stacks: 1
-    duration: 0.5
+    chance_rank0: 0.10
+    chance: 0.40
+    duration_rank0: 0.5
+    duration: 2.0
 source:
   url: https://wiki.warframe.com/w/Brain_Storm

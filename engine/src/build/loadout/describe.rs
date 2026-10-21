@@ -53,6 +53,13 @@ impl ModEffect {
             AddedSpread(v) => format!(
                 "+{v} degrees of spread — added after accuracy bonuses, which do not reach it"
             ),
+            // A STATE, not a number: no per-stack value to state.
+            GrantsStackingBuff(b) if b.grant == BuffGrant::InfiniteAmmo => format!(
+                "{} chance for Infinite Ammo for {}s — earned {}",
+                pct(b.chance).trim_start_matches('+'),
+                b.duration,
+                b.trigger.label(),
+            ),
             // A FLAT GRANT SAYS ITS UNIT: `+1 m` of reach, `+20` combo points.
             GrantsStackingBuff(b) => format!(
                 "{} {} per stack, up to {} ({}), for {}s — earned {}",

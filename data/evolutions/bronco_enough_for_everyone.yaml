@@ -4,14 +4,15 @@ weapon: bronco
 tier: 4
 position_in_tier: 1
 icon: AmmoEffWhenAimGlidingOrSliding(xWhite).png
-description: "+80% Ammo Efficiency when 6 enemies are within 6 m."
+description: "+75% Ammo Efficiency when 6 enemies are within 6 m."
 # see notes: genesis_family_s_adapter
 selection: choose_one
 
 effects:
   # see notes: edge_gap_see_docs
+  # see notes: ammo_efficiency_cap
   - kind: out_of_scope
-    clause: "+80% Ammo Efficiency when 6 enemies are within 6 m"
+    clause: "+75% Ammo Efficiency when 6 enemies are within 6 m"
     reason: infinite_ammo
 
 source:

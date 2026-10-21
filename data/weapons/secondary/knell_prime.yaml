@@ -37,7 +37,7 @@ weakpoint_stacks:
   duration_seconds: 2.0
   crit_multiplier: 0.5
   status_chance: 0.20
-  ammo_efficiency: 1.0
+  infinite_ammo: true
 
 attack:
   # see notes: cone_half_angle_from

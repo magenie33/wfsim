@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn frenzy_ammo_efficiency_prevents_reloads() {
     // All-head with Frenzy: only the first shot consumes ammo (Frenzy's
-    // +100% efficiency zeroes the rest), so the 25-shot cadence holds
+    // infinite ammo zeroes the rest), so the 25-shot cadence holds
     // with zero reloads despite the 12-round magazine.
     let p = FightParams {
         frenzy: true,
@@ -22,12 +22,15 @@ fn frenzy_ammo_efficiency_prevents_reloads() {
     assert_eq!(s.mean_reloads, 0.0);
 }
 
+/// INFINITE AMMO IS NOT CAPPED: a headshot window of it makes every later
+/// shot free, where the same window granting +100% Ammo Efficiency stops at
+/// the 75% cap and still reloads.
 #[test]
-fn headshot_ammo_efficiency_buff_refreshes_and_prevents_reloads() {
+fn headshot_infinite_ammo_buff_refreshes_and_prevents_reloads() {
     let buff = crate::model::StackingBuff {
-        id: "headshot_ammo_efficiency",
+        id: "headshot_infinite_ammo",
         trigger: crate::model::BuffTrigger::Headshot,
-        grant: crate::model::BuffGrant::AmmoEfficiency,
+        grant: crate::model::BuffGrant::InfiniteAmmo,
         chance: 1.0,
         decay: crate::model::BuffDecay::LoseOneAndReset,
         per_stack: 1.0,
@@ -53,10 +56,19 @@ fn headshot_ammo_efficiency_buff_refreshes_and_prevents_reloads() {
         ..no_status()
     };
     let body = FightParams { body_parts: mono_body(1.0), ..head.clone() };
+    let capped = FightParams {
+        stacking_buffs: vec![crate::model::StackingBuff {
+            grant: crate::model::BuffGrant::AmmoEfficiency,
+            ..head.stacking_buffs[0]
+        }],
+        ..head.clone()
+    };
     let head_result = monte_carlo(&head, 20, 4);
     let body_result = monte_carlo(&body, 20, 4);
+    let capped_result = monte_carlo(&capped, 20, 4);
     assert_eq!(head_result.mean_reloads, 0.0, "the first hit makes every later shot free");
     assert!(body_result.mean_reloads > 0.0, "body shots must never open the window");
+    assert!(capped_result.mean_reloads > 0.0, "+100% efficiency is 75%, and a shot in four still pays");
 }
 
 #[test]

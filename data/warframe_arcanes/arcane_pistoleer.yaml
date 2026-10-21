@@ -3,13 +3,14 @@ name: "Arcane Pistoleer"
 rarity: rare
 max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/AmmoEfficiencyOnPistolHeadshot
-description: "On Pistol Weak Point Kill:\n60% chance for +102% Ammo Efficiency for 12s"
+description: "On Pistol Weak Point Kill:\n60% Chance for Infinite Ammo for 12s"
 
+# see notes: ammo_efficiency_cap
 effects:
   - kind: unmodelled
     text: "On Pistol Weak Point Kill:"
   - kind: unmodelled
-    text: "60% chance for +102% Ammo Efficiency for 12s"
+    text: "60% Chance for Infinite Ammo for 12s"
 
 source:
   url: https://wiki.warframe.com/w/Arcane_Pistoleer

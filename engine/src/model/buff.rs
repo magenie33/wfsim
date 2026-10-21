@@ -244,9 +244,13 @@ pub enum BuffGrant {
     /// The RELATIVE status-chance bucket. Galvanized Elementalist's on-kill
     /// `+30% Status Chance`.
     StatusChance,
-    /// The refunded share of a round. Brain Storm and Skull Shots refresh a
-    /// full-efficiency window on each weak-point hit.
+    /// The refunded share of a round, capped with every other source in
+    /// `fight::ammo_efficiency`.
     AmmoEfficiency,
+    /// INFINITE AMMO while any stack is up — Brain Storm's and Skull Shots'
+    /// chance on a headshot. A state, not a number: `per_stack` is 1 and the
+    /// efficiency cap does not reach it.
+    InfiniteAmmo,
     /// Blazing Barrel on the Sybaris and the Stug: "+5% Multishot" — a
     /// PERCENTAGE of the weapon's base, which is what every multishot MOD
     /// grants, so it joins their bucket rather than either flat bracket.
@@ -326,6 +330,7 @@ impl BuffGrant {
             BuffGrant::CritChance => "crit_chance",
             BuffGrant::StatusChance => "status_chance",
             BuffGrant::AmmoEfficiency => "ammo_efficiency",
+            BuffGrant::InfiniteAmmo => "infinite_ammo",
             BuffGrant::HeadshotDamage => "headshot_damage",
             BuffGrant::InitialCombo => "initial_combo",
             BuffGrant::MeleeRange => "melee_range",
@@ -339,7 +344,7 @@ impl BuffGrant {
         use BuffGrant as G;
         [
             G::BaseDamage, G::FlatBaseDamage, G::BaseMultishot, G::Multishot, G::FlatMultishot, G::ReloadSpeed,
-            G::FireRate, G::BaseCritDamage, G::CritDamage, G::CritChance, G::StatusChance, G::AmmoEfficiency, G::HeadshotDamage,
+            G::FireRate, G::BaseCritDamage, G::CritDamage, G::CritChance, G::StatusChance, G::AmmoEfficiency, G::InfiniteAmmo, G::HeadshotDamage,
             G::InitialCombo, G::MeleeRange, G::StatusDamage, G::PunchThrough,
         ]
         .into_iter()
@@ -368,7 +373,7 @@ impl BuffGrant {
             BuffGrant::BaseCritDamage | BuffGrant::CritDamage => "crit_damage",
             BuffGrant::CritChance => "crit_chance",
             BuffGrant::StatusChance => "status_chance",
-            BuffGrant::AmmoEfficiency => "ammo_efficiency",
+            BuffGrant::AmmoEfficiency | BuffGrant::InfiniteAmmo => "ammo_efficiency",
             BuffGrant::HeadshotDamage => "headshot_damage",
             BuffGrant::InitialCombo => "initial_combo",
             BuffGrant::MeleeRange => "melee_range",
@@ -395,6 +400,7 @@ impl BuffGrant {
             BuffGrant::CritChance => "Crit Chance",
             BuffGrant::StatusChance => "Status Chance",
             BuffGrant::AmmoEfficiency => "Ammo Efficiency",
+            BuffGrant::InfiniteAmmo => "Infinite Ammo",
             BuffGrant::HeadshotDamage => "Headshot Damage",
             BuffGrant::InitialCombo => "Initial Combo",
             BuffGrant::MeleeRange => "Range",

@@ -62,14 +62,12 @@ evolutions:
   ballistica_swift_deliverance: 迅速判决
   ballistica_voids_guidance: 虚空指引
   bronco_commodores_fortune: 准将沐福
-  bronco_enough_for_everyone: 人人有份
   bronco_evo1_incarnon_form: 灵化形态
   bronco_extended_volley: 扩容齐发
   bronco_infused_shots: 注能射击
   bronco_kinetic_battle: 动能战斗
   bronco_practiced_grip: 熟练之握
   bronco_prime_commodores_fortune: 准将沐福
-  bronco_prime_enough_for_everyone: 人人有份
   bronco_prime_evo1_incarnon_form: 灵化形态
   bronco_prime_extended_volley: 扩容齐发
   bronco_prime_infused_shots: 注能射击
@@ -88,7 +86,6 @@ evolutions:
   cestra_survivors_edge: 生还占优
   cestra_swift_deliverance: 迅速判决
   cestra_wisemans_regard: 智者慧眼
-  dera_crimson_overture: 猩红序曲
   dera_deathtrap_trigger: 死险触发
   dera_elemental_balance: 元素平衡
   dera_evo1_incarnon_form: 灵化形态
@@ -97,7 +94,6 @@ evolutions:
   dera_high_ground: 高地优势
   dera_paragon_essence: 英豪本源
   dera_swift_deliverance: 迅速判决
-  dera_vandal_crimson_overture: 猩红序曲
   dera_vandal_deathtrap_trigger: 死险触发
   dera_vandal_elemental_balance: 元素平衡
   dera_vandal_evo1_incarnon_form: 灵化形态
@@ -654,7 +650,6 @@ evolutions:
   # The Boltor family.
   boltor_evo1_incarnon_form: 灵化形态
   boltor_hunters_mantra: 猎者密咒
-  boltor_crimson_overture: 猩红序曲
   boltor_swift_deliverance: 迅速判决
   boltor_extended_volley: 扩充齐发
   boltor_rapid_reinforcement: 急速强化
@@ -663,7 +658,6 @@ evolutions:
   boltor_commodores_fortune: 准将沐福
   telos_boltor_evo1_incarnon_form: 灵化形态
   telos_boltor_hunters_mantra: 猎者密咒
-  telos_boltor_crimson_overture: 猩红序曲
   telos_boltor_swift_deliverance: 迅速判决
   telos_boltor_extended_volley: 扩充齐发
   telos_boltor_rapid_reinforcement: 急速强化
@@ -672,7 +666,6 @@ evolutions:
   telos_boltor_commodores_fortune: 准将沐福
   boltor_prime_evo1_incarnon_form: 灵化形态
   boltor_prime_hunters_mantra: 猎者密咒
-  boltor_prime_crimson_overture: 猩红序曲
   boltor_prime_swift_deliverance: 迅速判决
   boltor_prime_extended_volley: 扩充齐发
   boltor_prime_rapid_reinforcement: 急速强化
@@ -722,14 +715,12 @@ evolution_descriptions:
   ballistica_swift_deliverance: "+50%投射物速度"
   ballistica_voids_guidance: "+40%精确度 -40%武器后坐力"
   bronco_commodores_fortune: "+20%基础暴击几率"
-  bronco_enough_for_everyone: "6米内至少有6名敌人时+80%弹药效率。"
   bronco_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
   bronco_extended_volley: "+2弹匣容量"
   bronco_infused_shots: "基础伤害增加 +20。每消耗50能量: 基础伤害增加 +10，持续10秒，最高可叠加至4x"
   bronco_kinetic_battle: "-50%后坐力"
   bronco_practiced_grip: "+30%精准度"
   bronco_prime_commodores_fortune: "+20%基础暴击几率"
-  bronco_prime_enough_for_everyone: "6米内至少有6名敌人时+80%弹药效率。"
   bronco_prime_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
   bronco_prime_extended_volley: "+2弹匣容量"
   bronco_prime_infused_shots: "基础伤害增加 +16。每消耗50能量: 基础伤害增加 +9，持续10秒，最高可叠加至4x"
@@ -748,7 +739,6 @@ evolution_descriptions:
   cestra_survivors_edge: "基础暴击几率增加+18%"
   cestra_swift_deliverance: "+50%投射物速度"
   cestra_wisemans_regard: "将当前暴击几率的30%增加到基础触发几率，最高可达40%"
-  dera_crimson_overture: "基础伤害增加+8 击杀时：+20%弹药效率，持续5秒。最多叠加到4层。"
   dera_deathtrap_trigger: "基础暴击几率增加+14% 基础暴击伤害倍率增加+0.6x"
   dera_elemental_balance: "基础触发几率增加 by +18%"
   dera_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
@@ -757,7 +747,6 @@ evolution_descriptions:
   dera_high_ground: "将当前触发几率的25%增加到基础暴击几率，最高可达35%"
   dera_paragon_essence: "基础伤害增加+6 触发异常状态时：+5%射速，持续5秒。最多叠加到6层。"
   dera_swift_deliverance: "基础弹匣容量增加+22"
-  dera_vandal_crimson_overture: "基础伤害增加+6 击杀时：+20%弹药效率，持续5秒。最多叠加到4层。"
   dera_vandal_deathtrap_trigger: "基础暴击几率增加+14% 基础暴击伤害倍率增加+0.4x"
   dera_vandal_elemental_balance: "基础触发几率增加 by +14%"
   dera_vandal_evo1_incarnon_form: "爆头为灵化转变充能，次要开火进行转变。切换回原有模式将消耗剩余的充能。"
@@ -1426,8 +1415,6 @@ evolution_descriptions:
     每个投射物造成的爆头能为灵化形态提供8发弹药，最高至160。充能耗尽后武器会自动转变为普通模式。
   boltor_hunters_mantra: |-
     基础伤害增加+18。 持续消耗能量类技能激活时：+4穿透 +40% 精准度。
-  boltor_crimson_overture: |-
-    击杀时：基础伤害增加+12和+20% 弹药效率，持续5秒。 最多叠加到3x。
   boltor_swift_deliverance: |-
     +60%投射物速度。
   boltor_extended_volley: |-
@@ -1447,8 +1434,6 @@ evolution_descriptions:
     每个投射物造成的爆头能为灵化形态提供8发弹药，最高至160。充能耗尽后武器会自动转变为普通模式。
   telos_boltor_hunters_mantra: |-
     基础伤害增加+4。 持续消耗能量类技能激活时：+4穿透 +40% 精准度。
-  telos_boltor_crimson_overture: |-
-    击杀时：基础伤害增加+2和+20% 弹药效率，持续5秒。 最多叠加到3x。
   telos_boltor_swift_deliverance: |-
     +60%投射物速度。
   telos_boltor_extended_volley: |-
@@ -1468,8 +1453,6 @@ evolution_descriptions:
     每个投射物造成的爆头能为灵化形态提供8发弹药，最高至160。充能耗尽后武器会自动转变为普通模式。
   boltor_prime_hunters_mantra: |-
     基础伤害增加+4。 持续消耗能量类技能激活时：+4穿透 +40% 精准度。
-  boltor_prime_crimson_overture: |-
-    击杀时：基础伤害增加+2和+20% 弹药效率，持续5秒。 最多叠加到3x。
   boltor_prime_swift_deliverance: |-
     +60%投射物速度。
   boltor_prime_extended_volley: |-

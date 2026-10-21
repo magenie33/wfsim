@@ -877,12 +877,11 @@ fn a_chamber_pays_the_first_round_of_the_magazine_and_no_other() {
 /// missing from the magazine, since the buff doesn't apply on a completely
 /// full one"*.
 ///
-/// So at 100% efficiency the magazine never leaves full and the mod is
-/// worth EXACTLY NOTHING — where a "the magazine was full" gate would have
-/// paid it on every shot of the run, which is the same bug DE fixed on the
-/// Vectis Incarnon in ver 43.5.
+/// So under INFINITE AMMO (what a 100% source now grants) the magazine never
+/// leaves full and the mod is worth EXACTLY NOTHING — where a "the magazine
+/// was full" gate would have paid it on every shot of the run.
 #[test]
-fn full_ammo_efficiency_never_leaves_the_magazine_full_enough_to_pay() {
+fn infinite_ammo_never_leaves_the_magazine_full_enough_to_pay() {
     let p = |bonus: f64| FightParams {
         multishot: 1.0,
         first_round_damage: bonus,
@@ -890,7 +889,21 @@ fn full_ammo_efficiency_never_leaves_the_magazine_full_enough_to_pay() {
         magazine_size: 5.0,
         crit_multiplier: 1.0,
         base_crit_chance: 0.0,
-        arcane: ArcaneFx { ammo_efficiency: 1.0, ..ArcaneFx::none() },
+        stacking_buffs: vec![crate::model::StackingBuff {
+            id: "infinite_ammo_throughout",
+            trigger: crate::model::BuffTrigger::Headshot,
+            grant: crate::model::BuffGrant::InfiniteAmmo,
+            chance: 1.0,
+            decay: crate::model::BuffDecay::LoseOneAndReset,
+            per_stack: 1.0,
+            max_stacks: 1,
+            duration: crate::model::NO_TIMEOUT,
+            initial_stacks: 1,
+            stacks_per_trigger: 1,
+            per_shell: false,
+            cleared_by: crate::model::ClearedBy::Nothing,
+            card_opens_full: false,
+        }],
         ammo_efficiency_applies: true,
         duration_seconds: 10.0,
         body_parts: mono_body(1.0),
@@ -898,6 +911,7 @@ fn full_ammo_efficiency_never_leaves_the_magazine_full_enough_to_pay() {
     };
     let off = monte_carlo(&p(0.0), 4, 3);
     let on = monte_carlo(&p(1.0), 4, 3);
+    assert_eq!(off.mean_reloads, 0.0, "infinite ammo from the first shot");
     assert!((on.mean_shots - off.mean_shots).abs() < 1e-9, "cadence must not change");
     assert!(
         (on.mean_damage - off.mean_damage).abs() < 1e-6,
@@ -1187,29 +1201,30 @@ fn a_zero_cost_shot_fires_off_an_empty_magazine_instead_of_reloading() {
     );
 }
 
-/// Ammo efficiency CAPS at 100%: a shot can cost
-/// nothing, never less. Stacking past the cap buys nothing and must never
-/// start refunding ammo — a magazine cannot grow while the weapon fires.
+/// Ammo efficiency CAPS at 75% once every source has combined: one shot in
+/// four pays, however much is stacked. Only INFINITE AMMO makes a shot free,
+/// and the cap does not reach it.
 #[test]
-fn ammo_efficiency_caps_at_free_and_never_refunds() {
+fn ammo_efficiency_caps_at_three_quarters_and_infinite_ammo_is_free() {
     // The pure function first, since that is where the ceiling lives.
-    assert_eq!(ammo_efficiency(true, 1.0, 1.0, 1.0, 0.0), 1.0, "3x over the cap");
-    assert_eq!(ammo_efficiency(true, 0.0, 0.0, 0.0, 0.0), 0.0);
-    assert_eq!(ammo_efficiency(false, 1.0, 1.0, 1.0, 1.0), 0.0, "charge-backed is exempt");
-    // AN ABILITY'S SHARE MULTIPLIES rather than adding — the wiki's own
-    // rule, and the arithmetic that separates the two: 75% on top of 50%
-    // is 87.5% (cost 0.5 x 0.25), where adding would have read 125% and
-    // clamped to free.
-    assert!((ammo_efficiency(true, 0.5, 0.0, 0.0, 0.75) - 0.875).abs() < 1e-12);
-    // …and either one alone is itself.
-    assert!((ammo_efficiency(true, 0.0, 0.0, 0.0, 0.75) - 0.75).abs() < 1e-12);
-    assert_eq!(ammo_efficiency(true, 0.0, 0.0, 0.0, 1.0), 1.0);
+    assert_eq!(ammo_efficiency(true, 1.0, 1.0, 1.0, 0.0, false), 0.75, "3x over the cap");
+    assert_eq!(ammo_efficiency(true, 0.5, 0.5, 0.0, 0.0, false), 0.75, "two halves");
+    assert_eq!(ammo_efficiency(true, 0.0, 0.0, 0.0, 0.0, false), 0.0);
+    assert_eq!(ammo_efficiency(false, 1.0, 1.0, 1.0, 1.0, true), 0.0, "charge-backed is exempt");
+    // AN ABILITY'S SHARE MULTIPLIES rather than adding, and the cap takes
+    // the product: 75% on top of 50% is 87.5% (cost 0.5 x 0.25), capped.
+    assert!((ammo_efficiency(true, 0.25, 0.0, 0.0, 0.5, false) - 0.625).abs() < 1e-12);
+    assert_eq!(ammo_efficiency(true, 0.5, 0.0, 0.0, 0.75, false), 0.75);
+    // …and either one alone is itself, up to the cap.
+    assert!((ammo_efficiency(true, 0.0, 0.0, 0.0, 0.75, false) - 0.75).abs() < 1e-12);
+    assert_eq!(ammo_efficiency(true, 0.0, 0.0, 0.0, 1.0, false), 0.75);
+    // INFINITE AMMO is free whatever else is in force.
+    assert_eq!(ammo_efficiency(true, 0.0, 0.0, 0.0, 0.0, true), 1.0);
+    assert_eq!(ammo_efficiency(true, 1.0, 1.0, 1.0, 1.0, true), 1.0);
 
-    // End to end: an absurd stack behaves exactly like a plain 100%. Note
-    // this half cannot catch a silent refund on its own — a magazine that
-    // grows is not reported anywhere, so nothing downstream would move.
-    // The assertions above are the real guard; this one pins that going
-    // over the cap does not disturb the cadence.
+    // End to end: an absurd stack behaves exactly like a plain 75% — a
+    // three-round magazine with no reserve fires twelve 0.25 shots and
+    // stops, where a free shot would have fired all twenty.
     let p = |eff: f64| FightParams {
         arcane: ArcaneFx { ammo_efficiency: eff, ..ArcaneFx::none() },
         ammo_efficiency_applies: true,
@@ -1221,16 +1236,15 @@ fn ammo_efficiency_caps_at_free_and_never_refunds() {
         body_parts: mono_body(1.0),
         ..no_status()
     };
-    let exact = monte_carlo(&p(1.0), 4, 3);
+    let exact = monte_carlo(&p(0.75), 4, 3);
     let over = monte_carlo(&p(5.0), 4, 3);
-    assert!((exact.mean_shots - 20.0).abs() < 1e-9, "shots {}", exact.mean_shots);
+    assert!((exact.mean_shots - 12.0).abs() < 1e-9, "shots {}", exact.mean_shots);
     assert!(
         (over.mean_shots - exact.mean_shots).abs() < 1e-9,
-        "over-cap must behave as exactly free: {} vs {}",
+        "over-cap must behave as exactly the cap: {} vs {}",
         over.mean_shots,
         exact.mean_shots
     );
-    assert_eq!(over.mean_reloads, 0.0);
 }
 
 /// Plentiful Mayhem on the real Incarnon numbers — ✅ measured: the 170-charge pool at 8

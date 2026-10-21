@@ -796,7 +796,8 @@ pub fn extra_hits_at(list: &[ActiveAbility], t: f64) -> Vec<ExtraHitLive> {
 ///
 /// The other sources (the buff bar, the arcanes) add among themselves and this
 /// composes with their total — `fight::ammo_efficiency` is where that happens,
-/// because it is the one function that has all of them.
+/// and where the 75% cap takes the result, because it is the one function that
+/// has all of them.
 pub fn ammo_efficiency_at(list: &[ActiveAbility], t: f64) -> f64 {
     let cost: f64 = list
         .iter()

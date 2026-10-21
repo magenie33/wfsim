@@ -198,7 +198,9 @@ weakpoint hits.
   shots_per_ammo = 1 / (1 - e)
   ```
   Sources stack **additively** with each other, **except Energized Munitions**
-  which stacks multiplicatively. `e = 1.0` (e.g. Frenzy's +100%) → infinite ammo.
+  which stacks multiplicatively; the combined `e` is capped at 0.75.
+- **Infinite ammo** — a shot costs nothing while it is up (Frenzy, Death Knell,
+  Brain Storm, Skull Shots). Its own state, outside the ammo-efficiency cap.
 
 ## Perks and buffs
 

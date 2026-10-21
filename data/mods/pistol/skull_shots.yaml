@@ -5,15 +5,17 @@ polarity: madurai
 base_drain: 10
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/PvPMods/Pistol/ViperUnlimitedAmmo
-description: "On Headshot:\n+100% Ammo Efficiency for 2s"
+description: "On Headshot:\nX% Chance for Infinite Ammo for Xs"
 exclusive_to: [viper, viper_wraith]
-lower_ranks_unmodelled: true
 effects:
+  # see notes: ammo_efficiency_cap
   - kind: stacking_buff
     trigger: headshot
-    grants: ammo_efficiency
-    rankMax: 1.0
+    grants: infinite_ammo
     max_stacks: 1
+    chance_rank0: 0.10
+    chance: 0.40
+    duration_rank0: 0.5
     duration: 2.0
 source:
   url: https://wiki.warframe.com/w/Skull_Shots

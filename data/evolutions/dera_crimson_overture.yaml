@@ -4,7 +4,7 @@ weapon: dera
 tier: 2
 position_in_tier: 1
 icon: DamageAmmoEfficiencyOnKill(xWhite).png
-description: "Increase Base Damage by +8. On Kill: +20% Ammo Efficiency for 5 seconds. Stacks up to 4x."
+description: "Increase Base Damage by +8. On Kill: +25% Ammo Efficiency for 5 seconds. Stacks up to 3x."
 # see notes: genesis_family_s_adapter
 selection: choose_one
 
@@ -13,8 +13,9 @@ effects:
   - kind: flat_base_damage
     value: 8.0
   # see notes: edge_gap_see_docs
+  # see notes: ammo_efficiency_cap
   - kind: out_of_scope
-    clause: "On Kill: +20% Ammo Efficiency for 5 seconds"
+    clause: "On Kill: +25% Ammo Efficiency for 5 seconds"
     reason: infinite_ammo
   # see notes: modelled_no_rule_clause
   - kind: unmodelled_stacks_up_to_x

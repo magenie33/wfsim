@@ -107,7 +107,7 @@ fn m103_a_punched_weak_point_fires_what_a_weak_point_fires() {
             duration_seconds: 6.0,
             crit_multiplier: 0.5,
             status_chance: 0.0,
-            ammo_efficiency: 0.0,
+            infinite_ammo: false,
         });
         // THE AIMED BODY ALONE, so the punched bodies' own damage cannot be
         // what this reads — the claim is about the pile, not about the crowd.

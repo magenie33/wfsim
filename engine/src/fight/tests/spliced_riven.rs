@@ -69,12 +69,13 @@ fn a_spliced_techrot_bonus_lands_on_a_techrot_unit() {
     assert_eq!(vs(Foe::training_dummy()), 1.0);
 }
 
-/// THE AKARIUS PRIME NEVER RELOADS on a 2+1 spliced Ammo Efficiency card with
-/// Akimbo Slip Shot while sliding: 0.005 x 90 x 1.2375 x 1.2 disposition is
-/// 66.8%, and +65% takes it past the 100% cap. One magazine and no reserve, so
-/// a single reload would end the fight at 8 shots.
+/// THE AKARIUS PRIME STOPS AT THE CAP on a 2+1 spliced Ammo Efficiency card
+/// with Akimbo Slip Shot while sliding: 0.005 x 90 x 1.2375 x 1.2 disposition
+/// is 66.8%, and +65% takes it past 100% — which the 75% cap turns into one
+/// round in four paying. One magazine and no reserve, so the fight ends at
+/// four shots a round.
 #[test]
-fn a_sliding_akarius_on_a_spliced_card_never_reloads() {
+fn a_sliding_akarius_on_a_spliced_card_stops_at_the_cap() {
     let base = WeaponBase::from_data("akarius_prime", true, &[]);
     let card = RivenSpec {
         class: "pistol".into(),
@@ -100,5 +101,5 @@ fn a_sliding_akarius_on_a_spliced_card_never_reloads() {
     p.reserve_ammo = 0.0;
     assert!(p.arcane.ammo_efficiency >= 1.0, "{}", p.arcane.ammo_efficiency);
     let shots = monte_carlo(&p, 2, 3).mean_shots;
-    assert!(shots > 4.0 * p.magazine_size, "{shots} shots from a {}-round magazine", p.magazine_size);
+    assert_eq!(shots, 4.0 * p.magazine_size, "{shots} shots from a {}-round magazine", p.magazine_size);
 }

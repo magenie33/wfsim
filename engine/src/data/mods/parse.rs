@@ -301,32 +301,36 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         // The buff's ID is the MOD's, leaked once. It is the key the card, the
         // replay curve, the stack config and the sampler all share, so deriving
         // it is what stops those four from drifting.
-        "stacking_buff" => ModEffect::GrantsStackingBuff(crate::model::StackingBuff {
-            // EVERY KEY THE FILE MAY STATE IS READ HERE — `STACKING_BUFF_KEYS`,
-            // which `stacking_buff_keys_are_all_read` holds the data to.
-            id: Box::leak(id.to_string().into_boxed_str()),
-            trigger: crate::model::BuffTrigger::from_id(v.get("trigger").and_then(Value::as_str)?)?,
-            grant: crate::model::BuffGrant::from_id(v.get("grants").and_then(Value::as_str)?)?,
-            per_stack: max("rankMax"),
-            max_stacks: u(v, "max_stacks").max(1),
-            // NO CLOCK STATED IS NO CLOCK, as an evolution reads it: a zero
-            // here dropped every stack the instant it was granted.
-            duration: n(v, "duration").unwrap_or(crate::model::NO_TIMEOUT),
-            chance: n(v, "chance").unwrap_or(1.0),
-            decay: crate::model::BuffDecay::from_id(v.get("decay").and_then(Value::as_str)),
-            initial_stacks: 0,
-            // ONE STACK A SHELL LOADED, where the file says `per_shell` — the
-            // fight counts the shells a reload actually loads (`bump_shells`).
-            stacks_per_trigger: if v.get("per_shell").and_then(Value::as_bool) == Some(true) { 0 } else { 1 },
-            per_shell: v.get("per_shell").and_then(Value::as_bool) == Some(true),
-            cleared_by: crate::model::ClearedBy::from_id(v.get("cleared_by").and_then(Value::as_str)),
-            // Read here as well, so a MOD that states it needs no second edit
-            // — no mod does today; the two that claim it are evolutions.
-            card_opens_full: v
-                .get("card_opens_full")
-                .and_then(Value::as_bool)
-                .unwrap_or(false),
-        }),
+        "stacking_buff" => {
+            let grant = crate::model::BuffGrant::from_id(v.get("grants").and_then(Value::as_str)?)?;
+            ModEffect::GrantsStackingBuff(crate::model::StackingBuff {
+                // EVERY KEY THE FILE MAY STATE IS READ HERE — `STACKING_BUFF_KEYS`,
+                // which `stacking_buff_keys_are_all_read` holds the data to.
+                id: Box::leak(id.to_string().into_boxed_str()),
+                trigger: crate::model::BuffTrigger::from_id(v.get("trigger").and_then(Value::as_str)?)?,
+                grant,
+                // INFINITE AMMO IS A STATE, so the file states no value for it.
+                per_stack: if grant == crate::model::BuffGrant::InfiniteAmmo { 1.0 } else { max("rankMax") },
+                max_stacks: u(v, "max_stacks").max(1),
+                // NO CLOCK STATED IS NO CLOCK, as an evolution reads it: a zero
+                // here dropped every stack the instant it was granted.
+                duration: n(v, "duration").unwrap_or(crate::model::NO_TIMEOUT),
+                chance: n(v, "chance").unwrap_or(1.0),
+                decay: crate::model::BuffDecay::from_id(v.get("decay").and_then(Value::as_str)),
+                initial_stacks: 0,
+                // ONE STACK A SHELL LOADED, where the file says `per_shell` — the
+                // fight counts the shells a reload actually loads (`bump_shells`).
+                stacks_per_trigger: if v.get("per_shell").and_then(Value::as_bool) == Some(true) { 0 } else { 1 },
+                per_shell: v.get("per_shell").and_then(Value::as_bool) == Some(true),
+                cleared_by: crate::model::ClearedBy::from_id(v.get("cleared_by").and_then(Value::as_str)),
+                // Read here as well, so a MOD that states it needs no second edit
+                // — no mod does today; the two that claim it are evolutions.
+                card_opens_full: v
+                    .get("card_opens_full")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false),
+            })
+        }
         // DEGREES, not an accuracy fraction — see `ModEffect::AddedSpread`.
         // `max_stacks` multiplies it, the same assumed-max reading a `kind:
         // buff` with an indirect grant already takes: a build carrying this
@@ -650,7 +654,7 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
 #[cfg(test)]
 pub(crate) const STACKING_BUFF_KEYS: &[&str] = &[
     "kind", "trigger", "grants", "rank0", "rankMax", "max_stacks", "duration",
-    "duration_rank0", "chance", "decay", "card_opens_full", "per_shell", "cleared_by",
+    "duration_rank0", "chance", "chance_rank0", "decay", "card_opens_full", "per_shell", "cleared_by",
 ];
 
 /// EVERY `<field>_rank0` LADDERS `<field>` from rank 0 to the max-rank value

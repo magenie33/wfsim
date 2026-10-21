@@ -20,8 +20,9 @@ grants:
   # 2026-07-25): "stacks multiplicatively after any equipped fire rate
   # mods or fire rate bonuses".
   fire_rate_multiplier: 2.5
-  # +100% ammo efficiency => infinite ammo: shots_per_ammo = 1/(1-e).
-  ammo_efficiency: 1.0
+  # INFINITE AMMO, its own state rather than capped ammo efficiency.
+  # see notes: ammo_efficiency_cap
+  infinite_ammo: true
   recoil: -0.75
   # +100% Toxin behaves like a Toxin mod, ADDITIVE with elemental mods
   # and appended at the END of the mod order, so it participates in

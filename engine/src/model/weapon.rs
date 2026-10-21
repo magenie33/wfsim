@@ -510,9 +510,10 @@ pub struct WeakpointStacksSpec {
     /// Per stack, added to the FINISHED status chance.
     #[serde(default)]
     pub status_chance: f64,
-    /// While ANY stack is up. 1.0 is the round being free.
+    /// INFINITE AMMO while ANY stack is up: the round is free, outside the
+    /// efficiency cap.
     #[serde(default)]
-    pub ammo_efficiency: f64,
+    pub infinite_ammo: bool,
 }
 
 /// A status-triggered crit-chance lock — Gotva Prime's.

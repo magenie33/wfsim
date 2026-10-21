@@ -255,6 +255,11 @@ What the drops still do not model:
   accumulated faster than they are collected delete each other, and the bin's
   size is unpublished. Here every pack in reach is collected instantly, so
   nothing is ever left long enough to be evicted.
+- **MOST INFINITE-AMMO SOURCES.** Frenzy, Death Knell, Brain Storm and Skull
+  Shots are modelled (`docs/MECHANICS.md` §"Ammo Efficiency"); Void Relic
+  buffs, Chamber Cascade, Overdrive, Gale Force, the Vasto's Reaper's Plenty
+  and Arcane Pistoleer are not. No Necramech or Amp is in the roster, so the
+  cap has nothing of theirs to reach.
 - **THE WASTE RULE IS AN ASSUMPTION.** A pack collected with less headroom than
   it carries is consumed WHOLE here (a reserve one round short takes one round
   and loses fourteen). The wiki does not say whether the game tops up and leaves

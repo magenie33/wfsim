@@ -4,7 +4,7 @@ weapon: boltor_prime
 tier: 2
 position_in_tier: 2
 icon: DamageAmmoEfficiencyOnKill(xWhite).png
-description: "Increase Base Damage by +0. On Kill: Increase Base Damage by +2 and +20% Ammo Efficiency for 5 seconds. Stacks up to 3x."
+description: "Increase Base Damage by +0. On Kill: Increase Base Damage by +2 and +25% Ammo Efficiency for 5 seconds. Stacks up to 3x."
 # see notes: genesis_family_s_boltor
 selection: choose_one
 
@@ -33,8 +33,9 @@ effects:
     max_stacks: 3
     duration_seconds: 5.0
     trigger: kill
+  # see notes: ammo_efficiency_cap
   - kind: out_of_scope
-    clause: "On Kill: +20% Ammo Efficiency for 5 seconds"
+    clause: "On Kill: +25% Ammo Efficiency for 5 seconds. Stacks up to 3x"
     reason: infinite_ammo
 
 source:

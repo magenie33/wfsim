@@ -12,8 +12,8 @@
 //!   grant it.
 //! - The buff lasts 3 s and is **refreshed** by subsequent headshots.
 //! - While active it grants: fire rate **x2.5** (an independent multiplier,
-//!   applied after fire-rate mods), **+100% ammo efficiency** (=> infinite
-//!   ammo), and **+100% Toxin** injected as an elemental mod at the end of the
+//!   applied after fire-rate mods), **infinite ammo** (its own state, not
+//!   capped ammo efficiency), and **+100% Toxin** injected as an elemental mod at the end of the
 //!   mod order. (Recoil -75% is not a damage bucket and is omitted here.)
 //!
 //! This perk is stateless — the buff's duration/refresh lives on the [`Buff`]
@@ -32,9 +32,6 @@ const DURATION_SECS: f64 = 3.0;
 
 /// Independent fire-rate multiplier (wiki "+150%" == x2.5).
 const FIRE_RATE_MULTIPLIER: f64 = 2.5;
-
-/// +100% ammo efficiency => infinite ammo.
-const AMMO_EFFICIENCY_BONUS: f64 = 1.0;
 
 /// +100% Toxin, injected as an elemental mod at the end of the mod order.
 const TOXIN_PERCENT_OF_BASE: f64 = 1.0;
@@ -68,7 +65,7 @@ impl Frenzy {
     fn buff_contributions() -> Contributions {
         Contributions {
             fire_rate_multiplier: FIRE_RATE_MULTIPLIER,
-            ammo_efficiency: AMMO_EFFICIENCY_BONUS,
+            infinite_ammo: true,
             injected_elements: vec![InjectedElement {
                 damage_type: DamageType::Toxin,
                 amount_percent_of_base: TOXIN_PERCENT_OF_BASE,
@@ -134,7 +131,8 @@ mod tests {
 
         let c = bar.total_contributions();
         assert!(approx(c.fire_rate_multiplier, 2.5));
-        assert!(approx(c.ammo_efficiency, 1.0));
+        assert!(c.infinite_ammo);
+        assert_eq!(c.ammo_efficiency, 0.0);
         assert_eq!(c.injected_elements.len(), 1);
         let inj = c.injected_elements[0];
         assert_eq!(inj.damage_type, DamageType::Toxin);

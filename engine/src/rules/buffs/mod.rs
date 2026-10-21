@@ -67,10 +67,12 @@ pub struct Contributions {
     /// Multiplicative: an independent fire-rate multiplier (Frenzy's x2.5),
     /// applied on its own bucket after additive fire-rate mods. Identity 1.0.
     pub fire_rate_multiplier: f64,
-    /// Additive: ammo-efficiency bonus `e`; shots_per_ammo = 1/(1-e), 1.0 =>
-    /// infinite ammo. (Energized Munitions is the multiplicative exception, not
-    /// modeled here.)
+    /// Additive: ammo-efficiency bonus `e`; shots_per_ammo = 1/(1-e), capped
+    /// with every other source in `fight::ammo_efficiency`.
     pub ammo_efficiency: f64,
+    /// Either: a shot costs nothing while any buff grants it. Its own state,
+    /// which the efficiency cap does not reach.
+    pub infinite_ammo: bool,
     /// Elements injected into the mod order (order preserved).
     pub injected_elements: Vec<InjectedElement>,
 }
@@ -84,6 +86,7 @@ impl Default for Contributions {
             flat_crit_chance: 0.0,
             fire_rate_multiplier: 1.0,
             ammo_efficiency: 0.0,
+            infinite_ammo: false,
             injected_elements: Vec::new(),
         }
     }
@@ -96,6 +99,7 @@ impl Contributions {
         self.flat_crit_chance += other.flat_crit_chance;
         self.fire_rate_multiplier *= other.fire_rate_multiplier;
         self.ammo_efficiency += other.ammo_efficiency;
+        self.infinite_ammo |= other.infinite_ammo;
         self.injected_elements.extend(other.injected_elements);
         self
     }

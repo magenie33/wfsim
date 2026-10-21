@@ -2,6 +2,7 @@ use super::*;
 
 mod card_order;
 mod clip_delegation;
+mod infinite_ammo;
 mod card_values;
 mod catalog;
 mod chamber;

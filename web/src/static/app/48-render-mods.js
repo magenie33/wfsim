@@ -116,9 +116,9 @@ const EXTRA_STAT_KEYS = [
   ["reload_speed", "Reload Speed"],
   ["magazine", "Magazine Capacity"],
   // AMMO EFFICIENCY is the odd one and belongs here anyway: it is not a damage
-  // bucket, it is a chance for a shot to cost NOTHING, and half a dozen sources
-  // outside a build grant it. Worth zero under Infinite
-  // ammo, which the Limits block above already says out loud.
+  // bucket, it divides what a shot costs (the fight caps the combined stat at
+  // 75%), and half a dozen sources outside a build grant it. Worth zero under
+  // Infinite ammo, which the Limits block above already says out loud.
   ["ammo_efficiency", "Ammo Efficiency"],
   ["status_duration", "Status Duration"],
   // NOT A BUCKET, and its hint says so: points added after mods, the layer an

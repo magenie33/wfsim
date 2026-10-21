@@ -54,6 +54,13 @@ pub const DROP_CHANCE_LANDSCAPE: [f64; 4] = [0.60, 0.525, 0.45, 0.375];
 /// measures the real split there is one place to put it.
 pub const SECONDARY_SHARE: f64 = 0.5;
 
+/// THE CEILING ON AMMO EFFICIENCY, after every source has combined: one shot
+/// in four pays. *"Ammo Efficiency is capped at 75% … This applies to Ammo
+/// Efficiency increases from multiple sources"* (DE, Dev Workshop "Ammo
+/// Efficiency Changes"). A free shot is INFINITE AMMO, a separate state the
+/// cap does not touch (`fight::ammo_efficiency`).
+pub const EFFICIENCY_CAP: f64 = 0.75;
+
 /// WHAT ONE BODY DROPS, rolled.
 ///
 /// `rng` is one uniform draw for the ordinary chance and a second for the
