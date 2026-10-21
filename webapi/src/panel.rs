@@ -299,6 +299,10 @@ struct SectionInputs<'a> {
     compression_per_m: f64,
 }
 
+/// The source key of a heavy-doubled crit card's second copy, listed under
+/// Crit Chance on a heavy form only.
+const CRIT_CHANCE_HEAVY_AGAIN: &str = "crit_chance_heavy_again";
+
 /// Every equipped mod's share of each bucket, and the lines that never merge
 /// into one.
 fn mod_sources(
@@ -343,6 +347,15 @@ fn mod_sources(
         }
         for e in &m.effects {
             use ModEffect::*;
+            // THE SHARE THE ENGINE PAID, set bonus included (`resolve`), or the
+            // listed terms do not add up to the number above them.
+            let boosted;
+            let e = if self_scale > 1.0 {
+                boosted = e.scaled(self_scale);
+                boosted.as_ref().unwrap_or(e)
+            } else {
+                e
+            };
             let before = src.len();
             let mut push = |key: &'static str, v: f64, note: Option<String>| {
                 src.push((key, name.clone(), v, note));
@@ -827,9 +840,12 @@ fn mod_sources(
                 Tennokai { .. } => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "a window this build opens during the fight, in which a heavy attack                             costs no combo — so what it is worth depends on how much counter the                             build has climbed to when it fires"})),
-                CritChanceHeavyDoubled(_) => conditionals.push(json!({
-                    "mod": name, "desc": e.describe(), "active": true,
-                    "why": "the card reads x2 on a heavy attack, so what it is worth depends on                             which of the seven melee modes this build is"})),
+                // Both copies are terms of the crit row; `section` lists the
+                // second only on a heavy form, where `resolve` adds it.
+                CritChanceHeavyDoubled(x) => {
+                    push("crit_chance", x, None);
+                    push(CRIT_CHANCE_HEAVY_AGAIN, x, Some("the card's x2 on a heavy attack".into()));
+                }
                 CritChanceOnSlide(_) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "it names an attack — a SLIDE — so it is worth its whole number in                             that mode and exactly nothing in the other six"})),
@@ -1120,10 +1136,12 @@ fn form_section(
             .iter()
             .filter(move |(k, _, _, _)| *k == key && tag.is_none())
             .map(|(_, name, v, note)| json!({ "mod": name, "value": v, "note": note }));
+        let heavy_again = key == "crit_chance" && base.form.is_heavy();
         evo.chain(
             src.iter()
-                .filter(|(k, _, _, note)| {
-                    *k == key && tag.is_none_or(|t| note.as_deref() == Some(t))
+                .filter(move |(k, _, _, note)| {
+                    (*k == key || (heavy_again && *k == CRIT_CHANCE_HEAVY_AGAIN))
+                        && tag.is_none_or(|t| note.as_deref() == Some(t))
                 })
                 .map(|(_, name, v, note)| {
                     // `fraction` is the RAW fraction beside the formatted text,
@@ -1142,6 +1160,15 @@ fn form_section(
                 }),
         )
         .collect()
+    };
+    // An explosion that IS a heavy attack (a detonated glaive) takes the
+    // heavy-doubled cards' second copy on any form, as `resolve` pays it.
+    let radial_cc_sources = |b: &wfsim_engine::model::RadialBase| -> Vec<Value> {
+        let mut s = sources("crit_chance", None);
+        if b.blast_kind == wfsim_engine::model::BlastKind::InFlight {
+            s.extend(sources(CRIT_CHANCE_HEAVY_AGAIN, None));
+        }
+        s
     };
     // ---- stat rows: base -> final, with the merged bonus and its sources ----
     let num = |x: f64| -> String {
@@ -1716,7 +1743,7 @@ fn form_section(
             json!({ "key": "crit_chance", "label": "Crit Chance",
                 "base": pc(rb.base_crit_chance - evo_flat_cc),
                 "final": pc(rr.crit_chance),
-                "sources": rsrc("crit_chance") }),
+                "sources": radial_cc_sources(rb) }),
             json!({ "key": "crit_damage", "label": "Crit Damage",
                 "base": format!("×{}", num(rb.base_crit_damage)),
                 "final": format!("×{}", num(rr.crit_damage)),
@@ -1820,7 +1847,7 @@ fn form_section(
                     "sources": sources("base_damage", None) }),
                 json!({ "key": "crit_chance", "label": "Crit Chance",
                     "base": pc(b.base_crit_chance), "final": pc(r.crit_chance),
-                    "sources": sources("crit_chance", None) }),
+                    "sources": radial_cc_sources(b) }),
                 json!({ "key": "crit_damage", "label": "Crit Damage",
                     "base": format!("×{}", num(b.base_crit_damage)),
                     "final": format!("×{}", num(r.crit_damage)),
@@ -1860,7 +1887,7 @@ fn form_section(
                     "sources": sources("base_damage", None) }),
                 json!({ "key": "crit_chance", "label": "Crit Chance",
                     "base": pc(b.base_crit_chance), "final": pc(r.crit_chance),
-                    "sources": sources("crit_chance", None) }),
+                    "sources": radial_cc_sources(b) }),
                 json!({ "key": "crit_damage", "label": "Crit Damage",
                     "base": format!("×{}", num(b.base_crit_damage)),
                     "final": format!("×{}", num(r.crit_damage)),
@@ -2073,6 +2100,31 @@ mod weakpoint_panel_tests {
 
     fn row<'a>(p: &'a Value, key: &str) -> Option<&'a Value> {
         p["stats"].as_array()?.iter().find(|r| r["key"] == json!(key))
+    }
+
+    /// Every crit row's listed terms add up to its number: the Sacrificial
+    /// pair's set bonus, the heavy-doubled card's second copy on a heavy form,
+    /// and on a detonated glaive's explosion, which is a heavy attack.
+    #[test]
+    fn heavy_doubled_crit_lists_its_terms_on_every_part() {
+        let p = panel_json(&json!({
+            "weapon": "glaive_prime", "mode": "throw_detonate",
+            "mods": ["sacrificial_steel", "sacrificial_pressure"],
+        }));
+        let mut seen = 0;
+        for f in p["forms"].as_array().expect("forms") {
+            for part in f["parts"].as_array().into_iter().flatten() {
+                let Some(r) = row(part, "crit_chance") else { continue };
+                let pct = |s: &Value| s.as_str().unwrap().trim_end_matches('%').parse::<f64>().unwrap();
+                let sum: f64 = r["sources"].as_array().unwrap().iter()
+                    .map(|s| s["fraction"].as_f64().expect("a mod term")).sum();
+                let want = pct(&r["base"]) * (1.0 + sum);
+                assert!((want - pct(&r["final"])).abs() < 0.06,
+                    "{} / {}: {} x (1 + {sum}) is not {}", f["label"], part["id"], r["base"], r["final"]);
+                seen += 1;
+            }
+        }
+        assert!(seen > 8, "the glaive's forms and parts were read: {seen}");
     }
 
     #[test]
