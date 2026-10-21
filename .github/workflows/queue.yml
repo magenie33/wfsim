@@ -44,6 +44,14 @@ on:
         description: "…of these weapons only (space-separated ids; blank = every weapon)"
         type: string
         default: ""
+      why:
+        description: "…and why, the batch's reason (blank = a model change)"
+        type: string
+        default: ""
+      cancel:
+        description: "cancel one batch: its id, every row it still owes withdrawn"
+        type: string
+        default: ""
 
 # ONE AT A TIME, AND THE RUNNING ONE WINS. Two of these would both read the same
 # inbox and derive the same builds — writing one row twice, which is harmless —
@@ -203,6 +211,7 @@ jobs:
           # environment it is only ever a value.
           RULER: ${{ inputs.rescore }}
           WEAPONS: ${{ inputs.weapons }}
+          WHY: ${{ inputs.why }}
         run: |
           set -euo pipefail
           # AN ID, AND THEN A RULER THAT EXISTS. The pattern is what keeps this
@@ -237,6 +246,32 @@ jobs:
             --queue-missing rescore.ndjson \
             < library.json > /dev/null
           bash scripts/ship_queue.sh "rescore-$RULER-$(date -u +'%Y-%m-%d')" \
-            "every row of $RULER, asked again after a model change" \
+            "${WHY:-every row of $RULER, asked again after a model change}" \
             rescore.ndjson
           echo "::notice::rescore: $(grep -c . rescore.ndjson || echo 0) row(s) of $RULER from $(wc -l < weapons.txt) weapon(s)"
+
+      - name: the databases
+        if: steps.wired.outputs.yes == 'true' && inputs.cancel != ''
+        uses: ./.github/actions/databases
+        with:
+          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
+      # ---- …AND A BATCH NOBODY WANTS ANY MORE -----------------------------
+      #
+      # THE SAME CANCEL AS BY HAND (scripts/cancel_queue.sh): its queue rows
+      # deleted and every demand no row is owed for withdrawn, a slice at a
+      # time. A button for the order center (wfsim-cloud), so a batch asked by
+      # mistake is undone without a shell. ONE BATCH, BY ITS WHOLE ID: the script
+      # reads it as a prefix, and a batch id ends in its day, so no whole id is
+      # the prefix of another.
+      - name: cancel one batch
+        if: steps.wired.outputs.yes == 'true' && inputs.cancel != ''
+        env:
+          BATCH: ${{ inputs.cancel }}
+        run: |
+          set -euo pipefail
+          case "$BATCH" in
+            *[!a-z0-9_-]*|"") echo "::error::not a batch id: $BATCH"; exit 1 ;;
+          esac
+          bash scripts/cancel_queue.sh --batch "$BATCH"

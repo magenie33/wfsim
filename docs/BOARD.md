@@ -272,7 +272,8 @@ page); only a fight that did not run is refused.
 
 **AN ORDER IS CANCELLED WITH `cancel_queue.sh`, NEVER A BARE DELETE.**
 `--all`, `--batch <prefix>` and/or `--ruler <id>` name the queue rows
-(`--dry-run` counts them). Each row was asked of the factory, so the cancel
+(`--dry-run` counts them); `queue.yml`'s `cancel` input runs it for one batch,
+which is how the order center (wfsim-cloud) cancels. Each row was asked of the factory, so the cancel
 deletes the rows, withdraws each board demand whose row no batch owes any more
 (`board_owed`), and withdraws each question left with no live demand. It
 works in slices of `CANCEL_SLICE` (20 000) demands, the head of the factory's
