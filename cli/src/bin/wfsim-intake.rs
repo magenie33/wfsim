@@ -44,10 +44,10 @@ fn id(rec: &Value, key: &str) -> String {
 ///
 /// A STAT LOSES ITS SIGN FOR A LISTED REASON (`build::rivens::ambiguous_stats`)
 /// AND A CARD LOSES ITS MAX RANK ONLY BY BEING NAMED in
-/// `data/search/every_rank.yaml`: a Status Duration malus at its deep end is
-/// off the -100% cliff, and a low-rank Hunter Track is what lifts it back
-/// above. Each combination of those is a CORNER, and every corner is a build a
-/// player could go and assemble.
+/// `data/search/every_rank.yaml`: a Status Duration malus is asked at each of
+/// its five rolls, because its best sits inside the band, and a listed card at
+/// each of its ranks. Each combination of those is a CORNER, and every corner
+/// is a build a player could go and assemble.
 ///
 /// WHICH CORNER IS BEST IS A SCORE, AND A SCORE IS THE SCORER'S — so no fight
 /// is run here. The caller asks one for the DEFAULT alone (index 0); the rest

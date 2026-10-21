@@ -15,9 +15,10 @@ const IRRELEVANT: [&str; 4] = ["ammo_maximum", "punch_through", "weapon_recoil",
 /// weapon's riven can roll.
 const HARMLESS_MALUS: [&str; 2] = ["zoom", "weapon_recoil"];
 /// THE MALUSES EACH COMBINATION IS ASKED WITH unless `--malus` says otherwise.
-/// Status duration at both ends: a deeper malus strips armour faster until it
-/// nullifies the burn at -100% (`DURATION_STATS`), so its best can be either.
-const DEFAULT_MALUS: &str = "none,harmless,status_duration@0.9,status_duration@1.1";
+/// Status duration at every one of `DURATION_ROLLS`: a deeper malus strips
+/// armour faster while every other status lives for less, so its best sits
+/// inside the band (`DURATION_STATS`).
+const DEFAULT_MALUS: &str = "none,harmless,status_duration@0.9,status_duration@0.95,status_duration@1,status_duration@1.05,status_duration@1.1";
 const BONUS_ROLL: f64 = 1.1;
 const MALUS_ROLL: f64 = 0.9;
 const RANK: u32 = 8;

@@ -98,10 +98,10 @@ assert_eq!(perfect(9, [3], table), 9, "a default that did not run stands");
 assert_eq!(perfect(0, [], |_: &u32| unreachable!("nothing to compare, nothing run")), 0);
 }
 
-/// A STATUS DURATION MALUS IS ASKED AT ITS TWO ENDS, on any weapon. A best
-/// inside the band (the edge of the -100% cliff) is not searched for.
+/// A STATUS DURATION MALUS IS ASKED AT EVERY ONE OF `DURATION_ROLLS`, on any
+/// weapon, the god roll first — and a best INSIDE the band is the one kept.
 #[test]
-fn a_status_duration_malus_is_asked_at_its_ends_only() {
+fn a_status_duration_malus_is_asked_at_every_duration_roll() {
 let shape = RivenShape {
     bonuses: vec!["damage".into(), "multishot".into()],
     malus: Some("status_duration".into()),
@@ -109,15 +109,16 @@ let shape = RivenShape {
 let asked = ambiguous_stats(&shape, "lex_prime");
 assert_eq!(asked.iter().cloned().collect::<Vec<_>>(), vec!["status_duration".to_string()]);
 
-// Rising with depth up to 1.04, then off the cliff: the deep end loses.
+// Rising with depth up to 1.05, then falling: the deep end loses to the inside.
 let mut seen = Vec::new();
 let out = best_roll(&shape, "rifle", &asked, |r| {
     let m = r.malus.as_ref().unwrap().roll;
     seen.push(m);
-    Some((if m > 1.045 { 0.0 } else { m }, 0.001))
+    Some((if m > 1.075 { 0.0 } else { m }, 0.001))
 });
-assert_eq!(seen, vec![ROLL_MIN, ROLL_MAX], "the god roll and the other end");
-assert_eq!(rolls(&out), vec![ROLL_MAX, ROLL_MAX, ROLL_MIN]);
+assert_eq!(seen, DURATION_ROLLS.to_vec(), "the god roll, then every other duration roll");
+assert_eq!(seen[0], ROLL_MIN, "the god roll is asked first");
+assert_eq!(rolls(&out), vec![ROLL_MAX, ROLL_MAX, 1.05]);
 }
 
 /// Bonuses then the malus — the order `RivenShape::at` reads them back in.

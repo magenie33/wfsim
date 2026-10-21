@@ -1610,18 +1610,21 @@ question with the evidence in the discarded half. It is also single-threaded
 and hourly, where the scorer fans out to 32 shards: 20-182 s a riven record
 against 0.01 s.
 
-**WHICH STATS GET A SECOND CORNER AT ALL** is
+**WHICH STATS GET MORE THAN ONE CORNER AT ALL** is
 `build::rivens::ambiguous_stats`. Three sources and no fourth:
 
 - **the three physical stats, on every weapon.** A physical bonus does not add
   damage beside the rest, it changes the SHARE each damage type holds of the
   total — and a status proc is drawn in proportion to that share, so more Impact
   is fewer Viral and Corrosive procs.
-- **status duration, on every weapon.** It paces Heat's armour strip (the steps
-  scale with it) and nullifies every status at or below -100%, so a deeper malus
-  strips faster until the burn disappears (M99). Its true best can sit INSIDE
-  the band, on the edge of that cliff; only the two ends are asked, and the edge
-  is reached by a low-rank card instead (below).
+- **status duration, on every weapon, at five rolls** (`DURATION_ROLLS`: 0.9,
+  0.95, 1.0, 1.05, 1.1). It paces Heat's armour strip (the steps scale with it,
+  M99) and shortens every other status with it, so a deeper malus strips faster
+  while each Viral, Corrosive or Magnetic stack lives for less, and the best
+  sits INSIDE the band. The Furis's standard_single_target #1 at disposition
+  1.2 reads 175, 181, 197, 221 and 162 KPM across the five rolls; the two ends
+  alone would publish 175. Even steps rather than a search for the peak,
+  because the curve has steps of its own where a status's life crosses a tick.
 - **a stat the WEAPON takes the sign off**, one row each in
   `build::rivens::SIGN_IS_NOT_THE_ANSWER`. A weapon earns a row by paying for NOT
   having something, which makes whatever supplies it a cost: `+2000% on
@@ -1641,14 +1644,15 @@ against 0.01 s.
 **A CARD'S RANK IS A CORNER THE SAME WAY, BY NAME.** A submitted rank is
 dropped and every card is stored at max rank, except the cards
 `data/search/every_rank.yaml` names: each of those in the build is a corner at
-every rank, crossed with every riven corner. A deep Status Duration malus plus
-a low-rank Hunter Track is how the edge of the -100% cliff is reached. A card joins the list by
-name, never by resembling one on it, and its rank is part of the id —
+every rank, crossed with every riven corner: a low-rank Hunter Track moves a
+deep Status Duration malus back up the band. A card joins the list by name,
+never by resembling one on it, and its rank is part of the id —
 `<card>@<rank>` in `mods` (`data::mods::RANK_MARK`).
 
 Measured over the library: 1,948 of 2,418 riven builds have no ambiguous stat
-at all and are the god roll and nothing else; 470 name one worth a second
-corner, and all but five of those name exactly one — two builds, not sixteen.
+at all and are the god roll and nothing else; 470 name one worth more corners,
+and all but five of those name exactly one — two builds for a sign stat, five
+for a duration stat, not sixteen.
 
 **AND WHEN TWO RULERS DISAGREE, THAT IS TWO ROWS AND ONE LIBRARY.** One ruler
 cannot speak for another and the card that wins a crowd need not win one

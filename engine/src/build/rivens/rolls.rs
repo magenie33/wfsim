@@ -118,14 +118,22 @@ pub fn default_rolls(shape: &RivenShape) -> Vec<f64> {
 /// the sign, on every weapon.
 pub const PHYSICAL_STATS: [&str; 3] = ["impact", "puncture", "slash"];
 
-/// …AND STATUS DURATION, on every weapon, asked at its two ends like the rest.
+/// …AND STATUS DURATION, on every weapon, asked at every one of
+/// [`DURATION_ROLLS`] rather than at its two ends.
 ///
-/// It paces Heat's armour strip (its steps scale with it) and nullifies every
-/// status at or below -100%, so a deeper malus strips faster until the burn
-/// disappears (M99). The true best can therefore sit INSIDE the band, on the
-/// edge of that cliff; the ends are asked, and a low-rank card on
-/// `data/search/every_rank.yaml` is what reaches the edge.
+/// It paces Heat's armour strip (its steps scale with it, M99) and shortens
+/// every other status with it, so a deeper malus strips faster while each
+/// Viral, Corrosive or Magnetic stack lives for less. The best sits INSIDE the
+/// band: the Furis's standard_single_target #1 at disposition 1.2 reads 175,
+/// 181, 197, 221 and 162 KPM across the five rolls, and the two ends alone
+/// would have published 175.
 pub const DURATION_STATS: [&str; 1] = ["status_duration"];
+
+/// THE ROLLS A DURATION STAT IS ASKED AT: the band in five even steps, so the
+/// interior best is found to within one step. Even steps and not a search for
+/// the peak, because the curve is not smooth — a status whose life crosses a
+/// whole second gains or loses a tick there.
+pub const DURATION_ROLLS: [f64; 5] = [0.9, 0.95, 1.0, 1.05, 1.1];
 
 /// …AND THE WEAPONS THAT TAKE THE SIGN OFF ONE MORE, one row each.
 ///
@@ -210,8 +218,8 @@ pub fn best_roll(
 
 /// EVERY CORNER A SHAPE IS ASKED AT, the god roll first: every bonus at its
 /// ceiling and the malus at its floor, then every combination of the
-/// `ambiguous` stats flipped to their other end — `2^k` in all, where k is one
-/// on all but five builds in the library.
+/// `ambiguous` stats at their other rolls — the other end for a sign stat,
+/// each of [`DURATION_ROLLS`] for a duration stat.
 pub fn corners(shape: &RivenShape, ambiguous: &BTreeSet<String>) -> Vec<Vec<f64>> {
     let stats: Vec<&str> = shape
         .bonuses
@@ -222,19 +230,34 @@ pub fn corners(shape: &RivenShape, ambiguous: &BTreeSet<String>) -> Vec<Vec<f64>
     let god: Vec<f64> = (0..stats.len())
         .map(|i| if i < shape.bonuses.len() { ROLL_MAX } else { ROLL_MIN })
         .collect();
-    let asked: Vec<usize> =
-        (0..stats.len()).filter(|&i| ambiguous.contains(stats[i])).collect();
-    (0..(1u32 << asked.len()))
-        .map(|m| {
-            let mut rolls = god.clone();
-            for (bit, &i) in asked.iter().enumerate() {
-                if m >> bit & 1 == 1 {
-                    rolls[i] = if rolls[i] == ROLL_MAX { ROLL_MIN } else { ROLL_MAX };
-                }
-            }
-            rolls
+    // EACH ASKED STAT'S ROLLS, ITS GOD ROLL FIRST, so the product below starts
+    // at the god roll and `corners(..)[0]` stays the default by construction.
+    let choices: Vec<(usize, Vec<f64>)> = (0..stats.len())
+        .filter(|&i| ambiguous.contains(stats[i]))
+        .map(|i| {
+            let other = if god[i] == ROLL_MAX { ROLL_MIN } else { ROLL_MAX };
+            let rest: Vec<f64> = if DURATION_STATS.contains(&stats[i]) {
+                DURATION_ROLLS.into_iter().filter(|&r| r != god[i]).collect()
+            } else {
+                vec![other]
+            };
+            (i, std::iter::once(god[i]).chain(rest).collect())
         })
-        .collect()
+        .collect();
+    let mut out = vec![god];
+    for (i, rolls) in &choices {
+        out = out
+            .iter()
+            .flat_map(|base| {
+                rolls.iter().map(move |&r| {
+                    let mut c = base.clone();
+                    c[*i] = r;
+                    c
+                })
+            })
+            .collect();
+    }
+    out
 }
 
 /// THE DEFAULT, UNLESS A FIGHT PROVES AN ALTERNATIVE BETTER.
