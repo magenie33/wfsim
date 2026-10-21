@@ -2799,7 +2799,7 @@ ui:
   "about {n} hours": "约 {n} 小时"
   "about {n} days": "约 {n} 天"
   "done in {t}": "{t}后完成"
-  "the last six hours' average": 近 6 小时平均
+  "the last 24 hours' average": 近 24 小时平均
   "at the recent compute pace": 按最近的算力估算
   "Nothing yet.": 还没有。
   "{name}'s contribution": "{name} 的贡献"

@@ -1352,9 +1352,10 @@ see two.
 
 - `owed`: the queue's rows by why, a row in two batches counted once as the
   first of a new build's, a rescore's, a sweep's, a refresh's.
-- `per_hour`: scores written over the last six hours, per hour, by who
-  computed them. One hour is too short: it swings five-fold between two quiet
-  ones, and a stopped hour reads as never.
+- `per_hour`: scores written over the last 24 hours, per hour, by who
+  computed them. One hour swings five-fold between two quiet ones and a
+  stopped hour reads as never; anything under a day reads the time of day,
+  since who is online follows the clock round the world.
 - `clear_hours`: the open work priced in compute. Each verb's work (the
   queue's rows but the refreshes for `simulate`, its open questions for any
   other) times what one of its facts cost over the last day — every

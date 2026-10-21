@@ -759,7 +759,7 @@ function computeDemandHtml() {
       <div class="demand-bar"><div style="width:${share}%"></div></div>
       <div class="set-note"><span class="demand-key on">■</span> ${escHtml(tr("volunteers {n} ({p}%)").replace("{n}", n(d.per_hour.volunteers)).replace("{p}", share))}
         &nbsp; <span class="demand-key">■</span> ${escHtml(tr("official machines {n} ({p}%)").replace("{n}", n(d.per_hour.official)).replace("{p}", 100 - share))}
-        · ${aT("the last six hours' average")}</div></dd></div>
+        · ${aT("the last 24 hours' average")}</div></dd></div>
     ${eta ? `<div class="kv"><dt>${aT("Cleared in")}</dt><dd>${big(eta)}<div class="set-note" style="margin-top:4px">${aT("at the recent compute pace")}</div></dd></div>` : ""}
   </dl></div></div>`;
 }

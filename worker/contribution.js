@@ -634,9 +634,10 @@ async function publishedContributors(env, now = Date.now()) {
 /// object and `/api/board/demand` serves the same bytes. Worked out per request,
 /// each isolate and each edge would keep its own minute, and readers disagree.
 export const DEMAND_KEY = "demand.json", DEMAND_CACHE = "public, max-age=30";
-/// THE PACE IS THIS LONG, in whole hours: one hour swings five-fold between two
-/// quiet ones, and a stopped hour says "never".
-export const DEMAND_PACE_HOURS = 6;
+/// THE PACE IS A WHOLE DAY, in whole hours: one hour swings five-fold between two
+/// quiet ones, a stopped hour says "never", and who is online follows the clock
+/// round the world, so any window shorter than a day reads the time of day.
+export const DEMAND_PACE_HOURS = 24;
 /// …A SURVEY'S OWN PACE, its shapes agreed in this long.
 export const SURVEY_PACE_MS = 3 * 3_600_000;
 /// …AND WHAT A FACT COSTS, over a day: every witness's fight, the ones that
