@@ -12,7 +12,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.7205 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-17 08:21 UTC · 284add9abc |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.7210 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-20 17:33 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.7205 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-17 08:04 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.3724 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-17 14:27 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.3477 | Primed Convulsion, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-18 05:59 UTC |

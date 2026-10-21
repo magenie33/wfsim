@@ -12,7 +12,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 54.3687 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-17 07:58 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 54.3697 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-20 17:08 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 416.0512 | Rime Rounds, Primary Acuity, Primed Shred, Serration, Galvanized Scope, Hammer Shot, Rifle Elementalist, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-17 07:58 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | cycle | 9.3476 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Primed Bane of Grineer, Serration, Galvanized Scope, Vital Sense, Gilded Truth, Vigilante Supplies, Primary Deadhead | 2026-10-17 13:40 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 35.6808 | Primed Cryo Rounds, Infected Clip, Primary Acuity, Serration, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-18 05:59 UTC |

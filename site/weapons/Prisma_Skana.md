@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.1261 | Virulent Scourge, Voltaic Strike, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Swooping Falcon, Melee Influence | 2026-10-18 11:36 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.1261 | Virulent Scourge, Voltaic Strike, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Swooping Falcon, Melee Influence | 2026-10-19 04:39 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.007758 | Virulent Scourge, Voltaic Strike, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Swooping Falcon, Melee Influence | 2026-10-17 04:41 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | block forward | 0.05251 | Virulent Scourge, Voltaic Strike, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Swooping Falcon, Melee Influence | 2026-10-19 23:14 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.06645 | Virulent Scourge, Voltaic Strike, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Swooping Falcon, Melee Influence | 2026-10-20 06:17 UTC |
 
 ## Not modelled here
 

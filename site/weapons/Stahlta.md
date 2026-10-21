@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.3425 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 21:47 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.7946 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 21:56 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.6749 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 21:47 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.3397 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-20 18:15 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.7782 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-20 21:00 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.6750 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-21 00:09 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 2.0264 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 21:55 UTC |
 
 ## In WFSim

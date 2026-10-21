@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 9.4977 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Compression | 2026-10-18 18:07 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 12.6532 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Compression | 2026-10-18 18:07 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 1.1812 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Compression | 2026-10-18 18:07 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 6.2358 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Compression | 2026-10-18 18:07 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 9.5019 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Compression | 2026-10-20 17:19 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 12.6672 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Compression | 2026-10-20 21:13 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 1.1815 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Compression | 2026-10-20 23:23 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 6.2405 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Compression | 2026-10-20 22:47 UTC |
 
 ## Not modelled here
 

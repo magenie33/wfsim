@@ -12,7 +12,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 3.2142 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Hammer Shot, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-17 08:43 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 3.2153 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Hammer Shot, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-20 17:18 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 12.0616 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Hammer Shot, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-17 08:43 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.3977 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Hammer Shot, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-17 08:06 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 1.4591 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Hammer Shot, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-10-18 04:47 UTC |

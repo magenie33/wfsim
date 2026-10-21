@@ -12,7 +12,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.9058 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Eject Magazine, Secondary Fortifier | 2026-10-15 14:44 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.9013 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Eject Magazine, Secondary Fortifier | 2026-10-20 19:04 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 34.1593 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Eject Magazine, Secondary Fortifier | 2026-10-15 14:47 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.3419 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Eject Magazine, Secondary Deadhead | 2026-10-15 14:47 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.9568 | Frostbite, Pistol Pestilence, Primed Heated Charge, Pistol Acuity, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Eject Magazine, Secondary Deadhead | 2026-10-15 14:47 UTC |

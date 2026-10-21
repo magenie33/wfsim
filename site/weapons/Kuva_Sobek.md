@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 29.3603 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Clip Delegation, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-18 11:20 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 29.3603 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Clip Delegation, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-19 18:44 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.8614 | Primed Chilling Grasp, Contagious Spread, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Clip Delegation, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-18 11:25 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 17.2029 | Primed Chilling Grasp, Contagious Spread, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Clip Delegation, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-18 11:27 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 29.3409 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Clip Delegation, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-20 18:13 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 29.3409 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Clip Delegation, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-20 21:12 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.8541 | Primed Chilling Grasp, Contagious Spread, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Clip Delegation, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-21 00:14 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 17.1889 | Primed Chilling Grasp, Contagious Spread, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Clip Delegation, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-20 22:38 UTC |
 
 ## In WFSim
 

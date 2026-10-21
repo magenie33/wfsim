@@ -12,7 +12,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.7677 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Vigilante Supplies, Pax Charge, Primary Compression | 2026-10-19 06:44 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.7606 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Vigilante Supplies, Pax Charge, Primary Compression | 2026-10-20 17:35 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.7677 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Vigilante Supplies, Pax Charge, Primary Compression | 2026-10-14 14:07 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.3644 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Critical Delay, Vile Acceleration, Vital Sense, Vigilante Supplies, Pax Charge, Primary Compression | 2026-10-19 05:51 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.8715 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Vigilante Supplies, Pax Charge, Primary Compression | 2026-10-14 19:27 UTC |

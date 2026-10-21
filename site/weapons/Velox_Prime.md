@@ -12,7 +12,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.2473 | Ice Storm, Jolt, Primed Heated Charge, Seeker, Galvanized Diffusion, Primed Expel Grineer, Galvanized Shot, Creeping Bullseye, Cascadia Flare | 2026-10-17 04:02 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.2474 | Ice Storm, Jolt, Primed Heated Charge, Seeker, Galvanized Diffusion, Primed Expel Grineer, Galvanized Shot, Creeping Bullseye, Cascadia Flare | 2026-10-20 17:07 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.9216 | Ice Storm, Jolt, Primed Heated Charge, Seeker, Galvanized Diffusion, Primed Expel Grineer, Galvanized Shot, Creeping Bullseye, Cascadia Flare | 2026-10-17 05:54 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2870 | Ice Storm, Jolt, Primed Heated Charge, Seeker, Galvanized Diffusion, Primed Expel Grineer, Galvanized Shot, Creeping Bullseye, Cascadia Flare | 2026-10-17 03:52 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.6873 | Primed Convulsion, Frostbite, Jolt, Primed Heated Charge, Amalgam Barrel Diffusion, Primed Expel Orokin, Galvanized Shot, Expel Grineer, Cascadia Flare | 2026-10-18 04:39 UTC |

@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 11.0186 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-17 00:01 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 11.0164 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-20 17:30 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 61.5161 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Primed Shred, Serration, Galvanized Scope, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-16 07:12 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.5657 | Primed Cryo Rounds, Malignant Force, Heavy Caliber, Primary Acuity, Serration, Hunter Munitions, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-16 07:06 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 4.9801 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-16 23:53 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 4.9702 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Serration, Galvanized Scope, Hammer Shot, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-20 21:36 UTC |
 
 ## Not modelled here
 

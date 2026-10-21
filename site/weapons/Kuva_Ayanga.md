@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.6122 | Primed Combustion Rounds, Primed Polar Magazine, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-17 01:06 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.6224 | Primed Combustion Rounds, Primed Polar Magazine, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-17 06:57 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.02961 | Primed Combustion Rounds, Primed Polar Magazine, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-17 01:07 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.1948 | Primed Combustion Rounds, Primed Polar Magazine, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-14 10:52 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.1948 | Primed Combustion Rounds, Primed Polar Magazine, Primed Dual Rounds, Primed Rubedo-Lined Barrel, Automatic Trigger, Critical Focus, Hollowed Bullets, Magnetized Cycle, Primary Crux, Secondary Enervate | 2026-10-20 06:31 UTC |
 
 ## Not modelled here
 

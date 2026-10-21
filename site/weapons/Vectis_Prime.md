@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 36.9484 | Primed Cryo Rounds, Infected Clip, Hellfire, Galvanized Chamber, Serration, Galvanized Scope, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-16 22:52 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 129.0666 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Galvanized Aptitude, Galvanized Scope, Semi-Rifle Cannonade, Vital Sense, Primary Crux | 2026-10-16 21:34 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 74.1450 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Scope, Speed Trigger, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-20 13:39 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 240.1221 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Scope, Speed Trigger, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-20 13:47 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 7.6048 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Galvanized Aptitude, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Crux | 2026-10-16 21:52 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 26.3305 | Primed Cryo Rounds, Infected Clip, Hellfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-16 22:05 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | cycle | 47.5616 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Scope, Speed Trigger, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-20 13:47 UTC |
 
 ## Not modelled here
 

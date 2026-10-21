@@ -15,7 +15,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 11.4876 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Primed Steady Hands, Secondary Fortifier | 2026-10-17 06:59 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 11.4876 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Primed Steady Hands, Secondary Fortifier | 2026-10-17 06:59 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4492 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Pistol Gambit, Lethal Torrent, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-17 05:40 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.2780 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Pistol Gambit, Lethal Torrent, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-20 00:52 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.2780 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Pistol Gambit, Lethal Torrent, Pistol Elementalist, Magnetic Might, Cascadia Flare | 2026-10-20 02:26 UTC |
 
 ## Not modelled here
 
