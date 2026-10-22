@@ -189,8 +189,9 @@ ignores unknown `kind`s, so the mod still loads). Wiki-sourced calc:
   (no per-hit loss). Hitscan pierces instantly; single-target sim = no-op
   (§7). *Engine: not modeled yet.*
 - **Magazine capacity** (`magazine_capacity_bonus`): +% of the BASE magazine
-  (additive bucket, floored to a whole round, and never below 1 — a bow under
-  a negative-magazine riven still fires its one arrow); feeds reload cadence / sustain
+  (additive bucket, rounded to the nearest whole round: a one-round Tonkor
+  under Primed Magazine Warp holds 2; never below 1: a bow under a
+  negative-magazine riven still fires its one arrow); feeds reload cadence / sustain
   (§9), not per-hit damage. *Engine: not modeled yet.*
 - **Zoom** (`zoom_bonus`): pistol zoom is pure FOV — **no damage** (unlike
   sniper zoom's additive headshot-damage bonus). Correctly a no-op.

@@ -986,9 +986,12 @@ pub fn resolve_for(
     let mag_size = if base.gauge_form.is_some() {
         base.magazine_size
     } else {
-        // Never below ONE round: a negative-magazine riven on a bow (base 1)
-        // still leaves the arrow nocked in game, so flooring to 0 would stop it firing.
-        ((base.magazine_size + flat_base_magazine) * (1.0 + mag)).floor().max(1.0)
+        // ROUNDED TO THE NEAREST ROUND, not floored (wiki Magazine_Warp,
+        // Primed_Magazine_Warp notes): a one-round Tonkor under Primed
+        // Magazine Warp holds 1 × 1.55 → 2. Never below ONE round: a
+        // negative-magazine riven on a bow (base 1) still leaves the arrow
+        // nocked in game, so 0 would stop it firing.
+        ((base.magazine_size + flat_base_magazine) * (1.0 + mag)).round().max(1.0)
     };
     // …AND WHAT A FULL CHARGE IS WORTH. The Phantasma's alt fire spends the
     // magazine to buy damage — "directly proportional to the amount of ammo
@@ -1953,7 +1956,7 @@ pub fn resolve_for(
             .collect(),
         multishot: own_multishot * (1.0 + evo_ms_bonus + multishot),
         base_multishot: own_multishot,
-        // Magazine capacity: +% of base, floored to whole rounds (in-game).
+        // Magazine capacity: +% of base, rounded to the nearest whole round.
         // A charge-backed Incarnon magazine is a fixed resource OUTSIDE the
         // ammo system — magazine mods are inert, so it never scales.
         magazine_size: mag_size,

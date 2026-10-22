@@ -1697,9 +1697,26 @@ fn magazine_and_status_duration_buckets_resolve() {
     ];
     let refs: Vec<&ModDef> = mods.iter().collect();
     let p = resolve(&base, &refs, StackPolicy::AssumedMax);
-    // Magazine capacity is +% of base, floored to whole rounds.
-    assert!((p.magazine_size - (baseline * 1.60).floor()).abs() < 1e-9);
+    // Magazine capacity is +% of base, rounded to the nearest whole round.
+    assert!((p.magazine_size - (baseline * 1.60).round()).abs() < 1e-9);
     assert!((p.status_duration_multiplier - 1.40).abs() < 1e-9);
+}
+
+/// A fraction of a round ROUNDS: the wiki's own example, a one-round Tonkor
+/// under max Primed Magazine Warp, holds 1 × 1.55 → 2, and under Magazine
+/// Warp 1 × 1.30 → 1.
+#[test]
+fn a_magazine_rounds_to_the_nearest_round() {
+    let tonkor = WeaponBase::from_data("tonkor", true, &[]);
+    assert_eq!(tonkor.magazine_size, 1.0);
+    let primed = [m("primed", vec![ModEffect::MagazineCapacity(0.55)])];
+    let plain = [m("plain", vec![ModEffect::MagazineCapacity(0.30)])];
+    let mag = |mods: &[ModDef]| {
+        let refs: Vec<&ModDef> = mods.iter().collect();
+        resolve(&tonkor, &refs, StackPolicy::AssumedMax).magazine_size
+    };
+    assert_eq!(mag(&primed), 2.0);
+    assert_eq!(mag(&plain), 1.0);
 }
 
 /// A negative magazine never empties the weapon: a one-round bow under a
@@ -1728,7 +1745,7 @@ fn exclusive_augments_use_their_static_final_buckets() {
     let enlarged = resolve(&viper, &[&stinging, &slip_magazine], StackPolicy::AssumedMax);
     assert_eq!(
         enlarged.magazine_size,
-        ((viper.magazine_size + 40.0) * 1.30).floor(),
+        ((viper.magazine_size + 40.0) * 1.30).round(),
         "the flat 40 raises the base that Slip Magazine multiplies"
     );
 
