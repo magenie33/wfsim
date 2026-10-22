@@ -123,6 +123,32 @@ impl EvolutionDef {
             .sum()
     }
 
+    /// Σ reload speed with no condition (Rapid Reinforcement) — the panel
+    /// attributes it on the Reload row, the bucket the mods feed.
+    pub fn reload_speed_bonus(&self) -> f64 {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::ReloadSpeedBonus(v) => Some(*v),
+                _ => None,
+            })
+            .sum()
+    }
+
+    /// Σ fire rate with no gate — a sprint or melee condition is a gated
+    /// term, listed where it pays.
+    pub fn fire_rate_bonus(&self) -> f64 {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::FireRateBonus { value, min_sprint, needs_melee_equipped }
+                    if *min_sprint <= 0.0 && !*needs_melee_equipped =>
+                {
+                    Some(*value)
+                }
+                _ => None,
+            })
+            .sum()
+    }
+
     /// Σ assumed-max multishot from permanent stacks (Fevered Frenzy).
     pub fn assumed_multishot(&self) -> f64 {
         self.active_effects()

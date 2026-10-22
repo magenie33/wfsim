@@ -687,7 +687,7 @@ fn mod_sources(
                     ),
                 },
                 Indirect(stat, x) => {
-                    src.push(("indirect", name.clone(), x, Some(stat.label().to_string())));
+                    src.push(("indirect", name.clone(), x, Some(format!("{stat:?}"))));
                 }
                 OnEquipHandling { .. } => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
@@ -1035,6 +1035,16 @@ fn evolution_sources(
                     Some("into the BASE magazine, and only while the fight says this weapon is the only one carried".into()),
                 ));
             }
+            for (key, v) in [("reload", def.reload_speed_bonus()), ("fire_rate", def.fire_rate_bonus())] {
+                if v > 0.0 {
+                    evo_src.push((
+                        key,
+                        name.clone(),
+                        fpct(v),
+                        Some("the same bucket the mods feed".into()),
+                    ));
+                }
+            }
             let v = def.assumed_multishot();
             if v > 0.0 {
                 evo_src.push((
@@ -1142,6 +1152,12 @@ fn form_section(
         }
     };
     let pc = |x: f64| format!("{:.1}%", x * 100.0);
+    // A TIME IN HUNDREDTHS, because the data is: the Vectis Prime reloads in
+    // 0.85 s, which one decimal printed as 0.8.
+    let secs = |x: f64| {
+        let s = format!("{x:.2}");
+        format!("{}s", s.trim_end_matches('0').trim_end_matches('.'))
+    };
     let mut stats = Vec::new();
     // Every base stat is ALWAYS listed (the panel must state the whole
     // base panel, not just what changed) — the UI drops the arrow when
@@ -1273,12 +1289,12 @@ fn form_section(
         "note": why,
         "sources": sources("incarnon_charge_rate", None) }));
         stats.push(json!({ "key": "transmute_in", "label": "Transmute In",
-        "base": format!("{}s", num(inc.transmute_in)),
-        "final": format!("{}s", num(inc.transmute_in / (1.0 + rl))),
+        "base": secs(inc.transmute_in),
+        "final": secs(inc.transmute_in / (1.0 + rl)),
         "sources": sources("reload", None) }));
         stats.push(json!({ "key": "transmute_out", "label": "Transmute Out",
-        "base": format!("{}s", num(inc.transmute_out)),
-        "final": format!("{}s", num(inc.transmute_out / (1.0 + rl))),
+        "base": secs(inc.transmute_out),
+        "final": secs(inc.transmute_out / (1.0 + rl)),
         "sources": sources("reload", None) }));
     } else {
         row(
@@ -1290,8 +1306,8 @@ fn form_section(
         row(
             "reload",
             "Reload",
-            format!("{}s", num(base.base_reload)),
-            format!("{}s", num(panel.reload_seconds)),
+            secs(base.base_reload),
+            secs(panel.reload_seconds),
         );
     }
     // THE CONE, and what an accuracy mod does to it.
@@ -1561,6 +1577,15 @@ fn form_section(
     // Indirect stats (recoil, accuracy, ammo…): not in theoretical DPS,
     // real in practice; base is unmodified (0%), final = Σ.
     let mut indirect_rows = Vec::new();
+    // …EACH SOURCE IN ITS STAT'S UNIT: Primed Shred's punch through is +2.2 m,
+    // and the shared list would have printed it as +220%.
+    let indirect_sources = |stat: wfsim_engine::model::IndirectStat| -> Vec<Value> {
+        let tag = format!("{stat:?}");
+        src.iter()
+            .filter(|(k, _, _, note)| *k == "indirect" && note.as_deref() == Some(tag.as_str()))
+            .map(|(_, name, v, _)| json!({ "mod": name, "value": stat.format(*v) }))
+            .collect()
+    };
     // Not every indirect stat is a fraction — punch through and beam range
     // are METRES, a double-jump refresh is a COUNT, an explosion-on-kill is
     // flat DAMAGE. `IndirectStat::format` owns that, so this table and the
@@ -1577,7 +1602,7 @@ fn form_section(
         }
         indirect_rows.push(
             json!({ "key": "indirect", "label": stat.label(), "base": "—",
-        "final": stat.format(*total), "sources": sources("indirect", Some(stat.label())) }),
+        "final": stat.format(*total), "sources": indirect_sources(*stat) }),
         );
     }
     // …AND HERE IT IS, as the number the simulation actually spends: the
@@ -1596,12 +1621,18 @@ fn form_section(
             .filter(|(s, _)| *s == stat)
             .map(|(_, v)| *v)
             .sum();
+        let own = base.punch_through_m;
         if panel.punch_through_m > 0.0 || granted > 0.0 {
-            indirect_rows.push(json!({
-                "key": "indirect", "label": stat.label(), "base": "—",
+            let mut row = json!({
+                "key": "indirect", "label": stat.label(),
+                "base": if own > 0.0 { stat.format(own) } else { "—".to_string() },
                 "final": stat.format(panel.punch_through_m),
-                "sources": sources("indirect", Some(stat.label())),
-            }));
+                "sources": indirect_sources(stat),
+            });
+            if granted > 0.0 && panel.punch_through_m < own + granted - 1e-9 {
+                row["note"] = json!("this attack takes no punch through from a mod");
+            }
+            indirect_rows.push(row);
         }
         // THE OTHER KIND, on its own row: it is the weapon's, no mod moves it,
         // and folding it into the metres above is what hid them.
@@ -2115,6 +2146,48 @@ mod weakpoint_panel_tests {
         let direct = part(form(&bare, "Incarnon Form"), "direct");
         assert!(row(direct, "weakpoint_cc").is_none());
         assert!(row(direct, "weakpoint_damage").is_none());
+    }
+}
+
+/// A ROW STATES ITS SOURCES IN ITS OWN UNIT AND NAMES EVERY ONE.
+#[cfg(test)]
+mod source_row_tests {
+    use super::*;
+
+    fn rows<'a>(p: &'a Value, form: &str) -> Vec<&'a Value> {
+        let f = p["forms"].as_array().expect("forms").iter()
+            .find(|f| f["label"] == json!(form)).unwrap_or_else(|| panic!("no {form}"));
+        f["stats"].as_array().into_iter().chain(f["indirect"].as_array()).flatten().collect()
+    }
+
+    fn row<'a>(p: &'a Value, form: &str, label: &str) -> &'a Value {
+        rows(p, form).into_iter().find(|r| r["label"] == json!(label))
+            .unwrap_or_else(|| panic!("no {label} row on {form}"))
+    }
+
+    /// THE VECTIS PRIME, which printed all three wrong: Primed Shred's
+    /// punch through as +220%, the weapon's own metre as a dash, Rapid
+    /// Reinforcement's reload as nobody's, and its 0.85 s reload as 0.8 s.
+    #[test]
+    fn the_vectis_prime_rows_say_what_moved_them() {
+        let p = panel_json(&json!({
+            "weapon": "vectis_prime",
+            "mods": ["primed_shred"],
+            "evolutions": ["vectis_prime_evo1_incarnon_form", "vectis_prime_rapid_reinforcement"],
+        }));
+        let pt = row(&p, "Base Form", "Punch Through");
+        assert_eq!(pt["base"], json!("+1m"));
+        assert_eq!(pt["final"], json!("+3.2m"));
+        assert_eq!(pt["sources"][0]["value"], json!("+2.2m"));
+        let reload = row(&p, "Base Form", "Reload");
+        assert_eq!(reload["base"], json!("0.85s"));
+        assert!(reload["sources"].as_array().expect("sources").iter()
+            .any(|s| s["mod"].as_str().is_some_and(|m| m.starts_with("Rapid Reinforcement"))),
+            "{reload}");
+        // …AND THE INCARNON FORM SAYS WHY IT IS ZERO, the mod still listed.
+        let inc = row(&p, "Incarnon Form", "Punch Through");
+        assert_eq!(inc["final"], json!("+0m"));
+        assert!(inc["note"].is_string(), "{inc}");
     }
 }
 
