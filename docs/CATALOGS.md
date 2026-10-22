@@ -701,10 +701,11 @@ The Shedu's row in full, since it is the one the roster leans on:
   say `multiplies`, which reads as a transcription and is not one. At 0%
   effectiveness the field is inert, so no number moves — but each says in
   as many words that it is a placeholder and what the column really reads.
-- **The Vectis pair's column reads `N/A`** and had never been transcribed at
-  all. That one is NOT inert: its effectiveness is 4%, so `multiplies` against
-  `adds` is a real difference, and `multiplies` is this repo's assumption rather
-  than the catalog's answer. Both files say so.
+- **The Vectis pair's column reads `N/A`**, and at 4% that is NOT inert.
+  `multiplies` is measured on the Vectis Prime (M118): the bonus lands whole on
+  the direct hit and the orb beside Serration. The same reading puts its
+  considered radius at 0.15 m (+12% at rank 5, no radius mod), not the row's
+  0.1 m (+8%), and the Vectis carries the same: one row, one orb.
 
 When `fetch_catalogs.mjs --force` reports the catalog MOVED, compare every
 transcribed row against the live table: what drifts is not the numbers a
@@ -919,8 +920,8 @@ the difference between "checked" and "nobody looked".
 | `trumna` | 100% | 1.6 m | +128% | Adds | snapshot |
 | `trumna_prime` | 100% | 1.6 m | +128% | Adds | snapshot |
 | `vadarya_prime` | 0% | 0 m | — | Doesn't Work | doesnt_work |
-| `vectis_incarnon` | 4% | 6.7 m | +8% | Multiplies | snapshot |
-| `vectis_prime_incarnon` | 4% | 6.7 m | +8% | Multiplies | snapshot |
+| `vectis_incarnon` | 4% | 6.7 m | +8%, **+12% carried from the Prime** (M118) | Multiplies | snapshot |
+| `vectis_prime_incarnon` | 4% | 6.7 m | +8%, **measured +12%** (M118) | Multiplies, **measured** | snapshot |
 | `zarr` | 100% | 4.9 m | +392% | Multiplies | snapshot |
 | `zhuge_prime` | 100% | 2.6 m | +208% | Multiplies | snapshot |
 

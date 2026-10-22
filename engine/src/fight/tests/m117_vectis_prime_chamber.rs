@@ -146,20 +146,20 @@ fn m117_the_combo_multiplies_the_chambered_round_and_the_plain_one() {
 }
 
 /// FROM THE HIP THE COUNTER PAYS AND DOES NOT BUILD (M117). Opening at 14,
-/// one hit short of x2: scoped in, the first hit takes it to 15 and the
-/// second round reads 2915; from the hip it stays at 14 and reads 2186.
+/// one hit short of x2: scoped in, the first hit takes it to 15 and pays
+/// x2 itself (M118), 4081; from the hip it stays at 14 and reads 3061.
 #[test]
 fn m117_a_hip_fired_hit_pays_the_combo_and_adds_nothing_to_it() {
     let read = |aiming: bool| shots_from(&vectis_prime_aimed(&["serration", "charged_chamber"], aiming), 0.0, (14, false), 4);
     let (scoped, hip) = (read(true), read(false));
-    assert_eq!(scoped.iter().map(|x| shown(*x)).collect::<Vec<_>>(), [3061.0, 2915.0, 4081.0, 2915.0]);
+    assert_eq!(scoped.iter().map(|x| shown(*x)).collect::<Vec<_>>(), [4081.0, 2915.0, 4081.0, 2915.0]);
     assert_eq!(hip.iter().map(|x| shown(*x)).collect::<Vec<_>>(), [3061.0, 2186.0, 3061.0, 2186.0]);
 }
 
 /// A MISS TAKES ONE POINT, AND ONLY SCOPED IN (M117). At 25 m a 5 degree cone
 /// drops some rounds; the counter opens at 45 (x2.5) and never times out, so
-/// each landed hit reads `45 + hits - misses` before it — and from the hip
-/// it reads 45 throughout. Reset-to-zero would put x1.0 on the first hit
+/// each landed hit reads `45 + hits - misses` counting itself (M118) — and
+/// from the hip it reads 45 throughout. Reset-to-zero would put x1.0 on the first hit
 /// after a miss.
 #[test]
 fn m117_a_scoped_miss_takes_one_point_and_a_hip_miss_takes_none() {
@@ -194,11 +194,11 @@ fn m117_a_scoped_miss_takes_one_point_and_a_hip_miss_takes_none() {
                             _ => None,
                         })
                         .product();
-                    assert_eq!(got, combo.multiplier(count as u32), "aiming {aiming}, hit {hits}");
-                    hits += 1;
                     if aiming {
                         count += 1;
                     }
+                    assert_eq!(got, combo.multiplier(count as u32), "aiming {aiming}, hit {hits}");
+                    hits += 1;
                 }
                 _ => {}
             }

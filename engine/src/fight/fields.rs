@@ -296,17 +296,25 @@ pub(super) fn field_tick_seeded(
     // an AoE would not get it, and DE let this one. So the field takes CO only
     // where the weapon declares it; otherwise it gets
     // the same bracket the radial does.
-    let bucket = if f.takes_condition_overload {
-        // A FIELD keeps the direct hit's base fraction: the CO catalog puts
-        // the Torid's cloud on the same base as its main fire.
+    let behavior = f.co_behavior.unwrap_or(active.co_behavior);
+    let (bucket, co_share) = if f.takes_condition_overload {
+        // A FIELD keeps the direct hit's base fraction unless it states its own:
+        // the CO catalog puts the Torid's cloud on the same base as its main fire.
         // A FIELD TICK carries no half-health term: the bonus is a DIRECT-hit
         // bonus like CO itself, and nothing in the catalog says otherwise.
-        gunco_bucket(params, active, debuffs, gal, at, base_damage, arcane_base_damage, arc_ratio, 0.0,
-            active.co_base.borrowed_for(crate::model::CoStage::Field), crate::model::CoStage::Field,
-            f.co_behavior.unwrap_or(active.co_behavior))
-            .bucket
+        let co_base = f.co_base.unwrap_or_else(|| active.co_base.borrowed_for(crate::model::CoStage::Field));
+        let g = gunco_bucket(params, active, debuffs, gal, at, base_damage, arcane_base_damage, arc_ratio, 0.0,
+            co_base, crate::model::CoStage::Field, behavior, f.co_status_types);
+        (g.bucket, g.co_share)
     } else {
-        arc_ratio
+        (arc_ratio, 0.0)
+    };
+    // PRIMARY COMPRESSION, where it reaches the part, stands where it does on
+    // the direct hit: its own factor, which an Adding CO term escapes.
+    let compression = if f.takes_compression {
+        beside_adding_co(active.compression_multiplier, co_share, behavior)
+    } else {
+        1.0
     };
     let mb_live = f.modified_base * arc_ratio;
 
@@ -332,6 +340,7 @@ pub(super) fn field_tick_seeded(
     // level rather than only where it compounds.
     let raw =
         qtotal * crit_multiplier * part_factor * bucket * faction_at(params.faction_at_time(at), DEPTH_HIT)
+            * compression
             * damage_multiplier
             * params.ability_final_at(at)
             * careen;
@@ -381,7 +390,7 @@ pub(super) fn field_tick_seeded(
             ].into_iter().chain(faction_layers(params, at, DEPTH_HIT)).chain([
                 (crate::record::Factor::FieldDamage, damage_multiplier),
                 (crate::record::Factor::WarframeAbility, params.ability_final_at(at)),
-                (crate::record::Factor::ArcaneFinal, careen),
+                (crate::record::Factor::ArcaneFinal, careen * compression),
             ]).collect::<Vec<_>>()),
             ..Instance::default()
         },

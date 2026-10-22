@@ -358,9 +358,10 @@ fn the_roster_reproduces_primary_compressions_published_column() {
         ("mk1_strun_incarnon", 3.20),   // not on the row; carried from the family
         ("phantasma_charged", 3.84),
         ("phantasma_prime_charged", 3.84),
-        // THE ONE OVERRIDE: 0.8 x 0.1 m, not 0.8 x 6.7 m x 4%.
-        ("vectis_incarnon", 0.08),
-        ("vectis_prime_incarnon", 0.08),
+        // THE ONE OVERRIDE, and MEASURED rather than the table's: 0.8 x
+        // 0.15 m (M118) where the row says 0.1 m, not 0.8 x 6.7 m x 4%.
+        ("vectis_incarnon", 0.12),
+        ("vectis_prime_incarnon", 0.12),
         // THE SPEARGUNS, whose two rows are the same weapon read twice —
         // 1.7 m on the primary fire and 7.0 m on the throw, ordinary in
         // every column. The Prime shares both rows: the catalog's Weapon
@@ -538,8 +539,9 @@ fn the_roster_reproduces_primary_compressions_published_column() {
 #[test]
 fn declared_compression_metres_take_blast_radius_mods() {
     // The table's Primed Firestorm column on the two rows whose metres are
-    // declared rather than read off a radial: 1.44x, like every other row.
-    for (id, pf) in [("miter", 0.2304), ("vectis_incarnon", 0.1152)] {
+    // declared rather than read off a radial: 1.44x, like every other row —
+    // on the Vectis's measured 0.15 m (M118) where the table reads 0.1 m.
+    for (id, pf) in [("miter", 0.2304), ("vectis_incarnon", 0.1728)] {
         let base = crate::model::WeaponBase::from_data(id, true, &[]);
         let pool = crate::data::mods::pool_for_weapon(id);
         let mods: Vec<&crate::model::ModDef> =

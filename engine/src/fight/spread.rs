@@ -342,6 +342,7 @@ pub(super) fn spread_hit(
             active.co_base,
             crate::model::CoStage::Direct,
             active.co_behavior,
+            None,
         )
     } else {
         Gunco { bucket: arc_ratio, ..Default::default() }

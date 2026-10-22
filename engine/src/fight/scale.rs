@@ -132,6 +132,9 @@ pub(super) fn gunco_bucket(
     // THE CLASS it combines under — the weapon's own everywhere but a part the
     // catalog gives a row of its own.
     behavior: crate::model::CoBehavior,
+    // THE STATUS COUNT, where it is not the target's live one (an embedded
+    // orb's first hit, `ResolvedLingering::co_status_types`).
+    types: Option<u32>,
 ) -> Gunco {
     debug_assert_eq!(
         co_base.stage(),
@@ -147,8 +150,9 @@ pub(super) fn gunco_bucket(
     let cold = debuffs
         .cold_status_count(at)
         .min(params.arcane.cold_cap);
+    let types = types.unwrap_or(debuffs.distinct_statuses() as u32);
     let gunco_total = [
-        (co_rate, debuffs.distinct_statuses() as u32),
+        (co_rate, types),
         (params.arcane.per_cold_base_damage, cold),
     ]
     .iter()
@@ -167,7 +171,7 @@ pub(super) fn gunco_bucket(
         bucket,
         co: gunco_total,
         rate: co_rate,
-        types: debuffs.distinct_statuses() as f64,
+        types: f64::from(types),
         half_hp,
         co_share: if numerator > 0.0 { (gunco_total / numerator).clamp(0.0, 1.0) } else { 0.0 },
     };

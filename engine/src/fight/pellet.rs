@@ -419,6 +419,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         co_base,
         crate::model::CoStage::Direct,
         active.co_behavior,
+        None,
     );
     // The explosion's own, and only when it differs — an evolution
     // that raises the radial's damage without raising its CO base
@@ -433,7 +434,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // DIRECT-hit bonus, like the CO it rides beside.
         Some(r) if r.takes_condition_overload => gunco_bucket(
             params, active, &mut bodies[0].debuffs, &mut *gal, t, base_damage, arcane_base_damage, arc_ratio, 0.0,
-            r.co_base, crate::model::CoStage::Radial, active.co_behavior,
+            r.co_base, crate::model::CoStage::Radial, active.co_behavior, None,
         ),
         // A DETONATED GLAIVE IS A HEAVY ATTACK and its swing is not: Killing
         // Blow's term joins the explosion's bracket alone — *"increase the
@@ -1047,7 +1048,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 windows.fire_rate_after_reload,
                 windows.base_damage_after_reload, windows.base_damage_eximus,
                 windows.streak, tendril.count, crit_per_hit.stacks, bar,
-                combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t),
+                combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t)
+                    + u32::from(direct && pellet_lands && active.sniper_combo.is_some() && params.combo_builds),
                 incarnon.incarnon_until,
         *influence_until,
             );
@@ -1331,19 +1333,19 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // damage bonuses such as Hornet Strike"; "affects both
         // forms", the explosions included).
         let attrition = noncrit_mult(active.noncrit_bonus, tier, &mut d.spine);
-        // THE SHOT COMBO COUNTER, as the counter stood when this shot
-        // was fired. Read BEFORE the hit is counted, because that is
-        // the multiplier the player saw under the reticle when they
-        // pulled — the hit that reaches Minimum Combo is the one that
-        // ARMS it, not the one that spends it.
+        // THE SHOT COMBO COUNTER, read AFTER this hit is counted
+        // (measured): at 4 on the Vectis Prime, the hit that takes it
+        // to its Minimum Combo of 5 already pays x1.5.
         //
         // It multiplies the whole shot, direct and radial alike: the
-        // wiki calls it "a bonus to their total damage". Only the
-        // DIRECT hit builds it — *"Area-of-effect and damage over time
-        // do not affect the Shot Combo Counter"* — which is counted
-        // below.
+        // wiki calls it "a bonus to their total damage". Only a DIRECT
+        // hit builds it — *"Area-of-effect and damage over time do not
+        // affect the Shot Combo Counter"* — so a radial reads the count
+        // its own direct hit already raised.
+        let combo_counts = direct && active.sniper_combo.is_some() && params.combo_builds;
         let combo_now =
-            combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t);
+            combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t)
+                + u32::from(combo_counts);
         let combo_multiplier = active.sniper_combo.map_or(1.0, |c| c.multiplier(combo_now));
         // DAMAGE FALLOFF over the distance this instance travelled.
         //
@@ -1846,12 +1848,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             // ONE PER LANDING PELLET. *"Weapons with Multishot will
             // count each successful hit from the same shot as multiple
             // shot instances"* — and per enemy under Punch Through,
-            // which this arena has only one of. Counted here so the
-            // NEXT instance sees it, which is the order the previous
-            // paragraph reads it in. Scoped in only (M117): from the hip a
-            // hit pays the counter and adds nothing to it.
-            if active.sniper_combo.is_some() && params.combo_builds {
-                sniper_combo.count = combo_now + 1;
+            // which this arena has only one of. `combo_now` already
+            // holds this hit. Scoped in only (M117): from the hip a hit
+            // pays the counter and adds nothing to it.
+            if combo_counts {
+                sniper_combo.count = combo_now;
                 sniper_combo.last_hit = t;
             }
             r.sources.direct += effective;
@@ -1958,7 +1959,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 entities.push(Entity::Cloud(fresh));
             }
             // …AND A LANDED VECTIS INCARNON ROUND LEAVES ITS ORB in the body,
-            // carrying this shot's first round and shot combo with it (M117).
+            // carrying this shot's first round and shot combo with it (M117),
+            // and the status count read before this round's own procs (M118).
             if let Some(e) = active.embed {
                 entities.push(Entity::Embed(EmbedState::new(
                     seat,
@@ -1968,6 +1970,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                     head_direct,
                     pm_mult * cc_mult * combo_multiplier,
                     landing,
+                    co_mult.types as u32,
                 )));
             }
         }

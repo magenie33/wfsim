@@ -1989,8 +1989,10 @@ enemy under Punch Through or ricochet. *"Area-of-effect and damage over time do
 not affect the Shot Combo Counter"*, so only the direct part of a shot counts,
 while the multiplier applies to the whole shot (the wiki calls it a bonus to
 "total damage"; the Vectis Prime page's column header calls it a "Total Base
-Damage Multiplier"). It is read BEFORE the hit is counted — the multiplier a
-shot pays is the one that was under the reticle when it was fired.
+Damage Multiplier"). It is read AFTER the hit is counted (M118): at 4 on the
+Vectis Prime, the hit that takes it to its Minimum Combo of 5 already pays
+x1.5. A hit that does not build it — from the hip — pays the count as it
+stands.
 
 **What takes it.** *"Reduced by 1 after a short period of time that no
 successful hits have been made, or if the player misses a shot. All sniper

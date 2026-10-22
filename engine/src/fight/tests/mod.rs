@@ -27,6 +27,7 @@ mod m102_latron_prime;
 mod m103_latron_punch_through;
 mod m111_dual_toxocyst_neurotoxin;
 mod m117_vectis_prime_chamber;
+mod m118_vectis_prime_compression;
 mod melee;
 mod okina;
 mod orbs_fields_beams;
@@ -480,6 +481,9 @@ fn cloud(stacking: crate::model::FieldStacking) -> crate::build::loadout::Resolv
         co_behavior: None,
         forced_proc_count: 1,
         excludes_live_base_damage: false,
+        co_base: None,
+        co_status_types: None,
+        takes_compression: false,
     }
 }
 
@@ -537,6 +541,9 @@ fn orb_part(damage: f64) -> crate::build::loadout::ResolvedLingering {
         co_behavior: None,
         forced_proc_count: 1,
         excludes_live_base_damage: false,
+        co_base: None,
+        co_status_types: None,
+        takes_compression: false,
     }
 }
 

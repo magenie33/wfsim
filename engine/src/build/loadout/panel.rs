@@ -118,6 +118,17 @@ pub struct ResolvedLingering {
     /// stacking buff) reach this part? It does on every part but the spectral
     /// dagger's, which melee damage bonuses do not reach.
     pub excludes_live_base_damage: bool,
+    /// THE BASE ITS CO TERM READS, where it is not the direct hit's share of
+    /// this part: the Vectis Incarnon's orb reads the round's 150 against its
+    /// own 225 (M118). `None` borrows the direct hit's, as the Torid's cloud.
+    pub co_base: Option<crate::model::CoBase>,
+    /// THE STATUS COUNT ITS CO TERM READS, where it is not the target's live
+    /// one: an orb's first hit lands with its round and counts only what was
+    /// on the target before that round's own procs (M118).
+    pub co_status_types: Option<u32>,
+    /// Does Primary Compression's bonus reach it — beside an Adding CO term,
+    /// as on the direct hit. The Vectis Incarnon's orb hits take it (M118).
+    pub takes_compression: bool,
 }
 
 impl ResolvedLingering {

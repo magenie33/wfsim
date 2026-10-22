@@ -1422,6 +1422,9 @@ pub fn resolve_for(
             co_behavior: None,
             forced_proc_count: 1,
             excludes_live_base_damage: false,
+            co_base: None,
+            co_status_types: None,
+            takes_compression: false,
         }
     });
 

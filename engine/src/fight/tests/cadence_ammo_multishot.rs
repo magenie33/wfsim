@@ -1363,6 +1363,9 @@ fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
             co_behavior: None,
             forced_proc_count: 1,
             excludes_live_base_damage: false,
+            co_base: None,
+            co_status_types: None,
+            takes_compression: false,
             ..cloud(crate::model::FieldStacking::Stack)
         }),
         co_per_type: 1.0,

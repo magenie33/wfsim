@@ -68,13 +68,12 @@ attack:
   # 150 COLD, the figure the Genesis page gives the form on both variants — only
   # the base-damage evolutions differ between them.
   damage: { cold: 150 }   # total 150
-  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): FOUR PER CENT: 0.1 m -> +8%, because it "uses embed radial instead of headshot explosion".
-  # …AND ITS STACKING COLUMN READS `N/A`, which is not an answer. Verbatim:
+  # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): FOUR PER CENT, because it "uses embed radial instead of headshot explosion".
+  # The row's 0.1 m -> +8% is NOT what the game pays: the Prime's measured +12%
+  # (M118) is 0.15 m, and the row and the orb are one for both variants.
+  # …AND ITS STACKING COLUMN READS `N/A`. Verbatim:
   #   Vectis (Prime) | Incarnon Form + AoE | 4% | N/A | Snapshot | 0.1 m | +8%
-  # Every other row says Multiplies or Adds; this one declines. `multiplies`
-  # below is THIS REPO'S ASSUMPTION and it is live rather than inert — 4% is not
-  # 0%, so the choice moves a number. It was never transcribed at all until the
-  # catalog moved on 2026-08-19 and every row was re-read.
+  # `multiplies` is MEASURED on the Prime (M118).
   compression:
     effectiveness: 0.04
     stacking: multiplies
@@ -84,8 +83,8 @@ attack:
     # says which one that is: the arcane takes the EMBED radial, not the
     # headshot explosion. 4% is the row's account of how far off that is, and it does not
     # reconstruct 0.1 from 6.7 — so the metres are declared and the percentage
-    # stays the transcribed column it is. 0.8 x 0.1 = the table's +8%.
-    reads_radius_m: 0.1
+    # stays the transcribed column it is. 0.8 x 0.15 = the measured +12% (M118).
+    reads_radius_m: 0.15
 
   # THE ORB EVERY LANDED ROUND LEAVES IN THE BODY IT HIT — the Prime's, whose
   # file carries the readings (M117); the Genesis page gives one set of numbers

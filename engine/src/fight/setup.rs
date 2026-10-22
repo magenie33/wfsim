@@ -1236,6 +1236,9 @@ impl FightParams {
                 co_behavior: None,
                 forced_proc_count: 1,
                 excludes_live_base_damage: false,
+                co_base: None,
+                co_status_types: None,
+                takes_compression: false,
             }),
             orb_blast: panel.orb.and(panel.radial).map(|r| crate::build::loadout::ResolvedLingering {
                 damage: r.damage,
@@ -1258,6 +1261,9 @@ impl FightParams {
                 co_behavior: None,
                 forced_proc_count: 1,
                 excludes_live_base_damage: false,
+                co_base: None,
+                co_status_types: None,
+                takes_compression: false,
             }),
             // THE SPECTRAL DAGGER, in the same timed-instance shape the orb's two
             // parts take: an entity acting on its own clock is settled the way
@@ -1295,6 +1301,9 @@ impl FightParams {
                     // of universal base damage"* — a bracket of its own.
                     co_behavior: Some(crate::model::CoBehavior::Independent),
                     excludes_live_base_damage: true,
+                    co_base: None,
+                    co_status_types: None,
+                    takes_compression: false,
                 };
                 SpectralDaggerParams {
                     strike: part(g.strike, true),

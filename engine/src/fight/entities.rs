@@ -49,6 +49,9 @@ pub(super) struct EmbedState {
     /// The additive headshot bracket as of the shot, which the explosion takes
     /// (M117: x1.6 with the scope, x1.9 with Deadhead, x1 from the hip).
     pub(super) head_bracket: f64,
+    /// The status types on the target before the round's own procs, which its
+    /// first hit counts and its later hits do not (M118).
+    pub(super) types_before: u32,
     pub(super) next_hit: f64,
     pub(super) hits_left: u32,
     /// When a head's orb explodes; `None` for one in a body.
@@ -59,6 +62,7 @@ pub(super) struct EmbedState {
 impl EmbedState {
     /// LEFT BY A PROJECTILE LANDING at `t`. It hits at once either way; in a
     /// body it hits `body_more_hits` more times, in a head it explodes instead.
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn new(
         owner: Seat,
         part: crate::build::loadout::ResolvedEmbed,
@@ -67,6 +71,7 @@ impl EmbedState {
         head: bool,
         carried: f64,
         head_bracket: f64,
+        types_before: u32,
     ) -> Self {
         Self {
             owner,
@@ -74,6 +79,7 @@ impl EmbedState {
             body,
             carried,
             head_bracket,
+            types_before,
             next_hit: t,
             hits_left: if head { 1 } else { 1 + part.body_more_hits },
             explodes_at: head.then_some(t + part.head_after_seconds),
@@ -504,6 +510,8 @@ fn embed_event(
     );
     let Entity::Embed(e) = &mut entities[i] else { unreachable!() };
     let is_hit = e.hits_left > 0 && e.explodes_at.is_none_or(|x| e.next_hit <= x);
+    // THE FIRST HIT is the one that lands with the round: none spent yet.
+    let first = is_hit && e.hits_left == if e.explodes_at.is_some() { 1 } else { 1 + e.part.body_more_hits };
     let orb = *e;
     let (part, hits, multiplier) = if is_hit {
         e.hits_left -= 1;
@@ -511,7 +519,14 @@ fn embed_event(
         if e.due().is_none() {
             entities.remove(i);
         }
-        (lingering_of(&orb.part.hit, None), 1, orb.carried)
+        // ITS HITS TAKE THE WEAPON'S CO TERM ON THE ROUND'S BASE, and the
+        // compression beside it; the explosion takes neither (M118): 788 =
+        // 596.25 x 1.12 + 150 x 0.8, a 10391 headshot explosion beside a status.
+        let mut hit = lingering_of(&orb.part.hit, Some(active.co_behavior));
+        hit.co_base = Some(active.co_base.against(orb.part.hit.co_base.of()).borrowed_for(crate::model::CoStage::Field));
+        hit.co_status_types = first.then_some(orb.types_before);
+        hit.takes_compression = true;
+        (hit, 1, orb.carried)
     } else {
         entities.remove(i);
         (lingering_of(&orb.part.explosion, None), orb.part.head_explosion_hits, orb.carried * orb.head_bracket)
