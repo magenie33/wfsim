@@ -60,6 +60,11 @@ attack:
   # Overload's count.
   forced_procs: [cold]
   punch_through_m: 0.0
+  # PUNCH THROUGH IS LOCKED TO 0 in this form, and the page says so rather
+  # than leaving it to the AoE rule (this attack has no `radial:`): *"can no
+  # longer Punch Through"*, and Inciting Incident's channeled +2 *"applies only
+  # in the base form"* (wiki Vectis_Incarnon_Genesis).
+  punch_through_mods: false
   # 150 COLD, the figure the Genesis page gives the form on both variants — only
   # the base-damage evolutions differ between them.
   damage: { cold: 150 }   # total 150

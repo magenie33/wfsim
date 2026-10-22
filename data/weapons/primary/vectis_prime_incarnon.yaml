@@ -61,6 +61,11 @@ attack:
   # Overload's count.
   forced_procs: [cold]
   punch_through_m: 0.0
+  # PUNCH THROUGH IS LOCKED TO 0 in this form, and the page says so rather
+  # than leaving it to the AoE rule (this attack has no `radial:`): *"can no
+  # longer Punch Through"*, and Inciting Incident's channeled +2 *"applies only
+  # in the base form"* (wiki Vectis_Incarnon_Genesis).
+  punch_through_mods: false
   damage: { cold: 150 }   # total 150
   # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): FOUR PER CENT: 0.1 m -> +8%, "uses embed radial instead of headshot explosion".
   # …AND ITS STACKING COLUMN READS `N/A`, which is not an answer. Verbatim:

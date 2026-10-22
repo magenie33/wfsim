@@ -1520,6 +1520,16 @@ fn an_aoe_attack_takes_no_punch_through_from_a_mod() {
     assert!((inc_shred.punch_through_m - 0.0).abs() < 1e-9,
         "the Incarnon beam takes no punch through: {}", inc_shred.punch_through_m);
 
+    // NOR THE VECTIS INCARNON'S ROUND: no `radial:` either, and its page
+    // locks its punch through to 0 — a mod, or the evolution's channeled +2,
+    // reaches only the base form.
+    for (inc, pool) in [("vectis_incarnon", "vectis"), ("vectis_prime_incarnon", "vectis_prime")] {
+        let shred = panel(inc, pool, &["primed_shred"]);
+        assert!(shred.radial.is_none(), "the fixture must be the case the class rule would get wrong");
+        assert!((shred.punch_through_m - 0.0).abs() < 1e-9,
+            "{inc} takes no punch through: {}", shred.punch_through_m);
+    }
+
     // THE TORID'S BASE FORM DOES NOT — it explodes on first contact.
     let torid_bare = panel("torid", "torid", &[]);
     let torid_shred = panel("torid", "torid", &["primed_shred"]);
