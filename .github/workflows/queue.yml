@@ -259,12 +259,16 @@ jobs:
           curl -s --connect-timeout 15 --max-time 60 https://wfsim.app/api/popularity > popularity.json || : > popularity.json
           mkdir -p by-weapon
           python3 scripts/popular_order.py popularity.json facts-known.ndjson --split by-weapon < rescore.ndjson
-          for f in by-weapon/*.ndjson; do
-            [ -e "$f" ] || continue
-            weapon=$(basename "$f" .ndjson); weapon="${weapon#*-}"
+          # FOUR WEAPONS AT A TIME, most popular first: one at a time wrote 65 rows
+          # a second, a ruler's 1.5 million rows six hours against this job's
+          # three. The order a row is handed out in is its deadline (`rowAsk`),
+          # not when it was written, so writing several batches at once moves
+          # nothing in it.
+          export DAY WHY
+          ls by-weapon/*.ndjson 2>/dev/null | xargs -r -P 4 -I{} bash -c '
+            weapon=$(basename "$1" .ndjson); weapon="${weapon#*-}"
             bash scripts/ship_queue.sh "rescore-$weapon-$DAY" \
-              "${WHY:-every row asked again after a model change}" "$f"
-          done
+              "${WHY:-every row asked again after a model change}" "$1"' _ {}
           echo "::notice::rescore: $(grep -c . rescore.ndjson || echo 0) row(s) of $RULER from $(wc -l < weapons.txt) weapon(s)"
 
       - name: the databases
