@@ -107,16 +107,36 @@ $$;
 -- THE JOIN PICK STARTS FROM THE SERVED ENGINE'S ANSWERS, in its own statement:
 -- walked down the order, a new engine's few answers among a million open rows
 -- took ten seconds and more, under the producer_use lock every sync waits on.
+-- A QUESTION ANOTHER VOLUNTEER HAS ANSWERED ON THIS ENGINE GOES FIRST, in the
+-- order, then the rest: one more agreeing answer makes it a fact, where a fresh
+-- row needs two, and its first witness waits for that answer to be paid. Taken by
+-- the deadline alone, a batch due sooner asked after the first answer left it
+-- waiting behind every row of that batch. Eligibility already keeps the asker's
+-- own owner and network out, so any served answer leads from another witness.
 CREATE OR REPLACE FUNCTION factory_take(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint)
 RETURNS SETOF text LANGUAGE plpgsql AS $$
+DECLARE
+  v_led text[];
 BEGIN
   IF $12 IS NULL THEN
+    SELECT coalesce(array_agg(t.id), '{}') INTO v_led FROM (
+      SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
+      WHERE e.id IN (SELECT l.question FROM led_questions l WHERE l.engine = $3)
+        AND EXISTS (SELECT 1 FROM answers a WHERE a.question = e.id AND a.engine = $3 AND a.void = 0 AND a.official = 0)
+        AND e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
+        AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
+        AND ($13 IS NULL OR e.producer = $13)
+        AND q.state = 'open' AND q.waits = 0 AND factory_takeable(q.lease_until, q.leased_at, $1, $8)
+      ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED) t;
+    RETURN QUERY SELECT unnest(v_led);
+    IF cardinality(v_led) >= $14 THEN RETURN; END IF;
     RETURN QUERY SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
     WHERE e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
       AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
       AND ($13 IS NULL OR e.producer = $13)
       AND q.state = 'open' AND q.waits = 0 AND factory_takeable(q.lease_until, q.leased_at, $1, $8)
-    ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED;
+      AND NOT (q.id = ANY (v_led))
+    ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 - cardinality(v_led) FOR UPDATE OF q SKIP LOCKED;
   ELSE
     RETURN QUERY SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
     WHERE e.id IN (SELECT s.question FROM answers s WHERE s.engine = $12 AND s.void = 0 AND s.owner <> $5 AND ($6 = '' OR s.net <> $6))
@@ -127,6 +147,28 @@ BEGIN
     ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED;
   END IF;
 END $$;
+
+-- THE LED QUESTIONS KEPT (schema.sql `led_questions`): a volunteer's answer on an
+-- open question adds its row, the question leaving `open` drops every row of it.
+-- An answer voided later leaves its row; the pick reads the answers again.
+CREATE OR REPLACE FUNCTION led_answered() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO led_questions (question, engine)
+    SELECT NEW.question, NEW.engine WHERE EXISTS (SELECT 1 FROM questions q WHERE q.id = NEW.question AND q.state = 'open')
+    ON CONFLICT DO NOTHING;
+  RETURN NULL;
+END $$;
+DROP TRIGGER IF EXISTS answers_led ON answers;
+CREATE TRIGGER answers_led AFTER INSERT ON answers
+  FOR EACH ROW WHEN (NEW.void = 0 AND NEW.official = 0) EXECUTE FUNCTION led_answered();
+CREATE OR REPLACE FUNCTION led_closed() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  DELETE FROM led_questions WHERE question = NEW.id;
+  RETURN NULL;
+END $$;
+DROP TRIGGER IF EXISTS questions_led ON questions;
+CREATE TRIGGER questions_led AFTER UPDATE OF state ON questions
+  FOR EACH ROW WHEN (OLD.state = 'open' AND NEW.state <> 'open') EXECUTE FUNCTION led_closed();
 
 -- …LEASED TOGETHER as $15 until $16 to device $17 — unless it holds $18 packs
 -- already.

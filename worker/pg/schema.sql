@@ -216,6 +216,16 @@ CREATE INDEX IF NOT EXISTS answers_unpaid_by_device ON answers (device, at) WHER
 CREATE UNIQUE INDEX IF NOT EXISTS answers_once ON answers (question, device, engine) WHERE official = 0;
 -- WHEN AN ENGINE'S UNIT OF WORK BEGAN, one seek (worker/fair.js `tableOf`).
 CREATE INDEX IF NOT EXISTS answers_by_engine ON answers (engine, at);
+-- AN OPEN QUESTION A VOLUNTEER HAS ANSWERED, by engine: one more agreeing
+-- answer makes it a fact, so a pack hands these out first (sync.sql
+-- `factory_take`). Kept by the triggers in sync.sql, a row while its question
+-- is open, so the pick reads a few thousand rows, never every answer.
+CREATE TABLE IF NOT EXISTS led_questions (
+  question TEXT COLLATE "C" NOT NULL,
+  engine   TEXT COLLATE "C" NOT NULL,
+  PRIMARY KEY (question, engine)
+);
+CREATE INDEX IF NOT EXISTS led_questions_by_engine ON led_questions (engine, question);
 
 -- WHAT THE WATCHDOG SAID, a round at most hourly, one row a finding under one
 -- `at` (worker/factory.js `watchdog`): read here by whoever fixes it, never

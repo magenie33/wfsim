@@ -78,9 +78,11 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
     const eligible = qs.filter(may).sort((a, b) => b.waits - a.waits || a.due - b.due || (a.id < b.id ? -1 : 1));
     const w = { device: me.device, owner: me.owner, siblings, net: me.net, lanes, before: before === null ? null : iso(before) };
     // A PACK, by the same rule: the first `size` it may answer of a packable
-    // verb that nobody waits on — read before `next` leases one of them.
+    // verb that nobody waits on — read before `next` leases one of them — those
+    // another witness answered on the served engine first.
     const size = 1 + Math.floor(r() * 5);
-    const packWant = eligible.filter((q) => !q.waits && q.verb === "simulate").slice(0, size).map((q) => q.id);
+    const packable = eligible.filter((q) => !q.waits && q.verb === "simulate"), led = (q) => q.answers.some((a) => a.engine === "e1");
+    const packWant = [...packable.filter(led), ...packable.filter((q) => !led(q))].slice(0, size).map((q) => q.id);
     const pack = await f.nextPack(env, w, "e1", { n: size, lease_ms: 60_000, most: 1 }, NOW);
     const packGot = pack ? pack.questions.map((q) => q.question) : [];
     const sameSet = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
