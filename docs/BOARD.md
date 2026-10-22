@@ -1021,7 +1021,17 @@ questions, never a heavier client.
   (due in six hours) — `survey_build` when WFSim submitted it, a survey's winner
   (due in three days: a batch of them owes millions of rows) — `refresh` for a `refresh-` batch's (due when its fact is fifteen days old),
   `sweep` for a rescore's, an older build's first pass, or a `backfill-`
-  batch's (due in a week). The reconciliation ships `backfill-`, rows nobody
+  batch's (due in a week).
+- **The most popular weapon first.** A rescore and the reconciliation ask
+  their rows in the order `/api/popularity` counts weapons, inside one by the
+  row's last score (`popular_order.py`), each row naming its weapon's place
+  (`order`). A placed row is due by its batch's DAY plus its producer's
+  deadline, a second a place (`rowAsk`), so the factory's earliest-deadline
+  order inside a producer hands the most popular weapon out first, however
+  many runs asked the batch. A rescore is one batch a weapon,
+  `rescore-<weapon>-<day>`, every ruler's rows in it when each ruler's run
+  names the same `day`: the order center lists them most popular first, and
+  each is moved or cancelled alone. The reconciliation ships `backfill-`, rows nobody
   ordered: under `arrivals-` a day's library growth queued inside `new_build`
   ahead of the submission somebody waits on. An
   arrival's row the board already scored is not asked: a resubmission the page

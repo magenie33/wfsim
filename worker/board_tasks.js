@@ -151,10 +151,18 @@ const isPlayer = (initiator) => typeof initiator === "string" && (initiator.star
 /// from `wfsim-intake --asked`), and only a player's (`user:`, `anonymous`)
 /// is waited: a survey's or a chat's riven gain, or an arrival nobody recorded,
 /// is an ordinary row, as is a backfill's re-ask.
+/// A ROW THAT NAMES ITS PLACE in its batch (`order`, its weapon's popularity rank,
+/// `scripts/popular_order.py`) is due by the batch's DAY plus its deadline, a
+/// second a place, never sooner than a minute from now: a batch asked over
+/// several runs keeps one order, and the most popular weapon is handed out first.
 export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) {
   const producer = producerOf(batch, builtAt, r.ruler, r.initiator);
   const measured = producer === "refresh" && measuredAt ? Date.parse(measuredAt) : NaN;
+  const day = /(\d{4}-\d{2}-\d{2})$/.exec(batch)?.[1];
+  const placed = Number.isInteger(r.order) && r.order >= 0 && day
+    ? Math.max(60_000, Date.parse(`${day}T00:00:00Z`) + DEADLINE_MS[producer] + r.order * 1000 - now) : NaN;
   const due_in_ms = Number.isFinite(measured) ? measured + REFRESH_WITHIN_MS - now
+    : Number.isFinite(placed) ? placed
     : isLadderCell(r.ruler) && !measuredAt ? SCENE_FIRST_MS : DEADLINE_MS[producer];
   return { producer, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate",
     request: { record: JSON.parse(record), ruler: r.ruler, mode: r.mode }, due_in_ms,

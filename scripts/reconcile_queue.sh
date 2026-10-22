@@ -61,8 +61,9 @@ popular=$(mktemp)
 curl -s --connect-timeout 15 --max-time 60 https://wfsim.app/api/popularity > "$popular" || : > "$popular"
 paced=$(mktemp)
 python3 scripts/scene_rows.py "$FACTS" "$popular" "$missing" "${SCENE_ROWS_PER_RUN:-40000}" > "$paced"
-rm -f "$popular"
-mv "$paced" "$missing"
+# …AND EVERY ROW ASKED IN POPULARITY ORDER, base rows and cells alike.
+python3 scripts/popular_order.py "$popular" "$FACTS" < "$paced" > "$missing"
+rm -f "$popular" "$paced"
 
 # ONE BATCH A DAY, named by the day. An hourly clock would otherwise mint
 # twenty-four groups a day and a list nobody can read is a list nobody uses;

@@ -130,7 +130,9 @@ ask_batches() {
     [splits("\n")] | map(select(length > 0)) | map(fromjson) as $all
     | range(0; ($all | length); $n)
     | . as $i
-    | { batch: $batch, rows: [$all[$i : $i + $n][] | { identity: .build_id, ruler, mode } + (if .named == true then { named: true } else {} end)] }
+    | { batch: $batch, rows: [$all[$i : $i + $n][] | { identity: .build_id, ruler, mode }
+        + (if .named == true then { named: true } else {} end)
+        + (if (.order | type) == "number" then { order } else {} end)] }
   ' "$1"
 }
 

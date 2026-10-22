@@ -36,7 +36,7 @@ def main(facts_path, popularity_path, rows_path, n):
             if not line.strip():
                 continue
             r = json.loads(line)
-            row = {"build_id": r["build_id"], "ruler": r["ruler"], "mode": r["mode"]}
+            row = {"build_id": r["build_id"], "ruler": r["ruler"], "mode": r["mode"], "weapon": r.get("weapon") or ""}
             if "__" not in r["ruler"]:
                 print(json.dumps(row, separators=(",", ":")))
                 continue

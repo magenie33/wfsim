@@ -380,6 +380,15 @@ docs/BOARD.md §"The sync in the database").
 - Nothing a sync's steps reach, through every function of `sync.sql` they
   name, locks or writes `producer_use`: `board_sync` writes it last.
 
+## `check_popular_order`
+
+Plain node: a batch is asked in popularity order (docs/BOARD.md §"Compute
+orders"). `popular_order.py` puts the most popular weapon first and its
+best-scored build first inside it, each row naming its weapon's place;
+`ship_queue.sh` carries the place to the ask; `rowAsk` makes a row a place
+down a second later, the same place due alike whichever run asked it, and a
+batch's long-past day due a minute from now rather than overdue.
+
 ## `check_initiator`
 
 Plain node on PGlite: who asked (docs/BOARD.md §"Who asked"). A demand and its
