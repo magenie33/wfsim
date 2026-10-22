@@ -63,6 +63,11 @@ attack:
   crit_multiplier: 2
   status_chance: 0.22
   punch_through_m: 0.0
+  # LOCKED, though no `radial:` is here to say so: the rocket explodes on
+  # contact, and *"Projectile AoE weapons ... cannot have their Punch Through
+  # stat modified"* (wiki Punch_Through). The explosion is unmodelled, so the
+  # shape rule cannot see it.
+  punch_through_mods: false
   damage: { blast: 200 }   # total 200
 
 # incarnon_evolutions: definitions live in data/evolutions/angstrum_*.yaml.

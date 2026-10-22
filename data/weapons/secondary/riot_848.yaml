@@ -48,6 +48,9 @@ attack:
   crit_multiplier: 2.2
   status_chance: 0.26
   punch_through_m: 0.0
+  # *"Punch Through has no effect on this weapon"* (wiki Riot-848). The
+  # explosion comes on the reload and is unmodelled, so no `radial:` says it.
+  punch_through_mods: false
   # NO RANGE ROW on the direct-hit block — the 1.5 m below is the
   # explosion's RADIUS and not a reach. See data/surveys/weapon_range.yaml.
   damage: { puncture: 12 }   # total 12

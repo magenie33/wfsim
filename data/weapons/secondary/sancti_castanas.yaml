@@ -57,6 +57,11 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.1
   punch_through_m: 0.0
+  # LOCKED, though no `radial:` is here to say so: the mine is a projectile
+  # whose damage is its blast, and *"Projectile AoE weapons ... cannot have
+  # their Punch Through stat modified"* (wiki Punch_Through). The blast is
+  # carried as the shot's own damage, so the shape rule cannot see it.
+  punch_through_mods: false
   # A GUARANTEED ELECTRICITY PROC — the module's ForcedProcs.
   forced_procs: [electricity]
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.

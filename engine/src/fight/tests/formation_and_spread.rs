@@ -1530,6 +1530,15 @@ fn an_aoe_attack_takes_no_punch_through_from_a_mod() {
             "{inc} takes no punch through: {}", shred.punch_through_m);
     }
 
+    // NOR A PROJECTILE WHOSE EXPLOSION IS UNMODELLED: the rule is the game's,
+    // and an entry that carries the blast as its own damage, or not at all,
+    // still holds the lock.
+    for w in ["angstrum", "prisma_angstrum", "castanas", "sancti_castanas", "riot_848"] {
+        let shred = panel(w, w, &["seeker"]);
+        assert!(shred.radial.is_none(), "the fixture must be the case the class rule would get wrong");
+        assert!((shred.punch_through_m - 0.0).abs() < 1e-9, "{w} takes no punch through: {}", shred.punch_through_m);
+    }
+
     // THE TORID'S BASE FORM DOES NOT — it explodes on first contact.
     let torid_bare = panel("torid", "torid", &[]);
     let torid_shred = panel("torid", "torid", &["primed_shred"]);
