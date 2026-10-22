@@ -122,7 +122,6 @@ BEGIN
     SELECT coalesce(array_agg(t.id), '{}') INTO v_led FROM (
       SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
       WHERE e.id IN (SELECT l.question FROM led_questions l WHERE l.engine = $3)
-        AND EXISTS (SELECT 1 FROM answers a WHERE a.question = e.id AND a.engine = $3 AND a.void = 0 AND a.official = 0)
         AND e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
         AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
         AND ($13 IS NULL OR e.producer = $13)
@@ -150,7 +149,9 @@ END $$;
 
 -- THE LED QUESTIONS KEPT (schema.sql `led_questions`): a volunteer's answer on an
 -- open question adds its row, the question leaving `open` drops every row of it.
--- An answer voided later leaves its row; the pick reads the answers again.
+-- An answer voided later leaves its row: the pick reads no answers, which on
+-- every pack scanned the engine's whole day of them, and a row it moves up
+-- early costs only its place.
 CREATE OR REPLACE FUNCTION led_answered() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   INSERT INTO led_questions (question, engine)
