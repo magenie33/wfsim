@@ -731,6 +731,7 @@ pub fn run_once_traced(
             n_pellets,
             mut beam_merge,
             blob_stacks,
+            mut rounds,
         } = resolve_the_shot(
             me.params,
             active,
@@ -824,6 +825,7 @@ pub fn run_once_traced(
                 beam_merge = base_ms + (live - base_ms) * (1.0 + active.multishot_ammo_bonus);
             } else {
                 n_pellets = 1 + afforded;
+                rounds.truncate(n_pellets);
             }
         }
         // The damage ramp, evaluated once per tick. A FINAL multiplier on the
@@ -962,10 +964,13 @@ pub fn run_once_traced(
             n_pellets,
             beam_merge,
             blob_stacks,
+            rounds,
             shot_head_landing,
             pellets_before,
             headshots_before,
             burst_completed: None,
+            burst_starts: (me.ammo.rounds_this_mag.max(1) - 1)
+                .is_multiple_of(active.burst.map_or(1, |b| b.count.max(1))),
         };
         // A SHOT THAT FLIES IS DUE THE GAP OVER ITS SPEED FROM NOW, and the
         // trigger does not wait for it: the next pull is timed from this one.

@@ -28,6 +28,7 @@ mod m103_latron_punch_through;
 mod m111_dual_toxocyst_neurotoxin;
 mod m117_vectis_prime_chamber;
 mod m118_vectis_prime_compression;
+mod m119_multishot_rides_the_round;
 mod melee;
 mod okina;
 mod orbs_fields_beams;

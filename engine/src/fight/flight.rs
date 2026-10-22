@@ -62,6 +62,8 @@ pub(super) struct Landing {
     pub(super) n_pellets: u32,
     pub(super) beam_merge: f64,
     pub(super) blob_stacks: u32,
+    /// Which of the `n_pellets` instances ride the round before them.
+    pub(super) rounds: super::resolve::Rounds,
     pub(super) shot_head_landing: f64,
     /// The run's counters as the hit begins — the marks the gauge and the
     /// next-shot bonus measure THIS shot's weak points against.
@@ -69,6 +71,11 @@ pub(super) struct Landing {
     pub(super) headshots_before: u32,
     /// See `after_the_landing`.
     pub(super) burst_completed: Option<bool>,
+    /// THE FIRST ROUND OF ITS BURST (every round of a weapon that has none).
+    /// A burst is one round as far as a kill goes (M119: a Burston's three
+    /// take three rounds of ammunition and do not reach the body behind the one
+    /// the first killed), so `Body::fallen` lasts the burst.
+    pub(super) burst_starts: bool,
 }
 
 #[wfsim_gas_macro::metered]
@@ -142,6 +149,14 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         (&me.fixed.main_variants, &me.fixed.main_variant_rad)
     };
     let d = &mut me.d;
+    // A SHOT STARTS WITH EVERY BODY STANDING: a kill between shots — a cloud's
+    // tick, an orb — is no part of this one (`Body::fallen`). A burst's later
+    // rounds are the same shot.
+    if l.burst_starts {
+        for b in g.bodies.iter_mut() {
+            b.fallen = false;
+        }
+    }
     // ONE INSTANCE for a per-instance arcane cap: the whole pull, pellets and
     // radial included.
     me.arc.next_instance();
@@ -158,6 +173,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut beam_merge = l.beam_merge;
     {
         let shot = Strike {
+            round_multishot: l.rounds.per_round(l.n_pellets),
             seat: me.seat,
             active,
             qvec: &l.qvec,
@@ -206,6 +222,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             rec_buff_index: &me.fixed.rec_buff_index,
             params: me.params,
         };
+        let mut round_aim = RoundAim::default();
         let mut live = Live {
             r: g.r,
             rec: g.rec,
@@ -232,9 +249,10 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             influence_until: &mut me.influence_until,
             landed_this_shot: &mut landed_this_shot,
             super_crit_armed: &mut me.super_crit_armed,
+            round_aim: &mut round_aim,
         };
-        for pellet_idx in 0..l.n_pellets {
-            settle_pellet(pellet_idx, &shot, &mut live);
+        for (pellet_idx, follows) in (0..l.n_pellets).zip(l.rounds.follows(l.n_pellets)) {
+            settle_pellet(pellet_idx, follows, &shot, &mut live);
         }
     }
 
@@ -268,6 +286,14 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             me.fixed.chain_layout.as_ref(),
             struck,
         );
+    }
+    // …AND ENDS THAT WAY, for whatever settles before the next one — once
+    // its burst is done.
+    let burst_len = active.burst.map_or(1, |b| b.count.max(1));
+    if l.burst_completed.unwrap_or_else(|| me.ammo.rounds_this_mag.is_multiple_of(burst_len)) {
+        for b in g.bodies.iter_mut() {
+            b.fallen = false;
+        }
     }
 
     // THE NEXT SHOT IS ARMED BY THIS ONE, pellets and spread included, and a

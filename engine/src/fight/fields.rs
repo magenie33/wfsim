@@ -220,7 +220,7 @@ pub(super) fn field_tick_seeded(
     is_blast: bool,
     seed: Option<&mut InfluenceSeed>,
 ) -> bool {
-    let Body { state: target, debuffs } = body;
+    let Body { state: target, debuffs, .. } = body;
     // MELEE CAREEN reaches a spectral dagger, and a melee weapon's only timed
     // parts are its daggers.
     let careen = careen_factor(params, debuffs, at);

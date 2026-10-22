@@ -20,6 +20,8 @@ use super::bumps::{bump_buffs, bump_status_buffs};
 /// of them a shot, and this is the one path all of them resolve through. A
 /// strike is what a combatant does.
 pub(super) struct Strike<'a> {
+    /// The multishot one round carries (`resolve::Rounds::per_round`).
+    pub(super) round_multishot: f64,
     /// WHO THREW IT. Every instance this strike settles is credited here, so
     /// the seat travels with the attack rather than being named again at each
     /// of the places one lands.
@@ -107,6 +109,18 @@ pub(super) struct Live<'a> {
     pub(super) influence_until: &'a mut f64,
     pub(super) landed_this_shot: &'a mut bool,
     pub(super) super_crit_armed: &'a mut bool,
+    pub(super) round_aim: &'a mut RoundAim,
+}
+
+/// WHERE A ROUND WENT — the part it found and the spread it drew — so every
+/// instance multishot adds to it lands there too (`resolve::Rounds`).
+#[derive(Debug, Clone, Copy, Default)]
+pub(super) struct RoundAim {
+    /// Which list the part came from (0 aimed, 1 unaimed, 2 gauge) and where in it.
+    list: u8,
+    part: usize,
+    dev: f64,
+    phi: f64,
 }
 
 /// WHAT A WEAK-POINT KILL GRANTS — one site, because "headshot kill" has to
@@ -166,8 +180,9 @@ fn weakpoint_kill(
 /// is what moving the pipeline into its own file costs.
 #[inline(always)]
 #[wfsim_gas_macro::metered]
-pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
+pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live: &mut Live) {
     let Strike {
+        round_multishot,
         seat,
         active,
         qvec,
@@ -232,6 +247,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     let sniper_combo = &mut *live.sniper_combo;
     let weakpoint_pile = &mut *live.weakpoint_pile;
     let strike_spread = &mut *live.strike_spread;
+    let round_aim = &mut *live.round_aim;
     let entities = &mut *live.entities;
     let any_big = &mut *live.any_big;
     let any_head = &mut *live.any_head;
@@ -464,14 +480,29 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     // flat chance, because `headshot_pct` describes the player and the
     // player is not pointing this one. Same helper the field's ticks
     // use, so the six strikes of one orb cannot answer differently.
-    let part = match active.unaimed_headshot_chance {
-        Some(c) => unaimed_part(&params.body_parts, c, &mut d.spine),
+    //
+    // AN INSTANCE MULTISHOT ADDED takes its round's part rather than a draw of
+    // its own: the round is the only thing that flew (`resolve::Rounds`).
+    let (list, parts): (u8, &[BodyPart]) = match active.unaimed_headshot_chance {
+        Some(_) => (1, &params.body_parts),
         // …AND WHILE THE BASE FORM CHARGES ITS GAUGE, the aim the scenario
         // gives that phase: a player aiming for weak points to fill it.
         None if params.cycle.is_some() && incarnon.in_base_form && !params.gauge_charging_body_parts.is_empty() => {
-            pick_part(&params.gauge_charging_body_parts, &mut d.spine)
+            (2, &params.gauge_charging_body_parts)
         }
-        None => pick_part(&params.body_parts, &mut d.spine),
+        None => (0, &params.body_parts),
+    };
+    let part = match parts.get(round_aim.part).filter(|_| follows && round_aim.list == list) {
+        Some(p) => p,
+        None => {
+            let p = match active.unaimed_headshot_chance {
+                Some(c) => unaimed_part(parts, c, &mut d.spine),
+                None => pick_part(parts, &mut d.spine),
+            };
+            round_aim.list = list;
+            round_aim.part = parts.iter().position(|q| std::ptr::eq(q, p)).unwrap_or(0);
+            p
+        }
     };
     let cc_pellet = effective_cc
         + if part.is_weak_point {
@@ -648,6 +679,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
     // thing ONE body can be asked; a crowd asks WHERE, so both survive
     // to build the epicentre below.
     let (dev, phi) = match active.spread {
+        Some(s) if follows && !s.is_pinpoint() && range > 0.0 => (round_aim.dev, round_aim.phi),
         Some(s) if !s.is_pinpoint() && range > 0.0 => {
             let dev = s.draw(d.aim.next_f64());
             // WHICH WAY IT WENT, drawn whenever the weapon points away
@@ -669,6 +701,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // does not mean no aim.
         _ => (0.0, 0.0),
     };
+    (round_aim.dev, round_aim.phi) = (dev, phi);
     let aim_offset = match active.spread {
         Some(s) if !s.is_pinpoint() && range > 0.0 => {
             crate::rules::space::miss_distance_off_axis(range, off_axis, dev, phi)
@@ -1445,7 +1478,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
         // target. Nothing lands on the aimed body, so its whole path (status,
         // kill, on-hit) is skipped and the formation is all there is; read at
         // `falloff` the share would be zero for everyone.
-        if !direct && falloff <= 0.0 {
+        if !direct && (falloff <= 0.0 || bodies[0].fallen) {
             if let (Some(rr), false) = (rad, bodies.len() < 2) {
                 spread_from_blast(
                     seat, windows, det, bodies, params, active, &rr,
@@ -1455,6 +1488,27 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                 );
             }
             replay_armed = arms_replay(params, replay, tier, qtotal, false, d);
+            continue;
+        }
+        // A BODY THIS SHOT ALREADY KILLED takes nothing more of it (M119): the
+        // instance is swallowed there. A round that punches
+        // through still flies on, and each body behind takes its instances as
+        // it would have — a dead one in front of it stops nothing.
+        let punch = PunchRolls {
+            multishot: round_multishot,
+            crit_chance: cc_pellet,
+            crit_damage: cd,
+            crit_multiplier,
+            attrition,
+        };
+        if direct && bodies[0].fallen {
+            if !follows && params.beam.is_none() && struck.len() > 1 {
+                spread_from_punch_through(
+                    seat, windows, bodies, params, active, struck, raw / bucket, shares, punch,
+                    spread_mb, status_chance, forced, &qvec, part.is_head, part_factor,
+                    landing, &mut *gal, &mut *arc, &mut *r, rec, d, t,
+                );
+            }
             continue;
         }
         let head_direct = direct && part.is_head;
@@ -1740,7 +1794,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                     tennokai_heavy,
                 );
             }
-            if params.beam.is_none() {
+            // ONE ROUND, ONE FLIGHT: the instances multishot added to it do not
+            // punch through, the round does, and rolls them again at each body.
+            if params.beam.is_none() && !follows {
                 punched = spread_from_punch_through(
                 seat,
                 windows,
@@ -1750,9 +1806,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
                     struck,
                     raw / bucket,
                     shares,
-                    crit_multiplier,
-                    tier,
-                    attrition,
+                    punch,
                     spread_mb,
                     status_chance,
                     forced,
@@ -2187,6 +2241,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, shot: &Strike, live: &mut Live) {
             };
         }
         if killed {
+            bodies[0].fallen = true;
             gal.bump_on_kill(params, t);
             arc.on_kill(params, t);
             // THE WEAK POINT, not the head: Update 44.0 converted Deadhead and

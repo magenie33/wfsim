@@ -2235,8 +2235,10 @@ fn mounting_momentum_is_reset_by_an_empty_magazine_so_it_does_not_ramp() {
     let dps = |secs: f64| {
         let arena = crate::arena::Arena::training(secs);
         let p = crate::fight::FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none());
-        let mut rng = crate::rules::rng::Rng::new(7);
-        crate::fight::run_once(&p, &mut rng).total_damage() / secs
+        // MANY SEEDS, so a 30 s opening is a shape and not one run's dice.
+        (1..=256).map(|seed| crate::fight::run_once(&p, &mut crate::rules::rng::Rng::new(seed)).total_damage()).sum::<f64>()
+            / 256.0
+            / secs
     };
     let (d30, d300, d600) = (dps(30.0), dps(300.0), dps(600.0));
     // PAST THE FIRST MAGAZINE the rate is flat: every magazine after it
@@ -2249,7 +2251,9 @@ fn mounting_momentum_is_reset_by_an_empty_magazine_so_it_does_not_ramp() {
     // …and the FIRST magazine is cheaper, because there is nothing to
     // spend yet. That is the honest cost of a buff you have to earn, and
     // it is also the proof the stacks are not being seeded.
-    assert!(d30 < d300 * 0.95, "the opening magazine is unbuffed: {d30:.0} vs {d300:.0}");
+    // Over many seeds the opening reads about 3% under the rest; one seed had
+    // shown 5%, which was that seed's dice.
+    assert!(d30 < d300 * 0.985, "the opening magazine is unbuffed: {d30:.0} vs {d300:.0}");
 }
 
 /// NIGHTWATCH NAPALM'S FIELD, and the two things a measurement settled about it.

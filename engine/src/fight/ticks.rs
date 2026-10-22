@@ -215,7 +215,7 @@ pub(super) fn process_ticks(
     // area, and they cannot work at all without it.
     body_index: usize,
 ) {
-    let Body { state: target, debuffs } = body;
+    let Body { state: target, debuffs, .. } = body;
     enum Ev {
         Dot(usize),
         Heat,

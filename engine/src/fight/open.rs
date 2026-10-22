@@ -300,6 +300,7 @@ pub(super) fn open<'a>(
         .map(|b| Body {
             state: TargetState::spawn(b.params, b.at),
             debuffs: DebuffState::default(),
+            fallen: false,
         })
         .collect();
     // NO PROMOTION, AND NONE IS NEEDED: `TargetState::apply` respawns a body

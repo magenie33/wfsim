@@ -16,6 +16,11 @@ use super::*;
 pub(super) struct Body {
     pub(super) state: TargetState,
     pub(super) debuffs: DebuffState,
+    /// KILLED BY THE SHOT BEING SETTLED: the rest of that shot finds nothing
+    /// here (M119). Its pools stand back up at once, but nothing of
+    /// the same shot reaches it — not the aimed round's later instances, not a
+    /// blast's, not a punch through behind it. Cleared when the shot is done.
+    pub(super) fallen: bool,
 }
 
 /// WHICH HALF OF ITS DEATH A BODY IS IN. Only a Thrax has a second half, and

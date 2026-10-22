@@ -527,7 +527,9 @@ fn emergent_multishot_stacks_are_earned_by_kills_from_zero() {
     // Cold-start config (initial 0): frail 50 HP target dies to every
     // pellet; +1.0 pellet per stack, cap 2, long duration. Strike k
     // fires (1 + stacks) pellets and the FIRST pellet's kill bumps
-    // the stack: pellets per shot 1, 2, 3, 3, ... = 1 + 2 + 8×3 = 27.
+    // the stack: pellets per shot 1, 2, 3, 3, ... = 1 + 2 + 8×3 = 27
+    // FIRED — and one LANDS a shot, the rest swallowed by the body it
+    // killed (`Body::fallen`).
     let spec = crate::model::StackSpec {
         per_stack: 1.0,
         max_stacks: 2,
@@ -543,15 +545,22 @@ fn emergent_multishot_stacks_are_earned_by_kills_from_zero() {
         body_parts: mono_body(1.0),
         ..no_status()
     };
+    let fired = |p: &FightParams| -> u32 {
+        record(p, 5, 0.0, f64::INFINITY, 10_000, 0)
+            .events()
+            .iter()
+            .map(|e| match e.kind {
+                crate::record::Kind::Strike { pellets } => pellets,
+                _ => 0,
+            })
+            .sum()
+    };
+    assert_eq!(fired(&p), 27);
     let s = monte_carlo(&p, 20, 5);
-    assert!(
-        (s.mean_pellets - 27.0).abs() < 1e-9,
-        "pellets {}",
-        s.mean_pellets
-    );
+    assert!((s.mean_pellets - 10.0).abs() < 1e-9, "pellets {}", s.mean_pellets);
 
     // Initial-full (the user's default): every shot fires 3 pellets
-    // from t = 0 (kills keep the stacks refreshed) -> 30 pellets.
+    // from t = 0 (kills keep the stacks refreshed) -> 30 fired.
     let full = FightParams {
         multishot_stack: Some(crate::model::StackSpec {
             initial_stacks: 2,
@@ -559,12 +568,7 @@ fn emergent_multishot_stacks_are_earned_by_kills_from_zero() {
         }),
         ..p
     };
-    let s2 = monte_carlo(&full, 20, 5);
-    assert!(
-        (s2.mean_pellets - 30.0).abs() < 1e-9,
-        "pellets {}",
-        s2.mean_pellets
-    );
+    assert_eq!(fired(&full), 30);
 }
 
 #[test]

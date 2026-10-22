@@ -315,6 +315,10 @@ pub(super) fn spread_hit(
     // the rule the aimed body's half of the same blast already follows.
     takes_co: bool,
 ) -> Landed {
+    // KILLED BY THIS SHOT ALREADY — see `Body::fallen`.
+    if foe.fallen {
+        return Landed::default();
+    }
     let base_damage = active.base_damage_bonus;
     let arcane_base_damage =
         arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t)
@@ -469,6 +473,7 @@ pub(super) fn spread_hit(
     // second body, so a kill by one is a kill by the weapon and every on-kill
     // grant fires. This counted them and fired nothing.
     if killed {
+        foe.fallen = true;
         gal.bump_on_kill(params, t);
         arc.on_kill(params, t);
         // …AND THE BODY THAT STANDS BACK UP IS A NEW INDIVIDUAL, which the
@@ -690,9 +695,9 @@ pub(super) fn spread_from_punch_through(
     struck: &[usize],
     raw_per_bucket: f64,
     shares: TypeShares,
-    crit_multiplier: f64,
-    crit_tier: u32,
-    attrition: f64,
+    // THE ROUND'S ROLLS, made again at every body (M119): two bodies punched
+    // read five numbers, each its own crit.
+    punch: PunchRolls,
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
@@ -788,40 +793,65 @@ pub(super) fn spread_from_punch_through(
             status_part_factor: head_part_factor,
             status_landing: head_status_landing,
         };
-        let foe = &mut bodies[s];
-        let landed = spread_hit(
-            seat,
-            w,
-            &inst,
-            foe,
-            &spec,
-            raw_per_bucket,
-            shares,
-            crit_multiplier,
-            crit_tier,
-            attrition,
-            modded_base,
-            status_chance,
-            forced,
-            vector,
-            params,
-            active,
-            gal,
-            arc,
-            r,
-            rec,
-            d,
-            t,
-            SpreadBy::PunchThrough,
-            false,
-            true,
-        );
-        if inst.headshot {
-            punched.hits += 1;
-            punched.kills += u32::from(landed.killed);
+        // THE ROUND'S AIMED ROLL, divided back out of the raw it was handed.
+        let unrolled = raw_per_bucket / (punch.crit_multiplier * punch.attrition).max(1e-12);
+        let instances = punch.multishot.floor() as u32 + d.spine.chance(punch.multishot.fract()) as u32;
+        for _ in 0..instances {
+            let tier = upgrade_crit_tier(
+                roll_crit_tier(punch.crit_chance, &mut d.spine),
+                active.crit_tier_upgrade_chance,
+                &mut d.spine,
+            );
+            let crit_multiplier = 1.0 + tier as f64 * (punch.crit_damage - 1.0);
+            let attrition = noncrit_mult(active.noncrit_bonus, tier, &mut d.spine);
+            let foe = &mut bodies[s];
+            let landed = spread_hit(
+                seat,
+                w,
+                &inst,
+                foe,
+                &spec,
+                unrolled * crit_multiplier * attrition,
+                shares,
+                crit_multiplier,
+                tier,
+                attrition,
+                modded_base,
+                status_chance,
+                forced,
+                vector,
+                params,
+                active,
+                gal,
+                arc,
+                r,
+                rec,
+                d,
+                t,
+                SpreadBy::PunchThrough,
+                false,
+                true,
+            );
+            if inst.headshot {
+                punched.hits += 1;
+                punched.kills += u32::from(landed.killed);
+            }
         }
     }
     punched
+}
+
+/// WHAT A ROUND ROLLS AT A BODY IT PUNCHES THROUGH TO — see
+/// [`spread_from_punch_through`].
+#[derive(Debug, Clone, Copy)]
+pub(super) struct PunchRolls {
+    /// The multishot the round carries, rolled again at each body.
+    pub(super) multishot: f64,
+    pub(super) crit_chance: f64,
+    pub(super) crit_damage: f64,
+    /// The aimed instance's own crit and non-crit factors, inside the raw.
+    pub(super) crit_multiplier: f64,
+    pub(super) attrition: f64,
 }
 
 /// A RICOCHET — the projectile arriving again, at a body it has not hit yet.
@@ -1470,7 +1500,7 @@ pub(super) fn fire_syndicate_radial(
     rng: &mut Rng,
     at: f64,
 ) {
-    let Body { state: target, debuffs } = body;
+    let Body { state: target, debuffs, .. } = body;
     let status_damage = params.status_duration_multiplier;
     let mit = debuffs.mitigation(at, status_damage, params.armor_strip_per_puncture, params.squad.enemy_armor_multiplier);
     let amt = sy.damage * params.faction_at_time(at);

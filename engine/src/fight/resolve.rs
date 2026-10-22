@@ -31,6 +31,72 @@ pub(super) struct Resolved {
     /// THE STACKS A BLOB WEAPON'S SHOT LAYS — `floor` of the live multishot,
     /// the count the Grimoire's multishot buys (M63), applied as M109 proposes.
     pub(super) blob_stacks: u32,
+    /// How the instances fall into the weapon's own rounds — see [`Rounds`].
+    pub(super) rounds: Rounds,
+}
+
+/// THE WEAPON'S OWN ROUNDS, AND THE INSTANCES EACH CARRIES (M119).
+/// A shot's physical pattern is the weapon's own — one round for a rifle, a
+/// shotgun's base pellet count for a shotgun — and multishot adds no round: it
+/// adds INSTANCES to one, each its own number with its own crit and status
+/// roll, landing where that round lands and nowhere else. Each round rolls its
+/// own share of the multishot, so a 7-pellet shotgun at x1.9 is seven draws of
+/// 1 or 2, never one draw of 13 or 14.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct Rounds {
+    n: usize,
+    /// The multishot each round carries — what it rolls again at every body
+    /// it punches through to.
+    each: f64,
+    copies: [u16; Rounds::MAX],
+}
+
+impl Rounds {
+    /// More rounds than any weapon has (the roster's most is 28).
+    const MAX: usize = 32;
+
+    /// `rounds` rounds sharing `multishot` between them, each rolling its own.
+    pub(super) fn roll(rounds: u32, multishot: f64, rng: &mut crate::rules::rng::Rng) -> Self {
+        let n = (rounds.max(1) as usize).min(Self::MAX);
+        let each = multishot / n as f64;
+        let mut copies = [0u16; Self::MAX];
+        for c in copies.iter_mut().take(n) {
+            *c = (each.floor() as u32 + rng.chance(each.fract()) as u32).min(u32::from(u16::MAX)) as u16;
+        }
+        Self { n, each, copies }
+    }
+
+    pub(super) fn total(&self) -> u32 {
+        self.copies[..self.n].iter().map(|&c| u32::from(c)).sum()
+    }
+
+    /// THE FIRST `keep` INSTANCES, in firing order — what a starved magazine
+    /// can still afford.
+    pub(super) fn truncate(&mut self, mut keep: u32) {
+        for c in self.copies[..self.n].iter_mut() {
+            let k = u32::from(*c).min(keep);
+            *c = k as u16;
+            keep -= k;
+        }
+    }
+
+    /// The multishot a round carries, or 1 where the layout no longer adds up
+    /// to the shot and every instance is its own round.
+    pub(super) fn per_round(&self, instances: u32) -> f64 {
+        if self.total() == instances { self.each } else { 1.0 }
+    }
+
+    /// For each instance in firing order: does it ride the round before it?
+    /// `instances` is the shot's final count; a layout that no longer adds up
+    /// to it (a swing landing twice) falls back to one round an instance.
+    pub(super) fn follows(&self, instances: u32) -> impl Iterator<Item = bool> + '_ {
+        let laid = self.total() == instances;
+        let per_round: &[u16] = if laid { &self.copies[..self.n] } else { &[] };
+        per_round
+            .iter()
+            .flat_map(|&c| (0..c).map(|k| k > 0))
+            .chain((0..if laid { 0 } else { instances }).map(|_| false))
+    }
 }
 
 /// Read the live bar, roll the multishot, and spend the round.
@@ -65,7 +131,7 @@ pub(super) fn resolve_the_shot(
     // MELEE ANIMOSITY'S PILE when this swing is a heavy attack, else zero.
     heavy_crit_relative: f64,
 ) -> Resolved {
-    let Body { state: target, debuffs } = body;
+    let Body { state: target, debuffs, .. } = body;
         // Timed buffs (Frenzy) lapse before this shot reads the bar;
         // Permanent locks re-assert — only in phases where the perk exists
         // (Frenzy belongs to the base form).
@@ -384,7 +450,8 @@ pub(super) fn resolve_the_shot(
                     + buff_total(active, crate::model::BuffGrant::Multishot, buff_stacks, t)
                         * active.base_multishot
             };
-        let rolled = ms_eff.floor() as u32 + d.spine.chance(ms_eff.fract()) as u32;
+        let rounds = Rounds::roll(active.base_multishot.round().max(1.0) as u32, ms_eff, &mut d.spine);
+        let rolled = rounds.total();
         // DOUBLE TAP, computed ONCE for the whole pull and applied to every
         // pellet of it. VERBATIM: "the bonus is applied on hit to all pellets as
         // damage * 20% * (hits - 1)", worked through on the card as "with a
@@ -547,5 +614,6 @@ pub(super) fn resolve_the_shot(
         n_pellets,
         beam_merge,
         blob_stacks: ms_eff.floor().max(1.0) as u32,
+        rounds,
     }
 }

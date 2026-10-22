@@ -1329,7 +1329,9 @@ fn a_beams_range_is_a_wall_for_the_bodies_behind_as_well() {
 /// white number for it.
 ///
 /// ASSERTED ON THE STREAM, not on a total: the question is whether the rows
-/// one tick writes agree, and a sum cannot be asked that.
+/// one tick writes agree, and a sum cannot be asked that. THE PART agrees; the
+/// CRIT need not, since every body the round reaches rolls its own (M119: two
+/// bodies punched read five numbers, each its own crit).
 #[test]
 fn one_round_pops_the_same_kind_of_number_on_every_body_it_crosses() {
     let base = crate::model::WeaponBase::from_data("phantasma_prime", false, &[]);
@@ -1361,10 +1363,11 @@ fn one_round_pops_the_same_kind_of_number_on_every_body_it_crosses() {
         if d.origin == crate::record::Origin::PunchThrough && d.crit_tier > 0 {
             crits += 1;
         }
-        per_tick
-            .entry((e.t * 1000.0).round() as u64)
-            .or_default()
-            .insert(format!("{:?}", d.kind));
+        let part = match d.kind {
+            crate::record::PopKind::Head | crate::record::PopKind::HeadCrit => "head",
+            _ => "body",
+        };
+        per_tick.entry((e.t * 1000.0).round() as u64).or_default().insert(part.to_string());
     }
     assert!(per_tick.len() > 20, "the fight ran: {} ticks", per_tick.len());
     let split: Vec<_> = per_tick.iter().filter(|(_, k)| k.len() > 1).collect();
@@ -1401,7 +1404,8 @@ fn a_punched_bodys_burn_is_the_size_the_aimed_bodys_is() {
             .collect();
         let panel =
             crate::build::loadout::resolve(&base, &refs, crate::model::StackPolicy::Emergent);
-        let mut arena = crate::arena::Arena::training(10.0);
+        // LONG ENOUGH that the two bodies' own crit rolls average out.
+        let mut arena = crate::arena::Arena::training(120.0);
         arena.others = vec![crate::formation::FoeSpec {
             id: String::new(),
             params: Foe::training_dummy(),

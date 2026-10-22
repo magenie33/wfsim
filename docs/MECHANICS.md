@@ -1805,6 +1805,29 @@ the rest is the multi-target model's input.
 node-sphere question is **unverified** (M15), and the 37 / 2.3 / 7 values
 themselves have a SOURCE-SPLIT recorded in DATA_SOURCES.
 
+### Multishot rides the weapon's own rounds (M119)
+
+A shot's physical pattern is the weapon's own: one round for a rifle, a
+shotgun's base pellet count for a shotgun, two independent shots for a duplex
+trigger. Multishot adds no round. It adds INSTANCES to a round, each its own
+number with its own crit and status roll, settled in order (round 1 direct,
+round 1 blast, round 2 …, M62) and landing where that round lands — the same
+body, the same part, the same hit or miss. `resolve::Rounds` holds the layout;
+each round rolls its own share of the multishot, so seven pellets at x1.9 are
+seven draws of 1 or 2.
+
+**A body the shot killed takes nothing more of it** (`Body::fallen`). The rest
+of its instances there are swallowed: no damage, no status, no combo point, no
+Extra Hit. A blast from any of the shot's rounds still reaches the bodies left
+standing. The body stands back up when the shot is settled, and a BURST is one
+shot for this — a Burston's three rounds kill one body. Anything on its own
+clock (a round in flight from an earlier shot, an orb, a cloud, a DoT) reaches
+the body that stood up.
+
+**Only the round punches through.** At every body it reaches it rolls the
+multishot again, each instance its own crit (two bodies punched read five
+numbers), and a body it killed in front of it stops nothing behind.
+
 ### Multishot perks that are not a flat bonus
 
 Two Torid evolutions grant multishot without being a number the resolver can
