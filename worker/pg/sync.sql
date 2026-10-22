@@ -152,7 +152,9 @@ END $$;
 -- An answer voided later leaves its row: the pick reads no answers, which on
 -- every pack scanned the engine's whole day of them, and a row it moves up
 -- early costs only its place.
-CREATE OR REPLACE FUNCTION led_answered() RETURNS trigger LANGUAGE plpgsql AS $$
+-- AS THE TABLES' OWNER (SECURITY DEFINER): a trigger runs as whoever wrote the
+-- row, and the settler's role, denied the table, had every settlement refused.
+CREATE OR REPLACE FUNCTION led_answered() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   INSERT INTO led_questions (question, engine)
     SELECT NEW.question, NEW.engine WHERE EXISTS (SELECT 1 FROM questions q WHERE q.id = NEW.question AND q.state = 'open')
@@ -162,7 +164,7 @@ END $$;
 DROP TRIGGER IF EXISTS answers_led ON answers;
 CREATE TRIGGER answers_led AFTER INSERT ON answers
   FOR EACH ROW WHEN (NEW.void = 0 AND NEW.official = 0) EXECUTE FUNCTION led_answered();
-CREATE OR REPLACE FUNCTION led_closed() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION led_closed() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
   DELETE FROM led_questions WHERE question = NEW.id;
   RETURN NULL;

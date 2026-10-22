@@ -631,7 +631,11 @@ deadline and what only they may settle.
   with a question this witness may answer; inside it, earliest deadline first:
   a chat's in two minutes, a new build's row in six hours, a survey shape in a
   day, a refresh in four, a rescore's or a sweep's in a week (`DEADLINE_MS` —
-  the dispatch policy, stated once).
+  the dispatch policy, stated once). A pack takes first, in that order, the
+  questions another volunteer has answered on the served engine
+  (`led_questions`): one more agreeing answer makes each a fact and pays its
+  first witness, where a batch due sooner would leave it waiting behind every
+  row of that batch.
 - **ELIGIBILITY IS ONE QUERY.** What a witness may answer — not its own, its
   owner's other devices', nor its network's, with the cores a waited-on
   question needs at its age — is decided in the SQL that picks it, never by a
