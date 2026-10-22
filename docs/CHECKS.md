@@ -1483,6 +1483,14 @@ which frames nothing further. A build of the host is what the weapon holds, and
 an ordinary weapon still holds a Warframe. The floor is the Sentinels' and the
 MOA's lowest (367 / 130 / 80).
 
+## `check_bar_before_catalog`
+
+The Warframe and companion pages show before the Warframe catalogue arrives.
+With the catalogue held, the account answering redraws the bar on screen and
+throws nothing, and the bar is drawn once the catalogue lands. Verified to
+bite: against the build before the fix the answer throws on the empty build,
+the `app.error` the live log counted.
+
 ## `check_fired_up`
 
 A Sentinel offers Fired Up and the floor host does not; seated, it is marked as

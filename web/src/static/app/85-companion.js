@@ -261,7 +261,8 @@ function compBarCfg() {
     rerender: renderCompPresetBar,
   };
 }
-const renderCompPresetBar = () => renderPresetBarIn($("preset-bar-companions"), compBarCfg());
+/// No companion yet, no bar, as `renderWfPresetBar`.
+const renderCompPresetBar = () => { if (comp) renderPresetBarIn($("preset-bar-companions"), compBarCfg()); };
 function compApply(st) {
   comp = compNormalize(st, comp.companion);
   dropSave("companions");

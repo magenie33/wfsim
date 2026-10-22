@@ -386,6 +386,11 @@ jobs:
       # it is never asked.
       - name: The Tenno reaches the panel, the sim and a share link
         run: node scripts/check_tenno.mjs
+      # A BAR REDRAWN BEFORE ITS PAGE HAS A BUILD threw inside the account's
+      # answer, which then skipped the sign-in entry, the notices and the sync —
+      # an error only the usage log ever saw.
+      - name: A build bar redrawn before its page has a build throws nothing
+        run: node scripts/check_bar_before_catalog.mjs
       # HOW DEEP THE BOARD IS READ, which the publisher no longer decides. The
       # rule moved from a binary with unit tests to a page without, and its
       # failure is silent in both directions: a cut drawn with `>` deletes the

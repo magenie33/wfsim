@@ -679,7 +679,10 @@ function wfBarCfg() {
     rerender: renderWfPresetBar,
   };
 }
-const renderWfPresetBar = () => renderPresetBarIn($("preset-bar-warframes"), wfBarCfg());
+/// NO FRAME YET, NO BAR: the page shows before its catalogue arrives, and a bar
+/// redrawn meanwhile (the account answering, a sync) has no frame to list;
+/// `showWarframe` draws it once one is open.
+const renderWfPresetBar = () => { if (wf) renderPresetBarIn($("preset-bar-warframes"), wfBarCfg()); };
 function wfApply(st) {
   wf = wfNormalize(st, wf.frame);
   dropSave("warframes");
