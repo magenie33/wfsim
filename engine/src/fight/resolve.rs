@@ -51,6 +51,7 @@ pub(super) struct Rounds {
     copies: [u16; Rounds::MAX],
 }
 
+#[wfsim_gas_macro::metered]
 impl Rounds {
     /// More rounds than any weapon has (the roster's most is 28).
     const MAX: usize = 32;

@@ -1299,10 +1299,12 @@ mod buff_event_cards {
             simulate_json(&json!({
                 "weapon": "laetum",
                 "mode": "base",
-                // AN ON-KILL BUILD, so the class under test is most of it.
+                // AN ON-KILL BUILD, so the class under test is most of it, on a
+                // target a shot does not always kill: one that dies to any hit
+                // dies once a shot whatever the build earned (M119).
                 "mods": ["galvanized_diffusion", "galvanized_shot", "primed_pistol_gambit"],
                 "arcane": ["secondary_merciless"],
-                "enemy": "crewman", "level": 10, "steel_path": false,
+                "enemy": "crewman", "level": 60, "steel_path": false,
                 "duration": 30, "runs": 12, "seed": 7, "metric": "kpm",
                 "headshot_pct": 100, "aiming": true, "infinite_ammo": true,
                 // The map PRESENT means the emergent sim, the path a player is
