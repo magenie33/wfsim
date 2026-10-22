@@ -443,7 +443,8 @@ pub struct AttackSpec {
     /// punch-through page's EXCEPTION list.
     ///
     /// `Some(true)` is the other direction, for an AoE attack a page says DOES
-    /// take them. Nothing in the roster needs it yet.
+    /// take them: the Trumna's hitscan primary fire, whose page says its
+    /// explosions stay on the first object hit with punch through modded on.
     #[serde(default)]
     pub punch_through_mods: Option<bool>,
     /// DOUBLE TAP ON AN ATTACK THAT EXPLODES, the Latron Incarnon's way

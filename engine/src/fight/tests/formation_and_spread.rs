@@ -1539,6 +1539,15 @@ fn an_aoe_attack_takes_no_punch_through_from_a_mod() {
         assert!((shred.punch_through_m - 0.0).abs() < 1e-9, "{w} takes no punch through: {}", shred.punch_through_m);
     }
 
+    // …AND A HITSCAN ROUND THAT EXPLODES TAKES THEM: the lock is for
+    // projectiles, and the Trumna's page says its primary fire's explosion
+    // stays on the first object hit while the round goes on.
+    for w in ["trumna", "trumna_prime"] {
+        let shred = panel(w, w, &["primed_shred"]);
+        assert!(shred.radial.is_some(), "the fixture must be the case the class rule would get wrong");
+        assert!((shred.punch_through_m - 2.2).abs() < 1e-9, "{w} takes punch through: {}", shred.punch_through_m);
+    }
+
     // THE TORID'S BASE FORM DOES NOT — it explodes on first contact.
     let torid_bare = panel("torid", "torid", &[]);
     let torid_shred = panel("torid", "torid", &["primed_shred"]);

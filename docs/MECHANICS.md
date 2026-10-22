@@ -3577,8 +3577,14 @@ A catalog rule, and the page states both halves:
 
 > "With a very few exceptions, weapon projectiles with an area of effect (AoE)
 > component will not Punch Through enemies or level geometry at all. Instead the
-> projectile will explode on first contact." — "Projectile AoE weapons cannot
-> have their Punch Through stat modified."
+> projectile will explode on first contact." — "Projectile AoE weapons (as
+> opposed to hit-scan projectiles) cannot have their Punch Through stat
+> modified."
+
+The shape rule below still locks a HITSCAN attack with a contact radial, and an
+entry unlocks one only on its page's word: the Trumna's primary fire, whose
+page says its explosions stay on the first object hit with punch through
+modded on (`punch_through_mods: true`).
 
 So a Shred on a grenade launcher is worth **literally nothing**. "An area of
 effect component" is both shapes this engine models — a `radial` (one explosion
