@@ -500,8 +500,8 @@ fn shiver_fortifier_encumber_empowered_cryogenic_resolve() {
     let ft = secondary("secondary_fortifier")
         .unwrap()
         .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::data::tenno::default_tenno());
-    // ×9, not ×8: the card's "x8" is the EXTRA (M38,).
-    assert!((ft.overguard_multiplier - 9.0).abs() < 1e-9);
+    // ×8: the card's "x8 Extra" is the total (M120).
+    assert!((ft.overguard_multiplier - 8.0).abs() < 1e-9);
     let en = secondary("secondary_encumber")
         .unwrap()
         .fx(5, StackPolicy::Emergent, NO_TRAITS, crate::data::tenno::default_tenno());

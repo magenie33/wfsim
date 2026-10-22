@@ -2,6 +2,10 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
+> **Superseded by M120:** measured ×8 at max rank, not ×9 — "x8 Extra" is the
+> total. The bonus is capped by the Overguard left, and a Warframe's damage
+> does not take it.
+
 Audited against the whole wiki page at the owner's request. Everything
 transcribed is right — x3/x4/x5/x6/x7/x8 by rank, Overguard only (so the
 multiplier rides the whole instance while the pool can absorb it, and the share

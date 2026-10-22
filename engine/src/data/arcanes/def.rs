@@ -515,17 +515,13 @@ impl ArcaneDef {
                     pct(at(scale)),
                     pct(at(scale) * f64::from(*max_stacks))
                 )),
-                // DE PRINTS THE EXTRA, and so does this: "x8 Extra Damage to
-                // Overguard" is the card, ×9 is what it does (M38). Printing
-                // the total here would put a number on the panel that appears
-                // nowhere in game.
                 ArcEffect::DamageVsFrozen(sc) => out.push(format!(
                     "x{:.2} damage to a target at ten Cold stacks — every melee hit and every spectral dagger",
                     at(sc)
                 )),
+                // "x8 Extra Damage to Overguard" is the total, measured (M120).
                 ArcEffect::OverguardDamage(sc) => out.push(format!(
-                    "×{:.0} extra damage to Overguard (×{:.0} in total)",
-                    at(sc),
+                    "×{:.0} damage to Overguard, up to the Overguard left",
                     1.0 + at(sc)
                 )),
                 ArcEffect::AmmoEfficiency { scale, when } => out.push(format!(

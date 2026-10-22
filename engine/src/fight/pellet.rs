@@ -630,27 +630,19 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // (fm² below) — the wiki "double dip".
     // Secondary Surge (assumed-max): a FINAL multiplier on the shot,
     // multiplicative with Hornet Strike (wiki notes). Secondary
-    // Fortifier: ×overguard_multiplier while the target's Overguard holds.
+    // Fortifier is NOT here: it is a fact about the body at the moment
+    // the damage lands, so `apply` decides it (M120).
     // Primary Compression's `multiplies` row rides the same slot, and
     // it is `active`'s rather than `params`' — the form being fired owns
     // it, because one arcane is worth +240% in the Torid's base form
     // and nothing in its Incarnon.
-    // HOISTED so `apply` is handed the SAME number that went in, and
-    // can take it back off the share that carries past a depleted
-    // Overguard rather than re-deriving it from a pool it has already
-    // spent.
-    let og_mult = if bodies[0].state.overguard > 0.0 {
-        params.arcane.overguard_multiplier
-    } else {
-        1.0
-    };
     // Primary Compression's `multiplies` row is NOT here: an adding CO's
     // recalculation omits it, so it joins `beside_adding_co` below.
     // …AND MELEE CAREEN, on the aimed body's own Cold. A body the hit
     // spreads to reads its own (`spread_hit`), so it is divided back out of
     // what the spread carries.
     let careen = careen_factor(params, &mut bodies[0].debuffs, t);
-    let arc_final = params.arcane.final_multiplier * og_mult * careen;
+    let arc_final = params.arcane.final_multiplier * careen;
 
     // ---- ATTACK PARTS (MECHANICS §7) -------------------------
     // A projectile carries TWO instances where the weapon declares a
@@ -1526,7 +1518,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             &params.foe,
             false,
             &mit,
-            og_mult,
+            params.arcane.overguard_multiplier,
             watching(rec, &mut breakdown),
         );
         let (effective, killed, broke) =

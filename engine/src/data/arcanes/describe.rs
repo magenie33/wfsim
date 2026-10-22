@@ -42,15 +42,10 @@ impl ArcaneDef {
                 // xX rule renders the +1.
                 | ArcEffect::Debilitate(scale)
                 | ArcEffect::FinalDamageCap(scale)
-                | ArcEffect::WeakpointNextShotDamage(scale) => vals.push(at(scale)),
-                // …AND THE ONE WHOSE CARD PRINTS THE EXTRA. `fill_x`'s "xX"
-                // rule exists because DE usually prints the TOTAL over a stored
-                // bonus; Secondary Fortifier's card says "Deals x8 Extra Damage
-                // to Overguard", where 8 IS the bonus and 9 is the total
-                // (MEASUREMENTS M38). So the stored value is already what the
-                // card shows, and the +1 has to be undone rather than the data
-                // bent to fit a formatting rule.
-                ArcEffect::OverguardDamage(scale) => vals.push(at(scale) - 1.0),
+                | ArcEffect::WeakpointNextShotDamage(scale)
+                // "Deals x8 Extra Damage to Overguard" prints the total too:
+                // measured ×8 (M120).
+                | ArcEffect::OverguardDamage(scale) => vals.push(at(scale)),
                 ArcEffect::ColdBurst { scale, radius0, radius1 }
                 | ArcEffect::AoeEcho { scale, radius0, radius1, .. } => {
                     vals.push(at(scale));

@@ -465,32 +465,11 @@ pub(super) fn process_ticks(
             }
         };
 
-        // SECONDARY FORTIFIER REACHES A TICK TOO, and only while the Overguard
-        // it is about is still there.
-        //
-        // The bonus is "DYNAMICALLY APPLIED, so the effect is lost entirely
-        // after depleting the Overguard from an enemy" — a live check at the
-        // moment damage lands, which is what a tick is. The card says "Deals x8
-        // Extra Damage to Overguard" with no qualifier about hits, and the same
-        // page says DoTs trigger the STEAL half. "Not inheritable" is not
-        // evidence against it: that names `Heat_Inherit`, the attribution
-        // mechanic, and says the bonus does not travel down THAT path.
-        //
-        // ONCE, NOT SQUARED. Faction damage is re-applied per derivation step
-        // because DE re-applies it (`faction_at(f, depth)`); nothing says that
-        // about this, and nothing here is a derivation — the tick is the same
-        // instance's payload landing later. The multiplier's own VALUE
-        // is a separate open question: our data reads DE's "x8" as the total
-        // and it may be a total of x9 (MEASUREMENTS M38).
-        let fortifier = if target.overguard > 0.0 {
-            params.arcane.overguard_multiplier
-        } else {
-            1.0
-        };
-        let unfortified = value;
-        let value = value * fortifier;
-        // …and `apply` is told what that was, so the share carrying past a
-        // depleted Overguard can shed it.
+        // SECONDARY FORTIFIER REACHES A TICK TOO, decided by `apply` as the
+        // tick lands: measured (M120), a Heat tick reads ×8 while the
+        // Overguard holds and its plain value once it is gone. Once, not
+        // squared — a tick is the same instance's payload landing later, not a
+        // derivation, so nothing re-applies it the way faction is.
         let mut breakdown = Breakdown::default();
         let settled = target.apply(
             value,
@@ -500,7 +479,7 @@ pub(super) fn process_ticks(
             p,
             ignores_armor,
             &mit,
-            fortifier,
+            params.arcane.overguard_multiplier,
             watching(rec, &mut breakdown),
         );
         let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
@@ -524,26 +503,18 @@ pub(super) fn process_ticks(
                 // THE ACCUMULATOR IS ITS OWN PART: the tick group's own 1
                 // (MEASUREMENTS M58), small, and the thing a reader checking a
                 // closed form will be off by.
-                base: unfortified,
+                base: value,
                 layers: dot_parts
                     .take()
                     .map(|parts| {
                         let out: f64 = parts.iter().map(|x| x.amount).sum();
-                        let mut v = vec![crate::record::Layer::Sum {
+                        vec![crate::record::Layer::Sum {
                             factor: crate::record::Factor::StatusSeeds,
                             parts,
                             out,
-                        }];
-                        v.extend(mul_layers(
-                            out,
-                            &[(crate::record::Factor::SecondaryFortifier, fortifier)],
-                        ));
-                        v
+                        }]
                     })
-                    .unwrap_or_else(|| mul_layers(
-                        unfortified,
-                        &[(crate::record::Factor::SecondaryFortifier, fortifier)],
-                    )),
+                    .unwrap_or_default(),
                 ..Instance::default()
             },
         );
@@ -567,9 +538,8 @@ pub(super) fn process_ticks(
             debuffs.on_death(dot_owner, params.acid_shells, &params.foe);
             break;
         }
-        // …and the detonation's EXTRA HIT, off the value that actually landed —
-        // Fortifier's multiplier included, since it multiplied the instance this
-        // is a percentage of. No body part: a detonation struck none.
+        // …and the detonation's EXTRA HIT, off the detonation's value. No body
+        // part: a detonation struck none.
         if let Some(bracket) = xh {
             if fire_extra_hits(
                 dot_owner,

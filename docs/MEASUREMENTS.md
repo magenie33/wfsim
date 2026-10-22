@@ -137,7 +137,7 @@ path, so an entry may be renamed but never renumbered.
 | [M35](measurements/M35-riven-stat-pools-counted.md) | which riven stats a weapon can roll is not derivable, so it was counted | · 2026-08-08 |
 | [M36](measurements/M36-felarx-incarnon-and-gun-co.md) | the Felarx's +2000% and Gun CO multiply | ✅ 2026-08-08 (owner) |
 | [M37](measurements/M37-debilitate-dot-attrition-bug.md) | a Debilitate DoT eats Attrition TWICE, and it is a BUG | ✅ 2026-08-08 (owner) |
-| [M38](measurements/M38-secondary-fortifier-rule.md) | Secondary Fortifier: the RULE is settled, the NUMBER is not | · 2026-08-09 |
+| [M38](measurements/M38-secondary-fortifier-rule.md) | Secondary Fortifier: the RULE is settled, the NUMBER is not — number superseded by M120 | · 2026-08-09 |
 | [M39](measurements/M39-secondary-fortifier-level-shaped.md) | Secondary Fortifier's value is LEVEL-SHAPED, and can be negative | ✅ 2026-08-09 |
 | [M40](measurements/M40-xatas-whisper-decode.md) | Xata's Whisper decodes exactly, and two of its clauses are still open | · 2026-08-09 |
 | [M41](measurements/M41-hitscan-incarnon-explosion-cadence.md) | a hitscan Incarnon's explosion fires ONCE PER TRIGGER PULL | ✅ 2026-08-11 (owner) |
@@ -218,6 +218,7 @@ path, so an entry may be renamed but never renumbered.
 | [M116](measurements/M116-forceful-finality-pays-the-emptying-burst.md) | Forceful Finality pays every round of the burst that EMPTIES the magazine — a partial one too, and under ammo efficiency only the burst that forces the reload; an Acuity takes the +5 | ✅ 2026-10-14 (owner) |
 | [M117](measurements/M117-chamber-and-sniper-combo.md) | Vectis Prime: the chamber is its own factor read off the HUD's rounded-up counter; crit damage is quantized; Cold's crit damage reaches no AoE; the shot combo pays from the hip and builds only scoped; Deadhead is +30%; the Incarnon orb's timeline | ✅ 2026-10-20 (owner) |
 | [M119](measurements/M119-multishot-rides-the-round.md) | Multishot adds instances to the weapon's own rounds, not rounds: a body a shot kills swallows the rest of it, a burst is one shot for that, and a punching round rolls its multishot again at each body | ✅ 2026-10-22 (owner) |
+| [M120](measurements/M120-fortifier-is-eight-and-capped.md) | Secondary Fortifier is ×8, capped by the Overguard left, and checked as each instance lands on its own body; an instance that breaks the pool alone takes no bonus | ✅ 2026-10-22 (owner) |
 | [M118](measurements/M118-vectis-prime-compression-and-combo-order.md) | Vectis Prime Incarnon: Primary Compression pays +12% at rank 5 and multiplies, on the direct hit and the orb; the shot combo counts a hit before it pays it; a frozen body takes +1.0 crit damage on the direct hit only; Galvanized Aptitude adds on the weapon's own base, not on Inciting Incident's +200 | ✅ 2026-10-22 (owner) |
 
 ## By weapon

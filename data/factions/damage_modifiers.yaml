@@ -94,8 +94,8 @@ special:
   overguard:
     void: 1.5                   # the only other Void-vulnerable pool
     # note: >-
-    # Neutral to all other damage types. No status/damage spillover to
-    # shields/health beneath it; grants crowd-control immunity while active
+    # Neutral to all other damage types. Damage past it carries into the
+    # shields/health beneath it (MEASUREMENTS M82); grants crowd-control immunity while active
     # (max 4 Cold procs) and blocks Parazon Mercy entirely. Magnetic status
     # amplifies damage against it (+100% first stack, +25% per further
     # stack, max +325% at 10). Damage Vulnerability effects apply normally

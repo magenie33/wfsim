@@ -187,7 +187,7 @@ pub(super) fn spread_from_influence(
                 tparams,
                 false,
                 &mit,
-                1.0,
+                params.arcane.overguard_multiplier,
                 watching(rec, &mut breakdown),
             );
             let (eff, killed) = (settled.effective, settled.killed);
@@ -385,7 +385,7 @@ pub(super) fn spread_hit(
         spec.params,
         false,
         &mit,
-        1.0,
+        params.arcane.overguard_multiplier,
         watching(rec, &mut breakdown),
     );
     let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
@@ -1513,7 +1513,7 @@ pub(super) fn fire_syndicate_radial(
         &params.foe,
         false,
         &mit,
-        1.0,
+        params.arcane.overguard_multiplier,
         watching(rec, &mut breakdown),
     );
     let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);

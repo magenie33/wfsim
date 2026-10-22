@@ -964,3 +964,32 @@ fn resupply_copies_the_hit_as_dealt() {
     assert!((ratio("resupply") - 0.25).abs() < 1e-9, "{}", ratio("resupply"));
     assert!((ratio("toxic_lash") - 0.3 * 2.2 / snapped).abs() < 1e-9, "{}", ratio("toxic_lash"));
 }
+
+/// AN EXTRA HIT TAKES SECONDARY FORTIFIER ONCE, AS IT LANDS (MEASUREMENTS
+/// M120). Xata's Whisper at 40% strength (10.4%), 160 Impact: 160 → 17 on a
+/// body with no Overguard, 1280 → 200 on one with it — `160 × 0.104 × 1.5`
+/// (Void's Overguard column) `× 8`. Copied off the fortified 1280 AND
+/// fortified again it would read 1600.
+#[test]
+fn m120_xatas_whisper_takes_fortifier_once() {
+    let one = |overguard: f64| {
+        let mut p = params(&[("xatas_whisper", None)], 0.4);
+        p.damage = DamageVector::new().with(DamageType::Impact, 160.0);
+        p.dot_modified_base = Some(160.0);
+        p.status_chance = 0.0;
+        p.base_status_chance = 0.0;
+        p.forced_procs = Vec::new();
+        p.foe.base_health = 1e15;
+        p.foe.base_overguard = overguard;
+        p.foe.type_mods.overguard = crate::data::factions::overguard_column();
+        p.arcane.overguard_multiplier = 8.0;
+        p.duration_seconds = 0.001;
+        run_once(&p, &mut crate::rules::rng::Rng::new(3))
+    };
+    let bare = one(0.0);
+    assert!((bare.sources.direct - 160.0).abs() < 1e-6, "hit {}", bare.sources.direct);
+    assert!((bare.sources.extra_hit - 16.64).abs() < 1e-6, "extra hit {}", bare.sources.extra_hit);
+    let og = one(1e12);
+    assert!((og.sources.direct - 1280.0).abs() < 1e-6, "hit {}", og.sources.direct);
+    assert!((og.sources.extra_hit - 199.68).abs() < 1e-6, "extra hit {}", og.sources.extra_hit);
+}

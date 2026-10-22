@@ -769,9 +769,10 @@ fn shiver_is_scaled_by_the_gunco_base_fraction() {
 
 #[test]
 fn fortifier_multiplies_damage_while_overguard_holds() {
-    // ×9 on every direct hit while the (infinite) overguard is up:
-    // 10 × 75 × 9 = 6750. NINE, not eight — the card's "x8" is the EXTRA
-    // (MEASUREMENTS M38,).
+    // ×8 on every direct hit while the (infinite) overguard is up:
+    // 10 × 75 × 8 = 6000 — the card's "x8 Extra" is the total (M120). It
+    // is the pool's multiplier, so it is in what the target took and not in
+    // the raw total.
     let mut t = Foe::training_dummy();
     t.base_overguard = 1e9;
     let p = FightParams {
@@ -781,9 +782,9 @@ fn fortifier_multiplies_damage_while_overguard_holds() {
     };
     let s = monte_carlo(&p, 20, 5);
     assert!(
-        (s.mean_damage - 6750.0).abs() < 1e-9,
+        (s.mean_effective_damage - 6000.0).abs() < 1e-9,
         "dmg {}",
-        s.mean_damage
+        s.mean_effective_damage
     );
 }
 

@@ -46,8 +46,8 @@ itself on the bar; the rest re-enters the ordinary route — the faction column,
 the shield gate, Toxin's bypass, armour and the Viral amp — because the two
 pools read different columns and the carried share never met Overguard's.
 
-Secondary Fortifier's multiplier does not travel with it: the card says "to
-Overguard" (M38), so the carried share arrives unfortified.
+Secondary Fortifier: an instance that breaks the pool on its own takes no
+bonus and carries `D − G`; one that cannot carries nothing (M120).
 
 **An enemy now has exactly two places to waste damage** — the health bar, where
 a killing blow's excess is overkill, and the shield bar, whose gate passes only

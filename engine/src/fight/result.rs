@@ -233,6 +233,7 @@ pub(super) fn write_row(
         keep(crate::record::Factor::PoolShare, p.share);
         keep(crate::record::Factor::DamageTypeColumn, p.column);
         keep(crate::record::Factor::DisruptAmp, p.disrupt_amp);
+        keep(crate::record::Factor::SecondaryFortifier, p.fortifier);
         keep(crate::record::Factor::GuardianAura, p.guardian);
         keep(crate::record::Factor::PastTheShield, p.past_shield);
         keep(crate::record::Factor::ShieldGate, p.shield_gate);

@@ -21,6 +21,7 @@ mod fired_up;
 mod formation_and_spread;
 mod glaive;
 mod fortifier_tick;
+mod m120_fortifier_capped;
 mod headshot_buff_wiring;
 mod incarnon_reload_route;
 mod m102_latron_prime;

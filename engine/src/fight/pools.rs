@@ -70,6 +70,10 @@ pub struct Portion {
     pub floor: f64,
     /// The clamp an attenuating target applied, or 1.
     pub attenuation: f64,
+    /// SECONDARY FORTIFIER'S MULTIPLIER on this portion, or 1 — only ever on
+    /// the Overguard row, and only when the instance could not break the pool
+    /// on its own (`fight::target_state`).
+    pub fortifier: f64,
     /// WHAT WAS LEFT IN THE POOL, as a factor — 1.0 unless the pool ran out
     /// mid-instance.
     ///
@@ -107,6 +111,7 @@ impl Default for Portion {
             floored: false,
             floor: 1.0,
             attenuation: 1.0,
+            fortifier: 1.0,
             pool_remaining: 1.0,
             effective: 0.0,
         }

@@ -157,12 +157,11 @@ impl TargetState {
         p: &Foe,
         ignores_armor: bool,
         mit: &Mitigation,
-        // WHAT THE CALLER ALREADY MULTIPLIED INTO `raw` FOR OVERGUARD'S SAKE
-        // — Secondary Fortifier's `overguard_multiplier`, or 1.0. It is handed
-        // over rather than applied here because the caller applies it on the
-        // way in; this only needs it to take it back OFF the share that
-        // carries past a depleted pool, which never met the Overguard the card
-        // names.
+        // SECONDARY FORTIFIER'S MULTIPLIER, or 1.0 — never already inside
+        // `raw`. Whether it applies is a fact about this body at the moment
+        // the damage lands (its own Overguard), so it is decided here and
+        // nowhere else: a hit, a tick, an extra hit and a body a shot spread
+        // to all pass through this door.
         overguard_multiplier: f64,
         // WHERE THE BREAKDOWN GOES, when anyone is watching. `None` is the
         // 999 runs of a thousand that are never replayed.
@@ -252,10 +251,22 @@ impl TargetState {
         // the whole of it when the target carries none.
         let mut passed = gated;
         let mut led_og_remaining = 1.0f64;
+        let mut led_fortifier = 1.0f64;
         if self.overguard > 0.0 {
             let whole = shares.whole(&p.type_mods.overguard);
-            let full = gated * whole * mit.disrupt_amp;
-            if full > self.overguard {
+            let plain = gated * whole * mit.disrupt_amp;
+            if plain < self.overguard && overguard_multiplier > 1.0 {
+                // SECONDARY FORTIFIER, CHECKED AS THE DAMAGE LANDS on this
+                // body's own Overguard, and capped by it: an instance that
+                // cannot break the pool on its own deals `min(×N, pool)` to it
+                // and nothing past it. Measured (M120): ×8 at max rank, a pop
+                // that reads exactly the pool left, health untouched.
+                let fortified = plain * overguard_multiplier;
+                og_part = fortified.min(self.overguard);
+                passed = 0.0;
+                led_fortifier = overguard_multiplier;
+                led_og_remaining = og_part / fortified;
+            } else if plain > self.overguard {
                 // ENEMY OVERGUARD CARRIES OVER, and it is the PLAYER's that
                 // does not. wiki `Overguard`: a player's has *"a 0.5 second
                 // invulnerability gate when fully depleted, preventing any
@@ -266,15 +277,15 @@ impl TargetState {
                 // paragraph says *"Enemies do not have any invulnerability
                 // gating when their Overguard is depleted."* Measured in game:
                 // an Overguard holder can be killed by one shot.
+                //
+                // An instance that breaks the pool on its own takes no
+                // Fortifier at all: the pool takes what it had and `plain`
+                // minus that carries on (M120).
                 og_part = self.overguard;
-                led_og_remaining = self.overguard / full;
-                // …AND IT ARRIVES UNFORTIFIED. Secondary Fortifier multiplies
-                // the instance before it gets here and its card says "to
-                // Overguard", so the share that never met the pool must not
-                // keep the bonus (MEASUREMENTS M38).
-                passed = gated / overguard_multiplier * (1.0 - led_og_remaining);
+                led_og_remaining = self.overguard / plain;
+                passed = gated * (1.0 - led_og_remaining);
             } else {
-                og_part = full;
+                og_part = plain;
                 passed = 0.0;
             }
             if led.is_some() {
@@ -496,6 +507,7 @@ impl TargetState {
             floored: led_og_floor != 1.0,
             floor: led_og_floor,
             attenuation: atten,
+            fortifier: led_fortifier,
             pool_remaining: led_og_remaining,
             effective: og_part,
         });
@@ -513,6 +525,7 @@ impl TargetState {
             floored: led_sh_floor != 1.0,
             floor: led_sh_floor,
             attenuation: atten,
+            fortifier: 1.0,
             pool_remaining: led_shield_cap,
             effective: shield_part,
         });
@@ -534,6 +547,7 @@ impl TargetState {
             floored: led_hp_floored,
             floor: led_hp_floor,
             attenuation: atten,
+            fortifier: 1.0,
             pool_remaining: 1.0,
             effective: health_part - leak_effective,
         });
@@ -559,6 +573,7 @@ impl TargetState {
             floored: led_hp_floored,
             floor: led_hp_floor,
             attenuation: atten,
+            fortifier: 1.0,
             pool_remaining: 1.0,
             effective: leak_effective,
         });
