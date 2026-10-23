@@ -647,6 +647,10 @@ export const DEMAND_COST_SCAN = 1_500_000;
 /// a table that does not fit in memory, and once a minute it pushed the
 /// volunteers' own rows out of the cache until their syncs timed out on locks.
 export const DEMAND_COST_EVERY_MS = 10 * 60_000;
+/// …EACH OF ITS STATEMENTS GIVEN THIS LONG, past the daemon's thirty seconds: on
+/// a board of a million and a half open questions the day's join and counts read
+/// for tens of seconds, read-only, once in `DEMAND_COST_EVERY_MS`.
+export const DEMAND_COST_TIMEOUT_MS = 120_000;
 const demandCosts = new WeakMap();
 
 /// THE WHOLE PICTURE, totals only, never a device or a person (docs/BOARD.md
@@ -661,7 +665,8 @@ export async function demandOf(env, now = Date.now()) {
   const db = env.LIBRARY, at = iso(now);
   const kept = demandCosts.get(env);
   const costs = kept && now - kept.at < DEMAND_COST_EVERY_MS ? kept : null;
-  const [done, gains, surveys, answered, owed, open, spent, facts] = await db.batch([
+  const [, done, gains, surveys, answered, owed, open, spent, facts] = await db.batch([
+    db.prepare(`SET LOCAL statement_timeout = ${costs ? "DEFAULT" : DEMAND_COST_TIMEOUT_MS}`),
     db.prepare(`SELECT SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official
                 FROM scores WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000)),
     db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?")

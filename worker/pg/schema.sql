@@ -153,7 +153,13 @@ CREATE TABLE IF NOT EXISTS questions (
 CREATE INDEX IF NOT EXISTS questions_order ON questions (state, waits DESC, due_at, id);
 CREATE INDEX IF NOT EXISTS questions_holder ON questions (leased_to);
 CREATE INDEX IF NOT EXISTS questions_lease ON questions (lease);
-CREATE INDEX IF NOT EXISTS questions_fact_at ON questions (fact_at);
+-- THE FACTS BY WHEN, AND OF WHICH VERB (worker/contribution.js `demandOf` counts
+-- a day's by verb without a visit to the table).
+DROP INDEX IF EXISTS questions_fact_at;
+CREATE INDEX IF NOT EXISTS questions_fact_at_verb ON questions (fact_at, verb);
+-- THE OPEN QUESTIONS BY VERB (`demandOf`): counted from the table, a million and
+-- a half of them read past the daemon's statement timeout.
+CREATE INDEX IF NOT EXISTS questions_open_verb ON questions (verb) WHERE state = 'open';
 -- THE WITHDRAWN PAST THE WINDOW (worker/pg/sync.sql `factory_forget_past`):
 -- the window's whole withdrawn read row by row every minute, without it.
 CREATE INDEX IF NOT EXISTS questions_withdrawn_at ON questions (opened_at) WHERE state = 'withdrawn';
