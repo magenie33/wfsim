@@ -168,14 +168,20 @@ if [ "${ONCE:-}" != 1 ]; then
   trap '[ -n "$INTAKE_PID" ] && kill "$INTAKE_PID" 2>/dev/null; db_cleanup' EXIT
 fi
 
-last_refresh=0
+# THE HOUR IS COUNTED FROM THE END OF THE LAST WHOLE PASS, and kept on disk. A
+# whole pass takes about the hour: counted from its start, every cycle would be
+# a whole one and the subset path would never run. Every deploy restarts this
+# service, and a restart starts no whole pass the hour does not owe.
+WHOLE_AT="$WORK/whole-at.txt"
+last_refresh=$(cat "$WHOLE_AT" 2>/dev/null || echo 0)
+# WHAT IS OWED A RE-RANK survives a failed pass and a restart: it is emptied
+# only once the board has published it.
+touch verified-owed.txt
 while true; do
   whole=0
-  facts_moved=0
   now=$(date +%s)
   if [ $((now - last_refresh)) -ge "$REFRESH_SECONDS" ] || [ ! -s library.json ]; then
     if refresh_store; then
-      last_refresh=$now
       whole=1
     else
       echo "live: the store could not be read; keeping the last copy" >&2
@@ -193,17 +199,34 @@ while true; do
     code=0
     node "$HERE/live_publish.mjs" delta "$WORK" || code=$?
     if [ "$code" = 0 ]; then
-      facts_moved=1
+      cat moved-ids.txt >> verified-owed.txt
     fi
   fi
-  if [ -s library.json ] && { [ "$whole" = 1 ] || [ "$facts_moved" = 1 ] || [ ! -d verified ]; }; then
+  if [ -s library.json ] && { [ "$whole" = 1 ] || [ -s verified-owed.txt ] || [ ! -d verified ]; }; then
     library_live
-    # WHOLE ON THE HOUR AND ON A FIRST START; otherwise only the weapons this
-    # cycle's facts touched.
+    # WHOLE ON THE HOUR AND ON A FIRST START; otherwise only the weapons the
+    # facts since the last publish touched. A list naming no weapon is spent.
     if [ "$whole" = 1 ] || [ ! -d verified ]; then
-      publish_verified || echo "live: the site's board did not publish; the last one stands" >&2
-    elif [ "$facts_moved" = 1 ] && subset_of moved-ids.txt verified-subset.json facts-known.ndjson; then
-      publish_verified verified-subset.json || echo "live: the site's board did not publish; the last one stands" >&2
+      if publish_verified; then
+        : > verified-owed.txt
+        # A WHOLE PASS THAT FAILED IS RUN AGAIN next cycle rather than an hour on.
+        if [ "$whole" = 1 ]; then
+          last_refresh=$(date +%s)
+          echo "$last_refresh" > "$WHOLE_AT"
+        fi
+      else
+        echo "live: the site's board did not publish; the last one stands" >&2
+      fi
+    else
+      code=0
+      subset_of verified-owed.txt verified-subset.json facts-known.ndjson || code=$?
+      if [ "$code" = 3 ]; then
+        : > verified-owed.txt
+      elif [ "$code" = 0 ] && publish_verified verified-subset.json; then
+        : > verified-owed.txt
+      else
+        echo "live: the site's board did not publish; the last one stands" >&2
+      fi
     fi
   fi
   # PUSHED EVERY CYCLE, and a file only when its bytes moved: a push the

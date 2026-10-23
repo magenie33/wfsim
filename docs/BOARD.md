@@ -233,7 +233,7 @@ including the empty ones, because a 404 and an empty list are the same thing to
 | `queue.yml` | the clock, once at 16:00 UTC | …and the weapons that have gone LONGEST are asked for again | the same runner |
 | `scores.yml` | the clock, hourly at `:30` | what is asked for is MEASURED | as many shards as the work needs |
 | `publish.yml` | the clock, once a day | `scores` is ranked into the `site/board` SNAPSHOT, which the site does not read | one runner, seconds |
-| `live_board.sh` | every 20 s, on the board server | `scores` is ranked into the LIVE board in R2, which the site reads | two cores, about a minute when it moves |
+| `live_board.sh` | every 20 s, on the board server | `scores` is ranked into the LIVE board in R2, which the site reads | two cores: minutes for the weapons a cycle moved, about an hour for a whole pass |
 
 **EVERY ONE OF THEM IS ALSO A BUTTON, AND IT IS THE SAME RUN.** None takes an
 input, so a hand-started run and a scheduled one differ in nothing at all.
@@ -602,7 +602,12 @@ written to it.
 **A CYCLE RE-RANKS THE WEAPONS IT MOVED** (`wfsim-board --subset`): the builds
 of every weapon whose facts or claims changed, against the board as it stands.
 Measured on the whole store, a subset pass writes exactly the files a whole pass
-does, in a quarter of the time; the hourly read still ranks everything.
+does, in a quarter of the time; the hourly read still ranks everything, an
+hour after the last whole pass FINISHED — a whole pass takes about the hour, so
+counted from its start no cycle would ever be a subset one. What is owed a
+re-rank (`verified-owed.txt`) and when the last whole pass ended
+(`whole-at.txt`) are kept on disk, so a restart — every deploy is one — neither
+drops a fact nor starts a whole pass the hour does not owe.
 
 **UNVERIFIED NUMBERS NEVER REACH IT.** A client result is on no board until it
 is a fact (§"Compute orders").
