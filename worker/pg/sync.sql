@@ -107,6 +107,9 @@ $$;
 -- THE JOIN PICK STARTS FROM THE SERVED ENGINE'S ANSWERS, in its own statement:
 -- walked down the order, a new engine's few answers among a million open rows
 -- took ten seconds and more, under the producer_use lock every sync waits on.
+-- ITS CANDIDATES ARE THE SERVED ENGINE'S LED QUESTIONS, each then checked for
+-- another owner's answer: a semi-join on the engine's answers read the day of
+-- them, 8 s a pick and 25 s under load, and the syncs locked behind it failed.
 -- A QUESTION ANOTHER VOLUNTEER HAS ANSWERED GOES FIRST, in the order, then the
 -- rest: one more agreeing answer makes it a fact, where a fresh row needs two,
 -- and its first witness waits for that answer to be paid. Taken by the deadline
@@ -139,7 +142,8 @@ BEGIN
     ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 - cardinality(v_led) FOR UPDATE OF q SKIP LOCKED;
   ELSE
     RETURN QUERY SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
-    WHERE e.id IN (SELECT s.question FROM answers s WHERE s.engine = $12 AND s.void = 0 AND s.owner <> $5 AND ($6 = '' OR s.net <> $6))
+    WHERE e.id IN (SELECT l.question FROM led_questions l WHERE l.engine = $12 AND EXISTS (SELECT 1 FROM answers s
+        WHERE s.question = l.question AND s.engine = $12 AND s.void = 0 AND s.owner <> $5 AND ($6 = '' OR s.net <> $6)))
       AND e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
       AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
       AND ($13 IS NULL OR e.producer = $13)
