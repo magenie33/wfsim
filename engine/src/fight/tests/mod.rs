@@ -3,6 +3,7 @@
 
 use super::*;
 
+mod battery_recharge;
 mod blobs;
 mod combatant_attribution;
 mod two_seats;

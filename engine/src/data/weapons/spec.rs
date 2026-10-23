@@ -462,6 +462,11 @@ pub struct WeaponSpec {
     /// that reloads.
     #[serde(default)]
     pub battery: Option<Battery>,
+    /// THE OTHER WAYS THIS FORM IS PLAYED, each an action list the weapon
+    /// states for itself — see [`DeclaredMode`]. Never inherited: a mode is
+    /// one form's.
+    #[serde(default)]
+    pub modes: Vec<DeclaredMode>,
     #[serde(default)]
     pub co_behavior: Option<String>,
     /// How much of the base the CO term computes on (the catalog's "CO Damage
@@ -648,4 +653,18 @@ impl WeaponType {
             Self::Archgun => "archgun",
         }
     }
+}
+
+/// A MODE A WEAPON DECLARES: a way to play one of its forms, written as the
+/// rules that go on top of the form's own list. Each weapon states its own, so
+/// none is given to a weapon by a rule in the engine (`play_modes`).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DeclaredMode {
+    /// The mode id a build, a share link and a board row carry.
+    pub id: String,
+    /// What the page calls it, and what it says the mode does.
+    pub name: String,
+    pub about: String,
+    pub rules: crate::data::apl::Apl,
 }

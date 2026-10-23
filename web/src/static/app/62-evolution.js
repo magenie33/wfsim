@@ -77,6 +77,9 @@ const isCycleMode = (id) => id === "cycle" || String(id).endsWith("_cycle");
 const modeForm = (w, id) => {
   const forms = (w || {}).forms || [];
   const def = forms.find((x) => x.is_default) || forms[0] || null;
+  // A MODE THE WEAPON DECLARES names the form it fires.
+  const declared = ((w || {}).declared_modes || {})[id];
+  if (declared) return forms.find((x) => x.id === declared.form) || def;
   // …AND A DETONATED THROW FIRES THE THROW: the mode is that form with one
   // more line on its action list.
   const fed = id === "cycle" ? "base" : String(id).replace(/_cycle$/, "").replace(/_detonate$/, "");
@@ -175,7 +178,10 @@ function modeExplain(w, id) {
     return out;
   };
   const out = [];
-  if (id === "base") {
+  const declared = ((w || {}).declared_modes || {})[id];
+  if (declared) {
+    out.push(tr(declared.about));
+  } else if (id === "base") {
     // …AND A MELEE WEAPON'S `base` IS A COMBO, whose FORM id is `neutral` and
     // therefore never equals the mode id.
     const lines = swung(def);

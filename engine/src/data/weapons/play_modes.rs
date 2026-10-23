@@ -57,6 +57,9 @@ pub struct WeaponPlayMode {
     /// list (`Self::rules`), and the only thing telling `throw` from
     /// `throw_detonate`: one form, two ways to play it.
     pub detonates: bool,
+    /// A MODE THE FORM'S ENTRY DECLARES (`WeaponSpec::modes`), whose rules are
+    /// its list. `None` on every mode derived here.
+    pub declared: Option<&'static DeclaredMode>,
 }
 
 /// Every way this weapon can be played, derived from the forms it registers.
@@ -81,6 +84,8 @@ impl WeaponPlayMode {
         use crate::data::apl::{Action, Apl, Rule, When};
         Apl(if self.detonates {
             vec![Rule { action: Action::Detonate, when: When::Always }]
+        } else if let Some(d) = self.declared {
+            return d.rules.clone();
         } else {
             Vec::new()
         })
@@ -144,6 +149,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
         other_id: None,
         sustainable: true,
         detonates: false,
+        declared: None,
     }];
     for alt in alts().filter(held) {
         out.push(WeaponPlayMode {
@@ -153,6 +159,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
             other_id: None,
             sustainable: true,
             detonates: false,
+            declared: None,
         });
         // …AND A THROW THAT CAN BE DETONATED IS TWO BUILDS: thrown and left to
         // come back, or set off in flight. Same form, one more line on the list.
@@ -164,6 +171,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
                 other_id: None,
                 sustainable: true,
                 detonates: true,
+                declared: None,
             });
         }
     }
@@ -178,6 +186,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
                 other_id: Some(alt.weapon_id),
                 sustainable: true,
                 detonates: false,
+                declared: None,
             });
         }
         // …AND A FORM YOU NEVER HOLD GETS NO MODE OF ITS OWN. `Transformed`
@@ -197,9 +206,17 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
             // sustained; anything else can.
             sustainable: false,
             detonates: false,
+            declared: None,
         });
     }
-    out
+    // …AND THE MODES EACH FORM DECLARES, after the mode that fires that form.
+    out.into_iter()
+        .flat_map(|m| {
+            let declared = matches!(m.mode, PlayMode::Base | PlayMode::Alternate) && !m.detonates;
+            let own = spec(m.weapon_id).filter(|_| declared).map_or(&[][..], |s| &s.modes[..]);
+            std::iter::once(m).chain(own.iter().map(move |d| WeaponPlayMode { id: d.id.as_str(), declared: Some(d), ..m }))
+        })
+        .collect()
 }
 
 /// The mode id of a form you can HOLD, and two of them must DIFFER: a mode id

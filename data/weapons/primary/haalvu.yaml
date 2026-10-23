@@ -44,11 +44,20 @@ battery:
   regen_per_second: 300.0
   delay_empty_seconds: 0.5
   delay_partial_seconds: 0.5
-  # THE EMPTY CASE IS AN ANIMATION, not the refill: "If ammo is fully depleted,
-  # the weapon will enter a reload animation of 2 seconds. However, it cannot
-  # be manually reloaded." The module's Reload 1 and the export's reloadTime 1
-  # are the 0.5 s delay plus 150/300 s of refill, which the animation outlasts.
+  # THE EMPTY CASE IS AN ANIMATION, not the refill — MEASURED (M121): 2 s
+  # dry, and 0.5 s then 300 a second stopped short. The module's Reload 1 and
+  # the export's reloadTime 1 are the delay plus 150/300 s of refill.
   empty_animation_seconds: 2.0
+
+# NEVER EMPTIED: an empty battery is the 2 s animation and one shot short of it
+# is a 1 s refill (0.5 s delay + 150/300 s, M121), so the most this form
+# deals is fired in runs that stop one shot short.
+modes:
+  - id: base_recharge
+    name: "Base Form, never emptied"
+    about: "Fired until the next shot would empty the battery, then held while it refills: 1 s back to full, where an empty battery's reload animation is 2 s."
+    rules:
+      - { action: { do: recharge }, when: { if: battery_would_empty } }
 
 attack:
   # see notes: cone_half_angle_from_2

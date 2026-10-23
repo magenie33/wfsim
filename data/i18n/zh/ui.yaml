@@ -371,6 +371,7 @@ ui:
   "All": 全部
   "Alt fire": 次要开火
   "Alternate Fire": 副射击
+  "Alternate Fire, never emptied": 副射击，不打空
   "Amalgam Argonak Metal Auger, the Argonak-exclusive mod — a weapon-exclusive card outside the pools this roster loads": "「Amalgam Argonak Metal Auger」，Argonak 的专属 MOD——这是一张武器专属卡，不在本武器库载入的卡池里"
   "Ammo Pickup Conversion": 弹药拾取转换
   "Ammo Reserve": 备弹
@@ -391,6 +392,7 @@ ui:
   "The Incarnon form's fire rate falls to 60% over 51 held shots and resets when firing stops. The sim holds the trigger until the magazine is dry, so a player who taps keeps more of the 13.33/s. The spool-down itself is modelled.": "灵化形态的射速在持续开火 51 发内降到 60%，停火后立即回满。模拟会一直按到弹匣打空，所以点射的玩家能保住更多的 13.33/秒。射速衰减本身已建模。"
   "Base Damage": 基础伤害
   "Base Form": 基础形态
+  "Base Form, never emptied": 基础形态，不打空
   "Base form": 基础形态
   "Base level": 基准等级
   "Beam Range": 光束长度
@@ -1713,6 +1715,7 @@ ui:
   "The mines are detonated by hand with the alt-fire, and several can be laid first (wiki). The sim detonates each on landing: the ceiling for one mine. Laying several and detonating them together is not modelled.": "地雷由副射击手动引爆，可以先布置多颗（wiki）。模拟让每颗落地即爆，这是单颗地雷的上限。先布置多颗再一起引爆的打法未建模。"
   "The mines are detonated by hand with the alt-fire, up to four at a time (wiki). The sim detonates each on landing: the ceiling for one mine. Sticking four and detonating them together is not modelled.": "地雷由副射击手动引爆，最多同时四颗（wiki）。模拟让每颗落地即爆，这是单颗地雷的上限。先粘上四颗再一起引爆的打法未建模。"
   "With 5 or more stacks of Primary Crux the game skips this mode's reload animation (wiki, Bugs). The sim pays the full 2 s, so a Crux build reads low here.": "主要·准星叠到 5 层或以上时，游戏会跳过这个模式的换弹动画（wiki，Bug 一节）。模拟照常付满 2 秒，所以带主要·准星的配装在这里数字偏低。"
+  "Fired until the next shot would empty the battery, then held while it refills: 1 s back to full, where an empty battery's reload animation is 2 s.": "一直射击到下一发会打空电池为止，然后停火等它回满：回满只要 1 秒，而打空后的换弹动画要 2 秒。"
   "The miniature rifles lock onto up to four enemies within 40 degrees and 10 m, paying ammo per target (wiki). The engine fires at the aimed body only: right against one enemy, up to four times low against a crowd.": "微型步枪会锁定 40 度、10 米内最多四个敌人，每个目标都消耗弹药（wiki）。引擎只朝瞄准的目标开火：对单个敌人是准确的，面对人群最多偏低四倍。"
   "The missiles home, which is not modelled; with one target at zero distance, homing and straight missiles land the same.": "导弹会追踪，未建模；只有一个零距离目标时，追踪与直射的命中结果相同。"
   "The mode is charged by dealing damage with the primary fire; the engine has no way for one mode to pay for another.": "这个模式需要用主射击造成伤害来充能；引擎无法让一个模式为另一个模式付费。"

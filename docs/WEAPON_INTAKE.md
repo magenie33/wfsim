@@ -283,6 +283,12 @@ an airburst) states nothing. A mode the page enters by AIMING (Quatz, Kuva
 Quartakk, Tenet Diplos: "aimed fire") is `form: aimed`, and the engine aims for
 it whatever the scenario says. A page that does not say is read as none of them.
 
+**A WAY TO PLAY A FORM THAT ITS OWN LIST DOES NOT SAY** is a mode the entry
+declares in `modes:` — an id, a name, what it does, and the rules that go on
+top of the form's list (the Haalvu's `recharge,if=battery.next_shot_empties`,
+M121). Each weapon states its own; the engine never hands a mode to a weapon
+by a rule of its own.
+
 A part that is not a separate trigger is not an entry: an explosion on impact
 is a `radial:` on the attack it belongs to, with its own crit, status, element,
 radius and falloff.
