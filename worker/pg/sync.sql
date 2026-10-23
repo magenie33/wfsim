@@ -107,12 +107,13 @@ $$;
 -- THE JOIN PICK STARTS FROM THE SERVED ENGINE'S ANSWERS, in its own statement:
 -- walked down the order, a new engine's few answers among a million open rows
 -- took ten seconds and more, under the producer_use lock every sync waits on.
--- A QUESTION ANOTHER VOLUNTEER HAS ANSWERED ON THIS ENGINE GOES FIRST, in the
--- order, then the rest: one more agreeing answer makes it a fact, where a fresh
--- row needs two, and its first witness waits for that answer to be paid. Taken by
--- the deadline alone, a batch due sooner asked after the first answer left it
--- waiting behind every row of that batch. Eligibility already keeps the asker's
--- own owner and network out, so any served answer leads from another witness.
+-- A QUESTION ANOTHER VOLUNTEER HAS ANSWERED GOES FIRST, in the order, then the
+-- rest: one more agreeing answer makes it a fact, where a fresh row needs two,
+-- and its first witness waits for that answer to be paid. Taken by the deadline
+-- alone, a batch due sooner asked after the first answer left it waiting behind
+-- every row of that batch. WHATEVER ENGINE ANSWERED: an older engine's answer
+-- joins a served one that reproduces it, and kept to the served engine, every
+-- release left the half-answered behind the rest until someone copied them over.
 CREATE OR REPLACE FUNCTION factory_take(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint)
 RETURNS SETOF text LANGUAGE plpgsql AS $$
 DECLARE
@@ -121,7 +122,7 @@ BEGIN
   IF $12 IS NULL THEN
     SELECT coalesce(array_agg(t.id), '{}') INTO v_led FROM (
       SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
-      WHERE e.id IN (SELECT l.question FROM led_questions l WHERE l.engine = $3)
+      WHERE e.id IN (SELECT l.question FROM led_questions l)
         AND e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
         AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
         AND ($13 IS NULL OR e.producer = $13)

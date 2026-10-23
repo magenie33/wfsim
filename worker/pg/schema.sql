@@ -233,7 +233,7 @@ CREATE INDEX IF NOT EXISTS answers_by_engine ON answers (engine, at);
 -- a visit to the table (worker/tasks.js `audit`): `answers_by_engine` holds `at`
 -- second, so a time range alone walked all of it, past the role's timeout.
 CREATE INDEX IF NOT EXISTS answers_by_at ON answers (at, question);
--- AN OPEN QUESTION A VOLUNTEER HAS ANSWERED, by engine: one more agreeing
+-- AN OPEN QUESTION A VOLUNTEER HAS ANSWERED, on any engine: one more agreeing
 -- answer makes it a fact, so a pack hands these out first (sync.sql
 -- `factory_take`). Kept by the triggers in sync.sql, a row while its question
 -- is open, so the pick reads a few thousand rows, never every answer.
@@ -242,7 +242,7 @@ CREATE TABLE IF NOT EXISTS led_questions (
   engine   TEXT COLLATE "C" NOT NULL,
   PRIMARY KEY (question, engine)
 );
-CREATE INDEX IF NOT EXISTS led_questions_by_engine ON led_questions (engine, question);
+DROP INDEX IF EXISTS led_questions_by_engine;
 
 -- WHAT THE WATCHDOG SAID, a round at most hourly, one row a finding under one
 -- `at` (worker/factory.js `watchdog`): read here by whoever fixes it, never
