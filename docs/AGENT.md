@@ -265,6 +265,29 @@ The rules the table keeps:
   on any difference; `check_mcp_tools` runs every query in the worker's copy
   with no page at all.
 
+## The method
+
+**HOW WFSIM JUDGES A BUILD IS STATED ONCE**, in `data/concepts.yaml`: each
+rule, why it holds, how to apply it, and the files in this repository that
+record the readings behind it. Every surface draws it from there — the
+`/method` pages and their twins (`ship_method`), the skill's "Judging a build",
+`llms.txt`, and the query `shell.method.read`, which carries it to the MCP
+server, the A2A agent, the bots and Nona — so a rule changes in one edit.
+
+- **English is the source.** A locale overlays every string through
+  `data/i18n/<code>/concepts.yaml`, keyed by the English, and gets its page at
+  `/method/<code>`. It translates the method whole or not at all, the rulers'
+  names and standards included: the build and
+  `a_locale_that_translates_the_method_translates_all_of_it` refuse a locale
+  that leaves one out.
+- **A rule states what the engine does.** Where a sentence names a property of
+  the engine, a test holds it there:
+  `every_ruler_ranks_by_kills_per_minute_as_the_method_says`.
+- **A reading is cited by its file**, and
+  `every_source_is_a_file_in_the_repository` fails a link to a renamed one.
+- **No number is computed from it.** It rides in the `text` pack and
+  `engine_id` leaves it out, so rewording a rule moves no engine.
+
 ## WebMCP
 
 `91-webmcp.js` hands the door's table to the browser's own agent through
@@ -447,7 +470,8 @@ serves it:
 | path | what it is |
 | --- | --- |
 | `/index.md`, `/weapons.md`, `/weapons/<Wiki_Name>.md` | a page's markdown twin, from the same values as its html |
-| `/llms.txt` | llmstxt.org index: what WFSim is and every weapon's twin |
+| `/method`, `/method/<locale>`, each with its `.md` twin | how WFSim judges a build (§"The method"), a plain page outside the app |
+| `/llms.txt` | llmstxt.org index: what WFSim is, its method and every weapon's twin |
 | `/.well-known/agent-skills/index.json` | one skill: look a weapon up, read the board, quote a score |
 | `/.well-known/api-catalog` | RFC 9727: the MCP server and the board JSON, the two public read APIs |
 | `/.well-known/mcp/server-card.json` | the MCP server: its endpoint and its tools, from the headless table and `mcp/account.js` |

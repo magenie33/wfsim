@@ -666,10 +666,10 @@ def quote_attr(path: str) -> str:
 # work is priced by, so it is the engine too.
 ENGINE_SOURCES = ("engine/src", "webapi/src", "wasm/src", "native/src", "tools/gas-macro", "data")
 ENGINE_SOURCES_NOT = ("data/i18n/", "data/board_state.yaml", "data/market.yaml",
-                      "data/assets.yaml", "data/notes.yaml")
+                      "data/assets.yaml", "data/notes.yaml", "data/concepts.yaml")
 # …and what the engine carries but no number is computed from: the overlay's
 # own code, and the surveys only a test reads.
-ENGINE_ID_NOT = ("engine/src/data/i18n.rs", "webapi/src/i18n.rs", "data/surveys/")
+ENGINE_ID_NOT = ("engine/src/data/i18n.rs", "webapi/src/i18n.rs", "engine/src/data/concepts.rs", "data/surveys/")
 
 
 def is_test_source(rel: str) -> bool:
@@ -1284,6 +1284,23 @@ def ladder_cells() -> list:
 
 
 @functools.lru_cache(maxsize=1)
+def base_rulers() -> dict:
+    """ruler id -> (reading order, name, standard), one per ruler file. A FILE IS
+    ITS LADDER'S BASE CELL, whose name fills each `{axis}` hole with the axis's
+    first rung (`expand_ladder`); the order is the one the roster sorts on
+    (`board::benchmarks::all`), so every list arrives as the page lists them."""
+    axes = {f.stem: yload(f.read_text(encoding="utf-8"))
+            for f in (ROOT / "data" / "benchmarks" / "axes").glob("*.yaml")}
+    out = {}
+    for f in sorted((ROOT / "data" / "benchmarks").glob("*.yaml")):
+        spec = yload(f.read_text(encoding="utf-8"))
+        name = re.sub(r"\{([a-z_]+)\}", lambda m: axes[m.group(1)]["values"][0]["short"], spec["name"])
+        order = (not spec.get("primary"), not spec["id"].startswith("standard_"), "single" not in spec["id"], spec["id"])
+        out[spec["id"]] = (order, name, str(spec.get("standard") or ""))
+    return dict(sorted(out.items(), key=lambda kv: kv[1][0]))
+
+
+@functools.lru_cache(maxsize=1)
 def board_best() -> dict:
     """weapon id -> [(ruler name, row)], the best RIVEN-FREE row under each.
     READ ONCE A BUILD: every weapon page asks, and each read is all of
@@ -1305,24 +1322,8 @@ def board_best() -> dict:
     roster nobody has measured returns, so the two guards below are what say
     which of them happened.
     """
-    rulers: dict = {}
-    axes = {f.stem: yload(f.read_text(encoding="utf-8"))
-            for f in (ROOT / "data" / "benchmarks" / "axes").glob("*.yaml")}
-
-    def said(axis: str) -> str:
-        # The base cell is the axis's first rung, and a name says its `short`.
-        return axes[axis]["values"][0]["short"]
-    for f in sorted((ROOT / "data" / "benchmarks").glob("*.yaml")):
-        spec = yload(f.read_text(encoding="utf-8"))
-        # A FILE IS ITS LADDER'S BASE CELL, whose name fills each `{axis}` hole
-        # (`expand_ladder`); a cell's rows are skipped below like any id this
-        # table does not hold.
-        name = re.sub(r"\{([a-z_]+)\}", lambda m: said(m.group(1)), spec["name"])
-        # THE SAME READING ORDER THE ROSTER SORTS ON (`board::benchmarks::all`),
-        # so the sentences arrive in the order the page lists the rulers in.
-        rulers[spec["id"]] = (not spec.get("primary"),
-                              not spec["id"].startswith("standard_"),
-                              "single" not in spec["id"], spec["id"], name)
+    # A cell's rows are skipped below like any id this table does not hold.
+    rulers = {k: (*order, name) for k, (order, name, _) in base_rulers().items()}
     files = [f for f in sorted((APP / "board").glob("*.json")) if f.stem != "index"]
     if not files:
         sys.exit("board_best: site/board/ holds no weapon file — wrong source")
@@ -1941,8 +1942,9 @@ def prerender(flagged: str) -> None:
                        "comp-name", name))
         companion_urls.append(SITE + path)
 
+    method_urls = ship_method(flagged)
     urls = ([SITE + "/", SITE + "/weapons"]
-            + [f"{SITE}/{path}" for path, *_ in shell_pages]
+            + [f"{SITE}/{path}" for path, *_ in shell_pages] + method_urls
             + [SITE + wiki_path(s) for s in roster()]
             + frame_urls + companion_urls)
     sitemap = ('<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -1959,9 +1961,9 @@ def prerender(flagged: str) -> None:
     ship_agent_files(by_slot)
     ship_privacy(flagged)
     named = ", ".join("/" + path for path, *_ in shell_pages)
-    print(f"prerendered {len(urls) - 2 - len(shell_pages) - len(frame_urls) - len(companion_urls)} weapon pages + "
+    print(f"prerendered {len(urls) - 2 - len(shell_pages) - len(method_urls) - len(frame_urls) - len(companion_urls)} weapon pages + "
           f"{len(frame_urls)} Warframe pages + {len(companion_urls)} companion pages + /weapons + "
-          f"{named} + sitemap.xml + robots.txt — "
+          f"{named} + {len(method_urls)} method pages + sitemap.xml + robots.txt — "
           f"{WROTE[0]} written, {WROTE[1]} already current")
 
 
@@ -2025,7 +2027,7 @@ def weapon_md(spec, name, cn, facts, stats, board_rows, caveats) -> str:
         out += "## Best riven-free build on the WFSim board"
         out += f", as of {board_asof()}\n\n" if board_asof() else "\n\n"
         out += ("A score belongs to its ruler: compare it only with scores under "
-                "the same ruler.\n\n")
+                f"the same ruler ({SITE}/method#ruler).\n\n")
         out += ("Each row is measured on its own, and says when and by which WFSim commit; "
                 "the game and WFSim both change, so an older row may be behind.\n\n")
         out += "| Ruler | Fight | Mode | Score | Build | Measured |\n| --- | --- | --- | ---: | --- | --- |\n"
@@ -2078,7 +2080,21 @@ description: Look up a Warframe weapon's stats and its best measured riven-free 
 - A score belongs to its ruler. Compare scores only under the same ruler, and
   quote the ruler's name with the number.
 - Quote the "as of" date the page states; the board is rescored as builds arrive.
-"""
+
+## Judging a build
+
+{SITE}/method.md states how WFSim judges a build, each rule with the in-game
+readings behind it; `shell_method_read` returns the same over MCP. Apply it
+when comparing builds or explaining why one is better:
+
+{method_rules()}"""
+
+
+def method_rules() -> str:
+    """Each concept's way to apply it, under its rule — what a model is told to do."""
+    m = yload((ROOT / "data" / "concepts.yaml").read_text(encoding="utf-8"))
+    return "".join(f"- **{c['title']}** ({SITE}/method#{c['id']}). " + " ".join(c["apply"]) + "\n"
+                   for c in m["concepts"])
 
 
 # WHAT WFSIM KEEPS ABOUT A PERSON, stated where Google, Discord and GitHub
@@ -2324,6 +2340,125 @@ def ship_privacy(flagged: str) -> None:
     ship_legal(flagged, "terms", "Terms", "The terms of service of WFSim.", '<div data-ext="terms"></div>')
     ship_legal(flagged, "refunds", "Refunds", "The refund policy of WFSim.", '<div data-ext="refunds"></div>')
 
+# THE METHOD (`data/concepts.yaml`, docs/AGENT.md §"The method"): English at
+# /method, each locale that translates it at /method/<code>, each with its
+# markdown twin. A locale's name as its own readers write it, as the app's
+# language menu lists it (`10-weapon-search.js`).
+LOCALE_NAMES = {"en": "English", "zh": "中文"}
+SOURCE = "https://github.com/magenie33/wfsim/blob/main/"
+
+
+def method_strings(m: dict) -> list[str]:
+    """Every string of the method a reader is shown — `Method::strings`, which
+    the engine's test holds each locale to the same way."""
+    out = [m["title"], m["about"], *m["labels"].values()]
+    for c in m["concepts"]:
+        out += [c["title"], c["rule"], *c["why"], *c["apply"]]
+        out += [e["shows"] for e in c.get("evidence") or ()] + [s["shows"] for s in c.get("see") or ()]
+    return out
+
+
+def method_locales(m: dict) -> dict:
+    """code -> tr for English and every locale whose overlay translates the
+    method. A LOCALE TRANSLATES IT WHOLE OR NOT AT ALL, rulers included: the
+    build stops on a string missing rather than ship a page half in English."""
+    out = {"en": lambda s: s}
+    want = method_strings(m) + [x for _, name, standard in base_rulers().values() for x in (name, standard) if x]
+    for d in sorted(p for p in (ROOT / "data" / "i18n").iterdir() if p.is_dir()):
+        ui = {}
+        for f in sorted(d.glob("*.yaml")):
+            ui.update((yload(f.read_text(encoding="utf-8")) or {}).get("ui") or {})
+        if m["about"] not in ui:
+            continue
+        missing = [s for s in want if s not in ui]
+        if missing or d.name not in LOCALE_NAMES:
+            sys.exit(f"method: {d.name} translates it but lacks {(missing or ['its LOCALE_NAMES entry'])[:3]}")
+        out[d.name] = lambda s, ui=ui: str(ui[s])
+    return out
+
+
+def method_md(m: dict, tr) -> str:
+    """The method as markdown: the page's words in the page's order."""
+    L = {k: tr(v) for k, v in m["labels"].items()}
+    out = f"# {tr(m['title'])}\n\n{tr(m['about'])}\n\n"
+    for c in m["concepts"]:
+        out += f"## {tr(c['title'])}\n\n**{tr(c['rule'])}**\n\n### {L['why']}\n\n"
+        out += "".join(f"- {tr(s)}\n" for s in c["why"]) + f"\n### {L['apply']}\n\n"
+        out += "".join(f"- {tr(s)}\n" for s in c["apply"]) + "\n"
+        if c.get("evidence"):
+            out += f"### {L['evidence']}\n\n" + "".join(
+                f"- {L[e['kind']]} · {tr(e['shows'])} [{Path(e['source']).stem}]({SOURCE}{e['source']})\n"
+                for e in c["evidence"]) + "\n"
+        if c.get("see"):
+            out += f"### {L['see']}\n\n" + "".join(
+                f"- [{Path(s['source']).name}]({SOURCE}{s['source']}): {tr(s['shows'])}\n" for s in c["see"]) + "\n"
+        if c.get("rulers"):
+            out += f"### {L['rulers']}\n\n" + "".join(
+                f"- **{tr(name)}**" + (f": {tr(standard)}" if standard else "") + "\n"
+                for _, name, standard in base_rulers().values()) + f"\n{SITE}/benchmark\n\n"
+    return out
+
+
+def method_html(m: dict, tr) -> str:
+    """The page's `<main>`: the same words as `method_md`, as html."""
+    e = html_mod.escape
+    L = {k: tr(v) for k, v in m["labels"].items()}
+    li = lambda xs: "<ul>" + "".join(f"<li>{x}</li>" for x in xs) + "</ul>\n"
+    out = f"<h1>{e(tr(m['title']))}</h1>\n<p>{e(tr(m['about']))}</p>\n"
+    for c in m["concepts"]:
+        out += (f'<section id="{c["id"]}">\n<h2>{e(tr(c["title"]))}</h2>\n<p><b>{e(tr(c["rule"]))}</b></p>\n'
+                f"<h3>{e(L['why'])}</h3>\n" + li(e(tr(s)) for s in c["why"])
+                + f"<h3>{e(L['apply'])}</h3>\n" + li(e(tr(s)) for s in c["apply"]))
+        if c.get("evidence"):
+            out += f"<h3>{e(L['evidence'])}</h3>\n" + li(
+                f"{e(L[x['kind']])} · {e(tr(x['shows']))} "
+                f'<a href="{SOURCE}{x["source"]}">{e(Path(x["source"]).stem)}</a>' for x in c["evidence"])
+        if c.get("see"):
+            out += f"<h3>{e(L['see'])}</h3>\n" + li(
+                f'<a href="{SOURCE}{s["source"]}">{e(Path(s["source"]).name)}</a>: {e(tr(s["shows"]))}' for s in c["see"])
+        if c.get("rulers"):
+            out += f"<h3>{e(L['rulers'])}</h3>\n" + li(
+                f"<b>{e(tr(name))}</b>" + (f": {e(tr(standard))}" if standard else "")
+                for _, name, standard in base_rulers().values()) + '<p><a href="/benchmark">/benchmark</a></p>\n'
+        out += "</section>\n"
+    return out
+
+
+def ship_method(flagged: str) -> list[str]:
+    """The method's pages and twins, one per language, and their urls — a plain page outside the
+    app like `ship_legal`, because the readers it is for run no script."""
+    m = yload((ROOT / "data" / "concepts.yaml").read_text(encoding="utf-8"))
+    style = re.search(r'href="(/asset/style\.[^"]+\.css)"', flagged).group(1)
+    tongues = method_locales(m)
+    at = lambda code: "/method" if code == "en" else f"/method/{code}"
+    alternates = "".join(f'<link rel="alternate" hreflang="{c}" href="{SITE}{at(c)}">\n' for c in tongues)
+    for code, tr in tongues.items():
+        others = " · ".join(f'<a href="{at(c)}" lang="{c}">{LOCALE_NAMES[c]}</a>' for c in tongues if c != code)
+        put(APP / at(code).lstrip("/") / "index.html", f"""<!doctype html>
+<html lang="{code}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{html_mod.escape(tr(m['title']))} | WFSim</title>
+<meta name="description" content="{html_mod.escape(tr(m['about']))}">
+<link rel="canonical" href="{SITE}{at(code)}">
+{alternates}<link rel="alternate" type="text/markdown" href="{at(code)}.md">
+<link rel="stylesheet" href="{style}">
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
+<style>.legal{{max-width:720px;margin:0 auto;padding:32px 16px 64px;line-height:1.6}}
+.legal h1{{margin-top:0}}.legal a{{color:var(--accent)}}</style>
+</head>
+<body>
+<main class="legal">
+<p><a href="/">WFSim</a>{' · ' + others if others else ''}</p>
+{method_html(m, tr)}</main>
+</body>
+</html>
+""")
+        put(APP / f"{at(code).lstrip('/')}.md", method_md(m, tr))
+    return [SITE + at(c) for c in tongues]
+
+
 def ship_agent_files(by_slot: dict) -> None:
     """The site as an agent reads it: markdown twins of the home page and the
     roster, `/llms.txt`, and the `/.well-known/` documents that point at them.
@@ -2336,7 +2471,8 @@ def ship_agent_files(by_slot: dict) -> None:
                         for slot in sorted(by_slot))
     put(APP / "weapons.md", f"# All {len(roster())} Warframe weapons in WFSim\n\n"
         f"Each links to its page as markdown; drop `.md` for the calculator.\n{roster_md}")
-    links = (f"- [MCP server]({MCP_URL}): these lookups as tools, read-only, no sign-in\n"
+    links = (f"- [Method]({SITE}/method.md): how WFSim judges a build, and the in-game readings behind each rule\n"
+             f"- [MCP server]({MCP_URL}): these lookups as tools, read-only, no sign-in\n"
              f"- [All weapons]({SITE}/weapons.md): every weapon WFSim models, by slot\n"
              f"- [Weapon lookup skill]({SITE}/.well-known/agent-skills/{SKILL_NAME}/SKILL.md): "
              "how to read a weapon's page and the board\n"

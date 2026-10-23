@@ -106,7 +106,8 @@ fn strip_comments(text: &str) -> String {
 const PACK_FORMAT: u32 = 1;
 
 /// WHICH PACK A FILE TRAVELS IN, by how often it moves and whether a number
-/// reads it: `data` is what the engine computes from; `text` the locales;
+/// reads it: `data` is what the engine computes from; `text` the locales and
+/// the method (`concepts.yaml`);
 /// `site` the board's bookkeeping, the image map and the market's names, which
 /// move with every rescore. None is a file only native code reads.
 fn pack_of(rel: &str) -> Option<&'static str> {
@@ -114,6 +115,8 @@ fn pack_of(rel: &str) -> Option<&'static str> {
         Some("text")
     } else if matches!(rel, "board_state.yaml" | "assets.yaml" | "market.yaml") {
         Some("site")
+    } else if rel == "concepts.yaml" {
+        Some("text")
     } else if rel == "notes.yaml" {
         None
     } else {

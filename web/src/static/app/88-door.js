@@ -180,7 +180,7 @@ const AGENT_SKILLS = {
   optimizer: "the build search: its scope, starting it, reading it, stopping it, saving a result",
   rivens: "riven cards: listing, making, copying, opening and writing one",
   enemies: "custom targets: listing, making, copying, opening and editing one",
-  shell: "documents and moving around: saved builds and scenarios, copies, undo, opening a module",
+  shell: "documents and moving around: saved builds and scenarios, copies, undo, opening a module, and how WFSim judges a build",
 };
 const agentSkills = () => Object.entries(AGENT_SKILLS).map(([id, what]) => ({
   id, what, actions: AGENT_ACTIONS.filter((a) => !a.hand && a.id.startsWith(id + ".")).map((a) => a.id),

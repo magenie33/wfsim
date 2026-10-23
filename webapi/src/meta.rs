@@ -1226,6 +1226,9 @@ pub fn meta_json() -> Value {
                     "where_the_ruler_cannot",
             },
         })).collect::<Vec<_>>(),
+        // HOW A BUILD IS JUDGED (`data/concepts.yaml`), in English; a locale's
+        // words are its `ui` overlay.
+        "method": wfsim_engine::data::concepts::method(),
         "benchmarks": wfsim_engine::board::benchmarks::all().iter().map(|b| json!({
             "primary": b.primary, "id": b.id,
             "name": b.name,

@@ -343,7 +343,11 @@ const HEADLESS_ABOUT = "WFSim is a Warframe weapon calculator. It builds a loado
   + "fight against a named enemy, and searches for the best mods. Every formula cites its source, "
   + "and every golden test is calibrated against a real in-game run. A board score belongs to its "
   + "ruler, the named benchmark fight: compare scores only under one ruler, quote the ruler with the "
-  + "number, and give the reader the row's link, which opens the build in the calculator.";
+  + "number, and give the reader the row's link, which opens the build in the calculator. How it "
+  + "judges a build, and the in-game readings behind each rule, is its method: https://wfsim.app/method.";
+
+/// Where a source file a query cites is read.
+const HEADLESS_SOURCE = "https://github.com/magenie33/wfsim";
 
 /// A query's name where a dot is not allowed (MCP, a model's function name) —
 /// the spelling Nona's `toolName` uses, and wire once published.
@@ -869,6 +873,37 @@ const HEADLESS_QUERIES = [
               ...(x.row.measured_by ? { measured_by: x.row.measured_by } : {}),
             })),
           })),
+      };
+    },
+  },
+  {
+    id: "shell.method.read",
+    what: "How WFSim judges a build: each rule, why it holds, how to apply it, and the readings behind it. Read it before comparing builds or explaining why one is better.",
+    anchor: "a[href=\"/method\"]",
+    args: {
+      concept: { kind: "string", what: "one rule's id; every rule when omitted" },
+    },
+    run({ concept }, host) {
+      const meta = host.meta();
+      const m = meta.method;
+      if (!m) return headlessNo("method_not_loaded", { because: "this engine carries no method" });
+      const all = m.concepts || [];
+      const picked = concept ? all.filter((c) => c.id === concept) : all;
+      if (concept && !picked.length) return headlessNo("unknown_concept", { alternatives: all.map((c) => c.id) });
+      const source = (s) => `${HEADLESS_SOURCE}/blob/main/${s}`;
+      const rulers = (meta.benchmarks || []).filter((b) => !b.cell_dir)
+        .map((b) => ({ id: b.id, name: host.tr(b.name), ...(b.standard ? { standard: host.tr(b.standard) } : {}) }));
+      return {
+        about: host.tr(m.about),
+        url: `${host.origin}/method`,
+        concepts: picked.map((c) => ({
+          id: c.id, title: host.tr(c.title), rule: host.tr(c.rule),
+          why: c.why.map((s) => host.tr(s)), apply: c.apply.map((s) => host.tr(s)),
+          evidence: (c.evidence || []).map((e) => ({ kind: e.kind, shows: host.tr(e.shows), source: source(e.source) })),
+          ...((c.see || []).length ? { see: c.see.map((s) => ({ shows: host.tr(s.shows), source: source(s.source) })) } : {}),
+          ...(c.rulers ? { rulers } : {}),
+          url: `${host.origin}/method#${c.id}`,
+        })),
       };
     },
   },

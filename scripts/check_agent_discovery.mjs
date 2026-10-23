@@ -3,8 +3,9 @@
 // (ARD) names only documents the site serves, each entry by exactly one of
 // `url` or `data`, under `urn:air:` identifiers and a media type; robots.txt
 // and the page's head both point at it; and the A2A card the build wrote is the
-// one `mcp/a2a.js` serves. No network, no browser; run after a site build.
-import { readFileSync, existsSync } from "node:fs";
+// one `mcp/a2a.js` serves; the method is served in every language it has. No
+// network, no browser; run after a site build.
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { agentCard } from "../mcp/a2a.js";
@@ -41,6 +42,19 @@ const { version, ...rest } = card;
 const { version: _v, ...live } = agentCard("x");
 check("the A2A card the build wrote is the one the server serves, versioned by an engine",
   JSON.stringify(rest) === JSON.stringify(live) && /^\w+$/.test(version), version);
+
+// THE METHOD (docs/AGENT.md §"The method"): each language's page and twin is
+// served, every page names every other, and the index and the skill point at it.
+const methodDir = resolve(ROOT, "site/method");
+const tongues = ["/method", ...(existsSync(methodDir) ? readdirSync(methodDir, { withFileTypes: true }) : [])
+  .filter((d) => d.isDirectory()).map((d) => `/method/${d.name}`)];
+const page = (t) => (existsSync(resolve(ROOT, `site${t}/index.html`)) ? read(`${t.slice(1)}/index.html`) : "");
+check("the method is served in English and each language it is translated into",
+  tongues.length > 1 && tongues.every((t) => page(t) && existsSync(resolve(ROOT, `site${t}.md`))), tongues);
+check("...and each of its pages names every language's", tongues.every((t) =>
+  tongues.every((u) => page(t).includes(`hreflang="${u === "/method" ? "en" : u.split("/")[2]}" href="${SITE}${u}"`))));
+check("llms.txt and the skill point at the method", read("llms.txt").includes(`${SITE}/method.md`)
+  && read(".well-known/agent-skills/wfsim-weapon-builds/SKILL.md").includes(`${SITE}/method#ruler`));
 
 console.log(failed ? `\n${failed} failed` : "\nwhat an agent reads to find WFSim is what the site serves");
 process.exit(failed ? 1 : 0);

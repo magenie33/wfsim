@@ -61,7 +61,7 @@
     // the relay); served as assets it would be the committed daily snapshot.
     // The page reads `cdn.wfsim.app` and never comes through here.
     "run_worker_first": ["/api/*", "/asset/*", "/pkg/*", "/", "/weapons", "/weapons/*",
-                         "/index.md", "/weapons.md",
+                         "/index.md", "/weapons.md", "/method", "/method/*", "/method.md",
                          "/.well-known/*", "/og/s/*", "/auth.md", "/privacy", "/terms", "/refunds",
                          "/board/*", "/board.meta.json"]
   },

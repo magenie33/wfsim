@@ -557,6 +557,18 @@ fn weapon_bound_ids() -> Vec<String> {
 mod tests {
     use super::*;
 
+    /// THE METHOD SAYS A RULER COUNTS KILLS PER MINUTE (`data/concepts.yaml`
+    /// `kills`), so a ruler that ranks by anything else changes that sentence
+    /// in the same commit.
+    #[test]
+    fn every_ruler_ranks_by_kills_per_minute_as_the_method_says() {
+        let said = crate::data::concepts::method().concepts.iter().any(|c| c.rule.contains("kills per minute"));
+        assert!(said, "concepts.yaml no longer says what a ruler counts; drop this test with it");
+        for b in all() {
+            assert_eq!(b.metric().id, "kpm", "{} ranks by {}, and concepts.yaml says kills per minute", b.id, b.metric().id);
+        }
+    }
+
     /// THE RULE, enforced. A benchmark that names a weapon — or a mod, an
     /// arcane, an evolution, or a form only some weapons register — is a ruler
     /// that measures different things on different weapons, and it fails the
