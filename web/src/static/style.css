@@ -2344,7 +2344,7 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .brules summary::-webkit-details-marker{display:none}
 .brules summary::before{content:"▸ ";color:var(--text-2)}
 .brules[open] summary::before{content:"▾ "}
-.bstd{margin:9px 0 0;color:var(--text);font-size:12.5px;line-height:1.65;max-width:78ch}
+.bstd{margin:0 0 8px;color:var(--text);font-size:12.5px;line-height:1.65;max-width:78ch}
 .brules ul{margin:8px 0 2px;padding-left:18px}
 .brules li{margin:5px 0;color:var(--text-2);font-size:12.5px;line-height:1.6;max-width:78ch}
 .bench-meta{margin-bottom:8px;color:var(--text-2);font-size:12px}

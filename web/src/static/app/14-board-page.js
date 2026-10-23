@@ -425,15 +425,15 @@ function renderBenchBoard() {
   const rules = $("bench-rules");
   if (rules) {
     const rs = cur.rules || [];
-    // THE CLAIM FIRST, THEN THE TERMS. A ruler whose name says "standard" owes
-    // the reader what that rests on, and it belongs above the rules rather than
-    // beside them: the rules say what is done, this says why it is worth doing.
+    // THE DEFINITION FIRST AND IN VIEW, THE TERMS FOLDED. A ruler whose name
+    // says "standard" says what that means where every reader sees it; the
+    // rules are the detail behind it.
     const why = cur.standard
       ? `<p class="bstd">${escHtml(tr(cur.standard))}</p>` : "";
-    rules.innerHTML = !rs.length && !why ? "" : `<details class="brules">
+    rules.innerHTML = !rs.length && !why ? "" : `${why}${!rs.length ? "" : `<details class="brules">
       <summary>${escHtml(tr("What this benchmark measures"))}</summary>
-      ${why}<ul>${rs.map((x) => `<li>${escHtml(tr(x))}</li>`).join("")}</ul>
-    </details>`;
+      <ul>${rs.map((x) => `<li>${escHtml(tr(x))}</li>`).join("")}</ul>
+    </details>`}`;
   }
   // THE RULER'S FIGHT, DRAWN. The rules above say it in sentences; this is
   // the same fight as a picture, by the same component the simulator uses, so
