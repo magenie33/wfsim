@@ -872,6 +872,8 @@ fn simulate_from(v: &Value, work: Work, on_run: &mut impl FnMut(u32, u32)) -> Va
         // loop was handed — not composed again here. The page prints what comes
         // back, so what it shows is what ran.
         "apl": params.apl().0.iter().map(wfsim_engine::data::apl::Rule::to_simc).collect::<Vec<_>>(),
+        // …AND WHAT WAS DONE BEFORE IT, read off the piles the fight opened on.
+        "precombat": params.precombat().iter().map(wfsim_engine::data::apl::Precombat::to_simc).collect::<Vec<_>>(),
         // …AND WHAT THE FRAME DID: the strength it fought at, and the strength
         // an Exalted weapon was summoned at (`data::casting`).
         "frame": {

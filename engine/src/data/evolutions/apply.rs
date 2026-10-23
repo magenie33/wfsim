@@ -189,7 +189,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 0,
                         per_shell: true,
                         cleared_by: crate::model::ClearedBy::EmptyMagazine,
-                        card_opens_full: false,
+                        precombat: false,
                     });
                 }
                 EvoEffect::FlatBaseStatusChance(v) => {
@@ -296,7 +296,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::model::ClearedBy::MagazineRefilled,
-                        card_opens_full: false,
+                        precombat: false,
                     });
                 }
                 EvoEffect::MultishotOnLastRound { value, base: is_base } => {
@@ -437,7 +437,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::StackingGrant {
                     trigger, grant, per_stack, max_stacks, duration, chance, decay, cleared_by,
-                    card_opens_full,
+                    precombat,
                 } => {
                     base.stacking_buffs.push(crate::model::StackingBuff {
                         id: stacking_card_id(*trigger, *grant),
@@ -452,7 +452,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: *cleared_by,
-                        card_opens_full: *card_opens_full,
+                        precombat: *precombat,
                     });
                 }
                 EvoEffect::StackingMultishotOnFiring { per_stack, max_stacks, base: is_base } => {
@@ -477,7 +477,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::model::ClearedBy::Reload,
-                        card_opens_full: false,
+                        precombat: false,
                     });
                 }
                 EvoEffect::StackingMultishotOnStatus { status, per_stack, max_stacks, duration } => {
@@ -498,7 +498,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::model::ClearedBy::Nothing,
-                        card_opens_full: false,
+                        precombat: false,
                     });
                 }
                 EvoEffect::StackingFireRateOnHeadshot { per_stack, max_stacks, duration, chance, decay } => {
@@ -518,7 +518,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::model::ClearedBy::Nothing,
-                        card_opens_full: false,
+                        precombat: false,
                     });
                 }
                 EvoEffect::PostModCritChance(v) => base.post_mod_crit_chance += v,
@@ -554,7 +554,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::model::ClearedBy::Nothing,
-                        card_opens_full: false,
+                        precombat: false,
                     });
                 }
                 EvoEffect::StackingReloadSpeedOnHeadshot {
@@ -577,7 +577,7 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: crate::model::ClearedBy::Nothing,
-                        card_opens_full: false,
+                        precombat: false,
                     });
                 }
                 EvoEffect::Inert(_) | EvoEffect::Qualifier(_) => {}

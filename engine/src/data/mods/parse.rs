@@ -323,10 +323,10 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                 stacks_per_trigger: if v.get("per_shell").and_then(Value::as_bool) == Some(true) { 0 } else { 1 },
                 per_shell: v.get("per_shell").and_then(Value::as_bool) == Some(true),
                 cleared_by: crate::model::ClearedBy::from_id(v.get("cleared_by").and_then(Value::as_str)),
-                // Read here as well, so a MOD that states it needs no second edit
-                // — no mod does today; the two that claim it are evolutions.
-                card_opens_full: v
-                    .get("card_opens_full")
+                // Read here as well, so a MOD that states it needs no second
+                // edit (`StackingBuff::precombat`).
+                precombat: v
+                    .get("precombat")
                     .and_then(Value::as_bool)
                     .unwrap_or(false),
             })
@@ -654,7 +654,7 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
 #[cfg(test)]
 pub(crate) const STACKING_BUFF_KEYS: &[&str] = &[
     "kind", "trigger", "grants", "rank0", "rankMax", "max_stacks", "duration",
-    "duration_rank0", "chance", "chance_rank0", "decay", "card_opens_full", "per_shell", "cleared_by",
+    "duration_rank0", "chance", "chance_rank0", "decay", "precombat", "per_shell", "cleared_by",
 ];
 
 /// EVERY `<field>_rank0` LADDERS `<field>` from rank 0 to the max-rank value

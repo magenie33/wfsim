@@ -43,11 +43,16 @@ function renderSimBuild() {
 function aplHtml(w) {
   const lines = (shownResult && shownResult.r && shownResult.r.apl) || [];
   if (!lines.length) return "";
-  return `<div class="sb-h">${escHtml(tr("Action priority"))} · ${escHtml(modeLabel(w, mode) || "")}</div>`
-    + `<ol class="sb-apl">${lines.map((l) => {
-      const [act, cond] = l.split(",if=");
-      return `<li><code>${escHtml(act)}</code>${cond ? ` <span class="sb-empty">if ${escHtml(cond)}</span>` : ""}</li>`;
-    }).join("")}</ol>`;
+  // BEFORE THE FIGHT, run once and free; then the list scanned between shots.
+  const pre = (shownResult.r.precombat) || [];
+  const item = (sep, word) => (l) => {
+    const [act, cond] = l.split(sep);
+    return `<li><code>${escHtml(act)}</code>${cond ? ` <span class="sb-empty">${word} ${escHtml(cond)}</span>` : ""}</li>`;
+  };
+  return (pre.length ? `<div class="sb-h">${escHtml(tr("Before the fight"))}</div>`
+      + `<ol class="sb-apl">${pre.map(item(",until=", "until")).join("")}</ol>` : "")
+    + `<div class="sb-h">${escHtml(tr("Action priority"))} · ${escHtml(modeLabel(w, mode) || "")}</div>`
+    + `<ol class="sb-apl">${lines.map(item(",if=", "if")).join("")}</ol>`;
 }
 
 /// THE WIELDER AS THE SIMULATOR SHOWS IT: read-only, the Warframe with the

@@ -117,20 +117,18 @@ impl EvolutionDef {
                     permanent: false,
                     opens_at: CardOpens::Zero,
                 }),
-                // OPENS FULL WHERE THE CARD SAYS A MISSION NEVER TAKES IT
-                // — a buff you are already carrying rather
-                // than one you keep up. NOT `permanent`, which means something
-                // narrower here: no trigger the sim can fire, so the count is a
-                // static choice. This one is earned by an event the fight
-                // performs several times over, so its lock stays live and a
-                // card set to zero builds back.
+                // OPENS WHERE THE PRECOMBAT LIST LEAVES IT — full, since it
+                // performs the trigger until the cap. NOT `permanent`, which
+                // means something narrower here: no trigger the sim can fire.
+                // This one the fight fires too, so a card set to zero builds
+                // back.
                 EvoEffect::StackingGrant {
-                    trigger, grant, max_stacks, card_opens_full, ..
+                    trigger, grant, max_stacks, precombat, ..
                 } => Some(EvoBuffCard {
                     id: stacking_card_id(*trigger, *grant),
                     max_stacks: *max_stacks,
                     permanent: false,
-                    opens_at: if *card_opens_full { CardOpens::Full } else { CardOpens::Zero },
+                    opens_at: if *precombat { CardOpens::Full } else { CardOpens::Zero },
                 }),
                 EvoEffect::StackingMultishotOnFiring { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_firing_multishot",

@@ -101,7 +101,7 @@ fn a_headshot_buff_opens_when_the_round_arrives() {
             stacks_per_trigger: 1,
             per_shell: false,
             cleared_by: crate::model::ClearedBy::Nothing,
-            card_opens_full: false,
+            precombat: false,
         }];
         p
     };
@@ -160,7 +160,7 @@ fn an_on_kill_punch_through_window_opens_at_the_landing() {
         stacks_per_trigger: 1,
         per_shell: false,
         cleared_by: crate::model::ClearedBy::Nothing,
-        card_opens_full: false,
+        precombat: false,
     }];
     p.duration_seconds = 2.0;
     let rec = record(&p, Rng::new(1).state(), 0.0, p.duration_seconds, 100_000, 0);

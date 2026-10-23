@@ -453,7 +453,7 @@ fn a_weapon_with_no_magazine_never_reloads_so_no_reload_buff_fires() {
                     stacks_per_trigger: 1,
                     per_shell: false,
                     cleared_by: crate::model::ClearedBy::Nothing,
-                    card_opens_full: false,
+                    precombat: false,
                 }],
                 crit_multiplier: 1.0,
                 base_crit_chance: 0.0,

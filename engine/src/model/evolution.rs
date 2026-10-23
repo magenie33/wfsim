@@ -415,9 +415,9 @@ pub enum EvoEffect {
         chance: f64,
         decay: crate::model::BuffDecay,
         cleared_by: crate::model::ClearedBy,
-        /// The card's own claim that a mission never takes it — see
-        /// [`crate::model::StackingBuff::card_opens_full`].
-        card_opens_full: bool,
+        /// Earned before the fight — see
+        /// [`crate::model::StackingBuff::precombat`].
+        precombat: bool,
     },
     StackingMultishotOnFiring {
         per_stack: f64,

@@ -436,6 +436,85 @@ pub fn for_fight(inserted: &Apl, shape: &Shape) -> Apl {
     Apl(out)
 }
 
+/// **WHAT THE PLAYER DOES BEFORE THE FIGHT** — SimC's `actions.precombat`.
+///
+/// The list runs once, top to bottom, before the first shot, and every line of
+/// it is free: no time passes and no enemy is in reach. So only what a player
+/// does alone can be on it — switching the weapon's mode, casting, emptying a
+/// magazine and reloading it — and a pile earned by hits or kills never is
+/// (`BuffTrigger::is_precombat`). What it leaves standing is what the fight
+/// opens on, which is the whole reason a buff opens anywhere but at zero.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Precombat {
+    pub action: PreAction,
+    /// The buff the action is repeated for, and the count that ends it.
+    pub until: Option<(String, u32)>,
+}
+
+/// One thing a player does before the fight.
+#[derive(Debug, Clone, PartialEq)]
+pub enum PreAction {
+    /// Put the weapon in the form the fight is played in, by its Alternate
+    /// Fire toggle.
+    SwitchMode { form: &'static str },
+    /// Any ability, cast once.
+    Cast,
+    /// Empty the magazine and reload it.
+    ReloadFromEmpty,
+    /// Reload a magazine that is not empty.
+    Reload,
+}
+
+impl Precombat {
+    /// The line as SimC writes one.
+    pub fn to_simc(&self) -> String {
+        let act = match &self.action {
+            PreAction::SwitchMode { form } => format!("switch_mode,form={form}"),
+            PreAction::Cast => "cast".into(),
+            PreAction::ReloadFromEmpty => "reload_from_empty".into(),
+            PreAction::Reload => "reload".into(),
+        };
+        match &self.until {
+            Some((buff, n)) => format!("{act},until=buff.{buff}.stack>={n}"),
+            None => act,
+        }
+    }
+
+    /// The press that earns a trigger, for the triggers a player performs alone.
+    pub fn earning(trigger: crate::model::BuffTrigger) -> Option<PreAction> {
+        use crate::model::BuffTrigger as T;
+        match trigger {
+            T::ReloadFromEmpty => Some(PreAction::ReloadFromEmpty),
+            T::ReloadComplete => Some(PreAction::Reload),
+            _ => None,
+        }
+    }
+}
+
+/// **THE PRECOMBAT LIST, PERFORMED** on a weapon's live piles: each buff that
+/// is earned before the fight has its trigger performed until it reaches its
+/// cap, and EVERY buff on that trigger takes what those presses earn, because
+/// they are the same presses. The piles open where this leaves them.
+///
+/// Free and deterministic: no clock runs, so nothing decays, and only a
+/// certain trigger may be earned this way (a roll would make the opening a
+/// draw from the fight's own streams).
+pub fn earn_before_the_fight(mut buffs: Vec<crate::model::StackingBuff>) -> Vec<crate::model::StackingBuff> {
+    let presses = |b: &crate::model::StackingBuff| b.max_stacks.div_ceil(b.stacks_per_trigger.max(1));
+    let wanted: Vec<(crate::model::BuffTrigger, u32)> = buffs
+        .iter()
+        .filter(|b| b.precombat && b.trigger.is_precombat() && b.chance >= 1.0)
+        .map(|b| (b.trigger, presses(b)))
+        .collect();
+    for (trigger, n) in wanted {
+        for b in buffs.iter_mut().filter(|b| b.trigger == trigger && b.chance >= 1.0) {
+            let earned = n.saturating_mul(b.stacks_per_trigger.max(1)).min(b.max_stacks);
+            b.initial_stacks = b.initial_stacks.max(earned);
+        }
+    }
+    buffs
+}
+
 /// **THE FOUR MODE KINDS AS THE LISTS THEY ARE**, for a reader who has a mode
 /// name and not a fight — the page, before a run has answered.
 ///
@@ -698,5 +777,57 @@ charged_throw");
                                        glaive_in_flight: flying, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&now(false)), Action::ChargedThrow);
         assert_eq!(apl.pick(&now(true)), Action::Detonate);
+    }
+    fn pile(trigger: crate::model::BuffTrigger, max: u32, precombat: bool) -> crate::model::StackingBuff {
+        crate::model::StackingBuff {
+            id: "pile",
+            trigger,
+            grant: crate::model::BuffGrant::FlatBaseDamage,
+            per_stack: 1.0,
+            max_stacks: max,
+            duration: crate::model::NO_TIMEOUT,
+            chance: 1.0,
+            decay: crate::model::BuffDecay::from_id(None),
+            initial_stacks: 0,
+            stacks_per_trigger: 1,
+            per_shell: false,
+            cleared_by: crate::model::ClearedBy::Nothing,
+            precombat,
+        }
+    }
+
+    /// **THE PRESSES THAT EARN ONE PILE EARN EVERY PILE ON THAT TRIGGER**, and
+    /// nothing earned by an enemy moves: two empty reloads for a two-stack
+    /// pile give a five-stack sibling two, and the on-kill pile stays at zero.
+    #[test]
+    fn the_precombat_presses_earn_every_pile_they_trigger() {
+        use crate::model::BuffTrigger as T;
+        let out = earn_before_the_fight(vec![
+            pile(T::ReloadFromEmpty, 2, true),
+            pile(T::ReloadFromEmpty, 5, false),
+            pile(T::Kill, 3, false),
+            pile(T::Kill, 3, true),
+        ]);
+        let opens: Vec<u32> = out.iter().map(|b| b.initial_stacks).collect();
+        assert_eq!(opens, [2, 2, 0, 0], "a kill is not a press made alone");
+    }
+
+    /// **A SHELL-COUNTING PILE IS EARNED A MAGAZINE A PRESS**, so one reload
+    /// fills thirteen stacks of a 13-round magazine and the cap holds.
+    #[test]
+    fn a_press_earns_what_one_trigger_grants() {
+        let mut p = pile(crate::model::BuffTrigger::ReloadComplete, 20, true);
+        p.stacks_per_trigger = 13;
+        assert_eq!(earn_before_the_fight(vec![p])[0].initial_stacks, 20, "two reloads, capped at 20");
+    }
+
+    /// **THE LIST READS AS SIMC WRITES A PRECOMBAT LIST.**
+    #[test]
+    fn a_precombat_line_reads_like_simc() {
+        let line = |action, until: Option<(&str, u32)>| Precombat { action, until: until.map(|(b, n)| (b.to_string(), n)) };
+        assert_eq!(line(PreAction::Cast, Some(("evo_multishot", 20))).to_simc(), "cast,until=buff.evo_multishot.stack>=20");
+        assert_eq!(line(PreAction::ReloadFromEmpty, Some(("evo_reload_damage", 1))).to_simc(),
+            "reload_from_empty,until=buff.evo_reload_damage.stack>=1");
+        assert_eq!(line(PreAction::SwitchMode { form: "alt_fire" }, None).to_simc(), "switch_mode,form=alt_fire");
     }
 }

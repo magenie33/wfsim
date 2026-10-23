@@ -38,7 +38,7 @@ fn no_rostered_buff_draws_a_flat_zero_it_did_not_earn() {
         stacks_per_trigger: 1,
         per_shell: false,
         cleared_by: crate::model::ClearedBy::Nothing,
-        card_opens_full: false,
+        precombat: false,
     };
     let mut params = FightParams {
         co_stack: Some(stack(0.2, "kill")),
