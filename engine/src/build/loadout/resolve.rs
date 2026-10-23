@@ -855,6 +855,30 @@ pub fn resolve_for(
         }
     }
 
+    // …AND WHAT THE PRECOMBAT LIST EARNED, on the panel at the count the fight
+    // opens on (`StackingBuff::precombat`): it is up before the first shot. A
+    // flat base add joins the bucket at the share it is worth — the fight's own
+    // conversion — so the CO term never reads it. Folded here, it leaves the
+    // live list below, as a conditional mod does under this policy.
+    let folded = |b: &StackingBuff| {
+        policy == StackPolicy::AssumedMax
+            && b.precombat
+            && matches!(b.grant, BuffGrant::Multishot | BuffGrant::FlatBaseDamage)
+    };
+    {
+        let unmodded = base.base_vector.total();
+        let earned = |g: BuffGrant| -> f64 {
+            base.stacking_buffs.iter().chain(mod_buffs.iter())
+                .filter(|b| folded(b) && b.grant == g)
+                .map(|b| b.per_stack * f64::from(b.initial_stacks))
+                .sum()
+        };
+        multishot += earned(BuffGrant::Multishot);
+        if unmodded > 0.0 {
+            base_damage += earned(BuffGrant::FlatBaseDamage) * (1.0 + base_damage) / unmodded;
+        }
+    }
+
     // Apply `disables`: a locked stat cannot be modified — zero its mod bucket
     // (and any conditional stacks feeding it); the weapon's base value stays.
     //
@@ -1896,7 +1920,7 @@ pub fn resolve_for(
             .stacking_buffs
             .iter()
             .chain(mod_buffs.iter())
-            .filter(|b| !locked_stat(b.grant.locked_stat()))
+            .filter(|b| !locked_stat(b.grant.locked_stat()) && !folded(b))
             // A LOCKED STAT TAKES ITS BUFFS WITH IT, and they go rather than
             // going quiet: a card that opens, stacks and grants nothing is a
             // measurement a player cannot make (the rule `check_equip_rules`

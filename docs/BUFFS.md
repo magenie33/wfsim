@@ -588,6 +588,13 @@ list builds it to its cap, which is the card's default. So the page and the
 board fight one fight. The run's response carries the list it performed
 (`precombat`), and the Simulator prints it above the action priority list.
 
+**THE PANEL COUNTS IT.** A pile the list earns is up before the first shot, so
+the stat panel (`StackPolicy::AssumedMax`) folds its multishot and its flat base
+damage in at the card's count — the flat add at the share of the base-damage
+bucket it is worth, so the CO term never reads it — and names it "earned before
+the fight". Folded there, it leaves that policy's live list, so nothing is
+counted twice.
+
 **A CLOSED SET BY RULE, NOT BY NAME.** Twenty stacking buffs in
 `data/evolutions/` have no clock and nothing that clears them, because that is
 the default for a card stating neither; none of them opens full unless a
