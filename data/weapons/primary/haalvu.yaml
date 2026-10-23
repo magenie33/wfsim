@@ -45,7 +45,8 @@ battery:
   delay_empty_seconds: 0.5
   delay_partial_seconds: 0.5
   # THE EMPTY CASE IS AN ANIMATION, not the refill — MEASURED (M121): 2 s
-  # dry, and 0.5 s then 300 a second stopped short. The module's Reload 1 and
+  # dry, and 0.5 s then 300 a second stopped short; reload speed reaches the
+  # 2 s and neither of the others (M122). The module's Reload 1 and
   # the export's reloadTime 1 are the delay plus 150/300 s of refill.
   empty_animation_seconds: 2.0
 

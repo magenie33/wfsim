@@ -761,7 +761,7 @@ element procs are weighted, not uniform.
 - **Continuous weapons** proc as if their multishot pellets were real
   (merged beam visuals notwithstanding) — multishot boosts status
   opportunities normally.
-- **Status Chance Vulnerability** (the proc of Tau damage, wiki
+- **Status Chance Vulnerability** (the proc of Tau damage, M122 and wiki
   `Damage/Tau_Damage`): each stack multiplies the status chance the body
   receives by `1 + 0.10 × stacks`, ten at most, 8 s each on its own clock,
   the eleventh replacing the oldest. Every rolled chance aimed at the body

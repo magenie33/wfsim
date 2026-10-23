@@ -220,6 +220,7 @@ path, so an entry may be renamed but never renumbered.
 | [M119](measurements/M119-multishot-rides-the-round.md) | Multishot adds instances to the weapon's own rounds, not rounds: a body a shot kills swallows the rest of it, a burst is one shot for that, and a punching round rolls its multishot again at each body | ✅ 2026-10-22 (owner) |
 | [M120](measurements/M120-fortifier-is-eight-and-capped.md) | Secondary Fortifier is ×8, capped by the Overguard left, and checked as each instance lands on its own body; an instance that breaks the pool alone takes no bonus | ✅ 2026-10-22 (owner) |
 | [M121](measurements/M121-haalvu-battery-refill-and-empty-animation.md) | Haalvu: a battery stopped short refills 0.5 s after the last shot at 300 a second; one fired dry waits 2 s, the reload animation, not the 1 s refill | ✅ 2026-10-23 (owner) |
+| [M122](measurements/M122-tau-status-chance-vulnerability.md) | Tau multiplies the status chance a body receives by 1 + 10% a stack and counts for Condition Overload; reload speed does not reach a Haalvu's battery; Primary Crux no longer skips the burst reload | ✅ 2026-10-23 (owner) |
 | [M118](measurements/M118-vectis-prime-compression-and-combo-order.md) | Vectis Prime Incarnon: Primary Compression pays +12% at rank 5 and multiplies, on the direct hit and the orb; the shot combo counts a hit before it pays it; a frozen body takes +1.0 crit damage on the direct hit only; Galvanized Aptitude adds on the weapon's own base, not on Inciting Incident's +200 | ✅ 2026-10-22 (owner) |
 
 ## By weapon
@@ -251,7 +252,7 @@ settles a RULE rather than a weapon has no row and is found by number above.
 | Furis | `furis` | [M35](measurements/M35-riven-stat-pools-counted.md) · [M101](measurements/M101-furis-co-reads-its-own-base-under-haven-foray.md) |
 | Gotva Prime | `gotva_prime` | [M30](measurements/M30-stat-lock-mod-bucket.md) |
 | Grimoire | `grimoire` | [M63](measurements/M63-grimoire-orb-strikes.md) · [M64](measurements/M64-tome-meter-is-a-clock.md) |
-| Haalvu | `haalvu` | [M121](measurements/M121-haalvu-battery-refill-and-empty-animation.md) |
+| Haalvu | `haalvu` | [M121](measurements/M121-haalvu-battery-refill-and-empty-animation.md) · [M122](measurements/M122-tau-status-chance-vulnerability.md) |
 | Kuva Nukor | `kuva_nukor` | [M78](measurements/M78-kuva-nukor-valence-in-co-base.md) |
 | Kuva Ogris | `kuva_ogris` | [M106](measurements/M106-assault-rifle-mods-take-launchers.md) |
 | Laetum | `laetum` | [M9](measurements/M09-incarnon-transition-timings.md) · [M10](measurements/M10-incarnon-reload-buff-reach.md) · [M11](measurements/M11-on-hit-per-trigger-or-instance.md) · [M15](measurements/M15-torid-incarnon-chain-nodes.md) · [M46](measurements/M46-chill-ladder.md) · [M59](measurements/M59-laetum-incarnon-irradiate-echo.md) · [M60](measurements/M60-headshot-bonuses-add.md) · [M61](measurements/M61-shield-break-spillover.md) · [M62](measurements/M62-volley-settles-per-pellet.md) |

@@ -53,7 +53,6 @@ attack:
   damage: { tau: 34 }   # total 34
 
 unmodeled:
-  - "With 5 or more stacks of Primary Crux the game skips this mode's reload animation (wiki, Bugs). The sim pays the full 2 s, so a Crux build reads low here."
   - "The miniature rifles lock onto up to four enemies within 40 degrees and 10 m, paying ammo per target (wiki). The engine fires at the aimed body only: right against one enemy, up to four times low against a crowd."
 
 source:
