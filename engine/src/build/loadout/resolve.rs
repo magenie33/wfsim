@@ -2044,6 +2044,7 @@ pub fn resolve_for(
             })
             .collect(),
         attractor_seconds: base.attractor_seconds,
+        lock_on: base.lock_on,
         tendril_max: base.tendril_max,
         tendril_range_m: base.tendril_range_m,
         tendril_acquire_deg: base.tendril_acquire_deg,

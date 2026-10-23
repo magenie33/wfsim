@@ -347,6 +347,10 @@ pub struct AttackSpec {
     /// rate — docs/UNMODELLED.md §Bullet Attractor.
     #[serde(default)]
     pub attractor_seconds: Option<f64>,
+    /// ROUNDS THAT PICK THEIR OWN BODY within a reach — see
+    /// [`crate::model::LockOn`].
+    #[serde(default)]
+    pub lock_on: Option<crate::model::LockOn>,
     /// A projectile that BOUNCES off what it hits and keeps going — the Latron
     /// family's Incarnon form, and the roster's only member.
     #[serde(default)]

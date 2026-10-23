@@ -640,6 +640,8 @@ pub struct ResolvedPanel {
     /// The field the attack plants, unmodded for the same reason: no mod in
     /// the roster lengthens it. See `data::weapons::AttackSpec`.
     pub attractor_seconds: Option<f64>,
+    /// See [`crate::model::LockOn`]; no mod moves it.
+    pub lock_on: Option<crate::model::LockOn>,
     /// Untouched by mods: the tendril cap is the weapon's.
     pub tendril_max: u32,
     /// How far a tendril reaches and how far off the reticle it will take a

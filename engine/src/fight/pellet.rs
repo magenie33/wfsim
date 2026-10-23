@@ -121,6 +121,8 @@ pub(super) struct RoundAim {
     part: usize,
     dev: f64,
     phi: f64,
+    /// A round a LOCK-ON put nowhere (`model::LockOn`).
+    lock_miss: bool,
 }
 
 /// WHAT A WEAK-POINT KILL GRANTS — one site, because "headshot kill" has to
@@ -492,6 +494,14 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         }
         None => (0, &params.body_parts),
     };
+    // INSIDE A LOCK-ON'S REACH THE ROUND PICKS ITS OWN SPOT: `(miss chance,
+    // chance a head-aimed round keeps the head)` for this gap and the bodies
+    // the rifles can take (`model::LockOn`). `None` on every other weapon.
+    let lock = active.lock_on.and_then(|l| {
+        let aim = params.aim_at.unwrap_or(params.target_at);
+        let n = crate::rules::chain::acquired(&params.body_positions(), params.player_at, aim, l.acquire_deg, l.range_m).len();
+        l.at(params.gap(), u32::try_from(n).unwrap_or(u32::MAX))
+    });
     let part = match parts.get(round_aim.part).filter(|_| follows && round_aim.list == list) {
         Some(p) => p,
         None => {
@@ -499,6 +509,16 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 Some(c) => unaimed_part(parts, c, &mut d.spine),
                 None => pick_part(parts, &mut d.spine),
             };
+            // …A HEAD IT LOSES lands on the body part the player weighs most.
+            let p = match lock {
+                Some((_, keep)) if p.is_head && keep < 1.0 && d.aim.next_f64() >= keep => parts
+                    .iter()
+                    .filter(|q| !q.is_head)
+                    .max_by(|a, b| a.aim_weight.total_cmp(&b.aim_weight))
+                    .unwrap_or(p),
+                _ => p,
+            };
+            round_aim.lock_miss = lock.is_some_and(|(m, _)| m > 0.0 && d.aim.next_f64() < m);
             round_aim.list = list;
             round_aim.part = parts.iter().position(|q| std::ptr::eq(q, p)).unwrap_or(0);
             p
@@ -723,7 +743,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // `gap` is what the shot flies and what the arena prints, so "20 m"
     // is the number on the scene. `INFINITY` where none is declared.
     let in_range = gap_m <= active.range_m;
-    let pellet_lands = aim_offset <= crate::rules::space::BODY_RADIUS_M && in_range;
+    let pellet_lands = aim_offset <= crate::rules::space::BODY_RADIUS_M && in_range && !round_aim.lock_miss;
     // WHERE THE ROUND WENT OFF — ONE EPICENTRE FOR THE WHOLE
     // EXPLOSION.
     //

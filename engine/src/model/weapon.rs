@@ -961,6 +961,8 @@ pub struct WeaponBase {
     pub multishot_adds_damage: bool,
     /// See `data::weapons::AttackSpec::attractor_seconds`.
     pub attractor_seconds: Option<f64>,
+    /// See [`LockOn`].
+    pub lock_on: Option<LockOn>,
     /// How many tendrils this weapon can hold up (0 = it has none). See
     /// `data::weapons::TendrilSpec` for why the COUNT is modelled and the
     /// tendrils' own damage is not.
@@ -1342,4 +1344,37 @@ pub struct WeaponBase {
     /// +v damage (0.0 = not installed). Both forms carry it; the rule differs
     /// by form and the sim reads that off `continuous`.
     pub multishot_ammo_bonus: f64,
+}
+
+/// ROUNDS THAT PICK THEIR OWN BODY — the Haalvu's burst, whose miniature rifles
+/// "target up to 4 enemies within 40° of the reticle and within 10m of the
+/// player". MODELLED IN OUTLINE, as the owner observed it: at contact every
+/// round lands where it is aimed; at the edge of the reach, against one body,
+/// `far_miss_share` of them land nowhere and none reaches a head; in between
+/// both move in a straight line, and every body the rifles can take besides
+/// the aimed one takes a share of the misses away, none left at `targets`.
+/// Beyond the reach nothing locks and the shot is aimed like any other.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LockOn {
+    pub range_m: f64,
+    pub acquire_deg: f64,
+    pub targets: u32,
+    pub far_miss_share: f64,
+    pub far_head_share: f64,
+}
+
+#[wfsim_gas_macro::metered]
+impl LockOn {
+    /// `(miss chance, chance a head-aimed round still finds the head)` for a
+    /// body `gap_m` away with `bodies` the rifles can take, the aimed one
+    /// among them. `None` beyond the reach.
+    pub fn at(&self, gap_m: f64, bodies: u32) -> Option<(f64, f64)> {
+        if gap_m > self.range_m {
+            return None;
+        }
+        let reach = (gap_m / self.range_m.max(1e-9)).clamp(0.0, 1.0);
+        let spare = self.targets.saturating_sub(bodies.max(1)) as f64 / (self.targets.max(2) - 1) as f64;
+        Some((self.far_miss_share * reach * spare, 1.0 - reach * (1.0 - self.far_head_share)))
+    }
 }
