@@ -501,7 +501,7 @@ pub(super) fn spread_hit(
     arc.next_instance();
     let procs = crate::rules::status::procs_for_hit(
         forced,
-        status_chance,
+        status_chance * foe.debuffs.received_status_chance(t),
         vector,
         &spec.params.status_immunities,
         &mut d.status,

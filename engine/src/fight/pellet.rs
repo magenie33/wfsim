@@ -2299,7 +2299,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         // immunities renormalized.
         let mut procs = status::procs_for_hit(
             forced,
-            status_chance,
+            status_chance * bodies[0].debuffs.received_status_chance(t),
             &qvec,
             &params.foe.status_immunities,
             &mut d.status,

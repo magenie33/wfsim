@@ -144,6 +144,9 @@ pub(super) struct DebuffState {
     /// and a re-proc moves it to where the new hit landed rather than adding a
     /// second one.
     pub(super) attractor: Vec<f64>,
+    /// Status Chance Vulnerability (Tau), one expiry a stack — see
+    /// [`DebuffState::received_status_chance`].
+    pub(super) tau: Vec<f64>,
     pub(super) blast: Vec<BlastStack>,
     /// THE SHOT THAT FILLED THE PILE, as `(RunResult::shots, instant)`. A Blast
     /// proc from that same shot after the pile went off is LOST, not the first
@@ -235,6 +238,12 @@ pub(super) const CORROSION_DURATION: f64 = 8.0;
 /// (wiki Damage/Void_Damage). Shorter than the standard 6 s, which is why it is
 /// its own constant rather than `STATUS_DURATION`.
 pub(super) const ATTRACTOR_DURATION: f64 = 3.0;
+/// Status Chance Vulnerability (Tau): "increases Status Chance received from
+/// all other status sources by 10% per stack for up to 10 stacks and lasts
+/// for 8 seconds, with each stack having its own duration" (wiki
+/// Damage/Tau_Damage).
+pub(super) const TAU_DURATION: f64 = 8.0;
+pub(super) const TAU_STATUS_CHANCE_PER_STACK: f64 = 0.10;
 pub(super) const TEN_STACK_CAP: usize = 10;
 pub(super) const BLAST_COEFFICIENT: f64 = 0.3;
 pub(super) const BLAST_FUSE: f64 = 1.5;
@@ -331,7 +340,7 @@ pub(super) fn ten_stack_amp(stacks: usize) -> f64 {
 /// run reached. Four rows changed to it on 2026-08-21: a stated cap the fight
 /// routinely exceeds is worse than no cap, because the chart pins at the
 /// stated one and the reader is told a pile of 22 is a pile of 10.
-pub const DEBUFF_ROSTER: [(&str, Option<u32>); 18] = [
+pub const DEBUFF_ROSTER: [(&str, Option<u32>); 19] = [
     // The 10-stack families, and the three that are not.
     ("virus", Some(TEN_STACK_CAP as u32)),
     ("corrosion", Some(TEN_STACK_CAP as u32)),
@@ -395,6 +404,7 @@ pub const DEBUFF_ROSTER: [(&str, Option<u32>); 18] = [
     // target carries that no damage type explains, so a reader checking a
     // Condition Overload bracket against the vector has to be able to see it.
     ("knockdown", Some(1)),
+    ("tau", Some(TEN_STACK_CAP as u32)),
 ];
 
 #[wfsim_gas_macro::metered]
@@ -464,12 +474,22 @@ impl DebuffState {
             dots_of(DamageType::Electricity),
             dots_of(DamageType::Gas),
             one(self.knockdown.is_some_and(|e| e > now), self.knockdown.unwrap_or(f64::NAN)),
+            live(&self.tau),
         ]
     }
 }
 
 #[wfsim_gas_macro::metered]
 impl DebuffState {
+    /// WHAT A ROLLED STATUS CHANCE IS WORTH ON THIS BODY: `1 + 10%` a live Tau
+    /// stack, a MULTIPLIER — the page's 210% reads 315% at five stacks and 420%
+    /// at ten. Every rolled chance aimed at the body takes it and a forced proc
+    /// does not ("will not create additional procs due to this
+    /// vulnerability"), so the caller multiplies the chance it rolls with.
+    pub(super) fn received_status_chance(&self, now: f64) -> f64 {
+        1.0 + TAU_STATUS_CHANCE_PER_STACK * self.tau.iter().filter(|&&e| e > now).count() as f64
+    }
+
     /// FIFO push with the universal replace-oldest rule (application-time
     /// order; uniform durations make the front the oldest).
     pub(super) fn push_capped(list: &mut Vec<f64>, expiry: f64, cap: usize, now: f64) {
@@ -743,6 +763,7 @@ impl DebuffState {
         self.corrosion.retain(|&e| e > now);
         self.confusion.retain(|&e| e > now);
         self.attractor.retain(|&e| e > now);
+        self.tau.retain(|&e| e > now);
         if let Some(f) = self.frozen_until {
             if f <= now {
                 // THAW: chill is SET to exactly 3 stacks with FRESH 6 s timers
@@ -1031,6 +1052,7 @@ impl DebuffState {
         // damage bonus" — and it is the only damage a Bullet Attractor is worth
         // in this arena.
         n += usize::from(!self.attractor.is_empty());
+        n += usize::from(!self.tau.is_empty());
         n += usize::from(!self.blast.is_empty());
         n += usize::from(self.heat.is_some());
         // NO `frozen` LINE. COLD IS ONE STATUS and its stacks are `freeze`,

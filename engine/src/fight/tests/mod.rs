@@ -49,6 +49,7 @@ mod spliced_riven;
 mod status_crit_parts;
 mod stormburst;
 mod stream_independence;
+mod tau_vulnerability;
 mod warframe_ability;
 
 #[cfg(test)]
