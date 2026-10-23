@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE BOARD THE SITE READS — docs/BOARD.md §"The live board". The bot server
+// THE BOARD THE SITE READS — docs/BOARD.md §"The live board". The board server
 // writes the projection of `scores` (verified facts only) here the moment it
 // moves, into the public bucket (`PUBLIC`, `wfsim-public`) under its public
 // paths, and `cdn.wfsim.app` serves that bucket through the CDN: the page

@@ -62,7 +62,7 @@ is how they are kept:
    clients sent the same bits; nothing short of that reaches the public board.
 3. **TWO KINDS OF COMPUTE, WITH FIXED JOBS.** The clients — browsers with the
    site open — are the first choice for every row. The official machines (the
-   bot server, `scores.yml`) do three things only: the FALLBACK for a row the
+   board server, `scores.yml`) do three things only: the FALLBACK for a row the
    clients did not finish by its deadline, the VERDICT when clients disagree, and
    the SPOT CHECK that keeps colluding clients a gamble.
 4. **FOUR DIALS.** `CLIENTS_PER_FACT` (how many clients must agree),
@@ -233,7 +233,7 @@ including the empty ones, because a 404 and an empty list are the same thing to
 | `queue.yml` | the clock, once at 16:00 UTC | …and the weapons that have gone LONGEST are asked for again | the same runner |
 | `scores.yml` | the clock, hourly at `:30` | what is asked for is MEASURED | as many shards as the work needs |
 | `publish.yml` | the clock, once a day | `scores` is ranked into the `site/board` SNAPSHOT, which the site does not read | one runner, seconds |
-| `live_board.sh` | every 20 s, on the bot server | `scores` is ranked into the LIVE board in R2, which the site reads | two cores, about a minute when it moves |
+| `live_board.sh` | every 20 s, on the board server | `scores` is ranked into the LIVE board in R2, which the site reads | two cores, about a minute when it moves |
 
 **EVERY ONE OF THEM IS ALSO A BUTTON, AND IT IS THE SAME RUN.** None takes an
 input, so a hand-started run and a scheduled one differ in nothing at all.
@@ -583,7 +583,7 @@ current and writes its numbers on top.
 ## The live board
 
 **WHAT THE SITE SHOWS IS `scores`, RANKED THE MOMENT IT MOVES.** Every 20 s
-`scripts/live_board.sh` on the bot server reads the rows `scores` gained
+`scripts/live_board.sh` on the board server reads the rows `scores` gained
 (`live_publish.mjs delta` — a verification, the scorer, the server's own
 settling), ranks them with `wfsim-board --project`, stamps the result with
 `board_meta.py` and pushes the files that changed through
@@ -707,7 +707,7 @@ trigger.
 - **A SCRIPT REACHES A DATABASE THROUGH ONE DOOR.** `scripts/db.sh` and
   `scripts/db.mjs` take one statement and answer from whichever database
   `PG_URL` (`PG_ACCOUNTS_URL`) names; the workflows set it through
-  `.github/actions/databases`, the bot server through
+  `.github/actions/databases`, the board server through
   `deploy/wfsim-pg-tunnel.service`. The factory's tables are read through the
   official door's `report`s.
 - **A NODE CHECK RUNS THE WORKER'S OWN SQL**: `scripts/pg/test_db.mjs` lays
@@ -784,7 +784,7 @@ as `HYPERDRIVE` and `HYPERDRIVE_ACCOUNTS`. Repository secrets
 `pg.wfsim.app` admits), `PG_PIPELINE_URL`
 (`postgres://wfsim_pipeline:…@127.0.0.1:15432/wfsim`),
 `PG_ACCOUNTS_PIPELINE_URL` (`…wfsim_accounts_pipeline…/wfsim_accounts`). On the
-bot server: cloudflared, `/etc/wfsim-pg-tunnel.env`, the tunnel's unit, and
+board server: cloudflared, `/etc/wfsim-pg-tunnel.env`, the tunnel's unit, and
 `PG_URL=postgres://wfsim_pipeline:…@127.0.0.1:15432/wfsim` in
 `/etc/wfsim-live.env`.
 
@@ -1154,7 +1154,7 @@ questions, never a heavier client.
   official machines may settle — `disputed`, `spot`, `nondeterministic` —
   fights each on the volunteers' own engine — the checked-out site's wasm under
   node, along the page's path (`wasm_witness.mjs`), since only that build
-  counts their work — ships the fact and tells the factory. The bot server
+  counts their work — ships the fact and tells the factory. The board server
   fights nothing. The factory credits whom the fact agrees with and refuses a client a
   dispute or a spot check disproves: its answers stop counting, what it was
   paid within the library's window (`KEPT_MS`) is taken back, and a fact it

@@ -15,7 +15,7 @@
 // last push (`pushed.json`), through the worker's `/api/board/live/`.
 //
 // THE FACTS FILE IS NEVER HELD WHOLE: it is every row of `scores`, past what
-// one string can be and past what the bot server's memory can hold as a map.
+// one string can be and past what the board server's memory can hold as a map.
 // It is streamed a line at a time, and appended to rather than rewritten —
 // `wfsim-board` keeps the newest line of a key (`load_facts`), and the hourly
 // read writes the file afresh.
