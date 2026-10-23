@@ -88,6 +88,11 @@ pub enum Action {
     Detonate,
     /// Put a magazine in.
     Reload,
+    /// STOP FIRING AND LET THE BATTERY REFILL, all the way: a battery waits
+    /// out its delay whatever the gap, so the longest refill buys the most
+    /// firing for the wait, and a full one is the longest there is. Not a
+    /// reload — nothing keyed to one fires.
+    Recharge,
     /// Go into the other form, and come back out of it. TWO ACTIONS AND NOT
     /// ONE: the record logs a transmute's two ends separately, and a list that
     /// said only "transform" would mean different things on different lines —
@@ -202,6 +207,11 @@ pub enum When {
     /// a sling whose strength only the summoning cast reads. Never holds
     /// between shots.
     Once,
+    /// `if=battery.next_shot_empties` — the next shot would leave the battery
+    /// at nothing, and an EMPTY battery is the long reload, not the refill.
+    /// Read off the next shot's live cost, so ammo efficiency moves it and
+    /// infinite ammo never makes it hold.
+    BatteryWouldEmpty,
     /// `if=tennokai` — the Tennokai flash is up, and what it buys is ONE swing
     /// turned into a heavy attack that spends no combo. A condition and not a
     /// property of the heavy action, because on a form that already spends
@@ -249,6 +259,7 @@ impl Rule {
             Action::HoldCast => "hold_cast".into(),
             Action::Detonate => "detonate".into(),
             Action::Reload => "reload".into(),
+            Action::Recharge => "recharge".into(),
             Action::TransformIn => "transform_in".into(),
             Action::TransformOut => "transform_out".into(),
         };
@@ -262,6 +273,7 @@ impl Rule {
                 format!("{act},if=buff.{ability}.remains<{seconds}")
             }
             When::Tennokai => format!("{act},if=tennokai"),
+            When::BatteryWouldEmpty => format!("{act},if=battery.next_shot_empties"),
             When::Once => format!("{act},if=once"),
             When::StrengthGain => format!("{act},if=strength_gain"),
         }
@@ -345,6 +357,7 @@ impl Apl {
                 When::MagazineAtMost { pct } => now.magazine_pct <= *pct,
                 When::BuffRemainsUnder { ability, seconds } => (now.remaining)(ability) < *seconds,
                 When::Tennokai => now.tennokai,
+                When::BatteryWouldEmpty => now.battery_would_empty,
                 When::Once | When::StrengthGain => false,
             };
             if holds {
@@ -387,6 +400,9 @@ pub struct Now<'a> {
     /// Is the Tennokai flash up — a melee-only fact, and `false` on every
     /// weapon and every instant that has no window open.
     pub tennokai: bool,
+    /// Would the next shot empty a BATTERY — `false` on every magazine that is
+    /// not one, where nothing refills on its own.
+    pub battery_would_empty: bool,
     /// Is a thrown glaive in the air — what makes `detonate` possible at all.
     /// `false` everywhere but the instant a throw arrives.
     pub glaive_in_flight: bool,
@@ -520,7 +536,7 @@ mod tests {
     use super::*;
 
     fn now<'a>(remaining: &'a dyn Fn(&str) -> f64) -> Now<'a> {
-        Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, glaive_in_flight: false, in_base_form: true, remaining }
+        Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, glaive_in_flight: false, in_base_form: true, remaining }
     }
 
     /// An ordinary gun: the trigger, and no flash to convert a swing.
@@ -691,7 +707,7 @@ prio: 3
         // the only thing that distinguishes a converted swing from the press a
         // heavy build makes all engagement.
         let none = |_: &str| 0.0;
-        let flash = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true, glaive_in_flight: false,
+        let flash = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true, battery_would_empty: false, glaive_in_flight: false,
                           in_base_form: true, remaining: &none };
         let converted = |a: &Apl| a.pick_rule(&flash)
             .is_some_and(|r| r.action == Action::Heavy && r.when == When::Tennokai);
@@ -706,9 +722,9 @@ prio: 3
         let none = |_: &str| 0.0;
         // IN THE FORM THE GAUGE FILLS IN, which is where `transform_in` is the
         // question; the way back is asked from the other half, below.
-        let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, magazine_pct: 1.0, tennokai: false, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&at(1.0)), Action::TransformIn, "full: go in");
-        let spent = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, glaive_in_flight: false, in_base_form: false, remaining: &none };
+        let spent = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, glaive_in_flight: false, in_base_form: false, remaining: &none };
         assert_eq!(apl.pick(&spent), Action::TransformOut, "spent: come back");
         // …AND THE WAY OUT IS NOT OFFERED IN THE FORM YOU WOULD BE LEAVING FROM
         // ANYWAY: a fight opens in the base form with an empty gauge, which is
@@ -729,7 +745,7 @@ prio: 3
         assert_eq!(past_full.pick(&at(35.0 / 30.0)), Action::TransformIn);
         assert_eq!(past_full.pick(&at(1.0)), Action::Shoot, "exactly full is not past full");
         // …AND AN EMPTY MAGAZINE IS A RELOAD WHATEVER THE GAUGE SAYS.
-        let dry = Now { can_fire: false, gauge_pct: 0.5, magazine_pct: 0.0, tennokai: false, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let dry = Now { can_fire: false, gauge_pct: 0.5, magazine_pct: 0.0, tennokai: false, battery_would_empty: false, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&dry), Action::Reload);
     }
 
@@ -742,7 +758,7 @@ prio: 3
             Rule { action: Action::Reload, when: When::Always },
         ]);
         let none = |_: &str| 0.0;
-        let at = |pct: f64| Now { can_fire: true, gauge_pct: 0.0, magazine_pct: pct, tennokai: false, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { can_fire: true, gauge_pct: 0.0, magazine_pct: pct, tennokai: false, battery_would_empty: false, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick_rule(&at(0.4)).map(|r| &r.when), Some(&When::MagazineAtMost { pct: 0.5 }));
         assert_eq!(apl.pick_rule(&at(0.8)).map(|r| &r.when), Some(&When::Always), "only the second holds");
         assert_eq!(apl.pick(&at(1.0)), Action::Shoot, "a full magazine reloads nothing");
@@ -761,7 +777,7 @@ prio: 3
 charged_throw");
         let none = |_: &str| 0.0;
         let now = |flying: bool| Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false,
-                                       glaive_in_flight: flying, in_base_form: true, remaining: &none };
+                                       battery_would_empty: false, glaive_in_flight: flying, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&now(false)), Action::ChargedThrow);
         assert_eq!(apl.pick(&now(true)), Action::Detonate);
     }

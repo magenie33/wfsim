@@ -254,6 +254,6 @@ pub(super) fn before_the_shot(
         charge_magazine_cycle(
             params, apl, tennokai, rec, rng, next_cost, t_at, r, ammo, incarnon, double_tap,
             windows, arc, buff_stacks, rs_armed, opening_closed,
-            field_duration_boost,
+            field_duration_boost, last_shot_t,
         )
 }

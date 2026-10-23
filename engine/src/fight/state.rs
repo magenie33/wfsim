@@ -256,6 +256,7 @@ impl IncarnonState {
                 gauge_pct: 0.0,
                 magazine_pct: ammo.loaded / ammo.cap.max(1e-9),
                 tennokai,
+                battery_would_empty: battery_would_empty(params, ammo.loaded, next_cost),
                 // BETWEEN SHOTS the glaive is always in the hand: a throw is decided
                 // where it ARRIVES (`fight::flight`), which is the only instant it flies.
                 glaive_in_flight: false,
@@ -316,6 +317,9 @@ impl IncarnonState {
                 _ => ammo.loaded / ammo.cap.max(1e-9),
             },
             tennokai,
+            // A CYCLE FIRES TWO MAGAZINES and no battery in the roster has a
+            // second form to cycle into, so the question is not asked there.
+            battery_would_empty: false,
             glaive_in_flight: false,
             in_base_form: self.in_base_form,
             remaining,
@@ -719,4 +723,12 @@ pub(super) fn roll_instant_reload(
             ammo.instant_reload_now = true;
         }
     }
+}
+
+/// IS THE NEXT SHOT THE ONE THAT EMPTIES THE BATTERY — what
+/// `When::BatteryWouldEmpty` reads. A shot with no cost never empties it, and
+/// one already empty has nothing left to hold back.
+#[wfsim_gas_macro::metered]
+pub(super) fn battery_would_empty(params: &FightParams, loaded: f64, next_cost: f64) -> bool {
+    params.battery.is_some() && next_cost > 1e-9 && loaded > 1e-9 && loaded <= next_cost + 1e-9
 }

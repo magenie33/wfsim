@@ -59,6 +59,9 @@ const earnedForm = (w) =>
 
 /// A MODE'S NAME, which is its FORM's — before it is told from its neighbour.
 const bareModeLabel = (w, id) => {
+  // A MODE THE WEAPON DECLARES carries its own name.
+  const declared = ((w || {}).declared_modes || {})[id];
+  if (declared) return tr(declared.name);
   // NAMED AFTER THE FORM IT SPENDS, not after a product: the Mausolon buys its
   // charged shot with five kills and has no Genesis anywhere, so "Incarnon
   // cycle" names something sixty-nine weapons have and the seventieth does not.

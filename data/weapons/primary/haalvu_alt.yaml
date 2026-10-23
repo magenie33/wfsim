@@ -17,6 +17,16 @@ battery:
   delay_partial_seconds: 0.5
   empty_animation_seconds: 2.0
 
+# NEVER EMPTIED: an empty battery is the 2 s animation and one shot short of it
+# is a 1 s refill (0.5 s delay + 150/300 s, measured), so the most this form
+# deals is fired in runs that stop one shot short.
+modes:
+  - id: alternate_recharge
+    name: "Alternate Fire, never emptied"
+    about: "Fired until the next shot would empty the battery, then held while it refills: 1 s back to full, where an empty battery's reload animation is 2 s."
+    rules:
+      - { action: { do: recharge }, when: { if: battery_would_empty } }
+
 # see notes: inherited_co_catalog_gives
 co_behavior: additive_with_base_damage
 

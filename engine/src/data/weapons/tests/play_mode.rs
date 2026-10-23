@@ -11,7 +11,9 @@ use super::*;
 #[test]
 fn every_weapon_has_a_base_mode_and_it_is_always_rankable() {
     for w in roster() {
-        let multishot = play_modes(&w.id);
+        // THE DERIVED MODES: a mode a form declares (`WeaponSpec::modes`) is
+        // the weapon's own word and is not what this table answers.
+        let multishot: Vec<_> = play_modes(&w.id).into_iter().filter(|m| m.declared.is_none()).collect();
         let base = multishot.iter().find(|m| m.mode == PlayMode::Base);
         let base = base.unwrap_or_else(|| panic!("{}: no base mode", w.id));
         assert!(base.sustainable, "{}: its own arsenal form is not rankable", w.id);
@@ -34,7 +36,7 @@ fn every_weapon_has_a_base_mode_and_it_is_always_rankable() {
 fn a_gauge_gives_a_cycle_and_costs_the_alternate_its_rank() {
     for w in roster() {
         let forms = forms_of(&w.id);
-        let multishot = play_modes(&w.id);
+        let multishot: Vec<_> = play_modes(&w.id).into_iter().filter(|m| m.declared.is_none()).collect();
         let alt = forms.iter().find(|f| !f.is_default);
         let Some(alt) = alt else {
             assert_eq!(multishot.len(), 1, "{}: one form, so one mode", w.id);

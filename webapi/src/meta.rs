@@ -300,6 +300,16 @@ pub fn meta_json() -> Value {
                     .iter()
                     .map(|m| (m.id.to_string(), json!(m.mode.id())))
                     .collect::<serde_json::Map<_, _>>(),
+                // …AND THE MODES A FORM DECLARES, in the weapon's own words: a
+                // name, what it does, and the form it fires (by kind, the id
+                // `forms` carries). The page reads these instead of a suffix.
+                "declared_modes": wfsim_engine::data::weapons::play_modes(&w.id)
+                    .iter()
+                    .filter_map(|m| m.declared.map(|d| (m.id.to_string(), json!({
+                        "name": d.name, "about": d.about,
+                        "form": wfsim_engine::data::weapons::spec(m.weapon_id).map(|s| s.form_kind().id()),
+                    }))))
+                    .collect::<serde_json::Map<_, _>>(),
                 // TWO FACTS ABOUT AMMO, and they were one until 2026-08-04.
                 // `has_reserve` is whether there is a pool behind the magazine
                 // at all — false only for a sentinel weapon ("Ammo Max: ∞ /
