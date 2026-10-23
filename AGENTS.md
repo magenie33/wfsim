@@ -14,8 +14,11 @@ fails **silently**. Everything else is routed to `docs/` (§"Read first").
 
 ## Before you start
 
-- Read `.handoff.md` (shared work state; keep it current, reset it to `idle`
-  when done) and `private/agents/README.md` — again after a context reset.
+- Read `.handoff.md` and `private/agents/README.md`, again after a context
+  reset. Then **claim your task** there: a block naming what you will touch,
+  live servers included, kept current and deleted once live. Ask a block's
+  session before touching what it names; one session on a live thing at a time
+  (`private/agents/notes/sessions-claim-their-work.md`).
 - **One worktree per task**, from `origin/main`: several sessions share the
   main checkout, so never build, stage or commit there (`docs/DEVELOPMENT.md`
   §"Sharing the checkout").
