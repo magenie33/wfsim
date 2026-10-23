@@ -421,3 +421,14 @@ reproduces itself under a second seed). It goes through `parse_optimize`, so
 it grades the app's own fight, and REFUSES a scope it cannot exhaust. Run it
 after ANY change to enumeration, scheduling or scoring. The cheap CI form is
 `optimizer/tests/search_accuracy.rs`. See `docs/OPTIMIZER.md` §Accuracy.
+
+## Reading a posted build: `decode_share`
+
+**`node scripts/decode_share.mjs <link | short id | code>`** prints the build
+a share link names: weapon, every slot with its polarity, each riven's stats
+and rolls, arcanes, evolutions (`--json` for the decoded object). A short id
+is read from the live store; the grammar is the worker's copy of the page's
+codec and the id table is `data/share_order.yaml`, so it reads a link as the
+page does. A link carries the build and nothing else — the enemy, the
+duration and any fight-wide stat (`extra_stats`) the poster ran it under are
+not in it, so ask for them.

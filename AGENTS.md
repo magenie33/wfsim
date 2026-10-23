@@ -44,6 +44,7 @@ fails **silently**. Everything else is routed to `docs/` (§"Read first").
 | engine cost | `cargo run --release --bin one_fight` (`-- save` first) |
 | optimizer accuracy | `cargo run --release --bin wfsim-truth -- pool=<ids>` |
 | are all channels on one release | `python scripts/ship.py --verify` |
+| read a build somebody posted | `node scripts/decode_share.mjs <link>` |
 
 ## Shipping
 
