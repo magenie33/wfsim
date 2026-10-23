@@ -1,0 +1,35 @@
+id: hystrix_prime_fire
+name: Hystrix Prime
+# THE FIRE QUILL: the same quill with a forced Heat status in place of
+# the Poison quill's Toxin (module Attacks, "Fire Quill").
+inherits: hystrix_prime
+form: heat
+form_name: Fire Quill
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
+transform_group: hystrix_prime
+
+# see notes: condition_overload_no_row_3
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from_2
+  spread:
+    min_deg: 5.0
+    max_deg: 9.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 80
+  fire_rate: 7
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.28
+  crit_multiplier: 2.2
+  status_chance: 0.2
+  punch_through_m: 0.0
+  forced_procs: [heat]
+  # see notes: no_range_row_attack
+  damage: { impact: 2.76, puncture: 39.56, slash: 3.68 }   # total 46
+
+source:
+  url: https://wiki.warframe.com/w/Hystrix_Prime

@@ -1609,8 +1609,6 @@ ui:
   "the aimed target": "被瞄准的目标"
   "The alt-fire cannot be reloaded early to skip its delay, and Kinetic Ricochet does not affect it; the sim does not interrupt reloads, so neither changes anything here.": "副射击不能提前换弹来跳过延迟，Kinetic Ricochet 也对它无效；模拟不打断换弹，所以两者在这里都没有影响。"
   "The alt-fire needs four rounds and reloads instead when there are fewer; the sim fires it whenever the mode is chosen, so a low magazine does not force a reload here.": "副射击需要弹匣里有四发，不够时会改成换弹；模拟只要选了这个模式就照打，所以弹匣见底时不会被强制换弹。"
-  "The alt-fire cycles four quill types, Poison, Fire, Electric and Ice; this entry is the Poison one. The others differ in element, and two in physical damage (40 against 36), so a build around another quill reads about a tenth low.": "副射击在四种刺之间切换：毒素、火焰、电击、冰冻；本条目是毒素。其余几种元素不同，其中两种物理伤害也不同（40 对 36），所以围绕其他刺的配装数字大约偏低十分之一。"
-  "The alt-fire cycles four quill types, Poison, Fire, Electric and Ice; this entry is the Poison one. The others differ in element, and two in physical damage, so a build around another quill is not exactly this number.": "副射击在四种刺之间切换：毒素、火焰、电击、冰冻；本条目是毒素。其余几种元素不同，其中两种物理伤害也不同，所以围绕其他刺的配装并不正好是这个数字。"
   "The alt-fire prevents zoom, so Hydraulic Crosshairs and Sharpened Bullets do not work on it (page); this entry does not apply that limit, so with those mods it reads high.": "副射击无法瞄准，所以 Hydraulic Crosshairs 和 Sharpened Bullets 对它无效（页面）；本条目没有应用这道限制，所以带这些 MOD 时数字偏高。"
   "The alt-fire sweeps both beams across the front (wiki); the sim fires a fixed ray, so the number is the ceiling against one target and reads low against a line.": "副射击会让两道光束在正前方来回扫（wiki）；模拟发射一条固定射线，所以对单个目标数字是上限，对一排目标数字偏低。"
   "The alt-fire detonates the arrow mid-flight; the sim lets it land, so choosing when to burst it is not modelled.": "副射击可以让箭在半空引爆；模拟让它落地，所以「何时引爆」这个选择未建模。"

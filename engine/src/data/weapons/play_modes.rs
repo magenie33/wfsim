@@ -212,7 +212,9 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
 /// the Kuva Hind's two extra triggers, melee's seven — take their own name.
 pub(super) fn free_form_id(kind: FormKind) -> &'static str {
     match kind {
-        FormKind::SemiAuto | FormKind::Auto => kind.id(),
+        // A GROUP OF TOGGLED MODES names each by its kind, or the three would
+        // share `alternate`.
+        FormKind::SemiAuto | FormKind::Auto | FormKind::Heat | FormKind::Electricity | FormKind::Cold => kind.id(),
         // Melee's seven are all FREE, so `Alternate` cannot tell them apart,
         // and each one IS an independent build — see MELEE.
         k if k.is_melee() => k.id(),

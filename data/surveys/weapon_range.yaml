@@ -197,6 +197,12 @@ checked:
   hind_semi:                   { range: null, type: read, note: 'this form’s own attack block states no Range row — Hit-Scan, and the page gives none' }
   hystrix:                     { range: null, type: projectile, note: 'this form’s own attack block states no Range; Projectile at 80 m/s' }
   hystrix_prime:               { range: null, type: projectile, note: 'this form’s own attack block states no Range; Projectile at 80 m/s' }
+  hystrix_electric:            { range: null, type: projectile, note: 'this form’s own attack block states no Range; Projectile at 80 m/s' }
+  hystrix_fire:                { range: null, type: projectile, note: 'this form’s own attack block states no Range; Projectile at 80 m/s' }
+  hystrix_ice:                 { range: null, type: projectile, note: 'this form’s own attack block states no Range; Projectile at 80 m/s' }
+  hystrix_prime_electric:      { range: null, type: projectile, note: 'this form’s own attack block states no Range; Projectile at 80 m/s' }
+  hystrix_prime_fire:          { range: null, type: projectile, note: 'this form’s own attack block states no Range; Projectile at 80 m/s' }
+  hystrix_prime_ice:           { range: null, type: projectile, note: 'this form’s own attack block states no Range; Projectile at 80 m/s' }
   imperator:                   { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
   imperator_vandal:            { range: 300.0, type: read, note: 'wiki, ATMOSPHERE column: "Range: 300.0 m", Hit-Scan' }
   javlok:                      { range: null, type: projectile, note: 'this form’s own attack block states no Range; its 2.4 m is the explosion RADIUS, not a reach; Projectile at 150 m/s' }

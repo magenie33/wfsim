@@ -1,0 +1,35 @@
+id: hystrix_ice
+name: Hystrix
+# THE ICE QUILL: the same quill with a forced Cold status in place of
+# the Poison quill's Toxin (module Attacks, "Ice Quill").
+inherits: hystrix
+form: cold
+form_name: Ice Quill
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
+transform_group: hystrix
+
+# see notes: condition_overload_no_row_3
+co_behavior: additive_with_base_damage
+
+attack:
+  # see notes: cone_half_angle_from_2
+  spread:
+    min_deg: 5.0
+    max_deg: 9.0
+  trigger: auto
+  shot_type: projectile
+  projectile_speed_mps: 80
+  fire_rate: 7
+  multishot: 1.0
+  ammo_cost: 1
+  crit_chance: 0.24
+  crit_multiplier: 2.2
+  status_chance: 0.1
+  punch_through_m: 0.0
+  forced_procs: [cold]
+  # see notes: no_range_row_attack
+  damage: { impact: 2.16, puncture: 30.96, slash: 2.88 }   # total 36
+
+source:
+  url: https://wiki.warframe.com/w/Hystrix
