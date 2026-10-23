@@ -397,8 +397,7 @@ pub(crate) fn damage_type(name: &str) -> DamageType {
         // (wiki `Damage/Tau Damage`), which is the Void's rule and is why the
         // enum has carried the variant since before a weapon dealt it. The
         // Haalvu is the first player weapon that does. Its STATUS is Status
-        // Chance Vulnerability (+10% received status a stack, ten stacks, 8 s)
-        // and this engine has no debuff for it — the weapon's own card says so.
+        // Chance Vulnerability — `fight::debuffs::DebuffState::tau`.
         "tau" => DamageType::Tau,
         other => panic!("unknown damage type in weapon data: {other}"),
     }

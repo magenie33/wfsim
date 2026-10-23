@@ -466,7 +466,7 @@ pub(super) fn field_tick_seeded(
     };
     let procs = status::procs_for_hit(
         forced,
-        f.status_chance,
+        f.status_chance * debuffs.received_status_chance(at),
         &qvec,
         &foe.status_immunities,
         &mut d.status,

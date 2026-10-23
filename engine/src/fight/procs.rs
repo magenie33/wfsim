@@ -97,6 +97,7 @@ pub(super) fn has_status(debuffs: &DebuffState, t: DamageType) -> bool {
         DamageType::Cold => !debuffs.freeze.is_empty() || debuffs.frozen_until.is_some(),
         DamageType::Heat => debuffs.heat.is_some(),
         DamageType::Void => !debuffs.attractor.is_empty(),
+        DamageType::Tau => !debuffs.tau.is_empty(),
         // Slash, Toxin, Electricity and Gas are DoTs and are answered below.
         _ => false,
     };
@@ -276,7 +277,7 @@ pub(super) fn fire_extra_hits(
         let forced: &[DamageType] = if forced_status { std::slice::from_ref(&ty) } else { &[] };
         let procs = status::procs_for_hit(
             forced,
-            if forced_status { 0.0 } else { status_chance },
+            if forced_status { 0.0 } else { status_chance * debuffs.received_status_chance(at) },
             &DamageVector::new().with(ty, raw),
             &params.foe.status_immunities,
             rng,
@@ -940,6 +941,12 @@ pub(super) fn settle_procs(
                 &mut debuffs.attractor,
                 at + ATTRACTOR_DURATION * status_damage,
                 1,
+                at,
+            ),
+            DamageType::Tau => DebuffState::push_capped(
+                &mut debuffs.tau,
+                at + TAU_DURATION * status_damage,
+                gcap(TEN_STACK_CAP),
                 at,
             ),
             // THE REST OF A SHOT THAT FILLED THE PILE ADDS NO STACK — see

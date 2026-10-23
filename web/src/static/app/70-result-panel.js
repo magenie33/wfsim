@@ -242,7 +242,7 @@ const buffRosterName = (id) => {
 const DEBUFF_TYPE = {
   virus: "viral", corrosion: "corrosive", disrupt: "magnetic",
   confusion: "radiation", blast: "blast", freeze: "cold", frozen: "cold",
-  stagger: "impact", weakened: "puncture", attractor: "void",
+  stagger: "impact", weakened: "puncture", attractor: "void", tau: "tau",
   bleed: "slash", poison: "toxin", ignite: "heat",
 };
 // MICROWAVE is not a damage type, so it has no `DT` name to borrow — it is

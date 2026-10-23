@@ -761,9 +761,12 @@ element procs are weighted, not uniform.
 - **Continuous weapons** proc as if their multishot pellets were real
   (merged beam visuals notwithstanding) — multishot boosts status
   opportunities normally.
-- **Status Vulnerability** (the proc of Void damage): +10% received status
-  chance per stack (max +100% at 10) — a DebuffBar entry that feeds back
-  into attackers' `SC`.
+- **Status Chance Vulnerability** (the proc of Tau damage, wiki
+  `Damage/Tau_Damage`): each stack multiplies the status chance the body
+  receives by `1 + 0.10 × stacks`, ten at most, 8 s each on its own clock,
+  the eleventh replacing the oldest. Every rolled chance aimed at the body
+  takes it, a forced proc does not, and the hit that lands a stack rolls
+  without it (`DebuffState::received_status_chance`).
 - **Negative status duration** (Riven, past −100%): all duration/DoT procs
   are nullified; instant procs still occur.
 - **DoT** effects are DebuffBar entries with a `dot` sub-block whose stacks
