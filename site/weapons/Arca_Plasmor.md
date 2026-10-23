@@ -4,7 +4,7 @@ Chinese name: 弧电离子枪
 
 Shotgun · Primary · Mastery Rank 10. 600 base damage (radiation 600), 22% crit chance, 1.6x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

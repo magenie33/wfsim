@@ -4,7 +4,7 @@ Chinese name: 虫置
 
 Rifle · Primary · Mastery Rank 0. 33 base damage (impact 5, puncture 6, slash 10, toxin 12), 25% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 15.0053 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Pax Charge, Primary Deadhead | 2026-10-20 15:29 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 15.0053 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Pax Charge, Primary Deadhead | 2026-10-22 14:24 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.1308 | High Voltage, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Pax Charge, Primary Debilitate | 2026-10-16 20:38 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2395 | High Voltage, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Pax Charge, Primary Debilitate | 2026-10-16 19:41 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.3147 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Vile Acceleration, Vital Sense, Pax Charge, Primary Merciless | 2026-10-22 12:53 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.9393 | High Voltage, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Pax Charge, Primary Debilitate | 2026-10-16 20:04 UTC |
 
 ## Not modelled here

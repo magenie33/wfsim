@@ -4,7 +4,7 @@ Chinese name: 凝目
 
 Rifle · Primary · Mastery Rank 0. 29 base damage (radiation 29), 25% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

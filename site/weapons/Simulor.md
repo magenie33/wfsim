@@ -4,7 +4,7 @@ Chinese name: 重力奇点拟成枪
 
 Rifle · Primary · Mastery Rank 5. 0 base damage (impact 0), 12% crit chance, 2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

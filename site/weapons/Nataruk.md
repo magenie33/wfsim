@@ -2,7 +2,7 @@
 
 Bow · Primary · Mastery Rank 0. 900 base damage (puncture 648, slash 252), 60% crit chance, 2.4x crit multiplier, 50% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -10,9 +10,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 7.6315 | Hellfire, Primary Acuity, Serration, Galvanized Aptitude, Bladed Rounds, Speed Trigger, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-16 23:47 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 7.6247 | Hellfire, Primary Acuity, Primed Shred, Serration, Galvanized Aptitude, Bladed Rounds, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-22 12:58 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 36.8218 | Hellfire, Heavy Caliber, Primary Acuity, Primed Shred, Serration, Galvanized Aptitude, Vital Sense, Radiated Reload, Terminal Velocity, Primary Crux | 2026-10-17 04:45 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 1.4176 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Primed Shred, Serration, Galvanized Aptitude, Vital Sense, Terminal Velocity, Primary Crux | 2026-10-17 00:56 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 1.4164 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Primed Shred, Serration, Galvanized Aptitude, Vital Sense, Terminal Velocity, Primary Crux | 2026-10-22 18:44 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 4.1375 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Primed Shred, Serration, Galvanized Aptitude, Vital Sense, Terminal Velocity, Primary Crux | 2026-10-18 07:56 UTC |
 
 ## Not modelled here

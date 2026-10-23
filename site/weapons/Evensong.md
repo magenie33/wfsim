@@ -4,7 +4,7 @@ Chinese name: 晚祷
 
 Bow · Primary · Mastery Rank 10. 500 base damage (puncture 150, slash 350), 25% crit chance, 2.2x crit multiplier, 38% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.2234 | Primed Cryo Rounds, Malignant Force, Split Flights, Serration, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-20 16:27 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.2150 | Primed Cryo Rounds, Malignant Force, Split Flights, Serration, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-17 04:49 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.3443 | Primed Cryo Rounds, Malignant Force, Split Flights, Serration, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-17 00:55 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.1370 | Primed Cryo Rounds, Malignant Force, Split Flights, Serration, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Compression | 2026-10-18 03:50 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 39.8020 | Primed Cryo Rounds, Infected Clip, Wildfire, Split Flights, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-22 12:30 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 41.2676 | Primed Cryo Rounds, Infected Clip, Wildfire, Split Flights, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-22 02:37 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 3.1394 | Primed Cryo Rounds, Infected Clip, Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vital Sense, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-10-23 00:41 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 13.1283 | Primed Cryo Rounds, Infected Clip, Hellfire, Split Flights, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-21 23:56 UTC |
 
 ## Not modelled here
 

@@ -4,7 +4,7 @@ Chinese name: 海波单剑
 
 Machete · Melee · Mastery Rank 6. 172 base damage (impact 25.8, puncture 25.8, slash 120.4), 15% crit chance, 2x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,7 +12,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | block | 1.7474 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-20 17:12 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | block | 1.7474 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-22 12:51 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | slide | 287.5623 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-19 02:41 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | block | 0.03430 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-17 04:36 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | block | 0.2402 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Galvanized Steel, Quickening, Spring-Loaded Blade, Weeping Wounds, Cyclone Kraken, Dreamer's Wrath, Melee Influence | 2026-10-18 05:58 UTC |

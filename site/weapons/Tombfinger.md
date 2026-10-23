@@ -4,7 +4,7 @@ Chinese name: 墓指
 
 Rifle · Primary · Mastery Rank 0. 48 base damage (impact 35, radiation 13), 24% crit chance, 2x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,9 +12,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.7606 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Vigilante Supplies, Pax Charge, Primary Compression | 2026-10-20 17:35 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.6191 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Vigilante Supplies, Pax Charge, Primary Compression | 2026-10-22 12:44 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 4.7677 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Vigilante Supplies, Pax Charge, Primary Compression | 2026-10-14 14:07 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.3644 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Critical Delay, Vile Acceleration, Vital Sense, Vigilante Supplies, Pax Charge, Primary Compression | 2026-10-19 05:51 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.3632 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Critical Delay, Vile Acceleration, Vital Sense, Vigilante Supplies, Pax Charge, Primary Compression | 2026-10-22 21:30 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.8715 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Vigilante Supplies, Pax Charge, Primary Compression | 2026-10-14 19:27 UTC |
 
 ## Not modelled here

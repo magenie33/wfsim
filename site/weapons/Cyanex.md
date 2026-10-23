@@ -4,7 +4,7 @@ Chinese name: 氰毒
 
 Pistol · Secondary · Mastery Rank 8. 50 base damage (impact 50), 8% crit chance, 1.4x crit multiplier, 32% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

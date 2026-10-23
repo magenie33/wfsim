@@ -4,6 +4,19 @@ Chinese name: 三宝聚
 
 Hammer · Melee · Mastery Rank 0. 248 base damage (impact 173.6, puncture 37.2, slash 37.2), 30% crit chance, 3x crit multiplier, 28% status chance.
 
+## Best riven-free build on the WFSim board, as of 2026-10-23
+
+A score belongs to its ruler: compare it only with scores under the same ruler.
+
+Each row is measured on its own, and says when and by which WFSim commit; the game and WFSim both change, so an older row may be behind.
+
+| Ruler | Fight | Mode | Score | Build | Measured |
+| --- | --- | --- | ---: | --- | --- |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | forward | 0.5618 | Fever Strike, Blood Rush, Galvanized Elementalist, Galvanized Steel, Killing Blow, Organ Shatter, Seismic Wave, Drifting Contact, Shattering Storm, Master's Edge, Melee Exposure | 2026-10-22 13:11 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | forward | 0.5618 | Fever Strike, Blood Rush, Galvanized Elementalist, Galvanized Steel, Killing Blow, Organ Shatter, Seismic Wave, Drifting Contact, Shattering Storm, Master's Edge, Melee Exposure | 2026-10-22 02:05 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | forward | 0.04536 | Fever Strike, Blood Rush, Galvanized Elementalist, Galvanized Steel, Killing Blow, Organ Shatter, Seismic Wave, Drifting Contact, Shattering Storm, Master's Edge, Melee Exposure | 2026-10-22 03:40 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | forward | 0.2092 | Fever Strike, Blood Rush, Galvanized Elementalist, Galvanized Steel, Killing Blow, Organ Shatter, Seismic Wave, Drifting Contact, Shattering Storm, Master's Edge, Melee Exposure | 2026-10-21 23:55 UTC |
+
 ## Not modelled here
 
 - One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total.

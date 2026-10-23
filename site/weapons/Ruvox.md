@@ -4,7 +4,7 @@ Chinese name: 古声
 
 Fist · Melee · Mastery Rank 14. 170 base damage (impact 170), 26% crit chance, 2.2x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
@@ -12,7 +12,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 0.5699 | Sacrificial Pressure, Sacrificial Steel, Amalgam Organ Shatter, Killing Blow, Gladiator Might, Seismic Wave, Corrupt Charge, Magnetic Rush, Seismic Palm, Melee Exposure | 2026-10-20 17:16 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 0.5699 | Sacrificial Pressure, Sacrificial Steel, Amalgam Organ Shatter, Killing Blow, Gladiator Might, Seismic Wave, Corrupt Charge, Magnetic Rush, Seismic Palm, Melee Exposure | 2026-10-22 13:34 UTC |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 1.4620 | Sacrificial Pressure, Sacrificial Steel, Amalgam Organ Shatter, Killing Blow, Gladiator Might, Seismic Wave, Corrupt Charge, Magnetic Rush, Seismic Palm, Melee Exposure | 2026-10-19 02:23 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | heavy | 0.04408 | Sacrificial Pressure, Sacrificial Steel, Amalgam Organ Shatter, Killing Blow, Gladiator Might, Seismic Wave, Corrupt Charge, Magnetic Rush, Seismic Palm, Melee Exposure | 2026-10-17 08:58 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | heavy | 0.1952 | Sacrificial Pressure, Sacrificial Steel, Amalgam Organ Shatter, Killing Blow, Gladiator Might, Seismic Wave, Corrupt Charge, Magnetic Rush, Seismic Palm, Melee Exposure | 2026-10-18 07:55 UTC |

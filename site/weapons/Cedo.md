@@ -4,7 +4,7 @@ Chinese name: 塞多
 
 Shotgun · Primary · Mastery Rank 8. 30 base damage x6 multishot (puncture 30), 20% crit chance, 2.4x crit multiplier, 0.3% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 

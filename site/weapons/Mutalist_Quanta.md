@@ -4,7 +4,7 @@ Chinese name: 异融量子枪
 
 Rifle · Primary · Mastery Rank 2. 25 base damage (impact 2.5, puncture 15, slash 7.5), 2.5% crit chance, 1.5x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-22
+## Best riven-free build on the WFSim board, as of 2026-10-23
 
 A score belongs to its ruler: compare it only with scores under the same ruler.
 
