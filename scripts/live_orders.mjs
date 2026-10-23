@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // THE OFFICIAL SIDE OF THE FACT FACTORY for board rows — docs/BOARD.md §"The
-// fact factory". `settle` is run by `settle.yml`, `unverified` by `live_board.sh`.
+// fact factory". `settle` is run by `settle.yml`.
 //
 //   node live_orders.mjs settle <work-dir> <bin-dir>   disputed, spot-checked and non-deterministic rows, fought here
 //     WITNESS_SITE, MEASURED_BY and WITNESS stand in for the bin dir's engine,
 //     its VERSION and `official:live`; exit 3 when there was nothing to claim.
-//   node live_orders.mjs unverified <work-dir> <out>   every client result not yet a fact, as fact lines
 //
 // THE OFFICIAL MACHINES ONLY BACK THE CLIENTS UP: every result waits for a
 // second client, and `settle` fights what only they may settle (worker/tasks.js
@@ -18,7 +17,7 @@ import { execFileSync } from "node:child_process";
 import { cpus } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { official, tell, unverifiedRows, BOARD_KINDS } from "./order_credit.mjs";
+import { official, tell, BOARD_KINDS } from "./order_credit.mjs";
 import { witness } from "./wasm_witness.mjs";
 
 const SETTLE_PER_CYCLE = 3;
@@ -78,21 +77,6 @@ async function settle() {
   return claimed;
 }
 
-/// EVERY CLIENT RESULT NOT YET A FACT, as the fact lines the owner's board
-/// projects (`board::CLIENT_MEASURED` marks them unverified): the first answer
-/// to each open board question.
-async function unverified() {
-  // THE FACTORY SAYS, from whichever database holds it (worker/factory.js `report`).
-  const rows = await unverifiedRows(official);
-  const at = new Date().toISOString();
-  writeFileSync(arg, rows.map((r) => {
-    const p = JSON.parse(r.payload), res = JSON.parse(r.result);
-    return JSON.stringify({ identity: p.identity, ruler: p.ruler, mode: p.mode, metric: res.metric, measured_by: `client:${r.engine}`,
-      score: res.score, cost_seconds: 0, started_at: at, finished_at: at }) + "\n";
-  }).join(""));
-}
-
 if (mode === "settle") { if (!(await settle())) process.exitCode = 3; }
-else if (mode === "unverified") await unverified();
 else if (mode === "rank") { /* nothing is held for ranking: a first result is open at once (worker/tasks.js) */ }
-else { console.error("usage: live_orders.mjs settle|unverified <work-dir> [bin-dir|out]"); process.exit(2); }
+else { console.error("usage: live_orders.mjs settle <work-dir> <bin-dir>"); process.exit(2); }

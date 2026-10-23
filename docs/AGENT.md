@@ -366,8 +366,7 @@ and `mcp/headless.js` to the server, restarts it and checks the engine it holds
 (`scripts/ship_bot.py`; the server and its key are `private/qq/bot.json`).
 
 IT READS THE PUBLISHED BOARD, the one the card page draws from, so the words
-and the image of one answer stand on the same rows. `WFSIM_LIVE_BOARD` points
-it at a directory of the owner's live board instead, on a server that keeps one.
+and the image of one answer stand on the same rows.
 
 THE BOT SERVER IS IN HONG KONG, where QQ's API, Discord and the site are all
 near: a card is a whole page load of the site, and from the mainland that load

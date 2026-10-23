@@ -129,10 +129,7 @@ export async function officialRoute(request, env, path) {
 ///   claimed     { rows: [{ batch, build_id, ruler, mode }] } → the rows no board
 ///               demand asks for, or one live and leased to `witness` (scripts/fetch_queue.sh)
 ///   refresh_live                                            → { n } (queue.yml)
-///   unverified  { after, limit }                            → open board rows' first answers, a page
-///               of live demands each, and `next` to pass as `after` (scripts/live_orders.mjs)
 ///   calibration { since, offset }                           → paid questions, 2000 a page (scripts/work_calibrate.mjs)
-const UNVERIFIED_PAGE = 5000;
 
 async function report(db, b) {
   const kinds = Object.keys(BOARD_PRODUCERS).map((k) => `'${k}'`).join(", ");
@@ -148,23 +145,6 @@ async function report(db, b) {
   }
   if (b.report === "refresh_live") {
     return json({ ok: true, n: (await db.prepare("SELECT count(*) AS n FROM demands WHERE producer = 'refresh' AND state = 'live'").first()).n });
-  }
-  if (b.report === "unverified") {
-    // A PAGE OF LIVE DEMANDS at a time, along `demands_live_question`: the whole
-    // set in one statement outran the statement timeout. The page bounds what is
-    // SCANNED, not what matches, so a run of unanswered demands cannot outrun it.
-    const limit = Math.min(UNVERIFIED_PAGE, Math.max(1, Number(b.limit) || UNVERIFIED_PAGE));
-    const [question, producer, ref] = Array.isArray(b.after) && b.after.length === 3 ? b.after.map(String) : ["", "", ""];
-    const { results } = await db.prepare(`WITH page AS (SELECT question, producer, ref, payload FROM demands
-         WHERE state = 'live' AND producer IN (${kinds}) AND question >= ?::text AND (question, producer, ref) > (?::text, ?::text, ?::text)
-         ORDER BY question, producer, ref LIMIT ${limit})
-      SELECT p.question, p.producer, p.ref, p.payload, a.result, a.engine FROM page p
-        LEFT JOIN questions q ON q.id = p.question AND q.state IN ('open', 'disputed', 'nondeterministic')
-        LEFT JOIN answers a ON a.id = (SELECT min(x.id) FROM answers x WHERE x.question = q.id AND x.void = 0 AND x.official = 0)
-       ORDER BY p.question, p.producer, p.ref`).bind(question, question, producer, ref).all();
-    const last = results.at(-1);
-    return json({ ok: true, rows: results.filter((r) => r.result != null).map(({ payload, result, engine }) => ({ payload, result, engine })),
-      next: results.length === limit ? [last.question, last.producer, last.ref] : null });
   }
   if (b.report === "calibration") {
     const { results } = await db.prepare(`SELECT q.id AS id, q.request AS request, max(a.work) AS work, max(a.counts) AS counts, '[' || string_agg(to_json(a.device)::text, ',' ORDER BY a.id) || ']' AS devices

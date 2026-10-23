@@ -604,8 +604,8 @@ of every weapon whose facts or claims changed, against the board as it stands.
 Measured on the whole store, a subset pass writes exactly the files a whole pass
 does, in a quarter of the time; the hourly read still ranks everything.
 
-**UNVERIFIED NUMBERS NEVER REACH IT.** The owner's board beside it adds every
-client result not yet a fact (§"Compute orders") and stays on the server.
+**UNVERIFIED NUMBERS NEVER REACH IT.** A client result is on no board until it
+is a fact (§"Compute orders").
 
 **THE COMMITTED BOARD IS A SNAPSHOT.** `publish.yml` writes `site/board/` once a
 day for people and for the record; the worker reads it only until the first
@@ -2575,9 +2575,9 @@ rule to keep the two apart.
 - **The library is the only irreplaceable thing.** Boards are derived, the site
   is generated, the code is in git. Anything that could truncate it needs a
   tripwire before it needs a backup.
-- **A client's number never becomes a score on its own.** It reaches the
-  owner's live board, marked `unverified`; it enters `scores` only when a
-  second client produced the same bits or the server did (§"Compute orders").
+- **A client's number never becomes a score on its own.** It enters `scores`,
+  and so a board, only when a second client produced the same bits or the
+  server did (§"Compute orders").
   Every published row is reproducible from the repo.
 - **No work is enqueued anywhere.** What is outstanding is derived from the
   facts that exist, so there is no second copy of it to fall out of step with
