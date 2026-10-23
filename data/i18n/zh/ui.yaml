@@ -398,6 +398,7 @@ ui:
   "Benchmarks · read-only": "基准场景 · 只读"
   "benchmark": 基准场景
   "Benchmark": 基准榜
+  "Before the fight": 战前
   # UTILITY. Game terms are DE's own Chinese (dict.zh.json):
   # Void Fissure 虚空裂缝, Railjack 航道星舰, Arbitration 仲裁.
   "Utility": 工具

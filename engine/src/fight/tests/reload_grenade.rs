@@ -296,7 +296,7 @@ fn a_partial_reload_clears_a_pile_lost_to_one() {
             stacks_per_trigger: 1,
             per_shell: false,
             cleared_by,
-            card_opens_full: false,
+            precombat: false,
         }];
         if early {
             p.apl_inserted = Apl(vec![Rule { action: Action::Reload, when: When::MagazineAtMost { pct: 0.5 } }]);

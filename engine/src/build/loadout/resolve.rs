@@ -1892,7 +1892,7 @@ pub fn resolve_for(
             + headshot_damage
             + zoom.headshot_damage,
         noncrit_bonus: base.noncrit_bonus,
-        stacking_buffs: base
+        stacking_buffs: crate::data::apl::earn_before_the_fight(base
             .stacking_buffs
             .iter()
             .chain(mod_buffs.iter())
@@ -1947,16 +1947,14 @@ pub fn resolve_for(
                     b.stacks_per_trigger
                 },
                 per_shell: b.stacks_per_trigger == 0,
-                // NO OPENING STACKS. It briefly seeded one reload's worth,
-                // which was wrong for the same reason Secondary Enervate opens
-                // at zero: this is a pile you can be caught without, and the
-                // fight is what earns it. An empty magazine takes the whole
-                // thing, so "how many you walk in with" is not a state the
-                // weapon has — it is a state the last few seconds decided.
+                // NO OPENING STACKS of its own: a pile you can be caught
+                // without is earned by the fight, and one the player builds
+                // alone is earned by the precombat list just below — once the
+                // magazine is known, since a reload earns a stack a shell.
                 initial_stacks: b.initial_stacks,
                 ..*b
             })
-            .collect(),
+            .collect()),
         multishot: own_multishot * (1.0 + evo_ms_bonus + multishot),
         base_multishot: own_multishot,
         // Magazine capacity: +% of base, rounded to the nearest whole round.

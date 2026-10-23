@@ -626,7 +626,7 @@ fn reavers_rapture_counts_bursts_and_resets_on_the_refill() {
         stacks_per_trigger: 1,
         per_shell: false,
         cleared_by: crate::model::ClearedBy::MagazineRefilled,
-        card_opens_full: false,
+        precombat: false,
     };
     // 21 rounds = seven whole bursts; the cap is five, so a magazine that
     // long reaches it and sits there. The reload is long enough that the
@@ -716,23 +716,20 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
         "a flat +6 is {want} of an unmodded {} base, got {}",
         soma_base.base_vector.total(), sb[0].per_stack);
 
-    // …AND THE CARD OPENS FULL. One of the short, closed list the owner
-    // exempts from the earned-at-zero rule because keeping it up is not
-    // something a player has to think about — a DECISION,
-    // named per buff in docs/BUFFS.md, and not something the card text or
-    // the buff's shape could decide.
-    assert!(sb[0].card_opens_full, "the allowance is granted and the data has to carry it");
+    // …AND THE PRECOMBAT LIST EARNS IT: two empty reloads before the fight,
+    // so the resolved pile opens at its cap with no card configured — the
+    // fight a ruler runs, which sends no buff map.
+    assert!(sb[0].precombat, "the data says the player earns it alone");
+    assert_eq!(sb[0].initial_stacks, 2, "and the list leaves it full");
 
-    // NOTHING ELSE IS ON THE LIST BY RESEMBLANCE. Twenty buffs reach the
-    // same arm with no clock and nothing that clears them — the default for
-    // a card that states neither — so this asserts the difference between
-    // being named and merely sharing the shape. Reaver's Rapture is one of
-    // the eighteen.
+    // NOTHING ELSE OPENS ABOVE ZERO BY RESEMBLANCE. Reaver's Rapture shares
+    // the shape — no clock, nothing clears it — and is earned on a full burst
+    // at an enemy, which no precombat press makes.
     let quiet = buffs("burston", "burston_reavers_rapture");
     assert!(!quiet.is_empty(), "the fixture has to carry a buff");
     assert!(
-        quiet.iter().all(|b| !b.card_opens_full),
-        "a buff nobody put on the list must not open full: {quiet:?}"
+        quiet.iter().all(|b| !b.precombat && b.initial_stacks == 0),
+        "a buff the list does not earn opens at zero: {quiet:?}"
     );
 
     // ---- the Zylok: a BASE crit-damage add, and the mods multiply it ----
@@ -779,7 +776,7 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
             ammo_efficiency_applies: false,
             infinite_reserve: true,
             stacking_buffs: vec![crate::model::StackingBuff {
-                id: "on_empty_reload_damage", ..sb[0]
+                id: "on_empty_reload_damage", initial_stacks: 0, ..sb[0]
             }],
             duration_seconds: 8.0,
             cycle: Some(IncarnonCycle {
@@ -811,7 +808,7 @@ fn on_reload_from_empty_pays_both_cards_and_only_from_empty() {
         magazine_size: 5.0,
         reload_seconds: 0.5,
         stacking_buffs: vec![crate::model::StackingBuff {
-            id: "on_empty_reload_damage", ..sb[0]
+            id: "on_empty_reload_damage", initial_stacks: 0, ..sb[0]
         }],
         duration_seconds: 10.0,
         ..no_status()
@@ -880,7 +877,7 @@ fn a_transform_on_a_full_magazine_is_not_a_reload_from_empty() {
         stacks_per_trigger: 1,
         per_shell: false,
         cleared_by: crate::model::ClearedBy::Nothing,
-        card_opens_full: false,
+        precombat: false,
     };
     let base_form = FightParams {
         damage: DamageVector::new().with(DamageType::Impact, 50.0),
@@ -1100,7 +1097,7 @@ fn on_kill_stacks_climb_from_a_kill_the_gun_did_not_land() {
         stacks_per_trigger: 1,
         per_shell: false,
         cleared_by: crate::model::ClearedBy::Nothing,
-        card_opens_full: false,
+        precombat: false,
     };
     // A target that dies to every shot and comes straight back, so kills
     // are frequent and nothing else in the fixture is doing anything.
@@ -1472,7 +1469,7 @@ fn sequential_skullbuster_is_a_streak_and_lands_in_the_additive_bracket() {
         stacks_per_trigger: 1,
         per_shell: false,
         cleared_by: crate::model::ClearedBy::Nothing,
-        card_opens_full: false,
+        precombat: false,
     };
     // Every shot on the head: the streak is never broken, so it climbs and
     // sits at the cap.

@@ -472,7 +472,7 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
                             stacks_per_trigger: 1,
                             per_shell: false,
                             cleared_by: crate::model::ClearedBy::Nothing,
-                            card_opens_full: false,
+                            precombat: false,
                         },
                     });
                     admissions.push(Admission {

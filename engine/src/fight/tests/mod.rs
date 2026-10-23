@@ -726,7 +726,7 @@ fn every_buff_params() -> FightParams {
             stacks_per_trigger: 1,
             per_shell: false,
             cleared_by: crate::model::ClearedBy::Nothing,
-            card_opens_full: false,
+            precombat: false,
         }, crate::model::StackingBuff {
             id: "on_headshot_reload_speed",
             trigger: crate::model::BuffTrigger::Headshot,
@@ -740,7 +740,7 @@ fn every_buff_params() -> FightParams {
             stacks_per_trigger: 1,
             per_shell: false,
             cleared_by: crate::model::ClearedBy::Nothing,
-            card_opens_full: false,
+            precombat: false,
         }],
         crit_chance_on_headshot: Some(timed(0.5)),
         crit_damage_on_kill: Some(timed(0.6)),

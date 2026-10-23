@@ -255,13 +255,12 @@ pub(crate) fn enumerate_buffs(
                     // EARNED, so it opens at zero: nothing in hand when the
                     // fight starts, like every other triggered buff here.
                     //
-                    // …UNLESS THE CARD SAYS A MISSION NEVER TAKES IT, which is
-                    // a different thing from a buff that merely happens to have
-                    // no clock: one you are already
-                    // carrying when the fight starts and do not have to keep
-                    // up. It still HAS a trigger, so it is not `permanent` —
-                    // set the card to zero and the run earns it back.
-                    default_stacks: if b.card_opens_full { b.max_stacks } else { 0 },
+                    // …UNLESS THE PLAYER EARNS IT BEFORE THE FIGHT, where the
+                    // count is the one the precombat list builds and the engine
+                    // opens on (`StackingBuff::initial_stacks`). It still HAS a
+                    // trigger, so it is not `permanent` — set the card to zero
+                    // and the run earns it back.
+                    default_stacks: b.initial_stacks,
                     default_locked: false,
                     permanent: false,
                     uncapped: false,

@@ -695,7 +695,7 @@ fn the_explosion_arms_an_on_hit_buff_of_its_own() {
                 stacks_per_trigger: 1,
                 per_shell: false,
                 cleared_by: crate::model::ClearedBy::Nothing,
-                card_opens_full: false,
+                precombat: false,
             }],
             // Never crits, never procs: every instance is "plain", so
             // the only variable is HOW MANY instances a shot produces.
@@ -881,7 +881,7 @@ fn overwhelming_attrition_takes_the_buff_cards_two_knobs() {
                 stacks_per_trigger: 1,
                 per_shell: false,
                 cleared_by: crate::model::ClearedBy::Nothing,
-                card_opens_full: false,
+                precombat: false,
             }],
             fire_rate,
             duration_seconds: secs,

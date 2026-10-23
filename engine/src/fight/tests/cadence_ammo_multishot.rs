@@ -902,7 +902,7 @@ fn infinite_ammo_never_leaves_the_magazine_full_enough_to_pay() {
             stacks_per_trigger: 1,
             per_shell: false,
             cleared_by: crate::model::ClearedBy::Nothing,
-            card_opens_full: false,
+            precombat: false,
         }],
         ammo_efficiency_applies: true,
         duration_seconds: 10.0,

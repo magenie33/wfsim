@@ -40,7 +40,7 @@ fn headshot_infinite_ammo_buff_refreshes_and_prevents_reloads() {
         stacks_per_trigger: 1,
         per_shell: false,
         cleared_by: crate::model::ClearedBy::Nothing,
-        card_opens_full: false,
+        precombat: false,
     };
     let head = FightParams {
         stacking_buffs: vec![buff],
@@ -86,7 +86,7 @@ fn direct_hit_reload_speed_buff_accelerates_later_reloads() {
         stacks_per_trigger: 1,
         per_shell: false,
         cleared_by: crate::model::ClearedBy::Nothing,
-        card_opens_full: false,
+        precombat: false,
     };
     let plain = FightParams {
         magazine_size: 2.0,

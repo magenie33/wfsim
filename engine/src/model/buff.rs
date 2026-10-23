@@ -526,26 +526,17 @@ pub struct StackingBuff {
     /// way to the 99-stack cap is to keep topping up a magazine that never
     /// empties.
     pub cleared_by: ClearedBy,
-    /// THE CARD OPENS AT ITS CAP — a DECISION, not a derivation.
+    /// THE PLAYER EARNS IT BEFORE THE FIGHT — the precombat list
+    /// (`data::apl::Precombat`) performs this buff's trigger until the card's
+    /// count is reached, at no cost in time.
     ///
-    /// Every buff in this app opens EARNED at zero, because the modelled fight
-    /// is one you have been in a while without contact for the last few seconds
-    /// (docs/BUFFS.md). A short, CLOSED list is exempted, because keeping those
-    /// up is not something a player thinks about and a fight that opens without
-    /// them is the less realistic of the two.
+    /// Only a trigger a player performs with no enemy present may say so
+    /// ([`BuffTrigger::is_precombat`]), and the file is refused otherwise: a
+    /// pile earned by kills or hits is earned in the fight.
     ///
-    /// IT IS A JUDGEMENT ABOUT PLAYING, NOT A CLAIM OFF THE CARD: a card can
-    /// say "lasts the mission" for a pile that takes a hundred kills to fill,
-    /// which is exactly what should NOT open full. So nothing here derives it —
-    /// the shape it would derive from is the DEFAULT for a buff that states
-    /// neither, and twenty carry it.
-    ///
-    /// ONLY THE OPENING MOVES. The trigger still fires, the clear still clears
-    /// and the decay still decays, so a buff on this list that DOES get taken
-    /// away in a fight is taken away in the sim. And it is a default rather
-    /// than a rule: the card's stack stepper sets any count you like, so a
-    /// reader who disagrees says so in their own scenario.
-    pub card_opens_full: bool,
+    /// A JUDGEMENT ABOUT PLAYING, NOT A CLAIM OFF THE CARD, and nothing derives
+    /// it: a pile a player can earn alone is not one every player builds.
+    pub precombat: bool,
 }
 
 /// See [`StackingBuff::cleared_by`]. A buff with a duration needs none of
@@ -669,6 +660,14 @@ impl BuffTrigger {
             BuffTrigger::FullBurst => "full_burst",
             BuffTrigger::Firing => "firing",
         }
+    }
+
+    /// CAN A PLAYER PERFORM THIS WITH NO ENEMY IN REACH? Only these may be
+    /// earned before the fight: emptying a magazine and reloading it needs
+    /// nothing to shoot at, and every other trigger is a hit, a kill or a
+    /// burst on a target.
+    pub fn is_precombat(self) -> bool {
+        matches!(self, BuffTrigger::ReloadComplete | BuffTrigger::ReloadFromEmpty)
     }
 
     /// The trigger a data file names. An event carrying a payload

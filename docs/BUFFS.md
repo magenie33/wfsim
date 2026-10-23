@@ -545,48 +545,56 @@ on-kill stacks never accumulate, and seeding them full handed the build a buff
 it can never earn and then held it there for five minutes. Zero-start is not a
 more pessimistic guess in that case; it is the correct one.
 
-Which buffs open full, in the whole data set — **three, and the list is closed**:
-
-| buff | where | why it is on the list |
-|---|---|---|
-| **Fevered Frenzy** | Dual Toxocyst | no trigger the sim can fire, so the count is a static choice and full is the only honest opening |
-| **Reified Bane** | both Boars, the three Latos | on reload from empty, nothing takes it |
-| **Fresh Havoc** | both Somas | on reload from empty, nothing takes it |
-
-THREE BUFFS, EIGHT ROWS. The unit the allowance is granted in is the PERK, not
-the weapon: Reified Bane is one buff with a different number on each of its five
-weapons, so a sixth weapon inheriting it needs no new decision.
-`only_the_three_named_buffs_open_full` reads the whole roster back and refuses a
-fourth — written that way round because a test naming the three and checking
-they open full would pass on a build that opened thirty.
-
 Everything else — every Galvanized
 mod, every on-kill/on-status arcane, Argon Scope, Sharpened Bullets, and the
 Dual Toxocyst's own **Frenzy** passive — has a 3–30 s timer and is earned.
 
-Reified Bane and Fresh Havoc are the second kind of full, and they are a
-**decision** where Fevered Frenzy's is a fact. Fevered Frenzy has no trigger the sim can fire, so its count
-is a static choice and there is nothing else it could open on. Fresh Havoc is
-earned by an empty reload the fight performs several times over — the sim can
-build it perfectly well. It opens full because keeping it up is not something a
-player has to think about, so a fight that opens without it is the less
-realistic of the two.
+### Before the fight
 
-**A CLOSED LIST, and a stated allowance.** `card_opens_full:` on the
-buff. It is a judgement about how the game is actually played, not a claim off
-the card, and the two diverge: a card can say "lasts permanently throughout the
-mission" for a pile that takes a hundred kills to fill, and that one should NOT
-open full. So nothing derives this — not from the wiki text and not from the
-shape, which would be the trap the paragraph below names from the other side:
-**twenty** stacking buffs in `data/evolutions/` reach the engine with no clock
-and nothing that clears them, because that is the DEFAULT for a card stating
-neither.
+**A BUFF OPENS ABOVE ZERO ONLY BECAUSE THE PLAYER EARNED IT BEFORE THE FIGHT.**
+The precombat list (`data::apl::Precombat`, SimC's `actions.precombat`) runs
+once, top to bottom, before the first shot. Every line of it is free: no time
+passes and no enemy is in reach. So only what a player does alone can be on it
+(`BuffTrigger::is_precombat`):
 
-Only the OPENING moves. The trigger still fires, the clear still clears, the
-decay still decays — a buff on this list that a fight does take away is taken
-away in the sim. And it is a DEFAULT, not a rule: the stack stepper on the card
-takes any count, so a reader who disagrees with the allowance says so in their
-own scenario, and the official benchmarks simply inherit it.
+- `switch_mode,form=<form>` — the weapon is put in the form the fight plays;
+- `cast` — an ability, any one;
+- `reload_from_empty` / `reload` — a magazine emptied and reloaded, or topped up.
+
+A pile earned by a hit, a kill or a burst at a target is earned in the fight
+and never here. `precombat_only_on_a_trigger_a_player_performs_alone` fails on a
+file that says otherwise, and on a rolled trigger, since the opening would then
+be a draw.
+
+**THE PRESSES ARE PERFORMED, NOT ASSUMED.** `earn_before_the_fight` repeats the
+trigger of each buff that says `precombat: true` until that buff is at its cap,
+and EVERY buff on that trigger takes what those presses earn: two empty reloads
+for Fresh Havoc are two empty reloads for anything else that pays on one. A
+clock starts at t = 0, so a timed pile opens with its whole window.
+
+| buff | where | the line |
+|---|---|---|
+| **Fevered Frenzy** | Dual Toxocyst | `cast,until=buff.evo_multishot.stack>=20` |
+| **Reified Bane** | both Boars, the three Latos | `reload_from_empty,until=buff.evo_reload_damage.stack>=1` |
+| **Fresh Havoc** | both Somas | `reload_from_empty,until=buff.on_empty_reload_damage.stack>=2` |
+
+Fevered Frenzy and Reified Bane are static piles — the fight fires no ability
+cast, and an empty reload never takes Reified Bane away — so their count is the
+card's and the line names the press that earns it. Fresh Havoc is a live pile
+and the fight keeps earning it.
+
+**THE CARD IS THE TARGET.** For a precombat buff the stack stepper sets how far
+the list builds it; with no card configured — a ruler sends no buff map — the
+list builds it to its cap, which is the card's default. So the page and the
+board fight one fight. The run's response carries the list it performed
+(`precombat`), and the Simulator prints it above the action priority list.
+
+**A CLOSED SET BY RULE, NOT BY NAME.** Twenty stacking buffs in
+`data/evolutions/` have no clock and nothing that clears them, because that is
+the default for a card stating neither; none of them opens full unless a
+player can earn it alone and the file says the player does.
+`a_card_opens_full_exactly_when_the_precombat_list_earns_it` holds the cards to
+the list.
 
 Two things carry no duration but are NOT permanent, and must never be treated
 as such by inferring the rule from `duration == 0`: **Secondary Enervate** (a

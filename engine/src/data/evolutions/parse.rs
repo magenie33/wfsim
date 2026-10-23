@@ -254,12 +254,11 @@ pub(super) fn effect(v: &Value) -> Option<EvoEffect> {
                 // stack drops on timeout and the timer restarts.
                 decay: crate::model::BuffDecay::from_id(v.get("decay").and_then(Value::as_str)),
                 cleared_by: crate::model::ClearedBy::from_id(v.get("cleared_by").and_then(Value::as_str)),
-                // TRANSCRIBED FROM THE CARD, and false is not "it decays" — it
-                // is "the card does not say". Two of the twenty buffs that
-                // reach this arm with no clock and no clear actually state it,
-                // and the other eighteen simply never filled the key in.
-                card_opens_full: v
-                    .get("card_opens_full")
+                // Earned before the fight (`StackingBuff::precombat`);
+                // `precombat_only_on_a_trigger_a_player_performs_alone` holds
+                // the data to a trigger that needs no enemy.
+                precombat: v
+                    .get("precombat")
                     .and_then(Value::as_bool)
                     .unwrap_or(false),
             }

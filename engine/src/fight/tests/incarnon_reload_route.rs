@@ -59,7 +59,7 @@ fn cycle_with(per_shell_perk: bool, base_mag: f64) -> FightParams {
             stacks_per_trigger: base_mag as u32,
             per_shell: true,
             cleared_by: crate::model::ClearedBy::EmptyMagazine,
-            card_opens_full: false,
+            precombat: false,
         }];
     }
     p
