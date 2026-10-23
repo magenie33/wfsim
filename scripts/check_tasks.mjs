@@ -871,7 +871,7 @@ console.log("many asks in two statements a chunk leave every table as one write 
             due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`,
         producer, ref, ids[k], at, due, waits ? 1 : 0, JSON.stringify(payload));
     }
-    const facts = await db.all(`SELECT q.*, EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = ? AND a.void = 0) AS served_answered
+    const facts = await db.all(`SELECT q.*, EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = ?) AS served_answered
         FROM questions q WHERE q.id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
         AND q.state IN ('fact', 'spot', 'disputed', 'nondeterministic')`, engine, JSON.stringify([...new Set(ids)]));
     for (const q of facts) {

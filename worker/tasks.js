@@ -223,7 +223,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
           .bind(JSON.stringify([...new Set([...ds.values()].map((d) => d.producer))].sort())),
       ]);
     }
-    const { results } = await db.prepare(`SELECT q.*, EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = ?2::text AND a.void = 0) AS served_answered
+    const { results } = await db.prepare(`SELECT q.*, EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = ?2::text) AS served_answered
         FROM questions q WHERE q.id IN ${listOf(db, "?1")} AND q.state IN ('fact', 'spot', 'disputed', 'nondeterministic')`)
       .bind(JSON.stringify([...new Set(ids)]), engine || "").all();
     // A FACT OF ANOTHER ENGINE answers nothing now: the question opens again,

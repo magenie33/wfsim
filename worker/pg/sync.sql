@@ -272,7 +272,9 @@ $$;
 -- fact $1 did not form cannot check it. The first is asked of the volunteers
 -- again, as a fact of another engine is (worker/tasks.js `demandAll`): open,
 -- its answers carried, and withdrawn where no live demand waits
--- (`factory_restate`); the second is the fact it was. At most $2 a call;
+-- (`factory_restate`); the second is the fact it was. Any answer of $1 keeps it
+-- the official machines', a void one too: the pick reads the index alone, not
+-- every answer of tens of thousands of questions. At most $2 a call;
 -- returns how many moved. Definer, as `factory_forget_past`.
 CREATE OR REPLACE FUNCTION factory_moot_checks(text, bigint) RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER AS $$
@@ -280,8 +282,8 @@ DECLARE v text[]; n bigint; qid text;
 BEGIN
   SELECT coalesce(array_agg(t.id), '{}') INTO v FROM (
     SELECT q.id FROM questions q WHERE q.state IN ('disputed', 'nondeterministic')
-       AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = $1 AND a.void = 0)
-     ORDER BY q.id LIMIT $2 FOR UPDATE OF q SKIP LOCKED) t;
+       AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = $1)
+     LIMIT $2 FOR UPDATE OF q SKIP LOCKED) t;
   UPDATE questions SET state = 'open', lease = NULL, lease_until = NULL, leased_to = NULL
     WHERE questions.id = ANY (v) AND state IN ('disputed', 'nondeterministic');
   FOREACH qid IN ARRAY v LOOP PERFORM factory_restate(qid); END LOOP;
