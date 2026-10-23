@@ -25,6 +25,7 @@ mod fortifier_tick;
 mod m120_fortifier_capped;
 mod headshot_buff_wiring;
 mod incarnon_reload_route;
+mod lock_on;
 mod m102_latron_prime;
 mod m103_latron_punch_through;
 mod m111_dual_toxocyst_neurotoxin;
@@ -126,6 +127,7 @@ impl Default for FightParams {
             base_status_chance: 0.37,
             forced_procs: Vec::new(),
             attractor_seconds: None,
+            lock_on: None,
             status_duration_multiplier: 1.0,
             fire_rate: 1.0,
             charge_seconds: None,

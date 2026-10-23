@@ -41,6 +41,10 @@ attack:
     count: 2
     delay_seconds: 0.05       # module BurstDelay
   shot_type: hit_scan
+  # THE MINIATURE RIFLES: "target up to 4 enemies within 40° of the reticle
+  # and within 10m of the player" (wiki); the shares are the owner's reading of
+  # where the rounds go, in outline (`model::LockOn`).
+  lock_on: { range_m: 10.0, acquire_deg: 40.0, targets: 4, far_miss_share: 0.5, far_head_share: 0.0 }
   fire_rate: 12
   multishot: 1.0
   ammo_cost: 1.5
@@ -53,7 +57,7 @@ attack:
   damage: { tau: 34 }   # total 34
 
 unmodeled:
-  - "The miniature rifles lock onto up to four enemies within 40 degrees and 10 m, paying ammo per target (wiki). The engine fires at the aimed body only: right against one enemy, up to four times low against a crowd."
+  - "Inside 10 m the miniature rifles pick their own spot, modelled in outline: at contact every round lands where it is aimed; at 10 m against one enemy half of them miss and none finds a head; each further enemy in reach takes some of the misses away, none left at four. In game the two rounds of a burst can land on different enemies; here both land on the aimed one, so the total is about right and the aimed enemy's share reads high."
 
 source:
   url: https://wiki.warframe.com/w/Haalvu

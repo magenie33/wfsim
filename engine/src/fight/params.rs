@@ -152,6 +152,8 @@ pub struct FightParams {
     /// `data::weapons::AttackSpec::attractor_seconds`. `None` for every weapon
     /// but the thrown spearguns.
     pub attractor_seconds: Option<f64>,
+    /// See [`crate::model::LockOn`]. `None` for every weapon but the Haalvu's burst.
+    pub lock_on: Option<crate::model::LockOn>,
     /// Status duration multiplier (1.0 = unmodded).
     pub status_duration_multiplier: f64,
     /// Base fire rate; multiplied live by BuffBar fire-rate multipliers

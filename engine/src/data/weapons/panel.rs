@@ -602,6 +602,7 @@ pub fn base_panel_assembled(
         pellet_elements: s.attack.pellet_elements.iter().map(|t| damage_type(t)).collect(),
         multishot_adds_damage: s.attack.multishot_adds_damage,
         attractor_seconds: s.attack.attractor_seconds,
+        lock_on: s.attack.lock_on,
         no_resupply: s.no_resupply,
         base_reload,
         by_round_reload,

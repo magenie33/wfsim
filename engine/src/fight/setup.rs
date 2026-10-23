@@ -1447,6 +1447,7 @@ impl FightParams {
             syndicate_radial: panel.syndicate_radial,
             forced_procs: panel.forced_procs.clone(),
             attractor_seconds: panel.attractor_seconds,
+            lock_on: panel.lock_on,
             pellet_damage: panel.pellet_damage.clone(),
             multishot_adds_damage: panel.multishot_adds_damage,
             sniper_combo: panel.sniper_combo,
