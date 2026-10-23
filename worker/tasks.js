@@ -1041,11 +1041,13 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // while witnesses were at work: something hands them out to nobody. One
     // overdue question waiting its turn is a queue; a whole kind silent is a stall.
     // Only a question nobody holds counts: one a page is computing and renewing
-    // is handed out, however long a single row takes.
+    // is handed out, however long a single row takes. Each past-due demand looks
+    // up its own question (LATERAL): joined, the planner guesses most live rows
+    // past due and walks every open question, minutes past the role's timeout.
     const { results: stalled } = await db.prepare(`SELECT d.producer, count(DISTINCT d.question) AS questions, min(d.due_at) AS oldest_due
-         FROM demands d JOIN questions q ON q.id = d.question
-        WHERE d.state = 'live' AND q.state = 'open' AND d.due_at < ?1::text
-          AND factory_takeable(q.lease_until, q.leased_at, ?1::text, ?3::bigint)
+         FROM demands d CROSS JOIN LATERAL (SELECT 1 FROM questions q WHERE q.id = d.question AND q.state = 'open'
+                AND factory_takeable(q.lease_until, q.leased_at, ?1::text, ?3::bigint) LIMIT 1) q
+        WHERE d.state = 'live' AND d.due_at < ?1::text
         GROUP BY d.producer
        HAVING NOT EXISTS (SELECT 1 FROM demands e JOIN answers a ON a.question = e.question
                            WHERE e.producer = d.producer AND a.at > ?2::text)`).bind(at, recent, ceiling).all();
@@ -1053,11 +1055,16 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       .bind(iso(now - 24 * 3_600_000)).first()).n;
     // WAITING ON THE OFFICIAL MACHINES since its last answer put it there: a
     // dispute nobody settles is the one place a question can still wait for ever.
-    // Not `opened_at` — a refresh opened hours ago turns spot a minute ago.
+    // Not `opened_at` — a refresh opened hours ago turns spot a minute ago. The
+    // last answer is before the cutoff when none is after it: the hours' answers
+    // are one range of `answers_by_at`, where a latest per question read every
+    // answer of tens of thousands of questions from the table.
+    const cutoff = iso(now - UNSETTLED_MS);
     const unsettled = (await db.prepare(
       `SELECT count(*) AS n FROM questions q WHERE q.state IN (${OFFICIAL_STATES.map(() => "?").join(", ")})
-          AND coalesce((SELECT max(a.at) FROM answers a WHERE a.question = q.id), q.opened_at) < ?`)
-      .bind(...OFFICIAL_STATES, iso(now - UNSETTLED_MS)).first()).n;
+          AND q.id NOT IN (SELECT a.question FROM answers a WHERE a.at >= ?)
+          AND (q.opened_at < ? OR EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id))`)
+      .bind(...OFFICIAL_STATES, cutoff, cutoff).first()).n;
     // PAST DUE AND STILL OPEN, by kind: the official machines take what is past
     // due within the hour, so a pile of it, or one left hours late, is a fleet
     // and a backstop both behind. A refresh past due is a row past fifteen days.
