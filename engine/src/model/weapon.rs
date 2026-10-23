@@ -801,6 +801,8 @@ pub struct WeaponBase {
     /// …and the ability whose cast summons it (`WeaponSpec::summoned_by`).
     pub summoned_by: Option<&'static str>,
     pub form: crate::model::FormKind,
+    /// Entered by an Alternate Fire toggle (`WeaponSpec::alt_fire_toggles`).
+    pub alt_fire_toggles: bool,
     /// Indirect stats the WEAPON itself brings, before any mod — today only
     /// EVOLUTIONS write here (Practiced Grip's +50% accuracy, Marksman's
     /// Hand's recoil, Swift Deliverance's projectile speed). `resolve` seeds

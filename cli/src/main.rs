@@ -28,6 +28,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         abilities_live: None,
         apl_inserted: Default::default(),
         form: wfsim_engine::model::FormKind::Base,
+        alt_fire_toggles: false,
         sample_by: wfsim_engine::rules::metrics::RunStat::KillProgress,
         acid_shells: None,
         // NOT A MELEE WEAPON: no combo counter, no script, no follow through.

@@ -4,6 +4,8 @@ name: Tiberon Prime
 # highest status.
 inherits: tiberon_prime
 form: auto
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
 transform_group: tiberon_prime
 
 introduced: "22.16.4"

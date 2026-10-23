@@ -4,6 +4,8 @@ name: Zenith
 # half of the weapon, and the one you are in until the disc is deployed.
 inherits: zenith
 form: auto
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
 transform_group: zenith
 
 introduced: "20.2"

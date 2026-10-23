@@ -36,6 +36,7 @@ mod orbs_fields_beams;
 mod overguard_status;
 mod pellet_volley;
 mod perks_and_cards;
+mod precombat_list;
 mod pools_columns_record;
 mod projectile_flight;
 mod radials_roster_targets;
@@ -65,6 +66,7 @@ impl Default for FightParams {
             abilities_live: None,
             apl_inserted: crate::data::apl::Apl::default(),
             form: crate::model::FormKind::Base,
+            alt_fire_toggles: false,
             // Ordinary: only one measured entry differs (see the field).
             echo_multiplier: 1.0,
             // A FIXTURE BRINGS NO WARFRAME: no auras, no shards.

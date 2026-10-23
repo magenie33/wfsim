@@ -1156,6 +1156,7 @@ impl FightParams {
             abilities_live: None,
             apl_inserted,
             form: panel.form,
+            alt_fire_toggles: panel.alt_fire_toggles,
             damage: panel.damage,
             resting: panel.resting.clone(),
             per_hit_element: panel.per_hit_element.clone(),

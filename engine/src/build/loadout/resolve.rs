@@ -1577,6 +1577,7 @@ pub fn resolve_for(
 
     ResolvedPanel {
         form: base.form,
+        alt_fire_toggles: base.alt_fire_toggles,
         class: base.class,
         summoned_by: base.summoned_by,
         slot: base.slot,
