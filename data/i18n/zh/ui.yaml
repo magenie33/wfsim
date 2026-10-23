@@ -1539,7 +1539,6 @@ ui:
   "drag onto a mark to land on that instant": 拖到任意一格刻度就落在那一瞬
   "stopped — nothing was measured": 已停止 —— 没有测出任何结果
   "submitted by players, scored here — read-only": 玩家提交，由我们自己跑分 —— 只读
-  "Switching firing modes takes 3 s, can be interrupted and scales with reload speed (wiki). The sim switches once, before the fight, where it costs nothing, and never inside one: each mode is measured as the whole weapon.": "切换射击模式需要 3 秒，可被打断，受换弹速度影响（wiki）。模拟只在战前切换一次，不计时间，战斗中从不切换：每个模式都按整把武器测量。"
   "switching into or out of the Incarnon form fully reloads the normal magazine, which is a free reload the sim does not give you": 进出灵化形态都会把普通形态的弹匣装满 —— 这是一次白送的装填，模拟没有给你
   taken: 实际承受
   "Switching modes takes 1 s of animation (0.5 s on Wisp); the sim never switches, so each mode is measured as the whole weapon.": "切换模式需要 1 秒动作（Wisp 为 0.5 秒）；模拟从不切换，所以每个模式都按整把武器测量。"

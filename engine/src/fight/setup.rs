@@ -367,6 +367,10 @@ impl FightParams {
         if let Some(cy) = self.cycle.as_mut() {
             cy.base_form.apply_buff_config(cfg);
         }
+        // …and the other mode a switching list holds, which is the same weapon.
+        if let Some(tg) = self.toggle.as_mut() {
+            tg.other.apply_buff_config(cfg);
+        }
     }
 
     /// NONE OF THESE TRIGGERS FIRES A BUFF HERE — `crate::data::buff_events`, and
@@ -458,6 +462,9 @@ impl FightParams {
         self.arcane.buffs.retain(|b| !hit(b.trigger.id()));
         if let Some(cy) = self.cycle.as_mut() {
             cy.base_form.deny_buff_triggers(denied);
+        }
+        if let Some(tg) = self.toggle.as_mut() {
+            tg.other.deny_buff_triggers(denied);
         }
     }
 
@@ -1448,6 +1455,7 @@ impl FightParams {
             forced_procs: panel.forced_procs.clone(),
             attractor_seconds: panel.attractor_seconds,
             lock_on: panel.lock_on,
+            toggle: None,
             pellet_damage: panel.pellet_damage.clone(),
             multishot_adds_damage: panel.multishot_adds_damage,
             sniper_combo: panel.sniper_combo,
@@ -1697,6 +1705,22 @@ impl FightParams {
     /// in the cycle and pays nothing there (docs/UNMODELLED.md §"A buff one
     /// form of a cycle has alone"); it indexed past the shared stacks before.
     /// Two lists that already agree come out as they went in.
+    /// …AND A LIST THAT SWITCHES MODES INSIDE THE FIGHT holds the other mode
+    /// beside this one: `seconds` is the weapon's `mode_switch_seconds`,
+    /// scaled by this form's reload speed as the page says a switch is. Its
+    /// stacking buffs are laid out on this form's list, as a cycle's are.
+    pub fn with_toggle(mut self, mut other: FightParams, seconds: f64, reload_bonus: f64) -> Self {
+        other.stacking_buffs = self
+            .stacking_buffs
+            .iter()
+            .map(|o| other.stacking_buffs.iter().find(|b| b.id == o.id).copied()
+                .unwrap_or(crate::model::StackingBuff { per_stack: 0.0, ..*o }))
+            .collect();
+        let rl = 1.0 + reload_bonus;
+        self.toggle = Some(super::params::Toggle { other: Box::new(other), switch_seconds: seconds / rl, reload_bucket: rl - 1.0 });
+        self
+    }
+
     fn with_cycle_buffs_aligned(mut self) -> Self {
         let outer = self.stacking_buffs.clone();
         if let Some(c) = self.cycle.as_mut() {

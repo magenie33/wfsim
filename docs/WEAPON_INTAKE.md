@@ -278,7 +278,9 @@ in a saved preset and in every share link. Adding a `FormKind` is three lines.
 switches the weapon into a mode that the trigger then fires — the Haalvu's
 burst, the Kuva Hind's semi and auto — the entry says `alt_fire_toggles: true`
 (`# see notes: alt_fire_toggles_wiki`): the fight switches before it starts
-and pulls the trigger. Alternate Fire that fires the attack itself (a throw,
+and pulls the trigger. A weapon whose page gives the switch a time states
+`mode_switch_seconds`, and only then may a list switch inside the fight.
+Alternate Fire that fires the attack itself (a throw,
 an airburst) states nothing. A mode the page enters by AIMING (Quatz, Kuva
 Quartakk, Tenet Diplos: "aimed fire") is `form: aimed`, and the engine aims for
 it whatever the scenario says. A page that does not say is read as none of them.

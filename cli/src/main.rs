@@ -156,6 +156,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         forced_procs: Vec::new(),
         attractor_seconds: None,
         lock_on: None,
+        toggle: None,
         status_duration_multiplier: 1.0,
         fire_rate: 1.0,
         charge_seconds: None, // not a charge weapon (that is a bow's cadence)

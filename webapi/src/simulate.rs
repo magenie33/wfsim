@@ -191,6 +191,9 @@ pub(crate) struct Entrant {
     fire: WeaponBase,
     from: Option<WeaponBase>,
     unarmed: Option<WeaponBase>,
+    /// The other mode a list that switches inside the fight goes to
+    /// (`switch_mode,form=…`), resolved from the same build.
+    toggle: Option<WeaponBase>,
     roster: Vec<FightParams>,
     pub(crate) seat_weapons: Vec<String>,
 }
@@ -233,6 +236,19 @@ impl Entrant {
                     .then(|| base_for(v, fight.single_form, &without_window(&evo_refs))),
             ),
         };
+        // A LIST THAT SWITCHES MODES names the form it goes to; that form is
+        // built here from the same build, as a cycle's other half is.
+        let toggle = fight.cycle_from.is_none().then(|| {
+            fight.arena.apl.0.iter().find_map(|r| match &r.action {
+                wfsim_engine::data::apl::Action::SwitchMode { form } => Some(form.clone()),
+                _ => None,
+            })
+        }).flatten().and_then(|form| {
+            wfsim_engine::data::weapons::forms_of(&info.id)
+                .iter()
+                .find(|f| f.kind.id() == form && f.weapon_id != fight.single_form)
+                .map(|f| base_for(v, f.weapon_id, &evo_refs))
+        });
         // EVERYTHING ELSE ACTING IN THIS FIGHT. Each entry is a request of its
         // own and resolves through the same path; the ARENA is this fight's, so
         // no seat can quietly be fighting a different enemy.
@@ -253,6 +269,7 @@ impl Entrant {
             fire,
             from,
             unarmed,
+            toggle,
             roster,
             seat_weapons,
         })
@@ -311,6 +328,18 @@ impl Entrant {
         let params = FightParams::for_entrant(&panel, None, || {
             panel_of(self.unarmed.as_ref().expect("a stated window prepared its un-armed base"))
         }, arena, &self.arcane_fx, &self.terms);
+        // …HOLDING THE OTHER MODE when the list switches, which only a weapon
+        // stating its switch time may do.
+        let params = match &self.toggle {
+            Some(tb) => {
+                let secs = wfsim_engine::data::weapons::spec(&info.id).and_then(|s| s.mode_switch_seconds).ok_or_else(|| {
+                    err_json(format!("{} states no time to switch modes, so its list cannot switch inside the fight", info.name))
+                })?;
+                let other = FightParams::for_entrant(&panel_of(tb), None, || unreachable!("a toggled mode states no window"), arena, &self.arcane_fx, &self.terms);
+                params.with_toggle(other, secs, panel.reload_bonus)
+            }
+            None => params,
+        };
         Ok((panel, params))
     }
 
@@ -1753,6 +1782,28 @@ mod form_tests {
             "enemy": "thrax_centurion", "duration": 30.0, "runs": 8,
             "headshot_pct": 100.0, "seed": 7,
         }))
+    }
+
+    /// **A LIST THAT SWITCHES MODES IS PLAYED**, with the other mode built from
+    /// the same request, and refused on a weapon that states no switch time.
+    #[test]
+    fn a_list_that_switches_modes_is_played_and_needs_a_switch_time() {
+        let run = |weapon: &str, apl: Value| {
+            let mut q = json!({
+                "weapon": weapon, "form": "base", "mods": [], "arcane": "none",
+                "enemy": "thrax_centurion", "duration": 30.0, "runs": 4, "seed": 7,
+            });
+            q["apl"] = apl;
+            simulate_json(&q)
+        };
+        let switch = json!([{ "action": { "do": "switch_mode", "form": "alt_fire" }, "when": { "if": "always" } }]);
+        let plain = run("haalvu", json!([]));
+        let switched = run("haalvu", switch.clone());
+        assert!(switched.get("error").is_none(), "{switched}");
+        assert!(switched["apl"].to_string().contains("switch_mode,form=alt_fire"), "{}", switched["apl"]);
+        assert_ne!(switched["dps"], plain["dps"], "the burst fired after the switch");
+        let refused = run("zarr", switch);
+        assert!(refused["error"].as_str().is_some_and(|e| e.contains("no time to switch")), "{refused}");
     }
 
     /// EVERY HIT A HEADSHOT WHILE CHARGING, AND ONLY THEN: a weakpoint-fed

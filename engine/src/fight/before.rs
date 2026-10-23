@@ -40,7 +40,8 @@ pub(super) fn before_the_shot(
     double_tap: &mut DoubleTap,
     rs_armed: &mut bool,
     opening_closed: &mut bool,
-    field_duration_boost: &mut bool,) -> Flow {
+    field_duration_boost: &mut bool,
+    switch_to: Option<super::cycle::SwitchTo>,) -> Flow {
     let t = *t_at;
         // THE FRAME FOR THIS INSTANT IS ALREADY DRAWN, by the scan loop just
         // before it chose whose turn this is. It has to be sampled there: a
@@ -243,7 +244,7 @@ pub(super) fn before_the_shot(
         if let Some(cy) = &params.cycle {
             if let Ends::After(_) = cy.ends {
                 let remains = crate::fight::cycle::ability_remains(params, t);
-                let out = apl.pick(&incarnon.now(params, ammo, next_cost, t, tennokai, &remains))
+                let out = apl.pick(&incarnon.now(params, ammo, next_cost, t, tennokai, &remains, None))
                     == crate::data::apl::Action::TransformOut;
                 if out {
                     incarnon.in_base_form = true;
@@ -254,6 +255,6 @@ pub(super) fn before_the_shot(
         charge_magazine_cycle(
             params, apl, tennokai, rec, rng, next_cost, t_at, r, ammo, incarnon, double_tap,
             windows, arc, buff_stacks, rs_armed, opening_closed,
-            field_duration_boost, last_shot_t,
+            field_duration_boost, last_shot_t, switch_to,
         )
 }

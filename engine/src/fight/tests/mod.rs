@@ -27,6 +27,7 @@ mod headshot_buff_wiring;
 mod incarnon_reload_route;
 mod lock_on;
 mod m102_latron_prime;
+mod mode_switch;
 mod m103_latron_punch_through;
 mod m111_dual_toxocyst_neurotoxin;
 mod m117_vectis_prime_chamber;
@@ -128,6 +129,7 @@ impl Default for FightParams {
             forced_procs: Vec::new(),
             attractor_seconds: None,
             lock_on: None,
+            toggle: None,
             status_duration_multiplier: 1.0,
             fire_rate: 1.0,
             charge_seconds: None,

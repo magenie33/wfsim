@@ -17,7 +17,8 @@ notes:
     it the variant of such a weapon reads as that weapon (Stradavar Prime,
     "the Primed variant of the select-fire Stradavar"; Kuva Zarr, whose Zarr
     switches "using its Alternate Fire"). The switch is made before the fight
-    and costs nothing there; a switch inside one is not modelled.
+    and costs nothing there; a list that switches inside one pays the weapon's
+    `mode_switch_seconds` on the reload clock.
   ammo_efficiency_cap: |
     AMMO EFFICIENCY STOPS AT 75%, and INFINITE AMMO is its own state. DE's Dev
     Workshop "Ammo Efficiency Changes & Riven Disposition Retirement"

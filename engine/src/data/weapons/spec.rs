@@ -462,6 +462,11 @@ pub struct WeaponSpec {
     /// that reloads.
     #[serde(default)]
     pub battery: Option<Battery>,
+    /// SECONDS TO SWITCH between the modes Alternate Fire toggles, before
+    /// reload speed — the Haalvu's 3. A list may switch inside the fight only
+    /// on a weapon that states it; before the fight the switch is free.
+    #[serde(default)]
+    pub mode_switch_seconds: Option<f64>,
     /// THE OTHER WAYS THIS FORM IS PLAYED, each an action list the weapon
     /// states for itself — see [`DeclaredMode`]. Never inherited: a mode is
     /// one form's.

@@ -238,6 +238,7 @@ impl IncarnonState {
     /// it you have LEFT — a charge magazine or a clock, both draining to zero.
     /// A weapon with no cycle has no gauge and reads 0 in the base form, which
     /// is the reading under which no transmute rule can fire at all.
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn now<'a>(
         &self,
         params: &FightParams,
@@ -249,6 +250,9 @@ impl IncarnonState {
         // answered from a fact nobody supplied.
         tennokai: bool,
         remaining: &'a dyn Fn(&str) -> f64,
+        // THE MODE A `switch_mode` CAN GO TO — the seat's other one, if it
+        // holds two (`fight::cycle::SwitchTo`).
+        switch_to: Option<&'a str>,
     ) -> crate::data::apl::Now<'a> {
         let Some(cy) = params.cycle.as_ref() else {
             return crate::data::apl::Now {
@@ -257,6 +261,7 @@ impl IncarnonState {
                 magazine_pct: ammo.loaded / ammo.cap.max(1e-9),
                 tennokai,
                 battery_would_empty: battery_would_empty(params, ammo.loaded, next_cost),
+                switch_to,
                 // BETWEEN SHOTS the glaive is always in the hand: a throw is decided
                 // where it ARRIVES (`fight::flight`), which is the only instant it flies.
                 glaive_in_flight: false,
@@ -320,6 +325,7 @@ impl IncarnonState {
             // A CYCLE FIRES TWO MAGAZINES and no battery in the roster has a
             // second form to cycle into, so the question is not asked there.
             battery_would_empty: false,
+            switch_to: None,
             glaive_in_flight: false,
             in_base_form: self.in_base_form,
             remaining,

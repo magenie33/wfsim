@@ -419,7 +419,20 @@ pub fn run_once_traced(
     };
     // THE ENGAGEMENT AS IT OPENS — see [`open`]. Destructured by value, so
     // every name below is the one the setup gave it.
-    let (fight, me) = open(params, Seat::WIELDER, rng, rec, &trace);
+    let (fight, mut me) = open(params, Seat::WIELDER, rng, rec, &trace);
+    // …AND THE OTHER MODE, opened the same way on a stream of its own that is
+    // thrown away, so holding it moves no draw of the fight's. Only what it
+    // READS is kept; what it would carry is the one weapon's and stays here.
+    if let Some(tg) = &params.toggle {
+        let (_, o) = open(&tg.other, Seat::WIELDER, &mut Rng::new(rng.state()), rec, &None);
+        me.other = Some(super::open::OtherMode {
+            params: o.params,
+            fixed: o.fixed,
+            apl: o.apl,
+            seconds: tg.switch_seconds,
+            bucket: tg.reload_bucket,
+        });
+    }
     // FLATTENED BACK INTO LOCALS, deliberately. The loop names these thirty-eight
     // pieces directly on the hottest path this engine has, and `open`'s own note
     // measures 2.7% a shot for handing them over any other way. What the split
@@ -600,6 +613,7 @@ pub fn run_once_traced(
             &mut me.rs_armed,
             &mut me.opening_closed,
             &mut me.field_duration_boost,
+            me.other.as_ref().map(|o| super::cycle::SwitchTo { form: o.params.form.id(), seconds: o.seconds, bucket: o.bucket }),
         ) {
             // A SEAT THAT CANNOT ACT AGAIN IS DONE, and the FIGHT is not:
             // your magazine running out at second 40 does not stop a companion
@@ -615,6 +629,20 @@ pub fn run_once_traced(
             // down and re-picking is what lets another seat fire during a
             // reload rather than after it.
             Flow::Continue => {
+                me.next_t = t;
+                r.per_seat[seat_index].add(SeatCounters::of(&r).since(counters_before));
+                continue;
+            }
+            // THE OTHER MODE, TAKEN UP: its params, what it reads and its list,
+            // and the one magazine held to what this mode holds.
+            Flow::Switch => {
+                if let Some(o) = me.other.as_mut() {
+                    std::mem::swap(&mut me.params, &mut o.params);
+                    std::mem::swap(&mut me.fixed, &mut o.fixed);
+                    std::mem::swap(&mut me.apl, &mut o.apl);
+                }
+                me.ammo.cap = me.params.magazine_size;
+                me.ammo.loaded = me.ammo.loaded.min(me.ammo.cap);
                 me.next_t = t;
                 r.per_seat[seat_index].add(SeatCounters::of(&r).since(counters_before));
                 continue;

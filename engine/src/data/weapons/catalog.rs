@@ -58,7 +58,7 @@ pub fn fill_template(tpl: &str, params: &BTreeMap<String, String>) -> String {
 ///   - `form`, `default_form`, `transform_group`, `transforms_to/from`,
 ///     `incarnon`, `id`, `name` — the entry's own identity;
 ///   - `source`, because a form that shares a page still says so itself.
-pub(super) const INHERITED: [&str; 30] = [
+pub(super) const INHERITED: [&str; 31] = [
     "slot", "class", "weapon_type", "mod_pools", "mastery_rank", "max_rank", "accuracy", "exalted", "fixed_stance",
     "no_exilus_slot",
     "compatibility_tags",
@@ -72,6 +72,8 @@ pub(super) const INHERITED: [&str; 30] = [
     // ZERO and is floored at 0.1 s, which kills the counter between every pair
     // of swings: six of the Magistar's seven modes had no counter at all.
     "combo_duration_seconds",
+    // …AND THE SWITCH BETWEEN TOGGLED MODES is the weapon's, whichever is held.
+    "mode_switch_seconds",
 ];
 
 /// ...and `deployments` and `valence`, which are MAPS and would need a deep

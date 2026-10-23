@@ -80,6 +80,19 @@ pub struct IncarnonCycle {
     pub starts_primed: bool,
 }
 
+/// THE OTHER MODE AN ALTERNATE-FIRE TOGGLE PUTS THE WEAPON IN, held for a list
+/// that switches inside the fight (`Action::SwitchMode`). Not a cycle: nothing
+/// is earned or spent to be in it, one magazine serves both, and the switch is
+/// the weapon's `mode_switch_seconds` on the reload clock.
+#[derive(Debug, Clone)]
+pub struct Toggle {
+    /// The other mode's whole params, its stacking buffs laid out on this one's.
+    pub other: Box<FightParams>,
+    /// The switch, already divided by `1 + reload_bucket`.
+    pub switch_seconds: f64,
+    pub reload_bucket: f64,
+}
+
 /// Parameters of the dummy engagement.
 #[derive(Debug, Clone)]
 pub struct FightParams {
@@ -154,6 +167,8 @@ pub struct FightParams {
     pub attractor_seconds: Option<f64>,
     /// See [`crate::model::LockOn`]. `None` for every weapon but the Haalvu's burst.
     pub lock_on: Option<crate::model::LockOn>,
+    /// See [`Toggle`]. `None` unless the list switches inside the fight.
+    pub toggle: Option<Toggle>,
     /// Status duration multiplier (1.0 = unmodded).
     pub status_duration_multiplier: f64,
     /// Base fire rate; multiplied live by BuffBar fire-rate multipliers

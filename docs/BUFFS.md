@@ -553,7 +553,9 @@ once, top to bottom, before the first shot. Every line of it is free: no time
 passes and no enemy is in reach. So only what a player does alone can be on it
 (`BuffTrigger::is_precombat`):
 
-- `switch_mode,form=<form>` — the weapon is put in the form the fight plays;
+- `switch_mode,form=<form>` — the weapon is put in the form the fight plays
+  (the same word inside the fight is a switch that costs the weapon's
+  `mode_switch_seconds` on the reload clock, `FightParams::toggle`);
 - `cast` — an ability, any one;
 - `reload_from_empty` / `reload` — a magazine emptied and reloaded, or topped up.
 

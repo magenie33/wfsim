@@ -28,6 +28,18 @@ pub(super) enum Flow {
     Break,
     /// Nothing here stopped the shot; carry on with it.
     Go,
+    /// The switch to the other mode has run (`t` is past it): the seat takes
+    /// up the other mode's params, and the loop starts again.
+    Switch,
+}
+
+/// WHERE A SEAT HOLDING TWO MODES CAN SWITCH TO, and what it costs: the form
+/// kind's id, the switch already divided by `1 + bucket`, and the bucket.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct SwitchTo {
+    pub(super) form: &'static str,
+    pub(super) seconds: f64,
+    pub(super) bucket: f64,
 }
 
 /// THE CHARGE-MAGAZINE CYCLE: a form that ends when its magazine runs out.
@@ -57,12 +69,13 @@ pub(super) fn charge_magazine_cycle(
     field_duration_boost: &mut bool,
     // When the last shot left — what a battery's delay counts from.
     last_shot_t: f64,
+    switch_to: Option<SwitchTo>,
 ) -> Flow {
         // WHAT THE LIST CALLS FOR AT THIS INSTANT. Asked once and matched
         // against, so the branches below are what the fight DOES and the list
         // is what decides — a rule inserted above `reload` stops the reload.
         let remains = ability_remains(params, *t);
-        let want = apl.pick(&incarnon.now(params, ammo, next_cost, *t, tennokai, &remains));
+        let want = apl.pick(&incarnon.now(params, ammo, next_cost, *t, tennokai, &remains, switch_to.map(|s| s.form)));
         if let Some(cy) = params.cycle.as_ref().filter(|c| c.ends == Ends::ChargeMagazine) {
             if want == Action::TransformOut {
                 // Charge magazine spent: revert to the base form. The swap
@@ -181,6 +194,18 @@ pub(super) fn charge_magazine_cycle(
                 }
                 return Flow::Continue;
             }
+        } else if let (Action::SwitchMode { .. }, Some(sw)) = (&want, switch_to) {
+            // THE SWITCH IS ON THE RELOAD CLOCK ("Mode swapping speed is
+            // affected by Reload Speed", wiki Haalvu) and is not a reload:
+            // nothing keyed to one fires, and a battery refills through it as
+            // through any other pause.
+            let spent = rescale_reload(sw.seconds, sw.bucket, live_reload_speed(params, params, *rs_armed, buff_stacks, *t));
+            r.downtime_seconds += spent;
+            *t += spent;
+            if *t >= params.duration_seconds {
+                return Flow::Break;
+            }
+            return Flow::Switch;
         } else if let (Action::Recharge, Some(b)) = (&want, params.battery) {
             // THE BATTERY REFILLS FROM THE LAST SHOT, after its delay, to the
             // brim: the top of the loop credits the gap
@@ -343,7 +368,7 @@ pub(super) fn charge_the_gauge(
             // the only rule above `transform_in` a reader can write is a cast,
             // and `reload` sits below it and is asked again at the top of the
             // loop with the real cost.
-            if apl.pick(&incarnon.now(params, ammo, 0.0, *t, tennokai, &remains)) == Action::TransformIn {
+            if apl.pick(&incarnon.now(params, ammo, 0.0, *t, tennokai, &remains, None)) == Action::TransformIn {
                 // BOTH DIRECTIONS TAKE IT. The wiki says Ready
                 // Retaliation "can affect transition INTO Incarnon form
                 // with a well-timed manual reload" and not the way back;

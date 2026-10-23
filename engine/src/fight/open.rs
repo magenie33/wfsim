@@ -113,6 +113,20 @@ pub(super) struct Combatant<'a> {
     /// WHAT IT ONLY READS — resolved once from its own build, constant for the
     /// whole engagement.
     pub(super) fixed: Fixed<'a>,
+    /// THE OTHER MODE IT HOLDS, for a list that switches inside the fight
+    /// (`FightParams::toggle`). A switch trades this for `params`, `fixed` and
+    /// `apl`; everything else on the seat — magazine, piles, clocks — is the
+    /// one weapon's and stays.
+    pub(super) other: Option<OtherMode<'a>>,
+}
+
+/// The mode a seat is not firing, kept whole for the switch back.
+pub(super) struct OtherMode<'a> {
+    pub(super) params: &'a FightParams,
+    pub(super) fixed: Fixed<'a>,
+    pub(super) apl: crate::data::apl::Apl,
+    pub(super) seconds: f64,
+    pub(super) bucket: f64,
 }
 
 /// WHAT A COMBATANT ONLY READS — resolved once, constant for the whole
@@ -735,6 +749,7 @@ pub(super) fn open<'a>(
             influence_until,
             last_shot_t,
             in_flight: Vec::new(),
+            other: None,
             fixed: Fixed {
                 aim_off_axis,
                 ricochet_layout,
