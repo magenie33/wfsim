@@ -333,6 +333,8 @@ pub struct ResolvedPanel {
     /// a Magistar's slide attack and its block combo resolve to different
     /// numbers AND to different buttons.
     pub form: crate::model::FormKind,
+    /// Entered by an Alternate Fire toggle (`WeaponSpec::alt_fire_toggles`).
+    pub alt_fire_toggles: bool,
     pub class: &'static str,
     /// The ability that summons it, on an Exalted weapon (`data::casting`).
     pub summoned_by: Option<&'static str>,

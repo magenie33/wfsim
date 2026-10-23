@@ -274,6 +274,15 @@ choose at the trigger — a charged shot, an alt-fire — is TWO entries in one
 kind that reads true: borrowing `charged` for a thrown spear puts a wrong word
 in a saved preset and in every share link. Adding a `FormKind` is three lines.
 
+**THEN ASK THE PAGE HOW THE SECOND ATTACK IS FIRED.** If Alternate Fire
+switches the weapon into a mode that the trigger then fires — the Haalvu's
+burst, the Kuva Hind's semi and auto — the entry says `alt_fire_toggles: true`
+(`# see notes: alt_fire_toggles_wiki`): the fight switches before it starts
+and pulls the trigger. Alternate Fire that fires the attack itself (a throw,
+an airburst) states nothing. A mode chosen by AIMING (Quatz, Kuva Quartakk,
+Tenet Diplos) is neither and has no word yet, and a page that does not say is
+not read as either.
+
 A part that is not a separate trigger is not an entry: an explosion on impact
 is a `radial:` on the attack it belongs to, with its own crit, status, element,
 radius and falloff.

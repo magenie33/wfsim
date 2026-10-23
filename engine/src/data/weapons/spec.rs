@@ -245,6 +245,14 @@ pub struct WeaponSpec {
     /// tapping a bow instead of drawing it switches form for free.
     #[serde(default)]
     pub default_form: bool,
+    /// IS THIS FORM A MODE ALTERNATE FIRE SWITCHES THE WEAPON INTO, fired on
+    /// the trigger — rather than an attack Alternate Fire fires itself? Read
+    /// off the weapon's wiki page, never off the form kind: the Haalvu's
+    /// burst mode and the Scourge's throw are both `alt_fire`. The fight
+    /// switches before it starts (`data::apl::PreAction::SwitchMode`) and
+    /// then pulls the trigger.
+    #[serde(default)]
+    pub alt_fire_toggles: bool,
     /// The mod POOLS this weapon draws from, as a union — `data/mods/<pool>/`.
     /// A weapon is not served by one list: a launcher takes both the
     /// primary-wide pool and the rifle class pool, and takes no assault-rifle

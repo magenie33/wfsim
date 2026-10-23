@@ -4,6 +4,8 @@ name: Zarr
 # a completely different weapon in the same shell.
 inherits: zarr
 form: alt_fire
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
 transform_group: zarr
 
 introduced: "19"

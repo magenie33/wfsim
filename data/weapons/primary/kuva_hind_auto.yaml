@@ -4,6 +4,8 @@ name: Kuva Hind
 # of the three that is not a discrete pull.
 inherits: kuva_hind
 form: auto
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
 transform_group: kuva_hind
 
 # NOT INHERITED — see `kuva_hind_semi`.

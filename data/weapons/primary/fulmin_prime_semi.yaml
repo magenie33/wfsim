@@ -4,6 +4,8 @@ name: Fulmin Prime
 # falloff window that starts and ends further out.
 inherits: fulmin_prime
 form: semi_auto
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
 transform_group: fulmin_prime
 
 introduced: "33.6"

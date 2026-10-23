@@ -65,7 +65,7 @@ attack:
 
 unmodeled:
   - "Tau's status effect is not modelled. Tau's neutral damage is applied correctly, but its proc raises the status chance the target takes from every other source by 10% a stack, up to ten (wiki). With other statuses stacked, the number reads low."
-  - "Switching firing modes takes 3 s, can be interrupted and scales with reload speed (wiki); the sim never switches, so each mode is measured as the whole weapon and the switch costs nothing."
+  - "Switching firing modes takes 3 s, can be interrupted and scales with reload speed (wiki). The sim switches once, before the fight, where it costs nothing, and never inside one: each mode is measured as the whole weapon."
 
 source:
   url: https://wiki.warframe.com/w/Haalvu

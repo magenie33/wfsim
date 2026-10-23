@@ -5,6 +5,8 @@ name: Kuva Hind
 # in ammo — "Semi-auto mode consumes 3 ammo per shot".
 inherits: kuva_hind
 form: semi_auto
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
 transform_group: kuva_hind
 
 # NOT INHERITED — the CO catalog gives a class PER ATTACK. No row for any of

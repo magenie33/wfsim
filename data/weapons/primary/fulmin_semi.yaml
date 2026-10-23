@@ -5,6 +5,8 @@ name: Fulmin
 # window from 10 to 20 m.
 inherits: fulmin
 form: semi_auto
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
 transform_group: fulmin
 
 introduced: "25.0"

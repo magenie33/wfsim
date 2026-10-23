@@ -63,6 +63,7 @@ pub(super) struct FieldCtx {
 impl FightParams {
     /// **WHAT THE PLAYER DID BEFORE THIS FIGHT** (`data::apl::Precombat`), read
     /// off the piles it opens on, so the list and the opening cannot disagree.
+    /// A form the Alternate Fire toggle enters opens the list with the switch.
     ///
     /// Fevered Frenzy and Reified Bane are static piles with no trigger the
     /// fight fires, so their count is the card's and the line names the press
@@ -70,6 +71,9 @@ impl FightParams {
     pub fn precombat(&self) -> Vec<crate::data::apl::Precombat> {
         use crate::data::apl::{PreAction, Precombat};
         let mut out = Vec::new();
+        if self.alt_fire_toggles {
+            out.push(Precombat { action: PreAction::SwitchMode { form: self.form.id() }, until: None });
+        }
         let until = |id: &str, n: u32| Some((id.to_string(), n));
         let own = |p: &FightParams, out: &mut Vec<Precombat>| {
             if let Some(m) = p.evo_multishot.filter(|m| m.stacks > 0) {
@@ -107,7 +111,13 @@ impl FightParams {
         crate::data::apl::for_fight(
             &self.apl_inserted,
             &crate::data::apl::Shape {
-                attack: crate::data::apl::Action::firing(self.form),
+                // A MODE THE TOGGLE PUT THE WEAPON IN IS FIRED ON THE TRIGGER;
+                // the toggle itself was pressed before the fight.
+                attack: if self.alt_fire_toggles {
+                    crate::data::apl::Action::Shoot
+                } else {
+                    crate::data::apl::Action::firing(self.form)
+                },
                 has_cycle: self.cycle.is_some(),
                 // THE SAME TWO GUARDS THE SWING READS (`fight::melee`): a form
                 // that spends combo pays the flash the other way, and a weapon

@@ -4,6 +4,8 @@ name: Haalvu
 # 1.5 ammo a shot per target, at a higher status chance and a lower crit.
 inherits: haalvu
 form: alt_fire
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
 transform_group: haalvu
 
 introduced: "43.0.7"

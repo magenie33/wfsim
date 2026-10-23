@@ -472,6 +472,7 @@ pub fn base_panel_assembled(
                 .into_boxed_slice(),
         ),
         form: FormKind::parse(&s.form),
+        alt_fire_toggles: s.alt_fire_toggles,
         // Empty until an evolution writes into it (data::evolutions::apply).
         indirect: Vec::new(),
         reload_damage_buff: 0.0,
