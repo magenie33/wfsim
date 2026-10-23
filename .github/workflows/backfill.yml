@@ -17,7 +17,7 @@ on:
 jobs:
   duration-corners:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache@v4

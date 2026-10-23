@@ -31,10 +31,36 @@ INTAKE="${INTAKE:-$HERE/../target/release/wfsim-intake}"
 #
 # THE LIBRARY ROWS TO SEND BACK, as inbox rows. `$2` is the instant they are
 # taken at, which becomes each new build's `at`.
+#
+# ONE ROW A SHAPE, NOT ONE A STORED CORNER: `library_build` ignores the rolls
+# and puts every card at max rank, so records differing only there come out as
+# the same set of corners, and the library holds each shape once per corner.
+# Sent whole, a pass derives each shape once for every corner it holds.
 again_rows() {
-  jq -c --arg at "$2" '
-    select(.v.riven_neg == "status_duration")
+  jq -c -n --arg at "$2" '
+    def bare: if type == "string" then sub("@[0-9]+$"; "") else . end;
+    foreach (inputs | select(.v.riven_neg == "status_duration")) as $r ({seen: {}, out: null};
+      ($r.v | del(.riven_rolls) | .mods |= ((. // []) | map(bare)) | .exilus |= bare
+        | tostring) as $shape
+      | if .seen[$shape] then .out = null else .seen[$shape] = true | .out = $r end;
+      .out // empty)
     | {id: ("library:" + .k), at: $at, record: .v}' "$1"
+}
+
+# INTAKE ON EVERY CORE: each record is derived alone, so shards of the rows are
+# independent passes and their outputs concatenate.
+intake_sharded() {
+  local in="$1" out="$2" n; n="${BACKFILL_JOBS:-$(nproc 2>/dev/null || echo 2)}"
+  local dir; dir=$(mktemp -d)
+  split -n "l/$n" -d "$in" "$dir/in."
+  local pids=() f
+  for f in "$dir"/in.*; do
+    "$INTAKE" < "$f" > "$f.out" &
+    pids+=("$!")
+  done
+  for f in "${pids[@]}"; do wait "$f"; done
+  cat "$dir"/in.*.out > "$out"
+  rm -rf "$dir"
 }
 
 # WHAT INTAKE MADE OF THEM THAT IS NEW: a status duration malus at an inside
@@ -49,7 +75,10 @@ fresh_corners() {
     | select(.record.riven_neg == "status_duration")
     | (.record.riven_rolls // [])[(.record.riven_pos // []) | length] as $r
     | select($r != null and $r > 0.9 + 1e-9 and $r < 1.1 - 1e-9)
-    | del(.from)' "$1"
+    | del(.from)' "$1" \
+  | jq -c -n 'foreach inputs as $b ({seen: {}, out: null};
+      if .seen[$b.id] then .out = null else .seen[$b.id] = true | .out = $b end;
+      .out // empty)'
   rm -f "$held"
 }
 
@@ -66,12 +95,13 @@ run() {
   trap 'rm -rf "$work"' EXIT
   bash "$HERE/fetch_library.sh" "$work/library.json"
   again_rows "$work/library.json.ndjson" "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" > "$work/again.ndjson"
-  "$INTAKE" < "$work/again.ndjson" > "$work/corners.ndjson"
+  echo "backfill: $(grep -c . < "$work/again.ndjson" || true) shape(s) go back through intake"
+  intake_sharded "$work/again.ndjson" "$work/corners.ndjson"
   fresh_corners "$work/corners.ndjson" "$work/library.json.ndjson" > "$work/fresh.ndjson"
   local n_again n_fresh
   n_again=$(grep -c . < "$work/again.ndjson") || n_again=0
   n_fresh=$(grep -c . < "$work/fresh.ndjson") || n_fresh=0
-  echo "backfill: $n_again stored build(s) with a status duration malus, $n_fresh new corner(s)"
+  echo "backfill: $n_again stored shape(s) with a status duration malus, $n_fresh new corner(s)"
   if [ "${DRY_RUN:-}" = "1" ]; then
     jq -c '{id, weapon: .record.weapon, rolls: .record.riven_rolls}' < "$work/fresh.ndjson" | head -20
     echo "backfill: DRY_RUN, nothing written"
@@ -98,11 +128,14 @@ self_test() {
     jq -n -c '{k: "hi", v: {weapon: "furis", riven_pos: ["fire_rate", "toxin"], riven_neg: "status_duration", riven_rolls: [1.1, 1.1, 1.1]}}'
     jq -n -c '{k: "zm", v: {weapon: "furis", riven_pos: ["fire_rate", "toxin"], riven_neg: "zoom", riven_rolls: [1.1, 1.1, 0.9]}}'
     jq -n -c '{k: "plain", v: {weapon: "furis", mods: ["serration"]}}'
+    # One shape with a card at a lower rank, which intake reads at max rank.
+    jq -n -c '{k: "r3", v: {weapon: "furis", mods: ["serration@3"], riven_pos: ["fire_rate"], riven_neg: "status_duration", riven_rolls: [1.1, 0.9]}}'
+    jq -n -c '{k: "r5", v: {weapon: "furis", mods: ["serration"], riven_pos: ["fire_rate"], riven_neg: "status_duration", riven_rolls: [1.1, 0.9]}}'
   } > library.ndjson
 
   again_rows library.ndjson "2026-10-23T00:00:00.000Z" > again.ndjson
-  [ "$(ids again.ndjson)" = "library:lo library:hi " ] \
-    && say ok "only the status duration malus goes back through intake" \
+  [ "$(ids again.ndjson)" = "library:lo library:r3 " ] \
+    && say ok "each status duration malus shape goes back through intake once" \
     || say FAIL "sent back: $(ids again.ndjson)"
   jq -e -s 'all(.at == "2026-10-23T00:00:00.000Z" and (.record | type) == "object")' again.ndjson >/dev/null \
     && say ok "...as inbox rows, the record whole and the instant given" \
@@ -115,6 +148,8 @@ self_test() {
       jq -n -c --arg id "$id" --argjson r "$r" \
         '{id: $id, at: "t", from: ["library:lo"], record: {weapon: "furis", riven_pos: ["fire_rate", "toxin"], riven_neg: "status_duration", riven_rolls: [1.1, 1.1, $r]}}'
     done
+    # The same corner out of two shards, written once.
+    jq -n -c '{id: "c0.95", at: "t", record: {weapon: "furis", riven_pos: ["fire_rate", "toxin"], riven_neg: "status_duration", riven_rolls: [1.1, 1.1, 0.95]}}'
     # An END under a new id — a record canonicalised differently since — is not written.
     jq -n -c '{id: "drift", at: "t", record: {weapon: "furis", riven_pos: ["fire_rate", "toxin"], riven_neg: "status_duration", riven_rolls: [1.1, 1.1, 1.1]}}'
     # A status duration BONUS at an inside roll is not this backfill's.
