@@ -1002,7 +1002,7 @@ fn acid_shells_explodes_a_corpse_and_the_blast_chains() {
     let pool = crate::data::mods::pool_for_build("sobek", &[]);
     let acid = pool.iter().find(|m| m.id == "acid_shells").expect("the augment");
     let base = crate::model::WeaponBase::from_data("sobek", false, &[]);
-    // A LINE OF FRAIL BODIES two metres apart, well inside the 15 m reach:
+    // A LINE OF FRAIL BODIES two metres apart, well inside the 10 m reach:
     // one killed by the gun, the rest reachable only by the chain.
     let fight = |mods: &[&_]| {
         let panel = crate::build::loadout::resolve(&base, mods, crate::model::StackPolicy::Emergent);
