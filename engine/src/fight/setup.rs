@@ -1318,6 +1318,7 @@ impl FightParams {
                         regen_per_second: rate,
                         delay_empty_seconds: delay,
                         delay_partial_seconds: delay,
+                        empty_animation_seconds: None,
                     })
                 }
                 (b, _, _) => b,

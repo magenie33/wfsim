@@ -458,6 +458,7 @@ fn a_battery_refills_between_shots_and_a_slow_enough_one_never_reloads() {
             regen_per_second: 28.0,
             delay_empty_seconds: 1.0,
             delay_partial_seconds: 0.4,
+            empty_animation_seconds: None,
         }),
         ..no_status()
     };
