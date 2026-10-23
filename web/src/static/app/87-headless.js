@@ -619,6 +619,31 @@ function distinctTop(list, n, group, meta) {
   return list.filter((x) => won.has(x)).map((x) => ({ ...x, tied: won.get(x) }));
 }
 
+// ---- the heads: what a short answer reads ------------------------------------
+
+/// HOW DEEP A SHORT ANSWER GOES: `builder.board.read`'s largest `limit`, and
+/// past the bots' longest image (`CARD_MAX`).
+const BOARD_HEADS_PLACES = 20;
+
+/// THE HEADS OF A WEAPON'S BOARD — `board/heads/<id>.json`, docs/BOARD.md
+/// §"The heads": every row holding one of the first `k` places of its ruler,
+/// mode and riven-ness (`rankBoard`), and each ruler's newest-measured row. A
+/// row scoring above a kept row in its ranking is kept too, so a ranking run on
+/// the heads places its first `k` as on every row, ties and their preferred
+/// build included, and `boardMeasuredAt` of a ruler is unchanged. The modes
+/// pooled (`pooledRanking`) need nothing more: a row's place among its own
+/// mode is never below its place among them all.
+function boardHeads(rows, k = BOARD_HEADS_PLACES) {
+  const keep = new Set(rankBoard(rows, [], []).filter((x) => x.rank <= k).map((x) => x.row));
+  const newest = new Map();
+  for (const r of rows) {
+    const had = newest.get(r.benchmark);
+    if (r.measured_at && (!had || r.measured_at > had.measured_at)) newest.set(r.benchmark, r);
+  }
+  for (const r of newest.values()) keep.add(r);
+  return rows.filter((r) => keep.has(r));
+}
+
 // ---- when a number was measured ---------------------------------------------
 
 /// WHEN A WEAPON'S NUMBERS LAST MOVED: the newest of its rows' `measured_at`,

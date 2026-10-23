@@ -436,6 +436,8 @@ jobs:
         run: node scripts/gen_worker_parts.mjs --check
       - name: The MCP server's queries run with no page
         run: node scripts/check_mcp_tools.mjs
+      - name: The heads answer as the whole board
+        run: node scripts/check_board_heads.mjs
       - name: The MCP server knows who calls, and how often
         run: node scripts/check_mcp_auth.mjs
       - name: What an agent reads to find WFSim is what the site serves

@@ -156,6 +156,7 @@ publish_verified() {
   mkdir -p pub/data
   [ -f pub/data/board_state.yaml ] || printf 'boards: {}\n' > pub/data/board_state.yaml
   project_into verified facts-known.ndjson pub "${1:-}" || return 1
+  node "$HERE/board_heads.mjs" verified >&2 || return 1
   python3 "$HERE/board_meta.py" verified pub/data/board_state.yaml verified/meta.json >&2
 }
 

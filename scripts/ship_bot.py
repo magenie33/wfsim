@@ -116,7 +116,7 @@ def deploy() -> None:
 
 
 LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/wasm_witness.mjs", "scripts/order_credit.mjs",
-                "scripts/live_publish.mjs",
+                "scripts/live_publish.mjs", "scripts/board_heads.mjs",
                 "scripts/board_meta.py", "scripts/fetch_library.sh", "scripts/fetch_facts.sh",
                 "scripts/ship_facts.sh", "scripts/ship_builds.sh",
                 "scripts/ship_queue.sh", "scripts/db.sh", "scripts/db.mjs", "scripts/pgq.mjs"]
@@ -200,6 +200,9 @@ def deploy_live(t: dict) -> None:
     if missing:
         sys.exit(f"ship_bot: the live scripts import {missing}, which LIVE_SCRIPTS does not send")
     send(t, [p for p in imported(LIVE_SCRIPTS) if p.startswith("worker/")], f"{root}/worker")
+    # …AND THE PAGE'S OWN CODE a live script runs (`board_heads.mjs`).
+    run(["ssh", *o, host, f"mkdir -p {root}/mcp"])
+    send(t, [p for p in imported(LIVE_SCRIPTS) if p.startswith("mcp/")], f"{root}/mcp")
     send(t, ["scripts/pg/package.json", "scripts/pg/package-lock.json"], f"{root}/scripts/pg")
     # INSTALLED ONLY WHEN THE LOCK MOVED: the server has node and no npm, so an
     # install it does not need must not be what fails the deploy.

@@ -265,6 +265,16 @@ board submission. Run it after adding a weapon or anything a weapon can carry.
 It opens every weapon's page, so CI shards it: `WFSIM_PARITY_SHARD=i/n` takes
 every n-th weapon from the i-th, and four jobs sweep the roster in parallel.
 
+## `check_board_heads`
+
+The heads (docs/BOARD.md §"The heads") answer as the whole board: over the
+committed `site/board/`, every scene joined, each weapon's rows and their
+`boardHeads` are asked `builder.board.read` at its deepest limit — every ruler,
+mode or modes pooled, riven-ness, distinct or not — and each ruler's newest
+measurement, and must answer alike. Three cuts that are wrong on purpose (one
+place short, a tie cut, the newest row left out) must each be caught. No
+server, no network.
+
 ## `check_board_submit`
 
 Plain node against a KV stub, no browser. Every key
