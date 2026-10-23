@@ -266,6 +266,38 @@ CREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS bigint LANGUAGE sql AS
   SELECT (SELECT count(*) FROM d) + (SELECT count(*) FROM q)
 $$;
 
+-- WHAT IS PAST THE WINDOW IS FORGOTTEN, so the library's size follows the board
+-- and the window, never the days it has run (worker/tasks.js `KEPT_MS`, the
+-- settler's `past` tick): a fact of an engine no longer served and a withdrawn
+-- question, settled before $1, go with their answers, their board demands no
+-- longer live and their refusals. Kept: a fact of the served engine $2, the
+-- cache a row asked again is told at once; a question a demand still waits on,
+-- or one any producer outside the board kinds $3 (json) asked; one its engine
+-- refused (`refusal_withdrawals`), which must stay withdrawn. At most $4
+-- questions a call; returns how many went. Definer: the settler's role is
+-- granted no delete on the tables it empties.
+CREATE OR REPLACE FUNCTION factory_forget_past(text, text, text, bigint) RETURNS bigint
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v text[];
+BEGIN
+  SELECT coalesce(array_agg(t.id), '{}') INTO v FROM (
+    SELECT q.id FROM questions q
+     WHERE ((q.state = 'fact' AND q.fact_at < $1 AND q.fact_engine IS DISTINCT FROM $2)
+            OR (q.state = 'withdrawn' AND q.opened_at < $1))
+       AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
+                        AND (d.state = 'live' OR d.producer NOT IN (SELECT jsonb_array_elements_text($3::jsonb))))
+       AND NOT EXISTS (SELECT 1 FROM refusal_withdrawals r WHERE r.question = q.id)
+     LIMIT $4 FOR UPDATE OF q SKIP LOCKED) t;
+  IF cardinality(v) = 0 THEN RETURN 0; END IF;
+  DELETE FROM answers WHERE question = ANY (v);
+  DELETE FROM demands WHERE question = ANY (v) AND state <> 'live';
+  DELETE FROM engine_refusals WHERE question = ANY (v);
+  DELETE FROM settle_queue WHERE question = ANY (v);
+  DELETE FROM led_questions WHERE question = ANY (v);
+  DELETE FROM questions WHERE id = ANY (v) AND state IN ('fact', 'withdrawn');
+  RETURN cardinality(v);
+END $$;
+
 -- A BOARD ROW STILL OWED (worker/board_tasks.js): `queue` holds it.
 CREATE OR REPLACE FUNCTION board_owed(text, text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS (SELECT 1 FROM queue WHERE build_id = $1 AND ruler = $2 AND mode = $3)

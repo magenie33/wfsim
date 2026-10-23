@@ -816,6 +816,15 @@ the copy in). It writes:
   asking and computing (the worker's own definitions), the queue, and its
   heartbeat with the commit it runs;
 - `fair_shares`, every minute: the fair-share table for the served engine;
+- nothing past the window, every minute (`factory_forget_past`): **THE
+  LIBRARY KEEPS FOURTEEN DAYS** (`KEPT_MS`), so its size follows the board and
+  the window, never the days it has run. A fact of an engine no longer served
+  and a withdrawn question, settled before the window, go with their answers,
+  their board demands and their refusals; the served engine's facts stay, the
+  cache a row asked again is told at once, and so does a question a demand
+  waits on, one a producer outside the board asked, and one its engine refused.
+  What a device earned is in `verifier_hours` and stays; a ledger's per-answer
+  counts and a refusal reach back the window;
 - `factory_findings`: what its comparisons found, one row a kind.
 
 ITS ROLE, `wfsim_factoryd`, reads only what its ticks read. A tick that reads
@@ -1139,8 +1148,8 @@ questions, never a heavier client.
   counts their work — ships the fact and tells the factory. The bot server
   fights nothing. The factory credits whom the fact agrees with and refuses a client a
   dispute or a spot check disproves: its answers stop counting, what it was
-  paid is taken back, and a fact it witnessed that nobody official checked is
-  opened again, its number taken off the board and its row owed again. A score
+  paid within the library's window (`KEPT_MS`) is taken back, and a fact it
+  witnessed in that window that nobody official checked is opened again, its number taken off the board and its row owed again. A score
   within a part in 10^12 of the fact's, its work equal, is the runs folded in
   another grouping (docs/WASM.md): unpaid, never refused. A
   REFUSAL IS A COOL-DOWN, never for good: a day, then three times as long each
@@ -2368,9 +2377,10 @@ holding the original.
 | a run artifact | 90 days | `gh run download --name library-<n>` |
 
 The server dumps both databases whole besides (`/usr/local/bin/wfsim-pg-backup`,
-nightly at 03:17 UTC): `pg_dump -Fc` of `wfsim` and `wfsim_accounts`, seven days
-on its disk and thirty in the R2 bucket `wfsim-pg-backup`. That copy holds
-personal data and never leaves the owner's accounts.
+nightly at 03:17 UTC): `pg_dump -Fc` of `wfsim` and `wfsim_accounts`, two days
+on its disk and thirty in the R2 bucket `wfsim-pg-backup`. That copy holds personal data
+and never leaves the owner's accounts. Postgres logs statements past five
+seconds, rotated weekly and four kept.
 
 **IT FETCHES COLD.** The backup reads the rows straight out of the database
 with no cache of any kind, because a copy that shares its input with the thing

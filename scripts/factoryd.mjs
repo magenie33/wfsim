@@ -15,10 +15,16 @@ import { servedRelease, CLIENTS_PER_FACT, PROTOCOL, PROTOCOLS_SERVED } from "../
 import { dialsOf, forgetDials } from "../worker/dials.js";
 import { putObject } from "./sigv4.mjs";
 import { iso } from "../worker/instant.js";
+import { KEPT_MS } from "../worker/tasks.js";
+import { BOARD_KINDS } from "../worker/board_kinds.js";
 import { demandOf, DEMAND_KEY, DEMAND_CACHE, tallyOf, tallyBase, TALLY_KEY, TALLY_CACHE, TALLY_BASE_MS } from "../worker/contribution.js";
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
 export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, STATS_TICK_MS = 10_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
+/// WHAT IS PAST THE WINDOW GOES this many questions a call, a few calls a
+/// minute (worker/pg/sync.sql `factory_forget_past`): a day's facts in hours,
+/// and no call near the statement timeout.
+export const PAST_MS = 60_000, PAST_BATCH = 2_000, PAST_CALLS = 5;
 const RELEASE_URL = process.env.RELEASE_URL || "https://wfsim.app/release.json";
 /// THE WORK SIGNAL: the object written to the public bucket, and where readers get it.
 export const SIGNAL_KEY = "work.json", SIGNAL_CACHE = "public, max-age=5";
@@ -150,9 +156,19 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       await env.LIBRARY.prepare("SELECT factory_forget_codes() AS n").first();
       forgotAt = now;
     },
+    // WHAT IS SETTLED AND PAST `KEPT_MS` IS FORGOTTEN; the served engine's facts stay.
+    past: async () => {
+      if (!release.engine) return;
+      const before = iso(Date.now() - KEPT_MS);
+      for (let i = 0; i < PAST_CALLS; i++) {
+        const { n } = await env.LIBRARY.prepare("SELECT factory_forget_past(?::text, ?::text, ?::text, ?::bigint) AS n")
+          .bind(before, release.engine, JSON.stringify(BOARD_KINDS), PAST_BATCH).first();
+        if (Number(n) < PAST_BATCH) break;
+      }
+    },
   };
   if (once) {
-    for (const name of ["snapshot", "fair", "settle", "demand", "tally", "forget"]) await tick(name, jobs[name]);
+    for (const name of ["snapshot", "fair", "settle", "demand", "tally", "forget", "past"]) await tick(name, jobs[name]);
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
     log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit);
@@ -170,7 +186,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     };
     timers.set(name, setTimeout(loop, 0));
   };
-  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget");
+  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past");
   every(WAVE_MS, "wave"); every(SIGNAL_CHECK_MS, "signalCheck");
   log("factoryd up", commit, release.engine);
   await new Promise((resolve) => {

@@ -998,17 +998,18 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// for good (`coolDownMs`). Its answers stop counting; what it was credited is
   /// taken back, in its hour; a fact it witnessed that the official machines
   /// never checked is opened again, and its producers told it no longer stands
-  /// (`on_retract`).
+  /// (`on_retract`). All of it within `KEPT_MS`: an answer older has been
+  /// forgotten, and what it earned and witnessed stands.
   async function refuse(env, device, now = Date.now()) {
-    const db = env.LIBRARY, at = iso(now);
+    const db = env.LIBRARY, at = iso(now), since = iso(now - KEPT_MS);
     const v = await db.prepare("SELECT refusals FROM verifiers WHERE id = ?").bind(device).first();
     const cool = coolDownMs(v && v.refusals);
-    const paid = (await db.prepare("SELECT coalesce(sum(work), 0) AS w FROM answers WHERE device = ? AND credited = 1 AND official = 0")
-      .bind(device).first()).w;
+    const paid = (await db.prepare("SELECT coalesce(sum(work), 0) AS w FROM answers WHERE device = ? AND credited = 1 AND official = 0 AND at >= ?")
+      .bind(device, since).first()).w;
     const { results: touched } = await db.prepare(
       `SELECT DISTINCT q.id, q.state FROM answers a JOIN questions q ON q.id = a.question
-        WHERE a.device = ? AND a.void = 0 AND a.official = 0 AND q.state IN ('fact', 'spot')
-          AND NOT EXISTS (SELECT 1 FROM answers o WHERE o.question = q.id AND o.official = 1 AND o.void = 0)`).bind(device).all();
+        WHERE a.device = ? AND a.at >= ? AND a.void = 0 AND a.official = 0 AND q.state IN ('fact', 'spot')
+          AND NOT EXISTS (SELECT 1 FROM answers o WHERE o.question = q.id AND o.official = 1 AND o.void = 0)`).bind(device, since).all();
     await db.batch([
       db.prepare("UPDATE verifiers SET banned = 1, refusals = refusals + 1, clean = 0, refused_until = ? WHERE id = ?").bind(iso(now + cool), device),
       db.prepare("UPDATE verifiers SET work = GREATEST(0, work - ?::bigint) WHERE id = ?::text").bind(paid, device),
@@ -1114,6 +1115,11 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
 export const FACTS_PER_REFUSAL_FORGIVEN = 1000;
 /// HOW LONG A REFUSAL LASTS: a day, three times as long at each one before it.
 export const coolDownMs = (refusals) => 86_400_000 * 3 ** Math.max(0, refusals || 0);
+/// HOW LONG THE LIBRARY KEEPS WHAT IS SETTLED: a fact of an engine no longer
+/// served and a withdrawn question, with their answers and demands, go once
+/// this old (worker/pg/sync.sql `factory_forget_past`); a refusal reaches back
+/// this far and no further.
+export const KEPT_MS = 14 * 86_400_000;
 
 /// ONE QUERY DECIDES WHAT A WITNESS MAY ANSWER (the LIVENESS property): a
 /// volunteer takes an open question it has not answered — nor any device of its

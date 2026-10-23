@@ -389,6 +389,18 @@ best-scored build first inside it, each row naming its weapon's place;
 down a second later, the same place due alike whichever run asked it, and a
 batch's long-past day due a minute from now rather than overdue.
 
+## `check_forget_past`
+
+Plain node on PGlite: the library's window (docs/BOARD.md §"The settler").
+`factory_forget_past` takes a fact of an engine no longer served and a
+withdrawn question settled before `KEPT_MS`, with their answers and demands,
+and keeps the served engine's facts, a recent fact, a question a live demand
+or a producer outside the board holds, a refused question, open and disputed
+ones; a call takes at most its batch and the questions it may not take never
+fill one; a forgotten row asked again opens anew; `refuse` reopens and takes
+back only inside the window. Fails on a pick that ignores the served engine or
+the refusals, and on a refusal without the window.
+
 ## `check_initiator`
 
 Plain node on PGlite: who asked (docs/BOARD.md §"Who asked"). A demand and its
