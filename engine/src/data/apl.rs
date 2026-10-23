@@ -147,7 +147,8 @@ impl Action {
     pub fn firing(form: crate::model::FormKind) -> Self {
         use crate::model::FormKind as F;
         match form {
-            F::Base | F::Incarnon => Action::Shoot,
+            // …AND A MODE THE TOGGLE SELECTS, fired on the same trigger.
+            F::Base | F::Incarnon | F::Heat | F::Electricity | F::Cold => Action::Shoot,
             F::Charged => Action::Charged,
             F::AltFire => Action::AltFire,
             F::SemiAuto => Action::SemiAuto,
@@ -652,6 +653,10 @@ prio: 3
         // the Incarnon form, and what you pull there is the ordinary trigger.
         assert_eq!(word(F::Base), "shoot");
         assert_eq!(word(F::Incarnon), "shoot");
+        // A MODE THE TOGGLE SELECTS is no press of its own: it is the trigger.
+        for f in [F::Heat, F::Electricity, F::Cold] {
+            assert_eq!(word(f), "shoot", "{f:?}");
+        }
         for f in [F::Charged, F::AltFire, F::SemiAuto, F::Auto] {
             assert_eq!(word(f), f.id(), "{f:?}");
         }

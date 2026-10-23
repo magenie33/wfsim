@@ -6,7 +6,9 @@ weapon_type: secondary
 # POISON one.
 class: pistol
 form: base
+form_name: Poison Quill
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: hystrix_prime
 mod_pools: [pistol]
 mastery_rank: 12
 max_rank: 30
@@ -49,9 +51,6 @@ attack:
   forced_procs: [toxin]
   # see notes: no_range_row_attack
   damage: { impact: 2.76, puncture: 39.56, slash: 3.68 }   # total 46
-
-unmodeled:
-  - "The alt-fire cycles four quill types, Poison, Fire, Electric and Ice; this entry is the Poison one. The others differ in element, and two in physical damage, so a build around another quill is not exactly this number."
 
 source:
   url: https://wiki.warframe.com/w/Hystrix_Prime

@@ -6,7 +6,9 @@ weapon_type: secondary
 # the POISON quill, which is the arsenal's own display.
 class: pistol
 form: base
+form_name: Poison Quill
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
+transform_group: hystrix
 mod_pools: [pistol]
 mastery_rank: 7
 max_rank: 30
@@ -49,9 +51,6 @@ attack:
   forced_procs: [toxin]
   # see notes: no_range_row_attack
   damage: { impact: 2.16, puncture: 30.96, slash: 2.88 }   # total 36
-
-unmodeled:
-  - "The alt-fire cycles four quill types, Poison, Fire, Electric and Ice; this entry is the Poison one. The others differ in element, and two in physical damage (40 against 36), so a build around another quill reads about a tenth low."
 
 source:
   url: https://wiki.warframe.com/w/Hystrix

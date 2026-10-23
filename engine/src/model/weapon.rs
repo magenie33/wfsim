@@ -301,6 +301,14 @@ pub enum FormKind {
     SemiAuto,
     /// See [`FormKind::SemiAuto`] — the fully automatic member of the same set.
     Auto,
+    /// A MODE THAT FORCES ONE STATUS, entered by the Alternate Fire toggle and
+    /// fired on the trigger — the Hystrix's Fire, Electric and Ice quills, its
+    /// Poison quill being the arsenal's form. NAMED FOR THE STATUS, the one
+    /// thing that tells the quills apart on every Hystrix; the page's own name
+    /// is the entry's `form_name`.
+    Heat,
+    Electricity,
+    Cold,
     // ---- MELEE. Seven ways to swing one weapon, and each of them is a
     // BUILD --------------------------------------------
     //
@@ -361,6 +369,9 @@ impl FormKind {
             FormKind::AltFire => "alt_fire",
             FormKind::SemiAuto => "semi_auto",
             FormKind::Auto => "auto",
+            FormKind::Heat => "heat",
+            FormKind::Electricity => "electricity",
+            FormKind::Cold => "cold",
             FormKind::Neutral => "neutral",
             FormKind::Forward => "forward",
             FormKind::Block => "block",
@@ -384,6 +395,9 @@ impl FormKind {
             FormKind::AltFire => "Alternate Fire",
             FormKind::SemiAuto => "Semi-Auto",
             FormKind::Auto => "Full-Auto",
+            FormKind::Heat => "Heat",
+            FormKind::Electricity => "Electricity",
+            FormKind::Cold => "Cold",
             // THE LABEL IS THE FALLBACK, not the name a reader sees. A stance
             // names its own combos and `/api/meta` fills that in; this is what
             // is drawn when no stance is equipped, where the input IS the only
@@ -465,6 +479,9 @@ impl FormKind {
             "alt_fire" => FormKind::AltFire,
             "semi_auto" => FormKind::SemiAuto,
             "auto" => FormKind::Auto,
+            "heat" => FormKind::Heat,
+            "electricity" => FormKind::Electricity,
+            "cold" => FormKind::Cold,
             "neutral" => FormKind::Neutral,
             "forward" => FormKind::Forward,
             "block" => FormKind::Block,
