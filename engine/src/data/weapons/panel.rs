@@ -475,7 +475,6 @@ pub fn base_panel_assembled(
         alt_fire_toggles: s.alt_fire_toggles,
         // Empty until an evolution writes into it (data::evolutions::apply).
         indirect: Vec::new(),
-        reload_damage_buff: 0.0,
         base_vector: vector,
         extra_hit_reads: s.attack.extra_hit_reads.map(|x| x.0),
         base_crit_chance: s.attack.crit_chance,
@@ -563,8 +562,6 @@ pub fn base_panel_assembled(
         },
         base_multishot: s.attack.multishot,
         evo_base_multishot: 0.0,
-        buff_multishot_bonus: 0.0,
-        buff_multishot_max_stacks: 0,
         magazine_size,
         // The reserve the sim may spend, and the two facts about it. HAVING
         // one is `ammo_max` — derived, because a weapon that states a reserve

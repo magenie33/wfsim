@@ -499,8 +499,8 @@ not deny, which are opposite claims that look identical from outside.
 
 ### Every timed buff starts EARNED, at zero
 
-**A buff starts full only if it is neither timed NOR consumable. Everything
-else starts at 0.**
+**A buff starts at 0 unless the player earned it before the fight** (§"Before
+the fight" below). Two kinds are never earned there:
 
 - **timed** — it has a duration, so a lull empties it;
 - **consumable** — it is SPENT by being used, whatever its duration says. A
@@ -509,9 +509,6 @@ else starts at 0.**
   question is whether the fight can hand it to you at t = 0, and a buff you
   have already spent is not one you are holding.
 
-The `permanent` flag on a buff card is exactly this distinction, and it is the
-only input the rule takes.
-
 **Secondary Enervate (次要·失活) is the worked example of the consumable half.**
 Untimed and UNCAPPED — a hit adds a stack of +10 flat crit chance with no
 ceiling — but a big crit wipes the pile, so it starts at 0 like everything else
@@ -519,8 +516,7 @@ that can be spent. It lives in a PERK rather than in `arcane.buffs`, and it has 
 same: the arcane whose entire point is a stack count has to be settable.
 `BuffMeta.uncapped` says there is no
 maximum, the card shows `/ ∞` and its input takes no `max`, and
-`FightParams::enervate_stacks` carries the configured pile into the run. In the whole data set today, exactly one buff
-qualifies: **Fevered Frenzy** (the Dual Toxocyst evolution).
+`FightParams::enervate_stacks` carries the configured pile into the run.
 
 The modelled fight is therefore: *you have been at it a while, but you have not
 been in contact for the last few seconds and are about to be.* Whatever
@@ -566,11 +562,14 @@ and never here. `precombat_only_on_a_trigger_a_player_performs_alone` fails on a
 file that says otherwise, and on a rolled trigger, since the opening would then
 be a draw.
 
-**THE PRESSES ARE PERFORMED, NOT ASSUMED.** `earn_before_the_fight` repeats the
-trigger of each buff that says `precombat: true` until that buff is at its cap,
-and EVERY buff on that trigger takes what those presses earn: two empty reloads
-for Fresh Havoc are two empty reloads for anything else that pays on one. A
-clock starts at t = 0, so a timed pile opens with its whole window.
+**THE PRESSES ARE PERFORMED, NOT ASSUMED** (`fight::open::precombat`). At the
+fight's open each line is pressed until its pile holds the count it names, as
+the same event the fight makes: an empty reload pays the shells, the completed
+reload and the reload from empty, and grows a magazine that grows on one. So
+EVERY pile on that trigger takes what the presses earn — two empty reloads for
+Fresh Havoc are two for anything else that pays on one. A clock starts at
+t = 0, so a timed pile opens with its whole window. A roll a press makes is
+drawn from its own stream and moves no draw of the fight's.
 
 | buff | where | the line |
 |---|---|---|
@@ -578,10 +577,10 @@ clock starts at t = 0, so a timed pile opens with its whole window.
 | **Reified Bane** | both Boars, the three Latos | `reload_from_empty,until=buff.evo_reload_damage.stack>=1` |
 | **Fresh Havoc** | both Somas | `reload_from_empty,until=buff.on_empty_reload_damage.stack>=2` |
 
-Fevered Frenzy and Reified Bane are static piles — the fight fires no ability
-cast, and an empty reload never takes Reified Bane away — so their count is the
-card's and the line names the press that earns it. Fresh Havoc is a live pile
-and the fight keeps earning it.
+All three are live piles the fight keeps earning: every ability the frame casts
+in the fight is a Fevered Frenzy stack (`FrameRuntime::take_casts`), and every
+empty reload a Reified Bane and a Fresh Havoc one. A pile's base damage is the
+buff's, so it never feeds the Condition Overload term (M88).
 
 **THE CARD IS THE TARGET.** For a precombat buff the stack stepper sets how far
 the list builds it; with no card configured — a ruler sends no buff map — the

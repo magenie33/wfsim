@@ -348,15 +348,6 @@ pub struct FightParams {
     /// See [`crate::model::WeaponBase::unswung_fraction`] — the share of the
     /// vector a stance's, a slam's or a heavy's own multiplier leaves alone.
     pub unswung_fraction: f64,
-    /// The evolution's PERMANENT stacked multishot (Fevered Frenzy): its
-    /// full contribution is already inside `multishot`; `apply_buff_config`
-    /// rescales it by the configured stacks ("evo_multishot"). No live
-    /// machinery — the trigger (ability cast) cannot fire in the sim and the
-    /// stacks never decay, so the count is static for the whole run.
-    pub evo_multishot: Option<crate::build::loadout::EvoMsBuff>,
-    /// The evolution's PERMANENT flat base damage (Reified Bane): the vector
-    /// already carries it, and `apply_buff_config` scales it back out.
-    pub evo_base_damage: Option<crate::build::loadout::EvoBdBuff>,
     /// Live on-kill CO stacks, live per StackSpec (Emergent policy).
     pub co_stack: Option<crate::model::StackSpec>,
     /// Live on-kill multishot stacks, earned from zero.

@@ -29,12 +29,9 @@ effects:
   # second line — the same shape the Burston's tier 2 has.
   - kind: flat_base_damage
     value: 34.0
-  # MODELLED, as a LIVE stacking buff. It could not be a
-  # `stacking_buff` with a multishot payload: that loads as
-  # `AssumedMaxMultishot` — a total and a cap and NO trigger — so it would have
-  # granted +1.2 multishot to a build carrying no Electricity at all. A live
-  # buff is bumped inside the fight, where the target's debuffs are in hand, so
-  # the condition it could not state statically is simply readable.
+  # MODELLED, as a LIVE stacking buff: it is bumped inside the fight, where
+  # the target's debuffs are in hand, so the condition — Electricity already
+  # on the target — is read at each hit.
   #
   # A FLAT +0.4, not a percentage of base multishot — "+0.4 Multishot" — so it
   # joins `ms_eff` beside Final Fusillade's rather than the multishot bucket.

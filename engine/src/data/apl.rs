@@ -486,33 +486,10 @@ impl Precombat {
         match trigger {
             T::ReloadFromEmpty => Some(PreAction::ReloadFromEmpty),
             T::ReloadComplete => Some(PreAction::Reload),
+            T::AbilityCast => Some(PreAction::Cast),
             _ => None,
         }
     }
-}
-
-/// **THE PRECOMBAT LIST, PERFORMED** on a weapon's live piles: each buff that
-/// is earned before the fight has its trigger performed until it reaches its
-/// cap, and EVERY buff on that trigger takes what those presses earn, because
-/// they are the same presses. The piles open where this leaves them.
-///
-/// Free and deterministic: no clock runs, so nothing decays, and only a
-/// certain trigger may be earned this way (a roll would make the opening a
-/// draw from the fight's own streams).
-pub fn earn_before_the_fight(mut buffs: Vec<crate::model::StackingBuff>) -> Vec<crate::model::StackingBuff> {
-    let presses = |b: &crate::model::StackingBuff| b.max_stacks.div_ceil(b.stacks_per_trigger.max(1));
-    let wanted: Vec<(crate::model::BuffTrigger, u32)> = buffs
-        .iter()
-        .filter(|b| b.precombat && b.trigger.is_precombat() && b.chance >= 1.0)
-        .map(|b| (b.trigger, presses(b)))
-        .collect();
-    for (trigger, n) in wanted {
-        for b in buffs.iter_mut().filter(|b| b.trigger == trigger && b.chance >= 1.0) {
-            let earned = n.saturating_mul(b.stacks_per_trigger.max(1)).min(b.max_stacks);
-            b.initial_stacks = b.initial_stacks.max(earned);
-        }
-    }
-    buffs
 }
 
 /// **THE FOUR MODE KINDS AS THE LISTS THEY ARE**, for a reader who has a mode
@@ -777,48 +754,6 @@ charged_throw");
                                        glaive_in_flight: flying, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&now(false)), Action::ChargedThrow);
         assert_eq!(apl.pick(&now(true)), Action::Detonate);
-    }
-    fn pile(trigger: crate::model::BuffTrigger, max: u32, precombat: bool) -> crate::model::StackingBuff {
-        crate::model::StackingBuff {
-            id: "pile",
-            trigger,
-            grant: crate::model::BuffGrant::FlatBaseDamage,
-            per_stack: 1.0,
-            max_stacks: max,
-            duration: crate::model::NO_TIMEOUT,
-            chance: 1.0,
-            decay: crate::model::BuffDecay::from_id(None),
-            initial_stacks: 0,
-            stacks_per_trigger: 1,
-            per_shell: false,
-            cleared_by: crate::model::ClearedBy::Nothing,
-            precombat,
-        }
-    }
-
-    /// **THE PRESSES THAT EARN ONE PILE EARN EVERY PILE ON THAT TRIGGER**, and
-    /// nothing earned by an enemy moves: two empty reloads for a two-stack
-    /// pile give a five-stack sibling two, and the on-kill pile stays at zero.
-    #[test]
-    fn the_precombat_presses_earn_every_pile_they_trigger() {
-        use crate::model::BuffTrigger as T;
-        let out = earn_before_the_fight(vec![
-            pile(T::ReloadFromEmpty, 2, true),
-            pile(T::ReloadFromEmpty, 5, false),
-            pile(T::Kill, 3, false),
-            pile(T::Kill, 3, true),
-        ]);
-        let opens: Vec<u32> = out.iter().map(|b| b.initial_stacks).collect();
-        assert_eq!(opens, [2, 2, 0, 0], "a kill is not a press made alone");
-    }
-
-    /// **A SHELL-COUNTING PILE IS EARNED A MAGAZINE A PRESS**, so one reload
-    /// fills thirteen stacks of a 13-round magazine and the cap holds.
-    #[test]
-    fn a_press_earns_what_one_trigger_grants() {
-        let mut p = pile(crate::model::BuffTrigger::ReloadComplete, 20, true);
-        p.stacks_per_trigger = 13;
-        assert_eq!(earn_before_the_fight(vec![p])[0].initial_stacks, 20, "two reloads, capped at 20");
     }
 
     /// **THE LIST READS AS SIMC WRITES A PRECOMBAT LIST.**

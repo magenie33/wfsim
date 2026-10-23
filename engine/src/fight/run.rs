@@ -1009,6 +1009,13 @@ pub fn run_once_traced(
                 &mut me.spool, &me.windows, &mut me.last_shot_t,
             );
         }
+        // AN ABILITY CAST THE FRAME MADE ON THIS TURN earns what a cast earns,
+        // paid when the turn ends: the piles it feeds have no clock to run.
+        if let Some(n) = me.spool.frame.as_mut().map(crate::data::casting::FrameRuntime::take_casts) {
+            for _ in 0..n {
+                bump_on_trigger(me.params, &mut me.buff_stacks, crate::model::BuffTrigger::AbilityCast, t, &mut me.d.spine);
+            }
+        }
         // WHERE THIS SEAT IS DUE NEXT. `next_shot_due` advanced `t` by this
         // weapon's cadence, which is this seat's clock and nobody else's.
         me.next_t = t;

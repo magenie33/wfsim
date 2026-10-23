@@ -163,6 +163,8 @@ pub struct FrameRuntime {
     once_done: Vec<bool>,
     kill_mark: u32,
     pub summon: Summon,
+    /// Ability casts made since the fight last asked (`Self::take_casts`).
+    casts: u32,
 }
 
 /// HOW OFTEN ONE TURN MAY ACT — a guard, so a rule whose action does not clear
@@ -173,7 +175,7 @@ impl FrameRuntime {
     pub fn new(spec: Arc<FrameSpec>, live: Arc<Mutex<Vec<ActiveAbility>>>) -> Self {
         let n = spec.rules.len();
         let summon = Summon { at_seconds: f64::NEG_INFINITY, strength: spec.strength };
-        FrameRuntime { spec, live, strength: Vec::new(), vigor: 0.0, ramp: (0, None), once_done: vec![false; n], kill_mark: 0, summon }
+        FrameRuntime { spec, live, strength: Vec::new(), vigor: 0.0, ramp: (0, None), once_done: vec![false; n], kill_mark: 0, summon, casts: 0 }
     }
 
     /// The frame's Ability Strength at `t` with `kills` made so far: its own,
@@ -306,6 +308,7 @@ impl FrameRuntime {
             Action::Cast { ability } if self.spec.summoned_by.as_deref() == Some(ability.as_str()) => {
                 let extra = self.spend_cast_bonus(&ability);
                 self.summon = Summon { at_seconds: t, strength: self.strength_now(t, kills) + extra };
+                self.casts += 1;
                 CAST_SECONDS_UNMEASURED / (1.0 + self.spec.casting_speed_bonus)
             }
             Action::Cast { ability } => self.cast(&ability, t, kills),
@@ -347,6 +350,7 @@ impl FrameRuntime {
             old.ends_at_seconds = t;
         }
         live.push(cast);
+        self.casts += 1;
         busy
     }
 
@@ -372,6 +376,12 @@ impl FrameRuntime {
     pub fn act(&mut self, t: f64, kills: u32) -> Option<f64> {
         self.grow(t, kills);
         (0..self.spec.rules.len()).find(|&k| self.wants(k, t, kills)).map(|k| self.perform(k, t, kills))
+    }
+
+    /// **THE CASTS MADE SINCE THE LAST ASK** — what the fight pays an "On
+    /// Ability Cast" pile (`BuffTrigger::AbilityCast`) for.
+    pub fn take_casts(&mut self) -> u32 {
+        std::mem::take(&mut self.casts)
     }
 
     /// Every act due at `t`, back to back; the time the weapon is free again.

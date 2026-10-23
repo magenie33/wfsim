@@ -49,7 +49,8 @@ fn neurotoxin_adds_beside_a_toxin_mod() {
 
 /// A Dual Toxocyst Incarnon on the never-dying dummy with nothing random left
 /// in the hit: no status, a crit worth 1x, one body part. Fevered Frenzy's
-/// stacks open full, so every shot is two pellets.
+/// twenty stacks are earned before the fight, so every shot is two pellets.
+const PELLETS: f64 = 2.0;
 fn dt_on_the_dummy(head: bool) -> FightParams {
     let mut p = FightParams::from_panel(
         &panel("dual_toxocyst_incarnon", &[FEVERED, NEUROTOXIN]),
@@ -68,8 +69,7 @@ fn dt_on_the_dummy(head: bool) -> FightParams {
 /// every shot is the resting 125; locked up, every shot is the 336.
 #[test]
 fn frenzys_toxin_is_on_the_hit_only_while_frenzy_is_up() {
-    let ms = dt_on_the_dummy(false).multishot;
-    assert_eq!(ms, 2.0);
+    let ms = PELLETS;
     let down = monte_carlo(&dt_on_the_dummy(false), 4, 1);
     assert!(
         (down.mean_damage / down.mean_shots - ms * 125.0).abs() < 1e-6,
@@ -93,7 +93,7 @@ fn the_shot_that_arms_frenzy_does_not_carry_its_toxin() {
     let p = dt_on_the_dummy(true);
     let head = p.body_parts[0].multiplier;
     let s = monte_carlo(&p, 4, 1);
-    let want = p.multishot * head * (125.0 + (s.mean_shots - 1.0) * 335.9375);
+    let want = PELLETS * head * (125.0 + (s.mean_shots - 1.0) * 335.9375);
     assert!((s.mean_damage - want).abs() < 1e-6, "{} against {want}", s.mean_damage);
 }
 

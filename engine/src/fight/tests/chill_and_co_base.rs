@@ -227,12 +227,16 @@ fn boar_prime_co_reads_its_own_base_under_reified_bane_in_both_forms() {
         ("boar_prime_incarnon", 30.0, 2.0, 1.0, 167.0),
     ] {
         let b = crate::model::WeaponBase::from_data(id, false, &["boar_prime_reified_bane"]);
+        // THE UNCONDITIONAL +10 IS IN THE BASE; the +14 — not the card's +10 —
+        // is the pile the precombat list earns, a flat add the base-damage
+        // mods multiply and the CO term never reads.
         let panel = b.base_vector.total();
-        // THE +14, not the card's +10 — the gated half as the damage reads it.
-        assert!((panel - (own_base + 24.0)).abs() < 1e-9, "{id}: panel {panel}");
+        assert!((panel - (own_base + 10.0)).abs() < 1e-9, "{id}: panel {panel}");
+        let bane = b.stacking_buffs.iter().find(|x| x.id == "evo_reload_damage").expect("the pile");
+        assert!((bane.per_stack - 14.0).abs() < 1e-9, "{id}: {}", bane.per_stack);
         let f = b.co_base_fraction();
         assert!((panel * f - own_base).abs() < 1e-9, "{id}: CO reads {}", panel * f);
-        let got = panel * (1.0 + 1.65 + 0.4 * stacks * types * f);
+        let got = (panel + bane.per_stack) * (1.0 + 1.65) + own_base * 0.4 * stacks * types;
         assert!((got - measured).abs() < 0.5, "{id}: {got} against a measured {measured}");
     }
 }

@@ -10,13 +10,10 @@ use super::*;
 fn a_card_opens_full_exactly_when_the_precombat_list_earns_it() {
     let mut wrong: Vec<String> = Vec::new();
     for def in pool() {
-        let earned = def.effects.iter().any(|e| match e {
-            EvoEffect::StackingGrant { precombat, .. } => *precombat,
-            // Static piles whose press the fight never makes: an ability cast
-            // (Fevered Frenzy) and an empty reload kept forever (Reified Bane).
-            EvoEffect::AssumedMaxMultishot { .. } | EvoEffect::FlatBaseDamageOnEmptyReload(_) => true,
-            _ => false,
-        });
+        let earned = def
+            .effects
+            .iter()
+            .any(|e| matches!(e, EvoEffect::StackingGrant { precombat: true, .. }));
         for card in def.buff_cards() {
             if (card.opens_at == CardOpens::Full) != earned {
                 wrong.push(format!("{} ({}) opens {:?}, earned before the fight: {earned}", def.id, card.id, card.opens_at));
@@ -28,8 +25,8 @@ fn a_card_opens_full_exactly_when_the_precombat_list_earns_it() {
 
 /// **ONLY WHAT A PLAYER DOES ALONE IS EARNED BEFORE THE FIGHT**, and only for
 /// certain: a pile on a hit or a kill is earned against an enemy, and a rolled
-/// trigger would make the opening a draw. `earn_before_the_fight` skips both
-/// silently, so this is where a file stating one fails.
+/// trigger would make the opening a draw. The fight's precombat presses a
+/// press made alone and nothing else, so this is where a file stating one fails.
 #[test]
 fn precombat_only_on_a_trigger_a_player_performs_alone() {
     let mut wrong: Vec<String> = Vec::new();

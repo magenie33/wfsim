@@ -104,11 +104,8 @@ pub enum BuffTrigger {
     /// target — the mechanic, not an admission.
     PunchThrough,
     /// Stormburst: a hit on a target that ALREADY carries this status. The
-    /// condition is on the TARGET, not on the shot — which is why it could not
-    /// be expressed as a static `AssumedMaxMultishot` (that would grant the
-    /// buff to a build with no Electricity in it at all) and can be expressed
-    /// here: a live buff is bumped inside the fight, where the target's
-    /// debuffs are in hand.
+    /// condition is on the TARGET, not on the shot, so it is read where the
+    /// target's debuffs are in hand: a live buff bumped inside the fight.
     HitEnemyWithStatus(crate::rules::damage::DamageType),
     /// Mounting Momentum: a completed RELOAD, not a shot. The first trigger in
     /// this vocabulary that is not something the weapon does to a target — and
@@ -140,6 +137,10 @@ pub enum BuffTrigger {
     /// burst at the end, and a partial burst is not one: the count restarts
     /// with the magazine, so those rounds earn nothing.
     FullBurst,
+    /// Fevered Frenzy: "On Ability Cast" — ANY Warframe ability, so a cast
+    /// counts whichever ability it was. Fired by the frame's own casts in the
+    /// fight and by the precombat list's `cast`.
+    AbilityCast,
     /// Crimson Overture: A KILL, wherever it came from.
     ///
     /// Counted off `RunResult::kills` rather than bumped at the six places a
@@ -423,6 +424,7 @@ impl BuffTrigger {
             BuffTrigger::ReloadComplete => "on a completed reload",
             BuffTrigger::ReloadFromEmpty => "on a reload from empty",
             BuffTrigger::FullBurst => "on a completed burst",
+            BuffTrigger::AbilityCast => "on an ability cast",
             BuffTrigger::Kill => "on a kill",
             BuffTrigger::Firing => "on firing",
             BuffTrigger::StatusApplied => "on a status landing",
@@ -658,16 +660,17 @@ impl BuffTrigger {
             BuffTrigger::ReloadComplete => "reload_complete",
             BuffTrigger::ReloadFromEmpty => "reload_from_empty",
             BuffTrigger::FullBurst => "full_burst",
+            BuffTrigger::AbilityCast => "ability_cast",
             BuffTrigger::Firing => "firing",
         }
     }
 
     /// CAN A PLAYER PERFORM THIS WITH NO ENEMY IN REACH? Only these may be
     /// earned before the fight: emptying a magazine and reloading it needs
-    /// nothing to shoot at, and every other trigger is a hit, a kill or a
-    /// burst on a target.
+    /// nothing to shoot at and neither does casting, and every other trigger
+    /// is a hit, a kill or a burst on a target.
     pub fn is_precombat(self) -> bool {
-        matches!(self, BuffTrigger::ReloadComplete | BuffTrigger::ReloadFromEmpty)
+        matches!(self, BuffTrigger::ReloadComplete | BuffTrigger::ReloadFromEmpty | BuffTrigger::AbilityCast)
     }
 
     /// The trigger a data file names. An event carrying a payload
@@ -676,7 +679,7 @@ impl BuffTrigger {
         use BuffTrigger as T;
         [
             T::Kill, T::Hit, T::DirectHit, T::Crit, T::PlainHit, T::Headshot, T::ConsecutiveHeadshot, T::PunchThrough,
-            T::StatusApplied, T::ReloadComplete, T::ReloadFromEmpty, T::FullBurst, T::Firing,
+            T::StatusApplied, T::ReloadComplete, T::ReloadFromEmpty, T::FullBurst, T::AbilityCast, T::Firing,
         ]
         .into_iter()
         .find(|t| t.id() == id)

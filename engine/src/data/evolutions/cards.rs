@@ -90,26 +90,11 @@ impl EvolutionDef {
                 // PAYS NOTHING, which is the whole point — the sim reproduces
                 // the game, and the game pays nothing here.
                 EvoEffect::LiveBug { .. } => None,
-                EvoEffect::AssumedMaxMultishot { max_stacks, .. } => Some(EvoBuffCard {
-                    id: "evo_multishot",
-                    max_stacks: *max_stacks,
-                    permanent: true,
-                    opens_at: CardOpens::Full,
-                }),
                 EvoEffect::StackingDamageOnPlainHit { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_plain_hit_damage",
                     max_stacks: *max_stacks,
                     permanent: false,
                     opens_at: CardOpens::Zero,
-                }),
-                // A BUFF, not a silent stat: the run holds it from t = 0, but
-                // it is earned by an empty reload and the bar has to say so. Permanent — nothing decays it — and one
-                // stack, which is what "on/off" is in this vocabulary.
-                EvoEffect::FlatBaseDamageOnEmptyReload(_) => Some(EvoBuffCard {
-                    id: "evo_reload_damage",
-                    max_stacks: 1,
-                    permanent: true,
-                    opens_at: CardOpens::Full,
                 }),
                 EvoEffect::StackingReloadSpeedOnHeadshot { max_stacks, .. } => Some(EvoBuffCard {
                     id: "on_headshot_reload_speed",
@@ -123,9 +108,9 @@ impl EvolutionDef {
                 // This one the fight fires too, so a card set to zero builds
                 // back.
                 EvoEffect::StackingGrant {
-                    trigger, grant, max_stacks, precombat, ..
+                    trigger, grant, max_stacks, precombat, card, ..
                 } => Some(EvoBuffCard {
-                    id: stacking_card_id(*trigger, *grant),
+                    id: card.unwrap_or_else(|| stacking_card_id(*trigger, *grant)),
                     max_stacks: *max_stacks,
                     permanent: false,
                     opens_at: if *precombat { CardOpens::Full } else { CardOpens::Zero },
@@ -260,6 +245,8 @@ pub(super) fn stacking_card_id(
         (T::PunchThrough, G::CritChance) => "on_punch_through_crit_chance",
         (T::PunchThrough, G::FireRate) => "on_punch_through_fire_rate",
         (T::Crit, G::StatusDamage) => "on_crit_status_damage",
+        // THE FROZEN ID of Fevered Frenzy's card, the only buff on this pair.
+        (T::AbilityCast, G::Multishot) => "evo_multishot",
         // A pair nobody has written a card for yet. It is still a real buff and
         // still runs; it just shares one generic id, which is visible the first
         // time two of them appear on one weapon and is the point at which the

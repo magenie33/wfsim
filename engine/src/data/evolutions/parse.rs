@@ -159,9 +159,6 @@ pub(super) fn effect(v: &Value) -> Option<EvoEffect> {
         "flat_base_crit_multiplier" => {
             EvoEffect::FlatBaseCritMultiplier(f(v, "value").unwrap_or(0.0))
         }
-        "flat_base_damage_on_empty_reload" => {
-            EvoEffect::FlatBaseDamageOnEmptyReload(f(v, "value").unwrap_or(0.0))
-        }
         // A CONDITION IS NEVER IGNORED. This arm read `value` and nothing else
         // for as long as it existed, so Fortress Salvo's "With Armor Over 450"
         // paid out to everybody — the exact failure `gated_by_tenno` was written
@@ -261,23 +258,20 @@ pub(super) fn effect(v: &Value) -> Option<EvoEffect> {
                     .get("precombat")
                     .and_then(Value::as_bool)
                     .unwrap_or(false),
-            }
-        }
-        "stacking_buff" => {
-            // Only the multishot grant is modeled here (Fevered Frenzy, whose
-            // trigger the sim has no event for); other payloads load inert.
-            let max = v.get("max_stacks").and_then(Value::as_u64).unwrap_or(0);
-            match v.get("grants").and_then(Value::as_str) {
-                Some("multishot") => EvoEffect::AssumedMaxMultishot {
-                    total: f(v, "per_stack").unwrap_or(0.0) * max as f64,
-                    max_stacks: max as u32,
+                // A CLOSED LIST: a card id a saved preset already carries.
+                card: match v.get("card").and_then(Value::as_str) {
+                    Some("evo_reload_damage") => Some("evo_reload_damage"),
+                    _ => None,
                 },
-                // NAME the payload. "unmodeled payload" told the pinned inert
-                // list nothing: two different unmodelled buffs read as the
-                // same entry, and neither said what it granted.
-                other => EvoEffect::Inert(format!("stacking_buff {}", other.unwrap_or("no payload"))),
             }
         }
+        // A stacking buff whose trigger or grant this engine has no word for
+        // loads inert, and NAMES the payload so the pinned inert list tells
+        // two of them apart.
+        "stacking_buff" => EvoEffect::Inert(format!(
+            "stacking_buff {}",
+            v.get("grants").and_then(Value::as_str).unwrap_or("no payload")
+        )),
         // THE CONDITION IS READ NOW, and it is a question about the PLAYER
         // rather than about this weapon: "With Sprint Speed 1.2 or Higher".
         // Unread, the perk paid out on every build including the ones that

@@ -67,90 +67,54 @@ fn cernos_primes_innate_headshot_bonus_multiplies_instead_of_adding() {
     assert!((a - m).abs() < 1e-9, "3 x 1.5 either way: {a} vs {m}");
 }
 
+/// The stacks a run holds at its first frame, for one buff, under a card.
+fn opening(panel: &crate::build::loadout::ResolvedPanel, id: &str, card: Option<u32>) -> (u16, f64) {
+    let mut p = FightParams::from_panel(panel, &crate::arena::Arena::training(10.0), &ArcaneFx::none());
+    if let Some(n) = card {
+        let mut cfg = BuffConfig::new();
+        cfg.insert(id.into(), (n, false));
+        p.apply_buff_config(&cfg);
+    }
+    let trace = replay(&p, Rng::new(7).state(), 600);
+    let i = trace.buffs_of(0).iter().position(|x| x.id == id).expect("on the roster");
+    (trace.frames[0].stacks_of(0)[i], monte_carlo(&p, 50, 7).mean_damage)
+}
+
+/// **REIFIED BANE IS ONE EMPTY RELOAD BEFORE THE FIGHT**, and nothing in it
+/// takes the +14 away. A live pile on the reload-from-empty trigger, so the
+/// card is the count the precombat list presses toward: zero is a fight that
+/// never made the reload, and it deals less.
 #[test]
-fn reified_banes_empty_reload_damage_is_a_buff_that_starts_on() {
-    // "On Reload From Empty: +14 Base Damage" is a BUFF, not a silent stat: it belongs on the buff bar, it opens at one stack
-    // because the modelled fight always reloads from empty, and it never
-    // times out. What makes it a buff rather than a decoration is that
-    // turning it off has to MOVE the damage.
+fn reified_bane_is_earned_before_the_fight() {
     use crate::build::loadout::resolve;
-    use crate::model::WeaponBase;
-    use crate::model::StackPolicy;
+    use crate::model::{StackPolicy, WeaponBase};
     let with = WeaponBase::from_data(
         "boar_prime", true, &["boar_prime_evo1_incarnon_form", "boar_prime_reified_bane"],
     );
     let panel = resolve(&with, &[], StackPolicy::Emergent);
-    let base_damage = panel.evo_base_damage.expect("reified bane grants the evo base_damage buff");
-    assert_eq!(base_damage.max_stacks, 1);
-    assert_eq!(base_damage.stacks, 1, "it opens ON");
-    assert!((base_damage.full - 14.0).abs() < 1e-9, "the empty-reload half is +14, got {}", base_damage.full);
-
-    // It is ANNOUNCED, or no card is drawn for it.
-    let params = FightParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &ArcaneFx::none());
-    assert!(
-        params.buff_roster().iter().any(|b| b.id == "evo_reload_damage" && b.max_stacks == 1),
-        "the buff bar never hears about it: {:?}",
-        params.buff_roster()
-    );
-
-    // And turning it off takes the damage back off — down to what the
-    // build would be with only the unconditional +10 half.
-    let off = {
-        let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &ArcaneFx::none());
-        let mut cfg = BuffConfig::new();
-        cfg.insert("evo_reload_damage".into(), (0, false));
-        p.apply_buff_config(&cfg);
-        p
-    };
-    assert!(off.damage.total() < params.damage.total(), "0 stacks changed nothing");
-    let ratio = off.damage.total() / params.damage.total();
-    let want = base_damage.without / (base_damage.without + base_damage.full);
-    assert!((ratio - want).abs() < 1e-9, "scaled by {ratio}, expected {want}");
-    assert_eq!(off.evo_base_damage.expect("still declared").stacks, 0);
+    let bane = panel.stacking_buffs.iter().find(|b| b.id == "evo_reload_damage").expect("the pile");
+    assert_eq!(bane.trigger, crate::model::BuffTrigger::ReloadFromEmpty);
+    assert!(bane.precombat && bane.initial_stacks == 1, "{bane:?}");
+    let (on, full) = opening(&panel, "evo_reload_damage", None);
+    assert_eq!(on, 1, "one empty reload before the fight");
+    let (off, none) = opening(&panel, "evo_reload_damage", Some(0));
+    assert_eq!(off, 0, "a card at zero presses nothing");
+    assert!(none < full, "the +14 moves the damage: {none} against {full}");
 }
 
+/// **FEVERED FRENZY IS TWENTY CASTS OF ANY ABILITY BEFORE THE FIGHT** — a live
+/// pile on the ability-cast trigger, opening where the card says.
 #[test]
-fn evo_multishot_config_rescales_the_permanent_stacks() {
-    // Fevered Frenzy: base 1 pellet × (+100% at 20 stacks) is baked into
-    // the resolved multishot; the per-buff config rescales it statically
-    // (no in-sim trigger, no decay). Lock is meaningless and ignored.
+fn fevered_frenzy_is_twenty_casts_before_the_fight() {
     use crate::build::loadout::resolve;
-    use crate::model::WeaponBase;
-    use crate::model::StackPolicy;
-    let base = WeaponBase::from_data(
-        "dual_toxocyst_incarnon",
-        true,
-        &["dual_toxocyst_evo1_incarnon_form", "dual_toxocyst_fevered_frenzy"],
-    );
+    use crate::model::{StackPolicy, WeaponBase};
+    let base = WeaponBase::from_data("dual_toxocyst", true, &["dual_toxocyst_fevered_frenzy"]);
     let panel = resolve(&base, &[], StackPolicy::Emergent);
-    let multishot = panel.evo_multishot.expect("fevered frenzy grants the evo multishot buff");
-    assert_eq!(multishot.max_stacks, 20);
-    assert!((multishot.full - 1.0).abs() < 1e-12, "1 pellet × +100% = 1.0");
-
-    let mk = |stacks: u32, locked: bool| {
-        let mut p = FightParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &ArcaneFx::none());
-        let mut cfg = BuffConfig::new();
-        cfg.insert("evo_multishot".into(), (stacks, locked));
-        p.apply_buff_config(&cfg);
-        p.multishot
-    };
-    let full = panel.multishot;
-    assert!(
-        (mk(20, true) - full).abs() < 1e-12,
-        "full stacks = untouched"
-    );
-    assert!(
-        (mk(0, false) - (full - 1.0)).abs() < 1e-12,
-        "0 stacks removes the whole bonus"
-    );
-    assert!(
-        (mk(10, false) - (full - 0.5)).abs() < 1e-12,
-        "half stacks remove half"
-    );
-    assert!(
-        (mk(10, true) - mk(10, false)).abs() < 1e-12,
-        "lock is ignored (permanent)"
-    );
+    let (full, at_full) = opening(&panel, "evo_multishot", None);
+    assert_eq!(full, 20);
+    let (half, at_half) = opening(&panel, "evo_multishot", Some(10));
+    assert_eq!(half, 10);
+    assert!(at_half < at_full, "ten stacks fewer is less multishot: {at_half} against {at_full}");
 }
 
 /// Every charge weapon that is NOT a bow pays the draw AND the listed

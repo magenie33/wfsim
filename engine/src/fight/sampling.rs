@@ -60,12 +60,6 @@ pub(super) fn sample_stacks(
         .map(|b| match b.id.as_str() {
             // A weapon passive, not a stack: it is up or it is not.
             "frenzy" => (live(bar.get(crate::rules::perks::frenzy::BUFF_ID).is_some()), never),
-            // PERMANENT (no trigger, no decay): whatever it was configured to,
-            // for the whole run. `multishot` already carries it, so the count
-            // is reconstructed from the fraction that survived the config.
-            "evo_multishot" => (params.evo_multishot.map_or(0, |m| cap(m.stacks)), never),
-            // Permanent like the one above: whatever it was configured to.
-            "evo_reload_damage" => (params.evo_base_damage.map_or(0, |b| cap(b.stacks)), never),
             "condition_overload" => (cap(gal.co.current(now, dur(&params.co_stack))), unknown),
             "on_kill_multishot" => (cap(gal.multishot.current(now, dur(&params.multishot_stack))), unknown),
             "on_headshot_kill_cc" => {
