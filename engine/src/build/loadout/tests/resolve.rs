@@ -2657,3 +2657,28 @@ fn a_picked_zoom_level_pays_its_own_buff() {
     assert!((at(3.5, true) - hip - 0.4).abs() < 1e-12, "the lower level when picked");
     assert!((at(4.0, true) - hip - 0.6).abs() < 1e-12, "a level it lacks is the top");
 }
+
+/// **THE FIRE QUILL'S HEAT IS A PROC, NOT DAMAGE** (W`Hystrix` §Notes): "using
+/// Scorch with the Fire Quill will add to the guaranteed Heat proc's damage
+/// over time as if Scorch were a base damage mod", still so when Scorch has
+/// combined with Jolt — and Jolt alone forms no Radiation with the quill.
+#[test]
+fn a_quills_element_takes_its_own_mods_and_combines_with_none() {
+    use crate::rules::damage::DamageType::{Electricity, Heat, Radiation};
+    let base = WeaponBase::from_data("hystrix_fire", false, &[]);
+    let pool = crate::data::mods::pistol_pool();
+    let mod_of = |id: &str| pool.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("{id}")).clone();
+    let (heat, elec) = (mod_of("heated_charge"), mod_of("convulsion"));
+    let bracket = |p: &crate::build::loadout::ResolvedPanel| {
+        p.elem_dot_bonus.iter().find(|(t, _)| *t == Heat).map_or(1.0, |(_, v)| *v)
+    };
+    let bare = resolve(&base, &[], StackPolicy::Emergent);
+    assert_eq!(bare.damage.get(Heat), 0.0, "the quill deals no Heat");
+    assert_eq!(bracket(&bare), 1.0);
+    let both = resolve(&base, &[&heat, &elec], StackPolicy::Emergent);
+    assert!(both.damage.get(Radiation) > 0.0, "the two mods still combine with each other");
+    assert!(bracket(&both) > 1.0, "and the Heat mod still lifts the forced Heat proc");
+    let jolt = resolve(&base, &[&elec], StackPolicy::Emergent);
+    assert!(jolt.damage.get(Radiation) == 0.0 && jolt.damage.get(Electricity) > 0.0, "no Radiation from the quill");
+    assert_eq!(bracket(&jolt), 1.0, "and nothing for the Heat proc");
+}

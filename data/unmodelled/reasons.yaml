@@ -136,6 +136,10 @@ reasons:
   # THE BOLT FAMILY'S OWN TRICK, on five weapons and counting (both Akboltos,
   # the Telos, both Gremlins) — the sentence carries no numbers, which is what
   # earns it a template rather than five spellings.
+  quill_corpse_ragdoll:
+    text: "On a kill the body follows the quill, damaging anyone in its path and pinning to walls (wiki). There is no ragdoll here, so against a crowd the number reads low."
+  khora_headshot_reload:
+    text: "Wielded by Khora, a headshot has an 8% chance to reload the magazine at once (wiki). It is not modelled, so on Khora a headshot build reads low."
   bolt_corpse_ragdoll:
     text: "On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low."
   # THREE WEAPONS AND THREE DIFFERENT RELOAD TIMES (both Veloxes, the Zhuge

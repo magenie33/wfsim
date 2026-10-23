@@ -52,5 +52,9 @@ attack:
   # see notes: no_range_row_attack
   damage: { impact: 2.76, puncture: 39.56, slash: 3.68 }   # total 46
 
+unmodeled:
+  - reason: quill_corpse_ragdoll
+  - reason: khora_headshot_reload
+
 source:
   url: https://wiki.warframe.com/w/Hystrix_Prime

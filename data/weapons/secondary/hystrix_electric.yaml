@@ -31,5 +31,9 @@ attack:
   # see notes: no_range_row_attack
   damage: { impact: 2.4, puncture: 34.4, slash: 3.2 }   # total 40
 
+unmodeled:
+  - reason: quill_corpse_ragdoll
+  - reason: khora_headshot_reload
+
 source:
   url: https://wiki.warframe.com/w/Hystrix

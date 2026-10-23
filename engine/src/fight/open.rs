@@ -766,6 +766,7 @@ pub(super) fn open<'a>(
 /// on one — so every pile on its trigger takes what it earns. Its own stream:
 /// a roll a press makes moves no draw of the fight's. Returns whether an empty
 /// reload was made, which is Renewed Horror's switch.
+#[wfsim_gas_macro::metered]
 fn precombat(params: &FightParams, stacks: &mut [LiveStacks], ammo: &mut Ammo) -> bool {
     use crate::data::apl::PreAction;
     use crate::model::BuffTrigger as T;
