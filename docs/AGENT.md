@@ -342,9 +342,15 @@ THE BOT SHIPS WITH THE SITE: `ship.py` copies `bot/`, `mcp/engine.js`, its wasm
 and `mcp/headless.js` to the server, restarts it and checks the engine it holds
 (`scripts/ship_bot.py`; the server and its key are `private/qq/bot.json`).
 
-IT READS THE OWNER'S LIVE BOARD when the server keeps one (`WFSIM_LIVE_BOARD`,
-docs/BOARD.md §"The live board"), and the published board otherwise. `ship_bot.py`
-ships the live board's Linux binaries and scripts beside the bot.
+IT READS THE PUBLISHED BOARD, the one the card page draws from, so the words
+and the image of one answer stand on the same rows. `WFSIM_LIVE_BOARD` points
+it at a directory of the owner's live board instead, on a server that keeps one.
+
+THE BOT SERVER IS IN HONG KONG, where QQ's API, Discord and the site are all
+near: a card is a whole page load of the site, and from the mainland that load
+crosses a link that drops at peak hours. The live board stays on the BOARD
+SERVER (docs/BOARD.md §"The live board"), `bot.json`'s `live`: `ship_bot.py`
+ships the live board's Linux binaries and scripts there.
 
 IT RELAYS DE'S WORLD STATE for the Utility pages, which DE's host refuses to
 the worker: each minute `bot/world.mjs` PUTs the file to `/api/world` with the

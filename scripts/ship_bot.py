@@ -9,7 +9,10 @@ the site copies these files over, restarts the bot, and then asks the server
 which engine it now holds (docs/AGENT.md §"The QQ bot").
 
 WHERE THE SERVER IS lives in `private/qq/bot.json` with its key, because this
-repository is public. A tree without it cannot ship the bot and says so.
+repository is public. A tree without it cannot ship the bot and says so. Its
+`live` names the live board's server when that is another one: the bot sits
+where QQ, Discord and the site are all near, the live board where it always
+was; each field `live` leaves out is the bot's.
 
     python scripts/ship_bot.py            # deploy, then verify
     python scripts/ship_bot.py --verify   # only: does the bot run the site's engine?
@@ -39,6 +42,15 @@ def target() -> dict:
     for k in ("key", "known_hosts"):
         t[k] = str(ROOT / t[k])
     return t
+
+
+def live_target(t: dict) -> dict:
+    """THE LIVE BOARD'S SERVER: the bot's, but for what `live` says."""
+    live = dict(t.get("live") or {})
+    for k in ("key", "known_hosts"):
+        if k in live:
+            live[k] = str(ROOT / live[k])
+    return {**t, **live}
 
 
 def ssh_opts(t: dict) -> list:
@@ -100,7 +112,7 @@ def deploy() -> None:
     keep = " ".join(f"-e '{n}'" for n in (wasm, *packs))
     run(["ssh", *o, host, f"cd {root}/site/pkg && ls | grep -vx {keep} | xargs -r rm -f; "
                           f"sudo systemctl restart {t['service']}"])
-    deploy_live(t)
+    deploy_live(live_target(t))
 
 
 LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/wasm_witness.mjs", "scripts/order_credit.mjs",
@@ -279,6 +291,16 @@ def self_test() -> int:
         ok = got is None if want is None else (got is not None and want in got)
         bad += 0 if ok else 1
         print(f"  {'ok  ' if ok else 'FAIL'}  {what}" + ("" if ok else f"   {got}"))
+    # THE LIVE BOARD GOES WHERE `live` SAYS, and with no `live` beside the bot.
+    one = {"host": "u@bot", "root": "/opt/b", "key": "k", "known_hosts": "h", "service": "s"}
+    two = {**one, "live": {"host": "u@board"}}
+    for ok, what in [
+        (live_target(one) == one, "no `live`: the live board ships to the bot's server"),
+        (live_target(two)["host"] == "u@board", "`live.host` moves the live board"),
+        (live_target(two)["root"] == "/opt/b" and live_target(two)["key"] == "k", "...and keeps every field it leaves out"),
+    ]:
+        bad += 0 if ok else 1
+        print(f"  {'ok  ' if ok else 'FAIL'}  {what}")
     # THE LIVE SCRIPTS' IMPORTS ARE ALL SENT: a worker module is shipped by the
     # walk, a script only by being listed.
     for ok, what in [

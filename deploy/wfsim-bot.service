@@ -10,8 +10,6 @@ Wants=network-online.target
 User=ubuntu
 WorkingDirectory=/opt/wfsim-bot
 ExecStart=/usr/bin/node bot/qq.mjs
-# The live board, when `wfsim-live.service` keeps one; the published board otherwise.
-Environment=WFSIM_LIVE_BOARD=/opt/wfsim-bot/live/board
 Restart=always
 RestartSec=5
 # THE BOT'S MEMORY IS ITS OWN: past MemoryHigh the kernel reclaims from this

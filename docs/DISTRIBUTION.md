@@ -175,7 +175,7 @@ content-addressed and cacheable for ever.
    twice. A main that moved while a run worked is the next CI run's to ship.
 
 A runner is outside mainland China, and both of its roads there crawl: a
-plain upload to the Shanghai bucket ran ~20 KB/s, and scp to the bot's server
+plain upload to the Shanghai bucket ran ~20 KB/s, and scp to the board server
 did not finish 20 MB in ten minutes. So its uploads go through the bucket's
 global acceleration (`COS_ACCELERATE=1`, `scripts/cos.py`), and the bot's
 files go through the bucket too: packed, put under an unguessable key, fetched

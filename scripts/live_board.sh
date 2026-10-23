@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# THE LIVE BOARDS, AND THE ORDERS BEHIND THEM — on the bot server
+# THE LIVE BOARDS, AND THE ORDERS BEHIND THEM — on the board server
 # (`deploy/wfsim-live.service`); `publish.yml` keeps a daily snapshot in git.
 #
 #   scripts/live_board.sh <work-dir> <bin-dir>
@@ -10,7 +10,7 @@
 # waits for a projection pass. EVERY CYCLE of the main loop the rows `scores`
 # gained are read, and the boards move:
 # `verified/`, `scores` alone, pushed to R2 for the site; `board/`, with every
-# client result not yet a fact, for the owner and the bot. This server fights
+# client result not yet a fact, for the owner. This server fights
 # nothing: what only the official machines may settle is `settle.yml`'s.
 # docs/BOARD.md §"The fact factory", §"The live board".
 #
