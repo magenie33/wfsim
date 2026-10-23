@@ -871,14 +871,17 @@ console.log("many asks in two statements a chunk leave every table as one write 
             due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`,
         producer, ref, ids[k], at, due, waits ? 1 : 0, JSON.stringify(payload));
     }
-    const facts = await db.all(`SELECT * FROM questions WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
-        AND state IN ('fact', 'spot')`, JSON.stringify([...new Set(ids)]));
+    const facts = await db.all(`SELECT q.*, EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = ? AND a.void = 0) AS served_answered
+        FROM questions q WHERE q.id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
+        AND q.state IN ('fact', 'spot', 'disputed', 'nondeterministic')`, engine, JSON.stringify([...new Set(ids)]));
     for (const q of facts) {
-      if (q.fact_engine !== engine) {
-        await db.run(`UPDATE questions SET state = 'open', opened_at = ?,
+      const settled = q.state === "fact" || q.state === "spot";
+      if (settled ? q.fact_engine !== engine : !q.served_answered) {
+        await db.run(`UPDATE questions SET state = 'open', opened_at = ?, lease = NULL, lease_until = NULL, leased_to = NULL,
             waits = (SELECT COALESCE(max(l.waits), 0) FROM demands l WHERE l.question = questions.id AND l.state = 'live') WHERE id = ? AND state = ?`, at, q.id, q.state);
         continue;
       }
+      if (!settled) continue;
       const a = await db.get("SELECT * FROM answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1", q.id, q.canon);
       const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon, result: a ? JSON.parse(a.result) : null,
         work: a ? a.work : 0, engine: a ? a.engine : null, official: !!(a && a.official) };

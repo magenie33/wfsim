@@ -285,6 +285,8 @@ jobs:
         run: node scripts/check_sync_proc.mjs
       - name: Every ask names who asked, one asker is held to its share, and a code is erased once the ask is over
         run: node scripts/check_initiator.mjs
+      - name: An official check of another engine goes back to the volunteers, and a spot of one to its fact
+        run: node scripts/check_moot_checks.mjs
       - name: The library keeps fourteen days, and only what the window and the board still need
         run: node scripts/check_forget_past.mjs
       - name: A batch is asked most popular weapon first, and a place is due by its batch's day

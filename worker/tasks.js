@@ -223,22 +223,29 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
           .bind(JSON.stringify([...new Set([...ds.values()].map((d) => d.producer))].sort())),
       ]);
     }
-    const { results } = await db.prepare(`SELECT * FROM questions WHERE id IN ${listOf(db, "?")} AND state IN ('fact', 'spot')`)
-      .bind(JSON.stringify([...new Set(ids)])).all();
+    const { results } = await db.prepare(`SELECT q.*, EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = ?2::text AND a.void = 0) AS served_answered
+        FROM questions q WHERE q.id IN ${listOf(db, "?1")} AND q.state IN ('fact', 'spot', 'disputed', 'nondeterministic')`)
+      .bind(JSON.stringify([...new Set(ids)]), engine || "").all();
     // A FACT OF ANOTHER ENGINE answers nothing now: the question opens again,
-    // its answers carried for the served engine to reproduce or replace.
+    // its answers carried for the served engine to reproduce or replace. So
+    // does a dispute no answer of the served engine is in: the official
+    // machines run that engine alone, and could neither settle it nor refuse
+    // anyone (worker/pg/sync.sql `factory_moot_checks`).
     // WAITED ON ONLY IF A LIVE DEMAND WAITS: a question's `waits` is its live
     // demands' (`factory_restate`), never a served one's. Kept from a demand
     // long served, a re-asked row goes alone to a free computer as though a
     // player waited, and a fleet handed one row a sync idles out the floor.
-    const stale = results.filter((q) => q.fact_engine !== engine);
+    const settled = (q) => q.state === "fact" || q.state === "spot";
+    const stale = results.filter((q) => (settled(q) ? q.fact_engine !== engine : !q.served_answered));
     if (stale.length) {
-      await db.prepare(`UPDATE questions SET state = 'open', opened_at = ?1::text,
+      // AN OFFICIAL LEASE GOES WITH THE DISPUTE: held, it kept the volunteers off
+      // the row for the claim's hours.
+      await db.prepare(`UPDATE questions SET state = 'open', opened_at = ?1::text, lease = NULL, lease_until = NULL, leased_to = NULL,
           waits = (SELECT COALESCE(max(l.waits), 0) FROM demands l WHERE l.question = questions.id AND l.state = 'live')
           FROM jsonb_to_recordset((?2::text)::jsonb) AS x(id text, state text) WHERE questions.id = x.id AND questions.state = x.state`)
         .bind(at, JSON.stringify(stale.map((q) => ({ id: q.id, state: q.state })))).run();
     }
-    await deliverMany(env, results.filter((q) => q.fact_engine === engine), now);
+    await deliverMany(env, results.filter((q) => settled(q) && q.fact_engine === engine), now);
     return ids;
   }
 

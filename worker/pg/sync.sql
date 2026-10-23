@@ -266,6 +266,33 @@ CREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS bigint LANGUAGE sql AS
   SELECT (SELECT count(*) FROM d) + (SELECT count(*) FROM q)
 $$;
 
+-- AN OFFICIAL CHECK OF ANOTHER ENGINE IS NONE: the official machines run the
+-- served engine $1 alone, so a dispute or a non-deterministic question no
+-- answer of $1 is in can neither be settled nor refuse anyone, and a spot of a
+-- fact $1 did not form cannot check it. The first is asked of the volunteers
+-- again, as a fact of another engine is (worker/tasks.js `demandAll`): open,
+-- its answers carried, and withdrawn where no live demand waits
+-- (`factory_restate`); the second is the fact it was. At most $2 a call;
+-- returns how many moved. Definer, as `factory_forget_past`.
+CREATE OR REPLACE FUNCTION factory_moot_checks(text, bigint) RETURNS bigint
+LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v text[]; n bigint; qid text;
+BEGIN
+  SELECT coalesce(array_agg(t.id), '{}') INTO v FROM (
+    SELECT q.id FROM questions q WHERE q.state IN ('disputed', 'nondeterministic')
+       AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = $1 AND a.void = 0)
+     ORDER BY q.id LIMIT $2 FOR UPDATE OF q SKIP LOCKED) t;
+  UPDATE questions SET state = 'open', lease = NULL, lease_until = NULL, leased_to = NULL
+    WHERE questions.id = ANY (v) AND state IN ('disputed', 'nondeterministic');
+  FOREACH qid IN ARRAY v LOOP PERFORM factory_restate(qid); END LOOP;
+  WITH back AS (UPDATE questions q SET state = 'fact', lease = NULL, lease_until = NULL, leased_to = NULL
+      WHERE q.id IN (SELECT p.id FROM questions p WHERE p.state = 'spot' AND p.fact_engine IS DISTINCT FROM $1
+                      LIMIT $2 FOR UPDATE SKIP LOCKED)
+      RETURNING 1)
+  SELECT count(*) INTO n FROM back;
+  RETURN cardinality(v) + n;
+END $$;
+
 -- WHAT IS PAST THE WINDOW IS FORGOTTEN, so the library's size follows the board
 -- and the window, never the days it has run (worker/tasks.js `KEPT_MS`, the
 -- settler's `past` tick): a fact of an engine no longer served and a withdrawn

@@ -816,6 +816,8 @@ the copy in). It writes:
   asking and computing (the worker's own definitions), the queue, and its
   heartbeat with the commit it runs;
 - `fair_shares`, every minute: the fair-share table for the served engine;
+- an official check of another engine undone, every minute
+  (`factory_moot_checks`, §"A release carries a result");
 - nothing past the window, every minute (`factory_forget_past`): **THE
   LIBRARY KEEPS FOURTEEN DAYS** (`KEPT_MS`), so its size follows the board and
   the window, never the days it has run. A fact of an engine no longer served
@@ -1123,7 +1125,13 @@ questions, never a heavier client.
 - **A release carries a result.** An answer of an older engine stays with its
   question: a client of the new engine that reproduces its bits makes the fact
   and both are credited; one that does not starts the new engine's own count,
-  and nobody is refused, since the release moved the number.
+  and nobody is refused, since the release moved the number. **AN OFFICIAL
+  CHECK OF ANOTHER ENGINE IS NONE**: the official machines run the served
+  engine alone, so a dispute or a non-deterministic question no answer of it
+  is in goes back to the volunteers as a fact of another engine does — open
+  where a live demand waits, its answers carried, withdrawn where none does —
+  and a spot of another engine's fact is that fact again
+  (`factory_moot_checks`, at a re-ask and the settler's `moot` tick).
 - **Fighting.** The client asks `/api/board/order` for the fight off the record
   (the scorer's `scored_build` and `row_requests`, a riven's rolls included),
   fights its runs on every community lane with `/api/board/runs` (a shard per

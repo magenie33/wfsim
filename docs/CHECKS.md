@@ -389,6 +389,19 @@ best-scored build first inside it, each row naming its weapon's place;
 down a second later, the same place due alike whichever run asked it, and a
 batch's long-past day due a minute from now rather than overdue.
 
+## `check_moot_checks`
+
+Plain node on PGlite: an official check of another engine (docs/BOARD.md §"A
+release carries a result"). `factory_moot_checks` opens a dispute and a
+non-deterministic question no answer of the served engine is in where a live
+demand waits, its answers kept and its official lease dropped, withdraws one
+nobody asks for, and makes a spot of another engine's fact that fact again; a
+dispute of the served engine and its spots stay. Reopened, the old answers do
+not fill the cap, two served answers agreeing make the fact and so does one
+reproducing an old answer; `demandAll` reopens such a dispute at a re-ask and
+leaves one of the served engine. Fails on a pick that ignores the served
+engine, on a lease kept, and on a re-ask that leaves the dispute.
+
 ## `check_forget_past`
 
 Plain node on PGlite: the library's window (docs/BOARD.md §"The settler").

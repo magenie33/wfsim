@@ -156,6 +156,15 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       await env.LIBRARY.prepare("SELECT factory_forget_codes() AS n").first();
       forgotAt = now;
     },
+    // AN OFFICIAL CHECK OF ANOTHER ENGINE IS NONE (worker/pg/sync.sql `factory_moot_checks`):
+    // a dispute goes back to the volunteers, a spot back to its fact.
+    moot: async () => {
+      if (!release.engine) return;
+      for (let i = 0; i < PAST_CALLS; i++) {
+        const { n } = await env.LIBRARY.prepare("SELECT factory_moot_checks(?::text, ?::bigint) AS n").bind(release.engine, PAST_BATCH).first();
+        if (Number(n) < PAST_BATCH) break;
+      }
+    },
     // WHAT IS SETTLED AND PAST `KEPT_MS` IS FORGOTTEN; the served engine's facts stay.
     past: async () => {
       if (!release.engine) return;
@@ -168,7 +177,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     },
   };
   if (once) {
-    for (const name of ["snapshot", "fair", "settle", "demand", "tally", "forget", "past"]) await tick(name, jobs[name]);
+    for (const name of ["snapshot", "fair", "settle", "demand", "tally", "forget", "past", "moot"]) await tick(name, jobs[name]);
     await close();
     const bad = [...failed].filter(([, n]) => n > 0).map(([k]) => k);
     log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit);
@@ -186,7 +195,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     };
     timers.set(name, setTimeout(loop, 0));
   };
-  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past");
+  every(RELEASE_MS, "release"); every(SNAPSHOT_MS, "snapshot"); every(FAIR_MS, "fair"); every(SETTLE_MS, "settle"); every(DEMAND_MS, "demand"); every(STATS_TICK_MS, "tally"); every(STATS_TICK_MS, "forget"); every(PAST_MS, "past"); every(PAST_MS, "moot");
   every(WAVE_MS, "wave"); every(SIGNAL_CHECK_MS, "signalCheck");
   log("factoryd up", commit, release.engine);
   await new Promise((resolve) => {
