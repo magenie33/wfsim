@@ -65,9 +65,7 @@ impl FightParams {
     /// off the piles it opens on, so the list and the opening cannot disagree.
     /// A form the Alternate Fire toggle enters opens the list with the switch.
     ///
-    /// Fevered Frenzy and Reified Bane are static piles with no trigger the
-    /// fight fires, so their count is the card's and the line names the press
-    /// that earns it in game. A cycle's base form carries its own.
+    /// A cycle's base form carries its own.
     pub fn precombat(&self) -> Vec<crate::data::apl::Precombat> {
         use crate::data::apl::{PreAction, Precombat};
         let mut out = Vec::new();
@@ -76,15 +74,6 @@ impl FightParams {
         }
         let until = |id: &str, n: u32| Some((id.to_string(), n));
         let own = |p: &FightParams, out: &mut Vec<Precombat>| {
-            if let Some(m) = p.evo_multishot.filter(|m| m.stacks > 0) {
-                out.push(Precombat { action: PreAction::Cast, until: until("evo_multishot", m.stacks) });
-            }
-            if let Some(b) = p.evo_base_damage.filter(|b| b.stacks > 0) {
-                out.push(Precombat {
-                    action: PreAction::ReloadFromEmpty,
-                    until: until("evo_reload_damage", b.stacks),
-                });
-            }
             for b in p.stacking_buffs.iter().filter(|b| b.precombat && b.initial_stacks > 0) {
                 if let Some(action) = Precombat::earning(b.trigger) {
                     let line = Precombat { action, until: until(b.id, b.initial_stacks) };

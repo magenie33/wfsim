@@ -205,3 +205,15 @@ fn a_lead_keeps_the_window_up_and_a_refresh_does_not_stack() {
         assert!((rt.strength_now(t, 0) - 1.4).abs() < 1e-9, "at {t}: {}", rt.strength_now(t, 0));
     }
 }
+
+/// **EVERY CAST IS COUNTED ONCE FOR THE FIGHT** — what an "On Ability Cast"
+/// pile is paid from (`BuffTrigger::AbilityCast`). Warcry at 30 s over 100 s
+/// is four casts, and asking again before another is zero.
+#[test]
+fn the_fight_is_told_each_cast_once() {
+    let f = frame(vec![rule(cast("warcry"), When::Always)], 1.0, 1.5, "vazarin", None, "melee", CastArcanes::NONE, &[]);
+    let (w, _, mut rt) = drive(&f, 100.0, 0.1, |_| 0);
+    assert_eq!(rt.take_casts() as usize, casts(&w).len());
+    assert_eq!(casts(&w).len(), 4);
+    assert_eq!(rt.take_casts(), 0, "a cast is paid once");
+}

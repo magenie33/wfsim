@@ -857,13 +857,6 @@ pub struct ResolvedPanel {
     /// Hemorrhage's status-conversion roll (an event mechanic — active under
     /// every policy; contributes no static panel stat).
     pub proc_conversion: Option<ProcConv>,
-    /// The evolution's PERMANENT stacked multishot (Fevered Frenzy), if any:
-    /// its FULL contribution is already inside `multishot`; the per-buff
-    /// config rescales via this spec (no in-sim trigger, no decay — the
-    /// stack count is a static choice, full by default).
-    pub evo_multishot: Option<EvoMsBuff>,
-    /// The evolution's PERMANENT flat base damage (Reified Bane), if any.
-    pub evo_base_damage: Option<EvoBdBuff>,
     /// Stats an equipped mod has LOCKED at the weapon's default (`disables`):
     /// `multishot` for the Acuity pair, `fire_rate` for the Cannonades.
     ///
@@ -905,33 +898,6 @@ impl ResolvedPanel {
     }
 }
 
-/// A permanent flat-BASE-DAMAGE buff on the resolved panel, sibling to
-/// [`EvoMsBuff`] and rescaled the same way: the panel already carries the full
-/// contribution, and the buff card scales it back out.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct EvoBdBuff {
-    /// The flat base damage the buff contributes at full stacks (+14).
-    pub full: f64,
-    /// The base TOTAL without it — the denominator for scaling back. The
-    /// bonus rides the whole mod chain multiplicatively (flat base damage is
-    /// added pro-rata BEFORE mods), so removing it is one ratio on the
-    /// resolved vector rather than a re-resolve.
-    pub without: f64,
-    pub max_stacks: u32,
-    pub stacks: u32,
-}
-
-/// A permanent stacked multishot buff on the resolved panel.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct EvoMsBuff {
-    /// FINAL multishot contributed at full stacks (base pellets × Σ bonus).
-    pub full: f64,
-    pub max_stacks: u32,
-    /// The count actually in play. PERMANENT stacks never move during a run,
-    /// so this is a static choice — but the replay still has to be able to say
-    /// what it was, and `multishot` has already absorbed it by then.
-    pub stacks: u32,
-}
 
 /// A resolved status-conversion roll (Hemorrhage).
 #[derive(Debug, Clone, Copy, PartialEq)]

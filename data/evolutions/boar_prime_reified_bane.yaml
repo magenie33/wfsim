@@ -14,29 +14,19 @@ effects:
   # evolution occupies.
   - kind: flat_base_damage
     value: 10.0
-  # The conditional half, MODELLED AS HELD — and the TIMING is what makes that
-  # correct rather than convenient.
-  #
-  # IN GAME the bonus lands the MOMENT an empty reload BEGINS; it does not wait
-  # for the reload to finish. The wiki says the opposite
-  # — "applied after finishing a reload while the magazine is empty" — and a
-  # measurement beats the wiki here, as everywhere.
-  #
-  # That distinction is not pedantry, it is the whole justification. Under the
-  # wiki's reading the buff would be DOWN for one reload every cycle — 2.75 s
-  # of a magazine that lasts 20 rounds — so "held for the whole run" would
-  # overstate the build every cycle. Under the measured behaviour there is no
-  # gap at all: the magazine empties, the reload starts, the buff is already
-  # back, and it "lasts indefinitely until a manual reload is initiated while
-  # the magazine is not empty" (the wiki's own words, and the sim never does
-  # that). So held is exact, not an approximation.
-  #
-  # THE EXCEPTION, not a pattern to copy: a reload-triggered effect fires on
-  # reload COMPLETION by default. This one needs the
-  # magazine EMPTY and fires at the reload's FIRST FRAME. Only this evolution
-  # is known to do it; the next one gets its own kind.
-  - kind: flat_base_damage_on_empty_reload
-    value: 14.0
+  # THE CONDITIONAL HALF, earned before the fight: one empty reload, and the
+  # only thing that takes it is a manual reload of a magazine that is not
+  # empty, which this engine never makes (UNMODELLED.md §"The MANUAL reload").
+  # Up before the first shot and never taken, so where in a reload the game
+  # pays it (its first frame, M29) moves nothing here. A buff's base add, so it
+  # does not feed the Condition Overload term: that reads the weapon's own base.
+  - kind: stacking_buff
+    trigger: reload_from_empty
+    grants: flat_base_damage
+    per_stack: 14.0
+    max_stacks: 1
+    card: evo_reload_damage
+    precombat: true
     # THE CARD SAYS +10 AND THE GAME PAYS +14: the wiki's "incorrectly listed
     # as +10 in game", read in the damage (M88).
     misprint: >-

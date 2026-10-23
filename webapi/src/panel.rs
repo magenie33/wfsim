@@ -1045,15 +1045,6 @@ fn evolution_sources(
                     ));
                 }
             }
-            let v = def.assumed_multishot();
-            if v > 0.0 {
-                evo_src.push((
-                    "multishot",
-                    name.clone(),
-                    fpct(v),
-                    Some("on-ability-cast stacks, assumed full".into()),
-                ));
-            }
             let v = def.co_per_type();
             if v > 0.0 {
                 evo_src.push((

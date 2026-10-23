@@ -120,27 +120,6 @@ pub enum EvoEffect {
     /// Base-stat layer like the crit-chance one above, so crit-damage mods
     /// multiply the new base.
     FlatBaseCritMultiplier(f64),
-    /// Flat BASE damage that an empty reload turns on and nothing turns off —
-    /// Boar's Reified Bane, "On Reload From Empty: Increase Base Damage by
-    /// +14". It is applied UNCONDITIONALLY, i.e. the run is modelled as
-    /// holding it from t = 0.
-    ///
-    /// Held is EXACT rather than an approximation, and the timing is why: the
-    /// bonus lands the moment an empty reload BEGINS (measured in game; the
-    /// wiki claims the opposite), so there is no gap — the magazine empties,
-    /// the reload starts, the buff is already back, and it "lasts indefinitely
-    /// until a manual reload is initiated while the magazine is not empty",
-    /// which the sim never does.
-    ///
-    /// **THIS IS THE EXCEPTION, AND THE NAME SAYS SO.** The DEFAULT for a
-    /// reload-triggered effect is that it fires when the reload COMPLETES; two
-    /// unusual conditions hold together here — the magazine must be EMPTY, and
-    /// it fires when the reload STARTS — so the variant stays narrow.
-    ///
-    /// Its own variant rather than part of `FlatBaseDamage` because it is a
-    /// BUFF: `resolve` turns it into an `EvoBdBuff` so the bar can show it and
-    /// a card can scale it back out.
-    FlatBaseDamageOnEmptyReload(f64),
     /// A handling / mobility / multi-target stat with no single-target damage
     /// payload — recoil, accuracy, punch through, projectile speed, holstered
     /// reload. It COUNTS: the value lands in the panel's `indirect` bucket
@@ -201,12 +180,6 @@ pub enum EvoEffect {
     /// projectiles it GENERATES deal +v damage as an independent multiplier.
     /// Affects both forms; the sim reads the per-form rule off `continuous`.
     MultishotConsumesAmmo(f64),
-    /// A PERMANENT stacking multishot buff (Fevered Frenzy: on-ability-cast
-    /// stacks with no timer, cleared only by death — so inside a sim run the
-    /// stack count is a static CHOICE, full by default). `total` = the
-    /// full-stack bonus (per_stack × max_stacks) that joins the weapon's
-    /// buff multishot; `max_stacks` lets the per-buff config rescale it.
-    AssumedMaxMultishot { total: f64, max_stacks: u32 },
     /// AN ELEMENT ON FRENZY'S CLOCK (Neurotoxin: "On Headshot: +70% Toxin for
     /// 3s" — Frenzy's trigger and Frenzy's window). It joins the passive's own
     /// injection, so it combines where Frenzy's Toxin does and is up exactly
@@ -418,6 +391,10 @@ pub enum EvoEffect {
         /// Earned before the fight — see
         /// [`crate::model::StackingBuff::precombat`].
         precombat: bool,
+        /// THE CARD ID, where the frozen wire already names this buff
+        /// (`evo_reload_damage`); otherwise the trigger and grant name it
+        /// (`data::evolutions::stacking_card_id`).
+        card: Option<&'static str>,
     },
     StackingMultishotOnFiring {
         per_stack: f64,

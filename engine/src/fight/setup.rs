@@ -69,9 +69,6 @@ impl FightParams {
         if self.frenzy {
             push!("frenzy", 1);
         }
-        if let Some(multishot) = self.evo_multishot {
-            push!("evo_multishot", multishot.max_stacks);
-        }
         // UNCAPPED — 0 means "no ceiling", which the api and the UI both read
         // as such rather than as a maximum of zero.
         if self.arcane.enervate_rank.is_some() {
@@ -89,9 +86,6 @@ impl FightParams {
         }
         if let Some(s) = &self.multishot_stack {
             push!("on_kill_multishot", s.max_stacks);
-        }
-        if self.evo_base_damage.is_some() {
-            push!("evo_reload_damage", 1);
         }
         // READY RETALIATION HAS NO CARD any more. It was one while it was a
         // 6 s window that could be up or down; now it lasts exactly as long as
@@ -260,34 +254,6 @@ impl FightParams {
                 } else {
                     None
                 };
-            }
-        }
-        if let Some(base_damage) = self.evo_base_damage {
-            if let Some(&(stacks, _)) = cfg.get("evo_reload_damage") {
-                let stacks = stacks.min(base_damage.max_stacks);
-                // ONE RATIO on the resolved vector. Flat base damage is added
-                // pro-rata BEFORE mods, so the bonus rides the whole chain
-                // multiplicatively and removing it needs no re-resolve — the
-                // same argument `evo_multishot` makes for its scalar.
-                let fraction = f64::from(stacks) / f64::from(base_damage.max_stacks);
-                let (now, want) = (base_damage.without + base_damage.full, base_damage.without + base_damage.full * fraction);
-                if now > 0.0 && want < now {
-                    let k = want / now;
-                    self.scale_damage(k);
-                }
-                if let Some(b) = self.evo_base_damage.as_mut() {
-                    b.stacks = stacks;
-                }
-            }
-        }
-        if let Some(multishot) = self.evo_multishot {
-            if let Some(&(stacks, _)) = cfg.get("evo_multishot") {
-                let stacks = stacks.min(multishot.max_stacks);
-                let fraction = f64::from(stacks) / f64::from(multishot.max_stacks);
-                self.multishot -= multishot.full * (1.0 - fraction);
-                if let Some(m) = self.evo_multishot.as_mut() {
-                    m.stacks = stacks;
-                }
             }
         }
         if let Some(s) = self.co_stack.as_mut() {
@@ -468,18 +434,6 @@ impl FightParams {
         if self.arcane.enervate_rank.is_some() && by_id("arcane:secondary_enervate") {
             self.arcane.enervate_rank = None;
             self.enervate_stacks = 0;
-        }
-        // FLAT BASE DAMAGE IS ALREADY IN THE VECTOR, added pro-rata before the
-        // mods, so what it bought has to come back out — one ratio.
-        if let Some(bd) = self.evo_base_damage {
-            if by_id("evo_reload_damage") {
-                let now = bd.without + bd.full;
-                if now > 0.0 {
-                    let k = bd.without / now;
-                    self.scale_damage(k);
-                }
-                self.evo_base_damage = None;
-            }
         }
         // A KILL'S PAYLOAD IS DENIED; A KILL'S ECONOMY IS NOT. These three are
         // payloads a card the BUILD carries hands over on a kill — a magazine
@@ -1407,8 +1361,6 @@ impl FightParams {
             ammo_efficiency_applies: panel.gauge_form.is_none(),
             multishot: panel.multishot + lone_bonus,
             base_multishot: panel.base_multishot,
-            evo_multishot: panel.evo_multishot,
-            evo_base_damage: panel.evo_base_damage,
             base_damage_bonus: panel.base_damage_bonus,
             co_per_type: panel.co_per_type,
             co_behavior: panel.co_behavior,
@@ -1778,23 +1730,6 @@ impl FightParams {
             return 1.0;
         }
         self.with_live_elements_unquantized(self.damage, mb, t, w).total() / mb
-    }
-
-    /// ONE RATIO ON THE HIT, with Frenzy up and down alike — a site that
-    /// scaled one vector would leave the other worth the unscaled number.
-    pub(super) fn scale_damage(&mut self, k: f64) {
-        self.damage = self.damage.scale(k);
-        if let Some(r) = self.resting.as_mut() {
-            r.damage = r.damage.scale(k);
-        }
-        if let Some(p) = self.per_hit_element.as_mut() {
-            for v in &mut p.damage {
-                *v = v.scale(k);
-            }
-        }
-        if let Some(d) = self.dot_modified_base.as_mut() {
-            *d *= k;
-        }
     }
 
     /// The (1 + element bonuses) bracket a MOD gives this element's DoT ticks.

@@ -148,25 +148,6 @@ impl EvolutionDef {
             })
             .sum()
     }
-
-    /// Σ assumed-max multishot from permanent stacks (Fevered Frenzy).
-    pub fn assumed_multishot(&self) -> f64 {
-        self.active_effects()
-            .filter_map(|e| match e {
-                EvoEffect::AssumedMaxMultishot { total, .. } => Some(*total),
-                _ => None,
-            })
-            .sum()
-    }
-
-    /// The permanent stacked-multishot buff, if this evolution grants one:
-    /// (full-stack bonus, max stacks). Drives the configurable buff card.
-    pub fn ms_buff(&self) -> Option<(f64, u32)> {
-        self.active_effects().find_map(|e| match e {
-            EvoEffect::AssumedMaxMultishot { total, max_stacks } => Some((*total, *max_stacks)),
-            _ => None,
-        })
-    }
 }
 
 /// Every embedded yaml under data/evolutions (cached).

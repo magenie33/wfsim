@@ -230,9 +230,6 @@ impl EvolutionDef {
                     }
                 }
                 EvoEffect::AmmoMaxSet(v) => format!("ammo reserve set to {v:.0}"),
-                EvoEffect::FlatBaseDamageOnEmptyReload(v) => format!(
-                    "+{v:.0} base damage from the moment an empty reload starts — held all run"
-                ),
                 EvoEffect::FlatBaseStatusChance(v) => format!(
                     "+{:.0}% BASE status chance (status mods multiply it)",
                     v * 100.0
@@ -268,10 +265,6 @@ impl EvolutionDef {
                 EvoEffect::FrenzyInjectedElement { element, amount } => format!(
                     "+{:.0}% {element:?} while Frenzy is up",
                     amount * 100.0
-                ),
-                EvoEffect::AssumedMaxMultishot { total, max_stacks } => format!(
-                    "+{:.0}% multishot ({max_stacks} on-ability-cast stacks, full by default)",
-                    total * 100.0
                 ),
                 EvoEffect::ConditionOverload { per_type, min_sprint } => format!(
                     "+{:.0}% direct damage per status type on the target{}",

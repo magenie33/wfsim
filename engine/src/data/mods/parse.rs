@@ -317,7 +317,12 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                 duration: n(v, "duration").unwrap_or(crate::model::NO_TIMEOUT),
                 chance: n(v, "chance").unwrap_or(1.0),
                 decay: crate::model::BuffDecay::from_id(v.get("decay").and_then(Value::as_str)),
-                initial_stacks: 0,
+                // A PRECOMBAT PILE'S COUNT IS ITS TARGET (`StackingBuff::precombat`).
+                initial_stacks: if v.get("precombat").and_then(Value::as_bool) == Some(true) {
+                    u(v, "max_stacks").max(1)
+                } else {
+                    0
+                },
                 // ONE STACK A SHELL LOADED, where the file says `per_shell` — the
                 // fight counts the shells a reload actually loads (`bump_shells`).
                 stacks_per_trigger: if v.get("per_shell").and_then(Value::as_bool) == Some(true) { 0 } else { 1 },

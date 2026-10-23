@@ -325,18 +325,21 @@ pub(super) fn open<'a>(
     // buff card seeds them like any other stacking buff.
     // ONE LiveStacks per declared buff, in the same order — index i is buff i.
     // The parallel Vec is what lets the sampler answer by ID without a match.
-    let buff_stacks: Vec<LiveStacks> = params
+    // A PILE EARNED BEFORE THE FIGHT OPENS EMPTY HERE: its count is the
+    // target the precombat list presses toward, just below.
+    let opening = |b: &crate::model::StackingBuff| if b.precombat { 0 } else { b.initial_stacks };
+    let mut buff_stacks: Vec<LiveStacks> = params
         .stacking_buffs
         .iter()
         .map(|b| match b.decay {
             crate::model::BuffDecay::PerStackExpiry => {
-                LiveStacks::seed_per_stack(b.initial_stacks, b.max_stacks, b.duration)
+                LiveStacks::seed_per_stack(opening(b), b.max_stacks, b.duration)
             }
             crate::model::BuffDecay::LoseOneAndReset => {
-                LiveStacks::seed(b.initial_stacks, b.max_stacks, b.duration)
+                LiveStacks::seed(opening(b), b.max_stacks, b.duration)
             }
             crate::model::BuffDecay::AllAtOnce => {
-                LiveStacks::seed_all_at_once(b.initial_stacks, b.max_stacks, b.duration)
+                LiveStacks::seed_all_at_once(opening(b), b.max_stacks, b.duration)
             }
         })
         .collect();
@@ -374,7 +377,7 @@ pub(super) fn open<'a>(
     } else {
         Vec::new()
     };
-    let ammo = Ammo {
+    let mut ammo = Ammo {
         drop_kill_mark: 0u32,
         refill_kill_mark: 0u32,
         rounds_this_mag: 0,
@@ -388,6 +391,7 @@ pub(super) fn open<'a>(
         instant_reload_now: false,
         grenade_thrown_at: None,
     };
+    let precombat_boost = precombat(params, &mut buff_stacks, &mut ammo);
     // Kills already paid to on-kill stacking buffs. See `BuffTrigger::Kill`.
     let kill_buff_mark: u32 = 0;
     let double_tap = DoubleTap {
@@ -499,7 +503,7 @@ pub(super) fn open<'a>(
     // Renewed Horror: armed by a reload from empty, spent by the next shot's
     // field. The sim always reloads from empty (it fires until dry), so on the
     // Torid this is the first shot of every magazine after the first.
-    let field_duration_boost = false;
+    let field_duration_boost = precombat_boost;
     // EVERYTHING ACTING ON A CLOCK OF ITS OWN — `fight::entities`.
     let entities: Vec<Entity> = Vec::new();
     let field_ctx = FieldCtx::default();
@@ -753,4 +757,43 @@ pub(super) fn open<'a>(
             },
         },
     )
+}
+
+/// **THE PRECOMBAT LIST, PERFORMED** (`FightParams::precombat`): each line is
+/// pressed until its pile holds the count it names, at t = 0 and free. A press
+/// is the same event the fight makes — an empty reload pays the shells, the
+/// completed reload and the reload from empty, and grows a magazine that grows
+/// on one — so every pile on its trigger takes what it earns. Its own stream:
+/// a roll a press makes moves no draw of the fight's. Returns whether an empty
+/// reload was made, which is Renewed Horror's switch.
+fn precombat(params: &FightParams, stacks: &mut [LiveStacks], ammo: &mut Ammo) -> bool {
+    use crate::data::apl::PreAction;
+    use crate::model::BuffTrigger as T;
+    /// A cap on one line's presses, so a pile its press cannot fill ends.
+    const PRESSES: u32 = 1_000;
+    let mut rng = Rng::new(0x05EE_D0FF_16E7);
+    let mut from_empty = false;
+    for line in params.precombat() {
+        let Some((id, n)) = &line.until else { continue };
+        let Some(i) = params.stacking_buffs.iter().position(|b| b.id == id) else { continue };
+        let duration = params.stacking_buffs[i].duration;
+        for _ in 0..PRESSES {
+            if stacks[i].current(0.0, duration) >= *n {
+                break;
+            }
+            match line.action {
+                PreAction::Cast => run::bump_on_trigger(params, stacks, T::AbilityCast, 0.0, &mut rng),
+                PreAction::Reload | PreAction::ReloadFromEmpty => {
+                    run::bump_shells(params, stacks, ammo.cap.round().max(0.0) as u32, 0.0, &mut rng);
+                    run::bump_on_trigger(params, stacks, T::ReloadComplete, 0.0, &mut rng);
+                    if line.action == PreAction::ReloadFromEmpty {
+                        run::bump_reload_from_empty(params, stacks, ammo, 0.0, &mut rng);
+                        from_empty = true;
+                    }
+                }
+                PreAction::SwitchMode { .. } => break,
+            }
+        }
+    }
+    from_empty
 }

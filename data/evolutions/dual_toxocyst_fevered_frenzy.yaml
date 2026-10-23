@@ -33,14 +33,10 @@ effects:
     grants: multishot
     per_stack: 0.05   # additive with multishot mods
     max_stacks: 20
-    # `duration`/`cleared_on` are NOT loaded: `data::evolutions` maps a
-    # `stacking_buff` granting `multishot` to
-    # `AssumedMaxMultishot`, which carries only the total and the cap. That IS
-    # the permanence — a buff with no timer and no in-sim trigger is a static
-    # choice, full by default — so the two keys are the written record of why,
-    # not an input (data/README.md).
-    duration: permanent          # MEASURED: stacks have
-    cleared_on: [death]          # no timer; only player death clears them
+    # NO CLOCK, MEASURED: the stacks have no timer and only the player's death
+    # clears them, which this arena never does. Earned before the fight by
+    # twenty casts of any ability, and by every cast the fight makes.
+    precombat: true
 
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst_Incarnon_Genesis

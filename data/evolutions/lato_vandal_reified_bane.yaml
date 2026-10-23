@@ -12,19 +12,19 @@ effects:
   # from: "Increase Base Damage by +12"
   - kind: flat_base_damage
     value: 12.0
-  # HELD FOR THE WHOLE RUN, and the wiki is explicit about why: "Once the damage
-  # bonus has been earned, the ONLY way to lose it is to manually reload with a
-  # non-empty magazine. The bonus will be retained through Incarnon
-  # transformations, regardless of magazine status when transformed."
-  #
-  # This engine never manually reloads — it reloads when it cannot fire, which
-  # is always from empty (UNMODELLED.md §"The MANUAL reload") — so the one event
-  # that could take this away cannot happen here. Modelled as earned and held,
-  # which is what `flat_base_damage_on_empty_reload` already does: baked into
-  # the base and recorded, so the buff card can take it back off for a player
-  # who wants to see the weapon without it.
-  - kind: flat_base_damage_on_empty_reload
-    value: 30.0
+  # THE CONDITIONAL HALF, earned before the fight: one empty reload, and the
+  # only thing that takes it is a manual reload of a magazine that is not
+  # empty, which this engine never makes (UNMODELLED.md §"The MANUAL reload").
+  # Up before the first shot and never taken, so where in a reload the game
+  # pays it (its first frame, M29) moves nothing here. A buff's base add, so it
+  # does not feed the Condition Overload term: that reads the weapon's own base.
+  - kind: stacking_buff
+    trigger: reload_from_empty
+    grants: flat_base_damage
+    per_stack: 30.0
+    max_stacks: 1
+    card: evo_reload_damage
+    precombat: true
 
 source:
   url: https://wiki.warframe.com/w/Lato_Incarnon_Genesis

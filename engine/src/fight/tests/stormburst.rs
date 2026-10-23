@@ -1,11 +1,7 @@
 //! STORMBURST: a buff whose condition is on the TARGET, not on the shot.
 //!
-//! It was inert until the StackingBuff refactor, and the reason is worth
-//! keeping: the static path (`AssumedMaxMultishot`) carries a total and a cap
-//! and NO trigger, so declaring it there would have granted +1.2 multishot to
-//! a build with no Electricity in it at all. A LIVE buff is bumped inside the
-//! fight, where the target's debuffs are in hand — so the condition it could
-//! not state statically is simply readable.
+//! A LIVE buff is bumped inside the fight, where the target's debuffs are in
+//! hand, so a build with no Electricity in it earns nothing from it.
 //!
 //! ON THIS WEAPON IT ONLY WORKS AS A CYCLE, which the sim found rather than
 //! anyone predicting it. The Incarnon form's base damage is Heat, so a

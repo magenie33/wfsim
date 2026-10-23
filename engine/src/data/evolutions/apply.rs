@@ -52,20 +52,6 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         flat_into_co += v;
                     }
                 }
-                // Same bucket as the line above: it is base damage, and the
-                // run is modelled holding it (see the variant's note).
-                // Into the base like any other flat damage — the buff OPENS
-                // FULL — and recorded so the buff card can take it back off.
-                EvoEffect::FlatBaseDamageOnEmptyReload(v) => {
-                    flat += v;
-                    // …AND SO DOES THIS ONE, by the same rule. It is a flat
-                    // base add wearing a trigger, and nothing about the trigger
-                    // changes which base the CO term reads.
-                    if !e.excludes_co_base(base.form, base.co_behavior) {
-                        flat_into_co += v;
-                    }
-                    base.reload_damage_buff += v;
-                }
                 // Into the SAME additive bucket a mod's indirect stat uses;
                 // `resolve` seeds the panel from here.
                 EvoEffect::Indirect(stat, v) => {
@@ -320,10 +306,6 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         base.injected_elements.push((*element, *amount));
                     }
                 }
-                EvoEffect::AssumedMaxMultishot { total, max_stacks } => {
-                    base.buff_multishot_bonus += total;
-                    base.buff_multishot_max_stacks = base.buff_multishot_max_stacks.max(*max_stacks);
-                }
                 // CARRIED, NOT SPENT, when the perk states a speed: `apply`
                 // works on the raw weapon and the player is not here — the
                 // condition is answered in `resolve_for`, which has the Tenno.
@@ -437,10 +419,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::StackingGrant {
                     trigger, grant, per_stack, max_stacks, duration, chance, decay, cleared_by,
-                    precombat,
+                    precombat, card,
                 } => {
                     base.stacking_buffs.push(crate::model::StackingBuff {
-                        id: stacking_card_id(*trigger, *grant),
+                        id: card.unwrap_or_else(|| stacking_card_id(*trigger, *grant)),
                         trigger: *trigger,
                         grant: *grant,
                         decay: *decay,
@@ -448,7 +430,9 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                         max_stacks: *max_stacks,
                         duration: *duration,
                         chance: *chance,
-                        initial_stacks: 0,
+                        // A PRECOMBAT PILE'S COUNT IS ITS TARGET: the list
+                        // presses to the cap unless a card says otherwise.
+                        initial_stacks: if *precombat { *max_stacks } else { 0 },
                         stacks_per_trigger: 1,
                         per_shell: false,
                         cleared_by: *cleared_by,

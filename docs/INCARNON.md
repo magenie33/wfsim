@@ -260,8 +260,7 @@ what each entry is waiting on. An unknown effect kind is the only spelling that
 means "nothing models this yet" and stays true — the kinds that would fit all
 pay out UNCONDITIONALLY, so `flat_base_damage` would load Haven Foray's
 overshield clause as a silent +30 on every build, `flat_base_crit_multiplier`
-would grant Prelude of Might's +3x to everyone, and a `stacking_buff` carrying a
-multishot payload becomes `AssumedMaxMultishot` whatever trigger sits beside it.
+would grant Prelude of Might's +3x to everyone.
 
 `unmodeled_effects` is derived from the same variants, so a perk's tile and this
 list cannot disagree.

@@ -22,7 +22,6 @@ fn every_weapon_that_pays_for_not_having_something_is_on_the_riven_list() {
                 EvoEffect::ChanceDamageOnNoncrit { .. }
                     | EvoEffect::CritMultiplierBelowCritChance { .. }
                     | EvoEffect::CritDamageBelowStatusCount { .. }
-                    | EvoEffect::FlatBaseDamageOnEmptyReload(_)
                     | EvoEffect::FieldDurationOnEmptyReload(_)
                     | EvoEffect::MagGrowthOnEmptyReload { .. }
             )
@@ -35,7 +34,7 @@ fn every_weapon_that_pays_for_not_having_something_is_on_the_riven_list() {
         };
         want.entry(e.weapon.as_str()).or_default().insert(stat);
     }
-    assert!(want.len() >= 20, "the walk found {} weapons", want.len());
+    assert!(want.len() >= 15, "the walk found {} weapons", want.len());
 
     let listed: std::collections::BTreeMap<&str, std::collections::BTreeSet<&str>> =
         crate::build::rivens::SIGN_IS_NOT_THE_ANSWER
@@ -116,9 +115,11 @@ fn loads_the_dt_evolution_pool() {
 fn fevered_and_carnage_parse_their_wiki_values() {
     let fe = get("dual_toxocyst_fevered_frenzy").unwrap();
     assert!(fe.effects.contains(&EvoEffect::FlatBaseDamage(50.0)));
-    assert!(fe
-        .effects
-        .contains(&EvoEffect::AssumedMaxMultishot { total: 1.0, max_stacks: 20 }));
+    // TWENTY STACKS OF +5%, on any ability cast, earned before the fight.
+    assert!(fe.effects.iter().any(|e| matches!(e,
+        EvoEffect::StackingGrant { trigger: crate::model::BuffTrigger::AbilityCast,
+            grant: crate::model::BuffGrant::Multishot, max_stacks: 20, precombat: true, per_stack, .. }
+            if (per_stack - 0.05).abs() < 1e-12)), "{:?}", fe.effects);
     let ca = get("dual_toxocyst_carnage_reign").unwrap();
     assert!(ca.effects.contains(&EvoEffect::FlatBaseDamage(60.0)));
     // …AND ITS SECOND CLAUSE IS GATED, NOT DEAD. "+33% Direct Damage per
@@ -205,7 +206,6 @@ fn a_broken_evolution_changes_nothing_whatever_it_grants() {
         base_form_only: false,
         effects: vec![
             EvoEffect::FlatBaseDamage(100.0),
-            EvoEffect::FlatBaseDamageOnEmptyReload(50.0),
             EvoEffect::FlatBaseCritChance(0.5),
             EvoEffect::FlatBaseCritMultiplier(1.5),
             EvoEffect::FlatBaseStatusChance(0.5),

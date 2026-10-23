@@ -880,9 +880,8 @@ pub fn resolve_for(
     let evo_ms_bonus = if locked_stat("multishot") {
         0.0
     } else {
-        base.buff_multishot_bonus + gate(GatedGrant::Multishot)
+        gate(GatedGrant::Multishot)
     };
-    let evo_ms_stacks = if locked_stat("multishot") { 0 } else { base.buff_multishot_max_stacks };
     let ms_last_round = if locked_stat("multishot") { 0.0 } else { base.multishot_on_last_round };
     let evo_fr_bonus = if locked_stat("fire_rate") {
         0.0
@@ -1893,7 +1892,7 @@ pub fn resolve_for(
             + headshot_damage
             + zoom.headshot_damage,
         noncrit_bonus: base.noncrit_bonus,
-        stacking_buffs: crate::data::apl::earn_before_the_fight(base
+        stacking_buffs: base
             .stacking_buffs
             .iter()
             .chain(mod_buffs.iter())
@@ -1950,12 +1949,11 @@ pub fn resolve_for(
                 per_shell: b.stacks_per_trigger == 0,
                 // NO OPENING STACKS of its own: a pile you can be caught
                 // without is earned by the fight, and one the player builds
-                // alone is earned by the precombat list just below — once the
-                // magazine is known, since a reload earns a stack a shell.
+                // alone carries the count the precombat list presses toward.
                 initial_stacks: b.initial_stacks,
                 ..*b
             })
-            .collect()),
+            .collect(),
         multishot: own_multishot * (1.0 + evo_ms_bonus + multishot),
         base_multishot: own_multishot,
         // Magazine capacity: +% of base, rounded to the nearest whole round.
@@ -2120,23 +2118,6 @@ pub fn resolve_for(
         base_damage_on_reload,
         base_damage_on_eximus_weakpoint,
         proc_conversion: proc_conv,
-        // Reified Bane: the vector already carries the +14 (evolutions apply
-        // before mods), so the buff opens FULL and the card scales it back.
-        evo_base_damage: (base.reload_damage_buff > 0.0).then_some(EvoBdBuff {
-            full: base.reload_damage_buff,
-            without: (base.base_vector.total() - base.reload_damage_buff).max(0.0),
-            max_stacks: 1,
-            stacks: 1,
-        }),
-        evo_multishot: (evo_ms_bonus > 0.0 && evo_ms_stacks > 0).then_some(
-            EvoMsBuff {
-                full: own_multishot * evo_ms_bonus,
-                max_stacks: evo_ms_stacks,
-                // Full until a buff card says otherwise — it is permanent, so
-                // "the count in play" starts at the count the panel resolved.
-                stacks: evo_ms_stacks,
-            },
-        ),
         locked: disabled.to_vec(),
     }
 }

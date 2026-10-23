@@ -84,8 +84,8 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
         // narrowest trigger on this list: the roll is only taken while the
         // window is SHUT, which is the card's "cannot refresh while active".
         "arcane:melee_influence" => "status_applied",
-        // Fevered Frenzy: permanent stacks, no in-sim trigger — the answer
-        // `ArcTrigger::Passive` gets, for the same reason.
+        // Fevered Frenzy, earned on an ability cast: a trigger no scenario
+        // switches off, so nothing may take it away.
         "evo_multishot" => return Some(None),
         // A MELEE INCARNON IS ARMED BY A HEAVY ATTACK, and that is the MODE's
         // business rather than the fight's: whether the loop contains one is a

@@ -894,20 +894,6 @@ pub struct WeaponBase {
     /// See [`crate::model::MeterSpec`] — the clock this form is gated
     /// behind, unmodded.
     pub meter: Option<crate::model::MeterSpec>,
-    /// Extra additive multishot from non-mod sources at assumed-max
-    /// (Fevered Frenzy's 20 stacks = +1.0).
-    /// Flat BASE damage an evolution grants through a PERMANENT buff rather
-    /// than unconditionally — Boar Prime's Reified Bane, "On Reload From
-    /// Empty: +14 Base Damage". `base_vector` already carries it (the buff
-    /// starts full, like Fevered Frenzy's multishot); this records how much of
-    /// it is the buff's, so a buff card can take it back off.
-    pub reload_damage_buff: f64,
-    pub buff_multishot_bonus: f64,
-    /// Stack count behind `buff_multishot_bonus` (Fevered Frenzy: 20). The
-    /// stacks are PERMANENT (no timer, cleared only by death) and their
-    /// trigger (ability cast) cannot fire in the sim — so the count is a
-    /// static per-buff CHOICE, full by default. 0 = no such buff.
-    pub buff_multishot_max_stacks: u32,
     pub magazine_size: f64,
     /// Base reserve rounds (wiki "Ammo Max"), before mods.
     pub ammo_reserve: f64,
