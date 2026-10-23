@@ -192,17 +192,12 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
   check("a store read whole moves the cursor to its newest row",
     moved.status === 0 && readFileSync(join(live, "facts-cursor.txt"), "utf8").trim() === newest,
     `${readFileSync(join(live, "facts-cursor.txt"), "utf8").trim()} for ${newest} ${moved.stderr.slice(0, 300)}`);
-  const [known] = await query("SELECT identity, ruler, mode FROM scores LIMIT 1");
   const waiting = { identity: "b1", ruler: "no_fact_yet", mode: "base", score: 2 };
-  writeFileSync(join(live, "unverified.ndjson"), `${JSON.stringify({ ...known, score: 3 })}\n${JSON.stringify(waiting)}\n`);
-  const opened = await publish("open", live, join(live, "unverified.ndjson"), join(live, "open.ndjson"));
-  check("a client result a fact answers is dropped, and one none does is kept",
-    opened.status === 0 && text(join(live, "open.ndjson")) === `${JSON.stringify(waiting)}\n`,
-    text(join(live, "open.ndjson")).slice(0, 300));
+  writeFileSync(join(live, "more.ndjson"), `${JSON.stringify(waiting)}\n`);
   writeFileSync(join(live, "library-ids.ndjson"), `${JSON.stringify({ k: "b1", v: { weapon: "torid" } })}\n`);
   writeFileSync(join(live, "library-live.json"), JSON.stringify([{ id: "b1", weapon: "torid" }, { id: "b9", weapon: "braton" }]));
   writeFileSync(join(live, "ids.txt"), "b1\n");
-  const cut = await publish("subset", live, join(live, "ids.txt"), join(live, "sub.json"), facts, join(live, "open.ndjson"));
+  const cut = await publish("subset", live, join(live, "ids.txt"), join(live, "sub.json"), facts, join(live, "more.ndjson"));
   const cutFacts = text(join(live, "sub.json.facts")).split("\n").filter(Boolean).map((l) => JSON.parse(l));
   check("a subset holds its weapon's builds and their facts from every file it is given",
     cut.status === 0 && JSON.parse(text(join(live, "sub.json")) || "[]").length === 1

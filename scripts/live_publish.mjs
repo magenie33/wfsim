@@ -5,7 +5,6 @@
 //   node live_publish.mjs delta <work-dir>                verified facts since the last read
 //   node live_publish.mjs cursor <work-dir>               the facts file just read whole: the delta starts at its newest
 //   node live_publish.mjs subset <work-dir> <ids> <out> <facts>...   the weapons <ids> touch: library, facts
-//   node live_publish.mjs open <work-dir> <results> <out>   the client results no fact answers
 //   node live_publish.mjs push <work-dir> <dir>           the files that moved, to R2
 //
 // `delta` appends to `facts-known.ndjson` every `scores` row finished in the
@@ -121,18 +120,6 @@ async function subset(idsPath, out, factsIn) {
   console.error(`live: re-ranking ${weapons.size} weapon(s), ${lib.length} build(s)`);
 }
 
-/// THE CLIENT RESULTS NO FACT HAS ANSWERED YET, out of `results` — a few
-/// hundred lines, held — against the facts file streamed once.
-async function open(resultsPath, out) {
-  const waiting = new Map();
-  for await (const l of eachLine(resultsPath)) waiting.set(key(JSON.parse(l)), l);
-  for await (const l of eachLine(join(work, "facts-known.ndjson"))) {
-    if (!waiting.size) break;
-    waiting.delete(key(factHead(l)));
-  }
-  writeFileSync(out, [...waiting.values()].map((l) => l + "\n").join(""));
-}
-
 async function push() {
   const ledgerPath = join(work, "pushed.json");
   const ledger = existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, "utf8")) : {};
@@ -167,5 +154,4 @@ if (mode === "delta") await delta();
 else if (mode === "cursor") await cursor();
 else if (mode === "push") await push();
 else if (mode === "subset") await subset(dir, process.argv[5], process.argv.slice(6));
-else if (mode === "open") await open(dir, process.argv[5]);
-else { console.error("usage: live_publish.mjs delta|cursor|subset|open|push <work-dir> ..."); process.exit(2); }
+else { console.error("usage: live_publish.mjs delta|cursor|subset|push <work-dir> ..."); process.exit(2); }

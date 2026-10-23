@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // THE ENGINE AND THE HEADLESS TABLE, as the bot server runs them — the same
 // `mcp/headless.js` and wasm the MCP server bundles, loaded the way
-// `scripts/check_mcp_tools.mjs` loads them. The board is the server's live one when
-// it keeps one, and the published one otherwise.
+// `scripts/check_mcp_tools.mjs` loads them. The board is the published one, the
+// rows the card page draws from.
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -10,7 +10,6 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const SITE = "https://wfsim.app";
 const BOARD_TTL_MS = 600_000;
-const LIVE_BOARD = process.env.WFSIM_LIVE_BOARD || "";
 
 export async function loadEngine() {
   const headless = await import(pathToFileURL(resolve(ROOT, "mcp/headless.js")));
@@ -33,14 +32,6 @@ export async function loadEngine() {
     meta: () => meta,
     names: () => Object.values(i18n),
     async board(id) {
-      // THE OWNER'S LIVE BOARD WHEN THIS SERVER KEEPS ONE (`scripts/live_board.sh`,
-      // swapped in whole), read on every ask because it moves by the minute;
-      // the published one otherwise.
-      if (LIVE_BOARD) {
-        try {
-          return JSON.parse(readFileSync(resolve(LIVE_BOARD, `${id}.json`), "utf8"));
-        } catch (_) { /* not projected yet — the published board answers */ }
-      }
       const hit = boards.get(id);
       if (hit && Date.now() - hit.at < BOARD_TTL_MS) return hit.rows;
       const r = await fetch(`${SITE}/board/${id}.json`);

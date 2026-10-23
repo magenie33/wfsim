@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# THE LIVE BOARDS, AND THE ORDERS BEHIND THEM — on the board server
+# THE LIVE BOARD, AND THE ORDERS BEHIND IT — on the board server
 # (`deploy/wfsim-live.service`); `publish.yml` keeps a daily snapshot in git.
 #
 #   scripts/live_board.sh <work-dir> <bin-dir>
@@ -8,10 +8,9 @@
 # builds into the library, every row it owes into the queue and opened as a
 # compute order (`ship_queue.sh`) — on its own clock, so a submission never
 # waits for a projection pass. EVERY CYCLE of the main loop the rows `scores`
-# gained are read, and the boards move:
-# `verified/`, `scores` alone, pushed to R2 for the site; `board/`, with every
-# client result not yet a fact, for the owner. This server fights
-# nothing: what only the official machines may settle is `settle.yml`'s.
+# gained are read, and the board moves: `verified/`, `scores` alone, pushed
+# to R2 for the site. A client result is on no board until it is a fact. This
+# server fights nothing: what only the official machines may settle is `settle.yml`'s.
 # docs/BOARD.md §"The fact factory", §"The live board".
 #
 # Needs the library's database — PG_URL (Postgres, scripts/db.sh) —
@@ -27,7 +26,7 @@ REFRESH_SECONDS="${REFRESH_SECONDS:-3600}"
 mkdir -p "$WORK"
 cd "$WORK"
 WORK="$(pwd)"
-touch new-builds.ndjson unverified.ndjson
+touch new-builds.ndjson
 
 . "$HERE/db.sh"
 
@@ -48,7 +47,6 @@ intake_arrivals() {
   # …INTO THE MAILBOX the main loop takes them from (`take_arrivals`).
   { flock 9
     cat builds-new.ndjson >> arrived-builds.ndjson
-    jq -r '.id' < builds-new.ndjson >> arrived-ids.txt
   } 9> mailbox.lock
   # THE FIGHT EACH ARRIVAL NAMED GOES FIRST, asked as waited on (`named`): the
   # player just ran it and is looking for that row. The build's other rows
@@ -80,11 +78,9 @@ intake_loop() {
 # after the store's read, so a build that landed meanwhile is in one or the other.
 take_arrivals() {
   { flock 9
-    touch arrived-builds.ndjson arrived-ids.txt
+    touch arrived-builds.ndjson
     cat arrived-builds.ndjson >> new-builds.ndjson
-    cat arrived-ids.txt >> touched-ids.txt
     : > arrived-builds.ndjson
-    : > arrived-ids.txt
   } 9> mailbox.lock
 }
 
@@ -160,32 +156,6 @@ publish_verified() {
   python3 "$HERE/board_meta.py" verified pub/data/board_state.yaml verified/meta.json >&2
 }
 
-# THE OWNER'S BOARD: the facts, and every client result no fact has answered
-# yet (`unverified-open.ndjson`), which a subset pass cuts its facts from too.
-open_results() {
-  node "$HERE/live_publish.mjs" open "$WORK" unverified.ndjson unverified-open.ndjson
-}
-
-project_private() {
-  if [ -z "${1:-}" ]; then
-    open_results || return 1
-    cat facts-known.ndjson unverified-open.ndjson > facts-live.ndjson
-  fi
-  project_into board facts-live.ndjson . "${1:-}" || return 1
-  echo "live: projected $(wc -l < unverified-open.ndjson) client result(s) beside $(wc -l < facts-known.ndjson) fact(s)" >&2
-}
-
-# WHICH BUILDS' CLIENT RESULTS CHANGED since the last read, into `touched-ids.txt`.
-read_unverified() {
-  node "$HERE/live_orders.mjs" unverified "$WORK" unverified.next || return 1
-  # ONE COLLATION FOR `sort` AND `comm`, BYTEWISE: under en_US.UTF-8 comm
-  # finds sort's own output out of order and may diff the wrong lines.
-  jq -r '"\(.identity)|\(.ruler)|\(.mode)|\(.score)"' < unverified.ndjson | LC_ALL=C sort > unverified.was
-  jq -r '"\(.identity)|\(.ruler)|\(.mode)|\(.score)"' < unverified.next | LC_ALL=C sort > unverified.now
-  LC_ALL=C comm -3 unverified.was unverified.now | tr -d '\t' | cut -d'|' -f1 | sort -u >> touched-ids.txt
-  mv unverified.next unverified.ndjson
-}
-
 # ONE CYCLE AND OUT takes its arrivals in line; a service runs the intake loop
 # beside the main one, and starts it again if it ever stops.
 INTAKE_PID=""
@@ -202,7 +172,6 @@ last_refresh=0
 while true; do
   whole=0
   facts_moved=0
-  : > touched-ids.txt
   now=$(date +%s)
   if [ $((now - last_refresh)) -ge "$REFRESH_SECONDS" ] || [ ! -s library.json ]; then
     if refresh_store; then
@@ -225,12 +194,9 @@ while true; do
     node "$HERE/live_publish.mjs" delta "$WORK" || code=$?
     if [ "$code" = 0 ]; then
       facts_moved=1
-      cat moved-ids.txt >> touched-ids.txt
     fi
   fi
-  read_unverified || echo "live: the open orders could not be read" >&2
-  if [ -s library.json ] && { [ "$whole" = 1 ] || [ "$facts_moved" = 1 ] || [ -s touched-ids.txt ] \
-       || [ ! -d verified ] || [ ! -d board ]; }; then
+  if [ -s library.json ] && { [ "$whole" = 1 ] || [ "$facts_moved" = 1 ] || [ ! -d verified ]; }; then
     library_live
     # WHOLE ON THE HOUR AND ON A FIRST START; otherwise only the weapons this
     # cycle's facts touched.
@@ -238,13 +204,6 @@ while true; do
       publish_verified || echo "live: the site's board did not publish; the last one stands" >&2
     elif [ "$facts_moved" = 1 ] && subset_of moved-ids.txt verified-subset.json facts-known.ndjson; then
       publish_verified verified-subset.json || echo "live: the site's board did not publish; the last one stands" >&2
-    fi
-    if [ "$whole" = 1 ] || [ ! -d board ]; then
-      project_private || echo "live: the projection failed; the last board stands" >&2
-    elif [ -s touched-ids.txt ]; then
-      if open_results && subset_of touched-ids.txt private-subset.json facts-known.ndjson unverified-open.ndjson; then
-        project_private private-subset.json || echo "live: the projection failed; the last board stands" >&2
-      fi
     fi
   fi
   # PUSHED EVERY CYCLE, and a file only when its bytes moved: a push the
