@@ -68,15 +68,23 @@ function api(path, body) {
 
 let meta = null;
 let names = null;
+const boardFile = async (env, url) => {
+  const r = await (env.SITE ? env.SITE.fetch(url) : fetch(url));
+  return r.ok ? r.json() : null;
+};
+
 /// The worker as a headless host: the engine's own meta and names, the board
 /// as the site publishes it right now, English, and no screen.
 const host = (env) => ({
   meta: () => (meta ??= api("/api/meta")),
   names: () => (names ??= Object.values(api("/api/i18n"))),
   async board(id) {
-    const url = `${SITE}/board/${encodeURIComponent(id)}.json`;
-    const r = await (env.SITE ? env.SITE.fetch(url) : fetch(url));
-    return r.ok ? r.json() : null;
+    return boardFile(env, `${SITE}/board/${encodeURIComponent(id)}.json`);
+  },
+  // THE HEADS, for a top-N answer (docs/BOARD.md §"The heads"); every row
+  // where a weapon has none yet.
+  async boardHeads(id) {
+    return (await boardFile(env, `${SITE}/board/heads/${encodeURIComponent(id)}.json`)) || this.board(id);
   },
   api: async (path, body) => api(path, body),
   tr: (s) => s,

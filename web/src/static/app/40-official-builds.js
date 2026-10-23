@@ -351,6 +351,17 @@ let BOARD_INDEX = null;
 async function loadWeaponBoard(id, base = boardOffOrigin ? BOARD_ORIGIN : "") {
   if (!id || BOARD_HAVE.has(id)) return;
   let rows = null;
+  // A TOP-N CARD READS THE HEADS, every scene in one file (docs/BOARD.md §"The
+  // heads"): its places are every row's, from a fraction of the rows. A weapon
+  // with no heads yet, and every other page, reads every row.
+  if (/\/card\/?$/.test(location.pathname) && cardParams().kind === "pz") {
+    try { rows = await fetchJsonPatient(`${base}/board/heads/${id}.json`); } catch (_) { /* every row, below */ }
+    if (rows) {
+      BOARD[id] = rows;
+      BOARD_HAVE.add(id);
+      return;
+    }
+  }
   try { rows = await fetchJsonPatient(`${base}/board/${id}.json`); } catch (_) { /* unreachable */ }
   // NULL IS NOT AN EMPTY BOARD. A dev server has no `board/` at all, and a
   // weapon left unloaded is what `boardProjection` refuses to speak about.
