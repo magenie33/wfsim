@@ -66,11 +66,6 @@ reasons:
   # reason rather than a sentence.
   explosion_ignores_cover:
     text: "The blast needs no line of sight. There is no cover here, so the perk adds nothing."
-  # A MODE THAT IS NOT A CHOICE. Some weapons switch form by AIMING rather than
-  # by a trigger, and this engine's mode is a build axis while `aiming` is the
-  # fight's own flag — so the two can be set to a pair the game cannot produce.
-  mode_is_the_aim_state:
-    text: "In game this mode is entered by aiming. The sim sets the mode and Aiming separately, so read every while-aiming bonus as active whenever this mode is."
   # SELF-STAGGER, which every modern AoE weapon carries and none of them can
   # suffer here — the wielder is not a body in this arena.
   # A PROJECTILE THAT HAS TO BE LED. Every shot in this arena connects the

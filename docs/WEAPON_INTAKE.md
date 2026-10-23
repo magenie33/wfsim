@@ -279,9 +279,9 @@ switches the weapon into a mode that the trigger then fires — the Haalvu's
 burst, the Kuva Hind's semi and auto — the entry says `alt_fire_toggles: true`
 (`# see notes: alt_fire_toggles_wiki`): the fight switches before it starts
 and pulls the trigger. Alternate Fire that fires the attack itself (a throw,
-an airburst) states nothing. A mode chosen by AIMING (Quatz, Kuva Quartakk,
-Tenet Diplos) is neither and has no word yet, and a page that does not say is
-not read as either.
+an airburst) states nothing. A mode the page enters by AIMING (Quatz, Kuva
+Quartakk, Tenet Diplos: "aimed fire") is `form: aimed`, and the engine aims for
+it whatever the scenario says. A page that does not say is read as none of them.
 
 A part that is not a separate trigger is not an entry: an explosion on impact
 is a `radial:` on the attack it belongs to, with its own crit, status, element,

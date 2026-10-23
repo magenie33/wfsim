@@ -1203,6 +1203,31 @@ fn a_form_that_cannot_zoom_pays_no_aim_gated_bonus() {
     assert_eq!(flagged, vec!["vasto_incarnon", "vasto_prime_incarnon"], "{flagged:?}");
 }
 
+/// **A FORM ENTERED BY AIMING IS AIMING**, the other half of the rule above:
+/// the Quatz's burst is "aimed fire" (wiki), so a scenario that hipfires
+/// still pays the aim mod there, while the hip-fire auto beside it does not.
+#[test]
+fn a_form_entered_by_aiming_pays_the_aim_gated_bonus() {
+    use crate::data::mods::class_pool;
+    let pool = class_pool("pistol");
+    let gc = pool.iter().find(|m| m.id == "galvanized_crosshairs")
+        .expect("galvanized_crosshairs is in the pistol pool");
+    let aiming = crate::data::tenno::default_tenno();
+    let hipfire = tenno_who(|s| s.aiming = false);
+    let cc = |id: &str, t: &crate::data::tenno::Tenno| {
+        let base = WeaponBase::from_data(id, false, &[]);
+        resolve_for(&base, &[gc], StackPolicy::AssumedMax, t).crit_chance
+    };
+    let (burst_aim, burst_hip) = (cc("quatz_burst", aiming), cc("quatz_burst", &hipfire));
+    assert!((burst_aim - burst_hip).abs() < 1e-9, "the burst aims either way: {burst_aim} vs {burst_hip}");
+    let (auto_aim, auto_hip) = (cc("quatz", aiming), cc("quatz", &hipfire));
+    assert!(auto_aim > auto_hip, "the hip-fire auto is the scenario's: {auto_aim} vs {auto_hip}");
+    // THE ROSTER: every page that says "aimed fire" for a mode of its own.
+    let aimed: Vec<&str> = crate::data::weapons::all().iter()
+        .filter(|w| w.form == "aimed").map(|w| w.id.as_str()).collect();
+    assert_eq!(aimed, vec!["kuva_quartakk", "quatz_burst", "tenet_diplos_lock_on"], "{aimed:?}");
+}
+
 /// A SCOPE GRANTS ONE OF THREE THINGS, AND THEY LAND IN THREE PLACES.
 ///
 /// The Vectis family's zoom gives headshot damage, the Rubico's a critical

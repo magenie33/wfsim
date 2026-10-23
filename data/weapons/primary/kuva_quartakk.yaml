@@ -7,7 +7,7 @@ weapon_type: primary
 # the arsenal's own display (module `_TooltipAttackDisplay: 2`); the hip-fire
 # auto is `kuva_quartakk_auto`.
 class: rifle
-form: alt_fire
+form: aimed
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: kuva_quartakk
 mod_pools: [primary, rifle, assault_rifle]
@@ -74,9 +74,6 @@ attack:
   # see notes: wall_ramp_full_damage_2
   range_m: 300.0
   damage: { impact: 19.98, puncture: 15.66, slash: 18.36 }   # total 54
-
-unmodeled:
-  - reason: mode_is_the_aim_state
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Quartakk

@@ -309,6 +309,11 @@ pub enum FormKind {
     Heat,
     Electricity,
     Cold,
+    /// A MODE ENTERED BY AIMING, fired on the trigger — the Quatz's and the
+    /// Kuva Quartakk's four-round burst, the Tenet Diplos's lock-on. Neither a
+    /// second trigger nor a toggle: the page's word is "aimed fire", and the
+    /// form IS aiming, which `resolve_for` answers for it.
+    Aimed,
     // ---- MELEE. Seven ways to swing one weapon, and each of them is a
     // BUILD --------------------------------------------
     //
@@ -372,6 +377,7 @@ impl FormKind {
             FormKind::Heat => "heat",
             FormKind::Electricity => "electricity",
             FormKind::Cold => "cold",
+            FormKind::Aimed => "aimed",
             FormKind::Neutral => "neutral",
             FormKind::Forward => "forward",
             FormKind::Block => "block",
@@ -398,6 +404,7 @@ impl FormKind {
             FormKind::Heat => "Heat",
             FormKind::Electricity => "Electricity",
             FormKind::Cold => "Cold",
+            FormKind::Aimed => "Aimed Fire",
             // THE LABEL IS THE FALLBACK, not the name a reader sees. A stance
             // names its own combos and `/api/meta` fills that in; this is what
             // is drawn when no stance is equipped, where the input IS the only
@@ -482,6 +489,7 @@ impl FormKind {
             "heat" => FormKind::Heat,
             "electricity" => FormKind::Electricity,
             "cold" => FormKind::Cold,
+            "aimed" => FormKind::Aimed,
             "neutral" => FormKind::Neutral,
             "forward" => FormKind::Forward,
             "block" => FormKind::Block,

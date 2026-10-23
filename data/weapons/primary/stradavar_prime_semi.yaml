@@ -4,6 +4,8 @@ name: Stradavar Prime
 # metre of innate punch through and the highest crit multiplier on the weapon.
 inherits: stradavar_prime
 form: semi_auto
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
 transform_group: stradavar_prime
 
 introduced: "24.5.8"
