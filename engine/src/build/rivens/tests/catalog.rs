@@ -121,6 +121,20 @@ assert_eq!(seen[0], ROLL_MIN, "the god roll is asked first");
 assert_eq!(rolls(&out), vec![ROLL_MAX, ROLL_MAX, 1.05]);
 }
 
+/// …AND ONLY THE MALUS: a status duration BONUS is asked at its two ends.
+#[test]
+fn a_status_duration_bonus_is_asked_at_its_two_ends() {
+let shape = RivenShape {
+    bonuses: vec!["damage".into(), "status_duration".into()],
+    malus: Some("zoom".into()),
+};
+let asked = ambiguous_stats(&shape, "lex_prime");
+assert_eq!(
+    corners(&shape, &asked),
+    vec![vec![ROLL_MAX, ROLL_MAX, ROLL_MIN], vec![ROLL_MAX, ROLL_MIN, ROLL_MIN]],
+);
+}
+
 /// Bonuses then the malus — the order `RivenShape::at` reads them back in.
 #[cfg(test)]
 fn rolls(spec: &RivenSpec) -> Vec<f64> {

@@ -118,8 +118,9 @@ pub fn default_rolls(shape: &RivenShape) -> Vec<f64> {
 /// the sign, on every weapon.
 pub const PHYSICAL_STATS: [&str; 3] = ["impact", "puncture", "slash"];
 
-/// …AND STATUS DURATION, on every weapon, asked at every one of
-/// [`DURATION_ROLLS`] rather than at its two ends.
+/// …AND STATUS DURATION, on every weapon: as the MALUS it is asked at every
+/// one of [`DURATION_ROLLS`] rather than at its two ends, and as a bonus at
+/// its two ends like the rest.
 ///
 /// It paces Heat's armour strip (its steps scale with it, M99) and shortens
 /// every other status with it, so a deeper malus strips faster while each
@@ -129,7 +130,7 @@ pub const PHYSICAL_STATS: [&str; 3] = ["impact", "puncture", "slash"];
 /// would have published 175.
 pub const DURATION_STATS: [&str; 1] = ["status_duration"];
 
-/// THE ROLLS A DURATION STAT IS ASKED AT: the band in five even steps, so the
+/// THE ROLLS A DURATION MALUS IS ASKED AT: the band in five even steps, so the
 /// interior best is found to within one step. Even steps and not a search for
 /// the peak, because the curve is not smooth — a status whose life crosses a
 /// whole second gains or loses a tick there.
@@ -218,8 +219,8 @@ pub fn best_roll(
 
 /// EVERY CORNER A SHAPE IS ASKED AT, the god roll first: every bonus at its
 /// ceiling and the malus at its floor, then every combination of the
-/// `ambiguous` stats at their other rolls — the other end for a sign stat,
-/// each of [`DURATION_ROLLS`] for a duration stat.
+/// `ambiguous` stats at their other rolls — each of [`DURATION_ROLLS`] for a
+/// duration malus, the other end for everything else.
 pub fn corners(shape: &RivenShape, ambiguous: &BTreeSet<String>) -> Vec<Vec<f64>> {
     let stats: Vec<&str> = shape
         .bonuses
@@ -236,7 +237,7 @@ pub fn corners(shape: &RivenShape, ambiguous: &BTreeSet<String>) -> Vec<Vec<f64>
         .filter(|&i| ambiguous.contains(stats[i]))
         .map(|i| {
             let other = if god[i] == ROLL_MAX { ROLL_MIN } else { ROLL_MAX };
-            let rest: Vec<f64> = if DURATION_STATS.contains(&stats[i]) {
+            let rest: Vec<f64> = if i >= shape.bonuses.len() && DURATION_STATS.contains(&stats[i]) {
                 DURATION_ROLLS.into_iter().filter(|&r| r != god[i]).collect()
             } else {
                 vec![other]

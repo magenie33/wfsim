@@ -1,0 +1,40 @@
+name: backfill
+
+# A CORNER RULE THAT GROWS REACHES NEW ARRIVALS ALONE: intake derives a riven's
+# corners when its shape arrives, and the inbox is emptied as it goes. This puts
+# the corners such a rule adds onto the builds the library already holds, and is
+# run by hand once per rule (`scripts/backfill_duration_corners.sh`). It writes
+# builds and asks no fight; the board asks for each corner once its default has
+# cleared the entry line.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: count the corners and print a sample, write nothing
+        type: boolean
+        default: true
+
+jobs:
+  duration-corners:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+      - run: cargo build --release --bin wfsim-intake
+      - name: the databases
+        uses: ./.github/actions/databases
+        with:
+          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
+      - name: a status duration malus's inside rolls
+        env:
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: bash scripts/backfill_duration_corners.sh

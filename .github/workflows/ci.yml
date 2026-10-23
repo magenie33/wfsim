@@ -478,6 +478,9 @@ jobs:
       # find it rather than dropping it.
       - name: What arrived is read out of the queue
         run: bash scripts/fetch_inbox.sh --self-test
+      # A backfill writes only the corners the library lacks, never an end.
+      - name: A duration malus's inside rolls reach stored builds
+        run: bash scripts/backfill_duration_corners.sh --self-test
       # …AND WHAT CAN NEVER BE PAID IS FORGOTTEN. A queue row is deleted beside
       # the fact that settles it, so a row under a retired ruler is owed for
       # ever and the "N row(s) owed" signal never returns to zero. Its statement

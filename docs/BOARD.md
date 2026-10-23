@@ -1617,8 +1617,8 @@ against 0.01 s.
   damage beside the rest, it changes the SHARE each damage type holds of the
   total — and a status proc is drawn in proportion to that share, so more Impact
   is fewer Viral and Corrosive procs.
-- **status duration, on every weapon, at five rolls** (`DURATION_ROLLS`: 0.9,
-  0.95, 1.0, 1.05, 1.1). It paces Heat's armour strip (the steps scale with it,
+- **status duration, on every weapon: as the MALUS at five rolls**
+  (`DURATION_ROLLS`: 0.9, 0.95, 1.0, 1.05, 1.1), as a bonus at its two ends. It paces Heat's armour strip (the steps scale with it,
   M99) and shortens every other status with it, so a deeper malus strips faster
   while each Viral, Corrosive or Magnetic stack lives for less, and the best
   sits INSIDE the band. The Furis's standard_single_target #1 at disposition
@@ -1652,7 +1652,14 @@ never by resembling one on it, and its rank is part of the id —
 Measured over the library: 1,948 of 2,418 riven builds have no ambiguous stat
 at all and are the god roll and nothing else; 470 name one worth more corners,
 and all but five of those name exactly one — two builds for a sign stat, five
-for a duration stat, not sixteen.
+for a duration malus, not sixteen.
+
+**A CORNER RULE THAT GROWS REACHES ARRIVALS ALONE**, because intake reads the
+inbox and the inbox is emptied as it goes. The builds already stored get the
+new corners from `backfill.yml` (`scripts/backfill_duration_corners.sh`), run
+by hand: it sends each stored duration-malus record back through intake and
+writes only the inside rolls the library lacks, never an end — a record
+canonicalised differently since it was stored would come back under a new id.
 
 **AND WHEN TWO RULERS DISAGREE, THAT IS TWO ROWS AND ONE LIBRARY.** One ruler
 cannot speak for another and the card that wins a crowd need not win one
