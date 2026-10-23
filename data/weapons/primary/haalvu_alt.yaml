@@ -15,6 +15,7 @@ battery:
   regen_per_second: 300.0
   delay_empty_seconds: 0.5
   delay_partial_seconds: 0.5
+  empty_animation_seconds: 2.0
 
 # see notes: inherited_co_catalog_gives
 co_behavior: additive_with_base_damage
@@ -43,6 +44,7 @@ attack:
 
 unmodeled:
   - "Tau's status effect is not modelled. Tau's neutral damage is applied correctly, but its proc raises the status chance the target takes from every other source by 10% a stack, up to ten (wiki). With other statuses stacked, the number reads low."
+  - "With 5 or more stacks of Primary Crux the game skips this mode's reload animation (wiki, Bugs). The sim pays the full 2 s, so a Crux build reads low here."
   - "The miniature rifles lock onto up to four enemies within 40 degrees and 10 m, paying ammo per target (wiki). The engine fires at the aimed body only: right against one enemy, up to four times low against a crowd."
 
 source:

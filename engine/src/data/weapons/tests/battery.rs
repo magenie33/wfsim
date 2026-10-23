@@ -5,6 +5,7 @@ use super::*;
 /// as the reload from empty. An arsenal figure built on the PARTIAL delay
 /// reads plausible and makes every empty battery wait the wrong delay: the
 /// Bubonico's 4.5 is `1.5 + 27/9`, where an empty one comes back in 3.1.
+/// A stated empty animation outlasting the refill is the empty case instead.
 #[test]
 fn a_battery_reload_is_the_empty_delay_plus_the_refill() {
     let mut checked = 0;
@@ -13,7 +14,8 @@ fn a_battery_reload_is_the_empty_delay_plus_the_refill() {
         let (Some(reload), Some(magazine)) = (s.reload_seconds, s.magazine) else {
             panic!("{}: a battery states its magazine and reload", s.id);
         };
-        let want = b.delay_empty_seconds + magazine / b.regen_per_second;
+        let refill = b.delay_empty_seconds + magazine / b.regen_per_second;
+        let want = b.empty_animation_seconds.map_or(refill, |a| a.max(refill));
         assert!(
             (reload - want).abs() < 0.01,
             "{}: reload_seconds {reload} is not {} + {magazine}/{} = {want:.3}",

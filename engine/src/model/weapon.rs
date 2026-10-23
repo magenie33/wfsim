@@ -645,6 +645,11 @@ pub struct Battery {
     pub delay_empty_seconds: f64,
     /// …and with rounds still in it (0.4 s).
     pub delay_partial_seconds: f64,
+    /// A RELOAD ANIMATION AN EMPTY BATTERY PLAYS, where the page states one
+    /// (the Haalvu's 2 s): the empty case is then the longer of it and the
+    /// refill, and `reload_seconds` carries that.
+    #[serde(default)]
+    pub empty_animation_seconds: Option<f64>,
 }
 
 /// A SPOOL: the rate MOVES the longer the trigger is held, and rebuilds from
