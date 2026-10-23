@@ -27,17 +27,25 @@ export async function loadEngine() {
   const meta = api("/api/meta");
   const i18n = api("/api/i18n");
   const boards = new Map();
+  const kept = async (url) => {
+    const hit = boards.get(url);
+    if (hit && Date.now() - hit.at < BOARD_TTL_MS) return hit.rows;
+    const r = await fetch(url);
+    const rows = r.ok ? await r.json() : null;
+    boards.set(url, { at: Date.now(), rows });
+    return rows;
+  };
   const zh = i18n.zh || {};
   const host = {
     meta: () => meta,
     names: () => Object.values(i18n),
     async board(id) {
-      const hit = boards.get(id);
-      if (hit && Date.now() - hit.at < BOARD_TTL_MS) return hit.rows;
-      const r = await fetch(`${SITE}/board/${id}.json`);
-      const rows = r.ok ? await r.json() : null;
-      boards.set(id, { at: Date.now(), rows });
-      return rows;
+      return kept(`${SITE}/board/${id}.json`);
+    },
+    // THE HEADS, for a top-N answer (docs/BOARD.md §"The heads"); every row
+    // where a weapon has none yet.
+    async boardHeads(id) {
+      return (await kept(`${SITE}/board/heads/${id}.json`)) || host.board(id);
     },
     api: async (path, body) => api(path, body),
     tr: (s) => (zh.ui && zh.ui[s]) || s,
