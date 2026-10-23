@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WFSim 怎么评判配装 | WFSim</title>
+<meta name="description" content="WFSim 怎么评判一套 Warframe 配装：每条规则都是计算器实际在做的事、这么做的原因，以及它依据的实测。">
+<link rel="canonical" href="https://wfsim.app/method/zh">
+<link rel="alternate" hreflang="en" href="https://wfsim.app/method">
+<link rel="alternate" hreflang="zh" href="https://wfsim.app/method/zh">
+<link rel="alternate" type="text/markdown" href="/method/zh.md">
+<link rel="stylesheet" href="/asset/style.02ddc439e1f4.css">
+<link rel="icon" type="image/svg+xml" href="/logo.svg">
+<style>.legal{max-width:720px;margin:0 auto;padding:32px 16px 64px;line-height:1.6}
+.legal h1{margin-top:0}.legal a{color:var(--accent)}</style>
+</head>
+<body>
+<main class="legal">
+<p><a href="/">WFSim</a> · <a href="/method" lang="en">English</a></p>
+<h1>WFSim 怎么评判配装</h1>
+<p>WFSim 怎么评判一套 Warframe 配装：每条规则都是计算器实际在做的事、这么做的原因，以及它依据的实测。</p>
+<section id="ruler">
+<h2>分数属于它的基准</h2>
+<p><b>配装放在一场有名字的战斗里评判，这场战斗就是它的基准：目标是谁、多少级、打多久、统计什么，全部写明。分数只能和同一基准下的分数比较。</b></p>
+<h3>为什么</h3>
+<ul><li>一发伤害值多少，取决于打在什么身上：护甲、超宏防护、派系、元素弱点、射程内站着几个敌人，每一样都会改变它。脱离战斗的数字既无法复现，也无法比较。</li><li>基准写明每一个条件，所以任何人都能跑同一场战斗，得到同一个分数。</li><li>一个基准下最好的配装，换一个基准可能就不是最好；那是战斗在回答另一个问题。</li></ul>
+<h3>怎么用</h3>
+<ul><li>比较两套配装之前，先确认它们是在同一个基准下算的分；基准不同，就不要比数字。</li><li>引用分数时，连同基准的名字一起写出。</li></ul>
+<h3>依据的读数</h3>
+<ul><li>游戏内实测 · 同一段虚空伤害，打在凶魂百夫长身上显示 14，打在另一个单位身上显示 9。 <a href="https://github.com/magenie33/wfsim/blob/main/docs/measurements/M98-void-weakness-overguard-and-thrax-body.md">M98-void-weakness-overguard-and-thrax-body</a></li></ul>
+<h3>现有基准</h3>
+<ul><li><b>标准单体 · 凶魂百夫长 9999 钢铁 · 180 秒 · KPM</b>: 「标准」指所有配装共用一套条件：同一个耐打、不属于任何派系的目标，同一场战斗，同一套规则。所以同一套配装在任何机器上都是同一个数，任意两套配装可以直接比较。你自己的条件在模拟器里设置。</li><li><b>标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 9999 级 钢铁之路 · 180 秒 · KPM</b>: 「标准」指所有配装共用一套条件：一群耐打、不属于任何派系的目标，站得刚好让每种元素范围效果都能打到邻居，方阵大小刚好装下它们；同一场战斗，同一套规则。所以同一套配装在任何机器上都是同一个数，任意两套配装可以直接比较。你自己的条件在模拟器里设置。</li><li><b>爆破使 · 单体 · 爆破型吞噬者 9999 钢铁 · 四人血量 · 180 秒 · KPM</b>: 这是玩家实际会打的一场具体战斗，按它本来的样子来测，不代表大多数情况：一整支小队面对的爆破使，由一把武器单独拆掉。</li><li><b>重型机枪手 · 单体 · 卓越者堕落重型机枪手 9999 钢铁 · 180 秒 · KPM</b>: 这是玩家实际会打的一场具体战斗，按它本来的样子来测，不代表大多数情况：虚空裂缝里的卓越者堕落重型机枪手，由一把武器单独拆掉。</li></ul>
+<p><a href="/benchmark">/benchmark</a></p>
+</section>
+<section id="fight">
+<h2>战斗是跑出来的，不是假设的</h2>
+<p><b>在基准下，层数、增益、异常状态、超宏防护和护甲，都从游戏里的起点开始，在战斗中一发一发地变化；不会因为卡面写了上限，就从上限开始。</b></p>
+<h3>为什么</h3>
+<ul><li>击杀叠层的增益，值多少取决于战斗让它叠到多少。目标一分钟才死两次，它很少叠得起来；目标每秒都在死，它几乎一直挂着。</li><li>每一发都打在前面几发留下的状态上：目标身上已有的异常、已经被削掉的护甲、快要引爆的一摞层数。</li><li>只有没有计时、也不会被消耗的增益才满层开局，因为谁都能整场一直保持它。</li></ul>
+<h3>怎么用</h3>
+<ul><li>面对耐打的目标，不要按满层计算计时类或击杀类增益；要问这套配装在那里多久能叠起来一次。</li><li>打弱目标领先的配装，打耐打的目标可能落后，反过来也一样。</li></ul>
+<h3>依据的读数</h3>
+<ul><li>引擎读数 · 同一套配装，计时类增益从零开始、必须在战斗中叠起来时，打 9999 级钢铁之路目标的分数低了 60%，打 30 级只低了 0.9%。 <a href="https://github.com/magenie33/wfsim/blob/main/docs/measurements/M27-buff-seed.md">M27-buff-seed</a></li></ul>
+</section>
+<section id="kills">
+<h2>看每分钟击杀，不看每秒伤害</h2>
+<p><b>基准统计每分钟击杀，并计入目标已被削掉的部分；所以打在已经死掉的身体上、或打进已经满了的一摞层数里的伤害，什么也不加。</b></p>
+<h3>为什么</h3>
+<ul><li>每秒伤害会把武器打出的每一个数都算进去，包括打在已经死掉的身体上的伤害。每分钟击杀只算真正把目标打掉的部分。</li><li>多重射击是给武器自己的每一发子弹加伤害实例：每个实例有自己的数字、暴击和异常状态，落在子弹落的地方。</li><li>计入目标已被削掉的部分，一套始终没能完成击杀的配装也照样有排名。</li></ul>
+<h3>怎么用</h3>
+<ul><li>用基准下的每分钟击杀评判配装，不用每秒伤害。</li><li>不要把多重射击算成打向其他目标的额外子弹。</li></ul>
+<h3>依据的读数</h3>
+<ul><li>游戏内实测 · 一个点射三发，打向一发就死的敌人：它死了，这一个点射剩下的部分一点也打不到后面那个敌人。 <a href="https://github.com/magenie33/wfsim/blob/main/docs/measurements/M119-multishot-rides-the-round.md">M119-multishot-rides-the-round</a></li><li>游戏内实测 · 一发把爆炸层数打满十层，只引爆一次，这一发剩下的爆炸触发全部作废。 <a href="https://github.com/magenie33/wfsim/blob/main/docs/measurements/M108-blast-pile-drops-the-rest-of-its-shot.md">M108-blast-pile-drops-the-rest-of-its-shot</a></li></ul>
+</section>
+<section id="measurement">
+<h2>以游戏为准</h2>
+<p><b>游戏内实测、wiki 和 DE 公开导出数据不一致时，以实测为准，其次 wiki，再次导出数据；引擎里每一条公式都写明出处。</b></p>
+<h3>为什么</h3>
+<ul><li>卡面文字和 wiki 是在描述游戏，它们可能漏掉两个效果怎么叠加，或者列出的数字到底指什么。游戏内实测能把这个问题定下来。</li><li>引擎采用的每一条实测都连同数字一起公开，任何人都可以重测一遍。</li><li>测试锁定的数值，只有新的游戏内实测才能改。</li></ul>
+<h3>怎么用</h3>
+<ul><li>卡面写法和游戏内实测不一致时，按实测来。</li><li>你自己的游戏内实测和 WFSim 不一致时，信你的实测。</li></ul>
+<h3>依据的读数</h3>
+<ul><li>游戏内实测 · +50% 和 +30% 两个爆头加成，游戏内实测是只有第一个时的 1.1998 倍：它们相加（1.2），不是相乘（1.3）。 <a href="https://github.com/magenie33/wfsim/blob/main/docs/measurements/M60-headshot-bonuses-add.md">M60-headshot-bonuses-add</a></li><li>游戏内实测 · 投掷每扔一次都要装填，所以一个循环是蓄力加装填，1.6 秒，而不是射速看起来的 1 秒。 <a href="https://github.com/magenie33/wfsim/blob/main/docs/measurements/M43-throw-cycle-includes-reload.md">M43-throw-cycle-includes-reload</a></li></ul>
+</section>
+<section id="search">
+<h2>分数是算出来的，不是填进去的</h2>
+<p><b>榜上的配装来自任何人的提交或搜索的结果，分数则由引擎给出：在固定种子下把基准的战斗跑很多遍。</b></p>
+<h3>为什么</h3>
+<ul><li>一套配装的表现很大程度上由几率决定，所以试一次排不出名次：只跑一次的波动，能让一张值 +30% 的异常 MOD 显示成负数。</li><li>固定种子让任何拿到源码的人都能复现每一个分数。</li><li>提交的是配装，从来不是数字，所以榜上没有一个分数是人填进去的。</li></ul>
+<h3>怎么用</h3>
+<ul><li>不要凭一次试验给配装排名。</li><li>引用榜上的配装时给链接，不要转述：链接会在计算器里打开这套配装，可以再跑一遍。</li></ul>
+<h3>依据的读数</h3>
+<ul><li>引擎读数 · 每个候选只跑一次时，一张异常 MOD 的结果是 +30%，上下浮动 39 个百分点；跑四百次仍然浮动 5.6 个百分点。 <a href="https://github.com/magenie33/wfsim/blob/main/docs/measurements/M24-one-run-gain-cannot-rank.md">M24-one-run-gain-cannot-rank</a></li></ul>
+</section>
+<section id="riven">
+<h2>先看武器本身，不带裂罅</h2>
+<p><b>排行榜首先列出不带裂罅的最佳配装；裂罅按「形状」排名，也就是 roll 出了哪些属性、哪一条是负面属性，按最好的数值计分，和不带裂罅的第一名放在一起比。</b></p>
+<h3>为什么</h3>
+<ul><li>裂罅是某个玩家的随机物品，给物品排名就是给运气排名。形状则是任何人都可以去 roll 的目标。</li><li>每套配装都按满投入计分：Forma 打满、每张卡满级、效价加成取最大值。排行榜比的是选择，不是谁刷得多。</li></ul>
+<h3>怎么用</h3>
+<ul><li>把不带裂罅的那一行当作武器本身的水平，把带裂罅的那一行当作这个形状能带来的提升。</li><li>比较裂罅，要看它相对同一基准、同一模式下不带裂罅第一名的提升。</li></ul>
+<h3>延伸阅读</h3>
+<ul><li><a href="https://github.com/magenie33/wfsim/blob/main/docs/BOARD.md">BOARD.md</a>: 排行榜怎么保存、怎么排名一个裂罅形状。</li></ul>
+</section>
+<section id="unmodelled">
+<h2>没有建模的部分会写明</h2>
+<p><b>武器、MOD、赋能、进化和敌人，各自写明了引擎没有建模的部分；分数只在已建模的范围内成立。</b></p>
+<h3>为什么</h3>
+<ul><li>一个有缺口却没人说明的数字，看起来就像是完整的。写明缺口，等于告诉你该去游戏里自己核对哪里。</li></ul>
+<h3>怎么用</h3>
+<ul><li>引用武器的分数时，连同它「未建模」的说明一起带上。</li><li>缺口影响到问题本身时，直接说明，不要绕着它估算。</li></ul>
+<h3>延伸阅读</h3>
+<ul><li><a href="https://github.com/magenie33/wfsim/blob/main/docs/UNMODELLED.md">UNMODELLED.md</a>: 引擎没有建模的所有机制，汇总在一份清单里。</li></ul>
+</section>
+</main>
+</body>
+</html>

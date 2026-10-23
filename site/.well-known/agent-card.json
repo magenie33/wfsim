@@ -1,7 +1,7 @@
 {
   "name": "WFSim",
-  "description": "WFSim is a Warframe weapon calculator. It builds a loadout, simulates the fight against a named enemy, and searches for the best mods. Every formula cites its source, and every golden test is calibrated against a real in-game run. A board score belongs to its ruler, the named benchmark fight: compare scores only under one ruler, quote the ruler with the number, and give the reader the row's link, which opens the build in the calculator.",
-  "version": "c0b59f7c8696",
+  "description": "WFSim is a Warframe weapon calculator. It builds a loadout, simulates the fight against a named enemy, and searches for the best mods. Every formula cites its source, and every golden test is calibrated against a real in-game run. A board score belongs to its ruler, the named benchmark fight: compare scores only under one ruler, quote the ruler with the number, and give the reader the row's link, which opens the build in the calculator. How it judges a build, and the in-game readings behind each rule, is its method: https://wfsim.app/method.",
+  "version": "f1be8faaaf60",
   "provider": {
     "organization": "WFSim",
     "url": "https://wfsim.app"
@@ -100,6 +100,23 @@
         "warframe",
         "builder",
         "rivens"
+      ],
+      "examples": [],
+      "inputModes": [
+        "application/json"
+      ],
+      "outputModes": [
+        "application/json"
+      ]
+    },
+    {
+      "id": "shell.method.read",
+      "name": "shell_method_read",
+      "description": "How WFSim judges a build: each rule, why it holds, how to apply it, and the readings behind it. Read it before comparing builds or explaining why one is better. Send a data part {\"skill\": \"shell.method.read\", \"args\": {...}}; args: {\"concept\":{\"type\":\"string\",\"description\":\"one rule's id; every rule when omitted\"}}.",
+      "tags": [
+        "warframe",
+        "shell",
+        "method"
       ],
       "examples": [],
       "inputModes": [

@@ -6,7 +6,7 @@ Dual Daggers · Melee · Mastery Rank 13. 261 base damage (heat 92, impact 21, p
 
 ## Best riven-free build on the WFSim board, as of 2026-10-23
 
-A score belongs to its ruler: compare it only with scores under the same ruler.
+A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
 Each row is measured on its own, and says when and by which WFSim commit; the game and WFSim both change, so an older row may be behind.
 

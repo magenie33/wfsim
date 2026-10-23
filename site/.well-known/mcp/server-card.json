@@ -2,9 +2,9 @@
   "serverInfo": {
     "name": "wfsim",
     "title": "WFSim",
-    "version": "c0b59f7c8696"
+    "version": "f1be8faaaf60"
   },
-  "description": "WFSim is a Warframe weapon calculator. It builds a loadout, simulates the fight against a named enemy, and searches for the best mods. Every formula cites its source, and every golden test is calibrated against a real in-game run. A board score belongs to its ruler, the named benchmark fight: compare scores only under one ruler, quote the ruler with the number, and give the reader the row's link, which opens the build in the calculator.",
+  "description": "WFSim is a Warframe weapon calculator. It builds a loadout, simulates the fight against a named enemy, and searches for the best mods. Every formula cites its source, and every golden test is calibrated against a real in-game run. A board score belongs to its ruler, the named benchmark fight: compare scores only under one ruler, quote the ruler with the number, and give the reader the row's link, which opens the build in the calculator. How it judges a build, and the in-game readings behind each rule, is its method: https://wfsim.app/method.",
   "transport": {
     "type": "streamable-http",
     "endpoint": "https://mcp.wfsim.app/mcp"
@@ -127,6 +127,21 @@
           "pooled": {
             "type": "boolean",
             "description": "a ruler's modes as one ranking"
+          }
+        },
+        "required": []
+      }
+    },
+    {
+      "name": "shell_method_read",
+      "title": "shell.method.read",
+      "description": "How WFSim judges a build: each rule, why it holds, how to apply it, and the readings behind it. Read it before comparing builds or explaining why one is better.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "concept": {
+            "type": "string",
+            "description": "one rule's id; every rule when omitted"
           }
         },
         "required": []

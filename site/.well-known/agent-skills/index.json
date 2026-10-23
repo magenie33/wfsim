@@ -6,7 +6,7 @@
       "type": "skill-md",
       "description": "Look up a Warframe weapon's stats and its best measured riven-free builds on WFSim.",
       "url": "/.well-known/agent-skills/wfsim-weapon-builds/SKILL.md",
-      "digest": "sha256:83a3826e897837051e4ed9b75f558b40670bcfd625eda510c92c65cb5a051813"
+      "digest": "sha256:0c31199478e3059cb219bc70e83f17a9706ec55da24bf62bc5943a8b4df65e3b"
     }
   ]
 }

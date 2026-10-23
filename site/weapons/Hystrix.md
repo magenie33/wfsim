@@ -6,7 +6,7 @@ Pistol · Secondary · Mastery Rank 7. 36 base damage (impact 2.16, puncture 30.
 
 ## Best riven-free build on the WFSim board, as of 2026-10-23
 
-A score belongs to its ruler: compare it only with scores under the same ruler.
+A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
 Each row is measured on its own, and says when and by which WFSim commit; the game and WFSim both change, so an older row may be behind.
 
@@ -19,7 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- The alt-fire cycles four quill types, Poison, Fire, Electric and Ice; this entry is the Poison one. The others differ in element, and two in physical damage (40 against 36), so a build around another quill reads about a tenth low.
+- On a kill the body follows the quill, damaging anyone in its path and pinning to walls (wiki). There is no ragdoll here, so against a crowd the number reads low.
+- Wielded by Khora, a headshot has an 8% chance to reload the magazine at once (wiki). It is not modelled, so on Khora a headshot build reads low.
 
 ## In WFSim
 

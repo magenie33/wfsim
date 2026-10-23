@@ -6,7 +6,7 @@ Rifle · Primary · Mastery Rank 14. 33 base damage (tau 33), 25% crit chance, 2
 
 ## Best riven-free build on the WFSim board, as of 2026-10-23
 
-A score belongs to its ruler: compare it only with scores under the same ruler.
+A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
 Each row is measured on its own, and says when and by which WFSim commit; the game and WFSim both change, so an older row may be behind.
 
@@ -19,8 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- Tau's status effect is not modelled. Tau's neutral damage is applied correctly, but its proc raises the status chance the target takes from every other source by 10% a stack, up to ten (wiki). With other statuses stacked, the number reads low.
-- Switching firing modes takes 3 s, can be interrupted and scales with reload speed (wiki); the sim never switches, so each mode is measured as the whole weapon and the switch costs nothing.
+- Switching firing modes takes 3 s, can be interrupted and scales with reload speed (wiki). The sim switches once, before the fight, where it costs nothing, and never inside one: each mode is measured as the whole weapon.
 
 ## In WFSim
 

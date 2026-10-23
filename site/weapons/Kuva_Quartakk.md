@@ -6,7 +6,7 @@ Rifle · Primary · Mastery Rank 13. 54 base damage (impact 19.98, puncture 15.6
 
 ## Best riven-free build on the WFSim board, as of 2026-10-23
 
-A score belongs to its ruler: compare it only with scores under the same ruler.
+A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
 Each row is measured on its own, and says when and by which WFSim commit; the game and WFSim both change, so an older row may be behind.
 
@@ -16,10 +16,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 22.0527 | Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-17 07:50 UTC |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.1266 | Stormbringer, Malignant Force, Primed Cryo Rounds, Galvanized Chamber, Serration, Galvanized Aptitude, Critical Delay, Hammer Shot, Primed Stabilizer, Primary Frostbite | 2026-10-17 07:50 UTC |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.6458 | Stormbringer, Malignant Force, Primed Cryo Rounds, Galvanized Chamber, Serration, Galvanized Aptitude, Critical Delay, Hammer Shot, Primed Stabilizer, Primary Frostbite | 2026-10-20 07:57 UTC |
-
-## Not modelled here
-
-- In game this mode is entered by aiming. The sim sets the mode and Aiming separately, so read every while-aiming bonus as active whenever this mode is.
 
 ## In WFSim
 
