@@ -611,6 +611,23 @@ client result not yet a fact (§"Compute orders") and stays on the server.
 day for people and for the record; the worker reads it only until the first
 live stamp exists, and never again after.
 
+## The heads
+
+**A SHORT ANSWER READS THE HEADS, NOT THE BOARD.** A weapon's file holds every
+row it kept, in every scene, which for a much-surveyed weapon is tens of
+thousands of rows; a top-N answer — a bot's long image, `builder.board.read`
+— needs a few. Each cycle `scripts/board_heads.mjs` cuts each weapon's rows,
+every scene joined, to `boardHeads` (`87-headless.js`, the page's own code) into
+`board/heads/<id>.json`, pushed with the rest of the live board: every row
+holding one of the first `BOARD_HEADS_PLACES` places of its ruler, mode and
+riven-ness, and each ruler's newest-measured row. Any ranking the page draws,
+run on the heads, places its first `BOARD_HEADS_PLACES` as on every row, ties
+and their preferred build included; `check_board_heads` holds that over the
+whole snapshot. The heads are rows in the board file's own shape, so a reader
+changes the file it reads and nothing else. A weapon's heads are written again
+only when one of its files is newer. `heads/` is no scene (`board_meta.py`
+`HEADS`), and the daily snapshot carries none.
+
 ## The fact factory
 
 **ONE THING IS DONE WITH THE VOLUNTEERS' COMPUTERS: A QUESTION BECOMES A

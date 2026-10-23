@@ -49,6 +49,8 @@ STATE_FIELDS = ("scored_at_epoch_seconds", "submissions", "listed")
 # has to keep in step; it is excluded from `weapons` and `rows`, which are counts
 # of the BOARD. Matches `INDEX_STEM` in `cli/src/board/publish.rs`.
 INDEX = "index"
+# THE HEADS' DIRECTORY, beside the scenes' and never one (`scripts/board_heads.mjs`).
+HEADS = "heads"
 
 
 def manifest() -> dict[str, str]:
@@ -70,11 +72,12 @@ def scene_weapons() -> dict[str, list[str]]:
     A page asks a scene for a weapon's rows only when it is listed here: a
     scene that never measured the weapon has no file, and asking anyway was a
     billed 404 per scene on every weapon page. A scene NOT in this map is asked
-    as before, so a stamp without it costs requests, never rows.
+    as before, so a stamp without it costs requests, never rows. The heads'
+    directory (`HEADS`) is no scene.
     """
     return {
         d.name: sorted(f.stem for f in d.glob("*.json") if f.stem != INDEX)
-        for d in sorted(BOARD.iterdir()) if d.is_dir()
+        for d in sorted(BOARD.iterdir()) if d.is_dir() and d.name != HEADS
     }
 
 

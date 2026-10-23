@@ -32,7 +32,7 @@ const boardRivenName = (riven) => HOST.rivenName(riven);
     part: "web/src/static/app/87-headless.js",
     out: "mcp/headless.js",
     head: "",
-    tail: "export { HEADLESS_ABOUT, HEADLESS_QUERIES, HEADLESS_RETIRED, headlessCheckArgs, headlessSchema, headlessNo, headlessToolName, headlessUnknown,\n  headlessSeat, headlessStateAxes, headlessWeapon, headlessWeaponPath, rivenStatNames, rivenStatNameEn, ocrFold, rivenQuery, boardMeasuredAt, measuredText, distinctTop, pooledRanking, pooledRivens,\n  placed, placeAmong, tieGroups, boardRowParts, rankBoard };\n",
+    tail: "export { HEADLESS_ABOUT, HEADLESS_QUERIES, HEADLESS_RETIRED, headlessCheckArgs, headlessSchema, headlessNo, headlessToolName, headlessUnknown,\n  headlessSeat, headlessStateAxes, headlessWeapon, headlessWeaponPath, rivenStatNames, rivenStatNameEn, ocrFold, rivenQuery, boardMeasuredAt, measuredText, distinctTop, pooledRanking, pooledRivens,\n  placed, placeAmong, tieGroups, boardRowParts, rankBoard, boardHeads, BOARD_HEADS_PLACES };\n",
   },
 ];
 
