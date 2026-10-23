@@ -1045,6 +1045,17 @@ fn evolution_sources(
                     ));
                 }
             }
+            // EARNED BEFORE THE FIGHT, at the cap the list presses to — on the
+            // panel because it is up from the first shot.
+            let earned = |g| def.precombat_grant(g);
+            let v = earned(wfsim_engine::model::BuffGrant::Multishot);
+            if v > 0.0 {
+                evo_src.push(("multishot", name.clone(), fpct(v), Some("earned before the fight".into())));
+            }
+            let v = earned(wfsim_engine::model::BuffGrant::FlatBaseDamage);
+            if v > 0.0 {
+                evo_src.push(("base_damage", name.clone(), format!("+{v:.0} flat"), Some("earned before the fight".into())));
+            }
             let v = def.co_per_type();
             if v > 0.0 {
                 evo_src.push((

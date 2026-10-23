@@ -148,6 +148,19 @@ impl EvolutionDef {
             })
             .sum()
     }
+
+    /// What the precombat list earns this perk's piles of `grant`, at their cap
+    /// (`StackingBuff::precombat`) — what the panel counts and names.
+    pub fn precombat_grant(&self, grant: crate::model::BuffGrant) -> f64 {
+        self.active_effects()
+            .filter_map(|e| match e {
+                EvoEffect::StackingGrant { grant: g, per_stack, max_stacks, precombat: true, .. } if *g == grant => {
+                    Some(per_stack * f64::from(*max_stacks))
+                }
+                _ => None,
+            })
+            .sum()
+    }
 }
 
 /// Every embedded yaml under data/evolutions (cached).

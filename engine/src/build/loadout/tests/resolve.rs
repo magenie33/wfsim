@@ -1407,11 +1407,10 @@ fn requires_gate_disables_and_cond_buff() {
     let ms_mod = m("multishot", vec![ModEffect::Multishot(1.0)]);
     let locked = resolve(&base, &[&ms_mod, &lock], StackPolicy::AssumedMax);
     assert!((locked.multishot - base.base_multishot).abs() < 1e-9, "the weapon's default");
-    let frenzy = |p: &crate::build::loadout::ResolvedPanel| p.stacking_buffs.iter().any(|b| b.id == "evo_multishot");
-    assert!(!frenzy(&locked), "and the evolution's pile goes with it");
-    // ...and the pile IS there without the lock, so the line above is not
-    // passing because it was never declared.
-    assert!(frenzy(&p0), "Fevered Frenzy is a pile unlocked");
+    // ...and Fevered Frenzy IS worth something without the lock — the panel
+    // counts what the precombat list earns — so the line above is not passing
+    // because it contributes nothing.
+    assert!(p0.multishot > base.base_multishot + 1e-9, "Fevered Frenzy pays unlocked");
     assert_eq!(locked.locked, vec!["multishot"], "the panel states the lock");
     // CondBuff: contributes under AssumedMax, nothing under Emergent.
     let cb = m("cond", vec![ModEffect::CondBuff(CondBucket::StatusChance, 0.90)]);
@@ -1657,9 +1656,9 @@ fn dual_toxocyst_panel_resolves_by_hand() {
     assert!((p.crit_damage - crate::rules::damage::quantize_base_crit_damage(3.0) * 2.1).abs() < 1e-9);
     assert!((p.status_chance - 1.29).abs() < 1e-9);
     assert!((p.fire_rate - 7.2).abs() < 1e-9);
-    // MS: 1 × (1 + 0.6 + 1.1 + 1.2 stacks) = 3.9. Fevered Frenzy's +1.0 is a
-    // pile the precombat list earns in the fight, not a panel term.
-    assert!((p.multishot - 3.9).abs() < 1e-9, "{}", p.multishot);
+    // MS: 1 × (1 + 1.0 Fevered + 0.6 + 1.1 + 1.2 stacks) = 4.9 — Fevered
+    // Frenzy's twenty stacks are earned before the fight, so the panel has them.
+    assert!((p.multishot - 4.9).abs() < 1e-9, "{}", p.multishot);
     // CO assumed max: 0.4 × 3 = 1.2. No status-damage mods.
     assert!((p.co_per_type - 1.2).abs() < 1e-9);
     assert!((p.status_damage_multiplier - 1.0).abs() < 1e-9);

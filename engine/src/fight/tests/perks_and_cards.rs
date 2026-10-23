@@ -100,6 +100,11 @@ fn reified_bane_is_earned_before_the_fight() {
     let (off, none) = opening(&panel, "evo_reload_damage", Some(0));
     assert_eq!(off, 0, "a card at zero presses nothing");
     assert!(none < full, "the +14 moves the damage: {none} against {full}");
+    // …AND THE PANEL COUNTS IT: up before the first shot, the +14 is in the
+    // build's base damage beside the unconditional +10.
+    let shown = resolve(&with, &[], StackPolicy::AssumedMax);
+    assert!((shown.modified_base - (with.base_vector.total() + 14.0)).abs() < 1e-9, "{}", shown.modified_base);
+    assert!(!shown.stacking_buffs.iter().any(|b| b.id == "evo_reload_damage"), "and is not counted twice");
 }
 
 /// **FEVERED FRENZY IS TWENTY CASTS OF ANY ABILITY BEFORE THE FIGHT** — a live
