@@ -84,15 +84,19 @@ evidence independent of the readings and it gives the same answer.
 
 Every laddered mod and arcane effect in `data/` was read against its card
 table in DE's export, rank by rank, under the rule this entry settles: rank
-`r` is `(r + 1) x p`, and the card rounds. Where the table puts the even
-split of the card's round max outside what its rows allow, the max is the
-shortest `p` inside that interval times the rank count:
+`r` is `(r + 1) x p`, and the card rounds a half up (Amalgam Barrel
+Diffusion: 36.5% shows 37%, 109.5% shows 110%). Where the table puts the
+even split of the card's round max outside what its rows allow, the max is
+the shortest decimal `p` inside that interval, lower end in and upper end
+out, times the rank count. Barrel Diffusion is the check on that choice: its
+interval is 0.1825 to 0.183, and the shortest decimal in it is the 0.1825
+the wiki states outright.
 
 | mod | was | now | the card's round max under `a + g x r` |
 |---|---|---|---|
 | Rubedo-Lined Barrel | 1.0 | 0.1666 x 6 = 0.9996 | impossible (99.95 to 99.98) |
 | Blood Rush | 0.4 | 0.0364 x 11 = 0.4004 | impossible (40.025 to 40.05) |
-| Critical Delay, Critical Deceleration | -0.2 | -0.0333 x 6 = -0.1998 | impossible (19.95 to 19.98) |
+| Critical Delay, Critical Deceleration | -0.2 | -0.03325 x 6 = -0.1995 | impossible (19.95 to 19.98) |
 | Ammo Chain | 1.0 | 0.1667 x 6 = 1.0002 | impossible (100.017 to 100.05) |
 | Resolute Focus | 1.0 | 0.167 x 6 = 1.002 | impossible (100.17 to 100.5) |
 | Amalgam Organ Shatter, Amalgam Shotgun Barrage | 0.85 | 0.141 x 6 = 0.846 | possible (84.5 to 85.17) |
