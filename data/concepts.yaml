@@ -57,9 +57,9 @@ concepts:
 
   - id: kills
     title: "Kills per minute, not damage per second"
-    rule: "A ruler counts kills per minute, including the part of the current target already gone, so damage that reaches a body already dead, or a pile already full, adds nothing."
+    rule: "A ruler counts kills per minute, including the part of a target already gone, so damage that reaches a body already dead, or a pile already full, adds nothing."
     why:
-      - "Damage per second counts every number a weapon deals, including damage on a body already dead and procs past a full pile. Kills per minute counts only what removes targets."
+      - "Damage per second counts every number a weapon deals, including damage on a body already dead. Kills per minute counts only what removes targets."
       - "Multishot adds instances to the weapon's own rounds: each its own number, crit and status, landing where the round lands."
       - "Counting the part of a target already gone lets a build that never finishes a kill still rank."
     apply:
