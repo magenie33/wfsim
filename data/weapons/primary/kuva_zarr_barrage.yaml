@@ -6,6 +6,8 @@ name: Kuva Zarr
 # damage", which is a sentence about the valence roll and nothing else here.
 inherits: kuva_zarr
 form: alt_fire
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
 transform_group: kuva_zarr
 
 # NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon's

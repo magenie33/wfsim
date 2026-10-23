@@ -1825,7 +1825,6 @@ ui:
   "this is the aimed enemy, and what the place tool puts down. Enemies already on the floor keep the unit they were placed with.": "这是被瞄准的敌人，也是放置工具会放下的单位。已经在场上的敌人保持放置时的单位。"
   "this is the aimed enemy, and what the place tool puts down. {n} already on the floor keep the unit they were placed with.": "这是被瞄准的敌人，也是放置工具会放下的单位。场上已有 {n} 个保持着各自放置时的单位。"
   "this matches the live game and is a bug — DE may patch it, and the number here changes when they do": 这与现在的游戏一致，但它是个 bug——DE 随时可能修，修了这里的数字就会变
-  "In game this mode is entered by aiming. The sim sets the mode and Aiming separately, so read every while-aiming bonus as active whenever this mode is.": "游戏里靠瞄准进入这个模式。模拟把模式和「瞄准」分开设置，所以只要处于这个模式，就应把所有「瞄准时」加成视为生效。"
   "this option did not re-roll the fight — run for run it scaled the same fight, so this comparison is exact": "这个选项没有让战斗重新掷骰——每一次运行它都是把同一场战斗按同一个倍数放大，所以这次比较是精确的"
   "this option re-rolls the fight, so its answer is only good to ±{x} — raise the run count to narrow it": 这个选项会让这场战斗重新掷骰，所以它的答案只精确到 ±{x} —— 提高运行次数可以收窄它
   "A reload is never interrupted here: in game you can fire mid-reload and keep the shells already loaded. A listed reload is a whole reload, by design.": "这里从不打断换弹：游戏里可以在换弹中途开火并保留已装的弹。按设计，标出的换弹就是完整的一次。"

@@ -4,6 +4,8 @@ name: Argonak
 # the crit chance for a status chance half again as high.
 inherits: argonak
 form: auto
+# see notes: alt_fire_toggles_wiki
+alt_fire_toggles: true
 transform_group: argonak
 
 introduced: "22"

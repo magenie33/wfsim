@@ -75,6 +75,13 @@ pub fn resolve_for(
         t.state.aiming = false;
         adjusted = Some(t);
     }
+    // …AND A FORM ENTERED BY AIMING IS AIMING, whatever the scenario says: the
+    // burst and the lock-on fire only from the sights (FormKind::Aimed).
+    if base.form == crate::model::FormKind::Aimed && !tenno.state.aiming {
+        let mut t = adjusted.take().unwrap_or_else(|| tenno.clone());
+        t.state.aiming = true;
+        adjusted = Some(t);
+    }
     let tenno = adjusted.as_ref().unwrap_or(tenno);
     let open_flat = || {
         base.gated

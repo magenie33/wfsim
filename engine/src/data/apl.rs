@@ -60,6 +60,9 @@ pub enum Action {
     AltFire,
     SemiAuto,
     Auto,
+    /// The trigger pulled while aiming, on a weapon whose aim picks the mode
+    /// (`FormKind::Aimed`).
+    Aimed,
     /// The stance's four ground combos, by the input that starts them. The
     /// fight plays the whole combo out; the list names the press.
     Neutral,
@@ -153,6 +156,7 @@ impl Action {
             F::AltFire => Action::AltFire,
             F::SemiAuto => Action::SemiAuto,
             F::Auto => Action::Auto,
+            F::Aimed => Action::Aimed,
             F::Neutral => Action::Neutral,
             F::Forward => Action::Forward,
             F::Block => Action::Block,
@@ -231,6 +235,7 @@ impl Rule {
             Action::AltFire => "alt_fire".into(),
             Action::SemiAuto => "semi_auto".into(),
             Action::Auto => "auto".into(),
+            Action::Aimed => "aimed".into(),
             Action::Neutral => "neutral".into(),
             Action::Forward => "forward".into(),
             Action::Block => "block".into(),
@@ -657,11 +662,11 @@ prio: 3
         for f in [F::Heat, F::Electricity, F::Cold] {
             assert_eq!(word(f), "shoot", "{f:?}");
         }
-        for f in [F::Charged, F::AltFire, F::SemiAuto, F::Auto] {
+        for f in [F::Charged, F::AltFire, F::SemiAuto, F::Auto, F::Aimed] {
             assert_eq!(word(f), f.id(), "{f:?}");
         }
         seen.extend(["shoot".into(), "charged".into(), "alt_fire".into(),
-                     "semi_auto".into(), "auto".into(), "detonate".into()]);
+                     "semi_auto".into(), "auto".into(), "aimed".into(), "detonate".into()]);
         let mut sorted = seen.clone();
         sorted.sort();
         sorted.dedup();

@@ -3,7 +3,7 @@ name: Quatz
 # THE AIMED BURST: four rounds fired simultaneously, at double the crit chance
 # and a 2.5x multiplier, in a small square around the reticle.
 inherits: quatz
-form: alt_fire
+form: aimed
 transform_group: quatz
 
 introduced: "25.4.0"
@@ -36,7 +36,6 @@ attack:
 
 unmodeled:
   - "Each shot lands in a small square around the aim point and can miss small targets (wiki); this entry uses the module's 1-1.2 degree spread for that square."
-  - reason: mode_is_the_aim_state
 
 source:
   url: https://wiki.warframe.com/w/Quatz

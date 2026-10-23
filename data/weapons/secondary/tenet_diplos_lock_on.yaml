@@ -10,7 +10,7 @@ name: Tenet Diplos
 # 2-round burst that ONE locked enemy receives. Against a single standing target
 # that is exactly right; against a crowd it is a whole eighth of the weapon.
 inherits: tenet_diplos
-form: alt_fire
+form: aimed
 transform_group: tenet_diplos
 
 introduced: "30.5"

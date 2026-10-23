@@ -12,9 +12,12 @@ notes:
   alt_fire_toggles_wiki: |
     A MODE ALTERNATE FIRE SWITCHES INTO, fired on the trigger. The weapon's wiki
     page says so in as many words: Alternate Fire "switches between", "cycles"
-    or "transforms the weapon between" its firing modes. The switch is made
-    before the fight and costs nothing there; a switch inside one is not
-    modelled.
+    or "transforms the weapon between" its firing modes, or its main fire "can
+    be quickly changed to" the other mode (Argonak). A variant whose page calls
+    it the variant of such a weapon reads as that weapon (Stradavar Prime,
+    "the Primed variant of the select-fire Stradavar"; Kuva Zarr, whose Zarr
+    switches "using its Alternate Fire"). The switch is made before the fight
+    and costs nothing there; a switch inside one is not modelled.
   ammo_efficiency_cap: |
     AMMO EFFICIENCY STOPS AT 75%, and INFINITE AMMO is its own state. DE's Dev
     Workshop "Ammo Efficiency Changes & Riven Disposition Retirement"
