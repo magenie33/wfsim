@@ -804,6 +804,8 @@ ui:
   "Not aiming, and no shot finds a head. Two terms, because the stance and where the shots land are different facts — the stance is what gates mods like Argon Scope.": 不瞄准，且没有一枪打中头部。这是两个条件，因为“姿势”和“子弹落点”是两件不同的事——像氩晶瞄具这类 MOD 卡的是姿势。
   "Not firing": 未开火
   "Not now": 暂不
+  "On a kill the body follows the quill, damaging anyone in its path and pinning to walls (wiki). There is no ragdoll here, so against a crowd the number reads low.": "击杀时尸体会跟着尖刺飞出，伤害沿途的目标并钉在墙上（wiki）。这里没有布娃娃物理，所以面对人群时数字偏低。"
+  "Wielded by Khora, a headshot has an 8% chance to reload the magazine at once (wiki). It is not modelled, so on Khora a headshot build reads low.": "由 Khora 使用时，爆头有 8% 几率立即装满弹匣（wiki）。未建模，所以 Khora 使用时爆头配装数字偏低。"
   "On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.": "击杀时尸体会跟着弩箭飞出，伤害沿途的敌人（wiki）。这里没有布娃娃物理，所以面对人群时数字偏低。"
   "Orbs merge, and a full set collapses into a singularity dealing damage over time in 5 m (module). The engine resolves each shot on its own, so neither is counted; this is most of the weapon, and the number reads well low.": "光球会合并，叠满后坍缩成奇点，在 5 米内持续造成伤害（模块）。引擎逐发独立结算，所以两者都未计入；这是这把武器的主要部分，数字明显偏低。"
   "Orbs merge: a new orb joining one in the air triggers 'Orb Merging Damage' in 4 m, growing with the number merged (wiki). The engine resolves each shot on its own, so the merge is not counted and the number reads well low for a player stacking orbs.": "光球会合并：新的光球并入空中已有的光球时，会在 4 米内触发「Orb Merging Damage」，伤害随合并数量增长（wiki）。引擎逐发独立结算，所以合并未计入，对堆叠光球的玩家而言数字明显偏低。"
