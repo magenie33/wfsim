@@ -10,7 +10,7 @@ description: "-X% Weapon Recoil"
 
 effects:
   - kind: recoil_reduction
-    rank0: -0.077
+    rank0: -0.077273
     rankMax: -0.85
 
 family: steady_hands

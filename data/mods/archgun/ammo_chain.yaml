@@ -10,7 +10,7 @@ description: "+X% Ammo Maximum"
 effects:
   - kind: ammo_max_bonus
     rank0: 0.1667
-    rankMax: 1.0
+    rankMax: 1.0002   # see notes: card_rounds_the_rank_value
 
 family: ammo_chain
 incompatible_with: [primed_ammo_chain]

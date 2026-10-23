@@ -14,7 +14,7 @@ effects:
   - kind: buff
     trigger: kill
     grants: multishot
-    rank0: 0.027
+    rank0: 0.027273
     rankMax: 0.3
     max_stacks: 4
     duration: 20

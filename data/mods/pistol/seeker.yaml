@@ -9,7 +9,7 @@ description: "+X Punch Through"
 
 effects:
   - kind: punch_through_bonus
-    rank0: 0.4
+    rank0: 0.35
     rankMax: 2.1
 
 source:

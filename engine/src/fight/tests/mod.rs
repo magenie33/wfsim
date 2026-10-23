@@ -33,6 +33,7 @@ mod m111_dual_toxocyst_neurotoxin;
 mod m117_vectis_prime_chamber;
 mod m118_vectis_prime_compression;
 mod m119_multishot_rides_the_round;
+mod m123_laetum_acuity;
 mod melee;
 mod okina;
 mod orbs_fields_beams;

@@ -19,7 +19,7 @@ effects:
   - kind: buff
     trigger: kill
     grants: condition_overload
-    rank0: 0.036
+    rank0: 0.036364
     rankMax: 0.4
     max_stacks: 2
     duration: 20

@@ -9,8 +9,8 @@ description: "+X% Damage"
 
 effects:
   - kind: base_damage_bonus
-    rank0: 0.1667
-    rankMax: 1.0
+    rank0: 0.1666
+    rankMax: 0.9996   # see notes: card_rounds_the_rank_value
 
 family: rubedo_lined_barrel
 incompatible_with: [primed_rubedo_lined_barrel]

@@ -22,18 +22,20 @@ effects:
   # rate is zero.
   #
   # Weak Point Damage is ADDED to the enemy's weak-point multiplier at 1.5×
-  # the listed value on true weak points (wiki: Butcher 3x head + rank 10 =
-  # 3 + 3.5 × 1.5 = 8.25x; MOA backpack is the listed-value exception), and
-  # the sum is MULTIPLICATIVE with headshot-multiplier bonuses (Deadhead).
+  # the value on true weak points (a 3x head + rank 10 = 3 + 3.498 × 1.5 =
+  # 8.247x; MOA backpack is the 1.0× exception), and the sum is
+  # MULTIPLICATIVE with headshot-multiplier bonuses (Deadhead).
+  # 3.498 is measured on the pistol twin (M123), whose card is this card
+  # row for row. see notes: card_rounds_the_rank_value
   - kind: weakpoint_damage_bonus
-    rank0: 0.3182
-    rankMax: 3.5
+    rank0: 0.318
+    rankMax: 3.498
   # Weak Point Crit Chance is a NORMAL relative crit-chance bonus (additive
   # with Point Strike) active on weak-point hits only — the multiplicative-
   # crit behavior on some weapons was a bug fixed in 38.5.
   - kind: weakpoint_crit_chance_bonus
-    rank0: 0.3182
-    rankMax: 3.5
+    rank0: 0.318
+    rankMax: 3.498
 
 source:
   url: https://wiki.warframe.com/w/Primary_Acuity

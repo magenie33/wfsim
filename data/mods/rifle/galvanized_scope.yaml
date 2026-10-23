@@ -20,7 +20,7 @@ effects:
     condition: aiming
     grants: crit_chance          # relative crit chance
     rank0: 0.1091
-    rankMax: 1.2
+    rankMax: 1.2001   # see notes: card_rounds_the_rank_value
     max_stacks: 1
     duration: 12
   # Unlike the other Galvanized mods, each stack has its OWN duration.

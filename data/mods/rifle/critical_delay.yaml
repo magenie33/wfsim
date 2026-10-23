@@ -17,7 +17,7 @@ effects:
   # sim read a penalty as a +100% bonus. The wiki's rank table: -3.3% -> -20%.
   - kind: fire_rate_bonus
     rank0: -0.0333
-    rankMax: -0.2
+    rankMax: -0.1998   # see notes: card_rounds_the_rank_value
 
 family: point_strike
 incompatible_with: [point_strike]

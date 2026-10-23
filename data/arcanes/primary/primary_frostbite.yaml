@@ -20,7 +20,7 @@ effects:
   - kind: buff
     trigger: cold_status
     grants: multishot
-    rank0: 0.0038
+    rank0: 0.00375
     rankMax: 0.0225
     max_stacks: 40
     duration: 12

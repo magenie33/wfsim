@@ -651,8 +651,8 @@ fn loads_the_pistol_pool_from_yaml() {
     assert!(by("expel_grineer").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Grineer, v) if (*v - 0.30).abs() < 1e-9)));
     assert!(by("expel_orokin").effects.iter().any(|e| matches!(e, ModEffect::FactionDamage(Faction::Corrupted, _))));
     // The formerly-unmodeled kinds now map to real effects.
-    assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointDamage(v) if (*v - 3.50).abs() < 1e-9)));
-    assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointCritChance(v) if (*v - 3.50).abs() < 1e-9)));
+    assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointDamage(v) if (*v - 3.498).abs() < 1e-9)));
+    assert!(by("pistol_acuity").effects.iter().any(|e| matches!(e, ModEffect::WeakpointCritChance(v) if (*v - 3.498).abs() < 1e-9)));
     assert!(by("hemorrhage").effects.iter().any(|e| matches!(e,
         ModEffect::ProcConversion { from: DamageType::Impact, to: DamageType::Slash, chance, low_rate_threshold, low_rate_multiplier }
             if (*chance - 0.35).abs() < 1e-9 && (*low_rate_threshold - 2.5).abs() < 1e-9 && (*low_rate_multiplier - 2.0).abs() < 1e-9)));
@@ -685,11 +685,12 @@ On Weak Point Kill:
     );
     // Its rifle twin spells all five out. The first buff carries a
     // `max_stacks: 1` the text never mentions, so a per-kind queue would
-    // hand THAT to "Stacks up to Xx" instead of the second buff's 5.
+    // hand THAT to "Stacks up to Xx" instead of the second buff's 5. Its
+    // first value is 0.1091 a rank, which the card rounds to 120%.
     assert_eq!(
         desc_info("galvanized_scope").unwrap().at(10),
         "On Weak Point Hit:
-+120% Critical Chance when Aiming for 12s
++120.01% Critical Chance when Aiming for 12s
 On Weak Point Kill:
 +40% Critical Chance when Aiming for 12s. Stacks up to 5x."
     );

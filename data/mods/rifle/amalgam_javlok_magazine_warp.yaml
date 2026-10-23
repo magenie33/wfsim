@@ -15,8 +15,8 @@ effects:
     rankMax: 0.45
   - kind: unmodelled
     clause: "+100% Combo Count Chance while Blocking with a Shield"
-    rank0: 0.167
-    rankMax: 1.00
+    rank0: 0.166667
+    rankMax: 1.0
 
 source:
   url: https://wiki.warframe.com/w/Amalgam_Javlok_Magazine_Warp

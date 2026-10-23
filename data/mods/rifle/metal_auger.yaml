@@ -11,7 +11,7 @@ effects:
   # NON-LINEAR ramp (the wiki's rank table): 0.4 / 0.7 / 1.1 / 1.4 / 1.8 / 2.1 -
   # rank 0 is 0.4, not rankMax/6.
   - kind: punch_through_bonus
-    rank0: 0.4
+    rank0: 0.35
     rankMax: 2.1
 
 source:

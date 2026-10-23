@@ -9,10 +9,10 @@ description: "+X% Critical Chance\n-X% Fire Rate"
 
 effects:
   - kind: crit_chance_bonus
-    rank0: 0.333
+    rank0: 0.333333
     rankMax: 2.0
   - kind: fire_rate_bonus   # corrupted downside
-    rank0: -0.033
+    rank0: -0.033333
     rankMax: -0.2
 
 family: pistol_gambit

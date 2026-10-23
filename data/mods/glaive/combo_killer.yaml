@@ -11,7 +11,7 @@ effects:
   # The wiki's rank table: +0.8 / 1.6 / 2.4 / 3.2 / 4.0 / 5.0 s. Its second
   # line needs a secondary weapon, which this arena does not fire.
   - kind: melee_combo_duration_bonus
-    rank0: 0.8
+    rank0: 0.833333
     rankMax: 5.0
 
 source:

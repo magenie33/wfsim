@@ -9,6 +9,15 @@
 # an entry from being orphaned.
 
 notes:
+  card_rounds_the_rank_value: |
+    THE CARD ROUNDS; THE RANK VALUE DOES NOT. A mod's value at rank r is
+    (r + 1) x a per-rank value that is itself a rounded decimal, and every
+    number the card shows is that product rounded to a whole percent. So the
+    max rank is the per-rank value times the rank count, not the card's round
+    number: Pistol Acuity is 0.318 x 11 = 3.498, which the card shows as 350%
+    and which the readings take (MEASUREMENTS M123). The card's own table
+    gives it away where a rank's rounding cannot be the even split: rank 7
+    shows 254%, where an exact 350/11 a rank would show 255%.
   alt_fire_toggles_wiki: |
     A MODE ALTERNATE FIRE SWITCHES INTO, fired on the trigger. The weapon's wiki
     page says so in as many words: Alternate Fire "switches between", "cycles"

@@ -53,19 +53,12 @@ measurement's 1.5000 / 1.1998 / 1.7996.
 The first capture's pair is therefore **yellow/orange**, not white/yellow: white
 → yellow would be ×4.4 and the numbers are nowhere near it.
 
-### The 0.19% that is NOT explained
+### The 0.19% is crit damage quantization
 
 All six numbers of the first capture sit **+0.14% to +0.21%** above
-`160 × 1.5 × tier` — one uniform factor of about ×1.0019, not a structural
-error: every RATIO above is exact to three decimals. The three published inputs
-were checked against the wiki and all match what `data/` holds (160 = 64 Impact
-+ 96 Slash, head 1.5x, crit multiplier 2.20x), so the factor is not in any of
-them. Left open deliberately (2026-08-25): a small discrepancy is acceptable and
-is not worth chasing.
-
-What would close it is three pop-ups from an unmodded gun on the same target: a
-body white (should be 160), a body yellow (352), and a head white (240). Between
-them the factor is pinned to one layer.
+`160 × 1.5 × tier`. That is the base crit damage on its 32/4095 grid (2.2 is
+2.203663 there, M117), and five of the six take it to the digit; 2812 is the
+model's 2813.3 (M123 has the table).
 
 ### A note on which number to compare
 

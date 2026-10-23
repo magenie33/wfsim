@@ -9,8 +9,8 @@ description: "+X% Damage\n+X% Sprint Speed"
 
 effects:
   - kind: base_damage_bonus
-    rank0: 0.1409
-    rankMax: 1.55
+    rank0: 0.141
+    rankMax: 1.551   # see notes: card_rounds_the_rank_value
   # A WARFRAME stat the weapon carries — which is exactly why this mod cannot
   # go on a companion weapon (see `excludes_weapon` below).
   # "+25% Sprint Speed"

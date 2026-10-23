@@ -17,7 +17,7 @@ effects:
     trigger: status_applied
     grants: melee_range
     decay: per_stack_expiry
-    rank0: 0.2
+    rank0: 0.166667
     rankMax: 1.0
     max_stacks: 2
     # A LADDERED duration — "for 4s" at rank 0, 24 s at max (DE's card per rank).
