@@ -1,8 +1,13 @@
 # Local agent coordination
 
-`python scripts/agentctl.py` gives coding sessions from any vendor the same
-task records, inbox and resource reservations. It uses Python's standard
-library and Git, without a daemon, SDK, account or model API.
+`node scripts/agentctl.mjs` gives coding sessions from any vendor the same
+task records, inbox and resource reservations. It uses Node 22.23.4 or newer,
+built-in SQLite and Git, without a daemon, SDK, account or model API.
+
+The built-in `node:sqlite` may emit Node's experimental API warning on stderr.
+It is not a command failure; inspect the exit code and JSON result. No npm
+installation is required. Schema 1 stores sessions and handoffs independently
+of the tool implementation.
 
 ## Scope and adoption
 
@@ -33,8 +38,8 @@ network filesystem or sync its live files between machines.
 SQLite transactions serialize mutations, with a 15-second busy timeout.
 Failures roll back and exit nonzero; operational results are JSON envelopes
 `{"v":1,"ok":true,"result":...}` on stdout, errors are
-`{"v":1,"ok":false,"error":"..."}` on stderr. Argument errors use argparse's
-usage output and exit 2. Unknown schema versions fail instead of guessing.
+`{"v":1,"ok":false,"error":"..."}` on stderr. Argument errors use the same
+JSON envelope and exit 1. Unknown schema versions fail instead of guessing.
 `--state-dir <directory>` selects an isolated store for tests; omit it for
 shared project work.
 
@@ -42,8 +47,8 @@ The database is local, untracked state, not a release artifact. Task and
 resource mutations and sent/acknowledged messages have transactionally
 recorded events. Heartbeats are current observations, not an activity log.
 `state snapshot` exports a readable JSON view; it is not another authority
-or a restorable database backup. With no CLI writers running, Python's
-SQLite backup API can make a consistent database backup. Removing the clone
+or a restorable database backup. SQLite's online backup API or a cold copy
+while no writers run can make a consistent database backup. Removing the clone
 also removes its default coordination state unless backed up separately.
 Never store credentials or sensitive content in task details or messages.
 
@@ -53,11 +58,11 @@ Run commands from your task worktree. These examples use session ids returned
 by `start`; `SESSION_A` and `SESSION_B` are placeholders, not tool names.
 
 ```text
-python scripts/agentctl.py session start --tool copilot
-python scripts/agentctl.py session list
-python scripts/agentctl.py task list
-python scripts/agentctl.py resource list
-python scripts/agentctl.py state snapshot
+node scripts/agentctl.mjs session start --tool copilot
+node scripts/agentctl.mjs session list
+node scripts/agentctl.mjs task list
+node scripts/agentctl.mjs resource list
+node scripts/agentctl.mjs state snapshot
 ```
 
 Each start creates a unique session id, even for two instances of one tool.
@@ -74,9 +79,9 @@ No background watcher is installed, and nothing can wake a closed session.
 ## Task lifecycle and handoff
 
 ```text
-python scripts/agentctl.py task create task-one --session SESSION_A --title "Implement feature" --scope "scripts/example.py; live: none"
-python scripts/agentctl.py task claim task-one --session SESSION_A
-python scripts/agentctl.py task show task-one
+node scripts/agentctl.mjs task create task-one --session SESSION_A --title "Implement feature" --scope "scripts/example.py; live: none"
+node scripts/agentctl.mjs task claim task-one --session SESSION_A
+node scripts/agentctl.mjs task show task-one
 ```
 
 Task ids are unique. Creation leaves a task pending; claiming it atomically
@@ -122,8 +127,8 @@ Recovery invalidates the old owner's future task updates.
 ## Resources and production boundaries
 
 ```text
-python scripts/agentctl.py resource acquire release:main --session SESSION_A --task task-one
-python scripts/agentctl.py resource release release:main --session SESSION_A
+node scripts/agentctl.mjs resource acquire release:main --session SESSION_A --task task-one
+node scripts/agentctl.mjs resource release release:main --session SESSION_A
 ```
 
 Use the same canonical name for the same resource, for example `release:main`,
@@ -147,10 +152,10 @@ changes who may merge, grants production access or automatically deploys.
 ## Messages and inspection
 
 ```text
-python scripts/agentctl.py message send --session SESSION_A --to SESSION_B --body "Please review task-one"
-python scripts/agentctl.py message inbox --session SESSION_B
-python scripts/agentctl.py message ack 1 --session SESSION_B
-python scripts/agentctl.py state events --after 0 --limit 100
+node scripts/agentctl.mjs message send --session SESSION_A --to SESSION_B --body "Please review task-one"
+node scripts/agentctl.mjs message inbox --session SESSION_B
+node scripts/agentctl.mjs message ack 1 --session SESSION_B
+node scripts/agentctl.mjs state events --after 0 --limit 100
 ```
 
 Messages persist until inspected; only the addressed session can acknowledge
@@ -161,8 +166,8 @@ leave a durable task handoff instead. Session ids are conventions, not secrets.
 
 ## Verification
 
-`python scripts/test_agentctl.py` uses temporary stores and competing CLI
-processes, with Node for the repository's safe worktree cleanup. It covers
+`node scripts/check_agentctl.mjs` uses temporary stores and competing CLI
+processes, using the repository's safe worktree cleanup. It covers
 exclusive task/resource acquisition, stale revisions,
 cross-vendor handoff, explicit recovery, message acknowledgment, invalid
 input, schema rejection and shared Git-worktree storage.
