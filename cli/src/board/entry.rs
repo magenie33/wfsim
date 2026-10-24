@@ -159,6 +159,19 @@ pub(crate) fn park_under_entry_line(
 /// has a column for the number and none for its spread — so a near-tie falls
 /// to whichever came out higher, as every other near-tie here does.
 pub(crate) fn one_row_per_shape(kept: &mut Vec<Row>) -> std::collections::BTreeSet<String> {
+    let collapsed = collapse_shapes(kept);
+    if !collapsed.is_empty() {
+        eprintln!(
+            "one row per shape: {} build(s) are another corner of a shape already listed",
+            collapsed.len()
+        );
+    }
+    collapsed
+}
+
+/// [`one_row_per_shape`] without the report — the assembly's, which runs it a
+/// weapon at a time.
+pub(crate) fn collapse_shapes(kept: &mut Vec<Row>) -> std::collections::BTreeSet<String> {
     let shape_of = |r: &Row| {
         r.riven.as_ref().map(|v| (r.weapon.clone(), r.mode.clone(), v.bonuses.clone(), v.malus.clone()))
     };
@@ -202,12 +215,6 @@ pub(crate) fn one_row_per_shape(kept: &mut Vec<Row>) -> std::collections::BTreeS
     let placed: std::collections::BTreeSet<&str> =
         kept.iter().map(|r| r.identity.as_str()).collect();
     collapsed.retain(|id| !placed.contains(id.as_str()));
-    if !collapsed.is_empty() {
-        eprintln!(
-            "one row per shape: {} build(s) are another corner of a shape already listed",
-            collapsed.len()
-        );
-    }
     collapsed
 }
 
@@ -252,9 +259,34 @@ pub(crate) fn account(
     shards: usize,
     refused: usize,
 ) {
+    let unaccounted = unaccounted(kept, scored_ids, deferred_ids, floored_ids, collapsed_ids);
+    assert!(
+        shards > 1 || unaccounted.is_empty(),
+        "{} validated build(s) produced no row at all. The library holds them and this board never looked at them: {:?}",
+        unaccounted.len(),
+        &unaccounted[..unaccounted.len().min(5)],
+    );
     let listed: std::collections::BTreeSet<&str> =
         kept.iter().map(|r| r.identity.as_str()).collect();
-    let unaccounted: Vec<&String> = scored_ids
+    eprintln!(
+        "accounted: {} published, {refused} refused at the door, {} under the entry line, {} another corner",
+        listed.len(),
+        floored_ids.len(),
+        collapsed_ids.len(),
+    );
+}
+
+/// The validated builds [`account`] finds in none of its four outcomes.
+pub(crate) fn unaccounted(
+    kept: &[Row],
+    scored_ids: &std::collections::BTreeSet<String>,
+    deferred_ids: &std::collections::BTreeSet<String>,
+    floored_ids: &std::collections::BTreeSet<String>,
+    collapsed_ids: &std::collections::BTreeSet<String>,
+) -> Vec<String> {
+    let listed: std::collections::BTreeSet<&str> =
+        kept.iter().map(|r| r.identity.as_str()).collect();
+    scored_ids
         .iter()
         .filter(|id| {
             !listed.contains(id.as_str())
@@ -271,19 +303,8 @@ pub(crate) fn account(
                 // The row was dropped deliberately, by `one_row_per_shape`.
                 && !collapsed_ids.contains(id.as_str())
         })
-        .collect();
-    assert!(
-        shards > 1 || unaccounted.is_empty(),
-        "{} validated build(s) produced no row at all. The library holds them and this board never looked at them: {:?}",
-        unaccounted.len(),
-        &unaccounted[..unaccounted.len().min(5)],
-    );
-    eprintln!(
-        "accounted: {} published, {refused} refused at the door, {} under the entry line, {} another corner",
-        listed.len(),
-        floored_ids.len(),
-        collapsed_ids.len(),
-    );
+        .cloned()
+        .collect()
 }
 
 /// THE ENTRY LINE, ON BOTH SIDES OF IT: which rows are published, and which

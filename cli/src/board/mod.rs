@@ -19,6 +19,7 @@
 //!
 //!   cat library.json | wfsim-board standard_single_target site/board //!     --facts-in facts-known.ndjson --facts facts.ndjson
 
+mod assemble;
 mod entry;
 mod facts;
 mod measure;

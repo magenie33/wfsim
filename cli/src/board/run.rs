@@ -11,11 +11,10 @@ use crate::args::{flag, has_flag};
 use super::entry::{account, apply_entry_line, one_row_per_shape, Who};
 use super::facts::{identity_of, load_cross_facts, load_facts, stamp, Fact, FactLog};
 use super::measure::{card_of, pause_row, run_budgeted, Partial};
-use super::publish::{write_pages, Row, RowRiven};
+use super::publish::{Row, RowRiven};
 use super::queue::{
     builds_with_a_row_owed, charge, load_queue, owed_again, unmeasured_row_seconds, write_missing, write_orphans,
 };
-use super::state::record_state;
 
 pub fn run() {
     // EVERY RULER, one id a line — the roster a workflow loops over. A file in
@@ -32,11 +31,18 @@ pub fn run() {
         groups_report(std::env::args().nth(2).as_deref() == Some("list"));
         return;
     }
+    // EVERY RULER'S BOARD, ASSEMBLED FROM THE FACTS: once, or held and kept
+    // current (`board::assemble`). A ruler's run below fights; it never publishes.
+    match std::env::args().nth(1).as_deref() {
+        Some("--project") => return super::assemble::project(),
+        Some("--serve") => return super::assemble::serve(),
+        _ => {}
+    }
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
         eprintln!(
             "usage: wfsim-board <benchmark-id> [site/board] [--shard i/n] \
                    [--facts-in <file>] [--facts <file>] [--measured-by <sha>] \
-                   [--project]  (library on stdin)"
+                   (library on stdin); wfsim-board --project|--serve <dir> ..."
         );
         std::process::exit(2);
     });
@@ -156,11 +162,6 @@ pub fn run() {
     // depending on which builds arrived. Both are here because the count is
     // what every shard can agree on without talking, and the clock is what
     // each one reads for itself.
-    // ASSEMBLE, NEVER FIGHT. The publish pass computes almost nothing already;
-    // this makes that a guarantee instead of an outcome, so a shard that failed
-    // costs a row on this board rather than an hour on the merge.
-    let project = has_flag("--project");
-    let mut absent = 0usize;
     let deadline = flag("--deadline")
         .and_then(|s| s.parse::<u64>().ok())
         .map(std::time::Duration::from_secs);
@@ -188,18 +189,6 @@ pub fn run() {
     // false ON PURPOSE — a build the budget did not reach this time is queued,
     // not lost, which is a FOURTH outcome and has to be one the check knows.
     let mut deferred_ids: std::collections::BTreeSet<String> = Default::default();
-    // THE ASSEMBLY TAKES ITS NUMBERS FROM THE FACTS AND NOWHERE ELSE.
-    //
-    // `--project` is the pass that PUBLISHES, and a publisher with more than
-    // one source needs a rule for which one wins — which is where every defect
-    // this pipeline has produced has lived. So under it there is one source: a
-    // row with a fact is published from that fact, and a row without one is not
-    // a row.
-    //
-    // Measured before this: the three highest rows of a Ballistica group were
-    // 3992.29, 3934.90 and 3928.68, and not one of them had a fact — they were
-    // the prior board's, published beside freshly measured ones half their
-    // size.
     // WHERE EVERY SCORE THIS RUN MEASURES IS APPENDED, one line a row and
     // flushed per row, so a shard that dies has banked what it finished.
     let mut log = FactLog::open(flag("--facts"), flag("--measured-by"));
@@ -215,15 +204,6 @@ pub fn run() {
     let mut raw = String::new();
     std::io::stdin().read_to_string(&mut raw).expect("stdin");
     let subs: Vec<Value> = serde_json::from_str(&raw).unwrap_or_default();
-    // `--subset` SAYS THE LIBRARY IS SOME WEAPONS' BUILDS AND NOT ALL: the live
-    // board re-ranks the weapons a cycle moved and leaves the rest as written.
-    // A weapon is ranked whole or not at all — its entry line is its group's —
-    // so the subset is cut by weapon, never by build.
-    let covered: Option<std::collections::BTreeSet<String>> = has_flag("--subset").then(|| {
-        subs.iter()
-            .filter_map(|s| s.get("weapon").and_then(Value::as_str).map(String::from))
-            .collect()
-    });
 
     // The benchmark's scenario, as the wire shape `simulate_json` parses. It is
     // the SAME map the app sends, which is what stops the board and the page
@@ -385,8 +365,7 @@ pub fn run() {
             payable.insert(asked.clone());
             let take = taking.as_ref().is_some_and(|t| t.contains(&asked));
             // …AND A ROW NOBODY ASKED FOR IS NOT WORK. Where there is no queue
-            // at all — `--project`, a local run — the fact alone decides, which
-            // is what this said before there was one.
+            // at all — a local run — the fact alone decides.
             let current = if take { None } else { facts.get(&key) };
             if missing_out.is_some()
                 && (sweep.contains(&v.weapon)
@@ -427,17 +406,6 @@ pub fn run() {
                     (f.score, f.finished_at.clone(), f.measured_by.clone())
                 }
                 None => {
-                    // A ROW WITH NO FACT IS NOT ON THIS BOARD. `--project`
-                    // ASSEMBLES and fights nothing: it groups what the facts
-                    // hold, ranks it, applies the floor and writes the files.
-                    // A row this generation has not measured lands on the next
-                    // board — which is what makes the publish cost bounded by
-                    // construction rather than by whichever shard fell over.
-                    if project {
-                        absent += 1;
-                        deferred_ids.insert(identity_of(&key));
-                        continue;
-                    }
                     // A ROW THIS RUN IS NOT TAKING IS NOT ITS WORK. Under a
                     // queue that is the whole selection: what is owed and what
                     // this run took of it are decided before the walk, in the
@@ -679,9 +647,6 @@ pub fn run() {
     // HOW MUCH BACKLOG IS LEFT, said out loud. A run that defers rows is not a
     // run that failed to score them: the next one takes the next share, and the
     // count falling run over run is what says the board is catching up.
-    if absent > 0 {
-        eprintln!("project: {absent} row(s) nobody has banked yet — they land on the next board");
-    }
     // …AND HOW MANY RAN OUT OF CLOCK PARTWAY. Not the same as `fresh_left`,
     // which is a row never started: these carry banked progress and resume on
     // the next run, which is what makes an arbitrarily slow row finishable.
@@ -743,30 +708,6 @@ pub fn run() {
 
     account(&kept, &scored_ids, &deferred_ids, &floored_ids, &collapsed_ids, shards, refused);
 
-    // WHAT THE PAGE FETCHES, and the only thing published: one file per weapon,
-    // plus an INDEX of each group's leader for the one view that ranks across
-    // weapons.
-    //
-    // A WEAPON'S FILE IS THE SOURCE OF ITS OWN CARRY. The rows of every OTHER
-    // ruler live in it and this pass measured none of them, so they are read
-    // back and kept — and a weapon this generation cannot speak for yet keeps
-    // this ruler's rows too, because a file written from an incomplete source is
-    // a file missing whatever the source lacks.
-    if let Some(dir) = std::env::args().nth(2).filter(|p| !p.starts_with("--")) {
-        write_pages(std::path::Path::new(&dir), &bench_id, &kept, covered.as_ref());
-    }
-
-    // WHAT THE RUNTIME NEEDS, and only that.
-    //
-    // The rows are not embedded — `site/board/` is outside `data/` for exactly
-    // that reason — so the page's few scalars per board come from a small
-    // generated file that is. Merged rather than overwritten: this binary runs
-    // once per benchmark.
-    // A SUBSET COUNTS SOME WEAPONS, which is no board's count: the state is
-    // the last whole pass's.
-    if covered.is_none() {
-        record_state(&bench_id, seen, kept.len());
-    }
 }
 
 /// `wfsim-board --groups`: the groups `board::groups::all` derives, summed the

@@ -78,34 +78,14 @@ jobs:
       - name: assemble every benchmark
         run: |
           set -euo pipefail
-          for id in $(./target/release/wfsim-board --rulers); do
-            # NO SLICE AND NO BUDGET: this pass fights nothing. `--project`
-            # makes that a guarantee, so a shard that fell over costs a row
-            # on this board rather than an hour on the merge — and the row
-            # lands on the next one, which is the convergence rule applied
-            # to the assembly.
-            #
-            # IT PUBLISHES A WEAPON AT A TIME, WHOLE. The directory it is
-            # handed is both what it writes and where a weapon's rows under
-            # every OTHER ruler are read back from, so a file is only ever
-            # written with all of them in hand.
-            ./target/release/wfsim-board "$id" site/board \
-              --project \
-              --facts-in facts-known.ndjson \
-              < library.json > /dev/null || {
-                code=$?
-                # TWO IS "NOT YET", ANYTHING ELSE IS BROKEN. Three boards are
-                # three rankings and they differ sixfold in cost —
-                # standard_single_target settles in an hour where standard_multi_target takes
-                # six — so an incomplete one may not hold a complete one back.
-                if [ "$code" = "2" ]; then
-                  echo "::notice::$id is not complete yet — left as it was"
-                else
-                  echo "::error::$id: the assembly failed with $code"
-                  exit "$code"
-                fi
-              }
-          done
+          # EVERY RULER IN ONE PASS THAT FIGHTS NOTHING (`wfsim-board
+          # --project`, docs/BOARD.md §"The assembly"): each build is read once
+          # and crossed with every ruler, a row with no fact lands on the next
+          # board, and the directory it is handed is where rows no live ruler
+          # rewrites are read back from.
+          ./target/release/wfsim-board --project site/board \
+            --facts-in facts-known.ndjson \
+            < library.json > /dev/null
 
       # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per
       # hour that says nothing is history nobody can read.
