@@ -41,6 +41,31 @@ pub mod weapons;
 
 include!(concat!(env!("OUT_DIR"), "/embedded_data.rs"));
 
+/// A CATALOG READ BY KEY, filled on first ask and kept for the process.
+///
+/// A hit shares the lock and allocates nothing, so every core reads it at
+/// once; a build's door asks several of these per record, and behind a mutex
+/// the cores queued on them. A miss builds outside the lock — two racing
+/// misses build twice and the first kept wins, which costs one leak.
+pub(crate) struct Memo<T: ?Sized + 'static>(
+    std::sync::OnceLock<std::sync::RwLock<std::collections::HashMap<String, &'static T>>>,
+);
+
+impl<T: ?Sized + Sync + 'static> Memo<T> {
+    pub(crate) const fn new() -> Self {
+        Memo(std::sync::OnceLock::new())
+    }
+
+    pub(crate) fn get_or(&self, key: &str, make: impl FnOnce() -> &'static T) -> &'static T {
+        let map = self.0.get_or_init(Default::default);
+        if let Some(v) = map.read().unwrap_or_else(|e| e.into_inner()).get(key) {
+            return v;
+        }
+        let v = make();
+        map.write().unwrap_or_else(|e| e.into_inner()).entry(key.to_string()).or_insert(v)
+    }
+}
+
 type Files = Vec<(&'static str, &'static str)>;
 
 /// Packs handed in by the host (`install`), until the first read seals them.

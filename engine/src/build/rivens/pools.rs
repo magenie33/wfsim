@@ -303,20 +303,16 @@ pub fn exceptions(family: &str) -> &'static Exceptions {
 
 /// The stat pool of one mod class — `data/rivens/<class>.yaml`.
 pub fn pool(class: &str) -> &'static [RivenStat] {
-    static POOLS: OnceLock<std::sync::Mutex<std::collections::BTreeMap<String, &'static [RivenStat]>>> =
-        OnceLock::new();
-    let cache = POOLS.get_or_init(|| std::sync::Mutex::new(std::collections::BTreeMap::new()));
-    let mut g = cache.lock().expect("riven pool cache");
-    g.entry(class.to_string())
-        .or_insert_with(|| {
-            let loaded = crate::data::files_under("rivens/")
-                .filter_map(|(p, text)| {
-                    let want = format!("rivens/{class}.yaml");
-                    (p == want).then(|| serde_norway::from_str::<PoolFile>(text).ok())?
-                })
-                .next()
-                .map(|f| f.stats)
-                .unwrap_or_default();
-            &*Box::leak(loaded.into_boxed_slice())
-        })
+    static POOLS: crate::data::Memo<[RivenStat]> = crate::data::Memo::new();
+    POOLS.get_or(class, || {
+        let loaded = crate::data::files_under("rivens/")
+            .filter_map(|(p, text)| {
+                let want = format!("rivens/{class}.yaml");
+                (p == want).then(|| serde_norway::from_str::<PoolFile>(text).ok())?
+            })
+            .next()
+            .map(|f| f.stats)
+            .unwrap_or_default();
+        &*Box::leak(loaded.into_boxed_slice())
+    })
 }

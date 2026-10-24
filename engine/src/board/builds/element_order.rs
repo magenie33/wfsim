@@ -50,7 +50,7 @@ pub(super) const MAX_ELEMENT_PERMUTATIONS: usize = 720;
 /// has something to measure.
 pub fn element_orders(weapon: &str, mods: &[String], evolutions: &[String]) -> Vec<ElementOrder> {
     let pool = crate::data::mods::pool_naming(weapon, mods);
-    let def = |id: &String| pool.iter().find(|m| m.id == id.as_str());
+    let def = |id: &String| pool.get(id);
     let evo_refs: Vec<&str> = evolutions.iter().map(String::as_str).collect();
     let base = crate::model::WeaponBase::from_data(weapon, true, &evo_refs);
 
@@ -153,14 +153,15 @@ pub(super) fn normalize_with(
     // away. Its legality is a question about the SHAPE and is asked in
     // `check_riven_shape`, where the answer can say why.
     if riven.is_some() {
-        pool.push(crate::model::ModDef { id: RIVEN_SLOT, ..pool[0].clone() });
+        let first = pool.iter().next().expect("a weapon's pool").clone();
+        pool.push(crate::model::ModDef { id: RIVEN_SLOT, ..first });
     }
     // CANONICALISED, not sorted and not left raw — see `canonical_mods`. A
     // plain sort scored a pairing nobody submitted; raw order made two spellings
     // of one fight into two rows.
     let kept: Vec<String> = mods
         .iter()
-        .filter(|id| pool.iter().any(|m| m.id == id.as_str()))
+        .filter(|id| pool.get(id).is_some())
         .cloned()
         .collect();
     let multishot = canonical_mods_with(weapon, &kept, riven);

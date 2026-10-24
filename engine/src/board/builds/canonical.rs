@@ -43,7 +43,7 @@ pub fn canonical_mods_with(
     riven: Option<&crate::build::rivens::RivenShape>,
 ) -> Vec<String> {
     let pool = crate::data::mods::pool_naming(weapon, mods);
-    let def = |id: &String| pool.iter().find(|m| m.id == id.as_str());
+    let def = |id: &String| pool.get(id);
     // WHAT EACH MOD PUTS INTO THE ELEMENT POOL, in order. One entry for an
     // ordinary elemental mod, none for a plain one, and up to TWO for a riven.
     let riven_elements: Vec<crate::rules::damage::DamageType> = match riven {

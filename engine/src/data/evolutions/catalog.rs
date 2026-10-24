@@ -179,21 +179,17 @@ pub fn pool() -> &'static Vec<EvolutionDef> {
 /// life (docs/WASM.md §"Memory"); the files are named `<weapon>_<evolution>`,
 /// and `weapon:` settles a prefix two weapons share (`bo_` and `bo_prime_`).
 pub fn for_weapon(weapon: &str) -> &'static [EvolutionDef] {
-    static BY_WEAPON: OnceLock<std::sync::Mutex<std::collections::HashMap<String, &'static [EvolutionDef]>>> = OnceLock::new();
-    let mut by = BY_WEAPON.get_or_init(Default::default).lock().unwrap_or_else(|e| e.into_inner());
-    if let Some(l) = by.get(weapon) {
-        return l;
-    }
-    let prefix = format!("evolutions/{weapon}_");
-    let mut out: Vec<EvolutionDef> = crate::data::files_under("evolutions/")
-        .filter(|(path, _)| path.starts_with(&prefix))
-        .map(|(path, text)| parse(path, text))
-        .filter(|e| e.weapon == weapon)
-        .collect();
-    in_game_order(&mut out);
-    let l: &'static [EvolutionDef] = Box::leak(out.into_boxed_slice());
-    by.insert(weapon.to_string(), l);
-    l
+    static BY_WEAPON: crate::data::Memo<[EvolutionDef]> = crate::data::Memo::new();
+    BY_WEAPON.get_or(weapon, || {
+        let prefix = format!("evolutions/{weapon}_");
+        let mut out: Vec<EvolutionDef> = crate::data::files_under("evolutions/")
+            .filter(|(path, _)| path.starts_with(&prefix))
+            .map(|(path, text)| parse(path, text))
+            .filter(|e| e.weapon == weapon)
+            .collect();
+        in_game_order(&mut out);
+        Box::leak(out.into_boxed_slice())
+    })
 }
 
 /// One evolution file, its naming contract checked.

@@ -8,7 +8,7 @@
 //! rest answer the registry's questions; `kitguns` assembles a modular one.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, OnceLock};
+use std::sync::OnceLock;
 
 use serde::Deserialize;
 
