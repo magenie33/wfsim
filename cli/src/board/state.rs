@@ -19,9 +19,9 @@ pub(crate) struct BoardRow {
     pub(crate) scored_at: usize,
 }
 
-pub(crate) fn stored_state() -> std::collections::BTreeMap<String, BoardRow> {
+pub(crate) fn stored_state(path: &std::path::Path) -> std::collections::BTreeMap<String, BoardRow> {
     let mut state: std::collections::BTreeMap<String, BoardRow> = Default::default();
-    let text = std::fs::read_to_string(BOARD_STATE).unwrap_or_default();
+    let text = std::fs::read_to_string(path).unwrap_or_default();
     let mut cur = String::new();
     for line in text.lines() {
         let t = line.trim_end();
@@ -58,26 +58,23 @@ pub(crate) const BOARD_STATE_HEADER: &str = "# WHAT THE RUNTIME KNOWS ABOUT EACH
 # question and the page answers it (docs/BOARD.md).
 ";
 
-/// Merge this ruler's scalars into the state file, when there is one.
-pub(crate) fn record_state(bench_id: &str, submissions: usize, listed: usize) {
-    if std::path::Path::new(BOARD_STATE).exists() {
-        let mut state = stored_state();
-        // WHEN, AND NOT ONLY WHAT. The counts say how far behind the board is in
-        // BUILDS; a reader looking at a number wants to know how old it is, and
-        // that is the one thing neither the counts nor the fingerprints can
-        // say — a fingerprint answers "did an input move", never "when was this
-        // measured". Seconds rather than a date because the page does the
-        // rendering and a board that should move in hours cannot say "today".
-        //
-        // A board written before this existed carries 0, which the page reads as
-        // "unknown" rather than as 1970.
+/// Merge these rulers' scalars into the state file at `path`, when there is
+/// one: `(ruler, submissions, listed)`.
+pub(crate) fn record_states(path: &std::path::Path, boards: &[(String, usize, usize)]) {
+    if path.exists() {
+        let mut state = stored_state(path);
+        // WHEN THE ASSEMBLY LAST WROTE THE BOARD, which no count or fingerprint
+        // can say: `/support` shows it and `scripts/check_board_age.py` alarms
+        // on it. A board written before this existed carries 0, read as unknown.
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_or(0, |d| d.as_secs() as usize);
-        state.insert(
-            bench_id.to_string(),
-            BoardRow { submissions, listed, scored_at: now },
-        );
+        for (bench_id, submissions, listed) in boards {
+            state.insert(
+                bench_id.clone(),
+                BoardRow { submissions: *submissions, listed: *listed, scored_at: now },
+            );
+        }
         let mut out = String::from(BOARD_STATE_HEADER);
         out.push_str("boards:
 ");
@@ -91,6 +88,6 @@ pub(crate) fn record_state(bench_id: &str, submissions: usize, listed: usize) {
                 r.submissions, r.listed, r.scored_at,
             ));
         }
-        std::fs::write(BOARD_STATE, out).unwrap_or_else(|e| panic!("{BOARD_STATE}: {e}"));
+        std::fs::write(path, out).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     }
 }

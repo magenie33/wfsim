@@ -4,20 +4,20 @@
 //
 //   node live_publish.mjs delta <work-dir>                verified facts since the last read
 //   node live_publish.mjs cursor <work-dir>               the facts file just read whole: the delta starts at its newest
-//   node live_publish.mjs subset <work-dir> <ids> <out> <facts>...   the weapons <ids> touch: library, facts
 //   node live_publish.mjs push <work-dir> <dir>           the files that moved, to R2
 //
 // `delta` appends to `facts-known.ndjson` every `scores` row finished in the
-// last two hours of what it has seen that moved: a scorer ships a row minutes
-// after it finishes, so a cursor on the clock alone would step over it. Exit 3
-// means nothing moved. `push` sends a file only when its bytes differ from the
+// last two hours of what it has seen that moved, and writes the same rows to
+// `moved-facts.ndjson` for the ranker (`wfsim-board --serve`): a scorer ships a
+// row minutes after it finishes, so a cursor on the clock alone would step over
+// it. Exit 3 means nothing moved. `push` sends a file only when its bytes differ from the
 // last push (`pushed.json`), through the worker's `/api/board/live/`.
 //
 // THE FACTS FILE IS NEVER HELD WHOLE: it is every row of `scores`, past what
 // one string can be and past what the board server's memory can hold as a map.
 // It is streamed a line at a time, and appended to rather than rewritten —
-// `wfsim-board` keeps the newest line of a key (`load_facts`), and the hourly
-// read writes the file afresh.
+// `wfsim-board` keeps the newest line of a key, and the hourly read writes the
+// file afresh.
 import { readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync, createReadStream } from "node:fs";
 import { createInterface } from "node:readline";
 import { createHash } from "node:crypto";
@@ -35,10 +35,6 @@ async function* eachLine(p) {
   if (!existsSync(p)) return;
   for await (const l of createInterface({ input: createReadStream(p), crlfDelay: Infinity })) if (l) yield l;
 }
-/// A FACT LINE'S KEY without parsing the line: every writer of the file puts
-/// identity, ruler and mode first, in that order (`fetch_facts.sh`, `delta`).
-const HEAD = /^\{"identity":"([^"]*)","ruler":"([^"]*)","mode":"([^"]*)"/;
-const factHead = (l) => { const m = HEAD.exec(l); if (m) return { identity: m[1], ruler: m[2], mode: m[3] }; const f = JSON.parse(l); return f; };
 
 async function delta() {
   const factsPath = join(work, "facts-known.ndjson");
@@ -55,16 +51,16 @@ async function delta() {
   // values: two spellings of one fact are not a change.
   const recent = existsSync(recentPath) ? JSON.parse(readFileSync(recentPath, "utf8")) : {};
   const same = (a, r) => a && a[0] === r.score && a[1] === r.measured_by && a[2] === r.finished_at;
-  const window = {}, moved = [], movedIds = [];
+  const window = {}, moved = [];
   for (const r of rows) {
-    if (!same(recent[key(r)], r)) { moved.push(JSON.stringify(r)); movedIds.push(r.identity); }
+    if (!same(recent[key(r)], r)) moved.push(JSON.stringify(r));
     window[key(r)] = [r.score, r.measured_by, r.finished_at];
     if (r.finished_at > seen) seen = r.finished_at;
   }
   if (moved.length) appendFileSync(factsPath, moved.join("\n") + "\n");
   writeFileSync(recentPath, JSON.stringify(window));
   writeFileSync(cursorPath, seen + "\n");
-  writeFileSync(join(work, "moved-ids.txt"), movedIds.map((id) => id + "\n").join(""));
+  writeFileSync(join(work, "moved-facts.ndjson"), moved.map((l) => l + "\n").join(""));
   if (!moved.length) process.exit(3);
   console.error(`live: ${moved.length} fact(s) moved since ${since}`);
 }
@@ -82,42 +78,6 @@ async function cursor() {
   if (!seen) return;
   writeFileSync(join(work, "facts-cursor.txt"), seen + "\n");
   writeFileSync(join(work, "facts-recent.json"), "{}");
-}
-
-/// THE BUILDS OF EVERY WEAPON A SET OF BUILD IDS TOUCHES — a weapon is ranked
-/// whole or not at all (`wfsim-board --subset`). Exit 3 when it names none.
-async function subset(idsPath, out, factsIn) {
-  const want = new Set();
-  for await (const l of eachLine(idsPath)) want.add(l);
-  const weaponOf = new Map();
-  for await (const l of eachLine(join(work, "library-ids.ndjson"))) {
-    const x = JSON.parse(l);
-    if (want.has(x.k)) weaponOf.set(x.k, x.v.weapon);
-  }
-  for await (const l of eachLine(join(work, "new-builds.ndjson"))) {
-    const x = JSON.parse(l);
-    if (want.has(x.id)) weaponOf.set(x.id, x.record.weapon);
-  }
-  const weapons = new Set(weaponOf.values());
-  if (!weapons.size) process.exit(3);
-  const lib = JSON.parse(readFileSync(join(work, "library-live.json"), "utf8")).filter((r) => weapons.has(r.weapon));
-  writeFileSync(out, JSON.stringify(lib));
-  // …AND ONLY THOSE WEAPONS' FACTS: reading every row of `scores` three times
-  // is most of what a subset pass costs.
-  const ids = new Set();
-  for await (const l of eachLine(join(work, "library-ids.ndjson"))) { const x = JSON.parse(l); if (weapons.has(x.v.weapon)) ids.add(x.k); }
-  for await (const l of eachLine(join(work, "new-builds.ndjson"))) { const x = JSON.parse(l); if (weapons.has(x.record.weapon)) ids.add(x.id); }
-  writeFileSync(`${out}.facts`, "");
-  let kept = [];
-  for (const p of factsIn) {
-    for await (const l of eachLine(p)) {
-      if (!ids.has(factHead(l).identity)) continue;
-      kept.push(l);
-      if (kept.length >= 10_000) { appendFileSync(`${out}.facts`, kept.join("\n") + "\n"); kept = []; }
-    }
-  }
-  if (kept.length) appendFileSync(`${out}.facts`, kept.join("\n") + "\n");
-  console.error(`live: re-ranking ${weapons.size} weapon(s), ${lib.length} build(s)`);
 }
 
 async function push() {
@@ -153,5 +113,4 @@ async function push() {
 if (mode === "delta") await delta();
 else if (mode === "cursor") await cursor();
 else if (mode === "push") await push();
-else if (mode === "subset") await subset(dir, process.argv[5], process.argv.slice(6));
-else { console.error("usage: live_publish.mjs delta|cursor|subset|push <work-dir> ..."); process.exit(2); }
+else { console.error("usage: live_publish.mjs delta|cursor|push <work-dir> ..."); process.exit(2); }

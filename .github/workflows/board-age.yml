@@ -1,0 +1,26 @@
+# IS THE LIVE BOARD STILL BEING RANKED?
+#
+# A stalled board serves a page that works, with an old ranking, and the page
+# shows no board-wide age; nothing fails, so nothing reports. This asks on a
+# clock and FAILS, unlike mirrors.yml: a failed scheduled run is what mails the
+# owner, and a stall is an outage to act on, not a fact to note.
+#
+# READ-ONLY AND CREDENTIAL-FREE, and off the board server, so a dead server is
+# reported too: scripts/check_board_age.py.
+name: board-age
+
+on:
+  schedule:
+    - cron: "40 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: The live board was stamped lately
+        run: python scripts/check_board_age.py
