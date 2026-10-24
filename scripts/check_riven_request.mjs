@@ -94,13 +94,15 @@ await Promise.all(apps.map(async (app) => {
     // a search the page would not run, so a refusal is counted and printed.
     if (page.error) { refused++; console.log(`  note  ${weapon} under ${ruler}: the page refuses it (${page.error})`); continue; }
     // A BUFF AT ITS OWN DEFAULT is what an absent one means (the engine opens on
-    // it): the controls write one whenever the panel answers (`syncBuffConfig`),
-    // so it is set aside rather than read as a different search.
-    const shown = JSON.parse(await app.evaluate(`(() => {
+    // it), and one the build does not carry is never read: the controls write
+    // each default whenever a panel answers (`syncBuffConfig`), for whichever
+    // build it answered, so both are set aside — judged by the engine's list for
+    // THIS build, asked here, not `buffList`, which is whichever answer landed last.
+    const shown = JSON.parse(await app.evaluate(`(async () => {
       const request = optimizeBody();
-      const at = Object.fromEntries(buffList.map((b) => [b.id, b]));
-      request.buffs = Object.fromEntries(Object.entries(request.buffs || {}).filter(([id, c]) => !(at[id]
-        && c.stacks === at[id].default_stacks && !!c.locked === !!at[id].default_locked)));
+      const at = Object.fromEntries(((await api("/api/panel", buildPayload())).buffs || []).map((b) => [b.id, b]));
+      request.buffs = Object.fromEntries(Object.entries(request.buffs || {}).filter(([id, c]) => at[id]
+        && !(c.stacks === at[id].default_stacks && !!c.locked === !!at[id].default_locked)));
       return JSON.stringify({ request,
         context: { ...boardBuildContext(), rivens: { [appraisal.rivenMod]: boardRivenShape(appraisal.rivenMod) } } });
     })()`));
