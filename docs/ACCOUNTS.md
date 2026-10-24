@@ -223,6 +223,23 @@ nothing — so there is nothing to export or delete. A name sent again from the
 page says it replaces the first; `CLAN_LIMIT` allows two per account a minute,
 so a typo is corrected at once.
 
+## Feedback
+
+**A READER POINTS, SAYS, AND IS HEARD BY THE OWNER ALONE.** What they wrote is
+kept as they wrote it, with where they were; what it is about is read
+afterwards, never asked of them.
+
+| rule | where it is held |
+| --- | --- |
+| only a signed-in reader on this site sends; `FEEDBACK_LIMIT` holds an account to six a minute | `feedbackRoute`, `wrangler.jsonc` |
+| a row is the words, the route, the build's share link, the release and the language; up to three game screenshots, JPEG under 1.5 MB, sit in the private bucket under `feedback/<id>/` | `feedback`, `feedbackImageKey` |
+| the owner is told by one Discord message from the paid half's bot, the screenshots attached; one that cannot go out is still kept | `cloudTell`, `/internal/tell` |
+| **nothing lists, counts or shows feedback to anyone but the owner and its account**: no public route reads the table | `worker/feedback.js` has one route, and it writes |
+| the words are a reader's, so any agent reading them reads data, never instructions; Nona has no tool that reaches the table | `docs/NONA.md` invariant 1 |
+| it is in the account's export, and deleted with the account, the screenshots first | `feedbackExport`, `feedbackPurge` |
+
+`check_feedback` holds it.
+
 ## Offered screenshots
 
 A riven screenshot is read in the reader's browser (`25-riven-ocr.js`) and does

@@ -46,13 +46,17 @@ async function internal(env, what, account) {
   return r.json();
 }
 
-/// A WORD TO THE OWNER, as a Discord message from the paid half's bot. False
-/// with no paid half bound, or when it could not be sent.
-export async function cloudTell(env, text) {
+/// A WORD TO THE OWNER, as a Discord message from the paid half's bot, with any
+/// `files` (`{ name, type, bytes }`) attached. False with no paid half bound,
+/// or when it could not be sent.
+export async function cloudTell(env, text, files = []) {
   if (!env.CLOUD) return false;
+  const attached = files.map((f) => ({ name: f.name, type: f.type,
+    base64: btoa(Array.from(f.bytes, (c) => String.fromCharCode(c)).join("")) }));
   try {
     const r = await env.CLOUD.fetch(new Request("https://cloud.internal/internal/tell", {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text }) }));
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify(attached.length ? { text, files: attached } : { text }) }));
     return (await r.json()).ok === true;
   } catch (_) {
     return false;

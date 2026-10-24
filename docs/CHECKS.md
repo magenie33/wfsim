@@ -110,6 +110,19 @@ a ban never; the purge, the export and the account's deletion each take what
 they should. It failed with an account's query widened to every account's and
 with bans counted as cool-downs.
 
+## `check_feedback`
+
+What a reader tells the owner (`worker/feedback.js`) on PGlite, no network: a
+reader with no account and another site are refused, and so are empty words,
+words past the limit, a fourth screenshot, a PNG and one past 1.5 MB, with
+nothing kept or sent; a signed-in reader's words are kept as written with the
+route, the share link and the release, the screenshots in the bucket under the
+row's id, and the owner's message carries who, where, the words and the
+screenshots; a message that cannot go out is still kept; the export holds the
+account's own feedback and nobody else's, and the deletion takes the rows and
+the screenshots. It failed with the export widened to every account and with
+the purge of the screenshots left out.
+
 ## `check_reminder_notices`
 
 Fires stubbed reminders, and a stubbed message from the site, on a page in both
