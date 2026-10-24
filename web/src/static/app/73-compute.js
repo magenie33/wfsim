@@ -728,18 +728,29 @@ function demandHours(h) {
   if (d) return tr("{d} d {h} h {m} min").replace("{d}", n(d)).replace("{h}", n(hh)).replace("{m}", n(m));
   return hh ? tr("{h} h {m} min").replace("{h}", n(hh)).replace("{m}", n(m)) : tr("{m} min").replace("{m}", n(m));
 }
+/// EACH KIND OF ORDER BY ITS NAME, as the worker lists them (worker/contribution.js
+/// `ORDER_KINDS`); a kind this page does not know yet is shown by its id.
+const ORDER_KIND_NAMES = { rescore: "rescores after a model change {n}", sweep: "a ruler's first pass over older builds {n}",
+  new_build: "new builds {n}", refresh: "scores three days old, measured again {n}", riven_gain: "riven gains {n}" };
+/// THE ORDERS AS A LIST: the worker's, or one made of an older object's counts.
+const demandOrders = (d) => d.orders || [["rescore", d.owed.rescores], ["sweep", d.owed.sweeps], ["new_build", d.owed.new_builds],
+  ["refresh", d.owed.refreshes], ["riven_gain", d.riven_gains]].filter(([, v]) => v).map(([kind, total]) => ({ kind, total, dispatched: null }));
 function computeDemandHtml() {
   const d = computeDemand;
   if (!d) return "";
   const n = (x) => Number(x || 0).toLocaleString(accountLocale());
   const big = (x) => `<b style="font-size:16px">${escHtml(x)}</b>`;
-  const owed = d.owed.new_builds + d.owed.rescores + d.owed.sweeps + (d.owed.refreshes || 0);
+  // THE TOTAL IS EVERY ORDER THERE IS NOW: what a device has taken and what
+  // still waits on the server. An order withdrawn leaves it; one the system
+  // asks for joins it.
+  const orders = demandOrders(d);
+  const owed = orders.reduce((a, o) => a + o.total, 0);
+  const known = orders.every((o) => o.dispatched != null);
+  const sent = orders.reduce((a, o) => a + (o.dispatched || 0), 0);
   const done = d.per_hour.volunteers + d.per_hour.official;
   const share = done ? Math.round((100 * d.per_hour.volunteers) / done) : 0;
-  const parts = [["new builds {n}", d.owed.new_builds], ["rescores after a model change {n}", d.owed.rescores],
-    ["a ruler's first pass over older builds {n}", d.owed.sweeps], ["scores three days old, measured again {n}", d.owed.refreshes],
-    ["riven gains {n}", d.riven_gains]]
-    .filter(([, v]) => v).map(([s, v]) => escHtml(tr(s).replace("{n}", n(v)))).join(" · ");
+  const list = orders.map((o) => `<li><span>${escHtml(tr(ORDER_KIND_NAMES[o.kind] || `${o.kind} {n}`).replace("{n}", n(o.total)))}</span>${
+    o.dispatched == null ? "" : `<span class="set-note">${escHtml(tr("dispatched {n}").replace("{n}", n(o.dispatched)))}</span>`}</li>`).join("");
   // EACH SURVEY IS A GOAL the reader can watch close: every riven shape of one
   // weapon, how many are confirmed and how many begun.
   const goals = (d.surveys || []).map((g) => {
@@ -756,7 +767,11 @@ function computeDemandHtml() {
   return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
     aT("All devices together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
-    <div class="kv"><dt>${aT("Queued")}</dt><dd>${big(n(owed))} ${aT("rows of scores")}${parts ? `<div class="set-note" style="margin-top:4px">${parts}</div>` : ""}</dd></div>
+    <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(n(owed))} ${aT("tasks")}${known && owed ? `
+      <div class="set-note" style="margin-top:4px">${escHtml(tr("dispatched {n}").replace("{n}", n(sent)))} · ${
+        escHtml(tr("waiting on the server {n}").replace("{n}", n(owed - sent)))}</div>
+      <div class="demand-bar" id="orders-bar"><div style="width:${Math.round((100 * sent) / owed)}%"></div></div>` : ""}${
+      list ? `<ul class="order-list">${list}</ul>` : ""}</dd></div>
     ${goals ? `<div class="kv"><dt>${aT("Goals")}</dt><dd style="min-width:0">${goals}</dd></div>` : ""}
     <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(n(done))} ${aT("rows of scores")}
       <div class="demand-bar"><div style="width:${share}%"></div></div>

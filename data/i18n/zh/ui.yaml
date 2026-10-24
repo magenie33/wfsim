@@ -2794,7 +2794,10 @@ ui:
   "All devices together · updated every minute": "所有设备合计 · 每分钟更新"
   "Computing now": 此刻在算
   "devices": "台设备"
-  "Queued": 排队中
+  "Total orders": 总订单
+  "tasks": 个任务
+  "dispatched {n}": "已派出 {n}"
+  "waiting on the server {n}": "服务器待派 {n}"
   "rows of scores": 行成绩
   "new builds {n}": "新提交的配装 {n}"
   "rescores after a model change {n}": "模型更新后重算 {n}"

@@ -44,6 +44,7 @@ import { shownName } from "./names.js";
 import { noteFactoryCall } from "./factory_calls.js";
 import { meritTotals } from "./merit.js";
 import { dialsOf } from "./dials.js";
+import { BOARD_KINDS } from "./board_kinds.js";
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
@@ -652,24 +653,31 @@ export const DEMAND_COST_EVERY_MS = 10 * 60_000;
 /// for tens of seconds, read-only, once in `DEMAND_COST_EVERY_MS`.
 export const DEMAND_COST_TIMEOUT_MS = 120_000;
 const demandCosts = new WeakMap();
+/// THE BOARD'S KINDS OF ORDER, as `orders` lists them, each by the `k` the
+/// owed rows are counted under. A kind is added here and named on the page
+/// (73-compute.js `ORDER_KIND_NAMES`); a page that does not know it yet shows it by its id.
+export const ORDER_KINDS = [["rescore", 1], ["sweep", 2], ["new_build", 0], ["refresh", 3]];
 
 /// THE WHOLE PICTURE, totals only, never a device or a person (docs/BOARD.md
 /// §"Demand" says each field).
 /// HOURS TO CLEAR ARE COMPUTE, NOT ROWS: one riven search costs as much as
 /// dozens of board rows, so rows per hour cannot say when the rest is done.
 /// Each verb's open work is priced at what one of its facts cost over the day
-/// and divided by the compute the volunteers answered per hour; refreshes come
-/// back every three days and never clear, so they are left out. Null where a
-/// verb with work formed no fact to price it by.
-export async function demandOf(env, now = Date.now()) {
+/// and divided by the compute the volunteers answered per hour: every order
+/// listed, so the countdown is when the total the page shows is done. Null
+/// where a verb with work formed no fact to price it by.
+/// THE ORDERS ARE ONE LIST, a kind a row (`ORDER_KINDS`): what each kind owes,
+/// and how much of it a device has taken — the rest waits on the server.
+export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN) {
   const db = env.LIBRARY, at = iso(now);
   const kept = demandCosts.get(env);
   const costs = kept && now - kept.at < DEMAND_COST_EVERY_MS ? kept : null;
-  const [, done, gains, surveys, answered, owed, open, spent, facts] = await db.batch([
+  const [, done, gains, surveys, answered, owed, open, spent, facts, taken] = await db.batch([
     db.prepare(`SET LOCAL statement_timeout = ${costs ? "DEFAULT" : DEMAND_COST_TIMEOUT_MS}`),
     db.prepare(`SELECT SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official
                 FROM scores WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000)),
-    db.prepare("SELECT COUNT(*) AS n FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?")
+    db.prepare(`SELECT COUNT(*) AS n, SUM(CASE WHEN started_at IS NULL THEN 0 ELSE 1 END) AS started
+                FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?`)
       .bind(iso(now - 86_400_000), SURVEY_CHANNEL),
     // EACH SURVEY AS A GOAL: every riven shape of one weapon on one ruler, how
     // many two owners have agreed on and how many anyone has begun. A survey
@@ -695,22 +703,34 @@ export async function demandOf(env, now = Date.now()) {
       db.prepare(`WITH s AS (SELECT question, compute_ms FROM answers
                     WHERE id > (SELECT COALESCE(MAX(id), 0) FROM answers) - ?2::bigint AND at >= ?1::text AND official = 0)
                   SELECT q.verb, SUM(COALESCE(s.compute_ms, 0)) AS ms FROM s JOIN questions q ON q.id = s.question GROUP BY q.verb`)
-        .bind(iso(now - DEMAND_COST_MS), DEMAND_COST_SCAN),
-      db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE fact_at >= ? GROUP BY verb").bind(iso(now - DEMAND_COST_MS)),
+        .bind(iso(now - DEMAND_COST_MS), scan),
+      // …OVER THE FACTS FORMED SINCE THE FIRST ANSWER THAT READ: a busy day has
+      // more answers than the read reaches, and its facts over the whole day
+      // priced every row at the fraction of the day the answers covered.
+      db.prepare(`SELECT verb, COUNT(*) AS n FROM questions WHERE fact_at >= GREATEST(?1::text,
+                    (SELECT at FROM answers WHERE id > (SELECT COALESCE(MAX(id), 0) FROM answers) - ?2::bigint ORDER BY id LIMIT 1))
+                  GROUP BY verb`).bind(iso(now - DEMAND_COST_MS), scan),
+      // A ROW A DEVICE HAS TAKEN — leased, by a volunteer or an official
+      // machine, now or before — is dispatched, by the kind `owed` counts it as.
+      db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT x.id, MIN(CASE WHEN d.producer = 'new_build' THEN 0
+                      WHEN d.payload::jsonb ->> 'batch' LIKE 'rescore%' THEN 1 WHEN d.producer = 'refresh' THEN 3 ELSE 2 END) AS k
+                    FROM questions x JOIN demands d ON d.question = x.id AND d.state = 'live' AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
+                   WHERE x.state = 'open' AND x.verb = 'simulate' AND (x.leased_at IS NOT NULL OR x.lease IS NOT NULL)
+                   GROUP BY x.id) y GROUP BY k`).bind(JSON.stringify(BOARD_KINDS)),
     ]),
   ]);
   const counted = costs || { by: Object.fromEntries(owed.results.map((r) => [r.k, Number(r.n)])),
+    takenBy: Object.fromEntries(taken.results.map((r) => [r.k, Number(r.n)])),
     openOf: open.results.map((r) => ({ verb: r.verb, n: Number(r.n) })) };
   const by = counted.by;
   const h = done.results[0] || {};
   const perHour = (x) => Math.round(Number(x || 0) / PACE_HOURS);
   const { msOf, factsOf } = costs || { msOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.ms)])),
     factsOf: Object.fromEntries(facts.results.map((r) => [r.verb, Number(r.n)])) };
-  if (!costs) demandCosts.set(env, { at: now, msOf, factsOf, by, openOf: counted.openOf });
+  if (!costs) demandCosts.set(env, { at: now, msOf, factsOf, by, takenBy: counted.takenBy, openOf: counted.openOf });
   const msPerHour = Number((answered.results[0] || {}).ms || 0) / PACE_HOURS;
-  // THE BOARD'S ROWS are the queue's, a refresh's left out; every other verb's
-  // open questions are its work.
-  const left = { simulate: (by[0] || 0) + (by[1] || 0) + (by[2] || 0) };
+  // THE BOARD'S ROWS are the queue's; every other verb's open questions are its work.
+  const left = { simulate: (by[0] || 0) + (by[1] || 0) + (by[2] || 0) + (by[3] || 0) };
   for (const r of counted.openOf) if (r.verb !== "simulate") left[r.verb] = r.n;
   let ms = 0;
   for (const [verb, n] of Object.entries(left)) {
@@ -722,6 +742,9 @@ export async function demandOf(env, now = Date.now()) {
   return { ok: true, v: 1, at, computing: await computingNow(env),
     owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0, refreshes: by[3] || 0 },
     riven_gains: Number((gains.results[0] || {}).n || 0),
+    orders: [...ORDER_KINDS.map(([kind, k]) => ({ kind, total: by[k] || 0, dispatched: Math.min(by[k] || 0, counted.takenBy[k] || 0) })),
+      { kind: "riven_gain", total: Number((gains.results[0] || {}).n || 0), dispatched: Number((gains.results[0] || {}).started || 0) }]
+      .filter((o) => o.total > 0),
     surveys: surveys.results.map(({ lately, ...g }) => {
       const s = { weapon: g.weapon, ruler: g.ruler, shapes: Number(g.shapes), agreed: Number(g.agreed), started: Number(g.started) };
       const pace = Number(lately || 0) / (PACE_HOURS);
