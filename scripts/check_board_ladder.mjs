@@ -4,9 +4,11 @@ import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 11000, lang: "en" });
 const { evaluate, check, send, sleep, BASE } = app;
+// THE BOARD'S OWN DOCUMENT, opened by its address: a built site carries only
+// its route's page, so the board's controls exist only once it is the page.
+await app.load("/benchmark");
 const result = await evaluate(`(async () => {
-  history.replaceState({}, '', '/benchmark');
-  route();
+  for (let i = 0; i < 100 && !document.getElementById('bench-scenes'); i++) await new Promise((r) => setTimeout(r, 100));
   const all = benchList(), bases = all.filter(b => b.id === b.base);
   const failures = [];
   const want = (ok, why) => { if (!ok) failures.push(why); };
