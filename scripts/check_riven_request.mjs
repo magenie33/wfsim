@@ -93,8 +93,17 @@ await Promise.all(apps.map(async (app) => {
     // A PAGE THAT REFUSES THE SEARCH has nothing to compare; the bot then stores
     // a search the page would not run, so a refusal is counted and printed.
     if (page.error) { refused++; console.log(`  note  ${weapon} under ${ruler}: the page refuses it (${page.error})`); continue; }
-    const shown = JSON.parse(await app.evaluate(`JSON.stringify({ request: optimizeBody(),
-      context: { ...boardBuildContext(), rivens: { [appraisal.rivenMod]: boardRivenShape(appraisal.rivenMod) } } })`));
+    // A BUFF AT ITS OWN DEFAULT is what an absent one means (the engine opens on
+    // it): the controls write one whenever the panel answers (`syncBuffConfig`),
+    // so it is set aside rather than read as a different search.
+    const shown = JSON.parse(await app.evaluate(`(() => {
+      const request = optimizeBody();
+      const at = Object.fromEntries(buffList.map((b) => [b.id, b]));
+      request.buffs = Object.fromEntries(Object.entries(request.buffs || {}).filter(([id, c]) => !(at[id]
+        && c.stacks === at[id].default_stacks && !!c.locked === !!at[id].default_locked)));
+      return JSON.stringify({ request,
+        context: { ...boardBuildContext(), rivens: { [appraisal.rivenMod]: boardRivenShape(appraisal.rivenMod) } } });
+    })()`));
     const diff = parts(shown, { request: page.request, context: page.context });
     compared++;
     if (diff.length) fail(`${weapon} under ${ruler}:\n        ${diff.join("\n        ")}`);
