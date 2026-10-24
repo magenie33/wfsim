@@ -199,19 +199,27 @@ fn fact_lines(path: &str) -> Option<impl Iterator<Item = String>> {
     Some(std::io::BufReader::new(file).lines().map_while(Result::ok))
 }
 
+#[cfg(test)]
 pub(crate) fn load_facts(spec: Option<String>, bench_id: &str) -> Facts {
-    let mut facts = Facts::default();
-    let Some(path) = spec else { return facts };
+    load_facts_of(spec, &[bench_id.to_string()]).remove(bench_id).unwrap_or_default()
+}
+
+/// [`load_facts`] for every ruler of `rulers` in one read of the file, by
+/// ruler.
+pub(crate) fn load_facts_of(spec: Option<String>, rulers: &[String]) -> std::collections::HashMap<String, Facts> {
+    let mut by: std::collections::HashMap<String, Facts> =
+        rulers.iter().map(|r| (r.clone(), Facts::default())).collect();
+    let Some(path) = spec else { return by };
     let Some(lines) = fact_lines(&path) else {
         eprintln!("facts: cannot read {path}");
-        return facts;
+        return by;
     };
     for line in lines {
         let line = line.as_str();
         let Ok(v) = serde_json::from_str::<Value>(line) else { continue };
-        if v.get("ruler").and_then(Value::as_str) != Some(bench_id) {
+        let Some(facts) = v.get("ruler").and_then(Value::as_str).and_then(|r| by.get_mut(r)) else {
             continue;
-        }
+        };
         let (Some(id), Some(score)) =
             (v.get("identity").and_then(Value::as_str), exact_score(line))
         else {
@@ -254,8 +262,10 @@ pub(crate) fn load_facts(spec: Option<String>, bench_id: &str) -> Facts {
             facts.insert(key, fact);
         }
     }
-    eprintln!("facts: {} rows read for {bench_id}", facts.len());
-    facts
+    for r in rulers {
+        eprintln!("facts: {} rows read for {r}", by[r].len());
+    }
+    by
 }
 
 /// ONE FACT, UNDER WHICHEVER RULER MEASURED IT — the one reader here that is

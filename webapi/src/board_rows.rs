@@ -188,21 +188,25 @@ pub fn row_requests(
     v: &ValidBuild,
     scenario: &Value,
 ) -> Vec<(wfsim_engine::data::weapons::WeaponPlayMode, Value)> {
-    wfsim_engine::data::weapons::play_modes(&v.weapon)
-        .into_iter()
-        .filter(|m| m.sustainable)
-        .map(|played| {
-            let mut req = simulate_request(scenario, v, played);
-            if let Some(shape) = &v.riven {
-                let cls = wfsim_engine::build::rivens::class_for_weapon(&v.weapon).unwrap_or("");
-                let spec = shape.at(cls, &card_of(v, shape));
-                if let Some(o) = req.as_object_mut() {
-                    o.insert("rivens".into(), riven_request(&spec));
-                }
-            }
-            (played, req)
-        })
-        .collect()
+    row_modes(v).into_iter().map(|played| (played, row_request(v, scenario, played))).collect()
+}
+
+/// [`row_requests`]'s modes, without building the fights.
+pub fn row_modes(v: &ValidBuild) -> Vec<wfsim_engine::data::weapons::WeaponPlayMode> {
+    wfsim_engine::data::weapons::play_modes(&v.weapon).into_iter().filter(|m| m.sustainable).collect()
+}
+
+/// [`row_requests`]'s fight for one of its modes.
+pub fn row_request(v: &ValidBuild, scenario: &Value, played: wfsim_engine::data::weapons::WeaponPlayMode) -> Value {
+    let mut req = simulate_request(scenario, v, played);
+    if let Some(shape) = &v.riven {
+        let cls = wfsim_engine::build::rivens::class_for_weapon(&v.weapon).unwrap_or("");
+        let spec = shape.at(cls, &card_of(v, shape));
+        if let Some(o) = req.as_object_mut() {
+            o.insert("rivens".into(), riven_request(&spec));
+        }
+    }
+    req
 }
 
 /// EVERY (RULER, MODE) A LIBRARY RECORD CAN BE SCORED ON — the rows a new

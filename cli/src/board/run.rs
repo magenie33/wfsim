@@ -9,8 +9,9 @@ use serde_json::Value;
 use crate::args::{flag, has_flag};
 
 use super::entry::{account, apply_entry_line, one_row_per_shape, Who};
-use super::facts::{identity_of, load_cross_facts, load_facts, stamp, Fact, FactLog};
+use super::facts::{identity_of, load_cross_facts, load_facts_of, stamp, CrossFact, Fact, FactLog, Facts};
 use super::measure::{card_of, pause_row, run_budgeted, Partial};
+use super::par::par_map;
 use super::publish::{Row, RowRiven};
 use super::queue::{
     builds_with_a_row_owed, charge, load_queue, owed_again, unmeasured_row_seconds, write_missing, write_orphans,
@@ -38,14 +39,21 @@ pub fn run() {
         Some("--serve") => return super::assemble::serve(),
         _ => {}
     }
-    let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
+    let first = std::env::args().nth(1).unwrap_or_else(|| {
         eprintln!(
-            "usage: wfsim-board <benchmark-id> [site/board] [--shard i/n] \
+            "usage: wfsim-board <benchmark-id>|--all [--shard i/n] [--deadline s | --deadlines 'id:s ...'] \
                    [--facts-in <file>] [--facts <file>] [--measured-by <sha>] \
                    (library on stdin); wfsim-board --project|--serve <dir> ..."
         );
         std::process::exit(2);
     });
+    // EVERY RULER IN ONE PROCESS (`--all`), each walked as alone, the library
+    // read once. A file one ruler writes names it with `{ruler}`.
+    let rulers: Vec<String> = if first == "--all" {
+        wfsim_engine::board::benchmarks::all().iter().map(|b| b.id.clone()).collect()
+    } else {
+        vec![first]
+    };
     // WHICH SLICE OF THE SUBMISSIONS THIS PROCESS SIMULATES. By INDEX in the
     // stdin array rather than by any property of the row: every shard is handed
     // the same file, so the split is identical without the shards agreeing on
@@ -67,10 +75,91 @@ pub fn run() {
     // of what a run decides, and it replaces a prior board, a merged store and a
     // directory of this run's own artifacts — three sources that could
     // disagree, and a rule about which of them won.
-    let facts = load_facts(flag("--facts-in"), &bench_id);
+    // THE LIBRARY, READ ONCE, and the door's legal half run once a record: it
+    // is the same for every ruler and is most of what the door costs, so a
+    // ruler adds only its own admission (`board_rows::admitted`).
+    let mut raw = String::new();
+    std::io::stdin().read_to_string(&mut raw).expect("stdin");
+    let subs: Vec<Value> = serde_json::from_str(&raw).unwrap_or_default();
+    drop(raw);
+    let built: Vec<Result<wfsim_engine::board::builds::ValidBuild, String>> =
+        par_map(&subs, wfsim_webapi::board_rows::board_build);
+    let mut facts_of = load_facts_of(flag("--facts-in"), &rulers);
+    let gate = has_flag("--gate");
+    let cross = if gate { load_cross_facts(flag("--facts-in")) } else { Vec::new() };
+    let already_owed =
+        if gate { builds_with_a_row_owed(flag("--queue-in")) } else { Default::default() };
+    let mut log = FactLog::open(flag("--facts"), flag("--measured-by"));
+    // A DEADLINE A RULER, when the caller split one budget by each ruler's work.
+    let deadlines: std::collections::HashMap<String, u64> = flag("--deadlines")
+        .map(|t| {
+            t.split([' ', ','])
+                .filter_map(|kv| kv.split_once(':'))
+                .filter_map(|(k, v)| Some((k.to_string(), v.parse().ok()?)))
+                .collect()
+        })
+        .unwrap_or_default();
+    let many = rulers.len() > 1;
+    for bench_id in &rulers {
+        let deadline = deadlines
+            .get(bench_id)
+            .copied()
+            .or_else(|| flag("--deadline").and_then(|s| s.parse::<u64>().ok()))
+            .map(std::time::Duration::from_secs);
+        walk(Walk {
+            bench_id,
+            shard,
+            shards,
+            subs: &subs,
+            built: &built,
+            facts: facts_of.remove(bench_id).unwrap_or_default(),
+            gate,
+            cross: &cross,
+            already_owed: &already_owed,
+            deadline,
+            log: &mut log,
+            many,
+        });
+    }
+}
+
+/// What one ruler's walk is handed: the library and what was read once for
+/// every ruler, and its own facts and clock.
+struct Walk<'a> {
+    bench_id: &'a str,
+    shard: usize,
+    shards: usize,
+    subs: &'a [Value],
+    built: &'a [Result<wfsim_engine::board::builds::ValidBuild, String>],
+    facts: Facts,
+    gate: bool,
+    cross: &'a [CrossFact],
+    already_owed: &'a std::collections::BTreeSet<String>,
+    deadline: Option<std::time::Duration>,
+    log: &'a mut FactLog,
+    many: bool,
+}
+
+/// A file flag's path for this ruler: `{ruler}` in it is the ruler's id, and
+/// a path without one is refused when the run walks several rulers, which
+/// would each write over the last.
+fn per_ruler(path: Option<String>, w: &Walk) -> Option<String> {
+    let path = path?;
+    if w.many && !path.contains("{ruler}") {
+        eprintln!("{path}: a run of every ruler names each ruler's file with {{ruler}}");
+        std::process::exit(2);
+    }
+    Some(path.replace("{ruler}", w.bench_id))
+}
+
+/// One ruler's walk over the library: what it measures, banks and owes.
+fn walk(w: Walk) {
+    let bench_id = w.bench_id.to_string();
+    let (shard, shards) = (w.shard, w.shards);
+    let facts = &w.facts;
     // WHAT A NEVER-SCORED ROW IS CHARGED, read off this ruler's own
     // measurements once, beside the facts it is derived from.
-    let unmeasured = unmeasured_row_seconds(&facts);
+    let unmeasured = unmeasured_row_seconds(facts);
     let mut reused = 0usize;
 
     // ---- WHAT THIS RUN IS ALLOWED TO FIGHT ----------------------------
@@ -117,9 +206,9 @@ pub fn run() {
     // beside the fact that settles it, so one no build can settle is owed for
     // ever: a build this ruler refuses, a mode the weapon lost, or an id the
     // identity rule has since moved (the build is scored under its new one).
-    let orphans_out = flag("--queue-orphans");
+    let orphans_out = per_ruler(flag("--queue-orphans"), &w);
     let mut payable: std::collections::HashSet<(String, String)> = Default::default();
-    let missing_out = flag("--queue-missing").and_then(|p| {
+    let missing_out = per_ruler(flag("--queue-missing"), &w).and_then(|p| {
         std::fs::File::create(&p)
             .map_err(|e| eprintln!("queue: cannot write {p}: {e}"))
             .ok()
@@ -136,13 +225,12 @@ pub fn run() {
     //
     // THE SHARE ITSELF IS NOT A FLAG. It is `KEEP_LEADER_SHARE`, and a number
     // on a command line would be a second copy of it.
-    let gate = has_flag("--gate");
-    let cross = if gate { load_cross_facts(flag("--facts-in")) } else { Vec::new() };
+    let gate = w.gate;
+    let cross = w.cross;
     // …AND WHICH BUILDS SOMEBODY HAS ALREADY ASKED ABOUT, on any ruler. A build
     // with no fact is owed one fight; this is how the run knows whether that
     // fight has already been asked for.
-    let already_owed =
-        if gate { builds_with_a_row_owed(flag("--queue-in")) } else { Default::default() };
+    let already_owed = w.already_owed;
     // WHICH GROUP EACH BUILD'S FACTS FALL IN, filled as the run walks the
     // library. A build illegal under THIS ruler is missing from it, which can
     // only understate another group's leader and so only ever asks for a row
@@ -162,9 +250,7 @@ pub fn run() {
     // depending on which builds arrived. Both are here because the count is
     // what every shard can agree on without talking, and the clock is what
     // each one reads for itself.
-    let deadline = flag("--deadline")
-        .and_then(|s| s.parse::<u64>().ok())
-        .map(std::time::Duration::from_secs);
+    let deadline = w.deadline;
     let mut paused = 0usize;
     // A row's banked progress, by key. Emptied as each row is taken up and
     // refilled only where the clock stopped one.
@@ -191,7 +277,7 @@ pub fn run() {
     let mut deferred_ids: std::collections::BTreeSet<String> = Default::default();
     // WHERE EVERY SCORE THIS RUN MEASURES IS APPENDED, one line a row and
     // flushed per row, so a shard that dies has banked what it finished.
-    let mut log = FactLog::open(flag("--facts"), flag("--measured-by"));
+    let log = w.log;
 
     // WHAT THIS RUN MEASURED, for the accounting line at the end.
     let mut computed: std::collections::HashMap<String, f64> = Default::default();
@@ -200,10 +286,6 @@ pub fn run() {
         eprintln!("unknown benchmark: {bench_id}");
         std::process::exit(2);
     });
-
-    let mut raw = String::new();
-    std::io::stdin().read_to_string(&mut raw).expect("stdin");
-    let subs: Vec<Value> = serde_json::from_str(&raw).unwrap_or_default();
 
     // The benchmark's scenario, as the wire shape `simulate_json` parses. It is
     // the SAME map the app sends, which is what stops the board and the page
@@ -231,7 +313,7 @@ pub fn run() {
     // partitions this set; anything left over is a build the library holds and
     // this board silently did not rank.
     let mut scored_ids: std::collections::BTreeSet<String> = Default::default();
-    for s in subs {
+    for (i, s) in w.subs.iter().enumerate() {
         // EVERY SUBMISSION IS A CANDIDATE FOR EVERY RULER.
         //
         // A submission has never carried a score — it carries a BUILD, and the
@@ -266,7 +348,11 @@ pub fn run() {
         // THE REASON IS PRINTED, with the whole build, not counted: "2 refused"
         // is a number that tells nobody anything, including the person whose
         // build it refused.
-        let v = match wfsim_webapi::board_rows::scored_build(&s, &bench_id) {
+        let door = w.built[i]
+            .as_ref()
+            .map_err(String::clone)
+            .and_then(|v| wfsim_webapi::board_rows::admitted(s, &bench_id, v).map(|()| v.clone()));
+        let v = match door {
             Ok(v) => v,
             Err(e) => {
                 let list = |k: &str| -> String {
@@ -320,13 +406,13 @@ pub fn run() {
         //
         // THE REQUESTS ARE `board_rows::row_requests`, the page's producer's
         // too — riven card included, and an unsustainable mode refused there.
-        let fights = wfsim_webapi::board_rows::row_requests(&v, &scenario);
+        let fights = wfsim_webapi::board_rows::row_modes(&v);
         if fights.is_empty() {
             eprintln!("refused {weapon}: it has no mode that can be sustained for an engagement");
             refused += 1;
             continue;
         }
-        for (played, req) in fights {
+        for played in fights {
             // ONE BUILD, SCORED ONCE PER MODE. The clone is the row's own copy:
             // `Row` takes the vectors by value and there is a row per mode.
             let v = v.clone();
@@ -528,6 +614,7 @@ pub fn run() {
                     // promise — so what bends is how many of those runs one
                     // board run pays for. `run_budgeted` merges the pieces into
                     // exactly what one call over the range produces.
+                    let req = wfsim_webapi::board_rows::row_request(&v, &scenario, played);
                     let want = req.get("runs").and_then(Value::as_u64).unwrap_or(0) as u32;
                     let Some((out, work)) = run_budgeted(
                         &mut part.borrow_mut(), "measure", &req, want, row_deadline,
@@ -696,12 +783,12 @@ pub fn run() {
     }
     if missing_out.is_some() {
         write_missing(
-            missing_out, pending_missing, gate, &cross, &who, &already_owed, &corner_of, &bench_id,
+            missing_out, pending_missing, gate, cross, &who, already_owed, &corner_of, &bench_id,
         );
     }
     if dry {
         eprintln!(
-            "dry-run: todo={todo} work={work_seconds:.0} reused={reused} seen={seen} unmeasured={unmeasured:.1}s"
+            "dry-run: ruler={bench_id} todo={todo} work={work_seconds:.0} reused={reused} seen={seen} unmeasured={unmeasured:.1}s"
         );
         return;
     }
