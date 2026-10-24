@@ -38,7 +38,6 @@ jobs:
       # ONE WITNESS A SHARD: a release frees every claim its witness holds.
       WITNESS: official:settle-${{ matrix.shard }}
       WITNESS_SITE: site
-      MEASURED_BY: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -3,8 +3,9 @@
 // fact factory". `settle` is run by `settle.yml`.
 //
 //   node live_orders.mjs settle <work-dir> <bin-dir>   disputed, spot-checked and non-deterministic rows, fought here
-//     WITNESS_SITE, MEASURED_BY and WITNESS stand in for the bin dir's engine,
-//     its VERSION and `official:live`; exit 3 when there was nothing to claim.
+//     WITNESS_SITE and WITNESS stand in for the bin dir's engine and
+//     `official:live`; exit 3 when there was nothing to claim. A fact records
+//     the witness's engine id as `measured_by`, the version a board row states.
 //
 // THE OFFICIAL MACHINES ONLY BACK THE CLIENTS UP: every result waits for a
 // second client, and `settle` fights what only they may settle (worker/tasks.js
@@ -12,7 +13,7 @@
 // engine — the site's wasm (scripts/wasm_witness.mjs), the only build that counts their
 // work — ships the fact through `ship_facts.sh`, and tells the factory, which
 // refuses whichever client the fact disproves, on that engine alone.
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
+import { writeFileSync, mkdirSync, rmSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { cpus } from "node:os";
 import { join, dirname } from "node:path";
@@ -38,7 +39,6 @@ const LANES = Number(process.env.WITNESS_LANES) || Math.max(1, Math.floor(cpus()
 /// for a later cycle.
 async function settle() {
   const w = await witness({ lanes: LANES, site: process.env.WITNESS_SITE || join(arg, "witness") });
-  const measuredBy = process.env.MEASURED_BY || readFileSync(join(arg, "VERSION"), "utf8").trim();
   const dir = join(work, "settle");
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
@@ -64,7 +64,7 @@ async function settle() {
       if (stuck) break;
       if (!got) continue;
       const done = new Date();
-      facts.push({ identity: row.identity, ruler: row.ruler, metric: got.metric, mode: row.mode, measured_by: measuredBy,
+      facts.push({ identity: row.identity, ruler: row.ruler, metric: got.metric, mode: row.mode, measured_by: w.engine || "",
         score: got.score, cost_seconds: (done - began) / 1000, started_at: began.toISOString(), finished_at: done.toISOString(), work: got.work });
     }
   } finally { await w.close(); }

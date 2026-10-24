@@ -119,7 +119,7 @@ function renderWeaponDoc() {
       + `<td>${escHtml(modeLabel(w, c.mode))}</td>`
       + `<td class="w-num">${escHtml(String(
         c.best.shown != null ? c.best.shown : c.best.score.toFixed(4)))}</td>`
-      + `<td>${escHtml(gear)}</td><td class="w-when">${measuredRecordHtml(c.best, true, false)}</td></tr>`;
+      + `<td>${escHtml(gear)}</td><td class="w-when">${measuredRecordHtml(c.best, false)}</td></tr>`;
   }).join("");
   // THE SAME SHAPE THE PRERENDER WROTE, down to the `shut` and the header: the
   // two write one block, and a reader who changes weapon must not find the
@@ -190,7 +190,7 @@ function renderWeaponBench() {
       + `<td class="wb-mode">${escHtml(modeLabel(w, c.mode))}</td>`
       + `<td class="wb-score">${escHtml(String(c.best.shown != null ? c.best.shown : c.best.score.toFixed(4)))}</td>`
       + `<td class="wb-rank">${r ? `${r.rank} / ${r.total}` : "—"}</td>`
-      + `<td class="wb-when">${measuredRecordHtml(c.best, false, false)}</td></tr>`;
+      + `<td class="wb-when">${measuredRecordHtml(c.best, false)}</td></tr>`;
   }).join("");
   // THE SAME LOOKUPS EVERY OTHER SURFACE USES. A card named here and named
   // differently in the build finder would be two names for one id.

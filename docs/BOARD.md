@@ -1915,14 +1915,18 @@ runs in steps of 5% from the leader alone down to the entry line, and shows
 rather than a copy of the line, because "no filter" stays true wherever the
 line is drawn.
 
-**EVERY BUILD SAYS WHEN AND BY WHICH VERSION IT WAS MEASURED.** A row publishes
-its fact's `finished_at` to the minute as `measured_at` (UTC, ISO) and its
-`measured_by` commit, cut to ten characters, as `measured_by`; either is omitted
-where the fact has none. One commit names every input of the number — engine,
-data and the ruler's terms — so it is the version to cite, whatever the game has
-done since. It is per BUILD, not per weapon or board: a weapon's builds are
-measured at different times by different versions and a rescore replaces them
-one by one. EVERY SURFACE THAT SHOWS A BOARD BUILD SHOWS ITS RECORD — the
+**EVERY BUILD SAYS WHEN AND BY WHICH ENGINE IT WAS MEASURED.** A row publishes
+its fact's `finished_at` to the minute as `measured_at` (UTC, ISO) and the
+ENGINE ID that measured it as `measured_by` — the volunteers' `verified:<engine>`
+and the official machines' bare id alike (`measured_engine`); either is omitted
+where the fact has none, and a fact that recorded a commit has none. The engine
+id is the one version every row can state: it names every input of the number,
+code and data, and two rows under one id are the same arithmetic. ONE FORMAT
+ON A BOARD, so a row never cites a commit beside another citing an engine. It
+is per BUILD, not per weapon or board: a weapon's builds are measured at
+different times by different engines and a rescore replaces them one by one.
+No time dates a whole board on the page: the live board re-ranks a weapon the
+moment its facts move, so each row's own record is the age a reader sees. EVERY SURFACE THAT SHOWS A BOARD BUILD SHOWS ITS RECORD — the
 board, the build finder, the weapon's measured-builds table and tab, the Riven
 Analyst, the simulator's build under test, the long image, the prerendered page
 and its markdown, and the headless rows — with one line beside a list saying an

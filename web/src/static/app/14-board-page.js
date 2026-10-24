@@ -259,24 +259,16 @@ function benchPendingAsk() {
 /// run STANDS DOWN while the engine fingerprint has moved — the push that moved
 /// it owns that rescore — and a row too expensive for one sitting carries into
 /// the next, so any named wait is a promise the pipeline does not keep and the
-/// page cannot check. How far behind the board is, it can say exactly.
-/// HOW OLD A NUMBER IS, in the coarsest unit that still says something. A board
-/// that should move in hours cannot answer "today", and a reader deciding
-/// whether to trust a row wants the age before the count.
-function benchAgeText(seconds) {
-  const mins = Math.floor((Date.now() / 1000 - seconds) / 60);
-  if (!(mins >= 0)) return "";
-  if (mins < 60) return tr("{n} min").replace("{n}", String(mins));
-  if (mins < 60 * 48) return tr("{n} h").replace("{n}", String(Math.floor(mins / 60)));
-  return tr("{n} d").replace("{n}", String(Math.floor(mins / 1440)));
-}
+/// page cannot check. How far behind the board is, it can say exactly. HOW OLD
+/// a number is, each row says for itself (`measuredRecordHtml`): the live board
+/// re-ranks a weapon the moment its facts move, so no one time dates a board.
 
 /// WHAT THE BOARD IN HAND SAYS ABOUT ITSELF, and NOT what the binary was built
 /// with. `board_state.yaml` is compiled into the wasm, so the copy behind
 /// `META.benchmarks` is as old as the last site build — while the scoring job
 /// rewrites `board.meta.json` every hour and never rebuilds the binary. Read
-/// the compiled copy and the age below dates the BUILD, and "N more submitted"
-/// counts everything sent since it. The fetched stamp carries the same fields
+/// the compiled copy and "N more submitted" counts everything sent since the
+/// BUILD. The fetched stamp carries the same fields
 /// for exactly this reason; `META`'s is the fallback for a page that has none.
 const benchState = (cur) =>
   (BOARD_META && BOARD_META.boards && cur && BOARD_META.boards[cur.id]) || cur || {};
@@ -284,18 +276,9 @@ const benchState = (cur) =>
 function benchPendingNote(cur) {
   benchPendingAsk();
   const st = benchState(cur);
-  // THE AGE IS NOT CONDITIONAL ON THE COUNT. A board with nothing waiting can
-  // still be days old — a data correction adds no submission — and that is
-  // exactly the case a reader cannot see any other way. ZERO means a board
-  // written before the field existed, which is unknown rather than 1970.
-  const at = st.scored_at_epoch_seconds || 0;
-  const age = at > 0 ? benchAgeText(at) : "";
-  const aged = age
-    ? ` <span class="bench-pending">${escHtml(tr("· scored {t} ago").replace("{t}", age))}</span>`
-    : "";
-  if (!benchPending || typeof benchPending !== "object") return aged;
+  if (!benchPending || typeof benchPending !== "object") return "";
   const note = (text) => ` <span class="bench-pending">${escHtml(text)}</span>`;
-  let out = aged;
+  let out = "";
   const scored = st.submissions || 0;
   const waiting = benchPending.count - scored;
   // AND NEVER A NEGATIVE ONE. A ruler that has just been added has scored
@@ -564,7 +547,7 @@ const benchRowHtml = (cur, { w, mode, row }, i) => `
             : ""}</span>
         <span class="bscore">${row
           ? escHtml(row.shown != null ? String(row.shown) : row.score.toFixed(4))
-            + (measuredRecordHtml(row, false, false) ? `<small class="bwhen" title="${escHtml(measuredNote())}">${measuredRecordHtml(row, false, false)}</small>` : "")
+            + (measuredRecordHtml(row, false) ? `<small class="bwhen" title="${escHtml(measuredNote())}">${measuredRecordHtml(row, false)}</small>` : "")
           : `<span class="bnone">${escHtml(tr("not measured"))}</span>`}</span>
       </a>`;
 

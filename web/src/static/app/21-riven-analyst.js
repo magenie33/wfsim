@@ -65,7 +65,7 @@ function renderRivenAnalyst() {
     const rows = g.rivens.map((x) => `<tr class="wb-row${x === pick ? " sel" : ""}" data-ra="${escHtml(x.key)}">`
       + `<td>${escHtml(raRolls(x.row.riven))}</td><td class="wb-score">${escHtml(raShown(x.row))}</td>`
       + `<td class="wb-score">${x.gain == null ? "—" : escHtml(gainPct(x.gain))}</td>`
-      + `<td class="wb-when">${measuredRecordHtml(x.row, false, false)}</td></tr>`).join("");
+      + `<td class="wb-when">${measuredRecordHtml(x.row, false)}</td></tr>`).join("");
     return `<p class="wb-ceiling">${escHtml(modeLabel(w, g.mode))} · ${escHtml(tr("The board's best riven-free build"))}: <b>${
       g.top ? escHtml(raShown(g.top.row)) : "—"}</b></p>`
       + `<table class="wb-tab"><thead><tr><th>${escHtml(tr("Riven"))}</th><th>${escHtml(tr("Score"))}</th>`

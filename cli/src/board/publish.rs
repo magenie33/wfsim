@@ -129,10 +129,20 @@ pub(crate) fn measured_minute(at: &str) -> Option<String> {
 /// the submitter's machine, not a commit.
 pub const CLIENT_MEASURED: &str = "client:";
 
-/// A commit hash shortened to ten characters, which GitHub resolves; anything
-/// that is not a hash is no version to cite and is omitted.
-pub(crate) fn measured_commit(sha: &str) -> Option<String> {
-    (sha.len() >= 7 && sha.bytes().all(|b| b.is_ascii_hexdigit())).then(|| sha[..sha.len().min(10)].to_string())
+/// WHAT `worker/board_tasks.js` writes before the engine id of a fact the
+/// volunteers settled.
+const VERIFIED_MEASURED: &str = "verified:";
+
+/// An engine id's length: `engine_id` in `scripts/build_site_app.py`.
+const ENGINE_ID_LEN: usize = 12;
+
+/// THE ENGINE THAT MEASURED A ROW, the one version every row states: a
+/// volunteers' fact's `verified:<engine>` or an official one's bare engine id.
+/// Anything else — a commit, a client, a migration — names no engine and is
+/// omitted, so a board never mixes two kinds of version.
+pub(crate) fn measured_engine(by: &str) -> Option<String> {
+    let id = by.strip_prefix(VERIFIED_MEASURED).unwrap_or(by);
+    (id.len() == ENGINE_ID_LEN && id.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f'))).then(|| id.to_string())
 }
 
 /// ONE ROW AS THE PAGE RECEIVES IT — `site/board/<weapon>.json`'s shape, in one
@@ -187,7 +197,7 @@ pub(crate) fn page_row(bench_id: &str, r: &Row) -> Value {
             o.insert("measured_at".into(), json!(at));
         }
     }
-    if let Some(by) = measured_commit(&r.measured_by) {
+    if let Some(by) = measured_engine(&r.measured_by) {
         if let Some(o) = row.as_object_mut() {
             o.insert("measured_by".into(), json!(by));
         }
@@ -566,17 +576,23 @@ mod page_row_tests {
             loader: String::new(),
             riven,
             measured_at: "2026-10-05T13:52:07Z".into(),
-            measured_by: "4f892ee6e4c1a2b3c4d5e6f708192a3b4c5d6e7f".into(),
+            measured_by: "verified:67e27b73c3ee".into(),
         }
     }
 
-    /// **A ROW SAYS WHEN AND BY WHICH COMMIT IT WAS MEASURED**, and a row
+    /// **A ROW SAYS WHEN AND BY WHICH ENGINE IT WAS MEASURED**, and a row
     /// without either says nothing rather than a value nobody recorded.
     #[test]
     fn a_row_carries_its_minute_and_a_clockless_row_omits_it() {
         let v = page_row("standard_single_target", &row(None));
         assert_eq!(v["measured_at"], json!("2026-10-05T13:52Z"), "{v}");
-        assert_eq!(v["measured_by"], json!("4f892ee6e4"), "{v}");
+        assert_eq!(v["measured_by"], json!("67e27b73c3ee"), "{v}");
+        let official = Row { measured_by: "67e27b73c3ee".into(), ..row(None) };
+        let v = page_row("standard_single_target", &official);
+        assert_eq!(v["measured_by"], json!("67e27b73c3ee"), "an official fact names its engine bare: {v}");
+        let commit = Row { measured_by: "4f892ee6e4c1a2b3c4d5e6f708192a3b4c5d6e7f".into(), ..row(None) };
+        let v = page_row("standard_single_target", &commit);
+        assert!(v.get("measured_by").is_none(), "a commit is no engine id: {v}");
         let none = Row { measured_at: String::new(), measured_by: "migrated".into(), ..row(None) };
         let v = page_row("standard_single_target", &none);
         assert!(v.get("measured_at").is_none() && v.get("measured_by").is_none(), "{v}");
@@ -584,7 +600,7 @@ mod page_row_tests {
         let client = Row { measured_by: "client:r42".into(), ..row(None) };
         let v = page_row("standard_single_target", &client);
         assert_eq!(v["unverified"], json!(true), "a client's number must say so: {v}");
-        assert!(v.get("measured_by").is_none(), "a client is no commit to cite: {v}");
+        assert!(v.get("measured_by").is_none(), "a client is no engine to cite: {v}");
     }
 
     /// **THE RIVEN REACHES THE PAGE**, which is the whole of what went wrong.

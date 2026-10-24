@@ -2037,9 +2037,9 @@ ui:
   "The top {n} builds of {w} under {ruler}. (￣ー￣)ゞ": "{w}在{ruler}下的前 {n} 套配装。(￣ー￣)ゞ"
   "updated {t}": "更新于 {t}"
   "measured {t}": "测于 {t}"
-  "version": "版本"
+  "engine": "引擎"
   "Record": "记录"
-  "Every build shows when it was measured and by which version of WFSim. The game and WFSim both change, so an older record may be behind.": "每个配装都标明了测量时间和 WF模拟 版本。游戏和 WF模拟 都在更新，较早的记录可能已经落后。"
+  "Every build shows when it was measured and by which WFSim engine. The game and WFSim both change, so an older record may be behind.": "每个配装都标明了测量时间和 WF模拟 引擎。游戏和 WF模拟 都在更新，较早的记录可能已经落后。"
   "Measured": "测量记录"
   "These are {w}'s rivens under {ruler}, against the best build without one. I ran every one. (*/ω＼*)": "这是{w}在{ruler}下的裂罅，和不带裂罅的第一名作对比。九九每张都跑过了。(*/ω＼*)"
   "I could not read “{word}”… The rulers are {list}; add riven for builds with one. (・_・;)": "「{word}」九九没认出来……基准可以写{list}，只看带裂罅的配装就加上「裂罅」。(・_・;)"
@@ -2591,7 +2591,6 @@ ui:
   "{n} d": "{n} 天"
   "{n} h": "{n} 小时"
   "{n} min": "{n} 分钟"
-  "· scored {t} ago": · 上次评分在 {t} 前
   # THE FORMA PLAN. Orokin Catalyst / Reactor are DE's item names and stay in
   # English until a zh source for them is reachable, as Forma itself does.
   "Forma plan": Forma 规划

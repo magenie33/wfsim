@@ -8,24 +8,22 @@
 // when a screenshot may be taken. The footer's code opens the page it is about.
 
 const CARD_MAX = 10;
-const WFSIM_COMMIT = "https://github.com/magenie33/wfsim/commit/";
 
-/// A BUILD'S OWN RECORD: when it was measured and by which version of WFSim.
-/// Each build carries its own — a weapon's builds are measured at different
-/// times by different versions, and a rescore replaces them one by one.
-function measuredRecordHtml(row, link = true, words = true) {
+/// A BUILD'S OWN RECORD: when it was measured and by which engine of WFSim
+/// (`measured_by`, the engine id — the one version every row states). Each
+/// build carries its own — a weapon's builds are measured at different times
+/// by different engines, and a rescore replaces them one by one.
+function measuredRecordHtml(row, words = true) {
   const r = row || {};
   const at = r.measured_at ? measuredText(r.measured_at) : "";
   return [
     at ? escHtml(words ? trF("measured {t}", { t: at }) : at) : "",
-    r.measured_by ? `${words ? escHtml(tr("version")) + " " : ""}${link
-      ? `<a href="${WFSIM_COMMIT}${escHtml(r.measured_by)}" target="_blank" rel="noopener">${escHtml(r.measured_by)}</a>`
-      : escHtml(r.measured_by)}` : "",
+    r.measured_by ? `${words ? escHtml(tr("engine")) + " " : ""}${escHtml(r.measured_by)}` : "",
   ].filter(Boolean).join(" · ");
 }
 
 /// …SAID ONCE BESIDE A LIST OF THEM, so nobody reads an old record as today's.
-function measuredNote() { return tr("Every build shows when it was measured and by which version of WFSim. The game and WFSim both change, so an older record may be behind."); }
+function measuredNote() { return tr("Every build shows when it was measured and by which WFSim engine. The game and WFSim both change, so an older record may be behind."); }
 
 /// What the address asks for, clamped to what a card shows.
 function cardParams() {
@@ -105,7 +103,7 @@ function rivenGradeNotes(v) {
 
 const cardShown = (r) => String(r.shown != null ? r.shown : (r.score || 0).toFixed(4));
 const cardRecord = (row) => {
-  const t = measuredRecordHtml(row, false);
+  const t = measuredRecordHtml(row);
   return t ? `<span class="lc-when">${t}</span>` : "";
 };
 const cardBox = (head, body) => `<section class="lc-box"><div class="lc-head">${head}</div>${body}</section>`;

@@ -560,7 +560,7 @@ jobs:
               --facts-in facts-known.ndjson \
               --queue-in queue.ndjson \
               --facts facts.ndjson \
-              --measured-by "$GITHUB_SHA" \
+              --measured-by "$ENGINE" \
               --shard "${{ matrix.shard }}/${{ needs.submissions.outputs.shard_count }}" \
               < library.json > /dev/null
           done
