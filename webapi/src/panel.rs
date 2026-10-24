@@ -89,7 +89,7 @@ pub fn panel_json(v: &Value) -> Value {
     let stances = mod_ids
         .iter()
         .filter(|id| {
-            stance_pool.iter().any(|m| m.id == id.as_str() && m.stance.is_some())
+            stance_pool.get(id).is_some_and(|m| m.stance.is_some())
         })
         .count();
     if mod_ids.len() - stances > 9 {

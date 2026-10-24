@@ -83,13 +83,8 @@ pub fn slots() -> Vec<&'static str> {
 /// The arcane pool of one slot — `data/arcanes/<slot>/*.yaml`. Cached per
 /// slot (each entry leaks once).
 pub fn slot_pool(slot: &str) -> &'static [ArcaneDef] {
-    static POOLS: OnceLock<Mutex<BTreeMap<String, &'static [ArcaneDef]>>> = OnceLock::new();
-    let cache = POOLS.get_or_init(|| Mutex::new(BTreeMap::new()));
-    let mut g = cache.lock().expect("arcane pool cache");
-    g.entry(slot.to_string())
-        .or_insert_with(|| {
-            Box::leak(load_pool(&format!("arcanes/{slot}/")).into_boxed_slice())
-        })
+    static POOLS: crate::data::Memo<[ArcaneDef]> = crate::data::Memo::new();
+    POOLS.get_or(slot, || Box::leak(load_pool(&format!("arcanes/{slot}/")).into_boxed_slice()))
 }
 
 /// The arcanes THIS WEAPON may equip in this slot.

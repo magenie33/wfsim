@@ -67,7 +67,7 @@ pub fn ranked_id(card: &str, rank: u32, max_rank: u32) -> String {
 pub fn at_rank(id: &str) -> Option<ModDef> {
     let (card, Some(rank)) = split_rank(id) else { return None };
     static TEXTS: OnceLock<BTreeMap<String, &'static str>> = OnceLock::new();
-    static BUILT: OnceLock<Mutex<BTreeMap<String, Option<ModDef>>>> = OnceLock::new();
+    static BUILT: crate::data::Memo<Option<ModDef>> = crate::data::Memo::new();
     let texts = TEXTS.get_or_init(|| {
         crate::data::files_under("mods/")
             .filter_map(|(_, text)| {
@@ -76,13 +76,13 @@ pub fn at_rank(id: &str) -> Option<ModDef> {
             })
             .collect()
     });
-    let mut built = BUILT.get_or_init(|| Mutex::new(BTreeMap::new())).lock().expect("ranked mods");
-    built
-        .entry(id.to_string())
-        .or_insert_with(|| {
-            let mf: ModFile = serde_norway::from_str(texts.get(card)?).ok()?;
-            (rank < mf.max_rank && !mf.lower_ranks_unmodelled)
-                .then(|| to_moddef_at(mf, Some(rank)))
+    BUILT
+        .get_or(id, || {
+            let built = (|| {
+                let mf: ModFile = serde_norway::from_str(texts.get(card)?).ok()?;
+                (rank < mf.max_rank && !mf.lower_ranks_unmodelled).then(|| to_moddef_at(mf, Some(rank)))
+            })();
+            Box::leak(Box::new(built))
         })
         .clone()
 }
@@ -149,11 +149,101 @@ pub fn search_presets() -> &'static SearchPresets {
 }
 
 /// [`pool_for_weapon`], plus the lower ranks `ids` name — the pool a build
-/// written as a mod list resolves against.
-pub fn pool_naming<S: AsRef<str>>(weapon_id: &str, ids: &[S]) -> Vec<ModDef> {
-    let mut pool = pool_for_weapon(weapon_id);
-    with_ranks(&mut pool, ids.iter().map(AsRef::as_ref));
+/// written as a mod list resolves against, as [`with_ranks`] makes it.
+///
+/// A VIEW, NOT A COPY. A build's door asks the pool a handful of questions by
+/// id, and copying several hundred cards to answer them was most of what the
+/// door cost; the weapon's pool is built once ([`pool_cached`]) and only what
+/// the named ranks add or change is owned here.
+pub fn pool_naming<S: AsRef<str>>(weapon_id: &str, ids: &[S]) -> NamedPool {
+    let mut pool = NamedPool { base: pool_cached(weapon_id, &[]), changed: Vec::new(), added: Vec::new() };
+    pool.with_ranks(ids.iter().map(AsRef::as_ref));
     pool
+}
+
+/// [`pool_naming`]'s answer: the weapon's pool, the cards a named rank changed,
+/// and the cards added to it, in that order.
+#[derive(Clone)]
+pub struct NamedPool {
+    base: &'static CachedPool,
+    /// Base cards replaced, by position.
+    changed: Vec<(usize, ModDef)>,
+    added: Vec<ModDef>,
+}
+
+impl NamedPool {
+    /// The card `id` names: the first of that id in [`NamedPool::iter`] order.
+    pub fn get(&self, id: &str) -> Option<&ModDef> {
+        match self.base.by_id.get(id) {
+            Some(&i) => Some(self.changed.iter().find(|(j, _)| *j == i).map_or(&self.base.mods[i], |(_, m)| m)),
+            None => self.added.iter().find(|m| m.id == id),
+        }
+    }
+
+    fn get_mut(&mut self, id: &str) -> Option<&mut ModDef> {
+        match self.base.by_id.get(id) {
+            Some(&i) => {
+                if !self.changed.iter().any(|(j, _)| *j == i) {
+                    self.changed.push((i, self.base.mods[i].clone()));
+                }
+                self.changed.iter_mut().find(|(j, _)| *j == i).map(|(_, m)| m)
+            }
+            None => self.added.iter_mut().find(|m| m.id == id),
+        }
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &ModDef> {
+        (0..self.base.mods.len())
+            .map(|i| self.changed.iter().find(|(j, _)| *j == i).map_or(&self.base.mods[i], |(_, m)| m))
+            .chain(self.added.iter())
+    }
+
+    /// [`with_ranks`] on the view.
+    pub fn with_ranks<'a>(&mut self, ids: impl IntoIterator<Item = &'a str>) {
+        for id in ids {
+            if self.get(id).is_some() {
+                continue;
+            }
+            let (card, Some(_)) = split_rank(id) else { continue };
+            if self.get(card).is_none() {
+                continue;
+            }
+            let Some(variant) = at_rank(id) else { continue };
+            let family = variant.family;
+            self.get_mut(card).expect("the card is in the pool").family = family;
+            self.added.push(variant);
+        }
+    }
+
+    /// One card more, after every other.
+    pub fn push(&mut self, m: ModDef) {
+        self.added.push(m);
+    }
+}
+
+/// A pool built once, with its cards indexed by id (the first of each id).
+pub struct CachedPool {
+    mods: Box<[ModDef]>,
+    by_id: std::collections::HashMap<&'static str, usize>,
+}
+
+/// [`pool_for_build`]'s answer, built once per (weapon, evolutions) and kept:
+/// it is a function of the embedded data alone.
+pub fn pool_cached(weapon_id: &str, evolutions: &[&str]) -> &'static CachedPool {
+    static POOLS: OnceLock<std::sync::RwLock<std::collections::HashMap<String, &'static CachedPool>>> =
+        OnceLock::new();
+    let pools = POOLS.get_or_init(Default::default);
+    let key = format!("{weapon_id}|{}", evolutions.join(","));
+    if let Some(p) = pools.read().expect("mod pools").get(&key) {
+        return p;
+    }
+    let mods = build_pool(weapon_id, evolutions).into_boxed_slice();
+    let mut by_id = std::collections::HashMap::new();
+    for (i, m) in mods.iter().enumerate() {
+        by_id.entry(m.id).or_insert(i);
+    }
+    let built: &'static CachedPool = Box::leak(Box::new(CachedPool { mods, by_id }));
+    pools.write().expect("mod pools").entry(key).or_insert(built)
 }
 
 /// The pool a weapon actually sees: the UNION of the named pools, in order,
@@ -257,6 +347,10 @@ pub(super) fn triggers_of(weapon_id: &str, evolutions: &[&str]) -> Vec<&'static 
 /// `evolutions` empty is the weapon as it comes out of the box — which is what
 /// [`pool_for_weapon`] means and why it is this function with nothing installed.
 pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
+    pool_cached(weapon_id, evolutions).mods.to_vec()
+}
+
+fn build_pool(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
     let Some(spec) = crate::data::weapons::spec(weapon_id) else {
         return Vec::new();
     };

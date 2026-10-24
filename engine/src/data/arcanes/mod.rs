@@ -15,8 +15,6 @@
 //! under [`StackPolicy::AssumedMax`] — under `Emergent` they are honest
 //! no-ops until the configured-buff policy lands.
 
-use std::collections::BTreeMap;
-use std::sync::{Mutex, OnceLock};
 
 use serde::Deserialize;
 use serde_norway::Value;

@@ -61,6 +61,17 @@ pub fn validate_for_board_with(
     // lives so this door and `wfsim-intake` cannot answer it differently.
     let b = validate_with(weapon, mods, evolutions, arcanes, valence, riven, exilus, assembly)?
         .with_wielder(wielder)?;
+    admit_for_board(benchmark, weapon, &b)?;
+    Ok(b)
+}
+
+/// THE BENCHMARK'S HALF OF [`validate_for_board_with`]: whether a build already
+/// legal (`validate_with`, `with_wielder`) is the shape this benchmark asks
+/// for. Split out because the legal half is the same for every ruler and costs
+/// most of the door, so a caller crossing one build with every ruler pays it
+/// once (`wfsim-board --project`). `weapon` is the id the build was submitted
+/// under.
+pub fn admit_for_board(benchmark: &str, weapon: &str, b: &ValidBuild) -> Result<(), String> {
     let req = match crate::board::benchmarks::get(benchmark) {
         Some(bm) => bm.build.clone(),
         // An unknown benchmark admits nothing: scoring a build against a ruler
@@ -81,7 +92,7 @@ pub fn validate_for_board_with(
         .mods
         .iter()
         .filter(|id| {
-            !pool.iter().any(|m| m.id == id.as_str() && m.stance.is_some())
+            pool.get(id).is_none_or(|m| m.stance.is_none())
         })
         .count();
     if R::requires_full(&req.mods) && main != MAIN_SLOTS {
@@ -152,7 +163,7 @@ pub fn validate_for_board_with(
     // `validate` refuses it for every caller, which is where a legality rule
     // belongs.
 
-    Ok(b)
+    Ok(())
 }
 
 /// Could a player have this in the arsenal?
@@ -242,9 +253,11 @@ pub fn validate_with(
         ));
     }
     let mut pool = crate::data::mods::pool_naming(weapon, mods);
-    crate::data::mods::with_ranks(&mut pool, exilus);
-    pool.extend(riven_def.clone());
-    let def = |id: &str| pool.iter().find(|m| m.id == id).expect("normalised into the pool");
+    pool.with_ranks(exilus);
+    if let Some(r) = riven_def.clone() {
+        pool.push(r);
+    }
+    let def = |id: &str| pool.get(id).expect("normalised into the pool");
 
     // THE EXILUS MOD, resolved against this weapon's own pool.
     //
@@ -265,7 +278,7 @@ pub fn validate_with(
             return Err(format!("{} has no exilus slot", spec.name));
         }
         Some(id) => {
-            let Some(m) = pool.iter().find(|m| m.id == id).cloned() else {
+            let Some(m) = pool.get(id).cloned() else {
                 return Err(format!("{id} is not a mod this weapon can hold"));
             };
             if !m.exilus {

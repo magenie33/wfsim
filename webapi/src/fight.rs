@@ -402,7 +402,7 @@ pub fn pairings_json(v: &Value) -> Value {
                 .map(|a| {
                     a.iter()
                         .filter_map(|x| x.as_str())
-                        .filter(|id| pool.iter().any(|m| m.id == *id))
+                        .filter(|id| pool.get(id).is_some())
                         .map(String::from)
                         .collect()
                 })
