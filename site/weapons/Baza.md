@@ -4,7 +4,7 @@ Chinese name: 苍鹰
 
 Rifle · Primary · Mastery Rank 7. 16 base damage (impact 5.76, puncture 6.72, slash 3.52), 26% crit chance, 3x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 6.7729 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Galvanized Aptitude, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 04:02 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 7.8298 | Cryo Rounds, Infected Clip, Hellfire, Wildfire, Primary Acuity, Galvanized Aptitude, Shred, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 05:56 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.4505 | Infected Clip, Rime Rounds, Thermite Rounds, Primary Acuity, Serration, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 04:00 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 1.9695 | Infected Clip, Rime Rounds, Thermite Rounds, Primary Acuity, Serration, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-18 07:55 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 6.7729 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Galvanized Aptitude, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 04:02 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 7.8298 | Cryo Rounds, Infected Clip, Hellfire, Wildfire, Primary Acuity, Galvanized Aptitude, Shred, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 05:56 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.4505 | Infected Clip, Rime Rounds, Thermite Rounds, Primary Acuity, Serration, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 04:00 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.9695 | Infected Clip, Rime Rounds, Thermite Rounds, Primary Acuity, Serration, Speed Trigger, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-18 07:55 UTC |
 
 ## Not modelled here
 

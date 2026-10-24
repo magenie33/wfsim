@@ -4,7 +4,7 @@ Chinese name: 响胆
 
 Rifle · Primary · Mastery Rank 0. 37 base damage (impact 6.5, puncture 9.5, radiation 13.5, slash 7.5), 19% crit chance, 2x crit multiplier, 19% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.5435 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-16 01:22 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.5435 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-16 07:13 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.1148 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-16 07:06 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.3714 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-16 07:50 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.5435 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-16 01:22 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.5435 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-16 07:13 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.1148 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-16 07:06 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.3714 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-16 07:50 UTC |
 
 ## In WFSim
 

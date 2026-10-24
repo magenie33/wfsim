@@ -4,7 +4,7 @@ Chinese name: 保障·潘塔
 
 Launcher · Primary · Mastery Rank 12. 75 base damage (impact 75), 26% crit chance, 2x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.6389 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-20 16:30 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 1.6383 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-17 05:48 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.2209 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Critical Delay, Napalm Grenades, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-17 03:08 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.9919 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-18 08:46 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.6389 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-20 16:30 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.6383 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-17 05:48 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.2209 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Critical Delay, Napalm Grenades, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-17 03:08 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.9919 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Serration, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Primary Compression | 2026-10-18 08:46 UTC |
 
 ## Not modelled here
 

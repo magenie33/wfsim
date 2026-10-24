@@ -4,7 +4,7 @@ Chinese name: 鲮鲤剑 Prime
 
 Sword · Melee · Mastery Rank 14. 248 base damage (impact 12.4, puncture 37.2, slash 198.4), 26% crit chance, 2.2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | block forward | 5.8966 | Condition Overload, Blood Rush, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Steel, Weeping Wounds, Magnetic Rush, Swooping Falcon, Dreamer's Wrath, Melee Exposure | 2026-10-22 13:14 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | block forward | 55.0919 | Shocking Touch, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Organ Shatter, Weeping Wounds, Magnetic Rush, Swooping Falcon, Dreamer's Wrath, Melee Influence | 2026-10-22 17:41 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | block forward | 0.6857 | Molten Impact, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Organ Shatter, Weeping Wounds, Magnetic Rush, Swooping Falcon, Dreamer's Wrath, Melee Exposure | 2026-10-22 19:34 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | block forward | 2.4343 | Molten Impact, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Organ Shatter, Weeping Wounds, Magnetic Rush, Swooping Falcon, Dreamer's Wrath, Melee Exposure | 2026-10-22 16:16 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | block forward | 5.8966 | Condition Overload, Blood Rush, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Steel, Weeping Wounds, Magnetic Rush, Swooping Falcon, Dreamer's Wrath, Melee Exposure | 2026-10-22 13:14 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | block forward | 55.0919 | Shocking Touch, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Organ Shatter, Weeping Wounds, Magnetic Rush, Swooping Falcon, Dreamer's Wrath, Melee Influence | 2026-10-22 17:41 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | block forward | 0.6857 | Molten Impact, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Organ Shatter, Weeping Wounds, Magnetic Rush, Swooping Falcon, Dreamer's Wrath, Melee Exposure | 2026-10-22 19:34 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | block forward | 2.4343 | Molten Impact, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Organ Shatter, Weeping Wounds, Magnetic Rush, Swooping Falcon, Dreamer's Wrath, Melee Exposure | 2026-10-22 16:16 UTC |
 
 ## Not modelled here
 

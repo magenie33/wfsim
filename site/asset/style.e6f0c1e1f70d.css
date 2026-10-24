@@ -2092,6 +2092,9 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .demand-bar>div{background:var(--accent)}
 .demand-key{opacity:.5}
 .demand-key.on{opacity:1;color:var(--accent)}
+.order-list{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.order-list li{display:flex;align-items:baseline;gap:4px 12px;flex-wrap:wrap;font-size:13px}
+.order-list li .set-note{margin-left:auto}
 .cr-badge{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 5px;box-sizing:border-box;border-radius:7px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 40%,transparent)}
 .cr-badge.cr-30{color:var(--gold);background:color-mix(in srgb,var(--gold) 14%,transparent);border-color:color-mix(in srgb,var(--gold) 55%,transparent)}
 .cr-line{display:flex;align-items:center;gap:10px;min-width:0}
@@ -2309,7 +2312,7 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .bench-sub{max-width:70ch;margin:0 0 14px;color:var(--text-2);font-size:15px;line-height:1.55}
 /* The terms, between the chips and the standard they belong to. */
 .bench-note{max-width:70ch;margin:14px 0 0;color:var(--muted);font-size:12px;line-height:1.6}
-#bench-picker,#bench-scenes{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+#bench-picker,.bench-axis{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 #bench-scenes:empty{display:none}
 /* WHICH BUILDS, under WHICH FIGHT — the second row reads as subordinate to the
    first because it is: a ruler is the standard, this only narrows who is shown

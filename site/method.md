@@ -23,10 +23,10 @@ How WFSim judges a Warframe build: each rule is what the calculator does, why it
 
 ### The rulers
 
-- **Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM**: Standard means one set of conditions for every build: one tough, unaffiliated target, the same fight and the same rules, so a number reproduces on any machine and any two builds compare directly. Your own conditions are set in the simulator.
-- **Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM**: Standard means one set of conditions for every build: a crowd of tough, unaffiliated targets, packed as close as every elemental area effect still reaches and no larger than holds them whole, the same fight and the same rules, so a number reproduces on any machine and any two builds compare directly. Your own conditions are set in the simulator.
-- **Demolisher · one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM**: One specific fight players run, measured as it is rather than as a stand-in for most play: a Demolisher a full squad meets, taken apart by one weapon.
-- **Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM**: One specific fight players run, measured as it is rather than as a stand-in for most play: the Eximus Corrupted Heavy Gunner of the Void Fissures, taken apart by one weapon.
+- **Standard Single Target · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM**: Standard means one set of conditions for every build: one tough, unaffiliated target, the same fight and the same rules, so a number reproduces on any machine and any two builds compare directly. Your own conditions are set in the simulator.
+- **Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM**: Standard means one set of conditions for every build: a crowd of tough, unaffiliated targets, packed as close as every elemental area effect still reaches and no larger than holds them whole, the same fight and the same rules, so a number reproduces on any machine and any two builds compare directly. Your own conditions are set in the simulator.
+- **Demolisher · one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM**: One specific fight players run, measured as it is rather than as a stand-in for most play: a Demolisher a full squad meets, taken apart by one weapon.
+- **Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM**: One specific fight players run, measured as it is rather than as a stand-in for most play: the Eximus Corrupted Heavy Gunner of the Void Fissures, taken apart by one weapon.
 
 https://wfsim.app/benchmark
 

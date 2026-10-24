@@ -4,7 +4,7 @@ Chinese name: 和谐
 
 Scythe · Melee · Mastery Rank 10. 240 base damage (puncture 168, slash 72), 20% crit chance, 2.2x crit multiplier, 36% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 0.7470 | Primed Fever Strike, Lasting Sting, Primed Pressure Point, Galvanized Steel, Amalgam Organ Shatter, Buzz Kill, Killing Blow, Melee Elementalist, Reaping Spiral, Melee Crescendo | 2026-10-22 12:23 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 0.7470 | Primed Fever Strike, Lasting Sting, Primed Pressure Point, Galvanized Steel, Amalgam Organ Shatter, Buzz Kill, Killing Blow, Melee Elementalist, Reaping Spiral, Melee Crescendo | 2026-10-23 00:54 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | heavy | 0.1500 | Lasting Sting, Primed Pressure Point, Primed Smite Grineer, Galvanized Steel, Amalgam Organ Shatter, Buzz Kill, Killing Blow, Melee Elementalist, Reaping Spiral, Melee Afflictions | 2026-10-22 03:38 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | heavy | 0.3683 | Lasting Sting, Primed Pressure Point, Galvanized Steel, Amalgam Organ Shatter, Buzz Kill, Killing Blow, Carnis Mandible, Melee Elementalist, Reaping Spiral, Melee Crescendo | 2026-10-21 23:57 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | heavy | 0.7470 | Primed Fever Strike, Lasting Sting, Primed Pressure Point, Galvanized Steel, Amalgam Organ Shatter, Buzz Kill, Killing Blow, Melee Elementalist, Reaping Spiral, Melee Crescendo | 2026-10-22 12:23 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | heavy | 0.7470 | Primed Fever Strike, Lasting Sting, Primed Pressure Point, Galvanized Steel, Amalgam Organ Shatter, Buzz Kill, Killing Blow, Melee Elementalist, Reaping Spiral, Melee Crescendo | 2026-10-23 00:54 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | heavy | 0.1500 | Lasting Sting, Primed Pressure Point, Primed Smite Grineer, Galvanized Steel, Amalgam Organ Shatter, Buzz Kill, Killing Blow, Melee Elementalist, Reaping Spiral, Melee Afflictions | 2026-10-22 03:38 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | heavy | 0.3683 | Lasting Sting, Primed Pressure Point, Galvanized Steel, Amalgam Organ Shatter, Buzz Kill, Killing Blow, Carnis Mandible, Melee Elementalist, Reaping Spiral, Melee Crescendo | 2026-10-21 23:57 UTC |
 
 ## Not modelled here
 

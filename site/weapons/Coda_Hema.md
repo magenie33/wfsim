@@ -4,7 +4,7 @@ Chinese name: 终幕·血肢
 
 Rifle · Primary · Mastery Rank 17. 52 base damage (viral 52), 20% crit chance, 2.3x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 18.6193 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-16 04:34 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 60.8726 | Stormbringer, Primary Acuity, Primed Shred, Serration, Galvanized Aptitude, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-16 07:12 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 1.7248 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-18 12:28 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 9.5094 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-18 12:37 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 18.6193 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-16 04:34 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 60.8726 | Stormbringer, Primary Acuity, Primed Shred, Serration, Galvanized Aptitude, Bladed Rounds, Rifle Elementalist, Vital Sense, Primary Crux | 2026-10-16 07:12 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.7248 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-18 12:28 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 9.5094 | Hellfire, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Vile Acceleration, Vital Sense, Magnetic Capacity, Primary Crux | 2026-10-18 12:37 UTC |
 
 ## Not modelled here
 

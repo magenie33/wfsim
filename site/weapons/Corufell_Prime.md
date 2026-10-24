@@ -4,7 +4,7 @@ Chinese name: 闪劫 Prime
 
 Heavy Scythe · Melee · Mastery Rank 16. 225 base damage (impact 108, puncture 76.5, slash 40.5), 30% crit chance, 2.5x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.09621 | Shocking Touch, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Galeforce Dawn, Discipline's Merit, Melee Influence | 2026-10-22 12:40 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.2277 | Shocking Touch, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Galeforce Dawn, Discipline's Merit, Melee Influence | 2026-10-22 12:33 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.001716 | Shocking Touch, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Galeforce Dawn, Discipline's Merit, Melee Influence | 2026-10-22 12:31 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.05071 | Shocking Touch, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Galeforce Dawn, Discipline's Merit, Melee Influence | 2026-10-22 16:02 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.09621 | Shocking Touch, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Galeforce Dawn, Discipline's Merit, Melee Influence | 2026-10-22 12:40 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.2277 | Shocking Touch, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Galeforce Dawn, Discipline's Merit, Melee Influence | 2026-10-22 12:33 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.001716 | Shocking Touch, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Galeforce Dawn, Discipline's Merit, Melee Influence | 2026-10-22 12:31 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.05071 | Shocking Touch, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Galeforce Dawn, Discipline's Merit, Melee Influence | 2026-10-22 16:02 UTC |
 
 ## Not modelled here
 

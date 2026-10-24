@@ -4,7 +4,7 @@ Chinese name: 圣洁·执法者
 
 Hammer · Melee · Mastery Rank 8. 240 base damage (impact 192, puncture 36, slash 12), 30% crit chance, 2x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy | 0.9016 | Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure | 2026-10-16 07:13 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | heavy slam | 12.0244 | Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Killing Blow, Organ Shatter, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure | 2026-10-18 12:29 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | heavy | 0.08047 | Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure | 2026-10-16 07:06 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | heavy | 0.3043 | Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure | 2026-10-16 07:12 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | heavy | 0.9016 | Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure | 2026-10-16 07:13 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | heavy slam | 12.0244 | Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Killing Blow, Organ Shatter, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure | 2026-10-18 12:29 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | heavy | 0.08047 | Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure | 2026-10-16 07:06 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | heavy | 0.3043 | Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Amalgam Organ Shatter, Killing Blow, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure | 2026-10-16 07:12 UTC |
 
 ## Not modelled here
 

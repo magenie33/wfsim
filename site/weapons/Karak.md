@@ -4,7 +4,7 @@ Chinese name: 卡拉克
 
 Rifle · Primary · Mastery Rank 1. 29 base damage (impact 13.05, puncture 8.7, slash 7.25), 9% crit chance, 1.5x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.2987 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 21:06 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 0.2987 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 20:57 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.02465 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 19:41 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 0.1537 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 20:35 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.2987 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 21:06 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.2987 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 20:57 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.02465 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 19:41 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.1537 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-16 20:35 UTC |
 
 ## In WFSim
 

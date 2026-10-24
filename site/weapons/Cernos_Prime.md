@@ -4,7 +4,7 @@ Chinese name: 西诺斯 Prime
 
 Bow · Primary · Mastery Rank 12. 184 base damage x3 multishot (impact 165.6, puncture 9.2, slash 9.2), 35% crit chance, 2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.1704 | Malignant Force, Rime Rounds, Split Flights, Serration, Galvanized Scope, Hunter Munitions, Rifle Elementalist, Vital Sense, Vigilante Supplies, Longbow Sharpshot | 2026-10-16 20:28 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 19.4726 | Malignant Force, Rime Rounds, Split Flights, Serration, Galvanized Scope, Hunter Munitions, Rifle Elementalist, Vital Sense, Vigilante Supplies, Longbow Sharpshot | 2026-10-16 20:38 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.6322 | Malignant Force, Rime Rounds, Split Flights, Serration, Galvanized Scope, Hunter Munitions, Rifle Elementalist, Vital Sense, Vigilante Supplies, Longbow Sharpshot | 2026-10-16 21:05 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.9252 | Malignant Force, Rime Rounds, Split Flights, Serration, Galvanized Scope, Hunter Munitions, Rifle Elementalist, Vital Sense, Vigilante Supplies, Longbow Sharpshot | 2026-10-16 20:06 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 5.1704 | Malignant Force, Rime Rounds, Split Flights, Serration, Galvanized Scope, Hunter Munitions, Rifle Elementalist, Vital Sense, Vigilante Supplies, Longbow Sharpshot | 2026-10-16 20:28 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 19.4726 | Malignant Force, Rime Rounds, Split Flights, Serration, Galvanized Scope, Hunter Munitions, Rifle Elementalist, Vital Sense, Vigilante Supplies, Longbow Sharpshot | 2026-10-16 20:38 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.6322 | Malignant Force, Rime Rounds, Split Flights, Serration, Galvanized Scope, Hunter Munitions, Rifle Elementalist, Vital Sense, Vigilante Supplies, Longbow Sharpshot | 2026-10-16 21:05 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.9252 | Malignant Force, Rime Rounds, Split Flights, Serration, Galvanized Scope, Hunter Munitions, Rifle Elementalist, Vital Sense, Vigilante Supplies, Longbow Sharpshot | 2026-10-16 20:06 UTC |
 
 ## In WFSim
 

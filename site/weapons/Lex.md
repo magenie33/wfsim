@@ -4,7 +4,7 @@ Chinese name: 雷克斯
 
 Pistol · Secondary · Mastery Rank 3. 130 base damage (impact 13, puncture 104, slash 13), 20% crit chance, 2x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 8.2662 | Frostbite, Pistol Pestilence, Scorch, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Eject Magazine, Secondary Fortifier | 2026-10-18 09:00 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | cycle | 27.5157 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Eject Magazine, Secondary Fortifier | 2026-10-18 09:00 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.8757 | Frostbite, Pistol Pestilence, Primed Heated Charge, Scorch, Galvanized Diffusion, Lethal Torrent, Pistol Elementalist, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-18 08:55 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 3.2307 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Lethal Torrent, Anemic Agility, Pistol Elementalist, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-18 08:53 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 8.2662 | Frostbite, Pistol Pestilence, Scorch, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Eject Magazine, Secondary Fortifier | 2026-10-18 09:00 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 27.5157 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Eject Magazine, Secondary Fortifier | 2026-10-18 09:00 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.8757 | Frostbite, Pistol Pestilence, Primed Heated Charge, Scorch, Galvanized Diffusion, Lethal Torrent, Pistol Elementalist, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-18 08:55 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 3.2307 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Lethal Torrent, Anemic Agility, Pistol Elementalist, Magnetic Might, Eject Magazine, Cascadia Flare | 2026-10-18 08:53 UTC |
 
 ## In WFSim
 

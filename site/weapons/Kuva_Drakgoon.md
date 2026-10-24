@@ -4,7 +4,7 @@ Chinese name: 赤毒·龙骑兵
 
 Shotgun · Primary · Mastery Rank 13. 46 base damage x10 multishot (impact 4.6, puncture 4.6, slash 36.8), 21% crit chance, 2.5x crit multiplier, 9% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 5.6169 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-16 22:58 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | base | 28.0250 | Primed Chilling Grasp, Contagious Spread, Scattering Inferno, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Deadhead | 2026-10-22 01:56 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | base | 0.5659 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-17 07:56 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | base | 2.3467 | Primed Chilling Grasp, Contagious Spread, Scattering Inferno, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Deadhead | 2026-10-21 22:39 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 5.6169 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-16 22:58 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 28.0250 | Primed Chilling Grasp, Contagious Spread, Scattering Inferno, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Deadhead | 2026-10-22 01:56 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.5659 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Primary Crux | 2026-10-17 07:56 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.3467 | Primed Chilling Grasp, Contagious Spread, Scattering Inferno, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Deadhead | 2026-10-21 22:39 UTC |
 
 ## Not modelled here
 

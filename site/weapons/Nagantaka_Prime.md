@@ -4,7 +4,7 @@ Chinese name: 噬蛇弩 Prime
 
 Crossbow · Primary · Mastery Rank 12. 173 base damage (impact 1.7, puncture 15.6, slash 155.7), 25% crit chance, 2.3x crit multiplier, 39% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-24
+## Best riven-free build on the WFSim board, as of 2026-10-25
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 5.1965 | Malignant Force, Rime Rounds, Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Primary Crux | 2026-10-22 13:04 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 180 s · KPM | alternate | 38.4763 | Malignant Force, Rime Rounds, Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Primary Crux | 2026-10-17 06:58 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 4-player health · 180 s · KPM | alternate | 0.3787 | Malignant Force, Rime Rounds, Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Primary Crux | 2026-10-22 19:13 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 180 s · KPM | alternate | 2.1866 | Malignant Force, Rime Rounds, Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Primary Crux | 2026-10-19 19:32 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 5.1965 | Malignant Force, Rime Rounds, Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Primary Crux | 2026-10-22 13:04 UTC |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 38.4763 | Malignant Force, Rime Rounds, Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Primary Crux | 2026-10-17 06:58 UTC |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 0.3787 | Malignant Force, Rime Rounds, Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Primary Crux | 2026-10-22 19:13 UTC |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 2.1866 | Malignant Force, Rime Rounds, Stormbringer, Primary Acuity, Primed Shred, Galvanized Aptitude, Galvanized Scope, Vital Sense, Primary Crux | 2026-10-19 19:32 UTC |
 
 ## Not modelled here
 
