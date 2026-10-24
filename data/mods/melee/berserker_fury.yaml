@@ -30,8 +30,8 @@ effects:
     trigger: kill
     grants: fire_rate
     decay: per_stack_expiry
-    rank0: 0.058333
-    rankMax: 0.35
+    rank0: 0.0583333
+    rankMax: 0.3499998   # see notes: package_rank_value
     max_stacks: 2
     duration: 10
 

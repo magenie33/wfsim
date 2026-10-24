@@ -12,8 +12,8 @@ description: "+X Range"
 # Rank 0: +0.3 Range
 effects:
   - kind: melee_range_bonus_m
-    rank0: 0.272727
-    rankMax: 3.0
+    rank0: 0.2727
+    rankMax: 2.9997   # see notes: package_rank_value
 
 family: reach
 

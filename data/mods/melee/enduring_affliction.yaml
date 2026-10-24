@@ -13,8 +13,8 @@ effects:
   # The same simulated gate: a heavy slam forces `Lifted` every time, so from
   # the second slam on the target is carrying it.
   - kind: status_chance_on_lifted
-    rank0: 0.166667
-    rankMax: 1.0
+    rank0: 0.16666
+    rankMax: 0.99996   # see notes: package_rank_value
 
 source:
   url: https://wiki.warframe.com/w/Enduring_Affliction

@@ -21,8 +21,8 @@ effects:
   - kind: buff
     trigger: headshot_kill
     grants: fire_rate
-    rank0: 0.0833
-    rankMax: 0.5
+    rank0: 0.08333
+    rankMax: 0.49998   # see notes: package_rank_value
     max_stacks: 1
     # see notes: ramps_with_rank
     duration_rank0: 1.5
@@ -35,8 +35,8 @@ effects:
     trigger: headshot_kill
     grants: reload_speed
     max_stacks: 1
-    rank0: 0.1667
-    rankMax: 1.0
+    rank0: 0.1666
+    rankMax: 0.9996   # see notes: package_rank_value
     # The "for Xs" belongs to THIS sentence, and the description filler walks
     # the effects in order — so the duration has to sit on the effect the
     # sentence has reached, not only on the buff that uses it.

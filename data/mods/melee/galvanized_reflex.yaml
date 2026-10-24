@@ -10,16 +10,16 @@ description: "+X% Heavy Attack Efficiency\nOn Melee Kill:\n+X Initial Combo for 
 # Rank 0: +4.5% Heavy Attack Efficiency / On Melee Kill:\n+2 Initial Combo for 20s. Stacks up to 4x.
 effects:
   - kind: heavy_attack_efficiency
-    rank0: 0.045455
-    rankMax: 0.5
-  # On Melee Kill: +20 Initial Combo for 20s, four stacks — COMBO POINTS rather
+    rank0: 0.04545
+    rankMax: 0.49995   # see notes: package_rank_value
+  # On Melee Kill: +20.46 Initial Combo for 20s, four stacks — COMBO POINTS rather
   # than a percentage, so it raises the floor the counter returns to. On a heavy
-  # mode that is the build: +80 points is four tiers that cost nothing to hold.
+  # mode that is the build: +81.84 points is four tiers that cost nothing to hold.
   - kind: stacking_buff
     trigger: kill
     grants: initial_combo
-    rank0: 2.0
-    rankMax: 20.0
+    rank0: 1.86
+    rankMax: 20.46   # see notes: package_rank_value
     max_stacks: 4
     duration: 20.0
 

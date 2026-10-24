@@ -11,11 +11,11 @@ effects:
   # see notes: 2d_groundwork_real_stat
   - kind: stagger_resist_bonus
     rank0: 0.167
-    rankMax: 1.002   # see notes: card_rounds_the_rank_value
+    rankMax: 1.002   # see notes: package_rank_value
     desc: "+100% Chance to Resist Staggers/Knockdowns when Aiming"
   - kind: accuracy_bonus
-    rank0: 0.0833
-    rankMax: 0.5
+    rank0: 0.0835
+    rankMax: 0.501   # see notes: package_rank_value
 
 source:
   url: https://wiki.warframe.com/w/Resolute_Focus

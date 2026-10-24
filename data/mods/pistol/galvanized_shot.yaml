@@ -10,14 +10,14 @@ description: "+X% Status Chance\nOn Kill:\n+X% Direct Damage per Status Type aff
 effects:
   - kind: status_chance_bonus
     rank0: 0.072727
-    rankMax: 0.8
+    rankMax: 0.799997   # see notes: package_rank_value
   # Condition Overload payload: +rankMax per status TYPE on the target, per
   # stack, DIRECT hits only. Its arithmetic is per-weapon (weapon co_behavior).
   - kind: buff
     trigger: kill
     grants: condition_overload
-    rank0: 0.036364
-    rankMax: 0.4
+    rank0: 0.0363636
+    rankMax: 0.3999996   # see notes: package_rank_value
     max_stacks: 3
     duration: 14
     # see notes: decay_read_mods_data

@@ -9,11 +9,11 @@ description: "+X% Critical Chance\n-X% Fire Rate"
 
 effects:
   - kind: crit_chance_bonus
-    rank0: 0.3333
-    rankMax: 2.0
+    rank0: 0.33333
+    rankMax: 1.99998   # see notes: package_rank_value
   - kind: fire_rate_bonus
-    rank0: -0.03325
-    rankMax: -0.1995   # see notes: card_rounds_the_rank_value
+    rank0: -0.0333
+    rankMax: -0.1998   # see notes: package_rank_value
 
 source:
   url: https://wiki.warframe.com/w/Critical_Deceleration

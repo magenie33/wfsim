@@ -29,7 +29,7 @@ fn split_flights_reaches_the_panel_as_a_live_stacking_buff() {
     // mods). Split Chamber's +90% is in the same one, which is also why the
     // two share a family and cannot be equipped together.
     assert_eq!(b.grant, BuffGrant::Multishot);
-    assert!((b.per_stack - 1.0).abs() < 1e-9, "+100% a stack at rank 5");
+    assert!((b.per_stack - 1.00002).abs() < 1e-9, "+100.002% a stack at rank 5");
     assert_eq!(b.max_stacks, 4);
     assert!((b.duration - 2.0).abs() < 1e-9);
     assert_eq!(

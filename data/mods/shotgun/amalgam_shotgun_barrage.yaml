@@ -10,7 +10,7 @@ description: "+X% Fire Rate\n+X% Revive Speed"
 effects:
   - kind: fire_rate_bonus
     rank0: 0.141
-    rankMax: 0.846   # see notes: card_rounds_the_rank_value
+    rankMax: 0.846   # see notes: package_rank_value
   # "+45% Revive Speed" — a WARFRAME utility stat, and the reason an Amalgam
   # mod cannot go on a companion's weapon (see `excludes_weapon`). OUT OF SCOPE
   # rather than pending, unlike the sprint speed on Amalgam Serration: sprint

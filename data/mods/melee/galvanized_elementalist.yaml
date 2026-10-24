@@ -10,8 +10,8 @@ description: "+X% Status Damage\nOn Melee Kill:\n+X% Status Chance for 20s. Stac
 # Rank 0: +7.3% Status Damage / On Melee Kill:\n+2.7% Status Chance for 20s. Stacks up to 4x.
 effects:
   - kind: status_damage_bonus
-    rank0: 0.0727
-    rankMax: 0.7997   # see notes: card_rounds_the_rank_value
+    rank0: 0.07272
+    rankMax: 0.79992   # see notes: package_rank_value
   # On Melee Kill: +30% Status Chance for 20s, four stacks.
   #
   # `stacking_buff` AND NOT `buff`: the second is not a kind this parser knows,
@@ -25,8 +25,8 @@ effects:
   - kind: stacking_buff
     trigger: kill
     grants: status_chance
-    rank0: 0.027273
-    rankMax: 0.3
+    rank0: 0.02727
+    rankMax: 0.29997   # see notes: package_rank_value
     max_stacks: 4
     duration: 20.0
     decay: per_stack_expiry

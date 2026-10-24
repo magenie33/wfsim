@@ -72,52 +72,18 @@ in **31.786% to 31.8125%**, and 0.318 is inside. An exact 350/11 = 31.818% is
 not: its rank 7 is 254.55%, shown 255, and the card shows **254**. This is
 evidence independent of the readings and it gives the same answer.
 
-### What is inferred from it
+### What it does not read
 
-- **The crit chance half** is 3.498 as well. Its table is the damage table
-  row for row; the 0.044-point difference in crit chance it makes on a Laetum
-  head is out of reach of any count of crits.
-- **Primary Acuity** is 3.498 in both halves. Its card is the same table row
-  for row; none of its numbers has been read.
+- **The crit chance half** is 3.498 as well, and so is **Primary Acuity** in
+  both halves: the package says so (below). None of those numbers has been
+  read; the 0.044-point difference in crit chance on a Laetum head is out of
+  reach of any count of crits.
 
-### The same rule, applied to every card that shows it
+### The game's package says so too
 
-Every laddered mod and arcane effect in `data/` was read against its card
-table in DE's export, rank by rank, under the rule this entry settles: rank
-`r` is `(r + 1) x p`, and the card rounds a half up (Amalgam Barrel
-Diffusion: 36.5% shows 37%, 109.5% shows 110%). Where the table puts the
-even split of the card's round max outside what its rows allow, the max is
-the shortest decimal `p` inside that interval, lower end in and upper end
-out, times the rank count. Barrel Diffusion is the check on that choice: its
-interval is 0.1825 to 0.183, and the shortest decimal in it is the 0.1825
-the wiki states outright.
-
-| mod | was | now | the card's round max under `a + g x r` |
-|---|---|---|---|
-| Rubedo-Lined Barrel | 1.0 | 0.1666 x 6 = 0.9996 | impossible (99.95 to 99.98) |
-| Blood Rush | 0.4 | 0.0364 x 11 = 0.4004 | impossible (40.025 to 40.05) |
-| Critical Delay, Critical Deceleration | -0.2 | -0.03325 x 6 = -0.1995 | impossible (19.95 to 19.98) |
-| Ammo Chain | 1.0 | 0.1667 x 6 = 1.0002 | impossible (100.017 to 100.05) |
-| Resolute Focus | 1.0 | 0.167 x 6 = 1.002 | impossible (100.17 to 100.5) |
-| Amalgam Organ Shatter, Amalgam Shotgun Barrage | 0.85 | 0.141 x 6 = 0.846 | possible (84.5 to 85.17) |
-| Amalgam Serration | 1.55 | 0.141 x 11 = 1.551 | possible (154.5 to 155.5) |
-| Galvanized Elementalist | 0.8 | 0.0727 x 11 = 0.7997 | possible (79.95 to 80.0) |
-| Galvanized Scope | 1.2 | 0.1091 x 11 = 1.2001 | possible (119.95 to 120.05) |
-
-The last column is the looser model, a rank-0 value `a` and a per-rank step
-`g` that need not be equal. The first five cards rule their round max out
-under it as well. The last five allow it, so for them the change rests on `a
-= g`, which this entry's readings and Amalgam Barrel Diffusion's 0.1825 x 6
-= 1.095 support and nothing has yet read on those five; one crit-damage
-number off an Organ Shatter build would test it.
-
-Nineteen more effects kept their max and took `max / ranks` at rank 0, since
-the old rank-0 value failed the card's lower ranks (Galvanized Shot's 0.036
-for 0.036364, Seeker's 0.4 for 0.35, Primary Frostbite's 0.0038 for
-0.00375). Left alone: Galvanized Reflex, whose table implies 20.35 to 20.5
-Initial Combo, a count; Shivering Contagion, a chance the card already caps
-at 100%; and Amalgam Barrel Diffusion, whose 1.095 the table allows. No
-arcane shows the signature.
+The package stores both Acuity lines as `0.31799999`, the float32 of 0.318,
+a rank, eleven ranks: 3.498 for the weak point damage and the weak point crit
+chance alike, on both cards. That and every other card's value a rank is M124.
 
 ### M60's unexplained 0.19% was crit damage quantization
 

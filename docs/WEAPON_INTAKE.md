@@ -178,8 +178,9 @@ gets one of them wrong. Add both, or neither.
 
 ### 1. The sources, and which one wins
 
-**MEASUREMENT > WIKI > DE's PUBLIC EXPORT** on every conflict — AGENTS.md and
-`docs/DATA_SOURCES.md` state the order and the evidence behind it. The export
+**MEASUREMENT > PACKAGE > WIKI > DE's PUBLIC EXPORT** on every conflict —
+AGENTS.md and `docs/DATA_SOURCES.md` state the order and the evidence behind
+it. The export
 fills what the wiki does not state (`uniqueName`, card text) and is never a
 number's source.
 

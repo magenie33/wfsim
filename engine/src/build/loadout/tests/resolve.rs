@@ -195,16 +195,17 @@ fn beam_length_takes_the_flat_metres_after_the_percentage() {
     assert!((base.range_m - 20.0).abs() < 1e-9, "the Phantasma's own reach: {}", base.range_m);
     let range = |mods: &[&_]| super::resolve(&base, mods, super::StackPolicy::Emergent).range_m;
     assert!((range(&[reach]) - 32.0).abs() < 1e-9, "flat alone: {}", range(&[reach]));
-    // The percentage is +90%: the card's own +30% plus its on-kill half at
-    // the assumed max every indirect buff grant is read at, two stacks of
-    // +30%. 20 x 1.9 = 38.
-    assert!((range(&[accel]) - 38.0).abs() < 1e-9, "percent alone: {}", range(&[accel]));
+    // The percentage is three times 0.2999997 (notes: package_rank_value):
+    // the card's own line plus its on-kill half at the assumed max every
+    // indirect buff grant is read at, two stacks. 20 x 1.8999991.
+    let pct = 1.0 + 3.0 * 0.2999997;
+    assert!((range(&[accel]) - 20.0 * pct).abs() < 1e-9, "percent alone: {}", range(&[accel]));
     // …and BOTH is 20 x 1.9 + 12, never (20 + 12) x 1.9 = 60.8. The two
     // readings are 10.8 m apart on this weapon, which is three ranks of the
     // group ruler's grid.
     let both = range(&[reach, accel]);
-    assert!((both - 50.0).abs() < 1e-9, "the flat metres land outside the percentage: {both}");
-    assert!((both - (base.range_m + 12.0) * 1.9).abs() > 1.0, "and not inside it");
+    assert!((both - (20.0 * pct + 12.0)).abs() < 1e-9, "the flat metres land outside the percentage: {both}");
+    assert!((both - (base.range_m + 12.0) * pct).abs() > 1.0, "and not inside it");
     // AN ATTACK THAT STATES NO REACH KEEPS NONE under either bonus, which
     // is what makes the page's per-attack notes need no transcription —
     // "only affects Panthera's Alt-fire", "only affects Phantasma's primary

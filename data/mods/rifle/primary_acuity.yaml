@@ -26,7 +26,7 @@ effects:
   # 8.247x; MOA backpack is the 1.0× exception), and the sum is
   # MULTIPLICATIVE with headshot-multiplier bonuses (Deadhead).
   # 3.498 is measured on the pistol twin (M123), whose card is this card
-  # row for row. see notes: card_rounds_the_rank_value
+  # row for row. see notes: package_rank_value
   - kind: weakpoint_damage_bonus
     rank0: 0.318
     rankMax: 3.498

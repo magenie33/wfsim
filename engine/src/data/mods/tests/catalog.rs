@@ -631,11 +631,11 @@ fn loads_the_pistol_pool_from_yaml() {
     // …AND WHAT EARNS IT, because the two cards sharing this variant differ
     // by nothing else: the Galvanized one waits for a kill and melee's own
     // waits for nothing, which is the whole of what a fight can deny.
-    assert!(by("galvanized_shot").effects.iter().any(|e| matches!(e, ModEffect::ConditionOverload { per_stack, max_stacks: 3, earned_on: Some("kill"), .. } if (*per_stack - 0.40).abs() < 1e-9)));
+    assert!(by("galvanized_shot").effects.iter().any(|e| matches!(e, ModEffect::ConditionOverload { per_stack, max_stacks: 3, earned_on: Some("kill"), .. } if (*per_stack - 0.3999996).abs() < 1e-9)));
     let melee = pool_for_weapon("magistar");
     let melee_co = melee.iter().find(|m| m.id == "condition_overload").expect("melee CO");
     assert!(melee_co.effects.iter().any(|e| matches!(e, ModEffect::ConditionOverload { earned_on: None, .. })));
-    assert!(by("galvanized_diffusion").effects.iter().any(|e| matches!(e, ModEffect::OnKillMultishot { per_stack, max_stacks: 4, .. } if (*per_stack - 0.30).abs() < 1e-9)));
+    assert!(by("galvanized_diffusion").effects.iter().any(|e| matches!(e, ModEffect::OnKillMultishot { per_stack, max_stacks: 4, .. } if (*per_stack - 0.2999997).abs() < 1e-9)));
     // Galvanized Crosshairs is AIM-GATED, so its buffs arrive WRAPPED -
     // asserting the bare variant would pass on a build where the gate had
     // been silently dropped, which is the bug this wrapper exists to stop.
@@ -679,20 +679,20 @@ fn fixed_and_rank_varying_values_land_in_the_right_slots() {
     assert_eq!(
         desc_info("galvanized_crosshairs").unwrap().at(10),
         "On Weak Point Hit:
-+120% Critical Chance when Aiming for 12s
++119.999% Critical Chance when Aiming for 12s
 On Weak Point Kill:
-+40% Critical Chance when Aiming for 12s. Stacks up to 5x."
++39.999% Critical Chance when Aiming for 12s. Stacks up to 5x."
     );
     // Its rifle twin spells all five out. The first buff carries a
     // `max_stacks: 1` the text never mentions, so a per-kind queue would
     // hand THAT to "Stacks up to Xx" instead of the second buff's 5. Its
-    // first value is 0.1091 a rank, which the card rounds to 120%.
+    // values are 0.1091 and 0.03636 a rank, which the card rounds to 120 and 40.
     assert_eq!(
         desc_info("galvanized_scope").unwrap().at(10),
         "On Weak Point Hit:
 +120.01% Critical Chance when Aiming for 12s
 On Weak Point Kill:
-+40% Critical Chance when Aiming for 12s. Stacks up to 5x."
++39.996% Critical Chance when Aiming for 12s. Stacks up to 5x."
     );
     // A duration that RAMPS: 1.5s at rank 0, 9s at max. Stored as one number
     // it read "for 9s" at every rank.
@@ -844,7 +844,7 @@ fn galvanized_steel_stacks_its_crit_damage_four_times() {
             if b.trigger == crate::model::BuffTrigger::Kill
                 && b.grant == crate::model::BuffGrant::CritDamage
                 && b.max_stacks == 4
-                && (b.per_stack - 0.30).abs() < 1e-9)));
+                && (b.per_stack - 0.29997).abs() < 1e-9)));
 }
 
 /// SPLIT FLIGHTS IS FOR NON-AOE BOWS, and the rule is DE's tags meeting: the

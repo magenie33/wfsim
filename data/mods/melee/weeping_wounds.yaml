@@ -12,8 +12,8 @@ description: "+X% Status Chance per Combo Multiplier"
 
 effects:
   - kind: status_chance_per_combo
-    rank0: 0.066667
-    rankMax: 0.4
+    rank0: 0.06666
+    rankMax: 0.39996   # see notes: package_rank_value
 
 source:
   url: https://wiki.warframe.com/w/Weeping_Wounds

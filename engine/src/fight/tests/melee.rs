@@ -348,8 +348,8 @@ fn reach_is_metres_and_metres_are_bodies() {
         pool.iter().filter(|m| m.id == "primed_reach").collect();
     let panel = crate::build::loadout::resolve(&bare, &pr, crate::model::StackPolicy::Emergent);
     assert!(
-        (panel.range_m - 5.5).abs() < 1e-9,
-        "2.5 m + 3 m should be 5.5 m, got {:.2}",
+        (panel.range_m - 5.4997).abs() < 1e-9,
+        "2.5 m + 2.9997 m should be 5.4997 m, got {:.4}",
         panel.range_m,
     );
     let reached = |mods: &[&str]| {
@@ -815,7 +815,7 @@ fn spring_loaded_blade_stacks_reach_and_reaches_what_it_brings_into_range() {
     };
     assert_eq!(b.grant, crate::model::BuffGrant::MeleeRange);
     assert_eq!(b.decay, crate::model::BuffDecay::PerStackExpiry, "independent timers");
-    assert_eq!((b.per_stack, b.max_stacks, b.duration), (1.0, 2, 24.0));
+    assert_eq!((b.per_stack, b.max_stacks, b.duration), (1.000002, 2, 24.0));
 }
 
 /// **A SLIDE ATTACK OPENS THE WINDOW AND TAKES IT.** A slide lands direct

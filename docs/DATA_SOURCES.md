@@ -18,11 +18,21 @@ page" lands there by default.
 No other host is a source. Chinese text is DE's own, from its Public Export
 (§"Chinese text").
 
-## MEASUREMENT > WIKI > DE's PUBLIC EXPORT
+## MEASUREMENT > PACKAGE > WIKI > DE's PUBLIC EXPORT
 
 ONE ORDER, FOR EVERY FIELD, whenever two sources disagree: an **in-game
-measurement** (`docs/MEASUREMENTS.md`), then **the wiki** — its pages over its
-data modules (§"INSIDE THE WIKI") — then **DE's Public Export**.
+measurement** (`docs/MEASUREMENTS.md`), then **the game's package**, then **the
+wiki** — its pages over its data modules (§"INSIDE THE WIKI") — then **DE's
+Public Export**.
+
+**The package is the input the game loads**: the client's own records, read
+from its cache (MEASUREMENTS M124 names the dump and its hash). A mod's value a
+rank is the package's, the shortest decimal that is its float32, and the card,
+the wiki's table and the export all show that times the rank count rounded
+(`data/notes.yaml` `package_rank_value`). It outranks the wiki because the wiki
+copies the card; a measurement outranks it because the package is the input
+and not the arithmetic on it. A line run by a script stores parameters, not
+the value, and is not read from it.
 
 **The export fills what the wiki does not state.** `scripts/de_export.py`
 downloads it (English and Chinese) into `vendor/public-export/`: `uniqueName`
@@ -338,7 +348,7 @@ experiment:
 | Shattering Impact | the same, and it works on invulnerable enemies |
 | Adaptation | which damage TYPE an enemy deals, by watching what it adapts to |
 | weak-point revealers (Cyte-09's Seek, Zenith/Scourge alt-fire, Vesper 77 ADS, Thurible, Laetum/Phenmor) | where the multipliers actually are on a model |
-| drop tables / World State API / EE.log | first-party data (the Public Export itself is a source — §"MEASUREMENT > WIKI > DE's PUBLIC EXPORT") |
+| drop tables / World State API / EE.log | first-party data (the Public Export itself is a source — §"MEASUREMENT > PACKAGE > WIKI > DE's PUBLIC EXPORT") |
 
 None of that is adopted as a data SOURCE — the two-source rule above is
 unchanged. It is a list of instruments, and its place in this repo is that
@@ -457,7 +467,7 @@ Two habits come out of it, and they cost nothing:
 
 ## Which source wins
 
-The order is §"MEASUREMENT > WIKI > DE's PUBLIC EXPORT"; nothing can show which
+The order is §"MEASUREMENT > PACKAGE > WIKI > DE's PUBLIC EXPORT"; nothing can show which
 source is wrong about a field while only one is consulted, so each is
 cross-checked, and the table says where each field is read.
 

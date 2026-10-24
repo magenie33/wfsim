@@ -14,8 +14,8 @@ effects:
   - kind: buff
     trigger: kill
     grants: multishot
-    rank0: 0.027273
-    rankMax: 0.3
+    rank0: 0.0272727
+    rankMax: 0.2999997   # see notes: package_rank_value
     max_stacks: 4
     duration: 20
     # see notes: decay_read_mods_data

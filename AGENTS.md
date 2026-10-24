@@ -141,10 +141,10 @@ Read the row for what you are about to touch before the code, not after.
   wins, and that rule is where this repo's defects have lived (`docs/BOARD.md`).
 - **Golden values change only with an in-game measurement.** New mechanics need
   golden tests; a faithful-looking implementation without one is not correct.
-- **Measurement > wiki > DE's public export**, on every conflict. The export
-  (`scripts/de_export.py`) fills what the wiki does not state; its `levelStats`
-  is rounded display, never a number's source. Join by `internal_name` ==
-  `uniqueName`, **never by name**. WFCD is not a source.
+- **Measurement > the game's package > wiki > DE's export**, on any conflict.
+  The export (`scripts/de_export.py`) fills what the wiki does not state; its
+  `levelStats` is rounded display, never a number's source. Join by
+  `internal_name` == `uniqueName`, **never by name**. WFCD is not a source.
 - **A data file states only rules the engine applies.** One it does not apply
   reads as applied to anyone auditing it; `docs/UNMODELLED.md` is the register.
 - **A build's axes are declared once**, in `engine::board::builds::BUILD_AXES`

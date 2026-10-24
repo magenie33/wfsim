@@ -9,16 +9,16 @@ description: "+X% Multishot\nOn Kill:\n+X% Multishot for Xs. Stacks up to Xx."
 
 effects:
   - kind: multishot_bonus
-    rank0: 0.0727
-    rankMax: 0.8
+    rank0: 0.07273
+    rankMax: 0.80003   # see notes: package_rank_value
   # On-kill STACKING multishot, not a second flat bonus. 5 stacks here against
   # the pistol twin's 4 (Galvanized Diffusion), and the unconditional half is
   # +80% against its +110%.
   - kind: buff
     trigger: kill
     grants: multishot
-    rank0: 0.0273
-    rankMax: 0.3
+    rank0: 0.02727
+    rankMax: 0.29997   # see notes: package_rank_value
     max_stacks: 5
     duration: 20
     # see notes: decay_read_mods_data

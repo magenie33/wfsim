@@ -14,7 +14,7 @@ effects:
   # the value on true weak points (a 3x head + rank 10 = 3 + 3.498 × 1.5 =
   # 8.247x, measured M123; MOA backpack is the 1.0× exception), and the sum
   # is MULTIPLICATIVE with headshot-multiplier bonuses (Deadhead).
-  # see notes: card_rounds_the_rank_value
+  # see notes: package_rank_value
   - kind: weakpoint_damage_bonus
     rank0: 0.318
     rankMax: 3.498

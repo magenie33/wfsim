@@ -13,10 +13,10 @@ effects:
   - kind: bounce_bonus
     rank0: -1
     rankMax: -4
-  # The wiki's rank table: +0.8 / 1.5 / 2.3 / 3 m.
+  # 0.75 m a rank (MEASUREMENTS M124): 0.75 / 1.5 / 2.25 / 3 m.
   - kind: bounce_blast_radius_bonus_m
-    rank0: 0.8
-    rankMax: 3.0
+    rank0: 0.75
+    rankMax: 3   # see notes: package_rank_value
   - kind: explode_on_bounce_chance
     rank0: 0.25
     rankMax: 1.0

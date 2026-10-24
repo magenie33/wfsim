@@ -24,8 +24,8 @@ effects:
   - kind: stacking_buff
     trigger: kill
     grants: crit_damage
-    rank0: 0.027273
-    rankMax: 0.3
+    rank0: 0.02727
+    rankMax: 0.29997   # see notes: package_rank_value
     max_stacks: 4
     duration: 20.0
 

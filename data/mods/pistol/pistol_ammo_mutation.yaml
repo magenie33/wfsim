@@ -16,8 +16,8 @@ effects:
   # consumer would want, and there is nothing to spend it on yet.
   - kind: ammo_conversion
     from: primary
-    rank0: 0.08
-    rankMax: 0.5
+    rank0: 0.084
+    rankMax: 0.504   # see notes: package_rank_value
 
 family: pistol_ammo_mutation
 incompatible_with: [primed_pistol_ammo_mutation]

@@ -17,7 +17,7 @@ excludes_weapon: [sentinel_weapon]
 effects:
   - kind: crit_damage_bonus
     rank0: 0.141
-    rankMax: 0.846   # see notes: card_rounds_the_rank_value
+    rankMax: 0.846   # see notes: package_rank_value
   # THE CHARGE BEFORE A HEAVY SWING, on its own clock — attack speed does not
   # touch it, which is the wiki's own sentence and the reason it is not the
   # fire-rate bucket.

@@ -14,8 +14,8 @@ effects:
   # mod that reads them.
   - kind: ammo_conversion
     from: secondary
-    rank0: 0.08
-    rankMax: 0.5
+    rank0: 0.084
+    rankMax: 0.504   # see notes: package_rank_value
 
 family: rifle_ammo_mutation
 incompatible_with: [primed_rifle_ammo_mutation]

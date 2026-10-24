@@ -13,7 +13,7 @@ description: "+X% Critical Chance stacks with Combo Multiplier"
 effects:
   - kind: crit_chance_per_combo
     rank0: 0.0364
-    rankMax: 0.4004   # see notes: card_rounds_the_rank_value
+    rankMax: 0.4004   # see notes: package_rank_value
 
 source:
   url: https://wiki.warframe.com/w/Blood_Rush

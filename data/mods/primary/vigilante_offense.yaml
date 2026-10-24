@@ -12,8 +12,8 @@ description: "+X Punch Through"
 # second target). So this mod is, for now, a set member with no damage.
 effects:
   - kind: punch_through_bonus
-    rank0: 0.3
-    rankMax: 1.5
+    rank0: 0.25
+    rankMax: 1.5   # see notes: package_rank_value
 
 set: vigilante
 

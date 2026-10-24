@@ -14,8 +14,8 @@ effects:
     trigger: headshot
     condition: aiming
     grants: crit_chance          # relative crit chance
-    rank0: 0.109
-    rankMax: 1.20
+    rank0: 0.10909
+    rankMax: 1.19999   # see notes: package_rank_value
     max_stacks: 1
     duration: 12
   # Unlike the other Galvanized mods, each stack has its OWN duration.
@@ -23,8 +23,8 @@ effects:
     trigger: headshot_kill
     condition: aiming
     grants: crit_chance
-    rank0: 0.036364
-    rankMax: 0.4
+    rank0: 0.036363
+    rankMax: 0.399993   # see notes: package_rank_value
     max_stacks: 5
     duration: 12
     # `decay` is NOT read by data::mods. The engine hardcodes the matching model

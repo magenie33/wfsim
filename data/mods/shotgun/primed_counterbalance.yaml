@@ -10,8 +10,8 @@ description: "-X% Weapon Recoil"
 
 effects:
   - kind: recoil_reduction
-    rank0: -0.0773
-    rankMax: -0.85
+    rank0: -0.07727
+    rankMax: -0.84997   # see notes: package_rank_value
 
 family: counterbalance
 incompatible_with: [counterbalance]

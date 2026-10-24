@@ -11,8 +11,8 @@ description: "Converts Secondary ammo pickups to X% of Ammo Pick Up."
 effects:
   - kind: ammo_conversion
     from: secondary
-    rank0: 0.08
-    rankMax: 0.5
+    rank0: 0.084
+    rankMax: 0.504   # see notes: package_rank_value
 
 family: shotgun_ammo_mutation
 incompatible_with: [primed_shotgun_ammo_mutation]

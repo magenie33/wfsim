@@ -19,8 +19,8 @@ effects:
   # it does not apply to slams, heavy slams or radial attacks, and the status
   # that a hit APPLIES does not amplify that same hit.
   - kind: condition_overload
-    rank0: 0.133333
-    rankMax: 0.8
+    rank0: 0.1333
+    rankMax: 0.7998   # see notes: package_rank_value
 
 source:
   url: https://wiki.warframe.com/w/Condition_Overload
