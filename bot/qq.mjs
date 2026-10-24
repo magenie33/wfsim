@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { loadEngine, SITE } from "./engine.mjs";
 import { makeAnswer } from "./answer.mjs";
-import { renderCard, renderCardWith, freezeRequest } from "./render.mjs";
+import { renderCard, renderCardWith, freezeRequest, retireBrowser } from "./render.mjs";
 import { relayWorld } from "./world.mjs";
 
 const ENV_FILE = process.env.BOT_ENV || "/etc/wfsim-bot.env";
@@ -115,12 +115,32 @@ async function openAppraisal(row, ask) {
 /// …AND ITS QUESTION FROZEN, so the community's computers can run it: the link
 /// opened with `?freeze` in a clean browser context, and what that page builds
 /// stored with the appraisal (worker/appraise.js §"Volunteer work"). Until it
-/// is stored nobody but a scan can answer it.
+/// is stored nobody but a scan can answer it, so a failure is tried again on a
+/// fresh browser, and one still unfrozen a minute on comes back from the claim.
+const FREEZE_TRIES = 3, FREEZE_AGAIN_MS = 60_000;
+/// When each code's last freeze ended in failure; Infinity while one runs.
+const freezing = new Map();
 async function freezeAppraisal(code) {
-  const frozen = await freezeRequest(`${SITE}/appraise/${code}?freeze=1`);
-  const r = await fetch(`${SITE}/api/appraise/${code}/request`, { method: "POST", headers: { "content-type": "application/json",
-    authorization: `Bearer ${env.BOT_RELAY_TOKEN}` }, body: JSON.stringify(frozen) });
-  if (!r.ok) throw new Error(`store: ${r.status}`);
+  if (Date.now() - (freezing.get(code) || 0) < FREEZE_AGAIN_MS) return;
+  freezing.set(code, Infinity);
+  for (let i = 1; ; i++) {
+    try {
+      const frozen = await freezeRequest(`${SITE}/appraise/${code}?freeze=1`);
+      const r = await fetch(`${SITE}/api/appraise/${code}/request`, { method: "POST", headers: { "content-type": "application/json",
+        authorization: `Bearer ${env.BOT_RELAY_TOKEN}` }, body: JSON.stringify(frozen), signal: AbortSignal.timeout(FETCH_MS) });
+      if (!r.ok) throw new Error(`store: ${r.status}`);
+      freezing.delete(code);
+      return;
+    } catch (e) {
+      // THE PAGE'S OWN REFUSAL (`freeze: <why>`) says the same on every try:
+      // asked no more while this bot runs.
+      const refused = /^freeze: /.test(String(e && e.message));
+      if (refused || i >= FREEZE_TRIES) { freezing.set(code, refused ? Infinity : Date.now()); throw e; }
+      console.error(`freeze ${code} try ${i}: ${e && e.message}`);
+      retireBrowser();
+      await new Promise((ok) => setTimeout(ok, 5000 * i));
+    }
+  }
 }
 
 // ---- riven appraisals: judge what came back, tell the chat once ----------------
@@ -163,8 +183,10 @@ async function appraisalTick() {
   const r = await fetch(`${SITE}/api/appraise/claim`, { method: "POST", headers: { "content-type": "application/json",
     authorization: `Bearer ${env.BOT_RELAY_TOKEN}` }, body: JSON.stringify({ channel: "qq", judged, told, started_told: startedTold }) });
   if (!r.ok) throw new Error(`appraise claim: ${r.status}`);
-  const { judge = [], tell = [], started = [] } = await r.json();
+  const { judge = [], tell = [], started = [], freeze = [] } = await r.json();
   judged = []; told = []; startedTold = [];
+  // AN ORDER NO COMPUTER CAN SEE YET, frozen again beside this loop.
+  for (const code of freeze) freezeAppraisal(code).catch((e) => console.error("freeze", code, e && e.message));
   // A COMPUTER TOOK IT: said once, however long the asker has waited.
   for (const s of started) {
     try {

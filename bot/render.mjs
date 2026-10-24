@@ -86,6 +86,11 @@ async function use(open) {
   return { send: p.send, close: async () => { try { await p.close(); } finally { release(c); } } };
 }
 
+/// A BROWSER THAT HUNG is asked nothing more: the next page starts a fresh one.
+export function retireBrowser() {
+  if (chrome && !chrome.retired) { chrome.retired = true; if (!chrome.open) quit(chrome); }
+}
+
 /// One page over the DevTools protocol: `send(method, params)` and close.
 function page() {
   return use(async (c) => {
@@ -140,6 +145,20 @@ async function attach(url, closed) {
   return { send, close };
 }
 
+/// A PAGE'S ANSWER TO `expr`, where a busy page is not a failed one: a card
+/// ranks a weapon's whole board on its main thread for longer than one call
+/// waits, so an unanswered call is "not yet" until the page's own deadline.
+function asker(p, until) {
+  return async (expr) => {
+    try {
+      return ((await p.send("Runtime.evaluate", { expression: expr, returnByValue: true })).result || {}).result?.value;
+    } catch (e) {
+      if (Date.now() > until || !/no answer in/.test(String(e && e.message))) throw e;
+      return undefined;
+    }
+  };
+}
+
 /// THE QUESTION A RIVEN GAIN ASKS, frozen: its link opened with `?freeze` in a
 /// clean context, which sets the search up and writes `{ engine, request }` to
 /// `body[data-request]` (81-appraisal.js) — so the request is the page's own and
@@ -148,9 +167,9 @@ export async function freezeRequest(url, { wait = READY_MS } = {}) {
   const p = await cleanPage();
   try {
     await p.send("Page.enable");
-    await p.send("Page.navigate", { url });
-    const ask = async (expr) => ((await p.send("Runtime.evaluate", { expression: expr, returnByValue: true })).result || {}).result?.value;
     const until = Date.now() + wait;
+    await p.send("Page.navigate", { url });
+    const ask = asker(p, until);
     for (;;) {
       const got = await ask(`document.body && document.body.dataset.request || ""`);
       if (got) {
@@ -185,9 +204,9 @@ export async function renderCardWith(url, { lang = "zh", wait = READY_MS } = {})
     // an injected script only runs on a page whose Page domain is enabled.
     await p.send("Page.enable");
     await p.send("Page.addScriptToEvaluateOnNewDocument", { source: `try { localStorage.setItem("wfsim-lang", ${JSON.stringify(lang)}); } catch (_) {}` });
-    await p.send("Page.navigate", { url });
-    const ask = async (expr) => ((await p.send("Runtime.evaluate", { expression: expr, returnByValue: true })).result || {}).result?.value;
     const until = Date.now() + wait;
+    await p.send("Page.navigate", { url });
+    const ask = asker(p, until);
     while (!(await ask(`document.body && document.body.dataset.cardReady === "1"`))) {
       if (Date.now() > until) throw new Error(`card not ready: ${url}`);
       await sleep(250);

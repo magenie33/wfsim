@@ -74,5 +74,16 @@ await call("POST", `/api/appraise/${other}/result`, { build, thanks: "a 片达�
 check("a name carrying a listed word is not carried into a chat at all, though the build counts",
   (await db.get("SELECT thanks FROM appraisal_results WHERE code = ?", other)).thanks === "");
 
+const frozenAsk = (await call("POST", "/api/appraise/new", ask("frozen", "g9", "wechat"), bot)).body.code;
+const lost = (await call("POST", "/api/appraise/new", ask("lost", "g9", "wechat"), bot)).body.code;
+const toFreeze = async (channel = "wechat") => (await call("POST", "/api/appraise/claim", { channel }, bot)).body.freeze || [];
+check("an appraisal just opened is not handed back to freeze", !(await toFreeze()).includes(lost));
+await db.run("UPDATE appraisals SET at = ? WHERE code IN (?, ?)", new Date(Date.now() - 90_000).toISOString(), frozenAsk, lost);
+await db.run("UPDATE appraisals SET request = '{}' WHERE code = ?", frozenAsk);
+const again = await toFreeze();
+check("one still unfrozen a minute on is handed back to its bot to freeze", again.includes(lost), JSON.stringify(again));
+check("…never one already frozen", !again.includes(frozenAsk));
+check("…nor to another channel's bot", !(await toFreeze("qq")).includes(lost));
+
 if (failures) { console.log(`\n${failures} failed`); process.exit(1); }
 console.log("\nan appraisal is asked once, answered once");

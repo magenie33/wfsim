@@ -25,6 +25,10 @@ export const SURVEY_KEEP_MS = 7 * 86_400_000;
 const keepFor = (a) => (a.channel === SURVEY_CHANNEL ? SURVEY_KEEP_MS : KEEP_MS);
 /// A build handed back and not judged within this is handed to the bot again.
 const RECLAIM_MS = 120_000;
+/// AN APPRAISAL STILL UNFROZEN this long after it opened is handed back to its
+/// bot to freeze again: one failed freeze must not leave a question no computer
+/// can see.
+const REFREEZE_MS = 60_000;
 /// How many appraisals one asker / one room may open in an hour.
 const PER_ASKER = 5, PER_ROOM = 20, HOUR = 3_600_000;
 const MAX_BUILD = 8_000, MAX_THANKS = 24;
@@ -410,8 +414,12 @@ async function claim(request, env) {
   const { results: toStart } = await db.prepare(`SELECT code, weapon, ruler, riven, chat, asker, at AS asked_at, started_at
     FROM appraisals WHERE channel = ? AND started_at IS NOT NULL AND started_told IS NULL AND told_at IS NULL AND done_at IS NULL
     ORDER BY started_at LIMIT 20`).bind(channel).all();
+  const { results: toFreeze } = await db.prepare(`SELECT code FROM appraisals
+    WHERE channel = ? AND request IS NULL AND done_at IS NULL AND at < ? AND at >= ? ORDER BY at LIMIT 5`)
+    .bind(channel, iso(now - REFREEZE_MS), iso(now - KEEP_MS)).all();
   const parse = (r) => ({ ...r, at: msOf(r.at), asked_at: msOf(r.asked_at), done_at: msOf(r.done_at), started_at: msOf(r.started_at),
     riven: JSON.parse(r.riven), chat: JSON.parse(r.chat),
     ...(r.build ? { build: JSON.parse(r.build) } : {}), ...(r.verdict ? { verdict: JSON.parse(r.verdict) } : {}) });
-  return json({ ok: true, judge: toJudge.map(parse), tell: toTell.map(parse), started: toStart.map(parse) });
+  return json({ ok: true, judge: toJudge.map(parse), tell: toTell.map(parse), started: toStart.map(parse),
+    freeze: toFreeze.map((r) => r.code) });
 }

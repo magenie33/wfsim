@@ -411,7 +411,9 @@ question (docs/BOARD.md §"The Riven Analyst").
    the page would send and what turns a result into a build
    (`boardBuildContext`). The bot opens it right after the appraisal, in a
    browser context of its own with no storage (`bot/render.mjs`
-   `freezeRequest`), and stores it once (`/api/appraise/<code>/request`).
+   `freezeRequest`), and stores it once (`/api/appraise/<code>/request`). A
+   failed freeze is tried again on a fresh browser, and an appraisal still
+   unfrozen a minute after it opened comes back in the bot's claim (`freeze`).
 3. ANY COMPUTER COMPUTING FOR THE BOARD runs it. Freezing it is an ASK of the
    fact factory (docs/BOARD.md §"The fact factory"; worker/appraise.js
    §"Volunteer work"): a chat's, someone waiting on it, due in two minutes and
