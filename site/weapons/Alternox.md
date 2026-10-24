@@ -4,7 +4,7 @@ Chinese name: 电幻步枪
 
 Rifle · Primary · Mastery Rank 8. 62 base damage (electricity 62), 14% crit chance, 2.2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-23
+## Best riven-free build on the WFSim board, as of 2026-10-24
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

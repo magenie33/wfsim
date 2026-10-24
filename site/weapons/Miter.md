@@ -4,7 +4,7 @@ Chinese name: 米特尔
 
 Rifle · Primary · Mastery Rank 6. 500 base damage (impact 25, puncture 25, slash 450), 10% crit chance, 2x crit multiplier, 50% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-23
+## Best riven-free build on the WFSim board, as of 2026-10-24
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

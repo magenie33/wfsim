@@ -4,7 +4,7 @@ Chinese name: 大力士
 
 Heavy Scythe · Melee · Mastery Rank 12. 300 base damage (puncture 90, slash 210), 30% crit chance, 2.2x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-23
+## Best riven-free build on the WFSim board, as of 2026-10-24
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

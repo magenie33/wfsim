@@ -4,7 +4,7 @@ Chinese name: 绝路
 
 Sniper · Primary · Mastery Rank 6. 180 base damage (impact 144, puncture 27, slash 9), 30% crit chance, 3x crit multiplier, 12% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-23
+## Best riven-free build on the WFSim board, as of 2026-10-24
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

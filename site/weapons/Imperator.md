@@ -4,7 +4,7 @@ Chinese name: 凯旋将军
 
 Archgun · Archgun · Mastery Rank 0. 100 base damage (impact 40, puncture 35, slash 25), 24% crit chance, 2x crit multiplier, 12% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-23
+## Best riven-free build on the WFSim board, as of 2026-10-24
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

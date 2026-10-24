@@ -4,7 +4,7 @@ Chinese name: 野猪 Prime
 
 Shotgun · Primary · Mastery Rank 11. 40 base damage x8 multishot (impact 26, puncture 6, slash 8), 15% crit chance, 2x crit multiplier, 11.25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-23
+## Best riven-free build on the WFSim board, as of 2026-10-24
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

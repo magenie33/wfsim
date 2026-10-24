@@ -4,7 +4,7 @@ Chinese name: 保障·锡斯特双枪
 
 Dual Pistols · Secondary · Mastery Rank 10. 28 base damage (impact 5.6, puncture 22.4), 16% crit chance, 1.6x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-23
+## Best riven-free build on the WFSim board, as of 2026-10-24
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

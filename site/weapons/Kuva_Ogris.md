@@ -4,7 +4,7 @@ Chinese name: 赤毒·食人女魔
 
 Launcher · Primary · Mastery Rank 15. 27 base damage (impact 18.9, puncture 8.1), 9% crit chance, 2x crit multiplier, 47% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-23
+## Best riven-free build on the WFSim board, as of 2026-10-24
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

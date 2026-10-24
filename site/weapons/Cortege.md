@@ -4,7 +4,7 @@ Chinese name: 送葬者
 
 Archgun · Archgun · Mastery Rank 14. 180 base damage (heat 180), 20% crit chance, 1.9x crit multiplier, 40% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-23
+## Best riven-free build on the WFSim board, as of 2026-10-24
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
