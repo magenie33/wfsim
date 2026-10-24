@@ -100,6 +100,7 @@ Read the row for what you are about to touch before the code, not after.
 | the update channel, mirrors, shells | `docs/DISTRIBUTION.md` |
 | the desktop client | `docs/DESKTOP.md` |
 | setup, profiling, sharing the checkout | `docs/DEVELOPMENT.md` |
+| cross-tool tasks, handoffs, resource reservations | `docs/COORDINATION.md` |
 | a server — what runs where, moving a service | `docs/SERVERS.md` |
 | how usage is counted | `docs/ANALYTICS.md` |
 | accounts, privacy, billing | `docs/ACCOUNTS.md` |

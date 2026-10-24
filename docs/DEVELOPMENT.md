@@ -354,6 +354,11 @@ See [`CORE.md`](CORE.md) §4 for the full architecture. In short:
 The multi-session working process (worktrees, staging, shipping from the main
 checkout) is in `private/agents` — read its README first.
 
+For opt-in local coordination across coding tools, see
+[`COORDINATION.md`](COORDINATION.md): one shared task store per clone,
+explicit handoffs and advisory resource reservations. Existing `.handoff.md`
+claims stay in force until their owners explicitly migrate them.
+
 **NO LINKS IN A CHECKOUT.** A worktree that needs `private/`, `vendor/` or
 `web/cache` gets a COPY: `git worktree remove --force` and `rm -rf` on Windows
 follow a junction and delete what it points to. `node
