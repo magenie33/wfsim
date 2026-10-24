@@ -423,6 +423,8 @@ jobs:
         run: node scripts/check_reminder_notices.mjs
       - name: Feedback is a mark beside the bell, one box and its screenshots, sent with where the reader was
         run: node scripts/check_feedback_panel.mjs
+      - name: The compute page's total is every order, dispatched and waiting, each kind a row of one list
+        run: node scripts/check_compute_orders.mjs
       # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
       # browser, no engine, no network — it imports `worker/index.js` and runs
       # it against a KV stub. It is here rather than on demand because the two

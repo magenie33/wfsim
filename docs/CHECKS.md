@@ -136,6 +136,17 @@ starts empty; on a phone the mark stays on the bar and nothing floating covers
 the panel. It failed with the mark never redrawn and with the jump menu over
 the panel.
 
+## `check_compute_orders`
+
+The orders on the compute page (`73-compute.js` `computeDemandHtml`), drawn
+from a stubbed demand object: the total is every order listed, said as what is
+dispatched and what waits on the server over a bar of the share dispatched;
+each kind is one row of a list with what was dispatched of it, a kind the page
+does not know shown by its id; the old Queued row is gone and the countdown
+stays; an older object without `orders` still lists its kinds and claims no
+split. It failed with the split drawn from the totals and with an unknown kind
+left out.
+
 ## `check_reminder_notices`
 
 Fires stubbed reminders, and a stubbed message from the site, on a page in both
@@ -762,7 +773,11 @@ what it earned and whether it is claimed, a refused one nothing; nothing is
 claimed signed out, from another site or with a malformed id; an owner sees
 each device by its name, when it last answered and the task it holds by kind
 and public facts alone, renames and removes it, and nobody else can; deleting
-the account releases its devices and its answer.
+the account releases its devices and its answer. The demand lists its orders
+a kind a row with what a device has taken of each, and prices the hours to
+clear over the facts formed since the first answer its read reaches; it
+failed with the dispatched count never matching and with the facts counted
+over the whole day.
 
 ## `check_folds`
 
