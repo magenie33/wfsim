@@ -10,6 +10,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const CHROME = process.env.CHROME || "chrome-headless-shell";
+/// A WHOLE CHROME (a check's, a developer's) opens a window unless told not to,
+/// and on a CI runner outgrows its small /dev/shm; the headless shell the server
+/// runs has no window to open.
+const HEADLESS = /headless-shell/.test(CHROME) ? [] : ["--headless=new", "--disable-dev-shm-usage"];
 /// A CARD TAKES 20–35 s on the bot's server: the page ranks the weapon's whole
 /// board before it draws the card. QQ holds a reply open for minutes.
 const READY_MS = 60_000;
@@ -42,7 +46,7 @@ async function launch() {
   const held = new Set([...browsers].map((b) => b.slot));
   let slot = 0;
   while (held.has(slot)) slot++;
-  const proc = spawn(CHROME, ["--no-sandbox", "--lang=zh-CN", "--remote-debugging-port=0", `--user-data-dir=${dir}`,
+  const proc = spawn(CHROME, [...HEADLESS, "--no-sandbox", "--lang=zh-CN", "--remote-debugging-port=0", `--user-data-dir=${dir}`,
     `--disk-cache-dir=${join(CACHE_ROOT, String(slot))}`, `--disk-cache-size=${CACHE_BYTES}`,
     "--hide-scrollbars", "--disable-gpu", "about:blank"], { stdio: "ignore" });
   proc.unref();

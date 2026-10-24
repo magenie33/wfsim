@@ -193,13 +193,19 @@ Verified to bite: a final round of 101 runs named every weapon.
 
 The bot's card is the page's, pixel for pixel: each fixture — a plain gun,
 riven builds, the analyst with and without a filter, a melee, a weapon with
-modes, an Incarnon, a kitgun — is taken from `/weapons/<Name>/card` and from
-the document `bot/card.mjs` writes, in Chinese and English, and the two PNGs
-must be the same bytes. The style is the one the page under test links, the
-pictures `site/img`; a page shot that differs is taken again twice, since a
-picture that failed to arrive is hidden rather than an error. Against a dev
-server, `web/cache/img` must hold `site/img`'s files (the dev server serves
-that cache). Verified to bite: `#card-page` moved one pixel failed every card.
+modes, an Incarnon, a kitgun, an appraisal's way in and its answer — is taken
+from `/weapons/<Name>/card` and from the document `bot/card.mjs` writes, in
+Chinese and English, and the two PNGs must be the same bytes. The appraisal is
+answered by a door in front of the site: a rank-7 card of a Laetum riven row of
+the board under test, and that row's build as the answer. Its replay runs both
+ways and the verdicts must match field for field — the raw score and gain to
+1e-12, since the page's fleet groups its fold by its lanes; the bot's is dated
+by the page's so both print one time. The style is the one the page under test
+links, the pictures `site/img`; a page shot that differs is taken again twice,
+since a picture that failed to arrive is hidden rather than an error. Against a
+dev server, `web/cache/img` must hold `site/img`'s files (the dev server serves
+that cache). Verified to bite: `#card-page` moved one pixel failed every card,
+and the bot's card at rank 8 failed both verdicts.
 
 ## `check_agent_door`
 

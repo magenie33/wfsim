@@ -2,7 +2,7 @@
 //
 // docs/AGENT.md §"The QQ bot". `/weapons/<Name>/card?kind=pz|zk&ruler=&n=`, a
 // zk narrowed by `&has=<stat ids>&malus=<id|any|none>`, a pz of riven builds by
-// `&rv=1`. The card itself is `headlessLongCard` (87-headless.js), the one the
+// `&rv=1`. The card itself is `headlessLongCard` (83-headless-card.js), the one the
 // bot draws with no page; this route fetches what it shows, draws it in the
 // light theme with nothing else on the page, and sets `body[data-card-ready]`
 // once every number in it has arrived.
@@ -16,41 +16,10 @@ function measuredNote() { return tr("Every build shows when it was measured and 
 /// What the address asks for (`headlessCardAsk`).
 const cardParams = () => headlessCardAsk(location.search);
 
-/// THE REPLAY: the board's own door judges the build, then the official fight
-/// runs it with the asker's card at its real rolls, scored the way the board
-/// scores (`metricValue`). Against the board: its riven-free leader for this
-/// ruler, and where the card would stand among the rivens it has measured.
-async function appraisalReplay(w, job) {
-  const build = job.result.build || {};
-  const check = await api("/api/board/check", build).catch(() => null);
-  if (!check || check.ok === false || check.accepted === false) {
-    return { ok: false, reason: (check && check.reason) || tr("the board could not judge this build") };
-  }
-  await agentDo("shell.preset.open", { bar: "scenario", preset: job.ruler });
-  const rv = job.riven || {};
-  const id = newRiven({ bonuses: rv.bonuses || [], malus: rv.malus || null,
-    rank: rv.rank != null ? rv.rank : rivenRules().max_rank, polarity: rv.polarity || "madurai" });
-  const riven = (loadPresetList(RIVENS).find((p) => p.id === id) || {}).state || {};
-  const state = boardRowState(w, { ...build, mods: (build.mods || []).map((m) => (m === BOARD_RIVEN_SLOT ? RIVEN_PREFIX + id : m)) });
-  // THE RULER'S OWN RUNS, not the reader's setting: the grade divides this
-  // number by the board's, and a board row is fought at the ruler's runs.
-  const runs = (((scenarioNamed(activeScenario) || {}).state) || {}).runs || simRuns();
-  const r = await simulateFleet({ ...tennoPayload(), ...seatPayload(state), rivens: rivenPayload(), ...theFight({ runs }) });
-  if (!r || r.ok === false) return { ok: false, reason: (r && r.error) || tr("the replay did not run") };
-  const met = metricOf((scenarioNamed(activeScenario) || {}).metric);
-  const score = metricValue(met, r);
-  const rows = (BOARD[w.id] || []).filter((x) => x.benchmark === job.ruler);
-  const free = pooledRanking(rankBoard(rows.filter((x) => !x.riven), [job.ruler], w.modes))[0];
-  const rivens = pooledRivens(META, w, rows, job.ruler).rivens;
-  const above = rivens.filter((x) => x.row.score > score).length;
-  const preset = ((META.search_presets || {}).presets || []).find((p) => p.riven) || {};
-  return { ok: true, score, shown: fmtScore(score), state, riven, metric: met.id,
-    top: free ? headlessCardShown(free.row) : null, gain: free ? score / free.row.score - 1 : null,
-    of: rivens.length, rank: above + 1, runs,
-    starts: builtinSearchStarts(w.id, RIVEN_PREFIX + id).length, candidate_runs: preset.candidate_runs || null,
-    board_at: boardMeasuredAt(rows) || null, at: new Date().toISOString(),
-    ...headlessRivenGrade(score, free ? free.row.score : 0, rivens.length ? rivens[0].row.score : 0) };
-}
+/// THE REPLAY (`headlessAppraisalReplay`), the bot's own: the simulation spread
+/// over this page's fleet.
+const appraisalReplay = (w, job) => headlessAppraisalReplay(pageSay(), w, job, BOARD[w.id] || [],
+  { check: (b) => api("/api/board/check", b), simulate: (body) => simulateFleet(body) });
 
 const cardBox = (head, body) => headlessCardBox(head, body);
 
@@ -67,11 +36,7 @@ async function renderCardPage(w, ask) {
   // AN APPRAISAL'S ANSWER, replayed here with the asker's real rolls — the
   // number a chat is told is this page's, never the searcher's.
   const verdict = kind === "appraise" && job && job.result ? await appraisalReplay(w, job) : null;
-  if (verdict) {
-    const { ok, score, shown, gain, top, of, rank, reason, grade, best, best_riven, runs, starts, candidate_runs, board_at, at } = verdict;
-    document.body.dataset.verdict = JSON.stringify({ ok, score, shown, gain, top, of, rank, reason,
-      grade, best, best_riven, runs, starts, candidate_runs, board_at, at });
-  }
+  if (verdict) document.body.dataset.verdict = JSON.stringify(headlessVerdictRecord(verdict));
   const card = headlessLongCard(pageSay(), w, ask, { rows: BOARD[w.id] || [], job, verdict, origin: LIVE_ORIGIN,
     riven: rivenCardGot });
   const qr = await api("/api/qr", { text: card.link });

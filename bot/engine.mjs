@@ -11,9 +11,9 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const SITE = "https://wfsim.app";
 const BOARD_TTL_MS = 600_000;
 
-/// `site` is where the board is read from: the live site, or a check's server.
-export async function loadEngine({ site = SITE } = {}) {
-  const headless = await import(pathToFileURL(resolve(ROOT, "mcp/headless.js")));
+/// THE WASM AND ITS DATA, as `mcp/engine.js` names them: once in this process,
+/// and once in each thread of a fleet (fleet.mjs).
+export function loadWasm() {
   const src = readFileSync(resolve(ROOT, "mcp/engine.js"), "utf8");
   const wasmPath = resolve(ROOT, "mcp", src.match(/^import module from "([^"]+)";$/m)[1]);
   const glue = src.split("\n").filter((l) => !/^(import|export) /.test(l)).join("\n");
@@ -24,6 +24,13 @@ export async function loadEngine({ site = SITE } = {}) {
     const err = engine.install_data(readFileSync(resolve(ROOT, "mcp", p), "utf8"));
     if (err) throw new Error(err);
   }
+  return engine;
+}
+
+/// `site` is where the board is read from: the live site, or a check's server.
+export async function loadEngine({ site = SITE } = {}) {
+  const headless = await import(pathToFileURL(resolve(ROOT, "mcp/headless.js")));
+  const engine = loadWasm();
   const api = (path, body) => JSON.parse(engine.api(path, JSON.stringify(body ?? {})));
   const meta = api("/api/meta");
   const i18n = api("/api/i18n");
@@ -58,5 +65,5 @@ export async function loadEngine({ site = SITE } = {}) {
     const q = headless.HEADLESS_QUERIES.find((x) => x.id === id);
     return headless.headlessCheckArgs(q, args) || q.run(args, host);
   };
-  return { host, run, meta, i18n, zh, headless, api, site };
+  return { host, run, meta, i18n, zh, headless, api, site, wasm: engine };
 }

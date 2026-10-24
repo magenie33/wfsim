@@ -41,10 +41,11 @@ check("an Operator node's switch goes through the door, a tick by the reader's h
   && src.includes('wfsim.do("simulator.node.tick", { node: n.id, on: el.dataset.s === "on" }, { hand: true })'));
 check("which slot a mod may sit in is decided once", once("=== !!m.stance") === 1, once("=== !!m.stance"));
 
-// THE HEADLESS PART READS NOTHING OF THE PAGE: a surface with no page runs it
+// THE HEADLESS PARTS READ NOTHING OF THE PAGE: a surface with no page runs them
 // as it is (docs/AGENT.md §"Headless queries"), so a page global in it works
 // here and breaks there. Comments are stripped; `host.tr(` is the part's own.
-const headless = readFileSync(new URL("../web/src/static/app/87-headless.js", import.meta.url), "utf8")
+const headless = ["83-headless-card.js", "87-headless.js"]
+  .map((f) => readFileSync(new URL(`../web/src/static/app/${f}`, import.meta.url), "utf8")).join("\n")
   .split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
 const reaches = headless.match(/\b(META|BOARD|BOARD_HAVE|LANG|I18N|ALT_NAMES|document|window|location|fetch)\b|\$\(|(?<![.\w])(tr|api|weaponInfo|modById|arcaneById|buildPayload)\(/g) || [];
 check("the headless part reads nothing of the page", reaches.length === 0, reaches.join(" · "));

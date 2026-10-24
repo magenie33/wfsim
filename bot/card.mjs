@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // THE LONG IMAGE, DRAWN HERE — docs/AGENT.md §"The QQ bot". The card page's own
-// drawing (`headlessLongCard`, 87-headless.js) run on the bot's engine and
+// drawing (`headlessLongCard`, 83-headless-card.js) run on the bot's engine and
 // written as one document holding everything it shows: the site's style, every
 // picture as data, the QR code. Chrome only rasterizes it (render.mjs
 // `renderDocument`): it loads nothing, so a busy page or a slow border cannot
@@ -9,6 +9,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { resolve, dirname, join, extname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { SITE } from "./engine.mjs";
+import { simulateFleet } from "./fleet.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 /// THE SITE'S STYLE AND PICTURES, the copy shipped beside the bot (scripts/ship_bot.py).
@@ -46,33 +47,42 @@ const speaker = (engine, lang) => {
   return speakers.get(lang);
 };
 
-/// THE CARD AT `url` (a `/weapons/<Name>/card?…` address) as a whole document,
-/// or null for one only the page draws: an appraisal's verdict, whose replay is
-/// a whole official fight on the page's fleet, and any card that is not a weapon's.
-/// `opts.css` and `opts.img` name the style and pictures (a check's own build).
-export async function cardDocument(engine, url, { lang = "zh", css = siteStyle(), img = IMG } = {}) {
+/// An appraisal as its door answers it, with the one build `result` names.
+const appraisalAt = (engine) => (code, result) => fetch(`${engine.site}/api/appraise/${encodeURIComponent(code)}${
+  result ? `?result=${result}` : ""}`, { signal: AbortSignal.timeout(30_000) }).then((r) => (r.ok ? r.json() : null));
+
+/// THE CARD AT `url` (a `/weapons/<Name>/card?…` address): `{ html, verdict }`,
+/// the whole document and, for an appraisal's answer, its replay's verdict
+/// (`headlessAppraisalReplay`, the fight run on this machine's cores) — or null
+/// for a card that is not a weapon's, which only the page draws.
+/// `opts.css` and `opts.img` name the style and pictures (a check's own build),
+/// `opts.appraisal(code, result)` the appraisal's door and `opts.now` the clock
+/// a verdict is dated by.
+export async function cardDocument(engine, url, { lang = "zh", css = siteStyle(), img = IMG, appraisal = appraisalAt(engine), now } = {}) {
   const h = engine.headless;
   const u = new URL(url);
   const path = /^(\/weapons\/[^/]+)\/card\/?$/.exec(u.pathname);
   if (!path) return null;
   const ask = h.headlessCardAsk(u.search);
-  if (ask.kind === "appraise" && ask.result) return null;
   const wanted = decodeURIComponent(path[1]);
   const plain = (engine.meta.weapons || []).find((w) => decodeURIComponent(h.headlessWeaponPath(engine.meta.weapons, w.id)) === wanted);
   if (!plain) throw new Error(`no weapon at ${wanted}`);
   const say = speaker(engine, lang);
   const w = say.meta.weapons.find((x) => x.id === plain.id);
-  const job = ask.kind !== "appraise" ? null : await fetch(`${engine.site}/api/appraise/${encodeURIComponent(ask.code)}`,
-    { signal: AbortSignal.timeout(30_000) }).then((r) => (r.ok ? r.json() : null));
+  const job = ask.kind === "appraise" ? await appraisal(ask.code, ask.result) : null;
   if (ask.kind === "appraise" && !job) throw new Error(`no appraisal ${ask.code}`);
-  const rows = ask.kind === "appraise" ? [] : (await engine.host.board(w.id)) || [];
+  const rows = ask.kind === "appraise" && !(job && job.result) ? [] : (await engine.host.board(w.id)) || [];
+  // THE NUMBER A CHAT IS TOLD is this replay's, never the searcher's.
+  const verdict = job && job.result ? await h.headlessAppraisalReplay(say, w, job, rows, {
+    check: async (b) => engine.api("/api/board/check", b), simulate: (body) => simulateFleet(engine.wasm, body), now }) : null;
   // A RIVEN'S STATS FROM THE ENGINE, whole: the page fills them in afterwards.
   const riven = (wp, spec) => h.headlessRivenAnswer(say, engine.api("/api/riven", { weapon: wp.id, ...spec }));
-  const card = h.headlessLongCard(say, w, ask, { rows, job, verdict: null, origin: SITE, riven });
+  const card = h.headlessLongCard(say, w, ask, { rows, job, verdict, origin: SITE, riven });
   const qr = engine.api("/api/qr", { text: card.link });
   // EVERY PICTURE EAGER, as the page sets them before its screenshot.
   const inside = card.draw(qr && qr.svg).replace(/ loading="lazy"/g, ' loading="eager"')
     .replace(/ src="([^"]*)"/g, (_, src) => ` src="${inlined(src, img)}"`);
-  return `<!doctype html><html lang="${lang}" data-theme="light"><head><meta charset="utf-8"><style>${css}</style></head>`
-    + `<body class="on-card"><main id="card-page" class="card-page${card.wayIn ? " lc-way-in" : ""}">${inside}</main></body></html>`;
+  return { html: `<!doctype html><html lang="${lang}" data-theme="light"><head><meta charset="utf-8"><style>${css}</style></head>`
+    + `<body class="on-card"><main id="card-page" class="card-page${card.wayIn ? " lc-way-in" : ""}">${inside}</main></body></html>`,
+    verdict: verdict ? h.headlessVerdictRecord(verdict) : null };
 }

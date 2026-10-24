@@ -116,7 +116,7 @@ const dtIcon = (ty) => {
 };
 // An engine-generated line in the locale (`headlessTf`, effect_phrases).
 const tf = (x) => headlessTf(I18N, x);
-/// THE PAGE AS A SPEAKER (87-headless.js §"words"): its names, its strings,
+/// THE PAGE AS A SPEAKER (83-headless-card.js §"words"): its names, its strings,
 /// its lines — what every drawing shared with a surface with no page is handed.
 let PAGE_SAY = null;
 const pageSay = () => (PAGE_SAY && PAGE_SAY.meta === META && PAGE_SAY.i18n === I18N && PAGE_SAY.lang === LANG ? PAGE_SAY

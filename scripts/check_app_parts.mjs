@@ -11,7 +11,7 @@ import { APP_PARTS_DIR, appParts } from "./app_source.mjs";
 
 // THE CEILING MAY ONLY FALL: it is the largest part today. Lower it when a part
 // is split; never raise it — a part past it is a section to cut in two.
-const PART_LINE_CEILING = 1292;
+const PART_LINE_CEILING = 1291;
 const NAME = /^\d\d-[a-z0-9]+(?:-[a-z0-9]+)*\.js$/;
 
 let failures = 0;

@@ -522,14 +522,8 @@ function restoreState(st, weapon) {
   }
 }
 
-// Kill score PER MINUTE. The score is whole kills plus the fraction of the
-// current target's pool already drained, so it grows with the engagement —
-// dividing by the clock is what makes two runs of different length
-// comparable, exactly as DPS does for damage.
-// A MISSING score or clock is NaN, never 0: an unknown drawn as "0 KPM" reads as
-// a build that killed nothing (a search row once read for a field it lacks).
-const kpm = (score, duration) => (score == null || !(Number(duration) >= 0) ? NaN
-  : duration > 0 ? (Number(score) * 60) / duration : 0);
+/// Kill score PER MINUTE (`headlessKpm`).
+const kpm = (score, duration) => headlessKpm(score, duration);
 
 /// WHAT A SCENARIO IS JUDGED BY — resolved against the table `/api/meta`
 /// publishes (`engine::rules::metrics`), never asked as "is it dps".
@@ -544,15 +538,8 @@ const kpm = (score, duration) => (score == null || !(Number(duration) >= 0) ? Na
 /// runs while drawing: `parse_fight` refuses one at the door, so anything that
 /// reaches here is a metric this build knows or a scenario that cannot run.
 const metricOf = (id) => headlessMetricOf(META, id, METRIC_FALLBACK);
-/// The run's number IN THAT METRIC. `score` off the wire is kill PROGRESS over
-/// the whole engagement, so a per-minute metric turns it into a rate; a metric
-/// that is already a rate reads its own field and is left alone. A result
-/// without that field is NaN, which every formatter below draws as "—".
-const metricValue = (m, r) => {
-  const raw = (r || {})[m.field];
-  if (raw == null) return NaN;
-  return m.per_minute ? kpm(raw, (r || {}).duration) : Number(raw);
-};
+/// The run's number IN THAT METRIC (`headlessMetricValue`).
+const metricValue = (m, r) => headlessMetricValue(m, r);
 /// Its unit, translated. The label is the engine's; the translation is ours.
 const metricLabel = (m) => tr(m.label);
 

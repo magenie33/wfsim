@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { loadEngine, SITE } from "./engine.mjs";
 import { makeAnswer } from "./answer.mjs";
-import { renderCard, renderCardWith, renderDocument } from "./render.mjs";
+import { renderCard, renderDocument } from "./render.mjs";
 import { cardDocument } from "./card.mjs";
 import { relayWorld } from "./world.mjs";
 
@@ -18,8 +18,6 @@ const API = env.QQ_API || "https://api.sgroup.qq.com";
 const IDLE_MS = 1000;
 /// A call to QQ or the site that has not answered in this has failed: the chat loop never waits unbounded.
 const FETCH_MS = 30_000;
-/// How long an appraisal's answer may take to draw: a replay is a whole fight.
-const REPLAY_MS = 300_000;
 
 let token = null;
 async function accessToken() {
@@ -67,13 +65,19 @@ async function boardDigest() {
   stamp = { digest, at: Date.now() };
   return digest;
 }
+/// A CARD AND ITS VERDICT, `{ png, verdict }`: drawn here (bot/card.mjs), and
+/// only a card that is not a weapon's opens the page.
+async function drawCard(url) {
+  const doc = await cardDocument(engine, url);
+  if (!doc) return { png: await renderCard(url), verdict: null };
+  return { png: await renderDocument(doc.html), verdict: doc.verdict };
+}
+
 async function cardFor(url) {
   const digest = await boardDigest();
   const hit = digest && cards.get(url);
   if (hit && hit.digest === digest && Date.now() - hit.at < CARD_KEEP_MS) return hit.png;
-  // DRAWN HERE, and only a card the bot cannot draw opens the page (bot/card.mjs).
-  const html = await cardDocument(engine, url);
-  const png = html ? await renderDocument(html) : await renderCard(url);
+  const { png } = await drawCard(url);
   if (digest) {
     cards.delete(url);
     cards.set(url, { png, digest, at: Date.now() });
@@ -176,7 +180,7 @@ async function postToChat(chat, seq, body) {
 
 async function tellAppraisal(item, chatPath, post, late) {
   let png = (drawn.get(item.code) || {}).png;
-  if (!png) png = (await renderCardWith(answer.answerCard(item, item.result_id), { wait: REPLAY_MS })).png;
+  if (!png) png = (await drawCard(answer.answerCard(item, item.result_id))).png;
   const media = await qq(`${chatPath}/files`, { file_type: 1, file_data: png.toString("base64"), srv_send_msg: false });
   await post({ msg_type: 7, content: answer.told(item, late), media: { file_info: media.file_info } });
   drawn.delete(item.code);
@@ -201,7 +205,7 @@ async function appraisalTick() {
   }
   for (const j of judge) {
     try {
-      const { png, verdict } = await renderCardWith(answer.answerCard(j, j.id), { wait: REPLAY_MS });
+      const { png, verdict } = await drawCard(answer.answerCard(j, j.id));
       const ok = !!(verdict && verdict.ok);
       judged.push({ id: j.id, ok, verdict: verdict || {} });
       if (ok && !drawn.has(j.code)) drawn.set(j.code, { png });

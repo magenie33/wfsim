@@ -370,14 +370,14 @@ IT READS THE PUBLISHED BOARD, the one the card page draws from, so the words
 and the image of one answer stand on the same rows.
 
 IT DRAWS ITS OWN CARD (`bot/card.mjs`): the card page's drawing,
-`headlessLongCard` (87-headless.js), run on the bot's engine, the riven lines
+`headlessLongCard` (83-headless-card.js), run on the bot's engine, the riven lines
 and the QR code from that engine, written as one document with the stylesheet
 inlined and every picture as data. Chrome only rasterizes it
 (`renderDocument`), loading nothing; a failure is taken again once on a fresh
 browser. The page's `/card` route draws the same function's output, and
-`check_card_document` holds the two to the same PNG bytes. An appraisal's
-verdict and the contributors' card still open the page (`renderCardWith`): the
-verdict replays a whole official fight on the page's fleet.
+`check_card_document` holds the two to the same PNG bytes, an appraisal's
+verdict included. Only the contributors' card still opens the page
+(`renderCardWith`).
 
 THE BOT SERVER IS IN HONG KONG, where QQ's API, Discord and the site are all
 near: a card it cannot draw itself is a whole page load of the site, and from
@@ -459,11 +459,15 @@ question (docs/BOARD.md §"The Riven Analyst").
    row, so cores on one computer, not more computers, are what make it quick.
    Once one has taken it the chat is told so.
 4. The channel's bot claims what came back (`/api/appraise/claim`), replays the
-   build itself with the card's real rolls at the ruler's own runs — the board's
-   fight, so its number divides the board's — and GRADES it 0 to 100, linear in
-   the gain: 100 × (card − riven-free #1) ÷ (board #1 − riven-free #1), rounded
-   down, 100 at or past #1 and for the first riven where the board has none, 0
-   for no gain (`rivenGrade`). The picture states every term it stood on: both
+   build itself with the card's real rolls and rank at the ruler's own runs —
+   the board's fight, so its number divides the board's — and GRADES it 0 to
+   100, linear in the gain: 100 × (card − riven-free #1) ÷ (board #1 −
+   riven-free #1), rounded down, 100 at or past #1 and for the first riven where
+   the board has none, 0 for no gain (`headlessRivenGrade`). The replay is
+   `headlessAppraisalReplay` (83-headless-card.js), which the card page runs too: the
+   bot fights it on its own engine across its cores, one shard a run folded in
+   run order (`bot/fleet.mjs`), so its number is the one a single call or the
+   board's scorer gives, to the bit. The picture states every term it stood on: both
    numbers, how many rivens, when, and that the search is a floor. The first build it accepts
    wins once; later ones are kept on the board and not announced. It answers
    as a passive reply while QQ's window is open (`bot/qq.mjs`), past it as an
