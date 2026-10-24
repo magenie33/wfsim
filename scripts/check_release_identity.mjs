@@ -232,11 +232,13 @@ check(/const benchState = [\s\S]{0,300}?BOARD_META[\s\S]{0,120}?\.boards/.test(a
 // and reading a field off anything else still is.
 const bind = (app.match(/const (\w+) = benchState\(/) || [])[1];
 check(!!bind, "…through one binding", "nothing calls benchState()");
-for (const f of ["scored_at_epoch_seconds", "submissions"]) {
-  const off = [...app.matchAll(new RegExp(`([A-Za-z_$][\\w$]*)\\.${f}\\b`, "g"))].map((m) => m[1]);
-  check(off.length > 0 && off.every((o) => o === bind), `…and reads ${f} from it`,
-    `read off ${[...new Set(off)].join(", ") || "nothing"}`);
-}
+const off = [...app.matchAll(/([A-Za-z_$][\w$]*)\.submissions\b/g)].map((m) => m[1]);
+check(off.length > 0 && off.every((o) => o === bind), "…and reads submissions from it",
+  `read off ${[...new Set(off)].join(", ") || "nothing"}`);
+// NO TIME DATES A WHOLE BOARD: the live board re-ranks a weapon the moment its
+// facts move, so each row's own record is its age (docs/BOARD.md).
+const dated = [...app.matchAll(/\.scored_at_epoch_seconds\b/g)].length;
+check(!dated, "…and dates no whole board", `${dated} read(s) of a board's scored_at_epoch_seconds`);
 
 console.log(NL + (bad ? `${bad} failed` : "the build says which release it is"));
 process.exit(bad ? 1 : 0);
