@@ -48,14 +48,11 @@ function renderOptFight() {
 // search preset; a start that pins something a limit rules out cannot run.
 // docs/OPTIMIZER.md, "Limits".
 
-const LIMIT_AXES = ["mods", "arcanes", "evolutions", "modes", "valence"];
-const blankLimits = () => ({ exclude: Object.fromEntries(LIMIT_AXES.map((k) => [k, []])),
-  mods: 8, exilus: true, arcane_seats: [] });
-
-/// A stored limits object, cleaned against THIS weapon: what it cannot hold drops.
+/// A stored limits object, cleaned against THIS weapon: what it cannot hold
+/// drops, onto the limits that rule nothing out (`headlessBlankLimits`).
 function normalizeLimits(l) {
-  const out = blankLimits();
   const w = weaponInfo($("weapon").value) || {};
+  const out = headlessBlankLimits(META, w.id);
   const ex = (l && l.exclude) || {};
   // A RIVEN THIS BROWSER DOES NOT HOLD stays excluded (`holdAbsent`): the
   // search reads the list as a filter, so an id it does not know costs nothing.

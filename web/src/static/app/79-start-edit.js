@@ -29,19 +29,8 @@ function normalizeStart(s, w) {
 /// The starts as `/api/optimize` reads them.
 const startsPayload = () => opt.starts.map(startPayload);
 
-/// A start as `/api/optimize` reads it: the build's slots, its axes, its pins.
-function startPayload(s) {
-  const b = s.build;
-  return {
-    slots: (b.slots || []).map((x) => (x && x.mod ? rankedId(x.mod, x.rank) : null)),
-    evolutions: Object.values(b.evoSel || {}).filter(Boolean),
-    arcane: (b.arcane || []).slice(),
-    arcane_rank: (b.arcaneRank || []).slice(),
-    mode: b.mode || null,
-    valence_element: (b.valence || {}).element || null,
-    fixed: (s.fixed || []).map((k) => { const [kind, idx] = k.split(":"); return { kind, idx: Number(idx) }; }),
-  };
-}
+/// A start as `/api/optimize` reads it (`headlessStartPayload`).
+const startPayload = (s) => headlessStartPayload(META, s);
 
 /// A RIVEN NO CARD OF THIS READER'S NAMES — the board's bare slot id, or a card
 /// since deleted. In `stance` or the `mods` scope one refuses the whole search

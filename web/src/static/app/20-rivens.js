@@ -55,40 +55,16 @@ const RIVEN_SPLICED_NOTE = "A Riven Splicer's stat, made out of two rolled ones:
 // count of bonuses, and a +1 for the malus. It leads because it is the
 // ONLY thing that decides the multipliers; a 2 and a 2+1 pay their bonuses
 // differently before a single stat is chosen.
-// Best first, left to right: 3+1, 3, 2+1, 2. A riven is
-// shopped for from the top — the third bonus is what makes one worth having,
-// and the malus is the price, so the pairs read as "with / without price"
-// rather than as a count that happens to climb.
-const RIVEN_SHAPES = [
-  { id: "3+1", bonuses: 3, malus: true },
-  { id: "3", bonuses: 3, malus: false },
-  { id: "2+1", bonuses: 2, malus: true },
-  { id: "2", bonuses: 2, malus: false },
-];
+// The four are `HEADLESS_RIVEN_SHAPES` (87-headless.js), best first.
 // A new card starts at 3+1 — the shape a riven worth
 // making is in. Stated by ID, not by position, so the display order above
 // stays a display decision and never doubles as the default.
 const RIVEN_SHAPE_DEFAULT = "3+1";
 
-// An EMPTY card. Nothing is pre-picked: a default stat is a claim the visitor
-// did not make. Two bonuses is the game's floor for a riven rather than a
-// suggestion, and the rolls sit at 1.0 because a slider has to be somewhere.
-// FOUR drafts, one per shape, and only the active one is the riven.
-//
-// Without them, switching 3+1 -> 2+1 -> 3+1 loses the third stat: the slot is
-// popped and there is nowhere for it to have gone.
-// Keeping each shape's own stats means a shape switch is a switch, not an
-// edit — you can compare a 2+1 against a 3+1 by clicking between them.
-//
-// `bonuses` / `malus` stay the ACTIVE shape's, so everything downstream —
-// the rows, the payload, the engine — keeps reading a riven the same way.
-const RIVEN_BLANK_DRAFT = (n, malus) => ({
-  bonuses: Array.from({ length: n }, () => ({ id: null, roll: 1.0 })),
-  malus: malus ? { id: null, roll: 1.0 } : null,
-});
+// An EMPTY card: a draft per shape (`headlessBlankDraft`), nothing pre-picked.
 function blankRiven() {
   const drafts = {};
-  RIVEN_SHAPES.forEach((s) => { drafts[s.id] = RIVEN_BLANK_DRAFT(s.bonuses, s.malus); });
+  HEADLESS_RIVEN_SHAPES.forEach((s) => { drafts[s.id] = headlessBlankDraft(s.bonuses, s.malus); });
   return {
     shape: RIVEN_SHAPE_DEFAULT,
     drafts,
@@ -99,39 +75,8 @@ function blankRiven() {
   };
 }
 
-/// Bring a riven up to the four-draft shape — older saved ones carry only the
-/// active stats, and a missing draft is simply an empty one.
-function withDrafts(r) {
-  const out = JSON.parse(JSON.stringify(r || {}));
-  out.rank = out.rank ?? rivenRules().max_rank;
-  out.polarity = out.polarity || "madurai";
-  // A riven saved before the wiki's Bonus/Malus wording still says
-  // positives/curse. It is the visitor's own item and outlives our
-  // vocabulary, so it is read either way and re-saved in the new words.
-  out.bonuses = out.bonuses || out.positives || [];
-  out.malus = out.malus || out.curse || null;
-  delete out.positives;
-  delete out.curse;
-  Object.values(out.drafts || {}).forEach((d) => {
-    d.bonuses = d.bonuses || d.positives || [];
-    d.malus = d.malus || d.curse || null;
-    delete d.positives;
-    delete d.curse;
-  });
-  out.shape = out.shape || `${out.bonuses.length || 2}${out.malus ? "+1" : ""}`;
-  out.drafts = out.drafts || {};
-  RIVEN_SHAPES.forEach((s) => {
-    if (!out.drafts[s.id]) out.drafts[s.id] = RIVEN_BLANK_DRAFT(s.bonuses, s.malus);
-  });
-  // The stats it was saved with belong to the shape it was saved in.
-  if (out.bonuses.length) {
-    out.drafts[out.shape] = { bonuses: out.bonuses, malus: out.malus };
-  }
-  const d = out.drafts[out.shape];
-  out.bonuses = d.bonuses;
-  out.malus = d.malus;
-  return out;
-}
+/// Bring a riven up to the four-draft shape (`headlessWithDrafts`).
+const withDrafts = (r) => headlessWithDrafts(META, r);
 
 /// Every slot filled? An unfinished card is not an ILLEGAL riven — it is one
 /// that has not been described yet, and it must not be reported as an error.
@@ -324,11 +269,11 @@ const shapeWords = (s) =>
 
 function renderRivenShape() {
   const now = riven.shape || `${riven.bonuses.length}${riven.malus ? "+1" : ""}`;
-  const shapeNow = RIVEN_SHAPES.find((x) => x.id === now)
-    || RIVEN_SHAPES.find((x) => x.id === RIVEN_SHAPE_DEFAULT);
+  const shapeNow = HEADLESS_RIVEN_SHAPES.find((x) => x.id === now)
+    || HEADLESS_RIVEN_SHAPES.find((x) => x.id === RIVEN_SHAPE_DEFAULT);
   $("riven-shape").innerHTML =
     `<span class="rv-lbl">${escHtml(tr("Shape"))}</span><span class="oseg">` +
-    RIVEN_SHAPES.map((s) =>
+    HEADLESS_RIVEN_SHAPES.map((s) =>
       `<span class="seg ${s.id === now ? "on" : ""}" data-rv="${s.id}"
              title="${escHtml(shapeWords(s))}">${s.id}</span>`).join("") +
     `</span><span class="rv-lbl dim">${escHtml(shapeWords(shapeNow))}</span>`;
@@ -339,8 +284,8 @@ function renderRivenShape() {
     // shape's. Nothing is discarded, so clicking back and forth is free.
     riven.drafts[riven.shape] = { bonuses: riven.bonuses, malus: riven.malus };
     riven.shape = want;
-    const s = RIVEN_SHAPES.find((x) => x.id === want);
-    const d = riven.drafts[want] || RIVEN_BLANK_DRAFT(s.bonuses, s.malus);
+    const s = HEADLESS_RIVEN_SHAPES.find((x) => x.id === want);
+    const d = riven.drafts[want] || headlessBlankDraft(s.bonuses, s.malus);
     riven.drafts[want] = d;
     riven.bonuses = d.bonuses;
     riven.malus = d.malus;

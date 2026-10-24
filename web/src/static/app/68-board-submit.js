@@ -63,16 +63,7 @@ const setBoardConsent = (v) => {
 function boardRivenShape(rivenMod) {
   const mod = rivenMod || (mainSlots().find((s) => isRivenId(s.mod)) || {}).mod;
   if (!mod) return { riven_pos: [], riven_neg: "" };
-  const st = (loadPresetList(RIVENS).find(
-    (p) => RIVEN_PREFIX + p.id === mod) || {}).state || {};
-  const ids = (xs) => (xs || []).map((x) => x && x.id).filter(Boolean);
-  return {
-    // SORTED, because a riven's stats do not combine with each other — two
-    // players listing them in different orders described one riven and must
-    // produce one row.
-    riven_pos: ids(st.bonuses || st.positives).sort(),
-    riven_neg: ((st.malus || st.curse) || {}).id || "",
-  };
+  return headlessRivenShape((loadPresetList(RIVENS).find((p) => RIVEN_PREFIX + p.id === mod) || {}).state || {});
 }
 
 function boardPayload() {

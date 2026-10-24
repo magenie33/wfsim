@@ -408,6 +408,96 @@ const headlessArcaneList = (v, n) => {
   return a.slice(0, n);
 };
 
+/// THE FIGHT EVERY SCENARIO IS APPLIED ONTO: the server's defaults
+/// (`meta.defaults`) as a complete fight. `contact` is two bodies' radius, and
+/// `metric` the one named before `meta` can name one.
+function headlessDefaultScenario(meta, contact, metric) {
+  const d = meta.defaults || {};
+  return {
+    enemy: d.enemy, level: d.level, steel_path: d.steel_path,
+    // A GUARDIAN EXIMUS'S AURA over the target. OFF, and that is the honest
+    // default rather than a convenience: every number this app has published
+    // assumes nobody is shielding it.
+    guardian_aura: d.guardian_aura === true,
+    // …and the pool an Ancient Protector holds in front of it. OFF, same
+    // reason.
+    ancient_protector_aura: d.ancient_protector_aura === true,
+    // NULL means "whatever this unit is by default", which the server resolves
+    // to its `can_be_eximus`. Only an explicit choice is stored, so switching
+    // targets keeps giving you the elite unit wherever one exists rather than
+    // carrying a decision made about a different enemy.
+    eximus: d.eximus ?? null,
+    // HOW MANY THE TARGET WAS BROUGHT FOR. One unless a scenario says
+    // otherwise — every fight this app has ever run is one player against one
+    // enemy, and this changes the ENEMY, never the number of guns.
+    squad_size: d.squad_size || 1,
+    headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
+    // THE TOP ZOOM LEVEL unless a level was picked — see `zoomField`.
+    scope_zoom: Number(d.scope_zoom) || 0,
+    // WHERE THE TWO OF THEM STAND, metres. Contact by default — as close as
+    // two bodies can be, which is what point blank means once they have a size.
+    player_at: [...(d.player_at || [0, 0])],
+    target_at: [...(d.target_at || [0, contact])],
+    // THE REST OF THE FORMATION — every body that is not the one being aimed
+    // at. Each is wholly its own: a place, and optionally
+    // its own unit and level. What it omits it takes from the target above, so
+    // nine identical enemies are nine positions and nothing else.
+    formation: (Array.isArray(d.formation) ? d.formation : []).map((f) => ({
+      at: [...(f.at || [0, 0])],
+      enemy: f.enemy || "",
+      level: f.level ?? null,
+    })),
+    // WHO ELSE IS FIRING — see `28-fight-roster.js`. Empty is the fight this
+    // app has always run, one gun against the formation, and it is what every
+    // official ruler means: a ruler never mentions this, so switching to one
+    // empties the roster rather than carrying the last fight's squad into it.
+    also_acting: (Array.isArray(d.also_acting) ? d.also_acting : [])
+      .map((x) => ({ weapon: x.weapon, preset: x.preset || "" })),
+    // WHERE THE WEAPON IS POINTED. `null` means "at the target", which is the
+    // fight this app has always run and what keeps every stored scenario
+    // meaning what it meant. Drag the marker and it becomes a place of its own.
+    aim_at: d.aim_at ? [...d.aim_at] : null,
+    invisible: !!d.invisible, airborne: !!d.airborne, sliding: !!d.sliding, aim_gliding: !!d.aim_gliding,
+    overshields: !!d.overshields,
+    channeling: !!d.channeling, melee_equipped: d.melee_equipped !== false,
+    solo_weapon: !!d.solo_weapon,
+    // KEPT WHOLE, unknown names included: an older page must not strip a
+    // newer fight's terms.
+    buff_triggers_off: [...(d.buff_triggers_off || [])],
+    frame: d.frame || "",
+    // ABSENT MEANS THE FLOOR. Only a key that is really there is an override,
+    // so these are copied only when the saved scenario had them.
+    ...(d.wf_health === undefined ? {} : { wf_health: d.wf_health }),
+    ...(d.wf_armor === undefined ? {} : { wf_armor: d.wf_armor }),
+    ...(d.wf_energy === undefined ? {} : { wf_energy: d.wf_energy }),
+    ...(d.wf_sprint === undefined ? {} : { wf_sprint: d.wf_sprint }),
+    infinite_ammo: d.infinite_ammo !== false, metric: d.metric || metric,
+    // NO `form`: how the weapon is played belongs to the build.
+    duration: d.duration, buffs: {},
+    // WARFRAME ABILITY BUFFS. `ability_strength` is a TYPED OVERRIDE, a
+    // fraction (1 = 100%), and NULL means the wielder's own — the linked
+    // Warframe build's (`applyScenario` reads an older page's stored 1 as null).
+    // `abilities` is what is ticked: `{id, secs}`, and `secs: null` is the
+    // whole fight.
+    ability_strength: null, abilities: [],
+    // THE RULES THE PLAYER INSERTED INTO THE ACTION PRIORITY LIST, in the
+    // engine's own shape (`data::apl::Rule`). Empty is every fight run before
+    // it, which assumes everything ticked is up.
+    apl: [],
+    // THE FIGHT'S OWN STAT BONUSES — see `EXTRA_STAT_KEYS`. Empty is a fight
+    // that hands this weapon nothing it did not earn, which is every ruler.
+    extra_stats: { ...(d.extra_stats || {}) },
+    // WHAT THE WARFRAME BRINGS. Both are the frame's rather than the weapon's,
+    // so they travel with the fight exactly as `abilities` does — and empty is
+    // a squad running no aura and a frame with bare sockets, which is every
+    // ruler and every scenario stored before they existed.
+    auras: (d.auras || []).map((a) => ({ id: a.id, count: a.count || 1 })),
+    shards: (d.shards || []).map((x) => ({
+      shard: x.shard, effect: x.effect, tauforged: !!x.tauforged,
+    })),
+  };
+}
+
 /// A SAVED BUILD AS THE WIRE, less who holds it — `wielder`, which only a page
 /// with the frame's builds can resolve, is passed in, and absent means the
 /// weapon's own default holder.
@@ -469,6 +559,216 @@ function headlessStateAxes(meta, p, weapon, exilusId) {
     valence: p.valence_element ? { element: p.valence_element, bonus: p.valence_bonus } : null,
     assembly: p.assembly || null,
   };
+}
+
+// ---- a riven gain's search, with no page -------------------------------------
+//
+// docs/AGENT.md §"Riven appraisal". The search a riven gain asks — the official
+// ruler's fight, the asker's card, the built-in `riven_appraisal` search — is a
+// function of those and `meta`, so the bot freezes it here, with no browser.
+// `check_riven_request` holds it to the request a clean page sets up through
+// its own controls (81-appraisal.js), on every weapon and ruler.
+
+const headlessWeaponOf = (meta, id) => (meta.weapons || []).find((x) => x.id === id) || null;
+
+/// FIELDS A SCENARIO NO LONGER CARRIES, stripped in both directions so a stored
+/// one — or a benchmark yaml — cannot reintroduce them: how the weapon is fired
+/// belongs to the build, and how hard a fight is measured to the reader (the
+/// official rulers' own runs are the scorer's, which no page setting moves).
+const HEADLESS_DEAD_SCENARIO_FIELDS = ["form", "mode", "runs"];
+
+/// A SCENARIO AS THE LIVE FIGHT, onto a COMPLETE fight — the defaults — and never
+/// onto the fight before it: `st` states only what it has an opinion about, so
+/// spreading it over the outgoing fight would keep that fight's other fields.
+function headlessScenarioOnto(meta, st, contact, metric) {
+  st = { ...(st || {}) };
+  HEADLESS_DEAD_SCENARIO_FIELDS.forEach((k) => { delete st[k]; });
+  const sim = { ...headlessDefaultScenario(meta, contact, metric), ...st, buffs: JSON.parse(JSON.stringify(st.buffs || {})),
+    apl: JSON.parse(JSON.stringify(Array.isArray(st.apl) ? st.apl : [])) };
+  // A STORED 1 IS NOT A CHOICE: an older page wrote it for everybody, before the
+  // wielder's own strength reached the fight. Null reads the Warframe build.
+  if (typeof sim.ability_strength !== "number" || sim.ability_strength === 1) sim.ability_strength = null;
+  // A BODY PLACED WITH NO UNIT meant the aimed body's: written down here, once,
+  // so it stops following the target from then on.
+  (sim.formation || []).forEach((f) => { if (!f.enemy) f.enemy = sim.enemy; });
+  return sim;
+}
+
+/// How a weapon is played when nothing says otherwise: `want` where it is one
+/// of the weapon's modes, else its cycle, else its first.
+function headlessDefaultMode(meta, weapon, want) {
+  const ms = (headlessWeaponOf(meta, weapon) || {}).modes || ["base"];
+  if (want && ms.includes(want)) return want;
+  return ms.includes("cycle") ? "cycle" : (ms[0] || "base");
+}
+
+/// A BUILD'S VALENCE, cleaned against its weapon. An element the spec does not
+/// offer is dropped — a preset from another weapon carries one — and the bonus
+/// is clamped to the roll's own range.
+function headlessDefaultValence(meta, weapon, st) {
+  const s = (headlessWeaponOf(meta, weapon) || {}).valence || null;
+  if (!s) return { element: "", bonus: 0 };
+  // THE FIRST ELEMENT AT THE ROLL'S CEILING, not "none": every adversary weapon
+  // comes out of its Lich carrying a bonus, every player can fuse to the
+  // ceiling and the board scores it, and the wiki lists the elements in the
+  // game's own order.
+  const el = st && s.elements.includes(st.element) ? st.element : s.elements[0];
+  const b = st && Number.isFinite(Number(st.bonus)) ? Number(st.bonus) : s.max;
+  return { element: el, bonus: Math.min(Math.max(b, s.min), s.max) };
+}
+
+/// A KITGUN'S PARTS, cleaned against it; null on a weapon that takes none. A
+/// build with none, or with the sibling slot's part, lands on the default
+/// `/api/meta` states — the repair `assembly_of` makes on the wire, so the page
+/// never shows one assembly while the server simulates another.
+function headlessDefaultAssembly(meta, weapon, st) {
+  const s = (headlessWeaponOf(meta, weapon) || {}).assembly || null;
+  if (!s) return null;
+  const d = s.default || {};
+  const has = (list, v) => list.some((x) => x.id === v);
+  return {
+    grip: st && has(s.grips, st.grip) ? st.grip : d.grip,
+    loader: st && has(s.loaders, st.loader) ? st.loader : d.loader,
+  };
+}
+
+/// The four shapes a riven card can take, and an empty draft of one.
+const HEADLESS_RIVEN_SHAPES = [
+  { id: "3+1", bonuses: 3, malus: true },
+  { id: "3", bonuses: 3, malus: false },
+  { id: "2+1", bonuses: 2, malus: true },
+  { id: "2", bonuses: 2, malus: false },
+];
+const headlessBlankDraft = (n, malus) => ({
+  bonuses: Array.from({ length: n }, () => ({ id: null, roll: 1.0 })),
+  malus: malus ? { id: null, roll: 1.0 } : null,
+});
+
+/// A RIVEN AS A SAVED CARD: a draft for every shape, its stats in its own.
+/// A card saved before the wiki's Bonus/Malus wording says positives/curse.
+function headlessWithDrafts(meta, r) {
+  const out = JSON.parse(JSON.stringify(r || {}));
+  out.rank = out.rank ?? (meta.riven_rules || {}).max_rank;
+  out.polarity = out.polarity || "madurai";
+  out.bonuses = out.bonuses || out.positives || [];
+  out.malus = out.malus || out.curse || null;
+  delete out.positives;
+  delete out.curse;
+  Object.values(out.drafts || {}).forEach((d) => {
+    d.bonuses = d.bonuses || d.positives || [];
+    d.malus = d.malus || d.curse || null;
+    delete d.positives;
+    delete d.curse;
+  });
+  out.shape = out.shape || `${out.bonuses.length || 2}${out.malus ? "+1" : ""}`;
+  out.drafts = out.drafts || {};
+  HEADLESS_RIVEN_SHAPES.forEach((s) => {
+    if (!out.drafts[s.id]) out.drafts[s.id] = headlessBlankDraft(s.bonuses, s.malus);
+  });
+  if (out.bonuses.length) out.drafts[out.shape] = { bonuses: out.bonuses, malus: out.malus };
+  const d = out.drafts[out.shape];
+  out.bonuses = d.bonuses;
+  out.malus = d.malus;
+  return out;
+}
+
+/// A RIVEN'S ID, opaque: `Date.now()` orders them and the suffix separates two
+/// made in the same millisecond.
+const headlessNewRivenId = () => "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+
+/// A riven as the board names it: its bonuses SORTED — a riven's stats do not
+/// combine, so two players listing them in different orders describe one riven
+/// and must make one row — and its malus.
+function headlessRivenShape(spec) {
+  const ids = (xs) => (xs || []).map((x) => x && x.id).filter(Boolean);
+  return { riven_pos: ids(spec.bonuses || spec.positives).sort(), riven_neg: ((spec.malus || spec.curse) || {}).id || "" };
+}
+
+/// A START AS `/api/optimize` READS ONE: the build's slots, its axes, its pins.
+function headlessStartPayload(meta, s) {
+  const b = s.build;
+  return {
+    slots: (b.slots || []).map((x) => (x && x.mod ? headlessRankedId(meta, x.mod, x.rank) : null)),
+    evolutions: Object.values(b.evoSel || {}).filter(Boolean),
+    arcane: (b.arcane || []).slice(),
+    arcane_rank: (b.arcaneRank || []).slice(),
+    mode: b.mode || null,
+    valence_element: (b.valence || {}).element || null,
+    fixed: (s.fixed || []).map((k) => { const [kind, idx] = k.split(":"); return { kind, idx: Number(idx) }; }),
+  };
+}
+
+/// A BUILT-IN SEARCH'S STARTS on `weapon`: one per element row, holding the
+/// row's 60/60 card the weapon equips under evolutions `evoSel` (its first
+/// ones when absent) — and `rivenMod` beside it, pinned. A row it takes none
+/// of adds nothing new.
+function headlessBuiltinStarts(meta, weapon, rivenMod, evoSel) {
+  const w = headlessWeaponOf(meta, weapon) || {};
+  const card = headlessModOf(meta);
+  const at = (mods) => ({ weapon, ...headlessStateAxes(meta, { mods }, weapon) });
+  const no = new Set(Object.values(evoSel || at([]).evoSel).flatMap((id) => (w.evo_forbids || {})[id] || []));
+  const fits = new Set((w.mods || []).filter((id) => card(id) && !no.has(id)));
+  const rows = ((meta.search_presets || {}).element_starts || [])
+    .map((row) => [rivenMod, row.find((c) => fits.has(c))].filter(Boolean)).filter((mods) => mods.length);
+  const unique = [...new Set(rows.map((r) => JSON.stringify(r)))].map((r) => JSON.parse(r));
+  const starts = unique.map((mods) => ({ build: at(mods), fixed: rivenMod ? ["mods:0"] : [] }));
+  return starts.length ? starts : [{ build: at([]), fixed: [] }];
+}
+
+/// What a search's limits may rule out, axis by axis.
+const HEADLESS_LIMIT_AXES = ["mods", "arcanes", "evolutions", "modes", "valence"];
+/// A search's limits on `weapon` with nothing ruled out: every card, the
+/// exilus and every arcane seat.
+function headlessBlankLimits(meta, weapon) {
+  return { exclude: Object.fromEntries(HEADLESS_LIMIT_AXES.map((k) => [k, []])), mods: 8, exilus: true,
+    arcane_seats: ((headlessWeaponOf(meta, weapon) || {}).arcane_pools || []).map(() => true) };
+}
+
+/// THE RIVEN GAIN'S SEARCH: `{ request, context }`, what a clean page builds for
+/// `weapon` under `ruler` with `card` (`{ bonuses, malus, rank, polarity }`) as
+/// the riven `rivenId` (a new one when absent) — the optimize request, and what
+/// turns its result into a build (68-board-submit.js `boardBuildContext`).
+/// `runs` is the final round's, a clean page's own. Null for an unknown weapon
+/// or ruler.
+function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = headlessNewRivenId(), runs = 100 }) {
+  const w = headlessWeaponOf(meta, weapon);
+  const bench = (meta.benchmarks || []).find((b) => b.id === ruler);
+  const preset = ((meta.search_presets || {}).presets || []).find((p) => p.riven);
+  if (!w || !bench || !preset) return null;
+  const contact = 2 * (Number(meta.body_radius_m) || 0.25);
+  const sim = { ...headlessScenarioOnto(meta, bench.scenario, contact, "kpm"), __weapon: weapon };
+  const mod = "riven:" + rivenId;
+  const spec = headlessWithDrafts(meta, { bonuses: (card.bonuses || []).map((b) => ({ id: b.id, roll: b.roll })),
+    malus: card.malus ? { id: card.malus.id, roll: card.malus.roll } : null,
+    rank: card.rank != null ? card.rank : (meta.riven_rules || {}).max_rank, polarity: card.polarity || "madurai" });
+  const mode = headlessDefaultMode(meta, weapon, null);
+  const valence = headlessDefaultValence(meta, weapon, null);
+  const assembly = headlessDefaultAssembly(meta, weapon, null);
+  // A WEAPON WITH ONE STANCE holds it, and one locked to its frames (an Exalted
+  // weapon) is held by the first of them, unbuilt (40-official-builds.js
+  // `defaultWielder`); every other holder is the floor, which the wire omits.
+  const stance = w.fixed_stance || "";
+  const wielder = !w.sentinel && (w.wielders || []).length ? { frame: w.wielders[0] } : undefined;
+  const request = {
+    weapon,
+    rivens: [{ id: rivenId, name: "riven 1", spec }],
+    every_rank: meta.every_rank || { mods: [], arcanes: [] },
+    mode,
+    valence_element: valence.element,
+    valence_bonus: valence.bonus,
+    ...(assembly ? { assembly: { ...assembly } } : {}),
+    stance,
+    ...sim, runs, custom_enemies: [], buffs: sim.buffs || {}, also_acting: [],
+    finalists: preset.finalists,
+    strategy: "quick",
+    starts: headlessBuiltinStarts(meta, weapon, mod).map((s) => headlessStartPayload(meta, s)),
+    candidate_runs: preset.candidate_runs,
+    limits: headlessBlankLimits(meta, weapon),
+  };
+  const context = { benchmark: bench.id, weapon, mode, stance, valence: valence.element,
+    grip: (assembly && assembly.grip) || "", loader: (assembly && assembly.loader) || "",
+    ...(wielder ? { wielder } : {}), rivens: { [mod]: headlessRivenShape(spec) } };
+  return { request, context };
 }
 
 /// NAMES WFSIM HAS RETIRED, old id -> the query that replaces it, or null
@@ -915,4 +1215,4 @@ const HEADLESS_QUERIES = [
 
 export { HEADLESS_ABOUT, HEADLESS_QUERIES, HEADLESS_RETIRED, headlessCheckArgs, headlessSchema, headlessNo, headlessToolName, headlessUnknown,
   headlessSeat, headlessStateAxes, headlessWeapon, headlessWeaponPath, rivenStatNames, rivenStatNameEn, ocrFold, rivenQuery, boardMeasuredAt, measuredText, distinctTop, pooledRanking, pooledRivens,
-  placed, placeAmong, tieGroups, boardRowParts, rankBoard, boardHeads, BOARD_HEADS_PLACES };
+  placed, placeAmong, tieGroups, boardRowParts, rankBoard, boardHeads, BOARD_HEADS_PLACES, headlessRivenGainRequest };

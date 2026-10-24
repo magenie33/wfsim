@@ -612,21 +612,6 @@ function renderPresetBar() {
 // build does not currently carry: that is what lets a scenario say "in THIS
 // fight, Deadhead starts at zero stacks" and have it hold when the mod is added
 // later. Anything unmentioned takes the buff's own default, full and unlocked.
-/// Fields a scenario may no longer hold. A stored preset written before the
-/// mode moved into the build still carries `form`, and applying it would put
-/// it back on `sim` — where the next auto-save would write it out again, and
-/// keep writing it forever. Dropped on the way in, so a custom scenario is
-/// clean the first time it is opened and stays clean.
-/// FIELDS A SCENARIO NO LONGER CARRIES, stripped in both directions so a stored
-/// one — or a benchmark yaml — cannot reintroduce them.
-///
-/// `runs` joined them on 2026-08-13. HOW HARD YOU MEASURE IS NOT PART OF THE
-/// FIGHT. The official rulers still run at 1,000 — that is the number
-/// their yaml states and the number the SCORER uses, and no local setting can
-/// move it — while the page runs at whatever you set, defaulting to 100. Two
-/// different questions that happened to share a field.
-const DEAD_SCENARIO_FIELDS = ["form", "mode", "runs"];
-
 /// HOW MANY TIMES THE PAGE REPLAYS A FIGHT. A preference, not a scenario field:
 /// it survives switching fights and switching weapons, because "how hard do I
 /// want to measure right now" is a fact about the person and not about the
@@ -646,52 +631,16 @@ function snapshotScenario() {
   const { __weapon, ...rest } = sim;
   // Belt and braces with the strip on the way IN: a fight has no opinion about
   // how the weapon is fired, so one can never leave here carrying one either.
-  DEAD_SCENARIO_FIELDS.forEach((k) => { delete rest[k]; });
+  HEADLESS_DEAD_SCENARIO_FIELDS.forEach((k) => { delete rest[k]; });
   return JSON.parse(JSON.stringify(rest));
 }
 function applyScenario(st) {
-  st = { ...(st || {}) };
-  DEAD_SCENARIO_FIELDS.forEach((k) => { delete st[k]; });
-  // ONTO THE DEFAULTS, NEVER ONTO THE FIGHT YOU ARE LEAVING.
-  //
-  // Spreading over the live `sim` leaves any field the incoming scenario does
-  // not mention holding the outgoing one's value — and a benchmark yaml
-  // mentions only what it has an opinion about. Tick Eximus on a copy of the
-  // official ruler, switch back to the official, and the official fight is
-  // now against an Eximus, because `standard_single_target.yaml` never says `eximus:`. `invisible` did not leak in the same
-  // test only because that yaml happens to state it.
-  //
-  // A scenario is therefore applied onto a COMPLETE fight — the server's
-  // defaults — which makes every preset self-contained whatever it omits. It is
-  // the same rule AGENTS.md already states for weapons ("the live `sim` at that
-  // moment still belongs to the weapon you just left"), and the same reason: a
-  // collection's state may not be written from outside it, and reading the
-  // outgoing state is how it gets written from outside it.
-  sim = { ...defaultScenario(), ...st, buffs: JSON.parse(JSON.stringify(st.buffs || {})),
-    apl: JSON.parse(JSON.stringify(Array.isArray(st.apl) ? st.apl : [])) };
-  // A STORED 1 IS NOT A CHOICE: an older page wrote it for everybody, before the
-  // wielder's own strength reached the fight. Null reads the Warframe build.
-  if (typeof sim.ability_strength !== "number" || sim.ability_strength === 1) sim.ability_strength = null;
+  // ONTO THE DEFAULTS, NEVER ONTO THE FIGHT YOU ARE LEAVING (`headlessScenarioOnto`).
+  sim = headlessScenarioOnto(META, st, CONTACT_M, METRIC_FALLBACK.id);
   // A scenario preset is stored per weapon, so its weapon-scoped field
   // (headshot %) is already right — stamp the marker so the re-seed does not
   // overwrite a saved choice with a default.
   sim.__weapon = $("weapon").value;
-  // …AND EVERY BODY GETS ITS UNIT, ONCE.
-  //
-  // A body placed since 2026-08-18 carries the unit it was placed with. Every
-  // body placed BEFORE that carries nothing, and a blank means "the aimed
-  // body's" — which is exactly what those bodies meant when they were placed,
-  // and is also, from the reader's side, indistinguishable from the bug that
-  // rule was written to end: switch the enemy on the left and the whole
-  // formation follows it — which is still true after the placement fix for
-  // every formation saved before it.
-  //
-  // So the blank is filled in HERE, at the one place a scenario becomes the
-  // live fight, from the enemy that scenario itself carries. It changes nothing
-  // about what those bodies are — it writes down what they already were — and
-  // from that moment they stop following. Growth stopping is not the same as
-  // the existing ones being fixed.
-  (sim.formation || []).forEach((f) => { if (!f.enemy) f.enemy = sim.enemy; });
   // A CUSTOM TARGET THIS BROWSER DOES NOT HOLD is held, not dropped
   // (`holdAbsent`): the roster's first unit stands in until it syncs.
   releaseAbsent(SCENARIOS);

@@ -21,17 +21,9 @@ const storeOptPresets = (ps) => storePresetList(OPT_DOMAIN, ps);
 // official rulers in the scenario bar — never stored, never edited; ⧉ copies one
 // into a search of your own. Owning none, the search is the first one listed.
 
-/// A built-in search's starts on weapon `wId`: one per element row, holding the
-/// row's 60/60 card the weapon equips — and, for a riven preset, `rivenMod`
-/// beside it, pinned. A row the weapon takes none of adds nothing new.
-function builtinSearchStarts(wId, rivenMod) {
-  const fits = new Set(buildPool().map((m) => m.id));
-  const rows = ((META.search_presets || {}).element_starts || [])
-    .map((row) => [rivenMod, row.find((c) => fits.has(c))].filter(Boolean)).filter((mods) => mods.length);
-  const unique = [...new Set(rows.map((r) => JSON.stringify(r)))].map((r) => JSON.parse(r));
-  const starts = unique.map((mods) => ({ build: stateFromBuild({ mods }, wId), fixed: rivenMod ? ["mods:0"] : [] }));
-  return starts.length ? starts : [blankStart()];
-}
+/// A built-in search's starts on weapon `wId` (`headlessBuiltinStarts`), the
+/// cards it equips under the builder's evolutions.
+const builtinSearchStarts = (wId, rivenMod) => headlessBuiltinStarts(META, wId, rivenMod, evoSel);
 /// A built-in search as a whole search state, on the open weapon.
 const builtinSearchState = (p, rivenMod) => ({ starts: builtinSearchStarts($("weapon").value, rivenMod),
   limits: normalizeLimits(null), candidate_runs: p.candidate_runs, finalists: p.finalists });
@@ -277,13 +269,15 @@ function optimizeBody() {
   };
 }
 
-async function runOptimize() {
+/// `given` is a whole request built elsewhere — a riven gain's, the one search
+/// every computer runs — in place of the one this page's controls build.
+async function runOptimize(given) {
   clearCheckpoint(); // a fresh run supersedes any interrupted one
   optLastStatus = null;
   $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
   $("opt-results").innerHTML = `<div class="placeholder">starting…</div>`;
   try {
-    const body = nameableOptimizeBody(optimizeBody());
+    const body = nameableOptimizeBody(given || optimizeBody());
     // STARTED, beside `optimizer.run` for finished: the gap is what was cancelled or failed.
     track("optimizer.start", $("weapon").value);
     const r = await postJson("/api/optimize", body);

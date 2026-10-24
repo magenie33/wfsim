@@ -371,6 +371,13 @@ jobs:
         env:
           WFSIM_PARITY_SHARD: ${{ matrix.shard }}/4
         run: node scripts/check_parity.mjs
+      # A RIVEN GAIN SENDS THE SEARCH ITS PAGE SHOWS: one function builds it for the
+      # page, the bot and the survey, and the page's own controls must set up the
+      # same search on every weapon — a clean boot a pair, so it shares the shards.
+      - name: A riven gain's search is the one its page shows
+        env:
+          WFSIM_RIVEN_SHARD: ${{ matrix.shard }}/4
+        run: node scripts/check_riven_request.mjs
 
   # The rest of the page, the board's library and the MCP server.
   page-rest:

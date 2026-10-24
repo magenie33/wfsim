@@ -86,31 +86,11 @@ async function use(open) {
   return { send: p.send, close: async () => { try { await p.close(); } finally { release(c); } } };
 }
 
-/// A BROWSER THAT HUNG is asked nothing more: the next page starts a fresh one.
-export function retireBrowser() {
-  if (chrome && !chrome.retired) { chrome.retired = true; if (!chrome.open) quit(chrome); }
-}
-
 /// One page over the DevTools protocol: `send(method, params)` and close.
 function page() {
   return use(async (c) => {
     const t = await (await fetch(`http://${c.base}/json/new?about:blank`, { method: "PUT" })).json();
     return attach(t.webSocketDebuggerUrl, () => fetch(`http://${c.base}/json/close/${t.id}`).catch(() => {}));
-  });
-}
-
-/// A PAGE IN A BROWSER CONTEXT OF ITS OWN — no storage any earlier page left —
-/// opened through the browser's own target, and the context dropped on close.
-function cleanPage() {
-  return use(async (c) => {
-    const v = await (await fetch(`http://${c.base}/json/version`)).json();
-    const b = await attach(v.webSocketDebuggerUrl, async () => {});
-    const ctx = (await b.send("Target.createBrowserContext", { disposeOnDetach: true })).result.browserContextId;
-    const target = (await b.send("Target.createTarget", { url: "about:blank", browserContextId: ctx })).result.targetId;
-    return attach(`ws://${c.base}/devtools/page/${target}`, async () => {
-      await b.send("Target.disposeBrowserContext", { browserContextId: ctx }).catch(() => {});
-      await b.close();
-    });
   });
 }
 
@@ -157,32 +137,6 @@ function asker(p, until) {
       return undefined;
     }
   };
-}
-
-/// THE QUESTION A RIVEN GAIN ASKS, frozen: its link opened with `?freeze` in a
-/// clean context, which sets the search up and writes `{ engine, request }` to
-/// `body[data-request]` (81-appraisal.js) — so the request is the page's own and
-/// holds nothing of anyone's.
-export async function freezeRequest(url, { wait = READY_MS } = {}) {
-  const p = await cleanPage();
-  try {
-    await p.send("Page.enable");
-    const until = Date.now() + wait;
-    await p.send("Page.navigate", { url });
-    const ask = asker(p, until);
-    for (;;) {
-      const got = await ask(`document.body && document.body.dataset.request || ""`);
-      if (got) {
-        const r = JSON.parse(got);
-        if (r.error) throw new Error(`freeze: ${r.error}`);
-        return r;
-      }
-      if (Date.now() > until) throw new Error(`freeze timed out: ${url}`);
-      await sleep(250);
-    }
-  } finally {
-    await p.close();
-  }
 }
 
 /// The card at `url` as a PNG buffer in the page's language `lang`, or an Error.

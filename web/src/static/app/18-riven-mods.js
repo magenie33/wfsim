@@ -24,7 +24,7 @@ const RIVEN_PREFIX = "riven:";
 /// either way, because that is the only thing this has to be.
 const newRivenId = (all) => {
   for (;;) {
-    const id = "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    const id = headlessNewRivenId();
     if (!all.some((p) => p.id === id)) return id;
   }
 };
@@ -512,11 +512,7 @@ function weaponAxes(weaponId) {
 ///
 /// One resolver, so "no mode named" means the same thing in the builder, in a
 /// share link and in a board submission.
-function defaultMode(weaponId, want) {
-  const ms = (weaponInfo(weaponId) || {}).modes || ["base"];
-  if (want && ms.includes(want)) return want;
-  return ms.includes("cycle") ? "cycle" : (ms[0] || "base");
-}
+function defaultMode(weaponId, want) { return headlessDefaultMode(META, weaponId, want); }
 
 /// The rivens a request must carry for its `riven:` ids to mean anything.
 ///

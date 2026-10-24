@@ -273,27 +273,9 @@ function modeOpts(w) {
 /// control, a payload and a reset cannot disagree about whether the axis exists.
 const valenceSpec = (id) => (weaponInfo(id) || {}).valence || null;
 
-/// A build's valence, cleaned against the weapon it is being opened on.
-///
-/// An element the spec does not offer is DROPPED rather than kept — a preset
-/// imported from another weapon carries one, and so does a stale one written
-/// before an element was removed. The percentage is clamped to the roll's own
-/// range for the same reason.
-function defaultValence(id, st) {
-  const s = valenceSpec(id);
-  if (!s) return { element: "", bonus: 0 };
-  // 60% IMPACT, not "none". Every copy of an adversary
-  // weapon in the game comes out of its Lich carrying a bonus, so "no element"
-  // is not a weaker build of it — it is a weapon nobody has, and the panel
-  // would print numbers no player can reproduce.
-  //
-  // The FIRST element and the roll's CEILING: the ceiling because every player
-  // can Valence-fuse to it and it is what the board scores, the first because
-  // the wiki lists them in the game's own order and Impact is where it starts.
-  const el = st && s.elements.includes(st.element) ? st.element : s.elements[0];
-  const b = st && Number.isFinite(Number(st.bonus)) ? Number(st.bonus) : s.max;
-  return { element: el, bonus: Math.min(Math.max(b, s.min), s.max) };
-}
+/// A build's valence, cleaned against the weapon it is being opened on
+/// (`headlessDefaultValence`).
+function defaultValence(id, st) { return headlessDefaultValence(META, id, st); }
 
 /// The parts `/api/meta` publishes for a weapon, or `null` if it takes none.
 const assemblySpec = (id) => (weaponInfo(id) || {}).assembly || null;
@@ -320,24 +302,9 @@ const slotSibling = (id) => {
   return w ? w.id : null;
 };
 
-/// THIS WEAPON'S PARTS, repaired against what it can actually take.
-///
-/// A build with no assembly, or one carrying a part from the sibling slot,
-/// lands on the server's own default rather than on nothing — the same repair
-/// `assembly_of` does on the wire, and it has to agree with it: a page showing
-/// one assembly while the server simulates another is the exact shape of bug
-/// that had a player measuring 26 KPM on a ranking and 15 in the simulator.
-/// That is why the default comes from `/api/meta` and is not computed here.
-function defaultAssembly(id, st) {
-  const s = assemblySpec(id);
-  if (!s) return null;
-  const d = s.default || {};
-  const has = (list, v) => list.some((x) => x.id === v);
-  return {
-    grip: st && has(s.grips, st.grip) ? st.grip : d.grip,
-    loader: st && has(s.loaders, st.loader) ? st.loader : d.loader,
-  };
-}
+/// THIS WEAPON'S PARTS, repaired against what it can actually take
+/// (`headlessDefaultAssembly`).
+function defaultAssembly(id, st) { return headlessDefaultAssembly(META, id, st); }
 
 /// THE PARTS BLOCK — two dropdowns, and what each part is worth beside it.
 ///

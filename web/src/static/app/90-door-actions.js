@@ -526,7 +526,7 @@ const AGENT_ACTIONS = [
     anchor: "#opt-limits",
     needs_weapon: true,
     args: {
-      axis: { kind: "string", required: true, what: "which axis", enum: () => LIMIT_AXES },
+      axis: { kind: "string", required: true, what: "which axis", enum: () => HEADLESS_LIMIT_AXES },
       id: { kind: "string", required: true, what: "the option's id" },
       excluded: { kind: "boolean", required: true, what: "true excludes it, false takes it back" },
     },
@@ -603,7 +603,7 @@ const AGENT_ACTIONS = [
     needs_weapon: true,
     args: {},
     run() {
-      return { shapes: RIVEN_SHAPES.map((x) => x.id), rolls: rivenRules(), stats: rivenPool().map((x) => ({
+      return { shapes: HEADLESS_RIVEN_SHAPES.map((x) => x.id), rolls: rivenRules(), stats: rivenPool().map((x) => ({
         id: x.id, name: rivenStatName(x), bonus: x.bonus !== false, malus: !!x.malus, ...(x.modeled ? {} : { modeled: false }),
         ...(x.spliced ? { spliced: true } : {}) })) };
     },
@@ -650,7 +650,7 @@ const AGENT_ACTIONS = [
     anchor: "#riven-shape, #riven-stats, #riven-foot",
     needs_weapon: true,
     args: {
-      shape: { kind: "string", required: true, what: "e.g. \"3+1\" (three bonuses and a malus) or \"2+0\"", enum: () => RIVEN_SHAPES.map((x) => x.id) },
+      shape: { kind: "string", required: true, what: "e.g. \"3+1\" (three bonuses and a malus) or \"2+0\"", enum: () => HEADLESS_RIVEN_SHAPES.map((x) => x.id) },
       bonuses: { kind: "array", required: true, what: "[{stat, value} or {stat, roll}], one per bonus" },
       malus: { kind: "object", nullable: true, what: "{stat, value} or {stat, roll}; omit or null when the shape has none" },
       rank: { kind: "number", min: 0, max: 8, what: "defaults to the maximum" },
@@ -658,7 +658,7 @@ const AGENT_ACTIONS = [
     },
     async run({ shape, bonuses, malus = null, rank, polarity }) {
       if (!activeRivenId() || !riven) return agentNo("no_riven_open", { try: "rivens.card.new" });
-      const sh = RIVEN_SHAPES.find((x) => x.id === shape);
+      const sh = HEADLESS_RIVEN_SHAPES.find((x) => x.id === shape);
       if (bonuses.length !== sh.bonuses) return agentNo("bad_argument", { argument: "bonuses", because: `${shape} has ${sh.bonuses}` });
       if (!!malus !== !!sh.malus) return agentNo("bad_argument", { argument: "malus", because: sh.malus ? `${shape} has a malus` : `${shape} has none` });
       const pool = rivenPool();

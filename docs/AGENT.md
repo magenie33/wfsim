@@ -406,14 +406,15 @@ question (docs/BOARD.md §"The Riven Analyst").
    optimizer are untouched. Every finalist goes to the board unasked; the winner
    goes back to the appraisal as a BUILD with an optional name to thank —
    never a score.
-   THE SAME LINK WITH `?freeze` sets that search up and stops, writing
-   `{ engine, request, context }` to `body[data-request]`: the optimize request
-   the page would send and what turns a result into a build
-   (`boardBuildContext`). The bot opens it right after the appraisal, in a
-   browser context of its own with no storage (`bot/render.mjs`
-   `freezeRequest`), and stores it once (`/api/appraise/<code>/request`). A
-   failed freeze is tried again on a fresh browser, and an appraisal still
-   unfrozen a minute after it opened comes back in the bot's claim (`freeze`).
+   THE SEARCH IS ONE FUNCTION OF THE APPRAISAL, `headlessRivenGainRequest`
+   (87-headless.js): the ruler's fight, the card, the built-in search, and
+   `{ request, context }` back — the optimize request and what turns a
+   result into a build (`boardBuildContext`). The page sends it, and its
+   controls show the same search (`check_riven_request`, every weapon). The
+   bot builds it on its own engine right after opening the appraisal, with no
+   page, and stores it once (`/api/appraise/<code>/request`); an appraisal
+   still unfrozen a minute after it opened comes back in the bot's claim
+   (`freeze`). The link with `?freeze` writes it to `body[data-request]`.
 3. ANY COMPUTER COMPUTING FOR THE BOARD runs it. Freezing it is an ASK of the
    fact factory (docs/BOARD.md §"The fact factory"; worker/appraise.js
    §"Volunteer work"): a chat's, someone waiting on it, due in two minutes and
@@ -424,12 +425,10 @@ question (docs/BOARD.md §"The Riven Analyst").
    bonuses at 1.1, one spliced at most, each with no malus, with a harmless
    one at 0.9 and with status duration at 0.9 and at 1.1; `--bonus` and
    `--malus` choose others), then frozen on the official machines
-   (`.github/workflows/survey.yml`, `scripts/riven_freeze.mjs`), never on the
-   machine that opened them: one clean page a weapon freezes a template, the
-   other cards are written into it (`scripts/riven_template.mjs`), and one in a
-   hundred is frozen clean as well and must be the same search, or that
-   weapon goes back to clean pages. Run again, it opens only the shapes a
-   weapon lacks; the workflow freezes only what is left.
+   (`.github/workflows/survey.yml`, `scripts/riven_freeze.mjs`) with the same
+   function on the checkout's engine, never on the machine that opened them.
+   Run again, it opens only the shapes a weapon lacks; the workflow freezes
+   only what is left.
    `/api/board/work` hands it out on the served engine only, and its page runs
    the request through a search of its own (`quickFleet`, the reader's
    optimizer untouched) and sends the build under its lease with the search's

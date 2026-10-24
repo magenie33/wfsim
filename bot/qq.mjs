@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { loadEngine, SITE } from "./engine.mjs";
 import { makeAnswer } from "./answer.mjs";
-import { renderCard, renderCardWith, freezeRequest, retireBrowser } from "./render.mjs";
+import { renderCard, renderCardWith } from "./render.mjs";
 import { relayWorld } from "./world.mjs";
 
 const ENV_FILE = process.env.BOT_ENV || "/etc/wfsim-bot.env";
@@ -112,34 +112,34 @@ async function openAppraisal(row, ask) {
   return opened;
 }
 
-/// …AND ITS QUESTION FROZEN, so the community's computers can run it: the link
-/// opened with `?freeze` in a clean browser context, and what that page builds
-/// stored with the appraisal (worker/appraise.js §"Volunteer work"). Until it
-/// is stored nobody but a scan can answer it, so a failure is tried again on a
-/// fresh browser, and one still unfrozen a minute on comes back from the claim.
-const FREEZE_TRIES = 3, FREEZE_AGAIN_MS = 60_000;
-/// When each code's last freeze ended in failure; Infinity while one runs.
+/// …AND ITS QUESTION FROZEN, so the community's computers can run it: the
+/// search `headlessRivenGainRequest` builds from the appraisal — the one its
+/// page sends — on this bot's own engine, which ships with the site, stored
+/// with the appraisal (worker/appraise.js §"Volunteer work"). Until it is
+/// stored nobody but a scan can answer it, so one still unfrozen a minute on
+/// comes back from the claim and is frozen again.
+const FREEZE_AGAIN_MS = 60_000;
+/// When each code's last freeze failed; Infinity while one runs, or for good
+/// once the engine has refused it.
 const freezing = new Map();
 async function freezeAppraisal(code) {
   if (Date.now() - (freezing.get(code) || 0) < FREEZE_AGAIN_MS) return;
   freezing.set(code, Infinity);
-  for (let i = 1; ; i++) {
-    try {
-      const frozen = await freezeRequest(`${SITE}/appraise/${code}?freeze=1`);
-      const r = await fetch(`${SITE}/api/appraise/${code}/request`, { method: "POST", headers: { "content-type": "application/json",
-        authorization: `Bearer ${env.BOT_RELAY_TOKEN}` }, body: JSON.stringify(frozen), signal: AbortSignal.timeout(FETCH_MS) });
-      if (!r.ok) throw new Error(`store: ${r.status}`);
-      freezing.delete(code);
+  try {
+    const call = (path, init) => fetch(`${SITE}${path}`, { ...init, signal: AbortSignal.timeout(FETCH_MS) })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${path}: ${r.status}`))));
+    const [job, release] = await Promise.all([call(`/api/appraise/${code}`), call("/release.json")]);
+    const asked = engine.headless.headlessRivenGainRequest(engine.meta, { weapon: job.weapon, ruler: job.ruler, card: job.riven || {} });
+    if (!asked) {
+      console.error(`freeze ${code}: no search for ${job.weapon} under ${job.ruler}`);
       return;
-    } catch (e) {
-      // THE PAGE'S OWN REFUSAL (`freeze: <why>`) says the same on every try:
-      // asked no more while this bot runs.
-      const refused = /^freeze: /.test(String(e && e.message));
-      if (refused || i >= FREEZE_TRIES) { freezing.set(code, refused ? Infinity : Date.now()); throw e; }
-      console.error(`freeze ${code} try ${i}: ${e && e.message}`);
-      retireBrowser();
-      await new Promise((ok) => setTimeout(ok, 5000 * i));
     }
+    await call(`/api/appraise/${code}/request`, { method: "POST", headers: { "content-type": "application/json",
+      authorization: `Bearer ${env.BOT_RELAY_TOKEN}` }, body: JSON.stringify({ engine: release.engine, ...asked }) });
+    freezing.delete(code);
+  } catch (e) {
+    freezing.set(code, Date.now());
+    throw e;
   }
 }
 
@@ -250,7 +250,8 @@ async function claim(done) {
   return (await r.json()).rows;
 }
 
-const answer = makeAnswer(await loadEngine());
+const engine = await loadEngine();
+const answer = makeAnswer(engine);
 console.log("wfsim-bot: up");
 relayWorld(env.BOT_RELAY_TOKEN);
 (async () => {

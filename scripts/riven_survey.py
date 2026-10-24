@@ -9,7 +9,7 @@
 
 Every shape of each weapon's riven (engine `riven_shapes`, which `--bonus` and
 `--malus` narrow) is opened as a `survey` appraisal, and the official machines
-freeze each on a clean page (`.github/workflows/survey.yml`), which hands it
+freeze each with `headlessRivenGainRequest` (`.github/workflows/survey.yml`), which hands it
 to the factory. Running it again is safe: a weapon opens only the shapes it
 lacks, and only unfrozen shapes are frozen.
 

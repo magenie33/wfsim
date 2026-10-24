@@ -67,7 +67,7 @@ const si62Back = (t) => {
 /// THE BAND IS FROZEN HERE, not read from the engine: a wire format cannot
 /// follow a constant that moves, or every link already posted decodes to a
 /// different riven. A roll outside it is a payload v4 declines to write.
-/// A RIVEN'S SHAPE IS ONE CHARACTER. There are four of them (`RIVEN_SHAPES`)
+/// A RIVEN'S SHAPE IS ONE CHARACTER. There are four of them (`HEADLESS_RIVEN_SHAPES`)
 /// plus the absent one a board riven carries, and "" is a different value from
 /// "3+1" to everything downstream — so it is CODED here rather than derived
 /// from the bonus count, and coded rather than carried raw, because the `+` in

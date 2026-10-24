@@ -101,92 +101,9 @@ let valence = { element: "", bonus: 0 };
 /// table and falls back to this.
 const METRIC_FALLBACK =
   { id: "kpm", field: "score", per_minute: true, label: "KPM", hint: "kills per minute" };
-function defaultScenario() {
-  const d = META.defaults || {};
-  return {
-    enemy: d.enemy, level: d.level, steel_path: d.steel_path,
-    // A GUARDIAN EXIMUS'S AURA over the target. OFF, and that is the honest
-    // default rather than a convenience: every number this app has published
-    // assumes nobody is shielding it.
-    guardian_aura: d.guardian_aura === true,
-    // …and the pool an Ancient Protector holds in front of it. OFF, same
-    // reason.
-    ancient_protector_aura: d.ancient_protector_aura === true,
-    // NULL means "whatever this unit is by default", which the server resolves
-    // to its `can_be_eximus`. Only an explicit choice is stored, so switching
-    // targets keeps giving you the elite unit wherever one exists rather than
-    // carrying a decision made about a different enemy.
-    eximus: d.eximus ?? null,
-    // HOW MANY THE TARGET WAS BROUGHT FOR. One unless a scenario says
-    // otherwise — every fight this app has ever run is one player against one
-    // enemy, and this changes the ENEMY, never the number of guns.
-    squad_size: d.squad_size || 1,
-    headshot_pct: d.headshot_pct, aiming: d.aiming !== false,
-    // THE TOP ZOOM LEVEL unless a level was picked — see `zoomField`.
-    scope_zoom: Number(d.scope_zoom) || 0,
-    // WHERE THE TWO OF THEM STAND, metres. Contact by default — as close as
-    // two bodies can be, which is what point blank means once they have a size.
-    player_at: [...(d.player_at || [0, 0])],
-    target_at: [...(d.target_at || [0, CONTACT_M])],
-    // THE REST OF THE FORMATION — every body that is not the one being aimed
-    // at. Each is wholly its own: a place, and optionally
-    // its own unit and level. What it omits it takes from the target above, so
-    // nine identical enemies are nine positions and nothing else.
-    formation: (Array.isArray(d.formation) ? d.formation : []).map((f) => ({
-      at: [...(f.at || [0, 0])],
-      enemy: f.enemy || "",
-      level: f.level ?? null,
-    })),
-    // WHO ELSE IS FIRING — see `28-fight-roster.js`. Empty is the fight this
-    // app has always run, one gun against the formation, and it is what every
-    // official ruler means: a ruler never mentions this, so switching to one
-    // empties the roster rather than carrying the last fight's squad into it.
-    also_acting: (Array.isArray(d.also_acting) ? d.also_acting : [])
-      .map((x) => ({ weapon: x.weapon, preset: x.preset || "" })),
-    // WHERE THE WEAPON IS POINTED. `null` means "at the target", which is the
-    // fight this app has always run and what keeps every stored scenario
-    // meaning what it meant. Drag the marker and it becomes a place of its own.
-    aim_at: d.aim_at ? [...d.aim_at] : null,
-    invisible: !!d.invisible, airborne: !!d.airborne, sliding: !!d.sliding, aim_gliding: !!d.aim_gliding,
-    overshields: !!d.overshields,
-    channeling: !!d.channeling, melee_equipped: d.melee_equipped !== false,
-    solo_weapon: !!d.solo_weapon,
-    // KEPT WHOLE, unknown names included: an older page must not strip a
-    // newer fight's terms.
-    buff_triggers_off: [...(d.buff_triggers_off || [])],
-    frame: d.frame || "",
-    // ABSENT MEANS THE FLOOR. Only a key that is really there is an override,
-    // so these are copied only when the saved scenario had them.
-    ...(d.wf_health === undefined ? {} : { wf_health: d.wf_health }),
-    ...(d.wf_armor === undefined ? {} : { wf_armor: d.wf_armor }),
-    ...(d.wf_energy === undefined ? {} : { wf_energy: d.wf_energy }),
-    ...(d.wf_sprint === undefined ? {} : { wf_sprint: d.wf_sprint }),
-    infinite_ammo: d.infinite_ammo !== false, metric: d.metric || METRIC_FALLBACK.id,
-    // NO `form`: how the weapon is played belongs to the build.
-    duration: d.duration, buffs: {},
-    // WARFRAME ABILITY BUFFS. `ability_strength` is a TYPED OVERRIDE, a
-    // fraction (1 = 100%), and NULL means the wielder's own — the linked
-    // Warframe build's (`applyScenario` reads an older page's stored 1 as null).
-    // `abilities` is what is ticked: `{id, secs}`, and `secs: null` is the
-    // whole fight.
-    ability_strength: null, abilities: [],
-    // THE RULES THE PLAYER INSERTED INTO THE ACTION PRIORITY LIST, in the
-    // engine's own shape (`data::apl::Rule`). Empty is every fight run before
-    // it, which assumes everything ticked is up.
-    apl: [],
-    // THE FIGHT'S OWN STAT BONUSES — see `EXTRA_STAT_KEYS`. Empty is a fight
-    // that hands this weapon nothing it did not earn, which is every ruler.
-    extra_stats: { ...(d.extra_stats || {}) },
-    // WHAT THE WARFRAME BRINGS. Both are the frame's rather than the weapon's,
-    // so they travel with the fight exactly as `abilities` does — and empty is
-    // a squad running no aura and a frame with bare sockets, which is every
-    // ruler and every scenario stored before they existed.
-    auras: (d.auras || []).map((a) => ({ id: a.id, count: a.count || 1 })),
-    shards: (d.shards || []).map((x) => ({
-      shard: x.shard, effect: x.effect, tauforged: !!x.tauforged,
-    })),
-  };
-}
+/// THE FIGHT EVERY SCENARIO IS APPLIED ONTO — `headlessDefaultScenario`, the
+/// one the bot's riven gain is frozen under too.
+function defaultScenario() { return headlessDefaultScenario(META, CONTACT_M, METRIC_FALLBACK.id); }
 
 // Sim scenario + per-buff config. Seeded from META.defaults in init().
 // `buffs` maps buff id -> { stacks, locked } (section 2); the buff SET comes

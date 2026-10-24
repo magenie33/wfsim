@@ -1,10 +1,11 @@
 # A RIVEN SURVEY'S SHAPES, FROZEN ON THE OFFICIAL MACHINES — docs/AGENT.md
 # §"Riven survey". `scripts/riven_survey.py` opens the shapes and starts this;
-# each shape's search is built by a clean page (`scripts/riven_freeze.mjs`) and
-# stored, which hands it to the factory. Nothing here computes a score.
+# each shape's search is built on this checkout's engine
+# (`scripts/riven_freeze.mjs`) and stored, which hands it to the factory.
+# Nothing here computes a score.
 #
 # A RUN TAKES WHAT IS LEFT AND STOPS. A shape is frozen once and never again, so
-# a run cut short loses only the pages in flight and the next one takes the
+# a run cut short loses only the calls in flight and the next one takes the
 # rest; an hour with nothing unfrozen is one short job.
 name: survey
 
@@ -19,11 +20,10 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # A run's share of the backlog. Most codes are written into a template and
-  # take a request each; a weapon whose check differs goes to clean pages, a
-  # few seconds each, and what is left waits for the next hour.
+  # A run's share of the backlog, a read and a store each, CALLS at once; what
+  # is left waits for the next hour.
   MAX_CODES: 20000
-  LANES: 4
+  CALLS: 16
 
 jobs:
   codes:
@@ -76,5 +76,5 @@ jobs:
         run: |
           set -euo pipefail
           [ -n "$BOT_RELAY_TOKEN" ] || { echo "::error::BOT_RELAY_TOKEN is not set"; exit 1; }
-          node scripts/riven_freeze.mjs codes.txt "$LANES" | tee freeze.log
+          node scripts/riven_freeze.mjs codes.txt "$CALLS" | tee freeze.log
           grep -v '^[0-9]*/[0-9]* ok' freeze.log | tail -n 40 >> "$GITHUB_STEP_SUMMARY"

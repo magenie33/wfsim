@@ -32,10 +32,11 @@ function isolateAppraisalStorage() {
 }
 
 /// THE LINK, ANSWERED: read the appraisal, put the address on its weapon's
-/// optimizer, draw that page, then set it up and start. `freeze` sets it up and
-/// stops there, writing the search it would run to `body[data-request]` — what
-/// the bot stores once, from a browser that holds nothing of anyone's, so every
-/// computer that runs this riven gain searches the same question.
+/// optimizer, draw that page, set it up and start. The search it runs is
+/// `headlessRivenGainRequest`'s — the one the bot freezes with no page, so every
+/// computer that runs this riven gain searches the same question — and the
+/// controls set up beside it show that search. `freeze` stops before running,
+/// writing `{ engine, request, context }` to `body[data-request]`.
 async function openAppraisal(code, freeze = false) {
   isolateAppraisalStorage();
   let job = null;
@@ -57,14 +58,16 @@ async function openAppraisal(code, freeze = false) {
   if (job.done && !freeze) return;
   try {
     await setUpAppraisal(w, job);
+    const asked = headlessRivenGainRequest(META, { weapon: w.id, ruler: job.ruler, card: job.riven || {},
+      rivenId: appraisal.rivenMod.slice(RIVEN_PREFIX.length) });
+    if (!asked) throw new Error(`unknown ruler ${job.ruler}`);
     if (freeze) {
-      const context = { ...boardBuildContext(), rivens: { [appraisal.rivenMod]: boardRivenShape(appraisal.rivenMod) } };
-      document.body.dataset.request = JSON.stringify({ engine: ENGINE_ID, request: optimizeBody(), context });
+      document.body.dataset.request = JSON.stringify({ engine: ENGINE_ID, ...asked });
       return;
     }
     appraisal.phase = "searching";
     renderAppraisal();
-    await runOptimize();
+    await runOptimize(asked.request);
   } catch (e) {
     appraisal.phase = "failed";
     appraisal.error = String((e && e.message) || e);

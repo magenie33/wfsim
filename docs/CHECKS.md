@@ -178,6 +178,17 @@ nothing; and that frozen request and context, run as volunteer work through the
 background's own search, answers the same build to the key, under its lease,
 with the search's work.
 
+## `check_riven_request`
+
+A riven gain sends the search its page shows: `headlessRivenGainRequest` is
+what the appraisal page, the bot and the survey all send, and the page's own
+controls — the ruler, the riven and the built-in search, set up beside it —
+must build that request and context key for key. One clean boot of
+`/appraise/<code>?freeze=1` a pair, the appraisal answered on the wire: every
+weapon under the primary ruler, every ruler on three weapons, the card's four
+shapes in turn. CI shards it with `check_parity` (`WFSIM_RIVEN_SHARD=i/n`).
+Verified to bite: a final round of 101 runs named every weapon.
+
 ## `check_agent_door`
 
 `window.wfsim` is one door, and an action is something a
