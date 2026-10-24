@@ -518,10 +518,24 @@ with its lock ignored.
 ### One change at a time
 
 A move changes ONE position. A valley where each change alone loses and two
-together win is crossed by a START on its far side — a player's own, or a
-default one per element — never by trying every pair: with every card a
-candidate, a pair move is C(8,2)·85² ≈ 200,000 builds a round, hours in a
-browser.
+together win is crossed three ways, none of them by trying every pair — with
+every card a candidate, a pair move is C(8,2)·85² ≈ 200,000 builds a round,
+hours in a browser:
+
+- a START on its far side — a player's own, or a default one per element;
+- the FILL BOTH WAYS (below): what shapes the build — its mode, evolution
+  tiers, valence and arcane seats, `QuickSpace::coupled` — chosen before its
+  cards and again after them, from every start;
+- a PAIR of coupled positions changed at once, once no single change wins
+  (One step, 4): a handful of options each, so a round of pairs costs about
+  one card slot's sweep.
+
+Over fifteen riven cases (the board's top riven shape of fourteen weapons and
+one reader's Laetum card) each of the last two found answers the other missed:
+the fill both ways took Furis from 141.4 to 183.6 kpm (Practiced Grip and
+Elemental Balance only pay once its cards are there), the pair took that
+Laetum card from 123.4 to 154.9 (Enervate with Overwhelming Attrition). Both
+together missed none, for 2.3× the evaluations of neither.
 
 
 **THE BUILT-IN SEARCHES** are `data/search/presets.yaml`, read-only like the
@@ -605,6 +619,11 @@ above runs only when a tool asks for it by name.
    restarts at the first position. A candidate that scores AS ONE with the
    build (`one_build`) replaces it when it is preferred (below), and never
    with a build the sweep has stood on.
+4. When no position offers a better candidate, every PAIR of coupled
+   positions is changed at once, as one more position whose candidates are
+   all those pairs; the best that beats the build replaces it like any move.
+   `optimizer::quick` tests both this and the fill both ways on toy spaces
+   that fail without them.
 
 ### A tie keeps the preferred build
 
@@ -643,7 +662,12 @@ Measured over Rubico Prime, Torid, Kuva Nukor, Sancti Magistar and Acceltra
 Prime at 10 runs: every answer was the unscreened search's own, for 23–36% of
 its full evaluations (CPU, measured at a keep of 0.25: 26–39% less).
 
-The FILL is one pass in the same order, before any sweep. It fills what the
+The FILL is one pass in the same order, before any sweep — and then a SECOND
+descent from the same start whose fill takes the coupled positions last, so
+what shapes the build is chosen for its cards rather than for a build with
+none. Both answers are that start's, merged by identity; a start whose fill
+reads the same either way (one that named everything) is descended once, and
+the page shows one lane a start either way. It fills what the
 start left EMPTY (a mod slot: its best legal candidate) and what it did not
 NAME (a mode, an evolution tier, the valence, an arcane seat, the exilus: the
 axis's default is kept only when no candidate beats it), and leaves what the

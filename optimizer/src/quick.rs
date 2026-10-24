@@ -85,6 +85,13 @@ pub trait QuickSpace: Sync {
     fn repair(&self, _b: &Self::Build, _free: &[Position]) -> Option<Self::Build> {
         None
     }
+    /// THE COUPLED POSITIONS — what shapes the build: few options each, and each
+    /// moves what the others are worth. Once no single change is better, every
+    /// TWO of them changed at once is one more step; and a start's fill is taken
+    /// both with them first and with them last. Empty = neither.
+    fn coupled(&self, _b: &Self::Build) -> Vec<Position> {
+        Vec::new()
+    }
 }
 
 /// Where a descent begins, what it may never change, and what it did not name.
@@ -301,29 +308,41 @@ impl<S: QuickSpace> Run<'_, S> {
         Some(best.map(|(b, s)| (b, s, tied)))
     }
 
+    /// What a start's fill chooses, in order: the sweep's order — what shapes
+    /// the build first — or, `shape_last`, the coupled positions after the rest.
+    fn fill_of(&self, start: &QuickStart<S::Build>, shape_last: bool) -> Vec<Position> {
+        let empty = self.space.empty(&start.build);
+        let mut fill: Vec<Position> = self
+            .space
+            .positions(&start.build)
+            .into_iter()
+            .filter(|p| !start.fixed.contains(p) && (empty.contains(p) || start.unnamed.contains(p)))
+            .collect();
+        if shape_last {
+            let coupled = self.space.coupled(&start.build);
+            fill.sort_by_key(|p| coupled.contains(p));
+        }
+        fill
+    }
+
     /// Fill, then sweep to a fixed point. `Err` = the start has no answer.
     fn descend(
         &mut self,
         start: &QuickStart<S::Build>,
+        shape_last: bool,
     ) -> Result<(S::Build, Score, Score, u32, bool), &'static str> {
         let fixed = |p: &Position| start.fixed.contains(p);
         let mut cur = start.build.clone();
         let mut moves = 0u32;
-        // FILL: ONE PASS, in the sweep's order, so what shapes the weapon (its
-        // mode, its evolutions, its arcane) is settled before any card is
-        // chosen for it. An EMPTY position takes its best legal candidate
-        // whether or not the bare slot scored higher — no candidate is
-        // "empty". An UNNAMED one holds only a default, and keeps it only when
-        // no candidate beats it. What the start NAMED is not touched here:
-        // judged on a half-empty build, Primed Cryo Rounds lost to Hellfire on
-        // Burston Prime and the answer lost Viral with it.
+        // FILL: ONE PASS. An EMPTY position takes its best legal candidate
+        // whether or not the bare slot scored higher — no candidate is "empty".
+        // An UNNAMED one holds only a default, and keeps it only when no
+        // candidate beats it. What the start NAMED is not touched here: judged
+        // on a half-empty build, Primed Cryo Rounds lost to Hellfire on Burston
+        // Prime and the answer lost Viral with it. The ORDER is the caller's
+        // (`fill_of`): what shapes the build chosen before its cards, or after.
         let empty = self.space.empty(&cur);
-        let fill: Vec<Position> = self
-            .space
-            .positions(&cur)
-            .into_iter()
-            .filter(|p| !fixed(p) && (empty.contains(p) || start.unnamed.contains(p)))
-            .collect();
+        let fill = self.fill_of(start, shape_last);
         self.sweeping = false;
         self.now = StartProgress { settled: false, round: 0, at: 0, of: fill.len() };
         for (k, p) in fill.into_iter().enumerate() {
@@ -364,7 +383,9 @@ impl<S: QuickSpace> Run<'_, S> {
         'sweep: loop {
             let positions: Vec<Position> =
                 self.space.positions(&cur).into_iter().filter(|p| !fixed(p)).collect();
-            self.now = StartProgress { settled: false, round: self.now.round + 1, at: 0, of: positions.len() };
+            let coupled: Vec<Position> = self.space.coupled(&cur).into_iter().filter(|p| !fixed(p)).collect();
+            let of = positions.len() + usize::from(coupled.len() > 1);
+            self.now = StartProgress { settled: false, round: self.now.round + 1, at: 0, of };
             for (k, &p) in positions.iter().enumerate() {
                 self.now.at = k;
                 match self.best(self.space.candidates(&cur, p), p) {
@@ -380,6 +401,38 @@ impl<S: QuickSpace> Run<'_, S> {
                     }
                     Some(Some((_, s, tied))) => self.set_free(p, tied && one_build(s, cur_score)),
                     Some(None) => {}
+                }
+            }
+            // NO SINGLE CHANGE IS BETTER: try every TWO coupled positions at
+            // once. A Laetum riven's answer wanted Enervate and Overwhelming
+            // Attrition together, each worse alone (123 against 155 kpm), and
+            // the element starts all differ in a card, never in an arcane.
+            if coupled.len() > 1 {
+                self.now.at = positions.len();
+                let mut pairs: Vec<S::Build> = Vec::new();
+                let mut keys = std::collections::HashSet::new();
+                for (i, &p) in coupled.iter().enumerate() {
+                    for c in self.space.candidates(&cur, p) {
+                        for &q in &coupled[i + 1..] {
+                            for d in self.space.candidates(&c, q) {
+                                if keys.insert(self.space.key(&d)) {
+                                    pairs.push(d);
+                                }
+                            }
+                        }
+                    }
+                }
+                match self.best(pairs, coupled[0]) {
+                    None => return Ok((cur, cur_score, from, moves, true)),
+                    Some(Some((b, s, _)))
+                        if self.wins(&b, s, &cur, cur_score) && visited.insert(self.space.key(&b)) =>
+                    {
+                        cur = b;
+                        cur_score = s;
+                        moves += 1;
+                        continue 'sweep;
+                    }
+                    _ => {}
                 }
             }
             self.now.settled = true;
@@ -427,24 +480,43 @@ pub fn quick_descent<S: QuickSpace>(
     let mut progress = Vec::with_capacity(starts.len());
     for (i, start) in starts.iter().enumerate() {
         run.stats.starts += 1;
-        run.free.clear();
-        let out = run.descend(start);
-        progress.push(StartProgress { settled: out.is_err() || run.now.settled, ..run.now });
-        match out {
-            Err(why) => failures.push(QuickFailure { start: i, why }),
-            Ok((build, score, from, moves, cut)) => {
-                run.stats.cut |= cut;
-                let id = space.identity(&build);
-                match answers.iter_mut().find(|a| space.identity(&a.build) == id) {
-                    Some(a) => {
-                        a.starts.push(i);
-                        a.from.push(from);
-                        a.moves.push(moves);
+        // THE FILL BOTH WAYS: what shapes the build chosen before its cards,
+        // then after them. Chosen first, on a build with no cards yet, every
+        // element start chose Furis the same evolutions and they all settled
+        // at 141 kpm; its cards chosen first, the toxin start reached 184 — the
+        // board's own #1. A start whose fill reads the same either way is
+        // descended once.
+        let ways: &[bool] = if run.fill_of(start, false) == run.fill_of(start, true) { &[false] } else { &[false, true] };
+        let mut lane = StartProgress::default();
+        for &shape_last in ways {
+            run.free.clear();
+            let out = run.descend(start, shape_last);
+            lane = StartProgress { settled: out.is_err() || run.now.settled, round: lane.round + run.now.round, ..run.now };
+            match out {
+                Err(why) => {
+                    if !failures.iter().any(|f: &QuickFailure| f.start == i) {
+                        failures.push(QuickFailure { start: i, why });
                     }
-                    None => answers.push(QuickAnswer { build, score, starts: vec![i], from: vec![from], moves: vec![moves] }),
+                }
+                Ok((build, score, from, moves, cut)) => {
+                    run.stats.cut |= cut;
+                    let id = space.identity(&build);
+                    match answers.iter_mut().find(|a| space.identity(&a.build) == id) {
+                        Some(a) if a.starts.contains(&i) => {}
+                        Some(a) => {
+                            a.starts.push(i);
+                            a.from.push(from);
+                            a.moves.push(moves);
+                        }
+                        None => answers.push(QuickAnswer { build, score, starts: vec![i], from: vec![from], moves: vec![moves] }),
+                    }
+                    if cut {
+                        break;
+                    }
                 }
             }
         }
+        progress.push(lane);
     }
     rank_ties(&mut answers, |a| a.score, |a, b| space.prefer(&a.build, &b.build));
     // THE SAME SCORE ON THE PAIRED STREAM IS THE SAME BUILD for the list
@@ -545,6 +617,99 @@ mod tests {
         fn key(&self, b: &Self::Build) -> String {
             format!("{b:?}")
         }
+    }
+
+    /// A SHAPE AND A CARD, scored by a table: [shape 0–1, card 0–2]. On a build
+    /// with no card yet shape 0 is better (5 against 4), so a fill that chooses
+    /// the shape first settles at (0, 0) = 10, where either change alone is
+    /// worse; chosen after its card, the shape reaches (1, 2) = 12.
+    struct ShapeAndCard;
+    impl QuickSpace for ShapeAndCard {
+        type Build = [Option<u8>; 2];
+        fn positions(&self, _: &Self::Build) -> Vec<Position> {
+            vec![Position { kind: "s", idx: 0 }, Position { kind: "c", idx: 1 }]
+        }
+        fn empty(&self, b: &Self::Build) -> Vec<Position> {
+            self.positions(b).into_iter().filter(|p| b[p.idx].is_none()).collect()
+        }
+        fn candidates(&self, b: &Self::Build, p: Position) -> Vec<Self::Build> {
+            (0..if p.idx == 0 { 2 } else { 3 })
+                .filter(|d| b[p.idx] != Some(*d))
+                .map(|d| {
+                    let mut n = *b;
+                    n[p.idx] = Some(d);
+                    n
+                })
+                .collect()
+        }
+        fn legal(&self, _: &Self::Build) -> bool {
+            true
+        }
+        fn score(&self, bs: &[Self::Build]) -> Vec<Score> {
+            let table = |b: &Self::Build| match *b {
+                [Some(s), None] => [5.0, 4.0][s as usize],
+                [None, Some(c)] => [1.0, 1.0, 3.0][c as usize],
+                [Some(s), Some(c)] => [[10.0, 6.0, 7.0], [7.0, 6.0, 12.0]][s as usize][c as usize],
+                [None, None] => 0.0,
+            };
+            bs.iter().map(|b| Some((table(b), 0.0))).collect()
+        }
+        fn key(&self, b: &Self::Build) -> String {
+            format!("{b:?}")
+        }
+        fn coupled(&self, _: &Self::Build) -> Vec<Position> {
+            vec![Position { kind: "s", idx: 0 }]
+        }
+    }
+
+    #[test]
+    fn a_start_is_filled_with_its_shape_last_too() {
+        let starts = vec![QuickStart { build: [None, None], fixed: vec![], unnamed: vec![] }];
+        let cfg = QuickConfig { max_evals: 0, stop: Vec::new() };
+        let QuickRun { answers, progress, .. } = quick_descent(&ShapeAndCard, &starts, &cfg);
+        assert_eq!(answers[0].build, [Some(1), Some(2)], "the shape chosen for its card");
+        assert_eq!(answers[0].starts, vec![0], "both fills are one start");
+        assert_eq!(progress.len(), 1, "…and one lane");
+        // A START WITH NOTHING TO FILL is descended once: the same answer, no twin.
+        let named = vec![QuickStart { build: [Some(0), Some(0)], fixed: vec![], unnamed: vec![] }];
+        let QuickRun { answers, .. } = quick_descent(&ShapeAndCard, &named, &cfg);
+        assert_eq!(answers.len(), 1);
+    }
+
+    /// TWO SHAPES THAT PAY ONLY TOGETHER: from (0, 0) = 5 either change alone is
+    /// 4, both at once 9.
+    struct TwoShapes;
+    impl QuickSpace for TwoShapes {
+        type Build = [Option<u8>; 2];
+        fn positions(&self, _: &Self::Build) -> Vec<Position> {
+            (0..2).map(|idx| Position { kind: "s", idx }).collect()
+        }
+        fn empty(&self, b: &Self::Build) -> Vec<Position> {
+            self.positions(b).into_iter().filter(|p| b[p.idx].is_none()).collect()
+        }
+        fn candidates(&self, b: &Self::Build, p: Position) -> Vec<Self::Build> {
+            ShapeAndCard.candidates(b, Position { kind: "s", idx: p.idx }).into_iter().filter(|n| n[p.idx] < Some(2)).collect()
+        }
+        fn legal(&self, _: &Self::Build) -> bool {
+            true
+        }
+        fn score(&self, bs: &[Self::Build]) -> Vec<Score> {
+            bs.iter().map(|b| Some(([[5.0, 4.0], [4.0, 9.0]][b[0].unwrap_or(0) as usize][b[1].unwrap_or(0) as usize], 0.0))).collect()
+        }
+        fn key(&self, b: &Self::Build) -> String {
+            format!("{b:?}")
+        }
+        fn coupled(&self, b: &Self::Build) -> Vec<Position> {
+            self.positions(b)
+        }
+    }
+
+    #[test]
+    fn two_coupled_positions_change_together_when_no_single_change_wins() {
+        let starts = vec![QuickStart { build: [Some(0), Some(0)], fixed: vec![], unnamed: vec![] }];
+        let cfg = QuickConfig { max_evals: 0, stop: Vec::new() };
+        let QuickRun { answers, .. } = quick_descent(&TwoShapes, &starts, &cfg);
+        assert_eq!(answers[0].build, [Some(1), Some(1)]);
     }
 
     #[test]
