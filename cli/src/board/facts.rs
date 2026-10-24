@@ -131,7 +131,7 @@ impl FactLog {
                 .create(true)
                 .append(true)
                 .open(&p)
-                .map_err(|e| eprintln!("facts: cannot append to {p}: {e}"))
+                .map_err(|e| say!("facts: cannot append to {p}: {e}"))
                 .ok()
                 .map(std::io::BufWriter::new)
         });
@@ -174,7 +174,7 @@ impl FactLog {
         // FLUSHED PER ROW. A buffer that is written at the end is the batch
         // this exists to stop being.
         if writeln!(out, "{line}").and_then(|()| out.flush()).is_err() {
-            eprintln!("facts: the log stopped accepting rows");
+            say!("facts: the log stopped accepting rows");
             self.out = None;
         }
     }
@@ -200,18 +200,25 @@ fn fact_lines(path: &str) -> Option<impl Iterator<Item = String>> {
 }
 
 pub(crate) fn load_facts(spec: Option<String>, bench_id: &str) -> Facts {
-    let mut facts = Facts::default();
-    let Some(path) = spec else { return facts };
+    load_facts_of(spec, &[bench_id]).remove(bench_id).unwrap_or_default()
+}
+
+/// …EACH OF `rulers`' FACTS, in one pass over the file: `--each-ruler` reads a
+/// store of millions of rows once, not once a ruler.
+pub(crate) fn load_facts_of(spec: Option<String>, rulers: &[&str]) -> std::collections::HashMap<String, Facts> {
+    let mut by: std::collections::HashMap<String, Facts> =
+        rulers.iter().map(|r| (r.to_string(), Facts::default())).collect();
+    let Some(path) = spec else { return by };
     let Some(lines) = fact_lines(&path) else {
-        eprintln!("facts: cannot read {path}");
-        return facts;
+        say!("facts: cannot read {path}");
+        return by;
     };
     for line in lines {
         let line = line.as_str();
         let Ok(v) = serde_json::from_str::<Value>(line) else { continue };
-        if v.get("ruler").and_then(Value::as_str) != Some(bench_id) {
+        let Some(facts) = v.get("ruler").and_then(Value::as_str).and_then(|r| by.get_mut(r)) else {
             continue;
-        }
+        };
         let (Some(id), Some(score)) =
             (v.get("identity").and_then(Value::as_str), exact_score(line))
         else {
@@ -254,8 +261,7 @@ pub(crate) fn load_facts(spec: Option<String>, bench_id: &str) -> Facts {
             facts.insert(key, fact);
         }
     }
-    eprintln!("facts: {} rows read for {bench_id}", facts.len());
-    facts
+    by
 }
 
 /// ONE FACT, UNDER WHICHEVER RULER MEASURED IT — the one reader here that is
@@ -285,7 +291,7 @@ pub(crate) fn load_cross_facts(spec: Option<String>) -> Vec<CrossFact> {
         .map(|b| family(&b.id).to_string())
         .collect();
     let Some(lines) = fact_lines(&path) else {
-        eprintln!("entry line: cannot read {path}");
+        say!("entry line: cannot read {path}");
         return Vec::new();
     };
     let mut out = Vec::new();
@@ -309,7 +315,6 @@ pub(crate) fn load_cross_facts(spec: Option<String>) -> Vec<CrossFact> {
             score,
         });
     }
-    eprintln!("entry line: {} fact(s) read across every live ruler", out.len());
     out
 }
 

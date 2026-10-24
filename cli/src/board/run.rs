@@ -9,7 +9,7 @@ use serde_json::Value;
 use crate::args::{flag, has_flag};
 
 use super::entry::{account, apply_entry_line, one_row_per_shape, Who};
-use super::facts::{identity_of, load_cross_facts, load_facts, stamp, Fact, FactLog};
+use super::facts::{identity_of, load_cross_facts, load_facts, load_facts_of, stamp, Fact, FactLog};
 use super::measure::{card_of, pause_row, run_budgeted, Partial};
 use super::publish::{Row, RowRiven};
 use super::queue::{
@@ -36,16 +36,91 @@ pub fn run() {
     match std::env::args().nth(1).as_deref() {
         Some("--project") => return super::assemble::project(),
         Some("--serve") => return super::assemble::serve(),
+        Some("--each-ruler") => return each_ruler(),
         _ => {}
     }
     let bench_id = std::env::args().nth(1).unwrap_or_else(|| {
-        eprintln!(
+        say!(
             "usage: wfsim-board <benchmark-id> [site/board] [--shard i/n] \
                    [--facts-in <file>] [--facts <file>] [--measured-by <sha>] \
-                   (library on stdin); wfsim-board --project|--serve <dir> ..."
+                   (library on stdin); wfsim-board --project|--serve <dir> ...; \
+                   wfsim-board --each-ruler --dry-run ..."
         );
         std::process::exit(2);
     });
+    let lib = library();
+    let gate = has_flag("--gate");
+    let facts = load_facts(flag("--facts-in"), &bench_id);
+    let cross = if gate { load_cross_facts(flag("--facts-in")) } else { Vec::new() };
+    let already_owed =
+        if gate { builds_with_a_row_owed(flag("--queue-in")) } else { Default::default() };
+    ruler(&bench_id, &lib, facts, &cross, &already_owed, &flag, &has_flag);
+}
+
+/// A LIBRARY RECORD AND ITS RULER-FREE READ (`board_rows::board_build`), made
+/// once however many rulers then cross it.
+type Built = (Value, Result<wfsim_engine::board::builds::ValidBuild, String>);
+
+fn library() -> Vec<Built> {
+    let mut raw = String::new();
+    std::io::stdin().read_to_string(&mut raw).expect("stdin");
+    let subs: Vec<Value> = serde_json::from_str(&raw).unwrap_or_default();
+    let built = super::assemble::par_map(&subs, wfsim_webapi::board_rows::board_build);
+    subs.into_iter().zip(built).collect()
+}
+
+/// `wfsim-board --each-ruler --dry-run …`: EVERY RULER'S COUNT FROM ONE READ of
+/// the library and the facts, the rulers on several cores, each log printed
+/// whole in roster order (to `--log`'s file when given). A flag's `{id}` is
+/// the ruler's id. Read once a ruler, the build half of the door was 49 s of
+/// each ruler's 78 and the facts 14, and 48 rulers on four cores outgrew the
+/// hour the reconciliation runs in.
+fn each_ruler() {
+    if !has_flag("--dry-run") {
+        eprintln!("wfsim-board --each-ruler counts and fights nothing: it takes --dry-run");
+        std::process::exit(2);
+    }
+    let roster: Vec<String> =
+        wfsim_engine::board::benchmarks::all().iter().map(|b| b.id.to_string()).collect();
+    let ids: Vec<&str> = roster.iter().map(String::as_str).collect();
+    let lib = library();
+    let gate = has_flag("--gate");
+    let by = std::sync::Mutex::new(load_facts_of(flag("--facts-in"), &ids));
+    let cross = if gate { load_cross_facts(flag("--facts-in")) } else { Vec::new() };
+    let already_owed =
+        if gate { builds_with_a_row_owed(flag("--queue-in")) } else { Default::default() };
+    let logs = super::assemble::par_map(&roster, |id| {
+        let facts = by.lock().expect("facts").remove(id).unwrap_or_default();
+        let mine = |name: &str| flag(name).map(|v| v.replace("{id}", id));
+        super::captured(|| ruler(id, &lib, facts, &cross, &already_owed, &mine, &has_flag))
+    });
+    let log_to = flag("--log");
+    for (id, log) in roster.iter().zip(logs) {
+        match &log_to {
+            Some(p) => {
+                let p = p.replace("{id}", id);
+                if let Err(e) = std::fs::write(&p, log) {
+                    eprintln!("each ruler: cannot write {p}: {e}");
+                    std::process::exit(1);
+                }
+            }
+            None => eprint!("{log}"),
+        }
+    }
+}
+
+/// ONE RULER'S PASS over the library: its flags read through `flag` and
+/// `has_flag`, its facts and the cross-ruler reads handed in.
+#[allow(clippy::too_many_arguments)]
+fn ruler(
+    bench_id: &str,
+    lib: &[Built],
+    facts: super::facts::Facts,
+    cross: &[super::facts::CrossFact],
+    already_owed: &std::collections::BTreeSet<String>,
+    flag: &dyn Fn(&str) -> Option<String>,
+    has_flag: &dyn Fn(&str) -> bool,
+) {
     // WHICH SLICE OF THE SUBMISSIONS THIS PROCESS SIMULATES. By INDEX in the
     // stdin array rather than by any property of the row: every shard is handed
     // the same file, so the split is identical without the shards agreeing on
@@ -67,7 +142,7 @@ pub fn run() {
     // of what a run decides, and it replaces a prior board, a merged store and a
     // directory of this run's own artifacts — three sources that could
     // disagree, and a rule about which of them won.
-    let facts = load_facts(flag("--facts-in"), &bench_id);
+    say!("facts: {} rows read for {bench_id}", facts.len());
     // WHAT A NEVER-SCORED ROW IS CHARGED, read off this ruler's own
     // measurements once, beside the facts it is derived from.
     let unmeasured = unmeasured_row_seconds(&facts);
@@ -85,7 +160,7 @@ pub fn run() {
     // which is where the ORDER lives: a batch jumps the line by its own `at`,
     // and truncating here is what makes that ordering mean something when the
     // run cannot do all of it.
-    let queued = load_queue(flag("--queue-in"), &bench_id);
+    let queued = load_queue(flag("--queue-in"), bench_id);
     let owed: Option<std::collections::HashSet<(String, String)>> =
         queued.as_ref().map(|q| q.iter().cloned().collect());
     let taking: Option<std::collections::HashSet<(String, String)>> = queued.as_ref().map(|q| {
@@ -121,7 +196,7 @@ pub fn run() {
     let mut payable: std::collections::HashSet<(String, String)> = Default::default();
     let missing_out = flag("--queue-missing").and_then(|p| {
         std::fs::File::create(&p)
-            .map_err(|e| eprintln!("queue: cannot write {p}: {e}"))
+            .map_err(|e| say!("queue: cannot write {p}: {e}"))
             .ok()
             .map(std::io::BufWriter::new)
     });
@@ -137,12 +212,12 @@ pub fn run() {
     // THE SHARE ITSELF IS NOT A FLAG. It is `KEEP_LEADER_SHARE`, and a number
     // on a command line would be a second copy of it.
     let gate = has_flag("--gate");
-    let cross = if gate { load_cross_facts(flag("--facts-in")) } else { Vec::new() };
+    if gate && flag("--facts-in").is_some() {
+        say!("entry line: {} fact(s) read across every live ruler", cross.len());
+    }
     // …AND WHICH BUILDS SOMEBODY HAS ALREADY ASKED ABOUT, on any ruler. A build
     // with no fact is owed one fight; this is how the run knows whether that
-    // fight has already been asked for.
-    let already_owed =
-        if gate { builds_with_a_row_owed(flag("--queue-in")) } else { Default::default() };
+    // fight has already been asked for (`already_owed`, read by the caller).
     // WHICH GROUP EACH BUILD'S FACTS FALL IN, filled as the run walks the
     // library. A build illegal under THIS ruler is missing from it, which can
     // only understate another group's leader and so only ever asks for a row
@@ -196,14 +271,10 @@ pub fn run() {
     // WHAT THIS RUN MEASURED, for the accounting line at the end.
     let mut computed: std::collections::HashMap<String, f64> = Default::default();
 
-    let bench = wfsim_engine::board::benchmarks::get(&bench_id).unwrap_or_else(|| {
-        eprintln!("unknown benchmark: {bench_id}");
+    let bench = wfsim_engine::board::benchmarks::get(bench_id).unwrap_or_else(|| {
+        say!("unknown benchmark: {bench_id}");
         std::process::exit(2);
     });
-
-    let mut raw = String::new();
-    std::io::stdin().read_to_string(&mut raw).expect("stdin");
-    let subs: Vec<Value> = serde_json::from_str(&raw).unwrap_or_default();
 
     // The benchmark's scenario, as the wire shape `simulate_json` parses. It is
     // the SAME map the app sends, which is what stops the board and the page
@@ -231,7 +302,7 @@ pub fn run() {
     // partitions this set; anything left over is a build the library holds and
     // this board silently did not rank.
     let mut scored_ids: std::collections::BTreeSet<String> = Default::default();
-    for s in subs {
+    for (s, built) in lib {
         // EVERY SUBMISSION IS A CANDIDATE FOR EVERY RULER.
         //
         // A submission has never carried a score — it carries a BUILD, and the
@@ -266,7 +337,7 @@ pub fn run() {
         // THE REASON IS PRINTED, with the whole build, not counted: "2 refused"
         // is a number that tells nobody anything, including the person whose
         // build it refused.
-        let v = match wfsim_webapi::board_rows::scored_build(&s, &bench_id) {
+        let v = match built.clone().and_then(|v| wfsim_webapi::board_rows::admitted(s, bench_id, &v).map(|()| v)) {
             Ok(v) => v,
             Err(e) => {
                 let list = |k: &str| -> String {
@@ -276,7 +347,7 @@ pub fn run() {
                         .unwrap_or_default()
                 };
                 let valence = s.get("valence").and_then(Value::as_str).unwrap_or("");
-                eprintln!(
+                say!(
                     "refused {weapon}: {e}
   mode={} mods=[{}] evolutions=[{}] arcanes=[{}] valence={}",
                     s.get("mode").and_then(Value::as_str).unwrap_or("—"),
@@ -322,7 +393,7 @@ pub fn run() {
         // too — riven card included, and an unsustainable mode refused there.
         let fights = wfsim_webapi::board_rows::row_requests(&v, &scenario);
         if fights.is_empty() {
-            eprintln!("refused {weapon}: it has no mode that can be sustained for an engagement");
+            say!("refused {weapon}: it has no mode that can be sustained for an engagement");
             refused += 1;
             continue;
         }
@@ -543,7 +614,7 @@ pub fn run() {
                     // Only a fight that did not run is refused.
                     let ok = out.get("ok").and_then(Value::as_bool).unwrap_or(false);
                     if !ok {
-                        eprintln!(
+                        say!(
                             "refused {weapon}: did not simulate ({})",
                             out.get("error").and_then(Value::as_str).unwrap_or("no error given")
                         );
@@ -565,7 +636,7 @@ pub fn run() {
                     // of 128 did exactly that, and cost a whole rescore — see
                     // docs/BOARD.md §"The pipeline, designed around one rule".
                     log.write(
-                        &bench_id,
+                        bench_id,
                         metric.id,
                         &key,
                         &Fact {
@@ -582,7 +653,7 @@ pub fn run() {
                     // slow row rather than 2,474 lines nobody reads.
                     let took = began.elapsed().as_secs_f64();
                     if took >= 30.0 {
-                        eprintln!(
+                        say!(
                             "slow row: {:7.1}s  {}  key={key}  riven={}  evos={}  arcanes={}",
                             took,
                             v.weapon,
@@ -639,7 +710,7 @@ pub fn run() {
     // HOW MUCH OF THIS BOARD WAS KEPT rather than recomputed, said out loud. A
     // run that reuses everything and a run that scored everything look
     // identical from the outside, and the difference is an hour.
-    eprintln!(
+    say!(
         "{seen} submissions, {refused} refused, {} rows ({reused} reused, {} scored here)",
         kept.len(),
         computed.len(),
@@ -651,12 +722,12 @@ pub fn run() {
     // which is a row never started: these carry banked progress and resume on
     // the next run, which is what makes an arbitrarily slow row finishable.
     if paused > 0 {
-        eprintln!("paused: {paused} row(s) banked partway — they resume on the next run");
+        say!("paused: {paused} row(s) banked partway — they resume on the next run");
     }
     if fresh_left > 0 {
         let fresh_taken = fresh_total - fresh_left;
         let why = if deadline.is_some_and(|d| started.elapsed() > d) { "clock" } else { "count" };
-        eprintln!(
+        say!(
             "new: {fresh_taken} of {fresh_total} never-scored row(s) taken, {fresh_left} left for the next run ({why})",
         );
     }
@@ -692,15 +763,15 @@ pub fn run() {
     // group's leader keeps earning every row it is owed; one that reaches it
     // nowhere keeps the facts it has and stops being asked for more.
     if let Some(p) = orphans_out.as_deref() {
-        write_orphans(p, owed.as_ref(), &payable, seen, &bench_id);
+        write_orphans(p, owed.as_ref(), &payable, seen, bench_id);
     }
     if missing_out.is_some() {
         write_missing(
-            missing_out, pending_missing, gate, &cross, &who, &already_owed, &corner_of, &bench_id,
+            missing_out, pending_missing, gate, cross, &who, already_owed, &corner_of, bench_id,
         );
     }
     if dry {
-        eprintln!(
+        say!(
             "dry-run: todo={todo} work={work_seconds:.0} reused={reused} seen={seen} unmeasured={unmeasured:.1}s"
         );
         return;
@@ -763,6 +834,54 @@ fn groups_report(list: bool) {
 #[cfg(test)]
 mod tests {
     use serde_json::{json, Value};
+
+    /// **A RULER WALKED BESIDE OTHERS SAYS WHAT IT SAYS ALONE**: `--each-ruler`
+    /// crosses one read of the library with every ruler on several threads, and
+    /// each ruler's log and files must be the ones a process of its own writes —
+    /// a log caught by the wrong thread, or a ruler handed another's facts,
+    /// reads here as two answers.
+    #[test]
+    fn a_ruler_walked_beside_others_says_what_it_says_alone() {
+        let rows: Vec<Value> =
+            serde_json::from_str(include_str!("../../../tests/gas/rows.json")).expect("rows");
+        let lib: Vec<super::Built> = rows
+            .iter()
+            .map(|r| {
+                let rec = r["record"].clone();
+                let built = wfsim_webapi::board_rows::board_build(&rec);
+                (rec, built)
+            })
+            .collect();
+        let roster: Vec<String> =
+            wfsim_engine::board::benchmarks::all().iter().take(6).map(|b| b.id.to_string()).collect();
+        let dir = std::env::temp_dir().join(format!("wfsim-each-ruler-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let queue = dir.join("queue.ndjson");
+        std::fs::write(&queue, "").unwrap();
+        let walk = |id: &String, tag: &str| {
+            let missing = dir.join(format!("{tag}-{id}.missing")).to_string_lossy().into_owned();
+            let queue = queue.to_string_lossy().into_owned();
+            let flag = |n: &str| match n {
+                "--queue-missing" => Some(missing.clone()),
+                "--queue-in" => Some(queue.clone()),
+                _ => None,
+            };
+            let has = |n: &str| n == "--dry-run";
+            let log = crate::board::captured(|| {
+                super::ruler(id, &lib, Default::default(), &[], &Default::default(), &flag, &has)
+            });
+            (log, std::fs::read_to_string(&missing).unwrap_or_default())
+        };
+        let alone: Vec<_> = roster.iter().map(|id| walk(id, "alone")).collect();
+        let beside = crate::board::assemble::par_map(&roster, |id| walk(id, "beside"));
+        assert_eq!(alone, beside);
+        for (id, (log, missing)) in roster.iter().zip(&alone) {
+            assert!(log.contains(&format!("facts: 0 rows read for {id}\n")) && log.contains("dry-run: "), "{id}: {log}");
+            assert!(missing.lines().count() > 0, "{id}: a ruler with no facts asked for nothing");
+        }
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     /// THE SCORER ASKS FOR A MODE, AND TWO MODES ARE TWO QUESTIONS. A weapon
     /// that can fill its gauge either way sent one request for both cycles, so

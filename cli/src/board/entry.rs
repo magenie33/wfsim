@@ -161,7 +161,7 @@ pub(crate) fn park_under_entry_line(
 pub(crate) fn one_row_per_shape(kept: &mut Vec<Row>) -> std::collections::BTreeSet<String> {
     let collapsed = collapse_shapes(kept);
     if !collapsed.is_empty() {
-        eprintln!(
+        say!(
             "one row per shape: {} build(s) are another corner of a shape already listed",
             collapsed.len()
         );
@@ -238,7 +238,7 @@ pub(crate) fn apply_entry_line(
         floored_ids = entry_floor(kept);
         let dropped = held - kept.len();
         if dropped > 0 {
-            eprintln!(
+            say!(
                 "entry line: {dropped} row(s) under {:.0}% of their group's leader, {} build(s) with none left",
                 wfsim_engine::data::boards::KEEP_LEADER_SHARE * 100.0,
                 floored_ids.len(),
@@ -268,7 +268,7 @@ pub(crate) fn account(
     );
     let listed: std::collections::BTreeSet<&str> =
         kept.iter().map(|r| r.identity.as_str()).collect();
-    eprintln!(
+    say!(
         "accounted: {} published, {refused} refused at the door, {} under the entry line, {} another corner",
         listed.len(),
         floored_ids.len(),

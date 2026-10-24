@@ -19,6 +19,33 @@
 //!
 //!   cat library.json | wfsim-board standard_single_target site/board //!     --facts-in facts-known.ndjson --facts facts.ndjson
 
+/// A LINE OF A RULER'S LOG: to stderr, or into the buffer its thread holds when
+/// `--each-ruler` walks several rulers at once and prints each log whole.
+macro_rules! say {
+    ($($t:tt)*) => { $crate::board::said(format!($($t)*)) };
+}
+
+thread_local! {
+    static SINK: std::cell::RefCell<Option<String>> = const { std::cell::RefCell::new(None) };
+}
+
+pub(crate) fn said(line: String) {
+    SINK.with(|s| match s.borrow_mut().as_mut() {
+        Some(log) => {
+            log.push_str(&line);
+            log.push('\n');
+        }
+        None => eprintln!("{line}"),
+    });
+}
+
+/// …AND WHAT `f` SAID, held rather than printed.
+pub(crate) fn captured(f: impl FnOnce()) -> String {
+    SINK.with(|s| *s.borrow_mut() = Some(String::new()));
+    f();
+    SINK.with(|s| s.borrow_mut().take()).unwrap_or_default()
+}
+
 mod assemble;
 mod entry;
 mod facts;

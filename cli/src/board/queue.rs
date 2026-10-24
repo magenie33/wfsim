@@ -98,7 +98,7 @@ pub(crate) fn builds_with_a_row_owed(spec: Option<String>) -> std::collections::
 pub(crate) fn load_queue(spec: Option<String>, bench_id: &str) -> Option<Vec<(String, String)>> {
     let path = spec?;
     let Ok(text) = std::fs::read_to_string(&path) else {
-        eprintln!("queue: cannot read {path}");
+        say!("queue: cannot read {path}");
         return Some(Vec::new());
     };
     let owed: Vec<(String, String)> = text
@@ -112,7 +112,7 @@ pub(crate) fn load_queue(spec: Option<String>, bench_id: &str) -> Option<Vec<(St
             ))
         })
         .collect();
-    eprintln!("queue: {} row(s) owed on {bench_id}", owed.len());
+    say!("queue: {} row(s) owed on {bench_id}", owed.len());
     Some(owed)
 }
 
@@ -151,10 +151,10 @@ pub(crate) fn write_orphans(
         .map(|(b, m)| format!("{}\n", serde_json::json!({ "build_id": b, "ruler": bench_id, "mode": m })))
         .collect();
     if let Err(e) = std::fs::write(path, text) {
-        eprintln!("queue: cannot write {path}: {e}");
+        say!("queue: cannot write {path}: {e}");
         return;
     }
-    eprintln!("queue: {} row(s) owed on {bench_id} that no build can pay", rows.len());
+    say!("queue: {} row(s) owed on {bench_id} that no build can pay", rows.len());
 }
 
 /// WHETHER A ROW IS OWED AGAIN: it has no fact, or its fact finished before the
@@ -206,9 +206,9 @@ pub(crate) fn write_missing(
         }
         let _ = out.flush();
     }
-    eprintln!("queue-missing: {missing} row(s) nothing has asked for on {bench_id}");
+    say!("queue-missing: {missing} row(s) nothing has asked for on {bench_id}");
     if gate {
-        eprintln!(
+        say!(
             "entry line: {parked} build(s) under {:.0}% of every group's leader — no row asked for",
             wfsim_engine::data::boards::KEEP_LEADER_SHARE * 100.0,
         );

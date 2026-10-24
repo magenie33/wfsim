@@ -149,7 +149,7 @@ const MAX_THREADS: usize = 8;
 /// EACH THREAD TAKES THE NEXT ITEM, not a slice: a record's cost differs by
 /// orders of magnitude (a riven of two elements orders its mods by search) and
 /// a weapon's by its library, so equal slices leave one thread with the work.
-fn par_map<T: Sync, U: Send>(items: &[T], f: impl Fn(&T) -> U + Sync) -> Vec<U> {
+pub(crate) fn par_map<T: Sync, U: Send>(items: &[T], f: impl Fn(&T) -> U + Sync) -> Vec<U> {
     let next = std::sync::atomic::AtomicUsize::new(0);
     let n = std::thread::available_parallelism()
         .map_or(1, |n| n.get())
