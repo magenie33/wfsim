@@ -61,6 +61,9 @@ const ACCOUNT_SAYS = {
   bad_username: "A username is 3 to 20 letters, digits or underscores.",
   bad_ign: "That is not an in-game name.",
   tell_failed: "It could not be sent. Try again later.",
+  bad_text: "Write at most 4000 characters.",
+  bad_image: "A screenshot could not be sent. Remove it and try again.",
+  too_many_images: "Up to 3 screenshots.",
   username_reserved: "That username is reserved.",
   username_taken: "That username is taken.",
   rename_too_soon: "A username can change once a day.",
@@ -213,6 +216,7 @@ function renderAccountEntry() {
   if (!box) return;
   const { providers, account } = accountState;
   box.hidden = !providers.length && !account;
+  renderFeedbackEntry();
   if (box.hidden) return;
   const here = location.pathname + location.search;
   box.innerHTML = account

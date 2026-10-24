@@ -123,6 +123,19 @@ account's own feedback and nobody else's, and the deletion takes the rows and
 the screenshots. It failed with the export widened to every account and with
 the purge of the screenshots left out.
 
+## `check_feedback_panel`
+
+Feedback on the page (`51-feedback-panel.js`), the worker stubbed: a mark on
+the bar beside the bell wherever accounts are offered and none where they are
+not; signed out the panel is a sign-in link back to the page, signed in one box
+with nothing to choose; a pasted screenshot sits beside it as a JPEG, three at
+most, each removable; the words and screenshots survive the panel shutting and
+a refusal; Ctrl+Enter sends the words with the route, the share link, the
+release and the language and no other field; sent, it shuts and the next
+starts empty; on a phone the mark stays on the bar and nothing floating covers
+the panel. It failed with the mark never redrawn and with the jump menu over
+the panel.
+
 ## `check_reminder_notices`
 
 Fires stubbed reminders, and a stubbed message from the site, on a page in both

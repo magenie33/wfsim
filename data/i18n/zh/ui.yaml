@@ -436,6 +436,16 @@ ui:
   "Recently fired": 最近触发
   "Pop up": 弹出
   "Off: kept under the bell only": 关闭后只记入铃铛，不弹出
+  # FEEDBACK: what a reader tells the owner (51-feedback-panel.js).
+  "Feedback": 反馈
+  "Sign in to send feedback.": 登录后发送反馈。
+  "What's off, or what would you change?": 哪里不对，或者你想怎么改
+  "Add game screenshots": 添加游戏截图
+  "Paste or drop up to 3. Only we see them; cover names and chat first.": 可粘贴或拖入，最多 3 张。截图只有我们能看到，发送前请遮住 ID 和聊天。
+  "Up to 3 screenshots.": 最多 3 张截图。
+  "Received.": 已收到。
+  "Write at most 4000 characters.": 最多 4000 字。
+  "A screenshot could not be sent. Remove it and try again.": 有一张截图发不出去，移除后再试。
   # NOTIFICATIONS: what the site tells the reader (28-notices.js).
   "Notifications": 通知
   "All notifications": 全部通知

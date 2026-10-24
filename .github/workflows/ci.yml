@@ -421,6 +421,8 @@ jobs:
         run: node scripts/check_page_titles.mjs
       - name: A fired reminder is a card in the corner and a count on the bell, never a strip over the page
         run: node scripts/check_reminder_notices.mjs
+      - name: Feedback is a mark beside the bell, one box and its screenshots, sent with where the reader was
+        run: node scripts/check_feedback_panel.mjs
       # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
       # browser, no engine, no network — it imports `worker/index.js` and runs
       # it against a KV stub. It is here rather than on demand because the two

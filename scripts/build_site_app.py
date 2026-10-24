@@ -2198,6 +2198,11 @@ your removing Discord or deleting the account.</p>
 <p>If you ask for an invite to WFSim's in-game clan, the in-game name you type
 is sent with your username to WFSim as a Discord message. WFSim keeps no copy of
 it.</p>
+<p>Feedback you send from the bar keeps what you wrote, the page you were on,
+the share link of the build on screen, the app's release, and any screenshots
+you attach, with your account. WFSim reads it; nobody else does. It is sent to
+WFSim as a Discord message, is in your export, and is deleted with the
+account.</p>
 
 <h2>Nona</h2>
 <p>Nona, the assistant in the page, runs on an AI service you choose and a key
