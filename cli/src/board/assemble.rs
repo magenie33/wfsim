@@ -220,12 +220,40 @@ impl Library {
 /// What a fact publishes: its score, the minute it finished
 /// (`publish::measured_minute` reads no further) and who measured it, the two
 /// strings by their place in a table — there are few of each and six million
-/// facts.
+/// facts — and when it finished, which decides between two facts of one row.
 #[derive(Clone, Copy)]
 struct Stored {
     score: f64,
+    at: u64,
     minute: u32,
     by: u32,
+}
+
+/// An `at` that is a place in `Facts::odd`, not a clock's digits.
+const ODD_AT: u64 = 1 << 63;
+
+/// THE CLOCK AS `load_facts` ORDERS IT, which is the text's order: an instant
+/// spelled as every writer of the file spells it (`2026-10-24T01:02:03.456Z`)
+/// is its seventeen digits, which order as the text does; anything else is
+/// kept as text.
+fn clock_digits(at: &str) -> Option<u64> {
+    let b = at.as_bytes();
+    if b.len() != 24 || b[4] != b'-' || b[7] != b'-' || b[10] != b'T' || b[13] != b':' || b[16] != b':'
+        || b[19] != b'.' || b[23] != b'Z'
+    {
+        return None;
+    }
+    let mut n = 0u64;
+    for (i, c) in b.iter().enumerate() {
+        if matches!(i, 4 | 7 | 10 | 13 | 16 | 19 | 23) {
+            continue;
+        }
+        if !c.is_ascii_digit() {
+            return None;
+        }
+        n = n * 10 + u64::from(c - b'0');
+    }
+    Some(n)
 }
 
 /// A fact with no clock.
@@ -259,6 +287,8 @@ struct Facts {
     modes: Table,
     by: Table,
     minutes: Table,
+    /// The `finished_at` texts no clock's digits spell.
+    odd: Vec<String>,
     rows: Vec<HashMap<(u32, u32), Stored>>,
 }
 
@@ -305,16 +335,49 @@ impl Facts {
         if mode.is_empty() {
             return None;
         }
-        let at = text(f.finished_at).unwrap_or_default();
-        let minute = match at.get(..16) {
-            Some(m) if at.as_bytes()[10] == b'T' => self.minutes.of(m),
+        let finished = text(f.finished_at).unwrap_or_default();
+        let id = self.ids.of(&identity);
+        let mode = self.modes.of(&mode);
+        let at = match clock_digits(&finished) {
+            Some(n) => n,
+            None => {
+                self.odd.push(finished.to_string());
+                ODD_AT | (self.odd.len() - 1) as u64
+            }
+        };
+        // THE NEWEST WINS THE ROW, by the clock and not by the file's order,
+        // and a tie goes to the later line — `load_facts`'s rule, the one the
+        // scorer reads the same file by.
+        if let Some(held) = self.rows[r].get(&(id, mode)) {
+            if self.later(held.at, at) {
+                return None;
+            }
+        }
+        let minute = match finished.get(..16) {
+            Some(m) if finished.as_bytes()[10] == b'T' => self.minutes.of(m),
             _ => NO_MINUTE,
         };
         let by = self.by.of(&text(f.measured_by).unwrap_or_default());
-        let id = self.ids.of(&identity);
-        let mode = self.modes.of(&mode);
-        self.rows[r].insert((id, mode), Stored { score, minute, by });
+        self.rows[r].insert((id, mode), Stored { score, at, minute, by });
         Some((r, identity.into_owned()))
+    }
+
+    /// Whether `a` finished after `b`, as their texts order: two clocks'
+    /// digits order as their texts do, and an odd one is compared as text.
+    fn later(&self, a: u64, b: u64) -> bool {
+        if a & ODD_AT == 0 && b & ODD_AT == 0 {
+            return a > b;
+        }
+        self.clock_text(a) > self.clock_text(b)
+    }
+
+    /// An `at` as the text it was read from.
+    fn clock_text(&self, at: u64) -> Cow<'_, str> {
+        if at & ODD_AT != 0 {
+            return Cow::Borrowed(self.odd[(at & !ODD_AT) as usize].as_str());
+        }
+        let d = format!("{at:017}");
+        Cow::Owned(format!("{}-{}-{}T{}:{}:{}.{}Z", &d[0..4], &d[4..6], &d[6..8], &d[8..10], &d[10..12], &d[12..14], &d[14..17]))
     }
 
     fn get(&self, r: usize, identity: &str, mode: &str) -> Option<&Stored> {
@@ -1026,6 +1089,42 @@ mod tests {
         let pairs = b.all_pairs();
         let (_, removed) = b.publish(pairs);
         assert!(removed > 0 && !dir.join("furis.json").exists(), "a weapon with no fact kept its file");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+    /// **A ROW'S FACT IS THE ONE `load_facts` KEEPS**: the newest by the clock
+    /// whatever the file's order, a tie to the later line, and a clock spelled
+    /// some other way compared as its text. The scorer reads the same file
+    /// with `load_facts`; two rules for one row would publish two numbers.
+    #[test]
+    fn a_rows_fact_is_the_one_load_facts_keeps() {
+        let ruler = "standard_single_target";
+        let line = |id: &str, score: f64, at: &str| {
+            json!({"identity": id, "ruler": ruler, "mode": "base", "score": score, "finished_at": at}).to_string()
+        };
+        let lines = [
+            line("a", 1.0, "2026-10-24T02:00:00.000Z"),
+            line("a", 2.0, "2026-10-24T01:00:00.000Z"),
+            line("b", 1.0, "2026-10-24T02:00:00.000Z"),
+            line("b", 2.0, "2026-10-24T02:00:00.000Z"),
+            line("c", 1.0, "2026-10-24 03:00:00+00"),
+            line("c", 2.0, "2026-10-24T02:00:00.000Z"),
+            line("d", 1.0, "2026-10-24T02:00:00.000Z"),
+            line("d", 2.0, "2026-10-24T02:00:00Z"),
+            line("e", 1.0, ""),
+            line("e", 2.0, ""),
+        ];
+        let dir = scratch("clock");
+        let path = dir.join("facts.ndjson");
+        std::fs::write(&path, lines.join("\n")).unwrap();
+        let want = crate::board::facts::load_facts(Some(path.to_string_lossy().into_owned()), ruler);
+        let mut facts = Facts::new(&roster());
+        facts.read(&path.to_string_lossy());
+        let r = roster().iter().position(|x| x.id == ruler).unwrap();
+        for id in ["a", "b", "c", "d", "e"] {
+            let kept = want[&format!("{id}#base")].score;
+            assert_eq!(facts.get(r, id, "base").map(|f| f.score), Some(kept), "{id}");
+        }
+        assert_eq!(facts.get(r, "a", "base").unwrap().score, 1.0, "an older line replaced a newer fact");
         let _ = std::fs::remove_dir_all(&dir);
     }
 }
