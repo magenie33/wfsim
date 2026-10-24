@@ -643,6 +643,9 @@ restart starts no read the hour does not owe.
 on each publish and each read of the store, so the newest
 `scored_at_epoch_seconds` in the public stamp older than four hours means the
 board stopped reaching readers, and the run fails, which mails the owner.
+**A STARVED FLEET IS ASKED ABOUT EVERY HALF HOUR** the same way
+(`dispatch.yml`, `scripts/check_dispatch.py`): it fails on `demand.json`'s
+`now.starved`, and on a picture a quarter hour old, a daemon that stopped.
 
 **UNVERIFIED NUMBERS NEVER REACH IT.** A client result is on no board until it
 is a fact (§"Compute orders").
@@ -724,7 +727,9 @@ deadline and what only they may settle.
   BUT IDLE** (`worker/idle_devices.js`): an id that asked in the last half hour
   yet holds no row and answered nothing in it — on an old engine, asking more
   than twice what a page asks when handed nothing, or on the served engine and
-  not computing. **WHAT IS FOUND IS WRITTEN DOWN** in `watchdog_said` as a
+  not computing. **A STARVED FLEET** (`starved`) is read off the daemon's
+  `demand.json` (`now.starved`), the verdict the scheduled check fails on.
+  **WHAT IS FOUND IS WRITTEN DOWN** in `watchdog_said` as a
   round — every finding at once, one row each under one `at` — at most hourly,
   and within ten minutes of a trouble after a quiet spell; kept thirty days.
   Nothing is sent to anyone: whoever fixes it reads the latest round,
@@ -1435,7 +1440,8 @@ see two.
 { ok, v: 1, at, computing, owed: { new_builds, rescores, sweeps, refreshes },
   riven_gains, orders: [{ kind, total, dispatched }],
   surveys: [{ weapon, ruler, shapes, agreed, started, clear_hours }],
-  per_hour: { volunteers, official }, clear_hours }
+  per_hour: { volunteers, official }, clear_hours,
+  now: { window_seconds, asking, held, answered, starved } }
 ```
 
 **THE TOTAL IS EVERY ORDER THERE IS NOW.** The page heads the picture with
@@ -1469,6 +1475,12 @@ it. The countdown under it is that total's.
   a verb with work formed no fact that day.
 - a survey's `clear_hours`: its shapes left over its shapes agreed per hour
   in the last 24 hours; null when none were.
+- `now`: the fleet over the last `window_seconds` (`NOW_WINDOW_MS`), a
+  reading and not a speed: the ids that asked, the leases running, the
+  volunteer answers. `starved` (`starvedOf`) is rows waiting on the server,
+  ten for every asking id, while those ids answered under fifteen each — a
+  healthy hour answers hundreds an id. Alarms read this, never `per_hour`:
+  a day's mean hides hours of a fleet handed nothing.
 
 EVERY SPEED THE SITE STATES IS OVER THE LAST 24 HOURS (`PACE_HOURS`,
 `worker/instant.js`): the demand's pace and hours to clear, a survey's, the

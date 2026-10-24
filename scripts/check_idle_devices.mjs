@@ -45,7 +45,17 @@ check("one that answered, only just asked once, or went away is none of them",
   ![id("d"), id("e"), id("f")].some((x) => found.some((f) => f.devices.some((y) => y.device === x))));
 
 console.log("\nwhat the watchdog says");
+// THE DAEMON'S PICTURE SAYS THE FLEET IS STARVED: the watchdog finds it there.
+const picture = (starved) => ({ get: async () => ({ body: JSON.stringify({ at: iso(NOW), orders: [{ kind: "sweep", total: 84_000, dispatched: 32 }],
+  now: { window_seconds: 600, asking: 28, held: 48, answered: 110, starved } }) }) });
+env.PUBLIC = picture(true);
 await watchdog(env, NOW);
+const starvedSaid = (await db.all("SELECT said FROM watchdog_said WHERE cause = 'starved'")).map((x) => x.said);
+check("a starved fleet in the daemon's picture is written down, with the rows waiting", starvedSaid.length === 1
+  && starvedSaid[0].includes("领不到活") && starvedSaid[0].includes("83968"), JSON.stringify(starvedSaid));
+env.PUBLIC = picture(false);
+check("…and one the picture calls fed is not found", !(await watchdog(env, NOW + 30_000)).some((f) => f.kind === "starved"));
+delete env.PUBLIC;
 const saidIdle = async () => (await db.all("SELECT said FROM watchdog_said ORDER BY at, cause")).map((x) => x.said).filter((t) => /idle:/.test(t));
 let idleSaid = await saidIdle();
 check("each kind is written down once, in Chinese, in one round", idleSaid.length === 3 && (await db.all("SELECT DISTINCT at FROM watchdog_said")).length === 1 && idleSaid.some((t) => t.includes("停在旧引擎"))

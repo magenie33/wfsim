@@ -657,6 +657,32 @@ const demandCosts = new WeakMap();
 /// owed rows are counted under. A kind is added here and named on the page
 /// (73-compute.js `ORDER_KIND_NAMES`); a page that does not know it yet shows it by its id.
 export const ORDER_KINDS = [["rescore", 1], ["sweep", 2], ["new_build", 0], ["refresh", 3]];
+/// THE FLEET THIS MOMENT (`now`): who asked, what they hold and what they
+/// answered over the last `NOW_WINDOW_MS`. Every speed above is a day's, and
+/// a day's mean hides an afternoon of nobody handed anything.
+export const NOW_WINDOW_MS = 10 * 60_000;
+/// STARVED: rows wait on the server, enough of them for every asking device to
+/// take a pack, while those devices answer under this many each in the window.
+/// A healthy hour's fleet answers 450 to 1600 a device; the afternoon the
+/// pick was planned on a drained queue's statistics it answered 8 to 38.
+export const STARVED_ANSWERS_PER_DEVICE = 15, STARVED_WAITING_PER_DEVICE = 10, STARVED_MIN_ASKING = 3;
+export function starvedOf(reading, orders) {
+  const waiting = orders.filter((o) => o.kind !== "riven_gain").reduce((n, o) => n + o.total - o.dispatched, 0);
+  return reading.asking >= STARVED_MIN_ASKING && waiting >= STARVED_WAITING_PER_DEVICE * reading.asking
+    && reading.answered < STARVED_ANSWERS_PER_DEVICE * reading.asking;
+}
+/// THE READING: three index reads, cheap enough each minute. A lease is read
+/// through `questions_holder`: through the open questions it read every one.
+async function nowOf(db, now) {
+  const since = iso(now - NOW_WINDOW_MS);
+  const [asking, held, answered] = await db.batch([
+    db.prepare("SELECT COUNT(*) AS n FROM verifiers WHERE asked_at > ? AND banned = 0").bind(since),
+    db.prepare("SELECT COUNT(*) AS n FROM questions WHERE leased_to IS NOT NULL AND lease_until > ?").bind(iso(now)),
+    db.prepare("SELECT COUNT(*) AS n FROM answers WHERE at > ? AND official = 0").bind(since),
+  ]);
+  const n = (r) => Number((r.results[0] || {}).n || 0);
+  return { window_seconds: NOW_WINDOW_MS / 1000, asking: n(asking), held: n(held), answered: n(answered) };
+}
 
 /// THE WHOLE PICTURE, totals only, never a device or a person (docs/BOARD.md
 /// §"Demand" says each field).
@@ -739,18 +765,21 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN) {
     ms += n * (msOf[verb] || 0) / factsOf[verb];
   }
   const clearHours = ms !== null && msPerHour > 0 ? ms / msPerHour : null;
+  const orders = [...ORDER_KINDS.map(([kind, k]) => ({ kind, total: by[k] || 0, dispatched: Math.min(by[k] || 0, counted.takenBy[k] || 0) })),
+    { kind: "riven_gain", total: Number((gains.results[0] || {}).n || 0), dispatched: Number((gains.results[0] || {}).started || 0) }]
+    .filter((o) => o.total > 0);
+  const reading = await nowOf(db, now);
   return { ok: true, v: 1, at, computing: await computingNow(env),
     owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0, refreshes: by[3] || 0 },
     riven_gains: Number((gains.results[0] || {}).n || 0),
-    orders: [...ORDER_KINDS.map(([kind, k]) => ({ kind, total: by[k] || 0, dispatched: Math.min(by[k] || 0, counted.takenBy[k] || 0) })),
-      { kind: "riven_gain", total: Number((gains.results[0] || {}).n || 0), dispatched: Number((gains.results[0] || {}).started || 0) }]
-      .filter((o) => o.total > 0),
+    orders,
     surveys: surveys.results.map(({ lately, ...g }) => {
       const s = { weapon: g.weapon, ruler: g.ruler, shapes: Number(g.shapes), agreed: Number(g.agreed), started: Number(g.started) };
       const pace = Number(lately || 0) / (PACE_HOURS);
       return { ...s, clear_hours: pace > 0 ? (s.shapes - s.agreed) / pace : null };
     }),
-    per_hour: { volunteers: perHour(h.volunteers), official: perHour(h.official) }, clear_hours: clearHours };
+    per_hour: { volunteers: perHour(h.volunteers), official: perHour(h.official) }, clear_hours: clearHours,
+    now: { ...reading, starved: starvedOf(reading, orders) } };
 }
 
 /// THE PAGE'S FALLBACK, where the bucket's own address is not reached: the

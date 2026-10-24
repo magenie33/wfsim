@@ -1,0 +1,25 @@
+# IS THE FLEET BEING HANDED WORK?
+#
+# A starved fleet keeps asking and the page still counts it as computing; every
+# speed on the page is a day's, so nothing a reader sees moves for hours. This
+# asks on a clock and FAILS, as board-age.yml does: a failed scheduled run is
+# what mails the owner.
+#
+# READ-ONLY AND CREDENTIAL-FREE, off the servers: scripts/check_dispatch.py.
+name: dispatch
+
+on:
+  schedule:
+    - cron: "10,40 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: The fleet is handed work
+        run: python scripts/check_dispatch.py

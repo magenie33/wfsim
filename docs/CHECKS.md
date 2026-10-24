@@ -667,7 +667,8 @@ Plain node on PGlite: ids that asked in the last half hour are sorted into an
 old engine, an asking loop and not computing; one that answered, only just
 asked once, or went away is none of them. The watchdog says each kind in
 Chinese once, not again for the same devices, and again, listing all, when a
-device it has not said joins a kind.
+device it has not said joins a kind. A starved fleet in the daemon's picture
+is written down with the rows waiting, and one it calls fed is not found.
 
 ## `check_tasks`
 
@@ -814,7 +815,9 @@ the account releases its devices and its answer. The demand lists its orders
 a kind a row with what a device has taken of each, and prices the hours to
 clear over the facts formed since the first answer its read reaches; it
 failed with the dispatched count never matching and with the facts counted
-over the whole day.
+over the whole day. Its `now` counts the ids that asked in the window, the
+leases running and the window's answers, and `starved` holds just under each
+floor and not at it; it failed with a lapsed lease counted and at the floor.
 
 ## `check_folds`
 

@@ -10,6 +10,7 @@ import { watchdogText } from "./watchdog_say.js";
 import { idleFindings } from "./idle_devices.js";
 import { iso } from "./instant.js";
 import { fairShadow, settleBatch } from "./settler.js";
+import { DEMAND_KEY } from "./contribution.js";
 
 /// HOW LONG EACH ASK MAY WAIT — THE WHOLE DISPATCH POLICY, stated in
 /// worker/deadlines.js.
@@ -179,6 +180,17 @@ export async function notePause(env, now) {
   await noteEvent(env.LIBRARY, "pause", now, PAUSE_GAP_MS);
 }
 
+/// A FLEET ASKING AND HANDED NOTHING, read off the daemon's own `demand.json`
+/// (`now`, worker/contribution.js `starvedOf`): the one reading the page and
+/// the scheduled check (scripts/check_dispatch.py) are given too.
+async function starvedFinding(env) {
+  const obj = env.PUBLIC && await env.PUBLIC.get(DEMAND_KEY).catch(() => null);
+  const d = obj && await new Response(obj.body).json().catch(() => null);
+  if (!d?.now?.starved) return null;
+  const waiting = d.orders.filter((o) => o.kind !== "riven_gain").reduce((n, o) => n + o.total - o.dispatched, 0);
+  return { kind: "starved", ...d.now, waiting, at: d.at };
+}
+
 /// THE WATCHDOG'S SCHEDULE (wrangler.jsonc `triggers`), how often what is wrong
 /// is written down, and how long a round of it is kept.
 export const WATCHDOG_CRON = "*/10 * * * *";
@@ -205,6 +217,8 @@ export async function watchdog(env, now = Date.now()) {
   await facts().liftIdle(env);
   const { engine } = await servedRelease(env);
   const found = await facts().audit(env, now, engine);
+  const starved = await starvedFinding(env);
+  if (starved) found.push(starved);
   // THE SETTLER'S FAIR TABLE AGAINST THIS WORKER'S, while it runs in shadow
   // (docs/BOARD.md §"The settler"): a comparison that fails changes nothing.
   if (engine) await fairShadow(env, engine, now).catch(() => null);

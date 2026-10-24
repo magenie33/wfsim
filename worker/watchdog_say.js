@@ -24,6 +24,13 @@ function describe(f, now) {
       `${f.questions} 个已过期的 ${f.producer} 题半小时内一个回答都没有，同时有 ${f.witnesses_active} 台机器在干别的活（最早到期已 ${fmtHours(hoursAgo(f.oldest_due, now))}）。` +
       `\n异常：这类题没被派给任何人。叫 agent 查派发。`];
   }
+  if (f.kind === "starved") {
+    const mins = Math.round(f.window_seconds / 60);
+    return ["act", "机器在线却领不到活",
+      `近 ${mins} 分钟 ${f.asking} 台机器来要活，只交回 ${f.answered} 个答案，正被领着的题 ${f.held} 个；服务器上还有 ${f.waiting} 行没派出去。` +
+      `
+异常：派单卡住了。叫 agent 查 factory_take 和 board_sync 的耗时，以及 questions 表的统计是否过期。`];
+  }
   if (f.kind === "refused_rows") {
     const ids = f.sample.map((s) => s.question).join("，");
     return ["act", "客户端引擎拒绝计算的题已撤回",

@@ -8,7 +8,7 @@
 // ask what it earned by its own id; nothing works signed out or from another
 // site; deleting the account releases its devices.
 //   node scripts/check_contribution.mjs
-import { contributionRoute, contributorRank, demandOf, DEMAND_KEY, publishContributors, CONTRIBUTORS_KEY, tallyOf, tallyBase, periodStarts, periodWindows } from "../worker/contribution.js";
+import { contributionRoute, contributorRank, demandOf, DEMAND_KEY, publishContributors, CONTRIBUTORS_KEY, tallyOf, tallyBase, periodStarts, periodWindows, NOW_WINDOW_MS, starvedOf } from "../worker/contribution.js";
 import { sha256 } from "../worker/accounts.js";
 import { testDb } from "./pg/test_db.mjs";
 import { PACE_HOURS } from "../worker/instant.js";
@@ -293,6 +293,24 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   check("...the day's price kept ten minutes, priced again after", (await demandOf(kept, now + 60_000)).clear_hours > 0
     && (await demandOf(kept, now + 11 * 60_000)).clear_hours === null);
   check("...and none where a verb formed no fact to price it by", (await demandOf({ LIBRARY: L }, now)).clear_hours === null);
+  // THE FLEET THIS MOMENT: two ids asked in the window and one before it; one
+  // lease runs and one has lapsed; the two answers of the last minute.
+  await L.run("INSERT INTO verifiers (id, seen, asked_at) VALUES ('ask1', 'x', ?), ('ask2', 'x', ?), ('ask0', 'x', ?)",
+    ago(60_000), ago(60_000), ago(NOW_WINDOW_MS + 60_000));
+  await L.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, leased_to, lease_until) VALUES
+    ('qh1', 'simulate', '{}', 'open', 'x', 'x', 'ask1', ?), ('qh2', 'simulate', '{}', 'open', 'x', 'x', 'ask2', ?)`, ago(-60_000), ago(60_000));
+  const fleet = (await demandOf({ LIBRARY: L }, now)).now;
+  check("the fleet this moment: ids that asked in the window, leases running, volunteer answers in it",
+    JSON.stringify(fleet) === JSON.stringify({ window_seconds: NOW_WINDOW_MS / 1000, asking: 2, held: 1, answered: 2, starved: false }), JSON.stringify(fleet));
+  await L.run("DELETE FROM questions WHERE id IN ('qh1', 'qh2')");
+  await L.run("DELETE FROM verifiers WHERE id IN ('ask1', 'ask2', 'ask0')");
+  const asked = (asking, answered) => ({ window_seconds: 600, asking, held: 0, answered });
+  const waits = (n) => [{ kind: "sweep", total: n + 5, dispatched: 5 }, { kind: "riven_gain", total: 100_000, dispatched: 0 }];
+  check("starved: rows wait for every asking device to take a pack, and they answer under the floor each",
+    starvedOf(asked(28, 419), waits(280)));
+  check("...not at the floor", !starvedOf(asked(28, 420), waits(84_000)));
+  check("...not with too few rows waiting for every device, riven gains not counted", !starvedOf(asked(28, 0), waits(279)));
+  check("...not with too few devices asking to read", !starvedOf(asked(2, 0), waits(84_000)));
   check("the endpoint serves the settler's object, worked out nowhere else",
     (await call("/api/board/demand")).error === "no_demand");
   env.PUBLIC = { get: async (k) => (k === DEMAND_KEY ? { body: JSON.stringify(d) } : null) };
