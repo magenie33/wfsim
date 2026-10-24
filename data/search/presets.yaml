@@ -6,7 +6,10 @@
 # status chance) for every mod class — a start takes the card the weapon equips.
 # A preset with `riven` also puts the asker's riven, pinned, in every start; one
 # not `listed` is applied by its own page (`riven_appraisal`, docs/AGENT.md
-# §"Riven appraisal") and never shown in the search bar.
+# §"Riven appraisal") and never shown in the search bar. `board_starts`: that
+# many more starts, the board's best distinct riven builds of the weapon on the
+# ruler with the asker's riven, pinned, in the riven's slot — a valley that
+# spans arcane, evolutions and cards is crossed by a start on its far side.
 element_starts:
   - [thermite_rounds, scattering_inferno, scorch, volcanic_edge, magma_chamber]
   - [rime_rounds, frigid_blast, frostbite, vicious_frost, hypothermic_shell]
@@ -25,3 +28,4 @@ presets:
     riven: true
     finalists: 1
     candidate_runs: 10
+    board_starts: 2

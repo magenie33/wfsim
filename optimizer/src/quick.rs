@@ -85,6 +85,12 @@ pub trait QuickSpace: Sync {
     fn repair(&self, _b: &Self::Build, _free: &[Position]) -> Option<Self::Build> {
         None
     }
+    /// THE COUPLED POSITIONS: few options each, and each moves what the others
+    /// are worth. Once no single change is better, every TWO of them changed at
+    /// once is one more step. Empty = no such step.
+    fn coupled(&self, _b: &Self::Build) -> Vec<Position> {
+        Vec::new()
+    }
 }
 
 /// Where a descent begins, what it may never change, and what it did not name.
@@ -364,7 +370,9 @@ impl<S: QuickSpace> Run<'_, S> {
         'sweep: loop {
             let positions: Vec<Position> =
                 self.space.positions(&cur).into_iter().filter(|p| !fixed(p)).collect();
-            self.now = StartProgress { settled: false, round: self.now.round + 1, at: 0, of: positions.len() };
+            let coupled: Vec<Position> = self.space.coupled(&cur).into_iter().filter(|p| !fixed(p)).collect();
+            let of = positions.len() + usize::from(coupled.len() > 1);
+            self.now = StartProgress { settled: false, round: self.now.round + 1, at: 0, of };
             for (k, &p) in positions.iter().enumerate() {
                 self.now.at = k;
                 match self.best(self.space.candidates(&cur, p), p) {
@@ -380,6 +388,38 @@ impl<S: QuickSpace> Run<'_, S> {
                     }
                     Some(Some((_, s, tied))) => self.set_free(p, tied && one_build(s, cur_score)),
                     Some(None) => {}
+                }
+            }
+            // NO SINGLE CHANGE IS BETTER: try every TWO coupled positions at
+            // once. A Laetum riven's answer wanted Enervate and Overwhelming
+            // Attrition together, each worse alone (123 against 155 kpm), and
+            // the element starts all differ in a card, never in an arcane.
+            if coupled.len() > 1 {
+                self.now.at = positions.len();
+                let mut pairs: Vec<S::Build> = Vec::new();
+                let mut keys = std::collections::HashSet::new();
+                for (i, &p) in coupled.iter().enumerate() {
+                    for c in self.space.candidates(&cur, p) {
+                        for &q in &coupled[i + 1..] {
+                            for d in self.space.candidates(&c, q) {
+                                if keys.insert(self.space.key(&d)) {
+                                    pairs.push(d);
+                                }
+                            }
+                        }
+                    }
+                }
+                match self.best(pairs, coupled[0]) {
+                    None => return Ok((cur, cur_score, from, moves, true)),
+                    Some(Some((b, s, _)))
+                        if self.wins(&b, s, &cur, cur_score) && visited.insert(self.space.key(&b)) =>
+                    {
+                        cur = b;
+                        cur_score = s;
+                        moves += 1;
+                        continue 'sweep;
+                    }
+                    _ => {}
                 }
             }
             self.now.settled = true;

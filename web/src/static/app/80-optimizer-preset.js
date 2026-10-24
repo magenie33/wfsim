@@ -23,24 +23,26 @@ const storeOptPresets = (ps) => storePresetList(OPT_DOMAIN, ps);
 
 /// A built-in search's starts on weapon `wId`: one per element row, holding the
 /// row's 60/60 card the weapon equips — and, for a riven preset, `rivenMod`
-/// beside it, pinned. A row the weapon takes none of adds nothing new.
-function builtinSearchStarts(wId, rivenMod) {
+/// beside it, pinned — then `more`, the board's (`boardRivenStarts`). A row the
+/// weapon takes none of adds nothing new.
+function builtinSearchStarts(wId, rivenMod, more = []) {
   const fits = new Set(buildPool().map((m) => m.id));
   const rows = ((META.search_presets || {}).element_starts || [])
     .map((row) => [rivenMod, row.find((c) => fits.has(c))].filter(Boolean)).filter((mods) => mods.length);
   const unique = [...new Set(rows.map((r) => JSON.stringify(r)))].map((r) => JSON.parse(r));
-  const starts = unique.map((mods) => ({ build: stateFromBuild({ mods }, wId), fixed: rivenMod ? ["mods:0"] : [] }));
+  const starts = unique.map((mods) => ({ build: stateFromBuild({ mods }, wId), fixed: rivenMod ? ["mods:0"] : [] }))
+    .concat(more);
   return starts.length ? starts : [blankStart()];
 }
 /// A built-in search as a whole search state, on the open weapon.
-const builtinSearchState = (p, rivenMod) => ({ starts: builtinSearchStarts($("weapon").value, rivenMod),
+const builtinSearchState = (p, rivenMod, more) => ({ starts: builtinSearchStarts($("weapon").value, rivenMod, more),
   limits: normalizeLimits(null), candidate_runs: p.candidate_runs, finalists: p.finalists });
 /// The search bar's built-in entries: the listed ones, and the riven appraisal's
 /// own while an appraisal is open on this page (81-appraisal.js).
 const builtinSearches = () => ((META.search_presets || {}).presets || [])
   .filter((p) => p.listed || (p.riven && appraisalActive() && appraisal.rivenMod))
   .map((p) => ({ name: tr(p.name), builtin: "search:" + p.id, savedAt: 0,
-    state: builtinSearchState(p, p.riven ? appraisal.rivenMod : null) }));
+    state: p.riven ? builtinSearchState(p, appraisal.rivenMod, appraisal.boardStarts) : builtinSearchState(p, null) }));
 const builtinSearchActive = () => String(activeOptPreset || "").startsWith("search:");
 
 /// A BUILT-IN SEARCH, ON SCREEN: the starts, the limits and the run terms are

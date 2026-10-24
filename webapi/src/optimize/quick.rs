@@ -508,6 +508,13 @@ impl QuickSpace for QuickCtx<'_> {
         out
     }
 
+    /// WHAT SHAPES THE WEAPON — mode, evolution tiers, valence, arcane seats:
+    /// a handful of options each, so a pair of them costs about one card
+    /// slot's sweep. Two card slots at once would be C(8,2) x 85^2 builds.
+    fn coupled(&self, b: &QBuild) -> Vec<Position> {
+        self.positions(b).into_iter().filter(|p| p.kind != "mods").collect()
+    }
+
     fn empty(&self, b: &QBuild) -> Vec<Position> {
         let mut out: Vec<Position> = (0..self.mod_slots)
             .filter(|&i| b.mods[i].is_none())

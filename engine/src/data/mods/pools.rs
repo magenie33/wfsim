@@ -138,6 +138,10 @@ pub struct SearchPreset {
     pub riven: bool,
     pub finalists: u32,
     pub candidate_runs: u32,
+    /// Starts taken from the board besides the element ones: its best riven
+    /// builds of this weapon on the ruler, the asker's riven in theirs.
+    #[serde(default)]
+    pub board_starts: u32,
 }
 
 pub fn search_presets() -> &'static SearchPresets {

@@ -87,7 +87,38 @@ async function setUpAppraisal(w, job) {
   // the starts the asker's riven rides in cannot be taken out from under it.
   appraisal.rivenMod = RIVEN_PREFIX + id;
   const own = ((META.search_presets || {}).presets || []).find((p) => p.riven);
+  appraisal.boardStarts = own && own.board_starts
+    ? await boardRivenStarts(w, job.ruler, appraisal.rivenMod, own.board_starts) : [];
   if (own) pickPreset(optBarCfg(), "search:" + own.id);
+}
+
+/// THE BOARD'S BEST RIVEN BUILDS AS STARTS (`board_starts` in the preset): the
+/// `n` best distinct builds among the weapon's heads on `ruler` that carry a
+/// riven, with the asker's in the riven's slot, pinned. Whatever the asker's
+/// shape, so a survey's template holds for every card it is written with
+/// (`riven_template.mjs`). A board that cannot be read adds none.
+async function boardRivenStarts(w, ruler, rivenMod, n) {
+  let rows = null;
+  for (const base of new Set([boardOffOrigin ? BOARD_ORIGIN : "", BOARD_ORIGIN])) {
+    try { rows = await fetchJsonPatient(`${base}/board/heads/${w.id}.json`); } catch (_) { rows = null; }
+    if (Array.isArray(rows)) break;
+  }
+  const seen = new Set(), out = [];
+  const ranked = (Array.isArray(rows) ? rows : [])
+    .filter((r) => r.benchmark === ruler && r.riven && (r.mods || []).includes(BOARD_RIVEN_SLOT))
+    .sort((a, b) => (b.score || 0) - (a.score || 0));
+  for (const row of ranked) {
+    const key = JSON.stringify([row.mode, row.arcanes, row.evolutions, row.mods, row.exilus, row.valence]);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const build = boardRowState(w, row);
+    const k = build.slots.findIndex((s) => s && isRivenId(s.mod));
+    if (k < 0) continue;
+    build.slots[k] = { mod: rivenMod, pol: null, rank: null };
+    out.push({ build, fixed: [`mods:${k}`] });
+    if (out.length >= n) break;
+  }
+  return out;
 }
 
 /// THE SEARCH HAS ANSWERED: its winner goes back to the appraisal, with the

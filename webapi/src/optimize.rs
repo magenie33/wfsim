@@ -2191,6 +2191,7 @@ pub fn run_optimize_resumable(
         "coverage": coverage,
         "space": space_size,
         "searched": searched,
+        "probe_fights": search_stats.map_or(0, |st| st.evals),
         // INDEX POSITIONS this shard consumed. Coverage above is this shard's
         // alone; a sharded run sums these and divides by `space` to get the
         // coverage of the whole fleet.
