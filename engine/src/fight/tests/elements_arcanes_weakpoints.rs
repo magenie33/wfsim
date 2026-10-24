@@ -514,6 +514,7 @@ fn galvanized_decay_loses_one_stack_and_resets_duration() {
         each: Vec::new(),
         per_stack: false,
         all_at_once: false,
+        ..LiveStacks::default()
     };
     assert_eq!(s.current(4.9, 10.0), 3);
     assert_eq!(s.current(5.1, 10.0), 2); // lost one, next decay at 15

@@ -119,14 +119,14 @@ rank 4 only because its float32 is 16.6499.
 
 ## What it does not settle
 
+Galvanized Reflex's +20.46 Initial Combo is a count; M125 reads it to the digit,
+four stacks at 81 and three at 61: the game keeps the decimals and shows the
+counter floored.
+
 - **Script-driven lines.** Arcanes and mods run by an apply script (107 of
   195 arcane records, Reflex Draw, Shivering Contagion, Hata-Satya) store
   parameters whose arithmetic lives in a script the cache does not hold.
   Their data is unchanged.
-- **Where a count is truncated.** Galvanized Reflex stores +1.86 Initial Combo
-  a rank, 20.46 at rank 10; the data takes it as stored. Whether the game
-  floors each stack, the sum or nothing is not in the package: four stacks
-  read on the combo counter would say.
 - **How the game multiplies.** The package is the input. The order and
   precision of the arithmetic on it is what the readings measure.
 

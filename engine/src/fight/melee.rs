@@ -63,6 +63,41 @@ pub(super) fn melee_combo_points(held: f64, initial: f64, since_spend_seconds: f
     held.max(initial.min(held + regen))
 }
 
+/// A FLOOR THAT STEPS DOWN LEAVES THE COUNTER WHERE IT WAS, on the combo clock.
+///
+/// Measured (M125): four Galvanized Reflex stacks hold the counter at 81; when
+/// one falls the counter keeps 81, the combo timer runs a full combo duration,
+/// and it then settles at the three-stack 61. So the points the old floor made
+/// become points earned at that instant: what the counter read just before the
+/// drop is kept on a fresh clock, and the clock's own expiry takes it down to
+/// the new floor. Replayed drop by drop, oldest first, since each one is its
+/// own moment for the clock and the 40-a-second refill.
+#[wfsim_gas_macro::metered]
+pub(super) fn floor_steps_down(active: &FightParams, buff_stacks: &mut [LiveStacks], melee: &mut MeleeState, floor_now: f64) {
+    let mut drops: Vec<(f64, f64)> = Vec::new();
+    for (i, b) in active.stacking_buffs.iter().enumerate() {
+        if b.grant == crate::model::BuffGrant::InitialCombo {
+            drops.extend(buff_stacks[i].take_shed().into_iter().map(|(at, n)| (at, b.per_stack * f64::from(n))));
+        }
+    }
+    if drops.is_empty() || active.combo_frozen {
+        return;
+    }
+    drops.sort_by(|a, b| a.0.total_cmp(&b.0));
+    let mut floor = floor_now + drops.iter().map(|d| d.1).sum::<f64>();
+    for (at, fell) in drops {
+        if at > melee.combo_expiry {
+            melee.combo_points = 0.0;
+        }
+        let held = melee_combo_points(melee.combo_points, floor, at - melee.combo_spent_t);
+        floor -= fell;
+        if held > floor {
+            melee.combo_points = held;
+            melee.combo_expiry = at + active.combo_duration_seconds;
+        }
+    }
+}
+
 /// KILLING BLOW'S BRACKET — what a `+X% Melee Damage on Heavy Attack` card is
 /// worth, as a term in the BASE-DAMAGE bucket.
 ///
@@ -712,6 +747,15 @@ pub(super) fn swing_this_shot(
     // prevents increasing the combo counter"* — so the counter is cleared
     // HERE, upstream of the one place it is read, rather than by each of
     // the four swings that earn into it remembering to ask.
+    // …AND THE FLOOR IS LIVE. Galvanized Reflex earns +20.46 initial combo per
+    // melee kill to four stacks, so the number the counter returns to moves
+    // during the fight — read here rather than at resolve, which is where
+    // it was a static build-time value and the card's whole second half
+    // went unpaid. Read FIRST: it settles every stack due by now, and the
+    // drops are what the next lines replay.
+    let initial_now =
+        active.initial_combo + buff_total(active, crate::model::BuffGrant::InitialCombo, buff_stacks, t);
+    floor_steps_down(active, buff_stacks, melee, initial_now);
     if t > melee.combo_expiry || active.combo_frozen {
         // *"Melee Combo resets after this time"*. Power Spike's partial
         // decay is a WARFRAME passive and is not modelled — declared,
@@ -719,13 +763,6 @@ pub(super) fn swing_this_shot(
         // this does and is therefore UNDER-reported here.
         melee.combo_points = 0.0;
     }
-    // …AND THE FLOOR IS LIVE. Galvanized Reflex earns +20 initial combo per
-    // melee kill to four stacks, so the number the counter returns to moves
-    // during the fight — read here rather than at resolve, which is where
-    // it was a static build-time value and the card's whole second half
-    // went unpaid.
-    let initial_now =
-        active.initial_combo + buff_total(active, crate::model::BuffGrant::InitialCombo, buff_stacks, t);
     let combo_now = melee_combo_points(melee.combo_points, initial_now, t - melee.combo_spent_t);
     let combo_multiplier = melee_combo_multiplier(combo_now);
     // THE STANCE MULTIPLIER SCALES THE SWING'S OWN DAMAGE, and a HEAVY form

@@ -345,16 +345,20 @@ pub(super) fn open<'a>(
     let mut buff_stacks: Vec<LiveStacks> = params
         .stacking_buffs
         .iter()
-        .map(|b| match b.decay {
-            crate::model::BuffDecay::PerStackExpiry => {
-                LiveStacks::seed_per_stack(opening(b), b.max_stacks, b.duration)
-            }
-            crate::model::BuffDecay::LoseOneAndReset => {
-                LiveStacks::seed(opening(b), b.max_stacks, b.duration)
-            }
-            crate::model::BuffDecay::AllAtOnce => {
-                LiveStacks::seed_all_at_once(opening(b), b.max_stacks, b.duration)
-            }
+        .map(|b| {
+            let pile = match b.decay {
+                crate::model::BuffDecay::PerStackExpiry => {
+                    LiveStacks::seed_per_stack(opening(b), b.max_stacks, b.duration)
+                }
+                crate::model::BuffDecay::LoseOneAndReset => {
+                    LiveStacks::seed(opening(b), b.max_stacks, b.duration)
+                }
+                crate::model::BuffDecay::AllAtOnce => {
+                    LiveStacks::seed_all_at_once(opening(b), b.max_stacks, b.duration)
+                }
+            };
+            // THE FLOOR'S DROPS ARE READ BY THE MELEE (`melee::floor_steps_down`).
+            if b.grant == crate::model::BuffGrant::InitialCombo { pile.logging_shed() } else { pile }
         })
         .collect();
     // BUMP BY TRIGGER, TOTAL BY GRANT — the two operations the whole family

@@ -14,6 +14,11 @@ pub(super) struct LiveStacks {
     /// [`BuffDecay::AllAtOnce`]: the shared clock takes the WHOLE pile when it
     /// falls due, instead of shedding one stack and restarting for the rest.
     pub(super) all_at_once: bool,
+    /// WHEN EACH STACK FELL, kept only for a pile that asked (`logging_shed`):
+    /// the initial-combo floor has to know the instant it stepped down, and
+    /// any reader at a later time would otherwise have taken that instant.
+    pub(super) shed_log: bool,
+    pub(super) shed: Vec<(f64, u32)>,
 }
 
 #[wfsim_gas_macro::metered]
@@ -24,6 +29,9 @@ impl LiveStacks {
         if self.per_stack {
             // Each stack on its own clock: drop every one that has fallen due,
             // which is FIFO because they were pushed in time order.
+            if self.shed_log {
+                self.shed.extend(self.each.iter().filter(|&&e| e <= now).map(|&e| (e, 1)));
+            }
             self.each.retain(|&e| e > now);
             self.stacks = self.each.len() as u32;
             return self.stacks;
@@ -33,11 +41,17 @@ impl LiveStacks {
             // without a hit." Nothing is shed one at a time, so there is no
             // remainder to restart the clock for.
             if self.stacks > 0 && self.expiry <= now {
+                if self.shed_log {
+                    self.shed.push((self.expiry, self.stacks));
+                }
                 self.stacks = 0;
             }
             return self.stacks;
         }
         while self.stacks > 0 && self.expiry <= now {
+            if self.shed_log {
+                self.shed.push((self.expiry, 1));
+            }
             self.stacks -= 1;
             self.expiry += duration;
         }
@@ -66,13 +80,17 @@ impl LiveStacks {
     }
 
     pub(super) fn seed(initial: u32, max: u32, duration: f64) -> Self {
-        LiveStacks {
-            stacks: initial.min(max),
-            expiry: duration,
-            each: Vec::new(),
-            per_stack: false,
-            all_at_once: false,
-        }
+        LiveStacks { stacks: initial.min(max), expiry: duration, ..LiveStacks::default() }
+    }
+
+    /// The same pile, keeping the time and size of every drop for `take_shed`.
+    pub(super) fn logging_shed(self) -> Self {
+        LiveStacks { shed_log: true, ..self }
+    }
+
+    /// Every drop since the last call, oldest first.
+    pub(super) fn take_shed(&mut self) -> Vec<(f64, u32)> {
+        std::mem::take(&mut self.shed)
     }
 
     /// Seed a pile that expires WHOLE — [`crate::model::BuffDecay::AllAtOnce`].
@@ -88,7 +106,7 @@ impl LiveStacks {
             expiry: duration,
             each: vec![duration; initial.min(max) as usize],
             per_stack: true,
-            all_at_once: false,
+            ..LiveStacks::default()
         }
     }
 
