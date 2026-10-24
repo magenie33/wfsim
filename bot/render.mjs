@@ -174,3 +174,44 @@ export async function renderCardWith(url, { lang = "zh", wait = READY_MS } = {})
     await p.close();
   }
 }
+
+/// A DOCUMENT LOADS NOTHING, so one not ready in this is a browser that hung.
+const DOCUMENT_MS = 15_000;
+
+/// A CARD ALREADY DRAWN, TAKEN (bot/card.mjs): `html` is a whole document holding
+/// everything it shows — its style, its pictures as data, its QR code — so the
+/// browser loads nothing and runs no app, and the picture is the `#card-page`
+/// element at the card page's own width and scale. A failure is taken again once
+/// on a fresh browser: with nothing to fetch, a retry costs a second.
+export async function renderDocument(html) {
+  try {
+    return await shootDocument(html);
+  } catch (e) {
+    console.error(`card document: ${e && e.message || e}; again on a fresh browser`);
+    if (chrome) { chrome.retired = true; if (!chrome.open) quit(chrome); }
+    return shootDocument(html);
+  }
+}
+
+async function shootDocument(html) {
+  const p = await page();
+  try {
+    await p.send("Emulation.setDeviceMetricsOverride", { width: 760, height: 1200, deviceScaleFactor: 1.5, mobile: false });
+    await p.send("Page.enable");
+    const frame = (await p.send("Page.getFrameTree")).result.frameTree.frame.id;
+    await p.send("Page.setDocumentContent", { frameId: frame, html });
+    const until = Date.now() + DOCUMENT_MS;
+    const ask = asker(p, until);
+    // EVERY PICTURE DECODED AND EVERY FONT IN, or the screenshot catches them arriving.
+    while (!(await ask(`document.fonts.status === "loaded" && [...document.querySelectorAll("#card-page img")].every((i) => i.complete)`))) {
+      if (Date.now() > until) throw new Error("card document not ready");
+      await sleep(50);
+    }
+    const r = await ask(`(() => { const b = document.getElementById("card-page").getBoundingClientRect(); return { x: b.left, y: b.top + scrollY, w: b.width, h: b.height }; })()`);
+    const shot = await p.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true,
+      clip: { x: r.x, y: r.y, width: r.w, height: r.h, scale: 1 } });
+    return Buffer.from(shot.result.data, "base64");
+  } finally {
+    await p.close();
+  }
+}

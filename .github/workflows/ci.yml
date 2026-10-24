@@ -447,6 +447,10 @@ jobs:
         run: node scripts/gen_worker_parts.mjs --check
       - name: The MCP server's queries run with no page
         run: node scripts/check_mcp_tools.mjs
+      # THE BOT DRAWS ITS CARD WITH NO PAGE and Chrome only rasterizes it: a
+      # card that drifted from the page's is still a picture, just a wrong one.
+      - name: The bot's card is the page's, pixel for pixel
+        run: node scripts/check_card_document.mjs
       - name: The heads answer as the whole board
         run: node scripts/check_board_heads.mjs
       - name: The MCP server knows who calls, and how often

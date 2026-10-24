@@ -543,12 +543,7 @@ const kpm = (score, duration) => (score == null || !(Number(duration) >= 0) ? Na
 /// AN UNKNOWN ID FALLS BACK TO THE DEFAULT rather than to nothing, because this
 /// runs while drawing: `parse_fight` refuses one at the door, so anything that
 /// reaches here is a metric this build knows or a scenario that cannot run.
-const metricOf = (id) => {
-  const all = META.metrics || [];
-  return all.find((m) => m.id === (id || META.metric_default))
-    || all.find((m) => m.id === META.metric_default)
-    || METRIC_FALLBACK;
-};
+const metricOf = (id) => headlessMetricOf(META, id, METRIC_FALLBACK);
 /// The run's number IN THAT METRIC. `score` off the wire is kill PROGRESS over
 /// the whole engagement, so a per-minute metric turns it into a rate; a metric
 /// that is already a rate reads its own field and is left alone. A result
@@ -563,7 +558,7 @@ const metricLabel = (m) => tr(m.label);
 
 /// ANY VALUE, NEVER A THROW: a number or a stale field reaching it once took a
 /// whole page down; it is drawn as text instead (null and undefined as nothing).
-const escHtml = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const escHtml = (s) => headlessEsc(s);
 
 // Decimal formatting with a SIGNIFICANCE floor: two
 // decimals normally, but a very small number grows decimals until it
@@ -572,10 +567,9 @@ const escHtml = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;"
 // EXACT ZERO keeps the plain "0.00" — only a nonzero-but-tiny value grows
 // decimals (log10(0) is -Infinity, so zero must short-circuit first).
 // A NUMBER NOT KNOWN is "—", never a zero that looks measured.
-const UNKNOWN = "—";
 const sig2 = (x, min = 2) => {
   const v = Number(x);
-  if (x == null || !Number.isFinite(v)) return UNKNOWN;
+  if (x == null || !Number.isFinite(v)) return HEADLESS_UNKNOWN;
   if (v === 0) return (0).toFixed(min);
   const a = Math.abs(v);
   const need = a >= 1 ? min : Math.max(min, 1 - Math.floor(Math.log10(a)));
@@ -591,13 +585,7 @@ const pct2 = (x) => sig2((Number(x) || 0) * 100) + "%";
 /// ranking published four, so a reader comparing their own run against the row
 /// it is about to become was reading two different spellings of the same
 /// measurement — and a disagreement of 0.001 looked like agreement.
-const fmtScore = (x) => {
-  const v = Number(x);
-  if (x == null || !Number.isFinite(v)) return UNKNOWN;
-  if (v === 0) return (0).toFixed(4);
-  const mag = Math.floor(Math.log10(Math.abs(v)));
-  return v.toFixed(Math.min(12, Math.max(4, 3 - mag)));
-};
+const fmtScore = (x) => headlessFmtScore(x);
 
 // One-time move of the weapon-LESS preset lists onto a weapon. They were
 // written before presets were scoped, so they belong to whatever the user

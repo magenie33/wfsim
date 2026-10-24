@@ -34,10 +34,6 @@ const PROC_WORD = {
   radiation: "Radiation", viral: "Viral",
   lifted: "Lifted", knockdown: "Knockdown",
 };
-const TRIGGER_WORD = {
-  auto: "fully automatic", semi_auto: "semi-auto", burst: "burst",
-  charge: "charged", held: "held", projectile: "projectile",
-};
 /// WHAT FILLS A GAUGE, in words. Mirrors `build::loadout::ChargeOn` — a member the
 /// page has no word for falls back to the id, which reads as obviously missing
 /// rather than as a silently empty sentence.
@@ -45,57 +41,12 @@ const CHARGE_WORD = {
   weakpoint_hits: "weakpoint hits", direct_hits: "direct hits", kills: "kills",
 };
 
-/// A FORM, NAMED WITH WHAT TELLS IT FROM THE FORM BESIDE IT: its trigger, or
-/// its draw.
-const firedForm = (f) => {
-  const word = f && TRIGGER_WORD[f.trigger];
-  const nm = tr((f || {}).name || "");
-  if (!word) return nm;
-  if (f.charge_seconds) {
-    return trF("{form} ({secs}s charge)", { form: nm, secs: (+f.charge_seconds).toFixed(2) });
-  }
-  // A FORM NAMED AFTER ITS TRIGGER DOES NOT SAY IT TWICE — the Kuva Hind's
-  // read "Semi-Auto (semi-auto)". Compared on the SOURCE strings, because a
-  // form name may not be translated yet and the rendered pair ("Semi-Auto"
-  // against "半自动") overlaps in neither language; and with BOTH SIDES
-  // checked non-empty, since a Chinese string strips to "" and
-  // `"".includes("")` is true, which swallowed every translated one.
-  const flat = (x) => String(x || "").toLowerCase().replace(/[^a-z]/g, "");
-  const said = (a, b) => !!flat(a) && !!flat(b) && flat(a).includes(flat(b));
-  const how = tr(word);
-  return said(f.name, word) || said(nm, how)
-    ? nm
-    : trF("{form} ({how})", { form: nm, how });
-};
-
+/// A FORM, NAMED WITH WHAT TELLS IT FROM THE FORM BESIDE IT (`headlessFiredForm`).
+const firedForm = (f) => headlessFiredForm(pageSay(), f);
 /// Is this mode a CYCLE — one form filling a gauge the other spends?
-const isCycleMode = (id) => id === "cycle" || String(id).endsWith("_cycle");
-
-/// THE FORM A MODE IS ABOUT: the one it fires, and for a cycle the one it
-/// FILLS THE GAUGE IN. A cycle is named for its feeder — `<mode>_cycle`, the
-/// bare `cycle` being the arsenal's own (engine `play_modes`).
-const modeForm = (w, id) => {
-  const forms = (w || {}).forms || [];
-  const def = forms.find((x) => x.is_default) || forms[0] || null;
-  // A MODE THE WEAPON DECLARES names the form it fires.
-  const declared = ((w || {}).declared_modes || {})[id];
-  if (declared) return forms.find((x) => x.id === declared.form) || def;
-  // …AND A DETONATED THROW FIRES THE THROW: the mode is that form with one
-  // more line on its action list.
-  const fed = id === "cycle" ? "base" : String(id).replace(/_cycle$/, "").replace(/_detonate$/, "");
-  if (fed === "base") return def;
-  if (fed === "transformed") return earnedForm(w);
-  // A WEAPON CAN HAVE MORE THAN ONE ALTERNATE — a bow with an adapter has a
-  // tapped shot AND an Incarnon form — told apart by the gauge, as the engine
-  // splits them.
-  if (fed === "alternate") {
-    return forms.find((x) => !x.is_default && !x.gauge_switched) || null;
-  }
-  // A MODE ID THAT IS A FORM ID — melee's seven, the Hind's two extra
-  // triggers. LAST: the form KIND `base` is a bow's TAPPED shot while the
-  // `base` MODE is the drawn one, so a direct match would swap them.
-  return forms.find((x) => x.id === fed) || def;
-};
+const isCycleMode = (id) => headlessIsCycleMode(id);
+/// THE FORM A MODE IS ABOUT (`headlessModeForm`).
+const modeForm = (w, id) => headlessModeForm(w, id);
 
 /// WHAT A MODE ACTUALLY IS, in sentences, derived from the weapon's own forms.
 ///

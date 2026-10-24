@@ -44,7 +44,7 @@ const CHROME_CANDIDATES = process.platform === "win32"
     ? ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"]
     : ["/usr/bin/google-chrome", "/usr/bin/google-chrome-stable",
        "/usr/bin/chromium-browser", "/usr/bin/chromium", "/snap/bin/chromium"];
-const CHROME = process.env.CHROME
+export const CHROME = process.env.CHROME
   || CHROME_CANDIDATES.find((p) => existsSync(p))
   || CHROME_CANDIDATES[0];
 
@@ -59,7 +59,7 @@ const SITE = resolve(dirname(fileURLToPath(import.meta.url)), "..", "site");
 /// check of the crawler's view needs and a fallback-only server hides.
 /// `delay` holds a file back by its extension — `{ ".wasm": 9000 }` is a slow
 /// line, which nothing in Chrome can impose on a worker's own fetch.
-async function serveSite(root, delay = {}) {
+export async function serveSite(root, delay = {}) {
   const srv = createServer(async (q, s) => {
     const p = decodeURIComponent(q.url.split("?")[0]);
     for (const c of [p, join(p, "index.html")]) {

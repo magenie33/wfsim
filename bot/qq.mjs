@@ -7,7 +7,8 @@
 import { readFileSync } from "node:fs";
 import { loadEngine, SITE } from "./engine.mjs";
 import { makeAnswer } from "./answer.mjs";
-import { renderCard, renderCardWith } from "./render.mjs";
+import { renderCard, renderCardWith, renderDocument } from "./render.mjs";
+import { cardDocument } from "./card.mjs";
 import { relayWorld } from "./world.mjs";
 
 const ENV_FILE = process.env.BOT_ENV || "/etc/wfsim-bot.env";
@@ -70,7 +71,9 @@ async function cardFor(url) {
   const digest = await boardDigest();
   const hit = digest && cards.get(url);
   if (hit && hit.digest === digest && Date.now() - hit.at < CARD_KEEP_MS) return hit.png;
-  const png = await renderCard(url);
+  // DRAWN HERE, and only a card the bot cannot draw opens the page (bot/card.mjs).
+  const html = await cardDocument(engine, url);
+  const png = html ? await renderDocument(html) : await renderCard(url);
   if (digest) {
     cards.delete(url);
     cards.set(url, { png, digest, at: Date.now() });

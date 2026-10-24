@@ -45,57 +45,12 @@ function benchShort(id) {
   return benchScenes().length > 1 && b.scene_name ? `${head} · ${tr(b.scene_name)}` : head;
 }
 
-/// HOW A WEAPON WAS PLAYED, in words. The ids are the vocabulary a submission
-/// and a board row use; this is what a reader sees.
-///
-/// NAMED FOR THE FORM IT FIRES, not for the mode's own id: a Cernos Prime's
-/// `base` mode is its CHARGED shot, because that is what the arsenal hands
-/// you, and calling it "base form" would be true of the id and false of the
-/// weapon. The mode ids are roles; the labels are the weapon's own words.
-/// THE FORM A CYCLE SPENDS — the gauge-fed one, which is the only thing that
-/// tells a cycle apart from a free alternate.
-const earnedForm = (w) =>
-  ((w || {}).forms || []).find((x) => !x.is_default && x.gauge_switched) || null;
-
-/// A MODE'S NAME, which is its FORM's — before it is told from its neighbour.
-const bareModeLabel = (w, id) => {
-  // A MODE THE WEAPON DECLARES carries its own name.
-  const declared = ((w || {}).declared_modes || {})[id];
-  if (declared) return tr(declared.name);
-  // NAMED AFTER THE FORM IT SPENDS, not after a product: the Mausolon buys its
-  // charged shot with five kills and has no Genesis anywhere, so "Incarnon
-  // cycle" names something sixty-nine weapons have and the seventieth does not.
-  if (isCycleMode(id)) {
-    const f = earnedForm(w);
-    return f ? trF("{form} cycle", { form: tr(f.name) }) : tr("cycle");
-  }
-  // A MODE'S NAME IS FIXED, and the stance changes what it is WORTH. Deriving
-  // it from the equipped stance breaks the one question a stance slot exists
-  // to answer: "which stance is best for the neutral combo" cannot be asked if
-  // the two builds call that mode different things.
-  const f = modeForm(w, id);
-  // A DETONATED THROW IS ITS THROW plus the press that sets it off.
-  if (f && /_detonate$/.test(id)) return trF("{form}, detonated", { form: tr(f.name) });
-  return f ? tr(f.name) : tr(id);
-};
-
-const modeLabel = (w, id) => {
-  const name = bareModeLabel(w, id);
-  // TWO MODES CAN ARRIVE AT ONE NAME, and then it names neither: a weapon with
-  // two shots has a cycle per shot, and both cycles spend the same form. WHICH
-  // SHOT is the difference, so that is what is added — and only where a
-  // sibling mode would read the same, so one of each is untouched.
-  const twin = ((w || {}).modes || []).some((o) => o !== id && bareModeLabel(w, o) === name);
-  const f = twin && modeForm(w, id);
-  if (!f) return name;
-  // A CYCLE IS TOLD FROM A CYCLE BY THE FORM THAT FILLS ITS GAUGE, which is
-  // the one thing the two do differently; anything else is told apart by how
-  // it is fired, which is what `firedForm` adds.
-  return isCycleMode(id)
-    ? trF("{form} cycle ({base})",
-      { form: tr((earnedForm(w) || {}).name || ""), base: tr(f.name) })
-    : firedForm(f);
-};
+/// THE FORM A CYCLE SPENDS — the gauge-fed one.
+const earnedForm = (w) => headlessEarnedForm(w);
+/// A MODE'S NAME, its FORM's, told from a sibling that reads the same
+/// (`headlessModeLabel`).
+const bareModeLabel = (w, id) => headlessBareModeLabel(pageSay(), w, id);
+const modeLabel = (w, id) => headlessModeLabel(pageSay(), w, id);
 
 /// One entry per WEAPON AND MODE: its best row under `id`, or null where nobody
 /// has submitted. A weapon with no row is not an error, it is the invitation —
@@ -170,15 +125,7 @@ function benchWriteUrl() {
 /// is named after every stat AND the roll it was stored at: two rows of one
 /// shape at two corners are two cards, and a name that dropped a roll handed
 /// one row's riven to the other.
-const boardRivenName = (rv) => {
-  const stat = (id, i) => {
-    const roll = (rv.rolls || [])[i];
-    return roll == null ? id : `${id} x${roll}`;
-  };
-  const bonuses = rv.bonuses || [];
-  return `${tr("board")} · ${bonuses.map(stat).join(" / ")}`
-    + (rv.malus ? ` − ${stat(rv.malus, bonuses.length)}` : "");
-};
+const boardRivenName = (rv) => headlessBoardRivenName(pageSay(), rv);
 
 /// The definitions `builtinBuilds` met, by the mod id it put in the slot.
 ///
@@ -189,14 +136,7 @@ const boardRivenName = (rv) => {
 /// locally.
 const boardRivenDefs = {};
 /// One board riven as a riven PRESET's state — the editor's own shape.
-const boardRivenState = (rv) => ({
-  bonuses: (rv.bonuses || []).map((id, i) => ({ id, roll: (rv.rolls || [])[i] ?? 1 })),
-  malus: rv.malus
-    ? { id: rv.malus, roll: (rv.rolls || [])[(rv.bonuses || []).length] ?? 1 }
-    : null,
-  rank: 8,
-  polarity: "madurai",
-});
+const boardRivenState = (rv) => headlessBoardRivenState(rv);
 const inBenchView = (r) =>
   benchRivenView === "all"
   || (benchRivenView === "riven") === rowHasRiven(r);

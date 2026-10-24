@@ -168,11 +168,7 @@ const WASM = !!window.WFSIM_WASM;
 // in this cache differ only by extension for different pictures (`Sobek.png`
 // is the shotgun, `Sobek.jpg` is Shattering Justice). `ship_art` derives that
 // name and `img_response` strips it back.
-const IMG = (name) => {
-  if (!name) return null;
-  const s = String(name);
-  return "/img/" + encodeURIComponent((s.startsWith("wiki:") ? s.slice(5) : s) + ".webp");
-};
+const IMG = (name) => headlessImg(name);
 // Polarity icons are vendored locally (pol/, shipped with both deployments)
 // — no more slow wiki 302 redirects. Omni (universal) uses the "Any" symbol
 // (a PNG); the rest are SVGs. Relative path: the app page sits at "/"

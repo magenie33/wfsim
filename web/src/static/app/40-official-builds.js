@@ -706,66 +706,9 @@ const builtinBuildsUncached = (w) => {
 /// A BOARD ROW AS A BUILD STATE — what the build bar opens, and what the
 /// Forma optimizer reads and saves.
 function boardRowState(w, row) {
-  const mode = row.mode || "base";
-  return buildState(w.id, {
-    mode,
-    // A BOARD ROW HAS NO WIELDER: every ruler scores in the Prototype's hands.
-    wielder: null,
-    // THE RIVEN'S SLOT IS TRANSLATED BACK. A record carries the bare
-    // `riven` at the riven's own position — position is the build — and on
-    // this side a mod id has to name an ITEM. The definition is registered
-    // rather than written: `restoreState` creates it if and when this build
-    // is actually taken.
-    // TEN SLOTS, because a melee row's mod list carries its STANCE with the
-    // rest — appended, and told apart by looking at it. A row from a gun
-    // has nine of these empty and is unchanged.
-    // …AND THE EXILUS SLOT IS ITS OWN FIELD, which this has to put back in
-    // it: `mods` carries the MAINS, so a row read as a flat list restores
-    // eight cards where the board scored nine. The number then disagrees
-    // with the row it was opened from — and on a melee that card is the
-    // Tennokai one, which is most of what the row is.
-    slots: (() => {
-      const ids = (row.mods || []).slice();
-      const si = ids.findIndex((id) => (modById(splitRank(id)[0]) || {}).stance);
-      const stance = si >= 0 ? ids.splice(si, 1)[0] : null;
-      const ex = row.exilus && row.exilus !== "none" ? row.exilus : null;
-      const main = ids.filter((id) => id !== ex);
-      const out = Array.from({ length: 10 }, () => ({ mod: null, pol: null, rank: null }));
-      main.slice(0, 8).forEach((id, i) => { out[i].mod = id; });
-      // A ROW WRITTEN BEFORE THE SLOT WAS RECORDED packed nine into `mods`,
-      // and its ninth card is the exilus one by position — the same
-      // fallback `stateFromBuild` keeps for a share link.
-      out[EXILUS].mod = ex || main[8] || null;
-      if (stance) out[STANCE].mod = stance;
-      return out;
-    })().map((s, k) => {
-      const id = s.mod;
-      if (id !== BOARD_RIVEN_SLOT || !row.riven) {
-        const [card, rank] = splitRank(id);
-        return { mod: card, pol: null, rank };
-      }
-      const local = RIVEN_PREFIX + boardRivenName(row.riven);
-      boardRivenDefs[local] = row.riven;
-      return { mod: local, pol: null, rank: null };
-    }),
-    evoSel: (row.evolutions || []).reduce((m, id, k) => ({ ...m, [k + 1]: id }), {}),
-    arcane: (row.arcanes || []).length ? row.arcanes : ["none"],
-    arcaneRank: [null],
-    // THE PROGENITOR ELEMENT the row was scored with, at the roll's
-    // MAXIMUM — which is the ruler's own term, not the row's, so it is
-    // taken from the weapon's spec rather than stored per row. Without
-    // this a Kuva row opens at whatever the last build was carrying and
-    // re-running it matches no line on the board.
-    valence: row.valence
-      ? { element: row.valence, bonus: (valenceSpec(w.id) || {}).max || 0 }
-      : null,
-    // THE PARTS the row was scored with, from the row's own two flat
-    // fields. A modular weapon's assembly IS its stat line, so a row that
-    // opened on the default parts would be a build that scores nothing
-    // like the number beside it — which is exactly what a missing `mode`
-    // did to every Incarnon row, and `valence` to seven Kuva Nukors.
-    assembly: row.grip ? { grip: row.grip, loader: row.loader } : null,
-  });
+  // A ROW'S RIVEN IS REGISTERED, not written: `restoreState` creates it if and
+  // when this build is actually taken (`headlessBoardRowAxes`).
+  return buildState(w.id, headlessBoardRowAxes(pageSay(), w, row, boardRivenDefs));
 }
 /// A BOARD ROW, OPENED. `?bench=<id>` names the ruler the row was read under,
 /// `?mode=` how the weapon was played; together they identify exactly one

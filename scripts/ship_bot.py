@@ -23,6 +23,7 @@ THE LIVE BOARD SHIPS WITH IT (`deploy/wfsim-live.service`): `wfsim-intake` and
 drive them. Without Docker the bot still ships and the live board keeps the
 binaries it had, which is said out loud — a stale intake refuses new weapons.
 """
+import hashlib
 import json
 import pathlib
 import re
@@ -110,9 +111,32 @@ def deploy() -> None:
     # an old one left beside them is a file nothing reads that a later glance
     # mistakes for live.
     keep = " ".join(f"-e '{n}'" for n in (wasm, *packs))
+    card_assets(t)
     run(["ssh", *o, host, f"cd {root}/site/pkg && ls | grep -vx {keep} | xargs -r rm -f; "
                           f"sudo systemctl restart {t['service']}"])
     deploy_live(live_target(t))
+
+
+def card_assets(t: dict) -> None:
+    """THE CARD'S STYLE AND PICTURES, which the bot draws its long image with
+    (bot/card.mjs): the stylesheet the site links, alone in its directory, and
+    `site/img` whenever its digest is not the server's — megabytes that move
+    only when the art does."""
+    root, host, o = t["root"], t["host"], ssh_opts(t)
+    index = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+    css = re.search(r'href="/asset/(style\.[0-9a-f]+\.css)"', index).group(1)
+    run(["ssh", *o, host, f"mkdir -p {root}/site/asset {root}/site/img"])
+    send(t, [f"site/asset/{css}"], f"{root}/site/asset")
+    run(["ssh", *o, host, f"cd {root}/site/asset && ls | grep -vxF '{css}' | xargs -r rm -f"])
+    imgs = sorted(p for p in (ROOT / "site" / "img").iterdir() if p.is_file())
+    h = hashlib.sha256()
+    for p in imgs:
+        h.update(p.name.encode() + b"\0" + p.read_bytes())
+    digest = h.hexdigest()
+    if run(["ssh", *o, host, f"cat {root}/site/img/.digest 2>/dev/null || true"]).strip() == digest:
+        return
+    send(t, [p.relative_to(ROOT).as_posix() for p in imgs], f"{root}/site/img")
+    run(["ssh", *o, host, f"echo {digest} > {root}/site/img/.digest"])
 
 
 LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/wasm_witness.mjs", "scripts/order_credit.mjs",

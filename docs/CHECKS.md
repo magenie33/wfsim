@@ -189,6 +189,18 @@ weapon under the primary ruler, every ruler on three weapons, the card's four
 shapes in turn. CI shards it with `check_parity` (`WFSIM_RIVEN_SHARD=i/n`).
 Verified to bite: a final round of 101 runs named every weapon.
 
+## `check_card_document`
+
+The bot's card is the page's, pixel for pixel: each fixture — a plain gun,
+riven builds, the analyst with and without a filter, a melee, a weapon with
+modes, an Incarnon, a kitgun — is taken from `/weapons/<Name>/card` and from
+the document `bot/card.mjs` writes, in Chinese and English, and the two PNGs
+must be the same bytes. The style is the one the page under test links, the
+pictures `site/img`; a page shot that differs is taken again twice, since a
+picture that failed to arrive is hidden rather than an error. Against a dev
+server, `web/cache/img` must hold `site/img`'s files (the dev server serves
+that cache). Verified to bite: `#card-page` moved one pixel failed every card.
+
 ## `check_agent_door`
 
 `window.wfsim` is one door, and an action is something a

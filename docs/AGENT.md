@@ -361,16 +361,27 @@ Secrets: the worker holds `QQ_APP_SECRET` and `BOT_RELAY_TOKEN`; the server
 holds the AppID, the AppSecret (for its access token) and the same relay token.
 `scripts/check_qq.mjs` holds the door to QQ's published signing example.
 
-THE BOT SHIPS WITH THE SITE: `ship.py` copies `bot/`, `mcp/engine.js`, its wasm
-and `mcp/headless.js` to the server, restarts it and checks the engine it holds
+THE BOT SHIPS WITH THE SITE: `ship.py` copies `bot/`, `mcp/engine.js`, its wasm,
+`mcp/headless.js`, the site's stylesheet and `site/img` (only when its digest
+moved) to the server, restarts it and checks the engine it holds
 (`scripts/ship_bot.py`; the server and its key are `private/qq/bot.json`).
 
 IT READS THE PUBLISHED BOARD, the one the card page draws from, so the words
 and the image of one answer stand on the same rows.
 
+IT DRAWS ITS OWN CARD (`bot/card.mjs`): the card page's drawing,
+`headlessLongCard` (87-headless.js), run on the bot's engine, the riven lines
+and the QR code from that engine, written as one document with the stylesheet
+inlined and every picture as data. Chrome only rasterizes it
+(`renderDocument`), loading nothing; a failure is taken again once on a fresh
+browser. The page's `/card` route draws the same function's output, and
+`check_card_document` holds the two to the same PNG bytes. An appraisal's
+verdict and the contributors' card still open the page (`renderCardWith`): the
+verdict replays a whole official fight on the page's fleet.
+
 THE BOT SERVER IS IN HONG KONG, where QQ's API, Discord and the site are all
-near: a card is a whole page load of the site, and from the mainland that load
-crosses a link that drops at peak hours. The live board stays on the BOARD
+near: a card it cannot draw itself is a whole page load of the site, and from
+the mainland that load crosses a link that drops at peak hours. The live board stays on the BOARD
 SERVER (docs/BOARD.md §"The live board"), `bot.json`'s `live`: `ship_bot.py`
 ships the live board's Linux binaries and scripts there.
 

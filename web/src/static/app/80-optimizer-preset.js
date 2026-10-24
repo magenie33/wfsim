@@ -475,7 +475,7 @@ async function resumeOptimize(saved) {
   }
 }
 
-const prettify = (id) => id.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+const prettify = (id) => headlessPrettify(id);
 const arcName = (id) => (id === "none" ? "no arcane" : ((META.arcanes || []).find((a) => a.id === id) || {}).name || prettify(id));
 const evoName = (id) => {
   for (const t of weaponEvos()) { const o = t.options.find((o) => o.id === id); if (o) return o.name; }

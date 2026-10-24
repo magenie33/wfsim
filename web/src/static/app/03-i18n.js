@@ -64,16 +64,13 @@ const trGap = (g) => headlessGap(g, tr);
 /// one per set of numbers.
 const trF = (template, params) => Object.entries(params || {}).reduce(
   (s, [k, v]) => s.split(`{${k}}`).join(v), tr(template));
-const LN = (table, id, en) => (I18N && I18N[table] && I18N[table][id]) || en;
+const LN = (table, id, en) => headlessLN(I18N, table, id, en);
 // A damage type's NAME. The English fallback is CAPITALISED rather than echoed:
 // callers arrive with either spelling — the server sends "Void" in a damage
 // meter row and a yaml token is "void" — and echoing put a lowercase "void" on
 // the English buff card while the Chinese one read 虚空. One helper,
 // one answer, whichever spelling reaches it.
-const DT = (ty) => {
-  const k = String(ty).toLowerCase();
-  return LN("damage_types", k, k.charAt(0).toUpperCase() + k.slice(1));
-};
+const DT = (ty) => headlessDT(I18N, ty);
 // A damage type's OFFICIAL colour and icon — DE's own, transcribed from the
 // wiki's `Module:DamageTypes/data` (see style.css for the palette and
 // data/assets.yaml for the files).
@@ -117,27 +114,13 @@ const dtIcon = (ty) => {
   const file = (META.damage_type_icons || {})[k];
   return file ? `<img class="dt-ico" src="${IMG(file)}" alt="" loading="lazy">` : "";
 };
-// Effect-line phrase substitution ("+X% Critical Chance" → "+X% 暴击几率"):
-// the ORDERED [regex, replacement(, flags)] table comes from the locale's
-// effect_phrases (data/i18n). Compiled once on first use.
-let EFFECT_RES = null;
-const tf = (x) => {
-  if (!I18N || typeof x !== "string") return x;
-  // AN EXACT TRANSLATION BEATS A SUBSTITUTION. The phrase table is the
-  // FALLBACK — it exists for the sentences DE never wrote — so a string the
-  // overlay states in full is taken whole rather than word by word. Without
-  // this, "Damage x1.5 at 5 hits, +0.5 every x3" came out as one Chinese word
-  // followed by the English it was embedded in.
-  if (I18N.ui && I18N.ui[x]) return I18N.ui[x];
-  if (!EFFECT_RES) {
-    EFFECT_RES = (I18N.effect_phrases || []).flatMap(([pat, cn, flags]) => {
-      try { return [[new RegExp(pat, flags || "gi"), cn]]; } catch (_) { return []; }
-    });
-  }
-  let s = x;
-  for (const [re, cn] of EFFECT_RES) s = s.replace(re, cn);
-  return s;
-};
+// An engine-generated line in the locale (`headlessTf`, effect_phrases).
+const tf = (x) => headlessTf(I18N, x);
+/// THE PAGE AS A SPEAKER (87-headless.js §"words"): its names, its strings,
+/// its lines — what every drawing shared with a surface with no page is handed.
+let PAGE_SAY = null;
+const pageSay = () => (PAGE_SAY && PAGE_SAY.meta === META && PAGE_SAY.i18n === I18N && PAGE_SAY.lang === LANG ? PAGE_SAY
+  : (PAGE_SAY = { meta: META, i18n: I18N, lang: LANG, t: tr, tf, dt: DT }));
 // One lowercase search haystack per entity: the LOCALIZED name, the
 // ENGLISH name, the English effect lines AND their translated phrases —
 // every search box matches in English and in the active language alike,
@@ -221,22 +204,9 @@ function applyI18n() {
     node.textContent = node.textContent.replace(el.dataset.i18nSrc, tr(el.dataset.i18nSrc)) || tr(el.dataset.i18nSrc);
   });
 }
-// Mutate META once: every downstream renderer (home grid, selects, pickers,
-// optimizer lists) shows overlay names with zero per-site changes. EVERY
-// entity keeps its English name as name_en — URLs/wiki links always build
-// from it (the wiki is English; a localized name in the URL 404s or lands
-// on oddities).
-function applyNameOverlay() {
-  if (!I18N) return;
-  const over = (x, table) => { x.name_en = x.name; x.name = LN(table, x.id, x.name); };
-  for (const w of META.weapons || []) {
-    over(w, "weapons");
-    for (const t of w.evolutions || []) for (const o of t.options || []) over(o, "evolutions");
-  }
-  for (const e of META.enemies || []) over(e, "enemies");
-  for (const pool of Object.values(META.mod_pools || {})) for (const m of pool) over(m, "mods");
-  for (const a of META.arcanes || []) over(a, "arcanes");
-}
+// META's names in the reader's language, once (`headlessApplyNames`); the
+// English stays as `name_en`, which URLs and wiki links are built from.
+function applyNameOverlay() { headlessApplyNames(META, I18N); }
 // Polarities available on GUN slots. Zenurik/Unairu/Penjaga are Warframe-augment
 // / melee-stance / companion-ability polarities — not gun slots. "Omni" is the
 // Omni Forma universal polarity (matches any mod EXCEPT Umbra mods).
@@ -282,5 +252,5 @@ const formaMin = (id) => (weaponInfo(id) || {}).forma_min || 0;
 // is in or near the viewport immediately either way. The weapon render on the
 // arena's inspector is a bare <img> for the same reason inverted — it is one
 // image, always on screen, and deferring it would delay the largest paint.
-const imgTag = (src, cls) => src ? `<img class="${cls||''}" src="${src}" loading="lazy" onerror="this.style.visibility='hidden'"/>` : `<span class="${cls||''}"></span>`;
+const imgTag = (src, cls) => headlessImgTag(src, cls);
 

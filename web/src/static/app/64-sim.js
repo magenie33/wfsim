@@ -103,69 +103,21 @@ async function renderSimWielder(host) {
     + `</div></div>`;
 }
 
-/// A MODULAR WEAPON'S TWO PARTS AS CHIPS, named from its own assembly spec.
-function partChipsOf(weaponId, grip, loader) {
-  const s = assemblySpec(weaponId) || {};
-  const name = (list, id) => ((list || []).find((x) => x.id === id) || {}).name || prettify(id);
-  return [grip && { label: name(s.grips, grip), key: "part:" + grip },
-    loader && { label: name(s.loaders, loader), key: "part:" + loader }].filter(Boolean);
-}
+/// A MODULAR WEAPON'S TWO PARTS AS CHIPS (`headlessPartChips`).
+const partChipsOf = (weaponId, grip, loader) => headlessPartChips(weaponInfo(weaponId), grip, loader);
 
-/// THE CURRENT WEAPON'S EVOLUTIONS AS CHIPS, tier first — by id, so a board
-/// row's list and the live selection read the same way.
-function evoChipsOf(ids, weaponId) {
-  return weaponEvos(weaponId).map((t) => {
-    const o = t.options.find((x) => ids.includes(x.id));
-    return o ? { img: o.icon ? IMG(o.icon) : null, label: `${t.tier} · ${o.name}`, key: "evo:" + o.id } : null;
-  }).filter(Boolean);
-}
+/// A WEAPON'S EVOLUTIONS AS CHIPS, the open weapon's when none is named
+/// (`headlessEvoChips`).
+const evoChipsOf = (ids, weaponId) => headlessEvoChips(weaponInfo(weaponId || $("weapon").value), ids);
 
-/// A BUILD AS CHIPS — the simulator's "what is being tested" card, and every
-/// row of the build finder. It takes a DESCRIPTOR, never live state, so the two
-/// cannot drift into two pictures of one build. A section given as null is not
-/// drawn (a weapon without that axis); an empty one says so. A chip's `cls`
-/// carries the finder's comparison marks.
-///
-/// THE BUILDER'S OWN ORDER, so the two read line for line: mode, mods, parts,
-/// arcane, evolutions, and the valence LAST — which on an adversary weapon, with
-/// no evolutions, makes it the fourth block. The mode is stated even where the
-/// weapon has one: a summary that drops a field the build has is not a summary.
-/// A BUILD STATE AS THE SIMULATOR'S CARD — the one brief every surface that
-/// shows a build draws: the simulator's own, and the optimizer's starts. `fixed`
-/// (a set of `mods:i` / `arcane:i` keys) marks the positions a start pins.
-/// A BUILD OF ANY WEAPON, drawn with THAT weapon's mods: `modById` reads the open
-/// weapon's pool, and a card of another — a computed task on /compute — showed
-/// only the cards the two pools share.
+/// A BUILD STATE AS THE SIMULATOR'S CARD (`headlessCardOfState`), drawn with
+/// that weapon's own mods. `fixed` (a set of `mods:i` / `arcane:i` keys) marks
+/// the positions a start pins; a start that names no mode shows the one the
+/// builder opens this weapon in, the simulator's build the builder's.
 function cardOfState(st, w, fixed) {
-  return withPoolOf(w, () => cardOfStateHere(st, w, fixed));
-}
-function cardOfStateHere(st, w, fixed) {
   const pinned = (k) => (fixed && fixed.has(k) ? "fixed" : "");
-  const arcs = st.arcane || [];
-  const ranks = st.arcaneRank || [];
-  return buildCardHtml({
-    // A START (the call that passes pins) that names no mode shows the one the
-    // builder opens this weapon in; the simulator's build shows the builder's.
-    mode: modeLabel(w, st.mode || (fixed ? defaultMode(w.id, null) : mode)),
-    mods: (st.slots || []).map((s, i) => {
-      if (s && isRivenId(s.mod)) return { label: rivenCardName(s.mod), cls: pinned("mods:" + i) };
-      const m = s && s.mod && modById(s.mod);
-      return m ? { img: IMG(m.image), label: m.name, rank: s.rank == null ? m.max_rank : s.rank,
-        cls: pinned("mods:" + i) } : null;
-    }).filter(Boolean),
-    riven: rivenCardHtml(w, ((st.slots || []).find((s) => s && isRivenId(s.mod)) || {}).mod),
-    arcanes: (w.arcane_slots || 0) >= 1
-      ? arcs.map((id, i) => {
-        const a = id !== "none" && arcaneById(id);
-        return a ? { img: IMG(a.image), label: a.name, rank: ranks[i] ?? ((a.ranks || []).length - 1),
-          cls: pinned("arcane:" + i) } : null;
-      }).filter(Boolean)
-      : null,
-    parts: st.assembly ? partChipsOf(w.id, st.assembly.grip, st.assembly.loader) : null,
-    evolutions: w.uses_evo2 ? evoChipsOf(Object.values(st.evoSel || {}).filter(Boolean), w.id) : null,
-    valence: valenceSpec(w.id) && st.valence
-      ? `${DT(st.valence.element)} +${Math.round(st.valence.bonus * 1000) / 10}%` : null,
-  });
+  const riven = (id) => ({ name: (rivenSpecFor(id) || {}).name || "", section: rivenCardHtml(w, id) });
+  return headlessCardOfState(pageSay(), { ...st, mode: st.mode || (fixed ? defaultMode(w.id, null) : mode) }, w, riven, pinned);
 }
 
 /// WHERE A RIVEN IN A BUILD IS DEFINED: the reader's own card, or a board row's,
@@ -176,11 +128,6 @@ function rivenSpecFor(id) {
   const rv = boardRivenDefs[id];
   return rv ? { name: "", spec: boardRivenState(rv) } : null;
 }
-const rivenCardName = (id) => (rivenSpecFor(id) || {}).name || tr("Riven");
-/// The section's heading: the reader's name for the card, then the name the
-/// game generates from its stats.
-const rivenCardHead = (name, generated) => `<div class="sb-h">${escHtml(tr("Riven"))}${
-  [name, generated].filter(Boolean).map((x) => ` · ${escHtml(x)}`).join("")}</div>`;
 
 /// Each riven's stats as `/api/riven` printed them, by weapon and card — the
 /// page never computes a riven value itself.
@@ -188,61 +135,38 @@ const rivenCardStats = new Map();
 /// The engine's answers still on their way — a surface that must not be caught
 /// half drawn (the long-image card page) waits for this to empty.
 const rivenCardPending = new Set();
-const rivenCardBody = (name, got) => rivenCardHead(name, got.generated)
-  + `<div class="sb-chips">${rivenCardChips(got.stats)}</div>`;
-/// RED IS THE MALUS, by its slot: a sign says nothing on recoil, whose bonus is a minus.
-const rivenCardChips = (stats) => stats.map((x) => `<span class="sb-chip${x.malus ? " neg" : ""}"><span>${
-  escHtml(x.label)}</span>${x.roll != null ? `<span class="rk">×${Number(x.roll).toFixed(2)}</span>` : ""}</span>`).join("");
 
-/// THE RIVEN SECTION OF A BUILD CARD. Until the engine has answered it names
-/// each stat with its roll; the answer then fills every card on the page that
-/// shows this riven, whoever drew it.
-function rivenCardHtml(w, id) {
-  return rivenSpecCardHtml(w, id && rivenSpecFor(id));
-}
-/// …and a riven that is no saved card, given as `{ name, spec }` (an appraisal's).
-function rivenSpecCardHtml(w, r) {
-  if (!r) return "";
-  const key = JSON.stringify([w.id, r.spec]);
+/// A RIVEN'S STATS FOR A CARD: the engine's answer once it has one, and until
+/// then each stat named with its roll — the answer then fills every card on the
+/// page that shows this riven, whoever drew it.
+function rivenCardGot(w, sp) {
+  const key = JSON.stringify([w.id, sp]);
   let got = rivenCardStats.get(key);
-  if (!got) {
-    const sp = r.spec;
-    const rows = (sp.bonuses || []).concat(sp.malus ? [sp.malus] : []).filter((x) => x && x.id);
-    const stats = rows.map((x, i) => ({ label: (i < (sp.bonuses || []).length ? "+" : "−")
-      + (rivenStat(x.id) ? rivenStatName(rivenStat(x.id)) : x.id), roll: x.roll, malus: i >= (sp.bonuses || []).length }));
-    got = { stats, generated: "" };
-    rivenCardStats.set(key, got);
-    const ask = api("/api/riven", { weapon: w.id, ...sp }).then((a) => {
-      if (!a || a.ok === false) return;
-      const done = { generated: a.name || "",
-        stats: (a.stats || []).map((x) => ({ label: tf(x.text), roll: x.roll, malus: x.slot === "malus" })) };
-      rivenCardStats.set(key, done);
-      document.querySelectorAll("[data-riven-card]").forEach((el) => {
-        if (el.dataset.rivenCard === key) el.innerHTML = rivenCardBody(el.dataset.rivenName, done);
-      });
-    }, () => {}).finally(() => rivenCardPending.delete(ask));
-    rivenCardPending.add(ask);
-  }
-  return `<div data-riven-card="${escHtml(key)}" data-riven-name="${escHtml(r.name)}">${rivenCardBody(r.name, got)}</div>`;
+  if (got) return got;
+  const rows = (sp.bonuses || []).concat(sp.malus ? [sp.malus] : []).filter((x) => x && x.id);
+  const stats = rows.map((x, i) => ({ label: (i < (sp.bonuses || []).length ? "+" : "−")
+    + (rivenStat(x.id) ? rivenStatName(rivenStat(x.id)) : x.id), roll: x.roll, malus: i >= (sp.bonuses || []).length }));
+  got = { stats, generated: "" };
+  rivenCardStats.set(key, got);
+  const ask = api("/api/riven", { weapon: w.id, ...sp }).then((a) => {
+    if (!a || a.ok === false) return;
+    const done = headlessRivenAnswer(pageSay(), a);
+    rivenCardStats.set(key, done);
+    document.querySelectorAll("[data-riven-card]").forEach((el) => {
+      if (el.dataset.rivenCard === key) el.innerHTML = headlessRivenCardBody(pageSay(), el.dataset.rivenName, done);
+    });
+  }, () => {}).finally(() => rivenCardPending.delete(ask));
+  rivenCardPending.add(ask);
+  return got;
 }
 
-function buildCardHtml(d) {
-  const chip = (c) => `<span class="sb-chip${c.cls ? " " + c.cls : ""}"${c.title ? ` title="${escHtml(c.title)}"` : ""}>` +
-    `${c.img ? imgTag(c.img, "sb-img") : ""}<span>${escHtml(c.label)}</span>${c.rank != null ? `<span class="rk">R${c.rank}</span>` : ""}</span>`;
-  const section = (head, chips, empty) => chips == null ? ""
-    : `<div class="sb-h">${head}</div><div class="sb-chips">${chips.map(chip).join("") || `<span class="sb-empty">${empty}</span>`}</div>`;
-  return [
-    d.mode != null ? section(tr("Mode"), [{ label: d.mode }]) : "",
-    section(`${tr("Mods")} · ${d.mods.length}`, d.mods, tr("no mods equipped")),
-    // THE RIVEN SPELLED OUT: every other card is fixed, its numbers are this build's own.
-    d.riven || "",
-    d.parts ? section(tr("Parts"), d.parts) : "",
-    section(tr("Arcane"), d.arcanes, tr("no arcane")),
-    section(tr("Evolutions"), d.evolutions, tr("none selected")),
-    // Its percentage rides with the element: 60% Heat and 25% Heat are two builds.
-    d.valence ? section(tr("Valence"), [{ label: d.valence }]) : "",
-  ].join("");
-}
+/// THE RIVEN SECTION OF A BUILD CARD.
+const rivenCardHtml = (w, id) => rivenSpecCardHtml(w, id && rivenSpecFor(id));
+/// …and a riven that is no saved card, given as `{ name, spec }` (an appraisal's).
+const rivenSpecCardHtml = (w, r) => (r ? headlessRivenSection(pageSay(), w, r, rivenCardGot(w, r.spec)) : "");
+
+/// A BUILD AS CHIPS (`headlessBuildCardHtml`).
+const buildCardHtml = (d) => headlessBuildCardHtml(pageSay(), d);
 
 /// THE FIGHT AS A CARD — the scenario read back in the build card's own chips,
 /// for a surface that runs the simulator's fight and does not edit it. A section

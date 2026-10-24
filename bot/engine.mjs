@@ -11,7 +11,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const SITE = "https://wfsim.app";
 const BOARD_TTL_MS = 600_000;
 
-export async function loadEngine() {
+/// `site` is where the board is read from: the live site, or a check's server.
+export async function loadEngine({ site = SITE } = {}) {
   const headless = await import(pathToFileURL(resolve(ROOT, "mcp/headless.js")));
   const src = readFileSync(resolve(ROOT, "mcp/engine.js"), "utf8");
   const wasmPath = resolve(ROOT, "mcp", src.match(/^import module from "([^"]+)";$/m)[1]);
@@ -40,12 +41,12 @@ export async function loadEngine() {
     meta: () => meta,
     names: () => Object.values(i18n),
     async board(id) {
-      return kept(`${SITE}/board/${id}.json`);
+      return kept(`${site}/board/${id}.json`);
     },
     // THE HEADS, for a top-N answer (docs/BOARD.md §"The heads"); every row
     // where a weapon has none yet.
     async boardHeads(id) {
-      return (await kept(`${SITE}/board/heads/${id}.json`)) || host.board(id);
+      return (await kept(`${site}/board/heads/${id}.json`)) || host.board(id);
     },
     api: async (path, body) => api(path, body),
     tr: (s) => (zh.ui && zh.ui[s]) || s,
@@ -57,5 +58,5 @@ export async function loadEngine() {
     const q = headless.HEADLESS_QUERIES.find((x) => x.id === id);
     return headless.headlessCheckArgs(q, args) || q.run(args, host);
   };
-  return { host, run, meta, zh, headless };
+  return { host, run, meta, i18n, zh, headless, api, site };
 }
