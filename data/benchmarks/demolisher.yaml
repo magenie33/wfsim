@@ -34,7 +34,7 @@
 # A third unnamed difference between them would be a bug, not a ruler.
 id: demolisher
 
-name: "Demolisher · one target · Demolisher Devourer {scene} · 4-player health · 180 s · KPM"
+name: "Demolisher · one target · Demolisher Devourer {scene} · {shooting} · 4-player health · 180 s · KPM"
 
 standard: "One specific fight players run, measured as it is rather than as a stand-in for most play: a Demolisher a full squad meets, taken apart by one weapon."
 
@@ -44,7 +44,7 @@ rules:
   - "The target is one Demolisher Devourer {scene}, carrying the health a four-player squad gives it. The fight lasts 180 seconds."
   - "ONE WEAPON FIRES. A four-player squad is a harder TARGET here, not three more guns — this fight has one shooter — so what is ranked is how much of that Demolisher your weapon alone takes off."
   - "One target: damage that reaches other enemies counts for nothing here."
-  - "Every shot is aimed and every one lands on the weak point, which is worth 3x."
+  - "{shooting} A weapon's forced targeting and stance still apply."
   - "Radiation cannot proc on this unit: the type is dropped from the draw, and every other type on the build gets likelier for it."
   - "It can never be Frozen, so Cold climbs to its cap and stays there. An Impact proc lands and counts as a status type, and does not stagger it."
   - "The score is kills per minute, counting the fraction of the current target already gone. Removing 3% of one Demolisher in 180 seconds scores 0.03 and still ranks."
@@ -65,7 +65,7 @@ build:
   exilus: optional
   valence: full
 
-ladder: [scene]
+ladder: [scene, shooting]
 scenario:
   # THE FIRST OF THE TWO CHANGED TERMS.
   enemy: demolisher_devourer
@@ -96,11 +96,7 @@ scenario:
   metric: kpm
   infinite_ammo: true
 
-  # AIMED, AND EVERY SHOT ON THE WEAK POINT — pinned exactly as the aimed board
-  # pins them, because they are terms of the claim and a reader should find them
-  # here. A SENTINEL WEAPON IS EXEMPT from both: its companion picks its own
-  # targets and never aims for a head, so `parse_fight` pins its rate at 0 and
-  # `tenno_from` its stance, and neither is the player's to set.
+  # The first shooting rung; weapon-forced targeting and stance still apply.
   headshot_pct: 100
 
   # THE NEUTRAL PLAYER, every field named including the ones already sitting at

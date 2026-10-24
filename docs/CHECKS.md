@@ -8,6 +8,14 @@ A check that runs the worker's SQL runs it on an in-memory PGlite laid with
 `worker/pg/*.sql` (`scripts/pg/test_db.mjs`), behind the statement API the
 worker gets from Hyperdrive; it needs `npm install --prefix scripts/pg`.
 
+## `check_board_ladder`
+
+The board's four fights cross four scenes and three shooting conditions.
+Each cell shows four scene choices and three shooting choices; switching an
+axis keeps the other, switching fights keeps both, and a URL round trip and
+a cold page load restore the same cell. Against the dev server:
+`WFSIM_BASE=http://127.0.0.1:<port> node scripts/check_board_ladder.mjs`.
+
 ## `check_page_bodies`
 
 `node --check` over every check script, and over `app.js` joined from its

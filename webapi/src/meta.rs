@@ -1251,6 +1251,9 @@ pub fn meta_json() -> Value {
             // a base cell), and its scene in the ruler's own words.
             "cell_dir": b.cell_dir(),
             "scene_name": b.rungs().iter().map(|r| r.short.as_str()).collect::<Vec<_>>().join(" · "),
+            "ladder": b.ladder.iter().zip(b.rungs()).map(|(axis, rung)| json!({
+                "axis": axis, "tag": rung.tag, "name": rung.short,
+            })).collect::<Vec<_>>(),
             // HOW MANY BUILDS THE RUN THAT WROTE THIS BOARD READ. Paired with
             // the library's own size (`/api/board/pending`), it is what lets a
             // STATIC board say how far behind it is — see `data::boards::Board`.

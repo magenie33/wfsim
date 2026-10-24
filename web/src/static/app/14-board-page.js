@@ -269,6 +269,27 @@ function benchArena(cur) {
   }
 }
 
+function renderBenchLadder(cur, bs) {
+  const into = $("bench-scenes");
+  if (!into) return;
+  const mine = cur ? bs.filter((b) => b.base === cur.base) : [];
+  const axes = (cur && cur.ladder) || [];
+  into.innerHTML = axes.map((selected) => {
+    const choices = mine.filter((b) => (b.ladder || []).every((r) =>
+      r.axis === selected.axis || axes.some((a) => a.axis === r.axis && a.tag === r.tag)));
+    const label = { scene: "Scene", shooting: "Shooting" }[selected.axis] || selected.axis;
+    return `<div class="bench-axis"><span class="slotf-lab">${escHtml(tr(label))}</span>${
+      choices.map((b) => {
+        const rung = b.ladder.find((r) => r.axis === selected.axis);
+        return `<button type="button" class="bchip${b.id === cur.id ? " sel" : ""}"
+          data-axis="${escHtml(selected.axis)}" data-scene="${escHtml(b.id)}">${escHtml(tr(rung.name))}</button>`;
+      }).join("")}</div>`;
+  }).join("");
+  into.querySelectorAll("[data-scene]").forEach((el) => {
+    el.onclick = () => { benchPick = el.dataset.scene; benchShowPicked(); };
+  });
+}
+
 function renderBenchBoard() {
   const box = $("bench-board");
   if (!box || !META) return;
@@ -293,15 +314,7 @@ function renderBenchBoard() {
       el.onclick = () => { benchPick = inScene(el.dataset.bench).id; benchShowPicked(); };
     });
   }
-  const scenes = $("bench-scenes");
-  if (scenes) {
-    const mine = cur ? bs.filter((b) => b.base === cur.base) : [];
-    scenes.innerHTML = mine.length < 2 ? "" : mine.map((b) => `<button type="button" class="bchip${
-      b.id === cur.id ? " sel" : ""}" data-scene="${escHtml(b.id)}">${escHtml(tr(b.scene_name || b.name))}</button>`).join("");
-    scenes.querySelectorAll("[data-scene]").forEach((el) => {
-      el.onclick = () => { benchPick = el.dataset.scene; benchShowPicked(); };
-    });
-  }
+  renderBenchLadder(cur, bs);
   if (!cur) { box.innerHTML = ""; return; }
   // …AND WHICH ENTRANTS AND WHICH BUILDS, one panel above the list: the slot,
   // that slot's own chips, the riven view, measured-only and a name. Every row
@@ -490,4 +503,3 @@ const benchRowHtml = (cur, { w, mode, row }, i) => `
             + (measuredRecordHtml(row, false) ? `<small class="bwhen" title="${escHtml(measuredNote())}">${measuredRecordHtml(row, false)}</small>` : "")
           : `<span class="bnone">${escHtml(tr("not measured"))}</span>`}</span>
       </a>`;
-

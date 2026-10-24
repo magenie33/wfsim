@@ -41,7 +41,7 @@ primary: true
 # distinguishes it from a future second ruler comes FIRST (single target, as
 # against a multi-target benchmark), then the target, then the two measurement
 # terms. Truncation therefore eats the least identifying part.
-name: "Standard Single Target · Thrax Centurion {scene} · 180 s · KPM"
+name: "Standard Single Target · Thrax Centurion {scene} · {shooting} · 180 s · KPM"
 
 # WHAT "STANDARD" MEANS: one set of conditions every build is measured under,
 # stated as a definition.
@@ -82,7 +82,7 @@ rules:
   - "The target is a Thrax Centurion because a build that beats it transfers: it belongs to no faction, so no faction mod and no faction bonus reads on it; it carries Overguard, which most Warframe abilities cannot take off, so the weapon has to; it is armoured and tanky; it is immune to no element, so every proc lands; its weak points are the ordinary ones, 3x on the head and 1x elsewhere."
   - "Its flaws are stated rather than hidden: it carries no shield, its Overguard may sit high, and the spectral form it enters on death is switched off here."
   - "One target: damage that reaches other enemies counts for nothing here."
-  - "Every shot is aimed and lands on the weak point. That is the ceiling of aim, not a claim about how most players shoot."
+  - "{shooting} A weapon's forced targeting and stance still apply."
   - "The score is kills per minute, counting the fraction of the current target already gone. Removing 3% of one target in 180 seconds scores 0.03 and still ranks."
   - "Every main slot is filled, every evolution tier the entry has is taken, every arcane seat it has is filled. The Exilus slot is optional: a row may wear one and a row without one is not a lesser build, so the two sit on the same board and the better number wins."
   - "The stance slot is optional too, and it is not a discount but a GRANT: a stance hands the weapon 10 mod capacity on a matching polarity, 5 on a bare slot and 4 on the wrong colour. A row without one is not a lesser build; it is a build that spent the capacity elsewhere."
@@ -109,7 +109,7 @@ build:
   # the same reason every row here is scored at full Forma and every tier.
   valence: full
 
-ladder: [scene]
+ladder: [scene, shooting]
 scenario:
   # A single Thrax target (faction Unknown) at the top of the level range, Steel
   # Path. Chosen because it is the fight the roster is already calibrated
@@ -228,18 +228,8 @@ scenario:
   # regardless. This is the reserve behind it.
   infinite_ammo: true
 
-  # AIMED, AND EVERY SHOT ON THE WEAK POINT. Both pinned rather than left to
-  # resolve, because they are terms of the claim this board makes and a reader
-  # should find them here rather than in a default.
-  #
-  # `aiming` is the STANCE, which gates mods like Argon Scope; `headshot_pct`
-  # is where the shots land. They are different facts and a board that means
-  # "played at the ceiling" has to say both.
-  #
-  # A SENTINEL WEAPON IS EXEMPT from both: its companion picks its own targets
-  # and never aims for a head, so `parse_fight` pins its rate at 0 and
-  # `tenno_from` its stance — neither is the player's to set, and pinning them
-  # here does not reach it.
+  # The first shooting rung; later rungs override its fields.
+  # Weapon-forced targeting and stance still apply through parse_fight.
   headshot_pct: 100
 
   # NO FORM, AND NO MODE. How a weapon is played is part of the ENTRANT, not

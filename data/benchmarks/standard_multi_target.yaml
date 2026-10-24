@@ -15,7 +15,7 @@
 # `board/benchmarks.rs` refuses it any weapon, mod, arcane or evolution id.
 id: standard_multi_target
 
-name: "Standard Multi Target · 5x5 at 3 m · Thrax Centurion {scene} · 180 s · KPM"
+name: "Standard Multi Target · 5x5 at 3 m · Thrax Centurion {scene} · {shooting} · 180 s · KPM"
 
 # WHAT "STANDARD" MEANS: one set of conditions every build is measured under,
 # stated as a definition. The target half is its companion's; the spacing is
@@ -28,7 +28,8 @@ rules:
   - "The spacing decides whether splash or single-target damage wins: 3 m is where that ordering matches play, and it is the widest whole metre at which Electricity still reaches a neighbour."
   - "The target is a Thrax Centurion because a build that beats it transfers: it belongs to no faction, so no faction mod and no faction bonus reads on it; it carries Overguard, which most Warframe abilities cannot take off, so the weapon has to; it is armoured and tanky; it is immune to no element, so every proc lands; its weak points are the ordinary ones, 3x on the head and 1x elsewhere."
   - "The shooter stands at contact with the middle body of the front rank, and fires along the line that rank faces."
-  - "Every shot is aimed and lands on the weak point of whatever it strikes directly, including anything it punches through. A chain hop and a damage cloud cannot be a weak point hit. A BLAST detonation can: it carries the weak-point and critical multipliers of the hit that applied the stack, out to everything its 5 m sphere reaches — measured in game (MEASUREMENTS M54)."
+  - "{shooting} A weapon's forced targeting and stance still apply."
+  - "Direct hits, including punch-through hits, use the selected headshot rate. A chain hop and a damage cloud cannot be a weak point hit. A Blast detonation carries the weak-point and critical multipliers of the hit that applied the stack (MEASUREMENTS M54)."
   - "The score is kills per minute across the whole formation, counting the fraction of each target already gone."
   - "A body that dies respawns where it stood, so the arrangement is the same at the end as at the start and the score is a rate rather than a race to the last body."
   - "The grid is stated as three numbers rather than as 25 positions, so its terms can be read and argued with."
@@ -48,7 +49,7 @@ build:
   exilus: optional
   valence: full
 
-ladder: [scene]
+ladder: [scene, shooting]
 scenario:
   enemy: thrax_centurion
   level: 9999

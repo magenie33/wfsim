@@ -598,7 +598,7 @@ mod tests {
     #[test]
     fn the_standard_single_target_benchmark_is_what_we_published() {
         let b = get("standard_single_target").expect("data/benchmarks/standard_single_target.yaml");
-        assert_eq!(b.name, "Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM");
+        assert_eq!(b.name, "Standard Single Target · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM");
         let s = |k: &str| b.scenario.get(k).cloned();
         assert_eq!(s("enemy").and_then(|v| v.as_str().map(String::from)).as_deref(), Some("thrax_centurion"));
         assert_eq!(s("level").and_then(|v| v.as_u64()), Some(9999));
@@ -824,6 +824,34 @@ mod tests {
             }
         }
         assert!(checked > 0, "some ruler spans an axis, or this checks nothing");
+    }
+
+    #[test]
+    fn shooting_rungs_cross_every_scene_and_keep_existing_fights() {
+        let rulers = all();
+        let scenes = &axes().iter().find(|a| a.id == "scene").expect("scene axis").values;
+        let shooting = &axes().iter().find(|a| a.id == "shooting").expect("shooting axis").values;
+        assert_eq!(scenes.len(), 4);
+        assert_eq!(shooting.iter().map(|r| r.set.get("headshot_pct").unwrap().as_u64().unwrap()).collect::<Vec<_>>(),
+            [100, 50, 0]);
+        assert_eq!(rulers.len(), 4 * 4 * 3);
+        for base in rulers.iter().filter(|b| b.id == b.base) {
+            for (i, scene) in scenes.iter().enumerate() {
+                let old_id = if i == 0 { base.id.clone() } else { format!("{}__{}", base.id, scene.tag) };
+                let original = get(&old_id).expect("existing ruler id retained");
+                for (j, shot) in shooting.iter().enumerate() {
+                    let id = if j == 0 { old_id.clone() } else { format!("{old_id}__{}", shot.tag) };
+                    let cell = get(&id).expect("every scene has every shooting rung");
+                    let mut expected = original.scenario.clone();
+                    for (k, v) in &shot.set {
+                        expected.as_mapping_mut().unwrap().insert(k.clone(), v.clone());
+                    }
+                    assert_eq!(cell.scenario, expected, "{id}: only shooting conditions change");
+                    assert_eq!(cell.scenario.get("aiming").and_then(|v| v.as_bool()), Some(true));
+                    assert!(cell.rules.iter().any(|r| r.shown().contains(&shot.long)), "{id}: its own rules");
+                }
+            }
+        }
     }
 
     /// A TEST HAS ONE CORE, AND NOT NAMING IT IS A MISTAKE.

@@ -1,0 +1,71 @@
+ui:
+  Scene: 场景
+  Shooting: 射击
+  100% headshots, aiming: 100% 爆头 · 瞄准
+  50% headshots, aiming: 50% 爆头 · 瞄准
+  0% headshots, aiming: 0% 爆头 · 瞄准
+  Shots are aimed, with a 100% headshot rate. A weapon's forced targeting and stance still apply.: 瞄准射击，爆头率为 100%。武器自身强制的命中位置和姿态仍然生效。
+  Shots are aimed, with a 0% headshot rate. A weapon's forced targeting and stance still apply.: 瞄准射击，爆头率为 0%。武器自身强制的命中位置和姿态仍然生效。
+  Shots are aimed, with a 50% headshot rate. A weapon's forced targeting and stance still apply.: 瞄准射击，爆头率为 50%。武器自身强制的命中位置和姿态仍然生效。
+  ? Direct hits, including punch-through hits, use the selected headshot rate. A chain hop and a damage cloud cannot be a weak point hit. A Blast detonation carries the weak-point and critical multipliers of the hit that applied the stack (MEASUREMENTS M54).
+  : 直接命中（包括穿透命中）使用所选爆头率。链式跳跃和伤害云不能命中弱点。爆炸异常的引爆继承施加该层异常的命中的弱点倍率和暴击倍率（MEASUREMENTS M54）。
+  Lv 9999 SP · 100% headshots, aiming: 9999 级 钢铁之路 · 100% 爆头 · 瞄准
+  Lv 9999 SP · 50% headshots, aiming: 9999 级 钢铁之路 · 50% 爆头 · 瞄准
+  Lv 9999 SP · 0% headshots, aiming: 9999 级 钢铁之路 · 0% 爆头 · 瞄准
+  Lv 1000 Icebind · 100% headshots, aiming: 1000 级 Icebind · 100% 爆头 · 瞄准
+  Lv 1000 Icebind · 50% headshots, aiming: 1000 级 Icebind · 50% 爆头 · 瞄准
+  Lv 1000 Icebind · 0% headshots, aiming: 1000 级 Icebind · 0% 爆头 · 瞄准
+  Lv 500 Archimedea · 100% headshots, aiming: 500 级 Archimedea · 100% 爆头 · 瞄准
+  Lv 500 Archimedea · 50% headshots, aiming: 500 级 Archimedea · 50% 爆头 · 瞄准
+  Lv 500 Archimedea · 0% headshots, aiming: 500 级 Archimedea · 0% 爆头 · 瞄准
+  Lv 200 SP · 100% headshots, aiming: 200 级 钢铁之路 · 100% 爆头 · 瞄准
+  Lv 200 SP · 50% headshots, aiming: 200 级 钢铁之路 · 50% 爆头 · 瞄准
+  Lv 200 SP · 0% headshots, aiming: 200 级 钢铁之路 · 0% 爆头 · 瞄准
+  Demolisher · one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 9999 钢铁 · 四人血量 · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Demolisher · one target · Demolisher Devourer Lv 9999 SP · 50% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 9999 钢铁 · 四人血量 · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Demolisher · one target · Demolisher Devourer Lv 9999 SP · 0% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 9999 钢铁 · 四人血量 · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Demolisher · one target · Demolisher Devourer Lv 1000 Icebind · 100% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 1000 级 Icebind · 四人血量 · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Demolisher · one target · Demolisher Devourer Lv 1000 Icebind · 50% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 1000 级 Icebind · 四人血量 · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Demolisher · one target · Demolisher Devourer Lv 1000 Icebind · 0% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 1000 级 Icebind · 四人血量 · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Demolisher · one target · Demolisher Devourer Lv 500 Archimedea · 100% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 500 级 Archimedea · 四人血量 · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Demolisher · one target · Demolisher Devourer Lv 500 Archimedea · 50% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 500 级 Archimedea · 四人血量 · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Demolisher · one target · Demolisher Devourer Lv 500 Archimedea · 0% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 500 级 Archimedea · 四人血量 · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Demolisher · one target · Demolisher Devourer Lv 200 SP · 100% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 200 钢铁 · 四人血量 · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Demolisher · one target · Demolisher Devourer Lv 200 SP · 50% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 200 钢铁 · 四人血量 · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Demolisher · one target · Demolisher Devourer Lv 200 SP · 0% headshots, aiming · 4-player health · 180 s · KPM: 爆破使 · 单体 · 爆破型吞噬者 200 钢铁 · 四人血量 · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 9999 钢铁 · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 50% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 9999 钢铁 · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 0% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 9999 钢铁 · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 1000 Icebind · 100% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 1000 级 Icebind · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 1000 Icebind · 50% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 1000 级 Icebind · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 1000 Icebind · 0% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 1000 级 Icebind · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 500 Archimedea · 100% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 500 级 Archimedea · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 500 Archimedea · 50% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 500 级 Archimedea · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 500 Archimedea · 0% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 500 级 Archimedea · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 200 SP · 100% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 200 钢铁 · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 200 SP · 50% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 200 钢铁 · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Heavy Gunner · one target · Eximus Corrupted Heavy Gunner Lv 200 SP · 0% headshots, aiming · 180 s · KPM: 重型机枪手 · 单体 · 卓越者堕落重型机枪手 200 钢铁 · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 9999 级 钢铁之路 · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 50% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 9999 级 钢铁之路 · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 0% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 9999 级 钢铁之路 · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 1000 Icebind · 100% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 1000 级 Icebind · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 1000 Icebind · 50% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 1000 级 Icebind · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 1000 Icebind · 0% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 1000 级 Icebind · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 500 Archimedea · 100% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 500 级 Archimedea · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 500 Archimedea · 50% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 500 级 Archimedea · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 500 Archimedea · 0% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 500 级 Archimedea · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 200 SP · 100% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 200 级 钢铁之路 · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 200 SP · 50% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 200 级 钢铁之路 · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Multi Target · 5x5 at 3 m · Thrax Centurion Lv 200 SP · 0% headshots, aiming · 180 s · KPM: 标准群体 · 5x5 间隔 3 米 · 凶魂百夫长 200 级 钢铁之路 · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 9999 钢铁 · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 9999 SP · 50% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 9999 钢铁 · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 9999 SP · 0% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 9999 钢铁 · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 1000 Icebind · 100% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 1000 级 Icebind · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 1000 Icebind · 50% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 1000 级 Icebind · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 1000 Icebind · 0% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 1000 级 Icebind · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 500 Archimedea · 100% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 500 级 Archimedea · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 500 Archimedea · 50% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 500 级 Archimedea · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 500 Archimedea · 0% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 500 级 Archimedea · 0% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 200 SP · 100% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 200 钢铁 · 100% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 200 SP · 50% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 200 钢铁 · 50% 爆头 · 瞄准 · 180 秒 · KPM
+  Standard Single Target · Thrax Centurion Lv 200 SP · 0% headshots, aiming · 180 s · KPM: 标准单体 · 凶魂百夫长 200 钢铁 · 0% 爆头 · 瞄准 · 180 秒 · KPM

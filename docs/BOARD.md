@@ -2368,6 +2368,15 @@ coded.
 
 ### A ruler's ladder: one fight, measured along axes
 
+Each of the four fights spans `scene` and `shooting`: four scenes and three
+shooting conditions make 48 cells. Shooting is a chosen combination of
+headshot rate and aiming, not a headshot-only axis: its rungs are 100%, 50%
+and 0% headshots, all aiming. Weapon-forced targeting and stance still apply.
+The board offers one row per axis; changing either keeps the other, and
+changing the fight keeps both. The full cell id travels in links and saved
+scenarios. The first shooting rung retains every existing ruler id and score;
+the other two have their own facts and enter the paced cell sweep.
+
 **A FILE IS ONE FIGHT; ITS LADDER MAKES IT SEVERAL RULERS.** An axis
 (`data/benchmarks/axes/<id>.yaml`) lists RUNGS, and a rung is a CHOSEN
 combination of fight fields — `scene` names each one by its level, its one

@@ -1,0 +1,14 @@
+id: shooting
+values:
+  - tag: aimed_heads
+    set: {headshot_pct: 100, aiming: true}
+    short: 100% headshots, aiming
+    long: "Shots are aimed, with a 100% headshot rate."
+  - tag: aimed_half
+    set: {headshot_pct: 50, aiming: true}
+    short: 50% headshots, aiming
+    long: "Shots are aimed, with a 50% headshot rate."
+  - tag: aimed_body
+    set: {headshot_pct: 0, aiming: true}
+    short: 0% headshots, aiming
+    long: "Shots are aimed, with a 0% headshot rate."

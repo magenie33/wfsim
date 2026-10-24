@@ -432,6 +432,8 @@ jobs:
         run: node scripts/check_feedback_panel.mjs
       - name: The compute page's total is every order, dispatched and waiting, each kind a row of one list
         run: node scripts/check_compute_orders.mjs
+      - name: The board's scene and shooting choices are independent and survive a link
+        run: node scripts/check_board_ladder.mjs
       # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
       # browser, no engine, no network — it imports `worker/index.js` and runs
       # it against a KV stub. It is here rather than on demand because the two
