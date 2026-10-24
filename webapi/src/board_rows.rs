@@ -119,6 +119,15 @@ pub fn with_rolls(mut rec: Value, rolls: &[f64]) -> Value {
 /// legality one: a row must be a COMPLETE build. `Err` is the scorer's printed
 /// refusal.
 pub fn scored_build(rec: &Value, bench_id: &str) -> Result<ValidBuild, String> {
+    let v = board_build(rec)?;
+    admitted(rec, bench_id, &v)?;
+    Ok(v)
+}
+
+/// THE RULER-FREE HALF OF [`scored_build`]: the record read as a legal build,
+/// its riven's rolls included. A caller crossing one record with every ruler
+/// reads it once here and asks [`admitted`] per ruler.
+pub fn board_build(rec: &Value) -> Result<ValidBuild, String> {
     let shape = {
         let bonuses = ids(rec, "riven_pos");
         (!bonuses.is_empty()).then(|| wfsim_engine::build::rivens::RivenShape {
@@ -136,8 +145,7 @@ pub fn scored_build(rec: &Value, bench_id: &str) -> Result<ValidBuild, String> {
     };
     let wielder: Option<wfsim_engine::data::warframes::Build> =
         rec.get("wielder").and_then(|x| serde_json::from_value(x.clone()).ok());
-    let v = wfsim_engine::board::builds::validate_for_board_with(
-        bench_id,
+    let v = wfsim_engine::board::builds::validate_with(
         get_str(rec, "weapon", ""),
         &ids(rec, "mods"),
         &ids(rec, "evolutions"),
@@ -146,14 +154,19 @@ pub fn scored_build(rec: &Value, bench_id: &str) -> Result<ValidBuild, String> {
         shape.as_ref(),
         rec.get("exilus").and_then(Value::as_str).filter(|x| !x.is_empty()),
         board_assembly_of(rec).as_ref(),
-        wielder.as_ref(),
-    )?;
+    )?
+    .with_wielder(wielder.as_ref())?;
     // …AND THE NUMBERS ITS RIVEN ROLLED, if the record names them. They are part
     // of the fight, so they are part of the identity every key is taken from.
     Ok(match rec.get("riven_rolls").and_then(Value::as_array) {
         Some(rolls) => v.with_riven_rolls(rolls.iter().filter_map(Value::as_f64).collect()),
         None => v,
     })
+}
+
+/// …AND THE RULER'S HALF: whether that build is the shape `bench_id` admits.
+pub fn admitted(rec: &Value, bench_id: &str, v: &ValidBuild) -> Result<(), String> {
+    wfsim_engine::board::builds::admit_for_board(bench_id, get_str(rec, "weapon", ""), v)
 }
 
 /// THE CARD A BUILD NAMES — its own rolls, or the god roll if it names none
@@ -196,12 +209,12 @@ pub fn row_requests(
 /// build owes, opened as compute orders the moment it arrives. A ruler that
 /// refuses the build owes nothing, and so does a mode it cannot sustain.
 pub fn owed_rows(record: &Value) -> Vec<(String, String)> {
+    let Ok(b) = board_build(record) else { return Vec::new() };
+    let modes = wfsim_engine::board::groups::board_modes(&b.weapon);
     wfsim_engine::board::benchmarks::all()
         .iter()
-        .filter_map(|bench| scored_build(record, &bench.id).ok().map(|b| (bench, b)))
-        .flat_map(|(bench, b)| {
-            wfsim_engine::board::groups::board_modes(&b.weapon).into_iter().map(move |m| (bench.id.clone(), m))
-        })
+        .filter(|bench| admitted(record, &bench.id, &b).is_ok())
+        .flat_map(|bench| modes.iter().map(move |m| (bench.id.clone(), m.clone())))
         .collect()
 }
 

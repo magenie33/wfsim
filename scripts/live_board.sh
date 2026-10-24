@@ -7,9 +7,9 @@
 # TWO LOOPS. The INTAKE loop takes a submission in the moment it lands — its
 # builds into the library, every row it owes into the queue and opened as a
 # compute order (`ship_queue.sh`) — on its own clock, so a submission never
-# waits for a projection pass. EVERY CYCLE of the main loop the rows `scores`
-# gained are read, and the board moves: `verified/`, `scores` alone, pushed
-# to R2 for the site. A client result is on no board until it is a fact. This
+# waits for the board. EVERY CYCLE of the main loop the rows `scores` gained
+# are read and handed to the ranker, and the board moves: `verified/`,
+# `scores` alone, pushed to R2 for the site. A client result is on no board until it is a fact. This
 # server fights nothing: what only the official machines may settle is `settle.yml`'s.
 # docs/BOARD.md §"The fact factory", §"The live board".
 #
@@ -74,86 +74,92 @@ intake_loop() {
   done
 }
 
-# WHAT THE INTAKE LOOP TOOK IN SINCE THE LAST CYCLE, moved out of the mailbox
-# after the store's read, so a build that landed meanwhile is in one or the other.
+# WHAT THE INTAKE LOOP TOOK IN SINCE THE LAST CYCLE, out of the mailbox into
+# `arrived-now.ndjson` for the ranker, and kept in `new-builds.ndjson` until a
+# read of the store holds it.
 take_arrivals() {
   { flock 9
     touch arrived-builds.ndjson
-    cat arrived-builds.ndjson >> new-builds.ndjson
+    mv arrived-builds.ndjson arrived-now.ndjson
     : > arrived-builds.ndjson
   } 9> mailbox.lock
+  cat arrived-now.ndjson >> new-builds.ndjson
 }
 
-# READ INTO A SPARE AND SWAPPED ON SUCCESS: a failed read truncates its output,
-# and an empty facts file would project a board with every scored row gone.
-refresh_store() {
-  bash "$HERE/fetch_library.sh" library.fresh >&2 || return 1
-  bash "$HERE/fetch_facts.sh" facts.fresh >&2 || return 1
-  [ -s library.fresh ] && [ -s facts.fresh ] || return 1
+# THE STORE READ AFRESH, BESIDE THE BOARD: the read takes most of an hour and
+# the board keeps moving meanwhile. Into spares, `fresh.ready` marking both
+# whole: a failed read truncates its output, and an empty facts file would
+# rank a board with every scored row gone.
+FETCH_PID=""
+start_fetch() {
+  rm -f fresh.ready
+  wc -l < new-builds.ndjson > fetch-mark.txt
+  ( bash "$HERE/fetch_library.sh" library.fresh >&2 && bash "$HERE/fetch_facts.sh" facts.fresh >&2 \
+      && [ -s library.fresh ] && [ -s facts.fresh ] && touch fresh.ready ) &
+  FETCH_PID=$!
+}
+
+# …AND SWAPPED IN once whole. A build taken in since the read began may be
+# missing from it, so it is kept: one in both is one build twice, which the
+# ranker lists once. The facts' cursor moves to the read's newest row, and the
+# next delta asks again for the two hours before it.
+swap_store() {
+  local mark
+  mark=$(cat fetch-mark.txt 2>/dev/null || echo 0)
   mv library.fresh library.json
-  # …AND WHICH BUILD IS WHICH WEAPON, which a subset pass is cut by.
-  mv library.fresh.ndjson library-ids.ndjson
+  rm -f library.fresh.ndjson
   mv facts.fresh facts-known.ndjson
+  tail -n +"$((mark + 1))" new-builds.ndjson > new-builds.next
+  mv new-builds.next new-builds.ndjson
   node "$HERE/live_publish.mjs" cursor "$WORK" >&2
-  # A BUILD THE LIBRARY NOW HOLDS is in the read itself.
-  : > new-builds.ndjson
+  rm -f fresh.ready
 }
 
-# A PROJECTION, into a directory swapped in whole, so a reader never sees a
-# board half written. Every ruler writes into the same directory: a weapon's
-# file carries its rows under every ruler (`write_pages`). Run from `<cwd>`, so
-# a `data/board_state.yaml` there is the one `wfsim-board` stamps.
-#
-# WITH A SUBSET LIBRARY (`$4`) it starts from the board as it stands and
-# re-ranks only the weapons that library holds (`--subset`); the hourly read
-# still ranks everything, so nothing a subset missed outlives the hour.
-project_into() {
-  local out="$1" facts="$2" cwd="$3" lib="library-live.json" flag="" r code
-  rm -rf "$out.next"
-  if [ -n "${4:-}" ] && [ -d "$out" ]; then
-    cp -a "$out" "$out.next" && rm -f "$out.next/meta.json"
-    lib="$4"
-    facts="$4.facts"
-    flag="--subset"
-  else
-    mkdir "$out.next"
-    # A WHOLE PASS STARTS THE LOG AFRESH: it is what the last pass refused,
-    # and appended to for good it grew past the facts themselves.
-    : > "$WORK/project.log"
-  fi
-  for r in $("$BIN/wfsim-board" --rulers); do
-    code=0
-    (cd "$cwd" && "$BIN/wfsim-board" "$r" "$WORK/$out.next" --project $flag --facts-in "$WORK/$facts" \
-      < "$WORK/$lib" > /dev/null 2>> "$WORK/project.log") || code=$?
-    if [ "$code" != "0" ] && [ "$code" != "2" ]; then
-      echo "live: $r failed with $code" >&2
-      return 1
-    fi
-  done
-  rm -rf "$out.old"
-  [ -d "$out" ] && mv "$out" "$out.old"
-  mv "$out.next" "$out"
-}
-
-library_live() {
-  jq -s '.[0] + [.[1][] | .record]' library.json <(jq -s . new-builds.ndjson) > library-live.json
-}
-
-# THE BUILDS OF THE WEAPONS A LIST OF BUILD IDS TOUCHES, into `$2`, and their
-# facts out of the files after it into `$2.facts` — or a failure when the list
-# names none.
-subset_of() {
-  node "$HERE/live_publish.mjs" subset "$WORK" "$@" >&2
-}
-
-# THE SITE'S BOARD: `scores` alone, stamped by `board_meta.py` and pushed to
-# R2, file by file as they move (`live_publish.mjs`). `$1` is a subset library.
-publish_verified() {
+# THE RANKER (`wfsim-board --serve`): every ruler's board held in memory and
+# moved a fact at a time, so a cycle costs the weapons it moved and never the
+# library. It starts from the files on disk, which hold everything it was ever
+# sent, so a ranker that stops — a reply other than `ok`, a crash, a deploy —
+# is started again from them on the next cycle and loses nothing.
+start_ranker() {
   mkdir -p pub/data
   [ -f pub/data/board_state.yaml ] || printf 'boards: {}\n' > pub/data/board_state.yaml
-  project_into verified facts-known.ndjson pub "${1:-}" || return 1
-  node "$HERE/board_heads.mjs" verified >&2 || return 1
-  python3 "$HERE/board_meta.py" verified pub/data/board_state.yaml verified/meta.json >&2
+  # THE LOG IS WHAT THIS RANKER REFUSED, said once a record: it starts afresh.
+  : > project.log
+  coproc RANKER { exec "$BIN/wfsim-board" --serve "$WORK/verified" --library "$WORK/library.json" \
+      --builds "$WORK/new-builds.ndjson" --facts-in "$WORK/facts-known.ndjson" \
+      --state "$WORK/pub/data/board_state.yaml" 2>> "$WORK/project.log"; }
+  ask "" || { stop_ranker; return 1; }
+}
+
+# ONE COMMAND, ONE LINE BACK. An empty command only reads (the `ready` line).
+ask() {
+  local reply
+  if [ -n "$1" ]; then
+    printf '%s\n' "$1" >&"${RANKER[1]}" || return 1
+  fi
+  IFS= read -r reply <&"${RANKER[0]}" || return 1
+  case "$reply" in
+    ok*) echo "live: ranker $reply" >&2 ;;
+    *) echo "live: the ranker answered: $reply" >&2; return 1 ;;
+  esac
+}
+
+ranker_alive() {
+  [ -n "${RANKER_PID:-}" ] && kill -0 "$RANKER_PID" 2>/dev/null
+}
+
+stop_ranker() {
+  if [ -n "${RANKER_PID:-}" ]; then
+    kill "$RANKER_PID" 2>/dev/null || true
+    wait "$RANKER_PID" 2>/dev/null || true
+  fi
+  RANKER_PID=""
+}
+
+# WHAT THE SITE READS BESIDE THE ROWS: each weapon's heads, and the stamp.
+stamp() {
+  node "$HERE/board_heads.mjs" verified >&2 \
+    && python3 "$HERE/board_meta.py" verified pub/data/board_state.yaml verified/meta.json >&2
 }
 
 # ONE CYCLE AND OUT takes its arrivals in line; a service runs the intake loop
@@ -165,68 +171,85 @@ start_intake() {
 }
 if [ "${ONCE:-}" != 1 ]; then
   start_intake
-  trap '[ -n "$INTAKE_PID" ] && kill "$INTAKE_PID" 2>/dev/null; db_cleanup' EXIT
+fi
+trap '[ -n "$INTAKE_PID" ] && kill "$INTAKE_PID" 2>/dev/null; [ -n "$FETCH_PID" ] && kill "$FETCH_PID" 2>/dev/null; stop_ranker; db_cleanup' EXIT
+
+# A FIRST START HAS NO STORE TO RANK FROM, and waits for one.
+if [ ! -s library.json ]; then
+  start_fetch
+  wait "$FETCH_PID" || true
+  FETCH_PID=""
+  if [ -f fresh.ready ]; then
+    swap_store
+    date +%s > fetch-at.txt
+  fi
 fi
 
-# THE HOUR IS COUNTED FROM THE END OF THE LAST WHOLE PASS, and kept on disk. A
-# whole pass takes about the hour: counted from its start, every cycle would be
-# a whole one and the subset path would never run. Every deploy restarts this
-# service, and a restart starts no whole pass the hour does not owe.
-WHOLE_AT="$WORK/whole-at.txt"
-last_refresh=$(cat "$WHOLE_AT" 2>/dev/null || echo 0)
-# WHAT IS OWED A RE-RANK survives a failed pass and a restart: it is emptied
-# only once the board has published it.
-touch verified-owed.txt
+# THE HOUR IS COUNTED FROM THE END OF THE LAST READ, kept on disk so a restart
+# — every deploy is one — starts no read the hour does not owe.
+last_fetch=$(cat fetch-at.txt 2>/dev/null || echo 0)
+stamp_owed=0
 while true; do
-  whole=0
-  now=$(date +%s)
-  if [ $((now - last_refresh)) -ge "$REFRESH_SECONDS" ] || [ ! -s library.json ]; then
-    if refresh_store; then
-      whole=1
-    else
-      echo "live: the store could not be read; keeping the last copy" >&2
-    fi
-  fi
   if [ "${ONCE:-}" = 1 ]; then
     intake_arrivals || true
   elif ! kill -0 "$INTAKE_PID" 2>/dev/null; then
     echo "live: the intake loop stopped; starting it again" >&2
     start_intake
   fi
+  reloaded=0
+  if [ -n "$FETCH_PID" ] && ! kill -0 "$FETCH_PID" 2>/dev/null; then
+    wait "$FETCH_PID" || true
+    FETCH_PID=""
+    if [ -f fresh.ready ]; then
+      swap_store
+      reloaded=1
+      last_fetch=$(date +%s)
+      echo "$last_fetch" > fetch-at.txt
+    else
+      echo "live: the store could not be read; keeping the last copy" >&2
+    fi
+  fi
+  if [ -z "$FETCH_PID" ] && [ $(( $(date +%s) - last_fetch )) -ge "$REFRESH_SECONDS" ]; then
+    start_fetch
+  fi
   take_arrivals
   # WHAT WAS VERIFIED SINCE THE LAST READ, without waiting for the hourly one.
+  moved=0
   if [ -s facts-known.ndjson ]; then
     code=0
     node "$HERE/live_publish.mjs" delta "$WORK" || code=$?
-    if [ "$code" = 0 ]; then
-      cat moved-ids.txt >> verified-owed.txt
+    [ "$code" = 0 ] && moved=1
+  fi
+  changed=0
+  if ! ranker_alive; then
+    if [ -s library.json ] && start_ranker; then
+      changed=1
+    else
+      echo "live: the ranker did not start; the last board stands" >&2
+    fi
+  elif [ "$reloaded" = 1 ]; then
+    # THE READ HOLDS EVERYTHING the cycle took in, so it is the whole message.
+    if ask "reload $WORK/library.json $WORK/new-builds.ndjson $WORK/facts-known.ndjson"; then
+      changed=1
+    else
+      stop_ranker
+    fi
+  elif [ -s arrived-now.ndjson ] || [ "$moved" = 1 ]; then
+    if { [ ! -s arrived-now.ndjson ] || ask "builds $WORK/arrived-now.ndjson"; } \
+      && { [ "$moved" = 0 ] || ask "facts $WORK/moved-facts.ndjson"; } \
+      && ask "publish"; then
+      changed=1
+    else
+      stop_ranker
     fi
   fi
-  if [ -s library.json ] && { [ "$whole" = 1 ] || [ -s verified-owed.txt ] || [ ! -d verified ]; }; then
-    library_live
-    # WHOLE ON THE HOUR AND ON A FIRST START; otherwise only the weapons the
-    # facts since the last publish touched. A list naming no weapon is spent.
-    if [ "$whole" = 1 ] || [ ! -d verified ]; then
-      if publish_verified; then
-        : > verified-owed.txt
-        # A WHOLE PASS THAT FAILED IS RUN AGAIN next cycle rather than an hour on.
-        if [ "$whole" = 1 ]; then
-          last_refresh=$(date +%s)
-          echo "$last_refresh" > "$WHOLE_AT"
-        fi
-      else
-        echo "live: the site's board did not publish; the last one stands" >&2
-      fi
+  # A STAMP THAT FAILED IS OWED until one lands.
+  [ "$changed" = 1 ] && stamp_owed=1
+  if [ "$stamp_owed" = 1 ]; then
+    if stamp; then
+      stamp_owed=0
     else
-      code=0
-      subset_of verified-owed.txt verified-subset.json facts-known.ndjson || code=$?
-      if [ "$code" = 3 ]; then
-        : > verified-owed.txt
-      elif [ "$code" = 0 ] && publish_verified verified-subset.json; then
-        : > verified-owed.txt
-      else
-        echo "live: the site's board did not publish; the last one stands" >&2
-      fi
+      echo "live: the board was not stamped; the next cycle stamps it" >&2
     fi
   fi
   # PUSHED EVERY CYCLE, and a file only when its bytes moved: a push the

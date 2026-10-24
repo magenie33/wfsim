@@ -181,6 +181,9 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
   check("a delta appends every row that moved and keeps what the file held",
     first.status === 0 && rows > 0 && grown.startsWith(old) && grown.split("\n").filter(Boolean).length === 1 + rows,
     `exit ${first.status}, ${grown.split("\n").filter(Boolean).length} line(s) for ${rows} row(s) ${first.stderr.slice(0, 300)}`);
+  const handed = text(join(live, "moved-facts.ndjson"));
+  check("...and hands the ranker exactly those rows", handed === grown.slice(old.length),
+    `${handed.split(String.fromCharCode(10)).filter(Boolean).length} line(s) handed for ${rows} row(s)`);
   const again = await publish("delta", live);
   check("...and the next, with nothing new, moves nothing", again.status === 3 && readFileSync(facts, "utf8") === grown,
     `exit ${again.status} ${again.stderr.slice(0, 300)}`);
@@ -192,17 +195,6 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
   check("a store read whole moves the cursor to its newest row",
     moved.status === 0 && readFileSync(join(live, "facts-cursor.txt"), "utf8").trim() === newest,
     `${readFileSync(join(live, "facts-cursor.txt"), "utf8").trim()} for ${newest} ${moved.stderr.slice(0, 300)}`);
-  const waiting = { identity: "b1", ruler: "no_fact_yet", mode: "base", score: 2 };
-  writeFileSync(join(live, "more.ndjson"), `${JSON.stringify(waiting)}\n`);
-  writeFileSync(join(live, "library-ids.ndjson"), `${JSON.stringify({ k: "b1", v: { weapon: "torid" } })}\n`);
-  writeFileSync(join(live, "library-live.json"), JSON.stringify([{ id: "b1", weapon: "torid" }, { id: "b9", weapon: "braton" }]));
-  writeFileSync(join(live, "ids.txt"), "b1\n");
-  const cut = await publish("subset", live, join(live, "ids.txt"), join(live, "sub.json"), facts, join(live, "more.ndjson"));
-  const cutFacts = text(join(live, "sub.json.facts")).split("\n").filter(Boolean).map((l) => JSON.parse(l));
-  check("a subset holds its weapon's builds and their facts from every file it is given",
-    cut.status === 0 && JSON.parse(text(join(live, "sub.json")) || "[]").length === 1
-      && cutFacts.length > 1 && cutFacts.every((f) => f.identity === "b1") && cutFacts.some((f) => f.ruler === "no_fact_yet"),
-    `exit ${cut.status} ${cut.stderr.slice(0, 300)}`);
 }
 // NOTHING A SCRIPT MADE OUTLIVES IT (scripts/db.sh `DB_TMP`): the live board
 // runs them all day on a server whose /tmp is memory.

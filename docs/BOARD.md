@@ -233,7 +233,7 @@ including the empty ones, because a 404 and an empty list are the same thing to
 | `queue.yml` | the clock, once at 16:00 UTC | …and the weapons that have gone LONGEST are asked for again | the same runner |
 | `scores.yml` | the clock, hourly at `:30` | what is asked for is MEASURED | as many shards as the work needs |
 | `publish.yml` | the clock, once a day | `scores` is ranked into the `site/board` SNAPSHOT, which the site does not read | one runner, seconds |
-| `live_board.sh` | every 20 s, on the board server | `scores` is ranked into the LIVE board in R2, which the site reads | two cores: minutes for the weapons a cycle moved, about an hour for a whole pass |
+| `live_board.sh` | every 20 s, on the board server | `scores` is ranked into the LIVE board in R2, which the site reads | two cores: seconds for the weapons a cycle moved; minutes to start, deriving the library once |
 
 **EVERY ONE OF THEM IS ALSO A BUTTON, AND IT IS THE SAME RUN.** None takes an
 input, so a hand-started run and a scheduled one differ in nothing at all.
@@ -470,13 +470,33 @@ runs — 36 minutes at the current twelve. That ceiling is reachable only when
 every ruler has a full deadline of work; the median shard finishes in 17 minutes
 because it runs out of rows first.
 
-### Publish assembles; it does not fight
+### The assembly
 
-`--project` is the guarantee rather than the habit. The publish pass groups what
-is known, ranks it and writes the files — **measured at one to two seconds**
-against a board of 7,659 rows — and never simulates. A row
-nobody has banked is absent from this board and lands on the next one, which is
-the convergence rule applied to the assembly.
+**PUBLISH ASSEMBLES; IT DOES NOT FIGHT.** `wfsim-board --project <dir>` writes
+every ruler's board in one pass (`cli/src/board/assemble.rs`); `--serve` is the
+same assembly held in memory for the live board (§"The live board"). A row is
+published from its fact and from nothing else, and a row nobody has banked is
+absent from this board and lands on the next one, which is the convergence rule
+applied to the assembly.
+
+**A BUILD IS READ ONCE, NOT ONCE PER RULER.** The door's legal half
+(`board_rows::board_build`) is the same for every ruler and is most of what the
+door costs; each record goes through it once, and each ruler adds only its own
+admission (`board_rows::admitted`, `admit_for_board`).
+
+**A WEAPON IS RANKED ALONE.** Its rows under one ruler are ranked, cut to one
+per riven shape and to the entry line, and accounted for, with no other
+weapon's rows in sight — so re-ranking only the weapons a fact moved writes the
+same files as assembling everything, which
+`a_board_moved_a_fact_at_a_time_is_the_board_from_scratch` holds it to. A
+weapon's file in a directory (the base board, or a scene's) holds the rows of
+every ruler of that directory, in roster order, and the directory's index holds
+each group's leader. A weapon with no row has no file.
+
+**A DIRECTORY OPENED WITH FILES IN IT** (the committed snapshot) keeps the rows
+no live ruler rewrites: a row of a ruler writing that directory is replaced, by
+family, so a `_vN` row goes with it; a retired ruler's row is dropped, or
+nothing could ever clear it; a row it cannot read is kept, and so is its file.
 
 WHAT IT BUYS is that a shard falling over costs a row rather than an hour. A
 merge that picks up whatever the fan-out missed does it alone and unsharded,
@@ -585,8 +605,8 @@ current and writes its numbers on top.
 **WHAT THE SITE SHOWS IS `scores`, RANKED THE MOMENT IT MOVES.** Every 20 s
 `scripts/live_board.sh` on the board server reads the rows `scores` gained
 (`live_publish.mjs delta` — a verification, the scorer, the server's own
-settling), ranks them with `wfsim-board --project`, stamps the result with
-`board_meta.py` and pushes the files that changed through
+settling), hands them to the ranker, stamps the result with `board_meta.py`
+and pushes the files that changed through
 `PUT /api/board/live/<file>` (bearer `BOARD_PUSH_TOKEN`), the stamp last, into
 the bucket `wfsim-public` under their public paths, each kept thirty seconds.
 
@@ -599,15 +619,30 @@ names that address — a desktop shell in the field, the bots, the MCP server,
 the relay. Everything in that bucket is public, so nothing private is ever
 written to it.
 
-**A CYCLE RE-RANKS THE WEAPONS IT MOVED** (`wfsim-board --subset`): the builds
-of every weapon whose facts or claims changed, against the board as it stands.
-Measured on the whole store, a subset pass writes exactly the files a whole pass
-does, in a quarter of the time; the hourly read still ranks everything, an
-hour after the last whole pass FINISHED — a whole pass takes about the hour, so
-counted from its start no cycle would ever be a subset one. What is owed a
-re-rank (`verified-owed.txt`) and when the last whole pass ended
-(`whole-at.txt`) are kept on disk, so a restart — every deploy is one — neither
-drops a fact nor starts a whole pass the hour does not owe.
+**THE RANKER HOLDS THE BOARD; A CYCLE COSTS WHAT IT MOVED.** `wfsim-board
+--serve` (§"The assembly") reads the library and every fact once when it
+starts, writes the whole board, and then takes one command a line on stdin:
+the builds the cycle took in, the facts it read, `publish`. A publish re-ranks
+only the (ruler, weapon) pairs those moved and writes only the files whose
+bytes changed, so a cycle's cost follows the facts that arrived and never the
+size of the library. A new build moves a row only once it has a fact.
+
+**EVERYTHING IT WAS SENT IS ON DISK** (`library.json`, `new-builds.ndjson`,
+`facts-known.ndjson`), so a ranker that stops — a reply other than `ok`, a
+crash, a deploy — is started again from them on the next cycle and loses
+nothing.
+
+**THE HOURLY READ OF THE STORE RUNS BESIDE THE BOARD**, not in front of it: the
+read takes most of an hour, into spares, and once both are whole the ranker
+rebuilds from them (`reload`), which is how a row `scores` lost leaves the
+board. The hour is counted from the end of the last read (`fetch-at.txt`), so a
+restart starts no read the hour does not owe.
+
+**A STALLED BOARD IS ASKED ABOUT EVERY HOUR, off the board server**
+(`board-age.yml`, `scripts/check_board_age.py`). The ranker stamps every ruler
+on each publish and each read of the store, so the newest
+`scored_at_epoch_seconds` in the public stamp older than four hours means the
+board stopped reaching readers, and the run fails, which mails the owner.
 
 **UNVERIFIED NUMBERS NEVER REACH IT.** A client result is on no board until it
 is a fact (§"Compute orders").
@@ -2689,7 +2724,7 @@ never having started it.
 
 **PUBLISH — a projection, and it depends on no run.** One read of the facts,
 rank, keep everything within half of each group's own leader, write
-`site/board/<weapon>.json` and the index beside it, commit. It can run at any
+`site/board/<weapon>.json` and the index beside it, commit (§"The assembly"). It can run at any
 moment, needs nothing from any scoring run, and CANNOT DESTROY ANYTHING because
 the only thing it reads that it also writes is a weapon's own carried rows.
 
