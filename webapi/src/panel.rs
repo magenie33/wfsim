@@ -2140,7 +2140,8 @@ mod weakpoint_panel_tests {
             "the plain crit chance is the weapon's, not the weak-point one"
         );
         let wp = row(direct, "weakpoint_cc").expect("a weak-point crit row exists");
-        assert_eq!(wp["final"], json!("126.0% on a weak point"));
+        // 28% x (1 + 3.498): Acuity is 0.318 a rank (notes: package_rank_value).
+        assert_eq!(wp["final"], json!("125.9% on a weak point"));
         assert!(row(direct, "weakpoint_damage").is_some(), "and the damage half is stated");
     }
 
