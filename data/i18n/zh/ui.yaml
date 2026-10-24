@@ -945,10 +945,10 @@ ui:
   "Standard Single Target · Thrax Centurion Lv 1000 Icebind · 180 s · KPM": 标准单体 · 凶魂百夫长 1000 级 Icebind · 180 秒 · KPM
   "Standard Single Target · Thrax Centurion Lv 500 Archimedea · 180 s · KPM": 标准单体 · 凶魂百夫长 500 级 Archimedea · 180 秒 · KPM
   "Standard Single Target · Thrax Centurion Lv 200 SP · 180 s · KPM": 标准单体 · 凶魂百夫长 200 钢铁 · 180 秒 · KPM
-  "Standard means this fight is claimed to represent most play, not that it is the fight you play: one tough, unaffiliated target, and a build that beats it transfers.": 「标准」是说这场战斗被判断为能代表大多数情况，不是说你平时就在打它：一个耐打、不属于任何派系的目标，打得赢它的配装能迁移到别处。
+  "Standard means one set of conditions for every build: one tough, unaffiliated target, the same fight and the same rules, so a number reproduces on any machine and any two builds compare directly. Your own conditions are set in the simulator.": 「标准」指所有配装共用一套条件：同一个耐打、不属于任何派系的目标，同一场战斗，同一套规则。所以同一套配装在任何机器上都是同一个数，任意两套配装可以直接比较。你自己的条件在模拟器里设置。
   "The target is a Thrax Centurion because a build that beats it transfers: it belongs to no faction, so no faction mod and no faction bonus reads on it; it carries Overguard, which most Warframe abilities cannot take off, so the weapon has to; it is armoured and tanky; it is immune to no element, so every proc lands; its weak points are the ordinary ones, 3x on the head and 1x elsewhere.": 选凶魂百夫长做目标，是因为打得赢它的配装能迁移：它不属于任何派系，派系 MOD 和派系加成都对它无效；它带超宏防护，大多数战甲技能扒不掉，只能靠武器；它有护甲，够肉；它不免疫任何元素，各种触发都能正常吃到；它的弱点分布是常见的，头部 3 倍、其他部位 1 倍。
   "Its flaws are stated rather than hidden: it carries no shield, its Overguard may sit high, and the spectral form it enters on death is switched off here.": 它的缺点也写在这里，不藏着：它没有护盾，超宏防护可能偏高，死后的灵体形态在这里是关掉的。
-  "Standard means this fight is claimed to represent most play, not that it is the fight you play: a crowd of tough, unaffiliated targets, packed as close as every elemental area effect still reaches and no larger than holds them whole.": 「标准」是说这场战斗被判断为能代表大多数情况，不是说你平时就在打它：一群耐打、不属于任何派系的目标，站得刚好让每种元素范围效果都能打到邻居，方阵大小刚好装下它们。
+  "Standard means one set of conditions for every build: a crowd of tough, unaffiliated targets, packed as close as every elemental area effect still reaches and no larger than holds them whole, the same fight and the same rules, so a number reproduces on any machine and any two builds compare directly. Your own conditions are set in the simulator.": 「标准」指所有配装共用一套条件：一群耐打、不属于任何派系的目标，站得刚好让每种元素范围效果都能打到邻居，方阵大小刚好装下它们；同一场战斗，同一套规则。所以同一套配装在任何机器上都是同一个数，任意两套配装可以直接比较。你自己的条件在模拟器里设置。
   "The spacing decides whether splash or single-target damage wins: 3 m is where that ordering matches play, and it is the widest whole metre at which Electricity still reaches a neighbour.": 决定溅射还是单体胜出的是间隔：3 米时这个排序和实战一致，也是电还能打到相邻敌人的最大整米间隔。
   "One specific fight players run, measured as it is rather than as a stand-in for most play: a Demolisher a full squad meets, taken apart by one weapon.": 这是玩家实际会打的一场具体战斗，按它本来的样子来测，不代表大多数情况：一整支小队面对的爆破使，由一把武器单独拆掉。
   "One specific fight players run, measured as it is rather than as a stand-in for most play: the Eximus Corrupted Heavy Gunner of the Void Fissures, taken apart by one weapon.": 这是玩家实际会打的一场具体战斗，按它本来的样子来测，不代表大多数情况：虚空裂缝里的卓越者堕落重型机枪手，由一把武器单独拆掉。
@@ -1037,7 +1037,7 @@ ui:
   "Weapons": 武器
   "What each mode is": 每种输出方式分别是什么
   "Only the build is sent: the weapon and its mods, evolutions and arcanes. Not your fight, and nothing about you: no account and no score. The board takes builds with every main slot filled.": "只发送配装：武器及其 MOD、进化和赋能。不含场景，也不含任何关于你的信息：没有账号，没有分数。榜单只收主槽位全部装满的配装。"
-  "What this benchmark measures": 这个基准到底在量什么
+  "What this benchmark measures": 这个基准测的是什么
   "What would be sent: the weapon and its mods, evolutions and arcanes. Nothing else — no account, no identifier, no names you chose, and no score (the board measures builds itself).": 会发送的内容：武器，以及它的 MOD、进化和赋能。仅此而已 —— 没有账号，没有任何标识，没有你起的任何名字，也不含分数（榜单自己测量配装）。
   "Where the damage went": 伤害落在哪里
   "Which means no Incarnon, for all but one weapon: eight of the nine Incarnon forms charge their gauge on weak-point hits, so at this rate they never fill it. The Torid charges on direct hits and still cycles.": 这也意味着除一把之外都进不了灵化：九个灵化形态里有八个靠弱点命中充能，在这个爆头率下永远填不满。托里德靠直接命中充能，照常循环。

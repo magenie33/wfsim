@@ -43,9 +43,9 @@ primary: true
 # terms. Truncation therefore eats the least identifying part.
 name: "Standard Single Target · Thrax Centurion {scene} · 180 s · KPM"
 
-# WHAT "STANDARD" CLAIMS, and it is a judgement rather than a fact — which is
-# exactly why it is written down where it can be argued with.
-standard: "Standard means this fight is claimed to represent most play, not that it is the fight you play: one tough, unaffiliated target, and a build that beats it transfers."
+# WHAT "STANDARD" MEANS: one set of conditions every build is measured under,
+# stated as a definition.
+standard: "Standard means one set of conditions for every build: one tough, unaffiliated target, the same fight and the same rules, so a number reproduces on any machine and any two builds compare directly. Your own conditions are set in the simulator."
 
 # NO VERSION NUMBER. There is one board, it is regenerated
 # whole whenever this file or the engine changes, and what is deployed is always

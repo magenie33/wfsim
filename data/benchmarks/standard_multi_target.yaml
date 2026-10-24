@@ -17,10 +17,10 @@ id: standard_multi_target
 
 name: "Standard Multi Target · 5x5 at 3 m · Thrax Centurion {scene} · 180 s · KPM"
 
-# WHAT "STANDARD" CLAIMS, and it is a judgement rather than a fact — which is
-# exactly why it is written down where it can be argued with. The target half
-# is the same claim its companion makes; the spacing is this ruler's own.
-standard: "Standard means this fight is claimed to represent most play, not that it is the fight you play: a crowd of tough, unaffiliated targets, packed as close as every elemental area effect still reaches and no larger than holds them whole."
+# WHAT "STANDARD" MEANS: one set of conditions every build is measured under,
+# stated as a definition. The target half is its companion's; the spacing is
+# this ruler's own.
+standard: "Standard means one set of conditions for every build: a crowd of tough, unaffiliated targets, packed as close as every elemental area effect still reaches and no larger than holds them whole, the same fight and the same rules, so a number reproduces on any machine and any two builds compare directly. Your own conditions are set in the simulator."
 
 rules:
   - "The target is a formation of 25 Thrax Centurions {scene}, a 5 by 5 grid spaced 3 metres centre to centre: the smallest odd square that holds every elemental area effect around the aimed body whole, a fully grown 6 m Gas cloud included. The fight lasts 180 seconds."
