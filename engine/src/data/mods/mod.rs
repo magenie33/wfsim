@@ -15,7 +15,7 @@
 //! so a not-yet-modeled special effect never silently drops the whole mod.
 
 use std::collections::BTreeMap;
-use std::sync::{Mutex, OnceLock};
+use std::sync::OnceLock;
 
 use serde::Deserialize;
 use serde_norway::Value;

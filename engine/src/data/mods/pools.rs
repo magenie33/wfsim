@@ -28,12 +28,13 @@ pub fn classes() -> Vec<&'static str> {
 /// The mod pool of one class — `data/mods/<class>/*.yaml`. Cached per class
 /// (each entry leaks its id/family strings once); cloned so callers own it.
 pub fn class_pool(class: &str) -> Vec<ModDef> {
-    static POOLS: OnceLock<Mutex<BTreeMap<String, &'static [ModDef]>>> = OnceLock::new();
-    let cache = POOLS.get_or_init(|| Mutex::new(BTreeMap::new()));
-    let mut g = cache.lock().expect("mod pool cache");
-    g.entry(class.to_string())
-        .or_insert_with(|| Box::leak(load_class(class).into_boxed_slice()))
-        .to_vec()
+    class_cards(class).to_vec()
+}
+
+/// [`class_pool`], as the cache holds it.
+fn class_cards(class: &str) -> &'static [ModDef] {
+    static POOLS: crate::data::Memo<[ModDef]> = crate::data::Memo::new();
+    POOLS.get_or(class, || Box::leak(load_class(class).into_boxed_slice()))
 }
 
 /// A CARD BELOW ITS MAX RANK IS AN ID OF ITS OWN: `<card>@<rank>`.
@@ -174,15 +175,15 @@ pub struct NamedPool {
 impl NamedPool {
     /// The card `id` names: the first of that id in [`NamedPool::iter`] order.
     pub fn get(&self, id: &str) -> Option<&ModDef> {
-        match self.base.by_id.get(id) {
-            Some(&i) => Some(self.changed.iter().find(|(j, _)| *j == i).map_or(&self.base.mods[i], |(_, m)| m)),
+        match self.base.place(id) {
+            Some(i) => Some(self.changed.iter().find(|(j, _)| *j == i).map_or(self.base.mods[i], |(_, m)| m)),
             None => self.added.iter().find(|m| m.id == id),
         }
     }
 
     fn get_mut(&mut self, id: &str) -> Option<&mut ModDef> {
-        match self.base.by_id.get(id) {
-            Some(&i) => {
+        match self.base.place(id) {
+            Some(i) => {
                 if !self.changed.iter().any(|(j, _)| *j == i) {
                     self.changed.push((i, self.base.mods[i].clone()));
                 }
@@ -194,7 +195,7 @@ impl NamedPool {
 
     pub fn iter(&self) -> impl Iterator<Item = &ModDef> {
         (0..self.base.mods.len())
-            .map(|i| self.changed.iter().find(|(j, _)| *j == i).map_or(&self.base.mods[i], |(_, m)| m))
+            .map(|i| self.changed.iter().find(|(j, _)| *j == i).map_or(self.base.mods[i], |(_, m)| m))
             .chain(self.added.iter())
     }
 
@@ -221,10 +222,20 @@ impl NamedPool {
     }
 }
 
-/// A pool built once, with its cards indexed by id (the first of each id).
+/// A pool built once: one card an id, in id order ([`pool_union`] sorts and
+/// the equip rules only filter), so a card is found by its id's place.
+///
+/// IT HOLDS THE CLASS CACHES' CARDS, NOT COPIES, and no index beside them: a
+/// compute lane keeps every pool it ever built for life (docs/WASM.md
+/// §"Memory").
 pub struct CachedPool {
-    mods: Box<[ModDef]>,
-    by_id: std::collections::HashMap<&'static str, usize>,
+    mods: Box<[&'static ModDef]>,
+}
+
+impl CachedPool {
+    fn place(&self, id: &str) -> Option<usize> {
+        self.mods.binary_search_by(|m| m.id.cmp(id)).ok()
+    }
 }
 
 /// [`pool_for_build`]'s answer, built once per (weapon, evolutions) and kept:
@@ -238,11 +249,8 @@ pub fn pool_cached(weapon_id: &str, evolutions: &[&str]) -> &'static CachedPool 
         return p;
     }
     let mods = build_pool(weapon_id, evolutions).into_boxed_slice();
-    let mut by_id = std::collections::HashMap::new();
-    for (i, m) in mods.iter().enumerate() {
-        by_id.entry(m.id).or_insert(i);
-    }
-    let built: &'static CachedPool = Box::leak(Box::new(CachedPool { mods, by_id }));
+    debug_assert!(mods.windows(2).all(|w| w[0].id < w[1].id), "{weapon_id}'s pool is one card an id, in id order");
+    let built: &'static CachedPool = Box::leak(Box::new(CachedPool { mods }));
     pools.write().expect("mod pools").entry(key).or_insert(built)
 }
 
@@ -255,10 +263,16 @@ pub fn pool_cached(weapon_id: &str, evolutions: &[&str]) -> &'static CachedPool 
 /// it. Collapsing that into a single directory per weapon was right only
 /// while every rifle-class weapon in the roster was a launcher.
 pub fn pool_union(pools: &[String]) -> Vec<ModDef> {
-    let mut out: Vec<ModDef> = Vec::new();
+    union_cards(pools).into_iter().cloned().collect()
+}
+
+/// [`pool_union`], as cards in the class caches rather than copies of them.
+fn union_cards(pools: &[String]) -> Vec<&'static ModDef> {
+    let mut out: Vec<&'static ModDef> = Vec::new();
+    let mut seen: std::collections::HashSet<&'static str> = std::collections::HashSet::new();
     for p in pools {
-        for m in class_pool(p) {
-            if !out.iter().any(|x| x.id == m.id) {
+        for m in class_cards(p) {
+            if seen.insert(m.id) {
                 out.push(m);
             }
         }
@@ -347,10 +361,10 @@ pub(super) fn triggers_of(weapon_id: &str, evolutions: &[&str]) -> Vec<&'static 
 /// `evolutions` empty is the weapon as it comes out of the box — which is what
 /// [`pool_for_weapon`] means and why it is this function with nothing installed.
 pub fn pool_for_build(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
-    pool_cached(weapon_id, evolutions).mods.to_vec()
+    pool_cached(weapon_id, evolutions).mods.iter().map(|m| (*m).clone()).collect()
 }
 
-fn build_pool(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
+fn build_pool(weapon_id: &str, evolutions: &[&str]) -> Vec<&'static ModDef> {
     let Some(spec) = crate::data::weapons::spec(weapon_id) else {
         return Vec::new();
     };
@@ -387,7 +401,7 @@ fn build_pool(weapon_id: &str, evolutions: &[&str]) -> Vec<ModDef> {
     // THE POOL IS THE WEAPON'S, whatever entry was named — `weapon_of`. A form
     // states no `mod_pools` of its own, and an empty pool is indistinguishable
     // from a weapon that refuses everything.
-    pool_union(&weapon.mod_pools)
+    union_cards(&weapon.mod_pools)
         .into_iter()
         .filter(|m| match m.requires_weapon {
             None => true,
