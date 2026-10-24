@@ -250,8 +250,8 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   check("...a score finished after its base counted on it", (await tallyOf(env, base, now)).totals.volunteers === 14);
   await L.run("DELETE FROM scores WHERE identity = 't-new'");
   // WHAT A FACT COSTS over the day: a board row's two witnesses fought 1 s each
-  // and a riven search's 30 s each; two searches are open, and the four rows the
-  // queue owes beside the refresh. 4 x 2 s + 2 x 60 s of work, and the volunteers
+  // and a riven search's 30 s each; two searches are open, and the five rows the
+  // queue owes with the refresh. 5 x 2 s + 2 x 60 s of work, and the volunteers
   // answered 372 s in the pace window's whole hours. The hour under way is not
   // one of them.
   await L.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, fact_at) VALUES
@@ -271,8 +271,23 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   check("the demand counts owed rows by why, one row once, the pace window's scores per hour by who, and riven gains of the last day",
     JSON.stringify([d.owed, d.per_hour, d.riven_gains]) === JSON.stringify([{ new_builds: 1, rescores: 2, sweeps: 1, refreshes: 1 }, { volunteers: paced(12), official: paced(6) }, 1]),
     JSON.stringify(d));
-  check("hours to clear are the open work's compute over the compute answered per hour, a refresh left out",
-    Math.abs(d.clear_hours - 128 / (372 / PACE_HOURS)) < 1e-9, String(d.clear_hours));
+  check("hours to clear are the open work's compute over the compute answered per hour, the refresh's row too",
+    Math.abs(d.clear_hours - 130 / (372 / PACE_HOURS)) < 1e-9, String(d.clear_hours));
+  check("...over the facts formed since the first answer the day's read reaches: one answer read, no fact since, no price",
+    (await demandOf({ LIBRARY: L }, now, 1)).clear_hours === null);
+  // THE ORDERS AS ONE LIST: each kind's rows, and those a device has taken —
+  // r1's question leased once, by the kind its rows count as, a rescore's.
+  await L.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, leased_at) VALUES ('qr1', 'simulate', '{}', 'open', 'x', 'x', ?),
+    ('qs1', 'simulate', '{}', 'open', 'x', 'x', NULL)`, ago(60_000));
+  await L.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, payload) VALUES
+    ('sweep', 'r1|heavy_gunner|base', 'qr1', 'live', 'x', 'x', '{"batch":"rescore-x"}'), ('sweep', 's1|heavy_gunner|base', 'qs1', 'live', 'x', 'x', '{"batch":"arrivals-2026-03-01"}')`);
+  const listed = (await demandOf({ LIBRARY: L }, now)).orders;
+  check("the orders are a list a kind a row, each with what a device has taken of it",
+    JSON.stringify(listed) === JSON.stringify([{ kind: "rescore", total: 2, dispatched: 1 }, { kind: "sweep", total: 1, dispatched: 0 },
+      { kind: "new_build", total: 1, dispatched: 0 }, { kind: "refresh", total: 1, dispatched: 0 }, { kind: "riven_gain", total: 1, dispatched: 0 }]),
+    JSON.stringify(listed));
+  await L.run("DELETE FROM demands WHERE question IN ('qr1', 'qs1')");
+  await L.run("DELETE FROM questions WHERE id IN ('qr1', 'qs1')");
   await L.run("UPDATE questions SET fact_at = NULL WHERE id = 'fo'");
   // Kept, a price is a number although a verb has since no fact; the hour may turn meanwhile.
   check("...the day's price kept ten minutes, priced again after", (await demandOf(kept, now + 60_000)).clear_hours > 0

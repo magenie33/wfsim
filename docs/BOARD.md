@@ -1398,27 +1398,40 @@ see two.
 
 ```text
 { ok, v: 1, at, computing, owed: { new_builds, rescores, sweeps, refreshes },
-  riven_gains, surveys: [{ weapon, ruler, shapes, agreed, started, clear_hours }],
+  riven_gains, orders: [{ kind, total, dispatched }],
+  surveys: [{ weapon, ruler, shapes, agreed, started, clear_hours }],
   per_hour: { volunteers, official }, clear_hours }
 ```
 
+**THE TOTAL IS EVERY ORDER THERE IS NOW.** The page heads the picture with
+it, said as what is dispatched and what waits on the server: an order
+withdrawn leaves it, one the system asks for joins it, and nothing else moves
+it. The countdown under it is that total's.
+
 - `owed`: the queue's rows by why, a row in two batches counted once as the
   first of a new build's, a rescore's, a sweep's, a refresh's.
+- `orders`: the same counts as one list, a kind a row (`ORDER_KINDS`:
+  `rescore`, `sweep`, `new_build`, `refresh`, then `riven_gain`), a kind
+  with nothing owed left out. `dispatched` is how many of its rows a device
+  has taken — its question leased, by a volunteer or an official machine, now
+  or before — and a riven gain's once begun; the rest wait on the server. A new
+  kind is added to the list and named on the page (`ORDER_KIND_NAMES`); a
+  page that does not know it shows it by its id.
 - `per_hour`: scores written over the last 24 hours, per hour, by who
   computed them. One hour swings five-fold between two quiet ones and a
   stopped hour reads as never; anything under a day reads the time of day,
   since who is online follows the clock round the world.
 - `clear_hours`: the open work priced in compute. Each verb's work (the
-  queue's rows but the refreshes for `simulate`, its open questions for any
-  other) times what one of its facts cost over the last day — every
-  volunteer answer's fight over the facts formed, so the usual rechecks and
-  losses are in the price — over the compute the volunteers answered per hour
+  queue's rows for `simulate`, its open questions for any other) times what
+  one of its facts cost over the last day — every volunteer answer's fight
+  over the facts formed since the first answer the read reaches, so the usual
+  rechecks and losses are in the price and a day of more answers than the read
+  takes is priced over the hours it covered — over the compute the volunteers answered per hour
   in the last six whole hours (`verifier_hours`). A day, because a few hours
   of one bad release would price every row at what that release wasted; the
   compute, because it holds within a fifth hour to hour while rows per hour
-  swing from nothing to thousands as the work moves between verbs. A refresh
-  comes back every three days and never clears. Null where a verb with work
-  formed no fact that day.
+  swing from nothing to thousands as the work moves between verbs. Null where
+  a verb with work formed no fact that day.
 - a survey's `clear_hours`: its shapes left over its shapes agreed per hour
   in the last 24 hours; null when none were.
 
