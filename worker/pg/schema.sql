@@ -163,6 +163,13 @@ CREATE INDEX IF NOT EXISTS questions_open_verb ON questions (verb) WHERE state =
 -- THE WITHDRAWN PAST THE WINDOW (worker/pg/sync.sql `factory_forget_past`):
 -- the window's whole withdrawn read row by row every minute, without it.
 CREATE INDEX IF NOT EXISTS questions_withdrawn_at ON questions (opened_at) WHERE state = 'withdrawn';
+-- ITS STATISTICS FOLLOW THE OPEN ROWS, by a count of changes and not a share
+-- of the table: the default re-reads them once a tenth of it has changed, and
+-- a queue that drained and then opened 128k rows was planned as one open row —
+-- each pack's candidate joined to a walk of questions_open_verb, 28 s a pick,
+-- every sync queued behind it and the volunteers handed nothing. Analysed, the
+-- same pick took 22 ms. Measured at about 3,000 changes a minute.
+ALTER TABLE questions SET (autovacuum_analyze_scale_factor = 0, autovacuum_analyze_threshold = 50000);
 
 CREATE TABLE IF NOT EXISTS demands (
   producer  TEXT COLLATE "C" NOT NULL,
