@@ -125,13 +125,17 @@ pub struct QuickFailure {
     pub why: &'static str,
 }
 
-/// Where one start is: filling or sweeping (which round), and at which of how
-/// many positions — what the page shows while a descent runs, since how many
-/// rounds it takes is found by taking them.
+/// Where one start is: which of its descents (the fill both ways), filling or
+/// sweeping (which round of that descent), and at which of how many positions —
+/// what the page shows while a descent runs, since how many rounds it takes is
+/// found by taking them. Settled = its last descent settled.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct StartProgress {
     pub settled: bool,
-    /// 0 = filling; n = the n-th sweep.
+    /// 1-based, of `passes`: a start whose fill reads the same either way has one.
+    pub pass: u32,
+    pub passes: u32,
+    /// 0 = filling; n = the n-th sweep of this descent.
     pub round: u32,
     pub at: usize,
     pub of: usize,
@@ -344,7 +348,7 @@ impl<S: QuickSpace> Run<'_, S> {
         let empty = self.space.empty(&cur);
         let fill = self.fill_of(start, shape_last);
         self.sweeping = false;
-        self.now = StartProgress { settled: false, round: 0, at: 0, of: fill.len() };
+        self.now = StartProgress { settled: false, round: 0, at: 0, of: fill.len(), ..StartProgress::default() };
         for (k, p) in fill.into_iter().enumerate() {
             self.now.at = k;
             let Some(found) = self.best(self.space.candidates(&cur, p), p) else {
@@ -385,7 +389,7 @@ impl<S: QuickSpace> Run<'_, S> {
                 self.space.positions(&cur).into_iter().filter(|p| !fixed(p)).collect();
             let coupled: Vec<Position> = self.space.coupled(&cur).into_iter().filter(|p| !fixed(p)).collect();
             let of = positions.len() + usize::from(coupled.len() > 1);
-            self.now = StartProgress { settled: false, round: self.now.round + 1, at: 0, of };
+            self.now = StartProgress { settled: false, round: self.now.round + 1, at: 0, of, ..self.now };
             for (k, &p) in positions.iter().enumerate() {
                 self.now.at = k;
                 match self.best(self.space.candidates(&cur, p), p) {
@@ -487,11 +491,12 @@ pub fn quick_descent<S: QuickSpace>(
         // board's own #1. A start whose fill reads the same either way is
         // descended once.
         let ways: &[bool] = if run.fill_of(start, false) == run.fill_of(start, true) { &[false] } else { &[false, true] };
+        let passes = ways.len() as u32;
         let mut lane = StartProgress::default();
-        for &shape_last in ways {
+        for (k, &shape_last) in ways.iter().enumerate() {
             run.free.clear();
             let out = run.descend(start, shape_last);
-            lane = StartProgress { settled: out.is_err() || run.now.settled, round: lane.round + run.now.round, ..run.now };
+            lane = StartProgress { settled: out.is_err() || run.now.settled, pass: k as u32 + 1, passes, ..run.now };
             match out {
                 Err(why) => {
                     if !failures.iter().any(|f: &QuickFailure| f.start == i) {
@@ -670,10 +675,15 @@ mod tests {
         assert_eq!(answers[0].build, [Some(1), Some(2)], "the shape chosen for its card");
         assert_eq!(answers[0].starts, vec![0], "both fills are one start");
         assert_eq!(progress.len(), 1, "…and one lane");
+        // …which says which descent it is on, its round counted within that one.
+        let p = progress[0];
+        assert_eq!((p.settled, p.pass, p.passes), (true, 2, 2), "{p:?}");
+        assert!(p.round <= 2, "the second descent's rounds alone: {p:?}");
         // A START WITH NOTHING TO FILL is descended once: the same answer, no twin.
         let named = vec![QuickStart { build: [Some(0), Some(0)], fixed: vec![], unnamed: vec![] }];
-        let QuickRun { answers, .. } = quick_descent(&ShapeAndCard, &named, &cfg);
+        let QuickRun { answers, progress, .. } = quick_descent(&ShapeAndCard, &named, &cfg);
         assert_eq!(answers.len(), 1);
+        assert_eq!((progress[0].pass, progress[0].passes), (1, 1));
     }
 
     /// TWO SHAPES THAT PAY ONLY TOGETHER: from (0, 0) = 5 either change alone is

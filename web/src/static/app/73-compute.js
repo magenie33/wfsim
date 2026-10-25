@@ -543,13 +543,13 @@ function computeLanes(box, starts) {
   if (box.children.length !== starts.length) box.innerHTML = starts.map(() => `<div class="rt-lane"><span></span><i><b></b></i></div>`).join("");
   starts.forEach((s, i) => {
     const el = box.children[i];
-    const text = `${tr("start")} ${i + 1} · ${s.settled ? tr("settled")
-      : s.round === 0 ? tr("filling {k} of {n}").replace("{k}", s.at + 1).replace("{n}", s.of)
-      : tr("round {r}, position {k} of {n}").replace("{r}", s.round).replace("{k}", s.at + 1).replace("{n}", s.of)}`;
+    const text = `${tr("start")} ${i + 1} · ${optLaneText(s)}`;
     const label = el.querySelector("span");
     if (label.textContent !== text) label.textContent = text;
     el.classList.toggle("settled", !!s.settled);
-    el.querySelector("b").style.width = `${s.settled ? 100 : Math.round((100 * (s.at + 1)) / Math.max(1, s.of))}%`;
+    const passes = Math.max(1, s.passes || 1);
+    const within = ((s.pass || 1) - 1 + (s.at + 1) / Math.max(1, s.of)) / passes;
+    el.querySelector("b").style.width = `${s.settled ? 100 : Math.round(100 * within)}%`;
   });
 }
 

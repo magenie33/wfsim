@@ -434,6 +434,8 @@ jobs:
         run: node scripts/check_compute_orders.mjs
       - name: The board's scene and shooting choices are independent and survive a link
         run: node scripts/check_board_ladder.mjs
+      - name: A built-in search is read-only, a click copies it, and the run button sends the page's own search
+        run: node scripts/check_search_presets.mjs
       # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
       # browser, no engine, no network — it imports `worker/index.js` and runs
       # it against a KV stub. It is here rather than on demand because the two

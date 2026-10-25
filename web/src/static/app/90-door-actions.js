@@ -787,9 +787,10 @@ const AGENT_ACTIONS = [
     run({ limit = 5 }) {
       if (optJobId != null) {
         const st = optLastStatus || {};
+        const done = optProgressOf(st);
         return {
           phase: st.phase || "starting",
-          progress: st.sims_planned ? `${Math.round((1000 * st.sims_done) / st.sims_planned) / 10}%` : null,
+          progress: done == null ? null : `${Math.round(1000 * done) / 10}%`,
           elapsed_s: st.elapsed_s != null ? Math.round(st.elapsed_s) : null,
           ...(st.round ? { round: `${st.round}/${st.rounds}` } : {}),
         };

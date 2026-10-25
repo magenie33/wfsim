@@ -1,8 +1,9 @@
 // THE BUILT-IN SEARCHES (80-optimizer-preset.js, data/search/presets.yaml): a
 // reader who owns no search has the first built-in — four starts, each the open
 // weapon's 60/60 card of one element — read-only like an official ruler: its
-// controls are inert, nothing it shows is stored, ⧉ makes an editable copy, and
-// deleting that copy brings the built-in back.
+// controls are inert, a click in them or ⧉ makes the reader's own copy, nothing
+// it shows is stored, deleting the copy brings the built-in back, and the run
+// button sends the search the page states.
 //   node scripts/check_search_presets.mjs
 import { openApp, sleep } from "./cdp.mjs";
 
@@ -42,12 +43,19 @@ check("…and clicked, it sends the search the page states",
   !!sent && sent.weapon === await evaluate(`$("weapon").value`) && sent.strategy === "quick" && sent.starts === 4,
   JSON.stringify(sent));
 check("…nor the limits' mod filter, which edits nothing", await evaluate(`!$("opt-limit-filter").disabled`));
-check("…a limit row clicked changes nothing", await evaluate(`(() => {
+// A CLICK IN A READ-ONLY REGION MAKES THE READER'S OWN COPY (`lockReadOnly`),
+// and the click itself toggles nothing in it.
+const deleteCopy = () => evaluate(`(() => { const del = $("preset-bar-optimizer").querySelector(".pop.del"); del.click(); if (loadOptPresets().length) del.click(); })()`);
+check("…a limit row clicked makes the reader's own copy, and toggles nothing", await evaluate(`(() => {
   const was = JSON.stringify(opt.limits);
   const row = document.querySelector("#opt-limit-mods .opt[data-axis]");
   if (row) row.click();
-  return !!row && JSON.stringify(opt.limits) === was;
-})()`));
+  return !!row && JSON.stringify(opt.limits) === was && loadOptPresets().length === 1 && !builtinSearchActive();
+})()`), await evaluate("activeOptPreset + ' / ' + loadOptPresets().length"));
+await deleteCopy();
+await sleep(800);
+check("…and deleting it opens the built-in again", await evaluate(`loadOptPresets().length === 0 && activeOptPreset === "search:four_elements"`),
+  await evaluate("activeOptPreset + ' / ' + loadOptPresets().length"));
 check("…and the limits stay inert when they redraw", await evaluate(`(() => {
   renderOptLimits();
   return [...$("opt-limits").querySelectorAll("select,input[type=checkbox]")].every((el) => el.disabled)
@@ -64,7 +72,7 @@ check("⧉ makes a search of the reader's own, editable", await evaluate(`loadOp
   && $("opt-builtin").hidden && !$("opt-finalists").disabled`));
 check("…holding the same four starts", JSON.stringify(await cards()) === JSON.stringify([["thermite_rounds"], ["rime_rounds"], ["high_voltage"], ["malignant_force"]]));
 
-await evaluate(`(() => { const del = $("preset-bar-optimizer").querySelector(".pop.del"); del.click(); if (loadOptPresets().length) del.click(); })()`);
+await deleteCopy();
 await sleep(800);
 check("deleting it brings the built-in back", await evaluate(`loadOptPresets().length === 0 && activeOptPreset === "search:four_elements"`),
   await evaluate("activeOptPreset + ' / ' + loadOptPresets().length"));

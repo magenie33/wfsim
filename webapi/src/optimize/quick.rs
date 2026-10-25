@@ -1116,7 +1116,7 @@ pub(crate) fn run_quick(
     if ctx.lead {
         let rows: Vec<Value> = progress
             .iter()
-            .map(|p| json!({ "settled": p.settled, "round": p.round, "at": p.at, "of": p.of }))
+            .map(|p| json!({ "settled": p.settled, "pass": p.pass, "passes": p.passes, "round": p.round, "at": p.at, "of": p.of }))
             .collect();
         FLEET.with(|f| f.borrow_mut().progress = json!(rows));
     }

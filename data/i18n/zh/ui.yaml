@@ -628,6 +628,7 @@ ui:
   "settled": 已收敛
   "filling {k} of {n}": 填满中 {k}/{n}
   "round {r}, position {k} of {n}": 第 {r} 轮扫描，位置 {k}/{n}
+  "descent {p} of {n}": 第 {p}/{n} 遍下降
   "{d} of {n} starts settled": "{d}/{n} 个起点已收敛"
   "each start improved until no change helped — the best those starts reach, not a proven best; add a start to look further": 每个起点都改到了再换什么都不涨 —— 这是这些起点能到的最好，不是证明过的最优；想找得更远就加起点
   "how many fights each candidate gets while the search compares them. 1 is ten times faster and noisier; the answers are re-measured in the simulator either way": 搜索比较候选时每个候选打几场。1 场快十倍但更吵；无论选哪个，答案最后都在模拟器里重新测量

@@ -347,13 +347,33 @@ async function pollOptimize() {
   optPollTimer = setTimeout(pollOptimize, 500);
 }
 
-function renderOptProgress(st) {
-  // A DESCENT'S BAR COUNTS SETTLED STARTS: how many rounds one takes is found
-  // by taking them, so the only total that exists is the number of starts.
+/// ONE START'S LANE, in words — here and on the compute page. A start whose
+/// fill reads differently either way descends twice, and says which time.
+function optLaneText(s) {
+  const at = s.settled
+    ? tr("settled")
+    : s.round === 0
+      ? tr("filling {k} of {n}").replace("{k}", s.at + 1).replace("{n}", s.of)
+      : tr("round {r}, position {k} of {n}").replace("{r}", s.round).replace("{k}", s.at + 1).replace("{n}", s.of);
+  return !s.settled && s.passes > 1 ? `${tr("descent {p} of {n}").replace("{p}", s.pass).replace("{n}", s.passes)} · ${at}` : at;
+}
+
+/// HOW FAR A SEARCH IS, 0–1, or null before there is anything to count. A
+/// descent counts its starts' finished descents: how many rounds one takes is
+/// found by taking them, so the only totals are the starts and their descents.
+function optProgressOf(st) {
   const lanes = st.starts || [];
-  const pct = !st.rounds && lanes.length
-    ? (100 * lanes.filter((s) => s.settled).length) / lanes.length
-    : st.sims_planned ? Math.min(100, (100 * st.sims_done) / st.sims_planned) : 0;
+  if (!st.rounds && lanes.length) {
+    const of = (s) => Math.max(1, s.passes || 1);
+    const done = (s) => (s.settled ? of(s) : Math.max(0, (s.pass || 1) - 1));
+    return lanes.reduce((a, s) => a + done(s), 0) / lanes.reduce((a, s) => a + of(s), 0);
+  }
+  return st.sims_planned ? Math.min(1, st.sims_done / st.sims_planned) : null;
+}
+
+function renderOptProgress(st) {
+  const lanes = st.starts || [];
+  const pct = 100 * (optProgressOf(st) || 0);
   // THE DESCENT HAS NO PLAN TO BE A PERCENTAGE OF — how many changes a start
   // takes is found by taking them — so it reports what it has done.
   const descending = !st.rounds;
@@ -366,11 +386,7 @@ function renderOptProgress(st) {
   const notes = (st.notes || []).map((n) =>
     `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? sig2(kpm(n.best, sim.duration)) + " KPM" : n.best.toExponential(2) + " dmg"} · ${(n.ms / 1000).toFixed(1)}s</div>`
   ).join("");
-  const lane = (s, i) => `<div class="opt-note">${escHtml(tr("start"))} ${i + 1}: ${escHtml(s.settled
-    ? tr("settled")
-    : s.round === 0
-      ? tr("filling {k} of {n}").replace("{k}", s.at + 1).replace("{n}", s.of)
-      : tr("round {r}, position {k} of {n}").replace("{r}", s.round).replace("{k}", s.at + 1).replace("{n}", s.of))}</div>`;
+  const lane = (s, i) => `<div class="opt-note">${escHtml(tr("start"))} ${i + 1}: ${escHtml(optLaneText(s))}</div>`;
   const sub = descending
     ? `<div class="opt-prog-sub">${escHtml(tr("{d} of {n} starts settled").replace("{d}", lanes.filter((s) => s.settled).length).replace("{n}", lanes.length || "…"))} · ${escHtml(tr("every worker scores each batch; in the browser a search takes minutes"))}</div>${lanes.map(lane).join("")}`
     : st.phase === "enumerating"
