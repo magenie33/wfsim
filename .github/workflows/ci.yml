@@ -601,7 +601,7 @@ jobs:
 
   ci-required:
     if: ${{ always() }}
-    needs: [plan, quick, commits, test, gas, engine-apart, published-board, site, checks, pipeline, page, parity, page-rest]
+    needs: [plan, quick, commits, coordination, test, gas, engine-apart, published-board, site, checks, pipeline, page, parity, page-rest]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
