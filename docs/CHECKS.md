@@ -12,8 +12,8 @@ worker gets from Hyperdrive; it needs `npm install --prefix scripts/pg`.
 
 CI selection and its final gate: unknown and core paths require full validation,
 mixed changes retain every requirement, renames cover the old path, and a failed,
-cancelled or unexpectedly skipped dependency cannot pass. Reuse requires a full
-proof for the exact commit and policy from a successful trusted run; PR, foreign,
+cancelled or unexpectedly skipped dependency cannot pass. Reuse requires a proof
+covering the selected jobs for the exact commit and policy from a successful trusted run; PR, foreign,
 incomplete and recursively reused evidence is refused. No browser. The workflow
 and release rules are in [`CI.md`](CI.md).
 
