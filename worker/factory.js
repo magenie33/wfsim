@@ -212,9 +212,12 @@ export async function watchdog(env, now = Date.now()) {
   // to anyone again after the grace, but nobody else settles them.
   const beat = await db.prepare("SELECT daemon_at FROM factory_snapshot WHERE id = 1").first().catch(() => null);
   if (!beat || Date.parse(beat.daemon_at) <= now - SETTLER_SILENT_MS) await settleBatch(env, now, Date.now() + 20_000).catch(() => 0);
-  await facts().redeliver(env, now);
-  await facts().repay(env, now);
-  await facts().liftIdle(env);
+  // EACH REPAIR APART: one that throws never keeps the round from being found
+  // and written down.
+  for (const [name, step] of [["redeliver", () => facts().redeliver(env, now)], ["repay", () => facts().repay(env, now)],
+    ["liftIdle", () => facts().liftIdle(env)]]) {
+    await step().catch((e) => console.error("watchdog", name, e));
+  }
   const { engine } = await servedRelease(env);
   const found = await facts().audit(env, now, engine);
   const starved = await starvedFinding(env);

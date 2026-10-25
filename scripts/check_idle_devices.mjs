@@ -74,5 +74,14 @@ check("every idle kind has its own words, none the fallback", ["old_engine", "as
   !watchdogText({ kind: `idle:${why}`, devices: [{ device: id("z"), engine: "e1", protocol: 8, lanes: 4, asks: 3, last_answer: null, label: null, why }],
     online: 10, served: "e1", loop_per_hour: 120 }, NOW).includes("没有这一类的说明")));
 
+// A REPAIR THAT THROWS — the repay outran its timeout — keeps no round from being written.
+await db.run("DELETE FROM watchdog_said");
+const real = db.prepare.bind(db);
+const timingOut = { ...env, PUBLIC: picture(true), LIBRARY: new Proxy(db, { get: (o, k) => k === "prepare"
+  ? (sql) => (/name = 'repay'/.test(sql) ? { bind: () => ({ first: async () => { throw new Error("statement timeout"); } }), first: async () => { throw new Error("statement timeout"); } } : real(sql))
+  : typeof o[k] === "function" ? o[k].bind(o) : o[k] }) };
+await watchdog(timingOut, NOW + 4 * 3_600_000);
+check("a repair that throws keeps no round from being written", (await db.all("SELECT cause FROM watchdog_said")).some((r) => r.cause === "starved"));
+
 console.log(failures ? `\n${failures} failed` : "\nan idle computer is found by what the server keeps, and said once");
 process.exit(failures ? 1 : 0);

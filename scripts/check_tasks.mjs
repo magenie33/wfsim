@@ -816,6 +816,45 @@ console.log("\nan agreeing answer outside the witnesses is marked covered, and r
     && (await db.get("SELECT work FROM verifiers WHERE id = 'c3'")).work === 0);
 }
 
+console.log("\nthe repay reads the facts from its cursor on, an hour of them a call");
+{
+  const db = await testDb("library"), env = { LIBRARY: db };
+  const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
+  const t = (m) => new Date(NOW - m * 60_000).toISOString();
+  const owe = async (id, m) => {
+    await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+      VALUES (?, 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`, id, t(m + 30), t(m + 30), t(m));
+    for (const dev of [`${id}-1`, `${id}-2`]) {
+      await db.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-01')", dev);
+      await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+        VALUES (?, 'e1', ?, ?, ?, 0, 'c', '{}', 100, 1, ?, 0, 0)`, id, dev, dev, dev, t(m + 5));
+    }
+  };
+  const paidOf = async (id) => Number((await db.get("SELECT count(*) AS n FROM answers WHERE question = ? AND credited = 1", id)).n);
+  // THE CURSOR STANDS FIVE HOURS BACK: one fact four and a half hours old, one
+  // three hours old, one before the cursor.
+  await db.run("INSERT INTO factory_cursors (name, through) VALUES ('repay', ?)", t(300));
+  await owe("first", 270); await owe("next", 180); await owe("behind", 330);
+  check("a call reads an hour from its cursor: the fact in it paid, the one after not yet",
+    (await f.repay(env, NOW)) === 2 && await paidOf("first") === 2 && await paidOf("next") === 0
+    && (await db.get("SELECT through FROM factory_cursors WHERE name = 'repay'")).through === t(240));
+  check("...the next call the next hour, and nothing before the cursor ever",
+    (await f.repay(env, NOW)) === 0 && (await f.repay(env, NOW)) === 2 && await paidOf("next") === 2 && await paidOf("behind") === 0);
+  // A CREDIT THAT FAILS holds the cursor at its fact, and the next call pays it.
+  await owe("flaky", 100);
+  await db.run("UPDATE factory_cursors SET through = ? WHERE name = 'repay'", t(110));
+  const real = db.prepare.bind(db);
+  let fail = true;
+  const flaky = { ...env, LIBRARY: new Proxy(db, { get: (o, k) => k === "prepare"
+    ? (sql) => (fail && /UPDATE verifiers/.test(sql) ? { bind: () => ({ run: async () => { throw new Error("busy"); }, all: async () => { throw new Error("busy"); } }) } : real(sql))
+    : typeof o[k] === "function" ? o[k].bind(o) : o[k] }) };
+  await f.repay(flaky, NOW).catch(() => 0);
+  const held = (await db.get("SELECT through FROM factory_cursors WHERE name = 'repay'")).through;
+  fail = false;
+  check("a credit that fails holds the cursor at its fact, and the next call pays it",
+    held === t(100) && (await f.repay(env, NOW)) === 2 && await paidOf("flaky") === 2, JSON.stringify({ held, want: t(100) }));
+}
+
 console.log("\na fact is no older than its last witness");
 {
   const db = await testDb("library"), env = { LIBRARY: db };

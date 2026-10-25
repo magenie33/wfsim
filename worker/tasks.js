@@ -894,23 +894,39 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// witness (`independent`) and is never owed: picked, the oldest of them held
   /// every call's places and nobody behind them was ever paid. Such an answer is
   /// COVERED once its witnesses are paid (`credit`), and no call reads it again.
+  /// ONLY THE FACTS FORMED SINCE THE LAST RUN are read (`factory_cursors`
+  /// `repay`), at most `REPAY_SLICE_MS` of them a call: read from the unpaid
+  /// answers, every one of half a million was joined to its question each call,
+  /// 36 s against the role's 25, and the watchdog behind it never ran. A fact
+  /// whose credit fails again holds the cursor; never further back than
+  /// `REDELIVER_BACK_MS`. A first run, with no cursor, reads the last slice.
+  const REPAY_SLICE_MS = 3_600_000;
   async function repay(env, now = Date.now(), max = 200) {
-    const db = env.LIBRARY;
-    const { results: qs } = await db.prepare(`SELECT DISTINCT q.id, q.canon, q.fact_engine, q.fact_at FROM answers a JOIN questions q ON q.id = a.question
-        WHERE a.credited = 0 AND a.void = 0 AND a.official = 0 AND a.canon = q.canon AND q.state IN ('fact', 'spot')
-          AND a.at <= q.fact_at AND q.fact_at < ?::text
-          AND NOT EXISTS (SELECT 1 FROM answers c WHERE c.question = a.question AND c.credited = 1 AND c.void = 0 AND c.official = 0
-                          AND (c.owner = a.owner OR (coalesce(a.net, '') <> '' AND c.net = a.net)))
-        ORDER BY q.fact_at LIMIT ?::bigint`)
-      .bind(iso(now - 10 * 60_000), max).all();
-    let paid = 0;
+    const db = env.LIBRARY, floor = iso(now - REDELIVER_BACK_MS);
+    const kept = await db.prepare("SELECT through FROM factory_cursors WHERE name = 'repay'").first();
+    const from = kept ? (kept.through > floor ? kept.through : floor) : iso(now - 10 * 60_000 - REPAY_SLICE_MS);
+    const until = iso(Math.min(now - 10 * 60_000, Date.parse(from) + REPAY_SLICE_MS));
+    const { results: qs } = await db.prepare(`SELECT q.id, q.canon, q.fact_engine, q.fact_at FROM questions q
+        WHERE q.fact_at >= ?1::text AND q.fact_at < ?2::text AND q.state IN ('fact', 'spot')
+          AND EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.credited = 0 AND a.void = 0 AND a.official = 0
+                        AND a.canon = q.canon AND a.at <= q.fact_at
+                        AND NOT EXISTS (SELECT 1 FROM answers c WHERE c.question = a.question AND c.credited = 1 AND c.void = 0 AND c.official = 0
+                                        AND (c.owner = a.owner OR (coalesce(a.net, '') <> '' AND c.net = a.net))))
+        ORDER BY q.fact_at, q.id LIMIT ?3::bigint`)
+      .bind(from, until, max).all();
+    let paid = 0, stuck = null;
     for (const q of qs) {
       const { results: all } = await db.prepare("SELECT * FROM answers WHERE question = ? AND void = 0 AND official = 0 AND canon = ? AND at <= ? ORDER BY id")
         .bind(q.id, q.canon, q.fact_at).all();
       const group = independent([...all.filter((a) => a.engine === q.fact_engine), ...all.filter((a) => a.engine !== q.fact_engine)]);
       const owed = group.filter((a) => !a.credited);
       if (!owed.length) continue;
-      try { await credit(db, owed, Date.parse(q.fact_at)); paid += owed.length; } catch (_) { /* paid next run */ }
+      try { await credit(db, owed, Date.parse(q.fact_at)); paid += owed.length; } catch (_) { stuck ??= q.fact_at; }
+    }
+    const through = stuck ?? (qs.length === max ? qs[qs.length - 1].fact_at : until);
+    if (through > from || !kept) {
+      await db.prepare(`INSERT INTO factory_cursors (name, through) VALUES ('repay', ?1::text)
+          ON CONFLICT (name) DO UPDATE SET through = excluded.through`).bind(through).run();
     }
     return paid;
   }

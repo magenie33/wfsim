@@ -944,7 +944,9 @@ they and every official answer still settle in the request.
   nothing: a state moves only from `open`, and a credit is one transaction
   that pays only answers still unpaid.
 - What a settlement committed but never did is the watchdog's: `repay` and
-  `redeliver`.
+  `redeliver`, each reading the facts formed since its cursor (`factory_cursors`),
+  `repay` an hour of them a call. Each runs apart: one that throws keeps no
+  round from being written.
 - If the heartbeat is five minutes old, the watchdog empties the queue itself.
 - Dial 0 queues nothing more, and the daemon empties what is already queued.
 

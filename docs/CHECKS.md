@@ -668,7 +668,8 @@ old engine, an asking loop and not computing; one that answered, only just
 asked once, or went away is none of them. The watchdog says each kind in
 Chinese once, not again for the same devices, and again, listing all, when a
 device it has not said joins a kind. A starved fleet in the daemon's picture
-is written down with the rows waiting, and one it calls fed is not found.
+is written down with the rows waiting, and one it calls fed is not found; a
+repair that throws keeps no round from being written.
 
 ## `check_tasks`
 
@@ -698,7 +699,8 @@ credited and nothing delivered, and settled again it stays open; no device,
 owner or network of either is the third; a third agreeing from a pack makes the
 fact and credits all three once, a third differing makes a dispute, and a
 rechecked row past its deadline goes to the official machines, who credit the
-two who agreed.
+two who agreed. The repay reads an hour of facts from its cursor a call,
+never one before it, and a credit that fails holds the cursor at its fact.
 
 ## `check_settler`
 
