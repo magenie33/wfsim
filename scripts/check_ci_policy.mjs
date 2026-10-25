@@ -91,4 +91,6 @@ assert.deepEqual(new Set(gateJobs), new Set(jobIds), 'every workflow job must re
 assert.match(workflow, /cancel-in-progress:.*refs\/heads\/main/);
 assert(!workflow.includes("github.event_name != 'pull_request'"), 'PRs build the current site');
 assert.match(workflow, /node scripts\/check_ci_policy\.mjs/);
+const ship = readFileSync('.github/workflows/ship.yml', 'utf8');
+assert.match(ship.split('\njobs:')[0], /actions: read/, 'release evidence needs permission to download CI proofs');
 console.log('CI selection, failed/cancelled gates, exact-SHA trust and rename coverage hold.');
