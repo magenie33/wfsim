@@ -269,18 +269,23 @@ function optimizeBody() {
   };
 }
 
-/// `given` is a whole request built elsewhere — a riven gain's, the one search
-/// every computer runs — in place of the one this page's controls build.
-async function runOptimize(given) {
+/// The search this page's controls state. It takes no argument: it is a click
+/// listener, and the event it is handed is not a request.
+function runOptimize() {
+  return runSearch(optimizeBody);
+}
+
+/// `request()` builds the whole request: a riven gain's, the one search every
+/// computer runs, or the one this page's controls state.
+async function runSearch(request) {
   clearCheckpoint(); // a fresh run supersedes any interrupted one
   optLastStatus = null;
   $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
   $("opt-results").innerHTML = `<div class="placeholder">starting…</div>`;
   try {
-    const body = nameableOptimizeBody(given || optimizeBody());
     // STARTED, beside `optimizer.run` for finished: the gap is what was cancelled or failed.
     track("optimizer.start", $("weapon").value);
-    const r = await postJson("/api/optimize", body);
+    const r = await postJson("/api/optimize", nameableOptimizeBody(request()));
     if (!r || r.ok === false) {
       optFinish(`<div class="error">optimize failed: ${r ? r.error : "no data"}</div>`);
       return;

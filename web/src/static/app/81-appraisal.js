@@ -67,7 +67,7 @@ async function openAppraisal(code, freeze = false) {
     }
     appraisal.phase = "searching";
     renderAppraisal();
-    await runOptimize(asked.request);
+    await runSearch(() => asked.request);
   } catch (e) {
     appraisal.phase = "failed";
     appraisal.error = String((e && e.message) || e);

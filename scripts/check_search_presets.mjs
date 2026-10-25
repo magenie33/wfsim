@@ -20,6 +20,27 @@ check("…answering the run terms it states", await evaluate("optRun.finalists =
 check("…read-only on screen: its note shows and its controls are inert", await evaluate(`!$("opt-builtin").hidden
   && $("opt-finalists").disabled && [...$("opt-starts").querySelectorAll("button")].every((b) => b.disabled)`));
 check("…and the run button is not among them", await evaluate(`!$("run-opt").disabled`));
+// A CLICK IS NOT A REQUEST: the listener is handed the event, and a search that
+// took it for a whole request searched nothing and listed one empty build.
+const sent = JSON.parse(await evaluate(`(async () => {
+  const real = window.fetch;
+  let body = null;
+  window.fetch = (url, init) => {
+    if (!String(url).endsWith("/api/optimize")) return real(url, init);
+    body = JSON.parse(init.body);
+    return Promise.resolve(new Response(JSON.stringify({ ok: false, error: "held by the check" })));
+  };
+  try {
+    $("run-opt").click();
+    await new Promise((r) => setTimeout(r, 500));
+  } finally {
+    window.fetch = real;
+  }
+  return JSON.stringify(body && { weapon: body.weapon, strategy: body.strategy, starts: (body.starts || []).length });
+})()`));
+check("…and clicked, it sends the search the page states",
+  !!sent && sent.weapon === await evaluate(`$("weapon").value`) && sent.strategy === "quick" && sent.starts === 4,
+  JSON.stringify(sent));
 check("…nor the limits' mod filter, which edits nothing", await evaluate(`!$("opt-limit-filter").disabled`));
 check("…a limit row clicked changes nothing", await evaluate(`(() => {
   const was = JSON.stringify(opt.limits);
