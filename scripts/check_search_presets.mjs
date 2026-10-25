@@ -24,18 +24,20 @@ check("…and the run button is not among them", await evaluate(`!$("run-opt").d
 // A CLICK IS NOT A REQUEST: the listener is handed the event, and a search that
 // took it for a whole request searched nothing and listed one empty build.
 const sent = JSON.parse(await evaluate(`(async () => {
-  const real = window.fetch;
+  // At api(), which both transports pass: the dev server's fetch and the
+  // built site's engine fleet.
+  const real = api;
   let body = null;
-  window.fetch = (url, init) => {
-    if (!String(url).endsWith("/api/optimize")) return real(url, init);
-    body = JSON.parse(init.body);
-    return Promise.resolve(new Response(JSON.stringify({ ok: false, error: "held by the check" })));
+  api = (path, b, ...rest) => {
+    if (path !== "/api/optimize") return real(path, b, ...rest);
+    body = b;
+    return Promise.resolve({ ok: false, error: "held by the check" });
   };
   try {
     $("run-opt").click();
     await new Promise((r) => setTimeout(r, 500));
   } finally {
-    window.fetch = real;
+    api = real;
   }
   return JSON.stringify(body && { weapon: body.weapon, strategy: body.strategy, starts: (body.starts || []).length });
 })()`));

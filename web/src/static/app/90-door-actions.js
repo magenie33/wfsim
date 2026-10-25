@@ -786,8 +786,7 @@ const AGENT_ACTIONS = [
     args: { limit: { kind: "number", min: 1, max: 100, what: "ranked builds to return, default 5" } },
     run({ limit = 5 }) {
       if (optJobId != null) {
-        const st = optLastStatus || {};
-        const done = optProgressOf(st);
+        const st = optLastStatus || {}, done = optProgressOf(st);
         return {
           phase: st.phase || "starting",
           progress: done == null ? null : `${Math.round(1000 * done) / 10}%`,
