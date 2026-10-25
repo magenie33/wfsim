@@ -43,6 +43,7 @@ const full = classify([], true);
 const reusedNeeds = needs(classify(['docs/UI.md']));
 assertGate(full, reusedNeeds, true);
 assert.throws(() => assertGate(full, reusedNeeds));
+assert.throws(() => assertGate(full, { ...needs(full), coordination: { result: 'failure' } }));
 const proof = { version: 1, sha: 'abc', policy: 'p', reused: false, jobs: PRODUCT_JOBS,
   results: Object.fromEntries(['quick', 'commits', 'plan', ...PRODUCT_JOBS].map(j => [j, 'success'])) };
 assert(validProof(proof, 'abc', 'p', true));
@@ -83,7 +84,10 @@ try {
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 const gate = workflow.slice(workflow.indexOf('\n  ci-required:'));
 assert.match(gate, /if:.*always\(\)/);
-for (const job of ['plan', 'quick', 'commits', ...PRODUCT_JOBS]) assert(gate.includes(job), `gate must await ${job}`);
+const jobIds = [...workflow.slice(workflow.indexOf('\njobs:\n')).matchAll(/^  ([\w-]+):$/gm)]
+  .map(m => m[1]).filter(j => j !== 'ci-required');
+const gateJobs = gate.match(/needs: \[([^\]]+)\]/)[1].split(',').map(j => j.trim());
+assert.deepEqual(new Set(gateJobs), new Set(jobIds), 'every workflow job must reach the required gate');
 assert.match(workflow, /cancel-in-progress:.*refs\/heads\/main/);
 assert(!workflow.includes("github.event_name != 'pull_request'"), 'PRs build the current site');
 assert.match(workflow, /node scripts\/check_ci_policy\.mjs/);

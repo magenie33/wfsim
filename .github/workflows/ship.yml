@@ -41,6 +41,7 @@ permissions:
 jobs:
   # ---- 1. is there anything to ship, and which CI run built it? -----------
   due:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-26.04
     outputs:
       go: ${{ steps.due.outputs.go }}

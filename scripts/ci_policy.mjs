@@ -63,6 +63,9 @@ export function assertGate(plan, needs, reused = false) {
     const expected = !reused && plan.jobs.includes(name) ? 'success' : 'skipped';
     if (needs[name]?.result !== expected) throw new Error(`${name}: expected ${expected}, got ${needs[name]?.result || 'missing'}`);
   }
+  for (const [name, job] of Object.entries(needs)) {
+    if (!PRODUCT_JOBS.includes(name) && job.result !== 'success') throw new Error(`${name}: ${job.result}`);
+  }
 }
 
 export function output(values) {
