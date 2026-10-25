@@ -48,6 +48,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FORCE_FULL: ${{ inputs.full }}
+          CI_PLAN: ${{ steps.scope.outputs.plan }}
         run: node scripts/ci_runs.mjs reuse
 
   quick:

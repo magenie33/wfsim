@@ -46,7 +46,7 @@ changes still require full validation before release.
 Combine ready changes onto one integration branch and validate that final
 commit. A rebase, squash or cherry-pick changes the SHA and requires validation
 of the new combination. A fast-forward of an already validated SHA can reuse
-that commit's full evidence. Never infer integration success from separate
+that commit's evidence when it covers the selected jobs. Never infer integration success from separate
 branches' results. A newer branch run cancels the previous run for that branch;
 main runs and shipping are not cancelled in progress.
 
@@ -62,8 +62,9 @@ the selected jobs and any reused run.
 A reusable run must be completed and successful, belong to this repository's
 CI workflow, name the exact same commit and contain unexpired `site-built` and
 `ci-proof` artifacts. PR runs are never release evidence. The proof binds the
-commit, policy digest and successful jobs. Only full proofs can skip product
-jobs in a later run. Reused proofs cannot be reused again; the original run
+commit, policy digest and successful jobs. A proof must cover every job selected
+by the later run: a product-only proof cannot replace Rust or gas checks.
+Reused proofs cannot be reused again; the original run
 remains the authority. Missing or inaccessible evidence causes checks to run.
 
 `ship.yml` accepts a fresh full or selected proof with a checked site artifact

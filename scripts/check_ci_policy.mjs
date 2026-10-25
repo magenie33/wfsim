@@ -59,6 +59,10 @@ assert(!validProof({ ...proof, jobs: ['site'] }, 'abc', 'p'));
 assert(!validProof({ ...proof, jobs: PRODUCT_JOBS.filter(j => j !== 'test') }, 'abc', 'p'));
 assert(validProof({ ...proof, jobs: BROWSER_JOBS }, 'abc', 'p'));
 assert(!validProof({ ...proof, jobs: BROWSER_JOBS }, 'abc', 'p', true));
+assert(validProof({ ...proof, jobs: BROWSER_JOBS }, 'abc', 'p', false, BROWSER_JOBS));
+assert(!validProof({ ...proof, jobs: BROWSER_JOBS }, 'abc', 'p', false, ['test']));
+assert(!validProof({ ...proof, jobs: BROWSER_JOBS }, 'abc', 'p', false, ['published-board']));
+assert(validProof(proof, 'abc', 'p', false, PRODUCT_JOBS));
 const run = { id: 1, head_sha: 'abc', conclusion: 'success', status: 'completed', event: 'workflow_dispatch',
   head_repository: { full_name: 'owner/repo' }, workflow_id: 9 };
 const context = { sha: 'abc', repository: 'owner/repo', workflow: 9, current: 2 };

@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { assertGate, BROWSER_JOBS, output, policyDigest, PRODUCT_JOBS } from './ci_policy.mjs';
 
-export function validProof(proof, sha, policy, full = false) {
+export function validProof(proof, sha, policy, full = false, required = []) {
   const complete = jobs => Array.isArray(proof?.jobs) && proof.jobs.length === jobs.length
     && jobs.every(j => proof.jobs.includes(j));
   return proof?.version === 1 && proof.sha === sha && proof.policy === policy
@@ -14,6 +14,7 @@ export function validProof(proof, sha, policy, full = false) {
     && proof.jobs.includes('site') && proof.jobs.every(j => PRODUCT_JOBS.includes(j))
     && new Set(proof.jobs).size === proof.jobs.length
     && (complete(PRODUCT_JOBS) || (!full && complete(BROWSER_JOBS)))
+    && required.every(j => proof.jobs.includes(j))
     && proof.jobs.every(j => proof.results?.[j] === 'success')
     && ['quick', 'commits', 'plan'].every(j => proof.results?.[j] === 'success');
 }
@@ -41,7 +42,7 @@ export function verifiedBase(base, repository, dependencies = {}) {
   return runs.some(run => trustedRun(run, { sha, repository, workflow, current: 0 }));
 }
 
-export function findRun({ sha, repository, policy, full, current = 0 }) {
+export function findRun({ sha, repository, policy, full, required = [], current = 0 }) {
   const workflow = api(`repos/${repository}/actions/workflows/ci.yml`).id;
   const runs = api(`repos/${repository}/actions/workflows/${workflow}/runs?head_sha=${sha}&status=success&per_page=100`).workflow_runs;
   for (const run of runs) {
@@ -52,7 +53,7 @@ export function findRun({ sha, repository, policy, full, current = 0 }) {
     try {
       gh(['run', 'download', String(run.id), '--repo', repository, '--name', 'ci-proof', '--dir', dir]);
       const proof = JSON.parse(readFileSync(join(dir, 'ci-proof.json'), 'utf8'));
-      if (validProof(proof, sha, policy, full)) return String(run.id);
+      if (validProof(proof, sha, policy, full, required)) return String(run.id);
     } catch (e) { console.error(`Ignoring unusable CI proof from ${run.id}: ${e.message}`); }
     finally { rmSync(dir, { recursive: true, force: true }); }
   }
@@ -66,12 +67,13 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     if (process.env.GITHUB_EVENT_NAME !== 'pull_request' && process.env.FORCE_FULL !== 'true'
       && process.env.GITHUB_EVENT_NAME !== 'schedule') {
       try {
+        const plan = JSON.parse(process.env.CI_PLAN);
         run = findRun({ sha: process.env.GITHUB_SHA, repository: process.env.GITHUB_REPOSITORY,
-          policy: policyDigest(), full: true, current: Number(process.env.GITHUB_RUN_ID) });
+          policy: policyDigest(), full: false, required: plan.jobs, current: Number(process.env.GITHUB_RUN_ID) });
       } catch (e) { console.log(`No reusable proof; running selected CI: ${e.message}`); }
     }
     output({ run });
-    if (run && process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\nReusing full validation and site-built from run ${run}, on this exact SHA.\n`);
+    if (run && process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\nReusing validated coverage and site-built from run ${run}, on this exact SHA.\n`);
   } else if (mode === 'base') {
     console.log(verifiedBase(process.argv[3], process.env.GITHUB_REPOSITORY));
   } else if (mode === 'gate') {
