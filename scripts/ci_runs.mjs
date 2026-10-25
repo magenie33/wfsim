@@ -29,6 +29,18 @@ function gh(args) {
 }
 const api = path => JSON.parse(gh(['api', path]));
 
+export function verifiedBase(base, repository, dependencies = {}) {
+  const query = dependencies.api || api;
+  const git = dependencies.git || (args => execFileSync('git', args, { encoding: 'utf8' }).trim());
+  // Release and board snapshots add no source; verify their last source commit.
+  const sha = git(['log', '-1', '--format=%H', base, '--', '.', ':!site',
+    ':!desktop/payload', ':!mcp/engine.js', ':!data/board_state.yaml']);
+  if (!sha) return false;
+  const workflow = query(`repos/${repository}/actions/workflows/ci.yml`).id;
+  const runs = query(`repos/${repository}/actions/workflows/${workflow}/runs?head_sha=${sha}&status=success&per_page=100`).workflow_runs;
+  return runs.some(run => trustedRun(run, { sha, repository, workflow, current: 0 }));
+}
+
 export function findRun({ sha, repository, policy, full, current = 0 }) {
   const workflow = api(`repos/${repository}/actions/workflows/ci.yml`).id;
   const runs = api(`repos/${repository}/actions/workflows/${workflow}/runs?head_sha=${sha}&status=success&per_page=100`).workflow_runs;
@@ -60,6 +72,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     }
     output({ run });
     if (run && process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\nReusing full validation and site-built from run ${run}, on this exact SHA.\n`);
+  } else if (mode === 'base') {
+    console.log(verifiedBase(process.argv[3], process.env.GITHUB_REPOSITORY));
   } else if (mode === 'gate') {
     const plan = JSON.parse(process.env.CI_PLAN);
     const needs = JSON.parse(process.env.CI_NEEDS);
@@ -73,5 +87,5 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     const sha = process.argv[3];
     const run = findRun({ sha, repository: process.env.GITHUB_REPOSITORY, policy: policyDigest(), full: false });
     console.log(run);
-  } else throw new Error('Use reuse, gate or ship <sha>');
+  } else throw new Error('Use reuse, base <sha>, gate or ship <sha>');
 }

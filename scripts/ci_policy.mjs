@@ -7,7 +7,7 @@ import { pathToFileURL } from 'node:url';
 export const PRODUCT_JOBS = ['test', 'gas', 'engine-apart', 'published-board', 'site', 'checks', 'pipeline', 'page', 'parity', 'page-rest'];
 export const BROWSER_JOBS = ['site', 'checks', 'pipeline', 'page', 'parity', 'page-rest'];
 
-export function classify(paths, force = false) {
+export function classify(paths, force = false, verifiedBase = true) {
   const reasons = [];
   let scope = 'docs';
   let snapshot = false;
@@ -26,10 +26,10 @@ export function classify(paths, force = false) {
     else if (scope === 'docs' && kind === 'snapshot') scope = 'snapshot';
   }
   if (snapshot && scope === 'product') scope = 'full';
-  if (force || !paths.length) scope = 'full';
+  if (force || !paths.length || !verifiedBase) scope = 'full';
   const jobs = scope === 'full' ? PRODUCT_JOBS : scope === 'product' ? BROWSER_JOBS
     : scope === 'snapshot' ? ['published-board'] : [];
-  return { scope, jobs, reasons, forced: force || !paths.length };
+  return { scope, jobs, reasons, forced: force || !paths.length || !verifiedBase, verifiedBase };
 }
 
 export function policyDigest() {
@@ -42,7 +42,9 @@ export function policyDigest() {
   return h.digest('hex');
 }
 
-export function changedPaths(event, env, git = args => execFileSync('git', args, { encoding: 'utf8' })) {
+const gitOutput = args => execFileSync('git', args, { encoding: 'utf8' });
+
+export function changedBase(event, env, git = gitOutput) {
   let base;
   if (env.GITHUB_EVENT_NAME === 'pull_request') {
     base = git(['merge-base', event.pull_request.base.sha, 'HEAD']).trim();
@@ -50,7 +52,13 @@ export function changedPaths(event, env, git = args => execFileSync('git', args,
     base = event.before;
   } else if (env.GITHUB_REF !== 'refs/heads/main') {
     base = git(['merge-base', 'origin/main', 'HEAD']).trim();
-  } else return [];
+  } else return null;
+  return base;
+}
+
+export function changedPaths(event, env, git = gitOutput) {
+  const base = changedBase(event, env, git);
+  if (!base) return [];
   // Without rename detection, both the old and new paths take part in selection.
   return git(['diff', '--name-only', '--no-renames', '-z', base, 'HEAD']).split('\0').filter(Boolean);
 }
@@ -79,9 +87,17 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   let paths = [];
   try { paths = changedPaths(event, process.env); }
   catch (e) { console.log(`Cannot establish changed paths; running full CI: ${e.message}`); }
-  const plan = classify(paths, process.env.GITHUB_EVENT_NAME === 'schedule' || event.inputs?.full === true || event.inputs?.full === 'true');
+  const force = process.env.GITHUB_EVENT_NAME === 'schedule' || event.inputs?.full === true || event.inputs?.full === 'true';
+  let verified = false;
+  if (!force && classify(paths).scope !== 'full') {
+    try {
+      const base = changedBase(event, process.env);
+      verified = execFileSync(process.execPath, ['scripts/ci_runs.mjs', 'base', base], { encoding: 'utf8' }).trim() === 'true';
+    } catch (e) { console.log(`Cannot verify the comparison base; running full CI: ${e.message}`); }
+  }
+  const plan = classify(paths, force, verified);
   output({ plan, policy: policyDigest(), ...Object.fromEntries(PRODUCT_JOBS.map(j => [j.replaceAll('-', '_'), plan.jobs.includes(j)])) });
-  const summary = `## CI scope: ${plan.scope}\n\nSelected: ${plan.jobs.join(', ') || 'quick checks only'}.\n\n${plan.forced ? 'Full validation requested or no reliable diff available.\n' : ''}\n${plan.reasons.map(r => `- ${JSON.stringify(r.path)}: ${r.kind}`).join('\n')}\n`;
+  const summary = `## CI scope: ${plan.scope}\n\nSelected: ${plan.jobs.join(', ') || 'quick checks only'}.\n\n${plan.forced ? 'Full validation requested, baseline unverified, or no reliable diff available.\n' : ''}\n${plan.reasons.map(r => `- ${JSON.stringify(r.path)}: ${r.kind}`).join('\n')}\n`;
   console.log(summary);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
 }

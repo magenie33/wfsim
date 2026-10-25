@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assertGate, BROWSER_JOBS, changedPaths, classify, PRODUCT_JOBS } from './ci_policy.mjs';
-import { trustedRun, validProof } from './ci_runs.mjs';
+import { trustedRun, validProof, verifiedBase } from './ci_runs.mjs';
 
 for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/src/optimize.rs',
   'data/weapons/braton.yaml', 'Cargo.lock', '.github/workflows/ci.yml', 'scripts/ci_policy.mjs',
@@ -15,6 +15,9 @@ for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/sr
 assert.deepEqual(classify([]).jobs, PRODUCT_JOBS);
 assert.deepEqual(classify(['docs/UI.md'], true).jobs, PRODUCT_JOBS);
 assert.equal(classify(['docs/UI.md', 'README.md']).jobs.length, 0);
+for (const paths of [['docs/UI.md'], ['worker/index.js'], ['web/src/static/style.css'], ['site/release.json']]) {
+  assert.deepEqual(classify(paths, false, false).jobs, PRODUCT_JOBS, 'an unverified base cannot justify skipping tests');
+}
 for (const path of ['web/src/static/style.css', 'data/i18n/zh/ui.yaml', 'worker/pg/schema.sql', 'bot/engine.mjs', 'mcp/index.js']) {
   const p = classify([path]);
   assert(p.jobs.includes('site') && p.jobs.includes('pipeline') && p.jobs.includes('parity'), path);
@@ -64,6 +67,20 @@ for (const patch of [{ id: 2 }, { head_sha: 'other' }, { conclusion: 'failure' }
   { event: 'pull_request' }, { workflow_id: 8 }, { head_repository: { full_name: 'fork/repo' } }]) {
   assert(!trustedRun({ ...run, ...patch }, context), JSON.stringify(patch));
 }
+const baseline = candidate => ({
+  git: args => {
+    assert(args.includes(':!site') && args.includes(':!data/board_state.yaml'));
+    return 'abc';
+  },
+  api: path => path.endsWith('/ci.yml') ? { id: 9 } : { workflow_runs: candidate ? [candidate] : [] },
+});
+assert(verifiedBase('snapshot', 'owner/repo', baseline(run)));
+for (const bad of [null, { ...run, conclusion: 'failure' }, { ...run, event: 'pull_request' }, { ...run, head_sha: 'old' }]) {
+  assert(!verifiedBase('snapshot', 'owner/repo', baseline(bad)));
+}
+assert.throws(() => verifiedBase('snapshot', 'owner/repo', {
+  ...baseline(run), api: () => { throw new Error('API unavailable'); },
+}));
 
 const dir = mkdtempSync(join(tmpdir(), 'wfsim-ci-diff-'));
 try {
@@ -91,6 +108,7 @@ assert.deepEqual(new Set(gateJobs), new Set(jobIds), 'every workflow job must re
 assert.match(workflow, /cancel-in-progress:.*refs\/heads\/main/);
 assert(!workflow.includes("github.event_name != 'pull_request'"), 'PRs build the current site');
 assert.match(workflow, /node scripts\/check_ci_policy\.mjs/);
+assert.match(workflow, /- id: scope\s+env:\s+GH_TOKEN:.*\n\s+run: node scripts\/ci_policy\.mjs/);
 const ship = readFileSync('.github/workflows/ship.yml', 'utf8');
 assert.match(ship.split('\njobs:')[0], /actions: read/, 'release evidence needs permission to download CI proofs');
 console.log('CI selection, failed/cancelled gates, exact-SHA trust and rename coverage hold.');

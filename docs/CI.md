@@ -6,6 +6,14 @@ commit; a branch dispatch uses its merge base with `origin/main`. Renames includ
 both paths. An unavailable base, empty diff or unknown path selects everything.
 Mixed changes take the union of their requirements.
 
+Selection requires a successful trusted CI run on the comparison base's last
+source commit. Generated release and board commits are skipped when finding
+that source, using the same exclusions as shipping. If the preceding source is
+unverified, failed or cancelled, the new commit runs full CI even for a UI or
+docs-only diff. This prevents an unverified core change from riding a later
+small change. Successful legacy full CI runs can establish this baseline; PR
+runs cannot. API errors also fall back to full validation.
+
 | Changes | Required checks |
 | --- | --- |
 | Markdown under `docs/`, `README.md`, `LICENSE` | Quick checks and commit messages |
