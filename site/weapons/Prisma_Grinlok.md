@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 4.1316 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Deadly Sequence, Primary Crux | 2026-10-17 07:55 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 20.3454 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Deadly Sequence, Primary Crux | 2026-10-16 22:08 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.2868 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Deadly Sequence, Primary Crux | 2026-10-17 08:43 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 3.0654 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Deadly Sequence, Primary Crux | 2026-10-17 07:56 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 4.1300 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Deadly Sequence, Primary Crux | 2026-10-24 05:31 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 20.3059 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Deadly Sequence, Primary Crux | 2026-10-24 05:50 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.2861 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Deadly Sequence, Primary Crux | 2026-10-24 05:50 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 3.0642 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Deadly Sequence, Primary Crux | 2026-10-24 05:50 UTC · dac6ecbaf97e |
 
 ## In WFSim
 

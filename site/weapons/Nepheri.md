@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | block | 1.5193 | Molten Impact, Condition Overload, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Spinning Needle, Melee Duplicate | 2026-10-16 01:24 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 7.3228 | Molten Impact, Condition Overload, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Spinning Needle, Melee Duplicate | 2026-10-16 01:24 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | block | 0.3336 | Molten Impact, Condition Overload, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Spinning Needle, Melee Duplicate | 2026-10-16 01:24 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | block | 0.8614 | Molten Impact, Condition Overload, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Spinning Needle, Melee Duplicate | 2026-10-16 01:24 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | block | 1.5181 | Molten Impact, Condition Overload, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Spinning Needle, Melee Duplicate | 2026-10-24 05:48 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 7.3210 | Molten Impact, Condition Overload, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Spinning Needle, Melee Duplicate | 2026-10-24 06:05 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | block | 0.3335 | Molten Impact, Condition Overload, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Spinning Needle, Melee Duplicate | 2026-10-24 06:05 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | block | 0.8607 | Molten Impact, Condition Overload, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Spinning Needle, Melee Duplicate | 2026-10-24 05:39 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 

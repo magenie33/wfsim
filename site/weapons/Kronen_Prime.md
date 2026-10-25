@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 5.0294 | Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Steel, Amalgam Organ Shatter, Gladiator Might, Magnetic Rush, Sovereign Outcast, Discipline's Merit, Melee Exposure | 2026-10-17 05:17 UTC · ff5ab977f2 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | slide | 48.2479 | Shocking Touch, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Elementalist, Galvanized Steel, Organ Shatter, Sovereign Outcast, Discipline's Merit, Melee Influence | 2026-10-17 06:51 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.3941 | Sacrificial Steel, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Amalgam Organ Shatter, Gladiator Might, Magnetic Rush, Sovereign Outcast, Discipline's Merit, Melee Exposure | 2026-10-17 04:41 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.5480 | Sacrificial Steel, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Amalgam Organ Shatter, Gladiator Might, Magnetic Rush, Sovereign Outcast, Discipline's Merit, Melee Exposure | 2026-10-20 02:51 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 6.1067 | Volcanic Edge, Condition Overload, Blood Rush, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Magnetic Rush, Sovereign Outcast, Discipline's Merit, Melee Exposure | 2026-10-24 19:32 UTC · bd0cc9e70106 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | slide | 48.1831 | Shocking Touch, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Galvanized Elementalist, Galvanized Steel, Organ Shatter, Sovereign Outcast, Discipline's Merit, Melee Influence | 2026-10-24 05:25 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.3934 | Sacrificial Steel, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Amalgam Organ Shatter, Gladiator Might, Magnetic Rush, Sovereign Outcast, Discipline's Merit, Melee Exposure | 2026-10-24 05:18 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.5454 | Sacrificial Steel, Condition Overload, Blood Rush, Primed Fury, Primed Reach, Amalgam Organ Shatter, Gladiator Might, Magnetic Rush, Sovereign Outcast, Discipline's Merit, Melee Exposure | 2026-10-24 05:18 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 

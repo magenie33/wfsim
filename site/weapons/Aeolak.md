@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 9.1930 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-16 07:53 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 27.5015 | Hellfire, Primary Acuity, Primed Shred, Serration, Galvanized Aptitude, Galvanized Scope, Rifle Elementalist, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-16 07:12 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.8835 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-16 04:21 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.4646 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-16 04:25 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 9.1824 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-24 04:58 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 27.3574 | Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-24 04:54 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.8824 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-24 04:58 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.4623 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Serration, Galvanized Aptitude, Hammer Shot, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-24 04:54 UTC · dac6ecbaf97e |
 
 ## In WFSim
 

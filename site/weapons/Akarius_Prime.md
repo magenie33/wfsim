@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 13.4722 | Ice Storm, Pistol Pestilence, Scorch, Galvanized Diffusion, Magnum Force, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-16 14:03 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 69.7847 | Frostbite, Pistol Pestilence, Primed Heated Charge, Primed Fulmination, Galvanized Diffusion, Hornet Strike, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-17 06:47 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.3451 | Frostbite, Pistol Pestilence, Primed Heated Charge, Scorch, Galvanized Diffusion, Hornet Strike, Primed Expel Grineer, Pistol Elementalist, Primed Pistol Ammo Mutation, Cascadia Flare | 2026-10-17 01:06 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 5.8995 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Primed Steady Hands, Cascadia Flare | 2026-10-20 13:52 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 13.4196 | Ice Storm, Pistol Pestilence, Scorch, Galvanized Diffusion, Magnum Force, Galvanized Shot, Pistol Elementalist, Magnetic Might, Secondary Fortifier | 2026-10-23 20:27 UTC · 5c64c380e5f2 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 56.9629 | Frostbite, Pistol Pestilence, Primed Heated Charge, Primed Fulmination, Galvanized Diffusion, Lethal Torrent, Pistol Elementalist, Magnetic Might, Primed Steady Hands, Cascadia Flare | 2026-10-23 20:54 UTC · 5c64c380e5f2 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.3445 | Frostbite, Pistol Pestilence, Primed Heated Charge, Scorch, Galvanized Diffusion, Hornet Strike, Primed Expel Grineer, Pistol Elementalist, Primed Pistol Ammo Mutation, Cascadia Flare | 2026-10-23 20:23 UTC · 5c64c380e5f2 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 5.8348 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Primed Steady Hands, Cascadia Flare | 2026-10-23 20:25 UTC · 5c64c380e5f2 |
 
 ## Not modelled here
 

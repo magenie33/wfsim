@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.3136 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-16 15:13 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.3146 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-16 15:35 UTC · f960f40bb8 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.01783 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-16 13:53 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.1500 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-16 20:38 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.3136 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-24 05:54 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.3146 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-24 06:07 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.01783 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-24 05:54 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.1501 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-24 05:54 UTC · dac6ecbaf97e |
 
 ## In WFSim
 

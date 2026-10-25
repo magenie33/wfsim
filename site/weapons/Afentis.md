@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 4.9176 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-14 21:16 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 24.4068 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Bladed Rounds, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-14 21:24 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 1.0916 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-14 21:18 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 2.9458 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-14 21:18 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 4.9148 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-24 05:47 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 24.4177 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Bladed Rounds, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-24 05:58 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 1.0915 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-24 06:03 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 2.9448 | Hellfire, Thermite Rounds, Heavy Caliber, Primary Acuity, Hammer Shot, Rifle Elementalist, Semi-Rifle Cannonade, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-24 05:58 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 

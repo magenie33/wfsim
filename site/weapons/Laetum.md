@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 62.7911 | Primed Convulsion, Pathogen Rounds, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Anemic Agility, Magnetic Might, Eject Magazine, Secondary Enervate | 2026-10-16 21:05 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 259.9314 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Accelerated Isotope, Magnetic Might, Secondary Irradiate | 2026-10-16 20:29 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | cycle | 12.9430 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Expel Grineer, Primed Target Cracker, Lethal Torrent, Anemic Agility, Secondary Enervate | 2026-10-16 20:28 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 34.8233 | Pathogen Rounds, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Expel Orokin, Primed Target Cracker, Lethal Torrent, Anemic Agility, Secondary Enervate | 2026-10-16 23:01 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 60.7460 | Primed Convulsion, Pathogen Rounds, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Anemic Agility, Magnetic Might, Eject Magazine, Secondary Enervate | 2026-10-23 20:04 UTC · 5c64c380e5f2 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 253.1757 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Accelerated Isotope, Magnetic Might, Secondary Irradiate | 2026-10-23 21:00 UTC · 5c64c380e5f2 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | cycle | 12.9052 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Expel Grineer, Primed Target Cracker, Lethal Torrent, Anemic Agility, Secondary Enervate | 2026-10-23 20:08 UTC · 5c64c380e5f2 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 34.2132 | Pathogen Rounds, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Expel Orokin, Primed Target Cracker, Lethal Torrent, Anemic Agility, Secondary Enervate | 2026-10-23 20:18 UTC · 5c64c380e5f2 |
 
 ## In WFSim
 

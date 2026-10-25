@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 8.5114 | Frigid Blast, Toxic Barrage, Scattering Inferno, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Magnetic Strafe, Primary Crux | 2026-10-18 12:39 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 17.0555 | Frigid Blast, Toxic Barrage, Scattering Inferno, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Magnetic Strafe, Primary Crux | 2026-10-18 12:25 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.1468 | Frigid Blast, Toxic Barrage, Incendiary Coat, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Primary Crux | 2026-10-16 07:50 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 4.6612 | Frigid Blast, Toxic Barrage, Scattering Inferno, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Magnetic Strafe, Primary Crux | 2026-10-18 12:24 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 8.5197 | Frigid Blast, Toxic Barrage, Scattering Inferno, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Magnetic Strafe, Primary Crux | 2026-10-24 05:32 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 17.0341 | Frigid Blast, Toxic Barrage, Scattering Inferno, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Magnetic Strafe, Primary Crux | 2026-10-24 05:32 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.1545 | Frigid Blast, Toxic Barrage, Incendiary Coat, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Primary Crux | 2026-10-24 05:32 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 4.6647 | Frigid Blast, Toxic Barrage, Scattering Inferno, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Magnetic Strafe, Primary Crux | 2026-10-24 06:26 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 

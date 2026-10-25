@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 3.7281 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Primed Firestorm, Serration, Nightwatch Napalm, Semi-Rifle Cannonade, Primary Compression | 2026-10-17 04:40 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 42.5041 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Primed Firestorm, Serration, Nightwatch Napalm, Semi-Rifle Cannonade, Primary Crux | 2026-10-17 06:55 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.4040 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Primed Firestorm, Serration, Nightwatch Napalm, Semi-Rifle Cannonade, Primary Compression | 2026-10-17 04:45 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.4869 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Primed Firestorm, Serration, Nightwatch Napalm, Semi-Rifle Cannonade, Primary Compression | 2026-10-19 21:59 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 3.6534 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Primed Firestorm, Serration, Nightwatch Napalm, Semi-Rifle Cannonade, Primary Compression | 2026-10-24 04:48 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 42.6716 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Primed Firestorm, Serration, Nightwatch Napalm, Semi-Rifle Cannonade, Primary Crux | 2026-10-24 04:48 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.4040 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Primed Firestorm, Serration, Nightwatch Napalm, Semi-Rifle Cannonade, Primary Compression | 2026-10-24 05:01 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.4880 | Hellfire, Thermite Rounds, Galvanized Chamber, Primed Firestorm, Primed Bane of Orokin, Nightwatch Napalm, Rifle Elementalist, Semi-Rifle Cannonade, Vigilante Supplies, Primary Crux | 2026-10-24 05:01 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 

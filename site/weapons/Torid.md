@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 29.3895 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-22 12:31 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 111.2637 | Primed Cryo Rounds, Thermite Rounds, High Voltage, Galvanized Chamber, Serration, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-16 09:50 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | cycle | 4.5943 | Primed Cryo Rounds, Infected Clip, Hellfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-18 03:54 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 20.0296 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Primed Bane of Orokin, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-20 01:46 UTC · 45f7fbd884 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 29.3895 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Galvanized Scope, Bladed Rounds, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Deadhead | 2026-10-22 12:31 UTC · 99dec9ad6d01 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 111.0042 | Primed Cryo Rounds, Thermite Rounds, High Voltage, Galvanized Chamber, Serration, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-23 01:37 UTC · 62a82930d1d3 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | cycle | 4.6002 | Primed Cryo Rounds, Infected Clip, Hellfire, Heavy Caliber, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-23 03:35 UTC · 4296a0964da6 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 20.0714 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Primed Bane of Orokin, Galvanized Scope, Vile Acceleration, Vital Sense, Primary Deadhead | 2026-10-23 03:07 UTC · 62a82930d1d3 |
 
 ## In WFSim
 

@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 6.4080 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-17 08:04 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 18.6170 | Hellfire, Thermite Rounds, Galvanized Chamber, Heavy Caliber, Critical Delay, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-17 07:59 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.9990 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-17 08:00 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.9965 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-18 06:54 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 6.4211 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-24 05:09 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 22.4931 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Heavy Caliber, Rifle Elementalist, Vile Acceleration, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-23 13:05 UTC · 5c64c380e5f2 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.9987 | Malignant Force, Rime Rounds, Hellfire, Primary Acuity, Serration, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-24 05:17 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 3.6848 | Malignant Force, Rime Rounds, Hellfire, Heavy Caliber, Primary Acuity, Primed Bane of Orokin, Rifle Elementalist, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-23 13:06 UTC · 5c64c380e5f2 |
 
 ## Not modelled here
 

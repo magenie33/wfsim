@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.4371 | Primed Fever Strike, Vicious Frost, Primed Fury, Primed Reach, Galvanized Elementalist, Pressure Point, Weeping Wounds, Magnetic Rush, Swirling Tiger, Melee Vortex | 2026-10-22 12:55 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.4368 | Primed Fever Strike, Vicious Frost, Primed Fury, Primed Reach, Galvanized Elementalist, Pressure Point, Weeping Wounds, Magnetic Rush, Swirling Tiger, Melee Vortex | 2026-10-19 02:54 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.005516 | Primed Fever Strike, Vicious Frost, Primed Fury, Primed Reach, Galvanized Elementalist, Pressure Point, Weeping Wounds, Magnetic Rush, Swirling Tiger, Melee Vortex | 2026-10-14 17:04 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 0.1045 | Primed Fever Strike, Vicious Frost, Primed Fury, Primed Reach, Galvanized Elementalist, Pressure Point, Weeping Wounds, Magnetic Rush, Swirling Tiger, Melee Vortex | 2026-10-14 19:12 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.9408 | Primed Fever Strike, Virulent Scourge, Lasting Sting, Primed Pressure Point, Galvanized Elementalist, Proton Snap, Weeping Wounds, Melee Prowess, Crossing Snakes, Master's Edge, Melee Retaliation | 2026-10-23 08:45 UTC · 4296a0964da6 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.9408 | Primed Fever Strike, Virulent Scourge, Lasting Sting, Primed Pressure Point, Galvanized Elementalist, Proton Snap, Weeping Wounds, Melee Prowess, Crossing Snakes, Master's Edge, Melee Retaliation | 2026-10-23 08:45 UTC · 4296a0964da6 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.5706 | Primed Fever Strike, North Wind, Virulent Scourge, Molten Impact, Lasting Sting, Primed Pressure Point, Galvanized Elementalist, Weeping Wounds, Crossing Snakes, Master's Edge, Melee Retaliation | 2026-10-23 08:52 UTC · 4296a0964da6 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.3008 | Primed Fever Strike, North Wind, Virulent Scourge, Molten Impact, Lasting Sting, Primed Pressure Point, Galvanized Elementalist, Weeping Wounds, Crossing Snakes, Master's Edge, Melee Retaliation | 2026-10-23 09:02 UTC · 4296a0964da6 |
 
 ## Not modelled here
 

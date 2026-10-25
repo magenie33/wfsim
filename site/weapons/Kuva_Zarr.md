@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 14.3074 | Stormbringer, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-10-22 12:50 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 54.7470 | Stormbringer, Primary Acuity, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Aerial Ace, Primary Crux | 2026-10-22 17:37 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 0.9918 | Hellfire, Wildfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Semi-Rifle Cannonade, Vital Sense, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-10-17 07:56 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 4.3342 | Hellfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-16 21:55 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 14.3074 | Stormbringer, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-10-22 12:50 UTC · 99dec9ad6d01 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 54.7470 | Stormbringer, Primary Acuity, Galvanized Aptitude, Galvanized Scope, Vile Acceleration, Vital Sense, Magnetic Capacity, Radiated Reload, Aerial Ace, Primary Crux | 2026-10-22 17:37 UTC · 62a82930d1d3 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 0.9911 | Hellfire, Wildfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Semi-Rifle Cannonade, Vital Sense, Radiated Reload, Vigilante Supplies, Primary Crux | 2026-10-24 03:34 UTC · db272037fe1d |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 4.2940 | Hellfire, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Critical Delay, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Crux | 2026-10-24 04:36 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 

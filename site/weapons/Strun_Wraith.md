@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 19.0564 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Vigilante Supplies, Primary Compression | 2026-10-16 20:41 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 19.0564 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Vigilante Supplies, Primary Compression | 2026-10-16 21:04 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | cycle | 2.4569 | Primed Chilling Grasp, Toxic Barrage, Incendiary Coat, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Vigilante Supplies, Primary Compression | 2026-10-16 19:41 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 10.7333 | Primed Chilling Grasp, Contagious Spread, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Primary Compression | 2026-10-16 20:04 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 17.6115 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Vigilante Supplies, Primary Compression | 2026-10-24 05:15 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 17.6115 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Vigilante Supplies, Primary Compression | 2026-10-24 05:25 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | cycle | 2.4401 | Primed Chilling Grasp, Toxic Barrage, Incendiary Coat, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Vigilante Supplies, Primary Compression | 2026-10-24 05:15 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 10.2133 | Primed Chilling Grasp, Contagious Spread, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Semi-Shotgun Cannonade, Primary Compression | 2026-10-24 05:07 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 

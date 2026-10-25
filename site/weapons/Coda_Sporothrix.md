@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 29.7968 | Wildfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Speed Trigger, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-16 07:16 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 29.7968 | Wildfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Speed Trigger, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-16 07:14 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.4468 | Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Vigilante Armaments, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-16 04:21 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 16.2145 | Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Vigilante Armaments, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-16 04:25 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 27.2310 | Wildfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Speed Trigger, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:07 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 27.2310 | Wildfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Speed Trigger, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:07 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.4440 | Thermite Rounds, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Vigilante Armaments, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:18 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 15.2035 | Wildfire, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Bladed Rounds, Speed Trigger, Vile Acceleration, Vital Sense, Primary Crux | 2026-10-24 05:07 UTC · dac6ecbaf97e |
 
 ## Not modelled here
 

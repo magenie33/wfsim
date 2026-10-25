@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 11.1421 | Primed Convulsion, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-17 06:58 UTC |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 33.7678 | Primed Convulsion, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-18 12:25 UTC |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | cycle | 0.6612 | Primed Convulsion, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-17 06:57 UTC |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 2.3907 | Primed Convulsion, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-18 08:47 UTC |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 10.8393 | Primed Convulsion, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-24 05:51 UTC · dac6ecbaf97e |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 32.9471 | Primed Convulsion, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-24 05:46 UTC · dac6ecbaf97e |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | cycle | 0.6613 | Primed Convulsion, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-24 05:47 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 2.3830 | Primed Convulsion, Frostbite, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Pistol Elementalist, Semi-Pistol Cannonade, Secondary Enervate | 2026-10-24 05:46 UTC · dac6ecbaf97e |
 
 ## In WFSim
 
