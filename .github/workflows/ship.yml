@@ -66,8 +66,7 @@ jobs:
             echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
           fi
           # CI ON THAT COMMIT, passed, its build kept: nothing else is shipped.
-          run=$(gh run list --workflow CI --commit "$src" --json databaseId,conclusion \
-                  --jq '[.[] | select(.conclusion == "success")][0].databaseId // empty')
+          run=$(node scripts/ci_runs.mjs ship "$src")
           if [ -z "$run" ]; then
             echo "::notice::ship: CI has not passed ${src:0:10} yet — its own CI run brings this back"
             echo "go=false" >> "$GITHUB_OUTPUT"; exit 0

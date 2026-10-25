@@ -4,12 +4,76 @@ on:
   push:
     branches: [main]
   pull_request:
-  # A BRANCH'S BUILD ON DEMAND, to try a change to the build itself before main.
   workflow_dispatch:
+    inputs:
+      full:
+        description: Run every check without reusing an earlier run
+        type: boolean
+        default: false
+  schedule:
+    - cron: '17 20 * * 0'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  test:
+  plan:
     runs-on: ubuntu-latest
+    outputs:
+      plan: ${{ steps.scope.outputs.plan }}
+      test: ${{ steps.scope.outputs.test }}
+      gas: ${{ steps.scope.outputs.gas }}
+      engine_apart: ${{ steps.scope.outputs.engine_apart }}
+      published_board: ${{ steps.scope.outputs.published_board }}
+      site: ${{ steps.scope.outputs.site }}
+      reuse: ${{ steps.reuse.outputs.run }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - id: scope
+        run: node scripts/ci_policy.mjs
+      - id: reuse
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE_FULL: ${{ inputs.full }}
+        run: node scripts/ci_runs.mjs reuse
+
+  quick:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - run: node scripts/check_ci_policy.mjs
+      - run: node scripts/check_page_bodies.mjs
+      - run: node scripts/check_comment_style.mjs
+      - run: node scripts/check_time_storage.mjs
+      - run: node scripts/check_app_parts.mjs
+      - run: node scripts/check_ime_keys.mjs
+      - run: node scripts/check_engine_layers.mjs
+      - run: node scripts/test_nona_core.mjs
+      - run: node scripts/check_nona_boundary.mjs
+      - run: node scripts/check_rescore_paths.mjs
+
+  test:
+    needs: [plan, quick]
+    if: needs.plan.outputs.test == 'true' && needs.plan.outputs.reuse == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [workspace, webapi, whole-scope, accuracy]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -18,15 +82,28 @@ jobs:
           toolchain: "1.97.1"
           components: clippy
       - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-tests
       - name: Clippy (deny warnings)
+        if: matrix.suite == 'workspace'
         run: cargo clippy --workspace --all-targets -- -D warnings
       - name: Tests
-        run: cargo test --workspace
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: |
+          case "$SUITE" in
+            workspace) cargo test --workspace --exclude wfsim-webapi ;;
+            webapi) cargo test -p wfsim-webapi -- --skip optimize::whole_scope_tests:: --skip optimize::quick_descent_tests:: ;;
+            whole-scope) cargo test -p wfsim-webapi --lib optimize::whole_scope_tests:: -- --nocapture ;;
+            accuracy) cargo test -p wfsim-webapi --lib optimize::quick_descent_tests:: -- --nocapture ;;
+          esac
 
   # NATIVE AND WASM COUNT THE SAME WORK (docs/WASM.md §"Gas"): both built from
   # this commit, a fixed set of rows fought by each must give the same gas,
   # work and score — the native client and every browser are paid alike.
   gas:
+    needs: [plan, quick]
+    if: needs.plan.outputs.gas == 'true' && needs.plan.outputs.reuse == ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +129,8 @@ jobs:
   # and only the data pack moves — so a data release never costs a reader the
   # module, and one source never builds two.
   engine-apart:
+    needs: [plan, quick]
+    if: needs.plan.outputs.engine_apart == 'true' && needs.plan.outputs.reuse == ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -69,6 +148,8 @@ jobs:
   # it, since publish.yml waits for `test` and a tightened door leaves the
   # snapshot holding rows the door now refuses.
   published-board:
+    needs: [plan, quick]
+    if: needs.plan.outputs.published_board == 'true' && needs.plan.outputs.reuse == ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -101,21 +182,15 @@ jobs:
 
   # THE SITE THIS COMMIT BUILDS — built here, once: `parity` checks it and
   # ship.yml publishes this very artifact, so what ships is what was checked.
-  # A pull request has no keys to the build cache and is checked against the
-  # committed site/ instead.
   site:
-    if: github.event_name != 'pull_request'
+    needs: [plan, quick]
+    if: needs.plan.outputs.site == 'true' && needs.plan.outputs.reuse == ''
     # PINNED, not ubuntu-latest: the image a release is built on moves when we move it.
     runs-on: ubuntu-26.04
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: ./.github/actions/site-tools
-        with:
-          cos_secret_id: ${{ secrets.COS_SECRET_ID }}
-          cos_secret_key: ${{ secrets.COS_SECRET_KEY }}
-          cos_bucket: ${{ secrets.COS_BUCKET }}
-          cos_region: ${{ secrets.COS_REGION }}
       - name: Build site/
         # UNBUFFERED, so each line is stamped when it was said and the log shows
         # which part of the build the time went to.
@@ -142,54 +217,14 @@ jobs:
   # goes in the job of its kind, and one that grows past the others is split.
   # This one: the files, the door and the services' own checks, no page.
   checks:
-    needs: site
-    if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
+    needs: [plan, site]
+    if: needs.site.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/built-site
         with:
           built: ${{ needs.site.result == 'success' }}
-      # EVERY CHECK SCRIPT PARSES, before any of them is run. A stray backtick
-      # in a comment closes the template literal a browser check hands the page,
-      # and it has done so seven times — each one costing a full browser run to
-      # find, because the parser reports it as a SyntaxError inside
-      # `node:internal` naming the line the literal starts on. Milliseconds, no
-      # browser, so it goes first: a check that cannot parse cannot fail
-      # honestly either.
-      - name: Every check script parses
-        run: node scripts/check_page_bodies.mjs
-      # Prose states the current rule and names nobody. Also milliseconds and no
-      # browser, so it sits beside the parser check at the front.
-      - name: Prose states the current rule
-        run: node scripts/check_comment_style.mjs
-      # A TIME IS STORED ONE WAY: ISO 8601 to the millisecond, or a day.
-      - name: Every stored time is one format
-        run: node scripts/check_time_storage.mjs
-      # APP.JS IS ITS PARTS, joined in filename order: nothing else sits beside
-      # them, no part outgrows the ceiling, and no whole app.js competes.
-      - name: app.js is its parts
-        run: node scripts/check_app_parts.mjs
-      # AN ENTER OR AN ESC IS THE INPUT METHOD'S while it composes pinyin.
-      - name: Enter and Esc wait for the input method
-        run: node scripts/check_ime_keys.mjs
-      # THE ENGINE'S LAYERS: no module names one above its own, and no two reach
-      # each other. The compiler accepts both inside a crate, so this is where
-      # they are caught. Milliseconds, no browser.
-      - name: The engine depends one way
-        run: node scripts/check_engine_layers.mjs
-      # NONA'S CORE IS PURE, so what she is sent, what is set aside and what a
-      # stored shape migrates to are unit-tested here without a browser.
-      - name: Nona's core logic holds
-        run: node scripts/test_nona_core.mjs
-      # SHE REACHES THE PAGE ONLY THROUGH THE DOOR. A module can name any of
-      # app.js's top-level names and it works until one is renamed; this fails
-      # first, along with an import that points up a layer.
-      - name: Nona keeps to her side of the door
-        run: node scripts/check_nona_boundary.mjs
-
-      - name: A rescore is triggered by everything that buys one
-        run: node scripts/check_rescore_paths.mjs
       # THE BUILD SAYS WHICH RELEASE IT IS, and its engine module cannot be
       # paired with another build's. Both fail silently — a page with no
       # identity still opens, and a cached module still loads — so they are
@@ -255,8 +290,8 @@ jobs:
 
   # The board's pipeline and the factory against a real Postgres, no page.
   pipeline:
-    needs: site
-    if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
+    needs: [plan, site]
+    if: needs.site.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -310,8 +345,8 @@ jobs:
 
   # The page in headless Chrome: its controls, lanes and queue.
   page:
-    needs: site
-    if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
+    needs: [plan, site]
+    if: needs.site.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -354,8 +389,8 @@ jobs:
   # The builder against every weapon: the slowest sweep, so it is SHARDED, every
   # fourth weapon to a job (WFSIM_PARITY_SHARD).
   parity:
-    needs: site
-    if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
+    needs: [plan, site]
+    if: needs.site.result == 'success'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -381,8 +416,8 @@ jobs:
 
   # The rest of the page, the board's library and the MCP server.
   page-rest:
-    needs: site
-    if: ${{ !cancelled() && (needs.site.result == 'success' || needs.site.result == 'skipped') }}
+    needs: [plan, site]
+    if: needs.site.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -545,3 +580,24 @@ jobs:
       - run: cargo build --release --bin wfsim-intake
       - name: A submission survives the hop into the library
         run: node scripts/check_submission_hop.mjs
+
+  ci-required:
+    if: ${{ always() }}
+    needs: [plan, quick, commits, test, gas, engine-apart, published-board, site, checks, pipeline, page, parity, page-rest]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - name: Every selected check succeeded
+        env:
+          CI_PLAN: ${{ needs.plan.outputs.plan }}
+          CI_NEEDS: ${{ toJSON(needs) }}
+          REUSE_RUN: ${{ needs.plan.outputs.reuse }}
+        run: node scripts/ci_runs.mjs gate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-proof
+          path: ci-proof.json
+          retention-days: 7

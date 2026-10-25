@@ -46,3 +46,10 @@ opt-level = 3
 opt-level = 3
 [profile.dev.package.wfsim-webapi]
 opt-level = 3
+
+# Search tests repeatedly parse and exchange builds through serde and YAML.
+# Optimise that path too, while keeping the test profile's correctness checks.
+[profile.test]
+opt-level = 3
+debug-assertions = true
+overflow-checks = true

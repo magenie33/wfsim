@@ -82,6 +82,10 @@ from the Windows/CI default, so prefer MSVC unless you have a reason not to.
 
 ## 4. Build, test, run
 
+CI selection, forced full runs, batching and reuse of a validated commit are in
+[`CI.md`](CI.md). Quick checks run on every change; core and unknown changes
+require full validation.
+
 From the repo root (prefix with `mise exec --` if mise is not shell-activated):
 
 ```sh
@@ -102,7 +106,7 @@ WFSIM_BASE=http://127.0.0.1:8787 node scripts/check_parity.mjs  # a check agains
 ```
 
 A check serves `site/` itself unless `WFSIM_BASE` names a server, and CI runs
-every check on the `site/` it builds — so a change is tested against the dev
+the selected browser checks on the `site/` it builds — so a change is tested against the dev
 server and `site/` is never built for it.
 
 ### THE SLOW STEP GOES LAST
@@ -120,8 +124,8 @@ trip at a time costs an afternoon.
   encode and its import — and each one found the slow way cost a full cycle.
 - **Debug and check against the dev server.** `cargo build -p wfsim-web` is a
   couple of seconds, and every check reaches it through `WFSIM_BASE`.
-- **Leave `site/` to CI.** It builds it on every push and runs every check on
-  it; in a worktree a local build fails anyway (no image cache).
+- **Leave `site/` to CI.** It builds product changes and runs the selected checks
+  on that build; local checks use the dev server.
 
 On Windows the site build sometimes fails with `OSError: Errno 22` writing one
 of the prerendered pages. It is environment flake rather than the code — the

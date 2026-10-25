@@ -19,6 +19,7 @@ import json
 import pathlib
 import sys
 import tarfile
+import urllib.request
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import cos  # noqa: E402
@@ -27,6 +28,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CACHE = ROOT / "web" / "cache"
 ARCHIVE = "build-cache/web-cache.tar.gz"
 LATEST = "build-cache/latest.json"
+PUBLIC = "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com"
 
 
 def pack() -> bytes:
@@ -62,12 +64,18 @@ def digest() -> str:
     return json.loads(have)["sha256"] if have else ""
 
 
-def pull() -> None:
-    c = cos.creds()
-    want = digest()
+def public_get(path: str) -> bytes:
+    """The build inputs are public, so PR builds need no bucket credentials."""
+    with urllib.request.urlopen(f"{PUBLIC}/{path}", timeout=120) as response:
+        return response.read()
+
+
+def pull(public: bool = False) -> None:
+    c = None if public else cos.creds()
+    want = json.loads(public_get(LATEST))["sha256"] if public else digest()
     if not want:
         sys.exit("build cache: the bucket holds none — run `python scripts/build_cache.py push` where web/cache/ is")
-    body = cos.get(c, ARCHIVE)
+    body = public_get(ARCHIVE) if public else cos.get(c, ARCHIVE)
     if body is None or hashlib.sha256(body).hexdigest() != want:
         sys.exit("build cache: the archive is not the one latest.json names — push again")
     CACHE.mkdir(parents=True, exist_ok=True)
@@ -84,5 +92,9 @@ if __name__ == "__main__":
         pull()
     elif what == "digest":
         print(digest())
+    elif what == "public-digest":
+        print(json.loads(public_get(LATEST))["sha256"])
+    elif what == "public-pull":
+        pull(public=True)
     else:
         sys.exit(__doc__)

@@ -9,10 +9,10 @@ inputs:
   build:
     description: "'true': the wasm tools, cargo-xwin and web/cache too, for building site/"
     default: "true"
-  cos_secret_id: { required: true }
-  cos_secret_key: { required: true }
-  cos_bucket: { required: true }
-  cos_region: { required: true }
+  cos_secret_id: { required: false }
+  cos_secret_key: { required: false }
+  cos_bucket: { required: false }
+  cos_region: { required: false }
 runs:
   using: composite
   steps:
@@ -77,12 +77,7 @@ runs:
     - if: inputs.build == 'true'
       id: digest
       shell: bash
-      env:
-        COS_SECRET_ID: ${{ inputs.cos_secret_id }}
-        COS_SECRET_KEY: ${{ inputs.cos_secret_key }}
-        COS_BUCKET: ${{ inputs.cos_bucket }}
-        COS_REGION: ${{ inputs.cos_region }}
-      run: echo "digest=$(python scripts/build_cache.py digest)" >> "$GITHUB_OUTPUT"
+      run: echo "digest=$(python scripts/build_cache.py public-digest)" >> "$GITHUB_OUTPUT"
     - if: inputs.build == 'true'
       id: kept
       uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
@@ -91,12 +86,7 @@ runs:
         key: build-cache-${{ steps.digest.outputs.digest }}
     - if: inputs.build == 'true' && steps.kept.outputs.cache-hit != 'true'
       shell: bash
-      env:
-        COS_SECRET_ID: ${{ inputs.cos_secret_id }}
-        COS_SECRET_KEY: ${{ inputs.cos_secret_key }}
-        COS_BUCKET: ${{ inputs.cos_bucket }}
-        COS_REGION: ${{ inputs.cos_region }}
-      run: python scripts/build_cache.py pull
+      run: python scripts/build_cache.py public-pull
     # THE DERIVED ART (build_site_app.py `ART_KEPT`), named by what it came from,
     # so a build encodes only the art that changed. Saved anew whenever the
     # builder or the cache moves; the newest one is what the next run starts from.

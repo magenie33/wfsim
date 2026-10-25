@@ -1,6 +1,6 @@
 # THE BUILD, EXACTLY, as ship.yml lays it, for every job that checks it: what
 # the build dropped is gone too, or the committed generation sits beside the two
-# it carries. Without a build (a pull request) the committed site/ is checked.
+# it carries. Pull requests build their own site too.
 name: built site
 description: the site/ this commit built, laid over the checkout, and the node the checks run on
 inputs:
