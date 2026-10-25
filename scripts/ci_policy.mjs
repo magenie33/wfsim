@@ -10,6 +10,7 @@ export const BROWSER_JOBS = ['site', 'checks', 'pipeline', 'page', 'parity', 'pa
 export function classify(paths, force = false) {
   const reasons = [];
   let scope = 'docs';
+  let snapshot = false;
   for (const path of paths) {
     let kind;
     if (/^(site\/|desktop\/payload\/|mcp\/engine\.js$|data\/board_state\.yaml$)/.test(path)) kind = 'snapshot';
@@ -19,10 +20,12 @@ export function classify(paths, force = false) {
     else if (/^(worker\/|bot\/|mcp\/)/.test(path)) kind = 'services';
     else kind = 'full';
     reasons.push({ path, kind });
+    snapshot ||= kind === 'snapshot';
     if (kind === 'full') scope = 'full';
     else if (scope !== 'full' && ['frontend', 'services'].includes(kind)) scope = 'product';
     else if (scope === 'docs' && kind === 'snapshot') scope = 'snapshot';
   }
+  if (snapshot && scope === 'product') scope = 'full';
   if (force || !paths.length) scope = 'full';
   const jobs = scope === 'full' ? PRODUCT_JOBS : scope === 'product' ? BROWSER_JOBS
     : scope === 'snapshot' ? ['published-board'] : [];
@@ -39,14 +42,14 @@ export function policyDigest() {
   return h.digest('hex');
 }
 
-export function changedPaths(event, env, git = args => execFileSync('git', args, { encoding: 'utf8' }).trim()) {
+export function changedPaths(event, env, git = args => execFileSync('git', args, { encoding: 'utf8' })) {
   let base;
   if (env.GITHUB_EVENT_NAME === 'pull_request') {
-    base = git(['merge-base', event.pull_request.base.sha, 'HEAD']);
+    base = git(['merge-base', event.pull_request.base.sha, 'HEAD']).trim();
   } else if (env.GITHUB_EVENT_NAME === 'push' && /^[a-f0-9]{40}$/.test(event.before || '') && !/^0+$/.test(event.before)) {
     base = event.before;
   } else if (env.GITHUB_REF !== 'refs/heads/main') {
-    base = git(['merge-base', 'origin/main', 'HEAD']);
+    base = git(['merge-base', 'origin/main', 'HEAD']).trim();
   } else return [];
   // Without rename detection, both the old and new paths take part in selection.
   return git(['diff', '--name-only', '--no-renames', '-z', base, 'HEAD']).split('\0').filter(Boolean);

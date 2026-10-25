@@ -24,6 +24,8 @@ assert.equal(classify(['web/src/static/style.css', 'engine/src/fight.rs']).scope
 assert.equal(classify(['data/board_state.yaml']).scope, 'snapshot');
 assert(!classify(['site/asset/app.123.js']).jobs.includes('site'));
 assert(classify(['site/asset/app.123.js', 'worker/index.js']).jobs.includes('site'));
+assert.equal(classify(['data/board_state.yaml', 'worker/index.js']).scope, 'full');
+assert.equal(classify(['docs/UI.md', 'data/board_state.yaml']).scope, 'snapshot');
 
 const needs = plan => Object.fromEntries(['plan', 'quick', 'commits', ...PRODUCT_JOBS].map(j =>
   [j, { result: ['plan', 'quick', 'commits', ...plan.jobs].includes(j) ? 'success' : 'skipped' }]));
