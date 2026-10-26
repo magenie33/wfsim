@@ -4,7 +4,7 @@ Chinese name: 苍鹰
 
 Rifle · Primary · Mastery Rank 7. 16 base damage (impact 5.76, puncture 6.72, slash 3.52), 26% crit chance, 3x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

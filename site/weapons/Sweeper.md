@@ -4,7 +4,7 @@ Chinese name: 扫除者
 
 Sentinel Weapon · Sentinel · Mastery Rank 0. 35 base damage x6 multishot (impact 29.75, puncture 1.75, slash 3.5), 10% crit chance, 1.75x crit multiplier, 4.5% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

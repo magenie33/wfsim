@@ -4,7 +4,7 @@ Chinese name: 合成燃气炮
 
 Archgun · Archgun · Mastery Rank 4. 240 base damage (impact 80, puncture 80, slash 80), 20% crit chance, 2.2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

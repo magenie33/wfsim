@@ -4,7 +4,7 @@ Chinese name: 斯特拉迪瓦 Prime
 
 Rifle · Primary · Mastery Rank 12. 30 base damage (impact 10.5, puncture 10.5, slash 9), 24% crit chance, 2.6x crit multiplier, 12% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

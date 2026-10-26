@@ -4,7 +4,7 @@ Chinese name: 悦音 Prime
 
 Shotgun Sidearm · Secondary · Mastery Rank 14. 325 base damage (impact 292.5, puncture 16.25, slash 16.25), 30% crit chance, 2.5x crit multiplier, 2% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

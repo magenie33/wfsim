@@ -4,7 +4,7 @@ Chinese name: 努寇微波枪
 
 Pistol · Secondary · Mastery Rank 4. 22 base damage (radiation 22), 3% crit chance, 4x crit multiplier, 29% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

@@ -4,7 +4,7 @@ Chinese name: 提佩多 Prime
 
 Staff · Melee · Mastery Rank 10. 170 base damage (impact 17, puncture 17, slash 136), 24% crit chance, 2.4x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

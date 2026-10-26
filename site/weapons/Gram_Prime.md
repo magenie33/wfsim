@@ -4,7 +4,7 @@ Chinese name: 格拉姆 Prime
 
 Heavy Blade · Melee · Mastery Rank 14. 300 base damage (impact 60, puncture 15, slash 225), 32% crit chance, 2.6x crit multiplier, 32% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

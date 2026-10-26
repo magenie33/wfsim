@@ -4,7 +4,7 @@ Chinese name: 赤毒·希尔德
 
 Hammer · Melee · Mastery Rank 13. 205 base damage (impact 75.85, puncture 100.45, slash 28.7), 31% crit chance, 2.7x crit multiplier, 27% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

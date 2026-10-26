@@ -4,7 +4,7 @@ Chinese name: 迦伦提恩 Prime
 
 Heavy Blade · Melee · Mastery Rank 13. 280 base damage (impact 7, puncture 7, slash 266), 26% crit chance, 2x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

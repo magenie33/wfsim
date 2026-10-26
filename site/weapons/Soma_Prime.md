@@ -4,7 +4,7 @@ Chinese name: 月神 Prime
 
 Rifle · Primary · Mastery Rank 7. 12 base damage (impact 1.2, puncture 4.8, slash 6), 30% crit chance, 3x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

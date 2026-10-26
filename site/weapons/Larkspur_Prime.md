@@ -4,7 +4,7 @@ Chinese name: 翠雀 Prime
 
 Archgun · Archgun · Mastery Rank 8. 180 base damage (impact 20, radiation 160), 14% crit chance, 1.6x crit multiplier, 50% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

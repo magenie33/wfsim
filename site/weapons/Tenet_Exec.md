@@ -4,7 +4,7 @@ Chinese name: 信条·枢密
 
 Heavy Blade · Melee · Mastery Rank 16. 190 base damage (impact 102.6, slash 87.4), 38% crit chance, 2.4x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

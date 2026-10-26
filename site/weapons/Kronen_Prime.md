@@ -4,7 +4,7 @@ Chinese name: 皇家拐刃 Prime
 
 Tonfa · Melee · Mastery Rank 13. 212 base damage (impact 21.2, puncture 21.2, slash 169.6), 22% crit chance, 2x crit multiplier, 34% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

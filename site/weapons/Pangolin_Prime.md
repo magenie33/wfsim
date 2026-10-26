@@ -4,7 +4,7 @@ Chinese name: 鲮鲤剑 Prime
 
 Sword · Melee · Mastery Rank 14. 248 base damage (impact 12.4, puncture 37.2, slash 198.4), 26% crit chance, 2.2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-25
+## Best riven-free build on the WFSim board, as of 2026-10-26
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
