@@ -187,7 +187,7 @@ Four things these rows show.
 | Scourge Prime | **Throw** (unmodded 200) | 100% | Multiplying | `scourge_prime_thrown` → `independent` |
 | Cernos Prime | Charged Attack | 50% | Adding | `co_base_fraction: 0.5` |
 | Stug | **Blob Impact** | 0% | Does not apply | `co_behavior: inert` |
-| Stug | **Incarnon Form** | 0% | Does not apply | blob parts exclude the payload; M127 confirms both forms' attached ticks and main explosions |
+| Stug | **Incarnon Form** | 0% | Does not apply | `co_behavior: inert`; M127 confirms both forms' attached ticks and main explosions |
 | Zylok / Zylok Prime | Incarnon Form Radial | 90% | Adding | derived per variant; the row MIXES them — see below |
 | Braton family | Incarnon Form Radial | 95% | Adding | derived: 70 + 4 = 74, 70/74 |
 | Burston / Burston Prime | Incarnon Form Radial | 24% | Adding | derived: 13 + 42 = 55, 13/55 |

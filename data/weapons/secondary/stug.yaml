@@ -34,10 +34,7 @@ ammo_pickup: 40
 magazine: 20
 reload_seconds: 2
 
-# CONDITION OVERLOAD DOES NOT APPLY TO THIS WEAPON. The wiki's CO catalog,
-# verbatim: "Stug | Blob Impact | 0% | Does not apply". It is the only
-# entry in the roster that takes `inert` — a blob has no direct hit for a
-# per-status bonus to attach to.
+# M127 and the wiki CO catalog: Blob Impact does not take GunCO.
 co_behavior: inert
 
 attack:

@@ -35,15 +35,8 @@ pseudo_reload:
   magazine: 120
   reload_seconds: 3.0
 
-# ORDINARY HERE — THE ROW IS THE BASE FORM'S. Verbatim:
-#
-#   |{{Weapon|Stug}}||Blob Impact||Projectile||4||0||0%||N/A||Does not apply
-#
-# "Attack Unmodded Damage 4" is what identifies it: this entry deals 50, the
-# base entry deals 4. So the row names the base form's blob and this form has
-# none — and a weapon's two FORMS can differ, which is the Torid's rule already
-# (`independent` on its base, ordinary on its Incarnon).
-co_behavior: additive_with_base_damage
+# M127 and the wiki's separate Incarnon Form row: neither blob part takes GunCO.
+co_behavior: inert
 
 attack:
   # see notes: cone_half_angle_from

@@ -328,6 +328,7 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         // The row is `Blob Impact | 0% | Does not apply`, and its unmodded 4
         // names the BASE form (the Incarnon deals 50).
         ("stug", "inert", 1.0),
+        ("stug_incarnon", "inert", 1.0),
         ("torid", "independent", 1.0),
         // THE SPEARGUNS' THROW, and the row's Attack Name cell is what
         // scopes it: `Throw` on both, so the PRIMARY FIRE entries have no
