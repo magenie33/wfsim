@@ -124,8 +124,7 @@ pub enum Origin {
     /// A SPECTRAL DAGGER's strike or its explosion — the Okina's Incarnon
     /// Form, acting on its own clock from a kill the swings made.
     SpectralDagger,
-    /// A PILE OF BLOBS going off — the Stug's, when its stacks reach the cap or
-    /// its lifespan runs out (`fight::blobs`).
+    /// A blob's attached tick or final explosion (`fight::blobs`, M127).
     Blob,
     /// AN EMBEDDED ORB's hit or its explosion — the Vectis Incarnon's, left in
     /// the body each projectile lands in (`fight::entities`).

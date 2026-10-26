@@ -187,6 +187,7 @@ Four things these rows show.
 | Scourge Prime | **Throw** (unmodded 200) | 100% | Multiplying | `scourge_prime_thrown` → `independent` |
 | Cernos Prime | Charged Attack | 50% | Adding | `co_base_fraction: 0.5` |
 | Stug | **Blob Impact** | 0% | Does not apply | `co_behavior: inert` |
+| Stug | **Incarnon Form** | 0% | Does not apply | blob parts exclude the payload; M127 confirms both forms' attached ticks and main explosions |
 | Zylok / Zylok Prime | Incarnon Form Radial | 90% | Adding | derived per variant; the row MIXES them — see below |
 | Braton family | Incarnon Form Radial | 95% | Adding | derived: 70 + 4 = 74, 70/74 |
 | Burston / Burston Prime | Incarnon Form Radial | 24% | Adding | derived: 13 + 42 = 55, 13/55 |
@@ -477,11 +478,10 @@ Primary, Embolist, Catabolyst, and Cortege" — that is `BeamSpec::
 radius_takes_multishot`, the sphere around a beam's contact point, and the extra
 beams themselves still deal damage.
 
-Two roster entries are hitscan with a radial and NO row, so they stay ordinary
-until measured: the Stug's Incarnon blob (which the table calls a *Projectile*
-under `Blob Impact`, and whose yaml carries a `projectile_speed_mps` — the
-`shot_type: hit_scan` on that entry looks like the odd field, not the rule), and
-nothing else.
+Stug's two blob forms are projectiles with their own catalog exclusions.
+M127 confirms no Galvanized Shot damage gain on their attached ticks or main
+explosions. This exclusion is specific to those parts, not a general rule
+deduced from their area geometry or direct-hit eligibility.
 
 ### The damage column is a FREE CROSS-CHECK of the whole roster
 

@@ -1376,8 +1376,8 @@ Rules the radial part follows, each differing from the direct part:
   patch note: *"Radial damage no longer gains extra headshot damage or
   triggers headshot conditions."* Note the *no longer*: before that pass a
   radial DID headshot, so this is a deliberate design rule, not a side effect.
-  A radial instance therefore never headshots, never feeds headshot-gated
-  buffs, and **never charges an Incarnon gauge that counts weakpoint hits** —
+  Ordinary radial instances therefore never headshot or feed headshot-gated
+  buffs, and **never charge an Incarnon gauge that counts weakpoint hits** —
   where a blast lands on the model is irrelevant, it has no hit location.
   Cross-check from the other direction: the two AoE Incarnon weapons don't
   use weakpoint charging at all. *"Angstrum Incarnon Genesis and Torid
@@ -1385,6 +1385,9 @@ Rules the radial part follows, each differing from the direct part:
   the Torid page spells the exclusion out: *"Direct shots charge Incarnon
   Transmutation"*, *"Torid's poison cloud does not build charges."* That is
   DE routing around a gauge an explosion can never fill.
+  Stug's declared area direct explosion is an exception: weak-point hit/kill
+  events and weak-point crit chance apply, with a critical-headshot fold-in,
+  but no Acuity weak-point damage addition (M127, §7.3).
 - **It can crit** — the part carries its own crit chance/multiplier in the
   weapon data (Laetum radial: 22% / 2.2×). And crit BUFFS reach it, scaled
   against **that part's** base. The rule is the same one mods already follow —
@@ -1605,33 +1608,61 @@ reloads keep the pile up.
 
 ### Blobs — the Stug's pile (§7.3)
 
-Every Stug shot embeds in the body it hits and adds its stacks to the pile
-there. Declared as `blob:` in the attack (`data::weapons::BlobSpec`: `cap`,
-`lifespan_seconds`, one stack's `explosion:`, `radius_at_cap_m`), resolved
-through the beam's buckets (`ResolvedBlob`), and set off by `fight::blobs` on
-the entity clock (§7.4).
+A blob is an entity attached to a body part. Contact only creates or feeds it;
+there is no direct damage instance. Its first attached tick lands on creation,
+then once per second on its original clock. Each addition refreshes the 1.5 s
+fuse without moving that clock. Expiry explodes immediately, with no fractional
+tick or tick at the expiry instant (M127).
 
-| entry | cap | one stack | a full pile |
-| --- | --- | --- | --- |
-| Stug | 10 | 75 Corrosive, 0.3 m | 750 Corrosive, 2.8 m |
-| Stug (Incarnon Form) | 5 | 200 Corrosive, 0.3 m | 1,000 Corrosive, 0.3 m (growth unpublished) |
+| entry | cap | attached base per stack | explosion base per stack | maximum explosion radius |
+| --- | --- | --- | --- | --- |
+| Stug | 10 | 4 Corrosive | 75 Corrosive | 2.8 m |
+| Stug (Incarnon Form) | 5 | 50 Corrosive | 200 Corrosive | 2.8 m |
 
-1. **MULTISHOT IS STACKS, NOT BLOBS.** A shot lays `floor` of the live
-   multishot in stacks and fires one blob — the floor the Grimoire's multishot
-   buys was measured (M63); the Stug's is M109's proposal.
-2. **A STACK REFRESHES THE LIFESPAN; THE CAP SETS IT OFF.** A pile goes off when
-   a shot takes it to the cap, or 1.5 s after its last stack. A shot that
-   crosses the cap pays the cap: what is over it is lost.
-3. **A SHOT ALREADY OVER THE CAP DOES NOT SET IT OFF** (M109, the owner's
-   report): the pile holds the cap and waits. Every later shot refreshes it,
-   so at multishot over 10 (over 5 in Incarnon form) a pile fed faster than
-   1.5 s goes off only when the firing stops — a reload, a pause.
-4. **A PILE IS ONE INSTANCE OF ALL ITS STACKS' DAMAGE** — "75 - 750 damage" —
-   so the statuses it rolls are seeded from all of it, on every body inside
-   its radius, falling off from the body it was in: 70%, the page's bug note
-   over its 30% table.
-5. **NOT MODELLED**: the charged alternate fire and the Incarnon form's bounce
-   explosions (`unmodeled` on both entries).
+1. **Multishot rolls integer stacks**, using the ordinary multishot draw:
+   1.6 supplies one or two, never a fixed floor. One projectile carries them.
+2. **Flat evolution damage is paid once** per tick or explosion, before the
+   mod buckets: with Overcharge Blast and Hornet Strike, attached damage is
+   `(per_stack * stacks + 300) * 3.2`. Evolution IV reaches both parts.
+3. **Birth and merging differ** (M109). A blob born full bypasses the stack
+   callback and waits for expiry. A growing merge to the cap detonates at once
+   and discards excess stacks; feeding a blob already full only refreshes it.
+   Spawn quantities beyond the first capped blob are not fully traced.
+4. **The head's explosion takes the additive headshot bracket over a 1x base**
+   and carries it to every victim (M127). Attached ticks take no head multiplier.
+   Both parts use AoE crit/status rules through `field_tick`.
+   The main explosion is declared `explosion_direct_events`: it takes
+   weak-point hit/kill triggers and conditional weak-point crit chance, and
+   eligible headcrits double crit damage inside the tier formula. Acuity's
+   weak-point damage addition does not reach it (M127: 4681 yellow, 7802 orange).
+   Attached ticks roll crits independently and take no such direct events or
+   Acuity bonuses; their ordinary kill triggers remain active.
+   Cold's received crit damage reaches the explosion, not attached ticks.
+   Puncture's received crit chance follows the same direct-hit class rule.
+   Both parts exclude Galvanized Shot's per-status damage payload (M127).
+   This is Stug's measured per-part GunCO rule; other weapons follow their
+   own catalog entries (CATALOGS.md). It does not establish an area-tag rule.
+   Radius, direct-hit crit/events and Acuity damage are separate properties.
+5. **Contact and an enemy-attached explosion each charge once** in the base
+   phase, independently of multishot and explosion victim count. Attached ticks
+   and ground damage do not charge. Each charge buys four Incarnon rounds.
+6. **The two forms never combine piles.** Identity includes owner, form, body
+   generation and body part. Multiple attachment patches within one body part
+   are not represented. A dead body's pile stays at its position but cannot
+   charge from a replacement individual.
+
+Attached ticks use a 2 m radius and 100% falloff. Explosion radius interpolates
+from 0.3 m to 2.8 m at the cap, with 70% falloff. M109's package report gives
+both forms the same maximum radius; intermediate radius and falloff still
+need measurements. Reflected Incarnon child projectiles are assumed to fly
+out of the fight and hit nobody, including crowds; their repeated hits,
+1600/2080 headshot readings and source parameters are recorded in M127.
+
+Declared in `blob:` (`BlobSpec`), carried through `BlobBase` and
+`ResolvedBlob`, and scheduled by `fight::entities`. Blob events can fill the
+gauge and start a transform between shots. Blazing Barrel stacks on firing in
+either form without a timer; reload or either transform clears it (M126).
+Installing the adapter removes charged alternate fire, outside this model.
 
 ### Entities — one list, one order (§7.4)
 

@@ -876,6 +876,10 @@ pub struct ReloadGrenadeSpec {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BlobSpec {
+    #[serde(default)]
+    pub explosion_direct_events: bool,
+    pub embed_radius_m: f64,
+    pub embed_falloff_reduction: f64,
     /// Stacks at which a pile detonates at once.
     pub cap: u32,
     /// How long a pile waits for its next stack before it detonates.

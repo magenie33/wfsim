@@ -210,12 +210,14 @@ which is why the choice has to be data rather than a default nobody re-read.
 ### A WEAK-POINT KILL IS THE ROUND'S KILL
 
 One definition, in `fight::pellet::weakpoint_kill`, and everything that reads
-the trigger reads it there: the DIRECT hit entered a weak point and the DIRECT
-hit finished that body. A WEAK POINT, not a head (`is_weak_point`, MECHANICS
+the trigger reads it there: an eligible direct instance entered a weak point
+and killed that body. Stug's declared area direct explosion qualifies (M127).
+A WEAK POINT, not a head (`is_weak_point`, MECHANICS
 §Body parts): Update 44.0 converted both Deadheads and Galvanized Scope /
 Crosshairs from "On Headshot" to "On Weakpoint". The wire id stays
-`headshot_kill`. A bleed that kills afterwards, an explosion that kills
-beside it and a bounce's assumed head are all kills and none of them is this.
+`headshot_kill`. A bleed that kills afterwards, an ordinary radial kill and a
+bounce's assumed head do not qualify. Stug's attached ticks still grant normal
+kill effects, but no direct-hit or weak-point events.
 
 It is paid once per body the round killed that way — the aimed one, and each
 one behind it the round punched through (MEASUREMENTS M103). Two things read
@@ -517,6 +519,12 @@ same: the arcane whose entire point is a stack count has to be settable.
 `BuffMeta.uncapped` says there is no
 maximum, the card shows `/ ∞` and its input takes no `max`, and
 `FightParams::enervate_stacks` carries the configured pile into the run.
+
+Its gain and big-crit reset counters have independent 30/s gates. One AoE
+event earns one stack; simultaneous big crits advance reset once, including
+when the first victim did not big-crit. Stug's contact is its entity's creation
+tick, with no separate contact stack. Attached ticks and main explosions
+submit their own events and read the live ramp, including between shots (M127).
 
 The modelled fight is therefore: *you have been at it a while, but you have not
 been in contact for the last few seconds and are about to be.* Whatever

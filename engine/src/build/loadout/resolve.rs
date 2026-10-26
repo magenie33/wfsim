@@ -1350,11 +1350,26 @@ pub fn resolve_for(
     });
     // THE BLOB, the same buckets. Its stacks are the fight's: a multishot buff
     // that arrives mid-fight lays more of them (`fight::resolve`).
-    let blob = base.blob.as_ref().map(|b| crate::build::loadout::ResolvedBlob {
-        cap: b.cap,
-        lifespan_seconds: b.lifespan_seconds,
-        explosion: a_resolved(&b.explosion),
-        radius_at_cap_m: b.radius_at_cap_m * if b.explosion.takes_blast_radius_mods { 1.0 + br } else { 1.0 },
+    let blob = base.blob.as_ref().map(|b| {
+        let with_flat = |r: &RadialBase| {
+            let mut part = r.clone();
+            let total = part.base_vector.total();
+            if total > 0.0 {
+                part.base_vector = part.base_vector.scale((total + b.flat_base_damage) / total);
+            }
+            a_resolved(&part)
+        };
+        crate::build::loadout::ResolvedBlob {
+            explosion_direct_events: b.explosion_direct_events,
+            hit: with_flat(&b.hit),
+            flat_base_damage: b.flat_base_damage,
+            hit_base_per_stack: b.hit.base_vector.total(),
+            explosion_base_per_stack: b.explosion.base_vector.total(),
+            cap: b.cap,
+            lifespan_seconds: b.lifespan_seconds,
+            explosion: with_flat(&b.explosion),
+            radius_at_cap_m: b.radius_at_cap_m * if b.explosion.takes_blast_radius_mods { 1.0 + br } else { 1.0 },
+        }
     });
     // THE EMBEDDED ORB, both parts through the same buckets as any explosion.
     let embed = base.embed.as_ref().map(|e| crate::build::loadout::ResolvedEmbed {

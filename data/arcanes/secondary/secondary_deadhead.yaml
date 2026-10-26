@@ -10,6 +10,7 @@ effects:
   # direct hit weak points (not AoE)". Excluded: AoE/explosion damage and most
   # status-proc kills. Included: direct hits; Electricity/Gas proc kills aimed
   # at the head (those procs land their own headshots).
+  # M127: Stug's declared area direct explosion also qualifies.
   # Additive with base-damage mods (Hornet Strike bucket) - so it also scales
   # ModifiedBase (DoT payloads, elemental amounts).
   - kind: buff

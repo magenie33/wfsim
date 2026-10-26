@@ -227,6 +227,7 @@ pub(super) fn stacking_card_id(
     match (trigger, grant) {
         (T::Firing, G::FireRate) => "on_firing_fire_rate",
         (T::Firing, G::BaseDamage) => "on_firing_damage",
+        (T::Firing, G::Multishot) => "on_firing_multishot",
         (T::StatusApplied, G::FireRate) => "on_status_fire_rate",
         (T::StatusApplied, G::BaseDamage) => "on_status_damage",
         (T::Headshot, G::FireRate) => "on_headshot_fire_rate",

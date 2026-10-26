@@ -102,6 +102,11 @@ impl WeaponBase {
         if let Some(sl) = self.slam.as_mut() {
             sl.base_vector = sl.base_vector.scale(by);
         }
+        if let Some(b) = self.blob.as_mut() {
+            b.hit.base_vector = b.hit.base_vector.scale(by);
+            b.explosion.base_vector = b.explosion.base_vector.scale(by);
+            b.flat_base_damage *= by;
+        }
         if let Some(e) = self.embed.as_mut() {
             e.hit.base_vector = e.hit.base_vector.scale(by);
             e.explosion.base_vector = e.explosion.base_vector.scale(by);
@@ -113,6 +118,9 @@ impl WeaponBase {
             return;
         }
         let original_total = self.base_vector.total();
+        if let Some(b) = self.blob.as_mut() {
+            b.flat_base_damage += flat;
+        }
         // A DIRECT VECTOR OF ZERO IS A FORM WHOSE WHOLE ATTACK IS ITS EXPLOSION
         // — the heavy slam states exactly that — so this cannot return early on
         // it: the add still has an explosion to reach.

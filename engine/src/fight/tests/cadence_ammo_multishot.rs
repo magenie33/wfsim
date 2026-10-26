@@ -130,6 +130,48 @@ fn blazing_barrel_is_cleared_by_a_reload_and_not_by_a_refill() {
     assert_eq!(s.max_stacks, 10);
 }
 
+/// M126: Stug's firing buff has no timer and clears on either transform.
+#[test]
+fn m126_stug_blazing_barrel_resets_in_both_forms() {
+    use crate::model::{BuffGrant, BuffTrigger, StackPolicy, WeaponBase};
+    for id in ["stug", "stug_incarnon"] {
+        let base = WeaponBase::from_data(id, true, &["stug_blazing_barrel"]);
+        let panel = crate::build::loadout::resolve(&base, &[], StackPolicy::Emergent);
+        let p = FightParams::from_panel(&panel, &crate::arena::Arena::training(30.0), &ArcaneFx::none());
+        let i = p.stacking_buffs.iter().position(|b| b.id == "on_firing_multishot")
+            .expect("the saved buff card keeps its id in both forms");
+        let b = &p.stacking_buffs[i];
+        assert_eq!(b.grant, BuffGrant::Multishot);
+        assert!(b.duration.is_infinite());
+        let mut stacks: Vec<_> = p.stacking_buffs.iter()
+            .map(|b| LiveStacks::seed(0, b.max_stacks, b.duration)).collect();
+        let mut rng = Rng::new(126);
+        let mut ammo = Ammo {
+            drop_kill_mark: 0, refill_kill_mark: 0, rounds_this_mag: 0,
+            refills: 0, cap: p.magazine_size, growth_stacks: 0,
+            summon_multiplier: 1.0, owed_shells: 0, loaded: p.magazine_size,
+            reserve: p.reserve_ammo, instant_reload_now: false, grenade_thrown_at: None,
+        };
+        let mut result = RunResult::default();
+        let mut armed = false;
+        let mut opening_closed = false;
+        // Reload, entry and exit use this shared refill path; exit is not a reload.
+        for (reload, from_empty) in [(true, Some(false)), (true, Some(false)), (false, None)] {
+            for shot in 0..12 {
+                bump_on_trigger(&p, &mut stacks, BuffTrigger::Firing, f64::from(shot), &mut rng);
+            }
+            assert_eq!(stacks[i].current(3600.0, b.duration), 10, "{id}: no timer, capped at ten");
+            let bonus = buff_total(&p, BuffGrant::Multishot, &mut stacks, 3600.0);
+            assert!((bonus - 0.5).abs() < 1e-9, "{id}: ten stacks give +50% multishot");
+            magazine_refilled(&p, &mut ammo, &mut result, &mut stacks, &mut armed,
+                &mut opening_closed, reload, from_empty);
+            assert_eq!(stacks[i].current(3600.0, b.duration), 0, "{id}: refill clears the buff");
+            bump_on_trigger(&p, &mut stacks, BuffTrigger::Firing, 3601.0, &mut rng);
+            assert_eq!(stacks[i].current(3601.0, b.duration), 1, "{id}: firing rebuilds from zero");
+        }
+    }
+}
+
 /// THE LATRON'S TWO PUNCTURE PERKS, both measured against the status they
 /// read rather than against a build that happens to be good.
 ///

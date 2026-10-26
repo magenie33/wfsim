@@ -30,6 +30,8 @@ effects:
 #   counts as ONE hit; projectile and non-chained beam attacks count as
 #   multiple; AoE always counts as one.
 # - Shotgun-sidearm pellets are tied to Multishot and are not separate hits.
+# - Gain and reset each have a 30/s gate; simultaneous big crits advance
+#   the reset counter once, independently of the gain gate.
 # - Expiring Blast procs count as a hit; Blast explosions from max stacks or
 #   a kill do not.
 # - Hits on an Arctic Eximus Snow Globe build the bonus without triggering

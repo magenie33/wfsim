@@ -5,6 +5,7 @@ use super::*;
 
 mod battery_recharge;
 mod blobs;
+mod m127_stug;
 mod combatant_attribution;
 mod two_seats;
 mod attrition_times_co;

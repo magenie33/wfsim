@@ -166,6 +166,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     // DID THIS SHOT HIT ANYTHING AT ALL — the question the SHOT COMBO COUNTER
     // asks, and it is the shot's rather than the pellet's.
     let mut landed_this_shot = false;
+    let mut blob_contact = None;
     // THE SHOT'S FACTORS, filled by its first landing pellet — see
     // `SpreadStrike`. `None` when nothing landed, and then nothing spreads.
     let mut strike_spread: Option<SpreadStrike> = None;
@@ -248,6 +249,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             field_duration_boost: &mut me.field_duration_boost,
             influence_until: &mut me.influence_until,
             landed_this_shot: &mut landed_this_shot,
+            blob_contact: &mut blob_contact,
             super_crit_armed: &mut me.super_crit_armed,
             round_aim: &mut round_aim,
         };
@@ -258,13 +260,21 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
 
     // THE BLOB EMBEDS in the body the shot struck, and a pile this shot takes
     // to its cap goes off now (`fight::blobs`).
-    if let Some(part) = active.blob.filter(|_| landed_this_shot) {
-        if let Some(pile) = embed_blob(g.entities, part, me.seat, 0, l.blob_stacks, t) {
+    if let Some((part, (spot, head, weakpoint, critical_head))) = active.blob.zip(blob_contact) {
+        let contact = BlobContact {
+            body: 0, spot, head, weakpoint, critical_head, base_form: l.base_form,
+            generation: g.bodies[0].state.generation,
+            head_bracket: l.shot_head_landing,
+        };
+        if let Some(pile) = embed_blob(g.entities, part, me.seat, contact, l.blob_stacks, t) {
             detonate_blob(
-                &me.windows, pile, t, &mut me.gal, &mut me.arc,
-                me.params, active, &me.field_ctx, g.r, g.rec, d, g.bodies,
+                &mut me.windows, pile, t, &mut me.gal, &mut me.arc,
+                me.params, active, &me.field_ctx, g.r, g.rec, d, g.bodies, &mut me.incarnon,
+                &mut BlobEvents { stacks: &mut me.buff_stacks, weakpoint_pile: &mut me.weakpoint_pile,
+                    rec_index: &me.fixed.rec_buff_index, bar: &mut me.bar, enervate: &mut me.enervate },
             );
         }
+        process_entities(g.entities, t + 1e-9, &mut turn!(me, active, d), g.r, g.rec, g.bodies);
     }
 
     // NO FORMATION, NOTHING TO REACH — see [`spread_beyond_the_target`].

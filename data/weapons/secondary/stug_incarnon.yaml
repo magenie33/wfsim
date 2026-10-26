@@ -10,16 +10,10 @@ transforms_from: stug
 
 # see notes: bulk_intake_stats_are
 unmodeled:
-  - "The Incarnon Form Bounce Explosion is not modelled; this form has more parts than this entry carries."
-  - "Unpublished: how far an Incarnon pile's explosion grows with its stacks; every pile here goes off at the one-stack 0.3 m."
-  - "Unmeasured: how many stacks a shot lays. Read as floor(multishot), the count the Grimoire's multishot buys; rolling the fraction would lay more."
-  - reason: blob_over_cap
-    cap: 5
-  - reason: blob_crossing_cap
-    cap: 5
-  - "Unmeasured: a pile is read as 200 a stack, the base form's linear scaling applied to the Incarnon explosion."
+  - "Bouncing Incarnon child projectiles are assumed to leave the fight and hit nobody, including crowds (M127). Their damage and parameters are recorded."
+  - "Attachment is resolved per body part; separate nearby patches on one part are not modelled (M127)."
+  - "Unmeasured: spawn-time projectile quantities beyond one full blob are capped here; the emitter's handling of the remainder is not traced (M109)."
   - "Unmeasured: the explosion's falloff is read as 70%, the base form's bug note applied to this form."
-  - "Unmeasured: when a body dies, its pile is read as staying where it stood and going off on whoever is there."
 
 gauge_form:
   gauge:
@@ -57,7 +51,7 @@ attack:
     min_deg: 0.0
     max_deg: 0.0
   trigger: auto
-  shot_type: hit_scan
+  shot_type: projectile
   projectile_speed_mps: 35
   fire_rate: 4
   multishot: 1.0
@@ -70,12 +64,15 @@ attack:
   # THE BLOB ECONOMY at five stacks — docs/MECHANICS.md §7.3, M109: "explode
   # after 1.5 seconds or reaching max stacks", "can stack up to 5 times before
   # exploding, increasing their damage and explosion range". One stack is the
-  # module's Incarnon Form Blob Explosion; how far the range grows is
-  # unpublished, so a full pile is held at the one-stack radius.
+  # module's Incarnon Form Blob Explosion; M109's package report gives the
+  # same 2.8 m maximum range as the base form.
   blob:
+    explosion_direct_events: true    # M127: area direct hit, including weak-point events
+    embed_radius_m: 2
+    embed_falloff_reduction: 1.0
     cap: 5
     lifespan_seconds: 1.5
-    radius_at_cap_m: 0.3
+    radius_at_cap_m: 2.8
     explosion:
       damage: { corrosive: 200 }   # total 200
       radius_m: 0.3

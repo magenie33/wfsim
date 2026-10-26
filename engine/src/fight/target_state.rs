@@ -40,6 +40,8 @@ pub(super) enum Phase {
 /// Live pools of the target during a run.
 #[derive(Clone)]
 pub(super) struct TargetState {
+    /// Distinguishes a corpse's attachments from the next spawned individual.
+    pub(super) generation: u32,
     /// See [`Phase`]. `Physical` on every body in every fight but one.
     pub(super) phase: Phase,
     /// WHERE THIS BODY STANDS, so what it drops falls somewhere rather than
@@ -87,6 +89,7 @@ impl TargetState {
         }
         Self {
             at,
+            generation: 0,
             phase: Phase::Physical,
             overguard: p.overguard(),
             shield: p.max_shield(),
@@ -639,7 +642,9 @@ impl TargetState {
                 self.atten_window_damage = 0.0;
                 return out;
             }
+            let generation = self.generation.wrapping_add(1);
             *self = TargetState::spawn_at(p, now, self.at); // instant respawn, same spot
+            self.generation = generation;
             out.killed = true;
         }
         out

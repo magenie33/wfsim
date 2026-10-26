@@ -303,6 +303,15 @@ pub fn base_panel_assembled(
     // THE BLOB'S EXPLOSION is one stack's, and a pile is a count of them —
     // multishot buys stacks, never a second explosion.
     let blob = s.attack.blob.as_ref().map(|b| crate::model::BlobBase {
+        explosion_direct_events: b.explosion_direct_events,
+        hit: a_radial(&RadialSpec {
+            damage: s.attack.damage.clone(),
+            radius_m: b.embed_radius_m,
+            falloff_reduction: Some(b.embed_falloff_reduction),
+            takes_multishot: false,
+            ..b.explosion.clone()
+        }),
+        flat_base_damage: 0.0,
         cap: b.cap,
         lifespan_seconds: b.lifespan_seconds,
         explosion: a_radial(&RadialSpec { takes_multishot: false, ..b.explosion.clone() }),

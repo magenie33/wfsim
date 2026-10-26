@@ -6,6 +6,9 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "Bouncing Incarnon child projectiles are assumed to leave the fight and hit nobody, including crowds (M127). Their damage and parameters are recorded.": "灵化跳弹按飞向空中、不再命中任何目标处理，群体战也不计收益；伤害和参数保留在 M127 实测记录中。"
+  "Attachment is resolved per body part; separate nearby patches on one part are not modelled (M127).": "泡泡按附着部位区分；同一部位不同位置上的独立泡泡尚未建模（M127）。"
+  "Unmeasured: spawn-time projectile quantities beyond one full blob are capped here; the emitter's handling of the remainder is not traced (M109).": "未确认：单发出生时超过一颗满层泡泡的数量暂按上限计算，发射器如何处理剩余数量尚未追踪（M109）。"
   # NONA, the in-page agent. Her Chinese name is her own name, not a
   # translation of the English one.
   "Nona": 九九

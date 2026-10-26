@@ -257,6 +257,11 @@ pub struct ResolvedReloadGrenade {
 /// THE BLOB ECONOMY through the mod buckets — see [`crate::model::BlobBase`].
 #[derive(Debug, Clone, Copy)]
 pub struct ResolvedBlob {
+    pub explosion_direct_events: bool,
+    pub hit: ResolvedRadial,
+    pub flat_base_damage: f64,
+    pub hit_base_per_stack: f64,
+    pub explosion_base_per_stack: f64,
     pub cap: u32,
     pub lifespan_seconds: f64,
     /// One stack's explosion, modded, at the one-stack radius.
@@ -277,6 +282,13 @@ pub struct ResolvedEmbed {
 }
 
 impl ResolvedBlob {
+    /// The flat evolution add is paid once, before the mod buckets (M127).
+    pub fn stack_scale(&self, stacks: u32, explosion: bool) -> f64 {
+        let base = if explosion { self.explosion_base_per_stack } else { self.hit_base_per_stack };
+        let one = base + self.flat_base_damage;
+        if one <= 0.0 { return 0.0; }
+        (base * f64::from(stacks) + self.flat_base_damage) / one
+    }
     /// HOW FAR A PILE OF `stacks` REACHES — linear from one stack to `cap`.
     pub fn radius_at(&self, stacks: u32) -> f64 {
         if self.cap <= 1 {

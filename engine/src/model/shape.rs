@@ -162,6 +162,10 @@ pub struct ReloadGrenadeBase {
 /// THE BLOB ECONOMY — see [`crate::data::weapons::BlobSpec`].
 #[derive(Debug, Clone)]
 pub struct BlobBase {
+    pub explosion_direct_events: bool,
+    pub hit: RadialBase,
+    /// Added once per instance, outside the stack multiplier (M127).
+    pub flat_base_damage: f64,
     pub cap: u32,
     pub lifespan_seconds: f64,
     /// One stack's explosion, at the one-stack radius.

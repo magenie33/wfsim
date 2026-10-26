@@ -15,15 +15,10 @@ transforms_to: stug_incarnon
 
 # see notes: bulk_intake_stats_are_2
 unmodeled:
-  - "The Incarnon form's bouncing secondary projectiles are not modelled: a stacked shot releases 2 to 5, each exploding on up to 3 bounces."
-  - "The charged alt-fire is not modelled: a full 10-stack blob over 2 s, for 10 ammo."
-  - "Unmeasured: how many stacks a shot lays. Read as floor(multishot), the count the Grimoire's multishot buys; rolling the fraction would lay more."
-  - reason: blob_over_cap
-    cap: 10
-  - reason: blob_crossing_cap
-    cap: 10
+  - "Bouncing Incarnon child projectiles are assumed to leave the fight and hit nobody, including crowds (M127). Their damage and parameters are recorded."
+  - "Attachment is resolved per body part; separate nearby patches on one part are not modelled (M127)."
+  - "Unmeasured: spawn-time projectile quantities beyond one full blob are capped here; the emitter's handling of the remainder is not traced (M109)."
   - "Unmeasured: the explosion's falloff is read as 70%, from the page's bug note, rather than the 30% in its table."
-  - "Unmeasured: when a body dies, its pile is read as staying where it stood and going off on whoever is there."
 accuracy: 100
 disposition: 1.2
 polarities: [vazarin]
@@ -52,7 +47,7 @@ attack:
     min_deg: 0.0
     max_deg: 0.0
   trigger: auto
-  shot_type: hit_scan
+  shot_type: projectile
   projectile_speed_mps: 35
   fire_rate: 4
   multishot: 1.0
@@ -67,6 +62,9 @@ attack:
   # detonate and deal 75 - 750 damage in a 0.3 - 2.8 meter radius, scaling
   # with the number of stacks." — so one stack is the module's Blob Explosion.
   blob:
+    explosion_direct_events: true    # M127: area direct hit, including weak-point events
+    embed_radius_m: 2
+    embed_falloff_reduction: 1.0
     cap: 10
     lifespan_seconds: 1.5            # "with a lifespan of 1.5 seconds"
     radius_at_cap_m: 2.8
@@ -79,6 +77,7 @@ attack:
       # range), it is actually 70% (dealing 100% - 30% damage over its range)".
       falloff_reduction: 0.7
 
+# M126: installing the adapter removes charged alt-fire; only primary fire is modelled.
 # incarnon_evolutions: definitions live in data/evolutions/stug_*.yaml.
 
 source:

@@ -127,8 +127,8 @@ pub(super) fn bump_shells(params: &FightParams, stacks: &mut [LiveStacks], n: u3
 /// reload that has begun has refilled nothing.
 ///
 /// `also_a_reload` is false where the event refills without being a reload:
-/// swapping OUT of the Incarnon form refills the base magazine, and Blazing
-/// Barrel is stated to survive it.
+/// swapping OUT of the Incarnon form refills the base magazine. Strun's Blazing
+/// Barrel survives it; Stug's clears on either transform (M126).
 ///
 /// `from_empty` is `Some` where the refill ENDS a reload (a transform into the
 /// Incarnon form is one) and says whether it began empty: Ready Retaliation is
@@ -501,6 +501,8 @@ pub fn run_once_traced(
     // **THE LIST THIS RUN EXECUTES**, composed once rather than per decision:
     // it is the same list for the whole engagement, and building it inside the
     // loop would allocate on every shot.
+    let has_blobs = seats.iter().any(|s| s.params.blob.is_some()
+        || s.params.cycle.as_ref().is_some_and(|c| c.base_form.blob.is_some()));
     let mut t;
     // WHOSE TURN, AND WHEN. The fight's clock is whatever the next seat is due
     // at; the body then reads `t` as "now" exactly as it did when there was
@@ -511,7 +513,44 @@ pub fn run_once_traced(
         // time (`fight::flight`). One that would arrive after the engagement
         // never does. A weapon whose shot does not fly never has one.
         let by = due.map(|s| seats[s].next_t);
-        if let Some((si, k)) = next_landing(&seats, by, params.duration_seconds) {
+        let landing = next_landing(&seats, by, params.duration_seconds);
+        let next_action = landing.map(|(s, k)| seats[s].in_flight[k].t)
+            .or(by).unwrap_or(f64::INFINITY);
+        // A blob's clock can fill its owner's gauge between trigger pulls.
+        let blob_due = has_blobs.then(|| entities.iter().filter_map(|e| match e {
+            Entity::Pile(p) => e.due().map(|at| (p.owner.0, at)),
+            _ => None,
+        }).filter(|(_, at)| *at <= next_action && *at < params.duration_seconds)
+            .min_by(|a, b| a.1.total_cmp(&b.1))).flatten();
+        if let Some((si, at)) = blob_due {
+            if trace.is_some() {
+                sample_frames_up_to(at, params, &mut trace, &mut next_frame, frame_seconds,
+                    &mut seats, &r, &bodies);
+            }
+            let me = &mut seats[si];
+            let counters_before = SeatCounters::of(&r);
+            let active = match &me.params.cycle {
+                Some(cy) if me.incarnon.in_base_form => &cy.base_form,
+                _ => me.params,
+            };
+            process_entities(&mut entities, at + 1e-9, &mut turn!(me, active, &mut me.d),
+                &mut r, rec, &mut bodies);
+            if let Some(cy) = me.params.cycle.as_ref().filter(|_| me.incarnon.in_base_form) {
+                if let Arms::Gauge { charge_on, charges_to_fill } = cy.arms {
+                    if me.incarnon.charges >= charges_to_fill {
+                        let mut now = at;
+                        charge_the_gauge(me.params, &me.apl, false, rec, rng, &mut me.d, cy,
+                            charge_on, r.pellets, r.weakpoint_hits + r.headshots_on_others,
+                            &mut now, &mut r, &mut me.ammo, &mut me.incarnon, &mut me.double_tap,
+                            &mut me.buff_stacks, &mut me.rs_armed, &mut me.opening_closed);
+                        if !me.incarnon.in_base_form { me.next_t = now; }
+                    }
+                }
+            }
+            r.per_seat[si].add(SeatCounters::of(&r).since(counters_before));
+            continue;
+        }
+        if let Some((si, k)) = landing {
             let mut l = seats[si].in_flight.remove(k);
             if trace.is_some() {
                 sample_frames_up_to(
@@ -890,6 +929,9 @@ pub fn run_once_traced(
         let shot_head_landing = (1.0 + shot_hb) * (1.0 + shot_hi);
         // Field ticks due before this shot, with the buff state as of now.
         me.field_ctx = FieldCtx {
+            direct_hit: false,
+            weakpoint_direct: false,
+            critical_head_direct: false,
             flat_crit,
             crit_chance_relative_mods: crit_chance_relative - me.params.arcane.crit_chance_relative,
             crit_damage_relative_mods: buff_total(active, crate::model::BuffGrant::CritDamage, &mut me.buff_stacks, t),

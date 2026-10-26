@@ -12,15 +12,14 @@ effects:
   # from: "Increase Base Damage by +175"
   - kind: flat_base_damage
     value: 175.0
-  # see notes: blazing_barrel_two_clauses_2
-  #
-  # see notes: 5_multishot_percentage_weapon
-  #
-  # see notes: no_duration_verbatim_wiki
-  - kind: stacking_multishot_on_firing
-    base: false
+  # M126: no timer; reload and either Incarnon transform clear the pile.
+  - kind: stacking_buff
+    trigger: firing
+    grants: multishot
     per_stack: 0.05
     max_stacks: 10
+    decay: per_stack_expiry
+    cleared_by: magazine_refilled
 
 source:
   url: https://wiki.warframe.com/w/Stug_Incarnon_Genesis

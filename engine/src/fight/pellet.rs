@@ -108,6 +108,7 @@ pub(super) struct Live<'a> {
     pub(super) field_duration_boost: &'a mut bool,
     pub(super) influence_until: &'a mut f64,
     pub(super) landed_this_shot: &'a mut bool,
+    pub(super) blob_contact: &'a mut Option<(usize, bool, bool, bool)>,
     pub(super) super_crit_armed: &'a mut bool,
     pub(super) round_aim: &'a mut RoundAim,
 }
@@ -126,10 +127,9 @@ pub(super) struct RoundAim {
 }
 
 /// WHAT A WEAK-POINT KILL GRANTS — one site, because "headshot kill" has to
-/// mean ONE thing across the engine: the DIRECT hit entered a weak point and
-/// the DIRECT hit finished that body. A bleed that kills afterwards, an
-/// explosion that kills beside it and a bounce's assumed head are all kills,
-/// and none of them is this.
+/// mean ONE thing across the engine: an eligible direct instance entered a
+/// weak point and killed that body. Stug's declared area direct explosion
+/// qualifies (M127); ordinary radial and status kills do not.
 ///
 /// Called once per body the round killed that way — the aimed one, and each
 /// one behind it the same round punched through.
@@ -153,7 +153,7 @@ pub(super) fn arms_replay(
 }
 
 #[wfsim_gas_macro::metered]
-fn weakpoint_kill(
+pub(super) fn weakpoint_kill(
     params: &FightParams,
     arc: &mut ArcRuntime,
     windows: &mut CardWindows,
@@ -172,6 +172,36 @@ fn weakpoint_kill(
             t,
         );
     }
+}
+
+/// Direct projectiles and declared area direct hits share weak-point events.
+#[allow(clippy::too_many_arguments)]
+#[wfsim_gas_macro::metered]
+pub(super) fn weakpoint_contact(
+    params: &FightParams, arc: &mut ArcRuntime, windows: &mut CardWindows,
+    stacks: &mut [LiveStacks], weakpoint_pile: &mut LiveStacks,
+    rec_index: &[Option<usize>], rec: &mut crate::record::Record,
+    t: f64, d: &mut crate::rules::rng::Draws, weakpoint: bool, eximus: bool,
+) {
+    if !weakpoint {
+        for (i, b) in params.stacking_buffs.iter().enumerate() {
+            if b.trigger == crate::model::BuffTrigger::ConsecutiveHeadshot {
+                stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
+            }
+        }
+        return;
+    }
+    if let Some(b) = params.crit_chance_on_headshot { windows.crit_on_headshot = t + b.duration; }
+    if let Some(b) = params.on_weakpoint { windows.weakpoint_buff = t + b.duration; }
+    if eximus {
+        if let Some(b) = params.base_damage_on_eximus_weakpoint { windows.base_damage_eximus = t + b.duration; }
+    }
+    bump_buffs!(params, stacks, rec_index, rec, crate::model::BuffTrigger::Headshot, t, d.extra);
+    if let Some(w) = params.weakpoint_stacks {
+        weakpoint_pile.bump(t, w.duration_seconds, w.max_stacks);
+    }
+    arc.bump_trigger(&params.arcane.buffs, ArcTrigger::WeakpointHit, t);
+    bump_buffs!(params, stacks, rec_index, rec, crate::model::BuffTrigger::ConsecutiveHeadshot, t, d.extra);
 }
 
 /// Fire one pellet of this shot.
@@ -810,6 +840,15 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 reason: "outside the cone",
             });
         }
+    }
+    // M127: contact feeds an entity; only that entity deals damage.
+    if active.blob.is_some() {
+        if pellet_lands {
+            *live.blob_contact = Some((round_aim.part, part.is_head, part.is_weak_point,
+                part.is_head && part.crit_bonus && part.multiplier > 1.0));
+            r.pellets += 1;
+        }
+        return;
     }
     // A THROWN GLAIVE'S BOUNCES — docs/MELEE.md §10. Decided once for the
     // pellet, before anything goes off, because the detonation reads where the
@@ -2067,82 +2106,14 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             *any_head |= part.is_head;
             *any_big |= tier >= 2;
 
-            // EVERY TRIGGER BELOW READS THE WEAK POINT, NOT THE HEAD, and
-            // the cards' own wording is why: *"Despite the description
-            // specifying headshots, the effect can be trigger on weak-point
-            // hits"* — the reading `BuffTrigger::Headshot` has always carried
-            // and could not reach, because the gate was the head.
-            //
-            // The two are *"distinct, but mostly overlapping"* (wiki, Enemy
-            // Body Parts) and Update 44 made the overlap smaller. What stays a
-            // HEAD's is what a hit is WORTH: the multiplier, the additive
-            // headshot-damage bracket, and the 1.5x rate above.
-            //
-            // Crosshairs' buff refreshes on every one of them (kills only
-            // matter for its stacks).
             if part.is_weak_point {
-                if let Some(b) = params.crit_chance_on_headshot {
-                    windows.crit_on_headshot = t + b.duration;
-                }
-                // LEADED GAS, refreshed the same way and on the same event.
-                if let Some(b) = params.on_weakpoint {
-                    windows.weakpoint_buff = t + b.duration;
-                }
-                // EXIMUS ADVANTAGE — the WEAK POINT is the trigger
-                // ("Despite the description specifying headshots, the
-                // effect can be trigger on weak-point hits"), and the
-                // second half of it is the TARGET. Against anything
-                // that is not an Eximus this line never runs, which is
-                // the whole reason the mod is not a plain on-headshot
-                // buff. It REFRESHES rather than stacking.
-                if params.foe.eximus {
-                    if let Some(b) = params.base_damage_on_eximus_weakpoint {
-                        windows.base_damage_eximus = t + b.duration;
-                    }
-                }
-                // …AND THE PER-HIT ONES BELOW ARE PAID ONCE PER WEAK
-                // POINT THE ROUND LANDED, the bodies it punched through
-                // included (`PunchedWeakPoints`): the round enters the
-                // same part of each, so a shot through two heads is two
-                // weak-point hits and not one. The two windows above
-                // take no count — a refresh is a refresh.
-                // …AND A BODY THE ROUND KILLED BEHIND THE FIRST IS A
-                // WEAK-POINT KILL. Paid HERE rather than in the kill path
-                // below, which never runs when the aimed body also died: it
-                // `continue`s out of this pellet.
                 for _ in 0..punched.kills {
                     weakpoint_kill(params, arc, windows, t);
                 }
-                for _ in 0..=punched.hits {
-                    // Lethal Rearmament: every headshot grants a stack —
-                    // a LOCKED buff earns it too, it just never loses it.
-                    // EVERY buff that triggers on a headshot, including
-                    // its own chance roll. One line for the family.
-                    bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::Headshot, t, d.extra);
-                    // DEATH KNELL, per PELLET: "individual Multishot bullets
-                    // can proc Death Knell" (wiki).
-                    if let Some(w) = params.weakpoint_stacks {
-                        weakpoint_pile.bump(t, w.duration_seconds, w.max_stacks);
-                    }
-                    // Primary Crux: a weak-point HIT (not a kill), per
-                    // PELLET. Bumped here, AFTER this pellet's status
-                    // chance was read above — the hit that grants a stack
-                    // does not benefit from it, the same rule the
-                    // base-damage stacks follow. A killing headshot still
-                    // counts: this runs before the kill path's `continue`.
-                    arc.bump_trigger(&params.arcane.buffs, ArcTrigger::WeakpointHit, t);
-                    bump_buffs!(params, buff_stacks, rec_buff_index, rec, crate::model::BuffTrigger::ConsecutiveHeadshot, t, d.extra);
-                }
-            } else {
-                // …AND ANYTHING THAT IS NOT A WEAK POINT TAKES THE PILE. The
-                // only trigger in this sim that the next shot can undo, and
-                // the reason it is not `Headshot` with a clock: what ends it
-                // is what you hit, not how long you waited.
-                for (i, b) in params.stacking_buffs.iter().enumerate() {
-                    if b.trigger == crate::model::BuffTrigger::ConsecutiveHeadshot {
-                        buff_stacks[i] = LiveStacks::seed(0, b.max_stacks, b.duration);
-                    }
-                }
+            }
+            for _ in 0..=punched.hits {
+                weakpoint_contact(params, arc, windows, buff_stacks, weakpoint_pile,
+                    rec_buff_index, rec, t, d, part.is_weak_point, params.foe.eximus);
             }
         }
 

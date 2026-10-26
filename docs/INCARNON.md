@@ -201,7 +201,7 @@ size the data declares. It was verified to fail with any one gate removed.
 | Cestra | Cestra (MR4) | Auto | auto projectile | 10 → 150 | 5 | — |
 | Kunai | Kunai (MR0), Mk1 (MR0) | Auto (thrown) | projectile | 5 → 20 | 5 | — |
 | Sicarus | Sicarus (MR3), Prime (MR14) | Burst | hit-scan | 10 → 120 | 5 | — |
-| Stug | Stug (MR2) | Auto/Charge | blob embed + blob explosion + bounce explosion | 4 → 120 | 6 | **blob economy**, DIRECT hits |
+| Stug | Stug (MR2) | Auto | attached blob ticks + main explosion; reflected child hits excluded | 4 → 120 | 6 | **blob economy**, DIRECT hits + attached explosions (M127) |
 
 ## Natural Incarnons
 
@@ -231,6 +231,10 @@ Retreat's own flat damage is excluded from its own percentage. None of this is
 visible on a bare weapon, which is why every one of them is pinned by a test
 that fails when the bracket moves.
 
+Stug's Blazing Barrel has no timer and stacks in either form; reload and both
+Incarnon transforms clear it (M126). Installing its adapter removes charged
+alternate fire.
+
 **Read the RAW wikitext, not the page.** Three separate readings of a rendered
 table said a perk was variant-exclusive; the markup said `colspan="3" | -`,
 which is that table's way of writing "no per-variant difference", and the perk
@@ -251,7 +255,9 @@ Boar Prime cost nothing to verify). New sessions are needed for:
 - **by-round reload** — Strun, interrupted and uninterrupted;
 - **duplex cadence** — Zylok, shots per second at the listed fire rate;
 - **Vectis's gauge** — 5 hits × 10 rounds should be 50, the page says 45;
-- **Stug** — everything about it.
+- **Stug** — attachment combine distance, intermediate radius/falloff and the
+  spawn-time emitter remainder; reflected child projectile collisions are
+  excluded from single-target and crowd fights (M127).
 
 ## Perks this loader does not model, and what each needs
 

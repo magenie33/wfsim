@@ -51,6 +51,7 @@ pub struct SecondaryEnervate {
     // Private bookkeeping (not shown in the UI).
     big_crit_count: u32,
     last_trigger_seconds: Option<f64>,
+    last_big_crit_seconds: Option<f64>,
 }
 
 #[wfsim_gas_macro::metered]
@@ -65,6 +66,7 @@ impl SecondaryEnervate {
             min_trigger_interval_seconds: 1.0 / RATE_LIMIT_HZ,
             big_crit_count: 0,
             last_trigger_seconds: None,
+            last_big_crit_seconds: None,
         }
     }
 
@@ -121,15 +123,19 @@ impl Perk for SecondaryEnervate {
         let Event::Hit(hit) = event;
         let big_crit = hit.big_crit;
 
-        if !self.trigger_allowed(t_secs) {
-            return;
-        }
-        self.last_trigger_seconds = Some(t_secs);
-
         // Read current stacks from the buff bar (0 if the buff is absent), gain
         // one on the hit, then apply the reset if this big crit fills the counter.
-        let mut stacks = bar.get(BUFF_ID).map_or(0, |b| b.stacks) + 1;
-        if big_crit {
+        let mut stacks = bar.get(BUFF_ID).map_or(0, |b| b.stacks);
+        if self.trigger_allowed(t_secs) {
+            self.last_trigger_seconds = Some(t_secs);
+            stacks += 1;
+        }
+        // A non-big hit may consume the gain gate without consuming the reset
+        // gate. Simultaneous victims share each gate, not each other's gate.
+        if big_crit && self.last_big_crit_seconds.is_none_or(|last|
+            t_secs - last >= self.min_trigger_interval_seconds - 1e-9)
+        {
+            self.last_big_crit_seconds = Some(t_secs);
             self.big_crit_count += 1;
             if self.big_crit_count >= self.reset_after_big_crits {
                 stacks = 0;
@@ -227,6 +233,33 @@ mod tests {
         // Exactly 1/30 s later, another trigger is allowed.
         e.on_event(&Event::Hit(Hit::default()), 1.0 / 30.0, &mut bar);
         assert_eq!(stacks(&bar), 2);
+    }
+
+    #[test]
+    fn gain_and_reset_have_independent_rate_gates() {
+        let mut bar = BuffBar::new();
+        let mut e = SecondaryEnervate::from_rank(0);
+        e.seed(20, &mut bar);
+        e.on_event(&Event::Hit(Hit::default()), 0.0, &mut bar);
+        assert_eq!(stacks(&bar), 21);
+        e.on_event(&Event::Hit(Hit { big_crit: true, ..Hit::default() }), 0.0, &mut bar);
+        assert_eq!(stacks(&bar), 0, "a later big victim still resets");
+    }
+
+    #[test]
+    fn simultaneous_big_crits_count_once_towards_reset() {
+        let mut bar = BuffBar::new();
+        let mut e = SecondaryEnervate::default();
+        e.seed(20, &mut bar);
+        for instant in 0..5 {
+            for _ in 0..10 {
+                e.on_event(&Event::Hit(Hit { big_crit: true, ..Hit::default() }),
+                    f64::from(instant) * STEP, &mut bar);
+            }
+        }
+        assert_eq!(stacks(&bar), 25, "five instants, not fifty numbers");
+        e.on_event(&Event::Hit(Hit { big_crit: true, ..Hit::default() }), 5.0 * STEP, &mut bar);
+        assert_eq!(stacks(&bar), 0);
     }
 
     #[test]

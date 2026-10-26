@@ -193,6 +193,30 @@ fn m100_an_electricity_tick_lands_on_a_part_of_its_own() {
     }
 }
 
+/// M100 follow-up: unarmoured gas body/head readings, including yellow crits.
+#[test]
+fn m100_gas_body_head_and_critical_readings_match_to_the_digit() {
+    for (head, crit, hit, tick) in [
+        (false, false, 480.0, 242.0),
+        (false, true, 1058.0, 530.0),
+        (true, false, 2592.0, 2336.0),
+        (true, true, 11424.0, 10284.0),
+    ] {
+        let mut p = m100_fixture(DamageType::Gas, head, 0);
+        p.foe.base_armor = 0.0;
+        p.base_crit_chance = if crit { 1.0 } else { 0.0 };
+        p.crit_multiplier = crate::rules::damage::quantize_base_crit_damage(2.2);
+        p.fire_rate = 0.1;
+        let rec = record(&p, 100, 0.0, f64::INFINITY, 10_000, 0);
+        let first = |origin| rec.events().iter().find_map(|e| match &e.kind {
+            crate::record::Kind::Damage(d) if d.origin == origin => Some(d.effective.round()),
+            _ => None,
+        });
+        assert_eq!(first(crate::record::Origin::Own), Some(hit), "head={head} crit={crit}");
+        assert_eq!(first(crate::record::Origin::Status), Some(tick), "head={head} crit={crit}");
+    }
+}
+
 /// M100's other half: the SAME fixture on Heat, Toxin and Blast keeps the
 /// hit's ladder and nothing more — 5.4x the body tick, not 9.7x.
 #[test]

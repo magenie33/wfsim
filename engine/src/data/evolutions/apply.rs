@@ -77,6 +77,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 // evolutions at all.
                 EvoEffect::FlatBaseCritChance(v) => {
                     base.base_crit_chance += v;
+                    if let Some(b) = base.blob.as_mut() {
+                        b.hit.base_crit_chance += v;
+                        b.explosion.base_crit_chance += v;
+                    }
                     if let Some(r) = base.radial.as_mut() {
                         r.base_crit_chance += v;
                     }
@@ -180,6 +184,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::FlatBaseStatusChance(v) => {
                     base.base_status_chance += v;
+                    if let Some(b) = base.blob.as_mut() {
+                        b.hit.base_status_chance += v;
+                        b.explosion.base_status_chance += v;
+                    }
                     if let Some(r) = base.radial.as_mut() {
                         r.base_status_chance += v;
                     }
@@ -201,6 +209,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                     // magazine evolution off the charge pool.
                     let v = if base.gauge_form.is_some() { *incarnon } else { *b };
                     base.base_status_chance += v;
+                    if let Some(b) = base.blob.as_mut() {
+                        b.hit.base_status_chance += v;
+                        b.explosion.base_status_chance += v;
+                    }
                     if let Some(r) = base.radial.as_mut() {
                         r.base_status_chance += v;
                     }
@@ -218,6 +230,10 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
                 }
                 EvoEffect::FlatBaseCritMultiplier(v) => {
                     base.base_crit_damage += v;
+                    if let Some(b) = base.blob.as_mut() {
+                        b.hit.base_crit_damage += v;
+                        b.explosion.base_crit_damage += v;
+                    }
                     if let Some(r) = base.radial.as_mut() {
                         r.base_crit_damage += v;
                     }

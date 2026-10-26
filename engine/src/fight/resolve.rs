@@ -614,7 +614,7 @@ pub(super) fn resolve_the_shot(
         ms_damage,
         n_pellets,
         beam_merge,
-        blob_stacks: ms_eff.floor().max(1.0) as u32,
+        blob_stacks: rolled.max(1),
         rounds,
     }
 }

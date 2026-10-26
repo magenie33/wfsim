@@ -181,7 +181,8 @@ pub(super) fn after_the_landing(
                 );
             }
         }
-        if let Some(en) = enervate.as_mut() {
+        // A blob's creation tick already submitted the contact's damage.
+        if let Some(en) = enervate.as_mut().filter(|_| active.blob.is_none()) {
             en.on_event(&hit, *t, bar);
         }
         if active.frenzy {

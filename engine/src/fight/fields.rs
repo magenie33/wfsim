@@ -34,6 +34,10 @@ pub(super) struct FieldState {
 /// approximation.
 #[derive(Debug, Clone, Copy, Default)]
 pub(super) struct FieldCtx {
+    pub(super) direct_hit: bool,
+    /// Declared area direct hits may take weak-point crit chance and headcrits.
+    pub(super) weakpoint_direct: bool,
+    pub(super) critical_head_direct: bool,
     /// Attacker BuffBar flat crit chance — ABSOLUTE, lands on every part.
     pub(super) flat_crit: f64,
     /// Σ RELATIVE crit-chance bonuses from MOD buffs.
@@ -188,7 +192,12 @@ pub(super) fn field_tick(
     field_tick_seeded(
         w, owner, f, damage_multiplier, at, ctx, body, body_index, gal, arc, params, active, r, rec, d,
         foe, origin, head_chance, is_blast, None,
-    )
+    ).killed
+}
+
+pub(super) struct FieldOutcome {
+    pub(super) killed: bool,
+    pub(super) crit_tier: u32,
 }
 
 /// WHAT A TIMED INSTANCE LEFT FOR MELEE INFLUENCE — the statuses it rolled,
@@ -254,7 +263,7 @@ pub(super) fn field_tick_seeded(
     // goes through.
     is_blast: bool,
     seed: Option<&mut InfluenceSeed>,
-) -> bool {
+) -> FieldOutcome {
     let Body { state: target, debuffs, .. } = body;
     // MELEE CAREEN reaches a spectral dagger, and a melee weapon's only timed
     // parts are its daggers.
@@ -288,18 +297,22 @@ pub(super) fn field_tick_seeded(
     // absolute ones land flat (MECHANICS §7).
     // Critical Mutation's pile is a global buff, the reload grenade's too (M107).
     let crit_chance_relative = ctx.crit_chance_relative_mods + params.arcane.crit_chance_relative + gal.mutation.bonus;
-    let cc = f.crit_chance + ctx.flat_crit + f.base_crit_chance * crit_chance_relative;
+    let cc = f.crit_chance + ctx.flat_crit + f.base_crit_chance * (crit_chance_relative
+        + if ctx.weakpoint_direct {
+            active.weakpoint_crit_chance_relative + params.arcane.weakpoint_crit_chance_relative
+        } else { 0.0 })
+        + if ctx.direct_hit { WEAKENED_FLAT_CC_PER_STACK * debuffs.weakened_active(at) as f64 } else { 0.0 };
     let tier = upgrade_crit_tier(roll_crit_tier(cc, &mut d.spine), active.crit_tier_upgrade_chance, &mut d.spine);
     let crit_damage_relative = arc.total(&params.arcane.buffs, ArcGrant::CritDamage, at)
         + arc.cd_bonus(active, at)
         + gal.mutation.bonus
         + ctx.crit_damage_relative_mods
         + params.arcane.crit_damage_relative;
-    // NO COLD: a field is Area of Effect damage, which Cold's crit damage
-    // "does not apply to" (wiki `Damage/Cold_Damage`, measured M117) — the
-    // same exclusion that keeps Puncture's flat crit chance off it.
+    // Ordinary area damage excludes Cold and Puncture. Declared area direct
+    // hits take their direct-hit bonuses (Stug, M127); GunCO is a separate gate.
     let cd = f.crit_damage
         + f.base_crit_damage * crit_damage_relative
+        + if ctx.direct_hit { debuffs.cold_cd_bonus(at) } else { 0.0 }
         + crate::data::abilities::final_crit_damage_at(&params.abilities_now(), at);
     // …AND THE CRIT-HEADSHOT FOLD-IN, on a tick that found an eligible head.
     // No exception is invented for it: a strike that can hit a weak point is a
@@ -307,6 +320,7 @@ pub(super) fn field_tick_seeded(
     // for one. A cloud never reaches this, because a cloud has no part.
     let cd = match part {
         Some(p) if p.is_head && p.crit_bonus && p.multiplier > 1.0 => 2.0 * cd,
+        _ if ctx.critical_head_direct => 2.0 * cd,
         _ => cd,
     };
     let crit_multiplier = 1.0 + tier as f64 * (cd - 1.0);
@@ -409,6 +423,9 @@ pub(super) fn field_tick_seeded(
         ledger::Clock::Hit,
         || Instance {
             origin,
+            radial: is_blast,
+            crit_tier: tier,
+            head: ctx.critical_head_direct || part.is_some_and(|p| p.is_head),
             // A CLOUD'S TICK IS WEAPON DAMAGE ON ITS OWN CLOCK — neither a
             // hit nor a status — so it carries a hit's factors, and no falloff
             // term because the grenade sticks to the target.
@@ -441,7 +458,7 @@ pub(super) fn field_tick_seeded(
     if killed {
         gal.bump_on_kill(params, at);
         arc.on_kill(params, at);
-        return true;
+        return FieldOutcome { killed: true, crit_tier: tier };
     }
     // Status per TICK, from the field's own vector and its own status chance,
     // plus THIS FIELD'S OWN forced procs — declared per attack part, which is
@@ -518,5 +535,5 @@ pub(super) fn field_tick_seeded(
         foe,
         DEPTH_PROC,
     );
-    false
+    FieldOutcome { killed: false, crit_tier: tier }
 }

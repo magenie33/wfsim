@@ -4,6 +4,19 @@ use super::*;
 /// number is exact arithmetic.
 fn blob(cap: u32) -> crate::build::loadout::ResolvedBlob {
     crate::build::loadout::ResolvedBlob {
+        explosion_direct_events: false,
+        hit: crate::build::loadout::ResolvedRadial {
+            damage: DamageVector::new().with(DamageType::Corrosive, 4.0),
+            modified_base: 4.0,
+            crit_damage: 1.0,
+            base_crit_damage: 1.0,
+            radius_m: 2.0,
+            falloff_reduction: 1.0,
+            ..Default::default()
+        },
+        flat_base_damage: 0.0,
+        hit_base_per_stack: 4.0,
+        explosion_base_per_stack: 75.0,
         cap,
         lifespan_seconds: 1.5,
         explosion: crate::build::loadout::ResolvedRadial {
@@ -29,6 +42,7 @@ fn stug(cap: u32, multishot: f64, magazine: f64) -> FightParams {
         reload_seconds: 2.0,
         duration_seconds: 10.0,
         blob: Some(blob(cap)),
+        body_parts: mono_body(1.0),
         ..no_status()
     };
     p.foe.base_health = 1e15;
@@ -42,7 +56,7 @@ fn pops(p: &FightParams) -> Vec<(f64, f64)> {
         .events()
         .iter()
         .filter_map(|e| match &e.kind {
-            crate::record::Kind::Damage(d) if d.origin == crate::record::Origin::Blob => Some((e.t, d.base)),
+            crate::record::Kind::Damage(d) if d.origin == crate::record::Origin::Blob && d.radial => Some((e.t, d.base)),
             _ => None,
         })
         .collect()

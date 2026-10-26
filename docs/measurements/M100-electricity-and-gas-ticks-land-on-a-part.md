@@ -66,7 +66,41 @@ Heat at 50% strip  (240 / 1296 + 1.5)        × 0.364  =  87.9 / 471.8
 - **Acuity.** The wiki excludes acuity-like bonuses from the landing, and this
   build has none, so that half is the wiki's alone.
 
-### What is implemented
+### Follow-up readings — 2026-10-26
+
+The owner tests base-form Laetum with Caput Mortuum's +50% headshot damage,
+Secondary Deadhead's +30%, and Lavos +200% Gas. Each pair is direct hit / Gas
+tick. Target identity and level were not restated in this batch; the readings
+match the damage before armour or other target multipliers.
+
+| hit location | non-critical hit / tick | critical hit / tick |
+|---|---|---|
+| Body | 480 / 242 | 1058 / 530 |
+| Head | 2592 / 2336 | 11424 / 10284 |
+
+Using the quantized base crit damage
+`c = round(2.2 * 4095 / 32) * 32 / 4095 = 2.203663003663004`, all readings
+match after display rounding:
+
+```
+body hit       480                               =   480
+body crit      480 * c                           =  1057.758... -> 1058
+head hit       480 * 5.4                         =  2592
+head crit      480 * 5.4 * 2 * c                 = 11423.789... -> 11424
+body tick      (80 + 0.5) * 3                    =   241.5      -> 242
+body crit tick (80 * c + 0.5) * 3                =   530.379... -> 530
+head tick      (80 * 5.4 + 0.5) * 3 * 1.8        =  2335.5      -> 2336
+head crit tick (80 * 5.4 * 2 * c + 0.5) * 3 * 1.8 = 10284.110... -> 10284
+```
+
+This confirms the second headshot bracket on the whole Gas tick, including
+the accumulator, for both non-critical and critical applying hits. The tick
+inherits the hit's crit-headshot seed; these readings do not imply a new crit
+roll by the tick. No new neighbour readings were supplied.
+
+Test: `m100_gas_body_head_and_critical_readings_match_to_the_digit`.
+
+### Implementation
 
 `lands_on_a_part` names the two families, and `Dot::landing` carries the
 second layer over the whole tick. The Tesla arc posts its seed unchanged, and

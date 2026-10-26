@@ -114,7 +114,7 @@ impl Entity {
     pub(super) fn due(&self) -> Option<f64> {
         match self {
             Entity::Cloud(f) => (f.ticks_left > 0).then_some(f.next_tick),
-            Entity::Pile(p) => Some(p.fuse_at),
+            Entity::Pile(p) => Some(p.next_tick.min(p.fuse_at)),
             Entity::Orb(o) => {
                 let strike_due = o.strikes_left > 0 && o.next_strike <= o.fuse_at;
                 Some(if strike_due { o.next_strike } else { o.fuse_at })
@@ -130,7 +130,10 @@ impl Entity {
 /// and moves.
 pub(super) struct Turn<'a> {
     /// See `process_ticks` — an entity reads its maker's live windows.
-    pub(super) w: &'a CardWindows,
+    pub(super) w: &'a mut CardWindows,
+    pub(super) buff_stacks: &'a mut [LiveStacks],
+    pub(super) weakpoint_pile: &'a mut LiveStacks,
+    pub(super) rec_buff_index: &'a [Option<usize>],
     pub(super) seat: Seat,
     pub(super) params: &'a FightParams,
     /// The form firing now: a pile and a volley read it.
@@ -144,6 +147,9 @@ pub(super) struct Turn<'a> {
     pub(super) d: &'a mut crate::rules::rng::Draws,
     pub(super) kill_mark: &'a mut u32,
     pub(super) influence_until: &'a mut f64,
+    pub(super) incarnon: &'a mut IncarnonState,
+    pub(super) bar: &'a mut BuffBar,
+    pub(super) enervate: &'a mut Option<SecondaryEnervate>,
 }
 
 /// A [`Turn`] for combatant `$me`, firing `$active`, rolling off `$d` — its
@@ -151,7 +157,10 @@ pub(super) struct Turn<'a> {
 macro_rules! turn {
     ($me:expr, $active:expr, $d:expr) => {
         Turn {
-            w: &$me.windows,
+            w: &mut $me.windows,
+            buff_stacks: &mut $me.buff_stacks,
+            weakpoint_pile: &mut $me.weakpoint_pile,
+            rec_buff_index: &$me.fixed.rec_buff_index,
             seat: $me.seat,
             params: $me.params,
             active: $active,
@@ -162,6 +171,9 @@ macro_rules! turn {
             d: $d,
             kill_mark: &mut $me.dagger_kill_mark,
             influence_until: &mut $me.influence_until,
+            incarnon: &mut $me.incarnon,
+            bar: &mut $me.bar,
+            enervate: &mut $me.enervate,
         }
     };
 }
@@ -195,11 +207,25 @@ pub(super) fn process_entities(
         let flow = match entities[i] {
             Entity::Cloud(_) => cloud_tick(entities, i, at, turn, r, rec, bodies),
             Entity::Pile(_) => {
-                let Entity::Pile(pile) = entities.remove(i) else { unreachable!() };
-                detonate_blob(
-                    turn.w, pile, at, turn.gal, turn.arc, turn.params, turn.active, turn.ctx, r, rec,
-                    turn.d, bodies,
-                );
+                let Entity::Pile(pile) = entities[i] else { unreachable!() };
+                if pile.fuse_at <= pile.next_tick + 1e-9 {
+                    entities.remove(i);
+                    detonate_blob(
+                        turn.w, pile, at, turn.gal, turn.arc, turn.params, turn.active, turn.ctx, r, rec,
+                        turn.d, bodies, turn.incarnon, &mut BlobEvents {
+                            stacks: turn.buff_stacks, weakpoint_pile: turn.weakpoint_pile,
+                            rec_index: turn.rec_buff_index,
+                            bar: turn.bar, enervate: turn.enervate,
+                        },
+                    );
+                } else {
+                    if let Entity::Pile(p) = &mut entities[i] { p.next_tick += 1.0; }
+                    tick_blob(turn.w, pile, at, turn.gal, turn.arc, turn.params, turn.active,
+                        turn.ctx, r, rec, turn.d, bodies, &mut BlobEvents {
+                            stacks: turn.buff_stacks, weakpoint_pile: turn.weakpoint_pile,
+                            rec_index: turn.rec_buff_index, bar: turn.bar, enervate: turn.enervate,
+                        });
+                }
                 Flow::Go
             }
             Entity::Orb(_) => orb_event(entities, i, at, turn, r, rec, bodies),
@@ -417,7 +443,7 @@ fn dagger_strike(
     );
     let kills_before = r.kills;
     r.kill_clock_paused = true;
-    let (w, ctx) = (turn.w, turn.ctx);
+    let (w, ctx) = (&*turn.w, turn.ctx);
     // WHAT THE HIT LEFT FOR INFLUENCE, and whether it killed — a body the hit
     // killed seeds nothing (*"hits that one-hit-kill enemies cannot trigger nor
     // benefit"*).
@@ -438,7 +464,7 @@ fn dagger_strike(
             w, dagger.owner, part, falloff, at, ctx, here, k, gal, arc, params, active, r, rec, d,
             spec.params, crate::record::Origin::SpectralDagger, None, is_blast,
             influence.then_some(&mut seed),
-        );
+        ).killed;
         // THE BODY THAT STANDS BACK UP IS A NEW INDIVIDUAL, so the pile the
         // last one wore goes with it — before the explosion lands, so the Cold
         // the explosion forces lands on the one standing there.
