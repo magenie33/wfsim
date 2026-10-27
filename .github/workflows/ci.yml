@@ -461,6 +461,8 @@ jobs:
         run: node scripts/check_riven_board.mjs
       - name: Customs precede their presets without reviving deleted rivens
         run: node scripts/check_sync_customs.mjs
+      - name: A shared build carries its riven and chosen label
+        run: node scripts/check_share.mjs
       # HOW DEEP THE BOARD IS READ, which the publisher no longer decides. The
       # rule moved from a binary with unit tests to a page without, and its
       # failure is silent in both directions: a cut drawn with `>` deletes the
