@@ -35,7 +35,11 @@ const CASES = [
   ["Ocucor", "slash", true, "39 of 500 cards"],
   // ...and refused where no card carries them, whatever the share says.
   ["Phenmor", "puncture", false, "30% of its damage, 0 of 500 cards"],
-  ["Boar", "zoom", false, "no scope, and no field in the data says so"],
+  ["Boar", "zoom", true, "shotgun Zoom is allowed by Hotfix 44.0.2"],
+  ["Boar Prime", "zoom", true, "the same card covers the whole family"],
+  ["Phantasma", "zoom", true, "shotgun Zoom supersedes the old absence count"],
+  ["Phantasma Prime", "zoom", true, "the same card covers the whole family"],
+  ["Sweeper Prime", "zoom", false, "companion weapons still exclude Zoom"],
   ["Phantasma Prime", "projectile_speed", false, "the bomb flies, 0 of 500 cards"],
   // THE INCARNON QUESTION, settled by counting rather than by argument: these
   // three forms fire a literal travelling projectile and their families show

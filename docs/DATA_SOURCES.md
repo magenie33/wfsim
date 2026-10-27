@@ -546,7 +546,7 @@ gives each hour its node's mission type and faction from `ExportRegions.json`.
 It is the only source, so it is checked against the game: the hour shown must be
 the one the game's Navigation shows.
 
-### RIVEN POOLS: the only source is other people's cards
+### RIVEN POOLS: class data and per-family evidence
 
 Which stats a weapon's riven can roll is DE's own per-weapon table. It is in no
 export, the wiki states a rule and immediately disclaims it (*"usually…
@@ -573,6 +573,11 @@ Three properties make it usable as a source rather than as a rumour:
 None of that makes the raw count an AUTHORITY — see §"Riven pools: evidence
 decides a physical stat, the rules the rest" below, which is where the counts go.
 Full reasoning and the corrections: `docs/MEASUREMENTS.md` M35.
+
+An explicit confirmation in `exceptions.yaml` outranks an older absence
+count in `pools.yaml`. The survey check still compares unconfirmed pairs;
+it does not refute a stat the game explicitly allows. Player shotgun Zoom
+is one such confirmation (see notes: shotgun_riven_zoom).
 
 **A CLASS's pool is a different question and DE answers it.** Which stats exist
 at all, their bases, their name fragments and their display templates are

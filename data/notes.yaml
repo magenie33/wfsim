@@ -9,6 +9,12 @@
 # an entry from being orphaned.
 
 notes:
+  shotgun_riven_zoom: |
+    Player shotgun Rivens allow positive and negative Zoom. Hotfix 44.0.2:
+    https://www.warframe.com/en/patch-notes/pc/44-0-2
+    This class-wide availability supersedes absence counts collected before
+    the hotfix. Companion weapons still exclude Zoom. The stat's base and
+    naming fragments come from the generated shotgun class table.
   package_rank_value: |
     THE RANK VALUE IS THE GAME'S OWN, NOT THE CARD'S. The game's package stores
     one value a rank for each line of a mod, and rank r is (r + 1) x it; the

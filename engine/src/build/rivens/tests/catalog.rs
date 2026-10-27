@@ -949,9 +949,8 @@ fn an_exception_overrides_the_derivation_and_nothing_else_does() {
     // …and TAKING AWAY what they allowed. The Phenmor is 30% Puncture, over
     // the line, and no live listing carries it.
     assert!(excluded_for("phenmor").contains(&"puncture"));
-    // Zoom is not derived at all — nothing in the weapon data says a Boar
-    // has no scope, so only an exception can say it.
-    assert!(excluded_for("boar").contains(&"zoom"));
+    // see notes: shotgun_riven_zoom
+    assert!(!excluded_for("boar").contains(&"zoom"));
     // A share landing EXACTLY on 25% is decided by neither of us: Karak
     // Wraith's Slash is 7.75 of 31 and the rule reads "more than 25%".
     assert!(!excluded_for("karak_wraith").contains(&"slash"));
@@ -995,6 +994,10 @@ fn the_survey_still_agrees_with_the_rules() {
             }
         }
         for n in sv.never.iter().filter(|s| !PHYSICAL.contains(s)) {
+            // Explicit roll evidence can supersede an older absence count.
+            if exceptions(fam).rolls.contains(n) {
+                continue;
+            }
             if !ours.contains(n) {
                 bad.push(format!("{fam}/{n}: no listing carries it, we offer it"));
             }
@@ -1243,4 +1246,25 @@ fn no_riven_fact_is_stated_in_both_evidence_files() {
         }
     }
     assert!(both.is_empty(), "{}", both.join("\n"));
+}
+#[test]
+fn player_shotgun_rivens_allow_zoom_in_both_slots() {
+    // see notes: shotgun_riven_zoom
+    let mut checked = 0;
+    for w in crate::data::weapons::all().iter().filter(|w| {
+        class_for_weapon(&w.id) == Some("shotgun") && !w.class.contains("sentinel")
+    }) {
+        for negative in [false, true] {
+            let spec = RivenSpec {
+                class: "shotgun".into(), rank: MAX_RANK, polarity: Polarity::Madurai,
+                bonuses: ["damage", if negative { "multishot" } else { "zoom" }]
+                    .into_iter().map(|id| RolledStat { id: id.into(), roll: 1.0 }).collect(),
+                malus: negative.then(|| RolledStat { id: "zoom".into(), roll: 1.0 }),
+            };
+            let illegal = spec.illegal_for(&w.id);
+            assert!(illegal.is_empty(), "{} negative={negative}: {illegal:?}", w.id);
+        }
+        checked += 1;
+    }
+    assert!(checked > 10, "only {checked} player shotguns were reached");
 }

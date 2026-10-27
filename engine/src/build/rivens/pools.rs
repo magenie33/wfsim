@@ -138,11 +138,8 @@ pub fn excluded_for(weapon_id: &str) -> Vec<&'static str> {
             }
         }
     }
-    // NOT NARROWED TO THE CLASS POOL, and the Boar is why: its exception says
-    // `never: [zoom]` and the shotgun pool has no Zoom row, so a stat named
-    // here need not be one the class rolls. Both the survey and the exceptions
-    // speak in the market's stat vocabulary rather than in one class's, and
-    // every caller intersects with the pool anyway.
+    // Evidence uses the market's vocabulary, which can name stats outside
+    // this class. Callers intersect these exclusions with the class pool.
     out
 }
 

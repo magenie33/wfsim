@@ -20,11 +20,13 @@
 
 families:
   - family: Boar
+    # see notes: shotgun_riven_zoom
+    rolls:
+      - stat: zoom
+        note: "see notes: shotgun_riven_zoom"
     never:
       - stat: projectile_speed
         note: "survey 2026-08-08: 2 of 500 live listings"
-      - stat: zoom
-        note: "survey 2026-08-08: 1 of 500 live listings"
   - family: Bronco
     never:
       - stat: projectile_speed
@@ -63,8 +65,10 @@ families:
       - stat: projectile_speed
         note: "survey 2026-08-08: 47 of 500 live listings"
   - family: Phantasma
+    # see notes: shotgun_riven_zoom
+    rolls:
+      - stat: zoom
+        note: "see notes: shotgun_riven_zoom"
     never:
       - stat: projectile_speed
-        note: "survey 2026-08-08: 0 of 500 live listings"
-      - stat: zoom
         note: "survey 2026-08-08: 0 of 500 live listings"
