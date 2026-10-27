@@ -53,6 +53,11 @@ check("the build bar ranks the board with the headless part's ranking",
   src.includes("return rankBoard(rows, benchList()"));
 
 await app.load("/weapons/Torid");
+// Focus controls render after the weapon is ready; the anchor audit waits for them.
+await evaluate(`(async () => {
+  await loadWarframeCatalog();
+  await renderSimFrame(document.querySelector("#sim-build-info .sb-frame"));
+})()`);
 
 // ---- the table ---------------------------------------------------------------
 

@@ -237,6 +237,8 @@ and the bot's card at rank 8 failed both verdicts.
 
 ## `check_agent_door`
 
+The anchor audit waits for the Focus catalog and simulator frame controls to render.
+
 `window.wfsim` is one door, and an action is something a
 reader can do — `docs/AGENT.md`. Two of its assertions are static, read off
 `app.js` rather than off the page, because duplication is invisible from
