@@ -729,7 +729,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
       db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE state = 'open' GROUP BY verb"),
     ]),
     ...(costs ? [] : [
-      db.prepare(`WITH s AS MATERIALIZED (SELECT question, compute_ms FROM answers
+      db.prepare(`WITH s AS (SELECT question, compute_ms FROM answers
                     WHERE id > (SELECT COALESCE(MAX(id), 0) FROM answers) - ?2::bigint AND at >= ?1::text AND official = 0)
                   SELECT q.verb, SUM(COALESCE(s.compute_ms, 0)) AS ms FROM s JOIN questions q ON q.id = s.question GROUP BY q.verb`)
         .bind(iso(now - DEMAND_COST_MS), scan),

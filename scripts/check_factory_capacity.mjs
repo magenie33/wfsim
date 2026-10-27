@@ -97,7 +97,7 @@ console.log("ok: demand and tally stay byte-equivalent with one rolling score re
 await L.run("INSERT INTO batches (id,at,why,total) VALUES ('rescore-capacity','x','x',2)");
 await L.run("INSERT INTO queue (batch,build_id,ruler,mode) VALUES ('rescore-capacity','one','r','m')");
 let samples = 0;
-const sampled = { LIBRARY: { ...L, prepare(sql) { if (/WITH s AS MATERIALIZED/.test(sql)) samples++; return L.prepare(sql); } } };
+const sampled = { LIBRARY: { ...L, prepare(sql) { if (/WITH s AS \(/.test(sql)) samples++; return L.prepare(sql); } } };
 const options = { costEveryMs: 3_600_000 };
 assert.equal((await demandOf(sampled, now, undefined, options)).owed.rescores, 1);
 await L.run("INSERT INTO queue (batch,build_id,ruler,mode) VALUES ('rescore-capacity','two','r','m')");
