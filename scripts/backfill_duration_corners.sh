@@ -82,6 +82,10 @@ fresh_corners() {
   rm -f "$held"
 }
 
+sample_corners() {
+  jq -cn 'limit(20; inputs | {id, weapon: .record.weapon, rolls: .record.riven_rolls})' < "$1"
+}
+
 run() {
   if [ -z "${PG_URL:-}" ]; then
     echo "::error::PG_URL is not set — the library's Postgres, docs/BOARD.md §\"Postgres\""
@@ -103,7 +107,7 @@ run() {
   n_fresh=$(grep -c . < "$work/fresh.ndjson") || n_fresh=0
   echo "backfill: $n_again stored shape(s) with a status duration malus, $n_fresh new corner(s)"
   if [ "${DRY_RUN:-}" = "1" ]; then
-    jq -c '{id, weapon: .record.weapon, rolls: .record.riven_rolls}' < "$work/fresh.ndjson" | head -20
+    sample_corners "$work/fresh.ndjson"
     echo "backfill: DRY_RUN, nothing written"
     return 0
   fi
@@ -163,6 +167,13 @@ self_test() {
   jq -e -s 'all(has("from") | not)' fresh.ndjson >/dev/null \
     && say ok "...without a queue row to spend" \
     || say FAIL "$(head -1 fresh.ndjson)"
+
+  jq -cn 'range(0;2000) | {id: ("corner-" + tostring), record: {weapon: "furis", riven_rolls: [1.1, 1.1, 1.0]}}' > many.ndjson
+  if sample_corners many.ndjson > sample.ndjson && [ "$(wc -l < sample.ndjson)" -eq 20 ]; then
+    say ok "a large dry run prints twenty sample corners and succeeds"
+  else
+    say FAIL "the dry-run sample failed or printed the wrong number of corners"
+  fi
 
   echo "backfill_duration_corners: $ok ok, $bad failed"
   [ "$bad" = 0 ]
