@@ -137,6 +137,7 @@ function optBarCfg() {
     active: () => activeOptPreset,
     setActive: (n) => { activeOptPreset = n; localStorage.setItem(presetActiveKey(OPT_DOMAIN), n); },
     snapshot: snapshotOpt,
+    copyState: materialiseReferencedRivens,
     apply: (st) => applyOptPreset(st || {}),
     blank: blankOpt,
     isBlank: (st) => sameState(st, blankOpt()),
@@ -650,7 +651,7 @@ async function resultToState(res) {
 // clobbered. Auto-named "opt N" (rename in the preset bar if it earns a
 // real name).
 async function addResult(res, btn) {
-  const state = await resultToState(res);
+  const state = materialiseReferencedRivens(await resultToState(res));
   const ps = loadPresetList(BUILDS);
   let n = 1;
   while (ps.some((p) => p.name === "opt " + n)) n++;

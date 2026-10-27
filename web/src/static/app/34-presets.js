@@ -43,13 +43,13 @@ const isCustomDomain = (d) => CUSTOM_DOMAINS.has(d);
 const CUSTOM_REFS = COLLECTIONS.filter((c) => c.ref);
 const CUSTOM_REF_RE = new RegExp(`"((?:${CUSTOM_REFS.map((c) => c.ref).join("|")})[^"\]+)"`, "g");
 /// Every custom reference in `v`, each once: `[{ domain, id, ref }]`.
-function customRefs(v) {
+function customRefs(v, includeReadOnly = false) {
   const out = new Map();
   let s;
   try { s = JSON.stringify(v); } catch (_) { return []; }
   for (const m of s.matchAll(CUSTOM_REF_RE)) {
     const c = CUSTOM_REFS.find((x) => m[1].startsWith(x.ref));
-    if (c && !out.has(m[1])) out.set(m[1], { domain: c.domain, id: m[1].slice(c.ref.length), ref: m[1] });
+    if (c && (includeReadOnly || !isReadOnlyRivenId(m[1])) && !out.has(m[1])) out.set(m[1], { domain: c.domain, id: m[1].slice(c.ref.length), ref: m[1] });
   }
   return [...out.values()];
 }

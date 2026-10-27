@@ -275,6 +275,12 @@ deleted, and the editor stands down instead of showing a document that is not
 there. Presets are not — the modules behind them always have a state, and "no
 build" is not something the builder can show.
 
+A published build's riven is read-only too: opening it resolves its immutable
+specification without saving a custom. Its reference names the riven family
+and specification, independently of its display name. Deleting an owned riven
+does not affect it. Copying the build, including the first edit that forks it,
+makes an owned riven with a fresh id and points the copied build at that id.
+
 ## Build sync
 
 **A SIGNED-IN READER'S SAVED ENTRIES ARE THE SAME ON EVERY BROWSER SIGNED IN

@@ -151,8 +151,7 @@ function sharePayload(build) {
   // NAME as the entry's first field: a card's identity is local — the recipient
   // is being handed a copy and gives it one of their own — so a share format
   // that carried it would be exporting a private key for no reader.
-  const byId = new Map(loadPresetList(RIVENS).map((x) => [x.id, x]));
-  const rivens = rivenOrder.map((n) => byId.get(n)).filter(Boolean)
+  const rivens = rivenOrder.map((n) => rivenEntryFor(RIVEN_PREFIX + n)).filter(Boolean)
     .map((x) => {
       const s = x.state || {};
       return [x.name, s.shape || "", s.rank ?? 8, POL_LETTER[cap1(s.polarity)] || "M",

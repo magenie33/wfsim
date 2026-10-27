@@ -63,7 +63,7 @@ const setBoardConsent = (v) => {
 function boardRivenShape(rivenMod) {
   const mod = rivenMod || (mainSlots().find((s) => isRivenId(s.mod)) || {}).mod;
   if (!mod) return { riven_pos: [], riven_neg: "" };
-  return headlessRivenShape((loadPresetList(RIVENS).find((p) => RIVEN_PREFIX + p.id === mod) || {}).state || {});
+  return headlessRivenShape((rivenEntryFor(mod) || {}).state || {});
 }
 
 function boardPayload() {

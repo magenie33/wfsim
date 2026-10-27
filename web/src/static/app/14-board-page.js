@@ -117,26 +117,33 @@ function benchWriteUrl() {
 }
 
 /// A BOARD ROW'S RIVEN, AS A LOCAL ITEM — the name it takes on the reader's
-/// machine, DERIVED from the shape so opening the same row twice reuses the
-/// one riven instead of stacking copies.
-///
-/// A row cannot name somebody's riven: the item is on one machine and what the
-/// board holds is a SHAPE at the corner its fight chose. So the reader's copy
-/// is named after every stat AND the roll it was stored at: two rows of one
-/// shape at two corners are two cards, and a name that dropped a roll handed
-/// one row's riven to the other.
+/// machine. Names are labels; read-only references below carry their own spec.
 const boardRivenName = (rv) => headlessBoardRivenName(pageSay(), rv);
 
-/// The definitions `builtinBuilds` met, by the mod id it put in the slot.
-///
-/// A REGISTRY RATHER THAN A WRITE, so listing the board's builds stays pure:
-/// a reader who never opens a riven row never gets one in their riven list.
-/// `restoreState` is where it lands, because that is the moment the build is
-/// actually being taken: copying a board build also copies its riven
-/// locally.
-const boardRivenDefs = {};
-/// One board riven as a riven PRESET's state — the editor's own shape.
+/// Board definitions stay outside the reader's owned custom collection.
 const boardRivenState = (rv) => headlessBoardRivenState(rv);
+const READONLY_RIVEN_PREFIX = "riven:readonly:";
+const isReadOnlyRivenId = (id) => typeof id === "string" && id.startsWith(READONLY_RIVEN_PREFIX);
+/// A self-contained reference survives saved starts and results across reloads.
+function boardRivenRef(w, rv) {
+  const spec = boardRivenState(rv);
+  return READONLY_RIVEN_PREFIX + encodeURIComponent(JSON.stringify([rivenScope(w.id), spec]));
+}
+/// Resolve only the current family's read-only equipment, never an owned card.
+function readOnlyRiven(id, weapon = rivenContextWeapon || presetWeapon()) {
+  if (!isReadOnlyRivenId(id)) return null;
+  try {
+    const [scope, state] = JSON.parse(decodeURIComponent(id.slice(READONLY_RIVEN_PREFIX.length)));
+    const line = (b) => b && typeof b.id === "string" && Number.isFinite(b.roll);
+    if (scope !== rivenScope(weapon) || !state || !Array.isArray(state.bonuses)
+        || !state.bonuses.every(line) || (state.malus !== null && !line(state.malus))
+        || state.rank !== 8 || state.polarity !== "madurai") return null;
+    return { id: id.slice(RIVEN_PREFIX.length), name: boardRivenName({
+      bonuses: state.bonuses.map((b) => b.id), malus: state.malus && state.malus.id,
+      rolls: state.bonuses.map((b) => b.roll).concat(state.malus ? [state.malus.roll] : []),
+    }), state, readonly: true };
+  } catch (_) { return null; }
+}
 const inBenchView = (r) =>
   benchRivenView === "all"
   || (benchRivenView === "riven") === rowHasRiven(r);

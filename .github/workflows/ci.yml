@@ -457,6 +457,10 @@ jobs:
       # an error only the usage log ever saw.
       - name: A build bar redrawn before its page has a build throws nothing
         run: node scripts/check_bar_before_catalog.mjs
+      - name: Read-only build rivens stay separate from owned customs
+        run: node scripts/check_riven_board.mjs
+      - name: Customs precede their presets without reviving deleted rivens
+        run: node scripts/check_sync_customs.mjs
       # HOW DEEP THE BOARD IS READ, which the publisher no longer decides. The
       # rule moved from a binary with unit tests to a page without, and its
       # failure is silent in both directions: a cut drawn with `>` deletes the

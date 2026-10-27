@@ -1545,6 +1545,13 @@ page shows the steps, and moving a step on the page moves it on the card. The
 backdrop word is the one fewest weapons share (PLASMOR, NIKANA, LATO, BRAMMA);
 the card is drawn 1080 wide at twice the pixels, and the share panel draws it.
 
+## `check_riven_board`
+
+Opening a published riven build saves no owned custom. Its riven remains
+readable after an owned card with the same specification is deleted and the
+build is reopened. Copying the build makes a fresh owned card, seats it in the
+copy, and leaves the published specification unchanged when that card is edited.
+
 ## `check_sync_customs`
 
 A custom travels with what names it, against the sync server faked as
@@ -1554,6 +1561,8 @@ allowance the build goes and the riven stays, named. A browser without the
 riven shows its slot as absent, saves the build WITH it, plans no Forma
 without it, and seats it when it arrives; a fight whose custom target is absent
 stands a unit in and saves the target. Taking a riven off says who uses it.
+Opening a published build does not recreate a deleted owned riven on the
+account; an editable copy sends its fresh riven before the copied build.
 
 ## `check_saves`
 

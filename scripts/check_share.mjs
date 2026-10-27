@@ -272,10 +272,10 @@ check("...and the sender's measurement did not land", bo.landedResult === false)
     // SAVED AS THE READER'S OWN, because the board build this arrived as is
     // BUILTIN — and a builtin's name never travels whatever it is called, so
     // renaming it in place would assert nothing about names at all.
+    const copyId = copyActivePreset(buildBarCfg());
     const ps = loadPresetList('builder-builds');
-    ps.push({ name: '我的 build', savedAt: Date.now(), state: snapshotState() });
+    ps.find(p => p.id === copyId).name = '我的 build';
     storePresetList('builder-builds', ps);
-    activePreset = '我的 build';
     await s(600);
 
     // ONE payload, every framing — so the comparison is about the framing and

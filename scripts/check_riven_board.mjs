@@ -1,24 +1,6 @@
-// A BOARD ROW MAY WEAR A RIVEN, AND TAKING IT GIVES YOU THE RIVEN.
-//
-// A riven is an item that exists on one machine, so what a row holds is a
-// SHAPE — which stats, which is the malus — scored at that shape's own ceiling,
-// the way every row is scored at full Forma. Three things have to be true on
-// the page, each with a way of being subtly wrong that looks fine:
-//
-//   * THE RANKING IS ONE LIST AND THE VIEW NARROWS IT. A riven build does not
-//     always beat a plain one, so they rank together — but under "all builds" a
-//     weapon whose riven build wins hides its plain one, which is the build
-//     most readers can actually make. A filter that quietly showed the same row
-//     in all three positions would look like it worked.
-//   * A RANK SAYS WHAT IT IS BEST OF: the floor treats riven and plain as
-//     separate fields, so a weapon has two leaders and a `#1` that could mean
-//     either is the one number on the page not saying what it ranks among.
-//   * TAKING THE ROW GIVES YOU THE RIVEN. The record carries the bare `riven`
-//     and a mod id has to name an ITEM, so one is created once, idempotently,
-//     only when the build is taken — without it the slot is dropped.
-//
-// The row is SYNTHETIC, because the live board has no riven build yet and a
-// check waiting for one would pass by doing nothing for weeks.
+// Published riven rows stay readable without owning a card. Only copying a
+// build creates equipment; editing that copy cannot change the published row.
+// Synthetic rows keep this check independent of the current board's winners.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000, base: process.env.WFSIM_BASE });
@@ -58,8 +40,9 @@ const views = await evaluate(`(async () => {
   const seen = {};
   for (const v of ['all', 'plain', 'riven']) {
     benchRivenView = v;
-    const e = benchEntries('standard_single_target', META.weapons || []).find(x => x.w.id === id && x.mode === 'cycle')
-           || benchEntries('standard_single_target', META.weapons || []).find(x => x.w.id === id);
+    const entries = benchEntries({ id: 'standard_single_target' }, META.weapons || []);
+    const e = entries.find(x => x.w.id === id && x.mode === 'cycle')
+           || entries.find(x => x.w.id === id);
     seen[v] = e && e.row ? { score: e.row.score, riven: !!e.row.riven } : null;
   }
   benchRivenView = 'all';
@@ -69,14 +52,14 @@ const views = await evaluate(`(async () => {
 check("a riven row is listed at all", views.seen && views.seen.all,
   JSON.stringify(views));
 check("...and under `all builds` the better one wins, riven or not",
-  views.seen.all.riven === true, JSON.stringify(views.seen.all));
+  views.seen.all?.riven === true, JSON.stringify(views.seen.all));
 // THE POINT OF THE FILTER: the plain build is reachable again.
 check("...`no riven` shows the plain build instead",
   views.seen.plain && views.seen.plain.riven === false,
   JSON.stringify(views.seen.plain));
 check("...and it is a DIFFERENT row, not the same one relabelled",
-  views.seen.plain.score !== views.seen.all.score,
-  `${views.seen.plain.score} vs ${views.seen.all.score}`);
+  views.seen.plain?.score !== views.seen.all?.score,
+  `${views.seen.plain?.score} vs ${views.seen.all?.score}`);
 check("...`riven only` shows the riven build",
   views.seen.riven && views.seen.riven.riven === true,
   JSON.stringify(views.seen.riven));
@@ -126,90 +109,136 @@ check("...no two entries share a builtin id", picker.unique, picker.ids.join(" |
 check("...and the riven rows are contiguous inside each mode",
   picker.contiguous, JSON.stringify(picker.ids));
 
-// ---- taking the row gives you the riven ------------------------------------
+// ---- reading and copying have separate ownership boundaries ---------------
 
-const taken = await evaluate(`(async () => {
+const ownership = await evaluate(`(async () => {
   ${setup}
-  const before = loadPresetList(RIVENS).length;
   const entry = builtinBuilds().find(b => b.board && b.board.riven);
-  if (!entry) return { error: 'no riven entry to take' };
-
-  restoreState(entry.state, id);
-  await new Promise(r => setTimeout(r, 900));
-  const after = loadPresetList(RIVENS);
-  const slot = slots.find(s => isRivenId(s.mod));
-
-  // TAKEN TWICE is the sharp half: the name is derived from the SHAPE, so the
-  // second take must find the first copy rather than stack another behind it.
-  restoreState(entry.state, id);
-  await new Promise(r => setTimeout(r, 900));
-  const twice = loadPresetList(RIVENS).length;
-
-  const made = after.find(p => RIVEN_PREFIX + p.name === (slot || {}).mod);
-  return {
-    before, after: after.length, twice,
-    equipped: (slot || {}).mod || null,
-    stats: made ? (made.state.bonuses || []).map(b => b.id) : null,
-    malus: made && made.state.malus ? made.state.malus.id : null,
-    rolls: made ? (made.state.bonuses || []).map(b => b.roll) : null,
-    // The build must still be eight mods — the riven filling its own slot.
-    filled: slots.slice(0, 8).filter(s => s.mod).length,
+  if (!entry) return { error: 'no published riven fixture' };
+  const legacy = boardRivenName(entry.board.riven);
+  const before = localStorage.getItem('wfsim-customs-rivens');
+  const beforeList = JSON.stringify(loadPresetList(RIVENS));
+  const cfg = buildBarCfg();
+  cfg.setActive('');
+  pickPreset(cfg, entry.builtin);
+  await new Promise(r => setTimeout(r, 400));
+  const ref = slots.find(s => isRivenId(s.mod))?.mod;
+  const expected = boardRivenState(entry.board.riven);
+  const spec = () => rivenSpecFor(ref)?.spec;
+  const request = () => rivenPayload().find(p => RIVEN_PREFIX + p.id === ref)?.spec;
+  const out = {
+    noOwned: JSON.stringify(loadPresetList(RIVENS)) === beforeList,
+    noStorage: localStorage.getItem('wfsim-customs-rivens') === before,
+    ref, readable: !!modById(ref),
+    spec: JSON.stringify(spec()) === JSON.stringify(expected),
+    request: JSON.stringify(request()) === JSON.stringify(expected),
+    filled: slots.slice(0, 8).filter(s => s.mod).length
   };
+  const wire = sharePayload()[6];
+  out.share = wire.length === 1 && wire[0][2] === 8 && wire[0][3] === 'M'
+    && JSON.stringify(wire[0][4]) === JSON.stringify(expected.bonuses.map(b => [b.id, b.roll]))
+    && JSON.stringify(wire[0][5]) === JSON.stringify([expected.malus.id, expected.malus.roll]);
+  const variantRef = boardRivenRef(weaponInfo('burston_prime'), entry.board.riven);
+  out.family = readOnlyRiven(ref, 'lex') === null
+    && !!readOnlyRiven(variantRef, 'burston') && !!readOnlyRiven(variantRef, 'burston_prime');
+  const old = { id: legacy, name: legacy, scope: rivenScope(id), savedAt: 1,
+    state: JSON.parse(JSON.stringify(expected)) };
+  old.state.bonuses[0].roll = 0.9;
+  storePresetList(RIVENS, loadPresetList(RIVENS).filter(p => p.id !== legacy).concat([old]));
+  out.legacyCannotOverride = JSON.stringify(spec()) === JSON.stringify(expected);
+  deleteRiven(legacy);
+  out.afterDelete = slots.some(s => s.mod === ref) && !!modById(ref)
+    && JSON.stringify(spec()) === JSON.stringify(expected)
+    && JSON.stringify(request()) === JSON.stringify(expected);
+  restoreState(entry.state, id);
+  out.reopened = slots.some(s => s.mod === ref) && !!modById(ref)
+    && !loadPresetList(RIVENS).some(p => p.id === legacy);
+  const ownedBefore = loadPresetList(RIVENS).length;
+  cfg.setActive(entry.builtin);
+  const copyId = copyActivePreset(cfg);
+  const copy = loadPresetList(BUILDS).find(p => p.id === copyId);
+  const copyRef = copy?.state.slots.find(s => isRivenId(s.mod))?.mod;
+  const made = loadPresetList(RIVENS).find(p => RIVEN_PREFIX + p.id === copyRef);
+  out.copy = !!made && made.id !== legacy && copyRef !== ref
+    && !copyRef.startsWith('riven:readonly:') && made.id !== made.name
+    && loadPresetList(RIVENS).length === ownedBefore + 1;
+  out.copyRefs = slots.some(s => s.mod === copyRef)
+    && copy?.state.slots.some(s => s.mod === copyRef);
+  if (made) {
+    made.state.bonuses[0].roll = 0.8;
+    storePresetList(RIVENS, loadPresetList(RIVENS).map(p => p.id === made.id ? made : p));
+  }
+  restoreState(entry.state, id);
+  out.isolated = !!made && JSON.stringify(spec()) === JSON.stringify(expected)
+    && rivenSpecFor(copyRef)?.spec.bonuses[0].roll === 0.8;
+  cfg.setActive(''); pickPreset(cfg, entry.builtin);
+  const publishedBefore = JSON.stringify(entry.state);
+  const countBeforeEdit = loadPresetList(RIVENS).length;
+  setRivenRank(ref, 7); flushPresetSaves();
+  const editRef = slots.find(s => isRivenId(s.mod))?.mod;
+  const editBuild = loadPresetList(BUILDS).find(p => p.id === activePreset);
+  out.firstEdit = editRef !== ref && editRef !== copyRef
+    && loadPresetList(RIVENS).length === countBeforeEdit + 1
+    && rivenSpecFor(editRef)?.spec.rank === 7
+    && editBuild?.state.slots.some(s => s.mod === editRef)
+    && JSON.stringify(entry.state) === publishedBefore && rivenSpecFor(ref)?.spec.rank === 8;
+  return out;
 })()`);
+for (const [label, key] of [
+  ['opening a published riven build leaves the owned list unchanged', 'noOwned'],
+  ['...and leaves owned storage unchanged', 'noStorage'],
+  ['...the riven resolves as a mod', 'readable'],
+  ['...with the published specification', 'spec'],
+  ['...and its specification travels with simulation requests', 'request'],
+  ['...and its full specification travels in share field 6', 'share'],
+  ['read-only references resolve across their family and refuse unrelated weapons', 'family'],
+  ['a legacy owned card cannot override the published specification', 'legacyCannotOverride'],
+  ['deleting that card preserves the published mod, specification and request', 'afterDelete'],
+  ['reopening remains readable without recreating the deleted owned card', 'reopened'],
+  ['copying creates one fresh opaque owned riven identity', 'copy'],
+  ['...the saved copy and live slots reference that owned identity', 'copyRefs'],
+  ['editing the owned copy leaves the published specification unchanged', 'isolated'],
+  ['the first rank edit forks a fresh owned card and build, preserving the published state', 'firstEdit'],
+]) check(label, ownership[key] === true, JSON.stringify(ownership));
+check('the published riven fills its own slot', ownership.filled === 8, JSON.stringify(ownership));
 
-check("taking a riven row creates the riven locally",
-  taken.after === taken.before + 1, JSON.stringify(taken));
-check("...and the build actually wears it",
-  !!taken.equipped && taken.filled === 8, JSON.stringify(taken));
-check("...with the row's own stats and rolls",
-  JSON.stringify(taken.stats) === JSON.stringify(SHAPE.bonuses)
-    && taken.malus === SHAPE.malus
-    && (taken.rolls || []).every((r) => r === 1.1),
-  JSON.stringify(taken));
-check("...and taking it twice does not stack a second copy",
-  taken.twice === taken.after, `${taken.before} -> ${taken.after} -> ${taken.twice}`);
-
-// ---- two corners of one shape are two cards --------------------------------
-
-// ONE SHAPE, TWO CORNERS. The fight can store a shape at its god roll on one
-// row and with the malus at its other end on another; each row must hand over
-// ITS OWN riven, and a copy an older page filed under the god roll's name with
-// the other corner's numbers must come back corrected.
 const corners = await evaluate(`(async () => {
   ${setup}
   const rowAt = (roll) => ({ ...BOARD[id][0], score: BOARD[id][0].score + roll,
     riven: { ...BOARD[id][0].riven, rolls: [1.1, 1.1, 1.1, roll] } });
   BOARD[id] = [rowAt(0.9), rowAt(1.1), ...BOARD[id].slice(1)];
   const entries = builtinBuilds().filter(b => b.board && b.board.riven);
-  const malusOf = async (entry) => {
+  const seen = [];
+  const before = JSON.stringify(loadPresetList(RIVENS));
+  for (const roll of [0.9, 1.1]) {
+    const entry = entries.find(e => e.board.riven.rolls[3] === roll);
+    if (!entry) return { error: 'missing corner ' + roll };
     restoreState(entry.state, id);
-    await new Promise(r => setTimeout(r, 900));
-    const slot = slots.find(s => isRivenId(s.mod));
-    const made = loadPresetList(RIVENS).find(p => RIVEN_PREFIX + p.id === (slot || {}).mod);
-    return { slot: (slot || {}).mod || null, roll: made && made.state.malus ? made.state.malus.roll : null };
-  };
-  const god = entries.find(e => e.board.riven.rolls[3] === 0.9);
-  const deep = entries.find(e => e.board.riven.rolls[3] === 1.1);
-  if (!god || !deep) return { error: 'the two corners were not listed', n: entries.length };
-  // A STALE COPY under the god roll's id, holding the deep corner's numbers.
-  const godId = boardRivenName(god.board.riven);
-  const ps = loadPresetList(RIVENS).filter(p => p.id !== godId);
-  ps.push({ id: godId, name: godId, savedAt: 1, state: boardRivenState(deep.board.riven) });
-  storePresetList(RIVENS, ps);
-  const g = await malusOf(god);
-  const d = await malusOf(deep);
-  return { god: g, deep: d };
+    const ref = slots.find(s => isRivenId(s.mod))?.mod;
+    seen.push({ ref, roll: rivenSpecFor(ref)?.spec.malus?.roll });
+  }
+  return { seen, unchanged: JSON.stringify(loadPresetList(RIVENS)) === before };
 })()`);
-check("two corners of one shape are two cards",
-  !!corners.god && !!corners.deep && corners.god.slot !== corners.deep.slot, JSON.stringify(corners));
-check("...and each card's name states every stat's roll",
-  ["god", "deep"].every((k) => corners[k] && ["critical_damage x1.1", "damage x1.1", "multishot x1.1"]
-    .every((t) => corners[k].slot.includes(t)))
-    && corners.god.slot.endsWith("recoil x0.9") && corners.deep.slot.endsWith("recoil x1.1"),
-  JSON.stringify(corners));
-check("...each with its own malus roll, a stale copy corrected",
-  corners.god && corners.god.roll === 0.9 && corners.deep && corners.deep.roll === 1.1,
-  JSON.stringify(corners));
+check('two corners resolve to distinct read-only cards with their own malus rolls',
+  corners.seen?.length === 2 && corners.seen[0].ref !== corners.seen[1].ref
+    && corners.seen[0].roll === 0.9 && corners.seen[1].roll === 1.1
+    && corners.unchanged, JSON.stringify(corners));
+
+const elements = await evaluate(`(() => {
+  const w = weaponInfo($('weapon').value);
+  const row = (BOARD[w.id] || []).find(r => r.riven);
+  const orders = [['heat', 'cold', 'multishot'], ['cold', 'heat', 'multishot']];
+  const seen = orders.map(bonuses => {
+    const state = boardRowState(w, { ...row, riven: { ...row.riven, bonuses, rolls: [0.9, 1.1, 1, 1.1] } });
+    const ref = state.slots.find(s => isRivenId(s.mod))?.mod;
+    return { ref, bonuses: rivenSpecFor(ref)?.spec.bonuses };
+  });
+  return { distinct: seen[0].ref !== seen[1].ref,
+    preserved: seen.every((s, i) => JSON.stringify(s.bonuses) === JSON.stringify(
+      orders[i].map((id, j) => ({ id, roll: [0.9, 1.1, 1][j] })))) };
+})()`);
+check('elemental bonus order survives read-only resolution and distinguishes references',
+  elements.distinct && elements.preserved, JSON.stringify(elements));
 
 // ---- the negative control ---------------------------------------------------
 
@@ -235,4 +264,4 @@ check("a weapon with no riven row makes no riven", plain.after === plain.before,
 check("...and shows no riven group and wears nothing",
   plain.rivenGroups === 0 && plain.wearing === 0, JSON.stringify(plain));
 
-await finish("a board row may wear a riven, and taking it gives you the riven");
+await finish("published rivens stay read-only until their build is copied");

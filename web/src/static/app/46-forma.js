@@ -148,13 +148,6 @@ function weaponLoadout(ss, strict = false) {
   let unread = false;
   const card = (s) => {
     if (!s || !s.mod) return null;
-    // A BOARD RIVEN that has not been taken yet: its shape is all there is.
-    const rv = isRivenId(s.mod) && !modById(s.mod) ? boardRivenDefs[s.mod] : null;
-    if (rv) {
-      const st = boardRivenState(rv);
-      return { drain: 2 + 2 * st.rank, polarity: polCap(st.polarity),
-        ordered: (rv.bonuses || []).some((id) => (rivenStat(id) || {}).elemental) };
-    }
     const m = modById(s.mod);
     if (!m) { unread = true; return null; }
     return { drain: modDrain(m, s.rank), polarity: m.polarity, ordered: !!m.elemental };

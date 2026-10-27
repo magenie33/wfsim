@@ -385,40 +385,26 @@ function snapshotState() {
   });
 }
 
-/// Create any BOARD riven this state wears that the reader does not have yet.
-///
-/// Returns nothing and writes at most once: the riven's name is derived from
-/// its shape, so a row taken twice reuses the first copy rather than stacking
-/// `… 2`, `… 3` behind it — which is the whole difference between this and the
-/// share link's import, where two links legitimately carry two different
-/// people's rivens that happen to share a name.
-function materialiseBoardRivens(st) {
-  const want = (st.slots || [])
-    .map((s) => s && s.mod)
-    .filter((id) => isRivenId(id) && boardRivenDefs[id]);
-  if (!want.length) return;
-  const ps = loadPresetList(RIVENS);
-  let added = 0;
-  for (const id of want) {
-    // THE BOARD ROW'S RIVEN KEEPS THE IDENTITY THE BUILD ALREADY NAMES. Its id
-    // is derived from the SHAPE (`boardRivenName`), so it is deterministic —
-    // which is what makes taking the same row twice reuse the first copy, and
-    // what lets the slot the build arrived with go on resolving.
-    const key = id.slice(RIVEN_PREFIX.length);
-    const state = boardRivenState(boardRivenDefs[id]);
-    const had = ps.find((p) => p.id === key);
-    // A COPY WHOSE ROLLS ARE NOT THE ROW'S IS CORRECTED, not reused: a name
-    // that once dropped the corner filed a deep roll under the god roll's id.
-    const rolls = (x) => JSON.stringify([...((x && x.bonuses) || []), (x && x.malus) || null]
-      .map((b) => (b ? [b.id, b.roll] : null)));
-    if (had && rolls(had.state) === rolls(state)) continue;
-    if (had) had.state = { ...had.state, bonuses: state.bonuses, malus: state.malus };
-    else ps.push({ id: key, name: key, savedAt: Date.now(), state });
-    added++;
+/// Owning a copy gives each referenced read-only card a fresh identity.
+function materialiseReferencedRivens(state) {
+  const out = JSON.parse(JSON.stringify(state));
+  const ps = loadPresetList(RIVENS), mapped = new Map();
+  for (const ref of customRefs(out, true)) {
+    const source = readOnlyRiven(ref.ref);
+    if (!source || mapped.has(ref.ref)) continue;
+    const id = newRivenId(ps);
+    ps.push({ id, name: source.name, savedAt: Date.now(), state: source.state });
+    mapped.set(ref.ref, RIVEN_PREFIX + id);
   }
-  if (!added) return;
+  if (!mapped.size) return out;
+  const rewrite = (v) => {
+    if (typeof v === "string") return mapped.get(v) || v;
+    if (Array.isArray(v)) return v.map(rewrite);
+    if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, rewrite(x)]));
+    return v;
+  };
   storePresetList(RIVENS, ps);
-  refreshRivenNames();
+  return rewrite(out);
 }
 
 // Apply a saved state. `weapon` is the weapon it belongs to — pass it and the
@@ -450,14 +436,6 @@ function restoreState(st, weapon) {
     history.replaceState(null, "", weaponModPath(w));
   }
   applyWeapon(w, null); // resets pool/innate/visibility
-  // A BOARD ROW'S RIVEN IS CREATED HERE, and only here — the moment a build
-  // that wears one is actually taken. Without it the loop below would drop the
-  // slot as "an id gone from the pool" and hand back a seven-mod build that
-  // scores nothing like the row it came from.
-  //
-  // IDEMPOTENT: the name is derived from the shape, so taking the same row
-  // twice finds the riven it made the first time.
-  materialiseBoardRivens(st);
   releaseAbsent(BUILDS);
   (st.slots || []).forEach((s, i) => {
     if (i >= slots.length) return;
@@ -516,6 +494,7 @@ function restoreState(st, weapon) {
   renderAssembly();
   renderWielder(); renderWeaponName();
   renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); refreshPanel();
+  if ((st.slots || []).some((s) => isReadOnlyRivenId(s.mod))) refreshRivenNames();
   renderStoredSimResult(); // the simulator shows THIS preset's last test
   if (absentOf(BUILDS, activePreset).length) {
     noteInline(tr("This build's riven is not on this browser. It is kept, and the numbers here leave it out until it syncs."));

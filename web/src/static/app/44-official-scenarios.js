@@ -124,13 +124,18 @@ const defaultEvolutions = (weaponId, sel) => Object.fromEntries(weaponEvos(weapo
 let modIndex = { pool: null, map: null };
 /// `fn` run with `w`'s mod pool in place of the open weapon's, and that one back after.
 function withPoolOf(w, fn) {
-  if (!w || !META || w.id === ($("weapon") || {}).value) return fn();
+  if (!w || !META || w.id === (rivenContextWeapon || ($("weapon") || {}).value)) return fn();
   const byId = new Map(Object.values(META.mod_pools || {}).flat().map((m) => [m.id, m]));
-  const saved = currentPool;
+  const saved = currentPool, savedRivenWeapon = rivenContextWeapon;
+  rivenContextWeapon = w.id;
   currentPool = (w.mods || []).map((id) => byId.get(id)).filter(Boolean);
-  try { return fn(); } finally { currentPool = saved; }
+  try { return fn(); } finally { currentPool = saved; rivenContextWeapon = savedRivenWeapon; }
 }
 const modById = (id) => {
+  if (isReadOnlyRivenId(id)) {
+    const p = readOnlyRiven(id);
+    return p ? rivenModOf(p) : null;
+  }
   if (isRivenId(id)) return rivenMods().find((m) => m.id === id);
   if (modIndex.pool !== currentPool) {
     const map = new Map();

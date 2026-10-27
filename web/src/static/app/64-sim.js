@@ -116,17 +116,15 @@ const evoChipsOf = (ids, weaponId) => headlessEvoChips(weaponInfo(weaponId || $(
 /// builder opens this weapon in, the simulator's build the builder's.
 function cardOfState(st, w, fixed) {
   const pinned = (k) => (fixed && fixed.has(k) ? "fixed" : "");
-  const riven = (id) => ({ name: (rivenSpecFor(id) || {}).name || "", section: rivenCardHtml(w, id) });
+  const riven = (id) => ({ name: (rivenSpecFor(id, w.id) || {}).name || "", section: rivenCardHtml(w, id) });
   return headlessCardOfState(pageSay(), { ...st, mode: st.mode || (fixed ? defaultMode(w.id, null) : mode) }, w, riven, pinned);
 }
 
 /// WHERE A RIVEN IN A BUILD IS DEFINED: the reader's own card, or a board row's,
-/// registered by `boardRowState` until the row is taken.
-function rivenSpecFor(id) {
-  const own = loadPresetList(RIVENS).find((p) => RIVEN_PREFIX + p.id === id);
-  if (own) return { name: own.name, spec: own.state || {} };
-  const rv = boardRivenDefs[id];
-  return rv ? { name: "", spec: boardRivenState(rv) } : null;
+/// carried by its read-only reference.
+function rivenSpecFor(id, weapon = presetWeapon()) {
+  const p = rivenEntryFor(id, weapon);
+  return p ? { name: p.name, spec: p.state || {} } : null;
 }
 
 /// Each riven's stats as `/api/riven` printed them, by weapon and card — the
@@ -161,7 +159,7 @@ function rivenCardGot(w, sp) {
 }
 
 /// THE RIVEN SECTION OF A BUILD CARD.
-const rivenCardHtml = (w, id) => rivenSpecCardHtml(w, id && rivenSpecFor(id));
+const rivenCardHtml = (w, id) => rivenSpecCardHtml(w, id && rivenSpecFor(id, w.id));
 /// …and a riven that is no saved card, given as `{ name, spec }` (an appraisal's).
 const rivenSpecCardHtml = (w, r) => (r ? headlessRivenSection(pageSay(), w, r, rivenCardGot(w, r.spec)) : "");
 

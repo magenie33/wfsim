@@ -706,9 +706,11 @@ const builtinBuildsUncached = (w) => {
 /// A BOARD ROW AS A BUILD STATE — what the build bar opens, and what the
 /// Forma optimizer reads and saves.
 function boardRowState(w, row) {
-  // A ROW'S RIVEN IS REGISTERED, not written: `restoreState` creates it if and
-  // when this build is actually taken (`headlessBoardRowAxes`).
-  return buildState(w.id, headlessBoardRowAxes(pageSay(), w, row, boardRivenDefs));
+  const axes = headlessBoardRowAxes(pageSay(), w, row, {});
+  if (row.riven) axes.slots.forEach((s) => {
+    if (isRivenId(s.mod)) s.mod = boardRivenRef(w, row.riven);
+  });
+  return buildState(w.id, axes);
 }
 /// A BOARD ROW, OPENED. `?bench=<id>` names the ruler the row was read under,
 /// `?mode=` how the weapon was played; together they identify exactly one
@@ -789,6 +791,7 @@ function buildBarCfg() {
     active: () => activePreset,
     setActive: (n) => { activePreset = n; localStorage.setItem(presetActiveKey(BUILDS), n); noteBoardActive(n); },
     snapshot: snapshotState,
+    copyState: materialiseReferencedRivens,
     // Never the payload's weapon — the scope's. See restoreState.
     // The benchmark build's Forma plan is NOT applied here — `restoreState`
     // owns it, so the boot path gets it too. See the comment there.

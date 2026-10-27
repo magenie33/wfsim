@@ -30,6 +30,7 @@ const newRivenId = (all) => {
 };
 const isRivenId = (id) => typeof id === "string" && id.startsWith(RIVEN_PREFIX);
 let rivenModCache = { key: null, list: [] };
+let rivenContextWeapon = "";
 
 // The saved rivens of the CURRENT weapon, shaped like mods so every list,
 // picker and slot that already understands a mod understands these.
@@ -41,62 +42,77 @@ function rivenMods() {
   const c = rivenModCache;
   if (c.w === w && c.owner === owner && c.whole === whole && c.names === rivenNames) return c.list;
   const raw = loadPresetList(RIVENS);
-  const list = raw.map((p) => {
-    const st = p.state || {};
-    const stats = (st.bonuses || st.positives || []).concat(st.malus || st.curse || []);
-    const lines = (rivenNames[p.id] || {}).lines || [];
-    const official = (rivenNames[p.id] || {}).name || "";
-    return {
-      id: RIVEN_PREFIX + p.id,
-      // DE's own riven card — the game draws every riven the same, so one
-      // image serves them all (`data/assets.yaml` mods.riven).
-      image: META.riven_image || null,
-      name: official ? `${p.name} · ${official}` : p.name,
-      name_en: official,
-      subtype: "Riven",
-      riven: true,
-      elemental: (st.bonuses || st.positives || []).some((b) => (rivenStat((b && b.id) || b) || {}).elemental),
-      // A weapon takes ONE riven. Same family = mutually exclusive, the rule
-      // the pool already has — so every list, slot and scope enforces it
-      // without knowing what a riven is.
-      family: "riven",
-      rarity: "legendary",
-      polarity: (st.polarity || "madurai").replace(/^./, (c) => c.toUpperCase()),
-      drain: 2 + 2 * (st.rank ?? 8),
-      max_rank: 8,
-      // THE CARD'S RANK IS THE SLOT'S. The engine prints and fights a riven at
-      // the rank its spec carries and never reads a slot rank for one, so the
-      // slot shows this and its stepper writes it (`setRivenRank`).
-      riven_rank: st.rank ?? 8,
-      exilus: false,
-      // The VEILED riven card — DE's own image for every riven type
-      // (`imageName` on the riven mod item), and the one on the CDN like
-      // every other mod picture.
-      image: "OmegaMod.png",
-      // Every printed value is searchable, which is how you find the riven
-      // with the crit damage on it without remembering what you called it.
-      effects: lines.length ? lines : stats.filter((s) => s && s.id).map((s) => s.id.replace(/_/g, " ")),
-      unmodeled_effects: (rivenNames[p.id] || {}).unmodeled || [],
-      // THE AUCTIONS THIS CARD COMPETES WITH — built here because this is
-      // where both halves are in scope: the roll, and the weapon it is for.
-      // The cache key covers both, so it cannot outlive either.
-      market_url: rivenMarketUrl(st, (META.weapons || []).find((x) => x.id === w)),
-      __spec: st,
-    };
-  });
+  const list = raw.map((p) => rivenModOf(p, w));
   rivenModCache = { w, owner, whole, names: rivenNames, list };
   return list;
+}
+
+/// A resolved definition as an equippable card, independent of its ownership.
+function rivenModOf(p, w = rivenContextWeapon || presetWeapon()) {
+  const st = p.state || {};
+  const stats = (st.bonuses || st.positives || []).concat(st.malus || st.curse || []);
+  const lines = (rivenNames[p.id] || {}).lines || [];
+  const official = (rivenNames[p.id] || {}).name || "";
+  return {
+    id: RIVEN_PREFIX + p.id,
+    // DE's own riven card — the game draws every riven the same, so one
+    // image serves them all (`data/assets.yaml` mods.riven).
+    image: META.riven_image || null,
+    name: official ? `${p.name} · ${official}` : p.name,
+    name_en: official,
+    subtype: "Riven",
+    riven: true,
+    elemental: (st.bonuses || st.positives || []).some((b) => (rivenStat((b && b.id) || b) || {}).elemental),
+    // A weapon takes ONE riven. Same family = mutually exclusive, the rule
+    // the pool already has — so every list, slot and scope enforces it
+    // without knowing what a riven is.
+    family: "riven",
+    rarity: "legendary",
+    polarity: (st.polarity || "madurai").replace(/^./, (c) => c.toUpperCase()),
+    drain: 2 + 2 * (st.rank ?? 8),
+    max_rank: 8,
+    // THE CARD'S RANK IS THE SLOT'S. The engine prints and fights a riven at
+    // the rank its spec carries and never reads a slot rank for one, so the
+    // slot shows this and its stepper writes it (`setRivenRank`).
+    riven_rank: st.rank ?? 8,
+    exilus: false,
+    // The VEILED riven card — DE's own image for every riven type
+    // (`imageName` on the riven mod item), and the one on the CDN like
+    // every other mod picture.
+    image: "OmegaMod.png",
+    // Every printed value is searchable, which is how you find the riven
+    // with the crit damage on it without remembering what you called it.
+    effects: lines.length ? lines : stats.filter((s) => s && s.id).map((s) => s.id.replace(/_/g, " ")),
+    unmodeled_effects: (rivenNames[p.id] || {}).unmodeled || [],
+    // THE AUCTIONS THIS CARD COMPETES WITH — built here because this is
+    // where both halves are in scope: the roll, and the weapon it is for.
+    // The cache key covers both, so it cannot outlive either.
+    market_url: rivenMarketUrl(st, (META.weapons || []).find((x) => x.id === w)),
+    __spec: st,
+  };
+}
+/// Owned equipment and read-only equipment have separate identities and sources.
+function rivenEntryFor(id, weapon = rivenContextWeapon || presetWeapon()) {
+  if (isReadOnlyRivenId(id)) return readOnlyRiven(id, weapon);
+  return loadPresetList(RIVENS, weapon).find((p) => RIVEN_PREFIX + p.id === id) || null;
+}
+/// Read-only definitions travel only when a live state actually references them.
+function referencedReadOnlyRivens(extra) {
+  const states = [slots, typeof opt === "undefined" ? null : opt.starts, extra];
+  return customRefs(states, true).map((r) => readOnlyRiven(r.ref)).filter(Boolean);
 }
 
 // The generated name and printed lines per saved riven, filled in by asking
 // the engine — the page never computes a riven value itself.
 let rivenNames = {};
+let rivenNamesVersion = 0;
 async function refreshRivenNames() {
-  const ps = loadPresetList(RIVENS);
+  const version = ++rivenNamesVersion, weapon = presetWeapon();
+  const ps = loadPresetList(RIVENS).concat(referencedReadOnlyRivens());
   const out = {};
   for (const p of ps) {
     try {
-      const r = await api("/api/riven", { weapon: $("weapon").value, ...(p.state || {}) });
+      const r = await api("/api/riven", { weapon, ...(p.state || {}) });
       out[p.id] = {
         name: r.name || "",
         lines: (r.stats || []).map((s) => s.text),
@@ -108,6 +124,7 @@ async function refreshRivenNames() {
       };
     } catch (_) { /* a name is a nicety; the riven still equips */ }
   }
+  if (version !== rivenNamesVersion || weapon !== presetWeapon()) return;
   rivenNames = out;
   rivenModCache = { key: null, list: [] };
   // The lists that show a riven's printed values may already have rendered
@@ -519,6 +536,9 @@ function defaultMode(weaponId, want) { return headlessDefaultMode(META, weaponId
 /// `id` is what the item id is built from; `name` rides along because it is
 /// what a share link written before ids carried, and the server still reads it
 /// when there is no id.
-const rivenPayload = () =>
-  loadPresetList(RIVENS).map((p) => ({ id: p.id, name: p.name, spec: p.state || {} }));
+const rivenPayload = (extra) => {
+  const entries = new Map(loadPresetList(RIVENS).map((p) => [p.id, p]));
+  for (const p of referencedReadOnlyRivens(extra)) entries.set(p.id, p);
+  return [...entries.values()].map((p) => ({ id: p.id, name: p.name, spec: p.state || {} }));
+};
 

@@ -21,6 +21,7 @@ const r = await evaluate(`(async () => {
   const riven = (id, name) => ({ id, name, scope: rivenScope('torid'), savedAt: 1, state: blankRiven() });
   const srv = new Map();
   const order = [];
+  const attempts = [];
   let clock = 1, allowance = null;
   const realFetch = window.fetch;
   window.fetch = async (url, o = {}) => {
@@ -30,8 +31,14 @@ const r = await evaluate(`(async () => {
       account: { id: 'acc1', created_at: '', identities: [{ provider: 'email', label: 'a@x' }] } });
     if (path !== '/api/cloud/sync') return realFetch(url, o);
     const b = JSON.parse(o.body || '{}');
-    const versions = {}, refused = [];
+    const versions = {}, refused = [], conflicts = [];
     for (const c of b.changes || []) {
+      attempts.push(c.id);
+      const had = srv.get(c.id);
+      if (c.base !== undefined && had && c.base !== had.version) {
+        conflicts.push({ id: c.id, list: had.list, version: had.version, body: had.body });
+        continue;
+      }
       // THE REAL SERVER'S ALLOWANCE: a new live item past it is refused.
       const live = (pool) => [...srv.values()].filter((e) => e.body && e.body.cloud_sync !== false && e.list.startsWith('wfsim-' + pool + '-')).length;
       const pool = c.list.startsWith('wfsim-customs-') ? 'customs' : 'presets';
@@ -41,7 +48,7 @@ const r = await evaluate(`(async () => {
       srv.set(c.id, { list: c.list, body: c.deleted ? null : JSON.parse(JSON.stringify(c.body)), updated_at: c.updated_at, synced_at: clock++, version: v });
       versions[c.id] = v;
     }
-    const extra = allowance ? { allowance, refused } : {};
+    const extra = { conflicts, ...(allowance ? { allowance, refused } : {}) };
     if (b.pull === false) return reply({ ok: true, full: false, versions, ...extra });
     const since = b.after ? b.after.t : (b.since || 0);
     const rows = [...srv.entries()].filter(([, e]) => e.synced_at > since).sort((x, y) => x[1].synced_at - y[1].synced_at);
@@ -121,6 +128,38 @@ const r = await evaluate(`(async () => {
   syncShow({ lists: new Set([EN]), ids: new Set(['e1']), removed: new Set() });
   await sleep(300);
   out.fightSeated = sim.enemy;
+
+  // The former board-derived owned identity is already deleted on the account.
+  await quiet();
+  localStorage.clear(); srv.clear(); order.length = 0; attempts.length = 0;
+  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3000);
+  const weapon = $('weapon').value;
+  const rows = (BOARD[weapon] || []).filter(x => x.benchmark === 'standard_single_target');
+  if (!rows.length) throw new Error('no board row for read-only sync fixture');
+  const best = rows.reduce((a, b) => a.score > b.score ? a : b);
+  const shape = { bonuses: ['critical_damage', 'damage', 'multishot'], malus: 'recoil', rolls: [1.1, 1.1, 1.1, 1.1] };
+  BOARD[weapon] = [{ ...best, score: best.score * 1.5,
+    mods: best.mods.map((m, i) => i === 0 ? 'riven' : m), riven: shape }, ...rows];
+  const legacy = boardRivenName(shape);
+  srv.set(legacy, { list: RV, body: null, updated_at: 1, synced_at: clock++, version: 2 });
+  await syncNow(); await quiet();
+  const entry = builtinBuilds().find(p => p.board && p.board.riven);
+  if (!entry) throw new Error('no published riven build for sync fixture');
+  const beforeStorage = localStorage.getItem(RV);
+  const cfg = buildBarCfg(); cfg.setActive(''); pickPreset(cfg, entry.builtin);
+  await quiet(); await syncNow(); await quiet();
+  out.readonlySync = [read(RV).length === 0, localStorage.getItem(RV) === beforeStorage,
+    !attempts.includes(legacy), srv.get(legacy).body === null, srv.get(legacy).version === 2];
+  const copyId = copyActivePreset(cfg);
+  await quiet(); await syncNow(); await quiet();
+  const copy = read(L).find(p => p.id === copyId);
+  const ref = copy?.state.slots.find(s => isRivenId(s.mod))?.mod;
+  const customId = ref?.slice(RIVEN_PREFIX.length);
+  out.readonlyCopy = [!!customId && customId !== legacy && !customId.startsWith('readonly:'),
+    !!srv.get(customId)?.body, !!srv.get(copyId)?.body,
+    order.indexOf(customId) >= 0 && order.indexOf(customId) < order.indexOf(copyId),
+    srv.get(copyId)?.body.state.slots.some(s => s.mod === ref) === true,
+    srv.get(legacy).body === null && srv.get(legacy).version === 2];
   window.fetch = realFetch;
   return out;
 })()`);
@@ -138,5 +177,9 @@ check("taking a riven off the account says how many synced items use it", r.offN
 check("a fight whose custom target is absent stands a unit in, and says so", ok(r.fightStand) === ok([true, true]), ok(r.fightStand));
 check("...and saves the target, not the stand-in", ok(r.fightKept) === ok(["custom:e1", 120]), ok(r.fightKept));
 check("...and fights it once it arrives", r.fightSeated === "custom:e1", r.fightSeated);
+check("opening a published riven neither writes owned storage nor resurrects its old cloud tombstone",
+  r.readonlySync?.every(Boolean), ok(r.readonlySync));
+check("copying syncs a fresh owned riven before the build that references it and preserves the tombstone",
+  r.readonlyCopy?.every(Boolean), ok(r.readonlyCopy));
 
 await app.finish("a custom travels with what names it, and is held where it is absent");

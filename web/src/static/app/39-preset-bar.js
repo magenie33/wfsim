@@ -155,10 +155,12 @@ const copyActivePreset = (cfg) => {
   flushPresetSaves();
   const ps = cfg.load();
   const base = presetLabel(presetFind(barEntries(cfg), cfg.active()));
-  const e = presetEntry(freeName(ps, (n) => base + " copy" + (n > 1 ? " " + n : "")), cfg.snapshot());
+  const state = cfg.copyState ? cfg.copyState(cfg.snapshot()) : cfg.snapshot();
+  const e = presetEntry(freeName(ps, (n) => base + " copy" + (n > 1 ? " " + n : "")), state);
   ps.push(e);
   cfg.store(ps);
   cfg.setActive(e.id);
+  if (cfg.copyState) whileApplying(() => cfg.apply(e.state));
   cfg.rerender();
   return e.id;
 };

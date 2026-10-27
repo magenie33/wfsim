@@ -652,6 +652,13 @@ function saveRivenSoon() {
 /// the slot instead moved the drain while the lines and the fight stood still.
 /// Every build seating this card follows, as every one does in game.
 function setRivenRank(rid, rank) {
+  if (readOnlyRiven(rid)) {
+    const seat = slots.findIndex((s) => s.mod === rid);
+    if (seat < 0) return;
+    if (officialBuildActive() && !startEdit) copyActivePreset(buildBarCfg());
+    else whileApplying(() => restoreState(materialiseReferencedRivens(snapshotState()), presetWeapon()));
+    rid = slots[seat].mod;
+  }
   const ps = loadPresetList(RIVENS);
   const p = ps.find((x) => RIVEN_PREFIX + x.id === rid);
   if (!p) return;
