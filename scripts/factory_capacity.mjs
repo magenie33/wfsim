@@ -44,7 +44,7 @@ export function capacity({ env = process.env, sample = resources, critical = {} 
       jobs.set(name, { ms: old ? Math.max(elapsed, old.ms * .8 + elapsed * .2) : elapsed,
         failures: failed ? (old?.failures || 0) + 1 : 0 });
     },
-    interval(name, base) {
+    interval(name, base, maximum = ceiling) {
       if (!fixed) return base;
       host = sample();
       const job = jobs.get(name);
@@ -55,7 +55,7 @@ export function capacity({ env = process.env, sample = resources, critical = {} 
           const c = jobs.get(name);
           return c ? Math.max(c.failures ? 1 : 0, c.ms / ms - 1) : 0;
         }));
-      return Math.round(Math.max(base, Math.min(ceiling,
+      return Math.round(Math.max(base, Math.min(ceiling, maximum,
         job.ms / duty * (1 + pressure) * 2 ** Math.min(3, job.failures))));
     },
     reading() {

@@ -61,7 +61,7 @@ gradually. This changes execution budgets, never fairness, witness counts or
 credit. Demand's live reading still refreshes each minute and its queue totals
 refresh every ten minutes. Its compute-cost estimate is kept between ten minutes
 and one hour. The tally refreshes
-between its configured interval and ten minutes. The daemon records the
+up to ten minutes, preserving a longer configured interval. The daemon records the
 resources and measured durations in `factory_findings.capacity`.
 
 `WFSIM_BACKGROUND_DUTY_PCT` sets each adaptive job's wall-time budget

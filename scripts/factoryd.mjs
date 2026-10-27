@@ -175,7 +175,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     tally: async () => {
       if (!target) return;
       const now = Date.now();
-      if (now - tallyAt < Math.min(10 * 60_000, budget.interval("tally", (await dialsOf(env, now)).stats_tally_ms)) - STATS_TICK_MS / 2) return false;
+      if (now - tallyAt < budget.interval("tally", (await dialsOf(env, now)).stats_tally_ms, 10 * 60_000) - STATS_TICK_MS / 2) return false;
       if (!tallyKept || now - Date.parse(tallyKept.at) >= TALLY_BASE_MS) tallyKept = await tallyBase(backgroundEnv.LIBRARY, now);
       await put(target, { key: TALLY_KEY, body: JSON.stringify(await tallyOf(backgroundEnv, tallyKept, now, await pace(now))), contentType: "application/json", cacheControl: TALLY_CACHE });
       tallyAt = now;
