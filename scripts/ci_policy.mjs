@@ -36,7 +36,8 @@ export function policyDigest() {
   const h = createHash('sha256');
   for (const path of ['.github/workflows/ci.yml', '.github/actions/site-tools/action.yml',
     '.github/actions/built-site/action.yml', 'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs',
-    'scripts/check_ci_policy.mjs', 'Cargo.toml', 'Cargo.lock']) {
+    'scripts/check_ci_policy.mjs', 'scripts/ci_rust.mjs', 'scripts/check_ci_partitions.mjs', 'scripts/riven_request_cases.mjs',
+    '.github/actions/site-tools/install.sh', 'scripts/check_site_setup.mjs', 'Cargo.toml', 'Cargo.lock']) {
     h.update(path).update('\0').update(readFileSync(path)).update('\0');
   }
   return h.digest('hex');

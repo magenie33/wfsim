@@ -136,6 +136,12 @@ jobs:
         with:
           node-version: "22.23.4"
       - if: steps.due.outputs.go == 'true'
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        continue-on-error: true
+        with:
+          shared-key: engine-macos-${{ matrix.arch }}
+          cache-workspace-crates: true
+      - if: steps.due.outputs.go == 'true'
         env:
           ARCH: ${{ matrix.arch }}
         run: |

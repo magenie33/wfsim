@@ -73,6 +73,8 @@ jobs:
         with:
           node-version: '22.23.4'
       - run: node scripts/check_ci_policy.mjs
+      - run: node scripts/check_ci_partitions.mjs
+      - run: node scripts/check_site_setup.mjs
       - run: node scripts/check_page_bodies.mjs
       - run: node scripts/check_comment_style.mjs
       - run: node scripts/check_time_storage.mjs
@@ -91,7 +93,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [workspace, webapi, whole-scope, accuracy]
+        suite: [workspace, webapi, whole-scope, descent, screened-descent, fleet-work, accuracy]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -112,8 +114,9 @@ jobs:
           case "$SUITE" in
             workspace) cargo test --workspace --exclude wfsim-webapi ;;
             webapi) cargo test -p wfsim-webapi -- --skip optimize::whole_scope_tests:: --skip optimize::quick_descent_tests:: ;;
-            whole-scope) cargo test -p wfsim-webapi --lib optimize::whole_scope_tests:: -- --nocapture ;;
+            whole-scope|descent|screened-descent|fleet-work) node scripts/ci_rust.mjs "$SUITE" ;;
             accuracy) cargo test -p wfsim-webapi --lib optimize::quick_descent_tests:: -- --nocapture ;;
+            *) echo "unknown Rust suite: $SUITE" >&2; exit 2 ;;
           esac
 
   # NATIVE AND WASM COUNT THE SAME WORK (docs/WASM.md §"Gas"): both built from
@@ -441,6 +444,10 @@ jobs:
     needs: [plan, site]
     if: needs.site.result == 'success'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [account, views, cards, heads, library]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/built-site
@@ -455,17 +462,22 @@ jobs:
       # without a sound: a moved control is a null, and every assertion after
       # it is never asked.
       - name: The Tenno reaches the panel, the sim and a share link
+        if: matrix.group == 'account'
         run: node scripts/check_tenno.mjs
       # A BAR REDRAWN BEFORE ITS PAGE HAS A BUILD threw inside the account's
       # answer, which then skipped the sign-in entry, the notices and the sync —
       # an error only the usage log ever saw.
       - name: A build bar redrawn before its page has a build throws nothing
+        if: matrix.group == 'account'
         run: node scripts/check_bar_before_catalog.mjs
       - name: Read-only build rivens stay separate from owned customs
+        if: matrix.group == 'account'
         run: node scripts/check_riven_board.mjs
       - name: Customs precede their presets without reviving deleted rivens
+        if: matrix.group == 'account'
         run: node scripts/check_sync_customs.mjs
       - name: A shared build carries its riven and chosen label
+        if: matrix.group == 'account'
         run: node scripts/check_share.mjs
       # HOW DEEP THE BOARD IS READ, which the publisher no longer decides. The
       # rule moved from a binary with unit tests to a page without, and its
@@ -473,6 +485,7 @@ jobs:
       # row exactly on the line, and an empty group reads as a weapon nobody
       # tried. Injected rows, so it can ask about exactly half.
       - name: The board is as deep as the reader asked
+        if: matrix.group == 'views'
         run: node scripts/check_board_depth.mjs
       # THE DOWNLOAD OFFER, which has three answers and only one of them is
       # visible on the machine it was written on. Its failure modes are silent
@@ -480,24 +493,32 @@ jobs:
       # handed a 34 MB download, a source badge that draws an icon and names
       # nothing — and each looks like a working page.
       - name: The download offer answers the machine asking
+        if: matrix.group == 'views'
         run: node scripts/check_downloads.mjs
       # A DOCUMENT CARRIES ITS OWN PAGE AND NOBODY ELSE'S. Both halves of that
       # fail silently — a document keeping all four bodies is merely large, and
       # a page whose body was taken and never fetched is merely blank — so
       # neither shows up as an error anywhere else.
       - name: A document carries its own page
+        if: matrix.group == 'views'
         run: node scripts/check_own_body.mjs
       - name: Every page is titled in both languages
+        if: matrix.group == 'views'
         run: node scripts/check_page_titles.mjs
       - name: A fired reminder is a card in the corner and a count on the bell, never a strip over the page
+        if: matrix.group == 'views'
         run: node scripts/check_reminder_notices.mjs
       - name: Feedback is a mark beside the bell, one box and its screenshots, sent with where the reader was
+        if: matrix.group == 'views'
         run: node scripts/check_feedback_panel.mjs
       - name: The compute page's total is every order, dispatched and waiting, each kind a row of one list
+        if: matrix.group == 'views'
         run: node scripts/check_compute_orders.mjs
       - name: The board's scene and shooting choices are independent and survive a link
+        if: matrix.group == 'views'
         run: node scripts/check_board_ladder.mjs
       - name: A built-in search is read-only, a click copies it, and the run button sends the page's own search
+        if: matrix.group == 'views'
         run: node scripts/check_search_presets.mjs
       # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
       # browser, no engine, no network — it imports `worker/index.js` and runs
@@ -506,6 +527,7 @@ jobs:
       # not throw, it produces a record the scorer quietly refuses, and the
       # submitter is told "sent". See docs/BOARD.md.
       - name: The board's submission endpoint keeps the whole build
+        if: matrix.group == 'library'
         run: node scripts/check_board_submit.mjs
       # A SHORT SHARE LINK stores a build under the worker's own hash of it, and
       # nothing that is not a share code. Stub store, no network.
@@ -513,31 +535,41 @@ jobs:
       # codec previews a link by a grammar the page left behind, and a stale
       # headless table answers an agent with queries the page has moved past.
       - name: The workers' copies are the page's parts
+        if: matrix.group == 'library'
         run: node scripts/gen_worker_parts.mjs --check
       - name: The MCP server's queries run with no page
+        if: matrix.group == 'library'
         run: node scripts/check_mcp_tools.mjs
       # THE BOT DRAWS ITS CARD WITH NO PAGE and Chrome only rasterizes it: a
       # card that drifted from the page's is still a picture, just a wrong one.
       - name: The bot's card is the page's, pixel for pixel
+        if: matrix.group == 'cards'
         run: node scripts/check_card_document.mjs
       - name: The heads answer as the whole board
+        if: matrix.group == 'heads'
         run: node scripts/check_board_heads.mjs
       - name: The MCP server knows who calls, and how often
+        if: matrix.group == 'library'
         run: node scripts/check_mcp_auth.mjs
       - name: What an agent reads to find WFSim is what the site serves
+        if: matrix.group == 'library'
         run: node scripts/check_agent_discovery.mjs
       - name: The account rules hold against the real schema
+        if: matrix.group == 'library'
         run: node scripts/check_accounts.mjs
       - name: Short share links store a build and nothing else
+        if: matrix.group == 'library'
         run: node scripts/check_share_short.mjs
       # A USAGE EVENT named on one side only is a time series that never starts,
       # and nothing throws. Stub dataset, no network.
       - name: Usage points agree between page and worker
+        if: matrix.group == 'library'
         run: node scripts/check_usage_events.mjs
       # …AND IT CAN BE PUT BACK. A backup nobody has restored is a hope: the
       # restore runs once, under pressure, by someone who has just lost data,
       # which is the worst moment to find a typo in it. Stub database, no network.
       - name: The library can be put back
+        if: matrix.group == 'library'
         run: bash scripts/restore_library.sh --self-test
       # THE LIBRARY IS ONE QUERY, and the failure mode it replaces is a SHORT
       # LIST — which publishes a perfectly valid board with rows missing and
@@ -545,6 +577,7 @@ jobs:
       # pages cannot overlap or skip, that each record is PARSED rather than
       # carried as the text the column holds, and that a short read refuses.
       - name: The library is one query, and a short one refuses
+        if: matrix.group == 'library'
         run: bash scripts/fetch_library.sh --self-test
       # …AND A FACT REACHES THE DATABASE THE MOMENT IT IS COMPUTED. The failure
       # this guards is the one that lost a whole rescore: work that is durable
@@ -553,12 +586,14 @@ jobs:
       # interpolated, two modes of one build stay two rows, and the cursor may
       # not move past a refusal or that row is never shipped again.
       - name: A fact is shipped as it is computed
+        if: matrix.group == 'library'
         run: bash scripts/ship_facts.sh --self-test
       # …AND READ BACK BY GENERATION. The read is where a paging bug hides: two
       # pages that overlap or skip leave a row the pipeline recomputes for ever
       # and nothing says so, which is why the ORDER BY is asserted rather than
       # assumed.
       - name: A generation is read back whole
+        if: matrix.group == 'library'
         run: bash scripts/fetch_facts.sh --self-test
       # THE OTHER HALF OF THE DOOR. A submission arrives verbatim because the
       # endpoint has no game data; these two carry it to `wfsim-intake`, which
@@ -567,9 +602,11 @@ jobs:
       # row is spent, so a refusal leaves the submission where the next run will
       # find it rather than dropping it.
       - name: What arrived is read out of the queue
+        if: matrix.group == 'library'
         run: bash scripts/fetch_inbox.sh --self-test
       # A backfill writes only the corners the library lacks, never an end.
       - name: A duration malus's inside rolls reach stored builds
+        if: matrix.group == 'library'
         run: bash scripts/backfill_duration_corners.sh --self-test
       # …AND WHAT CAN NEVER BE PAID IS FORGOTTEN. A queue row is deleted beside
       # the fact that settles it, so a row under a retired ruler is owed for
@@ -577,36 +614,46 @@ jobs:
       # is built without a database, which is the half that could empty the
       # queue and the half a self-test can reach.
       - name: A row owed under a retired ruler is forgotten
+        if: matrix.group == 'library'
         run: bash scripts/purge_queue.sh --self-test
       - name: A row no build can pay is forgotten, and nothing else
+        if: matrix.group == 'library'
         run: bash scripts/purge_orphans.sh --self-test
       # A CANCEL NAMES ITS ROWS, BOUND, AND NEVER WAITS ON A SYNC: the selector
       # and the statements are built without a database; check_pg_scripts runs
       # the cancel itself.
       - name: A cancel names its rows and skips what a sync holds
+        if: matrix.group == 'library'
         run: bash scripts/cancel_queue.sh --self-test
       - name: What intake made of an arrival reaches the library
+        if: matrix.group == 'library'
         run: bash scripts/ship_builds.sh --self-test
       - name: The bot server is sent every module the live board's scripts import
+        if: matrix.group == 'library'
         run: python3 scripts/ship_bot.py --self-test
       # A REFRESH ASKS WHAT THE FACTORY HAS ROOM FOR, and a row near its fifteen
       # days whatever the room: the oldest first, never more than an hour's.
       - name: A refresh asks the oldest rows the room allows, and the forced ones
+        if: matrix.group == 'library'
         run: python3 scripts/oldest_rows.py --self-test
       # AN EDIT THAT LEAVES THE TOKENS ALONE MOVES NO ENGINE: comments, layout
       # and test-only items are not what a number is computed from.
       - name: Rust is read as its tokens for the engine id
+        if: matrix.group == 'library'
         run: python3 scripts/rust_tokens.py --self-test
       # AN OLDER ENGINE IS ACCEPTED WHERE ITS BITS ARE THE SERVED ONE'S, and
       # nowhere else: a weapon's data and its linked forms, never mechanics.
       - name: An older engine is accepted exactly on the weapons its data matches
+        if: matrix.group == 'library'
         run: (python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml) && python3 scripts/check_engine_grace.py
       # THE WHOLE HOP, IN ONE. Each end of it has its own test and all of them
       # passed on the day `mode` was in the door's key, because no test looked at
       # what came out the far end. What a player PLACES and what the library
       # HOLDS is one question; this is the only place it is asked.
-      - run: cargo build --release --bin wfsim-intake
+      - if: matrix.group == 'library'
+        run: cargo build --release --bin wfsim-intake
       - name: A submission survives the hop into the library
+        if: matrix.group == 'library'
         run: node scripts/check_submission_hop.mjs
 
   ci-required:

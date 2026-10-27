@@ -2980,13 +2980,21 @@ mod whole_scope_tests {
     /// changes — every build is scored on the same paired stream wherever it runs.
     #[test]
     fn a_descent_split_across_workers_lands_where_one_worker_does() {
+        descent_split_across_workers(1);
+    }
+
+    #[test]
+    fn a_descent_split_across_workers_lands_where_one_worker_does_with_step_screen() {
+        descent_split_across_workers(10);
+    }
+
+    fn descent_split_across_workers(candidate_runs: u32) {
         let start = |slots: Value, fixed: Value| json!({ "slots": slots, "evolutions": [], "arcane": [], "fixed": fixed });
         // Three elements pinned: several element orders, so a worker's choice
         // of order is part of what has to reach the leader intact.
         let three = json!([{ "kind": "mods", "idx": 0 }, { "kind": "mods", "idx": 1 }, { "kind": "mods", "idx": 2 }]);
         // At ten runs a candidate the step screen is on, and its short
         // measurements travel the fleet as `{build, runs}` items too.
-        for candidate_runs in [1, 10] {
         let req = json!({
             "weapon": "braton_prime", "enemy": "thrax_centurion", "level": 100,
             "duration": 5.0, "runs": 4, "finalists": 2,
@@ -3016,7 +3024,6 @@ mod whole_scope_tests {
         };
         assert!(steps > 1, "the leader paused {steps} times");
         assert_eq!(rows(&led), rows(&alone), "candidate_runs {candidate_runs}, after {steps} steps");
-        }
     }
 
     /// THE WORK OF A SEARCH IS THE SEARCH'S, not the fleet's: however the

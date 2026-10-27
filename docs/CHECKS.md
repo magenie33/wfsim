@@ -17,6 +17,22 @@ covering the selected jobs for the exact commit and policy from a successful tru
 incomplete and recursively reused evidence is refused. No browser. The workflow
 and release rules are in [`CI.md`](CI.md).
 
+## `check_ci_partitions`
+
+The whole-scope Rust cases and additional page commands each execute in one
+nonempty CI group. Missing protected Rust cases, duplicate names and page
+commands without a declared group fail. The checks exercise these broken
+inputs too. Matrix results still aggregate into the required release gate.
+Riven-request partitions keep the full weapon, ruler, card-shape and link-code
+case set while sharing the extra rulers between jobs.
+
+## `check_site_setup`
+
+The actual setup shell runs with fake package-manager and privilege commands.
+Already installed packages make no network calls; site-only builds omit the
+desktop GUI packages; publishing retains them. An installation timeout keeps
+its failure status and diagnostic output. No packages are installed locally.
+
 ## `check_board_ladder`
 
 The board's four fights cross four scenes and three shooting conditions.

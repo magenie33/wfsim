@@ -9,9 +9,10 @@
 //
 //   node scripts/check_riven_request.mjs                 serves site/ itself
 //   WFSIM_BASE=http://127.0.0.1:<port> node scripts/check_riven_request.mjs
-//   WFSIM_RIVEN_SHARD=1/4 …   every fourth weapon, from the second
+//   WFSIM_RIVEN_SHARD=1/4 …   weapons and extra ruler cases split across jobs
 //   WFSIM_RIVEN_LANES=4 …     clean pages at once (default 4)
 import { openApp } from "./cdp.mjs";
+import { rivenRequestCases } from "./riven_request_cases.mjs";
 
 const [SHARD, SHARDS] = (process.env.WFSIM_RIVEN_SHARD || "0/1").split("/").map(Number);
 if (!(SHARDS >= 1 && SHARD >= 0 && SHARD < SHARDS)) {
@@ -48,12 +49,7 @@ function parts(a, b, path = "", out = []) {
 
 const first = await openApp({ profile: `wfsim-riven-request-0-${Date.now()}` });
 const meta = await first.evaluate(`(async () => { for (let i = 0; i < 200 && !(window.META && META.weapons); i++) await new Promise((r) => setTimeout(r, 100)); return META; })()`);
-const primary = (meta.benchmarks.find((b) => b.primary) || meta.benchmarks[0]).id;
-const pairs = [];
-meta.weapons.forEach((w, i) => { if (i % SHARDS === SHARD) pairs.push([w.id, primary]); });
-if (SHARD === 0) {
-  for (const w of EVERY_RULER_ON) for (const b of meta.benchmarks) if (b.id !== primary) pairs.push([w, b.id]);
-}
+const pairs = rivenRequestCases(meta, EVERY_RULER_ON, SHARD, SHARDS, CARDS.length);
 console.log(`${pairs.length} pairs, ${LANES} lanes`);
 
 const apps = [first];
@@ -75,10 +71,10 @@ let next = 0;
 await Promise.all(apps.map(async (app) => {
   while (next < pairs.length) {
     const k = next++;
-    const [weapon, ruler] = pairs[k];
-    const card = CARDS[k % CARDS.length];
+    const { weapon, ruler, card: cardIndex, index } = pairs[k];
+    const card = CARDS[cardIndex];
     // A CODE IS THREE TO TWELVE CHARACTERS, or the link is not an appraisal's.
-    const code = `T${String(k).padStart(4, "0")}`;
+    const code = `T${String(index).padStart(4, "0")}`;
     app.job = { ok: true, code, weapon, ruler, riven: card, at: Date.now(), done: false };
     // A CLEAN BOOT: nothing an earlier pair stored is read by the next.
     await app.send("Storage.clearDataForOrigin", { origin: new URL(app.BASE).origin, storageTypes: "local_storage,indexeddb,session_storage" });

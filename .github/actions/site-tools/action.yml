@@ -16,17 +16,14 @@ inputs:
 runs:
   using: composite
   steps:
-    # THE DESKTOP SHELL'S LIBRARIES (Tauri's list for Ubuntu), a CJK font for the
-    # link cards, which drawn without one are boxes, and the runner's newest
-    # clang first for cargo xwin: the MSVC headers refuse one before 19
-    # ("STL1000: expected Clang 19"). Runs on ubuntu-26.04, which carries 20-22.
+    # Site builds need the CJK font and xwin's linker; publishing also builds
+    # the Linux desktop shell. The MSVC headers require clang 19 or newer.
     - shell: bash
       run: |
         set -euo pipefail
         llvm=$(ls -d /usr/lib/llvm-* | sort -V | tail -1); v=${llvm##*-}
         [ "$v" -ge 19 ] || { echo "::error::newest clang on this runner is $v; cargo xwin needs 19"; exit 1; }
-        sudo timeout 180s apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
-        sudo env DEBIAN_FRONTEND=noninteractive timeout 300s apt-get install -y -qq libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev           fonts-noto-cjk "lld-$v" > /dev/null
+        bash "$GITHUB_ACTION_PATH/install.sh" '${{ inputs.build }}' "$v"
         test -f /usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc
         echo "$llvm/bin" >> "$GITHUB_PATH"
     - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master

@@ -107,15 +107,30 @@ serial release workflow.
 
 ## Test execution
 
-Quick source checks run before the expensive build and Rust jobs. Rust tests
-run in four groups: the workspace excluding webapi, ordinary webapi tests,
-whole-scope search tests, and the webapi exhaustive accuracy test. Their filters
-partition the suite; no assertion or test is removed. `fail-fast: false` retains
-the other groups' diagnostics when one fails.
+Quick source checks run before the expensive build and Rust jobs. The workspace,
+ordinary webapi and exhaustive accuracy tests have separate jobs. Whole-scope
+search tests split into ordinary cases, single-run descent, screened descent
+and fleet work conservation. The descent cases share the same assertions and
+budgets; each candidate-run setting executes once. `scripts/ci_rust.mjs` discovers
+the real test list and runs exact names, refusing a missing protected test or
+empty group. New ordinary whole-scope tests join the ordinary group.
 
-System dependency installation is noninteractive and has bounded waits. A
-stalled setup fails its job and can be retried on the same candidate; it does
-not supply successful validation or release evidence.
+The additional page checks run in five independent groups: accounts and sharing,
+views, card rendering, board heads and library integration. Each command belongs
+to one group. `check_ci_partitions` rejects missing, duplicate or empty groups;
+the required gate waits for every matrix member. A failed group can be retried
+without repeating the other groups. `fail-fast: false` preserves their results.
+Riven-request checks spread their extra ruler cases across all four parity
+jobs, retaining each weapon, ruler, card shape and link-code input. The partition
+check compares the full case set with the unbalanced layout.
+
+System dependency installation skips packages already installed. Site builds
+install the CJK font and linker; publishing also installs the Linux shell's GUI
+dependencies. Setup is noninteractive, has bounded network and process waits,
+and prints the package-manager log on failure. A failed setup supplies no
+successful validation or release evidence. Mac library builds cache dependencies
+and workspace artifacts separately per architecture; a cache failure falls back
+to compiling, and every build still runs its native/WASM comparison.
 
 The test profile optimizes dependencies as well as workspace code, retaining
 debug assertions and overflow checks. Search tests repeatedly parse and exchange
