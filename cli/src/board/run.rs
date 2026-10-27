@@ -104,7 +104,7 @@ fn each_ruler() {
                     std::process::exit(1);
                 }
             }
-            None => eprint!("{log}"),
+            None => super::print_log(log.as_bytes()),
         }
     }
 }

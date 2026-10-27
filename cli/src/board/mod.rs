@@ -35,8 +35,30 @@ pub(crate) fn said(line: String) {
             log.push_str(&line);
             log.push('\n');
         }
-        None => eprintln!("{line}"),
+        None => print_log(format!("{line}\n").as_bytes()),
     });
+}
+
+/// A runner's stderr can be a nonblocking pipe. Backpressure must retain the
+/// unwritten suffix rather than panic halfway through a reconciliation.
+fn write_log(out: &mut impl std::io::Write, mut bytes: &[u8]) -> std::io::Result<()> {
+    use std::io::{Error, ErrorKind};
+    while !bytes.is_empty() {
+        match out.write(bytes) {
+            Ok(0) => return Err(Error::from(ErrorKind::WriteZero)),
+            Ok(n) => bytes = &bytes[n..],
+            Err(e) if e.kind() == ErrorKind::Interrupted => {}
+            Err(e) if e.kind() == ErrorKind::WouldBlock => {
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            Err(e) => return Err(e),
+        }
+    }
+    Ok(())
+}
+
+fn print_log(bytes: &[u8]) {
+    write_log(&mut std::io::stderr().lock(), bytes).expect("board log");
 }
 
 /// …AND WHAT `f` SAID, held rather than printed.
@@ -57,3 +79,45 @@ mod run;
 mod state;
 
 pub use run::run;
+
+#[cfg(test)]
+mod log_tests {
+    use std::collections::VecDeque;
+    use std::io::{self, ErrorKind, Write};
+
+    struct Pipe {
+        writes: VecDeque<io::Result<usize>>,
+        bytes: Vec<u8>,
+    }
+
+    impl Write for Pipe {
+        fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+            let n = self.writes.pop_front().unwrap_or(Ok(bytes.len()))?;
+            self.bytes.extend_from_slice(&bytes[..n]);
+            Ok(n)
+        }
+
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn pipe_backpressure_preserves_every_byte() {
+        let mut pipe = Pipe {
+            writes: [Ok(3), Err(ErrorKind::WouldBlock.into()), Ok(2),
+                Err(ErrorKind::Interrupted.into()), Err(ErrorKind::WouldBlock.into())].into(),
+            bytes: Vec::new(),
+        };
+        super::write_log(&mut pipe, b"refused build\nnext ruler\n").unwrap();
+        assert_eq!(pipe.bytes, b"refused build\nnext ruler\n");
+    }
+
+    #[test]
+    fn a_closed_log_is_an_error() {
+        for result in [Ok(0), Err(ErrorKind::BrokenPipe.into())] {
+            let mut pipe = Pipe { writes: [result].into(), bytes: Vec::new() };
+            assert!(super::write_log(&mut pipe, b"refused build\n").is_err());
+        }
+    }
+}
