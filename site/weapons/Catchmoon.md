@@ -4,7 +4,7 @@ Chinese name: 捕月
 
 Shotgun · Primary · Mastery Rank 0. 216 base damage (heat 126, impact 90), 21% crit chance, 2x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

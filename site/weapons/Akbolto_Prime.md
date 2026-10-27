@@ -4,7 +4,7 @@ Chinese name: 螺钉双枪 Prime
 
 Dual Pistols · Secondary · Mastery Rank 13. 44 base damage (impact 4.4, puncture 37.84, slash 1.76), 36% crit chance, 2.8x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

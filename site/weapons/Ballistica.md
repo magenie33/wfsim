@@ -4,7 +4,7 @@ Chinese name: 布里斯提卡
 
 Pistol · Secondary · Mastery Rank 2. 100 base damage (impact 10, puncture 80, slash 10), 15% crit chance, 1.5x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

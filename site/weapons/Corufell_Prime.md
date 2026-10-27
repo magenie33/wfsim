@@ -4,7 +4,7 @@ Chinese name: 闪劫 Prime
 
 Heavy Scythe · Melee · Mastery Rank 16. 225 base damage (impact 108, puncture 76.5, slash 40.5), 30% crit chance, 2.5x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

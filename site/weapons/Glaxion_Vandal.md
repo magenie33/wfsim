@@ -4,7 +4,7 @@ Chinese name: 冷冻光束步枪·破坏者
 
 Rifle · Primary · Mastery Rank 12. 29 base damage (cold 29), 14% crit chance, 2x crit multiplier, 38% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

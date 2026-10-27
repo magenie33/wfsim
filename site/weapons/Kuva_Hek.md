@@ -4,7 +4,7 @@ Chinese name: 赤毒·海克
 
 Shotgun · Primary · Mastery Rank 15. 87 base damage x7 multishot (impact 13.05, puncture 56.55, slash 17.4), 23% crit chance, 2.1x crit multiplier, 13.3% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

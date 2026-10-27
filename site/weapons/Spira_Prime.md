@@ -4,7 +4,7 @@ Chinese name: 旋刃飞刀 Prime
 
 Pistol · Secondary · Mastery Rank 10. 60 base damage (impact 6, puncture 48, slash 6), 30% crit chance, 3x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

@@ -4,7 +4,7 @@ Chinese name: 孢射
 
 Pistol · Secondary · Mastery Rank 0. 0 base damage (), 21% crit chance, 3x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -14,7 +14,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | --- | --- | --- | ---: | --- | --- |
 | Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 8.0512 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Primed Steady Hands, Pax Charge, Secondary Enervate | 2026-10-22 12:26 UTC · 99dec9ad6d01 |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 17.2219 | Primed Convulsion, Galvanized Diffusion, Hornet Strike, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Pressurized Magazine, Magnetic Might, Primed Steady Hands, Pax Charge, Secondary Enervate | 2026-10-23 01:14 UTC · 62a82930d1d3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.1357 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Pax Charge, Secondary Enervate | 2026-10-23 00:59 UTC · 62a82930d1d3 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.3595 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Pistol Elementalist, Pax Charge, Secondary Enervate | 2026-10-26 19:12 UTC · 14c617506965 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 3.8349 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Pax Charge, Secondary Enervate | 2026-10-23 01:03 UTC · 62a82930d1d3 |
 
 ## Not modelled here

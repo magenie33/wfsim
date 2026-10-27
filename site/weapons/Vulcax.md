@@ -4,7 +4,7 @@ Chinese name: 金工火舌
 
 Sentinel Weapon · Sentinel · Mastery Rank 14. 500 base damage (heat 500), 20% crit chance, 2.5x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

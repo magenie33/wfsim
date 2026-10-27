@@ -4,7 +4,7 @@ Chinese name: 捕月
 
 Pistol · Secondary · Mastery Rank 0. 290 base damage (heat 184, impact 106), 21% crit chance, 2x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.8963 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-22 13:31 UTC · 99dec9ad6d01 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 4.5343 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-22 17:55 UTC · 62a82930d1d3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.1103 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-22 19:26 UTC · 62a82930d1d3 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.4823 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Primed Target Cracker, Lethal Torrent, Magnetic Might, Trick Mag, Pax Charge, Secondary Enervate | 2026-10-22 16:20 UTC · 99dec9ad6d01 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.1876 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Lethal Momentum, Pax Charge, Secondary Enervate | 2026-10-26 21:41 UTC · 14c617506965 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 6.8737 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Lethal Momentum, Pax Charge, Secondary Enervate | 2026-10-26 21:44 UTC · 14c617506965 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.3643 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Lethal Momentum, Pax Charge, Secondary Enervate | 2026-10-26 21:44 UTC · 14c617506965 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.8908 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Lethal Momentum, Pax Charge, Secondary Enervate | 2026-10-26 21:44 UTC · 14c617506965 |
 
 ## Not modelled here
 

@@ -4,7 +4,7 @@ Chinese name: MK1-盗贼
 
 Pistol · Secondary · Mastery Rank 0. 13 base damage (impact 1.95, puncture 9.1, slash 1.95), 5% crit chance, 2x crit multiplier, 1% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

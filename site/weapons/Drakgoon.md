@@ -4,7 +4,7 @@ Chinese name: 龙骑兵
 
 Shotgun · Primary · Mastery Rank 5. 70 base damage x10 multishot (impact 7, puncture 7, slash 56), 7.5% crit chance, 2x crit multiplier, 6.9% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

@@ -4,7 +4,7 @@ Chinese name: 拉托
 
 Pistol · Secondary · Mastery Rank 0. 40 base damage (impact 10, puncture 10, slash 20), 10% crit chance, 1.8x crit multiplier, 6% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

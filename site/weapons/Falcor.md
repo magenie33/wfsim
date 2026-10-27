@@ -4,7 +4,7 @@ Chinese name: 猎鹰轮
 
 Glaive · Melee · Mastery Rank 8. 230 base damage (electricity 84, impact 36, puncture 18, slash 92), 12% crit chance, 1.6x crit multiplier, 34% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

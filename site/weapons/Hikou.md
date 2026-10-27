@@ -4,7 +4,7 @@ Chinese name: 飞扬
 
 Pistol · Secondary · Mastery Rank 2. 26 base damage (impact 2.6, puncture 15.6, slash 7.8), 4% crit chance, 1.6x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

@@ -4,7 +4,7 @@ Chinese name: 艾弗旺-5 木星
 
 Rifle · Primary · Mastery Rank 14. 61 base damage (corrosive 7, puncture 31, slash 23), 21% crit chance, 2.3x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

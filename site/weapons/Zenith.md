@@ -4,7 +4,7 @@ Chinese name: 天穹之顶
 
 Rifle · Primary · Mastery Rank 10. 150 base damage (impact 15, puncture 120, slash 15), 35% crit chance, 2.5x crit multiplier, 8% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-26
+## Best riven-free build on the WFSim board, as of 2026-10-27
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
