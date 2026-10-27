@@ -20,7 +20,8 @@ const SUPPORT_USE = "wfsim-use";
 function supportUse() {
   try {
     const v = JSON.parse(localStorage.getItem(SUPPORT_USE) || "{}");
-    return { sims: v.sims | 0, engagements: v.engagements | 0 };
+    const count = (n) => Number.isSafeInteger(n) && n > 0 ? n : 0;
+    return { sims: count(v?.sims), engagements: count(v?.engagements) };
   } catch (_) { return { sims: 0, engagements: 0 }; }
 }
 function noteSimRun(engagements) {
@@ -114,7 +115,7 @@ function renderHomeFacts() {
 /// the computers at it now. Asked each minute the page is in view; between
 /// answers a count walks to the new one over the minute.
 const TALLY_EVERY_MS = 60_000;
-let tallyShown = null, tallyFrom = null, tallyTo = null, tallyAt = 0;
+let tallyShown = null, tallyFrom = null, tallyTo = null, tallyAt = 0, tallyLoading = null;
 /// THE COUNT IS A FILE first (`stats/tally.json`, written by the settler each
 /// minute and served by the CDN), and asked of the worker only when the file is
 /// unreachable or older than this — docs/BOARD.md §"The public stats".
@@ -125,7 +126,9 @@ async function statsFile(name, staleMs) {
   return s && s.v === 1 && serverNow() - Date.parse(s.at) <= staleMs ? s : null;
 }
 async function loadHomeTally() {
-  if (document.hidden || $("home-page")?.hidden) return;
+  if (document.hidden || ($("home-page")?.hidden && $("support-page")?.hidden)) return;
+  if (tallyLoading) return tallyLoading;
+  tallyLoading = (async () => {
   const r = await statsFile("tally", TALLY_STALE_MS)
     || await fetch("/api/board/tally", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || !r.totals) return;
@@ -137,6 +140,9 @@ async function loadHomeTally() {
   tallyTo = next;
   tallyAt = Date.now();
   renderHomeTally();
+  if (!$("support-page")?.hidden) renderSupportCounts();
+  })().finally(() => { tallyLoading = null; });
+  return tallyLoading;
 }
 function renderHomeTally() {
   const box = $("home-tally"), el = $("home-tally-n");
@@ -201,6 +207,7 @@ function identityLines() {
 }
 
 function renderSupport() {
+  if (!META) return;
   renderUsageNote();
   // WHAT AN EXTENSION ADDS to this page, drawn into its one slot.
   const slot = $("ext-support");
@@ -223,14 +230,73 @@ function renderSupport() {
     }
   }
   identityLines();
-  const used = $("support-usage");
-  if (used) {
-    const u = supportUse();
-    used.hidden = !u.sims;
-    if (u.sims) {
-      used.textContent = tr("You have run {n} simulations on this machine — {e} fights. That number is kept in this browser.")
-        .replace("{n}", u.sims.toLocaleString()).replace("{e}", u.engagements.toLocaleString());
-    }
+  renderSupportCounts();
+  loadHomeTally();
+  if (["#method", "#usage"].includes(location.hash)) $(location.hash.slice(1)).open = true;
+}
+
+/// Only measured targets change. Animation stops at the fetched value.
+const supportCountStates = new Map();
+const supportMotion = matchMedia("(prefers-reduced-motion: reduce)");
+function drawSupportCounts(el, rows) {
+  if (!el) return;
+  const key = JSON.stringify(rows.map((r) => [r.id, r.n, tr(r.what)]));
+  const prior = supportCountStates.get(el);
+  if (prior?.key === key) return;
+  if (prior) { cancelAnimationFrame(prior.frame); prior.observer?.disconnect(); }
+  const state = { key, values: new Map(prior?.values), frame: 0, observer: null };
+  supportCountStates.set(el, state);
+  el.innerHTML = rows.map((r) => `<div class="support-count" data-support-count="${escHtml(r.id)}" data-value="${r.n}">
+    <b><span class="count-accessible">${escHtml(r.n.toLocaleString())}</span><span class="count-value" aria-hidden="true">${escHtml(r.n.toLocaleString())}</span></b>
+    <span>${aT(r.what)}</span></div>`).join("");
+  const nodes = rows.map((r) => [r, el.querySelector(`[data-support-count="${r.id}"] .count-value`)]);
+  const settle = () => {
+    cancelAnimationFrame(state.frame);
+    for (const [r, node] of nodes) { node.textContent = r.n.toLocaleString(); state.values.set(r.id, r.n); }
+  };
+  state.settle = settle;
+  const animate = () => {
+    state.observer?.disconnect();
+    if (supportMotion.matches || document.hidden) { settle(); return; }
+    const from = new Map(state.values), start = performance.now();
+    const step = (now) => {
+      if (!el.isConnected || $("support-page").hidden || supportMotion.matches || document.hidden) { settle(); return; }
+      const p = Math.min(1, (now - start) / 1050), ease = 1 - (1 - p) ** 3;
+      for (const [r, node] of nodes) {
+        const value = Math.round((from.get(r.id) || 0) + (r.n - (from.get(r.id) || 0)) * ease);
+        node.textContent = value.toLocaleString(); state.values.set(r.id, value);
+      }
+      if (p < 1) state.frame = requestAnimationFrame(step);
+    };
+    state.frame = requestAnimationFrame(step);
+  };
+  if (supportMotion.matches || !("IntersectionObserver" in window)) settle();
+  else {
+    state.observer = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) animate(); }, { threshold: 0.2 });
+    state.observer.observe(el);
+  }
+}
+supportMotion.addEventListener("change", () => {
+  if (supportMotion.matches) for (const s of supportCountStates.values()) { s.observer?.disconnect(); s.settle(); }
+});
+
+function renderSupportCounts() {
+  const use = supportUse(), own = $("support-usage"), shared = $("support-community");
+  if (own) own.hidden = !use.sims;
+  drawSupportCounts($("support-use-facts"), use.sims ? [
+    { id: "sims", n: use.sims, what: "simulations run" },
+    { id: "engagements", n: use.engagements, what: "fights simulated" },
+  ] : []);
+  const rows = [
+    { id: "builds", n: boardCount("submissions"), what: "builds players have uploaded" },
+    { id: "volunteers", n: tallyTo?.volunteers || 0, what: "scores computed by players' devices" },
+  ].filter((r) => Number.isSafeInteger(r.n) && r.n > 0);
+  if (shared) shared.hidden = !rows.length;
+  drawSupportCounts($("support-community-facts"), rows);
+  const computing = $("support-computing");
+  if (computing) {
+    computing.hidden = !tallyTo?.computing;
+    if (!computing.hidden) computing.textContent = tr("{n} devices computing together now").replace("{n}", tallyTo.computing.toLocaleString());
   }
 }
 

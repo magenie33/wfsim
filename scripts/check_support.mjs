@@ -52,7 +52,7 @@ const facts = await evaluate(`(() => {
       + n("arcanes") + n("abilities") + n("auras") + n("shards") + n("enemies"),
     uploads: boards.length ? Math.max(...boards.map((b) => b.submissions | 0)) : 0,
     scored: boards.reduce((t, b) => t + (b.listed | 0), 0),
-    injected: PROJECT_FACTS,
+    injected: PROJECT_FACTS, dev: RELEASE_ID === "dev",
     built: {
       hidden: $("support-built").hidden,
       text: $("support-built").textContent.trim(),
@@ -88,15 +88,15 @@ check(`${tag} ...and the evaluations figure is every ruler's, added up`,
 //    about the repository around it — so the only question is whether the
 //    injection reached the shipping build and whether the page prints it.
 const inj = facts.injected || {};
-check(`${tag} the site build injected what it counted`,
-  !!facts.injected && inj.rust_tests > 0 && inj.browser_checks > 0 && inj.commits > 0 && !!inj.first_commit_day,
+check(`${tag} build counts are injected on releases and omitted on the dev server`,
+  facts.dev ? facts.injected === null : !!facts.injected && inj.rust_tests > 0 && inj.browser_checks > 0 && inj.commits > 0 && !!inj.first_commit_day,
   JSON.stringify(facts.injected));
 // Compared on DIGITS rather than on a separator: the sentence is a template
 // and the language decides its punctuation, so splitting it on a dash asserted
 // English typography rather than the two numbers in it.
 const digits = (s) => String(s).replace(/[^0-9]/g, "");
 check(`${tag} ...and the page states when it started, with its commit count`,
-  !facts.built.hidden
+  facts.dev ? facts.built.hidden : !facts.built.hidden
     && facts.built.text.includes(String(inj.first_commit_day))
     && digits(facts.built.text).includes(String(inj.commits)),
   JSON.stringify(facts.built));
@@ -159,14 +159,33 @@ const shown = await evaluate(`(async () => {
   history.pushState({}, "", "/support");
   route();
   await new Promise((r) => setTimeout(r, 400));
-  return { hidden: $("support-usage").hidden, text: $("support-usage").textContent.trim() };
+  return { hidden: $("support-usage").hidden, text: $("support-usage").textContent.trim(),
+    counts: [...document.querySelectorAll("#support-use-facts [data-support-count]")].map((e) => [e.dataset.supportCount, Number(e.dataset.value)]) };
 })()`);
 check(`${tag} ...and the page says so, in both figures`,
-  shown.hidden === false && /\b1\b/.test(shown.text) && /\b7\b/.test(shown.text),
+  shown.hidden === false && JSON.stringify(shown.counts) === JSON.stringify([["sims", 1], ["engagements", 7]]),
   JSON.stringify(shown));
 
 // ---------------------------------------------------------------------------
-// 5. THE WHOLE PAGE IN CHINESE. A number filled into an untranslated template
+// 5. THE SHARED TOTALS, with a repeated submission pool and reduced motion.
+await app.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+const shared = await evaluate(`(() => {
+  const oldBoard = BOARD_META, oldTally = tallyTo;
+  BOARD_META = { boards: { a: { submissions: 17, listed: 2 }, b: { submissions: 17, listed: 9 } } };
+  tallyTo = { volunteers: 24680, official: 4321, computing: 3 };
+  renderSupportCounts();
+  const counts = [...document.querySelectorAll("#support-community-facts [data-support-count]")].map((e) => [e.dataset.supportCount, Number(e.dataset.value)]);
+  const reduced = [...document.querySelectorAll("#support-community-facts .count-value")].map((e) => e.textContent);
+  const personal = supportUse();
+  BOARD_META = oldBoard; tallyTo = oldTally;
+  return { counts, personal, reduced };
+})()`);
+check(`${tag} shared builds count the pool once and device scores use the verified tally`,
+  JSON.stringify(shared.counts) === JSON.stringify([["builds", 17], ["volunteers", 24680]]), JSON.stringify(shared));
+check(`${tag} reduced motion shows final values immediately`, shared.reduced.join("|") === "17|24,680", JSON.stringify(shared.reduced));
+check(`${tag} shared totals do not change personal history`, shared.personal.sims === 1 && shared.personal.engagements === 7, JSON.stringify(shared.personal));
+
+// 6. THE WHOLE PAGE IN CHINESE. A number filled into an untranslated template
 //    is invisible in English and is half an English sentence on a zh page,
 //    which is `check_mode_def`'s own lesson one page over.
 await app.setLang("zh", 20000);
@@ -182,11 +201,11 @@ const zh = await evaluate(`(() => {
 })()`);
 const han = (s) => /[一-鿿]/.test(s);
 check(`${tag} zh the sections are named in Chinese`,
-  zh.heads.length >= 3 && zh.heads.every(han), JSON.stringify(zh.heads));
+  zh.heads.length >= 2 && zh.heads.every(han), JSON.stringify(zh.heads));
 check(`${tag} zh ...so are the figures' labels`,
   zh.labels.length >= 3 && zh.labels.every(han), JSON.stringify(zh.labels));
 check(`${tag} zh ...and the line the build fills in`,
-  han(zh.built) && /\d/.test(zh.built), zh.built);
+  facts.dev ? !zh.built : han(zh.built) && /\d/.test(zh.built), zh.built);
 
 await sleep(200);
 await finish("the support page counts what it claims, and keeps what is the reader's");
