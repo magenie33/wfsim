@@ -81,12 +81,15 @@ export function paceCache(readPace, ttl = 60_000) {
 
 /// A reserved session owns the daemon across hosts; losing it stops the owner.
 export async function claimDaemon(sql, onLost) {
-  const session = await sql.reserve();
+  let session;
   try {
+    // With fetch_types:false the driver needs a query before reserving a cold pool.
+    await sql.unsafe("SELECT 1");
+    session = await sql.reserve();
     const [row] = await session.unsafe("SELECT pg_try_advisory_lock(hashtextextended('wfsim-factoryd', 0)) AS held");
     if (!row.held) throw Error("another factory daemon owns this database");
   } catch (e) {
-    session.release(); await sql.end(); throw e;
+    session?.release(); await sql.end(); throw e;
   }
   let released = false, lost = false;
   return {

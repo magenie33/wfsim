@@ -733,7 +733,10 @@ Plain Node and PGlite: stronger and weaker host readings, bounded background
 backoff and recovery, operator overrides, serialized background work, failed
 reads and cache expiry. A shared rolling pace read leaves demand and tally
 byte-equivalent to separate reads. Critical work proceeds while a background
-operation waits. The deployment check is `python scripts/check_factory_deploy.py`:
+operation waits. The actual Postgres driver opens singleton ownership from a
+cold pool against a local wire-protocol fixture, with the daemon's connection
+options; failed initialization closes its client. The deployment check is
+`python scripts/check_factory_deploy.py`:
 target configuration, schema-derived concurrent indexes, credential boundaries
 and the artifact's dependency closure.
 

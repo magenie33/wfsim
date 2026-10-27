@@ -2,6 +2,9 @@
 // Capacity backs off background reads while the same facts, fairness and
 // public counts survive; failures cannot wedge a cache or the background lane.
 import assert from "node:assert/strict";
+import { createServer } from "node:net";
+import postgres from "./pg/node_modules/postgres/src/index.js";
+import { POSTGRES_OPTIONS } from "../worker/db.js";
 import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capacity.mjs";
 import { openEnv } from "./factoryd.mjs";
 import { demandOf, scorePace, tallyBase, tallyOf } from "../worker/contribution.js";
@@ -59,7 +62,11 @@ assert.deepEqual(order, ["first", "second"]);
 console.log("ok: background reads serialize, a failure releases the lane, critical work proceeds");
 
 let lost = 0, closed = 0, released = 0;
-const connection = (held) => ({ reserve: async () => ({ unsafe: async () => [{ held }], release: () => { released++; } }), end: async () => { closed++; } });
+let failedClosed = 0;
+await assert.rejects(claimDaemon({ unsafe: async () => { throw Error("connect failed"); },
+  end: async () => { failedClosed++; } }, () => {}), /connect failed/);
+assert.equal(failedClosed, 1);
+const connection = (held) => ({ unsafe: async () => [], reserve: async () => ({ unsafe: async () => [{ held }], release: () => { released++; } }), end: async () => { closed++; } });
 await assert.rejects(claimDaemon(connection(false), () => {}), /another factory daemon/);
 assert.equal(closed, 1); assert.equal(released, 1);
 const owner = await claimDaemon(connection(true), () => { lost++; });
@@ -67,6 +74,54 @@ owner.lost(); owner.lost(); assert.equal(lost, 1);
 await owner.release(); owner.lost(); assert.equal(lost, 1);
 assert.equal(closed, 2); assert.equal(released, 2);
 console.log("ok: a second daemon is refused, lost ownership stops once, shutdown releases it");
+
+// The real driver must reserve a cold pool with the daemon's fetch_types setting.
+const packet = (tag, body) => {
+  const size = Buffer.alloc(4); size.writeInt32BE(body.length + 4);
+  return Buffer.concat([Buffer.from(tag), size, body]);
+};
+const ready = packet("Z", Buffer.from("I")), sockets = new Set();
+const server = createServer((socket) => {
+  sockets.add(socket); socket.on("close", () => sockets.delete(socket));
+  let pending = Buffer.alloc(0), started = false;
+  socket.on("data", (data) => {
+    pending = Buffer.concat([pending, data]);
+    while (pending.length >= (started ? 5 : 4)) {
+      const size = pending.readInt32BE(started ? 1 : 0), length = size + (started ? 1 : 0);
+      if (pending.length < length) return;
+      const tag = started ? String.fromCharCode(pending[0]) : "startup";
+      pending = pending.subarray(length);
+      if (tag === "startup") {
+        started = true; socket.write(Buffer.concat([packet("R", Buffer.alloc(4)), ready]));
+      } else if (tag === "Q") {
+        const column = Buffer.alloc(18);
+        column.writeInt32BE(16, 6); column.writeInt16BE(1, 10); column.writeInt32BE(-1, 12);
+        socket.write(Buffer.concat([
+          packet("T", Buffer.concat([Buffer.from([0, 1]), Buffer.from("held\0"), column])),
+          packet("D", Buffer.from([0, 1, 0, 0, 0, 1, 116])),
+          packet("C", Buffer.from("SELECT 1\0")), ready,
+        ]));
+      } else if (tag === "X") socket.end();
+      else socket.destroy(Error(`unexpected protocol message ${tag}`));
+    }
+  });
+});
+await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+const cold = postgres(`postgres://fixture@127.0.0.1:${server.address().port}/factory`, {
+  ...POSTGRES_OPTIONS, max: 1, idle_timeout: 0, max_lifetime: 0,
+});
+let deadline;
+try {
+  const held = await Promise.race([claimDaemon(cold, () => {}), new Promise((_, reject) => {
+    deadline = setTimeout(() => reject(Error("a cold singleton connection did not start")), 3000);
+  })]);
+  await held.release();
+} finally {
+  clearTimeout(deadline); await cold.end({ timeout: 0 });
+  for (const socket of sockets) socket.destroy();
+  await new Promise((resolve) => server.close(resolve));
+}
+console.log("ok: the actual Postgres driver starts singleton ownership from a cold pool");
 
 const pools = [];
 let backgroundRelease;
