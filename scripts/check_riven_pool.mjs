@@ -131,18 +131,21 @@ for (const [i, [wiki]] of CASES.entries()) {
 // Copying is the case worth seeding rather than fetching: an identical spec
 // cannot answer differently, so the copy shows the original's numbers with no
 // round trip at all.
+// Load the saved fixture as a returning visitor so its printed metadata
+// follows the normal boot path.
+await evaluate(`(() => {
+  localStorage.clear();
+  localStorage.setItem('wfsim-customs-rivens', JSON.stringify([{
+    id: 'seed1', name: 'seeded', scope: rivenScope('burston_prime'),
+    state: { shape: '2', rank: 8, polarity: 'madurai',
+      bonuses: [{ id: 'damage', roll: 0.9 }], malus: null } }]));
+})()`);
+await app.load('/weapons/Burston_Prime/rivens');
 const shown = await evaluate(`(async () => {
   const s = ms => new Promise(r => setTimeout(r, ms));
   const rows = () => [...document.querySelectorAll('#riven-all .rv-all')]
     .map(el => el.textContent.replace(/\\s+/g, ' ').trim());
   const press = async (sel) => { const b = document.querySelector(sel); if (b) b.click(); await s(1800); };
-  localStorage.clear();
-  // A card with stats, so the list has numbers it can get wrong.
-  localStorage.setItem('wfsim-customs-rivens', JSON.stringify([{
-    id: 'seed1', name: 'seeded', scope: rivenScope('burston_prime'),
-    state: { shape: '2', rank: 8, polarity: 'madurai',
-      bonuses: [{ id: 'damage', roll: 0.9 }], malus: null } }]));
-  history.pushState({}, '', '/weapons/Burston_Prime/rivens'); route(); await s(5000);
   const out = { atStart: rows() };
   // OPENED THE WAY A READER OPENS IT — clicking the row, which is also the
   // path that has to keep working now that a row is addressed by identity.
