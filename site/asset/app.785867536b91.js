@@ -68,18 +68,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "32e4c232";
+const BUILD_ID = "ab7bc04b";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "f9e30897+";
+const BUILD_SHA = "7a5a3709+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "2eb28b213f80";
+const RELEASE_ID = "afbac609ac17";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -3483,26 +3483,33 @@ function benchWriteUrl() {
 }
 
 /// A BOARD ROW'S RIVEN, AS A LOCAL ITEM — the name it takes on the reader's
-/// machine, DERIVED from the shape so opening the same row twice reuses the
-/// one riven instead of stacking copies.
-///
-/// A row cannot name somebody's riven: the item is on one machine and what the
-/// board holds is a SHAPE at the corner its fight chose. So the reader's copy
-/// is named after every stat AND the roll it was stored at: two rows of one
-/// shape at two corners are two cards, and a name that dropped a roll handed
-/// one row's riven to the other.
+/// machine. Names are labels; read-only references below carry their own spec.
 const boardRivenName = (rv) => headlessBoardRivenName(pageSay(), rv);
 
-/// The definitions `builtinBuilds` met, by the mod id it put in the slot.
-///
-/// A REGISTRY RATHER THAN A WRITE, so listing the board's builds stays pure:
-/// a reader who never opens a riven row never gets one in their riven list.
-/// `restoreState` is where it lands, because that is the moment the build is
-/// actually being taken: copying a board build also copies its riven
-/// locally.
-const boardRivenDefs = {};
-/// One board riven as a riven PRESET's state — the editor's own shape.
+/// Board definitions stay outside the reader's owned custom collection.
 const boardRivenState = (rv) => headlessBoardRivenState(rv);
+const READONLY_RIVEN_PREFIX = "riven:readonly:";
+const isReadOnlyRivenId = (id) => typeof id === "string" && id.startsWith(READONLY_RIVEN_PREFIX);
+/// A self-contained reference survives saved starts and results across reloads.
+function boardRivenRef(w, rv) {
+  const spec = boardRivenState(rv);
+  return READONLY_RIVEN_PREFIX + encodeURIComponent(JSON.stringify([rivenScope(w.id), spec]));
+}
+/// Resolve only the current family's read-only equipment, never an owned card.
+function readOnlyRiven(id, weapon = rivenContextWeapon || presetWeapon()) {
+  if (!isReadOnlyRivenId(id)) return null;
+  try {
+    const [scope, state] = JSON.parse(decodeURIComponent(id.slice(READONLY_RIVEN_PREFIX.length)));
+    const line = (b) => b && typeof b.id === "string" && Number.isFinite(b.roll);
+    if (scope !== rivenScope(weapon) || !state || !Array.isArray(state.bonuses)
+        || !state.bonuses.every(line) || (state.malus !== null && !line(state.malus))
+        || state.rank !== 8 || state.polarity !== "madurai") return null;
+    return { id: id.slice(RIVEN_PREFIX.length), name: boardRivenName({
+      bonuses: state.bonuses.map((b) => b.id), malus: state.malus && state.malus.id,
+      rolls: state.bonuses.map((b) => b.roll).concat(state.malus ? [state.malus.roll] : []),
+    }), state, readonly: true };
+  } catch (_) { return null; }
+}
 const inBenchView = (r) =>
   benchRivenView === "all"
   || (benchRivenView === "riven") === rowHasRiven(r);
@@ -5378,6 +5385,7 @@ const newRivenId = (all) => {
 };
 const isRivenId = (id) => typeof id === "string" && id.startsWith(RIVEN_PREFIX);
 let rivenModCache = { key: null, list: [] };
+let rivenContextWeapon = "";
 
 // The saved rivens of the CURRENT weapon, shaped like mods so every list,
 // picker and slot that already understands a mod understands these.
@@ -5389,62 +5397,77 @@ function rivenMods() {
   const c = rivenModCache;
   if (c.w === w && c.owner === owner && c.whole === whole && c.names === rivenNames) return c.list;
   const raw = loadPresetList(RIVENS);
-  const list = raw.map((p) => {
-    const st = p.state || {};
-    const stats = (st.bonuses || st.positives || []).concat(st.malus || st.curse || []);
-    const lines = (rivenNames[p.id] || {}).lines || [];
-    const official = (rivenNames[p.id] || {}).name || "";
-    return {
-      id: RIVEN_PREFIX + p.id,
-      // DE's own riven card — the game draws every riven the same, so one
-      // image serves them all (`data/assets.yaml` mods.riven).
-      image: META.riven_image || null,
-      name: official ? `${p.name} · ${official}` : p.name,
-      name_en: official,
-      subtype: "Riven",
-      riven: true,
-      elemental: (st.bonuses || st.positives || []).some((b) => (rivenStat((b && b.id) || b) || {}).elemental),
-      // A weapon takes ONE riven. Same family = mutually exclusive, the rule
-      // the pool already has — so every list, slot and scope enforces it
-      // without knowing what a riven is.
-      family: "riven",
-      rarity: "legendary",
-      polarity: (st.polarity || "madurai").replace(/^./, (c) => c.toUpperCase()),
-      drain: 2 + 2 * (st.rank ?? 8),
-      max_rank: 8,
-      // THE CARD'S RANK IS THE SLOT'S. The engine prints and fights a riven at
-      // the rank its spec carries and never reads a slot rank for one, so the
-      // slot shows this and its stepper writes it (`setRivenRank`).
-      riven_rank: st.rank ?? 8,
-      exilus: false,
-      // The VEILED riven card — DE's own image for every riven type
-      // (`imageName` on the riven mod item), and the one on the CDN like
-      // every other mod picture.
-      image: "OmegaMod.png",
-      // Every printed value is searchable, which is how you find the riven
-      // with the crit damage on it without remembering what you called it.
-      effects: lines.length ? lines : stats.filter((s) => s && s.id).map((s) => s.id.replace(/_/g, " ")),
-      unmodeled_effects: (rivenNames[p.id] || {}).unmodeled || [],
-      // THE AUCTIONS THIS CARD COMPETES WITH — built here because this is
-      // where both halves are in scope: the roll, and the weapon it is for.
-      // The cache key covers both, so it cannot outlive either.
-      market_url: rivenMarketUrl(st, (META.weapons || []).find((x) => x.id === w)),
-      __spec: st,
-    };
-  });
+  const list = raw.map((p) => rivenModOf(p, w));
   rivenModCache = { w, owner, whole, names: rivenNames, list };
   return list;
+}
+
+/// A resolved definition as an equippable card, independent of its ownership.
+function rivenModOf(p, w = rivenContextWeapon || presetWeapon()) {
+  const st = p.state || {};
+  const stats = (st.bonuses || st.positives || []).concat(st.malus || st.curse || []);
+  const lines = (rivenNames[p.id] || {}).lines || [];
+  const official = (rivenNames[p.id] || {}).name || "";
+  return {
+    id: RIVEN_PREFIX + p.id,
+    // DE's own riven card — the game draws every riven the same, so one
+    // image serves them all (`data/assets.yaml` mods.riven).
+    image: META.riven_image || null,
+    name: official ? `${p.name} · ${official}` : p.name,
+    name_en: official,
+    subtype: "Riven",
+    riven: true,
+    elemental: (st.bonuses || st.positives || []).some((b) => (rivenStat((b && b.id) || b) || {}).elemental),
+    // A weapon takes ONE riven. Same family = mutually exclusive, the rule
+    // the pool already has — so every list, slot and scope enforces it
+    // without knowing what a riven is.
+    family: "riven",
+    rarity: "legendary",
+    polarity: (st.polarity || "madurai").replace(/^./, (c) => c.toUpperCase()),
+    drain: 2 + 2 * (st.rank ?? 8),
+    max_rank: 8,
+    // THE CARD'S RANK IS THE SLOT'S. The engine prints and fights a riven at
+    // the rank its spec carries and never reads a slot rank for one, so the
+    // slot shows this and its stepper writes it (`setRivenRank`).
+    riven_rank: st.rank ?? 8,
+    exilus: false,
+    // The VEILED riven card — DE's own image for every riven type
+    // (`imageName` on the riven mod item), and the one on the CDN like
+    // every other mod picture.
+    image: "OmegaMod.png",
+    // Every printed value is searchable, which is how you find the riven
+    // with the crit damage on it without remembering what you called it.
+    effects: lines.length ? lines : stats.filter((s) => s && s.id).map((s) => s.id.replace(/_/g, " ")),
+    unmodeled_effects: (rivenNames[p.id] || {}).unmodeled || [],
+    // THE AUCTIONS THIS CARD COMPETES WITH — built here because this is
+    // where both halves are in scope: the roll, and the weapon it is for.
+    // The cache key covers both, so it cannot outlive either.
+    market_url: rivenMarketUrl(st, (META.weapons || []).find((x) => x.id === w)),
+    __spec: st,
+  };
+}
+/// Owned equipment and read-only equipment have separate identities and sources.
+function rivenEntryFor(id, weapon = rivenContextWeapon || presetWeapon()) {
+  if (isReadOnlyRivenId(id)) return readOnlyRiven(id, weapon);
+  return loadPresetList(RIVENS, weapon).find((p) => RIVEN_PREFIX + p.id === id) || null;
+}
+/// Read-only definitions travel only when a live state actually references them.
+function referencedReadOnlyRivens(extra) {
+  const states = [slots, typeof opt === "undefined" ? null : opt.starts, extra];
+  return customRefs(states, true).map((r) => readOnlyRiven(r.ref)).filter(Boolean);
 }
 
 // The generated name and printed lines per saved riven, filled in by asking
 // the engine — the page never computes a riven value itself.
 let rivenNames = {};
+let rivenNamesVersion = 0;
 async function refreshRivenNames() {
-  const ps = loadPresetList(RIVENS);
+  const version = ++rivenNamesVersion, weapon = presetWeapon();
+  const ps = loadPresetList(RIVENS).concat(referencedReadOnlyRivens());
   const out = {};
   for (const p of ps) {
     try {
-      const r = await api("/api/riven", { weapon: $("weapon").value, ...(p.state || {}) });
+      const r = await api("/api/riven", { weapon, ...(p.state || {}) });
       out[p.id] = {
         name: r.name || "",
         lines: (r.stats || []).map((s) => s.text),
@@ -5456,6 +5479,7 @@ async function refreshRivenNames() {
       };
     } catch (_) { /* a name is a nicety; the riven still equips */ }
   }
+  if (version !== rivenNamesVersion || weapon !== presetWeapon()) return;
   rivenNames = out;
   rivenModCache = { key: null, list: [] };
   // The lists that show a riven's printed values may already have rendered
@@ -5867,8 +5891,11 @@ function defaultMode(weaponId, want) { return headlessDefaultMode(META, weaponId
 /// `id` is what the item id is built from; `name` rides along because it is
 /// what a share link written before ids carried, and the server still reads it
 /// when there is no id.
-const rivenPayload = () =>
-  loadPresetList(RIVENS).map((p) => ({ id: p.id, name: p.name, spec: p.state || {} }));
+const rivenPayload = (extra) => {
+  const entries = new Map(loadPresetList(RIVENS).map((p) => [p.id, p]));
+  for (const p of referencedReadOnlyRivens(extra)) entries.set(p.id, p);
+  return [...entries.values()].map((p) => ({ id: p.id, name: p.name, spec: p.state || {} }));
+};
 
 // ---- CLOUD SYNC, IN ONE PLACE ------------------------------------------------
 //
@@ -6795,6 +6822,13 @@ function saveRivenSoon() {
 /// the slot instead moved the drain while the lines and the fight stood still.
 /// Every build seating this card follows, as every one does in game.
 function setRivenRank(rid, rank) {
+  if (readOnlyRiven(rid)) {
+    const seat = slots.findIndex((s) => s.mod === rid);
+    if (seat < 0) return;
+    if (officialBuildActive() && !startEdit) copyActivePreset(buildBarCfg());
+    else whileApplying(() => restoreState(materialiseReferencedRivens(snapshotState()), presetWeapon()));
+    rid = slots[seat].mod;
+  }
   const ps = loadPresetList(RIVENS);
   const p = ps.find((x) => RIVEN_PREFIX + x.id === rid);
   if (!p) return;
@@ -10247,8 +10281,7 @@ function sharePayload(build) {
   // NAME as the entry's first field: a card's identity is local — the recipient
   // is being handed a copy and gives it one of their own — so a share format
   // that carried it would be exporting a private key for no reader.
-  const byId = new Map(loadPresetList(RIVENS).map((x) => [x.id, x]));
-  const rivens = rivenOrder.map((n) => byId.get(n)).filter(Boolean)
+  const rivens = rivenOrder.map((n) => rivenEntryFor(RIVEN_PREFIX + n)).filter(Boolean)
     .map((x) => {
       const s = x.state || {};
       return [x.name, s.shape || "", s.rank ?? 8, POL_LETTER[cap1(s.polarity)] || "M",
@@ -10336,8 +10369,9 @@ function sharePayload(build) {
   // link, `importShare` names an unnamed build anyway, and `build 1` was the
   // more expensive of the two: its SPACE is outside the compact form's
   // alphabet, so every ordinary link paid 2.5x for a name nobody chose.
-  const nm = build || officialBuildActive() || isGeneratedName(activePreset)
-    ? 0 : activePreset;
+  const name = p && p.name;
+  const nm = build || officialBuildActive() || !name || isGeneratedName(name)
+    ? 0 : name;
 
   const out = [2, st.weapon, nm, slots9, arcs, evos, rivens, 0, 0, md, val, asm];
   while (out.length > 9 && !out[out.length - 1]) out.pop();
@@ -11793,13 +11827,13 @@ const isCustomDomain = (d) => CUSTOM_DOMAINS.has(d);
 const CUSTOM_REFS = COLLECTIONS.filter((c) => c.ref);
 const CUSTOM_REF_RE = new RegExp(`"((?:${CUSTOM_REFS.map((c) => c.ref).join("|")})[^"\]+)"`, "g");
 /// Every custom reference in `v`, each once: `[{ domain, id, ref }]`.
-function customRefs(v) {
+function customRefs(v, includeReadOnly = false) {
   const out = new Map();
   let s;
   try { s = JSON.stringify(v); } catch (_) { return []; }
   for (const m of s.matchAll(CUSTOM_REF_RE)) {
     const c = CUSTOM_REFS.find((x) => m[1].startsWith(x.ref));
-    if (c && !out.has(m[1])) out.set(m[1], { domain: c.domain, id: m[1].slice(c.ref.length), ref: m[1] });
+    if (c && (includeReadOnly || !isReadOnlyRivenId(m[1])) && !out.has(m[1])) out.set(m[1], { domain: c.domain, id: m[1].slice(c.ref.length), ref: m[1] });
   }
   return [...out.values()];
 }
@@ -12896,40 +12930,26 @@ function snapshotState() {
   });
 }
 
-/// Create any BOARD riven this state wears that the reader does not have yet.
-///
-/// Returns nothing and writes at most once: the riven's name is derived from
-/// its shape, so a row taken twice reuses the first copy rather than stacking
-/// `… 2`, `… 3` behind it — which is the whole difference between this and the
-/// share link's import, where two links legitimately carry two different
-/// people's rivens that happen to share a name.
-function materialiseBoardRivens(st) {
-  const want = (st.slots || [])
-    .map((s) => s && s.mod)
-    .filter((id) => isRivenId(id) && boardRivenDefs[id]);
-  if (!want.length) return;
-  const ps = loadPresetList(RIVENS);
-  let added = 0;
-  for (const id of want) {
-    // THE BOARD ROW'S RIVEN KEEPS THE IDENTITY THE BUILD ALREADY NAMES. Its id
-    // is derived from the SHAPE (`boardRivenName`), so it is deterministic —
-    // which is what makes taking the same row twice reuse the first copy, and
-    // what lets the slot the build arrived with go on resolving.
-    const key = id.slice(RIVEN_PREFIX.length);
-    const state = boardRivenState(boardRivenDefs[id]);
-    const had = ps.find((p) => p.id === key);
-    // A COPY WHOSE ROLLS ARE NOT THE ROW'S IS CORRECTED, not reused: a name
-    // that once dropped the corner filed a deep roll under the god roll's id.
-    const rolls = (x) => JSON.stringify([...((x && x.bonuses) || []), (x && x.malus) || null]
-      .map((b) => (b ? [b.id, b.roll] : null)));
-    if (had && rolls(had.state) === rolls(state)) continue;
-    if (had) had.state = { ...had.state, bonuses: state.bonuses, malus: state.malus };
-    else ps.push({ id: key, name: key, savedAt: Date.now(), state });
-    added++;
+/// Owning a copy gives each referenced read-only card a fresh identity.
+function materialiseReferencedRivens(state) {
+  const out = JSON.parse(JSON.stringify(state));
+  const ps = loadPresetList(RIVENS), mapped = new Map();
+  for (const ref of customRefs(out, true)) {
+    const source = readOnlyRiven(ref.ref);
+    if (!source || mapped.has(ref.ref)) continue;
+    const id = newRivenId(ps);
+    ps.push({ id, name: source.name, savedAt: Date.now(), state: source.state });
+    mapped.set(ref.ref, RIVEN_PREFIX + id);
   }
-  if (!added) return;
+  if (!mapped.size) return out;
+  const rewrite = (v) => {
+    if (typeof v === "string") return mapped.get(v) || v;
+    if (Array.isArray(v)) return v.map(rewrite);
+    if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, rewrite(x)]));
+    return v;
+  };
   storePresetList(RIVENS, ps);
-  refreshRivenNames();
+  return rewrite(out);
 }
 
 // Apply a saved state. `weapon` is the weapon it belongs to — pass it and the
@@ -12961,14 +12981,6 @@ function restoreState(st, weapon) {
     history.replaceState(null, "", weaponModPath(w));
   }
   applyWeapon(w, null); // resets pool/innate/visibility
-  // A BOARD ROW'S RIVEN IS CREATED HERE, and only here — the moment a build
-  // that wears one is actually taken. Without it the loop below would drop the
-  // slot as "an id gone from the pool" and hand back a seven-mod build that
-  // scores nothing like the row it came from.
-  //
-  // IDEMPOTENT: the name is derived from the shape, so taking the same row
-  // twice finds the riven it made the first time.
-  materialiseBoardRivens(st);
   releaseAbsent(BUILDS);
   (st.slots || []).forEach((s, i) => {
     if (i >= slots.length) return;
@@ -13027,6 +13039,7 @@ function restoreState(st, weapon) {
   renderAssembly();
   renderWielder(); renderWeaponName();
   renderMods(); renderArcanes(); renderEvo(); renderMode(); renderValence(); renderSim(); refreshPanel();
+  if ((st.slots || []).some((s) => isReadOnlyRivenId(s.mod))) refreshRivenNames();
   renderStoredSimResult(); // the simulator shows THIS preset's last test
   if (absentOf(BUILDS, activePreset).length) {
     noteInline(tr("This build's riven is not on this browser. It is kept, and the numbers here leave it out until it syncs."));
@@ -14181,10 +14194,12 @@ const copyActivePreset = (cfg) => {
   flushPresetSaves();
   const ps = cfg.load();
   const base = presetLabel(presetFind(barEntries(cfg), cfg.active()));
-  const e = presetEntry(freeName(ps, (n) => base + " copy" + (n > 1 ? " " + n : "")), cfg.snapshot());
+  const state = cfg.copyState ? cfg.copyState(cfg.snapshot()) : cfg.snapshot();
+  const e = presetEntry(freeName(ps, (n) => base + " copy" + (n > 1 ? " " + n : "")), state);
   ps.push(e);
   cfg.store(ps);
   cfg.setActive(e.id);
+  if (cfg.copyState) whileApplying(() => cfg.apply(e.state));
   cfg.rerender();
   return e.id;
 };
@@ -15154,9 +15169,11 @@ const builtinBuildsUncached = (w) => {
 /// A BOARD ROW AS A BUILD STATE — what the build bar opens, and what the
 /// Forma optimizer reads and saves.
 function boardRowState(w, row) {
-  // A ROW'S RIVEN IS REGISTERED, not written: `restoreState` creates it if and
-  // when this build is actually taken (`headlessBoardRowAxes`).
-  return buildState(w.id, headlessBoardRowAxes(pageSay(), w, row, boardRivenDefs));
+  const axes = headlessBoardRowAxes(pageSay(), w, row, {});
+  if (row.riven) axes.slots.forEach((s) => {
+    if (isRivenId(s.mod)) s.mod = boardRivenRef(w, row.riven);
+  });
+  return buildState(w.id, axes);
 }
 /// A BOARD ROW, OPENED. `?bench=<id>` names the ruler the row was read under,
 /// `?mode=` how the weapon was played; together they identify exactly one
@@ -15237,6 +15254,7 @@ function buildBarCfg() {
     active: () => activePreset,
     setActive: (n) => { activePreset = n; localStorage.setItem(presetActiveKey(BUILDS), n); noteBoardActive(n); },
     snapshot: snapshotState,
+    copyState: materialiseReferencedRivens,
     // Never the payload's weapon — the scope's. See restoreState.
     // The benchmark build's Forma plan is NOT applied here — `restoreState`
     // owns it, so the boot path gets it too. See the comment there.
@@ -16524,13 +16542,18 @@ const defaultEvolutions = (weaponId, sel) => Object.fromEntries(weaponEvos(weapo
 let modIndex = { pool: null, map: null };
 /// `fn` run with `w`'s mod pool in place of the open weapon's, and that one back after.
 function withPoolOf(w, fn) {
-  if (!w || !META || w.id === ($("weapon") || {}).value) return fn();
+  if (!w || !META || w.id === (rivenContextWeapon || ($("weapon") || {}).value)) return fn();
   const byId = new Map(Object.values(META.mod_pools || {}).flat().map((m) => [m.id, m]));
-  const saved = currentPool;
+  const saved = currentPool, savedRivenWeapon = rivenContextWeapon;
+  rivenContextWeapon = w.id;
   currentPool = (w.mods || []).map((id) => byId.get(id)).filter(Boolean);
-  try { return fn(); } finally { currentPool = saved; }
+  try { return fn(); } finally { currentPool = saved; rivenContextWeapon = savedRivenWeapon; }
 }
 const modById = (id) => {
+  if (isReadOnlyRivenId(id)) {
+    const p = readOnlyRiven(id);
+    return p ? rivenModOf(p) : null;
+  }
   if (isRivenId(id)) return rivenMods().find((m) => m.id === id);
   if (modIndex.pool !== currentPool) {
     const map = new Map();
@@ -17051,13 +17074,6 @@ function weaponLoadout(ss, strict = false) {
   let unread = false;
   const card = (s) => {
     if (!s || !s.mod) return null;
-    // A BOARD RIVEN that has not been taken yet: its shape is all there is.
-    const rv = isRivenId(s.mod) && !modById(s.mod) ? boardRivenDefs[s.mod] : null;
-    if (rv) {
-      const st = boardRivenState(rv);
-      return { drain: 2 + 2 * st.rank, polarity: polCap(st.polarity),
-        ordered: (rv.bonuses || []).some((id) => (rivenStat(id) || {}).elemental) };
-    }
     const m = modById(s.mod);
     if (!m) { unread = true; return null; }
     return { drain: modDrain(m, s.rank), polarity: m.polarity, ordered: !!m.elemental };
@@ -21941,17 +21957,15 @@ const evoChipsOf = (ids, weaponId) => headlessEvoChips(weaponInfo(weaponId || $(
 /// builder opens this weapon in, the simulator's build the builder's.
 function cardOfState(st, w, fixed) {
   const pinned = (k) => (fixed && fixed.has(k) ? "fixed" : "");
-  const riven = (id) => ({ name: (rivenSpecFor(id) || {}).name || "", section: rivenCardHtml(w, id) });
+  const riven = (id) => ({ name: (rivenSpecFor(id, w.id) || {}).name || "", section: rivenCardHtml(w, id) });
   return headlessCardOfState(pageSay(), { ...st, mode: st.mode || (fixed ? defaultMode(w.id, null) : mode) }, w, riven, pinned);
 }
 
 /// WHERE A RIVEN IN A BUILD IS DEFINED: the reader's own card, or a board row's,
-/// registered by `boardRowState` until the row is taken.
-function rivenSpecFor(id) {
-  const own = loadPresetList(RIVENS).find((p) => RIVEN_PREFIX + p.id === id);
-  if (own) return { name: own.name, spec: own.state || {} };
-  const rv = boardRivenDefs[id];
-  return rv ? { name: "", spec: boardRivenState(rv) } : null;
+/// carried by its read-only reference.
+function rivenSpecFor(id, weapon = presetWeapon()) {
+  const p = rivenEntryFor(id, weapon);
+  return p ? { name: p.name, spec: p.state || {} } : null;
 }
 
 /// Each riven's stats as `/api/riven` printed them, by weapon and card — the
@@ -21986,7 +22000,7 @@ function rivenCardGot(w, sp) {
 }
 
 /// THE RIVEN SECTION OF A BUILD CARD.
-const rivenCardHtml = (w, id) => rivenSpecCardHtml(w, id && rivenSpecFor(id));
+const rivenCardHtml = (w, id) => rivenSpecCardHtml(w, id && rivenSpecFor(id, w.id));
 /// …and a riven that is no saved card, given as `{ name, spec }` (an appraisal's).
 const rivenSpecCardHtml = (w, r) => (r ? headlessRivenSection(pageSay(), w, r, rivenCardGot(w, r.spec)) : "");
 
@@ -23838,7 +23852,7 @@ const setBoardConsent = (v) => {
 function boardRivenShape(rivenMod) {
   const mod = rivenMod || (mainSlots().find((s) => isRivenId(s.mod)) || {}).mod;
   if (!mod) return { riven_pos: [], riven_neg: "" };
-  return headlessRivenShape((loadPresetList(RIVENS).find((p) => RIVEN_PREFIX + p.id === mod) || {}).state || {});
+  return headlessRivenShape((rivenEntryFor(mod) || {}).state || {});
 }
 
 function boardPayload() {
@@ -31298,6 +31312,7 @@ function optBarCfg() {
     active: () => activeOptPreset,
     setActive: (n) => { activeOptPreset = n; localStorage.setItem(presetActiveKey(OPT_DOMAIN), n); },
     snapshot: snapshotOpt,
+    copyState: materialiseReferencedRivens,
     apply: (st) => applyOptPreset(st || {}),
     blank: blankOpt,
     isBlank: (st) => sameState(st, blankOpt()),
@@ -31811,7 +31826,7 @@ async function resultToState(res) {
 // clobbered. Auto-named "opt N" (rename in the preset bar if it earns a
 // real name).
 async function addResult(res, btn) {
-  const state = await resultToState(res);
+  const state = materialiseReferencedRivens(await resultToState(res));
   const ps = loadPresetList(BUILDS);
   let n = 1;
   while (ps.some((p) => p.name === "opt " + n)) n++;
