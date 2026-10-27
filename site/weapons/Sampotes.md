@@ -4,7 +4,7 @@ Chinese name: 三宝聚
 
 Hammer · Melee · Mastery Rank 0. 248 base damage (impact 173.6, puncture 37.2, slash 37.2), 30% crit chance, 3x crit multiplier, 28% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-27
+## Best riven-free build on the WFSim board, as of 2026-10-28
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

@@ -4,7 +4,7 @@ Chinese name: 终幕·脓痘
 
 Pistol · Secondary · Mastery Rank 17. 55 base damage (toxin 55), 10% crit chance, 2.2x crit multiplier, 45% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-27
+## Best riven-free build on the WFSim board, as of 2026-10-28
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

@@ -4,7 +4,7 @@ Chinese name: 导热聚焦枪
 
 Shotgun · Primary · Mastery Rank 7. 12 base damage x2 multishot (impact 1.2, puncture 1.2, slash 9.6), 16% crit chance, 2.4x crit multiplier, 45% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-27
+## Best riven-free build on the WFSim board, as of 2026-10-28
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

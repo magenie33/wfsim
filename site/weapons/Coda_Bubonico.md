@@ -4,7 +4,7 @@ Chinese name: 终幕·横痃重炮
 
 Shotgun · Primary · Mastery Rank 17. 41 base damage x7 multishot (impact 2, puncture 13, slash 19, toxin 7), 27% crit chance, 2.3x crit multiplier, 10.14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-27
+## Best riven-free build on the WFSim board, as of 2026-10-28
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

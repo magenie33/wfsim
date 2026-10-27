@@ -15,15 +15,15 @@
   <meta property="og:url" content="https://wfsim.app/support" />
   <meta property="og:image" content="https://wfsim.app/logo.svg" />
   
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Support","description":"How WFSim works, why its numbers can be checked, and what it counts. WFSim is a free, open-source Warframe calculator, AGPL-3.0.","url":"https://wfsim.app/support","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Support","item":"https://wfsim.app/support"}]},"dateModified":"2026-10-27"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Support","description":"How WFSim works, why its numbers can be checked, and what it counts. WFSim is a free, open-source Warframe calculator, AGPL-3.0.","url":"https://wfsim.app/support","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Support","item":"https://wfsim.app/support"}]},"dateModified":"2026-10-28"}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.e6f0c1e1f70d.css" />
+  <link rel="stylesheet" href="/asset/style.22bd96a0339b.css" />
   
-  <link rel="preload" href="/pkg/wfsim_wasm_bg.4bf7c5c9f316.wasm" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/meta.06f7c8cac0dd.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/i18n.210a23238ab5.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/pack.data.087697e90dd4.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/wfsim_wasm_bg.e0b880ef0a07.wasm" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/meta.f86ffcefbcce.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/i18n.73040b9d38d3.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/pack.data.f0db2cfd65a4.json" as="fetch" crossorigin />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
   
@@ -216,7 +216,7 @@
       <div class="hero-facts" id="home-tally-n"></div>
     </div>
     <div class="hero-facts" id="home-facts" hidden></div>
-    <p class="hero-note"><span data-i18n>Every formula cites its source, and every golden test is calibrated against a real in-game run.</span> <a href="/support" data-i18n>How to check it</a></p>
+    <p class="hero-note"><span data-i18n>Every formula cites its source, and every golden test is calibrated against a real in-game run.</span> <a href="/support#method" data-i18n>How to check it</a></p>
     
     <div id="home-nav" class="snav"></div>
     
@@ -246,14 +246,24 @@
 
   <main id="support-page" class="support-page" hidden>
     <h1 id="h-support" class="hero-h" data-i18n>Support WFSim</h1>
-    
     <p class="hero-sub" data-i18n>A Warframe calculator built to match the game, checked against in-game measurements item by item. The calculator is free for everyone, and the same for everyone.</p>
-    
+    <div class="support-stories">
+      <section id="support-usage" class="support-story support-personal" hidden>
+        <h2 data-i18n>You and WFSim</h2>
+        <p class="support-story-copy" data-i18n>On this device, you have used WFSim to run:</p>
+        <div id="support-use-facts" class="support-counts"></div>
+        <p class="sup-note" data-i18n>This record stays in this browser.</p>
+      </section>
+      <section id="support-community" class="support-story" hidden>
+        <h2 data-i18n>What players have built together</h2>
+        <div id="support-community-facts" class="support-counts"></div>
+        <p id="support-computing" class="sup-note" hidden></p>
+      </section>
+    </div>
+    <div id="ext-support"></div>
+    <details id="method" class="support-details">
+      <summary data-i18n>How WFSim works, and how to check it</summary>
     <p class="hero-method" data-i18n>It does not score an opening state. It runs the fight — every ramp, every reload, every status that had to land before the damage depending on it — and reports what happened.</p>
-
-    <div id="support-facts" class="sup-facts"></div>
-    <p id="support-built" class="sup-note" hidden></p>
-
     <section class="block">
       <div class="bh"><h2 data-i18n>How it works</h2></div>
       <div class="bb">
@@ -277,29 +287,20 @@
       </div>
     </section>
 
-    <p id="support-usage" class="sup-usage" hidden></p>
+      <div id="support-facts" class="sup-facts"></div>
+      <p id="support-built" class="sup-note" hidden></p>
+      <p class="sup-note" data-i18n>Building, simulating and optimizing are the same for everyone. This is AGPL-3.0: the engine, the game data and the wasm are public, and you can run your own copy.</p>
+    </details>
 
-    <div id="ext-support"></div>
-
-    <section class="block">
-      <div class="bh"><h2 data-i18n>The calculator is the same for everyone</h2></div>
-      <div class="bb">
-        <ul class="sup-costs">
-          <li data-i18n>Building, simulating and optimizing are the same for everyone. This is AGPL-3.0: the engine, the game data and the wasm are public, and you can run your own copy.</li>
-          <li data-i18n>What you have run here stays in your own browser. What the site counts, and how to turn it off, is at the foot of this page.</li>
-        </ul>
-      </div>
-    </section>
-
-    <section class="sup-usage" id="usage">
-      <h2 data-i18n>What is counted</h2>
+    <details class="support-details" id="usage">
+      <summary data-i18n>What is counted</summary>
       <p><span data-i18n>WFSim counts what gets used — which pages open, whether a build was computed, a simulation or a search started and finished, whether Nona was opened, asked something or set to concise mode (never what was asked), whether the page itself failed (the kind of failure and where in WFSim's own code, never its text), a board build opened, a link shared and from which part of the page, how many presets and customs are saved, whether you are signed in (never which account) — under a random id this browser keeps. The count records no IP address and sets no cookie, and the id is not linked to anything that identifies you. With Global Privacy Control or Do Not Track on, nothing is sent. Per weapon, how many people ran a simulation or a search each day is added up and shown on the home page as its popularity ranking — totals only.</span></p>
       <p><span data-i18n>It also counts what kind of device opens it, in broad classes only — touch or mouse, a narrow or wide screen, how many processor cores in a few steps, whether it is inside WeChat or QQ — never the model or the browser, whether computing for the board carries on with the page out of sight, and, once a day, how long a small public file takes to load directly and through WFSim's Hong Kong relay.</span></p>
       <p><span data-i18n>Each count is kept under this id for 90 days; after that only daily totals that name no one remain. The id is replaced after 13 months.</span></p>
       <p><span data-i18n>This browser's id:</span> <code id="usage-id">—</code> <button id="usage-off" class="cu-btn" type="button"></button></p>
       <p><button id="usage-forget" class="cu-btn" type="button"></button> <span id="usage-forget-said" role="status"></span></p>
       <p><span data-i18n>A riven gain link, opened from a chat with Nona, runs the search in your browser and sends its builds to the board without asking — that is what the link is for. It keeps the build it found and, only if you type one, a name, which Nona posts in the chat to thank you; both are deleted a day later.</span></p>
-    </section>
+    </details>
     
     <p id="support-identity" class="sup-note" hidden></p>
   </main>
@@ -736,17 +737,18 @@
     <a href="https://discord.gg/H4BMqvYFVg" target="_blank" rel="noopener" title="join the Discord" data-i18n-title>Discord</a> ·
     
     <a href="/support" title="Support WFSim" data-i18n-title data-i18n>Support</a> ·
+    <span id="ext-footer"></span>
     <a href="/support#usage" data-i18n>Usage statistics</a> ·
     
     <a href="/method" data-native data-i18n>Method</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">ab7bc04b</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">dd58cfe0</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.68a467f9c7a9.js"></script>
+  <script src="/asset/app.ed3379161f62.js"></script>
   <script type="module" src="/asset/nona.49e7e5dce064/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>

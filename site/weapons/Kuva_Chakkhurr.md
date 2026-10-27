@@ -4,7 +4,7 @@ Chinese name: 赤毒·邪眼
 
 Rifle · Primary · Mastery Rank 15. 260 base damage (impact 260), 50% crit chance, 2.3x crit multiplier, 27% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-27
+## Best riven-free build on the WFSim board, as of 2026-10-28
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

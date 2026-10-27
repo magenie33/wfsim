@@ -4,7 +4,7 @@ Chinese name: 阿索代
 
 Pistol · Secondary · Mastery Rank 10. 70 base damage (heat 48, puncture 22), 32% crit chance, 2x crit multiplier, 8% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-27
+## Best riven-free build on the WFSim board, as of 2026-10-28
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

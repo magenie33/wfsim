@@ -4,7 +4,7 @@ Chinese name: 猛毒
 
 Sniper · Primary · Mastery Rank 8. 97 base damage (impact 9.7, puncture 40.74, slash 46.56), 16% crit chance, 2.1x crit multiplier, 35% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-27
+## Best riven-free build on the WFSim board, as of 2026-10-28
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

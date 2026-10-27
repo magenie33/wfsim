@@ -4,7 +4,7 @@ Chinese name: 恶脓双斧
 
 Dual Swords · Melee · Mastery Rank 6. 122 base damage (impact 19, puncture 11, slash 45, toxin 47), 25% crit chance, 3x crit multiplier, 15% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-27
+## Best riven-free build on the WFSim board, as of 2026-10-28
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

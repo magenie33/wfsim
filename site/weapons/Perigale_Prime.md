@@ -4,7 +4,7 @@ Chinese name: 月面狂风 Prime
 
 Sniper · Primary · Mastery Rank 14. 184 base damage (impact 22.08, puncture 103.04, slash 58.88), 32% crit chance, 2.6x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-27
+## Best riven-free build on the WFSim board, as of 2026-10-28
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

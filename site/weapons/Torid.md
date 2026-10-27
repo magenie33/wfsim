@@ -4,7 +4,7 @@ Chinese name: 托里德
 
 Launcher · Primary · Mastery Rank 4. 100 base damage (toxin 100), 15% crit chance, 2x crit multiplier, 23% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-27
+## Best riven-free build on the WFSim board, as of 2026-10-28
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
