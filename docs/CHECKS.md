@@ -17,6 +17,12 @@ covering the selected jobs for the exact commit and policy from a successful tru
 incomplete and recursively reused evidence is refused. No browser. The workflow
 and release rules are in [`CI.md`](CI.md).
 
+## `scene_rows.py`
+
+`python3 scripts/scene_rows.py --self-test` checks that reconciliation's total
+cap covers base rulers and cells together, preserves popularity order and
+leaves every deferred row available to the next pass.
+
 ## `check_board_ladder`
 
 The board's four fights cross four scenes and three shooting conditions.

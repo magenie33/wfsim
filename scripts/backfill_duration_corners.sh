@@ -69,8 +69,9 @@ intake_sharded() {
 fresh_corners() {
   local held; held=$(mktemp)
   jq -c '.k' "$2" > "$held"
-  jq -c --slurpfile have "$held" '
+  jq -cn --slurpfile have "$held" '
     ($have | map({key: ., value: true}) | from_entries) as $held
+    | inputs
     | select($held[.id] | not)
     | select(.record.riven_neg == "status_duration")
     | (.record.riven_rolls // [])[(.record.riven_pos // []) | length] as $r

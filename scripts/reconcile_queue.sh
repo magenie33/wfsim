@@ -52,14 +52,13 @@ for id in $("$BOARD" --rulers | tr -d '\r'); do
 done
 rm -rf "$parts"
 
-# A SCENE'S FIRST PASS IS PACED: a new rung owes every build a row at once, and
-# one run asking a whole board floods the factory's open questions. At most
-# `SCENE_ROWS_PER_RUN` cell rows a run, one weapon finished before the next and
-# the popular first; the rest are still missing next run (`scene_rows.py`).
+# RECONCILIATION IS PACED, including base rows from a library backfill. Both
+# caps preserve the missing rows for the next pass, popular weapons first.
 popular=$(mktemp)
 curl -s --connect-timeout 15 --max-time 60 https://wfsim.app/api/popularity > "$popular" || : > "$popular"
 paced=$(mktemp)
-python3 scripts/scene_rows.py "$FACTS" "$popular" "$missing" "${SCENE_ROWS_PER_RUN:-40000}" > "$paced"
+python3 scripts/scene_rows.py "$FACTS" "$popular" "$missing" "${SCENE_ROWS_PER_RUN:-40000}" \
+  "${RECONCILE_ROWS_PER_RUN:-40000}" > "$paced"
 # …AND EVERY ROW ASKED IN POPULARITY ORDER, base rows and cells alike.
 python3 scripts/popular_order.py "$popular" "$FACTS" < "$paced" > "$missing"
 rm -f "$popular" "$paced"
