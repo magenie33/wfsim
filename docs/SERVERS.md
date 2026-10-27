@@ -42,9 +42,52 @@ Asked in this order; the first answer that settles it wins.
 | official batch | GitHub Actions | CI, `ship.yml`, and the clock: `queue`, `scores`, `settle`, `survey`, `publish`, `backup`, `mirrors` | long work with no standing machine |
 | distribution | Tencent COS, mirrors | the desktop channel (docs/DISTRIBUTION.md) | reachable from the mainland |
 
-`ship.yml` deploys every machine role from the same commit: the bot to the
-China door and the live board to the board server (`scripts/ship_bot.py`,
-`bot.json`'s `live`), factoryd to the data core (`scripts/ship_factoryd.py`).
+`ship.yml` deploys the bot to the China door and the live board to the board
+server (`scripts/ship_bot.py`, `bot.json`'s `live`). The data core's daemon is
+deployed with `python scripts/ship_factoryd.py` from the same source commit
+after changes to its worker or scripts; `--verify` checks its commit and heartbeat.
+
+## Factory capacity and deployment
+
+The heartbeat, fair table and settlement use a separate database pool from
+statistics and maintenance. Background jobs run one at a time. The home tally
+and demand picture share one rolling score read for a minute; scores remain
+the source, and a failed read is retried rather than cached as zero.
+
+`scripts/factory_capacity.mjs` reads CPU availability, including cgroup CPU
+quotas, host load and Linux memory/I/O pressure. Expensive demand samples and
+the tally back off according to elapsed time and pressure, then recover
+gradually. This changes execution budgets, never fairness, witness counts or
+credit. Demand's live reading still refreshes each minute and its queue totals
+refresh every ten minutes. Its compute-cost estimate is kept between ten minutes
+and one hour. The tally refreshes
+between its configured interval and ten minutes. The daemon records the
+resources and measured durations in `factory_findings.capacity`.
+
+`WFSIM_BACKGROUND_DUTY_PCT` sets each adaptive job's wall-time budget
+(1–25, default 5), not a CPU utilization limit.
+`WFSIM_BACKGROUND_MAX_MS` bounds sample backoff (60,000–3,600,000, default
+3,600,000). `WFSIM_BACKGROUND_AUTO=0` keeps the configured clocks. Overrides
+belong in `/etc/wfsim-factoryd.env`, not edits to source on each machine.
+
+On an existing database host with PostgreSQL, the versioned schemas and Node
+at `/usr/local/bin/node`, `python scripts/ship_factoryd.py --bootstrap` creates
+the OS/database role, installs its grants and an initial local-socket environment,
+then deploys. The grant sources are `deploy/factoryd_grants.sql` and
+`deploy/factoryd_accounts_grants.sql`. Existing environment files are preserved;
+`FACTORY_ENV_FILE` explicitly supplies a replacement, with mode 640.
+
+`FACTORY_TARGET`, `FACTORY_SSH_KEY` and `FACTORY_KNOWN_HOSTS` select another
+host; otherwise the target comes from `private/hetzner/ssh.env`. R2 credentials
+come from the environment or `private/hetzner/r2-public.env`. Neither is in the
+bundle. Deployment builds the required indexes concurrently from their schema
+definitions, runs every tick once before switching, and restores the previous
+daemon if post-deployment verification fails.
+
+The daemon is a singleton per database: a reserved Postgres session owns an
+advisory lock and losing that session stops it. Copying deployment configuration
+to another host does not create another primary database or a second settler.
+Move the active daemon by stopping the old service before starting the new one.
 
 ## One instance
 

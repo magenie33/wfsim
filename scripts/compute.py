@@ -17,7 +17,7 @@ import os
 import subprocess
 import sys
 from collections import defaultdict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 # A UTC HOUR's offset for the hour-of-day table: the readers are mostly UTC+8.
 SHOW_OFFSET = 8
@@ -54,14 +54,37 @@ def pct(a, b):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int, default=90)
+    ap.add_argument("--before", type=date.fromisoformat, help="exclusive UTC end day; defaults to including today")
+    ap.add_argument("--json", action="store_true", help="aggregate work receipt, no device ids or CPU-hour conversion")
     args = ap.parse_args()
-    since = (date.today() - timedelta(days=args.days)).isoformat()
+    if args.days <= 0:
+        ap.error("--days must be positive")
+    until = args.before or datetime.now(timezone.utc).date()
+    since = (until - timedelta(days=args.days)).isoformat()
 
     # ONE ROW PER (device, UTC hour) it sent anything in: `tasks` results sent,
     # `ms` their fights' time on its machine, `work` what facts credited it. A
     # device COMPUTED in an hour only if it sent tasks: work alone is credit for
     # results it sent earlier, and the totals carried in from before hours were kept.
-    rows = db(f"SELECT verifier v, hour h, tasks t, ms, work w FROM verifier_hours WHERE hour >= '{since}'")
+    end = f" AND hour < '{args.before.isoformat()}'" if args.before else ""
+    rows = db(f"SELECT verifier v, hour h, tasks t, ms, work w FROM verifier_hours WHERE hour >= '{since}'{end}")
+    if args.json:
+        daily = defaultdict(lambda: {"devices": set(), "tasks": 0, "credited_work": 0, "client_elapsed_ms": 0})
+        for r in rows:
+            d = daily[r["h"][:10]]
+            if r["t"]:
+                d["devices"].add(r["v"])
+            d["tasks"] += r["t"]
+            d["credited_work"] += r["w"]
+            d["client_elapsed_ms"] += r["ms"]
+        print(json.dumps({"since": since, "before": args.before.isoformat() if args.before else None,
+            "unit": "billionths_of_credited_point", "devices": len({r["v"] for r in rows if r["t"]}),
+            "tasks": sum(r["t"] for r in rows), "credited_work": sum(r["w"] for r in rows),
+            "client_elapsed_ms": sum(r["ms"] for r in rows),
+            "active_device_hours": sum(bool(r["t"]) for r in rows),
+            "first_hour": min((r["h"] for r in rows), default=None), "last_hour": max((r["h"] for r in rows), default=None),
+            "days": [{"day": day, **d, "devices": len(d["devices"])} for day, d in sorted(daily.items())]}, indent=2))
+        return
     if not rows:
         print("no compute in the window")
         return
@@ -83,7 +106,7 @@ def main():
         days.pop(0)
     print(f"covered {days[0]} .. {days[-1]} UTC ({len(days)} days); the first and last are partial\n")
 
-    print(f"{'day':10}  {'devices':>7}  {'new':>4}  {'tasks':>7}  {'cpu h':>6}  {'work':>9}  "
+    print(f"{'day':10}  {'devices':>7}  {'new':>4}  {'tasks':>7}  {'elapsed h':>9}  {'work':>9}  "
           f"{'online h p50':>12}  {'p90':>4}  {'>=12h':>5}")
     for d in days:
         devs = {v: s for v, s in by_day[d].items() if s[0]}

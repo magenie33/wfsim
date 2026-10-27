@@ -160,6 +160,11 @@ CREATE INDEX IF NOT EXISTS questions_fact_at_verb ON questions (fact_at, verb);
 -- THE OPEN QUESTIONS BY VERB (`demandOf`): counted from the table, a million and
 -- a half of them read past the daemon's statement timeout.
 CREATE INDEX IF NOT EXISTS questions_open_verb ON questions (verb) WHERE state = 'open';
+-- RECENT DISAGREEMENTS, without scanning every settled question in the watchdog.
+CREATE INDEX IF NOT EXISTS questions_odd_at ON questions (fact_at) WHERE odd = 1;
+-- DISPATCHED OPEN ROWS, without fetching every open question for the tally.
+CREATE INDEX IF NOT EXISTS questions_dispatched ON questions (id)
+  WHERE state = 'open' AND verb = 'simulate' AND (leased_at IS NOT NULL OR lease IS NOT NULL);
 -- THE WITHDRAWN PAST THE WINDOW (worker/pg/sync.sql `factory_forget_past`):
 -- the window's whole withdrawn read row by row every minute, without it.
 CREATE INDEX IF NOT EXISTS questions_withdrawn_at ON questions (opened_at) WHERE state = 'withdrawn';

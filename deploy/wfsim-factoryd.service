@@ -21,6 +21,7 @@ CPUWeight=50
 MemoryMax=512M
 Restart=always
 RestartSec=5
+TimeoutStopSec=180
 
 [Install]
 WantedBy=multi-user.target

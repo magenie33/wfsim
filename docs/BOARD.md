@@ -896,17 +896,9 @@ ITS ROLE, `wfsim_factoryd`, reads only what its ticks read. A tick that reads
 a table the role lacks fails its `--once` pass and `ship_factoryd.py` keeps the
 old copy running, so a new read ships with its grant:
 
-```sh
-GRANT SELECT ON answers, engine_refusals, factory_dials, questions, queue, refusal_withdrawals,
-  settle_queue, verifier_hours, verifiers TO wfsim_factoryd;
-GRANT SELECT, INSERT, UPDATE, DELETE ON factory_findings, factory_snapshot, fair_shares TO wfsim_factoryd;
-GRANT SELECT (id) ON batches TO wfsim_factoryd;
-GRANT SELECT, UPDATE ON answers, demands, questions, verifiers TO wfsim_factoryd;
-GRANT SELECT, INSERT, UPDATE ON scores, verifier_hours TO wfsim_factoryd;
-GRANT SELECT, UPDATE, DELETE ON settle_queue TO wfsim_factoryd;
-GRANT DELETE ON queue TO wfsim_factoryd;
-GRANT SELECT (channel, request, at, done_at, weapon, ruler, agreed_at, started_at) ON appraisals TO wfsim_factoryd;
-```
+The grants are defined in `deploy/factoryd_grants.sql` and
+`deploy/factoryd_accounts_grants.sql`, applied by
+`python scripts/ship_factoryd.py --bootstrap` (docs/SERVERS.md).
 
 **THE WORK SIGNAL** is the snapshot published: after every snapshot, and at
 once when open or waited-on work appears from none (a two-second probe), the

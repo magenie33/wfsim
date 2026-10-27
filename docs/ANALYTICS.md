@@ -182,6 +182,7 @@ sent (docs/BOARD.md §"Contribution"):
 
 ```
 python scripts/compute.py            # every day verifier_hours holds
+python scripts/compute.py --days 7 --before 2026-10-27 --json
 ```
 
 Per UTC day: devices that sent results, those new that day, results, the hours
@@ -191,6 +192,13 @@ devices computing in each hour of the day. Totals only: it reads the device ids
 to count them, prints none, and never opens the accounts database. It reads
 the library through `scripts/pgq.mjs` from whatever `PG_URL` names — the
 tunnel to `pg.wfsim.app` (docs/BOARD.md §"Postgres").
+
+`--before` is an exclusive UTC end day. The JSON receipt contains submissions,
+credited work, participating devices, active device-hours and client-reported
+elapsed time, with no device ids. Work is in billionths of a credited point;
+it includes each credited witness, not a count of unique facts. Client elapsed
+time is not a hardware-independent CPU-hour benchmark. Compare equal windows
+and the same work units when assessing infrastructure capacity.
 
 ## Factory calls
 

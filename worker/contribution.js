@@ -694,14 +694,15 @@ async function nowOf(db, now) {
 /// where a verb with work formed no fact to price it by.
 /// THE ORDERS ARE ONE LIST, a kind a row (`ORDER_KINDS`): what each kind owes,
 /// and how much of it a device has taken — the rest waits on the server.
-export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN) {
+export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, options = {}) {
   const db = env.LIBRARY, at = iso(now);
   const kept = demandCosts.get(env);
-  const costs = kept && now - kept.at < DEMAND_COST_EVERY_MS ? kept : null;
-  const [, done, gains, surveys, answered, owed, open, spent, facts, taken] = await db.batch([
+  const counts = kept && now >= kept.countsAt && now - kept.countsAt < DEMAND_COST_EVERY_MS ? kept : null;
+  const costs = kept && now >= kept.costsAt && now - kept.costsAt < (options.costEveryMs || DEMAND_COST_EVERY_MS) ? kept : null;
+  const began = performance.now();
+  const reads = await db.batch([
     db.prepare(`SET LOCAL statement_timeout = ${costs ? "DEFAULT" : DEMAND_COST_TIMEOUT_MS}`),
-    db.prepare(`SELECT SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official
-                FROM scores WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000)),
+    ...(options.pace ? [] : [db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000))]),
     db.prepare(`SELECT COUNT(*) AS n, SUM(CASE WHEN started_at IS NULL THEN 0 ELSE 1 END) AS started
                 FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?`)
       .bind(iso(now - 86_400_000), SURVEY_CHANNEL),
@@ -716,7 +717,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN) {
     // THE LAST WHOLE HOURS, the one under way left out.
     db.prepare("SELECT COALESCE(SUM(ms), 0) AS ms FROM verifier_hours WHERE hour >= ?1::text AND hour < ?2::text")
       .bind(iso(now - PACE_HOURS * 3_600_000).slice(0, 13), iso(now).slice(0, 13)),
-    ...(costs ? [] : [
+    ...(counts ? [] : [
       // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
       // demands are read once and joined whole: looked up a queue row at a time,
       // every row cost an index walk for the few that have one.
@@ -726,7 +727,9 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN) {
                   LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
                   GROUP BY q.build_id, q.ruler, q.mode) x GROUP BY k`),
       db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE state = 'open' GROUP BY verb"),
-      db.prepare(`WITH s AS (SELECT question, compute_ms FROM answers
+    ]),
+    ...(costs ? [] : [
+      db.prepare(`WITH s AS MATERIALIZED (SELECT question, compute_ms FROM answers
                     WHERE id > (SELECT COALESCE(MAX(id), 0) FROM answers) - ?2::bigint AND at >= ?1::text AND official = 0)
                   SELECT q.verb, SUM(COALESCE(s.compute_ms, 0)) AS ms FROM s JOIN questions q ON q.id = s.question GROUP BY q.verb`)
         .bind(iso(now - DEMAND_COST_MS), scan),
@@ -736,6 +739,8 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN) {
       db.prepare(`SELECT verb, COUNT(*) AS n FROM questions WHERE fact_at >= GREATEST(?1::text,
                     (SELECT at FROM answers WHERE id > (SELECT COALESCE(MAX(id), 0) FROM answers) - ?2::bigint ORDER BY id LIMIT 1))
                   GROUP BY verb`).bind(iso(now - DEMAND_COST_MS), scan),
+    ]),
+    ...(counts ? [] : [
       // A ROW A DEVICE HAS TAKEN — leased, by a volunteer or an official
       // machine, now or before — is dispatched, by the kind `owed` counts it as.
       db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT x.id, MIN(CASE WHEN d.producer = 'new_build' THEN 0
@@ -745,7 +750,12 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN) {
                    GROUP BY x.id) y GROUP BY k`).bind(JSON.stringify(BOARD_KINDS)),
     ]),
   ]);
-  const counted = costs || { by: Object.fromEntries(owed.results.map((r) => [r.k, Number(r.n)])),
+  const [, done, gains, surveys, answered, ...rest] = options.pace
+    ? [reads[0], { results: [options.pace] }, ...reads.slice(1)] : reads;
+  let cursor = 0;
+  const owed = counts ? null : rest[cursor++], open = counts ? null : rest[cursor++];
+  const spent = costs ? null : rest[cursor++], facts = costs ? null : rest[cursor++], taken = counts ? null : rest[cursor++];
+  const counted = counts || { by: Object.fromEntries(owed.results.map((r) => [r.k, Number(r.n)])),
     takenBy: Object.fromEntries(taken.results.map((r) => [r.k, Number(r.n)])),
     openOf: open.results.map((r) => ({ verb: r.verb, n: Number(r.n) })) };
   const by = counted.by;
@@ -753,7 +763,11 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN) {
   const perHour = (x) => Math.round(Number(x || 0) / PACE_HOURS);
   const { msOf, factsOf } = costs || { msOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.ms)])),
     factsOf: Object.fromEntries(facts.results.map((r) => [r.verb, Number(r.n)])) };
-  if (!costs) demandCosts.set(env, { at: now, msOf, factsOf, by, takenBy: counted.takenBy, openOf: counted.openOf });
+  if (!costs || !counts) {
+    demandCosts.set(env, { countsAt: counts ? counts.countsAt : now, costsAt: costs ? costs.costsAt : now,
+      msOf, factsOf, by, takenBy: counted.takenBy, openOf: counted.openOf });
+    if (!costs) options.onCosts?.(performance.now() - began);
+  }
   const msPerHour = Number((answered.results[0] || {}).ms || 0) / PACE_HOURS;
   // THE BOARD'S ROWS are the queue's; every other verb's open questions are its work.
   const left = { simulate: (by[0] || 0) + (by[1] || 0) + (by[2] || 0) + (by[3] || 0) };
@@ -798,20 +812,25 @@ async function demand(env) {
 export const TALLY_BASE_MS = 60 * 60_000;
 const SPLIT = `SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official`;
 const split = (r) => ({ volunteers: (r && r.volunteers) || 0, official: (r && r.official) || 0 });
+export async function scorePace(env, now = Date.now()) {
+  return split(await env.LIBRARY.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`)
+    .bind(iso(now - PACE_HOURS * 3_600_000)).first());
+}
 /// THE BASE: every score by who computed it, as of `at`.
 export async function tallyBase(db, now = Date.now()) {
   return { at: iso(now), ...split(await db.prepare(`SELECT ${SPLIT} FROM scores`).first()) };
 }
 /// THE TALLY'S BODY from a base: the worker's answer and the settler's file
 /// (`TALLY_KEY`) are this one function.
-export async function tallyOf(env, base, now = Date.now()) {
+export async function tallyOf(env, base, now = Date.now(), pace = null) {
   const db = env.LIBRARY;
   let totals = { volunteers: 0, official: 0 }, perHour = { volunteers: 0, official: 0 };
   if (db && base) {
-    const [since, hour] = await db.batch([
+    const reads = await db.batch([
       db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at > ?`).bind(base.at),
-      db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000)),
+      ...(pace ? [] : [db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000))]),
     ]);
+    const [since, hour] = pace ? [reads[0], { results: [pace] }] : reads;
     const s = split(since.results[0]);
     totals = { volunteers: base.volunteers + s.volunteers, official: base.official + s.official };
     const h = split(hour.results[0]);

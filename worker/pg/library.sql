@@ -105,6 +105,8 @@ CREATE INDEX IF NOT EXISTS scores_ruler ON scores (ruler);
 -- …and "what has gone longest without being measured" is the order to repair
 -- in, which is the one thing a clock here is allowed to decide.
 CREATE INDEX IF NOT EXISTS scores_oldest ON scores (finished_at);
+-- THE ROLLING PACE reads who measured a score without fetching its heap row.
+CREATE INDEX IF NOT EXISTS scores_pace ON scores (finished_at) INCLUDE (measured_by);
 
 -- WHAT SOMEBODY ASKED TO BE COMPUTED, AND HOW FAR IT GOT. The queue may only
 -- ever CAUSE work: it may not prevent work and it may not decide a number, so

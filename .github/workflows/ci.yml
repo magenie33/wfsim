@@ -326,6 +326,10 @@ jobs:
         run: node scripts/check_fair.mjs
       - name: The settler in shadow judges as the request path does, and says where it does not
         run: node scripts/check_settler.mjs
+      - name: Background capacity yields to requests and shares the same public counts
+        run: node scripts/check_factory_capacity.mjs
+      - name: The factory deploy carries its dependencies and keeps credentials outside the artifact
+        run: python scripts/check_factory_deploy.py
       - name: Answers queued for the settler leave what settling them in the request leaves, once
         run: node scripts/check_settler_async.mjs
       - name: The factory holds with every answer queued and settled by the settler's pass

@@ -1075,7 +1075,11 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
         GROUP BY d.producer
        HAVING NOT EXISTS (SELECT 1 FROM demands e JOIN answers a ON a.question = e.question
                            WHERE e.producer = d.producer AND a.at > ?2::text)`).bind(at, recent, ceiling).all();
-    const odd = (await db.prepare("SELECT count(*) AS n FROM questions WHERE state = 'nondeterministic' OR (odd = 1 AND fact_at > ?)")
+    const odd = (await db.prepare(`SELECT SUM(n) AS n FROM (
+      SELECT count(*) AS n FROM questions WHERE state = 'nondeterministic'
+      UNION ALL
+      SELECT count(*) AS n FROM questions WHERE odd = 1 AND fact_at > ? AND state != 'nondeterministic'
+    ) x`)
       .bind(iso(now - 24 * 3_600_000)).first()).n;
     // WAITING ON THE OFFICIAL MACHINES since its last answer put it there: a
     // dispute nobody settles is the one place a question can still wait for ever.

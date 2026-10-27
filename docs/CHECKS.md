@@ -725,6 +725,16 @@ left unpaid are each a difference, kept in the finding with the question. An
 official answer and an older engine's peer are counted apart; two answers of
 one owner are one witness. One pass of the daemon's every tick runs clean.
 
+## `check_factory_capacity`
+
+Plain Node and PGlite: stronger and weaker host readings, bounded background
+backoff and recovery, operator overrides, serialized background work, failed
+reads and cache expiry. A shared rolling pace read leaves demand and tally
+byte-equivalent to separate reads. Critical work proceeds while a background
+operation waits. The deployment check is `python scripts/check_factory_deploy.py`:
+target configuration, schema-derived concurrent indexes, credential boundaries
+and the artifact's dependency closure.
+
 ## `check_settler_async`
 
 Plain node on PGlite, for the settler's queue (dial `settle_async`, docs/BOARD.md

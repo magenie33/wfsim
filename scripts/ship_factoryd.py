@@ -17,9 +17,14 @@ into the server's /etc/wfsim-factoryd.env, sent on stdin and never printed.
     python scripts/ship_factoryd.py            # deploy, then verify
     python scripts/ship_factoryd.py --verify   # only: does the daemon run HEAD, and beat?
 """
+from __future__ import annotations
+
 import io
 import json
+import os
 import pathlib
+import re
+import shlex
 import subprocess
 import sys
 import tarfile
@@ -36,7 +41,7 @@ SIGNAL_URL = "https://cdn.wfsim.app/work.json"
 # WRITTEN EVERY TEN SECONDS AND KEPT FIVE AT THE EDGE; older than this, the signal is down.
 SIGNAL_S = 60
 # WHAT THE DAEMON RUNS: the worker, and the two scripts of its own.
-DAEMON_FILES = ["scripts/factoryd.mjs", "scripts/sigv4.mjs"]
+DAEMON_FILES = ["scripts/factoryd.mjs", "scripts/factory_capacity.mjs", "scripts/sigv4.mjs"]
 REMOTE = "/opt/wfsim-factoryd"
 SERVICE = "wfsim-factoryd"
 UNIT = ROOT / "deploy" / f"{SERVICE}.service"
@@ -45,6 +50,11 @@ BEAT_S = 60
 
 
 def target() -> dict:
+    if os.environ.get("FACTORY_TARGET"):
+        required = ("FACTORY_TARGET", "FACTORY_SSH_KEY", "FACTORY_KNOWN_HOSTS")
+        if any(not os.environ.get(k) for k in required):
+            sys.exit("factory target needs FACTORY_TARGET, FACTORY_SSH_KEY and FACTORY_KNOWN_HOSTS")
+        return {"host": os.environ[required[0]], "key": os.environ[required[1]], "known_hosts": os.environ[required[2]]}
     if not TARGET.exists():
         sys.exit(f"ship_factoryd: no target ({TARGET.relative_to(ROOT)}) — the daemon cannot be shipped from this tree")
     env = dict(line.split("=", 1) for line in TARGET.read_text(encoding="utf-8").splitlines() if "=" in line and not line.startswith("#"))
@@ -90,6 +100,10 @@ def bundle(commit: str) -> bytes:
 
 def r2_token() -> dict | None:
     """The R2 token's four values, or None (said why) when a key is unfilled."""
+    if any(os.environ.get(k) for k in R2_KEYS) and not all(os.environ.get(k) for k in R2_KEYS):
+        sys.exit("factory signal needs all four R2 environment values")
+    if all(os.environ.get(k) for k in R2_KEYS):
+        return {k: os.environ[k] for k in R2_KEYS}
     if not R2_TOKEN.exists():
         print(f"signal: {R2_TOKEN.relative_to(ROOT)} is missing — the daemon ships without the work signal")
         return None
@@ -110,18 +124,57 @@ def merge_r2(t: dict, values: dict) -> None:
         stdin=lines)
 
 
+def index_sql() -> str:
+    """Concurrent indexes from the same DDL a new database is laid with."""
+    ddl = "\n".join((ROOT / "worker" / "pg" / p).read_text() for p in ("schema.sql", "library.sql"))
+    statements = []
+    for name in ("questions_odd_at", "questions_dispatched", "scores_pace"):
+        found = re.search(rf"CREATE INDEX IF NOT EXISTS {name}\b[^;]+;", ddl)
+        if not found:
+            raise ValueError(f"factory index missing from schema: {name}")
+        statements.append(found.group().replace("CREATE INDEX ", "CREATE INDEX CONCURRENTLY ", 1))
+    return "SET ROLE wfsim;\nSET lock_timeout = '5s';\n" + "\n".join(statements) + "\n"
+
+
+def bootstrap(t: dict) -> None:
+    """Install the daemon role on a host whose databases and Node already exist."""
+    ssh(t, "test -x /usr/local/bin/node && command -v psql >/dev/null && "
+        "(id -u wfsim_factoryd >/dev/null 2>&1 || useradd --system --no-create-home --shell /usr/sbin/nologin wfsim_factoryd)")
+    for database, filename in (("wfsim", "factoryd_grants.sql"), ("wfsim_accounts", "factoryd_accounts_grants.sql")):
+        ssh(t, f"sudo -u postgres psql -d {database} -X -q -v ON_ERROR_STOP=1",
+            stdin=(ROOT / "deploy" / filename).read_bytes())
+    source = os.environ.get("FACTORY_ENV_FILE")
+    if source:
+        ssh(t, "install -m 640 -o root -g wfsim_factoryd /dev/stdin /etc/wfsim-factoryd.env",
+            stdin=pathlib.Path(source).read_bytes())
+    else:
+        ssh(t, "if [ ! -f /etc/wfsim-factoryd.env ]; then install -m 640 -o root -g wfsim_factoryd /dev/stdin /etc/wfsim-factoryd.env; fi",
+            stdin=b"PG_URL=postgres://wfsim_factoryd@localhost/wfsim\nPG_ACCOUNTS_URL=postgres://wfsim_factoryd@localhost/wfsim_accounts\nPG_SOCKET=/var/run/postgresql\n")
+
+
 def deploy() -> None:
     t, commit = target(), head()
     dirty = subprocess.run(["git", "status", "--porcelain", "--", "worker", *DAEMON_FILES], cwd=ROOT,
                            capture_output=True, text=True, check=True).stdout.strip()
     if dirty:
         sys.exit("ship_factoryd: worker/ or the daemon's scripts have uncommitted changes — the daemon ships a commit")
+    ssh(t, "id wfsim_factoryd >/dev/null && /usr/local/bin/node --version && "
+        "runuser -u wfsim_factoryd -- test -r /etc/wfsim-factoryd.env")
     token = r2_token()
     if token:
         merge_r2(t, token)
     new = f"{REMOTE}.new"
     ssh(t, f"rm -rf {new} && mkdir -p {new} && tar xzf - -C {new} && chown -R root:root {new} && chmod -R a+rX {new}",
         stdin=bundle(commit))
+    ssh(t, "sudo -u postgres psql -d wfsim -X -q -v ON_ERROR_STOP=1", stdin=index_sql().encode())
+    ready = ssh(t, "sudo -u postgres psql -d wfsim -X -q -At -v ON_ERROR_STOP=1", stdin=b"""
+SELECT count(*) = 3 AND bool_and(i.indisvalid AND i.indisready)
+FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
+WHERE c.relnamespace = 'public'::regnamespace
+AND c.relname IN ('questions_odd_at', 'questions_dispatched', 'scores_pace');
+""").strip()
+    if ready != "t":
+        sys.exit("factoryd: required indexes are not valid and ready; running daemon kept")
     # ONE PASS OF EVERY TICK, as the service's user, before anything is swapped.
     ssh(t, f"cd {new} && set -a && . /etc/{SERVICE}.env && set +a && "
            f"runuser -u wfsim_factoryd -- /usr/local/bin/node scripts/factoryd.mjs --once")
@@ -130,7 +183,11 @@ def deploy() -> None:
     ssh(t, f"rm -rf {REMOTE}.old; if [ -d {REMOTE} ]; then mv {REMOTE} {REMOTE}.old; fi; mv {new} {REMOTE} && "
            f"systemctl enable --now {SERVICE} && systemctl restart {SERVICE}")
     time.sleep(15)
-    sys.exit(verify(t))
+    code = verify(t)
+    if code:
+        ssh(t, f"systemctl stop {SERVICE} && rm -rf {REMOTE}.failed && mv {REMOTE} {REMOTE}.failed && mv {REMOTE}.old {REMOTE} && systemctl start {SERVICE}")
+        print("factoryd: restored the previous daemon; new indexes retained")
+    sys.exit(code)
 
 
 def verify(t: dict | None = None) -> int:
@@ -148,9 +205,17 @@ def verify(t: dict | None = None) -> int:
         try:
             # AGED BY THE EDGE'S CLOCK (its Date header), never this machine's: a
             # desktop clock minutes off reads a fresh signal as stale.
-            with urllib.request.urlopen(urllib.request.Request(SIGNAL_URL, headers={"user-agent": "ship_factoryd"}), timeout=20) as r:
-                at = json.load(r).get("at")
-                now = parsedate_to_datetime(r.headers["date"]) if r.headers.get("date") else datetime.now(timezone.utc)
+            try:
+                with urllib.request.urlopen(urllib.request.Request(SIGNAL_URL, headers={"user-agent": "ship_factoryd"}), timeout=20) as r:
+                    at = json.load(r).get("at")
+                    now = parsedate_to_datetime(r.headers["date"]) if r.headers.get("date") else datetime.now(timezone.utc)
+            except Exception:
+                probe = ("import json,urllib.request; "
+                    f"r=urllib.request.urlopen({SIGNAL_URL!r}, timeout=20); "
+                    "print(json.dumps({'body':json.load(r),'date':r.headers.get('date')}))")
+                seen = json.loads(ssh(t, "python3 -c " + shlex.quote(probe)))
+                at = seen["body"].get("at")
+                now = parsedate_to_datetime(seen["date"]) if seen.get("date") else datetime.now(timezone.utc)
             seen = (now - datetime.fromisoformat(at.replace("Z", "+00:00"))).total_seconds() if at else None
         except Exception as e:  # noqa: BLE001 — any failure to read it is a signal that is down
             seen, at = None, f"unreadable ({e})"
@@ -163,4 +228,6 @@ def verify(t: dict | None = None) -> int:
 
 
 if __name__ == "__main__":
+    if "--bootstrap" in sys.argv:
+        bootstrap(target())
     sys.exit(verify() if "--verify" in sys.argv else deploy())

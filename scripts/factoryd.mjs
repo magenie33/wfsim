@@ -17,7 +17,8 @@ import { putObject } from "./sigv4.mjs";
 import { iso } from "../worker/instant.js";
 import { KEPT_MS } from "../worker/tasks.js";
 import { BOARD_KINDS } from "../worker/board_kinds.js";
-import { demandOf, DEMAND_KEY, DEMAND_CACHE, tallyOf, tallyBase, TALLY_KEY, TALLY_CACHE, TALLY_BASE_MS } from "../worker/contribution.js";
+import { demandOf, DEMAND_KEY, DEMAND_CACHE, DEMAND_COST_EVERY_MS, tallyOf, tallyBase, scorePace, TALLY_KEY, TALLY_CACHE, TALLY_BASE_MS } from "../worker/contribution.js";
+import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capacity.mjs";
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
 export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, STATS_TICK_MS = 10_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
@@ -53,19 +54,29 @@ const commitOf = () => {
 };
 const log = (...a) => console.log(new Date().toISOString(), ...a);
 
-export async function openEnv(env = process.env) {
+export async function openEnv(env = process.env, connect = postgres) {
   if (!env.PG_URL) throw new Error("PG_URL is required");
   const clients = [];
-  const db = (url) => {
+  const db = (url, background = false) => {
     // PG_SOCKET (a directory) reaches Postgres over its unix socket, as the
     // unit does: peer authentication, no password on the machine.
-    const c = postgresClient(postgres(url, { ...POSTGRES_OPTIONS, max: 2, idle_timeout: 0, connection: CONNECTION, onnotice: () => {},
+    const connection = { ...CONNECTION, ...(background ? { transaction_timeout: 120_000 } : {}),
+      application_name: background ? "wfsim-factoryd-background" : CONNECTION.application_name };
+    const c = postgresClient(connect(url, { ...POSTGRES_OPTIONS, max: background ? 1 : 2, idle_timeout: 0, connection, onnotice: () => {},
       ...(env.PG_SOCKET ? { host: env.PG_SOCKET } : {}) }));
     clients.push(c);
     return pgDb(c);
   };
   const out = { LIBRARY: db(env.PG_URL), ...(env.PG_ACCOUNTS_URL ? { ACCOUNTS: db(env.PG_ACCOUNTS_URL) } : {}) };
-  return { env: out, close: () => Promise.all(clients.map((c) => c.end())) };
+  const claim = async (onLost) => {
+    let owner;
+    const sql = connect(env.PG_URL, { ...POSTGRES_OPTIONS, max: 1, idle_timeout: 0,
+      connection: { ...CONNECTION, application_name: "wfsim-factoryd-owner" }, onnotice: () => {},
+      onclose: () => owner?.lost(), ...(env.PG_SOCKET ? { host: env.PG_SOCKET } : {}) });
+    owner = await claimDaemon(sql, onLost);
+    return owner;
+  };
+  return { env: out, backgroundEnv: { LIBRARY: db(env.PG_URL, true) }, claim, close: () => Promise.all(clients.map((c) => c.end())) };
 }
 
 /// THE RELEASE SERVED NOW, read through the worker's own `servedRelease` (a
@@ -78,13 +89,20 @@ async function served() {
 /// check; `put` (one object to R2) and `readEdge` (the signal as the CDN serves it) for R2 and the edge.
 export async function run({ once = false, opened = null, servedNow = served, target = signalTarget(),
   put = (t, o) => putObject({ ...t, ...o }), readEdge = readSignalEdge } = {}) {
-  const { env, close } = opened || await openEnv();
+  const { env, backgroundEnv = env, claim, close } = opened || await openEnv();
+  let stopping = false, ownershipLost = false, stopRun;
+  let owner;
+  try {
+    if (!once && claim) owner = await claim(() => { ownershipLost = true; stopping = true; stopRun?.(); });
+  } catch (e) { await close(); throw e; }
+  const budget = capacity(), background = backgroundLane();
+  const pace = paceCache((now) => scorePace(backgroundEnv, now));
   const commit = commitOf();
   // THE SHADOW GOES ON WHERE IT STOPPED: its cursor is kept in its finding.
   const kept = await env.LIBRARY.prepare("SELECT body FROM factory_findings WHERE kind = 'settle_shadow'").first().catch(() => null);
   let cursor = { at: iso(Date.now() - 10 * 60_000), id: "" };
   try { if (kept) cursor = JSON.parse(kept.body).cursor || cursor; } catch { /* from ten minutes ago */ }
-  let release = await servedNow(), stopping = false;
+  let release = await servedNow();
   const failed = new Map();
   const written = { open: true, urgent: true }, edge = { stale: 0, uncached: 0 };
   let unconfiguredSaid = false, tallyAt = 0, tallyKept = null, forgotAt = 0;
@@ -102,8 +120,16 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   // EVERY TICK ON ITS OWN CLOCK, and one that throws only logs: a bad minute of
   // the fair table must not stop the heartbeat.
   const tick = async (name, fn) => {
-    try { await fn(); if (failed.get(name)) log(name, "recovered"); failed.set(name, 0); }
-    catch (e) { const n = (failed.get(name) || 0) + 1; failed.set(name, n); if (n === 1 || n % 30 === 0) log(name, "failed", n, e && e.message); }
+    const began = performance.now();
+    try {
+      const ran = await fn();
+      if (ran === false) return;
+      if (failed.get(name)) log(name, "recovered"); failed.set(name, 0);
+      budget.observe(name, performance.now() - began);
+    } catch (e) {
+      budget.observe(name, performance.now() - began, true);
+      const n = (failed.get(name) || 0) + 1; failed.set(name, n); if (n === 1 || n % 30 === 0) log(name, "failed", n, e && e.message);
+    }
   };
   const jobs = {
     release: async () => { release = await servedNow(); forgetDials(); },
@@ -131,29 +157,34 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       const table = await fairTick(env, release.engine);
       const cmp = compareFair(table, (await readFair(env.LIBRARY, release.engine)).table);
       if (cmp.differ) await findingsTick(env.LIBRARY, "fair_roundtrip", (p) => ({ differ: (p.differ || 0) + 1, last: cmp }));
+      await findingsTick(env.LIBRARY, "capacity", () => budget.reading());
     },
     // THE QUEUE FIRST (dial `settle_async`), then the shadow's judging of what settled.
     settle: async () => { await settleBatch(env); cursor = (await settleShadow(env, { threshold: CLIENTS_PER_FACT, from: cursor })).cursor; },
     // THE COMPUTE PAGE'S PICTURE, one object every reader gets (worker/contribution.js `demandOf`).
     demand: async () => {
       if (!target) return;
-      await put(target, { key: DEMAND_KEY, body: JSON.stringify(await demandOf(env)), contentType: "application/json", cacheControl: DEMAND_CACHE });
+      const now = Date.now();
+      const body = await demandOf(backgroundEnv, now, undefined, { pace: await pace(now),
+        costEveryMs: budget.interval("demandCosts", DEMAND_COST_EVERY_MS),
+        onCosts: (ms) => budget.observe("demandCosts", ms) });
+      await put(target, { key: DEMAND_KEY, body: JSON.stringify(body), contentType: "application/json", cacheControl: DEMAND_CACHE });
     },
     // THE HOME PAGE'S COUNT (worker/contribution.js `tallyOf`), every `stats_tally_ms`;
     // the whole-table count under it is taken again each `TALLY_BASE_MS`.
     tally: async () => {
       if (!target) return;
       const now = Date.now();
-      if (now - tallyAt < (await dialsOf(env, now)).stats_tally_ms - STATS_TICK_MS / 2) return;
-      if (!tallyKept || now - Date.parse(tallyKept.at) >= TALLY_BASE_MS) tallyKept = await tallyBase(env.LIBRARY, now);
-      await put(target, { key: TALLY_KEY, body: JSON.stringify(await tallyOf(env, tallyKept, now)), contentType: "application/json", cacheControl: TALLY_CACHE });
+      if (now - tallyAt < Math.min(10 * 60_000, budget.interval("tally", (await dialsOf(env, now)).stats_tally_ms)) - STATS_TICK_MS / 2) return false;
+      if (!tallyKept || now - Date.parse(tallyKept.at) >= TALLY_BASE_MS) tallyKept = await tallyBase(backgroundEnv.LIBRARY, now);
+      await put(target, { key: TALLY_KEY, body: JSON.stringify(await tallyOf(backgroundEnv, tallyKept, now, await pace(now))), contentType: "application/json", cacheControl: TALLY_CACHE });
       tallyAt = now;
     },
     // AN ASK THAT IS OVER KEEPS NO CODE (worker/pg/sync.sql `factory_forget_codes`), every `initiator_forget_ms`.
     forget: async () => {
       const now = Date.now();
       if (now - forgotAt < (await dialsOf(env, now)).initiator_forget_ms - STATS_TICK_MS / 2) return;
-      await env.LIBRARY.prepare("SELECT factory_forget_codes() AS n").first();
+      await backgroundEnv.LIBRARY.prepare("SELECT factory_forget_codes() AS n").first();
       forgotAt = now;
     },
     // AN OFFICIAL CHECK OF ANOTHER ENGINE IS NONE (worker/pg/sync.sql `factory_moot_checks`):
@@ -161,7 +192,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     moot: async () => {
       if (!release.engine) return;
       for (let i = 0; i < PAST_CALLS; i++) {
-        const { n } = await env.LIBRARY.prepare("SELECT factory_moot_checks(?::text, ?::bigint) AS n").bind(release.engine, PAST_BATCH).first();
+        const { n } = await backgroundEnv.LIBRARY.prepare("SELECT factory_moot_checks(?::text, ?::bigint) AS n").bind(release.engine, PAST_BATCH).first();
         if (Number(n) < PAST_BATCH) break;
       }
     },
@@ -170,7 +201,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
       if (!release.engine) return;
       const before = iso(Date.now() - KEPT_MS);
       for (let i = 0; i < PAST_CALLS; i++) {
-        const { n } = await env.LIBRARY.prepare("SELECT factory_forget_past(?::text, ?::text, ?::text, ?::bigint) AS n")
+        const { n } = await backgroundEnv.LIBRARY.prepare("SELECT factory_forget_past(?::text, ?::text, ?::text, ?::bigint) AS n")
           .bind(before, release.engine, JSON.stringify(BOARD_KINDS), PAST_BATCH).first();
         if (Number(n) < PAST_BATCH) break;
       }
@@ -183,11 +214,13 @@ export async function run({ once = false, opened = null, servedNow = served, tar
     log(bad.length ? `once: failed ${bad.join(", ")}` : "once: ok", commit);
     return bad.length ? 1 : 0;
   }
+  if (stopping) { await close(); await owner?.release(); return 1; }
   const timers = new Map(), inflight = new Set();
   const every = (ms, name) => {
     const loop = async () => {
       if (stopping) return;
-      const p = tick(name, jobs[name]);
+      const p = ["demand", "tally", "forget", "past", "moot"].includes(name)
+        ? background(() => stopping ? undefined : tick(name, jobs[name])) : tick(name, jobs[name]);
       inflight.add(p);
       await p;
       inflight.delete(p);
@@ -200,14 +233,16 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   log("factoryd up", commit, release.engine);
   await new Promise((resolve) => {
     const stop = () => { stopping = true; for (const t of timers.values()) clearTimeout(t); resolve(); };
+    stopRun = stop;
     process.once("SIGTERM", stop);
     process.once("SIGINT", stop);
   });
   // A TICK UNDER WAY FINISHES, so no transaction is cut by the connection closing.
   await Promise.allSettled([...inflight]);
   await close();
+  await owner?.release();
   log("factoryd down");
-  return 0;
+  return ownershipLost ? 1 : 0;
 }
 
 /// THE SIGNAL AS A READER GETS IT: its `at` and the edge's cache status.
