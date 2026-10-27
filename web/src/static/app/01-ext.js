@@ -31,6 +31,16 @@ function extHookNow(name, ...args) {
 }
 const extKindOf = (path) => Object.keys(EXT.pages).find((k) => EXT.pages[k].path === path) || null;
 
+/// Entries may depend on the account; a failed extension adds no links.
+function extMenuItems(account) {
+  return Object.values(EXT.pages).flatMap((p) => {
+    try {
+      const item = p.entry ? p.entry(account) : p.menu && (account || p.open) ? { path: p.path, label: p.menu } : null;
+      return item && typeof item.path === "string" && item.path.startsWith("/") && typeof item.label === "string" ? [item] : [];
+    } catch (_) { return []; }
+  });
+}
+
 /// Once settled, a route starts synchronously as it always has.
 let extSettled = false;
 /// MOUNTED ONCE, BEFORE THE FIRST ROUTE: `route` waits on this, so an

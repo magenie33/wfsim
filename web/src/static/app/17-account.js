@@ -153,8 +153,10 @@ function loadAccount() {
     // page only once it says it is available.
     if (accountState.account && isSettings(at)) await Promise.all([loadAgents(), loadDevices(), ...extLoads()]);
     else if ((EXT.pages[at] || {}).open) await Promise.all(extLoads(at));
+    await extHook("accountLoaded", accountState.account);
     authArrival = { kind: at, ready: true };
     renderAccountEntry();
+    if (location.pathname.replace(/\/$/, "") === "/support") renderSupport();
     const kind = authKindOf(location.pathname);
     if (kind) renderAuthPage(kind);
     if (accountState.account) syncSoon(0);
@@ -195,7 +197,7 @@ async function loadAgents() {
 function authReturn() {
   const r = new URLSearchParams(location.search).get("return");
   const kind = r && authKindOf(r.split("?")[0]);
-  return r && /^\/(?!\/)/.test(r) && (!kind || isSettings(kind)) ? r : "/";
+  return r && /^\/(?!\/)/.test(r) && (!kind || isSettings(kind) || EXT.pages[kind]?.open) ? r : "/";
 }
 const authStart = (p, intent, back) =>
   `/api/auth/${p}/start?intent=${intent}&return=${encodeURIComponent(back)}`;
@@ -212,6 +214,8 @@ const extLoads = (kind) => Object.entries(EXT.pages)
 // ---- the top bar: one entry --------------------------------------------------------------
 
 function renderAccountEntry() {
+  const footer = $("ext-footer");
+  if (footer) footer.innerHTML = extHookNow("footer") || "";
   const box = $("account");
   if (!box) return;
   const { providers, account } = accountState;
@@ -226,13 +230,13 @@ function renderAccountEntry() {
           <span>@${escHtml(account.username || "")}</span></div></div>
         <a href="/account" role="menuitem">${aT("Account settings")}</a>
         <a href="/account/sync" role="menuitem">${aT("Cloud sync")}</a>
-        ${Object.values(EXT.pages).filter((p) => p.menu).map((p) => `<a href="${escHtml(p.path)}?from=menu" role="menuitem">${aT(p.menu)}</a>`).join("")}
+        ${extMenuItems(account).map((p) => `<a href="${escHtml(p.path)}?from=menu" role="menuitem">${aT(p.label)}</a>`).join("")}
         <hr><a href="#" role="menuitem" data-acct="logout">${aT("Sign out")}</a>
       </div>`
     // SIGNED OUT, an extension's page anyone may open stands beside "Sign in",
     // a plain link at the bar's weight: the menu that names it is not there yet.
-    : `${Object.values(EXT.pages).filter((p) => p.menu && p.open).map((p) =>
-        `<a class="topbar-page" href="${escHtml(p.path)}?from=topbar">${aT(p.menu)}</a>`).join("")}`
+    : `${extMenuItems(null).map((p) =>
+        `<a class="topbar-page" href="${escHtml(p.path)}?from=topbar">${aT(p.label)}</a>`).join("")}`
       + `<a class="signin-btn" href="/login?return=${encodeURIComponent(authKindOf(location.pathname) ? "/" : here)}">${aT("Sign in")}</a>`;
 }
 

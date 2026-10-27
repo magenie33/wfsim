@@ -388,7 +388,7 @@
       <div class="hero-facts" id="home-tally-n"></div>
     </div>
     <div class="hero-facts" id="home-facts" hidden></div>
-    <p class="hero-note"><span data-i18n>Every formula cites its source, and every golden test is calibrated against a real in-game run.</span> <a href="/support" data-i18n>How to check it</a></p>
+    <p class="hero-note"><span data-i18n>Every formula cites its source, and every golden test is calibrated against a real in-game run.</span> <a href="/support#method" data-i18n>How to check it</a></p>
     <!-- ONE SECTION PER EQUIPMENT SLOT, in `META.equipment_slots` order
          (data/equipment_slots.yaml) — the page names no slot of its own. -->
     <div id="home-nav" class="snav"></div>
@@ -466,44 +466,24 @@
 
   <main id="support-page" class="support-page" hidden>
     <h1 id="h-support" class="hero-h" data-i18n>Support WFSim</h1>
-    <!-- What this says nothing about is pricing, accounts, or anything else
-         that does not exist yet. What it names is the THREE MODULES and the
-         MEASUREMENTS — both true today, and both checkable by the reader
-         today. -->
     <p class="hero-sub" data-i18n>A Warframe calculator built to match the game, checked against in-game measurements item by item. The calculator is free for everyone, and the same for everyone.</p>
-    <!-- THE ONE SENTENCE ABOUT METHOD, and it is on this page because it is
-         what a reader deciding whether any of this is worth anything is
-         actually asking. It names a MECHANISM rather than a virtue — whether a
-         calculator scores an opening state or runs the fight is something you
-         can go and read in the engine — which is the only shape of claim this
-         page is allowed to make about itself. -->
+    <div class="support-stories">
+      <section id="support-usage" class="support-story support-personal" hidden>
+        <h2 data-i18n>You and WFSim</h2>
+        <p class="support-story-copy" data-i18n>On this device, you have used WFSim to run:</p>
+        <div id="support-use-facts" class="support-counts"></div>
+        <p class="sup-note" data-i18n>This record stays in this browser.</p>
+      </section>
+      <section id="support-community" class="support-story" hidden>
+        <h2 data-i18n>What players have built together</h2>
+        <div id="support-community-facts" class="support-counts"></div>
+        <p id="support-computing" class="sup-note" hidden></p>
+      </section>
+    </div>
+    <div id="ext-support"></div>
+    <details id="method" class="support-details">
+      <summary data-i18n>How WFSim works, and how to check it</summary>
     <p class="hero-method" data-i18n>It does not score an opening state. It runs the fight — every ramp, every reload, every status that had to land before the damage depending on it — and reports what happened.</p>
-
-    <!-- THE FACTS STRIP. Filled by `projectFacts()` — the roster and the pools
-         from META, the tests, checks and measurements from the site build. It
-         is the first thing on the page because a reader deciding whether this
-         is worth anything is asking what is behind it, and this answers in the
-         only currency this project accepts. -->
-    <div id="support-facts" class="sup-facts"></div>
-    <p id="support-built" class="sup-note" hidden></p>
-
-    <!-- THE EVIDENCE, WHERE SOMEBODY READS IT. This site's
-         strongest property is that it says what it CANNOT do — a weapon
-         banner, an evolution chip, a mod line, an arcane line, an enemy caveat
-         (`check_disclosure.mjs` asserts all five). Every one of them lives
-         deep inside a weapon page: a reader has to pick a weapon and equip
-         something before any of it is visible, so the most persuasive thing
-         here sat at the bottom of the funnel and no surface above it said a
-         word. None of these claims is an adjective — each names something
-         checkable, which is the only kind of confidence this repo allows
-         itself outside the home hero. -->
-    <!-- WHAT IT DOES, BEFORE WHY IT CAN BE TRUSTED. The section below is a
-         claim of method, and a claim stated first is an adjective — it has to
-         follow something concrete or a reader has nothing to attach it to.
-         Each line is a MECHANISM a player recognises from their own arsenal
-         and can go and check, and none of them names a number, a build or
-         anybody else's product: a figure here would bind the claim to one
-         weapon on one day, and this is a claim about how the engine works. -->
     <section class="block">
       <div class="bh"><h2 data-i18n>How it works</h2></div>
       <div class="bb">
@@ -527,38 +507,23 @@
       </div>
     </section>
 
-    <!-- WHAT THE READER HAS RUN, counted on their own machine and drawn only
-         once there is something to draw — a fresh visitor is told nothing
-         about themselves. -->
-    <p id="support-usage" class="sup-usage" hidden></p>
 
-    <div id="ext-support"></div>
-
-    <!-- STATED RATHER THAN DENIED: everyone gets the same build, the same
-         engine and the same answer, and the licence guarantees it rather than
-         a promise. -->
-    <section class="block">
-      <div class="bh"><h2 data-i18n>The calculator is the same for everyone</h2></div>
-      <div class="bb">
-        <ul class="sup-costs">
-          <li data-i18n>Building, simulating and optimizing are the same for everyone. This is AGPL-3.0: the engine, the game data and the wasm are public, and you can run your own copy.</li>
-          <li data-i18n>What you have run here stays in your own browser. What the site counts, and how to turn it off, is at the foot of this page.</li>
-        </ul>
-      </div>
-    </section>
-
+      <div id="support-facts" class="sup-facts"></div>
+      <p id="support-built" class="sup-note" hidden></p>
+      <p class="sup-note" data-i18n>Building, simulating and optimizing are the same for everyone. This is AGPL-3.0: the engine, the game data and the wasm are public, and you can run your own copy.</p>
+    </details>
 
     <!-- WHAT IS COUNTED, said where a reader looking for it will look, with the
          way out beside it. docs/ANALYTICS.md is the whole of it. -->
-    <section class="sup-usage" id="usage">
-      <h2 data-i18n>What is counted</h2>
+    <details class="support-details" id="usage">
+      <summary data-i18n>What is counted</summary>
       <p><span data-i18n>WFSim counts what gets used — which pages open, whether a build was computed, a simulation or a search started and finished, whether Nona was opened, asked something or set to concise mode (never what was asked), whether the page itself failed (the kind of failure and where in WFSim's own code, never its text), a board build opened, a link shared and from which part of the page, how many presets and customs are saved, whether you are signed in (never which account) — under a random id this browser keeps. The count records no IP address and sets no cookie, and the id is not linked to anything that identifies you. With Global Privacy Control or Do Not Track on, nothing is sent. Per weapon, how many people ran a simulation or a search each day is added up and shown on the home page as its popularity ranking — totals only.</span></p>
       <p><span data-i18n>It also counts what kind of device opens it, in broad classes only — touch or mouse, a narrow or wide screen, how many processor cores in a few steps, whether it is inside WeChat or QQ — never the model or the browser, whether computing for the board carries on with the page out of sight, and, once a day, how long a small public file takes to load directly and through WFSim's Hong Kong relay.</span></p>
       <p><span data-i18n>Each count is kept under this id for 90 days; after that only daily totals that name no one remain. The id is replaced after 13 months.</span></p>
       <p><span data-i18n>This browser's id:</span> <code id="usage-id">—</code> <button id="usage-off" class="cu-btn" type="button"></button></p>
       <p><button id="usage-forget" class="cu-btn" type="button"></button> <span id="usage-forget-said" role="status"></span></p>
       <p><span data-i18n>A riven gain link, opened from a chat with Nona, runs the search in your browser and sends its builds to the board without asking — that is what the link is for. It keeps the build it found and, only if you type one, a name, which Nona posts in the chat to thank you; both are deleted a day later.</span></p>
-    </section>
+    </details>
     <!-- WHAT THIS CLIENT IS RUNNING — the release, the board it is reading, and
          the shell around it. It answers the one question two readers comparing
          numbers ask each other, and without it a version difference and a real
@@ -1197,6 +1162,7 @@
          the ask belongs where someone who already wants to give will look for
          it, not in the path of someone doing a calculation. -->
     <a href="/support" title="Support WFSim" data-i18n-title data-i18n>Support</a> ·
+    <span id="ext-footer"></span>
     <a href="/support#usage" data-i18n>Usage statistics</a> ·
     <!-- A PAGE OUTSIDE THE APP (`ship_method`), so the click leaves it. -->
     <a href="/method" data-native data-i18n>Method</a>

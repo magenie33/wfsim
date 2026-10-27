@@ -606,11 +606,18 @@ into `app.js` by `build_site_app.py` (commits and the first commit's day) and
 everything else comes from `META` and `BOARD_META`. A figure is claimed only if
 a reader can check it against the public repository.
 
-THREE FIGURES: what is modelled (`rosterSize()`, a SUM over META's categories
-so a new one counts itself and the function is never edited again), what
-players built with it (`submissions`), and what came back out (`listed`).
-Submissions are ONE pool every ruler reads, so they are MAXed; listed scores
-are each ruler's own and are ADDED.
+The first figures have two scopes: this browser's simulations and fights,
+then player-uploaded builds and scores verified by players' devices. No local
+history means no personal figures. Submissions are one shared pool and use the
+maximum across rulers; verified player scores use the same tally feed as home,
+without official scores or extrapolation. One visible-page read per minute
+refreshes the tally; a failed read keeps the last confirmed numbers.
+
+Numbers animate on entering view and when their measured targets change,
+stopping at those targets. Reduced motion displays final values immediately.
+Personal history never joins an account or leaves the browser. Repository
+counts and the method remain under the expandable method section; home links
+to `/support#method`.
 
 NO SUM APPEARS ON THE PAGE. `check_support` asserts the whole page against a
 currency pattern, because a digit comes back in a sentence unnoticed.
@@ -636,11 +643,12 @@ extension is there.
 
 | what an extension registers | the page uses it for |
 | --- | --- |
-| `EXT.pages[kind]` — `path`, `view`, `title`, `nav`, `open`, `settings`, `available()`, `load()`, `render(account)`, `shown(main)` | a page in `#auth-page`, routed by `authKindOf`: `open` for anyone, `settings` among the account's pages and in their navigation while `available()`; `view` is its `app.view` kind |
+| `EXT.pages[kind]` — `path`, `view`, `title`, `nav`, `open`, `settings`, `available()`, `load()`, `render(account)`, `shown(main)`, `entry(account)` | a page in `#auth-page`, routed by `authKindOf`: `open` for anyone, `settings` among the account's pages and in their navigation while `available()`; `view` is its `app.view` kind; optional `entry` returns `{path, label}` for the account menu, or null |
 | `EXT.strings[lang]` | `tr`, after the page's own table |
 | `EXT.hooks.act(el, kind)` | a `data-auth` action `authAct` does not know; true when taken |
 | `EXT.hooks.deleteNote()` | what else deleting the account ends, under the danger zone |
 | `EXT.hooks.support(slot)` | the support page's `#ext-support` |
+| `EXT.hooks.accountLoaded(account)`, `footer()` | refresh extension state after the account read, then fill the footer's `#ext-footer` |
 | `EXT.hooks.shareSigner()`, `shareWho(id, sig)` | signing a short link, and naming who signed one |
 | `EXT.hooks.contributorMark(mark)`, `contributorRow(mark)` | a named ranking row's mark, and the class its row takes (lowercase words only) |
 

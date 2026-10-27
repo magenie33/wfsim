@@ -1789,8 +1789,11 @@ compared against the source it claims: the weapons tile against
 line against the injected `PROJECT_FACTS`. The other half is the one line
 about the READER — how much they have run here — asserted absent on a browser
 that has run nothing, correct after a real run at a run count the check chose,
-and absent from the request that run sent. It FORCES English rather than
-inheriting it, since the app boots into the browser's language.
+and absent from the request that run sent. Shared results are checked against
+a repeated submission pool and a separate verified-player tally; neither may
+change the personal record. Reduced motion must show the final values at once.
+It forces English rather than inheriting the browser's language, then checks
+the Chinese overlay.
 
 ## `check_forma_plan`
 
