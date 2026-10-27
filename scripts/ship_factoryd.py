@@ -154,7 +154,9 @@ def bootstrap(t: dict) -> None:
 
 def deploy() -> None:
     t, commit = target(), head()
-    dirty = subprocess.run(["git", "status", "--porcelain", "--", "worker", *DAEMON_FILES], cwd=ROOT,
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", "worker", *DAEMON_FILES,
+                            "scripts/ship_factoryd.py", "deploy/wfsim-factoryd.service", "deploy/factoryd_grants.sql",
+                            "deploy/factoryd_accounts_grants.sql"], cwd=ROOT,
                            capture_output=True, text=True, check=True).stdout.strip()
     if dirty:
         sys.exit("ship_factoryd: worker/ or the daemon's scripts have uncommitted changes — the daemon ships a commit")

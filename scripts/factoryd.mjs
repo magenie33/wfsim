@@ -95,7 +95,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   try {
     if (!once && claim) owner = await claim(() => { ownershipLost = true; stopping = true; stopRun?.(); });
   } catch (e) { await close(); throw e; }
-  const budget = capacity(), background = backgroundLane();
+  const budget = capacity({ critical: { snapshot: SNAPSHOT_MS, settle: SETTLE_MS } }), background = backgroundLane();
   const pace = paceCache((now) => scorePace(backgroundEnv, now));
   const commit = commitOf();
   // THE SHADOW GOES ON WHERE IT STOPPED: its cursor is kept in its finding.

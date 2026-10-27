@@ -32,7 +32,7 @@ export function backgroundLane() {
   };
 }
 
-export function capacity({ env = process.env, sample = resources } = {}) {
+export function capacity({ env = process.env, sample = resources, critical = {} } = {}) {
   const duty = bounded(Number(env.WFSIM_BACKGROUND_DUTY_PCT), 1, 25, 5) / 100;
   const ceiling = bounded(Number(env.WFSIM_BACKGROUND_MAX_MS), 60_000, 3_600_000, 3_600_000);
   const fixed = env.WFSIM_BACKGROUND_AUTO !== "0";
@@ -50,7 +50,11 @@ export function capacity({ env = process.env, sample = resources } = {}) {
       const job = jobs.get(name);
       if (!job) return base;
       const pressure = Math.max(host.io_pct / 100, host.memory_pct / 100,
-        Math.max(0, host.load / Math.max(.1, host.cpus) - 1));
+        Math.max(0, host.load / Math.max(.1, host.cpus) - 1),
+        ...Object.entries(critical).map(([name, ms]) => {
+          const c = jobs.get(name);
+          return c ? Math.max(c.failures ? 1 : 0, c.ms / ms - 1) : 0;
+        }));
       return Math.round(Math.max(base, Math.min(ceiling,
         job.ms / duty * (1 + pressure) * 2 ** Math.min(3, job.failures))));
     },

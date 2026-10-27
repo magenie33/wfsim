@@ -27,6 +27,9 @@ assert.equal(slow.interval("costs", 600_000), 3_600_000);
 const manual = capacity({ env: { WFSIM_BACKGROUND_AUTO: "0" }, sample: () => host });
 manual.observe("costs", 1e9, true);
 assert.equal(manual.interval("costs", 600_000), 600_000);
+const delayed = capacity({ env: {}, sample: () => host, critical: { settle: 2000 } });
+delayed.observe("costs", 20_000); delayed.observe("settle", 10_000);
+assert.ok(delayed.interval("costs", 600_000) > fast.interval("costs", 600_000));
 console.log("ok: host pressure, bounded backoff, gradual recovery and operator override");
 
 let calls = 0, fail = false;
