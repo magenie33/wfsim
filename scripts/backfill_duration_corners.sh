@@ -29,8 +29,8 @@ INTAKE="${INTAKE:-$HERE/../target/release/wfsim-intake}"
 
 # ---- the two filters ------------------------------------------------------
 #
-# THE LIBRARY ROWS TO SEND BACK, as inbox rows. `$2` is the instant they are
-# taken at, which becomes each new build's `at`.
+# THE LIBRARY ROWS TO SEND BACK, as inbox rows. Only the UTC day of `$2`
+# becomes each new build's `at`, as in the anonymous library.
 #
 # ONE ROW A SHAPE, NOT ONE A STORED CORNER: `library_build` ignores the rolls
 # and puts every card at max rank, so records differing only there come out as
@@ -44,7 +44,7 @@ again_rows() {
         | tostring) as $shape
       | if .seen[$shape] then .out = null else .seen[$shape] = true | .out = $r end;
       .out // empty)
-    | {id: ("library:" + .k), at: $at, record: .v}' "$1"
+    | {id: ("library:" + .k), at: $at[0:10], record: .v}' "$1"
 }
 
 # INTAKE ON EVERY CORE: each record is derived alone, so shards of the rows are
@@ -97,7 +97,8 @@ run() {
     return 1
   fi
   local work; work=$(mktemp -d)
-  trap 'rm -rf "$work"' EXIT
+  local cleanup; printf -v cleanup 'rm -rf -- %q' "$work"
+  trap "$cleanup" EXIT
   bash "$HERE/fetch_library.sh" "$work/library.json"
   again_rows "$work/library.json.ndjson" "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)" > "$work/again.ndjson"
   echo "backfill: $(grep -c . < "$work/again.ndjson" || true) shape(s) go back through intake"
@@ -142,8 +143,8 @@ self_test() {
   [ "$(ids again.ndjson)" = "library:lo library:r3 " ] \
     && say ok "each status duration malus shape goes back through intake once" \
     || say FAIL "sent back: $(ids again.ndjson)"
-  jq -e -s 'all(.at == "2026-10-23T00:00:00.000Z" and (.record | type) == "object")' again.ndjson >/dev/null \
-    && say ok "...as inbox rows, the record whole and the instant given" \
+  jq -e -s 'all(.at == "2026-10-23" and (.record | type) == "object")' again.ndjson >/dev/null \
+    && say ok "...as inbox rows, with the record whole and only its UTC day" \
     || say FAIL "$(head -1 again.ndjson)"
 
   # What intake would make of them: every corner, some already held.
@@ -174,6 +175,21 @@ self_test() {
     say ok "a large dry run prints twenty sample corners and succeeds"
   else
     say FAIL "the dry-run sample failed or printed the wrong number of corners"
+  fi
+
+  mkdir -p "$DIR/stub" "$DIR/bin"
+  printf '%s\n' '#!/usr/bin/env bash' 'cp "$BACKFILL_TEST_LIBRARY" "$1.ndjson"' > "$DIR/stub/fetch_library.sh"
+  printf '%s\n' '#!/usr/bin/env bash' 'exit 0' > "$DIR/bin/intake"
+  chmod +x "$DIR/bin/intake"
+  if (
+    HERE="$DIR/stub" INTAKE="$DIR/bin/intake" PG_URL=stub DRY_RUN=1
+    export BACKFILL_TEST_LIBRARY="$DIR/library.ndjson"
+    intake_sharded() { cp "$DIR/corners.ndjson" "$2"; }
+    run
+  ) > "$DIR/dry.log" 2>&1; then
+    say ok "a complete dry run returns successfully after its cleanup"
+  else
+    say FAIL "a complete dry run failed: $(tail -3 "$DIR/dry.log")"
   fi
 
   echo "backfill_duration_corners: $ok ok, $bad failed"
