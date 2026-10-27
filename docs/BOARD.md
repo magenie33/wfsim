@@ -2435,12 +2435,11 @@ row in every cell, so each rung multiplies the rows owed by the rulers it
 spans, and a new rung starts with every build unmeasured. A cell's row is never
 `new_build`'s: a new build is ranked first where it was always ranked, and the
 other scenes are a sweep's (`isLadderCell` in `worker/board_tasks.js`).
-Reconciliation asks at most `RECONCILE_ROWS_PER_RUN` missing rows per pass,
-including base rulers after a library backfill, and at most
-`SCENE_ROWS_PER_RUN` cell rows within that total. Rows outside the caps remain
-missing for the next pass, one weapon finished before the next and popular
-weapons first (`scripts/scene_rows.py`). A scene's leading build need not be
-the base's. Named submissions and explicit rescores keep their own intake.
+Its first pass is asked at a pace, at most `SCENE_ROWS_PER_RUN` cell rows a
+reconciliation, one weapon finished before the next and the most popular
+first (`scripts/scene_rows.py`) — a scene's leading build need not be the
+base's — so a
+new rung never floods the factory's open questions.
 
 **A SCENE'S ROWS LIVE IN ITS OWN DIRECTORY**, `site/board/<cell_dir>/` (a
 weapon file and an `index.json`, as at the top) and the live board's
