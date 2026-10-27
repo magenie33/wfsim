@@ -113,6 +113,10 @@ whole-scope search tests, and the webapi exhaustive accuracy test. Their filters
 partition the suite; no assertion or test is removed. `fail-fast: false` retains
 the other groups' diagnostics when one fails.
 
+System dependency installation is noninteractive and has bounded waits. A
+stalled setup fails its job and can be retried on the same candidate; it does
+not supply successful validation or release evidence.
+
 The test profile optimizes dependencies as well as workspace code, retaining
 debug assertions and overflow checks. Search tests repeatedly parse and exchange
 builds through serde and YAML. This profile changes test execution only; release

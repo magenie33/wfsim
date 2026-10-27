@@ -25,8 +25,8 @@ runs:
         set -euo pipefail
         llvm=$(ls -d /usr/lib/llvm-* | sort -V | tail -1); v=${llvm##*-}
         [ "$v" -ge 19 ] || { echo "::error::newest clang on this runner is $v; cargo xwin needs 19"; exit 1; }
-        sudo apt-get update -qq
-        sudo apt-get install -y -qq libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev           fonts-noto-cjk "lld-$v" > /dev/null
+        sudo timeout 180s apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+        sudo env DEBIAN_FRONTEND=noninteractive timeout 300s apt-get install -y -qq libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev           fonts-noto-cjk "lld-$v" > /dev/null
         test -f /usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc
         echo "$llvm/bin" >> "$GITHUB_PATH"
     - uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
