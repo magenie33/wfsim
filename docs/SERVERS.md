@@ -50,8 +50,9 @@ after changes to its worker or scripts; `--verify` checks its commit and heartbe
 ## Factory capacity and deployment
 
 The heartbeat, fair table and settlement use a separate database pool from
-statistics and maintenance. Background jobs run one at a time. The home tally
-and demand picture share one rolling score read for a minute; scores remain
+statistics and maintenance. Background jobs run one at a time and use
+per-statement and idle-transaction timeouts. The home tally and demand picture
+share one rolling score read for a minute; scores remain
 the source, and a failed read is retried rather than cached as zero.
 
 `scripts/factory_capacity.mjs` reads CPU availability, including cgroup CPU

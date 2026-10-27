@@ -60,7 +60,8 @@ export async function openEnv(env = process.env, connect = postgres) {
   const db = (url, background = false) => {
     // PG_SOCKET (a directory) reaches Postgres over its unix socket, as the
     // unit does: peer authentication, no password on the machine.
-    const connection = { ...CONNECTION, ...(background ? { transaction_timeout: 120_000 } : {}),
+    // Background batches can contain several bounded statements; the connection stays alive between them.
+    const connection = { ...CONNECTION, ...(background ? { transaction_timeout: 0 } : {}),
       application_name: background ? "wfsim-factoryd-background" : CONNECTION.application_name };
     const c = postgresClient(connect(url, { ...POSTGRES_OPTIONS, max: background ? 1 : 2, idle_timeout: 0, connection, onnotice: () => {},
       ...(env.PG_SOCKET ? { host: env.PG_SOCKET } : {}) }));
