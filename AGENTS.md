@@ -40,7 +40,7 @@ fails **silently**. Everything else is routed to `docs/` (§"Read first").
 | match CI | `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` |
 | the cheap checks | `node scripts/check_page_bodies.mjs`, `check_comment_style.mjs` |
 | a page check | `WFSIM_BASE=http://127.0.0.1:<port> node scripts/check_<name>.mjs` |
-| CI on a branch | `gh workflow run ci.yml --ref <branch>` |
+| CI on a release candidate | `gh workflow run ci.yml --ref <branch>` |
 | engine cost | `cargo run --release --bin one_fight` (`-- save` first) |
 | optimizer accuracy | `cargo run --release --bin wfsim-truth -- pool=<ids>` |
 | are all channels on one release | `python scripts/ship.py --verify` |
@@ -50,9 +50,11 @@ fails **silently**. Everything else is routed to `docs/` (§"Read first").
 
 1. Commit on a branch: an all-lowercase subject, `area: what changed and why it
    is right`, no AI credit (`check_commit_trailers`).
-2. Run CI on the branch. Green, it is ready for `main`: whoever ships
-   (`private/agents`) rebases and pushes it, and the branch is deleted only
-   after that push lands.
+2. Run quick and affected checks; hand off a finished feature as **ready for
+   integration**, with results and pending checks. Do not run full CI for each
+   subfeature. The merger batches ready work and validates the final candidate
+   before pushing `main`; separate branch results do not validate the combination
+   (`docs/CI.md`). Keep branches until their main push lands.
 3. `ship.yml` builds `site/` and publishes it with the desktop channel, the MCP
    server and the bot as one. An engine change also builds the mac engine
    first. Wait in the background, and confirm the live `app.<hash>.js`.
@@ -100,6 +102,7 @@ Read the row for what you are about to touch before the code, not after.
 | the update channel, mirrors, shells | `docs/DISTRIBUTION.md` |
 | the desktop client | `docs/DESKTOP.md` |
 | setup, profiling, sharing the checkout | `docs/DEVELOPMENT.md` |
+| validation scope, release batches, CI evidence | `docs/CI.md` |
 | cross-tool tasks, handoffs, resource reservations | `docs/COORDINATION.md` |
 | a server — what runs where, moving a service | `docs/SERVERS.md` |
 | how usage is counted | `docs/ANALYTICS.md` |

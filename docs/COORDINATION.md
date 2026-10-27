@@ -109,8 +109,13 @@ Handoff and completion require these nonempty string fields:
 Put the JSON in a shell variable and pass it as `--details`; use your shell's
 normal quoting, or pass a UTF-8 JSON file with `--details-file <path>` instead.
 These are reports, not independently verified assertions.
-Include CI links and blockers where relevant. Completing a task does not
-mean its code has shipped.
+Use the validation stages in [`CI.md`](CI.md). A finished feature with passing
+affected checks is ready for integration, even when release CI has not run.
+State that stage in `summary`; put the exact check commands/results and any
+failed, cancelled or unrun CI in `validation`. Use `next` to name the integration
+or release work still required. Only a candidate validated on its final commit
+is ready for main. The CLI's handoff state transfers ownership; it is not a
+release approval. Completing a task does not mean its code has shipped.
 
 Handoff releases task ownership, allowing another vendor's session to claim
 it with the same details. Completion marks it done and releases ownership.

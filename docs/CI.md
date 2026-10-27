@@ -29,10 +29,42 @@ Scripts and new paths are full CI until their dependencies are explicitly known.
 Generated snapshots never supply a release build. `site/` remains generated and
 must not be committed by hand.
 
-## Running and batching
+## Development and release batches
 
-Run quick checks and tests for the changed behavior locally, then push the
-branch. CI owns the full site build. To validate a branch:
+Development commits and releases have separate validation stages. Work stays
+on task branches while features are developed; a commit or backup push does
+not require full CI. Formal releases normally collect ready features into
+one or two batches a day; the release owner chooses when a batch closes.
+
+| Stage | Required evidence | Handoff status |
+| --- | --- | --- |
+| Development | Quick checks and tests for the changed behavior; inspect affected callers | In progress |
+| Finished feature | Affected checks pass; exact commit, commands, limitations and pending release checks recorded | Ready for integration |
+| Release candidate | All included changes combined on an integration branch; required CI succeeds on that final commit | Ready for main |
+| Publication | Confirmed manifest, same validated commit, serial main push and live verification | Live after verification |
+
+Run the cheap checks and relevant Rust tests before handing off; browser
+checks use the dev server. Mechanics still require their measurement/golden
+coverage, and search changes still require `wfsim-truth`; batching does not
+waive domain checks. CI owns the full site build.
+
+Do not dispatch full CI after every subfeature or small follow-up fix. Finish
+local checks and review first. Early branch CI is appropriate when a specific
+risk needs the CI environment, or when explicitly requested; record the reason
+and outcome. Pull requests retain their required CI. Report an existing CI
+failure or cancellation explicitly; pending release checks must not conceal a
+known defect. Work with unresolved relevant failures is blocked for integration.
+
+The merger takes only explicitly handed-off, ready features, leaving unfinished
+work on its task branch. A feature handoff does not require its own full CI run.
+Before moving the batch to main, run CI on the integration branch's final
+commit. The path selection above chooses the required jobs; a batch containing
+core or unknown changes runs full CI. Separate branches' green results never
+prove that their combination works. Fix failures and validate the resulting
+candidate before publishing. The manifest records included commits, engine
+changes, rescore decisions and deployment follow-up.
+
+To validate the release candidate:
 
 ```sh
 gh workflow run ci.yml --ref <branch>
@@ -43,12 +75,12 @@ gh workflow run ci.yml --ref <branch> -f full=true
 does the same on main. Scheduled coverage supplements the release checks; core
 changes still require full validation before release.
 
-Combine ready changes onto one integration branch and validate that final
-commit. A rebase, squash or cherry-pick changes the SHA and requires validation
-of the new combination. A fast-forward of an already validated SHA can reuse
-that commit's evidence when it covers the selected jobs. Never infer integration success from separate
-branches' results. A newer branch run cancels the previous run for that branch;
-main runs and shipping are not cancelled in progress.
+A rebase, squash, cherry-pick or added fix changes the SHA and requires
+validation of the resulting candidate. Freeze the candidate after it passes;
+a fast-forward of that exact SHA can reuse its evidence when it covers the
+selected jobs. Do not request a second full run just because the same validated
+commit moves to main. A newer branch run cancels the previous run for that
+branch; main runs and shipping are not cancelled in progress.
 
 ## Required gate and reuse
 

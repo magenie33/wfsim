@@ -86,6 +86,10 @@ CI selection, forced full runs, batching and reuse of a validated commit are in
 [`CI.md`](CI.md). Quick checks run on every change; core and unknown changes
 require full validation.
 
+Feature work uses affected local checks and an explicit ready-for-integration
+handoff. Finish those checks and review before dispatching CI. The merger
+validates the final release batch; full CI is not a per-subfeature requirement.
+
 From the repo root (prefix with `mise exec --` if mise is not shell-activated):
 
 ```sh
