@@ -86,6 +86,7 @@ factory_ask() {
   # THROUGH A FILE: a thousand rows near the kernel's 128 KiB limit on one argument.
   [ -n "$ASK_IN" ] || ASK_IN=$(mktemp)
   printf '%s' "$1" > "$ASK_IN"
+  : > "$ASK_OUT"
   ASK_CODE=$(curl -s --connect-timeout 15 --max-time 180 -o "$ASK_OUT" -w '%{http_code}' -X POST \
     -H "Authorization: Bearer ${FACTORY_TOKEN:-x}" \
     -H "content-type: application/json" \
@@ -99,16 +100,41 @@ factory_ask() {
 # scorer measures it: a run stopped between the queue's write and the ask
 # leaves exactly that. The worker reads the queue a chunk a call, from where
 # the last call stopped (`after`), until it reaches the end.
+backfill_error() {
+  local reason="$1" round="$2" asked="$3" after="$4" body
+  {
+    echo "::error::queue: backfill incomplete: $reason [HTTP $ASK_CODE]; round=$round asked=$asked after=$after"
+    body=$(jq -Rs --arg secret "${FACTORY_TOKEN:-}" '
+      if $secret == "" then . else split($secret) | join("[redacted]") end
+      | .[0:500]' < "$ASK_OUT") || body='"unreadable response"'
+    printf 'queue: response %s\n' "$body"
+  } >&2
+  return 1
+}
+
 backfill() {
   local asked=0 n i after='["","",""]'
   for i in $(seq 1 500); do
-    factory_ask "{\"backfill\":true,\"after\":$after}" || { echo "::warning::queue: the backfill ask was refused [HTTP $ASK_CODE]"; return 0; }
-    n=$(jq -r '.asked // 0' < "$ASK_OUT")
+    factory_ask "{\"backfill\":true,\"after\":$after}" \
+      || { backfill_error "ask refused" "$i" "$asked" "$after"; return 1; }
+    if ! jq -se --argjson after "$after" '
+      length == 1 and (.[0] | type == "object" and .ok == true
+      and (.asked | type == "number" and . >= 0 and floor == .)
+      and has("left") and (.left == null or (.left | type == "number" and . >= 0 and floor == .))
+      and (.after | type == "array" and length == 3 and all(.[]; type == "string"))
+      and (.left == 0 or .after > $after))' < "$ASK_OUT" > /dev/null 2>&1; then
+      backfill_error "invalid reply" "$i" "$asked" "$after"
+      return 1
+    fi
+    n=$(jq -r '.asked' < "$ASK_OUT")
     asked=$((asked + n))
-    [ "$(jq -r '.left' < "$ASK_OUT")" = "0" ] && break
+    if [ "$(jq -r '.left' < "$ASK_OUT")" = "0" ]; then
+      echo "queue: $asked owed row(s) nobody had asked for, now asked"
+      return 0
+    fi
     after=$(jq -c '.after' < "$ASK_OUT")
   done
-  echo "queue: $asked owed row(s) nobody had asked for, now asked"
+  backfill_error "round limit reached" "$i" "$asked" "$after"
 }
 
 # A NEW BUILD'S ROWS ARE ASKED FOR ONLY WHERE NO SCORE IS: a resubmission the
@@ -277,6 +303,36 @@ for a in "$@"; do
 done
 case "$body" in @*) body=$(cat "${body#@}") ;; esac
 printf '%s\n' "$body" >> "$PWD/sent.log"
+case "${BACKFILL_TEST_MODE:-}" in
+  http500)
+    printf '{"error":"backfill unavailable %s"}' "${FACTORY_TOKEN:-}" > "$out"
+    printf '500'; exit 0 ;;
+  invalid)
+    printf 'not json' > "$out"
+    printf '200'; exit 0 ;;
+  multiple)
+    printf '%s\n' '{"ok":true,"asked":0,"left":0,"after":["","",""]}' '{"ok":true,"asked":0,"left":0,"after":["","",""]}' > "$out"
+    printf '200'; exit 0 ;;
+  wrong-count)
+    printf '{"ok":true,"asked":-1,"left":0,"after":["","",""]}' > "$out"
+    printf '200'; exit 0 ;;
+  stalled)
+    printf '{"ok":true,"asked":0,"left":null,"after":["","",""]}' > "$out"
+    printf '200'; exit 0 ;;
+  unfinished)
+    jq -c '{ok:true,asked:1,left:null,after:[("x" + .after[0]),"r","m"]}' <<< "$body" > "$out"
+    printf '200'; exit 0 ;;
+  paged)
+    if jq -e '.after == ["","",""]' <<< "$body" > /dev/null; then
+      printf '{"ok":true,"asked":3,"left":null,"after":["h","r","m"]}' > "$out"
+    else
+      printf '{"ok":true,"asked":2,"left":0,"after":["z","r","m"]}' > "$out"
+    fi
+    printf '200'; exit 0 ;;
+  empty)
+    printf '{"ok":true,"asked":0,"left":0,"after":["","",""]}' > "$out"
+    printf '200'; exit 0 ;;
+esac
 printf '{"result":[{"results":[],"success":true}],"success":true}' > "$out"
 printf '200'
 ASK
@@ -310,6 +366,53 @@ OK
   order=$(grep -o 'INTO queue\|"rows":' sent.log | tr '\n' ' ')
   [ "$order" = 'INTO queue "rows": INTO queue "rows": ' ] \
     && say ok "...a chunk at a time, each asked before the next is written" || say FAIL "order: $order"
+
+  local mode
+  : > sent.log
+  if FACTORY_TOKEN=selftest-secret BACKFILL_TEST_MODE=http500 backfill > out.txt 2> err.txt; then
+    say FAIL "a refused backfill passed"
+  else
+    say ok "a refused backfill fails the run"
+  fi
+  grep -q 'HTTP 500.*round=1 asked=0 after=\["","",""\]' err.txt \
+    && grep -q 'backfill unavailable.*redacted' err.txt \
+    && ! grep -q 'selftest-secret' err.txt \
+    && [ ! -s out.txt ] \
+    && say ok "...and stderr gives the status, cursor and progress with the token redacted" \
+    || say FAIL "backfill diagnosis: $(cat err.txt)"
+  for mode in invalid multiple wrong-count stalled; do
+    if BACKFILL_TEST_MODE="$mode" backfill > out.txt 2> err.txt; then
+      say FAIL "invalid backfill $mode passed"
+    else
+      grep -q 'invalid reply' err.txt && [ ! -s out.txt ] \
+        && say ok "invalid backfill $mode fails without claiming completion" \
+        || say FAIL "invalid reply diagnosis: $(cat err.txt)"
+    fi
+  done
+  : > sent.log
+  if BACKFILL_TEST_MODE=paged backfill > out.txt 2> err.txt; then
+    [ "$(wc -l < sent.log | tr -d ' ')" = "2" ] \
+      && grep -q '5 owed row(s)' out.txt && [ ! -s err.txt ] \
+      && say ok "backfill follows the cursor and reports the total only at the end" \
+      || say FAIL "paged reply: $(cat out.txt err.txt)"
+  else
+    say FAIL "paged backfill failed: $(cat err.txt)"
+  fi
+  BACKFILL_TEST_MODE=empty backfill > out.txt 2> err.txt \
+    && grep -q '0 owed row(s)' out.txt \
+    && say ok "an empty completed backfill succeeds" \
+    || say FAIL "empty reply: $(cat out.txt err.txt)"
+  : > sent.log
+  if BACKFILL_TEST_MODE=unfinished backfill > out.txt 2> err.txt; then
+    say FAIL "an unfinished backfill claimed completion"
+  else
+    [ "$(wc -l < sent.log | tr -d ' ')" = "500" ] \
+      && grep -q 'round limit reached.*round=500 asked=500 after=' err.txt \
+      && [ ! -s out.txt ] \
+      && [ "$(wc -c < err.txt | tr -d ' ')" -lt 1300 ] \
+      && say ok "the existing round limit fails with bounded diagnostics when work remains" \
+      || say FAIL "unfinished backfill diagnosis: $(head -c 1300 err.txt)"
+  fi
 
   cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
