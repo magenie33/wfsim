@@ -1,0 +1,240 @@
+{
+  "base": "fb4f44243e64297d380ee49f83e2011082aebb659cd19f4f04990f41339e5f27",
+  "images": [
+    {
+      "file": "AbilityDurationMod.jpg",
+      "bytes": 13487,
+      "sha256": "834246ef6adcaa790df8e041cbdb0c5374427fbf5ce4131d627316555e77f663"
+    },
+    {
+      "file": "ArchwingDamageAfterReloadMod.jpg",
+      "bytes": 24474,
+      "sha256": "7019d7bbbaff1dfb95b136499dfc70643adf8cbbee66ce574205f0c9058aa06d"
+    },
+    {
+      "file": "ArchwingWeaponFreezeDamageModRifle.jpg",
+      "bytes": 15047,
+      "sha256": "7e249daa66bbc6a175b2cbca82aaec0e477f23b24d1f254b98316d8dfab765d8"
+    },
+    {
+      "file": "AvatarPickupBonusMod.jpg",
+      "bytes": 13007,
+      "sha256": "7b7350f437b698eacfe065d4ed96de4e9ecb7eb7e72f27f80ab742774a96620e"
+    },
+    {
+      "file": "AvatarQuickThinkingMod.jpg",
+      "bytes": 16877,
+      "sha256": "ae0b1b3360d2877eb987cc6314d970ee1d5223deed132e6e51db75e1f45c4015"
+    },
+    {
+      "file": "AvatarSureFootedMod.jpg",
+      "bytes": 18152,
+      "sha256": "e0a70a05d57ac4cc946354b8e85e41c3890550127ff916531dfa98c844a99f03"
+    },
+    {
+      "file": "BerserkerHysteriaAbility.png",
+      "bytes": 115880,
+      "sha256": "7a7c5cc9431750a9a7d39697e1d942ade2c6db6b12fb1e73ad4b44045861256f"
+    },
+    {
+      "file": "CitrinePrime.png",
+      "bytes": 102617,
+      "sha256": "96e8c3132ec7e130dd496894f412e514fa70a02a6524f47bfcb94a74c4cf3f6b"
+    },
+    {
+      "file": "CorufellPrime.png",
+      "bytes": 25979,
+      "sha256": "9314c029aa8825b2a4974cd930f7962df04b8cfbed0550559535a1ef89f9c60f"
+    },
+    {
+      "file": "ExaltedAWScytheWeapon.png",
+      "bytes": 31624,
+      "sha256": "66f0f00bd48f6033ab97e5495d5b9ddf44181884d112de09f2f235e6f8f0a92c"
+    },
+    {
+      "file": "Hakchum(xWhite).png",
+      "bytes": 35082,
+      "sha256": "e4b501d711360cc87f29f0893f358d81c4c81083138c432cf8fe63176de7cfee"
+    },
+    {
+      "file": "Naraemagi(xWhite).png",
+      "bytes": 40497,
+      "sha256": "3971c883d1ec76f0305e6992472d54ae0deb94d3ca48412f2211a9c6ae5b9808"
+    },
+    {
+      "file": "Narin.png",
+      "bytes": 80229,
+      "sha256": "71b86d4020eaaa9d1040eaeb95baaccf1cce98a6ed6c7c79ce593e043f512e16"
+    },
+    {
+      "file": "Neote(xWhite).png",
+      "bytes": 23483,
+      "sha256": "3d235d68e2c249acef34503e6b67eebe14fabdfc28241c5e84c77b7d242e5a9c"
+    },
+    {
+      "file": "Nurinarim(xWhite).png",
+      "bytes": 65535,
+      "sha256": "0a789df6fb769537eeba3ae5255d2579c7b96d779f8c6f3191afc46cff7bf996"
+    },
+    {
+      "file": "OrokinImageA.jpg",
+      "bytes": 30025,
+      "sha256": "7151f6f89d202bd587bb0e5c2840c6cb1fbc6dea7f925801660c9d95ac720c4f"
+    },
+    {
+      "file": "OrokinImageB.jpg",
+      "bytes": 27017,
+      "sha256": "aceb4bfd54bfbe8741eb32d68f2805867d1bcafdf3718bd178750527853cab98"
+    },
+    {
+      "file": "OrokinImageC.jpg",
+      "bytes": 29200,
+      "sha256": "8fdf5982673e891603259dadcc2ecb756caddde2671f5eaa70d966f1bf2c9f7e"
+    },
+    {
+      "file": "OrokinImageD.jpg",
+      "bytes": 19430,
+      "sha256": "b8c5a9f2cc192c58430ddba59aaa57827ae3ecf33f5f4c69f0064c45bbe8dfc9"
+    },
+    {
+      "file": "OrokinImageE.jpg",
+      "bytes": 16568,
+      "sha256": "02b9a72885a264eadc6019c1a515cb1cd5643859849cd3a844c5ae25a8ef027d"
+    },
+    {
+      "file": "OrokinImageF.jpg",
+      "bytes": 20253,
+      "sha256": "26307a7fbdd1f5fe8bf015e87df9b691e11cac2256bb1b38ffc15ad5f6f5f8eb"
+    },
+    {
+      "file": "OrokinImageG.jpg",
+      "bytes": 28368,
+      "sha256": "4a56218fffc01672ae80d7676256c7590099bc901e76f664d95c5b38b15ff311"
+    },
+    {
+      "file": "OrokinImageH.jpg",
+      "bytes": 15667,
+      "sha256": "cabba27fb723e1f033c859ac6cbb81705b1ad250cda1d910608a100e43377c95"
+    },
+    {
+      "file": "OrokinImageI.jpg",
+      "bytes": 17162,
+      "sha256": "905b9c6d5e3193b639bbd0f75ba0a4ccc20ea070e0017a56880f1c866ccdf166"
+    },
+    {
+      "file": "OrokinImageJ.jpg",
+      "bytes": 17252,
+      "sha256": "014084aaaef992f2bf8e0d50e863d9f32b31948fa24ff57d8e37c719fe8313e2"
+    },
+    {
+      "file": "OrokinImageK.jpg",
+      "bytes": 17036,
+      "sha256": "5502707fe3a0f91b77819c360b66e60c253c811c379a9859bc1a3e41747b8772"
+    },
+    {
+      "file": "OrokinImageL.jpg",
+      "bytes": 26934,
+      "sha256": "a4bfc1c41ff4963dd926c606cbf62dde9ac12f5acfbcfd4fa2c23ce797cc05d2"
+    },
+    {
+      "file": "OrokinImageM.jpg",
+      "bytes": 28473,
+      "sha256": "2ac828c755d776f057b734195f747d5f7aaf29741476588086d7e493c1e1bb28"
+    },
+    {
+      "file": "OrokinImageN.jpg",
+      "bytes": 22830,
+      "sha256": "b47c7bf394a2b341da78bda34546c17253f7bf9de26d9b774b05aa8d7799243e"
+    },
+    {
+      "file": "OrokinImageO.jpg",
+      "bytes": 23625,
+      "sha256": "a0658b8cc935a7cf66fab4079feeff3305db519d2b79337d4b30bce1c347ad7e"
+    },
+    {
+      "file": "OrokinImageP.jpg",
+      "bytes": 25455,
+      "sha256": "36b080892cb3f77d11b2ba38897f39a69ab17f5af2a91cd144a904fa3e6c8d99"
+    },
+    {
+      "file": "OrokinImageQ.jpg",
+      "bytes": 27847,
+      "sha256": "46b73f316c7fc8900fb760755e2f1cdae35e23d3739a6a10831d8e44465390d0"
+    },
+    {
+      "file": "OrokinImageR.jpg",
+      "bytes": 28281,
+      "sha256": "39463a66bd3d65c5bc311b75e6624c2212a18dc484d7c736e60b535492b538c2"
+    },
+    {
+      "file": "OrokinImageT.jpg",
+      "bytes": 22727,
+      "sha256": "a701799d0333a0d3f45294a03dd8766c499939d0f6e65e3e325b27ad5b824e97"
+    },
+    {
+      "file": "OrokinImageU.jpg",
+      "bytes": 24631,
+      "sha256": "c5cb0586e1686618b0795f84364822efd38495008fb0ace29b3eb4629e5fc770"
+    },
+    {
+      "file": "PowerMaxMod.jpg",
+      "bytes": 13299,
+      "sha256": "ddfea6fc1774257fe43bc460a0f674c38f4bcd30129562dd44edceda7ba7f9ae"
+    },
+    {
+      "file": "RifleChargedChamberMod.jpg",
+      "bytes": 23125,
+      "sha256": "5a91f0fe264def924cd9a22236ef5380f378a4e0a450f1e8f5e1c9a0bdd77964"
+    },
+    {
+      "file": "ShieldMaxMod.jpg",
+      "bytes": 19889,
+      "sha256": "b3bc96ce6430b446ac07accf51238961897d5364fef6118fec5faaf167311d47"
+    },
+    {
+      "file": "SlideResistanceDecreaseMod.jpg",
+      "bytes": 18028,
+      "sha256": "e412774497182bcbd9b33df5ee8ec8247b01e33c26b425087a5479190d65ee69"
+    },
+    {
+      "file": "StaffCombo1a.png",
+      "bytes": 76405,
+      "sha256": "0f5a2d831c4da263e2ef0d6bd36cd72d3cc5ab8a7dd808bd7656f2c9387176c0"
+    },
+    {
+      "file": "SteflosPrime.png",
+      "bytes": 47173,
+      "sha256": "186c863dbc10bffc41a18d7e8eacc2720fca499810f9ae12660e3a229a7ab87e"
+    },
+    {
+      "file": "TitaniaLanternAugment.jpg",
+      "bytes": 16577,
+      "sha256": "99daf6b018f7b72083a7a8fcb14fa83dce881e4e199a8e02135dadf846f8c84c"
+    },
+    {
+      "file": "TitaniaSpellbindAugment.jpg",
+      "bytes": 25521,
+      "sha256": "09a87e4e9779f6b45e18c124e676484a7759823d850ad68a02fe963ce1351948"
+    },
+    {
+      "file": "TnoLotusPodShotgun.png",
+      "bytes": 72438,
+      "sha256": "f483fe00325d0927a7da74845b8e559cd1a8da34ca64c5291d4d0dad69c4298b"
+    },
+    {
+      "file": "Vigor.jpg",
+      "bytes": 17877,
+      "sha256": "f0858ab15e765d2dae5af064f306388ce1643b3c6c4b08f3a9eef593dd04c44d"
+    },
+    {
+      "file": "WeaponMeleeStatusChanceSPMod.jpg",
+      "bytes": 22097,
+      "sha256": "cc5878ca0d61199761a0b35aac9d02469b16746726fba60610e70f3239a53899"
+    },
+    {
+      "file": "WeaponProcTimeMeleeMod.jpg",
+      "bytes": 16566,
+      "sha256": "c99ded0192819fc347cb7084b53dea7c8a44f6d1d9f953c972f4269f3fe5cd20"
+    }
+  ]
+}
