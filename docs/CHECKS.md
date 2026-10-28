@@ -240,7 +240,9 @@ Simulator, Optimizer and Builder tabs in both directions; each slot also runs
 a real simulation through Run Simulation. The selected route and an already
 open jump menu keep the slot through route re-entry. Catchmoon also covers cold
 reloads, Back/Forward, sharing from the other slot and a reload stash carrying
-the secondary build under the old chamber URL.
+the secondary build under the old chamber URL. A delayed destination board holds
+the route open while the previous weapon's rows land; neither Kitgun slots nor
+unrelated weapons may be routed back by that arrival.
 
 ## `check_accounts`
 

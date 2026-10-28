@@ -501,6 +501,9 @@ let boardOffOrigin = location.hostname === new URL(LIVE_ORIGIN).hostname;
 /// already left must not redraw the one they are looking at.
 function boardRowsLanded(id) {
   if (!$("weapon") || $("weapon").value !== id) return;
+  const target = routeWeaponId();
+  // The next route owns the page while its board is still loading.
+  if (target && target !== id) return;
   try { initPresets(); renderPresetBar(); refreshPanel(); }
   catch (_) { /* nothing is showing it yet */ }
 }

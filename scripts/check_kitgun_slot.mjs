@@ -5,6 +5,31 @@ import { isDeepStrictEqual } from "node:util";
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, finish } = app;
 
+for (const [from, to] of [['catchmoon_primary', 'catchmoon_secondary'], ['arbucep', 'nikana_prime']]) {
+  const arrival = await evaluate(`(async () => {
+    nav(weaponPath(${JSON.stringify(from)}));
+    await route();
+    const load = loadWeaponBoard;
+    let release;
+    const waiting = new Promise(r => { release = r; });
+    loadWeaponBoard = async (id, ...args) => {
+      if (id === ${JSON.stringify(to)}) await waiting;
+      return load(id, ...args);
+    };
+    try {
+      history.pushState(null, '', weaponPath(${JSON.stringify(to)}) + '/optimizer');
+      const pending = route();
+      boardRowsLanded(${JSON.stringify(from)});
+      const kept = routeWeaponId() === ${JSON.stringify(to)};
+      release();
+      await pending;
+      return { kept, weapon: $('weapon').value, route: routeWeaponId() };
+    } finally { release(); loadWeaponBoard = load; }
+  })()`);
+  check(from + ' board arriving during navigation preserves the destination',
+    arrival.kept && arrival.weapon === to && arrival.route === to, JSON.stringify(arrival));
+}
+
 const chambers = await evaluate(`META.weapons.filter(w => w.assembly && w.slot === 'primary')
   .map(w => ({ id: w.id, chamber: w.assembly.chamber }))`);
 check('the catalog has Kitgun chambers to exercise', chambers.length > 0);
