@@ -64,7 +64,9 @@ const r = await evaluate(`(async () => {
   // they are about to override before they override it.
   out_afterTick = sim.wf_armor;
   await typeIn('wf_armor', 1500);
-  await sleep(1600);
+  // The panel resolves asynchronously; wait for its value before reading it.
+  const panelDue = Date.now() + 15000;
+  while (Date.now() < panelDue && !(/Bulwark/i.test(conds()) && /500/.test(conds()))) await sleep(100);
   const armorAfterTyping = sim.wf_armor;
   const after = conds();
   const floorLine = (document.querySelector('.wffloor') || {}).textContent || '';
