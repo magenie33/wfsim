@@ -701,11 +701,19 @@ diffable and auditable, and it carries deliberate overrides with their reasons
 (an Incarnon FORM shows its BASE weapon's image; the export hands some cards a
 sibling's texture, and those come from the wiki).
 
+Mod illustrations use DE's export only. `fetch_images.py::UNIQUE_NAMES` joins
+cards whose gameplay records have no texture to an exported family member;
+this changes only their art. The Pinnacle Pack Equilibrium uses the family's
+exported illustration. An explicit empty image preserves a card without DE
+art (Hysteria and Clashing Forest); clients draw no illustration and the site
+packager skips that entry. Wiki card frames and text are not mod illustrations.
+
 - **Completeness is enforced.** `every_data_entry_has_an_image` walks every
   weapon, mod and arcane in `data/` and names what is missing.
 - **One picture, one subject.** `no_two_weapons_share_an_image` and
   `no_two_mod_families_share_an_image` fail when two different weapons, or two
-  mod families, wear one file.
+  mod families, wear one file. DE's shared art for Charged Chamber and Primed
+  Chamber is an explicit exception; they can equip together.
 - **`scripts/gen_assets.py`** only ADDS what is missing, so the hand-written
   overrides survive. A new entry is named after DE's texture file, with as many
   folders in front as it takes for no different texture to wear the name

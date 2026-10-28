@@ -41,8 +41,14 @@ def internal_names():
     return out
 
 
-# Art whose id has no data file: the riven card the builder draws for any riven.
-UNIQUE_NAMES = {"riven": "/Lotus/Upgrades/Mods/Randomized/LotusRifleRandomModRare"}
+# Image-only joins: the riven has no data file; the other cards' gameplay
+# records lack textures, so their art comes from an exported family member.
+UNIQUE_NAMES = {
+    "riven": "/Lotus/Upgrades/Mods/Randomized/LotusRifleRandomModRare",
+    "equilibrium_pinnacle_pack": "/Lotus/Upgrades/Mods/Warframe/AvatarPickupBonusMod",
+    "maglev": "/Lotus/Upgrades/Mods/Warframe/Beginner/AvatarSlideBoostModBeginner",
+    "quick_thinking": "/Lotus/Upgrades/Mods/Warframe/Beginner/AvatarPowerToHealthOnDeathModBeginner",
+}
 
 
 def export_urls():

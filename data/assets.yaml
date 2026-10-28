@@ -2155,26 +2155,9 @@ weapons:
   zenistar_heavy_slam: Zenistar.png
   zenistar_slide: Zenistar.png
 mods:
-  # Hysteria's stance card is in neither the module nor DE's export; the ability
-  # page draws this file for it.
-  # Every riven uses DE's unveiled card `OmegaMod.png`
-  # (`/Lotus/Upgrades/Mods/Randomized/Lotus*RandomModRare`); visitor-made
-  # rivens have no per-riven asset, so `rivenMods` stamps this one.
-  # `wiki:` names the source; parentheses are only part of some file names.
-  # Assault-rifle-only pool. Rifle Ammo Mutation and its Primed
-  # version share one card art, which is DE's own doing.
-  # DE's export gives Primed Chamber the SAME texture as Charged Chamber
-  # (RifleChargedChamberMod.jpg), about a card that has looked different since
-  # 2013 — so the fetcher takes this one from the wiki, where the mod's own
-  # page links it. The other Primed cards under `wiki:` are the same case: the
-  # export hands them their base card's texture and the wiki has their own.
-  # THE MELEE POOL. A Primed card shares its ordinary twin's
-  # image, which is this file's own convention — `primed_cryo_rounds` and
-  # `cryo_rounds` have pointed at one file since the rifle pool landed.
-  # DE's export draws these two with a sibling's texture, and the WIKI holds
-  # their own under a different name — its file is named after the CARD rather
-  # than after DE's asset path. So the `wiki:` name here is the wiki's, which is
-  # what that prefix means: "the fetcher takes this from the wiki".
+  # Mod illustrations come from DE's Public Export. An empty value means no
+  # matching DE illustration is available (Hysteria and Clashing Forest).
+  # Every riven uses DE's unveiled card `OmegaMod.png`.
   accelerated_blast: ShotgunAcceleratedBlast.jpg
   accelerated_isotope: RadiationFireratePistolMod.jpg
   acid_shells: SobekNightwatchMod.jpg
@@ -2322,7 +2305,7 @@ mods:
   galvanized_chamber: RifleGalvanizedWeaponFireIterationsSPMod.jpg
   galvanized_crosshairs: CritChanceWhileAimingPistolSPMod.jpg
   galvanized_diffusion: PistolGalvanizedWeaponFireIterationsSPMod.jpg
-  galvanized_elementalist: wiki:GalvanizedElementalistMod.png
+  galvanized_elementalist: WeaponMeleeStatusChanceSPMod.jpg
   galvanized_hell: WeaponFireIterationsSPMod.jpg
   galvanized_reflex: WeaponHeavyAttackEfficiencySPMod.jpg
   galvanized_savvy: WeaponStatusChanceSPMod.jpg
@@ -2360,7 +2343,7 @@ mods:
   hush: RifleSilencerMod.jpg
   hydraulic_crosshairs: PistolCritChanceWhileAiming.jpg
   hypothermic_shell: ArchwingEventColdStatusRifleMod.jpg
-  hysteria: "wiki:HysteriaStanceMod.png"
+  hysteria: ""
   ice_storm: PistolIceStormMod.jpg
   incendiary_coat: ShotgunFireDamageMod.jpg
   infected_clip: PoisonDamageRifleMod.jpg
@@ -2375,7 +2358,7 @@ mods:
   kinetic_ricochet: TetraCorpusArenaMod.jpg
   laser_sight: CritChanceWhileAiming.jpg
   lasting_purity: Vulkar.jpg
-  lasting_sting: wiki:LastingStingMod.png
+  lasting_sting: WeaponProcTimeMeleeMod.jpg
   leaded_gas: NightwaveLasSilencedPistolAugmentMod.jpg
   lethal_momentum: WeaponProjectileSpeedPistolMod.jpg
   lethal_torrent: Grinder.jpg
@@ -2448,7 +2431,7 @@ mods:
   primed_bane_of_infested: RifleDamageInfested.jpg
   primed_bane_of_orokin: RifleDamageCorrupted.jpg
   primed_bane_of_the_murmur: WeaponFactionDamageMurmurs.jpg
-  primed_chamber: wiki:PrimedChamberMod.png
+  primed_chamber: RifleChargedChamberMod.jpg
   primed_charged_shell: ShotgunElectricityDamageMod.jpg
   primed_chilling_grasp: ShotgunFreezeDamageMod.jpg
   primed_cleanse_corpus: ShotgunDamageCorpus.jpg
@@ -2478,7 +2461,7 @@ mods:
   primed_pistol_ammo_mutation: PistolAmmoMutatorMod.jpg
   primed_pistol_gambit: PistolCritChanceMod.jpg
   primed_point_blank: ShotgunDamageAmountMod.jpg
-  primed_polar_magazine: wiki:PrimedPolarMagazineMod.png
+  primed_polar_magazine: ArchwingWeaponFreezeDamageModRifle.jpg
   primed_pressure_point: MeleeDamageMod.jpg
   primed_quickdraw: PistolReloadSpeedMod.jpg
   primed_ravage: ShotgunCritDamageMod.jpg
@@ -2652,8 +2635,7 @@ mods:
   burning_wasp: WhipCombo1a.jpg
   butchers_revelry: SawBladeCmbOne.jpg
   carving_mantis: DualSwordCmbThree.jpg
-  # Not in DE's export at all, so the card art is the wiki's.
-  clashing_forest: wiki:ClashingForestMod.png
+  clashing_forest: ""
   cleaving_whirlwind: AxeCombo2a.jpg
   coiling_viper: WhipCombo2b.jpg
   combo_fury: WeaponGlaiveOnKillBuffSecondary.jpg
@@ -2939,7 +2921,7 @@ warframe_mods:
   balefire_surge: HildrynBalefireAugment.jpg
   ballistic_bullseye: MesaBallisticBatteryAugment.jpg
   battering_maneuver: ImpactParkourTwoMod.jpg
-  beguiling_lantern: wiki:BeguilingLanternMod.png
+  beguiling_lantern: TitaniaLanternAugment.jpg
   blazing_pillage: HildrynPillageAugment.jpg
   blending_talons: GarudaSeekingTalonsAugment.jpg
   blind_rage: CorruptedPowerForEfficiencyMod.jpg
@@ -2996,7 +2978,7 @@ warframe_mods:
   enraged: ValkyrHysteriaTwoAugment.jpg
   enveloping_cloud: MonkeyCloudWalkerAugment.jpg
   equilibrium: AvatarPickupBonusMod.jpg
-  equilibrium_pinnacle_pack: wiki:PinnaclePackEquilibriumMod.png
+  equilibrium_pinnacle_pack: AvatarPickupBonusMod.jpg
   escape_velocity: NovaWormholeAugments.jpg
   eternal_war: ValkyrWarcryAugment.jpg
   everlasting_ward: ChromaLuckAugment1.jpg
@@ -3062,7 +3044,7 @@ warframe_mods:
   lingering_transmutation: AlchemistTransmuteAugmentCard.jpg
   loyal_merulina: YareliBoardAugmentTwo.jpg
   mach_crash: GaussMachRushAugment.jpg
-  maglev: wiki:MaglevMod.png
+  maglev: SlideResistanceDecreaseMod.jpg
   magnetized_discharge: MagMagnetizeAugmentt.jpg
   master_thief: AvatarChanceToLootMod.jpg
   mecha_pulse: WarframeMechaPulseMod.jpg
@@ -3110,9 +3092,9 @@ warframe_mods:
   preparation: AvatarSpawnEnergyMod.jpg
   prey_of_dynar: VorunaShroudAugment.jpg
   primal_rage: MonkeyStaffAugment.jpg
-  primed_continuity: wiki:PrimedContinuityMod.png
-  primed_flow: wiki:PrimedFlowMod.png
-  primed_redirection: wiki:PrimedRedirectionMod.png
+  primed_continuity: AbilityDurationMod.jpg
+  primed_flow: PowerMaxMod.jpg
+  primed_redirection: ShieldMaxMod.jpg
   primed_sure_footed: AvatarSureFootedMod.jpg
   primed_vigor: Vigor.jpg
   prism_guard: MiragePrismAugment.jpg
@@ -3123,7 +3105,7 @@ warframe_mods:
   purging_slash: ExcaliburSlashDashPvPAugment.jpg
   purifying_flames: EmberFireBlastPvPAugment.jpg
   pyroclastic_flow: NezhaFirewalkerAugment.jpg
-  quick_thinking: wiki:QuickThinkingMod.png
+  quick_thinking: AvatarQuickThinkingMod.jpg
   radiant_finish: ExcaliburRadialBlindAugment.jpg
   rage: AvatarDamageToEnergyMod.jpg
   rapid_resilience: AvatarProcTimeMod.jpg
@@ -3173,7 +3155,7 @@ warframe_mods:
   spectral_spirit: DagathApparitionAugment.jpg
   spectrosiphon: GaraSpectrorageAugment.jpg
   speed_drift: OrokinChallengeModSpeed.jpg
-  spellbound_harvest: wiki:SpellboundHarvestMod.png
+  spellbound_harvest: TitaniaSpellbindAugment.jpg
   staggering_shield: MesaRicochetArmourAugment.jpg
   stealth_drift: OrokinChallengeModStealth.jpg
   steel_fiber: ArmourMod.jpg
@@ -3181,7 +3163,7 @@ warframe_mods:
   streamline: AbilityEfficiencyMod.jpg
   streamlined_form: HolsterSpeedSlideBoostMod.jpg
   stretch: AbilityRangeMod.jpg
-  sure_footed: wiki:SureFootedMod.png
+  sure_footed: AvatarSureFootedMod.jpg
   surging_blades: YareliDisksAugment.jpg
   surging_dash: ExcaliburSlashDashAugment.jpg
   swift_bite: LavosSerpentAugment.jpg
@@ -3220,7 +3202,7 @@ warframe_mods:
   vexing_retaliation: ChromaVexArmorAugment.jpg
   vigilante_pursuit: VigilantePursuit.jpg
   vigilante_vigor: VigilanteVigor.jpg
-  vigor: wiki:VigorMod.png
+  vigor: Vigor.jpg
   vigorous_swap: AvatarHolsterDamageMod.jpg
   viral_tempest: HydroidTempestBarrageAugment.jpg
   vitality: HealthMaxMod.jpg
@@ -3340,9 +3322,8 @@ auras:
 operators:
   operator: "wiki:OperatorBust.png"
 
-# THE TEKTOLYST ARTIFACTS, hand-set from the wiki: DE's export draws every
-# Antique mod as a placeholder (`OrokinImage*.jpg`) and carries neither the
-# arcanes nor the artifacts, so `gen_assets.py` does not own these three sections.
+# Tektolyst artifacts and arcanes use wiki images; Antique mod illustrations
+# come from DE's Public Export.
 artifacts:
   cogron: "wiki:Cogron.png"
   lorak: "wiki:Lorak.png"
@@ -3351,26 +3332,26 @@ artifacts:
   vexoric: "wiki:Vexoric.png"
 
 artifact_mods:
-  da_ren: "wiki:Da-RenMod.png"
-  empazu_shol: "wiki:Empazu-SholMod.png"
-  esti_vel_ikha: "wiki:EstiVel-IkhaMod.png"
-  evir_ti: "wiki:Evir-TiMod.png"
-  hayan_dabor: "wiki:Hayan-DaborMod.png"
-  hok_kaal: "wiki:Hok-KaalMod.png"
-  kaal_zidi: "wiki:Kaal-zidiMod.png"
-  lashta_vak: "wiki:Lashta-VakMod.png"
-  lorun_tash: "wiki:Lorun-TashMod.png"
-  metem_erun: "wiki:Metem-ErunMod.png"
-  metem_hakh: "wiki:Metem-HakhMod.png"
-  omn_evi: "wiki:Omn-EviMod.png"
-  sey_taph: "wiki:Sey-TaphMod.png"
-  sil_tabol: "wiki:Sil-TabolMod.png"
-  talsek_an: "wiki:Talsek-AnMod.png"
-  ubri_kaneph: "wiki:Ubri-KanephMod.png"
-  ulashta_shol: "wiki:Ulashta-SholMod.png"
-  vikla_safor: "wiki:Vikla-SaforMod.png"
-  vik_anam: "wiki:Vik-AnamMod.png"
-  yar_dal: "wiki:YarDalMod.png"
+  da_ren: OrokinImageO.jpg
+  empazu_shol: OrokinImageQ.jpg
+  esti_vel_ikha: OrokinImageE.jpg
+  evir_ti: OrokinImageK.jpg
+  hayan_dabor: OrokinImageL.jpg
+  hok_kaal: OrokinImageD.jpg
+  kaal_zidi: OrokinImageH.jpg
+  lashta_vak: OrokinImageR.jpg
+  lorun_tash: OrokinImageB.jpg
+  metem_erun: OrokinImageP.jpg
+  metem_hakh: OrokinImageI.jpg
+  omn_evi: OrokinImageC.jpg
+  sey_taph: OrokinImageT.jpg
+  sil_tabol: OrokinImageM.jpg
+  talsek_an: OrokinImageF.jpg
+  ubri_kaneph: OrokinImageU.jpg
+  ulashta_shol: OrokinImageN.jpg
+  vikla_safor: OrokinImageG.jpg
+  vik_anam: OrokinImageA.jpg
+  yar_dal: OrokinImageJ.jpg
 
 artifact_arcanes:
   zid_an_asheir: "wiki:Zid-AnAsheir.png"
