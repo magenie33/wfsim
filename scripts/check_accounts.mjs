@@ -8,6 +8,8 @@
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runInNewContext } from "node:vm";
+import { appSource } from "./app_source.mjs";
 import { accountRoute, purgeDeleted } from "../worker/accounts.js";
 import { cloudRoute, cloudPath } from "../worker/cloud.js";
 import { agentRoute, MCP_LIMITS } from "../worker/agents.js";
@@ -49,6 +51,19 @@ const env = {
 };
 const SITE = "https://wfsim.app";
 const PASSWORD = "correct horse battery";
+const authStartSource = appSource().match(/const authStart = [\s\S]*?;/)[0];
+const authStart = runInNewContext(authStartSource + "\nauthStart", { crypto, encodeURIComponent });
+for (const provider of ["google", "discord", "github"]) {
+  const back = "/login?return=%2Fweapons%2FTorid";
+  const first = new URL(authStart(provider, "login", back), SITE);
+  const next = new URL(authStart(provider, "login", back), SITE);
+  const link = new URL(authStart(provider, "link", "/account"), SITE);
+  check(`${provider}: reopening sign-in cannot reuse the previous authorization URL`,
+    first.href !== next.href && first.pathname === `/api/auth/${provider}/start`
+      && next.pathname === first.pathname && next.searchParams.get("intent") === "login"
+      && next.searchParams.get("return") === back
+      && link.searchParams.get("intent") === "link" && link.searchParams.get("return") === "/account");
+}
 
 // ---- a browser: a cookie jar and the calls the page makes ----------------------------
 
@@ -80,8 +95,10 @@ function browser() {
       const code = `code-${Math.random()}`;
       people.set(code, person);
       const start = await call("GET", `/api/auth/${provider}/start?intent=${intent}&return=/weapons/Torid`);
+      check(`${provider}: an authorization redirect is not cached`, start.headers.get("cache-control") === "no-store");
       const state = new URL(start.headers.get("location")).searchParams.get("state");
       const back = await call("GET", `/api/auth/${provider}/callback?code=${code}&state=${tamper || state}`);
+      check(`${provider}: a callback redirect is not cached`, back.headers.get("cache-control") === "no-store");
       return new URL(back.headers.get("location"));
     },
     /// Register or link an address with a password: the mail, then its code.

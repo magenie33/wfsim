@@ -233,6 +233,13 @@ weapon under the primary ruler, every ruler on three weapons, the card's four
 shapes in turn. CI shards it with `check_parity` (`WFSIM_RIVEN_SHARD=i/n`).
 Verified to bite: a final round of 101 runs named every weapon.
 
+## `check_accounts`
+
+The account rules run against the real schema in PGlite with provider and mail
+responses stubbed. The page's sign-in links produce a fresh authorization URL
+for each attempt, preserving the provider, intent and return path; authorization
+and callback redirects carry `no-store`.
+
 ## `check_card_document`
 
 The bot's card is the page's, pixel for pixel: each fixture — a plain gun,

@@ -229,7 +229,10 @@ async function oauthStart(request, env, provider) {
   const url = new URL(request.url);
   const back = safeReturn(url.searchParams.get("return"));
   const intent = url.searchParams.get("intent") === "link" ? "link" : "login";
-  const fail = (reason) => Response.redirect(`${url.origin}${back}${back.includes("?") ? "&" : "?"}auth_error=${reason}`, 302);
+  const fail = (reason) => new Response(null, { status: 302, headers: {
+    location: `${url.origin}${back}${back.includes("?") ? "&" : "?"}auth_error=${reason}`,
+    "cache-control": "no-store",
+  } });
   if (!configured(env).includes(provider)) return fail("unavailable");
   const p = PROVIDERS[provider];
   const state = random(16);
@@ -247,6 +250,7 @@ async function oauthStart(request, env, provider) {
   });
   return new Response(null, { status: 302, headers: {
     location: `${p.authorize}?${q}`,
+    "cache-control": "no-store",
     "set-cookie": setCookie(OAUTH_COOKIE, `${carried}.${await hmac(env.AUTH_SECRET, carried)}`, OAUTH_SECONDS, "/api/auth"),
   } });
 }
@@ -262,7 +266,7 @@ async function oauthCallback(request, env, provider) {
   }
   const back = flow ? safeReturn(flow.back) : "/";
   const done = (param, cookie) => {
-    const h = new Headers({ location: `${url.origin}${back}${back.includes("?") ? "&" : "?"}${param}` });
+    const h = new Headers({ location: `${url.origin}${back}${back.includes("?") ? "&" : "?"}${param}`, "cache-control": "no-store" });
     h.append("set-cookie", setCookie(OAUTH_COOKIE, "", 0, "/api/auth"));
     if (cookie) h.append("set-cookie", cookie);
     return new Response(null, { status: 302, headers: h });
