@@ -139,6 +139,8 @@ router leaves to the browser.
 
 A state-changing call is JSON from this origin; the session cookie is
 `HttpOnly; Secure; SameSite=Lax`, a random token whose hash is the table's key.
+OAuth redirects are not cached. Each rendered sign-in link has a fresh attempt
+identifier so a previous authorization redirect cannot stand in for a new sign-in.
 
 ## The private worker
 

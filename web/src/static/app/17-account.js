@@ -200,7 +200,7 @@ function authReturn() {
   return r && /^\/(?!\/)/.test(r) && (!kind || isSettings(kind) || EXT.pages[kind]?.open) ? r : "/";
 }
 const authStart = (p, intent, back) =>
-  `/api/auth/${p}/start?intent=${intent}&return=${encodeURIComponent(back)}`;
+  `/api/auth/${p}/start?intent=${intent}&return=${encodeURIComponent(back)}&attempt=${crypto.getRandomValues(new Uint32Array(4)).join("-")}`;
 /// WHAT THE SITE CALLS AN ACCOUNT: its display name, or its username where
 /// there is none or the server hides it (worker/names.js `shownName`).
 const accountName = (a) => (a && ((!a.display_name_hidden && a.display_name) || a.username)) || "WFSim";

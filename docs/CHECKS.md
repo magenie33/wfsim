@@ -240,6 +240,13 @@ Simulator, Optimizer and Builder tabs in both directions; each slot also runs
 a real simulation. Slot changes keep the chamber address while module links
 name the selected entry.
 
+## `check_accounts`
+
+The account rules run against the real schema in PGlite with provider and mail
+responses stubbed. The page's sign-in links produce a fresh authorization URL
+for each attempt, preserving the provider, intent and return path; authorization
+and callback redirects carry `no-store`.
+
 ## `check_card_document`
 
 The bot's card is the page's, pixel for pixel: each fixture — a plain gun,
