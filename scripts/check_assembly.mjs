@@ -167,11 +167,7 @@ check("...and a projectile chamber's say their fire rate",
 
 // ---- ONE PAGE, TWO SLOTS ----------------------------------------------------
 
-// A Kitgun is ONE weapon and TWO roster entries, so `/weapons/Tombfinger`
-// resolves to one of them and the Slot control has to reach the other WITHOUT
-// changing the address — otherwise the two are two pages that happen to share a
-// name, and the second is unreachable. Switching is switching WEAPONS in every
-// other sense, which is what keeps each slot's build its own.
+// Each slot's route identifies its own entry and build.
 check("...and it offers the other slot", !!drawn.sibling, JSON.stringify(drawn));
 
 const switched = await evaluate(`(async () => {
@@ -179,16 +175,14 @@ const switched = await evaluate(`(async () => {
   const before = { id: $('weapon').value, slot: weaponInfo($('weapon').value).slot,
                    grips: assemblySpec($('weapon').value).grips.map(g => g.id) };
   const path = location.pathname;
-  switchWeapon(slotSibling(before.id));
-  renderAssembly();
-  // LONG ENOUGH FOR THE SIBLING'S BOARD TO LAND: its arrival re-runs the
-  // preset restore, the one step after the switch that can move the address.
+  ddReg.get('dd-kitslot').onPick(weaponInfo(slotSibling(before.id)).slot);
+  // Wait for the selected entry's board and preset restore.
   await new Promise(r => setTimeout(r, 3000));
   const id = $('weapon').value;
   return {
     before, after: { id, slot: weaponInfo(id).slot,
                      grips: assemblySpec(id).grips.map(g => g.id) },
-    path, pathAfter: location.pathname,
+    path, pathAfter: location.pathname, route: routeWeaponId(),
     // The parts reset to the new entry's own default: the sibling's five grips
     // are not legal here, so carrying one over would be a weapon nobody has.
     assembly: { ...assembly },
@@ -200,8 +194,8 @@ check("picking the other slot moves to the other entry",
     && switched.after.slot !== switched.before.slot
     && switched.sent === switched.after.id,
   JSON.stringify(switched));
-check("...without changing the address, because it is one weapon",
-  switched.pathAfter === switched.path,
+check("...and the address identifies the selected slot",
+  switched.pathAfter !== switched.path && switched.route === switched.after.id,
   `${switched.path} -> ${switched.pathAfter}`);
 check("...and the grips on offer are the new slot's",
   switched.after.grips.every((g) => !switched.before.grips.includes(g))

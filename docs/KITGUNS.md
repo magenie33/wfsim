@@ -23,13 +23,13 @@ difference reaches the damage TYPE (a secondary Gaze deals Puncture + Radiation,
 a primary Gaze Radiation alone). So the roster holds one entry per (chamber,
 slot) — `gaze_primary`, `gaze_secondary` — each stating its own `mod_pools`.
 The grip can then never move a mod pool: switching slots is switching WEAPONS,
-and the page's Slot control does it without changing the address.
-Module links follow the selected entry, so opening the Simulator or Optimizer
+and the page's Slot control opens the selected entry's route. The address,
+module tabs and jump menu identify the same slot, so a reload or navigation
 keeps that slot and its build.
 
 **ONE WEAPON IN IDENTITY, TWO IN DATA.** Both entries share the chamber's wiki
-page and URL (the lower id keeps `/weapons/<Chamber>`, the other lives at its
-id), its mastery track and its riven family. A chamber has ONE riven, which fits
+page, mastery track and riven family. Each has its own route: the lower id keeps
+`/weapons/<Chamber>`, the other lives at its id. A chamber has ONE riven, which fits
 either slot and rolls the pistol pool (`riven_class: pistol` on the primary,
 `data/notes.yaml` `kitgun_riven_is_the_chambers`), and both slots state the one
 disposition every riven reads, 1.2.

@@ -237,18 +237,8 @@ const assemblySpec = (id) => (weaponInfo(id) || {}).assembly || null;
 
 /// THE OTHER SLOT OF THE SAME CHAMBER, or `null`.
 ///
-/// A Kitgun is ONE weapon — one mastery track, one riven, one wiki page, and
-/// therefore ONE URL — and it is TWO roster entries, because the slot decides
-/// which mods it may hold and that is a question with a static answer. Those
-/// two facts meet here: `/weapons/Tombfinger` resolves to one entry and the
-/// Slot control moves to the other WITHOUT changing the address, which is what
-/// makes the two a page rather than two pages that happen to share a name. The
-/// second entry still needs an address of its OWN to be linkable at all, and
-/// `urlSlug` gives it one; nothing on the page navigates to it.
-///
-/// Switching is switching WEAPONS in every other sense — its own build, its own
-/// riven slots, its own board rows — which is exactly what "nothing crosses
-/// between weapons" already guarantees, so nothing extra is needed for it.
+/// Slots share a chamber, wiki page and riven family. Each entry has its own
+/// build, mod pool and route, so a slot change follows ordinary weapon routing.
 const slotSibling = (id) => {
   const s = assemblySpec(id);
   if (!s) return null;
@@ -360,11 +350,9 @@ function renderAssembly() {
           value: (weaponInfo(id) || {}).slot,
           label: tr(cap1((weaponInfo(id) || {}).slot)),
         })).sort((a, b) => a.value.localeCompare(b.value)),
-        // The address stays put: `restoreState` knows a Kitgun's two slots
-        // are one page, so switching the ENTRY does not move it.
         onPick: (v) => {
           if (v === wSlot) return;
-          switchWeapon(sibling);
+          nav(weaponModPath(sibling));
         },
       })}</label>`
     : "";

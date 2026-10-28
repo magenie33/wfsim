@@ -424,15 +424,9 @@ function restoreState(st, weapon) {
   const w = weapon || (st && st.weapon);
   if (!st || !weaponInfo(w)) return;
   $("weapon").value = w;
-  // Keep the route honest when the restore changes weapon (the stash case);
-  // for a preset `w` is already the current weapon, so this is a no-op.
-  // …EXCEPT ON A KITGUN, whose two slots are one page: an address naming the
-  // sibling is this entry's address too. Rewriting it is how a board landing
-  // late (`ensureWeaponBoard` re-runs `initPresets`) walked the Slot control off
-  // `/weapons/<Chamber>`.
+  // A weapon page names the exact entry, including its Kitgun slot.
   const here = routeWeaponId();
-  const siblingsPage = here && here !== w && slotSibling(here) === w;
-  if (!document.querySelector(".config-page").hidden && !siblingsPage) {
+  if (!document.querySelector(".config-page").hidden || (here && here !== w)) {
     history.replaceState(null, "", weaponModPath(w));
   }
   applyWeapon(w, null); // resets pool/innate/visibility
@@ -499,6 +493,8 @@ function restoreState(st, weapon) {
   if (absentOf(BUILDS, activePreset).length) {
     noteInline(tr("This build's riven is not on this browser. It is kept, and the numbers here leave it out until it syncs."));
   }
+  // A restored entry replaces any routing still pending for the old address.
+  if (here && here !== w) route();
 }
 
 /// Kill score PER MINUTE (`headlessKpm`).

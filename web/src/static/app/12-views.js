@@ -351,7 +351,7 @@ async function route() {
 const modSuffix = () => (location.pathname.match(/\/(simulator|optimizer|rivens|riven-analyst|benchmark)\/?$/) || [null, ""])[1];
 const weaponModPath = (id) => weaponPath(id) + (modSuffix() ? "/" + modSuffix() : "");
 
-// Links follow the active entry even when a Kitgun slot keeps the chamber URL.
+// Module links follow the active weapon entry.
 function renderModuleTabs(mod = modSuffix()) {
   const path = weaponPath($("weapon").value);
   $("module-tabs").innerHTML = [

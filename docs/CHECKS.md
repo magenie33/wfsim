@@ -237,8 +237,10 @@ Verified to bite: a final round of 101 runs named every weapon.
 
 Every Kitgun chamber keeps its selected slot, mods and loader through the
 Simulator, Optimizer and Builder tabs in both directions; each slot also runs
-a real simulation. Slot changes keep the chamber address while module links
-name the selected entry.
+a real simulation through Run Simulation. The selected route and an already
+open jump menu keep the slot through route re-entry. Catchmoon also covers cold
+reloads, Back/Forward, sharing from the other slot and a reload stash carrying
+the secondary build under the old chamber URL.
 
 ## `check_accounts`
 
