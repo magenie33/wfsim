@@ -487,6 +487,9 @@ jobs:
       - name: The board is as deep as the reader asked
         if: matrix.group == 'views'
         run: node scripts/check_board_depth.mjs
+      - name: Kitgun module navigation keeps the selected slot and build
+        if: matrix.group == 'views'
+        run: node scripts/check_kitgun_slot.mjs
       # THE DOWNLOAD OFFER, which has three answers and only one of them is
       # visible on the machine it was written on. Its failure modes are silent
       # and plausible — a Mac or Linux reader handed an .exe, a phone reader

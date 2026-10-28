@@ -24,6 +24,8 @@ a primary Gaze Radiation alone). So the roster holds one entry per (chamber,
 slot) — `gaze_primary`, `gaze_secondary` — each stating its own `mod_pools`.
 The grip can then never move a mod pool: switching slots is switching WEAPONS,
 and the page's Slot control does it without changing the address.
+Module links follow the selected entry, so opening the Simulator or Optimizer
+keeps that slot and its build.
 
 **ONE WEAPON IN IDENTITY, TWO IN DATA.** Both entries share the chamber's wiki
 page and URL (the lower id keeps `/weapons/<Chamber>`, the other lives at its
