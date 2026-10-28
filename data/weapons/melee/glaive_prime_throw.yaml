@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: glaive_prime_throw
 name: Glaive Prime
 # see notes: glaive_throw_from_the_module
@@ -9,15 +11,13 @@ unmodeled:
   - reason: glaive_bounce_count_assumed
   - reason: glaive_bounce_explosion_assumed
   - reason: glaive_detonation_ends_bounces
-  - reason: glaive_throw_return_assumed
   - reason: glaive_throw_animation_assumed
   - reason: glaive_throw_tennokai_unmodelled
   - reason: glaive_throw_animosity_unmodelled
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: projectile
-  projectile_speed_mps: 40
+  projectile_speed_mps: 40.0
   fire_rate: 1.25
   multishot: 1.0
   ammo_cost: 0
@@ -27,10 +27,13 @@ attack:
   status_chance: 0.32
   punch_through_m: 1
   range_m: 30
-  damage: { impact: 27, puncture: 27, slash: 126 }   # total 180
-  # THE IN-FLIGHT DETONATION — the Recall Explosion row; `detonate` sets it off.
+  damage:
+    impact: 27
+    puncture: 27
+    slash: 126
   radial:
-    damage: { blast: 592 }   # total 592
+    damage:
+      blast: 592
     radius_m: 4.8
     blast_kind: in_flight
     crit_chance: 0.24
@@ -38,25 +41,32 @@ attack:
     status_chance: 0.32
     falloff_start_m: 0.0
     falloff_reduction: 0
-    forced_procs: [impact, slash]
+    forced_procs:
+    - impact
+    - slash
     takes_multishot: false
-  # THE BOUNCES — "can bounce up to three times" (wiki); the
-  # Bounce Explosion row is what a Volatile card sets off.
   thrown_bounce:
     bounces: 3
     explosion:
-      damage: { blast: 296 }   # total 296
+      damage:
+        blast: 296
       radius_m: 4.8
       crit_chance: 0.24
       crit_multiplier: 2.2
       status_chance: 0.32
       falloff_start_m: 0.0
       falloff_reduction: 0.4
-      forced_procs: [impact]
+      forced_procs:
+      - impact
       takes_multishot: false
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 1.0, forced_procs: [impact, slash], combo_points: 1, combo_points_base: 1 }
-
+  - multiplier: 1.0
+    delay_seconds: 1.0
+    combo_points: 1
+    combo_points_base: 1
+  throw_charge_seconds: 1.2
+  forced_procs:
+  - impact
+  - slash
 source:
   url: https://wiki.warframe.com/w/Glaive_Prime

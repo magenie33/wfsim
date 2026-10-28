@@ -1,42 +1,30 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: wise_razor
 name: Wise Razor
 rarity: uncommon
 polarity: madurai
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/LongKatanaCmbOneMeleeTree
-description: "Deftly executed sweeps and slashes."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
-# NO BLOCK COMBO: the module publishes no duration for it, so this card supplies none and that mode is refused under it.
+description: Deftly executed sweeps and slashes.
 combos:
-  # Threshing Grain — 4.4 s at 1.0x, 4 inputs
   neutral:
-    - { multiplier: 3.0, delay_seconds: 1.1, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 1.1, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 1.1, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.0, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 1.1, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-  # Cutting Thrice — 2.55 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/LongKatanaCmbOneMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 2.0, delay_seconds: 0.85, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.85, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.85, combo_points: 4, combo_points_base: 4 }
-  # Calling Thunder — 3.5 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/LongKatanaCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_A
   block_forward:
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [slash, lifted], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.1667, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 1.1667, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 4.0, delay_seconds: 1.1666, all_around: true, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/LongKatanaCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/LongKatanaCmbOneMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/LongKatanaCmbOneMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Wise_Razor

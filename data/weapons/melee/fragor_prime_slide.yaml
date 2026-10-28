@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: fragor_prime_slide
 name: Fragor Prime
 # see notes: melee_from_the_modules
@@ -10,7 +11,6 @@ unmodeled:
     passive: "its combo counter starts at 30"
 
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 0.8
@@ -22,13 +22,16 @@ attack:
   status_chance: 0.18
   punch_through_m: 0.0
   range_m: 2.6
-  # see notes: slide_ignores_follow_through
   follow_through: 1.0
-  heavy: { multiplier: 6.0, windup_seconds: 0.4 }
-  damage: { impact: 189, puncture: 40.5, slash: 40.5 }   # total 270
-  # see notes: combo_points_from_multiplier
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 2.0
+  damage:
+    impact: 189
+    puncture: 40.5
+    slash: 40.5
   combo_script:
-    - { multiplier: 2.0, delay_seconds: 0.97, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerMeleeTree
+    context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Fragor_Prime

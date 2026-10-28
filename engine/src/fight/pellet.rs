@@ -43,6 +43,7 @@ pub(super) struct Strike<'a> {
     pub(super) tennokai_heavy: bool,
     /// Does the in-flight explosion go off — see `MeleeState::detonating`.
     pub(super) detonates: bool,
+    pub(super) recalls: bool,
     pub(super) melee_struck: &'a [usize],
     pub(super) struck: &'a [usize],
     /// The metres a live grant added to this shot's punch through — see
@@ -232,6 +233,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         tennokai,
         tennokai_heavy,
         detonates,
+        recalls,
         melee_struck,
         struck,
         pierce_live_m,
@@ -879,7 +881,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             glaive_stop_along = Some(
                 ((b.x - muzzle.x) * dx + (b.y - muzzle.y) * dy) / len - crate::rules::space::BODY_RADIUS_M,
             );
-            let hops = if detonates || tb.bounces <= 1 {
+            let hops = if detonates || recalls || tb.bounces <= 1 {
                 Vec::new()
             } else {
                 crate::rules::space::bounce_path(
@@ -1376,13 +1378,13 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             }
             _ => 0.0,
         };
-        let status_chance = *beam_merge
+        let status_chance = (*beam_merge
             * (match &rad {
                 None => active.status_chance + active.base_status_chance * sc_arc,
                 Some(r) => r.status_chance + r.base_status_chance * sc_arc,
             } + derived_sc)
             // Death Knell's, on the FINISHED number.
-            + weakpoint_sc;
+            + weakpoint_sc) * swing.as_ref().map_or(1.0, |h| h.status_multiplier);
         // EACH PART'S OWN. The direct hit reads the attack's list; an
         // EXPLOSION reads its own, because "Guaranteed Impact proc" is
         // said of one and not the other on the same weapon (the Scourge
@@ -2462,6 +2464,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     if active.independent_procs.contains(&"knockdown") {
         let until = t + KNOCKDOWN_SECONDS * params.status_duration_multiplier;
         bodies[0].debuffs.knockdown = Some(bodies[0].debuffs.knockdown.map_or(until, |e| e.max(until)));
+    }
+    if let Some(radial) = radial_stage {
+        apply_independent_forced(radial.forced_procs, &mut bodies[0], t, params.status_duration_multiplier);
     }
         // …AND THE ORDINARY END OF A PELLET, which does get to name
         // what it applied.

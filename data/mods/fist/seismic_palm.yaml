@@ -1,45 +1,33 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: seismic_palm
 name: Seismic Palm
 rarity: rare
 polarity: vazarin
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/FistCmbTwoMeleeTree
-description: "Methodical strikes with reaching combos."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Methodical strikes with reaching combos.
 combos:
-  # Quaking Touch — 1.55 s at 1.0x, 3 inputs
   neutral:
-    - { multiplier: 3.0, delay_seconds: 0.5167, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.5167, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.5166, combo_points: 1, combo_points_base: 1 }
-  # Erupting Vulcan — 1.35 s at 1.0x, 4 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/FistCmbTwoMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.3375, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.3375, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.3375, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.3375, combo_points: 3, combo_points_base: 3 }
-  # Echoing Hands — 2.05 s at 1.0x, 2 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/FistCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 1.025, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.025, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-  # Sudden Rockfall — 1.7 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/FistCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_C
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.5667, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.5667, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.5666, combo_points: 1, combo_points_base: 1 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/FistCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/FistCmbTwoMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/FistCmbTwoMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Seismic_Palm

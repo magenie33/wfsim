@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: ninkondi_slide
 name: Ninkondi
 # see notes: melee_from_the_modules
@@ -6,7 +7,6 @@ form: slide
 transform_group: ninkondi
 co_behavior: additive_with_base_damage
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -18,13 +18,15 @@ attack:
   status_chance: 0.35
   punch_through_m: 0.0
   range_m: 2.31
-  # see notes: slide_ignores_follow_through
   follow_through: 1.0
-  heavy: { multiplier: 5.0, windup_seconds: 0.1667 }
-  damage: { impact: 90, electricity: 100 }   # total 190
-  # see notes: combo_points_from_multiplier
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 1.0
+  damage:
+    impact: 90
+    electricity: 100
   combo_script:
-    - { multiplier: 2.0, hits: 3, delay_seconds: 1.05, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/NunchakuMeleeTree
+    context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Ninkondi

@@ -47,7 +47,7 @@ pub(super) struct ModFile {
     /// A STANCE'S COMBO SCRIPTS, one per form it supplies — see
     /// [`crate::model::ModDef::stance`]. Absent on every other mod.
     #[serde(default)]
-    pub(super) combos: Option<std::collections::BTreeMap<String, Vec<crate::model::ComboHit>>>,
+    pub(super) combos: Option<std::collections::BTreeMap<String, crate::model::MeleeCombo>>,
     pub(super) effects: Vec<Value>,
 }
 
@@ -746,14 +746,14 @@ pub(super) fn to_moddef_at(mut mf: ModFile, rank: Option<u32>) -> ModDef {
     // it is — the pool is built once at load.
     let stance: Option<crate::model::StanceCombos> = mf.combos.as_ref().map(|m| {
             let v: Vec<(&'static str, &'static [crate::model::ComboHit])> = m
-                .iter()
-                .map(|(form, hits)| {
+                .keys()
+                .map(|form| {
                     // A FORM NAME THE ENGINE DOES NOT KNOW IS A LOUD FAILURE:
                     // a stance whose combo lands under a misspelt key would
                     // read as a stance that simply has no such combo.
                     let form: &'static str = crate::model::FormKind::parse(form).id();
                     let hits: &'static [crate::model::ComboHit] =
-                        Box::leak(hits.clone().into_boxed_slice());
+                        Box::leak(crate::data::melee::resolve(m, form).into_boxed_slice());
                     (form, hits)
                 })
                 .collect();

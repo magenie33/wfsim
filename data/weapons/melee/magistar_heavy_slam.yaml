@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: magistar_heavy_slam
 name: Magistar
 # NOTHING BUT HEAVY SLAMS — the Magistar's own build, and the one melee mode
@@ -26,10 +28,9 @@ co_behavior: additive_with_base_damage
 unmodeled:
   - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.833
+  fire_rate: 0.8333333333333334
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -38,31 +39,27 @@ attack:
   status_chance: 0.1
   punch_through_m: 0.0
   range_m: 2.5
-  # see notes: class_s_heavy_attack
-  heavy: { multiplier: 6.0, windup_seconds: 0.4 }
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.5
   spends_combo: true
-  damage: { impact: 0.0 }
+  damage:
+    impact: 0.0
   radial:
-    # see MEASUREMENTS M69
-    damage: { blast: 630 }
+    damage:
+      blast: 630
     radius_m: 10.0
     blast_kind: slam
     falloff_start_m: 0.0
     falloff_reduction: 0.3
     forced_procs: []
     takes_multishot: false
-  # THE LOOP IS `CLIMB -> SLAM -> RECOVER`, and only the last of the three is a
-  # fixed cost. *"Heavy slams do not have any wind up"* (wiki, Melee) — so this
-  # swing carries none, unlike the standing heavy attack's 1.2 s — and the climb
-  # is the player's own time, which `fight::heavy_cycle_seconds` spends the way
-  # that pays this mode best.
-  #
-  # TWO SECONDS IS A STAND-IN for the landing recovery. Nothing publishes it; it
-  # is uncancellable and attack speed shortens it, which is exactly what
-  # `delay_seconds` already means. Declared in docs/MELEE.md until it is
-  # measured in game.
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 2.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
+  - multiplier: 1.0
+    delay_seconds: 2.0
+    forced_procs:
+    - lifted
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Magistar

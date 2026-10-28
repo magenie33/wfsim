@@ -3,8 +3,6 @@ name: Melee Influence
 rarity: rare
 max_rank: 5
 internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/MeleeProcsSpread
-# "Does not work with Glaive (Weapon Type) weapons" (wiki).
-inert_on: [glaive]
 description: "On Melee <DT_ELECTRICITY_COLOR>Electricity Status: 20% chance for elemental Melee Status Effects to apply to enemies within 20m for 18s. Cannot refresh while active."
 
 # Rank 0: On Melee <DT_ELECTRICITY_COLOR>Electricity Status: 20% chance for elemental Melee Status Effects to apply to enemies within 10m for 3s. Cannot refresh while active.
@@ -28,10 +26,10 @@ effects:
     duration_rank0: 3
     duration_rankMax: 18
 
-# IT DOES NOTHING ON A GLAIVE (`inert_on`), swing or throw. Its other
-# restriction is not applied: it triggers only on DIRECT melee strikes (not on
-# Magnetic's breakage or a toxin field), which costs no number while the roster
-# has no such melee source. docs/UNMODELLED.md carries it.
+# Glaives can trigger this with forced Electricity even after their damage
+# combines into another element. The wiki's glaive exception is only for
+# projectiles passing through Electric Shield and similar effects.
+# Secondary status sources are not excluded here (docs/UNMODELLED.md).
 
 source:
   url: https://wiki.warframe.com/w/Melee_Influence

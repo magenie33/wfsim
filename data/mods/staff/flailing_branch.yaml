@@ -1,42 +1,29 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: flailing_branch
 name: Flailing Branch
 rarity: rare
 polarity: unairu
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffCmbTwoMeleeTree
-description: "Lifting strikes and whirlwind combos."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Lifting strikes and whirlwind combos.
 combos:
-  # Rising Falls — 2.35 s at 1.0x, 2 inputs
   neutral:
-    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 1.175, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 1.175, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-  # Battered Thread — 1.85 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffCmbTwoMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.6167, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.6167, impact_multiplier: 1.1, slash_multiplier: 1.1, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.6166, combo_points: 4, combo_points_base: 4 }
-  # Rising Falls — 2.35 s at 1.0x, 2 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 1.175, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 1.175, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-  # Autumn Leaf — 2.05 s at 1.0x, 2 inputs
+    reuse: neutral
   block_forward:
-    - { multiplier: 2.0, delay_seconds: 1.025, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.025, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_B
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffCmbTwoMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Flailing_Branch

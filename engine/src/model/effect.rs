@@ -1298,17 +1298,9 @@ pub struct Tennokai {
     /// COUNTED and never applied — a number the reader is owed, not a death.
     pub curse_heat_per_second: f64,
     pub curse_seconds: f64,
-    /// THE CHARGE BEFORE A TENNOKAI ATTACK, seconds — and it is ZERO.
-    ///
-    /// Measured: the window's swing goes out with no charge at all. DE says
-    /// only that it *"increases its Wind Up Speed"* and publishes no figure, so
-    /// this was a +100% stand-in; the measurement replaces it with the thing
-    /// the mechanic is for.
-    ///
-    /// IT IS STILL RESOLVED HERE rather than off the build's bucket, because
-    /// *"the Wind-Up Speed of Tennokai attacks is not affected by Wind-Up Speed
-    /// bonuses from other sources"* (wiki, Tennokai) — the field stays so that
-    /// a figure, if one is ever published, has one place to go.
+    /// Tennokai charge, in seconds. Zero is the model convention while the
+    /// runtime parameter is absent from the package export (docs/MELEE.md).
+    /// The heavy attack's ordinary animation remains on attack speed.
     pub windup_seconds: f64,
 }
 

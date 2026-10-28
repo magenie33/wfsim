@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: spinnerex_block_forward
 name: Spinnerex
 # see notes: melee_from_the_modules
@@ -6,15 +7,14 @@ form: block_forward
 transform_group: spinnerex
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_passive_unmodelled
-    passive: "an enemy it hit in the last 5 s that dies has a 10% chance per Toxin status on it to explode for 480 Toxin in 10 m, with a forced Toxin status"
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_passive_unmodelled
+  passive: an enemy it hit in the last 5 s that dies has a 10% chance per Toxin status on it to explode for 480 Toxin in 10 m, with a forced Toxin status
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 1.36
+  fire_rate: 1.3599999666666667
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -24,8 +24,13 @@ attack:
   punch_through_m: 0.0
   range_m: 3.0
   follow_through: 0.5
-  heavy: { multiplier: 4.5, windup_seconds: 0.1333 }
-  damage: { toxin: 168 }   # total 168
-
+  heavy:
+    multiplier: 4.5
+    windup_seconds: 2.0
+  damage:
+    toxin: 168
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Spinnerex

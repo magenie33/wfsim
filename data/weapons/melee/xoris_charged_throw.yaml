@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: xoris_charged_throw
 name: Xoris
 # see notes: glaive_throw_from_the_module
@@ -6,20 +7,17 @@ form: charged_throw
 transform_group: xoris
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: glaive_bounce_count_assumed
-  - reason: glaive_bounce_explosion_assumed
-  - reason: glaive_detonation_ends_bounces
-  - reason: glaive_throw_return_assumed
-  - reason: glaive_throw_animation_assumed
-  - reason: glaive_throw_tennokai_unmodelled
-  - reason: glaive_throw_animosity_unmodelled
-  - "The Charged Throw's direct damage is the module's, the same as the quick throw's where every other glaive doubles it; unmeasured."
+- reason: glaive_bounce_count_assumed
+- reason: glaive_bounce_explosion_assumed
+- reason: glaive_detonation_ends_bounces
+- reason: glaive_throw_tennokai_unmodelled
+- reason: glaive_throw_animosity_unmodelled
+- The Charged Throw's direct damage is the module's, the same as the quick throw's where every other glaive doubles it; unmeasured.
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: projectile
-  projectile_speed_mps: 25
-  fire_rate: 1.17
+  projectile_speed_mps: 25.0
+  fire_rate: 1.1666666666666667
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -28,35 +26,41 @@ attack:
   status_chance: 0.2
   punch_through_m: 0
   range_m: 21
-  damage: { impact: 24, puncture: 40.8, slash: 55.2 }   # total 120
-  # THE IN-FLIGHT DETONATION — the Recall Explosion row; `detonate` sets it off.
+  damage:
+    impact: 24
+    puncture: 40.8
+    slash: 55.2
   radial:
-    damage: { electricity: 1000 }   # total 1000
-    radius_m: 9
+    damage:
+      electricity: 1000
+    radius_m: 9.0
     blast_kind: in_flight
     crit_chance: 0.22
     crit_multiplier: 2.4
-    status_chance: 0.2
+    status_chance: 0.18
     falloff_start_m: 0.0
     falloff_reduction: 0
-    forced_procs: [impact, electricity]
+    forced_procs:
+    - impact
+    - electricity
     takes_multishot: false
-  # THE BOUNCES — "can bounce up to three times" (wiki); the
-  # Bounce Explosion row is what a Volatile card sets off.
   thrown_bounce:
     bounces: 3
     explosion:
-      damage: { electricity: 500 }   # total 500
-      radius_m: 9
+      damage:
+        electricity: 500
+      radius_m: 9.0
       crit_chance: 0.22
       crit_multiplier: 2.4
-      status_chance: 0.2
+      status_chance: 0.18
       falloff_start_m: 0.0
       falloff_reduction: 0.7
       takes_multishot: false
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 1.0, windup_seconds: 1.192, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/GlaiveMeleeTree
+    context: CC_GROUND_HEAVY
+  throw_charge_seconds: 1.2
+  forced_procs:
+  - impact
 source:
   url: https://wiki.warframe.com/w/Xoris

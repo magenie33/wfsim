@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: nami_solo_heavy
 name: Nami Solo
 # see notes: melee_from_the_modules
@@ -5,16 +6,8 @@ inherits: nami_solo
 form: heavy
 transform_group: nami_solo
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: heavy_charge_share_assumed
-    published: 0.7
-    charge: 0.2333
-    swing: 0.4667
-  - reason: melee_heavy_total_disputed
-    infobox: 6
-    table: 5
+unmodeled: []
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -27,15 +20,16 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.7
-  heavy: { multiplier: 6.0, windup_seconds: 0.2333 }
+  heavy:
+    multiplier: 3.75
+    windup_seconds: 2.0
   spends_combo: true
-  damage: { impact: 25.8, puncture: 25.8, slash: 120.4 }   # total 172
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 25.8
+    puncture: 25.8
+    slash: 120.4
   combo_script:
-    - { multiplier: 1.5, hits: 2, windup_seconds: 0.2333, delay_seconds: 0.0, all_around: true, combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.5, delay_seconds: 0.0, all_around: true, forced_procs: [slash], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.5, delay_seconds: 0.4667, all_around: true, combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 6.0, windup_seconds: 0.2333, delay_seconds: 0.4667, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/MacheteMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Nami_Solo

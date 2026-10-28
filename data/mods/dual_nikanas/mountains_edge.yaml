@@ -1,42 +1,32 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: mountains_edge
 name: Mountain's Edge
 rarity: uncommon
 polarity: naramon
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualKatanaCmbOneMeleeTree
-description: "Sharp movements with wide reach."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Sharp movements with wide reach.
 combos:
-  # Rise and Fall — 2.8 s at 1.0x, 3 inputs
   neutral:
-    - { multiplier: 3.0, hits: 3, delay_seconds: 0.9333, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.9333, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.9334, combo_points: 3, combo_points_base: 3 }
-  # Loyal Blades — 2.7 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualKatanaCmbOneMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, hits: 3, delay_seconds: 0.9, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 4, delay_seconds: 0.9, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.5, hits: 2, delay_seconds: 0.9, combo_points: 2, combo_points_base: 2 }
-  # Rise and Fall — 2.8 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualKatanaCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 3.0, hits: 3, delay_seconds: 0.9333, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.9333, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.9334, combo_points: 3, combo_points_base: 3 }
-  # Steel Eclipse — 3.9 s at 1.0x, 5 inputs
+    reuse: neutral
   block_forward:
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.78, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.78, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.78, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.78, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.78, combo_points: 3, combo_points_base: 3 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualKatanaCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualKatanaCmbOneMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualKatanaCmbOneMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Mountain's_Edge

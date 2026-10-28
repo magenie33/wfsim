@@ -1620,6 +1620,24 @@ pub fn resolve_for(
     });
     let projectile_speed_mps = base.projectile_speed_mps.map(|v| v * ps);
 
+    let stance_heavy = mods.iter().find_map(|m| m.stance)
+        .and_then(|c| c.iter().find(|(f, _)| *f == "heavy").map(|(_, h)| *h))
+        .filter(|h| h.iter().any(|r| r.event_timing.is_some()))
+        .filter(|h| h.iter().all(|r| r.event_timing.is_none_or(|e| !matches!(e.kind, crate::model::MeleeEventKind::Throw | crate::model::MeleeEventKind::Ranged))))
+        .or_else(|| (!base.heavy_script.is_empty()).then_some(base.heavy_script.as_slice()));
+    let heavy = stance_heavy.map(|script| {
+        let input = script[0].event_timing.unwrap().input;
+        let first = script.iter().take_while(|h| h.event_timing.unwrap().input == input);
+        crate::model::HeavyAttack {
+            multiplier: first.clone().map(|h| h.multiplier * f64::from(h.hits)).sum(),
+            windup_seconds: first.clone().map(|h| {
+                if h.event_timing.is_some_and(|e| e.weapon_charge) {
+                    base.heavy.map_or(h.windup_seconds, |b| b.windup_seconds)
+                } else { h.windup_seconds }
+            }).sum(),
+            swing_seconds: first.map(|h| h.delay_seconds).sum(),
+        }
+    }).or(base.heavy);
     ResolvedPanel {
         form: base.form,
         alt_fire_toggles: base.alt_fire_toggles,
@@ -1704,18 +1722,31 @@ pub fn resolve_for(
         // same weapon in the same mode is a different sequence of swings under
         // Crushing Ruin and under Shattering Storm. The entry's own script is
         // the UNSTANCED fallback, which is what an empty stance slot gives you.
+        heavy_script: stance_heavy.map_or_else(Vec::new, |h| h.to_vec()),
         combo_script: {
             let script = mods
                 .iter()
                 .find_map(|m| m.stance)
                 .and_then(|c| c.iter().find(|(f, _)| *f == base.form.id()).map(|(_, h)| h))
                 .map_or_else(|| base.combo_script.clone(), |h| h.to_vec());
+            for (i, h) in script.iter().enumerate() {
+                assert!(h.hit_delay_seconds.is_none_or(|t| t.is_finite() && t >= 0.0 && t <= h.delay_seconds),
+                    "melee contact must be inside its animation segment");
+                assert!(h.next_swing_index.is_none_or(|i| i < script.len()),
+                    "melee loop target must name a script row");
+                assert!(h.next_swing_index.is_none() || i + 1 == script.len(),
+                    "only the final melee row can redirect the loop");
+            }
             let last = script.len().saturating_sub(1);
             script
                 .iter()
                 .enumerate()
                 .map(|(i, h)| crate::model::ComboHit {
-                    windup_seconds: h.windup_seconds
+                    windup_seconds: (if h.event_timing.is_some_and(|e| e.throw_charge) {
+                        base.throw_charge_seconds.expect("timed throw needs its weapon charge")
+                    } else if h.event_timing.is_some_and(|e| e.weapon_charge) {
+                        base.heavy.map_or(h.windup_seconds, |b| b.windup_seconds)
+                    } else { h.windup_seconds })
                         / (1.0 + windup_speed + base.evo_heavy_windup_speed).max(1e-9),
                     // THE COMBO'S CLOSING SLAM sends the shockwave, whichever
                     // stance supplied it: *"Each heavy blade stance will trigger
@@ -1770,16 +1801,14 @@ pub fn resolve_for(
         // THE HEAVY'S WIND-UP TAKES THE SAME BUCKET the script's does, because
         // it is the same clock: a Tennokai swing is a heavy attack, and the
         // window's own speed bonus is on top of whatever the build bought.
-        heavy: base.heavy.map(|h| crate::model::HeavyAttack {
+        heavy: heavy.map(|h| crate::model::HeavyAttack {
             windup_seconds: h.windup_seconds
                 / (1.0 + windup_speed + base.evo_heavy_windup_speed).max(1e-9),
             ..h
         }),
         tennokai: Tennokai {
-            // …AND THERE IS NO CHARGE AT ALL. Measured: the window's swing goes
-            // out on the press. Not the build's bucket and not the class's
-            // either — see the field, and `notes: tonfa_heavy_timing` for the
-            // two clocks a heavy is made of.
+            // The package export has no Tennokai charge parameter. The model
+            // uses zero charge while retaining the heavy animation's events.
             windup_seconds: 0.0,
             ..tk
         },

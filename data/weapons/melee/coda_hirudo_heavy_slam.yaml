@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: coda_hirudo_heavy_slam
 name: Coda Hirudo
 # see notes: melee_from_the_modules
@@ -10,7 +12,6 @@ unmodeled:
   - reason: melee_valence_unmodelled
     family: Coda
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -22,11 +23,15 @@ attack:
   status_chance: 0.18
   punch_through_m: 0.0
   range_m: 1.25
-  heavy: { multiplier: 6.5029, windup_seconds: 0.1667 }
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 2.0
   spends_combo: true
-  damage: { impact: 0.0 }
+  damage:
+    impact: 0.0
   radial:
-    damage: { blast: 525 }
+    damage:
+      blast: 525
     radius_m: 8.0
     blast_kind: slam
     status_chance: 0.1
@@ -34,9 +39,12 @@ attack:
     falloff_reduction: 0.3
     forced_procs: []
     takes_multishot: false
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 2.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 1.0
+    delay_seconds: 2.0
+    forced_procs:
+    - lifted
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Coda_Hirudo

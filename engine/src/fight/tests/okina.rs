@@ -215,23 +215,32 @@ fn synergist_surety_grows_the_bleeds_and_not_the_hits() {
     );
 }
 
-/// **MELEE CAREEN REACHES THE DAGGER**, and the dagger is what feeds it: ten
-/// forced Cold stacks is a frozen target, so the explosion after a strike and
-/// every dagger after the first lands on one — *"Daggers can benefit from Melee
-/// Careen's damage multiplier against frozen enemies"*.
+/// Careen multiplies a dagger only while its target has ten Cold stacks.
+/// Compare individual ledger factors; the swing cadence changes freeze uptime.
 #[test]
 fn melee_careen_multiplies_a_dagger_on_a_frozen_body() {
     let evo = ["okina_evo1_incarnon_form"];
-    let off = dagger_rows(&okina_with("okina", &evo, &[], None, true, true));
-    let on = dagger_rows(&okina_with("okina", &evo, &[], Some("melee_careen"), true, true));
-    let mean = |v: &[(f64, f64)]| v.iter().map(|x| x.1).sum::<f64>() / v.len().max(1) as f64;
-    assert!(!off.is_empty() && !on.is_empty());
-    assert!(
-        mean(&on) > mean(&off) * 1.3,
-        "x2.5 on a frozen body: a dagger row averages {:.0} -> {:.0}",
-        mean(&off),
-        mean(&on)
-    );
+    let frozen_state = DEBUFF_ROSTER.iter().position(|(id, _)| *id == "frozen").unwrap();
+    for arcane in [None, Some("melee_careen")] {
+        let p = okina_with("okina", &evo, &[], arcane, true, true);
+        let rec = record(&p, 0x0C1A, 0.0, 30.0, 1_000_000, 0);
+        let mut boosted = 0;
+        let mut ordinary = 0;
+        for e in rec.events() {
+            let crate::record::Kind::Damage(d) = &e.kind else { continue };
+            if d.origin != crate::record::Origin::SpectralDagger { continue; }
+            let frozen = d.debuffs[frozen_state].0 > 0;
+            let factor = d.layers.iter().find_map(|l| match l {
+                crate::record::Layer::Mul { factor: crate::record::Factor::ArcaneFinal, value, .. } => Some(*value),
+                _ => None,
+            }).unwrap_or(1.0);
+            let expected = if arcane.is_some() && frozen { 2.5 } else { 1.0 };
+            assert_eq!(factor, expected, "dagger at {}: frozen={frozen}", e.t);
+            if factor > 1.0 { boosted += 1; } else { ordinary += 1; }
+        }
+        assert!(ordinary > 0, "the fixture must include unfrozen dagger hits");
+        if arcane.is_some() { assert!(boosted > 0, "the fixture must freeze a target"); }
+    }
 }
 
 /// **INFLUENCE CARRIES A DAGGER'S EXPLOSION, AND NOT ITS FORCED COLD.** With the

@@ -1,38 +1,32 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: burning_wasp
 name: Burning Wasp
 rarity: uncommon
 polarity: vazarin
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipCmbOneMeleeTree
-description: "Chaining combos."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Chaining combos.
 combos:
-  # Sparking Torture — 1.9 s at 1.0x, 2 inputs
   neutral:
-    - { multiplier: 3.0, delay_seconds: 0.95, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.95, all_around: true, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-  # Buzzing Sting — 3.0 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipCmbOneMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 1.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 1.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 1.0, all_around: true, combo_points: 2, combo_points_base: 2 }
-  # Sparking Torture — 1.9 s at 1.0x, 2 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 3.0, delay_seconds: 0.95, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.95, all_around: true, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-  # Guided Claw — 1.8 s at 1.0x, 2 inputs
+    reuse: neutral
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.9, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.9, all_around: true, combo_points: 3, combo_points_base: 3 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipCmbOneMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipCmbOneMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Burning_Wasp

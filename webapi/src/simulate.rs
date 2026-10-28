@@ -316,14 +316,9 @@ impl Entrant {
             return Ok((if fire.meter.is_some() { from } else { fire }, params));
         }
         let panel = panel_of(&self.fire);
-        // A GROUND COMBO IS PLAYED FROM A STANCE, and every reader of a fight
-        // resolves here — so the refusal is one decision, not three.
-        if wfsim_engine::data::weapons::combo_needs_a_stance(&info.id, panel.form) {
-            use wfsim_engine::data::weapons::{stance_supplies, STANCELESS_COMBO, STANCE_LACKS_COMBO};
-            let seated = refs.iter().find_map(|m| m.stance);
-            if !stance_supplies(seated, panel.form) {
-                return Err(err_json(if seated.is_some() { STANCE_LACKS_COMBO } else { STANCELESS_COMBO }));
-            }
+        let seated = refs.iter().find_map(|m| m.stance);
+        if let Some(reason) = wfsim_engine::data::weapons::combo_error(&info.id, panel.form, seated) {
+            return Err(err_json(reason));
         }
         let params = FightParams::for_entrant(&panel, None, || {
             panel_of(self.unarmed.as_ref().expect("a stated window prepared its un-armed base"))
@@ -2063,17 +2058,21 @@ mod form_tests {
         );
     }
 
-    /// A GROUND COMBO WITH AN EMPTY STANCE SLOT IS REFUSED — the stanceless
-    /// combos publish no duration, and the entry's own script is a stance's.
-    /// What no stance changes still runs, and so does a fixed stance.
+    /// Bare inputs run only where their own package timeline is complete.
     #[test]
-    fn a_stanceless_ground_combo_is_refused_and_nothing_else_is() {
+    fn bare_combo_availability_follows_the_weapon_timeline() {
         let sim = |weapon: &str, mode: &str, mods: &[&str]| {
             simulate_json(&json!({ "weapon": weapon, "mode": mode, "mods": mods, "runs": 1 }))
         };
         let refused = |r: &Value| r["error"].as_str().is_some_and(|e| e.contains("no stance in the slot"));
         for mode in ["base", "forward", "block", "block_forward"] {
-            assert!(refused(&sim("magistar", mode, &[])), "{mode} with an empty slot");
+            for weapon in ["praedos", "magistar"] {
+                let result = sim(weapon, mode, &[]);
+                assert_eq!(result["ok"], true, "{weapon}/{mode}: {result}");
+            }
+        }
+        for mode in ["block", "block_forward"] {
+            assert!(refused(&sim("corufell_prime", mode, &[])), "{mode} has no bare package input");
             assert!(!refused(&sim("magistar", mode, &["crushing_ruin"])), "{mode} with a stance");
         }
         for mode in ["heavy", "slide", "heavy_slam"] {
@@ -2081,8 +2080,8 @@ mod form_tests {
         }
         assert!(!refused(&sim("valkyr_talons", "base", &["hysteria"])), "a fixed stance is seated");
         // …AND THE REPLAY ASKS THE SAME QUESTION, through the same resolution.
-        let log = crate::log::log_json(&json!({ "weapon": "magistar", "mode": "base", "mods": [], "run": [0, 0] }));
-        assert!(refused(&log), "{log}");
+        let log = crate::log::log_json(&json!({ "weapon": "praedos", "mode": "base", "mods": [], "run": [0, 0] }));
+        assert_eq!(log["ok"], true, "{log}");
     }
 
     /// A SET THAT ENHANCES ITS OWN MEMBERS SAYS SO ON THE CARD, and says it

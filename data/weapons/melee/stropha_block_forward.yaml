@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: stropha_block_forward
 name: Stropha
 # see notes: melee_from_the_modules
@@ -12,7 +13,6 @@ unmodeled:
     attacks: "Ranged Attack"
   - reason: gunblade_heavy_is_a_shot
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -25,7 +25,10 @@ attack:
   punch_through_m: 0.0
   range_m: 2.0
   follow_through: 0.5
-  damage: { impact: 61.6, puncture: 74.8, slash: 83.6 }   # total 220
-
+  damage:
+    impact: 61.6
+    puncture: 74.8
+    slash: 83.6
+  combo_script: []
 source:
   url: https://wiki.warframe.com/w/Stropha

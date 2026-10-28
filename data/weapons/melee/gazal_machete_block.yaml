@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: gazal_machete_block
 name: Gazal Machete
 # see notes: melee_from_the_modules
@@ -6,12 +7,11 @@ form: block
 transform_group: gazal_machete
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_passive_unmodelled
-    passive: "with a Djinn, each Fatal Attraction grants it +25% damage as Corrosive for 30 s"
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_passive_unmodelled
+  passive: with a Djinn, each Fatal Attraction grants it +25% damage as Corrosive for 30 s
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -24,8 +24,15 @@ attack:
   punch_through_m: 0.0
   range_m: 2.6
   follow_through: 0.7
-  heavy: { multiplier: 6.0, windup_seconds: 0.2333 }
-  damage: { impact: 17.8, puncture: 26.7, slash: 133.5 }   # total 178
-
+  heavy:
+    multiplier: 3.75
+    windup_seconds: 2.0
+  damage:
+    impact: 17.8
+    puncture: 26.7
+    slash: 133.5
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/MacheteMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Gazal_Machete

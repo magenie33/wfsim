@@ -1,54 +1,30 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: votive_onslaught
 name: Votive Onslaught
 rarity: rare
 polarity: naramon
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WarfanCmbTwoMeleeTree
-description: "Precise, focused arcs and cuts not hampered by pity."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Precise, focused arcs and cuts not hampered by pity.
 combos:
-  # Purging Drive — 2.57 s at 1.0x, 4 inputs
   neutral:
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.6425, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.6425, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.6425, all_around: true, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.6425, forced_procs: [slash, knockdown], combo_points: 3, combo_points_base: 3 }
-  # Clarion Rush — 1.84 s at 1.0x, 4 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WarfanCmbTwoMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.46, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.46, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 3, delay_seconds: 0.46, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 4, delay_seconds: 0.46, combo_points: 1, combo_points_base: 1 }
-  # Penitent Offering — 2.67 s at 1.0x, 4 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WarfanCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.6675, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.6675, forced_procs: [lifted], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.6675, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.6675, forced_procs: [lifted], combo_points: 2, combo_points_base: 2 }
-  # Rending Lamentation — 2.78 s at 1.0x, 4 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WarfanCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_C
   block_forward:
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.695, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.695, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.695, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.695, forced_procs: [lifted], combo_points: 3, combo_points_base: 3 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WarfanCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_B
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WarfanCmbTwoMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Votive_Onslaught

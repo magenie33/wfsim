@@ -1411,6 +1411,7 @@ impl FightParams {
             acid_shells: panel.acid_shells,
             crit_chance_per_hit: panel.crit_chance_per_hit,
             combo_script: panel.combo_script.clone(),
+            heavy_script: panel.heavy_script.clone(),
             follow_through: panel.follow_through,
             slam: panel.slam,
             shockwave: panel.shockwave,

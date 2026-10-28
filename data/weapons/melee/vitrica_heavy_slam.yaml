@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: vitrica_heavy_slam
 name: Vitrica
 # see notes: melee_from_the_modules
@@ -14,10 +16,9 @@ unmodeled:
   - reason: melee_passive_unmodelled
     passive: "every slam sends a ground wave, 10 Impact, that shatters glassed enemies — 40 m from a slam, 80 m and a forced Impact status from a heavy slam"
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.833
+  fire_rate: 0.8333333333333334
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -26,11 +27,15 @@ attack:
   status_chance: 0.33
   punch_through_m: 0.0
   range_m: 2.9
-  heavy: { multiplier: 6.0, windup_seconds: 0.3667 }
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.64999998
   spends_combo: true
-  damage: { impact: 0.0 }
+  damage:
+    impact: 0.0
   radial:
-    damage: { impact: 999 }
+    damage:
+      impact: 999
     radius_m: 4.0
     blast_kind: slam
     status_chance: 0.5
@@ -38,9 +43,10 @@ attack:
     falloff_reduction: 0.3
     forced_procs: []
     takes_multishot: false
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 2.0, combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 1.0
+    delay_seconds: 2.0
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Vitrica

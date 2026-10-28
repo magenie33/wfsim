@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: tenet_agendus
 name: Tenet Agendus
 slot: melee
@@ -26,21 +27,19 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_attack_unmodelled
-    attacks: "Energy Disk"
-  - reason: melee_own_combo_unmodelled
-    combos: "heavy attack"
-  - reason: melee_valence_unmodelled
-    family: Tenet
-  - reason: melee_slide_unpublished
-
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_attack_unmodelled
+  attacks: Energy Disk
+- reason: melee_own_combo_unmodelled
+  combos: heavy attack
+- reason: melee_valence_unmodelled
+  family: Tenet
+- reason: melee_slide_unpublished
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.917
+  fire_rate: 0.9166666666666666
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -50,10 +49,15 @@ attack:
   punch_through_m: 0.0
   range_m: 2.6
   follow_through: 0.6
-  heavy: { multiplier: 4.0, windup_seconds: 0.3333 }
-  damage: { impact: 120, electricity: 140 }   # total 260
+  heavy:
+    multiplier: 4.0
+    windup_seconds: 2.0
+  damage:
+    impact: 120
+    electricity: 140
   slam:
-    damage: { electricity: 260 }
+    damage:
+      electricity: 260
     radius_m: 6.0
     blast_kind: slam
     status_chance: 0.3
@@ -61,6 +65,8 @@ attack:
     falloff_reduction: 0.5
     forced_procs: []
     takes_multishot: false
-
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/CrpHammerShieldMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Tenet_Agendus

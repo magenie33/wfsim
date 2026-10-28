@@ -25,6 +25,8 @@ fn idle_counter() -> MeleeState {
         combo_expiry: f64::NEG_INFINITY,
         combo_spent_t: f64::NEG_INFINITY,
         swing_idx: 0,
+        heavy_idx: 0,
+        input: None,
         tennokai_until: f64::NEG_INFINITY,
         tennokai_chained: false,
         tennokai_hits: 0,
@@ -32,6 +34,7 @@ fn idle_counter() -> MeleeState {
         animosity_stacks: 0,
         animosity_input_landed: false,
         detonating: false,
+        recalling: false,
     }
 }
 

@@ -1,48 +1,29 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: clashing_forest
 name: Clashing Forest
 rarity: uncommon
 polarity: madurai
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffCmbOneMeleeTree
-description: "Arcing strikes and focused combos."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Arcing strikes and focused combos.
 combos:
-  # Resolute Flurry — 1.95 s at 1.0x, 3 inputs
   neutral:
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.5, delay_seconds: 0.65, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.65, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.65, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-  # Skyward Limb — 2.05 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffCmbOneMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.6833, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.6833, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.6834, combo_points: 2, combo_points_base: 2 }
-  # Resolute Flurry — 1.95 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.5, delay_seconds: 0.65, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.65, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.65, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-  # Battering Roots — 2.1 s at 1.0x, 2 inputs
+    reuse: neutral
   block_forward:
-    - { multiplier: 2.0, hits: 2, delay_seconds: 1.05, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 1.05, combo_points: 3, combo_points_base: 3 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_B
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffCmbOneMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Clashing_Forest

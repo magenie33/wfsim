@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: ekhein_forward
 name: Ekhein
 # see notes: melee_from_the_modules
@@ -6,15 +7,14 @@ form: forward
 transform_group: ekhein
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_passive_unmodelled
-    passive: "Heavy Insight: a heavy attack that lands grants +80% damage and +20% attack speed for 8 s"
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_passive_unmodelled
+  passive: 'Heavy Insight: a heavy attack that lands grants +80% damage and +20% attack speed for 8 s'
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.767
+  fire_rate: 0.7666666666666667
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -24,8 +24,13 @@ attack:
   punch_through_m: 0.0
   range_m: 2.8
   follow_through: 0.4
-  heavy: { multiplier: 6.0, windup_seconds: 0.4 }
-  damage: { impact: 340 }   # total 340
-
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.69999999
+  damage:
+    impact: 340
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerMeleeTree
+    context: CC_GROUND_BRANCH_A
 source:
   url: https://wiki.warframe.com/w/Ekhein

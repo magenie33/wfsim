@@ -1,51 +1,32 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: gnashing_payara
 name: Gnashing Payara
 rarity: rare
 polarity: unairu
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbTwoMeleeTree
-description: "Lunging punctures with impaling spirals."
-
-# THE HEAVIEST ROWS OF THE CLASS. Pincer Strike is 1400% over 2.5 s, and
-# Flash Flurry's opener carries `SlashMultiplier = { 2 }` — a bonus to the
-# Slash component alone, on a class whose damage is mostly Slash.
-# see notes: combo_points_from_multiplier
+description: Lunging punctures with impaling spirals.
 combos:
-  # see notes: combo_clock_is_the_input
-  # Pincer Strike — 2.50 s at 1.0x, 2 inputs of 1.25 s, 1400% in all
   neutral:
-    - { multiplier: 3.0, delay_seconds: 1.25, hits: 2, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, forced_procs: [slash, knockdown], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 1.25, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-  # Cheetah's Guile — 1.15 s at 1.0x, 2 inputs of 0.575 s, 500% in all
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbTwoMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.575, hits: 2, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.575, combo_points: 2, combo_points_base: 2 }
-  # Pincer Strike — 2.50 s at 1.0x, 2 inputs of 1.25 s, 1400% in all
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 3.0, delay_seconds: 1.25, hits: 2, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, forced_procs: [slash, knockdown], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 1.25, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-  # Flash Flurry — 1.55 s at 1.0x, 2 inputs of 0.775 s, 1100% in all
+    reuse: neutral
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.775, hits: 2, slash_multiplier: 2.0, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.775, all_around: true, combo_points: 2, combo_points_base: 2 }
-  # see notes: dual_daggers_heavy
-  # see notes: tonfa_heavy_timing
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_B
   heavy:
-    - { multiplier: 1.0, hits: 2, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.0, hits: 2, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbTwoMeleeTree
+    context: CC_GROUND_HEAVY
   slide:
-    - { multiplier: 2.0, delay_seconds: 0.67, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbTwoMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Gnashing_Payara
-  # The combo data: https://wiki.warframe.com/w/Module:Stances/data

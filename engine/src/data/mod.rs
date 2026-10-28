@@ -29,6 +29,7 @@ pub mod evolutions;
 pub mod factions;
 pub mod i18n;
 pub mod market;
+pub mod melee;
 pub mod mod_sets;
 pub mod mods;
 pub mod rage;

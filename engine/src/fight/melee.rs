@@ -268,6 +268,8 @@ pub(super) struct MeleeState {
     /// WHICH SWING OF THE SCRIPT IS NEXT. A gun leaves the script empty and
     /// never reads this.
     pub(super) swing_idx: usize,
+    pub(super) heavy_idx: usize,
+    pub(super) input: Option<MeleeInputState>,
     /// A window a landed hit opens, in which a HEAVY attack costs no combo. The
     /// owner settled what to do with it in one clause — use it the moment it
     /// fires — so the loop takes the very next swing rather than inventing a
@@ -291,9 +293,57 @@ pub(super) struct MeleeState {
     pub(super) animosity_input_landed: bool,
     /// IS THE GLAIVE IN THE AIR GOING TO BE DETONATED? Decided when it is
     /// thrown (`swing_this_shot`), because the next throw's timing depends on
-    /// it — a detonated glaive is back in the hand at once — and read where it
-    /// lands, where the explosion SPENDS the counter as a heavy attack does.
+    /// it. The explosion is read where it lands, where the explosion SPENDS the counter as a heavy attack does.
     pub(super) detonating: bool,
+    pub(super) recalling: bool,
+}
+
+/// One committed input, held across its separately resolved attack events.
+pub(super) struct MeleeInputState {
+    pub(super) ready: bool,
+    pub(super) tennokai: bool,
+    pub(super) converted: bool,
+    pub(super) chained: bool,
+    pub(super) kill_mark: u32,
+    pub(super) combo_now: Option<f64>,
+}
+
+#[wfsim_gas_macro::metered]
+pub(super) fn current_melee_event<'a>(active: &'a FightParams, melee: &MeleeState) -> Option<&'a crate::model::ComboHit> {
+    let (script, index) = if melee.input.as_ref().is_some_and(|i| i.converted) {
+        (&active.heavy_script, melee.heavy_idx)
+    } else { (&active.combo_script, melee.swing_idx) };
+    script.get(index % script.len().max(1))
+}
+
+/// Commit at an input boundary; resolve damage only when its event is due.
+#[wfsim_gas_macro::metered]
+pub(super) fn prepare_melee_event(active: &FightParams, apl: &crate::data::apl::Apl, t: f64, rate: f64, kills: u32, melee: &mut MeleeState) -> Option<f64> {
+    current_melee_event(active, melee)?.event_timing?;
+    if melee.input.is_none() {
+        let flash = active.tennokai.enabled && t < melee.tennokai_until;
+        let converts = flash && !active.spends_combo && !active.heavy_script.is_empty()
+            && apl.pick_rule(&crate::data::apl::Now {
+                can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true,
+                battery_would_empty: false, switch_to: None, glaive_in_flight: false,
+                in_base_form: true, remaining: &|_| 0.0,
+            }).is_some_and(|r| r.action == crate::data::apl::Action::Heavy && r.when == crate::data::apl::When::Tennokai);
+        let tennokai = flash && (converts || active.spends_combo);
+        melee.input = Some(MeleeInputState {
+            ready: false, tennokai, converted: converts,
+            chained: tennokai && melee.tennokai_chained, kill_mark: kills, combo_now: None,
+        });
+        if tennokai {
+            melee.tennokai_until = f64::NEG_INFINITY;
+            melee.tennokai_chained = false;
+        }
+    }
+    if melee.input.as_ref().unwrap().ready { return None; }
+    let h = current_melee_event(active, melee).unwrap();
+    let charge = if melee.input.as_ref().unwrap().tennokai { 0.0 } else { h.windup_seconds };
+    let delay = charge + h.hit_delay_seconds.unwrap_or(0.0) / rate.max(1e-9);
+    melee.input.as_mut().unwrap().ready = true;
+    Some(delay)
 }
 
 /// MELEE ANIMOSITY'S BONUS on this swing: the pile, on a heavy attack only.
@@ -335,6 +385,7 @@ pub(super) fn after_swing(
     bodies: &mut [Body],
 ) {
         let landed = (r.pellets - pellets_before) as f64;
+        let input_ends = if h.event_timing.is_some() { h.ends_input() } else { active.spends_combo || tennokai_heavy || h.ends_input() };
         // RAGE BUILDS ON EVERY BODY A HIT LANDED ON AND EVERY KILL SINCE THE
         // LAST SWING — a status kill "still counts as a melee kill". The kill
         // is paid at this swing rather than at the death.
@@ -355,7 +406,7 @@ pub(super) fn after_swing(
                 }
             } else if h.slam_multiplier.is_none() || h.multiplier > 0.0 {
                 melee.animosity_input_landed |= landed > 0.0;
-                if h.delay_seconds > 0.0 && std::mem::take(&mut melee.animosity_input_landed) {
+                if h.ends_input() && std::mem::take(&mut melee.animosity_input_landed) {
                     melee.animosity_stacks =
                         (melee.animosity_stacks + 1).min(params.arcane.heavy_crit_max_stacks);
                 }
@@ -374,7 +425,7 @@ pub(super) fn after_swing(
         // because a chain replaces it: a Tennokai KILL re-opens the window
         // with no hit in between, which is the only way in this mechanic to
         // swing it twice in a row.
-        if tennokai && active.tennokai.chain_seconds > 0.0 && r.kills > tennokai_kill_mark {
+        if input_ends && tennokai && active.tennokai.chain_seconds > 0.0 && r.kills > tennokai_kill_mark {
             melee.tennokai_until = t + active.tennokai.chain_seconds;
             melee.tennokai_chained = true;
             melee.tennokai_hits = 0;
@@ -384,7 +435,7 @@ pub(super) fn after_swing(
         // does not save it — *"your combo will still be reset"* — so it is
         // unconditional here, and the Heat is COUNTED rather than applied
         // because nothing in this arena damages the Tenno.
-        if tennokai && active.tennokai.curse_resets_combo && r.kills == tennokai_kill_mark {
+        if input_ends && tennokai && active.tennokai.curse_resets_combo && r.kills == tennokai_kill_mark {
             melee.combo_points = 0.0;
             r.self_damage.add(
                 DamageType::Heat,
@@ -393,7 +444,6 @@ pub(super) fn after_swing(
         }
         let heavy = active.spends_combo || tennokai_heavy;
         melee.tennokai_input_landed |= landed > 0.0;
-        let input_ends = heavy || h.delay_seconds > 0.0;
         if active.tennokai.enabled
             && input_ends
             && std::mem::take(&mut melee.tennokai_input_landed)
@@ -473,7 +523,8 @@ pub(super) fn after_swing(
         // …AND A TENNOKAI SWING SPENDS NOTHING — *"does not consume Combo
         // Counter"* — which on a HEAVY mode is the whole of what the window
         // buys, and on a light one is what makes a free 12x heavy free.
-        if (active.spends_combo || melee.detonating) && !tennokai {
+        let spends_here = h.event_timing.is_none_or(|e| e.starts_input);
+        if (active.spends_combo || melee.detonating) && !tennokai && spends_here {
             // …AND IT SPENDS WHAT THE SWING READ, floor included. The
             // counter is ONE number: *"40% heavy attack efficiency will
             // change the amount spent to 60% combo points"*, and the points
@@ -564,12 +615,23 @@ pub(super) fn after_swing(
         }
 }
 
+/// Contact on the animation clock, after a separately paced charge.
+#[wfsim_gas_macro::metered]
+pub(super) fn swing_contact_delay(active: &FightParams, swing: Option<&crate::model::ComboHit>, rate: f64, tennokai: bool, tennokai_heavy: bool) -> f64 {
+    if swing.is_some_and(|h| h.event_timing.is_some()) { return 0.0; }
+    let Some(h) = swing.filter(|_| !tennokai_heavy) else { return 0.0 };
+    let Some(at) = h.hit_delay_seconds else { return 0.0 };
+    let charge = if tennokai && active.spends_combo { active.tennokai.windup_seconds } else { h.windup_seconds };
+    charge + at / rate.max(1e-9)
+}
+
 /// HOW LONG UNTIL THE NEXT SHOT — a draw, a swing's animation, or the fire
 /// rate's own interval, whichever this form pays.
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn seconds_to_next_shot(
     active: &FightParams,
+    now: f64,
     rate: f64,
     initial_now: f64,
     swing: Option<crate::model::ComboHit>,
@@ -579,6 +641,31 @@ pub(super) fn seconds_to_next_shot(
     incarnon: &IncarnonState,
     melee: &mut MeleeState,
 ) -> f64 {
+    if let Some(h) = swing.as_ref().filter(|h| h.event_timing.is_some()) {
+        let converted = melee.input.as_ref().is_some_and(|i| i.converted);
+        let mut recovery = (h.delay_seconds - h.hit_delay_seconds.unwrap_or(0.0)).max(0.0) / rate.max(1e-9);
+        if active.form.is_throw() && h.ends_input() {
+            let gap = if melee.detonating || melee.recalling { active.gap() } else { active.throw_turn_m() };
+            recovery = recovery.max(2.0 * active.flight_seconds(gap));
+        }
+        if converted {
+            melee.heavy_idx = h.next_swing_index.unwrap_or(melee.heavy_idx + 1);
+            if h.ends_input() { melee.swing_idx = 0; }
+        } else {
+            melee.swing_idx = h.next_swing_index.unwrap_or(melee.swing_idx + 1);
+        }
+        if h.ends_input() {
+            if active.spends_combo && !tennokai {
+                let next = current_melee_event(active, melee).unwrap();
+                let lead = next.windup_seconds + next.hit_delay_seconds.unwrap_or(0.0) / rate.max(1e-9);
+                let between_contacts = now + recovery + lead - melee.combo_spent_t;
+                recovery += heavy_cycle_seconds(between_contacts, melee.combo_points, initial_now) - between_contacts;
+            }
+            melee.input = None;
+        }
+        else if let Some(i) = melee.input.as_mut() { i.ready = false; }
+        return recovery;
+    }
     match active.charge_seconds {
         Some(c) => {
             let draw = c * active.fire_rate / rate.max(1e-9);
@@ -656,23 +743,21 @@ pub(super) fn seconds_to_next_shot(
             if tennokai {
                 melee.swing_idx = 0;
             } else {
-                melee.swing_idx += 1;
+                melee.swing_idx = swing.as_ref().and_then(|h| h.next_swing_index)
+                    .unwrap_or(melee.swing_idx + 1);
             }
-            let cycle = (w + d / rate.max(1e-9)).max(1e-6)
-                // A THROWN GLAIVE HOLDS THE NEXT THROW until it is back: out to
-                // where it turns and back again, or out to the target alone when
-                // it is detonated, which *"returns the weapon to the user's
-                // hand"* (wiki, Melee). The return at the throw's own speed is a
-                // stand-in, declared on every throw entry.
-                + if active.form.is_throw() {
-                    if melee.detonating {
-                        active.flight_seconds(active.gap())
-                    } else {
-                        2.0 * active.flight_seconds(active.throw_turn_m())
-                    }
-                } else {
-                    0.0
-                };
+            let animation = d / rate.max(1e-9);
+            let motion = (w + animation).max(1e-6);
+            let cycle = if active.form.is_throw() {
+                let gap = if melee.detonating || melee.recalling { active.gap() } else { active.throw_turn_m() };
+                let round_trip = 2.0 * active.flight_seconds(gap);
+                match swing.as_ref().and_then(|h| h.hit_delay_seconds) {
+                    // Release, flight and recovery share a timeline: flight
+                    // starts at release rather than after the animation ends.
+                    Some(at) => motion.max(w + at / rate.max(1e-9) + round_trip),
+                    None => motion + round_trip,
+                }
+            } else { motion };
             // …AND A HEAVY MODE SWINGS WHEN THE COUNTER IS WORTH SPENDING,
             // which is not always as soon as the animation allows — see
             // `heavy_cycle_seconds`. Derived from the swing SPENDING the
@@ -718,6 +803,7 @@ pub(super) struct Swung {
     pub(super) co_base: crate::model::CoBase,
     /// Is this throw going to be detonated — see `MeleeState::detonating`.
     pub(super) detonates: bool,
+    pub(super) recalls: bool,
 }
 
 /// Read the stance's next swing, spend what it spends, and fold it into the
@@ -738,7 +824,7 @@ pub(super) fn swing_this_shot(
     //
     // A gun's script is empty and every line below is a no-op for it: the
     // swing is `None`, the multiplier is 1.0, and the counter never moves.
-    let swing = active.combo_script.get(melee.swing_idx % active.combo_script.len().max(1)).cloned();
+    let swing = current_melee_event(active, melee).cloned();
     // THE COUNTER, BEFORE THIS SWING. A heavy attack reads it and then
     // empties it, so the multiplier it pays is the one that was standing
     // when the trigger went down — the same rule the game states by
@@ -763,7 +849,11 @@ pub(super) fn swing_this_shot(
         // this does and is therefore UNDER-reported here.
         melee.combo_points = 0.0;
     }
-    let combo_now = melee_combo_points(melee.combo_points, initial_now, t - melee.combo_spent_t);
+    let mut combo_now = melee_combo_points(melee.combo_points, initial_now, t - melee.combo_spent_t);
+    let input_heavy = active.spends_combo || melee.input.as_ref().is_some_and(|i| i.converted);
+    if let Some(i) = melee.input.as_mut().filter(|_| input_heavy) {
+        combo_now = *i.combo_now.get_or_insert(combo_now);
+    }
     let combo_multiplier = melee_combo_multiplier(combo_now);
     // THE STANCE MULTIPLIER SCALES THE SWING'S OWN DAMAGE, and a HEAVY form
     // takes the combo multiplier on top of it.
@@ -785,13 +875,14 @@ pub(super) fn swing_this_shot(
     // an already-heavy form the other half pays: the swing costs no combo,
     // so the counter it read is there for the next one. ONE WINDOW, ONE
     // SWING either way — the flash goes out with it.
-    let tennokai = active.tennokai.enabled && t < melee.tennokai_until;
+    let tennokai = melee.input.as_ref().map_or_else(
+        || active.tennokai.enabled && t < melee.tennokai_until, |i| i.tennokai);
     // **THE LIST DECIDES WHETHER THE SWING CONVERTS**, by the RULE it picks and
     // not by its action: `heavy,if=tennokai` on a light combo is a converted
     // swing, while the `heavy` a heavy-attack build presses all engagement is
     // the mode's own press and converts nothing. Two lines, one action, and
     // only the condition tells them apart.
-    let tennokai_heavy = apl
+    let tennokai_heavy = melee.input.as_ref().map_or_else(|| apl
         .pick_rule(&crate::data::apl::Now {
             can_fire: true,
             gauge_pct: 0.0,
@@ -805,13 +896,11 @@ pub(super) fn swing_this_shot(
         })
         .is_some_and(|r| {
             r.action == crate::data::apl::Action::Heavy && r.when == crate::data::apl::When::Tennokai
-        });
+        }), |i| i.converted);
     // **THE LIST DECIDES WHETHER A THROW IS DETONATED** — `detonate` is the
     // heavy press while the glaive flies, so it is asked as of that instant.
     // Only a throw whose entry carries the in-flight explosion has one to set off.
-    let detonates = active.form.is_throw()
-        && active.radial.as_ref().is_some_and(|r| r.blast_kind == crate::model::BlastKind::InFlight)
-        && apl.pick(&crate::data::apl::Now {
+    let in_flight_action = active.form.is_throw().then(|| apl.pick(&crate::data::apl::Now {
             can_fire: true,
             gauge_pct: 0.0,
             magazine_pct: 1.0,
@@ -821,15 +910,20 @@ pub(super) fn swing_this_shot(
             glaive_in_flight: true,
             in_base_form: true,
             remaining: &|_| 0.0,
-        }) == crate::data::apl::Action::Detonate;
+        }));
+    let detonates = active.form.is_throw()
+        && active.radial.as_ref().is_some_and(|r| r.blast_kind == crate::model::BlastKind::InFlight)
+        && in_flight_action == Some(crate::data::apl::Action::Detonate);
+    let recalls = active.form.is_throw() && in_flight_action == Some(crate::data::apl::Action::Recall);
     melee.detonating = detonates;
+    melee.recalling = recalls;
     // …AND WHETHER THE ONE BEING SPENT WAS CHAINED, kept because spending
     // it clears the flag and the damage is decided after.
-    let tennokai_was_chained = tennokai && melee.tennokai_chained;
+    let tennokai_was_chained = melee.input.as_ref().map_or(tennokai && melee.tennokai_chained, |i| i.chained);
     // WHAT THE COUNT WAS BEFORE IT, so "did this swing kill" is a
     // subtraction rather than a flag every path would have to set.
-    let tennokai_kill_mark = r.kills;
-    if tennokai {
+    let tennokai_kill_mark = melee.input.as_ref().map_or(r.kills, |i| i.kill_mark);
+    if tennokai && melee.input.is_none() {
         melee.tennokai_until = f64::NEG_INFINITY;
         melee.tennokai_chained = false;
     }
@@ -858,7 +952,9 @@ pub(super) fn swing_this_shot(
     // Overload, which the game adds. Master's Edge and Truth's Flame are the
     // window's own.
     let swing_mult = if tennokai_heavy {
-        active.heavy.map_or(1.0, |h| h.multiplier)
+        (if swing.as_ref().is_some_and(|h| h.event_timing.is_some()) {
+            swing.as_ref().unwrap().multiplier
+        } else { active.heavy.map_or(1.0, |h| h.multiplier) })
             * combo_multiplier
             // …AND ONLY WHERE THE CARD PAYS IT. Truth's Flame's bonus is
             // the CHAINED window's; every other card's is unconditional.
@@ -899,9 +995,15 @@ pub(super) fn swing_this_shot(
     // number as `Base x 1.5` before the mods that multiply the whole thing.
     let physical_bonus = [
         (DamageType::Impact, swing.as_ref().map_or(1.0, |h| h.impact_multiplier)),
+        (DamageType::Puncture, swing.as_ref().map_or(1.0, |h| h.puncture_multiplier)),
         (DamageType::Slash, swing.as_ref().map_or(1.0, |h| h.slash_multiplier)),
     ];
-    let any_physical = physical_bonus.iter().any(|(_, b)| (b - 1.0).abs() > 1e-12);
+    let extra_bonus = swing.iter().flat_map(|h| h.damage_type_multipliers.iter()).map(|(name, value)| {
+            let ty = DamageType::from_name(name).unwrap_or_else(|| panic!("unknown melee damage type {name}"));
+            (ty, *value)
+        });
+    let physical_bonus = physical_bonus.into_iter().chain(extra_bonus);
+    let any_physical = physical_bonus.clone().any(|(_, b)| (b - 1.0).abs() > 1e-12);
     // THE FLAT ADD RIDES BESIDE THE SWING, NEVER INSIDE IT (MEASUREMENTS
     // M79). A stance's multiplier, a slam's and a heavy's are the WEAPON's,
     // so the packet an Incarnon perk added keeps its size while the
@@ -971,5 +1073,6 @@ pub(super) fn swing_this_shot(
         direct_pre_snap,
         co_base,
         detonates,
+        recalls,
     }
 }

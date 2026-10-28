@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: tenet_agendus_heavy
 name: Tenet Agendus
 # see notes: melee_from_the_modules
@@ -21,10 +23,9 @@ unmodeled:
     infobox: 4
     table: 5
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.917
+  fire_rate: 0.9166666666666666
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -34,13 +35,28 @@ attack:
   punch_through_m: 0.0
   range_m: 2.6
   follow_through: 0.6
-  heavy: { multiplier: 4.0, windup_seconds: 0.3333 }
+  heavy:
+    multiplier: 4.0
+    windup_seconds: 2.0
   spends_combo: true
-  damage: { impact: 120, electricity: 140 }   # total 260
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 120
+    electricity: 140
   combo_script:
-    - { multiplier: 4.0, windup_seconds: 0.3333, delay_seconds: 0.6667, all_around: true, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 4.0, windup_seconds: 0.3333, delay_seconds: 0.6667, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 4.0
+    windup_seconds: 0.3333
+    delay_seconds: 0.6667
+    all_around: true
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0
+  - multiplier: 4.0
+    windup_seconds: 0.3333
+    delay_seconds: 0.6667
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Tenet_Agendus

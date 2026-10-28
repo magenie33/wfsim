@@ -1131,9 +1131,9 @@ A melee weapon has TWO slots a gun does not, and one
 decides what it swings. Every assertion is on the WIRE or on a real
 `/api/simulate`. Its sharpest pair is the ROUND TRIP — `buildPayload` into
 `stateFromBuild` must put the stance back in the STANCE slot rather than in
-slot 9 — and the FALLBACK: an empty slot fires the entry's own script, which
-happens to be Crushing Ruin's, so a stance that failed to apply would read as
-a pass.
+slot 9. A complete bare Praedos input runs with no stance on the wire;
+Magistar's bare input produces a different fight from either stance. The mode explanation
+also resolves the heavy's weapon-specific charge alongside its motion time.
 
 ## `check_stance_capacity`
 

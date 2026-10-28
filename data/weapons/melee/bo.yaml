@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: bo
 name: Bo
 slot: melee
@@ -31,7 +32,6 @@ unmodeled:
   - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
 
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -44,17 +44,23 @@ attack:
   punch_through_m: 0.0
   range_m: 3.0
   follow_through: 0.5
-  heavy: { multiplier: 5.0, windup_seconds: 0.1667 }
-  damage: { impact: 126, puncture: 14 }   # total 140
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 2.0
+  damage:
+    impact: 126
+    puncture: 14
   slam:
-    damage: { impact: 140 }
+    damage:
+      impact: 140
     radius_m: 6.0
     blast_kind: slam
     status_chance: 0.1
     falloff_start_m: 0.0
     falloff_reduction: 0.5
-    forced_procs: [impact]
+    forced_procs:
+    - impact
     takes_multishot: false
-
+  combo_script: []
 source:
   url: https://wiki.warframe.com/w/Bo

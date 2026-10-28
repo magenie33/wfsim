@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: guandao_forward
 name: Guandao
 # see notes: melee_from_the_modules
@@ -6,13 +7,12 @@ form: forward
 transform_group: guandao
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.833
+  fire_rate: 0.8333333333333334
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -22,8 +22,15 @@ attack:
   punch_through_m: 0.0
   range_m: 3.0
   follow_through: 0.6
-  heavy: { multiplier: 6.0, windup_seconds: 0.3 }
-  damage: { impact: 50.5, puncture: 10.1, slash: 141.4 }   # total 202
-
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 2.0
+  damage:
+    impact: 50.5
+    puncture: 10.1
+    slash: 141.4
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmMeleeTree
+    context: CC_GROUND_BRANCH_A
 source:
   url: https://wiki.warframe.com/w/Guandao

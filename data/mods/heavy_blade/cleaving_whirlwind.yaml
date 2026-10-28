@@ -1,52 +1,78 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
+# see notes: combo_points_from_multiplier
+# see notes: stance_ranged_rows
+# see notes: stance_from_the_module
 id: cleaving_whirlwind
 name: Cleaving Whirlwind
 rarity: rare
 polarity: vazarin
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/AxeCmbTwoMeleeTree
-description: "Arcing cuts with spinning finish."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Arcing cuts with spinning finish.
 combos:
-  # Crowd Fall — 2.25 s at 1.0x, 3 inputs
   neutral:
-    - { multiplier: 3.0, delay_seconds: 0.75, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 4.0, delay_seconds: 0.75, combo_points: 4, combo_points_base: 4 }
-    - { multiplier: 5.0, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 5, combo_points_base: 5 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.75, combo_points: 1, combo_points_base: 1 }
-  # Broken Bull — 5.7 s at 1.0x, 6 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/AxeCmbTwoMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.95, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.95, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.95, all_around: true, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.95, all_around: true, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.0, all_around: true, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.95, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.0, delay_seconds: 0.95, combo_points: 1, combo_points_base: 1 }
-  # Drifting Stampede — 1.9 s at 1.0x, 2 inputs
+  - multiplier: 1.0
+    hits: 2
+    delay_seconds: 0.95
+    all_around: true
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 1.0
+    hits: 2
+    delay_seconds: 0.95
+    all_around: true
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 1.0
+    delay_seconds: 0.0
+    all_around: true
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 2.0
+    delay_seconds: 0.95
+    all_around: true
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 2.0
+    hits: 2
+    delay_seconds: 0.95
+    all_around: true
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 2.0
+    delay_seconds: 0.0
+    all_around: true
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 2.0
+    delay_seconds: 0.95
+    all_around: true
+    forced_procs:
+    - impact
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 0.0
+    delay_seconds: 0.95
+    combo_points: 1
+    combo_points_base: 1
   block:
-    - { multiplier: 4.0, delay_seconds: 0.0, slash_multiplier: 1.25, combo_points: 4, combo_points_base: 4 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.95, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 5.0, delay_seconds: 0.95, slash_multiplier: 1.25, combo_points: 5, combo_points_base: 5 }
-  # Sundered Tusk — 2.7 s at 1.0x, 2 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/AxeCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_C
   block_forward:
-    - { multiplier: 5.0, delay_seconds: 0.0, slash_multiplier: 1.25, forced_procs: [impact], combo_points: 5, combo_points_base: 5 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.35, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.0, slash_multiplier: 1.25, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, delay_seconds: 0.0, slash_multiplier: 1.25, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, slash_multiplier: 1.25, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 4.0, delay_seconds: 0.0, slash_multiplier: 1.25, forced_procs: [lifted], combo_points: 4, combo_points_base: 4 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.35, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/AxeCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/AxeCmbTwoMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/AxeCmbTwoMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Cleaving_Whirlwind

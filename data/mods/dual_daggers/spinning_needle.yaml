@@ -1,58 +1,33 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: spinning_needle
 name: Spinning Needle
 rarity: rare
 polarity: vazarin
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbThreeMeleeTree
-description: "Swift stabs, twisting slashes."
-
-# THE MATCHING STANCE on both Okinas: their stance slot is Vazarin, so this
-# grants the full 10 capacity where the other two grant 4
-# (`rules::capacity::stance_capacity`).
-#
-# `Sweep` IS NOT `360`: the rows the module marks `Sweep` take the forward arc,
-# the rows it marks `360` are spins (`all_around`).
-# see notes: combo_points_from_multiplier
+description: Swift stabs, twisting slashes.
 combos:
-  # see notes: combo_clock_is_the_input
-  # True Kiss — 1.85 s at 1.0x, 3 inputs of 0.6167 s, 1100% in all
   neutral:
-    - { multiplier: 3.0, delay_seconds: 0.6167, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.6167, hits: 2, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.6166, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-  # Accursed Whispers — 2.15 s at 1.0x, 4 inputs of 0.5375 s, 1300% in all
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbThreeMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.5375, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.5375, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.5375, hits: 5, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.5375, forced_procs: [lifted], combo_points: 3, combo_points_base: 3 }
-  # Fey Intervention — 1.10 s at 1.0x, 1 input of 1.1 s, 700% in all
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 1.1, combo_points: 4, combo_points_base: 4 }
-  # Fey Intervention — 2.50 s at 1.0x, 4 inputs of 0.625 s, 1400% in all
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_C
   block_forward:
-    - { multiplier: 2.0, delay_seconds: 0.625, hits: 2, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.625, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.625, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.625, hits: 2, combo_points: 2, combo_points_base: 2 }
-  # see notes: dual_daggers_heavy
-  # see notes: tonfa_heavy_timing
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_B
   heavy:
-    - { multiplier: 1.0, hits: 2, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.0, hits: 2, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbThreeMeleeTree
+    context: CC_GROUND_HEAVY
   slide:
-    - { multiplier: 2.0, delay_seconds: 0.67, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbThreeMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Spinning_Needle
-  # The combo data: https://wiki.warframe.com/w/Module:Stances/data

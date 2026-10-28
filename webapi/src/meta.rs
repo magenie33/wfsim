@@ -574,6 +574,8 @@ pub fn meta_json() -> Value {
                         json!({
                         "id": id, "name": name, "is_default": def,
                         "combo": combo,
+                        "heavy_charge_seconds": s.and_then(|s| s.attack.heavy).map(|h| h.windup_seconds),
+                        "throw_charge_seconds": s.and_then(|s| s.attack.throw_charge_seconds),
                         // THE TWO FACTS THE SCRIPT CANNOT CARRY, both the
                         // ENTRY's rather than the stance's, and both the reason
                         // a reader would pick this mode over the one beside it.
@@ -1415,6 +1417,7 @@ pub fn meta_json() -> Value {
 /// states it — a combo's `Duration` is its direct swings', and the slam three of
 /// Crushing Ruin's four end on rides the swing it is listed with.
 fn combo_summary(script: &[wfsim_engine::model::ComboHit]) -> Value {
+    let script = wfsim_engine::model::ComboHit::repeating(script);
     let swings = script.iter().filter(|h| h.slam_multiplier.is_none()).count();
     let total: f64 = script
         .iter()
@@ -1442,9 +1445,12 @@ fn combo_summary(script: &[wfsim_engine::model::ComboHit]) -> Value {
     json!({
         "swings": swings, "total": r3(total), "seconds": r3(seconds_of(script)),
         "spins": spins, "procs": procs,
+        "weapon_charge_inputs": script.iter().filter(|h| h.event_timing.is_some_and(|e| e.weapon_charge)).count(),
+        "weapon_throw_inputs": script.iter().filter(|h| h.event_timing.is_some_and(|e| e.throw_charge)).count(),
     })
 }
 
 fn seconds_of(script: &[wfsim_engine::model::ComboHit]) -> f64 {
-    script.iter().map(|h| h.windup_seconds + h.delay_seconds).sum()
+    wfsim_engine::model::ComboHit::repeating(script)
+        .iter().map(|h| h.windup_seconds + h.delay_seconds).sum()
 }

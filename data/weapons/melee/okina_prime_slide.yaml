@@ -1,3 +1,5 @@
+# see notes: okina_spectral_dagger
+# see notes: melee_shared_package_actions
 id: okina_prime_slide
 name: Okina Prime
 # LURKING COUGAR — the class's slide attack, on a loop: one 200% spin with
@@ -10,10 +12,9 @@ unmodeled:
   - reason: spectral_dagger_orbit_and_target_assumed
   - reason: dual_daggers_heavy_unmeasured
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 1.17
+  fire_rate: 1.1666666666666667
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -22,23 +23,29 @@ attack:
   status_chance: 0.24
   punch_through_m: 0.0
   range_m: 1.7
-  # see notes: slide_ignores_follow_through
   follow_through: 1.0
-  # see notes: dual_daggers_heavy
-  heavy: { multiplier: 2.0, windup_seconds: 0.1667 }
-  damage: { impact: 9.2, puncture: 64.4, slash: 110.4 }   # total 184
-  # see notes: okina_spectral_dagger
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.69999999
+  damage:
+    impact: 9.2
+    puncture: 64.4
+    slash: 110.4
   spectral_dagger:
-    damage: { impact: 27.6, puncture: 64.4, slash: 92 }
+    damage:
+      impact: 27.6
+      puncture: 64.4
+      slash: 92
     speed_mps: 18.0
     blast:
-      damage: { cold: 184 }
+      damage:
+        cold: 184
       radius_m: 4.0
-      forced_procs: [cold]
+      forced_procs:
+      - cold
       takes_multishot: false
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 2.0, delay_seconds: 0.67, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerMeleeTree
+    context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Okina_Prime

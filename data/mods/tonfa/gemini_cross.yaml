@@ -1,77 +1,35 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
+# see notes: gemini_cross_timeline
+# see notes: melee_package_timing
 id: gemini_cross
 name: Gemini Cross
 rarity: uncommon
 polarity: madurai
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/TonfaCmbOneMeleeTree
-description: "A style exhibiting sweeping slash attacks and swift jabs."
-
-# THE MATCHING STANCE ON A PRAEDOS, which is the only thing that separates the
-# two Tonfa cards before their combos are compared: the slot is Madurai, so this
-# grants the full 10 capacity where Sovereign Outcast grants 4
-# (`rules::capacity::stance_capacity`).
-#
-# LONGER AND FLATTER THAN SOVEREIGN OUTCAST. Vagrant Blight is 5 inputs over
-# 4.6 s against Rogue Edict's 4 over 2.85, and most of its rows are 100% — so it
-# earns more COMBO POINTS per second and less damage, which is exactly the trade
-# a heavy build wants and a light build does not.
-#
-# `Sweep` IS NOT `360`. Blind Tormentor marks two swings `Types = { "Sweep" }`,
-# which is a wide forward arc rather than a spin — the engine models the forward
-# 90-degree arc for it, the same as an unmarked swing, so it is not written as
-# `all_around`.
-# see notes: combo_points_from_multiplier
+description: A style exhibiting sweeping slash attacks and swift jabs.
 combos:
-  # see notes: combo_clock_is_the_input
-  # Vagrant Blight — 4.60 s at 1.0x, 5 inputs of 0.92 s
   neutral:
-    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.5, delay_seconds: 0.92, hits: 2, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.5, delay_seconds: 0.0, hits: 2, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.92, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.5, delay_seconds: 0.92, hits: 3, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.92, hits: 2, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.92, forced_procs: [slash, knockdown], combo_points: 2, combo_points_base: 2 }
-  # Cold Vendetta — 1.20 s at 1.0x, 3 inputs of 0.4 s
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/TonfaCmbOneMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.4, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.4, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.4, combo_points: 2, combo_points_base: 2 }
-  # Blind Tormentor — 2.85 s at 1.0x, 2 inputs of 1.425 s, the second ending on
-  # the weapon's own slam
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/TonfaCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 1.425, hits: 2, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, hits: 2, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.0, hits: 2, forced_procs: [knockdown], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.425, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-  # Baleful Sin — 2.30 s at 1.0x, 4 inputs of 0.575 s
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/TonfaCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_C
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.575, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.575, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.575, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.575, combo_points: 2, combo_points_base: 2 }
-  # see notes: tonfa_heavy_and_slide
-  # see notes: tonfa_heavy_timing
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/TonfaCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_B
   heavy:
-    - { multiplier: 2.0, hits: 2, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 2.0, hits: 2, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/TonfaCmbOneMeleeTree
+    context: CC_GROUND_HEAVY
   slide:
-    - { multiplier: 2.0, delay_seconds: 0.74, hits: 2, all_around: true, combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/TonfaCmbOneMeleeTree
+    context: CC_SLIDING
 effects:
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Gemini_Cross
-  # The combo data: https://wiki.warframe.com/w/Module:Stances/data

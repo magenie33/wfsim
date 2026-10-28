@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: prisma_skana_heavy
 name: Prisma Skana
 # see notes: melee_from_the_modules
@@ -5,13 +6,8 @@ inherits: prisma_skana
 form: heavy
 transform_group: prisma_skana
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: heavy_charge_share_assumed
-    published: 0.6
-    charge: 0.2
-    swing: 0.4
+unmodeled: []
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -24,13 +20,16 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.6
-  heavy: { multiplier: 5.0, windup_seconds: 0.2 }
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.69999999
   spends_combo: true
-  damage: { impact: 25.5, puncture: 25.5, slash: 119 }   # total 170
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 25.5
+    puncture: 25.5
+    slash: 119
   combo_script:
-    - { multiplier: 5.0, windup_seconds: 0.2, delay_seconds: 0.4, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 5.0, windup_seconds: 0.2, delay_seconds: 0.4, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Prisma_Skana

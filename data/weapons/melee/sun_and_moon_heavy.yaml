@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: sun_and_moon_heavy
 name: "Sun & Moon"
 # see notes: melee_from_the_modules
@@ -5,16 +6,8 @@ inherits: sun_and_moon
 form: heavy
 transform_group: sun_and_moon
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: heavy_charge_share_assumed
-    published: 1.0
-    charge: 0.3333
-    swing: 0.6667
-  - reason: melee_heavy_total_disputed
-    infobox: 6
-    table: 12
+unmodeled: []
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -27,18 +20,16 @@ attack:
   punch_through_m: 0.0
   range_m: 2.6
   follow_through: 0.6
-  heavy: { multiplier: 6.0, windup_seconds: 0.3333 }
+  heavy:
+    multiplier: 12.0
+    windup_seconds: 2.0
   spends_combo: true
-  damage: { impact: 38, puncture: 45.6, slash: 106.4 }   # total 190
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 38
+    puncture: 45.6
+    slash: 106.4
   combo_script:
-    - { multiplier: 1.0, windup_seconds: 0.3333, delay_seconds: 0.0, forced_procs: [slash], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 3.0, delay_seconds: 0.6667, combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 0.5, windup_seconds: 0.3333, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [slash], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.5, delay_seconds: 0.6667, combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualKatanaMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Sun_&_Moon

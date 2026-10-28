@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: argo_and_vel_block_forward
 name: "Argo & Vel"
 # see notes: melee_from_the_modules
@@ -6,15 +7,14 @@ form: block_forward
 transform_group: argo_and_vel
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_attack_unmodelled
-    attacks: "Heavy Attack Glaive and Heavy Attack Glaive AoE"
-  - reason: melee_slide_unpublished
-  - reason: melee_heavy_is_special
-    what: "a thrown glaive at 3x that bounces once, ricochets to one more enemy and explodes"
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_attack_unmodelled
+  attacks: Heavy Attack Glaive and Heavy Attack Glaive AoE
+- reason: melee_slide_unpublished
+- reason: melee_heavy_is_special
+  what: a thrown glaive at 3x that bounces once, ricochets to one more enemy and explodes
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 0.8
@@ -27,7 +27,11 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.6
-  damage: { impact: 60, slash: 240 }   # total 300
-
+  damage:
+    impact: 60
+    slash: 240
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DuviriSwordShieldWarframeMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Argo_&_Vel

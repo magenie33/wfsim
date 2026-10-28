@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: tenet_livia
 name: Tenet Livia
 slot: melee
@@ -26,17 +27,15 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_valence_unmodelled
-    family: Tenet
-  - reason: melee_slide_unpublished
-
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_valence_unmodelled
+  family: Tenet
+- reason: melee_slide_unpublished
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 1.08
+  fire_rate: 1.0833333333333333
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -46,17 +45,26 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.7
-  heavy: { multiplier: 6.0, windup_seconds: 0.2333 }
-  damage: { impact: 9.9, puncture: 9.9, slash: 178.2 }   # total 198
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 2.0
+  damage:
+    impact: 9.9
+    puncture: 9.9
+    slash: 178.2
   slam:
-    damage: { impact: 198 }
+    damage:
+      impact: 198
     radius_m: 7.0
     blast_kind: slam
     status_chance: 0.1
     falloff_start_m: 0.0
     falloff_reduction: 0.5
-    forced_procs: [impact]
+    forced_procs:
+    - impact
     takes_multishot: false
-
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/LongKatanaMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Tenet_Livia

@@ -37,7 +37,7 @@ pub enum DamageType {
     Cinematic,
 }
 
-/// A SET of damage types held in one word — an attack part's FORCED procs.
+/// Forced damage-type and independent procs, held in one word per attack part.
 ///
 /// A mask rather than a `Vec` because [`crate::build::loadout::ResolvedRadial`] is
 /// `Copy` and the sim copies one per pellet; walking 17 bits costs nothing
@@ -47,6 +47,22 @@ pub struct ForcedProcs(u32);
 
 #[wfsim_gas_macro::metered]
 impl ForcedProcs {
+    pub fn from_names<'a>(names: impl IntoIterator<Item = &'a str>) -> Self {
+        let mut set = Self::default();
+        for name in names {
+            let bit = if let Some(t) = DamageType::from_name(name) { 1 << t as u32 }
+                else { match name { "lifted" => 1 << 29, "knockdown" => 1 << 30,
+                    _ => panic!("unknown forced proc {name}") } };
+            set.0 |= bit;
+        }
+        set
+    }
+
+    pub fn independent(self, name: &str) -> bool {
+        let bit = match name { "lifted" => 1 << 29, "knockdown" => 1 << 30, _ => 0 };
+        self.0 & bit != 0
+    }
+
     pub fn from_types(ts: impl IntoIterator<Item = DamageType>) -> Self {
         Self(ts.into_iter().fold(0, |m, t| m | (1 << t as u32)))
     }

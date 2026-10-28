@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: obex_forward
 name: Obex
 # see notes: melee_from_the_modules
@@ -6,11 +7,10 @@ form: forward
 transform_group: obex
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_incarnon_slam_arms_unmodelled
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_incarnon_slam_arms_unmodelled
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -23,8 +23,15 @@ attack:
   punch_through_m: 0.0
   range_m: 1.25
   follow_through: 0.9
-  heavy: { multiplier: 12.0, windup_seconds: 0.1667 }
-  damage: { impact: 84, puncture: 18, slash: 18 }   # total 120
-
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.75
+  damage:
+    impact: 84
+    puncture: 18
+    slash: 18
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PunchKickMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Obex

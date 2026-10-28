@@ -1,3 +1,6 @@
+# see notes: okina_spectral_dagger
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: okina_heavy_slam
 name: Okina
 # NOTHING BUT HEAVY SLAMS, the mode no stance changes. Entirely radial: the
@@ -11,10 +14,9 @@ unmodeled:
   - reason: spectral_dagger_orbit_and_target_assumed
   - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 1.08
+  fire_rate: 1.0833333333333333
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -23,12 +25,15 @@ attack:
   status_chance: 0.2
   punch_through_m: 0.0
   range_m: 1.7
-  # see notes: dual_daggers_heavy
-  heavy: { multiplier: 2.0, windup_seconds: 0.1667 }
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.69999999
   spends_combo: true
-  damage: { impact: 0.0 }
+  damage:
+    impact: 0.0
   radial:
-    damage: { blast: 420 }
+    damage:
+      blast: 420
     radius_m: 7.0
     blast_kind: slam
     status_chance: 0.1
@@ -36,20 +41,25 @@ attack:
     falloff_reduction: 0.3
     forced_procs: []
     takes_multishot: false
-  # see notes: okina_spectral_dagger
   spectral_dagger:
-    damage: { impact: 21, puncture: 49, slash: 70 }
+    damage:
+      impact: 21
+      puncture: 49
+      slash: 70
     speed_mps: 18.0
     blast:
-      damage: { cold: 140 }
+      damage:
+        cold: 140
       radius_m: 4.0
-      forced_procs: [cold]
+      forced_procs:
+      - cold
       takes_multishot: false
-  # CLIMB -> SLAM -> RECOVER, and two seconds is the same stand-in for the
-  # landing recovery every heavy slam in the roster carries (docs/MELEE.md).
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 2.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 1.0
+    delay_seconds: 2.0
+    forced_procs:
+    - lifted
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Okina

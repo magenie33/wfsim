@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: furax_wraith_heavy
 name: Furax Wraith
 # see notes: melee_from_the_modules
@@ -6,18 +7,13 @@ form: heavy
 transform_group: furax_wraith
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_slide_unpublished
-  - reason: heavy_charge_share_assumed
-    published: 0.6
-    charge: 0.2
-    swing: 0.4
-  - reason: melee_passive_unmodelled
-    passive: "its combo counter starts at 20"
+- reason: melee_slide_unpublished
+- reason: melee_passive_unmodelled
+  passive: its combo counter starts at 20
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 1.08
+  fire_rate: 1.0833333333333333
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -27,13 +23,16 @@ attack:
   punch_through_m: 0.0
   range_m: 1.25
   follow_through: 0.9
-  heavy: { multiplier: 5.0, windup_seconds: 0.2 }
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.75
   spends_combo: true
-  damage: { impact: 97.3, puncture: 20.9, slash: 20.8 }   # total 139
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 97.299999
+    puncture: 20.850001
+    slash: 20.849997
   combo_script:
-    - { multiplier: 5.0, windup_seconds: 0.2, delay_seconds: 0.4, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 5.0, windup_seconds: 0.2, delay_seconds: 0.4, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/FistMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Furax_Wraith

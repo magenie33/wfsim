@@ -1,42 +1,28 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: shimmering_blight
 name: Shimmering Blight
 rarity: uncommon
 polarity: zenurik
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmCmbOneMeleeTree
-description: "Fast spinning attacks and staggering strikes."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Fast spinning attacks and staggering strikes.
 combos:
-  # Slashing Wind — 0.95 s at 1.0x, 2 inputs
   neutral:
-    - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.475, combo_points: 2, combo_points_base: 2 }
-  # Slashing Wind — 0.95 s at 1.0x, 2 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmCmbOneMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.475, combo_points: 2, combo_points_base: 2 }
-  # Slashing Wind — 0.95 s at 1.0x, 2 inputs
+    reuse: neutral
   block:
-    - { multiplier: 1.0, delay_seconds: 0.475, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.475, combo_points: 2, combo_points_base: 2 }
-  # Howling Gale — 2.55 s at 1.0x, 3 inputs
+    reuse: neutral
   block_forward:
-    - { multiplier: 1.0, hits: 4, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.85, all_around: true, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.85, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.85, combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_B
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmCmbOneMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Shimmering_Blight

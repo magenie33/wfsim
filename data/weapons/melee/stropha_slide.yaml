@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: stropha_slide
 name: Stropha
 # see notes: melee_from_the_modules
@@ -10,7 +11,6 @@ unmodeled:
     attacks: "Ranged Attack"
   - reason: gunblade_heavy_is_a_shot
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -22,12 +22,13 @@ attack:
   status_chance: 0.14
   punch_through_m: 0.0
   range_m: 2.0
-  # see notes: slide_ignores_follow_through
   follow_through: 1.0
-  damage: { impact: 61.6, puncture: 74.8, slash: 83.6 }   # total 220
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 61.6
+    puncture: 74.8
+    slash: 83.6
   combo_script:
-    - { multiplier: 2.0, delay_seconds: 0.6, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/GunbladeMeleeTree
+    context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Stropha

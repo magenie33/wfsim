@@ -1,55 +1,185 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
+# see notes: combo_points_from_multiplier
+# see notes: stance_ranged_rows
+# see notes: stance_from_the_module
 id: bullet_dance
 name: Bullet Dance
 rarity: rare
 polarity: madurai
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/GunbladeCmbTwoMeleeTree
-description: "Sharpened blades dance with gunfire."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
-# see notes: stance_ranged_rows
+description: Sharpened blades dance with gunfire.
 combos:
-  # Automatic Rhumba — 4.5 s at 1.0x, 5 inputs
   neutral:
-    - { multiplier: 1.25, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.9, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.25, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.9, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.5, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.9, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.9, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, hits: 3, delay_seconds: 0.9, impact_multiplier: 1.25, slash_multiplier: 1.25, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-  # Magnum Mambo — 3.0 s at 1.0x, 4 inputs
+  - multiplier: 1.25
+    delay_seconds: 0.0
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 0.9
+    forced_procs:
+    - slash
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 1.25
+    delay_seconds: 0.0
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 0.9
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 1.5
+    delay_seconds: 0.0
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 0.9
+    forced_procs:
+    - slash
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 2.0
+    delay_seconds: 0.0
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 0.9
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 3.0
+    hits: 3
+    delay_seconds: 0.9
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    forced_procs:
+    - impact
+    combo_points: 3
+    combo_points_base: 3
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.75, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.75, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.75, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.75, combo_points: 1, combo_points_base: 1 }
-  # Samba Slash — 3.0 s at 1.0x, 3 inputs
+  - multiplier: 1.0
+    delay_seconds: 0.0
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 0.75
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 2.0
+    delay_seconds: 0.75
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 3.0
+    delay_seconds: 0.75
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 3
+    combo_points_base: 3
+  - multiplier: 2.0
+    delay_seconds: 0.0
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 0.75
+    combo_points: 1
+    combo_points_base: 1
   block:
-    - { multiplier: 1.0, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0, combo_points: 1, combo_points_base: 1 }
-  # Lead Tango — 2.8 s at 1.0x, 3 inputs
+  - multiplier: 1.0
+    delay_seconds: 0.0
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 1.0
+    forced_procs:
+    - slash
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 2.0
+    delay_seconds: 0.0
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 1.0
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 2.0
+    delay_seconds: 0.0
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 1.0
+    combo_points: 1
+    combo_points_base: 1
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.9333, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, hits: 2, delay_seconds: 0.9333, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.9334, impact_multiplier: 1.25, slash_multiplier: 1.25, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-
+  - multiplier: 3.0
+    delay_seconds: 0.0
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 3
+    combo_points_base: 3
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 0.9333
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 2.0
+    hits: 2
+    delay_seconds: 0.0
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    hits: 2
+    delay_seconds: 0.9333
+    forced_procs:
+    - slash
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 3.0
+    delay_seconds: 0.9334
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    forced_procs:
+    - impact
+    combo_points: 3
+    combo_points_base: 3
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/GunbladeCmbTwoMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Bullet_Dance

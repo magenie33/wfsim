@@ -4,8 +4,8 @@
 //! The pull and the hit are two moments. The pull spends the round, rolls the
 //! shot's numbers and sets the clock to the next pull; the HIT is everything
 //! that keys off contact — damage, procs, on-hit and on-kill buffs, the spread
-//! to the bodies around it. A shot that does not fly lands inside its own turn
-//! and nothing between the two moments exists; one that flies is a [`Landing`]
+//! to the bodies around it. Immediate contact lands inside its own turn;
+//! projectile flight and timed melee animation contacts become a [`Landing`]
 //! the scheduler settles at its own time (docs/MECHANICS.md §"Projectile
 //! flight").
 
@@ -38,6 +38,7 @@ pub(super) struct Landing {
     pub(super) tennokai_kill_mark: u32,
     /// Is this throw detonated where it arrives — see `MeleeState::detonating`.
     pub(super) detonates: bool,
+    pub(super) recalls: bool,
     pub(super) melee_struck: Vec<usize>,
     /// THE PUNCH THROUGH A LIVE GRANT GAVE THE ROUND AS IT LEFT THE MUZZLE
     /// (Ripper Rounds' kill window): a property of the projectile, so a kill
@@ -192,6 +193,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             tennokai: l.tennokai,
             tennokai_heavy: l.tennokai_heavy,
             detonates: l.detonates,
+            recalls: l.recalls,
             melee_struck: &l.melee_struck,
             struck,
             pierce_live_m: l.pierce_live_m,

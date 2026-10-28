@@ -387,8 +387,9 @@ Both are listed under Bugs on its page, and both would move a number:
 ## MELEE INFLUENCE SPREADS FROM THINGS IT SHOULD NOT
 
 The arcane is modelled — the roll, the window, the ten spreadable elements, the
-radius, the faction rungs, the damage on the body it came from — and it does
-nothing on a Glaive-type weapon, swing or throw (`inert_on: [glaive]`).
+radius, the faction rungs and the damage on the body it came from. Glaives can
+trigger it with Electricity status, including a forced proc whose damage type
+has combined into another element.
 **One RESTRICTION is not applied**, and it makes the model too generous:
 
 **It triggers only on DIRECT melee strikes.** *"Secondary melee effects such as
@@ -480,9 +481,9 @@ numbers, and the engine does not apply, is admitted on that weapon:
 | --- | --- | --- |
 | an attack beyond swing, slam and heavy slam — a throw, a shot, a projectile, a pool | `melee_attack_unmodelled` (names them) | the weapon |
 | a heavy that is not a swing: no heavy mode | `glaive_heavy_is_a_throw`, `gunblade_heavy_is_a_shot`, `melee_heavy_is_special` (says what it is) | every glaive and gunblade; Zenistar, Syam, Quassus, Quassus Prime, Edun, Corufell, Corufell Prime, Caustacyst, Coda Caustacyst, Arum Spinosa, Argo & Vel |
-| a glaive's throw beyond what the arena holds — walls to bounce off, how the bounce count and the bounce explosion are read, the flight back, the throw's animation, Tennokai and Melee Animosity on a throw (docs/MELEE.md §10) | `glaive_bounce_*`, `glaive_detonation_ends_bounces`, `glaive_throw_*` | every glaive's throws; Orvius's quick throw (a hover, not a strike) has no form |
-| no heavy or no slide figure/duration published: no such mode | `melee_heavy_unpublished`, `melee_slide_unpublished` | Amanata's heavy; the slide of War, War Prime and every Blade and Whip, Fist, Scythe, Heavy Scythe, Sword and Shield, Two-Handed Nikana and Warfan — the class's slide block has no `Duration` |
-| combos the stance module gives the WEAPON itself | `melee_own_combo_unmodelled` | Korumm, Tatsu, Nepheri, … |
+| a glaive's throw beyond what the arena holds — walls to bounce off, how the bounce count and the bounce explosion are read, the throw's animation, Tennokai and Melee Animosity on a throw (docs/MELEE.md §10) | `glaive_bounce_*`, `glaive_detonation_ends_bounces`, `glaive_throw_*` | every glaive's throws; Orvius's quick throw (a hover, not a strike) has no form |
+| a missing package action, duration or attack event | `docs/melee/package-coverage.json` | unavailable weapon inputs and legacy stance modes; no projectile is replaced with an invented sweep |
+| a weapon's special attack beyond its exported collision events | `melee_own_combo_unmodelled` | the named weapon's admission |
 | a passive, a signature bonus, a wielder bonus | `melee_passive_unmodelled` (says what it is) | Wrath, Pride, Lesion, Tonkkatt, the block-charge Sword and Shields, … |
 | infobox heavy total against the class table's | `melee_heavy_total_disputed` | where the two differ |
 | Incarnon Genesis / Form | `melee_incarnon_unmodelled` | the Incarnon melee |
@@ -494,12 +495,16 @@ Split-Sword**'s Dual Swords half is declared on its Heavy Blade entry; **Zaws**
 are modular and out by class like the rest of `Module:Weapons/data/modular`;
 **Harrowing Spire**, the Bayonet stance, therefore has no weapon to sit on.
 
-**The stances.** Every PvE stance card is in, transcribed from
-`Module:Stances/data` (`notes: stance_from_the_module`). Two combos have no
-published duration and are left off their card — Gleaming Talon's block combo
-and Wise Razor's — so that mode is refused under that card
-(`STANCE_LACKS_COMBO`). Gunblade and glaive rows the module marks `Ranged` are
-played as swings (`notes: stance_ranged_rows`). **Clashing Forest** is not in
+**The stances.** Available stance and bare weapon inputs use the shared package
+actions (`notes: melee_shared_package_actions`). A missing bare ground branch
+uses the exported default input when that branch is absent; a branch present
+with incomplete events remains unavailable. Coverage lists retained wiki
+fallbacks, missing actions and unsupported control flags. A seated stance
+without the requested input is refused (`STANCE_LACKS_COMBO`). Sweep geometry,
+collision-window ends and animation cancellation are absent from the export;
+manual geometry masks and contact at the opening marker remain arena rules.
+Gunblade projectile events without usable data remain unmodelled.
+**Clashing Forest** is not in
 DE's export, so its Chinese name is EMPTY until read off the client — and
 its art is the wiki's.
 

@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: ether_daggers_slide
 name: Ether Daggers
 # see notes: melee_from_the_modules
@@ -6,10 +7,9 @@ form: slide
 transform_group: ether_daggers
 co_behavior: additive_with_base_damage
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.833
+  fire_rate: 0.8333333333333334
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -18,13 +18,16 @@ attack:
   status_chance: 0.3
   punch_through_m: 0.0
   range_m: 1.75
-  # see notes: slide_ignores_follow_through
   follow_through: 1.0
-  heavy: { multiplier: 2.0, windup_seconds: 0.1667 }
-  damage: { impact: 33.6, puncture: 33.6, slash: 156.8 }   # total 224
-  # see notes: combo_points_from_multiplier
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.69999999
+  damage:
+    impact: 33.6
+    puncture: 33.6
+    slash: 156.8
   combo_script:
-    - { multiplier: 2.0, delay_seconds: 0.67, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerMeleeTree
+    context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Ether_Daggers

@@ -72,7 +72,11 @@ const comboOf = (w, id) => {
   const sid = (slots[STANCE] || {}).mod;
   const m = sid ? modById(sid) : null;
   const fromStance = m && m.stance_combos ? m.stance_combos[id] : null;
-  return fromStance || f.combo || null;
+  const c = fromStance || f.combo || null;
+  if (!c) return null;
+  return { ...c, seconds: c.seconds
+    + (c.weapon_charge_inputs || 0) * (f.heavy_charge_seconds || 0)
+    + (c.weapon_throw_inputs || 0) * (f.throw_charge_seconds || 0) };
 };
 
 function modeExplain(w, id) {

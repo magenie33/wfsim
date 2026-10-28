@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: ack_and_brunt_forward
 name: "Ack & Brunt"
 # see notes: melee_from_the_modules
@@ -6,18 +7,17 @@ form: forward
 transform_group: ack_and_brunt
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_attack_unmodelled
-    attacks: "Spectral Axe and Spectral Axe Explosion"
-  - reason: melee_slide_unpublished
-  - reason: melee_passive_unmodelled
-    passive: "blocking an elemental attack stores a charge adding 17.5% of that element to the next attack, up to 4"
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_attack_unmodelled
+  attacks: Spectral Axe and Spectral Axe Explosion
+- reason: melee_slide_unpublished
+- reason: melee_passive_unmodelled
+  passive: blocking an elemental attack stores a charge adding 17.5% of that element to the next attack, up to 4
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.833
+  fire_rate: 0.8333333333333334
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -27,8 +27,15 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.6
-  heavy: { multiplier: 5.0, windup_seconds: 0.2333 }
-  damage: { impact: 14.9, puncture: 14.9, slash: 119.2 }   # total 149
-
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.69999999
+  damage:
+    impact: 14.9
+    puncture: 14.9
+    slash: 119.2
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordShieldMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Ack_&_Brunt

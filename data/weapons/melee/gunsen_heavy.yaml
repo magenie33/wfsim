@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: gunsen_heavy
 name: Gunsen
 # see notes: melee_from_the_modules
@@ -17,10 +19,9 @@ unmodeled:
   - reason: melee_passive_unmodelled
     passive: "a Warfan's slam hits twice, the heavy slam's second hit at the normal slam's figures"
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 1.17
+  fire_rate: 1.1666666666666667
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -30,13 +31,31 @@ attack:
   punch_through_m: 0.0
   range_m: 1.7
   follow_through: 0.7
-  heavy: { multiplier: 4.0, windup_seconds: 0.1667 }
+  heavy:
+    multiplier: 4.0
+    windup_seconds: 2.0
   spends_combo: true
-  damage: { impact: 12.8, puncture: 19.2, slash: 128 }   # total 160
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 12.8
+    puncture: 19.2
+    slash: 128
   combo_script:
-    - { multiplier: 2.0, hits: 2, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [knockdown, slash], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 4.0, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [knockdown, slash], combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 2.0
+    hits: 2
+    windup_seconds: 0.1667
+    delay_seconds: 0.3333
+    forced_procs:
+    - knockdown
+    - slash
+    combo_points: 0
+    combo_points_base: 0
+  - multiplier: 4.0
+    windup_seconds: 0.1667
+    delay_seconds: 0.3333
+    forced_procs:
+    - knockdown
+    - slash
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Gunsen

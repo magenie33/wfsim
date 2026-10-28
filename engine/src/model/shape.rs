@@ -544,16 +544,29 @@ pub enum BlastKind {
 /// swing's animation length directly.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ComboHit {
+    /// Present only on rows compiled from an input/action timeline.
+    #[serde(skip)]
+    pub event_timing: Option<crate::model::MeleeEventTiming>,
     /// The stance damage multiplier, as a FRACTION (400% -> 4.0).
     ///
     /// DAMAGE ONLY. What the swing earns the counter is `combo_points`, a
     /// separate number the game sets per attack.
     pub multiplier: f64,
-    /// Seconds from this swing to the next, at 1.0x attack speed.
+    /// Seconds from this row's start to the next row, at 1.0x attack speed.
     ///
     /// The ANIMATION, and attack speed shortens it. It does NOT include the
     /// wind-up below, which is a separate clock scaled by a separate bucket.
     pub delay_seconds: f64,
+    /// Contact within this row's animation, before attack-speed scaling.
+    /// None preserves the untimed script's immediate hit.
+    #[serde(default)]
+    pub hit_delay_seconds: Option<f64>,
+    /// Whether this hit closes an input. Untimed scripts infer it from delay.
+    #[serde(default)]
+    pub input_end: Option<bool>,
+    /// The final row's loop target; an opener can lead into a repeating suffix.
+    #[serde(default)]
+    pub next_swing_index: Option<usize>,
     /// THE CHARGE BEFORE A HEAVY SWING, in seconds at 1.0x wind-up speed.
     ///
     /// A SEPARATE CLOCK, because DE says so: *"Increasing melee attack speed
@@ -600,6 +613,14 @@ pub struct ComboHit {
     /// consumed it on the way.
     #[serde(default = "one")]
     pub impact_multiplier: f64,
+    #[serde(default = "one")]
+    pub puncture_multiplier: f64,
+    /// Per-swing ProcAtten, separate from the weapon's status mod bucket.
+    #[serde(default = "one")]
+    pub status_multiplier: f64,
+    /// DamagePctAtten on resolved damage types, including elemental damage.
+    #[serde(default)]
+    pub damage_type_multipliers: std::collections::BTreeMap<String, f64>,
     /// A BONUS TO THE SLASH COMPONENT of this swing alone.
     ///
     /// `SlashMultiplier = { 1.25 }` in the module — Sovereign Outcast marks one
@@ -657,6 +678,16 @@ fn one_hit() -> u32 {
 
 #[wfsim_gas_macro::metered]
 impl ComboHit {
+    /// The repeating suffix, excluding any one-time opening inputs.
+    pub fn repeating(script: &[Self]) -> &[Self] {
+        let start = script.last().and_then(|h| h.next_swing_index).unwrap_or(0);
+        &script[start..]
+    }
+
+    pub fn ends_input(&self) -> bool {
+        self.input_end.unwrap_or(self.delay_seconds > 0.0)
+    }
+
     /// The two kinds of forced proc this swing carries, told apart by name.
     ///
     /// A name the engine does not know is a LOUD failure rather than a silent

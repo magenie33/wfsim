@@ -512,6 +512,7 @@ pub struct FightParams {
     /// Empty on every gun, and its emptiness is what keeps this loop unchanged
     /// for them.
     pub combo_script: Vec<crate::model::ComboHit>,
+    pub heavy_script: Vec<crate::model::ComboHit>,
     /// `FT^(n-1)`, the share a swing has left for the n-th body it reaches.
     /// `None` on anything that is not a melee swing.
     pub follow_through: Option<f64>,

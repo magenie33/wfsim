@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: mios_heavy
 name: Mios
 # see notes: melee_from_the_modules
@@ -6,16 +7,11 @@ form: heavy
 transform_group: mios
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_slide_unpublished
-  - reason: heavy_charge_share_assumed
-    published: 0.4
-    charge: 0.1333
-    swing: 0.2667
+- reason: melee_slide_unpublished
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 1.08
+  fire_rate: 1.0833333333333333
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -25,15 +21,16 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.5
-  heavy: { multiplier: 4.0, windup_seconds: 0.1333 }
+  heavy:
+    multiplier: 16.0
+    windup_seconds: 0.69999999
   spends_combo: true
-  damage: { impact: 53.1, puncture: 44.25, slash: 79.65 }   # total 177
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 53.1
+    puncture: 44.25
+    slash: 79.65
   combo_script:
-    - { multiplier: 4.0, windup_seconds: 0.1333, delay_seconds: 0.2667, combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 4.0, windup_seconds: 0.1333, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 4.0, delay_seconds: 0.0, combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 4.0, delay_seconds: 0.2667, combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordWhipMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Mios

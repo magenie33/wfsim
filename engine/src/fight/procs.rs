@@ -1,6 +1,18 @@
 use crate::rules::math::Portable;
 use super::*;
 
+#[wfsim_gas_macro::metered]
+pub(super) fn apply_independent_forced(forced: crate::rules::damage::ForcedProcs, body: &mut Body, t: f64, duration: f64) {
+    if forced.independent("lifted") {
+        let until = t + LIFTED_SECONDS * duration;
+        body.debuffs.lifted = Some(body.debuffs.lifted.map_or(until, |e| e.max(until)));
+    }
+    if forced.independent("knockdown") {
+        let until = t + KNOCKDOWN_SECONDS * duration;
+        body.debuffs.knockdown = Some(body.debuffs.knockdown.map_or(until, |e| e.max(until)));
+    }
+}
+
 /// Settle ONE damage instance's status procs onto the target — MECHANICS §6.
 ///
 /// Every instance kind applies status by identical rules — a direct pellet, a

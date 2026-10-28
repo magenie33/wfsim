@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: amanata_forward
 name: Amanata
 # see notes: melee_from_the_modules
@@ -6,13 +7,13 @@ form: forward
 transform_group: amanata
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_heavy_unpublished
-  - reason: melee_passive_unmodelled
-    passive: "Amanata's Rolls: a random blessing — 40% final Critical Chance, 30% final Status Chance, 30% Status Damage, +1 m range, 20% attack speed, or all five — rerolled every 30 hits"
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_heavy_unpublished
+- reason: melee_passive_unmodelled
+  passive: "Amanata's Rolls: a random blessing \u2014 40% final Critical Chance, 30% final Status Chance, 30% Status Damage, +1 m range, 20% attack speed, or all\
+    \ five \u2014 rerolled every 30 hits"
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -25,7 +26,11 @@ attack:
   punch_through_m: 0.0
   range_m: 3.0
   follow_through: 0.6
-  damage: { puncture: 37.8, slash: 88.2 }   # total 126
-
+  damage:
+    puncture: 37.8
+    slash: 88.2
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmMeleeTree
+    context: CC_GROUND_BRANCH_A
 source:
   url: https://wiki.warframe.com/w/Amanata

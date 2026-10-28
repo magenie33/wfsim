@@ -208,7 +208,7 @@ ui:
   "click: must have · again: I don't have · again: clear": "点一下：必须有 · 再点：我没有 · 再点：清除"
   "what you don't have, or must have — mods, arcanes, evolutions, riven stats": "你没有的、或必须要有的——MOD、赋能、进化、裂罅属性"
   "fixed on this weapon — it cannot be removed, and its slot takes no Forma": 这把武器固定装备，不能卸下，槽位也不能 Forma
-  "no stance in the slot: stanceless combos are not modelled yet — equip a stance, or play heavy attacks, slide attacks or heavy slams": 架势槽是空的：无架势连段尚未建模——请装上一张架势，或改用重击、滑行攻击或重击震地
+  "no stance in the slot: this stanceless input is not modelled — equip a stance or choose a supported input": 架势槽为空：这个无架势输入尚未建模，请装备架势或选择已支持的输入。
   "this stance publishes no timing for this combo, so it is not modelled — pick another combo or another stance": 这张架势的这个连段没有公布时长，所以未建模——请换一个连段或换一张架势
   "THE DAMAGE IS HYSTERIA'S AT 100% ABILITY STRENGTH. Every swing, slide and slam number on the page carries the Strength icon, so a Valkyr build with more strength deals proportionally more than this reports": "**伤害来自 Hysteria，按 100% 技能强度计**。技能页上每个挥砍、滑行和捶地数值都带强度图标，所以强度更高的 Valkyr 配装实际伤害会按比例高于此处"
   "Hysteria drains 5 Energy a second while the claws are out; Energy is not modelled, so they stay out for the whole fight.": "Hysteria 开着利爪时每秒消耗 5 点能量；能量未建模，所以利爪全程保持。"
@@ -225,7 +225,7 @@ ui:
   "A detonated glaive goes off on its way out, no further than the first body it cannot pass, and makes no bounce after that one: the fight does not wait for the bounces it could still have made.": "引爆的战刃在飞出途中爆炸，最远到第一个穿透不过去的敌人，之后不再弹跳：不会等它把还能打的弹跳打完。"
   "The glaive seeks enemies by itself (wiki, Volatile Rebound); here it flies straight and bounces where reflection takes it.": "这把战刃会自己寻找敌人（wiki，易爆反弹页面）；这里它直线飞行，按反射方向弹跳。"
   "How fast a thrown glaive comes back is unpublished: one left to return is taken to fly back over the same distance at its own speed, and a detonated one is in the hand at once.": "投出的战刃飞回来的速度没有公开：不引爆时按原速沿同样距离飞回计算，引爆后则立刻回到手上。"
-  "A throw's own animation is unpublished: it is taken as one attack at the throw's listed rate, after the charge where there is one, and attack speed shortens it.": "投掷本身的动作时长没有公开：按投掷的面板攻速算一次攻击（蓄力投掷在蓄力之后），攻速会缩短它。"
+  "The quick ground throw has no exported release event. Its release duration uses one attack at the unmodded quick-throw rate, scaled by attack speed.": "地面快速投掷缺少导出的出手事件。其出手时长按无 MOD 时的快速投掷攻速计算一次攻击，再由攻速缩放。"
   "Tennokai on a throw is not modelled as the game has it: the window pauses while the glaive flies and only a detonation spends it.": "投掷时的 Tennokai 没有按游戏里的方式建模：战刃飞行期间窗口会暂停，只有引爆才会消耗它。"
   "Melee Animosity counts a throw as a heavy attack that pays its bonus and spends no stack; here a throw is a light input.": "近战·憎恶把投掷算作重击，吃加成且不消耗层数；这里投掷按普通攻击输入处理。"
   "The throw forces Ragdoll (the module's ForcedProcs), a state this arena does not have.": "投掷会强制触发 Ragdoll（模块的 ForcedProcs），本场没有这个状态。"

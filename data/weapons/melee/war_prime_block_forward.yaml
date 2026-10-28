@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: war_prime_block_forward
 name: War Prime
 # see notes: melee_from_the_modules
@@ -6,14 +7,13 @@ form: block_forward
 transform_group: war_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_slide_unpublished
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_slide_unpublished
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.917
+  fire_rate: 0.9166666666666666
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -21,13 +21,19 @@ attack:
   crit_multiplier: 3.2
   status_chance: 0.32
   punch_through_m: 0.0
-  # "Every hit on enemies that are not ragdolled procs an Impact status
-  # effect" (page); a ragdolled body is not told apart here.
-  forced_procs: [impact]
+  forced_procs:
+  - impact
   range_m: 3.2
   follow_through: 0.6
-  heavy: { multiplier: 6.0, windup_seconds: 0.3667 }
-  damage: { impact: 194.4, puncture: 32.4, slash: 43.2 }   # total 270
-
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 1.2
+  damage:
+    impact: 194.4
+    puncture: 32.4
+    slash: 43.2
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/AxeMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/War_Prime

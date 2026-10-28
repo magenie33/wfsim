@@ -9,6 +9,40 @@
 # an entry from being orphaned.
 
 notes:
+  melee_shared_package_actions: |
+    data/melee/actions.yaml owns shared melee animations and attack events.
+    Stance and weapon scripts bind its package tree/context ids; reuse names
+    an equivalent input explicitly. Package-derived fields come only from
+    tests/fixtures/melee/package-2026-10-08.json (melee_package_timing).
+    scripts/import_melee_package.py --check verifies those generated fields.
+    The catalog's geometry masks are manual wiki rules, retained by the
+    importer and applied by the loader; new event counts must match a mask.
+    Missing attack/projectile events stay unmodelled. Non-damaging control
+    flags and the damaged DualSwordBranchAB damage vector are listed in
+    docs/melee/package-coverage.json; the invalid vector is not applied.
+    Heavy charge reads the weapon's package parameter at build resolution;
+    each heavy input's multiplier comes from its actual sweep overrides.
+    Bare inputs without a separate branch reuse the default ground sequence;
+    when only branch A stores that sequence it is also the neutral default.
+    Block-forward falls back to neutral, not to the movement combo. The class
+    tables document these aliases: https://wiki.warframe.com/w/Hammer and
+    https://wiki.warframe.com/w/Dual_Swords . An exported incomplete branch is
+    not replaced by another input. Every inferred binding is listed under
+    bare_input_aliases in the coverage report.
+  gemini_cross_timeline: |
+    Gemini Cross's six supported modes use input/action/event timelines from
+    @superexboom's build 2026.10.08 package export (melee_package_timing).
+    The pinned export is tests/fixtures/melee/package-2026-10-08.json;
+    scripts/import_melee_package.py imports it and --check compares the YAML.
+    Runtime reads stance bindings and the shared catalog. Overrides attach to source hit
+    indices before events are sorted chronologically. A sweep event opens
+    collision; the arena assumes immediate contact within its existing arc.
+    Slide geometry and the closing slam's one combo point use the stance wiki;
+    the export does not provide those fields. WaitStart is retained in the
+    evidence, without treating it as a proven animation-cancellation boundary.
+    Heavy charge uses the weapon's chargeTime; extraDuration is the charge
+    animation length, not an additional delay. Tennokai charge defaults to zero
+    because its runtime parameter is absent; heavy attack events still play.
   shotgun_riven_zoom: |
     Player shotgun Rivens allow positive and negative Zoom. Hotfix 44.0.2:
     https://www.warframe.com/en/patch-notes/pc/44-0-2
@@ -376,35 +410,36 @@ notes:
     the grant does not, and a `max_rank` here would make the card ask for drain
     it does not cost (`ModDef.base_drain` is `base + max_rank`).
   melee_from_the_modules: |
-    A MELEE ENTRY'S NUMBERS FROM THE TWO WIKI MODULES, where its own page states
-    nothing else (docs/MELEE.md §9):
-    - the swing, reach, follow through, polarities and combo
-      clock are `Module:Weapons/data/melee`'s infobox fields;
-    - the four ground combos carry NO script: a stance supplies it, and an
-      empty slot is refused (`combo_needs_a_stance`);
-    - the heavy is the CLASS's heavy block from `Module:Stances/data`, scaled
-      so one heavy attack totals the infobox's `HeavyAttack`; its wind-up is
-      split by `heavy_charge_share_assumed`;
-    - the slide is the class's slide block, each hit at the infobox's
-      `SlideAttack`, timed by the block's `Duration`;
-    - the slam is the infobox's `Slam Attack` at 100% (half its 2x), and the
-      heavy slam its `Heavy Slam Attack` on the 2.0 s stand-in recovery.
+    Weapon metadata, reach, follow through, combo duration and properties not
+    exported by the package retain Module:Weapons/data/melee and each page's
+    Characteristics/Notes/Mechanics. Available package base stats, animation
+    events and per-swing properties take precedence (melee_shared_package_actions).
+    Legacy scripts remain only where the package omits attack/projectile data.
+    The weapon's unit slam and independent heavy-slam recovery retain their
+    declared sources and limitations; package animation durations do not supply
+    a missing ground-impact recovery or player ascent time.
+  melee_package_timing: |
+    Animation durations and event positions extracted and organized by
+    @superexboom, client build 2026.10.08, export commit
+    84b71490039d205aa7ada42cb134d319aa852775. Packages.bin SHA-256:
+    0d5881641f87e9746fb307a4fae76422cbba314bf4f808f9d5ca57bd20f0ea78.
+    Each event time is its animation duration times its normalized position.
+    A multi-hit input uses successive event deltas and keeps its remaining
+    recovery on its last row; input_end records which hit closes the input.
+    Glaive charged throws use ChargeDuration and separate release animations;
+    their final row repeats from the first consecutive throw.
   glaive_throw_from_the_module: |
-    A GLAIVE'S THROW FROM `Module:Weapons/data/melee`, its `Throw` and
-    `Charged Throw` rows (docs/MELEE.md §10):
-    - the direct hit is the row's damage, crit, status and forced procs, its
-      `ShotSpeed` the projectile speed, its `Range` the flight range and its
-      `PunchThrough` the innate punch through;
-    - the explosion is the matching `Recall Explosion` row — the in-flight
-      detonation — with its own radius, crit, status and forced procs and no
-      falloff (`Reduction = 0`); it goes off only when `detonate` is pressed;
-    - the bounce explosion is the matching `Bounce Explosion` row, with its
-      own falloff and forced procs; the bounce count is the page's;
-    - the charge is the row's `ChargeTime`, on the heavy wind-up clock; the
-      throw itself is one attack at the quick `Throw` row's `FireRate`;
-    - each throw that lands earns one combo point, as one 100% swing does.
+    Throw and charged-throw projectile records supply Amount, crit, proc chance,
+    speed, forced procs, explosion amount/radius/falloff and HeavyRecallAtten/
+    HeavyRecallProcs. The recall's amount is Explosion x HeavyRecallAtten;
+    the bounce's is Explosion. Each instance keeps its own forced proc set.
+    The existing wiki damage-type composition is retained when the export
+    omits Type; range, punch through, bounce count and bounce forced procs
+    retain their wiki sources. Charge and motion have separate speed buckets
+    (M129). Charged releases use the shared opener/consecutive sequence;
+    quick ground releases retain the declared legacy clock when absent.
   stance_from_the_module: |
-    A STANCE TRANSCRIBED MECHANICALLY from `Module:Stances/data`, and its card
+    LEGACY STANCE ROWS use `Module:Stances/data`, and their card
     fields from `Module:Mods/data`. One `Attacks` entry is one input and the
     combo's `Duration` is split evenly across the inputs
     (`combo_clock_is_the_input`); `Dmg` is the row's multiplier, `Hits` its
@@ -419,30 +454,6 @@ notes:
     and they are played as swings at the row's multiplier, in reach, with no
     travel, spread or falloff. The number is the module's; the delivery is
     not modelled.
-  tonfa_heavy_and_slide: |
-    DISCORD SEWN AND FEUDING BLOOD — the Tonfa's own heavy and slide, identical
-    on both stances because they are the CLASS's rather than the card's.
-
-    THE HEAVY IS 4x, NOT THE MODULE'S 5x. `Module:Stances/data` prints
-    `Dmg = { 250 }, Hits = { 2 }`, which reads as 500%; DE's export says 4x on
-    all six Tonfas in the game (Boltace 704/176, Kronen 520/130, Kronen Prime
-    848/212, Ohma 896/224, Telos Boltace 840/210, Praedos 800/200), and it is
-    unanimous where the module is one row. The HIT COUNT is the module's and the
-    TOTAL is the export's, so each of the two hits is 200%.
-  dual_daggers_heavy: |
-    SAVAGE TIGER — the Dual Daggers' own heavy, identical on every stance
-    because it is the CLASS's rather than the card's.
-
-    IT IS 2x, AND TWO WIKI SOURCES DISAGREE. The weapon's own infobox
-    (`Module:Weapons/data/melee`) prints `HeavyAttack = 280` on a 140 Okina and
-    368 on a 184 Okina Prime; W`Melee`'s class table prints "5x (2.5x Slash +
-    2.5x Slash)" and `Module:Stances/data` prints `Dmg = { 250 }, Hits = { 2 }`.
-    The weapon's own page wins over a family overview (docs/WEAPON_INTAKE.md
-    §1), and DE's export agrees on all six Dual Daggers. The HIT COUNT is the
-    stance module's, so each of the two hits is 100%. Unmeasured.
-
-    THE WIND-UP is the infobox's `WindUp = 0.5`, split the way
-    `heavy_charge_share_assumed` states.
   okina_spectral_dagger: |
     THE SPECTRAL DAGGER — what an Okina's Incarnon Form makes of a kill. The
     attack is the infobox's (`Spectral Dagger` and its `Spectral Dagger
@@ -467,11 +478,6 @@ notes:
     THE PUBLISHED FIGURE IS THE SUM, NOT THE CHARGE. Reading it as charge alone
     makes a wind-up build far faster than it is: 1.2/2.8 is 0.43 s against the
     0.94 s that was measured.
-  class_s_heavy_attack: |
-    THE CLASS'S HEAVY ATTACK — 6x with a 1.2 s charge, from the wiki's
-    per-weapon-type table. Stated on EVERY form including the light ones,
-    because TENNOKAI turns one of their swings into a heavy attack and a form
-    with no heavy of its own could not fire the swing the window buys.
   co_explosion_second_family: |
     CO ON AN EXPLOSION — the second family in the roster to do it, after the
     Burston. "Radial hit only receives CO bonus on target directly hit by

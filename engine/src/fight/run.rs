@@ -624,7 +624,7 @@ pub fn run_once_traced(
         // THE FLASH, READ ONCE FOR THIS SCAN. Melee state, and the one fact in
         // `Now` no other part of the fight can answer.
         let flash = me.params.tennokai.enabled && t < me.melee.tennokai_until;
-        match before_the_shot(
+        let flow = if me.melee.input.is_some() { Flow::Go } else { before_the_shot(
             me.params,
             &me.apl,
             flash,
@@ -653,7 +653,8 @@ pub fn run_once_traced(
             &mut me.opening_closed,
             &mut me.field_duration_boost,
             me.other.as_ref().map(|o| super::cycle::SwitchTo { form: o.params.form.id(), seconds: o.seconds, bucket: o.bucket }),
-        ) {
+        ) };
+        match flow {
             // A SEAT THAT CANNOT ACT AGAIN IS DONE, and the FIGHT is not:
             // your magazine running out at second 40 does not stop a companion
             // that fires until 180. It parks, and the loop ends when every
@@ -696,6 +697,33 @@ pub fn run_once_traced(
             Some(cy) if me.incarnon.in_base_form => &cy.base_form,
             _ => me.params,
         };
+        if current_melee_event(active, &me.melee).is_some_and(|h| h.event_timing.is_some()) {
+            let event_rate = cadence_rate(me.params, active, t, &mut me.bar, &mut me.buff_stacks, &me.windows);
+            if let Some(wait) = prepare_melee_event(active, &me.apl, t, event_rate, r.kills, &mut me.melee) {
+                if wait > 0.0 {
+                    me.next_t = t + wait;
+                    r.per_seat[seat_index].add(SeatCounters::of(&r).since(counters_before));
+                    continue;
+                }
+            }
+            process_ticks(&me.windows, &mut bodies[0], &mut me.gal, &mut me.arc, t + 1e-9,
+                me.params, active, &mut r, rec, &mut d.status, &me.params.foe, 0);
+            process_entities(&mut entities, t, &mut turn!(me, active, &mut *d), &mut r, rec, &mut bodies);
+            if let Some(h) = current_melee_event(active, &me.melee)
+                .filter(|h| h.event_timing.is_some_and(|e| matches!(e.kind, crate::model::MeleeEventKind::Idle))).cloned() {
+                let i = me.melee.input.as_ref().unwrap();
+                let (tennokai, converted, mark) = (i.tennokai, i.converted, i.kill_mark);
+                let initial = active.initial_combo;
+                let combo = melee_combo_points(me.melee.combo_points, initial, t - me.melee.combo_spent_t);
+                after_swing(&h, active, me.params, rec, d, combo, melee_combo_multiplier(combo),
+                    tennokai, mark, converted, r.pellets, t, &mut r, &mut me.melee,
+                    &mut me.incarnon, &me.ammo, &mut me.arc, &mut bodies);
+                me.next_t = t + seconds_to_next_shot(active, t, event_rate, initial, Some(h),
+                    tennokai, converted, &me.ammo, &me.incarnon, &mut me.melee);
+                r.per_seat[seat_index].add(SeatCounters::of(&r).since(counters_before));
+                continue;
+            }
+        }
         // The instance total and its SHAPE (Toxin's shield bypass, the
         // vulnerability column) are derived PER STAGE now — each attack part
         // has its own vector — so only the vector and ModifiedBase survive at
@@ -751,6 +779,7 @@ pub fn run_once_traced(
             direct_pre_snap,
             co_base,
             detonates,
+            recalls,
         } = swing_this_shot(
             me.params,
             &me.apl,
@@ -853,7 +882,7 @@ pub fn run_once_traced(
         // Melee has no multishot mod in its pool, so the two can never compete.
         // …AND A TENNOKAI SWING LANDS ONCE — see `swing_instances`.
         if let Some(h) = &swing {
-            let n = swing_instances(h.hits, tennokai_heavy);
+            let n = swing_instances(h.hits, tennokai_heavy && h.event_timing.is_none());
             if n > 1 {
                 n_pellets = n_pellets.saturating_mul(n);
             }
@@ -1009,6 +1038,7 @@ pub fn run_once_traced(
             tennokai_heavy,
             tennokai_kill_mark,
             detonates,
+            recalls,
             melee_struck,
             pierce_live_m: buff_total(active, crate::model::BuffGrant::PunchThrough, &mut me.buff_stacks, t),
             effective_cc,
@@ -1042,14 +1072,15 @@ pub fn run_once_traced(
             burst_starts: (me.ammo.rounds_this_mag.max(1) - 1)
                 .is_multiple_of(active.burst.map_or(1, |b| b.count.max(1))),
         };
-        // A SHOT THAT FLIES IS DUE THE GAP OVER ITS SPEED FROM NOW, and the
-        // trigger does not wait for it: the next pull is timed from this one.
-        let flight = active.flight_seconds(me.params.gap());
-        if flight > 0.0 {
+        // Contact follows charge and the animation event, then projectile
+        // travel where present. The next input has its own completion clock.
+        let arrival_delay = active.flight_seconds(me.params.gap())
+            + swing_contact_delay(active, landing.swing.as_ref(), live_rate, tennokai, tennokai_heavy);
+        if arrival_delay > 0.0 {
             let swing = landing.swing.clone();
             let burst_len = active.burst.map_or(1, |b| b.count.max(1));
             me.in_flight.push(Landing {
-                t: t + flight,
+                t: t + arrival_delay,
                 burst_completed: Some(me.ammo.rounds_this_mag.is_multiple_of(burst_len)),
                 ..landing
             });

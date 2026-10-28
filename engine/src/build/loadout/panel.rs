@@ -458,6 +458,8 @@ pub struct ResolvedPanel {
     // ---- MELEE ----------------------------------------------------------
     /// The melee combo script, delays already shortened by attack speed.
     pub combo_script: Vec<crate::model::ComboHit>,
+    /// An equipped stance's event-timed heavy inputs, used by Tennokai.
+    pub heavy_script: Vec<crate::model::ComboHit>,
     /// `FT^(n-1)` — what the n-th body a swing reaches takes.
     pub follow_through: Option<f64>,
     /// THE WEAPON'S OWN SLAM, resolved: what a combo swing that ends on one

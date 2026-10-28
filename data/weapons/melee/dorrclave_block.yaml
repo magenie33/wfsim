@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: dorrclave_block
 name: Dorrclave
 # see notes: melee_from_the_modules
@@ -6,16 +7,15 @@ form: block
 transform_group: dorrclave
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_slide_unpublished
-  - reason: melee_passive_unmodelled
-    passive: "Rising Vendetta: 10 kills or assists grant +0.5 Follow Through and +100% flat Status Chance to the next 10 attacks that hit"
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_slide_unpublished
+- reason: melee_passive_unmodelled
+  passive: 'Rising Vendetta: 10 kills or assists grant +0.5 Follow Through and +100% flat Status Chance to the next 10 attacks that hit'
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.833
+  fire_rate: 0.8333333333333334
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -25,8 +25,13 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.5
-  heavy: { multiplier: 4.0, windup_seconds: 0.1333 }
-  damage: { slash: 222 }   # total 222
-
+  heavy:
+    multiplier: 16.0
+    windup_seconds: 0.69999999
+  damage:
+    slash: 222
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordWhipMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Dorrclave

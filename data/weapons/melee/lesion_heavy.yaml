@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: lesion_heavy
 name: Lesion
 # see notes: melee_from_the_modules
@@ -13,7 +15,6 @@ unmodeled:
   - reason: melee_passive_unmodelled
     passive: "Frenzy: applying a status grants +15% attack speed, +100% Toxin and +25% flat Status Chance for 6 s, not refreshed while active"
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -26,13 +27,28 @@ attack:
   punch_through_m: 0.0
   range_m: 2.7
   follow_through: 0.6
-  heavy: { multiplier: 6.0, windup_seconds: 0.3 }
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.60000002
   spends_combo: true
-  damage: { impact: 47.4, puncture: 11.85, slash: 177.75 }   # total 237
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 47.4
+    puncture: 11.85
+    slash: 177.75
   combo_script:
-    - { multiplier: 6.0, windup_seconds: 0.3, delay_seconds: 0.6, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 6.0, windup_seconds: 0.3, delay_seconds: 0.6, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 6.0
+    windup_seconds: 0.3
+    delay_seconds: 0.6
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0
+  - multiplier: 6.0
+    windup_seconds: 0.3
+    delay_seconds: 0.6
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Lesion
