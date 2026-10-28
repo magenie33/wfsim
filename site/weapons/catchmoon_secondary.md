@@ -4,7 +4,7 @@ Chinese name: 捕月
 
 Pistol · Secondary · Mastery Rank 0. 290 base damage (heat 184, impact 106), 21% crit chance, 2x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-28
+## Best riven-free build on the WFSim board, as of 2026-10-29
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

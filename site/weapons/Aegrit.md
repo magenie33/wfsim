@@ -4,7 +4,7 @@ Chinese name: 骇敌榴弹
 
 Pistol · Secondary · Mastery Rank 11. 9 base damage (impact 4.5, puncture 1.8, slash 2.7), 37% crit chance, 1.9x crit multiplier, 19% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-28
+## Best riven-free build on the WFSim board, as of 2026-10-29
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

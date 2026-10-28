@@ -4,7 +4,7 @@ Chinese name: 异化者
 
 Pistol · Secondary · Mastery Rank 11. 53 base damage (corrosive 53), 11% crit chance, 2.9x crit multiplier, 43% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-28
+## Best riven-free build on the WFSim board, as of 2026-10-29
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

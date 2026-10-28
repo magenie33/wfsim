@@ -4,7 +4,7 @@ Chinese name: 噬蛇弩 Prime
 
 Crossbow · Primary · Mastery Rank 12. 173 base damage (impact 1.7, puncture 15.6, slash 155.7), 25% crit chance, 2.3x crit multiplier, 39% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-28
+## Best riven-free build on the WFSim board, as of 2026-10-29
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

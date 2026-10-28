@@ -4,7 +4,7 @@ Chinese name: 布拉克
 
 Shotgun Sidearm · Secondary · Mastery Rank 6. 20 base damage x10 multishot (impact 9, puncture 5, slash 6), 17% crit chance, 2x crit multiplier, 5.1% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-28
+## Best riven-free build on the WFSim board, as of 2026-10-29
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

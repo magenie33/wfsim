@@ -4,7 +4,7 @@ Chinese name: 和谐
 
 Scythe · Melee · Mastery Rank 10. 240 base damage (puncture 168, slash 72), 20% crit chance, 2.2x crit multiplier, 36% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-28
+## Best riven-free build on the WFSim board, as of 2026-10-29
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

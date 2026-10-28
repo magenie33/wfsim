@@ -4,7 +4,7 @@ Chinese name: 视使之触
 
 Pistol · Secondary · Mastery Rank 8. 11 base damage (puncture 1, radiation 10), 16% crit chance, 1.8x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-28
+## Best riven-free build on the WFSim board, as of 2026-10-29
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

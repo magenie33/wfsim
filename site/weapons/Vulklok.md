@@ -4,7 +4,7 @@ Chinese name: 金工火枪
 
 Sentinel Weapon · Sentinel · Mastery Rank 0. 175 base damage (electricity 175), 35% crit chance, 2.5x crit multiplier, 25% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-28
+## Best riven-free build on the WFSim board, as of 2026-10-29
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
