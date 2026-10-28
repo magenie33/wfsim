@@ -18,14 +18,15 @@ runs cannot. API errors also fall back to full validation.
 | --- | --- |
 | Markdown under `docs/`, `README.md`, `LICENSE` | Quick checks and commit messages |
 | `docs/CLIENTS.md`, `docs/measurements/` | Full CI: the build reads the contract and counts measurements |
-| `web/src/static/`, `data/i18n/`, `worker/`, `bot/`, MCP source | Quick checks, build, services, pipeline, all browser checks and all parity shards |
+| `web/src/static/`, `data/i18n/`, `worker/`, `bot/`, MCP source, check scripts invoked only by those jobs | Quick checks, build, services, pipeline, all browser checks and all parity shards |
 | Generated `site/`, `desktop/payload/`, `mcp/engine.js`, `data/board_state.yaml` only | Quick checks and published-board legality |
 | Engine, optimizer, webapi, game data, Rust dependencies, tooling, workflow or any other path | Full CI |
 
 The product group skips Rust tests, gas equivalence, module reproducibility and
 published-board legality. Its Rust and game-data inputs have not changed; it
 still builds the current site and checks every browser group, including parity.
-Scripts and new paths are full CI until their dependencies are explicitly known.
+Browser check paths come from the selected jobs' commands in `ci.yml`; they
+are not a second list. Other scripts and unknown paths select full CI.
 Generated snapshots never supply a release build. `site/` remains generated and
 must not be committed by hand.
 
