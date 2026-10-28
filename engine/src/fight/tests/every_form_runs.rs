@@ -387,7 +387,8 @@ fn every_entry_either_has_a_spread_or_admits_it_has_none() {
         );
     }
     assert!(with >= 207, "only {with} entries carry a spread");
-    assert!(without <= 17, "the gap grew to {without}; it is only allowed to shrink");
+    // Nunchasa Alt-Fire publishes no spread; its explicit admission adds one known gap.
+    assert!(without <= 18, "the gap grew to {without}; it is only allowed to shrink");
 }
 
 /// ...and every DEPLOYMENT of every entry, for the same reason: the

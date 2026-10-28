@@ -36,5 +36,8 @@ attack:
   cold_trail: { duration_seconds: 10.0, tick_interval_seconds: 1.0 }
   damage: { cold: 500, puncture: 250, slash: 250 }
 
+unmodeled:
+  - reason: spread_not_transcribed
+
 source:
   url: https://wiki.warframe.com/w/Nunchasa

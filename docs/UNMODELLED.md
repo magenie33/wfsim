@@ -109,12 +109,14 @@ What is still open here:
   question, already pinned per pellet. So there is one circle and one number,
   and one Simulacrum measurement settles it — a counted number of pellets, a
   known range, a weapon of known spread, count what lands;
-- **17 entries have no transcribed spread**, down from 62. Sixteen of them are
+- **18 entries have no transcribed spread**. Sixteen of them are
   SENTINEL weapons, and that one is a source gap rather than a matching one:
   the wiki's companion module carries no `MinSpread`/`MaxSpread` for any of
-  them. The seventeenth is the Miter, whose weapon publishes a cone for its
+  them. The other two are the Miter, whose weapon publishes a cone for its
   uncharged shot and its Incarnon form and none for the charged shot our entry
-  IS — so the intake takes nothing rather than the neighbouring one. Each says
+  IS, and Nunchasa Alt-Fire, whose attack block publishes no spread although
+  its primary does. The intake takes nothing rather than the neighbouring
+  attack’s value. Each says
   so (`spread_not_transcribed`); re-running `scripts/intake_spread.py` only
   ever lowers the count and a test holds the ceiling;
 - **PROJECTILE LIFETIME, and with it a projectile's MAX RANGE** (= speed ×
