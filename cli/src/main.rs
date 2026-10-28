@@ -33,6 +33,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         acid_shells: None,
         // NOT A MELEE WEAPON: no combo counter, no script, no follow through.
         combo_script: Vec::new(),
+        heavy_script: Vec::new(),
         follow_through: None,
         slam: None,
         shockwave: None,
@@ -71,6 +72,8 @@ fn dual_toxocyst_baseline() -> FightParams {
         orb_strike: None,
         orb_blast: None,
         spectral_dagger: None,
+        cold_trail: None,
+        reload_cold_radius_per_round_m: None,
         // A ROUND LEAVES ON THE TRIGGER, like every gun but one.
         windup_seconds: 0.0,
         no_magazine: false,
