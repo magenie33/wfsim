@@ -245,6 +245,7 @@ function switchWeapon(id) {
   ensureWeaponBoard(id);
   applyWeapon(id, null);
   initPresets();
+  renderModuleTabs();
 }
 
 function applyWeaponInner(id, presetMods) {

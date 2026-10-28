@@ -322,14 +322,7 @@ async function route() {
         history.replaceState(null, "", `${location.pathname}?${q}`);
       }
     }
-    $("module-tabs").innerHTML =
-      `<a class="mtab ${mod === "" ? "sel" : ""}" href="${weaponPath(w.id)}">${tr("Builder")}</a>` +
-      `<a class="mtab ${mod === "simulator" ? "sel" : ""}" href="${weaponPath(w.id)}/simulator">${tr("Simulator")}</a>` +
-      `<a class="mtab ${mod === "optimizer" ? "sel" : ""}" href="${weaponPath(w.id)}/optimizer">${tr("Optimizer")}</a>` +
-      `<a class="mtab ${mod === "rivens" ? "sel" : ""}" href="${weaponPath(w.id)}/rivens">${tr("Rivens")}</a>` +
-      `<a class="mtab ${mod === "riven-analyst" ? "sel" : ""}" href="${weaponPath(w.id)}/riven-analyst">${tr("Riven Analyst")}</a>` +
-      `<a class="mtab ${mod === "benchmark" ? "sel" : ""}" href="${weaponPath(w.id)}/benchmark">${tr("Benchmark")}</a>` +
-      `<a class="mtab ${mod === "enemies" ? "sel" : ""}" href="${weaponPath(w.id)}/enemies">${tr("Enemies")}</a>`;
+    renderModuleTabs(mod);
     // Arriving on the simulator: refresh its build summary (builder edits
     // don't re-render sim views while they are hidden). The SCENARIO is one
     // state shared with the optimizer, so each tab redraws its own copy of
@@ -357,6 +350,16 @@ async function route() {
 // preset load) keep the visitor on the tab they are on.
 const modSuffix = () => (location.pathname.match(/\/(simulator|optimizer|rivens|riven-analyst|benchmark)\/?$/) || [null, ""])[1];
 const weaponModPath = (id) => weaponPath(id) + (modSuffix() ? "/" + modSuffix() : "");
+
+// Links follow the active entry even when a Kitgun slot keeps the chamber URL.
+function renderModuleTabs(mod = modSuffix()) {
+  const path = weaponPath($("weapon").value);
+  $("module-tabs").innerHTML = [
+    ["", "Builder"], ["simulator", "Simulator"], ["optimizer", "Optimizer"],
+    ["rivens", "Rivens"], ["riven-analyst", "Riven Analyst"],
+    ["benchmark", "Benchmark"], ["enemies", "Enemies"],
+  ].map(([id, label]) => `<a class="mtab ${mod === id ? "sel" : ""}" href="${path}${id ? "/" + id : ""}">${tr(label)}</a>`).join("");
+}
 
 // WHAT AN ARCANE SEAT IS CALLED: the pool it draws, which is a weapon type or
 // a Kitgun's own. "add Kitgun arcane" is the sentence, so the Kitgun label is
