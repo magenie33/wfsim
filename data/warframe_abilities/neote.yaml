@@ -1,0 +1,22 @@
+# see notes: generated_ability
+id: neote
+name: "Neote"
+frame: narin
+slot: 1
+energy_cost: 25
+subsumable: true
+internal_name: /Lotus/Powersuits/Duelist/Abilities/DuelistThrustAbility
+icon: Neote(xWhite).png
+description: "Lunge with Narin's ice rapier Neote, inflicting  Cold Damage and  Cold and  Puncture Status Effect on foes directly ahead of her.\n\nGain Ice for each enemy hit."
+
+stats:
+  - { id: damage, label: "Damage per Hit", value: 400, unit: flat, scales_with: strength }
+  - { id: range, label: "Range", value: 12, unit: m, scales_with: range }
+  - { id: hits, label: "Hits", value: 5, unit: flat, scales_with: none }
+  - { id: cold_procs, label: "Cold Stacks per Hit", value: 2, unit: flat, scales_with: none }
+  - { id: puncture_procs, label: "Puncture Stacks per Hit", value: 1, unit: flat, scales_with: none }
+unmodelled:
+  - "Combat casts, cone geometry, forced statuses and Ice generation are not simulated; the displayed values describe the ability at this build's stats."
+
+source:
+  url: https://wiki.warframe.com/w/Neote

@@ -192,6 +192,8 @@ pub(super) struct Ammo {
     /// was from empty, until the loop that owns the airborne list takes it (the
     /// Catabolyst family: "toss the ammo bladder as a grenade when reloading").
     pub(super) grenade_thrown_at: Option<(f64, bool)>,
+    /// Reload-start wave waiting for the chronological entity walk.
+    pub(super) reload_cold: Option<ReloadCold>,
 }
 
 /// WHERE A TRANSMUTING WEAPON IS IN ITS CYCLE — which form is out, when the
@@ -202,6 +204,10 @@ pub(super) struct IncarnonState {
     /// which needs its own because it advances in both forms while the others
     /// only pay out in one.
     pub(super) kill_mark: u32,
+    /// Contact and Blast marks for a weighted hit-fed gauge.
+    pub(super) contact_mark: u32,
+    pub(super) weakpoint_mark: u32,
+    pub(super) blast_mark: u32,
     /// Incarnon cycle state. The engagement opens in the BASE form and earns
     /// its way in — see `IncarnonCycle::starts_primed` for why, and for the
     /// reading that opens transformed.
@@ -286,6 +292,7 @@ impl IncarnonState {
             // EMPTY IS THE ENGINE'S OWN EPSILON and not `> 0`: a magazine sits
             // on 1e-10 after an overdraw, and a gauge calling that "not spent"
             // would hold the form open on rounds nothing can fire.
+            (false, _, Ends::SingleShot) => 1.0,
             (false, _, Ends::ChargeMagazine) if ammo.loaded < 1e-9 => 0.0,
             (false, _, Ends::ChargeMagazine) => ammo.loaded / ammo.cap.max(1e-9),
             // A LOCKED WINDOW NEVER RUNS OUT, so the form is never spent. Said
@@ -304,7 +311,7 @@ impl IncarnonState {
             // clock-ended cycle keeps no second magazine — a melee weapon has
             // none at all — and fires the one magazine throughout.
             can_fire: can_fire(
-                if self.in_base_form && cy.ends == Ends::ChargeMagazine {
+                if self.in_base_form && matches!(cy.ends, Ends::ChargeMagazine | Ends::SingleShot) {
                     self.base_magazine
                 } else {
                     ammo.loaded
@@ -317,7 +324,7 @@ impl IncarnonState {
             // charge magazine is spent, never reloaded), and the one magazine
             // of a clock-ended cycle.
             magazine_pct: match (self.in_base_form, cy.ends) {
-                (true, Ends::ChargeMagazine) => self.base_magazine / cy.base_form.magazine_size.max(1e-9),
+                (true, Ends::ChargeMagazine | Ends::SingleShot) => self.base_magazine / cy.base_form.magazine_size.max(1e-9),
                 (false, Ends::ChargeMagazine) => 1.0,
                 _ => ammo.loaded / ammo.cap.max(1e-9),
             },
@@ -737,4 +744,20 @@ pub(super) fn roll_instant_reload(
 #[wfsim_gas_macro::metered]
 pub(super) fn battery_would_empty(params: &FightParams, loaded: f64, next_cost: f64) -> bool {
     params.battery.is_some() && next_cost > 1e-9 && loaded > 1e-9 && loaded <= next_cost + 1e-9
+}
+
+#[wfsim_gas_macro::metered]
+impl CardWindows {
+    /// Deadly Efficiency and Eximus Advantage share the weapon's base-damage bucket.
+    pub(super) fn base_damage_additions(&self, active: &FightParams, at: f64) -> (f64, f64) {
+        let reload = match active.base_damage_on_reload {
+            Some(b) if at < self.base_damage_after_reload => b.value,
+            _ => 0.0,
+        };
+        let eximus = match active.base_damage_on_eximus_weakpoint {
+            Some(b) if at < self.base_damage_eximus => b.value,
+            _ => 0.0,
+        };
+        (reload, eximus)
+    }
 }

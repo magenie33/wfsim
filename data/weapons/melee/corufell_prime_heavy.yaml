@@ -1,0 +1,36 @@
+id: corufell_prime_heavy
+name: Corufell Prime
+inherits: corufell_prime
+form: heavy
+form_name: Charged Projectile
+transform_group: corufell_prime
+# Corufell | Heavy Attack Projectile | 1200 | 1200 | 100% | Multiplying.
+# The weapon infobox states 650 Heat per projectile; the catalog total is not a per-shot base.
+co_behavior: independent
+unmodeled:
+  - reason: corufell_projectile_timing
+  - reason: corufell_projectile_width
+  - reason: corufell_signature_windup
+  - reason: melee_slide_unpublished
+attack:
+  trigger: melee
+  shot_type: projectile
+  projectile_speed_mps: 40
+  fire_rate: 0.833
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.3
+  crit_multiplier: 2.5
+  status_chance: 0.14
+  punch_through_m: 0.0
+  infinite_body_punch_through: true
+  falloff: { start_m: 15, end_m: 30, reduction: 0.5 }
+  spends_combo: true
+  damage: { heat: 650 }
+  # Prime's Characteristics state innate 1.5x Heavy Attack Wind Up Speed.
+  heavy: { multiplier: 1.0, windup_seconds: 0.8666666666666667 }
+  combo_script:
+    - { multiplier: 1.0, windup_seconds: 0.8666666666666667, delay_seconds: 1.0, combo_points: 0, combo_points_base: 0 }
+source:
+  url: https://wiki.warframe.com/w/Corufell_Prime

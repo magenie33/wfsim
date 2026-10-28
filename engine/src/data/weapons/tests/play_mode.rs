@@ -13,7 +13,7 @@ fn every_weapon_has_a_base_mode_and_it_is_always_rankable() {
     for w in roster() {
         // THE DERIVED MODES: a mode a form declares (`WeaponSpec::modes`) is
         // the weapon's own word and is not what this table answers.
-        let multishot: Vec<_> = play_modes(&w.id).into_iter().filter(|m| m.declared.is_none()).collect();
+        let multishot: Vec<_> = play_modes(&w.id).into_iter().filter(|m| m.declared.is_none() || m.mode == PlayMode::Cycle).collect();
         let base = multishot.iter().find(|m| m.mode == PlayMode::Base);
         let base = base.unwrap_or_else(|| panic!("{}: no base mode", w.id));
         assert!(base.sustainable, "{}: its own arsenal form is not rankable", w.id);
@@ -36,7 +36,7 @@ fn every_weapon_has_a_base_mode_and_it_is_always_rankable() {
 fn a_gauge_gives_a_cycle_and_costs_the_alternate_its_rank() {
     for w in roster() {
         let forms = forms_of(&w.id);
-        let multishot: Vec<_> = play_modes(&w.id).into_iter().filter(|m| m.declared.is_none()).collect();
+        let multishot: Vec<_> = play_modes(&w.id).into_iter().filter(|m| m.declared.is_none() || m.mode == PlayMode::Cycle).collect();
         let alt = forms.iter().find(|f| !f.is_default);
         let Some(alt) = alt else {
             assert_eq!(multishot.len(), 1, "{}: one form, so one mode", w.id);
@@ -59,7 +59,7 @@ fn a_gauge_gives_a_cycle_and_costs_the_alternate_its_rank() {
         // there is no state to be in, so `Transformed` would be a mode
         // describing nothing.
         let metered = |f: &FormRef| {
-            spec(f.weapon_id).is_some_and(|s| s.attack.meter.is_some())
+            spec(f.weapon_id).is_some_and(|s| s.attack.meter.is_some() || s.gauge_form.as_ref().is_some_and(|g| g.single_shot))
         };
         let own_modes = alts.iter().filter(|f| !metered(f)).count();
         // ONE CYCLE PER (GAUGE FORM, FORM YOU CAN HOLD): which form fills
@@ -182,7 +182,7 @@ fn the_ballistica_prime_can_fill_its_gauge_from_either_shot() {
 #[test]
 fn the_mausolon_earns_its_alt_fire_without_an_adapter() {
     let all: Vec<&'static str> = play_modes("mausolon").iter().map(|m| m.id).collect();
-    assert_eq!(all, vec!["base", "cycle", "transformed"]);
+    assert_eq!(all, vec!["base", "cycle"]);
     let on: Vec<&'static str> = play_modes("mausolon")
         .into_iter()
         .filter(|m| m.sustainable)

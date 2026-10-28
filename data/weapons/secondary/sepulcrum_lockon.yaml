@@ -4,6 +4,7 @@ name: Sepulcrum
 inherits: sepulcrum
 form: alt_fire
 transform_group: sepulcrum
+transforms_from: sepulcrum
 
 introduced: "29"
 
@@ -13,6 +14,15 @@ introduced: "29"
 #
 # see notes: entry_read_adding_at
 co_behavior: independent
+
+gauge_form:
+  single_shot: true
+  gauge:
+    charge_on: kills
+    charges_to_fill: 5
+    max_rounds: 1
+  transmute_in_seconds: 0.0
+  transmute_out_seconds: 0.0
 
 attack:
   # see notes: cone_half_angle_from_2
@@ -48,7 +58,6 @@ attack:
 
 unmodeled:
   - "Lock-on marks several targets and sends a missile at each (wiki); the engine fires at the aimed body only, so against a crowd the number reads low by the number marked."
-  - "The mode is charged by dealing damage with the primary fire; the engine has no way for one mode to pay for another."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 

@@ -352,6 +352,7 @@ weapons:
   reconifex: 侦察者
   sagek_prime: 杀格 Prime
   spectra_vandal: 光谱切割器·破坏者
+  steflos_prime: 石晶之花 Prime
   steflos: 石晶之花
   thornbak: 棘背
   velox: 逐电
@@ -777,6 +778,8 @@ weapons:
   coda_pathocyst_forward: 终幕·病囊飞刃
   coda_pathocyst_heavy_slam: 终幕·病囊飞刃
   coda_pathocyst_slide: 终幕·病囊飞刃
+  corufell_heavy: 闪劫
+  corufell_prime_heavy: 闪劫 Prime
   corufell: 闪劫
   corufell_block: 闪劫
   corufell_block_forward: 闪劫
@@ -2828,6 +2831,10 @@ shards:
 # frame's `abilities` list in DE's Public Export in Chinese, joined on the
 # ability's internal_name.
 warframe_abilities:
+  hakchum: "鹤影舞坠"
+  naraemagi: "冰翎御盾"
+  neote: "寒霜疾剑"
+  nurinarim: "降灵旋刃"
   airburst: "空爆"
   aquablades: "水形之刃"
   astral_shell: "星壳"

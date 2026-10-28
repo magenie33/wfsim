@@ -2,11 +2,6 @@ id: aksondol
 name: Aksondol
 slot: secondary
 weapon_type: secondary
-# NARIN'S SIGNATURE DUAL PISTOLS, half Puncture and half Cold on a 10-shot-a-
-# second hitscan pull out of an 8-round magazine — so the reload is most of the
-# weapon's clock, and the reload is also where its own mechanic lives. That
-# mechanic is admitted below rather than modelled: the page states it and
-# publishes not one number for it.
 class: dual_pistols
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -17,8 +12,8 @@ max_rank: 30
 # see notes: weapon_level_metadata_wiki_uncrosschecked
 accuracy: 23.5
 disposition: 1.2
-polarities: [naramon]
-exilus_polarity: madurai
+polarities: [vazarin]
+exilus_polarity: naramon
 # NO `riven_family`. It is DE's own `compatibility` string and the only
 # place we can read it is a week of trades — where a weapon this new does
 # not appear, because nobody has traded one. Writing the display name here
@@ -37,13 +32,16 @@ reload_seconds: 2.6
 co_behavior: additive_with_base_damage
 
 attack:
+  # M128: reload-start timing; radius/count/scaling from the weapon page.
+  reload_cold_radius_per_round_m: 1.0
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
     max_deg: 7.0
   trigger: semi_auto
-  shot_type: hit_scan
-  fire_rate: 10
+  shot_type: projectile
+  projectile_speed_mps: 110
+  fire_rate: 4
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.24
@@ -53,9 +51,6 @@ attack:
   # see notes: wall_ramp_full_damage_2
   range_m: 300.0
   damage: { puncture: 70, cold: 70 }   # total 140
-
-unmodeled:
-  - "Reloading leaves a freezing mist that applies Cold to anything entering it, growing with each round reloaded (wiki). No number for it is published, so it is not modelled and the gun applies more Cold in game than here."
 
 source:
   url: https://wiki.warframe.com/w/Aksondol

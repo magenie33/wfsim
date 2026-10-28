@@ -851,7 +851,7 @@ page's patch note (Zenistar's slide); a page characteristic the entry can
 carry is carried (War's forced Impact, Xoris's endless combo clock).
 
 **A HEAVY THAT IS NOT A SWING HAS NO HEAVY FORM** — a throw, a shot, a wave, a
-disc (`melee_heavy_is_special`), like the glaives and gunblades before them.
+disc (`melee_heavy_is_special`), like the glaives and gunblades before them. Corufell and Corufell Prime instead have a projectile heavy mode; its timing and geometry limits are listed in `docs/UNMODELLED.md` §"Steflos and Corufell families".
 Playing the class's swing in its place would be a number the game never shows.
 
 **THE INFOBOX WINS THE HEAVY OVER THE CLASS TABLE, and says where it

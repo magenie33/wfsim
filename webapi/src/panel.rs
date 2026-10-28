@@ -1286,9 +1286,14 @@ fn form_section(
     // times, each scaled by the reload formula base/(1 + reload bonus).
     if let Some(inc) = base.gauge_form {
         let rl = panel.reload_bonus;
-        stats.push(json!({ "key": "magazine", "label": "Max Charges",
-        "base": num(inc.max_charges), "final": num(inc.max_charges),
-        "sources": json!([]) }));
+        if inc.single_shot {
+            row("magazine", "Magazine", num(raw_mag), num(panel.magazine_size));
+            row("reload", "Reload", secs(base.base_reload), secs(panel.reload_seconds));
+        } else {
+            stats.push(json!({ "key": "magazine", "label": "Max Charges",
+            "base": num(inc.max_charges), "final": num(inc.max_charges),
+            "sources": json!([]) }));
+        }
         // HOW THE GAUGE FILLS, which the panel never said. The engine has
         // always read it — `charge_on` is weapon data and the shot loop
         // counts headshots or pellets accordingly — but a player could not
@@ -1306,6 +1311,10 @@ fn form_section(
                 "direct hits",
                 "ANY direct hit, so the form does not depend on the headshot rate (wiki Incarnon: \"Angstrum Incarnon Genesis and Torid Incarnon Genesis are instead charged through direct hits\"). A lingering field is not a direct hit and does not charge it",
             ),
+            wfsim_engine::model::ChargeOn::HitsAndWeakpoints => (
+                "charges",
+                "Each body hit grants 0.5 charge and each weak-point hit grants 1 charge. Multishot, punch through and Blast status hits contribute; death detonations and Extra Hits do not.",
+            ),
             wfsim_engine::model::ChargeOn::Kills => (
                 "kills",
                 "KILLS, not hits — so this form is worth what the fight lets you earn, and against a single target that does not die it never arrives at all. A radial, a field tick or a status proc all count: the kill is what is asked for, not the instance that landed it. Kills made with the earned form itself do not pay for the next one",
@@ -1314,9 +1323,12 @@ fn form_section(
         stats.push(json!({ "key": "gauge", "label": "Gauge Fills On",
         "base": "—",
         // A COUNT, so no decimal: "5 direct hits", not "5.0".
-        "final": format!("{:.0} {what}", inc.charges_to_fill),
+        "final": format!("{:.0} {what}", if inc.charge_on == wfsim_engine::model::ChargeOn::HitsAndWeakpoints {
+            inc.charges_to_fill / 2.0
+        } else { inc.charges_to_fill }),
         "note": why,
         "sources": sources("incarnon_charge_rate", None) }));
+        if !inc.single_shot {
         stats.push(json!({ "key": "transmute_in", "label": "Transmute In",
         "base": secs(inc.transmute_in),
         "final": secs(inc.transmute_in / (1.0 + rl)),
@@ -1325,6 +1337,7 @@ fn form_section(
         "base": secs(inc.transmute_out),
         "final": secs(inc.transmute_out / (1.0 + rl)),
         "sources": sources("reload", None) }));
+        }
     } else {
         row(
             "magazine",

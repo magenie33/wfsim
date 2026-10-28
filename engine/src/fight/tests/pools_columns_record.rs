@@ -280,7 +280,7 @@ fn a_blast_aoe_carries_the_weak_point_and_a_toxin_dot_does_not() {
     let aoe = |part_factor: f64| {
         let mut d = DebuffState::default();
         for _ in 0..TEN_STACK_CAP {
-            d.blast.push(BlastStack {
+            d.blast.push(BlastStack { charges_gauge: false,
                 fuse: 99.0,
                 value: BLAST_COEFFICIENT * 1000.0 * part_factor,
                 xh_bracket: 1.0,

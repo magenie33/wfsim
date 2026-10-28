@@ -31,6 +31,8 @@ pub enum Ends {
     /// The CHARGE MAGAZINE runs dry. The gun Incarnon's, and the reason its
     /// cycle is written around a magazine at all.
     ChargeMagazine,
+    /// Fire one earned alternate shot, then resume primary fire without a refill.
+    SingleShot,
     /// A CLOCK, from the moment it armed. The melee Incarnon's — and the whole
     /// of what separates a Genesis worth the engagement (180 s) from one worth
     /// half of it (the Praedos's 90 s).
@@ -240,6 +242,10 @@ pub struct FightParams {
     /// THE GRENADES A RELOAD FROM EMPTY THROWS — see
     /// [`crate::build::loadout::ResolvedReloadGrenade`] and `fight::grenades`.
     pub reload_grenade: Option<crate::build::loadout::ResolvedReloadGrenade>,
+    /// Reload-start Cold wave: metres of radius per round spent, one Cold proc per round.
+    pub reload_cold_radius_per_round_m: Option<f64>,
+    /// A Cold trail along the projectile path, independent of radius mods.
+    pub cold_trail: Option<crate::model::ColdTrail>,
     /// THE BLOB EACH SHOT EMBEDS — see
     /// [`crate::build::loadout::ResolvedBlob`] and `fight::blobs`.
     pub blob: Option<crate::build::loadout::ResolvedBlob>,

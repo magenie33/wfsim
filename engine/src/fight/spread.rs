@@ -805,6 +805,7 @@ pub(super) fn spread_from_punch_through(
             let crit_multiplier = 1.0 + tier as f64 * (punch.crit_damage - 1.0);
             let attrition = noncrit_mult(active.noncrit_bonus, tier, &mut d.spine);
             let foe = &mut bodies[s];
+            if foe.fallen { break; }
             let landed = spread_hit(
                 seat,
                 w,
@@ -832,6 +833,7 @@ pub(super) fn spread_from_punch_through(
                 false,
                 true,
             );
+            r.punched_contacts += 1;
             if inst.headshot {
                 punched.hits += 1;
                 punched.kills += u32::from(landed.killed);

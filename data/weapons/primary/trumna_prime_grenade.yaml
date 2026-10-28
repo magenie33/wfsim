@@ -4,11 +4,21 @@ name: Trumna Prime
 inherits: trumna_prime
 form: alt_fire
 transform_group: trumna_prime
+transforms_from: trumna_prime
 
 introduced: "37.0.9"
 
 # CARRIED FROM `trumna_grenade` — see notes: co_carried_from_the_family
 co_behavior: independent
+
+gauge_form:
+  single_shot: true
+  gauge:
+    charge_on: kills
+    charges_to_fill: 5
+    max_rounds: 1
+  transmute_in_seconds: 0.0
+  transmute_out_seconds: 0.0
 
 attack:
   extra_hit_reads: { impact: 0.4, slash: 0.55, puncture: 0.05 }   # see notes: extra_hit_reads
@@ -20,7 +30,7 @@ attack:
   shot_type: hit_scan
   fire_rate: 1.33
   multishot: 1.0
-  ammo_cost: 1
+  ammo_cost: 0
   crit_chance: 0.38
   crit_multiplier: 2.4
   status_chance: 0.5
@@ -43,7 +53,6 @@ attack:
 
 unmodeled:
   - "Primary Compression's row for this attack is not entered. The table reads '127% / Both / Merged': over 100% effectiveness, both stacking brackets at once, and a fourth kind of radius calculation. The engine has no place for that combination, so the arcane adds nothing on this form here, where in game it is worth more than on the primary fire."
-  - "The grenades are earned by dealing damage with the primary fire, and the alt-fire is locked until the meter is full (wiki). The engine has no way for one mode to pay for another, so this entry fires on a cadence with no meter."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 

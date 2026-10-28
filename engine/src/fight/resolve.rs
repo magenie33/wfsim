@@ -373,19 +373,7 @@ pub(super) fn resolve_the_shot(
         } else {
             (active.fire_rate + fr_reload_add) * contribs.fire_rate_multiplier
         };
-        // Deadly Efficiency's live share of the BASE-DAMAGE bucket. Zero until
-        // a reload has finished, and zero again when the window closes.
-        let bd_reload_add = match active.base_damage_on_reload {
-            Some(b) if t < windows.base_damage_after_reload => b.value,
-            _ => 0.0,
-        };
-        // …and Eximus Advantage's share of the same bucket. "Stacks additively
-        // with base damage bonuses like Hornet Strike", so it joins here rather
-        // than forming a factor of its own.
-        let bd_eximus_add = match active.base_damage_on_eximus_weakpoint {
-            Some(b) if t < windows.base_damage_eximus => b.value,
-            _ => 0.0,
-        };
+        let (bd_reload_add, bd_eximus_add) = windows.base_damage_additions(active, t);
 
         // Multishot: pellets this pull = floor + fractional chance; every
         // pellet is an independent damage instance. Earned Galvanized

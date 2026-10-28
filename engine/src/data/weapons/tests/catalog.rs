@@ -420,6 +420,7 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         ("mutalist_cernos", "additive_with_base_damage", 0.5),
         ("mutalist_cernos_uncharged", "independent", 1.0),
         ("nataruk_perfect", "independent", 1.0),
+        ("nunchasa_alt", "independent", 1.0),
         ("paracyst_harpoon", "independent", 1.0),
         ("prime_laser_rifle", "independent", 1.0),
         ("quellor_alt", "independent", 1.0),
@@ -428,6 +429,9 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         ("stahlta", "independent", 1.0),
         ("stahlta_charged", "independent", 1.0),
         ("steflos", "independent", 1.0),
+        ("steflos_prime", "independent", 1.0),
+        ("corufell_heavy", "independent", 1.0),
+        ("corufell_prime_heavy", "independent", 1.0),
         ("tenet_envoy", "independent", 1.0),
         ("trumna_grenade", "independent", 1.0),
         //
@@ -1112,21 +1116,11 @@ fn every_weapon_registers_a_form_that_matches_its_mechanics() {
     for s in all() {
         let kind = s.form_kind(); // panics on a name outside the vocabulary
         let charge_trigger = s.attack.trigger == "charge";
-        // AN ADAPTER FORM IS EXEMPT, and only that. It carries its own
-        // kind — the form vocabulary answers "which form of this weapon",
-        // and `incarnon` already answers it — so a form that happens to
-        // draw is not thereby the charged form. The Dread's Incarnon form
-        // draws for 0.6 s and is not what the arsenal means by "charged
-        // Dread". Everything else still has to agree: a `charge` trigger
-        // filed as `base` is a data error. NOT the gauge: the Mausolon's
-        // alt-fire has one and IS the charged form, because a charge is
-        // exactly how it is fired.
-        assert_eq!(
-            charge_trigger && !kind.is_adapter_form(),
-            kind == FormKind::Charged,
-            "{}: a charge trigger IS the charged form, and nothing else is",
-            s.id
-        );
+        // An earned alternate trigger may itself be charged, including a
+        // second drawn attack alongside a bow's charged primary.
+        let charged_alt = kind == FormKind::AltFire && s.gauge_form.as_ref().is_some_and(|g| g.single_shot);
+        assert_eq!(charge_trigger && !kind.is_adapter_form() && !charged_alt,
+            kind == FormKind::Charged, "{}: charge trigger/form mismatch", s.id);
         // AN IMPLICATION, NOT AN EQUIVALENCE. An adapter form is always
         // bought with a gauge, so one without the economy is a half-written
         // entry — but the converse stopped holding when the Mausolon landed
@@ -1704,7 +1698,7 @@ fn the_one_x_heads_are_the_ones_the_wiki_names() {
         "athodai_alt", "athodai_prime_alt", "catchmoon_primary", "catchmoon_secondary",
         "dread_incarnon", "fulmin_semi", "fulmin_prime_semi", "lex_incarnon",
         "lex_prime_incarnon", "nataruk_perfect", "paris_incarnon", "mk1_paris_incarnon",
-        "paris_prime_incarnon", "steflos",
+        "paris_prime_incarnon", "steflos", "steflos_prime", "nunchasa_alt",
     ];
     want.sort_unstable();
     assert_eq!(have, want);

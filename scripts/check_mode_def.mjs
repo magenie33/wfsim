@@ -65,7 +65,7 @@ const grab = (weapon) => `(async () => {
 //             "only where there is a choice" short-circuit was written for
 const WEAPONS = [
   "Mausolon", "Torid", "Cortege", "Lex", "Kuva_Hind", "Magistar", "Ballistica_Prime",
-  "Ocucor",
+  "Ocucor", "Nunchasa", "Higasa", "Battacor", "Trumna", "Trumna_Prime", "Morgha", "Sepulcrum",
 ];
 
 for (const lang of ["en", "zh"]) {
@@ -114,6 +114,11 @@ for (const lang of ["en", "zh"]) {
     if (r.modes.includes("cycle")) {
       check(`${w}/${lang}: the gauge economy is stated`,
         /\d/.test(r.lines.join(" ")), r.lines.join(" ").slice(0, 80));
+    }
+
+    if (["Nunchasa", "Higasa", "Mausolon", "Cortege", "Morgha", "Battacor", "Trumna", "Trumna_Prime", "Sepulcrum"].includes(w)) {
+      check(`${w}/${lang}: primary only or full-charge alternate cycle`,
+        JSON.stringify(r.modes) === JSON.stringify(["base", "cycle"]), JSON.stringify(r.modes));
     }
 
     // THE MATCHED PAIR. Both directions, because either alone passes on a bug.

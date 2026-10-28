@@ -1,0 +1,18 @@
+# CITRINE PRIME, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: citrine_prime
+name: Citrine Prime
+internal_name: /Lotus/Powersuits/Geode/CitrinePrime
+
+health: 500
+shield: 370
+
+polarities: [vazarin, madurai, naramon]
+aura_polarity: naramon
+
+passive: "Citrine grants nearby allies 5 health regeneration per second. Pick up a Health Orb to increase regeneration by 0.1, up to a maximum of 25."
+passive_unmodelled: frame
+abilities: [fractured_blast, preserving_shell, prismatic_gem, crystallize]
+
+source:
+  url: https://wiki.warframe.com/w/Citrine/Prime

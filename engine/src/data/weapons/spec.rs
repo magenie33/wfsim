@@ -666,6 +666,9 @@ impl WeaponType {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DeclaredMode {
+    /// The earned alternate attack this mode spends a full gauge on.
+    #[serde(default)]
+    pub cycle_with: Option<String>,
     /// The mode id a build, a share link and a board row carry.
     pub id: String,
     /// What the page calls it, and what it says the mode does.

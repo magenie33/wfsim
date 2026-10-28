@@ -1,0 +1,19 @@
+# NARIN, at rank 30, from Module:Warframes/data.
+# see notes: generated_frame
+id: narin
+name: Narin
+internal_name: /Lotus/Powersuits/Duelist/Duelist
+
+health: 370
+shield: 650
+
+polarities: [madurai, vazarin]
+aura_polarity: naramon
+
+# Sangodae duration is 15 s on Narin/Abilities/Passive; the module's 10 s is stale.
+passive: "Each stack of Cold Status Effect on enemies increase chance to spawn Sangodae pickup by 1%, granting Extra Cold Damage on Primary and Secondary weapons for 15s. Narin also gains Cold Damage for her abilities."
+passive_unmodelled: weapon
+abilities: [neote, naraemagi, hakchum, nurinarim]
+
+source:
+  url: https://wiki.warframe.com/w/Narin

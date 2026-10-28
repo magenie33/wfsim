@@ -1,0 +1,19 @@
+# see notes: generated_ability
+id: naraemagi
+name: "Naraemagi"
+frame: narin
+slot: 2
+energy_cost: 50
+internal_name: /Lotus/Powersuits/Duelist/Abilities/DuelistRiposteAbility
+icon: Naraemagi(xWhite).png
+description: "Recover Shields by absorbing  Cold Status Effect from nearby enemies. Gain  Overguard if at full Shields.\n\nGain Ice for each enemy hit."
+
+stats:
+  - { id: shields, label: "Shields per Cold Stack", value: 75, unit: flat, scales_with: strength }
+  - { id: overguard_cap, label: "Overguard Cap", value: 15000, unit: flat, scales_with: strength }
+  - { id: radius, label: "Radius", value: 14, unit: m, scales_with: range }
+unmodelled:
+  - "Cold absorption, shield restoration, Overguard generation and the target requirement are not simulated."
+
+source:
+  url: https://wiki.warframe.com/w/Naraemagi

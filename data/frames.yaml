@@ -132,6 +132,11 @@ frames:
     armor: 265
     energy: 180
     sprint: 1
+  - id: citrine_prime
+    name: Citrine Prime
+    armor: 325
+    energy: 200
+    sprint: 1
   - id: cyte_09
     name: Cyte-09
     armor: 150
@@ -387,6 +392,11 @@ frames:
     armor: 185
     energy: 225
     sprint: 1.2
+  - id: narin
+    name: Narin
+    armor: 165
+    energy: 300
+    sprint: 1.1
   - id: nekros
     name: Nekros
     armor: 105

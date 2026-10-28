@@ -49,6 +49,14 @@ no_resupply: true
 # names only its two RADIALS, which take no CO in any case. Ordinary.
 co_behavior: additive_with_base_damage
 
+modes:
+  - id: cycle
+    name: "Full-charge alt-fire cycle"
+    about: "Fire the primary until 5 kills fill the gauge, fire the alternate once, then repeat."
+    cycle_with: mausolon_charged
+    rules:
+      - { action: { do: transform_in }, when: { if: gauge_at_least, pct: 1.0 } }
+
 attack:
   # see notes: cone_half_angle_from
   spread:

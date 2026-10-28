@@ -6,6 +6,7 @@ class: archgun
 form: base
 default_form: true
 transform_group: morgha
+transforms_to: morgha_alt
 
 # TWO COLUMNS, exactly double on every part.
 #   |            | burst shot | its explosion | Ammo Max | speed   |
@@ -39,6 +40,14 @@ ammo_max: 160
 no_resupply: true
 
 co_behavior: additive_with_base_damage
+
+modes:
+  - id: cycle
+    name: "Full-charge alt-fire cycle"
+    about: "Fire the primary until 5 kills fill the gauge, fire the alternate once, then repeat."
+    cycle_with: morgha_alt
+    rules:
+      - { action: { do: transform_in }, when: { if: gauge_at_least, pct: 1.0 } }
 
 attack:
   extra_hit_reads: even   # see notes: extra_hit_reads

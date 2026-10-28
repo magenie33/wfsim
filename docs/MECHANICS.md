@@ -617,37 +617,41 @@ count — which is most status builds. In the engine, `DebuffState::amps` is rea
 inside the stage loop for exactly this reason; `prune` stays once per pellet,
 since the whole volley is at one instant and pruning again is a no-op.
 
-### A gauge is not an adapter
+### Gauge-fed attacks
 
-A **gauge-switched form** is one you pay a meter to enter: fill it in the base
-form, spend it in the other, come back. Three weapons' worth of vocabulary used
-to say "Incarnon" for that, because every example was one — the data key was
-`incarnon:`, the request token was `incarnon_cycle`, and the engine decided
-"does this have a gauge" by asking whether the form was *named* `incarnon`.
+`WeaponSpec::has_gauge` reads an entry's `gauge_form` or recharge meter.
+`FormKind::is_adapter_form` identifies an Incarnon adapter; a gauge alone does
+not imply an adapter or an evolution unlock.
 
-The **Mausolon** is the counter-example. Its alt-fire is
-bought with kills — *"Getting 5 kills with the Mausolon's primary fire will
-unlock an Alternate Fire that discharges a powerful laser that explodes on
-impact"*, and once spent *"additional kills are needed to recharge the laser"*
-(wiki) — and it is an ordinary Arch-Gun with no adapter, no Genesis and no
-tier-1 unlock. The **Cortege** carries the identical sentence for its trio of
-grenades. So the two questions were split:
+A gauge with `single_shot: true` buys one alternate attack, then returns to
+primary fire. The primary declares its cycle in `modes` with `cycle_with`
+naming the alternate entry. Its two modes are primary-only and the full-charge
+cycle. The gauge starts empty; every full gauge buys one shot. Each attack uses
+its own damage, charge time, fire rate and ammunition cost. Changing attacks
+preserves the ordinary magazine and grants no reload or reload-triggered buff.
+The selected attack pays its draw before firing.
 
-- **`WeaponSpec::has_gauge`** — declared by the entry (`gauge_form:`). This is
-  what makes a cycle, and it is the only thing that does.
-- **`FormKind::is_adapter_form`** — still only the Incarnon form. This is what
-  hides a form until its unlock is chosen and what keeps it out of a riven pool.
+Incarnon charge magazines instead last until their separate ammunition is
+spent and retain their own transform/refill rules.
 
-`ChargeOn` therefore has three members: `weakpoint_hits` (the Zariman pistols),
-`direct_hits` (the Torid) and `kills`. The third is counted off a **mark**
-rather than a per-shot delta, because a kill can land on a status tick between
-two shots — and the mark advances in **both** forms, so a kill made with the
-earned form never pays for the next one.
+`ChargeOn` accepts weak-point hits, direct hits, kills, or weighted body and
+weak-point hits. Multishot and punch-through contacts count separately.
+Kill-fed gauges read a mark between attacks so primary-fire status kills can
+charge them.
 
-A kill-fed gauge is also the first mechanic here that can be *reached* and
-still not *pay*: an unmodded Mausolon in a 30 s engagement earns its fifth kill
-late enough that it transmutes and the fight ends before the 0.8 s charge
-completes.
+**Nunchasa** uses ten half-charge units: one per body contact and two per
+weak-point contact. Primary-fire Blast hits contribute; death detonations and
+Extra Hits do not. The full-charge arrow uses its own 1.5 s draw, 1,000 base
+damage, 36% crit/status, 3.0x crit multiplier and 85 m/s speed, versus the
+primary's 0.6 s draw, 400 base damage and 70 m/s speed. Its 2 m width and
+infinite body punch through are independent of Firestorm. The projectile
+forces one Cold proc: the page names Cold's status Freeze, distinct from the
+ten-stack Frozen state. Its path applies one Cold proc per second for 10 s
+from passage at each static body. Trails keep separate clocks.
+
+**Status: unverified.** These values follow the
+[Nunchasa page](https://wiki.warframe.com/w/Nunchasa); the proc count and trail
+stacking need in-game confirmation.
 
 ### Independent procs
 
@@ -1331,8 +1335,8 @@ How the sim runs it (`engine::fight::flight`):
   is 0, which is the distance both official rulers pin.
 
 The other half of the stat — **max range = speed × lifetime** — is still
-unmodelled: no roster weapon publishes a projectile lifetime, so a round flies
-any distance (`docs/UNMODELLED.md` §2).
+unmodelled: Steflos states a lifetime and extends it on contact, but the
+engine applies no lifetime cutoff (`docs/UNMODELLED.md` §2).
 
 The critical-headshot damage interaction is specified in §5.
 
@@ -1542,6 +1546,27 @@ Four rules, and each is a decision a reader can argue with:
 each of them a rule of its own and a CO class is a property of the WEAPON here,
 so they take none at all rather than take it under a class the catalog denies
 them — recorded per entry as `cluster_bomblet_co` (docs/CATALOGS.md §1).
+
+### Reload Cold wave
+
+`attack.reload_cold_radius_per_round_m` declares an instant, zero-damage Cold
+wave at reload start (M128), centred on the wielder. Each whole round spent
+adds one Cold proc and the declared metres of radius; Fulmination multiplies
+that radius. Partial reloads read only the rounds spent. Passive magazine
+refills do not produce a wave. Reloads run to completion in this arena, so a
+reload cannot be cancelled to re-arm it.
+
+Each body in reach receives Cold through the normal Cold/Frozen state machine,
+with its own immunities, stack cap and Overguard. Status duration scales both
+clocks. There is no lingering field and no hit, Frostbite, Empowered or
+Shivering Contagion trigger. Encumber retains its simultaneous-proc limit;
+its bonus is a normal weapon status using the weapon's modified base and live
+base-damage and status-damage buffs. The wave has no crit or body-part multiplier.
+Line of sight is unobstructed in this arena. Arcane Ice Storm's ability bonuses
+remain unmodelled.
+
+**Status: unverified** except for reload-start timing (M128). Range, proc count,
+scaling and trigger exclusions follow the [Aksondol page](https://wiki.warframe.com/w/Aksondol).
 
 ### Reload grenades — the magazine, thrown (§7.2)
 

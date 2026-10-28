@@ -23,6 +23,8 @@ pub(super) enum Entity {
     Orb(OrbState),
     Dagger(DaggerState),
     Volley(Volley),
+    ReloadCold(ReloadCold),
+    ColdTrail(ColdTrailTick),
     Embed(EmbedState),
 }
 
@@ -104,6 +106,8 @@ impl Entity {
             Entity::Orb(o) => o.owner,
             Entity::Dagger(g) => g.owner,
             Entity::Volley(v) => v.owner,
+            Entity::ReloadCold(v) => v.owner,
+            Entity::ColdTrail(v) => v.owner,
             Entity::Embed(e) => e.owner,
         }
     }
@@ -121,6 +125,8 @@ impl Entity {
             }
             Entity::Dagger(g) => Some(g.strikes_at),
             Entity::Volley(v) => Some(v.at),
+            Entity::ReloadCold(v) => Some(v.at),
+            Entity::ColdTrail(v) => Some(v.at),
             Entity::Embed(e) => e.due(),
         }
     }
@@ -246,6 +252,19 @@ pub(super) fn process_entities(
                     turn.w, v.owner, v.at, v.from_empty, turn.ctx, turn.gal, turn.arc, turn.params,
                     active, r, rec, turn.d, bodies,
                 );
+                Flow::Go
+            }
+            Entity::ColdTrail(_) => {
+                let Entity::ColdTrail(mut tick) = entities.remove(i) else { unreachable!() };
+                cold_trail_tick(tick, turn, r, rec, bodies);
+                tick.left -= 1;
+                tick.at += tick.interval_seconds;
+                if tick.left > 0 { entities.push(Entity::ColdTrail(tick)); }
+                Flow::Go
+            }
+            Entity::ReloadCold(_) => {
+                let Entity::ReloadCold(wave) = entities.remove(i) else { unreachable!() };
+                reload_cold_wave(wave, turn, r, rec, bodies);
                 Flow::Go
             }
             Entity::Embed(_) => embed_event(entities, i, at, turn, r, rec, bodies),
