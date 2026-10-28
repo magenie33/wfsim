@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { assertGate, BROWSER_JOBS, changedPaths, classify, PRODUCT_JOBS } from './ci_policy.mjs';
+import { assertGate, BROWSER_JOBS, browserCheckPaths, changedPaths, classify, PRODUCT_JOBS } from './ci_policy.mjs';
 import { trustedRun, validProof, verifiedBase } from './ci_runs.mjs';
 
 for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/src/optimize.rs',
@@ -22,6 +22,16 @@ for (const path of ['web/src/static/style.css', 'data/i18n/zh/ui.yaml', 'worker/
   const p = classify([path]);
   assert(p.jobs.includes('site') && p.jobs.includes('pipeline') && p.jobs.includes('parity'), path);
   assert(!p.jobs.includes('test') && !p.jobs.includes('gas'), path);
+}
+for (const path of ['scripts/check_kitgun_slot.mjs', 'scripts/check_riven_request.mjs']) {
+  assert.deepEqual(classify([path]).jobs, BROWSER_JOBS, path);
+  assert.deepEqual(classify([path], false, false).jobs, PRODUCT_JOBS);
+  assert.deepEqual(classify([path], true).jobs, PRODUCT_JOBS);
+  assert.equal(classify([path, 'engine/src/lib.rs']).scope, 'full');
+}
+for (const path of ['scripts/check_future.mjs', 'scripts/check_gas.mjs', 'scripts/check_lane_memory.mjs',
+  'scripts/check_ci_partitions.mjs', 'scripts/check_assembly.mjs', 'scripts/cdp.mjs', 'scripts/build_site_app.py']) {
+  assert.equal(classify([path]).scope, 'full', path);
 }
 assert.equal(classify(['web/src/static/style.css', 'engine/src/fight.rs']).scope, 'full');
 assert.equal(classify(['data/board_state.yaml']).scope, 'snapshot');
@@ -103,6 +113,12 @@ try {
 } finally { rmSync(dir, { recursive: true, force: true }); }
 
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
+const browserChecks = browserCheckPaths(workflow);
+assert(browserChecks.size > 0);
+for (const path of browserChecks) assert.deepEqual(classify([path]).jobs, BROWSER_JOBS, path);
+assert.deepEqual([...browserCheckPaths('jobs:\n  gas:\n    run: node scripts/check_gas.mjs\n  page:\n    run: node scripts/check_example.mjs\n    run: node scripts/check_gas.mjs\n  quick:\n    run: node scripts/check_quick.mjs\n')],
+  ['scripts/check_example.mjs']);
+assert.deepEqual([...browserCheckPaths('jobs:\n  page:\n    # node scripts/check_comment.mjs\n    - name: node scripts/check_title.mjs\n      run: |\n        # node scripts/check_disabled.mjs\n        node scripts/check_example.mjs\n  gas:\n    - run: |\n        MODE=build node scripts/check_example.mjs\n')], []);
 const gate = workflow.slice(workflow.indexOf('\n  ci-required:'));
 assert.match(gate, /if:.*always\(\)/);
 const jobIds = [...workflow.slice(workflow.indexOf('\njobs:\n')).matchAll(/^  ([\w-]+):$/gm)]

@@ -7,6 +7,29 @@ import { pathToFileURL } from 'node:url';
 export const PRODUCT_JOBS = ['test', 'gas', 'engine-apart', 'published-board', 'site', 'checks', 'pipeline', 'page', 'parity', 'page-rest'];
 export const BROWSER_JOBS = ['site', 'checks', 'pipeline', 'page', 'parity', 'page-rest'];
 
+export function browserCheckPaths(workflow) {
+  const sections = workflow.split(/^  ([\w-]+):[ \t]*$/m);
+  const paths = new Set(), other = new Set();
+  for (let i = 1; i < sections.length; i += 2) {
+    const owners = BROWSER_JOBS.includes(sections[i]) ? paths : other;
+    const lines = sections[i + 1].split('\n');
+    for (let j = 0; j < lines.length; j++) {
+      const run = lines[j].match(/^[ \t]*(?:- )?run:[ \t]*(.*)$/);
+      if (!run) continue;
+      const commands = [];
+      if (/^[|>][+-]?$/.test(run[1])) {
+        const indent = lines[j].indexOf('run:');
+        while (j + 1 < lines.length && (!lines[j + 1].trim() || lines[j + 1].search(/\S/) > indent)) commands.push(lines[++j]);
+      } else commands.push(run[1]);
+      for (const line of commands.filter(line => !line.trimStart().startsWith('#'))) {
+        for (const command of line.matchAll(/\bnode (scripts\/check_[\w-]+\.mjs)\b/g)) owners.add(command[1]);
+      }
+    }
+  }
+  return new Set([...paths].filter(path => !other.has(path)));
+}
+const browserChecks = browserCheckPaths(readFileSync(new URL('../.github/workflows/ci.yml', import.meta.url), 'utf8'));
+
 export function classify(paths, force = false, verifiedBase = true) {
   const reasons = [];
   let scope = 'docs';
@@ -18,11 +41,12 @@ export function classify(paths, force = false, verifiedBase = true) {
     else if (/^(docs\/.*\.md$|README\.md$|LICENSE$)/.test(path)) kind = 'docs';
     else if (/^web\/src\/static\//.test(path) || /^data\/i18n\//.test(path)) kind = 'frontend';
     else if (/^(worker\/|bot\/|mcp\/)/.test(path)) kind = 'services';
+    else if (browserChecks.has(path)) kind = 'browser-check';
     else kind = 'full';
     reasons.push({ path, kind });
     snapshot ||= kind === 'snapshot';
     if (kind === 'full') scope = 'full';
-    else if (scope !== 'full' && ['frontend', 'services'].includes(kind)) scope = 'product';
+    else if (scope !== 'full' && ['frontend', 'services', 'browser-check'].includes(kind)) scope = 'product';
     else if (scope === 'docs' && kind === 'snapshot') scope = 'snapshot';
   }
   if (snapshot && scope === 'product') scope = 'full';
