@@ -7,7 +7,6 @@ Dual Daggers · Melee · Mastery Rank 5. 140 base damage (impact 7, puncture 63,
 ## Not modelled here
 
 - The 5% Movement Speed bonus while held: nobody moves here.
-- One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total.
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
 - Unpublished: how long a spectral dagger orbits before it seeks (the Incarnon Form card uses a stand-in), and which enemy it seeks (here, the nearest within 15 m). Both decide how soon a kill pays; neither is measured.
 - The heavy attack is 2x, from this weapon's infobox; the wiki's class table and stance module say 5x. Unmeasured.

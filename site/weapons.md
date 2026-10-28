@@ -1,4 +1,4 @@
-# All 625 Warframe weapons in WFSim
+# All 626 Warframe weapons in WFSim
 
 Each links to its page as markdown; drop `.md` for the calculator.
 
@@ -260,7 +260,7 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Xoris](https://wfsim.app/weapons/Xoris.md): Glaive · Melee · Mastery Rank 4
 - [Zenistar](https://wfsim.app/weapons/Zenistar.md): Heavy Blade · Melee · Mastery Rank 6
 
-## Primary (201)
+## Primary (202)
 
 - [AX-52](https://wfsim.app/weapons/AX-52.md): Rifle · Primary · Mastery Rank 12
 - [Acceltra](https://wfsim.app/weapons/Acceltra.md): Rifle · Primary · Mastery Rank 8
@@ -418,6 +418,7 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Sporothrix](https://wfsim.app/weapons/Sporothrix.md): Sniper · Primary · Mastery Rank 13
 - [Stahlta](https://wfsim.app/weapons/Stahlta.md): Rifle · Primary · Mastery Rank 10
 - [Steflos](https://wfsim.app/weapons/Steflos.md): Shotgun · Primary · Mastery Rank 8
+- [Steflos Prime](https://wfsim.app/weapons/Steflos_Prime.md): Shotgun · Primary · Mastery Rank 15
 - [Stradavar](https://wfsim.app/weapons/Stradavar.md): Rifle · Primary · Mastery Rank 8
 - [Stradavar Prime](https://wfsim.app/weapons/Stradavar_Prime.md): Rifle · Primary · Mastery Rank 12
 - [Strun](https://wfsim.app/weapons/Strun.md): Shotgun · Primary · Mastery Rank 1

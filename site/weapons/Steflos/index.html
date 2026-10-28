@@ -20,10 +20,10 @@
   
   <link rel="stylesheet" href="/asset/style.22bd96a0339b.css" />
   
-  <link rel="preload" href="/pkg/wfsim_wasm_bg.e0b880ef0a07.wasm" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/meta.f86ffcefbcce.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/i18n.73040b9d38d3.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/pack.data.f0db2cfd65a4.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/wfsim_wasm_bg.cb321d9fdec7.wasm" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/meta.f34c70d201c8.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/i18n.2bd49a953319.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/pack.data.40fe1aa06a49.json" as="fetch" crossorigin />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
   
@@ -268,7 +268,8 @@
       </table>
       <div class="w-notes"><b>Not modelled here</b>
         <ul>
-        <li>The projectile lives 0.6 s, and each enemy hit adds 50% to its life and size, up to 10 s (wiki). The engine stops a projectile at the first body it hits, so against a crowd the number reads low.</li>
+        <li>Projectile lifetime and growth are not modelled: the base lifetime is 0.6 s, each enemy hit adds 50% lifetime up to 10 s, and the projectile grows in size. The simulation uses a fixed 2 m width and does not stop the projectile when its lifetime expires.</li>
+        <li>Citrine and Citrine Prime grant this weapon +40% Projectile Speed; that signature bonus is not modelled.</li>
         </ul>
       </div>
       </div>
@@ -699,13 +700,13 @@
     
     <a href="/method" data-native data-i18n>Method</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">dd58cfe0</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">2239074a</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.cd4c45b0c017.js"></script>
+  <script src="/asset/app.fc2cbea027d7.js"></script>
   <script type="module" src="/asset/nona.49e7e5dce064/index.js"></script>
 
 <div class="calc-status" id="calc-status" hidden></div>

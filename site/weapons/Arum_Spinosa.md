@@ -6,7 +6,6 @@ Warfan · Melee · Mastery Rank 11. 297 base damage (impact 35.64, puncture 59.4
 
 ## Not modelled here
 
-- One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total.
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
 - Not modelled: First Heavy Attack - Toxic Spines and Second Heavy Attack - Toxic Spines. Of this weapon's attacks, only the swing, the slam and the heavy slam are.
 - The wiki publishes no slide attack figure or duration for this weapon, so there is no slide mode.

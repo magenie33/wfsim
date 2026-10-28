@@ -21,7 +21,6 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 - A heavy attack grants every attack 5% life steal plus 5% per combo level, permanently, shared with allies within 15 m. Nothing damages the Tenno here and there are no allies, so it adds nothing.
 - A 20% chance to resist a status effect while held protects the wielder; nothing shoots back here.
-- One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total.
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
 
 ## In WFSim

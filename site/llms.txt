@@ -512,6 +512,7 @@
 - [Stahlta](https://wfsim.app/weapons/Stahlta.md): Rifle · Primary · Mastery Rank 10
 - [Staticor](https://wfsim.app/weapons/Staticor.md): Pistol · Secondary · Mastery Rank 10
 - [Steflos](https://wfsim.app/weapons/Steflos.md): Shotgun · Primary · Mastery Rank 8
+- [Steflos Prime](https://wfsim.app/weapons/Steflos_Prime.md): Shotgun · Primary · Mastery Rank 15
 - [Stinger](https://wfsim.app/weapons/Stinger.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Stradavar](https://wfsim.app/weapons/Stradavar.md): Rifle · Primary · Mastery Rank 8
 - [Stradavar Prime](https://wfsim.app/weapons/Stradavar_Prime.md): Rifle · Primary · Mastery Rank 12

@@ -19,7 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
-- The projectile lives 0.6 s, and each enemy hit adds 50% to its life and size, up to 10 s (wiki). The engine stops a projectile at the first body it hits, so against a crowd the number reads low.
+- Projectile lifetime and growth are not modelled: the base lifetime is 0.6 s, each enemy hit adds 50% lifetime up to 10 s, and the projectile grows in size. The simulation uses a fixed 2 m width and does not stop the projectile when its lifetime expires.
+- Citrine and Citrine Prime grant this weapon +40% Projectile Speed; that signature bonus is not modelled.
 
 ## In WFSim
 

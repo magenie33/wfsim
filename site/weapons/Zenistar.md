@@ -6,7 +6,6 @@ Heavy Blade · Melee · Mastery Rank 6. 298 base damage (heat 150, impact 80, sl
 
 ## Not modelled here
 
-- One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total.
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
 - Not modelled: Attacks While Disc Deployed. Of this weapon's attacks, only the swing, the slam and the heavy slam are.
 - This weapon's heavy attack is a thrown disc: 75 Impact on contact, a 350 Heat burst, then a 4 m aura of 50 Heat every 0.8 s for 10 s, longer with the combo multiplier, which is not modelled, so there is no heavy mode and a Tennokai window converts nothing.

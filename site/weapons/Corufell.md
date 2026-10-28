@@ -6,11 +6,10 @@ Heavy Scythe · Melee · Mastery Rank 8. 200 base damage (impact 96, puncture 68
 
 ## Not modelled here
 
-- One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total.
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
-- Not modelled: Charged Projectile. Of this weapon's attacks, only the swing, the slam and the heavy slam are.
 - The wiki publishes no slide attack figure or duration for this weapon, so there is no slide mode.
-- This weapon's heavy attack is a transformation into a gunblade that fires up to two energy projectiles, which is not modelled, so there is no heavy mode and a Tennokai window converts nothing.
+- A Tennokai window does not convert a light combo into the heavy projectile. Heavy-attack mode can use Tennokai's combo-free heavy attacks. The sliding heavy attack that swings the scythe is not modelled.
+- Citrine and Citrine Prime grant +20% Heavy Attack Wind Up Speed; that signature bonus is not modelled. The stacking of Prime's innate 1.5x wind-up speed with wind-up mods is unmeasured; this loop multiplies their speed factors.
 
 ## In WFSim
 

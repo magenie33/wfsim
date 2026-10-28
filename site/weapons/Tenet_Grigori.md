@@ -2,11 +2,10 @@
 
 Chinese name: 信条·格里高利
 
-Scythe · Melee · Mastery Rank 14. 228 base damage (impact 9.1, puncture 82.1, slash 136.8), 24% crit chance, 1.6x crit multiplier, 38% status chance.
+Scythe · Melee · Mastery Rank 14. 228 base damage (impact 9.12, puncture 82.08, slash 136.8), 24% crit chance, 1.6x crit multiplier, 38% status chance.
 
 ## Not modelled here
 
-- One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total.
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
 - Not modelled: Energy Disk. Of this weapon's attacks, only the swing, the slam and the heavy slam are.
 - The wiki gives this weapon combos of its own (heavy attack), which replace the stance's and are not transcribed; the stance's (or its class's) are used instead.
