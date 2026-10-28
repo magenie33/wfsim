@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: praedos_heavy_slam
 name: Praedos
 # NOTHING BUT HEAVY SLAMS — the mode this weapon is built for, and the one melee
@@ -29,12 +31,9 @@ co_behavior: additive_with_base_damage
 unmodeled:
   - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  # ATTACK SPEED, in the fire-rate bucket. 1.17 is fast for a melee weapon and
-  # it is the whole reason a Tonfa reaches a combo tier a hammer cannot.
-  fire_rate: 1.17
+  fire_rate: 1.1666666666666667
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -42,19 +41,16 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.2
   punch_through_m: 0.0
-  # REACH, and it is a real distance in this arena: 2.5 m from the wielder.
-  # Incarnon Form adds 3 m to it, which is the largest reach bonus in the
-  # roster and the only thing that makes a light Praedos mode reach a crowd.
   range_m: 2.5
-  # NO FOLLOW THROUGH ON A SLAM: *"Follow Through does not affect (Heavy)
-  # Slam Attacks"* (wiki, Melee). A slam's damage is its radial, and the
-  # radial reaches the room through the sphere rather than through a swing.
-  # see notes: tonfa_heavy_and_slide
-  heavy: { multiplier: 4.0, windup_seconds: 0.4 }
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.69999999
   spends_combo: true
-  damage: { impact: 0.0 }
+  damage:
+    impact: 0.0
   radial:
-    damage: { blast: 600 }
+    damage:
+      blast: 600
     radius_m: 9.0
     blast_kind: slam
     status_chance: 0.1
@@ -62,19 +58,12 @@ attack:
     falloff_reduction: 0.3
     forced_procs: []
     takes_multishot: false
-  # THE LOOP IS `CLIMB -> SLAM -> RECOVER`, and only the last of the three is a
-  # fixed cost. *"Heavy slams do not have any wind up"* (wiki, Melee) — so this
-  # swing carries none, unlike the standing heavy attack's 0.7 s — and the climb
-  # is the player's own time, which `fight::heavy_cycle_seconds` spends the way
-  # that pays this mode best.
-  #
-  # TWO SECONDS IS A STAND-IN for the landing recovery, the same one the
-  # Magistar carries. Nothing publishes it; it is uncancellable and attack speed
-  # shortens it, which is exactly what `delay_seconds` already means — and this
-  # weapon has more attack speed to spend on it than any other melee in the
-  # roster. Declared in docs/MELEE.md until it is measured in game.
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 2.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
+  - multiplier: 1.0
+    delay_seconds: 2.0
+    forced_procs:
+    - lifted
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Praedos

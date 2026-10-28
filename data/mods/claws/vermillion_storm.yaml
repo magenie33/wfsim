@@ -1,55 +1,33 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: vermillion_storm
 name: Vermillion Storm
 rarity: rare
 polarity: madurai
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ClawCmbTwoMeleeTree
-description: "Kicks woven between spinning slashes."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Kicks woven between spinning slashes.
 combos:
-  # Flurry Rose — 3.95 s at 1.0x, 6 inputs
   neutral:
-    - { multiplier: 3.0, delay_seconds: 0.6583, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.6583, forced_procs: [lifted], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.6583, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.6583, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.6583, combo_points: 4, combo_points_base: 4 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.6585, forced_procs: [knockdown], combo_points: 3, combo_points_base: 3 }
-  # Crimson Hurricane — 1.9 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ClawCmbTwoMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.6333, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, hits: 3, delay_seconds: 0.6333, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.6334, combo_points: 1, combo_points_base: 1 }
-  # Ruby Wind — 2.5 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ClawCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 3.0, delay_seconds: 0.8333, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.8333, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.8334, forced_procs: [knockdown], combo_points: 1, combo_points_base: 1 }
-  # Cardinal Breeze — 3.4 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ClawCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_C
   block_forward:
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 1.1333, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.5, hits: 4, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 3, delay_seconds: 1.1333, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.5, hits: 8, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 1.1334, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ClawCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ClawCmbTwoMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ClawCmbTwoMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Vermillion_Storm

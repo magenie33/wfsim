@@ -1,47 +1,108 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
+# see notes: combo_points_from_multiplier
+# see notes: stance_ranged_rows
+# see notes: stance_from_the_module
 id: high_noon
 name: High Noon
 rarity: rare
 polarity: madurai
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/GunbladeCmbOneMeleeTree
-description: "Bullets spray between wicked slash attacks."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
-# see notes: stance_ranged_rows
+description: Bullets spray between wicked slash attacks.
 combos:
-  # Final Showdown — 3.25 s at 1.0x, 4 inputs
   neutral:
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, hits: 2, delay_seconds: 0.8125, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.8125, impact_multiplier: 1.25, slash_multiplier: 1.25, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.8125, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.8125, impact_multiplier: 1.25, slash_multiplier: 1.25, forced_procs: [knockdown], combo_points: 3, combo_points_base: 3 }
-  # Vagabond Blitz — 2.5 s at 1.0x, 3 inputs
+  - multiplier: 1.0
+    hits: 2
+    delay_seconds: 0.0
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    hits: 2
+    delay_seconds: 0.8125
+    forced_procs:
+    - slash
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 2.0
+    hits: 2
+    delay_seconds: 0.8125
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    forced_procs:
+    - impact
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 2.0
+    delay_seconds: 0.8125
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 3.0
+    delay_seconds: 0.8125
+    impact_multiplier: 1.25
+    slash_multiplier: 1.25
+    forced_procs:
+    - knockdown
+    combo_points: 3
+    combo_points_base: 3
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.8333, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.8333, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.8334, combo_points: 1, combo_points_base: 1 }
-  # Tomahawk Double-Tap — 1.75 s at 1.0x, 3 inputs
+  - multiplier: 1.0
+    delay_seconds: 0.0
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 0.8333
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 2.0
+    hits: 2
+    delay_seconds: 0.8333
+    combo_points: 2
+    combo_points_base: 2
+  - multiplier: 1.0
+    delay_seconds: 0.0
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 0.8334
+    combo_points: 1
+    combo_points_base: 1
   block:
-    - { multiplier: 0.0, slam_multiplier: 3.0, delay_seconds: 0.0, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.5833, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 4.0, hits: 2, delay_seconds: 0.5833, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 4, combo_points_base: 4 }
-    - { multiplier: 4.0, delay_seconds: 0.5834, impact_multiplier: 1.25, slash_multiplier: 1.25, combo_points: 4, combo_points_base: 4 }
-  # Desperado Zeal — 1.85 s at 1.0x, 2 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/GunbladeCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_C
   block_forward:
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.925, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, hits: 2, delay_seconds: 0.925, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
-
+  - multiplier: 1.0
+    delay_seconds: 0.0
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    delay_seconds: 0.925
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 1.0
+    hits: 2
+    delay_seconds: 0.0
+    combo_points: 1
+    combo_points_base: 1
+  - multiplier: 0.0
+    slam_multiplier: 1.0
+    hits: 2
+    delay_seconds: 0.925
+    forced_procs:
+    - slash
+    combo_points: 1
+    combo_points_base: 1
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/GunbladeCmbOneMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/High_Noon

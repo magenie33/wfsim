@@ -14,6 +14,7 @@ mod effect;
 mod enemy;
 mod evolution;
 mod shape;
+mod melee;
 mod text;
 mod weapon;
 
@@ -23,6 +24,7 @@ pub use effect::*;
 pub use enemy::*;
 pub use evolution::*;
 pub use shape::*;
+pub use melee::*;
 pub use text::*;
 pub use weapon::*;
 

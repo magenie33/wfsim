@@ -80,18 +80,29 @@ pub fn stance_polarity(id: &str) -> Option<Polarity> {
     spec(id)?.stance_polarity.as_deref().map(polarity)
 }
 
-/// Does firing `form` on `weapon` need a stance in the slot? A GROUND COMBO
-/// DOES: the stanceless combos publish damage and no duration
-/// (`Module:Stances/data`), so an empty slot has no script to time — and the
-/// entry's own script is a stance's, which an empty slot would get for free.
-/// Heavy, slide and slam are the same whatever is seated; a fixed stance is
-/// always seated.
+/// A ground input needs a stance only while its own package script is absent.
 pub fn combo_needs_a_stance(weapon: &str, form: crate::model::FormKind) -> bool {
     use crate::model::FormKind as F;
     let Some(w) = spec(weapon) else { return false };
     w.rules_slot() == "melee"
         && w.fixed_stance.is_none()
         && matches!(form, F::Neutral | F::Forward | F::Block | F::BlockForward)
+        && !all().iter().find(|s| s.group() == w.group() && s.form_kind() == form)
+            .is_some_and(|s| !s.attack.combo_script.is_empty()
+                && s.attack.combo_script.iter().all(|h| h.event_timing.is_some()))
+}
+
+/// The same combo availability rule for simulation, replay and search.
+pub fn combo_error(weapon: &str, form: FormKind, seated: Option<crate::model::StanceCombos>) -> Option<&'static str> {
+    use crate::model::FormKind as F;
+    let w = spec(weapon)?;
+    if w.rules_slot() != "melee" || w.fixed_stance.is_some()
+        || !matches!(form, F::Neutral | F::Forward | F::Block | F::BlockForward) { return None; }
+    if seated.is_some() {
+        (!stance_supplies(seated, form)).then_some(STANCE_LACKS_COMBO)
+    } else {
+        combo_needs_a_stance(weapon, form).then_some(STANCELESS_COMBO)
+    }
 }
 
 /// The board's refusal of a melee row with an empty stance slot.
@@ -100,11 +111,10 @@ pub const STANCE_REQUIRED: &str =
 
 /// The refusal a stanceless ground combo gets, in one wording for every caller.
 pub const STANCELESS_COMBO: &str =
-    "no stance in the slot: stanceless combos are not modelled yet — equip a stance, or play heavy attacks, slide attacks or heavy slams";
+    "no stance in the slot: this stanceless input is not modelled — equip a stance or choose a supported input";
 
-/// …and does the SEATED stance supply this form's combo? A card carries a
-/// combo only where `Module:Stances/data` publishes its duration, so a card
-/// can lack one form — and the entry's own script is then an empty slot's.
+/// A seated stance must supply the selected input; the bare tree is used only
+/// when the stance slot is empty.
 pub fn stance_supplies(stance: Option<crate::model::StanceCombos>, form: FormKind) -> bool {
     stance.is_some_and(|c| c.iter().any(|(f, _)| *f == form.id()))
 }

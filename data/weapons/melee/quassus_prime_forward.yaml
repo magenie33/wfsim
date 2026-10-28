@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: quassus_prime_forward
 name: Quassus Prime
 # see notes: melee_from_the_modules
@@ -6,20 +7,19 @@ form: forward
 transform_group: quassus_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_attack_unmodelled
-    attacks: "First Heavy Attack - Ethereal Daggers and Second Heavy Attack - Ethereal Daggers"
-  - reason: melee_slide_unpublished
-  - reason: melee_heavy_is_special
-    what: "a spread of thrown ethereal daggers, 76 base each: 18 at 2.5x, then 9 at 5x, each with a forced Slash status"
-  - reason: melee_passive_unmodelled
-    passive: "a Warfan's slam hits twice, the heavy slam's second hit at the normal slam's figures"
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_attack_unmodelled
+  attacks: First Heavy Attack - Ethereal Daggers and Second Heavy Attack - Ethereal Daggers
+- reason: melee_slide_unpublished
+- reason: melee_heavy_is_special
+  what: 'a spread of thrown ethereal daggers, 76 base each: 18 at 2.5x, then 9 at 5x, each with a forced Slash status'
+- reason: melee_passive_unmodelled
+  passive: a Warfan's slam hits twice, the heavy slam's second hit at the normal slam's figures
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.833
+  fire_rate: 0.8333333333333334
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -29,7 +29,12 @@ attack:
   punch_through_m: 0.0
   range_m: 1.7
   follow_through: 0.7
-  damage: { impact: 26, puncture: 52, slash: 182 }   # total 260
-
+  damage:
+    impact: 26
+    puncture: 52
+    slash: 182
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WarfanMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Quassus_Prime

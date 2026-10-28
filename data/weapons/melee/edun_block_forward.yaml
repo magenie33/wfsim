@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: edun_block_forward
 name: Edun
 # see notes: melee_from_the_modules
@@ -6,14 +7,13 @@ form: block_forward
 transform_group: edun
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_attack_unmodelled
-    attacks: "Polearm Throw and Polearm Explosion"
-  - reason: melee_heavy_is_special
-    what: "a thrown polearm: 480 damage on contact with a forced Impact status, then a 400 Blast explosion in 5 m a second later"
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_attack_unmodelled
+  attacks: Polearm Throw and Polearm Explosion
+- reason: melee_heavy_is_special
+  what: 'a thrown polearm: 480 damage on contact with a forced Impact status, then a 400 Blast explosion in 5 m a second later'
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -26,7 +26,12 @@ attack:
   punch_through_m: 0.0
   range_m: 3.0
   follow_through: 0.6
-  damage: { impact: 44, puncture: 66, slash: 110 }   # total 220
-
+  damage:
+    impact: 44
+    puncture: 66
+    slash: 110
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DuviriPolearmWarframeMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Edun

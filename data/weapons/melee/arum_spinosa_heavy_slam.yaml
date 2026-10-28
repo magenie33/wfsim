@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: arum_spinosa_heavy_slam
 name: Arum Spinosa
 # see notes: melee_from_the_modules
@@ -15,10 +17,9 @@ unmodeled:
   - reason: melee_heavy_is_special
     what: "a spread of thrown toxic spines, 70 base each: 18 at 2.5x, then 9 at 5x"
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 1.08
+  fire_rate: 1.0833333333333333
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -28,9 +29,11 @@ attack:
   punch_through_m: 0.0
   range_m: 1.7
   spends_combo: true
-  damage: { impact: 0.0 }
+  damage:
+    impact: 0.0
   radial:
-    damage: { blast: 891 }
+    damage:
+      blast: 891
     radius_m: 6.0
     blast_kind: slam
     status_chance: 0.28
@@ -38,9 +41,12 @@ attack:
     falloff_reduction: 0.3
     forced_procs: []
     takes_multishot: false
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 2.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 1.0
+    delay_seconds: 2.0
+    forced_procs:
+    - lifted
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Arum_Spinosa

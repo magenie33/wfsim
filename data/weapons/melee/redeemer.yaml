@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: redeemer
 name: Redeemer
 slot: melee
@@ -34,10 +35,9 @@ unmodeled:
   - reason: gunblade_heavy_is_a_shot
 
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.833
+  fire_rate: 0.8333333333333334
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -47,16 +47,21 @@ attack:
   punch_through_m: 0.0
   range_m: 2.0
   follow_through: 0.5
-  damage: { impact: 18, puncture: 36, slash: 126 }   # total 180
+  damage:
+    impact: 18
+    puncture: 36
+    slash: 126
   slam:
-    damage: { impact: 180 }
+    damage:
+      impact: 180
     radius_m: 5.0
     blast_kind: slam
     status_chance: 0.1
     falloff_start_m: 0.0
     falloff_reduction: 0.5
-    forced_procs: [impact]
+    forced_procs:
+    - impact
     takes_multishot: false
-
+  combo_script: []
 source:
   url: https://wiki.warframe.com/w/Redeemer

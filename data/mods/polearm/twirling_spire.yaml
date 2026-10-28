@@ -1,45 +1,30 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: twirling_spire
 name: Twirling Spire
 rarity: rare
 polarity: naramon
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmCmbThreeMeleeTree
-description: "A mix of sweeping attacks with precise strikes."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: A mix of sweeping attacks with precise strikes.
 combos:
-  # Cresting Peak — 3.3 s at 1.0x, 3 inputs
   neutral:
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 1.1, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 1.1, forced_procs: [lifted], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 1.1, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-  # Spiraling Pinnacle — 2.5 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmCmbThreeMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.8333, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, all_around: true, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.8333, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 4, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.8334, all_around: true, combo_points: 2, combo_points_base: 2 }
-  # Summit Plunge — 2.0 s at 1.0x, 1 input
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, hits: 4, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 4.0, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 2.0, combo_points: 1, combo_points_base: 1 }
-  # Vaulting Apex — 1.75 s at 1.0x, 2 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_C
   block_forward:
-    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 4.0, delay_seconds: 0.875, combo_points: 4, combo_points_base: 4 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_B
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmCmbThreeMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Twirling_Spire

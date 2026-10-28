@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: coda_hirudo_heavy
 name: Coda Hirudo
 # see notes: melee_from_the_modules
@@ -6,17 +7,9 @@ form: heavy
 transform_group: coda_hirudo
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_valence_unmodelled
-    family: Coda
-  - reason: heavy_charge_share_assumed
-    published: 0.5
-    charge: 0.1667
-    swing: 0.3333
-  - reason: melee_heavy_total_disputed
-    infobox: 6.5
-    table: 5
+- reason: melee_valence_unmodelled
+  family: Coda
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -29,14 +22,16 @@ attack:
   punch_through_m: 0.0
   range_m: 1.25
   follow_through: 0.9
-  heavy: { multiplier: 6.5029, windup_seconds: 0.1667 }
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 2.0
   spends_combo: true
-  damage: { impact: 26.25, puncture: 140, slash: 8.75 }   # total 175
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 26.25
+    puncture: 140
+    slash: 8.75
   combo_script:
-    - { multiplier: 6.5029, windup_seconds: 0.1667, delay_seconds: 0.0, combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 0.0, slam_multiplier: 5.2023, delay_seconds: 0.3333, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.3006, hits: 4, windup_seconds: 0.1667, delay_seconds: 0.3333, combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PunchKickMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Coda_Hirudo

@@ -82,12 +82,23 @@ check(`${tag} the stance travels in the request`,
   (fight.sent || []).includes("shattering_storm"), JSON.stringify(fight.sent));
 check(`${tag} ...and two stances are two different fights`,
   fight.ruin > 0 && fight.storm > 0 && fight.ruin !== fight.storm, JSON.stringify(fight));
-// THE ENTRY'S OWN SCRIPT IS THE UNSTANCED FALLBACK, and it happens to be
-// Crushing Ruin's — which is what the Magistar's four combo entries were
-// transcribed from. Asserted so that a stance failing to APPLY cannot read as a
-// pass: if the swap did nothing, `storm` would equal `none` too.
-check(`${tag} ...while an empty slot falls back to the entry's own script`,
-  fight.none === fight.ruin && fight.none !== fight.storm, JSON.stringify(fight));
+check(`${tag} ...and the bare combo is its own fight`,
+  fight.none > 0 && fight.none !== fight.ruin && fight.none !== fight.storm, JSON.stringify(fight));
+
+await app.load("/weapons/Praedos", 22000);
+const bare = await evaluate(`(async () => {
+  slots = slots.map((s) => ({ ...s, mod: null }));
+  const body = { ...theFight(), ...buildPayload(), runs: 1, seed: 4 };
+  const r = await api("/api/simulate", body);
+  slots[STANCE].mod = "gemini_cross";
+  const heavy = comboOf(weaponInfo($("weapon").value), "heavy");
+  return { ok: r.ok, damage: r.dps, sent: body.mods, seconds: heavy && heavy.seconds };
+})()`);
+check(`${tag} a bare package combo runs with no stance on the wire`,
+  bare.ok === true && bare.damage > 0 && bare.sent.length === 0, JSON.stringify(bare));
+check(`${tag} the mode explanation includes this weapon's heavy charge`,
+  Math.abs(bare.seconds - 2.73333398) < 0.002, JSON.stringify(bare));
+await app.load("/weapons/Magistar", 22000);
 
 // ---------------------------------------------------------------------------
 // 4. THE ROUND TRIP. `buildPayload` -> `stateFromBuild` has to put the stance

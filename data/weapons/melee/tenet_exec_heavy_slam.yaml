@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: tenet_exec_heavy_slam
 name: Tenet Exec
 # see notes: melee_from_the_modules
@@ -14,7 +16,6 @@ unmodeled:
   - "The shockwave's blasts go off with the slam that sends them; the page says the wave travels and times nothing (M110)."
   - "The fan between a heavy slam's three shockwave lines is unpublished: 60 degrees edge to edge is assumed (M110)."
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -26,11 +27,15 @@ attack:
   status_chance: 0.22
   punch_through_m: 0.0
   range_m: 2.8
-  heavy: { multiplier: 6.0, windup_seconds: 0.3667 }
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.69999999
   spends_combo: true
-  damage: { impact: 0.0 }
+  damage:
+    impact: 0.0
   radial:
-    damage: { impact: 570 }
+    damage:
+      impact: 570
     radius_m: 4.0
     blast_kind: slam
     status_chance: 0.0
@@ -38,12 +43,16 @@ attack:
     falloff_reduction: 0.3
     forced_procs: []
     takes_multishot: false
-  # "Heavy slam attacks send out 3 sets of 3 shockwaves in a spread" (page);
-  # each blast is this slam again in a sphere 3 m across (M110).
-  shockwave: { lines: 3, fan_deg: 60.0, explosions: 3, spacing_m: 5.0, width_m: 3.0 }
-  # see notes: combo_points_from_multiplier
+  shockwave:
+    lines: 3
+    fan_deg: 60.0
+    explosions: 3
+    spacing_m: 5.0
+    width_m: 3.0
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 2.0, combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 1.0
+    delay_seconds: 2.0
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Tenet_Exec

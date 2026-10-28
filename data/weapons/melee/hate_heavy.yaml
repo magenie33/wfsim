@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: hate_heavy
 name: Hate
 # see notes: melee_from_the_modules
@@ -6,18 +7,13 @@ form: heavy
 transform_group: hate
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_attack_unmodelled
-    attacks: "Spectral Blade and Spectral Blade Explosion"
-  - reason: melee_slide_unpublished
-  - reason: heavy_charge_share_assumed
-    published: 1.0
-    charge: 0.3333
-    swing: 0.6667
+- reason: melee_attack_unmodelled
+  attacks: Spectral Blade and Spectral Blade Explosion
+- reason: melee_slide_unpublished
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.917
+  fire_rate: 0.9166666666666666
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -27,13 +23,16 @@ attack:
   punch_through_m: 0.0
   range_m: 2.8
   follow_through: 0.6
-  heavy: { multiplier: 6.0, windup_seconds: 0.3333 }
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 2.0
   spends_combo: true
-  damage: { impact: 34.5, puncture: 34.5, slash: 161 }   # total 230
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 34.5
+    puncture: 34.5
+    slash: 161
   combo_script:
-    - { multiplier: 6.0, windup_seconds: 0.3333, delay_seconds: 0.6667, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 6.0, windup_seconds: 0.3333, delay_seconds: 0.6667, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ScytheMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Hate

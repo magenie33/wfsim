@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: bo_heavy
 name: Bo
 # see notes: melee_from_the_modules
@@ -11,7 +13,6 @@ unmodeled:
     charge: 0.1667
     swing: 0.3333
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -24,13 +25,27 @@ attack:
   punch_through_m: 0.0
   range_m: 3.0
   follow_through: 0.5
-  heavy: { multiplier: 5.0, windup_seconds: 0.1667 }
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 2.0
   spends_combo: true
-  damage: { impact: 126, puncture: 14 }   # total 140
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 126
+    puncture: 14
   combo_script:
-    - { multiplier: 5.0, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 5.0, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 5.0
+    windup_seconds: 0.1667
+    delay_seconds: 0.3333
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0
+  - multiplier: 5.0
+    windup_seconds: 0.1667
+    delay_seconds: 0.3333
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Bo

@@ -1,40 +1,32 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: iron_phoenix
 name: Iron Phoenix
 rarity: rare
 polarity: unairu
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/IronPhoenixMeleeTree
-description: "Fast cutting attacks with puncture finish."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Fast cutting attacks with puncture finish.
 combos:
-  # Wings and Beak — 1.35 s at 1.0x, 3 inputs
   neutral:
-    - { multiplier: 3.0, delay_seconds: 0.45, impact_multiplier: 0.1, slash_multiplier: 0.1, forced_procs: [impact, slash], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.45, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.45, forced_procs: [knockdown], combo_points: 2, combo_points_base: 2 }
-  # Double Slash — 0.65 s at 1.0x, 2 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/IronPhoenixMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.325, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.325, combo_points: 2, combo_points_base: 2 }
-  # Wings and Beak — 1.35 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/IronPhoenixMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 3.0, delay_seconds: 0.45, impact_multiplier: 0.1, slash_multiplier: 0.1, forced_procs: [impact, slash], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.45, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.45, forced_procs: [knockdown], combo_points: 2, combo_points_base: 2 }
-  # Taking Flight — 1.8 s at 1.0x, 2 inputs
+    reuse: neutral
   block_forward:
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.9, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 4.0, delay_seconds: 0.0, forced_procs: [lifted], combo_points: 4, combo_points_base: 4 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.9, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/IronPhoenixMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/IronPhoenixMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/IronPhoenixMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Iron_Phoenix

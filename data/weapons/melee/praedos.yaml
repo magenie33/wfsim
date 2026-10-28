@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: praedos
 name: Praedos
 slot: melee
@@ -11,16 +12,8 @@ mod_pools: [melee, tonfa]
 mastery_rank: 14
 max_rank: 30
 
-# THE FIRST TONFA IN THE ROSTER, and the class differs from the hammer in three
-# ways that all matter: 1.17 attack speed against 0.833, a 4x heavy against 6x,
-# and 0.6 Follow Through against 0.4 — so it reaches a combo tier faster, pays
-# less for each heavy attack it spends there, and keeps more of a swing for the
-# second body.
-#
-# THE CLASS HEAVY IS 4x AND THE STANCE MODULE DISAGREES — see
-# `notes: tonfa_heavy_and_slide`, where the six-weapon check that settles it is
-# written out. It is the one number on this weapon that two wiki sources state
-# differently.
+# The package supplies 7/6 attack speed and two 2.5x sweeps per heavy input.
+# Follow Through is 0.6; its geometry remains the wiki's.
 #
 # ITS EVOLUTIONS ARE INNATE. There is no Genesis to buy: five tiers ship with
 # the weapon, and one of them (Shockwave Synergy) is the only card in the game
@@ -53,16 +46,12 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  # ATTACK SPEED, in the fire-rate bucket. 1.17 is fast for a melee weapon and
-  # it is the whole reason a Tonfa reaches a combo tier a hammer cannot.
-  fire_rate: 1.17
+  fire_rate: 1.1666666666666667
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -70,52 +59,29 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.2
   punch_through_m: 0.0
-  # REACH, and it is a real distance in this arena: 2.5 m from the wielder.
-  # Incarnon Form adds 3 m to it, which is the largest reach bonus in the
-  # roster and the only thing that makes a light Praedos mode reach a crowd.
   range_m: 2.5
-  # `FT^(n-1)` — wiki's Follow Through table, Tonfa.
   follow_through: 0.6
-  # see notes: tonfa_heavy_and_slide
-  heavy: { multiplier: 4.0, windup_seconds: 0.4 }
-  damage: { impact: 20, puncture: 20, slash: 160 }   # total 200
-
-  # THE WEAPON'S OWN SLAM, at 100% of base — a combo's trailing hit states its
-  # own multiplier (`Dmg = { 200, 100 }` in the module), so this is the unit it
-  # scales. The standalone slam is the same attack at 200%, which is the 400
-  # this weapon's own attack table prints, and its status chance is 10% rather
-  # than the 20% the swing carries.
-  #
-  # EVERY NUMBER FROM THE WIKI'S OWN ATTACK TABLE: 100% Impact, 8 m, linear
-  # falloff from the point of impact to 50% at the edge, forced Impact.
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.69999999
+  damage:
+    impact: 20
+    puncture: 20
+    slash: 160
   slam:
-    damage: { impact: 200 }
+    damage:
+      impact: 200
     radius_m: 8.0
     blast_kind: slam
     status_chance: 0.1
     falloff_start_m: 0.0
     falloff_reduction: 0.5
-    forced_procs: [impact]
+    forced_procs:
+    - impact
     takes_multishot: false
-  # ROGUE EDICT — Sovereign Outcast's neutral combo, transcribed from
-  # `Module:Stances/data`. 2200% over 2.85 s at 1.0x attack speed, which checks
-  # against the rendered table's other column: 2200 / 2.85 = 771.9%/s.
-  #
-  # THE ENTRY CARRIES A STANCE'S SCRIPT because the stanceless Tonfa block
-  # publishes no duration for its ground combos, so there is nothing to time
-  # them with. Installing either Tonfa card replaces this.
-  #
-  # see notes: combo_clock_is_the_input — four inputs of 0.7125 s
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.5, delay_seconds: 0.7125, hits: 5, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 0.5, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.7125, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.7125, hits: 4, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.7125, hits: 2, forced_procs: [knockdown], combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/TonfaMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Praedos
   # The combo table: https://wiki.warframe.com/w/Sovereign_Outcast

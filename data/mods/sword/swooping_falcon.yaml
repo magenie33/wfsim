@@ -1,45 +1,33 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: swooping_falcon
 name: Swooping Falcon
 rarity: rare
 polarity: madurai
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordCmbTwoMeleeTree
-description: "Quick slashes with spinning lunges."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Quick slashes with spinning lunges.
 combos:
-  # Diving Kestrel — 2.0 s at 1.0x, 3 inputs
   neutral:
-    - { multiplier: 3.0, delay_seconds: 0.6667, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.6667, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.6666, forced_procs: [knockdown], combo_points: 2, combo_points_base: 2 }
-  # Swift Pursuit — 1.95 s at 1.0x, 4 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordCmbTwoMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.4875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.4875, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.4875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.4875, combo_points: 2, combo_points_base: 2 }
-  # Keen Broadwing — 2.75 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 1.0, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.9167, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.9167, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 5.0, delay_seconds: 0.9166, combo_points: 5, combo_points_base: 5 }
-  # Slicing Talon — 2.05 s at 1.0x, 4 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_C
   block_forward:
-    - { multiplier: 2.0, delay_seconds: 0.5125, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.5125, forced_procs: [impact, slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.5125, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.5125, combo_points: 4, combo_points_base: 4 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordCmbTwoMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordCmbTwoMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Swooping_Falcon

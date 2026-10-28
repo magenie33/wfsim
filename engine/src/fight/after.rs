@@ -261,37 +261,12 @@ pub(super) fn next_shot_due(
     spool: &mut Spool,
     windows: &CardWindows,
     last_shot_t: &mut f64,) {
-        // Next shot: cadence reflects the bar as of now (Frenzy just
-        // granted/refreshed counts immediately), plus Pressurized
-        // Magazine's live on-reload fire-rate buff.
-        bar.expire(*t);
-        let mut fr_add = match active.fire_rate_on_reload {
-            Some(b) if *t < windows.fire_rate_after_reload => b.value,
-            _ => 0.0,
-        };
-        // THE SAME BUCKET fire-rate mods and a static `fire_rate_bonus`
-        // evolution live in — `base * (1 + fr + evo + 0.05n)`. `per_stack` is
-        // already the absolute rate that fraction is worth, so adding it here,
-        // inside the bracket rather than outside it, is what keeps it additive
-        // with mods instead of multiplicative with them.
-        fr_add += buff_total(active, crate::model::BuffGrant::FireRate, buff_stacks, *t);
-        // …AND A WARFRAME ABILITY'S SHARE, into the same sum: Warcry's attack
-        // speed is "additive to mods (e.g., Fury)" and its own strength knob has
-        // already been spent on it (`data::abilities::resolve`).
-        //
-        // THE FRAME'S TURN, between shots (`data::casting::FrameRuntime::act`):
-        // a melee kill has grown the window it landed in, and every planned
-        // rule that acts now acts, each cast that roots the frame a pause in
-        // the shooting.
-        if let Some(f) = spool.frame.as_mut() {
+        // Frame actions wait for a committed melee input to finish.
+        let input_continues = swing.as_ref().is_some_and(|h| h.event_timing.is_some() && !h.ends_input());
+        if let Some(f) = spool.frame.as_mut().filter(|_| !input_continues) {
             *t = f.act_all(*t, r.kills);
         }
-        fr_add += crate::data::abilities::fire_rate_at(&params.abilities_now(), *t);
-        let rate = if params.locks("fire_rate") {
-            active.fire_rate
-        } else {
-            (active.fire_rate + fr_add) * bar.total_contributions().fire_rate_multiplier
-        };
+        let rate = cadence_rate(params, active, *t, bar, buff_stacks, windows);
         // THE TRIGGER CAME OFF, DERIVED rather than listed. Every pause in
         // this loop — a reload, a transform, a dry magazine, a stall on a dry
         // reserve — leaves this shot LATER than the moment the last one made it
@@ -318,7 +293,18 @@ pub(super) fn next_shot_due(
         // (`rate / active.fire_rate` is exactly that factor, and it is 1.0 when no
         // buff is up). Same bucket, reciprocal application — see `charge_seconds`.
         *t += seconds_to_next_shot(
-            active, rate, initial_now, swing, tennokai, tennokai_heavy, ammo, incarnon, melee,
+            active, *t, rate, initial_now, swing, tennokai, tennokai_heavy, ammo, incarnon, melee,
         );
         spool.due = *t;
+}
+
+/// One attack-speed bucket for animation lead-in, event gaps and recovery.
+#[wfsim_gas_macro::metered]
+pub(super) fn cadence_rate(params: &FightParams, active: &FightParams, t: f64, bar: &mut BuffBar, buff_stacks: &mut [LiveStacks], windows: &CardWindows) -> f64 {
+    bar.expire(t);
+    if params.locks("fire_rate") { return active.fire_rate; }
+    let reload = active.fire_rate_on_reload.filter(|_| t < windows.fire_rate_after_reload).map_or(0.0, |b| b.value);
+    let stacked = buff_total(active, crate::model::BuffGrant::FireRate, buff_stacks, t);
+    let ability = crate::data::abilities::fire_rate_at(&params.abilities_now(), t);
+    (active.fire_rate + reload + stacked + ability) * bar.total_contributions().fire_rate_multiplier
 }

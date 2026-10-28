@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: sancti_magistar
 name: Sancti Magistar
 slot: melee
@@ -58,18 +60,14 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "A heavy attack grants every attack 5% life steal plus 5% per combo level, permanently, shared with allies within 15 m. Nothing damages the Tenno here and there are no allies, so it adds nothing."
-  - "A 20% chance to resist a status effect while held protects the wielder; nothing shoots back here."
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-
+- A heavy attack grants every attack 5% life steal plus 5% per combo level, permanently, shared with allies within 15 m. Nothing damages the Tenno here and there
+  are no allies, so it adds nothing.
+- A 20% chance to resist a status effect while held protects the wielder; nothing shoots back here.
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  # ATTACK SPEED, in the fire-rate bucket — which is what makes Fury and
-  # Berserker ordinary mods here. A stance's swing delays are published at 1.0x,
-  # and `build::loadout::resolve` divides the whole script by this bucket.
   fire_rate: 1.0
   multishot: 1.0
   ammo_cost: 0
@@ -78,26 +76,18 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.2
   punch_through_m: 0.0
-  # REACH, and it is a real distance in this arena: 2.5 m from the wielder.
-  # On the group ruler's 3 m grid that is one body per swing, which is why
-  # Follow Through pays nothing there and a slam pays everything.
   range_m: 2.6
-  # `FT^(n-1)` — wiki's Follow Through table, Hammer.
   follow_through: 0.4
-  # see notes: class_s_heavy_attack
-  heavy: { multiplier: 6.0, windup_seconds: 0.4 }
-  damage: { impact: 192, puncture: 36, slash: 12 }   # total 240
-
-  # THE WEAPON'S OWN SLAM, at 100% of base — a combo's trailing hit states its
-  # own multiplier (`Dmg = { 500, 100 }` in the module), so this is the unit it
-  # scales. The standalone slam is the same attack at 200%, which is the 480
-  # this weapon's own attack table prints, and its status chance is 10% rather
-  # than the 20% the swing carries.
-  #
-  # EVERY NUMBER FROM THE WIKI'S OWN ATTACK TABLE: 100% Impact, 9 m, linear
-  # falloff from the point of impact to 50% at the edge, forced Knockdown.
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.5
+  damage:
+    impact: 192
+    puncture: 36
+    slash: 12
   slam:
-    damage: { impact: 240 }
+    damage:
+      impact: 240
     radius_m: 9.0
     blast_kind: slam
     status_chance: 0.1
@@ -105,23 +95,9 @@ attack:
     falloff_reduction: 0.5
     forced_procs: []
     takes_multishot: false
-  # RAGING WHIRLWIND — transcribed from the wiki's own `Module:Stances/data`,
-  # which publishes `Dmg`, `Hits`, `Procs`, `Types`, `ImpactMultiplier` and
-  # `Duration` per combo. The duration is the MODULE's (3.0 s at 1.0x attack
-  # speed), not derived — though deriving it from the rendered table's two
-  # columns gave the same number, which is how the derivation was checked.
-  #
-  # THE SLAM TAKES NO TIME OF ITS OWN: it rides the swing it is listed with, so
-  # the 4 direct swings share the 3.0 s and it lands alongside the last of them.
-  # `Knockback` is Impact's own proc and is transcribed as `impact`.
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 4.0, delay_seconds: 1.0, impact_multiplier: 1.5, forced_procs: [impact], combo_points: 4, combo_points_base: 4 }
-    - { multiplier: 2.0, delay_seconds: 0.0, all_around: true, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 1.0, all_around: true, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 5.0, delay_seconds: 0.0, impact_multiplier: 1.5, forced_procs: [knockdown], combo_points: 5, combo_points_base: 5 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 1.0, combo_points: 1, combo_points_base: 1 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerMeleeTree
+    context: CC_GROUND_BRANCH_A
 source:
   url: https://wiki.warframe.com/w/Sancti_Magistar
   # The combo table: https://wiki.warframe.com/w/Crushing_Ruin

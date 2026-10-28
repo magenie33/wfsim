@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: innodem_forward
 name: Innodem
 # see notes: melee_from_the_modules
@@ -6,12 +7,11 @@ form: forward
 transform_group: innodem
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_attack_unmodelled
-    attacks: "Dagger Projectile"
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_attack_unmodelled
+  attacks: Dagger Projectile
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 0.75
@@ -24,8 +24,15 @@ attack:
   punch_through_m: 0.0
   range_m: 1.8
   follow_through: 0.9
-  heavy: { multiplier: 2.0, windup_seconds: 0.1333 }
-  damage: { impact: 36, puncture: 144, slash: 180 }   # total 360
-
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.64999998
+  damage:
+    impact: 36
+    puncture: 144
+    slash: 180
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Innodem

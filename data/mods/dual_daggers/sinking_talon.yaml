@@ -1,57 +1,31 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: sinking_talon
 name: Sinking Talon
 rarity: uncommon
 polarity: zenurik
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbOneMeleeTree
-description: "Strong, focused attacks with multi-hit spins."
-
-# THE FLATTEST DUAL DAGGERS STANCE. Three of its four combos are the same
-# Lashing Panther — four 100% swings in 1.15 s — so it earns combo points
-# faster per second than either rare card and deals less per input.
-# see notes: combo_points_from_multiplier
+description: Strong, focused attacks with multi-hit spins.
 combos:
-  # see notes: combo_clock_is_the_input
-  # Lashing Panther — 1.15 s at 1.0x, 4 inputs of 0.2875 s, 400% in all
   neutral:
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-  # Lashing Panther — 1.15 s at 1.0x, 4 inputs of 0.2875 s, 400% in all
+    reuse: forward
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-  # Lashing Panther — 1.15 s at 1.0x, 4 inputs of 0.2875 s, 400% in all
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.2875, combo_points: 1, combo_points_base: 1 }
-  # Rising Lion — 3.05 s at 1.0x, 3 inputs of 1.0167 s, 1600% in all
+    reuse: forward
   block_forward:
-    - { multiplier: 2.0, delay_seconds: 1.0167, hits: 2, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.0, forced_procs: [slash, lifted], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, delay_seconds: 0.0, hits: 2, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 1.0167, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 1.0166, hits: 2, slash_multiplier: 1.25, forced_procs: [knockdown], combo_points: 2, combo_points_base: 2 }
-  # see notes: dual_daggers_heavy
-  # see notes: tonfa_heavy_timing
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_B
   heavy:
-    - { multiplier: 1.0, hits: 2, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.0, hits: 2, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbOneMeleeTree
+    context: CC_GROUND_HEAVY
   slide:
-    - { multiplier: 2.0, delay_seconds: 0.67, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualDaggerCmbOneMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Sinking_Talon
-  # The combo data: https://wiki.warframe.com/w/Module:Stances/data

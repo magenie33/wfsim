@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: wolf_sledge
 name: Wolf Sledge
 slot: melee
@@ -26,13 +27,11 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_attack_unmodelled
-    attacks: "Throw, Throw Bounce Explosion and Throw Recall Explosion"
-
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_attack_unmodelled
+  attacks: Throw, Throw Bounce Explosion and Throw Recall Explosion
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -45,10 +44,16 @@ attack:
   punch_through_m: 0.0
   range_m: 3.1
   follow_through: 0.4
-  heavy: { multiplier: 4.0, windup_seconds: 0.4 }
-  damage: { impact: 132.09, puncture: 7.77, slash: 119.14 }   # total 259
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.69999999
+  damage:
+    impact: 132.09
+    puncture: 7.77
+    slash: 119.14
   slam:
-    damage: { impact: 259 }
+    damage:
+      impact: 259
     radius_m: 9.0
     blast_kind: slam
     status_chance: 0.1
@@ -56,6 +61,8 @@ attack:
     falloff_reduction: 0.5
     forced_procs: []
     takes_multishot: false
-
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ThrowingHammerMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Wolf_Sledge

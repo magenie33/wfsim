@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: arca_titron_heavy_slam
 name: Arca Titron
 # see notes: melee_from_the_modules
@@ -10,10 +12,9 @@ unmodeled:
   - reason: melee_passive_unmodelled
     passive: "Slam Capacitor: each kill by anything but a slam stores a charge of +250% damage and +2 m range for the next slam, up to 5, with no expiry"
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.733
+  fire_rate: 0.7333333333333333
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -22,20 +23,28 @@ attack:
   status_chance: 0.38
   punch_through_m: 0.0
   range_m: 2.6
-  heavy: { multiplier: 6.0, windup_seconds: 0.4 }
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.69999999
   spends_combo: true
-  damage: { impact: 0.0 }
+  damage:
+    impact: 0.0
   radial:
-    damage: { electricity: 1080 }
+    damage:
+      electricity: 1080
     radius_m: 10.0
     blast_kind: slam
     falloff_start_m: 0.0
     falloff_reduction: 0.3
-    forced_procs: [electricity]
+    forced_procs:
+    - electricity
     takes_multishot: false
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 2.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 1.0
+    delay_seconds: 2.0
+    forced_procs:
+    - lifted
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Arca_Titron

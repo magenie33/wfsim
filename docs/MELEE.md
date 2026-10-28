@@ -32,21 +32,15 @@ seven different builds being ranked, which is what the board is for.
 | `slide` | slide | Hell's Wave | 200% (360deg, forced Impact) |
 | `heavy_slam` | heavy, airborne | — | 630 Blast, 10 m sphere |
 
-**THREE CLASSES WERE WRITTEN BY HAND** (every other class is built from the modules, §9), and the second one is what proves the first
-was not hard-coded. A Tonfa (the Praedos) differs from a hammer in every number
-the class owns — 1.17 attack speed against 0.833, a **4x** heavy against 6x,
-0.6 Follow Through against 0.4, a 0.4 s heavy CHARGE against the hammer's
-published 1.2 — and it needed no engine change to say so. Its stances are two more cards in a pool of their own.
-The third, DUAL DAGGERS (the Okina pair), is the same: a **2x** heavy, 0.8
-Follow Through, 1.7 m of reach, three stances and Amar's Contempt in
-`data/mods/dual_daggers/` (`notes: dual_daggers_heavy`).
+Weapon stats and attack events remain separate. Praedos has 7/6 attack speed
+and 0.6 Follow Through; Magistar has 5/6 and 0.4. The package's Tonfa heavy
+contains two 2.5x sweeps per input. Its heavy charge comes from the weapon's
+parameter and its ordinary animation takes attack speed. A scalar arsenal
+heavy total does not replace these per-swing overrides.
 
-**THE TONFA HEAVY IS THE ONE NUMBER TWO WIKI SOURCES DISAGREE ON.**
-`Module:Stances/data` prints `Dmg = { 250 }, Hits = { 2 }` for Discord Sewn,
-which reads as 500%; DE's export says 4x on all six Tonfas in the game (Boltace
-704/176, Kronen 520/130, Kronen Prime 848/212, Ohma 896/224, Telos Boltace
-840/210, Praedos 800/200). Six weapons agreeing beat one row, so the entries
-take the module's HIT COUNT and the export's TOTAL: two hits of 200%.
+The shared action catalog supplies ordinary melee inputs, stances, heavy
+attacks, slides and charged glaive releases wherever the export provides their
+events. Weapon-specific charge and attack speed resolve against that sequence.
 
 **A MODE'S NAME IS FIXED AND ITS STRENGTH IS NOT**. The id
 is the INPUT — `neutral`, `block_forward` — and so is what a reader sees;
@@ -67,8 +61,9 @@ label the app draws.
 
 ## 2. THE MECHANICS, AND WHERE EACH ONE CAME FROM
 
-Every line below is quoted from `wiki.warframe.com` and cross-checked against
-DE's Public Export where the export carries the field.
+Damage measurements remain the overrides for the rules they measured.
+Imported animation timing and per-swing properties use the pinned package;
+wiki-only delivery and geometry rules retain their stated limitations.
 
 ### The combo counter
 
@@ -156,13 +151,10 @@ back, not what a player owes on the way in — so the first heavy of the
 engagement already pays the floor, and a half-second fight (one slam) is the
 only thing that can tell the two rules apart.
 
-It is the whole of the pure-heavy build. The Magistar's Incarnon Form carries
-**+30**, which is back inside **0.75 s** against a **1.07 s** cycle (a 0.4 s
-charge reduced by the form's own +50% wind-up speed, then the 0.8 s swing) — so
-every heavy attack lands at **2x** rather than 1x. A hammer's split of its
-published 1.2 s is the Tonfa's measured one, assumed (`heavy_charge_share_assumed`). `melee_combo_points` takes the higher of what was earned
-and what has refilled, which is what makes "spend it and it comes back" and
-"build on top of it" one number.
+The Magistar's Incarnon Form carries **+30**, refilled inside **0.75 s**.
+Whether the next heavy reads 2x depends on its actual strike time, including
+charge, animation events and any worthwhile wait. `melee_combo_points` takes
+the higher of earned and refilled points.
 
 ### Follow Through
 
@@ -526,37 +518,24 @@ pattern is to use the window the moment it fires.
 **TENNOKAI COUNTS INPUTS, NOT STRIKES.** Discipline's Merit opens the window
 *"after 4 melee inputs that hit an enemy"*, *"Multi-strike attacks do not count
 as additional hits"* and *"Heavy attacks do not count as a hit"*; the random 15%
-is rolled once an input the same way. A row with a delay closes an input, so
-Baleful Sin's opening four strikes are one. Counted per strike, that one press
-opened the window and Gemini Cross's forward-block loop fired a free heavy
-every 0.575 s — twice any other combo on the same Praedos.
+is rolled once an input the same way. A timeline records its input boundaries
+explicitly, so Baleful Sin's opening four strikes count once. Legacy scripts
+infer a boundary from the row carrying the input's delay.
 
 **A TENNOKAI HEAVY BREAKS THE STANCE CHAIN**, so the next light swing starts
 the combo over, and that decides which swings ever happen: under Discipline's
 Merit a combo plays four inputs, wrapping or cut short, and then the heavy.
 
-**A TENNOKAI SWING LANDS ONCE.** The window does not buff a light swing, it
-SUBSTITUTES a heavy attack for it — and a heavy attack's multiplier is the
-class's whole total, so a Rogue Edict row that lands a 50% spin five times is
-one 4x heavy when the flash converts it, not five. `swing_instances` is the
-rule and it is asserted on the rule rather than on a fight: the window also
-costs a wind-up the light swing did not pay, and that alone moves every total
-the other way, so a fight-level assertion passes with the rule deleted.
+**A TENNOKAI INPUT PLAYS A HEAVY ATTACK.** Event-timed heavy inputs retain each
+attack event, its multiplier and forced procs. Gemini Cross plays two 2.5x
+sweeps at the same timestamp. Both read one combo snapshot and the input costs
+no combo. Legacy scripts substitute one instance at the class's total heavy
+multiplier and use `HeavyAttack::swing_seconds` for its ordinary animation.
 
-**AND IT CHARGES AT ITS OWN SPEED.** *"The Wind-Up Speed of Tennokai attacks is
-not affected by Wind-Up Speed bonuses from other sources"* — so
-`Tennokai::windup_seconds` is resolved apart from the bucket every other
-wind-up reads, off the CLASS's charge. A heavy build carrying both wind-up
-cards therefore charges a Tennokai attack SLOWER than its ordinary one, which
-is the card's own clause and not an artefact. The window's own speed-up is
-**+100%** and it is the one number in the mechanic DE publishes nothing for —
-`build::loadout::TENNOKAI_WINDUP_SPEED`, declared on every melee entry.
-
-**AND IT SWINGS THE HEAVY'S OWN ANIMATION**, one heavy's share of the weapon's
-heavy form (`HeavyAttack::swing_seconds`), never the light row it replaced. A
-stance puts an input's whole time on its LAST row, so a row inside one carries
-none: a Parting Knee converted on its opener paid nothing, the chain restarted,
-and the 0.91 s row was never reached — a slide loop swung four times as often.
+**TENNOKAI CHARGE DEFAULTS TO ZERO.** The package export contains no Tennokai
+runtime charge parameter. Zero is the model convention, separate from the
+ordinary heavy charge and its wind-up-speed bucket. The heavy's motion, attack
+events and remaining recovery still play on the attack-speed clock.
 
 **A SLIDE OPENS IT TOO.** A slide attack lands direct melee hits like any light
 swing, so it rolls for the flash, and a slide loop that gets one fires the
@@ -583,10 +562,9 @@ applies to.
    say which line pays nothing.
 3. **Power Spike's partial combo decay** — a Warframe passive, so the counter
    here drops to zero where a real build keeps most of it.
-4. **One attack input's own animation length.** The module publishes a combo's
-   DURATION and one entry per input, and nothing inside an entry, so the INPUTS
-   share it evenly and an entry's rows land together. It moves a status tick's
-   start by fractions of a second and moves no total.
+4. **Animation events absent from a legacy script.** Wiki-only inputs share
+   the published combo duration evenly and their rows land together.
+   Event-timed inputs use the package animation duration and attack events.
 5. **`Sweep` and `Thrust` are one shape here** — a 90-degree arc in front,
    `fight::MELEE_ARC_DEG`. A sweep is wider than that and a thrust is
    narrower, the real answer is per attack INPUT, and nothing published gives
@@ -828,27 +806,77 @@ mod under one display name, and the bare path is the player's card: join by
 
 ---
 
-## 9. THE MODULE-BUILT ROSTER — every other melee weapon
+## 9. Sources and shared action data
 
-Every non-Exalted melee weapon the wiki's module holds is in the roster. Six
-were written by hand off their pages (Magistar, Sancti Magistar, Okina, Okina
-Prime, Praedos, Valkyr Talons); the rest take their numbers from
-`Module:Weapons/data/melee` and `Module:Stances/data` (`notes:
-melee_from_the_modules`), then were audited against their own page's
-`==Characteristics==`, `==Notes==` and `==Mechanics==`:
+The package export supplies available base stats and attack sequences. Weapon
+metadata, reach, geometry and properties absent from the export retain their
+wiki sources (`notes: melee_from_the_modules`). Fixed-stance measured damage
+and combo rules remain in the weapon data.
 
 | form | where its numbers come from |
 | --- | --- |
-| neutral (the weapon) | the infobox: swing damage, crit, status, attack speed, reach, Follow Through, combo clock, polarities; its slam is `Slam Attack` at 100%, and every form that states none reads this one |
-| forward / block / block_forward | the same attack and NO script — the stance supplies it, and an empty slot is refused |
-| heavy | the CLASS's heavy block from the module, scaled so one heavy totals the infobox's `HeavyAttack`; wind-up split by `heavy_charge_share_assumed` |
-| slide | the class's slide block, each hit at the infobox's `SlideAttack`, timed by the block's `Duration` |
+| neutral / forward / block / block_forward | the equipped stance's package tree, or the weapon's bare tree when the slot is empty; explicit aliases reuse the default input |
+| heavy | the package's separate sweep events and per-swing overrides; weapon charge is independent of animation duration |
+| slide | the package slide animation and its individual events; spin geometry retains the class rule |
 | heavy_slam | `Heavy Slam Attack` as a slam sphere on the 2.0 s stand-in recovery |
 
-**THE PAGE WINS WHERE IT STATES A NUMBER.** A weapon whose page gives its own
-heavy in multipliers plays it (Keratinos); a stale module figure yields to the
-page's patch note (Zenistar's slide); a page characteristic the entry can
-carry is carried (War's forced Impact, Xoris's endless combo clock).
+### Input, action and event timelines
+
+Melee uses an input/action/event timeline. `MeleeCombo` accepts an inline
+timeline, a shared package tree/context binding, an input alias or a legacy
+hit script. An input
+contains actions; an action carries a source id, animation duration, optional
+charge and ordered attack events. Its lead-in and remaining recovery follow
+from these times, so the data does not repeat them as independent numbers.
+`MeleeTimeline::compile` lowers the timeline to scheduler rows. The fight
+commits an input before its lead-in, then resolves each attack when its event
+is due. Ability casts and Tennokai substitutions wait for an input boundary.
+The heavy's scalar panel values are derived from its event sequence.
+
+Gemini Cross's six-mode example has 17 inputs and 45 attack events. Its ordinary heavy
+charge uses the weapon's package `chargeTime` (0.69999999 s); its strike
+animation is 0.666667 s. `extraDuration` identifies the charge animation's
+length and adds no second charge. M73 remains the earlier in-game reading;
+this timeline uses the package clock split. Praedos's package attack speed is
+7/6. [The complete timeline](melee/GEMINI_CROSS.md) lists the modes and events.
+
+Stances and available bare weapon inputs reference `data/melee/actions.yaml`.
+Each package action is defined once; its callers select an input sequence.
+The catalog's geometry masks retain manual wiki rules. The importer verifies
+the package-derived fields without replacing those masks. Coverage and
+unavailable records are listed in `docs/melee/package-coverage.json`.
+
+A row's `hit_delay_seconds` schedules contact after its charge and animation
+offset; `delay_seconds` schedules the next row. Several rows of one input use
+successive event deltas, and `input_end` closes only its last hit.
+`next_swing_index` lets a one-time opener lead into a repeating suffix, as on
+the ordinary Glaive's charged throw. Charge uses wind-up speed, motion uses
+attack speed, and flight uses projectile speed. A timed throw starts flying
+at its release event while its remaining animation continues.
+
+The export's sweep marker starts collision. The arena assumes contact at that
+marker for an in-range target, using its existing melee arc. The export does
+not establish a collision-window end or a cancellable recovery boundary;
+`WaitStart` is therefore not used to shorten the animation. Aerial sequences
+are outside the arena's supported stance modes.
+
+Thanks to [@superexboom](https://github.com/superexboom) for extracting and
+organizing these animation records.
+The package hash and export version are in `data/notes.yaml`.
+
+### An empty stance slot
+
+A weapon's own package tree supplies its bare inputs. An equipped stance
+replaces them with its own tree. Simulation, replay and search share
+`data::weapons::combo_error`: a complete bare input is playable without a
+stance. Absent bare branches reuse the default combo; a default stored only in
+branch A also supplies the neutral input. An explicitly exported but incomplete
+branch is left empty rather than replaced with another attack. The benchmark's
+separate stance requirement remains a legality rule.
+
+Missing projectile/sweep events retain the existing unmodelled declaration;
+the importer does not create a mid-animation melee hit for them. Existing
+measured combo rules, including M95/M97, remain in their fixed-stance data.
 
 **A HEAVY THAT IS NOT A SWING HAS NO HEAVY FORM** — a throw, a shot, a wave, a
 disc (`melee_heavy_is_special`), like the glaives and gunblades before them.
@@ -887,12 +915,12 @@ the glaive is in the air (`Now::glaive_in_flight`).
 
 | mode id | the list | what happens |
 | --- | --- | --- |
-| `throw` / `charged_throw` | the throw | it strikes, flies to where it turns and back, and the next one goes |
+| `throw` / `charged_throw` | `recall` above the throw | it strikes and immediately turns home at outbound speed |
 | `throw_detonate` / `charged_throw_detonate` | `detonate` above the throw | it strikes and is set off where the blast is worth most |
 
-**A MODE IS A WRITTEN LIST**, and a detonated throw is the one mode whose list
-says more than its form: `WeaponPlayMode::rules` adds `detonate`, and the
-fight reads the list, so an inserted `detonate` does the same.
+**A MODE IS A WRITTEN LIST.** `WeaponPlayMode::rules` adds `recall` or
+`detonate`, and the fight reads that list. Both actions are possible only
+while the glaive is in flight and add no input delay (M129).
 
 **TWO HALVES OF ONE THROW, AND THEY WANT OPPOSITE THINGS:**
 
@@ -930,22 +958,38 @@ loop buffers every throw. Whirlwind speeds the flight and, *"as a direct
 result"*, stretches the range with it. Combo Fury and Mark of the Beast buff the
 secondary weapon and are out of this arena.
 
-**THE GLAIVE IN THE AIR HOLDS THE NEXT THROW** — out to the target and no more
-when it is detonated; out to where it turns and back when it is not
-(`FightParams::throw_turn_m`). The charge is the heavy wind-up clock, so the
-wind-up cards shorten it and attack speed does not.
+**THE GLAIVE IN THE AIR HOLDS THE NEXT THROW** — out to the target and back
+when recalled or detonated; out to where it turns and back otherwise
+(`FightParams::throw_turn_m`). The throwing motion uses the heavy
+wind-up clock for its charge and the attack-speed clock for its release
+motion (M129). Recall and
+detonation inputs add no delay, and both return at outbound speed. Catching
+adds no recovery before the next throw. An explicit list with neither input
+leaves the disc to fly and bounce until it returns.
 
-Numbers are the module's `Throw`, `Charged Throw`, `Recall Explosion` and `Bounce Explosion` rows
-(`notes: glaive_throw_from_the_module`), with each page's own figures winning
-where it states one (ranges, a quick throw's innate punch through, Kestrel's
-falloff).
+Projectile damage, crit, status, speed, explosion amounts and recall procs use
+the package records (`notes: glaive_throw_from_the_module`). Damage-type
+composition absent from a record, range, punch through, bounce count and bounce
+forced procs retain their wiki rules.
+
+**FORCED PROCS BELONG TO EACH INSTANCE.** Falcor's quick collision forces
+Impact and its charged collision forces Electricity; either manual detonation
+forces Electricity. Xoris's collision forces Impact, and either manual
+detonation forces Impact and Electricity. Pathocyst and Coda Pathocyst's manual
+detonations force Impact and Viral: the pages state Viral and the module supplies
+Impact as well. A forced element survives elemental combinations and does not
+depend on a random status roll. Volatile bounce explosions use their own list,
+not the manual detonation's; only Glaive Prime's quick bounce forces Impact.
+`fight::tests::glaive` checks each throw's three lists and the forced Electricity
+path into Melee Influence after Electricity damage combines into Corrosive.
 
 ### …and what is still owed
 
-- **The flight back and the throw's own animation are stand-ins** (the throw's
-  speed; one attack at the quick throw's rate). They are most of a throw
-  loop's cadence, so one stopwatch run — throw to catch, and charge to
-  detonation to the next release — moves every glaive's number.
+- **Quick ground throws lack a package release event.** The
+  quick ground throws retain one attack at the unmodded quick-throw rate where
+  their actual release event is absent. Charged throws use the package opener
+  followed by consecutive A/B animations. M129 supplies the independent speed
+  buckets, return speed and zero catch recovery.
 - **Bounces off walls**, which is most of what a glaive bounces off in a
   mission; the flight between bounces, which adds no time here; the way home,
   which strikes nothing; Falcor's and Orvius's seeking.
@@ -954,5 +998,11 @@ falloff).
   bleeds, and here it reaches only the strike.
 - **A quick throw's bounce count**: only the charged throw's is published.
 - **Orvius's quick throw** is a hover that explodes by itself, and has no form.
+- **Cerata's innate Toxin on throws**: its page says it stays separate from
+  modded elements; the model combines it as on a swing. Compare an unmodded
+  throw with Cold alone, then Cold and a Toxin mod, direct and radial separately.
+- **Falcor's punch through under Volatile cards**: its page reports that the
+  innate metre survives despite the arsenal display. The model removes it as
+  on other glaives; one aligned pair of enemies separates the two behaviours.
 - **Disputed rows**, declared on their entries: Halikar's quick detonation,
   Xoris's charged strike, two 12% explosion crit chances, Kestrel's falloff.

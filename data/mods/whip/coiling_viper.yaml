@@ -1,45 +1,31 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: coiling_viper
 name: Coiling Viper
 rarity: rare
 polarity: zenurik
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipCmbTwoMeleeTree
-description: "Powerful arcing strikes with energetic flips."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Powerful arcing strikes with energetic flips.
 combos:
-  # Whistling Wind — 2.7 s at 1.0x, 3 inputs
   neutral:
-    - { multiplier: 1.0, delay_seconds: 0.9, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.9, forced_procs: [lifted], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 4.0, delay_seconds: 0.9, combo_points: 4, combo_points_base: 4 }
-  # Whistling Wind — 2.7 s at 1.0x, 3 inputs
+    reuse: forward
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.9, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.9, forced_procs: [lifted], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 4.0, delay_seconds: 0.9, combo_points: 4, combo_points_base: 4 }
-  # Whistling Wind — 2.7 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 1.0, delay_seconds: 0.9, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.9, forced_procs: [lifted], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 4.0, delay_seconds: 0.9, combo_points: 4, combo_points_base: 4 }
-  # Tumbling King — 2.3 s at 1.0x, 2 inputs
+    reuse: forward
   block_forward:
-    - { multiplier: 2.0, delay_seconds: 1.15, impact_multiplier: 1.25, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 1.15, combo_points: 3, combo_points_base: 3 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipCmbTwoMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipCmbTwoMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Coiling_Viper

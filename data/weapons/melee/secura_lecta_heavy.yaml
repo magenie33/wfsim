@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: secura_lecta_heavy
 name: Secura Lecta
 # see notes: melee_from_the_modules
@@ -5,13 +6,8 @@ inherits: secura_lecta
 form: heavy
 transform_group: secura_lecta
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: heavy_charge_share_assumed
-    published: 0.4
-    charge: 0.1333
-    swing: 0.2667
+unmodeled: []
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.25
@@ -24,13 +20,16 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.5
-  heavy: { multiplier: 4.5, windup_seconds: 0.1333 }
+  heavy:
+    multiplier: 4.5
+    windup_seconds: 1.0
   spends_combo: true
-  damage: { puncture: 30, slash: 66, electricity: 80 }   # total 176
-  # see notes: combo_points_from_multiplier
+  damage:
+    puncture: 30
+    slash: 66
+    electricity: 80
   combo_script:
-    - { multiplier: 4.5, windup_seconds: 0.1333, delay_seconds: 0.2667, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 4.5, windup_seconds: 0.1333, delay_seconds: 0.2667, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/WhipMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Secura_Lecta

@@ -129,7 +129,9 @@ pub fn heavy_swing_seconds(s: &WeaponSpec) -> f64 {
         return 0.0;
     };
     let script = &heavy.attack.combo_script;
-    let charges = script.iter().filter(|h| h.windup_seconds > 0.0).count();
+    let charges = script.iter().filter(|h| {
+        if h.event_timing.is_some() { h.ends_input() } else { h.windup_seconds > 0.0 }
+    }).count();
     if charges == 0 {
         return 0.0;
     }
@@ -272,8 +274,8 @@ pub fn base_panel_assembled(
             takes_blast_radius_mods: r.takes_blast_radius_mods,
             falloff_start_m: r.falloff_start_m.unwrap_or(0.0),
             falloff_reduction: r.falloff_reduction.unwrap_or(0.0),
-            forced_procs: crate::rules::damage::ForcedProcs::from_types(
-                r.forced_procs.iter().map(|t| damage_type(t)),
+            forced_procs: crate::rules::damage::ForcedProcs::from_names(
+                r.forced_procs.iter().map(String::as_str),
             ),
             takes_condition_overload: r.takes_condition_overload,
             takes_multishot: r.takes_multishot,
@@ -688,6 +690,12 @@ pub fn base_panel_assembled(
         windup_seconds: s.attack.windup_seconds,
         no_magazine: s.attack.no_magazine,
         combo_script: s.attack.combo_script.clone(),
+        throw_charge_seconds: s.attack.throw_charge_seconds,
+        heavy_script: all().iter()
+            .find(|e| e.group() == s.group() && e.form_kind() == crate::model::FormKind::Heavy)
+            .map(|e| &e.attack.combo_script)
+            .filter(|h| !h.is_empty() && h.iter().all(|r| r.event_timing.is_some()))
+            .map_or_else(Vec::new, Clone::clone),
         heavy: s.attack.heavy.map(|h| crate::model::HeavyAttack {
             swing_seconds: heavy_swing_seconds(s),
             ..h

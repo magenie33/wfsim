@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: dark_sword_heavy
 name: Dark Sword
 # see notes: melee_from_the_modules
@@ -5,16 +6,11 @@ inherits: dark_sword
 form: heavy
 transform_group: dark_sword
 co_behavior: additive_with_base_damage
-unmodeled:
-  - reason: heavy_charge_share_assumed
-    published: 0.6
-    charge: 0.2
-    swing: 0.4
+unmodeled: []
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.833
+  fire_rate: 0.8333333333333334
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -24,13 +20,16 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.6
-  heavy: { multiplier: 5.0, windup_seconds: 0.2 }
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.64999998
   spends_combo: true
-  damage: { puncture: 120, slash: 60, radiation: 80 }   # total 260
-  # see notes: combo_points_from_multiplier
+  damage:
+    puncture: 120
+    slash: 60
+    radiation: 80
   combo_script:
-    - { multiplier: 5.0, windup_seconds: 0.2, delay_seconds: 0.4, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 5.0, windup_seconds: 0.2, delay_seconds: 0.4, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Dark_Sword

@@ -10,8 +10,7 @@ pub(super) struct ArcaneFile {
     /// `dual_pistols`); calc-layer gate like a mod's `requires`.
     #[serde(default)]
     pub(super) requires: Option<String>,
-    /// …and its mirror: weapon traits on which the effects go INERT though the
-    /// arcane still equips (Melee Influence on a glaive).
+    /// Weapon traits on which the effects are inert though the arcane equips.
     #[serde(default)]
     pub(super) inert_on: Vec<String>,
     #[serde(default)]

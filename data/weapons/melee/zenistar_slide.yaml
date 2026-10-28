@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: zenistar_slide
 name: Zenistar
 # see notes: melee_from_the_modules
@@ -11,10 +12,9 @@ unmodeled:
   - reason: melee_heavy_is_special
     what: "a thrown disc: 75 Impact on contact, a 350 Heat burst, then a 4 m aura of 50 Heat every 0.8 s for 10 s, longer with the combo multiplier"
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.833
+  fire_rate: 0.8333333333333334
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -23,14 +23,13 @@ attack:
   status_chance: 0.3
   punch_through_m: 0.0
   range_m: 2.6
-  # see notes: slide_ignores_follow_through
   follow_through: 1.0
-  damage: { impact: 80, slash: 68, heat: 150 }   # total 298
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 80
+    slash: 68
+    heat: 150
   combo_script:
-    # 596, the page's 26.0 patch note: the module's `SlideAttack` 260 is the
-    # pre-26.0 figure, and every other Heavy Blade's module slide is 2x.
-    - { multiplier: 2.0, delay_seconds: 0.98, all_around: true, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/AxeMeleeTree
+    context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Zenistar

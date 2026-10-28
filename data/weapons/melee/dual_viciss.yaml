@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: dual_viciss
 name: Dual Viciss
 slot: melee
@@ -26,13 +27,11 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_passive_unmodelled
-    passive: "each enemy it inflicts Gas on grants +7% attack speed and +8% movement speed for 10 s, up to 5 stacks, refreshed by each new stack"
-
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_passive_unmodelled
+  passive: each enemy it inflicts Gas on grants +7% attack speed and +8% movement speed for 10 s, up to 5 stacks, refreshed by each new stack
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -45,16 +44,25 @@ attack:
   punch_through_m: 0.0
   range_m: 2.4
   follow_through: 0.5
-  heavy: { multiplier: 4.0, windup_seconds: 0.2333 }
-  damage: { puncture: 51, slash: 51, gas: 153 }   # total 255
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.34999999
+  damage:
+    puncture: 51
+    slash: 51
+    gas: 153
   slam:
-    damage: { gas: 255 }
+    damage:
+      gas: 255
     radius_m: 8.0
     blast_kind: slam
     falloff_start_m: 0.0
     falloff_reduction: 0.5
-    forced_procs: [impact]
+    forced_procs:
+    - impact
     takes_multishot: false
-
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualSwordMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Dual_Viciss

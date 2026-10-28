@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: dual_ichor_slide
 name: Dual Ichor
 # see notes: melee_from_the_modules
@@ -6,10 +7,9 @@ form: slide
 transform_group: dual_ichor
 co_behavior: additive_with_base_damage
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 1.08
+  fire_rate: 1.0833333333333333
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -18,13 +18,17 @@ attack:
   status_chance: 0.15
   punch_through_m: 0.0
   range_m: 2.3
-  # see notes: slide_ignores_follow_through
   follow_through: 1.0
-  heavy: { multiplier: 4.0, windup_seconds: 0.2333 }
-  damage: { impact: 19, puncture: 11, slash: 45, toxin: 47 }   # total 122
-  # see notes: combo_points_from_multiplier
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.5
+  damage:
+    impact: 19
+    puncture: 11
+    slash: 45
+    toxin: 47
   combo_script:
-    - { multiplier: 2.0, delay_seconds: 1.2, all_around: true, combo_points: 2, combo_points_base: 2 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DualSwordMeleeTree
+    context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Dual_Ichor

@@ -1,48 +1,32 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: homing_fang
 name: Homing Fang
 rarity: uncommon
 polarity: naramon
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbOneMeleeTree
-description: "Fast strikes, many hits."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Fast strikes, many hits.
 combos:
-  # Cutting Arches — 2.8 s at 1.0x, 3 inputs
   neutral:
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.9333, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.9333, slash_multiplier: 2.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 4.0, delay_seconds: 0.9334, forced_procs: [knockdown, slash], combo_points: 4, combo_points_base: 4 }
-  # Life Eater — 1.4 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbOneMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.4667, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.4667, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.4666, all_around: true, combo_points: 1, combo_points_base: 1 }
-  # Cutting Arches — 2.8 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.9333, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.9333, slash_multiplier: 2.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 4.0, delay_seconds: 0.9334, forced_procs: [knockdown, slash], combo_points: 4, combo_points_base: 4 }
-  # Lashing Forward — 1.7 s at 1.0x, 2 inputs
+    reuse: neutral
   block_forward:
-    - { multiplier: 2.0, delay_seconds: 0.85, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, hits: 3, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.85, forced_procs: [lifted], combo_points: 3, combo_points_base: 3 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbOneMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbOneMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbOneMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Homing_Fang

@@ -86,6 +86,8 @@ pub enum Action {
     /// (wiki, Melee). Possible only then — `Now::glaive_in_flight` — so it sits
     /// ABOVE the throw and is passed over between throws.
     Detonate,
+    /// Recall a flying glaive without detonating it (M129).
+    Recall,
     /// Put a magazine in.
     Reload,
     /// PUT THE WEAPON IN ANOTHER MODE ITS ALTERNATE FIRE TOGGLES, inside the
@@ -145,6 +147,7 @@ impl Action {
                 | Action::TapCast
                 | Action::HoldCast
                 | Action::Detonate
+                | Action::Recall
         )
     }
 }
@@ -262,6 +265,7 @@ impl Rule {
             Action::TapCast => "tap_cast".into(),
             Action::HoldCast => "hold_cast".into(),
             Action::Detonate => "detonate".into(),
+            Action::Recall => "recall".into(),
             Action::Reload => "reload".into(),
             Action::Recharge => "recharge".into(),
             Action::SwitchMode { form } => format!("switch_mode,form={form}"),
@@ -348,7 +352,7 @@ impl Apl {
                 // passed over like a transmute into a form already held.
                 Action::Reload => now.magazine_pct < 1.0 - 1e-9,
                 // …AND A GLAIVE IN THE HAND CANNOT BE DETONATED.
-                Action::Detonate => now.glaive_in_flight,
+                Action::Detonate | Action::Recall => now.glaive_in_flight,
                 // …AND A MODE CAN BE SWITCHED TO ONLY FROM THE OTHER ONE.
                 Action::SwitchMode { form } => now.switch_to == Some(form.as_str()),
                 _ => true,
@@ -692,7 +696,7 @@ prio: 3
             assert_eq!(word(f), f.id(), "{f:?}");
         }
         seen.extend(["shoot".into(), "charged".into(), "alt_fire".into(),
-                     "semi_auto".into(), "auto".into(), "aimed".into(), "detonate".into()]);
+                     "semi_auto".into(), "auto".into(), "aimed".into(), "detonate".into(), "recall".into()]);
         let mut sorted = seen.clone();
         sorted.sort();
         sorted.dedup();

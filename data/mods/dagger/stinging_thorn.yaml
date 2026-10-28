@@ -1,53 +1,33 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: stinging_thorn
 name: Stinging Thorn
 rarity: rare
 polarity: madurai
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbThreeMeleeTree
-description: "Vigorous slashes with forceful stabs."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Vigorous slashes with forceful stabs.
 combos:
-  # Carving Spike — 3.95 s at 1.0x, 5 inputs
   neutral:
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, delay_seconds: 0.79, forced_procs: [impact], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, forced_procs: [slash], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.79, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.79, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.79, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.79, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-  # Piercing Horn — 1.8 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbThreeMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.6, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.6, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.6, combo_points: 2, combo_points_base: 2 }
-  # Impaling Quill — 2.35 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.7833, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.7833, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.7834, combo_points: 4, combo_points_base: 4 }
-  # Lacerating Spine — 2.7 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_C
   block_forward:
-    - { multiplier: 2.0, delay_seconds: 0.9, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.9, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.9, forced_procs: [knockdown], combo_points: 1, combo_points_base: 1 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbThreeMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerCmbThreeMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Stinging_Thorn

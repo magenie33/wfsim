@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: kuva_shildeg_heavy
 name: Kuva Shildeg
 # see notes: melee_from_the_modules
@@ -6,17 +7,12 @@ form: heavy
 transform_group: kuva_shildeg
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_valence_unmodelled
-    family: Kuva
-  - reason: heavy_charge_share_assumed
-    published: 1.2
-    charge: 0.4
-    swing: 0.8
+- reason: melee_valence_unmodelled
+  family: Kuva
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.917
+  fire_rate: 0.9166666666666666
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -26,13 +22,16 @@ attack:
   punch_through_m: 0.0
   range_m: 3.0
   follow_through: 0.4
-  heavy: { multiplier: 6.0, windup_seconds: 0.4 }
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.5
   spends_combo: true
-  damage: { impact: 75.85, puncture: 100.45, slash: 28.7 }   # total 205
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 75.85
+    puncture: 100.45
+    slash: 28.7
   combo_script:
-    - { multiplier: 6.0, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 6.0, windup_seconds: 0.4, delay_seconds: 0.8, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Kuva_Shildeg

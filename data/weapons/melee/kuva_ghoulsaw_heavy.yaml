@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: kuva_ghoulsaw_heavy
 name: Kuva Ghoulsaw
 # see notes: melee_from_the_modules
@@ -6,14 +7,9 @@ form: heavy
 transform_group: kuva_ghoulsaw
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_valence_unmodelled
-    family: Kuva
-  - reason: heavy_charge_share_assumed
-    published: 1.0
-    charge: 0.3333
-    swing: 0.6667
+- reason: melee_valence_unmodelled
+  family: Kuva
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.2
@@ -26,15 +22,16 @@ attack:
   punch_through_m: 0.0
   range_m: 2.15
   follow_through: 1.0
-  heavy: { multiplier: 6.0, windup_seconds: 0.3333 }
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.5
   spends_combo: true
-  damage: { impact: 40.09, puncture: 48.53, slash: 122.38 }   # total 211
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 40.09
+    puncture: 48.53
+    slash: 122.38
   combo_script:
-    - { multiplier: 1.0, hits: 3, windup_seconds: 0.3333, delay_seconds: 0.0, combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, forced_procs: [slash], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 1.0, delay_seconds: 0.6667, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 6.0, windup_seconds: 0.3333, delay_seconds: 0.6667, combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SawBladeMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Kuva_Ghoulsaw

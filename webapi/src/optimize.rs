@@ -918,15 +918,12 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         }
         None => vec![fight.mode.clone()],
     };
-    // A GROUND COMBO IS PLAYED FROM A STANCE — the same refusal `Entrant`
-    // gives, so a search never ranks a mode the simulator will not play.
+    // Use Entrant's availability rule so search never ranks an input that
+    // simulation refuses, with either a seated stance or the native tree.
     let unplayable = |m: &ModeForms| {
         wfsim_engine::data::weapons::spec(&m.fire_id).is_some_and(|s| {
-            wfsim_engine::data::weapons::combo_needs_a_stance(&info.id, s.form_kind())
-                && !wfsim_engine::data::weapons::stance_supplies(
-                    stance_def.as_ref().and_then(|m| m.stance),
-                    s.form_kind(),
-                )
+            wfsim_engine::data::weapons::combo_error(&info.id, s.form_kind(),
+                stance_def.as_ref().and_then(|m| m.stance)).is_some()
         })
     };
     let modes: Vec<ModeForms> =
@@ -2469,12 +2466,11 @@ mod optimizer_evolution_tests {
             "modes": { "heavy": "fixed" },
             "build_size": 8,
         });
-        // A GROUND COMBO WITH NO STANCE IS REFUSED, not searched on a script
-        // the empty slot does not have (`combo_needs_a_stance`).
+        // The bare combo has its own package timeline and needs no stance.
         let mut combo = base.clone();
         combo["modes"] = json!({ "base": "fixed" });
-        let e = super::parse_optimize(&combo).err().expect("a stanceless combo is refused");
-        assert!(e.to_string().contains("no stance in the slot"), "{e}");
+        let p = super::parse_optimize(&combo).expect("a package-timed bare combo runs");
+        assert!(!p.constraints.require.iter().any(|m| m == "sovereign_outcast"));
         let bare = super::parse_optimize(&base).expect("a heavy attack needs no stance");
         assert!(!bare.constraints.require.iter().any(|m| m == "sovereign_outcast"));
         assert_eq!(bare.build_size, 8);

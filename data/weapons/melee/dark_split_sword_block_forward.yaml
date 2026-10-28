@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: dark_split_sword_block_forward
 name: Dark Split-Sword
 # see notes: melee_from_the_modules
@@ -6,14 +7,13 @@ form: block_forward
 transform_group: dark_split_sword
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - "The Dark Split-Sword splits into a pair of Dual Swords with their own stats and stance; only the Heavy Blade form is entered here."
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- The Dark Split-Sword splits into a pair of Dual Swords with their own stats and stance; only the Heavy Blade form is entered here.
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 0.917
+  fire_rate: 0.9166666666666666
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -23,8 +23,15 @@ attack:
   punch_through_m: 0.0
   range_m: 2.8
   follow_through: 0.6
-  heavy: { multiplier: 6.0, windup_seconds: 0.3667 }
-  damage: { puncture: 78, slash: 52, radiation: 100 }   # total 230
-
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 1.2
+  damage:
+    puncture: 78
+    slash: 52
+    radiation: 100
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/AxeMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Dark_Split-Sword

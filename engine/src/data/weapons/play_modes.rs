@@ -79,13 +79,15 @@ pub struct WeaponPlayMode {
 impl WeaponPlayMode {
     /// **THE RULES THIS MODE ADDS TO THE ACTION LIST** above the form's own
     /// press — a mode IS a written list, and these are the lines a form cannot
-    /// say for itself. Empty for every mode but a detonated throw.
+    /// say for itself. Throw modes recall or detonate at contact (M129).
     pub fn rules(&self) -> crate::data::apl::Apl {
         use crate::data::apl::{Action, Apl, Rule, When};
         Apl(if self.detonates {
             vec![Rule { action: Action::Detonate, when: When::Always }]
         } else if let Some(d) = self.declared {
             return d.rules.clone();
+        } else if spec(self.weapon_id).is_some_and(|s| FormKind::parse(&s.form).is_throw()) {
+            vec![Rule { action: Action::Recall, when: When::Always }]
         } else {
             Vec::new()
         })

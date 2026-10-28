@@ -22,6 +22,8 @@ mod every_form_runs;
 mod fired_up;
 mod formation_and_spread;
 mod glaive;
+mod timed_melee;
+mod melee_timeline;
 mod fortifier_tick;
 mod m120_fortifier_capped;
 mod headshot_buff_wiring;
@@ -206,6 +208,7 @@ impl Default for FightParams {
             acid_shells: None,
             crit_chance_per_hit: None,
             combo_script: Vec::new(),
+            heavy_script: Vec::new(),
             follow_through: None,
             slam: None,
             shockwave: None,

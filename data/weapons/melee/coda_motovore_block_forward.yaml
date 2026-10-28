@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: coda_motovore_block_forward
 name: Coda Motovore
 # see notes: melee_from_the_modules
@@ -6,14 +7,13 @@ form: block_forward
 transform_group: coda_motovore
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_valence_unmodelled
-    family: Coda
-  - reason: melee_passive_unmodelled
-    passive: "Impact, Puncture and Slash mods are six times as potent on it, and its dominant physical type grants +40% attack speed, +1.5 m range or +100% Status Chance"
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_valence_unmodelled
+  family: Coda
+- reason: melee_passive_unmodelled
+  passive: Impact, Puncture and Slash mods are six times as potent on it, and its dominant physical type grants +40% attack speed, +1.5 m range or +100% Status Chance
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -26,8 +26,15 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   follow_through: 0.4
-  heavy: { multiplier: 6.0, windup_seconds: 0.4 }
-  damage: { impact: 83.325, puncture: 83.325, slash: 83.35 }   # total 250
-
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.69999999
+  damage:
+    impact: 83.325
+    puncture: 83.325
+    slash: 83.35
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerMeleeTree
+    context: CC_GROUND_BRANCH_A
 source:
   url: https://wiki.warframe.com/w/Coda_Motovore

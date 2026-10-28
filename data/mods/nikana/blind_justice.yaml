@@ -1,57 +1,33 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: blind_justice
 name: Blind Justice
 rarity: uncommon
 polarity: madurai
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/KatanaCmbThreeMeleeTree
-description: "Reverse grip style emphasizing slashing and impaling strikes."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Reverse grip style emphasizing slashing and impaling strikes.
 combos:
-  # Guiding Light — 2.6 s at 1.0x, 5 inputs
   neutral:
-    - { multiplier: 3.0, delay_seconds: 0.52, slash_multiplier: 2.0, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.52, slash_multiplier: 2.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.52, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, hits: 2, delay_seconds: 0.52, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.0, forced_procs: [slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.52, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-  # Zatōs Creed — 3.05 s at 1.0x, 4 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/KatanaCmbThreeMeleeTree
+    context: CC_GROUND
   forward:
-    - { multiplier: 1.0, delay_seconds: 0.7625, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.7625, all_around: true, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, all_around: true, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.7625, forced_procs: [lifted], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 3.0, delay_seconds: 0.7625, combo_points: 3, combo_points_base: 3 }
-  # Destined Path — 1.7 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/KatanaCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.5667, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 2.0, delay_seconds: 0.5667, forced_procs: [impact, slash], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.5666, slash_multiplier: 2.0, combo_points: 4, combo_points_base: 4 }
-  # Heeding Call — 2.45 s at 1.0x, 3 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/KatanaCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_C
   block_forward:
-    - { multiplier: 1.0, hits: 5, delay_seconds: 0.8167, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 0.8167, slash_multiplier: 2.0, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 4.0, delay_seconds: 0.0, forced_procs: [knockdown], combo_points: 4, combo_points_base: 4 }
-    - { multiplier: 0.0, slam_multiplier: 1.0, delay_seconds: 0.8166, combo_points: 1, combo_points_base: 1 }
-  # Parting Knee — 0.91 s at 1.0x, 1 input
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/KatanaCmbThreeMeleeTree
+    context: CC_GROUND_BRANCH_B
   slide:
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, all_around: true, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.0, all_around: true, forced_procs: [lifted], combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 1.0, delay_seconds: 0.91, all_around: true, combo_points: 1, combo_points_base: 1 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/KatanaCmbThreeMeleeTree
+    context: CC_SLIDING
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/KatanaCmbThreeMeleeTree
+    context: CC_GROUND_HEAVY
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Blind_Justice

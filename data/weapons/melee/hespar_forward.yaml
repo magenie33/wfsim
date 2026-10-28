@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: hespar_forward
 name: Hespar
 # see notes: melee_from_the_modules
@@ -6,11 +7,10 @@ form: forward
 transform_group: hespar
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_slide_unpublished
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_slide_unpublished
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -23,8 +23,15 @@ attack:
   punch_through_m: 0.0
   range_m: 2.8
   follow_through: 0.4
-  heavy: { multiplier: 18.0, windup_seconds: 0.3333 }
-  damage: { impact: 112, puncture: 33.6, slash: 134.4 }   # total 280
-
+  heavy:
+    multiplier: 18.0
+    windup_seconds: 2.0
+  damage:
+    impact: 112
+    puncture: 33.6
+    slash: 134.4
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/HeavyScytheMeleeTree
+    context: CC_GROUND_BRANCH_A
 source:
   url: https://wiki.warframe.com/w/Hespar

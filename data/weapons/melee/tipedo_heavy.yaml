@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: tipedo_heavy
 name: Tipedo
 # see notes: melee_from_the_modules
@@ -11,10 +13,9 @@ unmodeled:
     charge: 0.1667
     swing: 0.3333
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 1.33
+  fire_rate: 1.3333333333333333
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -24,13 +25,28 @@ attack:
   punch_through_m: 0.0
   range_m: 3.0
   follow_through: 0.5
-  heavy: { multiplier: 5.0, windup_seconds: 0.1667 }
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.60000002
   spends_combo: true
-  damage: { impact: 12.4, puncture: 12.4, slash: 99.2 }   # total 124
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 12.4
+    puncture: 12.4
+    slash: 99.2
   combo_script:
-    - { multiplier: 5.0, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 5.0, windup_seconds: 0.1667, delay_seconds: 0.3333, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 5.0
+    windup_seconds: 0.1667
+    delay_seconds: 0.3333
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0
+  - multiplier: 5.0
+    windup_seconds: 0.1667
+    delay_seconds: 0.3333
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Tipedo

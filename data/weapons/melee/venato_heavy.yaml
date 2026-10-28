@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: venato_heavy
 name: Venato
 # see notes: melee_from_the_modules
@@ -6,18 +7,13 @@ form: heavy
 transform_group: venato
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_slide_unpublished
-  - reason: heavy_charge_share_assumed
-    published: 1.0
-    charge: 0.3333
-    swing: 0.6667
-  - reason: melee_passive_unmodelled
-    passive: "wielded by Caliban, attacks have a 50% chance of an extra combo point"
+- reason: melee_slide_unpublished
+- reason: melee_passive_unmodelled
+  passive: wielded by Caliban, attacks have a 50% chance of an extra combo point
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
-  fire_rate: 1.08
+  fire_rate: 1.0833333333333333
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -27,13 +23,16 @@ attack:
   punch_through_m: 0.0
   range_m: 2.7
   follow_through: 0.6
-  heavy: { multiplier: 6.0, windup_seconds: 0.3333 }
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.69999999
   spends_combo: true
-  damage: { impact: 33, puncture: 110, slash: 77 }   # total 220
-  # see notes: combo_points_from_multiplier
+  damage:
+    impact: 33
+    puncture: 110
+    slash: 77
   combo_script:
-    - { multiplier: 6.0, windup_seconds: 0.3333, delay_seconds: 0.6667, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 6.0, windup_seconds: 0.3333, delay_seconds: 0.6667, forced_procs: [slash, knockdown], combo_points: 0, combo_points_base: 0 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ScytheMeleeTree
+    context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Venato

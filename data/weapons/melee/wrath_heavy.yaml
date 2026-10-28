@@ -1,3 +1,5 @@
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
 id: wrath_heavy
 name: Wrath
 # see notes: melee_from_the_modules
@@ -17,7 +19,6 @@ unmodeled:
   - reason: melee_passive_unmodelled
     passive: "Gravitic Slash: each enemy a slam hits grants +15% Critical Chance, up to 10 stacks, for 10 s"
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.2
@@ -30,16 +31,41 @@ attack:
   punch_through_m: 0.0
   range_m: 2.8
   follow_through: 0.4
-  heavy: { multiplier: 18.0, windup_seconds: 0.3333 }
+  heavy:
+    multiplier: 18.0
+    windup_seconds: 3.0
   spends_combo: true
-  damage: { puncture: 44, slash: 176 }   # total 220
-  # see notes: combo_points_from_multiplier
+  damage:
+    puncture: 44
+    slash: 176
   combo_script:
-    - { multiplier: 6.0, windup_seconds: 0.3333, delay_seconds: 0.0, forced_procs: [impact], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 6.0, delay_seconds: 0.0, forced_procs: [slash], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 6.0, delay_seconds: 0.6667, forced_procs: [knockdown], combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 18.0, windup_seconds: 0.3333, delay_seconds: 0.0, combo_points: 0, combo_points_base: 0 }
-    - { multiplier: 18.0, delay_seconds: 0.6667, combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 6.0
+    windup_seconds: 0.3333
+    delay_seconds: 0.0
+    forced_procs:
+    - impact
+    combo_points: 0
+    combo_points_base: 0
+  - multiplier: 6.0
+    delay_seconds: 0.0
+    forced_procs:
+    - slash
+    combo_points: 0
+    combo_points_base: 0
+  - multiplier: 6.0
+    delay_seconds: 0.6667
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0
+  - multiplier: 18.0
+    windup_seconds: 0.3333
+    delay_seconds: 0.0
+    combo_points: 0
+    combo_points_base: 0
+  - multiplier: 18.0
+    delay_seconds: 0.6667
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Wrath

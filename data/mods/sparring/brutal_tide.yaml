@@ -1,50 +1,31 @@
+# see notes: melee_shared_package_actions
+# see notes: stance_grants_capacity
 id: brutal_tide
 name: Brutal Tide
 rarity: rare
 polarity: naramon
-# see notes: stance_grants_capacity
 base_drain: 0
 max_rank: 0
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PunchKickCmbTwoMeleeTree
-description: "Round-house attacks and leaping fists."
-
-# see notes: stance_from_the_module
-# see notes: combo_points_from_multiplier
+description: Round-house attacks and leaping fists.
 combos:
-  # Inferno — 2.15 s at 1.0x, 4 inputs
   neutral:
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.5375, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.5375, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.5375, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.5375, combo_points: 3, combo_points_base: 3 }
-  # Inferno — 2.15 s at 1.0x, 4 inputs
+    reuse: forward
   forward:
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.5375, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.5375, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.5375, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.5375, combo_points: 3, combo_points_base: 3 }
-  # Inferno — 2.15 s at 1.0x, 4 inputs
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PunchKickCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_A
   block:
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.5375, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.5375, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 2.0, delay_seconds: 0.5375, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, hits: 2, delay_seconds: 0.5375, combo_points: 3, combo_points_base: 3 }
-  # Rushing Fire — 3.85 s at 1.0x, 3 inputs
+    reuse: forward
   block_forward:
-    - { multiplier: 2.0, hits: 2, delay_seconds: 1.2833, forced_procs: [impact], combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, hits: 2, delay_seconds: 0.0, combo_points: 1, combo_points_base: 1 }
-    - { multiplier: 3.0, delay_seconds: 1.2833, forced_procs: [impact], combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 2.0, delay_seconds: 0.0, combo_points: 2, combo_points_base: 2 }
-    - { multiplier: 3.0, delay_seconds: 0.0, combo_points: 3, combo_points_base: 3 }
-    - { multiplier: 1.0, delay_seconds: 1.2834, forced_procs: [knockdown], combo_points: 1, combo_points_base: 1 }
-
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PunchKickCmbTwoMeleeTree
+    context: CC_GROUND_BRANCH_B
+  heavy:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PunchKickCmbTwoMeleeTree
+    context: CC_GROUND_HEAVY
+  slide:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PunchKickCmbTwoMeleeTree
+    context: CC_SLIDING
 effects:
-  # A STANCE IS NOT A STAT — its whole payload is the `combos:` above.
-  - kind: out_of_scope
-
+- kind: out_of_scope
 source:
   url: https://wiki.warframe.com/w/Brutal_Tide

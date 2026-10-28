@@ -1348,6 +1348,9 @@ pub(super) fn blast_at(
             rad.blast_kind == crate::model::BlastKind::InFlight,
             rad.takes_condition_overload,
         );
+        if !foe.fallen {
+            apply_independent_forced(rad.forced_procs, foe, t, params.status_duration_multiplier);
+        }
     }
 }
 

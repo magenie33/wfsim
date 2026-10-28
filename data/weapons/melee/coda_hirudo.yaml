@@ -1,3 +1,4 @@
+# see notes: melee_shared_package_actions
 id: coda_hirudo
 name: Coda Hirudo
 slot: melee
@@ -27,13 +28,11 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
-  - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
-  - "Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low."
-  - reason: melee_valence_unmodelled
-    family: Coda
-
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
+  reads low.'
+- reason: melee_valence_unmodelled
+  family: Coda
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 1.0
@@ -46,17 +45,26 @@ attack:
   punch_through_m: 0.0
   range_m: 1.25
   follow_through: 0.9
-  heavy: { multiplier: 6.5029, windup_seconds: 0.1667 }
-  damage: { impact: 26.25, puncture: 140, slash: 8.75 }   # total 175
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 2.0
+  damage:
+    impact: 26.25
+    puncture: 140
+    slash: 8.75
   slam:
-    damage: { impact: 175 }
+    damage:
+      impact: 175
     radius_m: 7.0
     blast_kind: slam
     status_chance: 0.1
     falloff_start_m: 0.0
     falloff_reduction: 0.5
-    forced_procs: [impact]
+    forced_procs:
+    - impact
     takes_multishot: false
-
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PunchKickMeleeTree
+    context: CC_GROUND
 source:
   url: https://wiki.warframe.com/w/Coda_Hirudo

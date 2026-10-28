@@ -236,8 +236,10 @@ pub struct AttackSpec {
     /// `damage:` above stays the weapon's own per-swing base, and each entry
     /// scales it — which is what makes the four combos share one transcription
     /// of the weapon and differ only where they actually differ.
-    #[serde(default)]
+    #[serde(default, deserialize_with = "crate::data::melee::deserialize_script")]
     pub combo_script: Vec<ComboHit>,
+    #[serde(default)]
+    pub throw_charge_seconds: Option<f64>,
     /// WHAT A SECOND BODY IN THE SAME SWING TAKES.
     ///
     /// *"Proportion of weapon damage = FT^(n-1)"* (wiki, Melee) where `n` is
