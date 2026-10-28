@@ -1084,7 +1084,7 @@ def ship_art() -> None:
     want = {
         v[5:] if str(v).startswith("wiki:") else v
         for table in assets.values() if isinstance(table, dict)
-        for v in table.values() if v
+        for v in table.values()
     }
     # Art a data file declares itself, because the CDN does not carry it:
     # evolution icons (`icon:`) and enemy portraits (`image:`), both from the

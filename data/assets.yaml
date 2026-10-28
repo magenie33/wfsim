@@ -2155,8 +2155,8 @@ weapons:
   zenistar_heavy_slam: Zenistar.png
   zenistar_slide: Zenistar.png
 mods:
-  # Mod illustrations come from DE's Public Export. An empty value means no
-  # matching DE illustration is available (Hysteria and Clashing Forest).
+  # Official DE game illustrations, from Public Export or game extraction.
+  # Download provenance is recorded in scripts/fetch_images.py.
   # Every riven uses DE's unveiled card `OmegaMod.png`.
   accelerated_blast: ShotgunAcceleratedBlast.jpg
   accelerated_isotope: RadiationFireratePistolMod.jpg
@@ -2343,7 +2343,7 @@ mods:
   hush: RifleSilencerMod.jpg
   hydraulic_crosshairs: PistolCritChanceWhileAiming.jpg
   hypothermic_shell: ArchwingEventColdStatusRifleMod.jpg
-  hysteria: ""
+  hysteria: BerserkerHysteriaAbility.png
   ice_storm: PistolIceStormMod.jpg
   incendiary_coat: ShotgunFireDamageMod.jpg
   infected_clip: PoisonDamageRifleMod.jpg
@@ -2635,7 +2635,7 @@ mods:
   burning_wasp: WhipCombo1a.jpg
   butchers_revelry: SawBladeCmbOne.jpg
   carving_mantis: DualSwordCmbThree.jpg
-  clashing_forest: ""
+  clashing_forest: StaffCombo1a.png
   cleaving_whirlwind: AxeCombo2a.jpg
   coiling_viper: WhipCombo2b.jpg
   combo_fury: WeaponGlaiveOnKillBuffSecondary.jpg

@@ -9,11 +9,13 @@ server from this cache, the static build from site/img/, which
 
 WHERE A FILE COMES FROM. A name in data/assets.yaml is OUR cache key; the file
 is DE's own texture, found through the id's `internal_name` in DE's Public
-Export (`scripts/de_export.py`). A `wiki:` name, and the art declared in a data
-file, come from the wiki.
+Export (`scripts/de_export.py`). EXTRACTED_ART names official DE game artwork
+whose extracted copies are hosted by browse.wf. A `wiki:` name, and the art
+declared in a data file, come from the wiki.
 
 Usage: python scripts/fetch_images.py
 """
+import hashlib
 import os
 import re
 import subprocess
@@ -48,6 +50,19 @@ UNIQUE_NAMES = {
     "equilibrium_pinnacle_pack": "/Lotus/Upgrades/Mods/Warframe/AvatarPickupBonusMod",
     "maglev": "/Lotus/Upgrades/Mods/Warframe/Beginner/AvatarSlideBoostModBeginner",
     "quick_thinking": "/Lotus/Upgrades/Mods/Warframe/Beginner/AvatarPowerToHealthOnDeathModBeginner",
+}
+
+# Official DE game artwork absent from Public Export. browse.wf hosts these
+# extracted copies; it is a third-party download host, not a DE service.
+EXTRACTED_ART = {
+    "BerserkerHysteriaAbility.png": (
+        "https://browse.wf/Lotus/Interface/Cards/Images/BerserkerHysteriaAbility.png",
+        "7a7c5cc9431750a9a7d39697e1d942ade2c6db6b12fb1e73ad4b44045861256f",
+    ),
+    "StaffCombo1a.png": (
+        "https://browse.wf/Lotus/Interface/Cards/Images/Stances/StaffCombo1a.png",
+        "0f5a2d831c4da263e2ef0d6bd36cd72d3cc5ab8a7dd808bd7656f2c9387176c0",
+    ),
 }
 
 
@@ -124,21 +139,28 @@ MAGIC = tuple(bytes.fromhex(h) for h in (
 
 
 def is_image(path):
-    """True if `path` starts with the signature of a format a browser draws."""
+    """Image signature, plus the pinned digest for extracted game artwork."""
     try:
         with open(path, "rb") as fh:
             head = fh.read(12)
     except OSError:
         return False
-    return head.startswith(MAGIC) or (head[:4] == b"RIFF" and head[8:12] == b"WEBP")
+    if not (head.startswith(MAGIC) or (head[:4] == b"RIFF" and head[8:12] == b"WEBP")):
+        return False
+    extracted = EXTRACTED_ART.get(os.path.basename(path))
+    if extracted:
+        with open(path, "rb") as fh:
+            return hashlib.sha256(fh.read()).hexdigest() == extracted[1]
+    return True
 
 
 def main():
     os.makedirs(CACHE, exist_ok=True)
-    # (name, url) pairs: DE's textures + wiki-hosted art.
+    # DE's exported and extracted textures, plus wiki-hosted non-mod art.
     export_names, wiki_names = image_names()
     wiki_names = sorted(set(wiki_names) | set(wiki_icon_names()))
     urls = export_urls()
+    urls.update({name: source[0] for name, source in EXTRACTED_ART.items()})
     jobs = [(n, urls.get(n)) for n in export_names] + [
         (n, "https://wiki.warframe.com/w/Special:FilePath/" + n) for n in wiki_names
     ]
@@ -154,7 +176,7 @@ def main():
                 have += 1
                 continue
             os.remove(dst)          # HTML error page, truncated file, …
-            print(f"  BAD  {n} — cached file was not an image, refetching")
+            print(f"  BAD  {n} — cached image failed validation, refetching")
         if url is None:
             bad.append(n)
             print(f"  MISS {n} — no id wearing it resolves to a texture in DE's export")

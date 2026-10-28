@@ -701,12 +701,17 @@ diffable and auditable, and it carries deliberate overrides with their reasons
 (an Incarnon FORM shows its BASE weapon's image; the export hands some cards a
 sibling's texture, and those come from the wiki).
 
-Mod illustrations use DE's export only. `fetch_images.py::UNIQUE_NAMES` joins
+Mod illustrations are official Digital Extremes game artwork.
+`fetch_images.py::UNIQUE_NAMES` joins
 cards whose gameplay records have no texture to an exported family member;
 this changes only their art. The Pinnacle Pack Equilibrium uses the family's
-exported illustration. An explicit empty image preserves a card without DE
-art (Hysteria and Clashing Forest); clients draw no illustration and the site
-packager skips that entry. Wiki card frames and text are not mod illustrations.
+exported illustration. Hysteria's `BerserkerHysteriaAbility.png` and Clashing
+Forest's `Stances/StaffCombo1a.png` are extracted game illustrations absent
+from Public Export. `fetch_images.py::EXTRACTED_ART` records their download
+URLs and SHA-256 digests. [browse.wf](https://browse.wf/about) provides the
+extracted copies; the host is independent of DE. The artwork is DE's, while
+the download provenance is browse.wf. Wiki card frames and text are not mod
+illustrations.
 
 - **Completeness is enforced.** `every_data_entry_has_an_image` walks every
   weapon, mod and arcane in `data/` and names what is missing.

@@ -542,9 +542,6 @@ mod one_picture_one_weapon {
         }
         let mut by_image: std::collections::HashMap<&str, Vec<&str>> = Default::default();
         for (id, image) in &assets().mods {
-            if image.is_empty() {
-                continue;
-            }
             by_image.entry(image.as_str()).or_default().push(id.as_str());
         }
         for (image, mut ids) in by_image {
@@ -562,19 +559,14 @@ mod one_picture_one_weapon {
     }
 
     #[test]
-    fn mod_art_uses_de_illustrations_or_an_explicit_empty_entry() {
+    fn mod_art_uses_de_game_illustrations() {
         let a = assets();
-        let mut absent = Vec::new();
         for table in [&a.mods, &a.warframe_mods, &a.auras, &a.artifact_mods] {
             for (id, image) in table {
+                assert!(!image.is_empty(), "{id} must have its DE game illustration");
                 assert!(!image.starts_with("wiki:"), "{id} must use DE mod art: {image}");
-                if image.is_empty() {
-                    absent.push(id.as_str());
-                }
             }
         }
-        absent.sort_unstable();
-        assert_eq!(absent, ["clashing_forest", "hysteria"], "only cards without DE art may be empty");
     }
 
     /// ...and every weapon in the roster HAS one. The build fails on a missing
