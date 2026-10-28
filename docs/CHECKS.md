@@ -235,9 +235,10 @@ Verified to bite: a final round of 101 runs named every weapon.
 
 ## `check_kitgun_slot`
 
-Catchmoon keeps its selected slot, mods and loader through the Simulator,
-Optimizer and Builder tabs in both directions; each slot also runs a real simulation. Slot
-changes keep the chamber address while module links name the selected entry.
+Every Kitgun chamber keeps its selected slot, mods and loader through the
+Simulator, Optimizer and Builder tabs in both directions; each slot also runs
+a real simulation. Slot changes keep the chamber address while module links
+name the selected entry.
 
 ## `check_card_document`
 
