@@ -693,13 +693,13 @@ pub fn base_panel_assembled(
         unaimed_headshot_chance: s.attack.unaimed_headshot_chance,
         windup_seconds: s.attack.windup_seconds,
         no_magazine: s.attack.no_magazine,
-        combo_script: s.attack.combo_script.clone(),
+        combo_script: s.attack.combo_script.to_vec(),
         throw_charge_seconds: s.attack.throw_charge_seconds,
         heavy_script: all().iter()
             .find(|e| e.group() == s.group() && e.form_kind() == crate::model::FormKind::Heavy)
             .map(|e| &e.attack.combo_script)
             .filter(|h| !h.is_empty() && h.iter().all(|r| r.event_timing.is_some()))
-            .map_or_else(Vec::new, Clone::clone),
+            .map_or_else(Vec::new, |h| h.to_vec()),
         heavy: s.attack.heavy.map(|h| crate::model::HeavyAttack {
             swing_seconds: heavy_swing_seconds(s),
             ..h

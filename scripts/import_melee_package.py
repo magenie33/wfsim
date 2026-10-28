@@ -337,15 +337,18 @@ def main():
             if "see notes: combo_points_from_multiplier" not in text:
                 writes[path] = "# see notes: combo_points_from_multiplier\n" + text
     loops = {t: {c: 1 for c, paths in ctx.items() if paths == GLAIVE_THROW} for t, ctx in trees.items()}
-    catalog = {"actions": actions, "trees": trees, "geometry": geometry,
+    referenced = {path for contexts in trees.values() for paths in contexts.values() for path in paths}
+    catalog_actions = {path: a for path, a in actions.items() if path in referenced}
+    catalog = {"actions": catalog_actions, "trees": trees, "geometry": geometry,
                "repeat_from_input": {t: ctx for t, ctx in loops.items() if ctx}}
     report = {"build": raw["buildLabel"], "source": str(SOURCE.relative_to(ROOT)),
-              "actions": len(actions), "trees": len(trees), "migrated_stance_modes": migrated,
+              "actions": len(catalog_actions), "available_actions": len(actions), "trees": len(trees), "migrated_stance_modes": migrated,
               "aliases": aliases, "retained_stance_modes": retained,
               "unavailable_actions": invalid, "unmodelled_fields": omissions,
               "migrated_weapon_modes": weapon_modes, "retained_weapon_modes": weapon_gaps,
               "bare_inputs_requiring_a_stance": stance_only, "bare_input_aliases": bare_aliases}
-    writes[CATALOG] = "# see notes: melee_shared_package_actions\n# see notes: melee_package_timing\n" + dump(catalog)
+    # JSON syntax is valid YAML and lets runtime decode without a YAML document.
+    writes[CATALOG] = "# see notes: melee_shared_package_actions\n# see notes: melee_package_timing\n" + json.dumps(catalog, indent=2) + "\n"
     writes[REPORT] = json.dumps(report, indent=2) + "\n"
     changed = [p for p, text in writes.items() if not p.exists() or p.read_text() != text]
     differences = [str(p.relative_to(ROOT)) for p in changed]
@@ -355,7 +358,7 @@ def main():
         for path in changed:
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(writes[path])
-    print(json.dumps({"actions": len(actions), "trees": len(trees), "stance_modes": len(migrated),
+    print(json.dumps({"actions": len(catalog_actions), "available_actions": len(actions), "trees": len(trees), "stance_modes": len(migrated),
                       "aliases": len(aliases), "retained": len(retained), "weapon_modes": len(weapon_modes),
                       "weapon_gaps": len(weapon_gaps), "stance_only_inputs": len(stance_only), "changed_files": len(differences),
                       "bare_aliases": len(bare_aliases),

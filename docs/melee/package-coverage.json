@@ -1,7 +1,8 @@
 {
   "build": "2026.10.08",
   "source": "tests/fixtures/melee/package-2026-10-08.json",
-  "actions": 838,
+  "actions": 689,
+  "available_actions": 838,
   "trees": 117,
   "migrated_stance_modes": [
     [

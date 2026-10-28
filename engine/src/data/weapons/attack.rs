@@ -237,7 +237,7 @@ pub struct AttackSpec {
     /// scales it — which is what makes the four combos share one transcription
     /// of the weapon and differ only where they actually differ.
     #[serde(default, deserialize_with = "crate::data::melee::deserialize_script")]
-    pub combo_script: Vec<ComboHit>,
+    pub combo_script: std::sync::Arc<[ComboHit]>,
     #[serde(default)]
     pub throw_charge_seconds: Option<f64>,
     /// WHAT A SECOND BODY IN THE SAME SWING TAKES.

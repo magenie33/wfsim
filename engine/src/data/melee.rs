@@ -2,7 +2,7 @@
 //! Shared package actions, referenced by stance and weapon input contexts.
 
 use std::collections::BTreeMap;
-use std::sync::OnceLock;
+use std::sync::{Arc, Mutex, OnceLock};
 use crate::model::{ComboHit, MeleeAction, MeleeCombo, MeleeInput, MeleeTimeline};
 use serde::{Deserialize, Deserializer};
 
@@ -18,8 +18,15 @@ struct Catalog {
 
 fn catalog() -> &'static Catalog {
     static CATALOG: OnceLock<Catalog> = OnceLock::new();
-    CATALOG.get_or_init(|| serde_norway::from_str(super::file("melee/actions.yaml").expect("melee action data installed"))
-        .expect("melee action catalog"))
+    CATALOG.get_or_init(|| {
+        // Generated JSON-compatible YAML avoids retaining a full YAML parse
+        // document while the weapon catalog is loading (docs/WASM.md).
+        let mut source = super::file("melee/actions.yaml").expect("melee action data installed");
+        while source.trim_start().starts_with('#') {
+            source = source.split_once('\n').map_or("", |(_, rest)| rest);
+        }
+        serde_json::from_str(source).expect("melee action catalog")
+    })
 }
 
 pub fn compile(combo: &MeleeCombo) -> Vec<ComboHit> {
@@ -53,6 +60,30 @@ pub fn resolve(combos: &BTreeMap<String, MeleeCombo>, form: &str) -> Vec<ComboHi
     }
 }
 
-pub fn deserialize_script<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<ComboHit>, D::Error> {
-    MeleeCombo::deserialize(deserializer).map(|c| compile(&c))
+type SharedScripts = BTreeMap<(String, String), Arc<[ComboHit]>>;
+
+pub fn deserialize_script<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Arc<[ComboHit]>, D::Error> {
+    let combo = MeleeCombo::deserialize(deserializer)?;
+    let MeleeCombo::Package { tree, context } = &combo else { return Ok(compile(&combo).into()); };
+    // A package input is immutable; its weapon-specific charge is resolved
+    // only when constructing a build, so the catalog can share its rows.
+    static SCRIPTS: OnceLock<Mutex<SharedScripts>> = OnceLock::new();
+    let mut scripts = SCRIPTS.get_or_init(Default::default).lock().expect("melee scripts cache");
+    let key = (tree.clone(), context.clone());
+    Ok(Arc::clone(scripts.entry(key).or_insert_with(|| compile(&combo).into())))
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn native_inputs_share_rows_but_builds_resolve_their_own_copy() {
+        let a = crate::data::weapons::spec("magistar").unwrap();
+        let b = crate::data::weapons::spec("sancti_magistar").unwrap();
+        assert!(std::sync::Arc::ptr_eq(&a.attack.combo_script, &b.attack.combo_script));
+        let expected = b.attack.combo_script[0].multiplier;
+        let mut build = crate::model::WeaponBase::from_data("magistar", true, &[]);
+        build.combo_script[0].multiplier += 100.0;
+        assert_eq!(b.attack.combo_script[0].multiplier, expected);
+        assert_eq!(crate::model::WeaponBase::from_data("magistar", true, &[]).combo_script[0].multiplier, expected);
+    }
 }

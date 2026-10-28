@@ -294,6 +294,12 @@ input's size anyway.
   is for the checks that walk the whole catalog.
 - **Rare blocks of `AttackSpec` are boxed.** A handful of weapons fill them,
   and inline they put kilobytes on every one of two thousand entries.
+- **Package melee inputs share immutable rows.** Weapons using the same tree
+  and context retain one compiled sequence. A build copies its selected inputs
+  before resolving weapon-specific charge, so one weapon cannot alter another.
+  The generated catalog uses JSON-compatible YAML and decodes directly; a full
+  YAML document must not overlap the weapon loader's retained data.
+  Only actions referenced by the supported input trees enter the runtime catalog.
 - **A lane is warmed with a `rest`, never an endpoint.** The worker answers it
   after the module loads without entering the engine; `/api/meta` is the
   costliest answer there is (~70 MB to build), so a warm-up that asked for it

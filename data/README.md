@@ -22,6 +22,10 @@ item  ──references──▶  perk (trigger + grants)
 
 - A perk carries its `grants` block inline; a separate buff table returns
   only if two perks ever grant the same effect.
+- Melee stance and weapon inputs reference `melee/actions.yaml` by package
+  tree and context. Its generated JSON-compatible YAML defines each used action
+  once; `scripts/import_melee_package.py --check` verifies the source-derived
+  fields while retaining manual geometry masks. See `docs/MELEE.md` §9.
 
 ## i18n: English is the source, translations are overlays
 

@@ -335,6 +335,7 @@ version = "0.0.0"
 dependencies = [
  "libm",
  "serde",
+ "serde_json",
  "serde_norway",
  "wfsim-gas-macro",
 ]
