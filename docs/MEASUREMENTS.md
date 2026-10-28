@@ -67,6 +67,7 @@ is only the order to measure them in.
 | entry | what one session would settle |
 | --- | --- |
 | **Every glaive** (MELEE §10) | On one fresh, paused target with the frame, enemy/level, mods, arcanes and combo recorded: separate quick and charged collisions, manual detonations without a collision, and Volatile bounce explosions. Record the direct number, first DoT tick and status icons separately; repeat after combining innate Electricity into Corrosive or Radiation to isolate forced procs. Falcor's charged collision should still force Electricity; Xoris's collision forces Impact and its manual detonation forces Impact plus Electricity. Then time ten throw/catch loops at a fixed distance. Targeted disputes: Xoris charged direct damage; Halikar quick detonation; Coda Pathocyst and Kestrel Prime quick detonation crit rates; Kestrel falloff; Cerata's separate innate Toxin; Falcor's innate punch through with Volatile cards; Power Throw's reach into direct-hit DoTs and detonations. |
+| **Nunchasa** (`nunchasa`, `nunchasa_alt`) | Confirm the full-charge cycle's body/weak-point and Blast charging, whether the alternate forces one Cold proc or the full Frozen state, and the 10 s trail's first tick and stacking. Stats and the current one-proc interpretation follow the weapon page. |
 | **Onos** (`onos`, `onos_incarnon`) | The held beam's ramp: the yaml admits the damage climbs to ×2.5 over a hold and models none of it. Read the beam tick at trigger-down, mid-hold and at the top — is ×2.5 the end of a ramp or a step, what clock walks it, and does it survive letting go? Separately, the Incarnon form's charged arm-cannon shot is a second attack with its own explosion and has no entry at all. |
 | **Stug** (`stug`, `stug_incarnon`, M109/M127) | M127 settles base-form discrete stacks; both forms' damage, refreshed 1.5 s lifespan, separate piles and capped merge detonation without residual stacks (10 base / 5 Incarnon); headshot explosion bonus; one charge per enemy direct hit and attached explosion, none from ground blobs, four rounds per charge. M109 explains full-at-birth blobs waiting for expiry. Evolution IV uses weapon-wide defaults. Still open: exact fractional-multishot probability; spawn-time emitter remainder; local combine distance, radius and falloff; secondary bounce collision geometry (hits excluded). |
 | **Tenet Exec** (`tenet_exec_heavy_slam`, `tenet_exec_block_forward`, M110) | The shockwave beyond its width: the fan between a heavy slam's three lines; whether the blasts go off with the slam or as the wave travels; the falloff, which the module and the page state the opposite way round; and whether a slam-radius bonus widens a blast. |
@@ -229,6 +230,7 @@ path, so an entry may be renamed but never renumbered.
 | [M127](measurements/M127-stug-base-blob-ticks-and-multishot.md) | Stug: both forms have a 1.5 s lifespan refreshed independently of the entity's damage clock and never combine piles; base-form ticks start at creation then every second, ten stacks detonate immediately, +300 yields attached damage 304/308/312 and explosions 375/525/1050; fractional multishot gives discrete stacks | ✅ 2026-10-26 (owner) |
 | [M129](measurements/M129-glaive-throw-clock-and-recall.md) | Glaive charge uses wind-up speed and release motion uses attack speed; recall and detonation return at outbound speed, with no input or catch recovery delay; first and consecutive throws are distinct | ✅ 2026-10-28 (owner, qualitative) |
 | [M118](measurements/M118-vectis-prime-compression-and-combo-order.md) | Vectis Prime Incarnon: Primary Compression pays +12% at rank 5 and multiplies, on the direct hit and the orb; the shot combo counts a hit before it pays it; a frozen body takes +1.0 crit damage on the direct hit only; Galvanized Aptitude adds on the weapon's own base, not on Inciting Incident's +200 | ✅ 2026-10-22 (owner) |
+| [M128](measurements/M128-aksondol-reload-wave-start.md) | Aksondol applies its Cold wave at reload start; the count, range and trigger interactions follow the wiki and remain unverified in game | ✅ 2026-10-27 (owner: timing only) |
 
 ## By weapon
 
@@ -238,6 +240,7 @@ settles a RULE rather than a weapon has no row and is found by number above.
 
 | weapon | id | entries |
 | --- | --- | --- |
+| Aksondol | `aksondol` | [M128](measurements/M128-aksondol-reload-wave-start.md) |
 | Amprex | `amprex` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) |
 | Arbucep | `arbucep` | [M112](measurements/M112-arbucep-volley-costs-six-rounds.md) · [M113](measurements/M113-arbucep-multishot-is-a-fixed-factor-that-reaches-dots.md) |
 | Atomos | `atomos` | [M15](measurements/M15-torid-incarnon-chain-nodes.md) |

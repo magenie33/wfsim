@@ -8,6 +8,7 @@ class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: trumna_prime
+transforms_to: trumna_prime_grenade
 mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, PROJECTILE, AOE
 mastery_rank: 15
 max_rank: 30
@@ -30,6 +31,14 @@ reload_seconds: 4
 
 # see notes: condition_overload_no_row_3
 co_behavior: additive_with_base_damage
+
+modes:
+  - id: cycle
+    name: "Full-charge alt-fire cycle"
+    about: "Fire the primary until 5 kills fill the gauge, fire the alternate once, then repeat."
+    cycle_with: trumna_prime_grenade
+    rules:
+      - { action: { do: transform_in }, when: { if: gauge_at_least, pct: 1.0 } }
 
 attack:
   # see notes: cone_half_angle_from_2

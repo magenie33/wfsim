@@ -252,6 +252,15 @@ pub(super) fn before_the_shot(
                 }
             }
         }
+        if let Some(cy) = params.cycle.as_ref().filter(|c| c.ends == Ends::SingleShot) {
+            if let Arms::Gauge { charge_on, .. } = cy.arms {
+                let was_base = incarnon.in_base_form;
+                charge_the_gauge(params, apl, tennokai, rec, rng, d, cy, charge_on, true,
+                    r.pellets, r.weakpoint_hits + r.headshots_on_others,
+                    t_at, r, ammo, incarnon, double_tap, buff_stacks, rs_armed, opening_closed);
+                if was_base && !incarnon.in_base_form { return Flow::Continue; }
+            }
+        }
         charge_magazine_cycle(
             params, apl, tennokai, rec, rng, next_cost, t_at, r, ammo, incarnon, double_tap,
             windows, arc, buff_stacks, rs_armed, opening_closed,

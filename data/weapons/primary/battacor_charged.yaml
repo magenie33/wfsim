@@ -4,11 +4,21 @@ name: Battacor
 inherits: battacor
 form: charged
 transform_group: battacor
+transforms_from: battacor
 
 introduced: "24"
 
 # see notes: inherited_co_catalog_gives_2
 co_behavior: additive_with_base_damage
+
+gauge_form:
+  single_shot: true
+  gauge:
+    charge_on: kills
+    charges_to_fill: 3
+    max_rounds: 1
+  transmute_in_seconds: 0.0
+  transmute_out_seconds: 0.0
 
 attack:
   # see notes: cone_half_angle_from_2
@@ -20,7 +30,7 @@ attack:
   fire_rate: 5
   charge_seconds: 0.4
   multishot: 1.0
-  ammo_cost: 1
+  ammo_cost: 0
   crit_chance: 0.34
   crit_multiplier: 3.0
   status_chance: 0.08
@@ -40,7 +50,7 @@ attack:
     effectiveness: 1.00
     stacking: adds
     radius_calculation: constant_check
-  damage: { radiation: 208 }   # total 208
+  damage: { radiation: 624 }   # total 624
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:
     radius_m: 3.4
@@ -51,7 +61,7 @@ attack:
     status_chance: 0.5
     takes_multishot: false
     takes_blast_radius_mods: true
-    damage: { radiation: 208 }   # total 208
+    damage: { radiation: 624 }   # total 624
 
 unmodeled:
   - reason: explosion_ignores_cover

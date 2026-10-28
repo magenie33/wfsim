@@ -3299,6 +3299,10 @@
       "package context or attack events incomplete"
     ],
     [
+      "corufell_heavy",
+      "package context or attack events incomplete"
+    ],
+    [
       "corufell_prime",
       "weapon absent from package export"
     ],
@@ -3312,6 +3316,10 @@
     ],
     [
       "corufell_prime_forward",
+      "weapon absent from package export"
+    ],
+    [
+      "corufell_prime_heavy",
       "weapon absent from package export"
     ],
     [

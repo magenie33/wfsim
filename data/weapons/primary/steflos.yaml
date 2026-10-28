@@ -2,10 +2,8 @@ id: steflos
 name: Steflos
 slot: primary
 weapon_type: primary
-# A SEED POD THAT GETS BIGGER THE MORE IT HITS. 320 damage a shot, mostly Heat,
-# on a projectile with a 0.6-second life that grows by half on every enemy it
-# touches — a travel mechanic this engine has no clock for, admitted below.
 class: shotgun
+form_name: Normal Attack
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [primary, shotgun]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO
@@ -50,6 +48,7 @@ attack:
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 20
+  projectile_width_m: 2.0
   fire_rate: 3.0
   multishot: 1.0
   ammo_cost: 1
@@ -68,7 +67,8 @@ attack:
   damage: { heat: 190, impact: 130 }   # total 320
 
 unmodeled:
-  - "The projectile lives 0.6 s, and each enemy hit adds 50% to its life and size, up to 10 s (wiki). The engine stops a projectile at the first body it hits, so against a crowd the number reads low."
+  - reason: steflos_projectile_lifetime
+  - reason: steflos_signature_speed
 
 source:
   url: https://wiki.warframe.com/w/Steflos

@@ -473,6 +473,11 @@ pub struct AttackSpec {
     /// THE GRENADES A RELOAD THROWS — see [`ReloadGrenadeSpec`].
     #[serde(default)]
     pub reload_grenade: Option<Box<ReloadGrenadeSpec>>,
+    /// Instant Cold wave on reload start; one proc per round expended (Aksondol wiki).
+    #[serde(default)]
+    pub reload_cold_radius_per_round_m: Option<f64>,
+    #[serde(default)]
+    pub cold_trail: Option<crate::model::ColdTrail>,
     /// A BLOB THAT EMBEDS AND DETONATES LATER — see [`BlobSpec`].
     #[serde(default)]
     pub blob: Option<Box<BlobSpec>>,
@@ -987,6 +992,9 @@ pub struct ThrownBounceSpec {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct GaugeFormSpec {
+    /// The gauge buys one alternate shot, sharing the ordinary magazine.
+    #[serde(default)]
+    pub single_shot: bool,
     pub gauge: GaugeSpec,
     /// The transition INTO the form, unmodded. Per weapon: it is that
     /// weapon's reload time, which the page states outright ("an animation

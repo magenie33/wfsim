@@ -516,6 +516,7 @@ resolved:
   stahlta:                       /Lotus/Weapons/Corpus/LongGuns/CrpRubanRifle/CrpRubanRifle
   staticor:                      /Lotus/Weapons/Corpus/Pistols/CrpElectroMag/CrpElectroMag
   steflos:                       /Lotus/Weapons/Tenno/LongGuns/TnoLotusPodShotgun/TnoLotusPodShotgun
+  steflos_prime:                 /Lotus/Weapons/Tenno/LongGuns/PrimeSteflos/PrimeSteflosShotgun
   stinger:                       /Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon
   stradavar:                     /Lotus/Weapons/Tenno/LongGuns/TennoTommyGun/TennoTommyGunRifle
   stradavar_prime:               /Lotus/Weapons/Tenno/LongGuns/PrimeStradavar/PrimeStradavarGun

@@ -185,3 +185,15 @@ reasons:
     text: "A plain slam at the arming combo also activates its Incarnon Form; here only a heavy attack does, so a loop that slams without a heavy arms it later than in a mission, or never."
   melee_valence_unmodelled:
     text: "Its {family} valence bonus is not modelled: the build cannot state the element and bonus this copy rolled, so it reads without one."
+  steflos_projectile_lifetime:
+    text: "Projectile lifetime and growth are not modelled: the base lifetime is 0.6 s, each enemy hit adds 50% lifetime up to 10 s, and the projectile grows in size. The simulation uses a fixed 2 m width and does not stop the projectile when its lifetime expires."
+  steflos_signature_speed:
+    text: "Citrine and Citrine Prime grant this weapon +40% Projectile Speed; that signature bonus is not modelled."
+  corufell_projectile_timing:
+    text: "The two consecutive heavy projectiles have no published input timings. This loop fires one projectile per heavy input and uses the listed 0.833 attacks/s as recovery, plus the 1.3 s wind-up (divided by 1.5 on Prime). The melee scheduler places wind-up after the hit; the opening hit and exact two-shot cadence are not calibrated."
+  corufell_projectile_width:
+    text: "The heavy projectile is wide, but its width and maximum flight range are unpublished. It is simulated as a ray with infinite body punch through and no maximum range."
+  corufell_signature_windup:
+    text: "Citrine and Citrine Prime grant +20% Heavy Attack Wind Up Speed; that signature bonus is not modelled. The stacking of Prime's innate 1.5x wind-up speed with wind-up mods is unmeasured; this loop multiplies their speed factors."
+  corufell_light_tennokai:
+    text: "A Tennokai window does not convert a light combo into the heavy projectile. Heavy-attack mode can use Tennokai's combo-free heavy attacks. The sliding heavy attack that swings the scythe is not modelled."

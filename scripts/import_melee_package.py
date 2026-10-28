@@ -258,7 +258,8 @@ def main():
             context = "CC_GROUND_HEAVY"
         attack = copy.deepcopy(w.get("attack", {}))
         original = copy.deepcopy(attack)
-        if form in (*CONTEXTS, "heavy_slam") and root.get("weapon_type") == "melee" and not root.get("fixed_stance") and source["damage"]["amount"] > 0:
+        projectile_heavy = form == "heavy" and attack.get("shot_type") == "projectile"
+        if not projectile_heavy and form in (*CONTEXTS, "heavy_slam") and root.get("weapon_type") == "melee" and not root.get("fixed_stance") and source["damage"]["amount"] > 0:
             base_attack = root["attack"]
             if attack.get("damage") == base_attack.get("damage"):
                 attack["damage"] = damage_vector(source["damage"]["amount"], attack["damage"], source["damage"]["types"])
@@ -305,10 +306,10 @@ def main():
             if form in ("neutral", "forward", "block", "block_forward") and not root.get("fixed_stance"):
                 # An absent branch cannot inherit the parent's neutral input.
                 attack["combo_script"] = []
-        if "fire_rate" in attack and form in (*CONTEXTS, "heavy_slam", "charged_throw") and source["attackSpeed"] > 0:
+        if not projectile_heavy and "fire_rate" in attack and form in (*CONTEXTS, "heavy_slam", "charged_throw") and source["attackSpeed"] > 0:
             attack["fire_rate"] = source["attackSpeed"]
         charge = source["heavy"]["chargeTime"]
-        if attack.get("heavy") and charge is not None:
+        if not projectile_heavy and attack.get("heavy") and charge is not None:
             attack["heavy"]["windup_seconds"] = charge
             heavy_paths = trees.get(tree, {}).get("CC_GROUND_HEAVY", [])
             if heavy_paths and not any(p in GLAIVE_THROW for p in heavy_paths):

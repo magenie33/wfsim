@@ -46,7 +46,7 @@ POLARITIES = {"madurai", "naramon", "vazarin", "zenurik", "unairu", "penjaga", "
 # (movement, pickups, survival) and only the builder admits it.
 WEAPON_PASSIVES = {
     "ash", "banshee", "cyte_09", "dante", "excalibur", "frost", "garuda", "grendel",
-    "hydroid", "jade", "koumei", "kullervo", "mesa", "nyx", "qorvex", "saryn",
+    "hydroid", "jade", "narin", "koumei", "kullervo", "mesa", "nyx", "qorvex", "saryn",
     "styanax", "trinity", "uriel", "vauban", "volt", "voruna", "yareli", "zephyr",
 }
 MARKUP = re.compile(r"<[^>]+>")

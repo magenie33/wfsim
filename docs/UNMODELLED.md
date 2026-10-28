@@ -118,9 +118,9 @@ What is still open here:
   so (`spread_not_transcribed`); re-running `scripts/intake_spread.py` only
   ever lowers the count and a test holds the ceiling;
 - **PROJECTILE LIFETIME, and with it a projectile's MAX RANGE** (= speed ×
-  lifetime, wiki `Range`). No entry states a lifetime, so a round flies any
-  distance and a Projectile Speed bonus pays through the flight and the falloff
-  window only;
+  lifetime, wiki `Range`). A round with no declared hard range flies any
+  distance; Steflos's stated lifetime and contact extensions are not applied.
+  A Projectile Speed bonus pays through flight and the falloff window only;
 - **WHERE A FLIGHT IS NOT KNOWN, IT IS ZERO.** 30 `projectile` entries carry no
   `projectile_speed_mps` (the Kuva Bramma, the Kuva Zarr, the laser rifles…),
   no kitgun chamber carries one, and the Stug states a speed under
@@ -480,7 +480,7 @@ numbers, and the engine does not apply, is admitted on that weapon:
 | gap | reason | on |
 | --- | --- | --- |
 | an attack beyond swing, slam and heavy slam — a throw, a shot, a projectile, a pool | `melee_attack_unmodelled` (names them) | the weapon |
-| a heavy that is not a swing: no heavy mode | `glaive_heavy_is_a_throw`, `gunblade_heavy_is_a_shot`, `melee_heavy_is_special` (says what it is) | every glaive and gunblade; Zenistar, Syam, Quassus, Quassus Prime, Edun, Corufell, Corufell Prime, Caustacyst, Coda Caustacyst, Arum Spinosa, Argo & Vel |
+| a heavy that is not a swing: no heavy mode | `glaive_heavy_is_a_throw`, `gunblade_heavy_is_a_shot`, `melee_heavy_is_special` (says what it is) | every glaive and gunblade; Zenistar, Syam, Quassus, Quassus Prime, Edun, Caustacyst, Coda Caustacyst, Arum Spinosa, Argo & Vel |
 | a glaive's throw beyond what the arena holds — walls to bounce off, how the bounce count and the bounce explosion are read, the throw's animation, Tennokai and Melee Animosity on a throw (docs/MELEE.md §10) | `glaive_bounce_*`, `glaive_detonation_ends_bounces`, `glaive_throw_*` | every glaive's throws; Orvius's quick throw (a hover, not a strike) has no form |
 | a missing package action, duration or attack event | `docs/melee/package-coverage.json` | unavailable weapon inputs and legacy stance modes; no projectile is replaced with an invented sweep |
 | a weapon's special attack beyond its exported collision events | `melee_own_combo_unmodelled` | the named weapon's admission |
@@ -806,3 +806,15 @@ a player ("the whole reason a player carries it"). An assumption opens
 "Assumed:" or "Unmeasured:", and a gap with no published number opens
 "Unpublished:". The Chinese is written from the finished English, never
 alongside it.
+
+## Steflos and Corufell families
+
+Steflos and Steflos Prime use the published approximate 2 m projectile width, damage, flight speed and distance falloff. Lifetime-dependent range, lifetime extensions and size growth are not applied; the Citrine signature speed bonus is not applied.
+
+Corufell and Corufell Prime have a Charged Projectile heavy mode, with their own damage, crit, status, flight speed, falloff, infinite body punch through and combo spending. Projectile width and maximum flight range are unpublished. The loop fires one projectile per heavy input and uses the listed rate as recovery plus wind-up; opening-hit timing and the consecutive two-shot sequence are not calibrated. Prime’s innate wind-up factor is multiplied by the mod factor, with no measured stacking rule. The Citrine signature bonus, sliding scythe heavy and converting light-combo Tennokai into a projectile are not modelled. Each limitation is disclosed on the relevant entry.
+
+## Narin
+
+The builder resolves Narin’s base stats, ability costs and entered max-rank ability numbers with their stated strength, range and duration scaling. The Ice meter, Sangodae drops and pickups, its 50% Cold Extra Hit with a guaranteed Cold status, its fixed 15 s window, and the 25% ability damage multiplier are not run in combat. The passive is marked as weapon-affecting and unmodelled.
+
+Neote’s casts and status applications, Naraemagi’s absorption and restoration, Hakchum’s landing and storm with Cold vulnerability, and Nurinarim’s gating, drain, marks, stripping and frozen explosions are not simulated. The ability entries disclose these limits; panel numbers alone do not implement their combat effects. Sources: [passive](https://wiki.warframe.com/w/Narin/Abilities/Passive), [abilities](https://wiki.warframe.com/w/Narin/Abilities).

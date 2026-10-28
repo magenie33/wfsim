@@ -972,6 +972,9 @@ pub(super) fn settle_procs(
                     }
                 }
                 debuffs.blast.push(BlastStack {
+                    charges_gauge: params.cycle.as_ref().is_some_and(|c|
+                        active.form == c.base_form.form && matches!(c.arms,
+                            Arms::Gauge { charge_on: crate::model::ChargeOn::HitsAndWeakpoints, .. })),
                     fuse: at + BLAST_FUSE * status_damage,
                     value: BLAST_COEFFICIENT
                         * mb_live
@@ -1034,6 +1037,7 @@ pub(super) fn settle_procs(
                     let mut killed = false;
                     let mut broke_any = None;
                     for b in &fired {
+                        r.blast_gauge_hits += u32::from(b.charges_gauge);
                         let mut breakdown = Breakdown::default();
                         let settled = target.apply(
                             b.value,
@@ -1326,4 +1330,21 @@ pub(super) fn roll_proc_conversion(
             }
         }
     }
+}
+
+/// Secondary Encumber grants at most one random proc per simultaneous batch.
+#[wfsim_gas_macro::metered]
+pub(super) fn encumber_proc(chance: f64, has_status: bool, done: &mut bool, rng: &mut Rng) -> Option<DamageType> {
+    if chance <= 0.0 || *done || !has_status || !rng.chance(chance) {
+        return None;
+    }
+    const POOL: [DamageType; 13] = [
+        DamageType::Impact, DamageType::Puncture, DamageType::Slash,
+        DamageType::Heat, DamageType::Cold, DamageType::Electricity,
+        DamageType::Toxin, DamageType::Blast, DamageType::Corrosive,
+        DamageType::Magnetic, DamageType::Viral, DamageType::Gas, DamageType::Radiation,
+    ];
+    let idx = (rng.next_f64() * POOL.len() as f64) as usize % POOL.len();
+    *done = true;
+    Some(POOL[idx])
 }

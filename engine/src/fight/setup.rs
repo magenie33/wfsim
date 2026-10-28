@@ -1124,6 +1124,8 @@ impl FightParams {
             radial: compressed_radial,
             cluster: panel.cluster,
             reload_grenade: panel.reload_grenade,
+            reload_cold_radius_per_round_m: panel.reload_cold_radius_per_round_m,
+            cold_trail: panel.cold_trail,
             blob: panel.blob,
             embed: panel.embed,
             falloff: panel.falloff,
@@ -1366,7 +1368,7 @@ impl FightParams {
             // nothing, and neither did Frenzy's or a Deadly-Efficiency build.
             // Nothing caught it because every test here builds `FightParams`
             // by hand, where the field defaults to `true`.
-            ammo_efficiency_applies: panel.gauge_form.is_none(),
+            ammo_efficiency_applies: panel.gauge_form.is_none_or(|f| f.single_shot),
             multishot: panel.multishot + lone_bonus,
             base_multishot: panel.base_multishot,
             base_damage_bonus: panel.base_damage_bonus,
@@ -1687,7 +1689,7 @@ impl FightParams {
                         .map(|f| (f.charges_to_fill / (1.0 + f.charge_rate)).ceil() as u32)
                         .unwrap_or(9),
                 },
-                ends: Ends::ChargeMagazine,
+                ends: if inc_form.is_some_and(|f| f.single_shot) { Ends::SingleShot } else { Ends::ChargeMagazine },
                 transmute_out_seconds: inc_form.map_or(1.0, |f| f.transmute_out) / rl,
                 transmute_seconds: inc_form.map_or(2.35, |f| f.transmute_in) / rl,
                 reload_bucket: rl - 1.0,

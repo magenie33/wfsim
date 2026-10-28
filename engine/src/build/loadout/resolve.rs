@@ -103,7 +103,7 @@ pub fn resolve_for(
     // Gun, Extended Volley): the same `incarnon.is_none()` guard `apply` puts
     // on the ungated spelling, kept here because this add cannot happen there —
     // `apply` never sees a Tenno.
-    let gated_mag: f64 = if base.gauge_form.is_none() {
+    let gated_mag: f64 = if base.gauge_form.is_none_or(|f| f.single_shot) {
         base.gated
             .iter()
             .filter(|t| t.grant == GatedGrant::FlatBaseMagazine && t.gate.holds(tenno))
@@ -1013,7 +1013,7 @@ pub fn resolve_for(
     // THE MODDED MAGAZINE, computed HERE because on one weapon it is a damage
     // stat and the damage is built below. A charge-backed Incarnon magazine is
     // a fixed resource outside the ammo system, so magazine mods never scale it.
-    let mag_size = if base.gauge_form.is_some() {
+    let mag_size = if base.gauge_form.is_some_and(|f| !f.single_shot) {
         base.magazine_size
     } else {
         // ROUNDED TO THE NEAREST ROUND, not floored (wiki Magazine_Warp,
@@ -1658,6 +1658,8 @@ pub fn resolve_for(
         radial,
         cluster,
         reload_grenade,
+        reload_cold_radius_per_round_m: base.reload_cold_radius_per_round_m.map(|m| m * (1.0 + br).max(0.0)),
+        cold_trail: base.cold_trail,
         blob,
         embed,
         spread,
@@ -2178,7 +2180,7 @@ pub fn resolve_for(
             // A charge-backed Incarnon magazine is outside the ammo system and
             // the mods never scale it — the same exception `mag_size` makes two
             // hundred lines up, so the grant follows the magazine it grows.
-            let scaled = if base.gauge_form.is_some() { per } else { per * (1.0 + mag) };
+            let scaled = if base.gauge_form.is_some_and(|f| !f.single_shot) { per } else { per * (1.0 + mag) };
             (scaled, max)
         }),
         crit_damage_on_kill,

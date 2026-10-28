@@ -1293,6 +1293,10 @@ pub struct WeaponBase {
     pub cluster: Option<ClusterBase>,
     /// The grenades a reload from empty throws — see [`ReloadGrenadeBase`].
     pub reload_grenade: Option<ReloadGrenadeBase>,
+    /// Reload-start Cold wave: metres of radius per round spent, one Cold proc per round.
+    pub reload_cold_radius_per_round_m: Option<f64>,
+    /// A Cold trail along the projectile path, independent of radius mods.
+    pub cold_trail: Option<crate::model::ColdTrail>,
     /// The blob each shot embeds — see [`BlobBase`].
     pub blob: Option<BlobBase>,
     /// See [`crate::data::weapons::EmbedSpec`].

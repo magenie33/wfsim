@@ -85,6 +85,8 @@ family, one form, one slot, one class.
 
 ### Rows carried
 
+Steflos Prime carries Steflos Normal Attack’s Multiplying class (320 | 320 | 100%). Corufell and Corufell Prime’s Charged Projectile carry the Corufell Heavy Attack Projectile row (1200 | 1200 | 100% | Multiplying). The weapon infoboxes state 600 and 650 Heat per projectile; the catalog’s 1200 is not used as their per-projectile damage.
+
 | weapon | attack | unmodded | relative | type | our entry |
 | --- | --- | --- | --- | --- | --- |
 | Torid | Main-fire (Projectile) | 100 | 100% | Multiplying | `torid.yaml` → `independent` |
@@ -270,6 +272,7 @@ it under-reports.
 | `tenet_diplos_lock_on` | independent | 100% |
 | `tenet_envoy` | independent | 100% |
 | `trumna_grenade` | independent | 100% |
+| `nunchasa_alt` | independent | 100% |
 
 **Seven AoE PARTS** have a row of their own, so they take the WHOLE term on an
 explosion that is most of the weapon: the Ambassador's radial

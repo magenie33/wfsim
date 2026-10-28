@@ -76,7 +76,7 @@ pub(super) fn charge_magazine_cycle(
         // is what decides — a rule inserted above `reload` stops the reload.
         let remains = ability_remains(params, *t);
         let want = apl.pick(&incarnon.now(params, ammo, next_cost, *t, tennokai, &remains, switch_to.map(|s| s.form)));
-        if let Some(cy) = params.cycle.as_ref().filter(|c| c.ends == Ends::ChargeMagazine) {
+        if let Some(cy) = params.cycle.as_ref().filter(|c| c.ends == Ends::ChargeMagazine || (c.ends == Ends::SingleShot && incarnon.in_base_form)) {
             if want == Action::TransformOut {
                 // Charge magazine spent: revert to the base form. The swap
                 // fully reloads the base magazine (wiki side effect). The
@@ -150,9 +150,7 @@ pub(super) fn charge_magazine_cycle(
                 }
                 let rs = live_reload_speed(params, &cy.base_form, *rs_armed, buff_stacks, *t);
                 let spent = live_reload_time(&cy.base_form, params, arc, rs, *t, from_empty);
-                if cy.base_form.reload_grenade.is_some() {
-                    ammo.grenade_thrown_at = Some((*t + spent * THROW_AT_RELOAD_SHARE_UNMEASURED, from_empty));
-                }
+                schedule_reload_effects(&cy.base_form, ammo, incarnon.base_magazine, cy.base_form.magazine_size, *t, spent, from_empty);
                 // THE OPENING WINDOW closes when the first reload STARTS, which
                 // is here — everything dealt up to this instant is what the
                 // magazine you walked in with was worth.
@@ -252,9 +250,7 @@ pub(super) fn charge_magazine_cycle(
             let spent = live_reload_time(params, params, arc, rs, *t, from_empty);
             // THE THROW IS THE RELOAD'S: it leaves partway through and costs no
             // time of its own — damage the reload delivers for free.
-            if params.reload_grenade.is_some() {
-                ammo.grenade_thrown_at = Some((*t + spent * THROW_AT_RELOAD_SHARE_UNMEASURED, from_empty));
-            }
+            schedule_reload_effects(params, ammo, ammo.loaded, ammo.cap, *t, spent, from_empty);
             // TWO ROWS, THE START AND THE END, and nothing in between. What is between them is not a reload event — it is
             // whatever the fight went on doing while the weapon was down, which
             // for a status build is most of its damage.
@@ -313,6 +309,7 @@ pub(super) fn charge_the_gauge(
     d: &mut crate::rules::rng::Draws,
     cy: &IncarnonCycle,
     charge_on: crate::model::ChargeOn,
+    base_hit: bool,
     pellets_before: u32,
     headshots_before: u32,
     t: &mut f64,
@@ -334,7 +331,15 @@ pub(super) fn charge_the_gauge(
         // the Mausolon's laser (wiki), not kills of any kind.
         let fresh_kills = r.kills - incarnon.kill_mark;
         incarnon.kill_mark = r.kills;
-        if incarnon.in_base_form {
+        let contacts = r.pellets + r.punched_contacts;
+        let weakpoints = r.weakpoint_hits + r.headshots_on_others;
+        let weighted = contacts.saturating_sub(incarnon.contact_mark)
+            + weakpoints.saturating_sub(incarnon.weakpoint_mark)
+            + r.blast_gauge_hits.saturating_sub(incarnon.blast_mark);
+        incarnon.contact_mark = contacts;
+        incarnon.weakpoint_mark = weakpoints;
+        incarnon.blast_mark = r.blast_gauge_hits;
+        if incarnon.in_base_form && (base_hit || cy.ends != Ends::SingleShot) {
             // Per PELLET, and per the WEAPON's rule: weak-point hits for
             // the Zariman pistols, any direct hit for the Torid, kills for
             // the Mausolon. A field or radial instance is neither of the
@@ -350,6 +355,7 @@ pub(super) fn charge_the_gauge(
                 }
                 crate::model::ChargeOn::DirectHits => r.pellets - pellets_before,
                 crate::model::ChargeOn::Kills => fresh_kills,
+                crate::model::ChargeOn::HitsAndWeakpoints => weighted,
             };
             // A FULL GAUGE ARMS THE TRANSFORM; the cadence below still
             // runs. A `continue` here would skip the completing shot's OWN
@@ -369,6 +375,15 @@ pub(super) fn charge_the_gauge(
             // and `reload` sits below it and is asked again at the top of the
             // loop with the real cost.
             if apl.pick(&incarnon.now(params, ammo, 0.0, *t, tennokai, &remains, None)) == Action::TransformIn {
+                if cy.ends == Ends::SingleShot {
+                    incarnon.in_base_form = false;
+                    incarnon.charges = 0;
+                    ammo.loaded = incarnon.base_magazine;
+                    ammo.cap = cy.base_form.magazine_size;
+                    r.transforms += 1;
+                    record_weapon(params, rec, ammo, incarnon);
+                    return;
+                }
                 // BOTH DIRECTIONS TAKE IT. The wiki says Ready
                 // Retaliation "can affect transition INTO Incarnon form
                 // with a well-timed manual reload" and not the way back;

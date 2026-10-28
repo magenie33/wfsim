@@ -6,6 +6,14 @@ use super::*;
 use crate::rules::damage::DamageVector;
 use serde::Deserialize;
 
+/// A projectile leaves one Cold proc per interval along its flight path.
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ColdTrail {
+    pub duration_seconds: f64,
+    pub tick_interval_seconds: f64,
+}
+
 /// What happens when a second field lands on a target that already has one.
 ///
 /// Weapon DATA, not a global rule — the Torid STACKS (✅ measured, MEASUREMENTS
@@ -439,6 +447,8 @@ pub struct BeamGeometry {
 /// [`WeaponBase::incarnon`]). All times are UNMODDED bases.
 #[derive(Debug, Clone, Copy)]
 pub struct GaugeForm {
+    /// One alternate shot per full gauge, using the ordinary magazine.
+    pub single_shot: bool,
     /// Fixed charge capacity ("Max Charges") — magazine mods are inert.
     pub max_charges: f64,
     /// WHAT fills the gauge. Not cosmetic: the Zariman pistols count weak-point
@@ -473,6 +483,8 @@ pub enum ChargeOn {
     /// poison cloud does not build charges") and a 37.0 patch note fixed the
     /// case where it did.
     DirectHits,
+    /// One unit per body contact, two per weak point; ten units fill five charges.
+    HitsAndWeakpoints,
     /// Kills, not hits — the Mausolon and the Cortege, whose alt-fire is a
     /// thing you EARN rather than hold: "Getting 5 kills with the Mausolon's
     /// primary fire will unlock an Alternate Fire", and after firing it

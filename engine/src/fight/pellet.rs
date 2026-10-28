@@ -411,24 +411,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // STATUS DAMAGE A LIVE BUFF IS ADDING, read before this hit bumps any —
     // what the statuses this hit leaves burn at (Synergist Surety).
     let status_damage_live = buff_total(active, crate::model::BuffGrant::StatusDamage, &mut *buff_stacks, t);
-    let arcane_base_damage = arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t)
-        + bd_reload_add
-        + bd_eximus_add
-        // Primary Compression's `adds` row: the same bracket a live
-        // base-damage buff joins, so Serration dilutes it exactly as
-        // the wiki's "additive with damage bonuses" says it should.
-        + active.compression_base_damage
-        + buff_total(active, crate::model::BuffGrant::BaseDamage, &mut *buff_stacks, t)
-        // Striking Succession, already converted by `resolve` into the
-        // share of this bucket its flat number is worth — so it lands
-        // here and NOT diluted, which is the whole point of the
-        // conversion.
-        + buff_total(active, crate::model::BuffGrant::FlatBaseDamage, &mut *buff_stacks, t)
-        // …AND KILLING BLOW, which is a term in this bucket and not a
-        // multiplier — see `heavy_attack_base_damage`.
-        + heavy_attack_base_damage(active, tennokai_heavy)
-        // …AND RAGE: "additive with mods like Pressure Point".
-        + arc.rage_bonus(t);
+    let arcane_base_damage = live_base_damage_additions(params, active, arc, buff_stacks,
+        bd_reload_add + bd_eximus_add, t, tennokai_heavy);
     // FEIGNED RETREAT / SWIFT CONCLUSION: a condition on the TARGET,
     // evaluated per instance because the target's health is falling
     // while the shot is being resolved.
@@ -2343,29 +2327,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // give a pellet two shots at Encumber. Trigger scope is
     // health-bar statuses only (U33 patch note) — the only kind a
     // proc list ever holds.
-    if params.arcane.encumber_chance > 0.0
-        && !*encumber_done
-        && !procs.is_empty()
-        && d.extra.chance(params.arcane.encumber_chance)
+    if let Some(proc) = encumber_proc(params.arcane.encumber_chance, !procs.is_empty(),
+        encumber_done, &mut d.extra)
     {
-        const POOL: [DamageType; 13] = [
-            DamageType::Impact,
-            DamageType::Puncture,
-            DamageType::Slash,
-            DamageType::Heat,
-            DamageType::Cold,
-            DamageType::Electricity,
-            DamageType::Toxin,
-            DamageType::Blast,
-            DamageType::Corrosive,
-            DamageType::Magnetic,
-            DamageType::Viral,
-            DamageType::Gas,
-            DamageType::Radiation,
-        ];
-        let idx = (d.extra.next_f64() * POOL.len() as f64) as usize % POOL.len();
-        procs.push(POOL[idx]);
-        *encumber_done = true;
+        procs.push(proc);
     }
     // Internal Bleeding / Hemorrhage: one roll per damage INSTANCE
     // when a `from` status landed and no `to` status did; chance ×2

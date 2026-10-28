@@ -208,7 +208,7 @@ pub(super) fn after_the_landing(
             })
         {
             charge_the_gauge(
-                params, apl, flash, rec, rng, d, cy, charge_on, pellets_before, headshots_before,
+                params, apl, flash, rec, rng, d, cy, charge_on, active.form == cy.base_form.form, pellets_before, headshots_before,
                 t, r, ammo, incarnon, double_tap, buff_stacks,
                 rs_armed, opening_closed,
             );
@@ -295,6 +295,10 @@ pub(super) fn next_shot_due(
         *t += seconds_to_next_shot(
             active, *t, rate, initial_now, swing, tennokai, tennokai_heavy, ammo, incarnon, melee,
         );
+        if params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot) {
+            // This cycle pays the selected attack's draw before its trigger.
+            *t -= active.charge_seconds.unwrap_or(0.0) * active.fire_rate / rate.max(1e-9);
+        }
         spool.due = *t;
 }
 
@@ -307,4 +311,21 @@ pub(super) fn cadence_rate(params: &FightParams, active: &FightParams, t: f64, b
     let stacked = buff_total(active, crate::model::BuffGrant::FireRate, buff_stacks, t);
     let ability = crate::data::abilities::fire_rate_at(&params.abilities_now(), t);
     (active.fire_rate + reload + stacked + ability) * bar.total_contributions().fire_rate_multiplier
+}
+
+/// A selected charge attack finishes its own draw before it can fire.
+#[wfsim_gas_macro::metered]
+pub(super) fn charged_shot_span(params: &FightParams, active: &FightParams,
+    windows: &CardWindows, bar: &BuffBar, stacks: &mut [LiveStacks], at: f64) -> f64 {
+    let Some(draw) = active.charge_seconds else { return 0.0 };
+    if params.locks("fire_rate") { return draw; }
+    let timed = match active.fire_rate_on_reload {
+        Some(b) if at < windows.fire_rate_after_reload => b.value,
+        _ => 0.0,
+    };
+    let add = timed + buff_total(active, crate::model::BuffGrant::FireRate, stacks, at)
+        + crate::data::abilities::fire_rate_at(&params.abilities_now(), at);
+    let factor = (active.fire_rate + add) / active.fire_rate.max(1e-9)
+        * bar.total_contributions().fire_rate_multiplier;
+    draw / factor.max(1e-9)
 }

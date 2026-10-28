@@ -8,6 +8,7 @@ class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: battacor
+transforms_to: battacor_charged
 mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, ASSAULT_AMMO
 mastery_rank: 10
 max_rank: 30
@@ -33,6 +34,14 @@ reload_seconds: 2
 #
 # see notes: entry_read_adding_at
 co_behavior: independent
+
+modes:
+  - id: cycle
+    name: "Full-charge alt-fire cycle"
+    about: "Fire the primary until 3 kills fill the gauge, fire the alternate once, then repeat."
+    cycle_with: battacor_charged
+    rules:
+      - { action: { do: transform_in }, when: { if: gauge_at_least, pct: 1.0 } }
 
 attack:
   # see notes: cone_half_angle_from_2

@@ -353,6 +353,9 @@ pub struct RunResult {
     /// the other. They are the same number on every body whose weak points are
     /// all heads, which is most of them.
     pub weakpoint_hits: u32,
+    /// Direct body contacts beyond the aimed body, including multishot.
+    pub(crate) punched_contacts: u32,
+    pub(crate) blast_gauge_hits: u32,
     /// WEAK POINTS THE AIMING DID NOT PICK — a body the round punched through
     /// and entered at the head, or one a bounce arrived at.
     ///

@@ -408,6 +408,7 @@ pub(super) fn open<'a>(
         reserve: params.reserve_ammo,
         instant_reload_now: false,
         grenade_thrown_at: None,
+        reload_cold: None,
     };
     let precombat_boost = precombat(params, &mut buff_stacks, &mut ammo);
     // Kills already paid to on-kill stacking buffs. See `BuffTrigger::Kill`.
@@ -617,6 +618,9 @@ pub(super) fn open<'a>(
     let weakpoint_next_shot_armed = false;
     let incarnon = IncarnonState {
         kill_mark: 0u32,
+        contact_mark: 0,
+        weakpoint_mark: 0,
+        blast_mark: 0,
         in_base_form: params.cycle.as_ref().is_some_and(|c| !c.starts_primed),
         incarnon_until: match params.cycle.as_ref().map(|c| (c.starts_primed, c.ends)) {
             Some((true, Ends::After(seconds))) => seconds,

@@ -42,6 +42,14 @@ no_resupply: true
 
 co_behavior: additive_with_base_damage
 
+modes:
+  - id: cycle
+    name: "Full-charge alt-fire cycle"
+    about: "Fire the primary until 5 kills fill the gauge, fire the alternate once, then repeat."
+    cycle_with: cortege_alt
+    rules:
+      - { action: { do: transform_in }, when: { if: gauge_at_least, pct: 1.0 } }
+
 attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data (MinSpread/MaxSpread on this attack).

@@ -640,6 +640,7 @@ pub fn meta_json() -> Value {
                         "trigger": s.map(|x| x.attack.trigger.clone()),
                         "charge_seconds": s.and_then(|x| x.attack.charge_seconds),
                         "gauge": s.and_then(|x| x.gauge_form.as_ref()).map(|g| json!({
+                            "single_shot": g.single_shot,
                             "charge_on": g.gauge.charge_on,
                             "charges_to_fill": g.gauge.charges_to_fill,
                             "max_rounds": g.gauge.max_rounds,

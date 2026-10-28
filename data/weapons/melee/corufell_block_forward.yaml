@@ -9,11 +9,9 @@ co_behavior: additive_with_base_damage
 unmodeled:
 - 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
   reads low.'
-- reason: melee_attack_unmodelled
-  attacks: Charged Projectile
 - reason: melee_slide_unpublished
-- reason: melee_heavy_is_special
-  what: a transformation into a gunblade that fires up to two energy projectiles
+- reason: corufell_light_tennokai
+- reason: corufell_signature_windup
 attack:
   trigger: melee
   shot_type: hit_scan

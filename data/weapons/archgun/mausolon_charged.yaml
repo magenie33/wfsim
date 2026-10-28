@@ -23,6 +23,7 @@ transforms_from: mausolon
 # trigger. Writing the house 1 s standard here would invent a second of
 # downtime per laser that the weapon does not pay.
 gauge_form:
+  single_shot: true
   gauge:
     charge_on: kills
     charges_to_fill: 5
@@ -48,12 +49,6 @@ co_behavior: additive_with_base_damage
 # the number, the same way it owns every other proc's duration.
 independent_procs: [lifted]
 
-# THE CHARGE POOL, not the belt. The 300-round magazine inherited from
-# `mausolon` is the AUTO fire's; this form's magazine is the gauge's
-# `max_rounds`, which is the convention every gauge-fed form in the roster
-# already follows (Torid Incarnon: `magazine: 170` against `max_rounds: 170`).
-magazine: 1
-
 attack:
   # see notes: cone_half_angle_from
   spread:
@@ -68,7 +63,7 @@ attack:
   # DIFFERENT RESOURCES. The laser draws nothing from the 900-round ground
   # reserve — that is what DE's zero says — and it spends the one charge five
   # kills bought, which is what makes the form end.
-  ammo_cost: 1
+  ammo_cost: 0
   crit_chance: 0.50
   crit_multiplier: 3.5
   status_chance: 0.50

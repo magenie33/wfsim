@@ -17,6 +17,7 @@ introduced: "37"
 # THE TWO ZEROES ARE FACTS: there is no transmutation animation in either
 # direction — you hold the alt button and the one-second charge below runs.
 gauge_form:
+  single_shot: true
   gauge:
     charge_on: kills
     charges_to_fill: 10
@@ -24,8 +25,6 @@ gauge_form:
   transmute_in_seconds: 0.0
   transmute_out_seconds: 0.0
 
-# THE CHARGE POOL, not the magazine: this form fires once per fill.
-magazine: 1
 
 # see notes: inherited_co_catalog_gives_4
 co_behavior: additive_with_base_damage

@@ -453,6 +453,7 @@ pub(super) fn process_ticks(
                     r.blast_pops += 1;
                 }
                 let b = debuffs.blast.remove(*i);
+                r.blast_gauge_hits += u32::from(b.charges_gauge);
                 dot_parts = rec.is_on().then(|| vec![b.seed_part(rec)]);
                 (
                     b.value,
@@ -637,9 +638,7 @@ pub(super) fn settle_what_is_in_the_air(
         let (params, active, owner) = (turn.params, turn.active, turn.seat);
         // A MAGAZINE THROWN BY THE RELOAD BEFORE THIS SHOT, settled at the
         // instant it left — what is due before it acts first, the rest after.
-        if let Some((at, from_empty)) = ammo.grenade_thrown_at.take() {
-            entities.push(Entity::Volley(Volley { owner, at, from_empty }));
-        }
+        enqueue_reload_effects(ammo, owner, entities);
         process_entities(entities, *t, turn, r, rec, bodies);
         // JAHU CANTICLE. Every kill takes a share off the armour of every enemy
         // inside Affinity Range — which is measured from the PLAYER, not from

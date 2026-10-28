@@ -349,6 +349,7 @@ weapons:
   nataruk: OmicrusBow.png
   nataruk_perfect: OmicrusBow.png
   nunchasa: DuelistBow.png
+  nunchasa_alt: DuelistBow.png
   nukor: Nukor.png
   ogris: Ogris.png
   opticor: Opticor.png
@@ -405,6 +406,7 @@ weapons:
   stahlta_charged: CrpRubanRifle.png
   staticor: Staticor.png
   staticor_uncharged: Staticor.png
+  steflos_prime: SteflosPrime.png
   steflos: TnoLotusPodShotgun.png
   stradavar: Stradavar.png
   stradavar_prime: StradavarPrime.png
@@ -847,6 +849,8 @@ weapons:
   coda_pathocyst_heavy_slam: CodaPathocyst.png
   coda_pathocyst_slide: CodaPathocyst.png
   coda_pathocyst_throw: CodaPathocyst.png
+  corufell_heavy: ExaltedAWScytheWeapon.png
+  corufell_prime_heavy: CorufellPrime.png
   corufell: ExaltedAWScytheWeapon.png
   corufell_block: ExaltedAWScytheWeapon.png
   corufell_block_forward: ExaltedAWScytheWeapon.png
@@ -2786,6 +2790,8 @@ warframes:
   chroma: Chroma.png
   chroma_prime: ChromaPrime.png
   citrine: Citrine.png
+  citrine_prime: CitrinePrime.png
+  narin: Narin.png
   cyte_09: Frumentarius.png
   dagath: Dagath.png
   dante: Pagemaster.png

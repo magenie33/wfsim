@@ -205,3 +205,23 @@ pub(super) fn careen_factor(params: &FightParams, debuffs: &mut DebuffState, t: 
         1.0
     }
 }
+
+/// Weapon-owned base-damage buffs shared by hits and weapon-applied status triggers.
+#[wfsim_gas_macro::metered]
+pub(super) fn live_base_damage_additions(
+    params: &FightParams,
+    active: &FightParams,
+    arc: &mut ArcRuntime,
+    stacks: &mut [LiveStacks],
+    timed: f64,
+    at: f64,
+    heavy: bool,
+) -> f64 {
+    arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at)
+        + timed
+        + active.compression_base_damage
+        + buff_total(active, crate::model::BuffGrant::BaseDamage, stacks, at)
+        + buff_total(active, crate::model::BuffGrant::FlatBaseDamage, stacks, at)
+        + heavy_attack_base_damage(active, heavy)
+        + arc.rage_bonus(at)
+}

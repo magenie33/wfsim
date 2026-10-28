@@ -48,6 +48,9 @@ mod pools_columns_record;
 mod projectile_flight;
 mod radials_roster_targets;
 mod reload_grenade;
+mod reload_cold;
+mod earned_alt;
+mod citrine_weapons;
 mod replay_debilitate_misc;
 mod replay_reads_every_buff;
 mod ripper_rounds;
@@ -98,6 +101,8 @@ impl Default for FightParams {
             radial: None,
             cluster: None,
             reload_grenade: None,
+            reload_cold_radius_per_round_m: None,
+            cold_trail: None,
             blob: None,
             embed: None,
             // POINT BLANK, and no falloff to notice it with — every golden

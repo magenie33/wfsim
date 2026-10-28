@@ -1,0 +1,24 @@
+# see notes: generated_ability
+id: nurinarim
+name: "Nurinarim"
+frame: narin
+slot: 4
+energy_cost: 25
+internal_name: /Lotus/Powersuits/Duelist/Abilities/DuelistBladeDanceAbility
+icon: Nurinarim(xWhite).png
+description: "Requires full Ice to cast. An ancestral spirit descends upon Narin and she begins sword dancing for continuous nearby damage. Press Attack on the marked targets to launch shattering icy slashes that deplete Armor and Shields. Hitting Frozen enemies causes them to explode, dealing massive radial  Cold Damage."
+
+stats:
+  - { id: aura_damage, label: "Aura Damage per Second", value: 500, unit: flat, scales_with: strength }
+  - { id: slash_damage, label: "Icy Slash Damage", value: 20000, unit: flat, scales_with: strength }
+  - { id: explosion_damage, label: "Frozen Enemy Explosion Damage", value: 10000, unit: flat, scales_with: strength }
+  - { id: reduction, label: "Shield and Armor Reduction per Cold Stack", value: 0.05, unit: pct, scales_with: strength }
+  - { id: aura_radius, label: "Aura Radius", value: 8, unit: m, scales_with: range }
+  - { id: explosion_radius, label: "Explosion Radius", value: 10, unit: m, scales_with: range }
+  - { id: duration, label: "Maximum Duration", value: 20, unit: seconds, scales_with: duration }
+  - { id: marked_multiplier, label: "Marked Shot Damage Multiplier", value: 2, unit: multiplier, scales_with: none }
+unmodelled:
+  - "The Ice gate and drain, target marks, sword-dance attacks, stripping, frozen explosions, ability lockouts and Sangodae multipliers are not simulated. The displayed duration assumes no unmarked slashes."
+
+source:
+  url: https://wiki.warframe.com/w/Nurinarim

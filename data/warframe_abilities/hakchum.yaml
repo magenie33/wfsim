@@ -1,0 +1,23 @@
+# see notes: generated_ability
+id: hakchum
+name: "Hakchum"
+frame: narin
+slot: 3
+energy_cost: 75
+internal_name: /Lotus/Powersuits/Duelist/Abilities/DuelistLeapAbility
+icon: Hakchum(xWhite).png
+description: "Tap to leap into the air, tap again to land at target location. Applies  Cold Damage Vulnerability and Status Effect in a large radius upon landing.\n\nGain Ice for each enemy hit."
+
+stats:
+  - { id: damage, label: "Landing Damage", value: 1000, unit: flat, scales_with: strength }
+  - { id: storm_damage, label: "Storm Damage per Second", value: 100, unit: flat, scales_with: strength }
+  - { id: cold_vulnerability, label: "Cold Damage Vulnerability", value: 1.5, unit: pct, scales_with: strength }
+  - { id: radius, label: "Radius", value: 10, unit: m, scales_with: range }
+  - { id: duration, label: "Duration", value: 15, unit: seconds, scales_with: duration }
+unmodelled:
+  - "Flight, landing hits, the persistent storm, Cold vulnerability and Ice generation are not applied to combat."
+tags:
+  - { tag: invulnerable, when: "during flight" }
+
+source:
+  url: https://wiki.warframe.com/w/Hakchum

@@ -181,6 +181,8 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
         // ONE CYCLE PER FORM YOU CAN HOLD: the form you fill the gauge IN is
         // a different build — see `PlayMode::Cycle`.
         for feeder in std::iter::once(default).chain(alts().filter(held)) {
+            if spec(feeder.weapon_id).is_some_and(|s| s.modes.iter()
+                .any(|d| d.cycle_with.as_deref() == Some(alt.weapon_id))) { continue; }
             out.push(WeaponPlayMode {
                 id: cycle_id(feeder.weapon_id == default.weapon_id, feeder.kind),
                 mode: PlayMode::Cycle,
@@ -196,7 +198,7 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
         // orb and you are back on the primary before it lands, so a Tome has
         // exactly two — `base` and `cycle`. MEASUREMENTS §"Two modes, and
         // `transformed` is not one of them".
-        if spec(alt.weapon_id).is_some_and(|s| s.attack.meter.is_some()) {
+        if spec(alt.weapon_id).is_some_and(|s| s.attack.meter.is_some() || s.gauge_form.as_ref().is_some_and(|g| g.single_shot)) {
             continue;
         }
         out.push(WeaponPlayMode {
@@ -216,7 +218,11 @@ pub fn play_modes(weapon_id: &str) -> Vec<WeaponPlayMode> {
         .flat_map(|m| {
             let declared = matches!(m.mode, PlayMode::Base | PlayMode::Alternate) && !m.detonates;
             let own = spec(m.weapon_id).filter(|_| declared).map_or(&[][..], |s| &s.modes[..]);
-            std::iter::once(m).chain(own.iter().map(move |d| WeaponPlayMode { id: d.id.as_str(), declared: Some(d), ..m }))
+            std::iter::once(m).chain(own.iter().map(move |d| WeaponPlayMode {
+                id: d.id.as_str(), declared: Some(d),
+                mode: if d.cycle_with.is_some() { PlayMode::Cycle } else { m.mode },
+                other_id: d.cycle_with.as_deref().or(m.other_id), ..m
+            }))
         })
         .collect()
 }

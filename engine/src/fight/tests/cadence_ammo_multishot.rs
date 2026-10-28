@@ -150,7 +150,7 @@ fn m126_stug_blazing_barrel_resets_in_both_forms() {
             drop_kill_mark: 0, refill_kill_mark: 0, rounds_this_mag: 0,
             refills: 0, cap: p.magazine_size, growth_stacks: 0,
             summon_multiplier: 1.0, owed_shells: 0, loaded: p.magazine_size,
-            reserve: p.reserve_ammo, instant_reload_now: false, grenade_thrown_at: None,
+            reserve: p.reserve_ammo, instant_reload_now: false, grenade_thrown_at: None, reload_cold: None,
         };
         let mut result = RunResult::default();
         let mut armed = false;

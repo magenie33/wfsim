@@ -241,10 +241,12 @@ pub fn base_panel_assembled(
         });
 
     let gauge_form = s.gauge_form.as_ref().map(|inc| GaugeForm {
+        single_shot: inc.single_shot,
         max_charges: inc.gauge.max_rounds,
         charge_on: match inc.gauge.charge_on.as_str() {
             "weakpoint_hits" => ChargeOn::WeakpointHits,
             "direct_hits" => ChargeOn::DirectHits,
+            "hits_and_weakpoints" => ChargeOn::HitsAndWeakpoints,
             "kills" => ChargeOn::Kills,
             other => panic!("{id}: unknown gauge charge_on: {other}"),
         },
@@ -645,6 +647,8 @@ pub fn base_panel_assembled(
         radial,
         cluster,
         reload_grenade,
+        reload_cold_radius_per_round_m: s.attack.reload_cold_radius_per_round_m,
+        cold_trail: s.attack.cold_trail,
         blob,
         embed,
         reload_from_empty_speed: s.reload_from_empty_speed.unwrap_or(0.0),

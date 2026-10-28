@@ -397,6 +397,10 @@ pub struct ResolvedPanel {
     pub cluster: Option<ResolvedCluster>,
     /// The resolved reload grenades, when a reload from empty throws any.
     pub reload_grenade: Option<ResolvedReloadGrenade>,
+    /// Reload-start Cold wave: metres of radius per round spent, one Cold proc per round.
+    pub reload_cold_radius_per_round_m: Option<f64>,
+    /// A Cold trail along the projectile path, independent of radius mods.
+    pub cold_trail: Option<crate::model::ColdTrail>,
     /// The resolved blob, when every shot embeds one.
     pub blob: Option<ResolvedBlob>,
     pub embed: Option<ResolvedEmbed>,

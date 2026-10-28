@@ -540,7 +540,7 @@ pub fn run_once_traced(
                     if me.incarnon.charges >= charges_to_fill {
                         let mut now = at;
                         charge_the_gauge(me.params, &me.apl, false, rec, rng, &mut me.d, cy,
-                            charge_on, r.pellets, r.weakpoint_hits + r.headshots_on_others,
+                            charge_on, true, r.pellets, r.weakpoint_hits + r.headshots_on_others,
                             &mut now, &mut r, &mut me.ammo, &mut me.incarnon, &mut me.double_tap,
                             &mut me.buff_stacks, &mut me.rs_armed, &mut me.opening_closed);
                         if !me.incarnon.in_base_form { me.next_t = now; }
@@ -723,6 +723,10 @@ pub fn run_once_traced(
                 r.per_seat[seat_index].add(SeatCounters::of(&r).since(counters_before));
                 continue;
             }
+        }
+        if me.params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot) {
+            t += charged_shot_span(me.params, active, &me.windows, &me.bar, &mut me.buff_stacks, t);
+            if t >= me.params.duration_seconds { break; }
         }
         // The instance total and its SHAPE (Toxin's shield bypass, the
         // vulnerability column) are derived PER STAGE now — each attack part
@@ -1072,6 +1076,9 @@ pub fn run_once_traced(
             burst_starts: (me.ammo.rounds_this_mag.max(1) - 1)
                 .is_multiple_of(active.burst.map_or(1, |b| b.count.max(1))),
         };
+        let single_shot = !me.incarnon.in_base_form
+            && me.params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot);
+        lay_cold_trail(me.seat, active, t, &mut entities);
         // Contact follows charge and the animation event, then projectile
         // travel where present. The next input has its own completion clock.
         let arrival_delay = active.flight_seconds(me.params.gap())
@@ -1084,6 +1091,10 @@ pub fn run_once_traced(
                 burst_completed: Some(me.ammo.rounds_this_mag.is_multiple_of(burst_len)),
                 ..landing
             });
+            if single_shot {
+                me.incarnon.in_base_form = true;
+                me.incarnon.base_magazine = me.ammo.loaded;
+            }
             next_shot_due(
                 me.params, active, &mut t, swing, initial_now, tennokai, tennokai_heavy, &r,
                 &mut me.bar, &mut me.buff_stacks, &me.ammo, &me.incarnon, &mut me.melee,
@@ -1104,6 +1115,10 @@ pub fn run_once_traced(
                     area_near: &area_near,
                 },
             );
+            if single_shot {
+                me.incarnon.in_base_form = true;
+                me.incarnon.base_magazine = me.ammo.loaded;
+            }
             next_shot_due(
                 me.params, active, &mut t, landing.swing, initial_now, tennokai, tennokai_heavy, &r,
                 &mut me.bar, &mut me.buff_stacks, &me.ammo, &me.incarnon, &mut me.melee,
@@ -1170,9 +1185,7 @@ pub fn run_once_traced(
         };
         // A MAGAZINE THROWN BY A RELOAD NO SHOT FOLLOWED — the engagement ended
         // inside it.
-        if let Some((at, from_empty)) = me.ammo.grenade_thrown_at.take() {
-            entities.push(Entity::Volley(Volley { owner: me.seat, at, from_empty }));
-        }
+        enqueue_reload_effects(&mut me.ammo, me.seat, &mut entities);
         // THE KILLS SINCE THE LAST SWING still make their daggers, and one made
         // in time lands inside the engagement.
         make_daggers(me.seat, me.params, active, end, &mut r, &mut me.dagger_kill_mark, &mut entities);

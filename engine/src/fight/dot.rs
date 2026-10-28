@@ -269,6 +269,8 @@ pub(super) struct HeatEntity {
 /// stack detonates everything early. The radial is ignored — single-target
 /// sim, and the host is excluded from the radial anyway.
 pub(super) struct BlastStack {
+    /// Only primary-fire Blast hits feed a weighted gauge; death bursts never do.
+    pub(super) charges_gauge: bool,
     pub(super) fuse: f64,
     pub(super) value: f64,
     /// The applying weapon's [`InstanceScale::xh_bracket`], carried so that the
