@@ -25,48 +25,57 @@ await sleep(15000);
 
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const out = {};
   // THE SHAPE THAT NEEDS TELLING: Influence on the crowd, a share of the
-  // machine a phone would have, and a run count that makes it minutes rather
-  // than seconds. All three are things a reader really sets.
+  // machine a phone would have, and enough work to judge a remaining time.
   ['primed_pressure_point', 'sacrificial_steel', 'organ_shatter',
    'voltaic_strike', 'shocking_touch', 'condition_overload']
     .forEach((id, i) => { slots[i] = { ...(slots[i] || {}), mod: id, rank: null }; });
   arcanes[0] = 'melee_influence';
   arcaneRanks[0] = 5;
   setComputePct(10);
-  gainPrefs = { ...gainPrefs, on: true, runs: 60 };
-  resetPool();
+  const measure = async (runs) => {
+    const out = {};
+    gainPrefs = { ...gainPrefs, on: true, runs };
+    restartCalc();
 
-  const t0 = Date.now();
-  openPicker(6, document.querySelector('.slot') || document.body);
-  userTaskPanelOpen = true;
-  renderUserTasks();
+    const t0 = Date.now();
+    openPicker(6, document.querySelector('.slot') || document.body);
+    userTaskPanelOpen = true;
+    renderUserTasks();
 
-  let guess = null, guessAt = null;
-  out.sawRow = false;
-  for (let i = 0; i < 400; i++) {
-    await sleep(500);
-    // THE FIRST ESTIMATE WORTH QUOTING, kept with the moment it was made so it
-    // can be judged against what actually happened after it.
-    if (guess === null && gainScan.etaMs && gainScan.done >= 5) {
-      guess = gainScan.etaMs;
-      guessAt = Date.now();
-      out.guessAtDone = gainScan.done;
-      out.guessOf = gainScan.total;
+    let guess = null, guessAt = null;
+    out.sawRow = false;
+    for (let i = 0; i < 400; i++) {
+      await sleep(500);
+      // THE FIRST ESTIMATE WORTH QUOTING, kept with the moment it was made so it
+      // can be judged against what actually happened after it.
+      if (guess === null && gainScan.etaMs && gainScan.done >= 5) {
+        guess = gainScan.etaMs;
+        guessAt = Date.now();
+        out.guessAtDone = gainScan.done;
+        out.guessOf = gainScan.total;
+      }
+      const box = document.getElementById('user-tasks-panel');
+      if (box && !box.hidden && /left/.test(box.innerText)) out.sawRow = true;
+      if (!gainScan.running && gainScan.key !== null) break;
     }
+    out.settled = !gainScan.running && gainScan.key !== null;
+    out.lanes = poolSize();
+    out.totalMs = Date.now() - t0;
+    out.predictedMs = guess;
+    out.actualAfterGuessMs = guessAt ? Date.now() - guessAt : null;
+    // …AND IT IS GONE WHEN THERE IS NOTHING LEFT TO WAIT FOR.
     const box = document.getElementById('user-tasks-panel');
-    if (box && !box.hidden && /left/.test(box.innerText)) out.sawRow = true;
-    if (!gainScan.running && gainScan.key !== null) break;
+    out.rowAfter = box ? /left/.test(box.innerText) : false;
+    return out;
+  };
+  // Start at the supported floor; faster machines need more work, not more patience.
+  let runs = 10, out;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    out = await measure(runs);
+    if (!out.settled || out.totalMs > 8000) return out;
+    runs = Math.min(60, Math.max(runs + 10, Math.ceil(runs * 20000 / Math.max(out.totalMs, 1))));
   }
-  out.settled = !gainScan.running && gainScan.key !== null;
-  out.lanes = poolSize();
-  out.totalMs = Date.now() - t0;
-  out.predictedMs = guess;
-  out.actualAfterGuessMs = guessAt ? Date.now() - guessAt : null;
-  // …AND IT IS GONE WHEN THERE IS NOTHING LEFT TO WAIT FOR.
-  const box = document.getElementById('user-tasks-panel');
-  out.rowAfter = box ? /left/.test(box.innerText) : false;
   return out;
 })()`);
 
