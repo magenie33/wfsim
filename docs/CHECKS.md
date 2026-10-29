@@ -194,10 +194,15 @@ bar and its panel on screen.
 
 ## `check_fx_lines`
 
-The bot's `fx` reader with a fixture pool, no network: a line reads with or
-without spaces, `+` or 正, and its side follows 正/负 or the number's sign against
-the stat's direction (变焦-50 a malus, 后坐力-50 a bonus); the two disagreeing, a
-missing number or an unknown word is an error rather than a guess.
+The shared typed reader against every stat in `data/rivens/` and the real
+Chinese locale, no network or browser. Requires Python with PyYAML (`PYTHON`
+selects its interpreter). Every full English and Chinese name reads in both
+orders, with `x2` explanations kept inside the name; official names win an
+alias collision. Signs follow the stat's direction, including recoil,
+malus-only combo gain and faction multipliers. Missing values, contradictory
+signs and unknown or ambiguous words are refused. The full `fx` command
+hands printed values to the engine and keeps its exact returned rolls;
+an out-of-range value never opens an appraisal.
 
 ## `check_appraise`
 

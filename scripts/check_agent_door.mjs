@@ -44,7 +44,7 @@ check("which slot a mod may sit in is decided once", once("=== !!m.stance") === 
 // THE HEADLESS PARTS READ NOTHING OF THE PAGE: a surface with no page runs them
 // as it is (docs/AGENT.md §"Headless queries"), so a page global in it works
 // here and breaks there. Comments are stripped; `host.tr(` is the part's own.
-const headless = ["83-headless-card.js", "87-headless.js"]
+const headless = ["83-headless-card.js", "87-headless.js", "92-riven-input.js"]
   .map((f) => readFileSync(new URL(`../web/src/static/app/${f}`, import.meta.url), "utf8")).join("\n")
   .split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
 const reaches = headless.match(/\b(META|BOARD|BOARD_HAVE|LANG|I18N|ALT_NAMES|document|window|location|fetch)\b|\$\(|(?<![.\w])(tr|api|weaponInfo|modById|arcaneById|buildPayload)\(/g) || [];

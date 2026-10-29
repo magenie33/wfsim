@@ -40,6 +40,7 @@ riven_words:
   弹夹: [magazine_capacity]
   装填: [reload_speed]
   后坐: [weapon_recoil]
+  后坐力: [weapon_recoil]
   范围: [range]
   射程: [range]
   滑暴: [critical_chance_for_slide_attack]

@@ -316,7 +316,8 @@ no sessions, the headless table's queries as read-only tools. It
 bundles the engine rather than sharing the site's worker, because a site worker
 carrying six megabytes of wasm would start every page load colder.
 
-- `mcp/headless.js` is `87-headless.js`, copied by `gen_worker_parts.mjs`.
+- `mcp/headless.js` joins `83-headless-card.js`, `92-riven-input.js` and
+  `87-headless.js`, copied by `gen_worker_parts.mjs`.
 - `mcp/engine.js` is written by `build_site_app.py`: the page's bindgen glue as
   a module, importing the wasm from `site/pkg/` so no second binary is kept. A
   worker cannot compile wasm from bytes at run time; an imported one is
@@ -400,11 +401,15 @@ the optimizer, run by the community's computers or in the browser of whoever
 opens the link — never by re-scoring known builds, which is the board's
 question (docs/BOARD.md §"The Riven Analyst").
 
-1. A chat's bot reads the card (`fx` in Chinese chats: `fx <weapon> [ruler]`
-   then each stat and its number, `readRivenLines` in `bot/answer.mjs`; a
+1. A chat's bot reads the card (`fx <weapon> [ruler]` then each stat and its
+   number) with `readRivenLines` in `92-riven-input.js`,
+   shared with the page through `mcp/headless.js`. Full official Chinese and
+   English names take precedence over input aliases. Either the name or the
+   card's value may come first, including a faction's `x0.xx` multiplier. A
    line's side is its 正/负 or its number's sign against the stat's direction,
-   so 变焦-50 is the malus and 后坐力-50 a bonus), checks it with the
-   engine's own riven rules and opens an appraisal at `/api/appraise/new`
+   so 变焦-50 is the malus and 后坐力-50 a bonus; a malus-only stat keeps its
+   own direction (M71). The engine checks the shape and printed range and
+   converts the values to rolls. The bot opens an appraisal at `/api/appraise/new`
    (`worker/appraise.js`): weapon, ruler, the card's rolls, and the channel's
    own note of where to answer, which nothing else reads.
 2. `/appraise/<code>` opens that weapon's optimizer under the official ruler
