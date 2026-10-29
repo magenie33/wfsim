@@ -161,7 +161,7 @@ function renderBuildFinder() {
     // means nothing here. The scope starts where the open build is, else on the
     // board's leader, which is where the rows arrive first.
     const act = all.find((p) => presetId(p) === activePreset) || all[0];
-    Object.assign(finder, { weapon: w.id, b: act ? act.benchmark : null, mo: act ? act.mode : null,
+    Object.assign(finder, { weapon: w.id, b: act ? act.benchmark : null, mo: FINDER_EVERY_MODE,
       sc: act ? benchSceneOf((META.benchmarks || []).find((b) => b.id === act.benchmark)) : "",
       rv: "all", req: new Set(), exc: new Set(), open: null, ref: null, shown: FINDER_FIRST, hi: 0, ties: new Set(),
       ships_open: !loadPresetList(BUILDS).length });
@@ -184,7 +184,7 @@ function renderBuildFinder() {
     return;
   }
   const inMo = (p) => p.benchmark === finder.b && (finder.mo === FINDER_EVERY_MODE || p.mode === finder.mo);
-  if (!all.some(inMo)) finder.mo = all.find((p) => p.benchmark === finder.b)?.mode || w.modes?.[0] || "base";
+  if (finder.mo !== FINDER_EVERY_MODE && !all.some(inMo)) finder.mo = FINDER_EVERY_MODE;
   const everyMode = finder.mo === FINDER_EVERY_MODE;
   const inScope = (p) => inMo(p)
     && (finder.rv === "all" || (finder.rv === "riven") === !!p.riven);
@@ -436,8 +436,7 @@ function renderBuildFinder() {
       + (updated ? " · " + trF("updated {t}", { t: updated }) : ""))}</small></div>` +
     `<div class="fd-scope">` +
     benchSelectorHtml(finder.b) +
-    `<div class="fd-seg"><span>${escHtml(tr("Mode"))}</span>${modes.length > 1
-      ? segBtn("mo", FINDER_EVERY_MODE, tr("All"), all.filter((p) => p.benchmark === finder.b).length) : ""}${modes.map((m) => segBtn("mo", m,
+    `<div class="fd-seg"><span>${escHtml(tr("Mode"))}</span>${segBtn("mo", FINDER_EVERY_MODE, tr("All"), all.filter((p) => p.benchmark === finder.b).length)}${modes.map((m) => segBtn("mo", m,
       (all.find((p) => p.benchmark === finder.b && p.mode === m) || {}).modeName || m,
       all.filter((p) => p.benchmark === finder.b && p.mode === m).length)).join("")}</div>` +
     `<div class="fd-seg"><span>${escHtml(tr("Riven"))}</span>` +

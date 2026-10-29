@@ -29,6 +29,8 @@ try {
     const next = benchChoose(custom.id, 'base', all.find(b => b.base !== custom.base).base);
     out.preserve = benchSceneOf(all.find(b => b.id === next)) === benchSceneOf(custom);
     history.pushState(null, '', '/weapons/Torid'); await route(); await loadBoard('torid');
+    finder.weapon = null; renderBuildFinder();
+    out.allModes = finder.mo === FINDER_EVERY_MODE && !!document.querySelector('#build-finder [data-fseg="mo"][data-v="*"].on');
     finder.b = custom.id; renderBuildFinder();
     out.finder = document.querySelector('#build-finder [data-board-selected]')?.dataset.boardSelected === custom.id;
     const before = BOARD.torid;
@@ -59,6 +61,7 @@ try {
     app.check('multiple-board selection preserves every cell and checked value', result.multiple);
     app.check('changing fight preserves enemy strength and operating conditions', result.preserve);
     app.check('the build finder uses the same selection', result.finder);
+    app.check('the build finder defaults to all usage modes', result.allModes);
     app.check('an unmeasured selection stays available', result.empty);
     app.check('weapon boards, riven analysis and appraisal use the same hierarchy', result.surfaces);
     app.check('the simulator and optimizer share a hierarchical official-board picker', result.scenario && result.opened);
