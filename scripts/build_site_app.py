@@ -165,34 +165,29 @@ def wiki_slug(name: str) -> str:
 
 
 @functools.lru_cache(maxsize=1)
-def _slug_owner() -> dict:
-    """For each wiki slug, the LOWEST id that answers to it."""
+def _slug_ids() -> dict:
+    """Weapon ids sharing each wiki slug, in stable order."""
     own: dict = {}
     for s in roster():
         g = wiki_slug(s["name"])
-        if g not in own or s["id"] < own[g]:
-            own[g] = s["id"]
-    return own
+        own.setdefault(g, []).append(s["id"])
+    return {g: sorted(ids) for g, ids in own.items()}
 
 
 def url_slug(spec: dict) -> str:
-    """THE PATH SEGMENT A WEAPON LIVES AT — the wiki page name, and the ID
-    where that name is not this weapon's alone.
+    """Unique wiki names are paths; shared names use each entry's full id.
 
-    URLs mirror wiki page names (AGENTS.md) and ids never appear, which holds
-    for every weapon whose display name is its own. Two Kitgun slots are ONE
-    wiki page and two roster entries, so the rule maps them onto one address
-    and the loser of that collision has NO URL AT ALL — no prerendered page,
-    no sitemap row, nothing to link. An id is uglier than a wiki name and it
-    is reachable, which beats correct-looking and absent.
-
-    THE LOWEST ID KEEPS THE WIKI NAME, so `/weapons/Tombfinger` is a stable
-    address rather than one that follows roster order — and it stays the one
-    the Slot control swaps INSIDE, which is what makes a Kitgun one page.
-    `urlSlug` in app.js is the same rule and has to stay it.
+    `weaponSlug` in the page and headless client uses the same rule.
     """
     g = wiki_slug(spec["name"])
-    return g if _slug_owner().get(g) == spec["id"] else spec["id"]
+    return spec["id"] if len(_slug_ids().get(g, ())) > 1 else g
+
+
+def legacy_url_slug(spec: dict) -> str | None:
+    """A shared wiki-name alias keeps pointing at its original owner."""
+    g = wiki_slug(spec["name"])
+    ids = _slug_ids().get(g, ())
+    return g if len(ids) > 1 and ids[0] == spec["id"] else None
 
 
 def url_path(path: str) -> str:
@@ -1774,8 +1769,15 @@ def prerender(flagged: str) -> None:
         out.parent.mkdir(parents=True, exist_ok=True)
         page = shell(flagged, title, desc, url, og_img, seo, "w-name", name, cn)
         past_the_scanner(lambda: put(out, page))
-        put(APP / "weapons" / (url_slug(spec) + ".md"),
-            weapon_md(spec, name, cn, facts, stats, board_rows, caveats))
+        alias = legacy_url_slug(spec)
+        if alias:
+            old = APP / "weapons" / alias / "index.html"
+            old.parent.mkdir(parents=True, exist_ok=True)
+            past_the_scanner(lambda: put(old, page))
+        markdown = weapon_md(spec, name, cn, facts, stats, board_rows, caveats)
+        put(APP / "weapons" / (url_slug(spec) + ".md"), markdown)
+        if alias:
+            put(APP / "weapons" / (alias + ".md"), markdown)
 
     # /weapons — THE ADDRESS OF THE ROSTER, and the only page that links to it.
     #

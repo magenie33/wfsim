@@ -27,9 +27,10 @@ roster list both entries, with the slot in the name; choosing the other slot
 uses ordinary weapon navigation. The address, module tabs and jump menu keep
 the selected weapon and its build.
 
-The two weapons share the chamber's wiki
-page, mastery track and riven family. Each has its own route: the lower id keeps
-`/weapons/<Chamber>`, the other lives at its id. A chamber has ONE riven, which fits
+The two weapons share the chamber's wiki page, mastery track and riven family.
+Their routes use the full ids, `/weapons/<chamber>_primary` and
+`/weapons/<chamber>_secondary`. The old `/weapons/<Chamber>` route remains an
+alias for the primary entry. A chamber has ONE riven, which fits
 either slot and rolls the pistol pool (`riven_class: pistol` on the primary,
 `data/notes.yaml` `kitgun_riven_is_the_chambers`), and both slots state the one
 disposition every riven reads, 1.2.

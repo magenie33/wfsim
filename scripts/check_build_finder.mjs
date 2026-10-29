@@ -69,10 +69,10 @@ const r = await evaluate(`(async () => {
   jump.open = false; renderJump();
 
   out.firstPage = listed().length;
-  // THE SCOPE IS ONE CELL: every listed row shares the ruler and the mode the
-  // scope segments say.
+  // Every listed row matches the selected ruler and the mode filter, including All.
   const scoped = listed().map(byId);
-  out.oneCell = scoped.length > 0 && scoped.every((p) => p && p.benchmark === finder.b && p.mode === finder.mo);
+  out.oneCell = scoped.length > 0 && scoped.every((p) => p && p.benchmark === finder.b
+    && (finder.mo === FINDER_EVERY_MODE || p.mode === finder.mo));
   // A ROW IS THE SIMULATOR'S BUILD CARD, holding every card the build carries.
   const row0 = box().querySelector('tr.fr');
   const b0 = byId(row0.dataset.frow).board;
@@ -127,7 +127,8 @@ const r = await evaluate(`(async () => {
   if (un) { un.click(); await sleep(250); }
   if (box().querySelector('tr.fdet')) { box().querySelector('tr.fr.x').click(); await sleep(250); }
   // FIVE UNTIL ASKED: "more" adds rows, and "back to the top" folds them away.
-  out.inScope = builtinBuilds().filter((p) => p.benchmark === finder.b && p.mode === finder.mo).length;
+  out.inScope = builtinBuilds().filter((p) => p.benchmark === finder.b
+    && (finder.mo === FINDER_EVERY_MODE || p.mode === finder.mo)).length;
   const more = box().querySelector('[data-fmore]');
   if (more) { more.click(); await sleep(200); }
   out.afterMore = listed().length;
@@ -213,7 +214,7 @@ const r = await evaluate(`(async () => {
   const idx = await (await fetch('/board/index.json', { cache: 'no-cache' })).json();
   out.bareId = '';
   for (const w of (META.weapons || []).filter((x) => !(idx[x.id] || []).length).slice(0, 5)) {
-    await open(wikiSlug(w));
+    await open(urlSlug(w));
     if (builtinBuilds().length) continue;
     out.bareId = w.id;
     out.bareEmpty = !!box().querySelector('.fd-empty') && !box().querySelector('tr.fr');

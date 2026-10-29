@@ -144,7 +144,8 @@ async function route() {
   // address; matching the wiki slug first would hand it to the entry that owns
   // the shared name and the second slot would be unreachable again.
   const w = slug && ((META.weapons || []).find((x) => x.id === slug)
-    || (META.weapons || []).find((x) => wikiSlug(x).toLowerCase() === slug));
+    || (META.weapons || []).filter((x) => wikiSlug(x).toLowerCase() === slug)
+      .sort((a, b) => a.id.localeCompare(b.id))[0]);
   // The active module: "" = builder, "simulator", "optimizer".
   const mod = (w && m[2]) ? m[2].slice(1) : "";
   // THE ROWS BEFORE ANYTHING IS SHOWN. Waiting after the page was unhidden put
@@ -153,6 +154,10 @@ async function route() {
   const gen = ++routeGen;
   if (w) await loadWeaponBoard(w.id);
   if (gen !== routeGen) return;
+  if (w) {
+    const path = weaponPath(w.id) + (m[2] || "");
+    if (location.pathname !== path) history.replaceState(history.state, "", path + location.search + location.hash);
+  }
   // WHICH PAGE, as a kind and never an address: one point per kind per load.
   track("app.view", w ? `weapon_${mod || "builder"}` : support ? "support" : bench ? "benchmark"
     : dl ? "download" : util ? `utility_${util}` : wfHit ? "warframe" : opRoute ? "operator"

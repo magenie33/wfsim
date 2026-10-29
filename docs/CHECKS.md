@@ -53,6 +53,13 @@ axis keeps the other, switching fights keeps both, and a URL round trip and
 a cold page load restore the same cell. Against the dev server:
 `WFSIM_BASE=http://127.0.0.1:<port> node scripts/check_board_ladder.mjs`.
 
+## `check_every_weapon_has_a_url`
+
+Every weapon has a unique path that resolves to its own entry. Weapons sharing
+a wiki name use their full ids symmetrically; the old shared-name path opens
+its original owner at the canonical address. The symmetric-path assertion
+fails when one entry keeps the shared wiki-name path.
+
 ## `check_user_task_queue` and `check_user_task_center`
 
 The first checks the generic local lifecycle, immutable inputs, attempt guards

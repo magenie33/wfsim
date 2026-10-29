@@ -52,25 +52,20 @@ function headlessNameOf(meta) {
 const wikiWeaponName = (w) => (w.name_en || w.name).split(" (")[0];
 const wikiSlug = (w) => wikiWeaponName(w).replace(/ /g, "_");
 
-/// THE PATH SEGMENT A WEAPON LIVES AT — the wiki page name, and the ID where
-/// that name is not this weapon's alone: two Kitgun slots are one wiki page and
-/// two roster entries, and the loser of that collision would have no URL. THE
-/// LOWEST ID KEEPS THE WIKI NAME, so the address does not follow roster order.
-/// `url_slug` in `build_site_app.py` is the same rule and has to stay it, or a
-/// link points at a page that was never written. Not remembered for an empty
-/// roster, which would freeze every path to its id.
-let slugOwnerMemo = null;
+/// Unique wiki names are paths; shared names use every entry's full id.
+/// `url_slug` in `build_site_app.py` writes the same paths for static pages.
+let slugCountMemo = null;
 function weaponSlug(weapons, w) {
-  if (weapons.length && (!slugOwnerMemo || slugOwnerMemo.weapons !== weapons)) {
-    const owner = new Map();
+  if (!slugCountMemo || slugCountMemo.weapons !== weapons) {
+    const count = new Map();
     for (const x of weapons) {
       const g = wikiSlug(x);
-      if (!owner.has(g) || x.id < owner.get(g)) owner.set(g, x.id);
+      count.set(g, (count.get(g) || 0) + 1);
     }
-    slugOwnerMemo = { weapons, owner };
+    slugCountMemo = { weapons, count };
   }
   const g = wikiSlug(w);
-  return !slugOwnerMemo || slugOwnerMemo.owner.get(g) === w.id ? g : w.id;
+  return slugCountMemo.count.get(g) > 1 ? w.id : g;
 }
 function headlessWeaponPath(weapons, id) {
   const w = weapons.find((x) => x.id === id);
@@ -580,7 +575,7 @@ function headlessBenchmarkParts(meta, id) {
       .map((x) => ({ ...x, label: axis === "scene" ? "Enemy strength" : "Operating conditions" }))),
     ...(axes.some((x) => !["scene", "shooting"].includes(x.axis))
       ? axes.filter((x) => !["scene", "shooting"].includes(x.axis)).map((x) => ({ ...x, label: "Other conditions" }))
-      : [{ axis: "other", tag: "none", name: "No special conditions", label: "Other conditions" }])];
+      : [{ axis: "other", tag: "none", name: "Standard conditions", label: "Other conditions" }])];
 }
 function headlessBenchmarkName(meta, id, translate = (x) => x) {
   const parts = headlessBenchmarkParts(meta, id);

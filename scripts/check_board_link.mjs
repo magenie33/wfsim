@@ -151,7 +151,7 @@ const r = await evaluate(`(async () => {
     out.otherMode = have.mode || 'base';
     renderBenchBoard(); await s(1200);
     const rows = [...document.querySelectorAll('.bench-rows .brow')]
-      .filter(a => (a.getAttribute('href') || '').includes('/' + wikiSlug(twoModes) + '?'));
+      .filter(a => (a.getAttribute('href') || '').includes(weaponPath(twoModes.id) + '?'));
     out.bothListed = rows.length;
     out.bothMeasured = rows.filter(a => !a.classList.contains('none')).length;
     const mine = rows[0];
@@ -361,7 +361,7 @@ const pick = await evaluate(`(async () => {
   out.drawn = deep ? deep.id : null;
   if (deep) {
     const w = (META.weapons || []).find(x => x.id === deep.id);
-    history.pushState({}, '', '/weapons/' + wikiSlug(w)); route(); await s(3200);
+    history.pushState({}, '', weaponPath(w.id)); route(); await s(3200);
     // THE BUILD FINDER'S SCOPE: one segment button per mode on the ruler it is
     // on, and a table of the rows under the one that is on.
     const box = document.getElementById('build-finder');

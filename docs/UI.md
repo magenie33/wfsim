@@ -366,7 +366,7 @@ types pinyin into each box that filters as it is typed in.
 
 Every board entry point selects a fight, enemy strength, operating conditions,
 then other conditions. The default is Standard Single Target, Lv 9999 Steel
-Path, 100% headshots while aiming, and no special conditions. Names and options
+Path, 100% headshots while aiming, and standard conditions. Names and options
 come from the same benchmark metadata. A full path names the selected cell in
 pickers, scenario presets, task details and reports.
 
@@ -1153,8 +1153,8 @@ valence, the assembly, a riven) are exactly the ones the target cannot hold.
 A build worth having comes from the board or from a share link. URLs mirror
 English wiki page names (spaces → `_`); an internal id appears in a URL only
 where the wiki name is not one weapon's alone — two Kitgun slots are one wiki
-page and two roster entries, so the lowest id keeps the wiki name and the other
-lives at its id rather than at nothing (`urlSlug`, and `url_slug` in
+page and two roster entries, so both use their full ids. A shared wiki-name
+route remains an alias for the lowest id (`urlSlug`, and `url_slug` in
 `build_site_app.py`, which must stay the same rule).
 
 **A REPORT OF A MODULE IS A BLOCK OF THAT MODULE.** The Shapley analysis
