@@ -8,7 +8,7 @@
 // again until the served engine's own answers fill the cap; two of them
 // agreeing make the fact, and so does one reproducing an old answer.
 //   node scripts/check_moot_checks.mjs
-import { facts } from "../worker/factory.js";
+import { facts, VERBS } from "../worker/factory.js";
 import { testDb } from "./pg/test_db.mjs";
 
 let failures = 0;
@@ -20,6 +20,8 @@ const check = (what, ok, detail = "") => {
 const L = await testDb("library");
 const env = { LIBRARY: L, ASSETS: { fetch: async () => new Response(JSON.stringify({ engine: "e1", release: "r1" })) } };
 const NOW = Date.parse("2026-11-01T12:00:00.000Z"), iso = (ms) => new Date(ms).toISOString(), AT = iso(NOW - 3_600_000);
+// Engine joins are tested without the random third witness covered by check_tasks.
+VERBS.simulate.recheck = 0;
 const f = facts();
 
 const question = (id, state, { fact_engine = null, lease = false } = {}) => L.run(

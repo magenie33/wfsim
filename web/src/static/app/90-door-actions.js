@@ -80,7 +80,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.forma.read",
     query: true,
-    what: "Read the Forma planner: its rules (catalyst, reach max rank, grant slot first, Omni and Umbra Forma use, a Forma limit), which saved builds are planned together with this one, and the board-reach analysis if it has been run.",
+    what: "Read Forma rules, builds planned with this one, and any board-reach analysis.",
     anchor: "#forma-plan",
     needs_weapon: true,
     args: {},
@@ -92,7 +92,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.forma.rules",
     writes: "prefs",
-    what: "Change the Forma planner's rules — this browser's, for every build — which the Forma plan and the reach both obey. forma_limit is a whole number or null.",
+    what: "Set browser-wide rules for Forma planning and reach. forma_limit is an integer or null.",
     anchor: "#forma-plan",
     needs_weapon: true,
     args: {
@@ -113,7 +113,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.forma.partner",
     writes: "prefs",
-    what: "Plan another saved build of this weapon together with the open one (on=true) or stop — the Forma plan then fits both on one set of polarities.",
+    what: "Include (on=true) or exclude a saved build of this weapon in the shared polarity plan.",
     anchor: "#forma-plan",
     needs_weapon: true,
     args: { build: { kind: "string", required: true, what: "saved build id" }, on: { kind: "boolean", required: true, what: "planned together" } },
@@ -128,7 +128,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.reach.run",
     writes: "none",
-    what: "Work out what one polarity layout reaches across this weapon's board rulers, and what each extra Forma buys; optionally set the scope first. Returns the curve and, at the first point that meets the line, each ruler's best build that fits.",
+    what: "Compute this weapon's reach per Forma across board rulers, optionally setting scope. Return the curve and each ruler's best fitting build at the first point meeting the line.",
     anchor: "#forma-plan",
     needs_weapon: true,
     args: {
@@ -156,7 +156,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.reach.mark",
     writes: "none",
-    what: "Mark a point of the worked-out reach curve by its index, to read and apply that layout.",
+    what: "Select a reach-curve point by index to read or apply its layout.",
     anchor: "#forma-plan",
     needs_weapon: true,
     args: { point: { kind: "number", required: true, min: 0, max: 100, what: "point index" } },
@@ -170,7 +170,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.reach.apply",
     writes: "build",
-    what: "Put the open build's slots on the marked point's polarities, as the planner's apply button does.",
+    what: "Apply the selected reach point's polarities to the open build.",
     anchor: "#forma-plan",
     needs_weapon: true,
     args: {},
@@ -185,7 +185,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.reach.save",
     writes: "none",
-    what: "Save a ruler's best-fitting build at the marked point as a build of its own, on that point's polarities.",
+    what: "Save a ruler's best fitting build at the selected reach point with its polarities.",
     anchor: "#forma-plan",
     needs_weapon: true,
     args: { ruler_index: { kind: "number", required: true, min: 0, max: 20, what: "the ruler's index in the reach read" } },
@@ -1047,7 +1047,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.mod.set",
     writes: "build",
-    what: "Seat a mod in a slot, or empty the slot with mod=null. A mod already seated elsewhere is exchanged with this slot, as it is when a reader picks it.",
+    what: "Seat a mod, or empty the slot with mod=null. A mod seated elsewhere swaps with this slot.",
     anchor: "#mod-slots, #exilus",
     needs_weapon: true,
     args: {
@@ -1097,7 +1097,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.forma.plan",
     writes: "build",
-    what: "Re-polarize the slots for the fewest Forma that fit the seated mods, as the auto button does.",
+    what: "Re-polarize slots with the fewest Forma needed for the seated mods.",
     anchor: "#auto-forma",
     needs_weapon: true,
     args: {},
@@ -1106,7 +1106,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.arcane.set",
     writes: "build",
-    what: "Seat an arcane, or empty the seat with arcane=null. Only arcanes this weapon's seat takes are accepted.",
+    what: "Seat a compatible arcane, or empty the seat with arcane=null.",
     anchor: "#arcane-slots",
     needs_weapon: true,
     args: {
@@ -1129,7 +1129,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.evolution.set",
     writes: "build",
-    what: "Install an Incarnon evolution in a tier. Every tier always holds one, so this swaps it.",
+    what: "Replace a tier's installed Incarnon evolution.",
     anchor: "#evo-rows",
     needs_weapon: true,
     args: {
