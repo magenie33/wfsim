@@ -18,11 +18,11 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Jaw Sword","description":"Jaw Sword (蛇颚刀) — Sword · Melee · Mastery Rank 0. 120 base damage (impact 6, puncture 24, slash 90), 8% crit chance, 1.5x crit multiplier, 16% status chance. Build it, simulate the fight, and optimize the mods.","url":"https://wfsim.app/weapons/Jaw_Sword","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Jaw Sword","item":"https://wfsim.app/weapons/Jaw_Sword"}]},"dateModified":"2026-10-29","about":{"@type":"Thing","name":"Jaw Sword","alternateName":"蛇颚刀"}}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.22bd96a0339b.css" />
+  <link rel="stylesheet" href="/asset/style.0b6ae3da879b.css" />
   
   <link rel="preload" href="/pkg/wfsim_wasm_bg.cb321d9fdec7.wasm" as="fetch" crossorigin />
   <link rel="preload" href="/pkg/meta.ec0f892f0914.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/i18n.2bd49a953319.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/i18n.5e7016d2e398.json" as="fetch" crossorigin />
   <link rel="preload" href="/pkg/pack.data.40fe1aa06a49.json" as="fetch" crossorigin />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
@@ -188,6 +188,10 @@
         <div class="rbell-panel fbk-panel" id="feedback-panel"></div>
       </div>
       
+      <div class="user-tasks" id="user-tasks">
+        <button type="button" id="user-tasks-toggle" class="ghost-btn" aria-expanded="false" aria-controls="user-tasks-panel" aria-label="Task center" title="Task center" data-i18n-title><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h7M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><span id="user-tasks-count" class="task-count" hidden></span></button>
+        <section id="user-tasks-panel" class="task-center" aria-label="Task center" hidden></section>
+      </div>
       <div class="rbell" id="rem-bell" hidden>
         <button id="rem-bell-btn" class="ghost-btn rbell-btn" aria-expanded="false" aria-controls="rem-bell-panel"
                 aria-haspopup="true" title="Reminders" data-i18n-title aria-label="Reminders"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span id="rem-bell-count" class="tbadge" hidden></span></button>
@@ -434,6 +438,13 @@
       <div class="bb">
         
         <div class="cu-tools" id="riven-tools"></div>
+        <details class="sect"><summary data-i18n>Import card text</summary>
+          <label for="riven-text" data-i18n>Paste the card's stat names and values; separate cards with a blank line.</label>
+          <textarea id="riven-text" rows="4"></textarea>
+          <button type="button" class="ghost-btn" id="riven-text-import" data-i18n>Import cards</button>
+          <span id="riven-text-note" role="status"></span>
+        </details>
+        <div class="cu-tools" id="riven-appraisals"></div>
         
         <input type="file" id="riven-ocr-file" accept="image/*" hidden>
         <div id="riven-ocr" class="rv-ocr"></div>
@@ -688,16 +699,14 @@
     
     <a href="/method" data-native data-i18n>Method</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">ef0c4939</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">f2ef88c8</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.0262020a9296.js"></script>
+  <script src="/asset/app.34b2e75d6735.js"></script>
   <script type="module" src="/asset/nona.49e7e5dce064/index.js"></script>
-
-<div class="calc-status" id="calc-status" hidden></div>
 
 <div class="jump" id="jump" hidden>
   <button type="button" class="jump-grip" id="jump-grip" title="drag to move — click to open or close" data-i18n-title><span class="jg-h">⠿</span><span class="jg-i">☰</span><span class="jg-n" id="jump-now"></span></button>
