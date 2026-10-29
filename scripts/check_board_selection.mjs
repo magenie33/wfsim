@@ -6,6 +6,13 @@ try {
   const result = await app.evaluate(`(async () => {
     if (typeof benchSelectorHtml !== 'function') return { shared: false };
     const out = { shared: true }, all = benchList();
+    const kitguns = META.weapons.filter(w => w.assembly);
+    out.kitgunSlots = kitguns.length > 0 && kitguns.every(w => {
+      const pair = kitguns.filter(k => k.assembly.chamber === w.assembly.chamber);
+      const entries = benchEntries(all[0], pair);
+      return pair.length === 2 && new Set(entries.map(e => e.w.id)).size === 2
+        && entries.every(e => benchRowHtml(all[0], e, 0).includes('(' + tr(ARC_POOL_LABEL[e.w.slot]) + ')'));
+    });
     const weapons = META.weapons.slice(0, 2).map(w => ({ ...w, modes: ['base', 'cycle'] }));
     const saved = weapons.map(w => BOARD[w.id]), priorView = benchRivenView, priorMeasured = benchMeasuredOnly;
     try {
@@ -82,6 +89,7 @@ try {
     app.check('build filters choose the highest matching score for each weapon', result.viewWinner);
     app.check('hiding unmeasured weapons retains one measured entry', result.measuredWeapons);
     app.check('the overview preserves the original per-mode build groups', result.modeRecords);
+    app.check('primary and secondary Kitguns remain separate and visibly name their slots', result.kitgunSlots);
     app.check('all cells retain their identity, order, summary and URL', result.cells.length === 0, JSON.stringify(result.cells));
     app.check('complete labels distinguish every board', result.unique);
     app.check('multiple-board selection preserves every cell and checked value', result.multiple);

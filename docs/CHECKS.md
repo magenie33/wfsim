@@ -43,6 +43,7 @@ The overview selects one best result per weapon under each build filter,
 hides mode badges while retaining the winner's link, and preserves the original
 mode groups. The check fails against the shipping page without the shared picker
 and against the overview that lists each mode separately.
+Primary and secondary Kitguns remain separate entries with visible slot names.
 
 ## `check_board_ladder`
 

@@ -380,6 +380,8 @@ The benchmark overview ranks each weapon once, using its highest measured score
 across the allowed modes and the selected build filter. It shows no mode badge.
 The link retains the winning build's mode and riven group. Detailed builds,
 admission thresholds and retention remain grouped by mode.
+Primary and secondary Kitguns are separate weapon entries. Their overview names
+include the slot; each entry takes its own highest score across modes and assemblies.
 
 ## The build finder
 
