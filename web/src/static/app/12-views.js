@@ -139,13 +139,10 @@ async function route() {
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
   // to the home grid — which reads as "the site sent me somewhere else".
-  const slug = m && decodeURIComponent(m[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
   // AN ID ANSWERS FIRST. `/weapons/tombfinger_secondary` is that weapon's own
   // address; matching the wiki slug first would hand it to the entry that owns
   // the shared name and the second slot would be unreachable again.
-  const w = slug && ((META.weapons || []).find((x) => x.id === slug)
-    || (META.weapons || []).filter((x) => wikiSlug(x).toLowerCase() === slug)
-      .sort((a, b) => a.id.localeCompare(b.id))[0]);
+  const w = m && headlessWeaponAt(META.weapons || [], m[1]);
   // The active module: "" = builder, "simulator", "optimizer".
   const mod = (w && m[2]) ? m[2].slice(1) : "";
   // THE ROWS BEFORE ANYTHING IS SHOWN. Waiting after the page was unhidden put

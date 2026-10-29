@@ -65,7 +65,7 @@ export async function cardDocument(engine, url, { lang = "zh", css = siteStyle()
   if (!path) return null;
   const ask = h.headlessCardAsk(u.search);
   const wanted = decodeURIComponent(path[1]);
-  const plain = (engine.meta.weapons || []).find((w) => decodeURIComponent(h.headlessWeaponPath(engine.meta.weapons, w.id)) === wanted);
+  const plain = h.headlessWeaponAt(engine.meta.weapons || [], path[1].slice("/weapons/".length));
   if (!plain) throw new Error(`no weapon at ${wanted}`);
   const say = speaker(engine, lang);
   const w = say.meta.weapons.find((x) => x.id === plain.id);

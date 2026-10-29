@@ -35,6 +35,8 @@ const FIXTURES = [
   "Nikana_Prime/card?kind=pz",
   "Haalvu/card?kind=pz",
   "Catchmoon/card?kind=pz",
+  "catchmoon_primary/card?kind=pz",
+  "catchmoon_secondary/card?kind=pz",
   "Laetum/card?kind=appraise&code=CHECK1",
   "Laetum/card?kind=appraise&code=CHECK1&result=1",
 ];

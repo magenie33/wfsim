@@ -867,6 +867,12 @@ function headlessWeaponPath(weapons, id) {
   const w = weapons.find((x) => x.id === id);
   return "/weapons/" + (w ? weaponSlug(weapons, w) : id);
 }
+/// Canonical ids and legacy wiki-name aliases resolve to one weapon on every client.
+function headlessWeaponAt(weapons, segment) {
+  const slug = decodeURIComponent(segment).trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return weapons.find((w) => w.id === slug)
+    || weapons.filter((w) => wikiSlug(w).toLowerCase() === slug).sort((a, b) => a.id.localeCompare(b.id))[0] || null;
+}
 
 /// A refusal, in the door's shape (`agentNo`), for a caller that has no door.
 function headlessNo(reason, detail = {}) {
@@ -1889,6 +1895,6 @@ const HEADLESS_QUERIES = [
 ];
 
 export { HEADLESS_ABOUT, HEADLESS_QUERIES, HEADLESS_RETIRED, headlessCheckArgs, headlessSchema, headlessNo, headlessToolName, headlessUnknown,
-  headlessSeat, headlessStateAxes, headlessWeapon, headlessWeaponPath, rivenStatNames, rivenStatNameEn, ocrFold, rivenQuery, readRivenLines, boardMeasuredAt, measuredText, distinctTop, pooledRanking, pooledRivens,
+  headlessSeat, headlessStateAxes, headlessWeapon, headlessWeaponPath, headlessWeaponAt, rivenStatNames, rivenStatNameEn, ocrFold, rivenQuery, readRivenLines, boardMeasuredAt, measuredText, distinctTop, pooledRanking, pooledRivens,
   placed, placeAmong, tieGroups, boardRowParts, rankBoard, boardHeads, BOARD_HEADS_PLACES, headlessRivenGainRequest,
   headlessSpeaker, headlessCardAsk, headlessLongCard, headlessRivenAnswer, headlessAppraisalReplay, headlessVerdictRecord };

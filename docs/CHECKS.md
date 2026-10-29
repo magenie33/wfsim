@@ -285,7 +285,8 @@ The bot's card is the page's, pixel for pixel: each fixture — a plain gun,
 riven builds, the analyst with and without a filter, a melee, a weapon with
 modes, an Incarnon, a kitgun, an appraisal's way in and its answer — is taken
 from `/weapons/<Name>/card` and from the document `bot/card.mjs` writes, in
-Chinese and English, and the two PNGs must be the same bytes. The appraisal is
+Chinese and English, and the two PNGs must be the same bytes. Kitgun fixtures
+cover the old chamber alias and both slot-specific addresses. The appraisal is
 answered by a door in front of the site: a rank-7 card of a Laetum riven row of
 the board under test, and that row's build as the answer. Its replay runs both
 ways and the verdicts must match field for field — the raw score and gain to

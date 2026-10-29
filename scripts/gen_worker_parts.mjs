@@ -33,7 +33,7 @@ const boardRivenName = (riven) => HOST.rivenName(riven);
     part: ["web/src/static/app/83-headless-card.js", "web/src/static/app/92-riven-input.js", "web/src/static/app/87-headless.js"],
     out: "mcp/headless.js",
     head: "",
-    tail: "export { HEADLESS_ABOUT, HEADLESS_QUERIES, HEADLESS_RETIRED, headlessCheckArgs, headlessSchema, headlessNo, headlessToolName, headlessUnknown,\n  headlessSeat, headlessStateAxes, headlessWeapon, headlessWeaponPath, rivenStatNames, rivenStatNameEn, ocrFold, rivenQuery, readRivenLines, boardMeasuredAt, measuredText, distinctTop, pooledRanking, pooledRivens,\n  placed, placeAmong, tieGroups, boardRowParts, rankBoard, boardHeads, BOARD_HEADS_PLACES, headlessRivenGainRequest,\n  headlessSpeaker, headlessCardAsk, headlessLongCard, headlessRivenAnswer, headlessAppraisalReplay, headlessVerdictRecord };\n",
+    tail: "export { HEADLESS_ABOUT, HEADLESS_QUERIES, HEADLESS_RETIRED, headlessCheckArgs, headlessSchema, headlessNo, headlessToolName, headlessUnknown,\n  headlessSeat, headlessStateAxes, headlessWeapon, headlessWeaponPath, headlessWeaponAt, rivenStatNames, rivenStatNameEn, ocrFold, rivenQuery, readRivenLines, boardMeasuredAt, measuredText, distinctTop, pooledRanking, pooledRivens,\n  placed, placeAmong, tieGroups, boardRowParts, rankBoard, boardHeads, BOARD_HEADS_PLACES, headlessRivenGainRequest,\n  headlessSpeaker, headlessCardAsk, headlessLongCard, headlessRivenAnswer, headlessAppraisalReplay, headlessVerdictRecord };\n",
   },
 ];
 

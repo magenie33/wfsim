@@ -71,6 +71,12 @@ function headlessWeaponPath(weapons, id) {
   const w = weapons.find((x) => x.id === id);
   return "/weapons/" + (w ? weaponSlug(weapons, w) : id);
 }
+/// Canonical ids and legacy wiki-name aliases resolve to one weapon on every client.
+function headlessWeaponAt(weapons, segment) {
+  const slug = decodeURIComponent(segment).trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return weapons.find((w) => w.id === slug)
+    || weapons.filter((w) => wikiSlug(w).toLowerCase() === slug).sort((a, b) => a.id.localeCompare(b.id))[0] || null;
+}
 
 /// A refusal, in the door's shape (`agentNo`), for a caller that has no door.
 function headlessNo(reason, detail = {}) {
