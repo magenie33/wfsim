@@ -746,6 +746,9 @@ fact and credits all three once, a third differing makes a dispute, and a
 rechecked row past its deadline goes to the official machines, who credit the
 two who agreed. The repay reads an hour of facts from its cursor a call,
 never one before it, and a credit that fails holds the cursor at its fact.
+A new engine absent from the database's statistics still offers every eligible
+open question. Its plan reads answers for that field rather than the engine's
+answers on closed questions; the check loads the latter after `ANALYZE`.
 
 ## `check_settler`
 

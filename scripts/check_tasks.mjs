@@ -982,6 +982,36 @@ console.log("many asks in two statements a chunk leave every table as one write 
   check(`on ${trials} random books, asked a row at a time and asked at once leave the same questions, demands and tellings`, bad === 0, first);
 }
 
+console.log("\na new engine before its first statistics refresh");
+{
+  const db = await testDb("library");
+  // Statistics know only the old engine; the new one's answers arrive after
+  // ANALYZE, mostly on questions outside the small open field.
+  const open = 32, cold = 2000;
+  await db.exec(`INSERT INTO questions (id, verb, request, state, due_at, opened_at)
+    SELECT 'q'||i, 'simulate', '{}', CASE WHEN i <= ${open} THEN 'open' ELSE 'fact' END,
+      '2026-10-29', '2026-10-28' FROM generate_series(1, ${open + cold}) i;
+    INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at)
+    SELECT 'q'||i, 'old', 'other', 'other', '', 'c', '{}', 1, '2026-10-28' FROM generate_series(1, ${open + cold}) i;
+    ANALYZE questions;
+    ANALYZE answers;
+    INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at)
+    SELECT 'q'||i, 'fresh', 'other', 'other', '', 'c', '{}', 1, '2026-10-29' FROM generate_series(${open + 1}, ${open + cold}) i;`);
+  const row = await db.get(`EXPLAIN (ANALYZE, FORMAT JSON, TIMING OFF)
+    SELECT id FROM factory_eligible('2026-10-29T12:00:00.000Z', 0, 16, 'fresh', '["me"]', 'me', '', NULL, 7200, 120)
+    WHERE state = 'open' ORDER BY waits DESC, due_at, id LIMIT ${open}`);
+  const plan = row["QUERY PLAN"][0].Plan;
+  let read = 0;
+  const walk = (p) => {
+    if (p["Relation Name"] === "answers") read += (p["Actual Rows"] + (p["Rows Removed by Filter"] || 0)) * p["Actual Loops"];
+    for (const child of p.Plans || []) walk(child);
+  };
+  walk(plan);
+  check("a new engine still offers every eligible open question", plan["Actual Rows"] === open, JSON.stringify(plan));
+  check("eligibility reads answers for the open field, not the engine's other answers", read <= 4 * open, `${read} answers for ${open} questions`);
+  await db.close();
+}
+
 console.log("\nlocks: every statement that gives back many leases takes their rows in id order");
 {
   // A DEADLOCK NEEDS TWO ORDERS: a lease given back over many rows, and a

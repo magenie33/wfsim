@@ -61,8 +61,12 @@ RETURNS SETOF questions LANGUAGE sql STABLE AS $$
     AND ($2 = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM answers x WHERE x.question = q.id)
          OR $3 >= (SELECT min((t ->> 'lanes')::numeric) FROM jsonb_array_elements(q.lanes::jsonb) t
                    WHERE (t ->> 'after_ms')::numeric <= extract(epoch FROM ($1::timestamptz - q.opened_at::timestamptz)) * 1000))
-    AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = $4
-          AND (a.device IN (SELECT value FROM jsonb_array_elements_text($5::jsonb)) OR a.owner = $6 OR ($7 <> '' AND a.net = $7)))
+    -- Read this question before filtering its engine: a newly released engine
+    -- absent from ANALYZE can otherwise scan its whole day of answers per pick.
+    AND NOT EXISTS (SELECT 1 FROM (SELECT a.engine, a.device, a.owner, a.net FROM answers a
+          WHERE a.question = q.id OFFSET 0) a
+          WHERE a.engine = $4
+            AND (a.device IN (SELECT value FROM jsonb_array_elements_text($5::jsonb)) OR a.owner = $6 OR ($7 <> '' AND a.net = $7)))
     AND NOT EXISTS (SELECT 1 FROM engine_refusals r WHERE r.question = q.id AND r.engine = $4
           AND r.device IN (SELECT value FROM jsonb_array_elements_text($5::jsonb)))
     AND ($8 IS NULL OR q.due_at < $8)
