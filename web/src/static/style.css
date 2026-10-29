@@ -3707,7 +3707,8 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 .board-choice-options .bchip { margin: 0; }
 .board-choice-options .bchip:disabled { opacity: 1; cursor: default; }
 .board-choice-summary { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; margin-top: 10px; }
-.board-choice-popover { width: min(680px, calc(100vw - 24px)); padding: 14px; }
+.board-choice-popover { width: min(680px, calc(100vw - 24px)); padding: 14px;
+  max-height: calc(100dvh - 12px); overflow-y: auto; overscroll-behavior: contain; }
 .board-check-group { margin: 8px 0; }
 .board-check-group > summary { cursor: pointer; }
 .board-check-scene { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 10px 12px; }

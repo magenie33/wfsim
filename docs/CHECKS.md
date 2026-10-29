@@ -38,7 +38,8 @@ its failure status and diagnostic output. No packages are installed locally.
 All 48 cells keep their full labels and URL identity. The benchmark page,
 build finder, weapon board, riven analyst and appraisal select the same cell
 through the same four dimensions. Official scenario selection opens that cell;
-an unmeasured selection remains available, and the picker fits a phone.
+an unmeasured selection remains available, and the picker fits phone and short
+viewports. The short-viewport check fails against an unbounded popover.
 The overview selects one best result per weapon under each build filter,
 hides mode badges while retaining the winner's link, and preserves the original
 mode groups. The check fails against the shipping page without the shared picker

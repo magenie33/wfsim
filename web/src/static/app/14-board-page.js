@@ -83,13 +83,18 @@ function openBenchSelector(anchor, id, pick) {
   }
   pop.setAttribute("aria-label", tr("Choose a board"));
   let selected = id || benchList()[0]?.id;
+  const position = () => {
+    place(pop, anchor);
+    const top = Math.max(6, Math.min(pop.getBoundingClientRect().top, innerHeight - 6 - pop.offsetHeight));
+    pop.style.top = (scrollY + top) + "px";
+  };
   const draw = () => {
     pop.innerHTML = benchSelectorHtml(selected) + `<button type="button" class="ghost-btn" data-board-apply>${escHtml(tr("Use this board"))}</button>`;
-    wireBenchSelector(pop, (next) => { selected = next; draw(); place(pop, anchor); });
+    wireBenchSelector(pop, (next) => { selected = next; draw(); position(); });
     pop.querySelector("[data-board-apply]").onclick = () => { pop.hidden = true; pick(selected); };
   };
-  draw(); pop.hidden = false; place(pop, anchor);
-  pop.querySelector("[data-board-apply]").focus();
+  draw(); pop.hidden = false; position();
+  pop.querySelector("[data-board-apply]").focus({ preventScroll: true });
 }
 function benchChecklistHtml(ids, selected) {
   const wanted = new Set(ids), rows = benchList().filter((b) => wanted.has(b.id));

@@ -104,12 +104,18 @@ try {
     await app.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
     await app.load('/benchmark', 1000);
     app.check('the board selector stays within a phone viewport', await app.evaluate(`document.querySelector('#bench-picker .board-selector').getBoundingClientRect().right <= innerWidth && document.documentElement.scrollWidth <= innerWidth`));
-    app.check('the official-board popover fits a phone viewport', await app.evaluate(`(async () => {
+    const popoverBounds = () => app.evaluate(`(async () => {
       history.pushState(null, '', '/weapons/Torid/simulator'); await route(); renderScenarioBar();
       const anchor = document.querySelector('[data-board-open]'); anchor.click();
       const rect = document.getElementById('board-choice-popover').getBoundingClientRect();
-      return rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight;
-    })()`));
+      return { fits: rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight,
+        left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: innerWidth, height: innerHeight };
+    })()`);
+    const phone = await popoverBounds();
+    app.check('the official-board popover fits a phone viewport', phone.fits, JSON.stringify(phone));
+    await app.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 360, deviceScaleFactor: 1, mobile: true });
+    const short = await popoverBounds();
+    app.check('the official-board popover fits a short viewport', short.fits, JSON.stringify(short));
   }
   await app.finish('board selection and display share one hierarchy');
 } catch (error) { await app.close(); throw error; }
