@@ -20,6 +20,23 @@ const { evaluate, check, sleep, send, BASE } = app;
 // comparing the raw id asserts that the copy was NOT made.
 const sameRiven = (s) => String(s).replace(/riven:[a-z0-9]+/g, "riven:*");
 
+/// A cold engine can finish after the editor has imported its build.
+/// Wait for visible stats; an empty sender and recipient must never agree.
+async function readyPanel() {
+  for (let i = 0; i < 120; i++) {
+    const text = await evaluate(`(() => {
+      const rows = document.getElementById('stats-rows');
+      if (typeof panelKey === 'undefined' || panelKey !== buildKey() || !rows?.textContent.trim()) return null;
+      return ['stats-rows', 'stats-damage'].map(id => document.getElementById(id)?.textContent || '')
+        .join(' | ').replace(/\\s+/g, ' ').trim();
+    })()`);
+    if (text) return text;
+    await sleep(250);
+  }
+  await app.close();
+  throw new Error('The share page did not render its stats panel within 30 seconds');
+}
+
 // SHARING CAN BE SWITCHED OFF, and while it is, THIS is what has to hold: no
 // way to make a new link, and every link already posted still opens a page.
 // A blank is the one outcome a posted URL must never reach — it is what got the
@@ -105,6 +122,7 @@ const sent = await evaluate(`(async () => {
            shownIsBuildOnly: !!dec && dec.sc === null && dec.m === null,
            shownHasMods: !!dec && (dec.slots || []).some(x => x && x.mod) };
 })()`);
+sent.panel = await readyPanel();
 // WHAT THE PANEL HANDS OUT IS A BUILD. Asserted on the panel's own field
 // rather than on `shareUrl`, because the button could be wired to something
 // else and every other assertion here would stay green — which is what a
@@ -127,6 +145,7 @@ check("...and its build still is", sent.legacyDec.mods >= 5, `${sent.legacyDec.m
 // ---- the RECIPIENT: a real navigation, in a browser with nothing ---------
 await evaluate(`(() => { localStorage.clear(); location.href = ${JSON.stringify("__URL__").replace("__URL__", sent.url)}; })()`);
 await sleep(12000);
+await readyPanel();
 const got = await evaluate(`(async () => {
   const q = (s) => document.querySelector(s);
   await new Promise(r => setTimeout(r, 2500));
@@ -208,6 +227,7 @@ check("the reader has a fight of their own to disturb",
 // chat windows, so it is the shape that has to be safe to click.
 await evaluate(`(() => { location.href = ${JSON.stringify(sent.legacyUrl)}; })()`);
 await sleep(12000);
+await readyPanel();
 const bo = await evaluate(`(async () => {
   await new Promise(r => setTimeout(r, 2500));
   const b = loadPresetList('builder-builds').find(p => presetId(p) === activePreset);
