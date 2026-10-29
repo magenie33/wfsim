@@ -1,3 +1,6 @@
+// Report ids are captured before restoring a weapon canonicalizes its address.
+let initialTaskReport = { path: location.pathname, measurement: new URLSearchParams(location.search).get("measurement"),
+  optimization: new URLSearchParams(location.search).get("task-result") };
 // ---- views: '/' = the weapon list (home); '/weapons/<Wiki_Name>' = the
 // BUILDER; '/weapons/<Wiki_Name>/simulator' = the SIMULATOR (tests the
 // current build); '/weapons/<Wiki_Name>/optimizer' = the OPTIMIZER — one
@@ -279,6 +282,11 @@ async function route() {
     // READ BEFORE THE SWITCH. Loading a weapon restores its preset, and that
     // rewrites the address to the weapon's plain path — so by the time the
     // weapon is on screen the query is already gone, and the mode with it.
+    const measurement = new URLSearchParams(location.search).get("measurement")
+      || (initialTaskReport?.path === location.pathname ? initialTaskReport.measurement : null);
+    const optimizationId = new URLSearchParams(location.search).get("task-result")
+      || (initialTaskReport?.path === location.pathname ? initialTaskReport.optimization : null);
+    initialTaskReport = null;
     const wantMode = new URLSearchParams(location.search).get("mode");
     // …AND THE CARD'S OWN QUESTION, for the same reason (45-card-page.js).
     const cardAsk = mod === "card" ? cardParams() : null;
@@ -329,8 +337,9 @@ async function route() {
     // those fields on arrival — the other tab may have moved them, and the
     // tabs are CSS-hidden rather than re-rendered.
     if (mod === "simulator") renderSim();
-    if (mod === "simulator") await openSimulationReport(w);
-    if (mod === "optimizer") { renderOptFight(); updateOptEstimate(); }
+    if (mod === "simulator") await openSimulationReport(w, measurement);
+    if (mod === "optimizer") { renderOptFight(); updateOptEstimate(); await openOptimizationReport(optimizationId); }
+    else optimizationReport = null;
     if (mod === "rivens") renderRivens();
     if (mod === "riven-analyst") renderRivenAnalyst();
     if (mod === "card") renderCardPage(w, cardAsk);

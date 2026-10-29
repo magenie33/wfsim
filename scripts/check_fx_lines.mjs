@@ -1,50 +1,127 @@
-// A riven typed for `fx` reads every way a player writes a line, and says which
-// side it is on the way the card does. No browser, no data: a fixture pool and
-// locale, through the bot's own reader and the page's own query.
+// The typed riven reader against every real pool and the official locale.
+// Names, values and signs work in either card order; aliases cannot replace
+// an official name. No browser or network. Requires Python with PyYAML.
 //
 //   node scripts/check_fx_lines.mjs
-import { readRivenLines } from "../bot/answer.mjs";
-import { rivenQuery } from "../mcp/headless.js";
+import { execFileSync } from "node:child_process";
+import { readRivenLines, makeAnswer } from "../bot/answer.mjs";
+import * as headless from "../mcp/headless.js";
 
-const pool = [
-  { id: "multishot", text: "|val|% Multishot", base: 0.01 },
-  { id: "critical_damage", text: "|val|% Critical Damage", base: 0.01 },
-  { id: "zoom", text: "|val|% Zoom", base: 0.01 },
-  { id: "weapon_recoil", text: "|val|% Weapon Recoil", base: -0.01 },
-];
-const zh = {
-  riven_words: { 多重射击: ["multishot"], 多重: ["multishot"], 暴伤: ["critical_damage"], 变焦: ["zoom"], 后坐力: ["weapon_recoil"] },
-  riven_query_words: { malus: ["负", "-"] },
+const { pools, zh } = JSON.parse(execFileSync(process.env.PYTHON || "python3", ["-c", `
+import json
+from pathlib import Path
+import yaml
+pools = {}
+for path in sorted(Path("data/rivens").glob("*.yaml")):
+    table = yaml.safe_load(path.read_text())
+    if not isinstance(table, dict) or "stats" not in table:
+        continue
+    for stat in table["stats"]:
+        stat["unit"] = "x" if stat["kind"] == "faction_damage_bonus" else "%" if "%" in stat["text"] else ""
+    pools[table["class"]] = table["stats"]
+zh = yaml.safe_load(Path("data/i18n/zh/ui.yaml").read_text())
+zh.update(yaml.safe_load(Path("data/i18n/zh/riven_words.yaml").read_text()))
+print(json.dumps({"pools": pools, "zh": zh}))
+`], { cwd: new URL("..", import.meta.url), encoding: "utf8" }));
+const tf = (s) => headless.headlessSpeaker({}, { zh }, "zh").tf(s);
+const read = (s, pool = pools.rifle, locales = [zh]) => readRivenLines(s, pool, locales);
+const compact = (r) => r.lines ? r.lines.map((x) => `${x.malus ? "-" : "+"}${x.id}:${x.value}`).join(" ") : `!${r.error}`;
+let failed = 0, checked = 0;
+const check = (name, ok, detail = "") => {
+  checked++;
+  if (ok) return;
+  failed++;
+  if (failed <= 16) console.log(`FAIL  ${name}: ${detail}`);
 };
-const squash = (s) => s.normalize("NFKC").toLowerCase().replace(/\s+/g, "");
-const read = (s) => readRivenLines(squash(s), pool, [zh], rivenQuery);
-const line = (s) => { const r = read(s); return r.lines ? r.lines.map((x) => `${x.malus ? "-" : "+"}${x.id}:${x.value}`).join(" ") : `!${r.error}`; };
-
-let failed = 0;
-const want = (input, expected) => {
-  const got = line(input);
-  const ok = got === expected;
-  if (!ok) failed += 1;
-  console.log(`${ok ? "  ok  " : "  FAIL"}  ${input.padEnd(28)} ${got}${ok ? "" : `  (wanted ${expected})`}`);
+const want = (input, expected, pool, locales) => {
+  const got = compact(read(input, pool, locales));
+  check(input, got === expected, `${got}, wanted ${expected}`);
 };
 
-// A bonus, however it is written.
-for (const s of ["多重射击50", "多重射击+50", "正多重射击50", "多重射击 50", "多重射击 +50", "+多重射击50"]) want(s, "+multishot:50");
-// A malus, by its word or by its sign against the stat's direction.
-for (const s of ["变焦-50", "负变焦50", "负变焦-50", "-变焦50", "变焦 - 50"]) want(s, "-zoom:50");
-// RECOIL IS BETTER DOWN: its minus is the bonus and its plus the malus.
-want("后坐力-50", "+weapon_recoil:50");
-want("后坐力+50", "-weapon_recoil:50");
-want("负后坐力50", "-weapon_recoil:50");
-// A whole card, spaced or not.
+for (const s of ["多重射击50", "多重射击+50", "正多重射击50", "多重射击 50", "多重射击 +50", "+多重射击50", "+50% 多重射击", "50多重射击"]) want(s, "+multishot:50");
+for (const s of ["变焦-50", "负变焦50", "负变焦-50", "-变焦50", "变焦 - 50", "-50% 变焦"]) want(s, "-zoom:50");
+for (const s of ["武器后坐力-50", "后坐力-50", "Weapon Recoil-50", "-50% 武器后坐力", "-50% Weapon Recoil"]) want(s, "+weapon_recoil:50");
+for (const s of ["武器后坐力+50", "后坐力+50", "负后坐力50", "+50% Weapon Recoil"]) want(s, "-weapon_recoil:50");
 want("暴伤160.9 多重120.7 变焦-50", "+critical_damage:160.9 +multishot:120.7 -zoom:50");
 want("暴伤160.9%多重+120.7%负变焦50%", "+critical_damage:160.9 +multishot:120.7 -zoom:50");
-// …AND WHAT IS TOO FAR OFF IS SAID, never guessed.
-want("负变焦+50", "!contradicts");
-want("正后坐力+50", "!contradicts");
-want("多重射击", "!format");
-want("多重射击50 暴伤", "!format");
+want("+160.9% Critical Damage\n+120.7% Multishot\n+50% Weapon Recoil", "+critical_damage:160.9 +multishot:120.7 -weapon_recoil:50");
+want("暴击伤害：１６０．９％，多重射击：＋１２０．７％；变焦：−５０％", "+critical_damage:160.9 +multishot:120.7 -zoom:50");
+want("Fire Rate (x2 for Bows)50", "+fire_rate:50");
+want("+50% Fire Rate (x2 for Bows)", "+fire_rate:50");
+want("Critical Chance (x2 for Heavy Attacks)50", "+critical_chance:50", pools.melee);
+want("暴击几率（重击时 x2）50", "+critical_chance:50", pools.melee);
+want("暴击几率50", "+critical_chance:50", pools.melee);
+want("连击持续时间6s", "+combo_duration:6", pools.melee);
+want("+6s Combo Duration", "+combo_duration:6", pools.melee);
+want("-50% Chance to Gain Combo Count", "-chance_to_gain_combo_count:50", pools.melee);
+want("负连击数几率50", "-chance_to_gain_combo_count:50", pools.melee);
+want("Damage to Corpus x1.5", "+damage_to_corpus:1.5");
+want("x0.59 对 Corpus 的伤害", "-damage_to_corpus:0.59");
+want("对 Corpus 的伤害0.59", "-damage_to_corpus:0.59");
+for (const s of ["负变焦+50", "正后坐力+50", "正0.59对Corpus的伤害"]) want(s, "!contradicts");
+for (const s of ["多重射击", "多重射击50 暴伤", "50", "多重50.2.3", "变焦--50"]) want(s, "!format");
 want("飞天50", "!unread");
+want("双暴50", "!ambiguous");
 
-console.log(failed ? `\n${failed} failed` : "\nfx reads a riven every way it is written");
+// A conflicting shorthand must lose to the official full name.
+want("武器后坐力-50", "+weapon_recoil:50", pools.rifle,
+  [{ ...zh, riven_words: { ...zh.riven_words, 武器后坐力: ["zoom"] } }]);
+for (const [input, bonuses, malus] of [
+  ["双暴负任意", ["critical_chance", "critical_damage"], "any"],
+  ["病毒伤害无负", ["viral"], "none"],
+  ["后坐力负弹匣", ["weapon_recoil"], "magazine_capacity"],
+]) {
+  const q = headless.rivenQuery(pools.rifle, [zh], input);
+  check(`query ${input}`, !q.unread.length && JSON.stringify(q.bonuses) === JSON.stringify(bonuses) && q.malus === malus, JSON.stringify(q));
+}
+
+for (const [cls, pool] of Object.entries(pools)) {
+  for (const stat of pool) {
+    const value = stat.unit === "x" ? 1.5 : 50;
+    const sign = stat.base < 0 ? "-" : "+";
+    const number = stat.unit === "x" ? `x${value}` : `${sign}${value}`;
+    const names = [headless.rivenStatNameEn(stat), tf(stat.text.replace("|val|", number))
+      .replace(/^[+\-]?x?\d+(?:\.\d+)?(?:%|s)?\s*/, "")];
+    for (const name of names) {
+      const expected = `${stat.bonus === false ? "-" : "+"}${stat.id}:${value}`;
+      want(`${name}${number}`, expected, pool);
+      want(`${number}${stat.unit === "%" ? "%" : ""} ${name}`, expected, pool);
+      const query = headless.rivenQuery(pool, [zh], name);
+      check(`${cls} query ${name}`, query.unread.length === 0 && query.bonuses.length === 1 && query.bonuses[0] === stat.id && !query.malus, JSON.stringify(query));
+    }
+  }
+}
+
+// The command delegates printed-value inversion to the engine, including x0.xx
+// maluses. These sentinel rolls are the engine's answer, not a second formula.
+const cases = [
+  { text: "fx Torid +102.3% Multishot +151.5% Critical Damage x0.58 Damage to Corpus", malus: "damage_to_corpus", shown: 0.6,
+    min: 0.56, max: 0.64, unit: "x", value: 0.58, roll: 1.051234 },
+  { text: "fx Torid 多重102.3 暴伤151.5 武器后坐力+50", malus: "weapon_recoil", shown: 50,
+    min: 45, max: 55, unit: "%", value: 50, roll: 1.000123 },
+];
+for (const c of cases) {
+  const stats = [
+    { slot: "0", id: "multishot", shown: 100, min: 90, max: 110, decimals: 1, unit: "%", roll: 1.023456 },
+    { slot: "1", id: "critical_damage", shown: 150, min: 135, max: 165, decimals: 1, unit: "%", roll: 1.01 },
+    { slot: "malus", id: c.malus, shown: c.shown, min: c.min, max: c.max, decimals: 2, unit: c.unit, roll: c.roll },
+  ];
+  const requests = [], opened = [];
+  const meta = { weapons: [{ id: "torid", name: "Torid", riven_class: "rifle" }],
+    benchmarks: [{ id: "test", name: "Test", primary: true }], riven_stats: pools };
+  const answer = makeAnswer({ meta, zh, headless, host: { api: async (path, body) => {
+    requests.push(body);
+    return { ok: true, stats, illegal: [] };
+  } } });
+  await answer(c.text, { openAppraisal: async (job) => { opened.push(job); return { code: "TEST1" }; } });
+  check(`${c.malus}: the command creates one appraisal`, opened.length === 1, JSON.stringify(opened));
+  check(`${c.malus}: the engine reads the shown values`, requests.length === 2 && requests[1].bonuses[0].value === 102.3
+    && requests[1].bonuses[1].value === 151.5 && requests[1].malus.value === c.value, JSON.stringify(requests));
+  check(`${c.malus}: the card keeps the engine's exact rolls`, opened[0]?.riven.bonuses[0].roll === stats[0].roll
+    && opened[0]?.riven.malus.roll === c.roll, JSON.stringify(opened));
+  await answer(c.text.replace("102.3", "200"), { openAppraisal: async (job) => { opened.push(job); return { code: "TEST2" }; } });
+  check(`${c.malus}: an impossible printed value creates no appraisal`, opened.length === 1);
+}
+
+console.log(`${checked} checks, ${failed} failed${failed > 16 ? ` (${failed - 16} more failures)` : ""}`);
 process.exit(failed ? 1 : 0);

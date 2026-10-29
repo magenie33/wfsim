@@ -137,7 +137,8 @@ function readOnlyRiven(id, weapon = rivenContextWeapon || presetWeapon()) {
     const line = (b) => b && typeof b.id === "string" && Number.isFinite(b.roll);
     if (scope !== rivenScope(weapon) || !state || !Array.isArray(state.bonuses)
         || !state.bonuses.every(line) || (state.malus !== null && !line(state.malus))
-        || state.rank !== 8 || state.polarity !== "madurai") return null;
+        || !Number.isInteger(state.rank) || state.rank < 0 || state.rank > (META.riven_rules?.max_rank ?? 8)
+        || !["madurai", "vazarin", "naramon"].includes(state.polarity)) return null;
     return { id: id.slice(RIVEN_PREFIX.length), name: boardRivenName({
       bonuses: state.bonuses.map((b) => b.id), malus: state.malus && state.malus.id,
       rolls: state.bonuses.map((b) => b.roll).concat(state.malus ? [state.malus.roll] : []),

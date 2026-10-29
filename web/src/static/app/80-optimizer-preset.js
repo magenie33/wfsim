@@ -190,12 +190,12 @@ function updateOptEstimate() {
     $("opt-estimate").innerHTML += ` · <span class="warn">${escHtml(tr("a start pins what a limit rules out — change the start or the limit"))}</span>`;
   }
   // Never re-enable while a background job is still running.
-  $("run-opt").disabled = optJobId != null || !!blocked;
+  $("run-opt").disabled = !!optimizationTaskForPage() || !!blocked;
   lockBuiltinSearch();
   // Every search mutation funnels through here — AUTO-SAVE into the active
   // preset (debounced), same contract as the build bar.
   optSaveTimer = deferSave("search", () => {
-    if (presetApplying) return;
+    if (presetApplying || optimizationReport) return;
     const ps = loadOptPresets();
     // A SEARCH IS BORN ON THE FIRST EDIT, like a build (`markPresetDirty`).
     // This funnel also runs on every render, so the evidence of an edit is the
@@ -220,23 +220,9 @@ function updateOptEstimate() {
 }
 let optSaveTimer = null;
 
-// The optimize run is a BACKGROUND JOB on the server: POST /api/optimize
-// returns a job_id immediately; we poll /api/optimize/status for live funnel
-// progress (overall % is exact — the schedule fixes every round's sim count
-// up front) and can /api/optimize/cancel. On page reload, init() reattaches
-// to a still-running job via a no-id status call.
-let optJobId = null;
-/// WHEN THE POLL LAST HEARD FROM THE JOB. `optJobId` is cleared by `optFinish`
-/// alone, so an exit that skips it latches it; the community's work asks
-/// `optIsLive` instead, which expires (69-board-work.js `ownTabBusy`).
-let optHeardAt = 0;
-const OPT_STALE_MS = 15000;
-const optIsLive = () => optJobId !== null && Date.now() - optHeardAt < OPT_STALE_MS;
-let optPollTimer = null;
-let optCancelling = false; // survives the poll's 500 ms re-renders
-let optLastStatus = null; // the running job's last poll, which the door reads
-
-const postJson = (url, body) => api(url, body);
+// The existing controls and agent door read only the current editor's task.
+let optJobId = null, optLastStatus = null;
+const optIsLive = () => !!userTasks?.view().some((task) => task.state === "running" && task.destination === "local");
 
 /// THE SEARCH THE PAGE WOULD RUN, as the request it sends — read off the builder
 /// and the optimizer as they stand. A riven gain freezes it once, on a page that
@@ -278,74 +264,16 @@ function runOptimize() {
 
 /// `request()` builds the whole request: a riven gain's, the one search every
 /// computer runs, or the one this page's controls state.
-async function runSearch(request) {
-  clearCheckpoint(); // a fresh run supersedes any interrupted one
-  optLastStatus = null;
-  $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
-  $("opt-results").innerHTML = `<div class="placeholder">starting…</div>`;
-  try {
-    // STARTED, beside `optimizer.run` for finished: the gap is what was cancelled or failed.
-    track("optimizer.start", $("weapon").value);
-    const r = await postJson("/api/optimize", nameableOptimizeBody(request()));
-    if (!r || r.ok === false) {
-      optFinish(`<div class="error">optimize failed: ${r ? r.error : "no data"}</div>`);
-      return;
-    }
-    optJobId = r.job_id; optHeardAt = Date.now();
-    pollOptimize();
-  } catch (e) {
-    optFinish(`<div class="error">optimize failed: ${e}</div>`);
-  }
-}
-
-function optFinish(html) {
-  if (optPollTimer) { clearTimeout(optPollTimer); optPollTimer = null; }
-  optJobId = null;
-  optCancelling = false;
-  if (html !== undefined) $("opt-results").innerHTML = html;
-  $("run-opt").textContent = "Run Optimizer";
-  updateOptEstimate(); // re-enables the button when the scope is valid
-}
-
-async function pollOptimize() {
-  let st;
-  try {
-    st = await postJson("/api/optimize/status", optJobId != null ? { id: optJobId } : {});
-  } catch (e) {
-    optFinish(`<div class="error">optimize status failed: ${e}</div>`);
-    return;
-  }
-  if (!st || st.ok === false) {
-    optFinish(`<div class="error">optimize failed: ${st ? st.error : "no data"}</div>`);
-    return;
-  }
-  optJobId = st.job_id; optHeardAt = Date.now();
-  optLastStatus = st;
-  if (st.phase === "error") {
-    optFinish(`<div class="error">optimize failed: ${(st.result && st.result.error) || "unknown error"}</div>`);
-    return;
-  }
-  if (st.phase === "done" || st.phase === "cancelled") {
-    optFinish();
-    if (st.result && st.result.results && st.result.results.length) {
-      renderOptResults(st.result);
-      // FINISHED, not started: a start can be cancelled, and a cancel is not a run.
-      if (st.phase === "done") track("optimizer.run", $("weapon").value, st.elapsed_s);
-      // …AND EVERY FINALIST GOES TO THE BOARD. After the results are drawn, so
-      // a slow door never delays the answer the reader asked for.
-      offerOptBoardSubmit(st.result);
-      // …AND AN APPRAISAL'S WINNER back to the chat that asked (81-appraisal.js).
-      if (st.phase === "done") appraisalAnswered(st.result);
-      // A cancel is not necessarily the end of the search — the run stopped,
-      // but its resume point is still on disk. Offer it under the results.
-      if (st.phase === "cancelled") appendResumeOffer();
-    } else {
-      $("opt-results").innerHTML = `<div class="placeholder">cancelled before anything had been ranked — no results</div>`;
-    }
-    return;
-  }
-  renderOptProgress(st);
-  optPollTimer = setTimeout(pollOptimize, 500);
+async function runSearch(request, options = {}) {
+  leaveOptimizationReport();
+  const body = taskClone(nameableOptimizeBody(request()));
+  const origin = captureOptimizationOrigin();
+  origin.build = frozenTaskBuild(origin.build, body);
+  origin.appraisal = options.appraisal ? taskClone(options.appraisal) : null;
+  const queue = await initUserTasks();
+  const task = await queue.create("optimization", body, origin);
+  renderOptimizationTask();
+  return task;
 }
 
 /// ONE START'S LANE, in words — here and on the compute page. A start whose
@@ -397,37 +325,21 @@ function renderOptProgress(st) {
     <div class="opt-prog-head"><span>${head}</span><span class="opt-elapsed">${st.elapsed_s.toFixed(0)}s</span></div>
     <div class="opt-bar"><i style="width:${pct}%"></i></div>
     ${sub}${notes}
-    <button class="ghost-btn small" id="opt-cancel" ${optCancelling ? "disabled" : ""}>${optCancelling ? "Cancelling…" : "Cancel"}</button>
+    <button class="ghost-btn small" id="opt-cancel">${escHtml(tr("Cancel"))}</button>
   </div>`;
-  // The 500 ms poll re-renders this whole block — `optCancelling` keeps the
-  // button's cancelling state alive across re-renders, or it snaps back to a
-  // live-looking "Cancel" and cancellation looks ignored.
   $("opt-cancel").addEventListener("click", cancelOptimize);
 }
 
 /// STOPPING A SEARCH, from its button or the agent door. The poll reports the
 /// outcome; a stopped search keeps what it had ranked.
 async function cancelOptimize() {
-  optCancelling = true;
-  const b = $("opt-cancel");
-  if (b) { b.disabled = true; b.textContent = "Cancelling…"; }
-  try { await postJson("/api/optimize/cancel", { id: optJobId }); } catch (e) { /* poll reports */ }
+  const task = optimizationTaskForPage();
+  if (task) await userTasks.cancel(task.id);
 }
-
-// Reattach to a job that is still running server-side (e.g. after a page
-// reload): a no-id status call returns the latest job.
 async function reattachOptimize() {
-  try {
-    const st = await postJson("/api/optimize/status", {});
-    if (st && st.ok !== false && (st.phase === "enumerating" || st.phase === "running")) {
-      optJobId = st.job_id; optHeardAt = Date.now();
-      $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
-      renderOptProgress(st);
-      optPollTimer = setTimeout(pollOptimize, 500);
-      return;
-    }
-  } catch (e) { /* no server-side job — nothing to reattach */ }
-  offerResume(); // nothing is running: a reload may have killed a wasm run
+  await initUserTasks();
+  renderOptimizationTask(true);
+  if (!optimizationTaskForPage() && !optimizationReport) offerResume();
 }
 
 // The run itself is gone, but the field it had narrowed to is not. Offer to
@@ -440,12 +352,6 @@ function offerResume() {
   const box = $("opt-results");
   box.innerHTML = "";
   box.append(el);
-}
-
-// The same control, under a cancelled run's leaderboard.
-function appendResumeOffer() {
-  const el = resumeControl();
-  if (el) $("opt-results").append(el);
 }
 
 function resumeControl() {
@@ -474,27 +380,8 @@ function resumeControl() {
 }
 
 async function resumeOptimize(saved) {
-  $("run-opt").disabled = true; $("run-opt").textContent = "Optimizing…";
-  $("opt-results").innerHTML = `<div class="placeholder">${saved.cp.kind === "screen"
-    ? `re-walking to the saved point (${saved.cp.start_seq.toLocaleString()} candidates)…`
-    : `resuming from round ${saved.cp.round}…`}</div>`;
-  try {
-    // The STORED body, not the current form: the checkpoint describes a field
-    // narrowed under that exact scope, and re-deriving the body from the UI
-    // would let an edited setting resume into a run it never belonged to.
-    // A RESUME IS A START: its finish is an `optimizer.run` like any other.
-    track("optimizer.start", $("weapon").value);
-    const r = await postJson("/api/optimize", { ...nameableOptimizeBody(saved.body), __resume: saved.cp });
-    if (!r || r.ok === false) {
-      clearCheckpoint();
-      optFinish(`<div class="error">resume failed: ${r ? r.error : "no data"}</div>`);
-      return;
-    }
-    optJobId = r.job_id; optHeardAt = Date.now();
-    pollOptimize();
-  } catch (e) {
-    optFinish(`<div class="error">resume failed: ${e}</div>`);
-  }
+  await runSearch(() => ({ ...saved.body, __resume: saved.cp }));
+  clearCheckpoint();
 }
 
 const prettify = (id) => headlessPrettify(id);
@@ -594,6 +481,7 @@ function renderOptResults(r) {
   $("opt-results").querySelectorAll(".opt-add").forEach((el) =>
     el.addEventListener("click", () => addResult(JSON.parse(el.dataset.r), el)));
   $("opt-results").querySelectorAll(".opt-restart").forEach((el) => el.addEventListener("click", async () => {
+    leaveOptimizationReport();
     addStart(await resultToState(byRank.get(Number(el.dataset.rank))));
     el.textContent = "✓ " + tr("start") + " " + opt.starts.length; el.disabled = true;
   }));
@@ -633,7 +521,7 @@ async function resultToState(res) {
     valence_element: res.valence || valence.element,
     valence_bonus: valence.bonus,
   };
-  const st = stateFromBuild(payload, $("weapon").value, res.exilus);
+  const st = frozenTaskBuild(stateFromBuild(payload, $("weapon").value, res.exilus), { ...payload, weapon: $("weapon").value });
   // …and the POLARITIES, which are the page's alone: a payload states the
   // build, and the cheapest layout that fits it is a plan the builder makes.
   st.slots = await planSlotsAlone(st.slots.map((s, i) => ({ mod: s.mod, pol: innate[i], rank: s.rank })));

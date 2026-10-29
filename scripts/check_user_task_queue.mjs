@@ -218,4 +218,80 @@ await check("the cancellation assertion fails with its attempt guard removed", a
   const broken = classes(source.replace(guard, "held"));
   await assert.rejects(() => cancellationInvariant(broken), /AssertionError/);
 });
+await check("a batch is admitted atomically and never partly queued", async () => {
+  const { queue } = fixture();
+  await assert.rejects(queue.createMany([{ kind: "new-calculation", request: { count: 1 }, origin }, { kind: "new-calculation", request: { count: 0 }, origin }]));
+  assert.equal(queue.list().length, 0);
+});
+await check("a task's checkpoint is isolated from every other task", async () => {
+  const { queue, store, type } = fixture();
+  type.execute = async (task, { checkpoint }) => { await checkpoint({ marker: task.id }); return {}; };
+  const first = await create(queue), second = await create(queue);
+  await queue.runNext(); await queue.runNext();
+  assert.equal(await store.value('checkpoint:' + first.id), null);
+  assert.equal(await store.value('checkpoint:' + second.id), null);
+});
+await check("handoff retains local execution until durable remote acceptance", async () => {
+  const { queue } = fixture(), accepted = deferred();
+  queue.executors = new Map(queue.executors);
+  queue.executors.set('remote', { supports: () => true, accept: () => accepted.promise, run: async () => ({}) });
+  const task = await create(queue), transfer = queue.transfer(task.id, 'remote');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(queue.list()[0].destination, 'local');
+  accepted.resolve({ id: 'remote-command' }); await transfer;
+  const held = queue.list()[0];
+  assert.equal(held.id, task.id); assert.equal(held.destination, 'remote'); assert.equal(held.remote_command, 'remote-command');
+  assert.deepEqual(held.request, task.request);
+});
+await check("a lost handoff response retries the same command", async () => {
+  const { queue } = fixture(), commands = [];
+  queue.executors = new Map(queue.executors);
+  queue.executors.set('remote', { supports: () => true, accept: async (task, id) => { commands.push(id); if (commands.length === 1) throw new Error('network'); return { id }; }, run: async () => ({}) });
+  const task = await create(queue);
+  await assert.rejects(queue.transfer(task.id, 'remote'));
+  await queue.transfer(task.id, 'remote');
+  assert.equal(commands[0], commands[1]); assert.equal(queue.list()[0].destination, 'remote');
+});
+await check("local completion during handoff cancels the remote duplicate", async () => {
+  const { queue, artifacts } = fixture(), accept = deferred(), cancelled = [];
+  queue.executors = new Map(queue.executors);
+  queue.executors.set('remote', { supports: () => true, accept: () => accept.promise, cancel: async id => cancelled.push(id), run: async () => ({}) });
+  const task = await create(queue), transfer = queue.transfer(task.id, 'remote');
+  await new Promise(resolve => setImmediate(resolve));
+  await queue.runNext(); accept.resolve({ id: 'remote-duplicate' }); await transfer; await queue.deliverCommands();
+  assert.equal(queue.list()[0].state, 'succeeded'); assert.equal(artifacts.size, 1); assert.deepEqual(cancelled, ['remote-duplicate']);
+});
+await check("completion delivery is recovered and idempotent", async () => {
+  const { queue, type, store } = fixture(), delivered = [];
+  type.completed = async task => delivered.push(task.attempt);
+  await create(queue); await queue.runNext(); await queue.deliverEvents(); await queue.deliverEvents();
+  assert.equal(delivered.length, 1);
+  assert.ok((await store.read()).events[0].delivered_at);
+});
+await check("transient replacement rejects a superseded scan", async () => {
+  const context = vm.createContext({ crypto: webcrypto, AbortController });
+  vm.runInContext(source + '\nglobalThis.Transient = UserTransientTask;', context);
+  const slot = new context.Transient('automatic');
+  const old = slot.replace({ weapon: 'a' }, {}), current = slot.replace({ weapon: 'b' }, {});
+  assert.equal(slot.report(old, 'succeeded', { done: 2 }), false);
+  assert.equal(slot.report(current, 'running', { done: 1 }), true);
+  assert.equal(slot.current.request.weapon, 'b'); slot.cancel();
+  assert.equal(slot.report(current, 'succeeded', {}), false);
+});
+await check("remote recovery retains a lost acceptance command", async () => {
+  const { queue, store } = fixture();
+  const task = await create(queue);
+  await store.change(state => Object.assign(state.tasks[0], { state: 'running', destination: 'remote', attempt: 'accepted-command' }));
+  await queue.refresh(); await queue.recover('remote');
+  assert.equal(queue.list()[0].id, task.id);
+  assert.equal(queue.list()[0].state, 'queued'); assert.equal(queue.list()[0].remote_command, 'accepted-command');
+});
+await check("removing history preserves a pending completion delivery", async () => {
+  const { queue, type, store } = fixture(); let available = false, delivered = 0;
+  type.completed = async () => { if (!available) throw Object.assign(new Error('offline'), { retryable: false }); delivered++; };
+  const task = await create(queue); await queue.runNext(); await queue.deliverEvents(); await queue.remove(task.id);
+  assert.equal(queue.list().length, 0); assert.equal((await store.read()).tasks.length, 1);
+  available = true; await queue.deliverEvents();
+  assert.equal(delivered, 1); assert.equal((await store.read()).tasks.length, 0);
+});
 console.log(`\n${passed} user task queue checks passed`);

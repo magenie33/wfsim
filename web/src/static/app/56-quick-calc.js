@@ -153,6 +153,7 @@ async function scanGains(axis, repaint) {
   gainScan = { key: null, want: gainKey(), axis, running: true, base: 0, floor: 0,
     phase: "", by: {}, refused: {}, done: 0, repaint, beat: Date.now(),
     total: 0, ids: new Set(), note: name, metric: "", lanesLost: 0 };
+  quickTask.replace(gainScan.want, { weapon: $("weapon").value, scenario_name: name });
   // THE CANDIDATES ARE ENUMERATED BEFORE THE FIRST RUN, so a list drawn while
   // the base fight is still going already knows how many of ITS OWN rows are
   // coming. One request, no simulation — it costs a round trip and no runs.

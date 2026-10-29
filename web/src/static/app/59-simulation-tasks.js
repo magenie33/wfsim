@@ -2,7 +2,7 @@
 const simulationSubmitting = new Map();
 const simulationContextId = (context) => JSON.stringify([context.weapon, context.preset, context.key]);
 USER_TASK_TYPES.set("simulation", {
-  schema: 1, icon: "▷",
+  schema: 1, icon: "▷", community: { kind: "simulation" },
   validate(request) {
     if (!request.weapon || !Number.isInteger(request.runs) || request.runs < 1) throw new Error("Invalid simulation request.");
   },
@@ -29,7 +29,7 @@ USER_TASK_TYPES.set("simulation", {
     } finally { release(); }
   },
   async save(task, result, { persistent }) {
-    const record = await resultAddCaptured(result, task.origin.build, task.origin.context, task.attempt, persistent);
+    const record = await resultAddCaptured(result, frozenTaskBuild(task.origin.build, task.request), task.origin.context, task.attempt, persistent);
     resultMem.set(resultMemKey(task.origin.context.weapon, task.origin.context.preset), { ...record, r: result });
     track("simulator.run", task.request.weapon, task.request.runs);
     noteSimRun(task.request.runs);
@@ -87,33 +87,47 @@ function renderSimulationTask(redrawResult = false) {
   return true;
 }
 
+const quickTask = new UserTransientTask("quick");
+function observeQuickTask() {
+  if (!gainScan.want) { if (quickTask.current) { quickTask.cancel(); quickTask.current = null; } return; }
+  if (!quickTask.current || quickTask.current.request !== gainScan.want) {
+    if (!gainScan.want) return;
+    quickTask.replace(gainScan.want, { weapon: $("weapon").value, scenario_name: gainScenario().name });
+  }
+  if (quickTask.current.state === "cancelled" && !gainScan.running) return;
+  quickTask.report(quickTask.generation, gainScan.running ? "running" : gainScan.failed ? "failed" : gainScan.key ? "succeeded" : "ready",
+    { phase: gainScan.phase || gainScan.note || "ranking the options", done: gainScan.done, total: gainScan.total,
+      eta_seconds: gainScan.etaMs > 0 ? gainScan.etaMs / 1000 : null });
+}
 USER_TASK_TYPES.set("quick", {
   icon: "ϟ",
-  describe() { return { title: tr("Quick calculation"), note: [weaponInfo($("weapon").value)?.name, gainScenario().name].filter(Boolean).join(" · ") }; },
+  describe(task) { return { title: tr("Quick calculation"), note: [weaponInfo(task.origin.weapon)?.name, task.origin.scenario_name].filter(Boolean).join(" · ") }; },
   details() { return quickCalculationDetails(); },
-  actions(task, action) { return action("reset", "rebuild the calculator"); },
+  actions(task, action) { return (task.state === "running" ? action("cancel", "Cancel") : "") + action("reset", "rebuild the calculator"); },
   act(action) {
-    if (action !== "reset") throw new Error("Unknown task action.");
-    restartCalc(); refreshGains();
+    if (action === "cancel") {
+      gainGen += 1; gainPending = null; gainScan.running = false;
+      quickTask.cancel(); calcDirty();
+    } else if (action === "reset") { restartCalc(); refreshGains(); }
+    else throw new Error("Unknown task action.");
   },
 });
 userTaskSources.set("quick", () => {
   if (!META || !$("weapon").value) return [];
-  return [{ id: "quick", state: gainScan.running ? "running" : gainScan.failed ? "failed" : gainScan.key ? "succeeded" : "ready",
-    progress: { phase: gainScan.phase || gainScan.note || tr("ranking the options"), done: gainScan.done, total: gainScan.total,
-      eta_seconds: gainScan.etaMs > 0 ? gainScan.etaMs / 1000 : null } }];
+  observeQuickTask();
+  return [quickTask.current || { id: "quick", state: "ready", origin: { weapon: $("weapon").value, scenario_name: gainScenario().name } }];
 });
 
 let simulationReport = null;
-async function openSimulationReport(weapon) {
-  const id = new URLSearchParams(location.search).get("measurement");
+async function openSimulationReport(weapon, id) {
   if (!id) { simulationReport = null; return; }
+  history.replaceState(null, "", `${weaponPath(weapon.id)}/simulator?measurement=${encodeURIComponent(id)}`);
   await loadResults();
   const record = results.find((row) => row.id === id && row.weapon === weapon.id);
   if (!record) { simulationReport = { id }; renderStoredSimResult(); return; }
   simulationReport = record;
   const path = `${weaponPath(weapon.id)}/simulator?measurement=${encodeURIComponent(id)}`;
-  restoreState(record.build, weapon.id);
+  whileApplying(() => restoreState(record.build, weapon.id));
   activePreset = record.preset;
   activeScenario = record.scenario;
   sim = taskClone(record.fight);

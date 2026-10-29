@@ -67,7 +67,7 @@ async function openAppraisal(code, freeze = false) {
     }
     appraisal.phase = "searching";
     renderAppraisal();
-    await runSearch(() => asked.request);
+    await runSearch(() => asked.request, { appraisal: { code: appraisal.code, thanks: appraisalName() } });
   } catch (e) {
     appraisal.phase = "failed";
     appraisal.error = String((e && e.message) || e);
@@ -91,31 +91,6 @@ async function setUpAppraisal(w, job) {
   appraisal.rivenMod = RIVEN_PREFIX + id;
   const own = ((META.search_presets || {}).presets || []).find((p) => p.riven);
   if (own) pickPreset(optBarCfg(), "search:" + own.id);
-}
-
-/// THE SEARCH HAS ANSWERED: its winner goes back to the appraisal, with the
-/// name to thank if one was given.
-async function appraisalAnswered(r) {
-  if (!appraisalActive() || appraisal.phase !== "searching") return;
-  const best = (r.results || []).find((x) => x && (x.mods || []).length);
-  if (!best) { appraisal.phase = "failed"; appraisal.error = tr("the search ranked nothing"); renderAppraisal(); return; }
-  appraisal.phase = "sending";
-  renderAppraisal();
-  const thanks = appraisalName();
-  try {
-    const res = await fetch(`/api/appraise/${encodeURIComponent(appraisal.code)}/result`, {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ build: boardPayloadFromResult(best), thanks }),
-    });
-    const body = await res.json().catch(() => ({}));
-    appraisal.phase = res.ok && body.ok ? "sent" : "failed";
-    appraisal.first = !!body.first;
-    if (!res.ok) appraisal.error = body.error || String(res.status);
-  } catch (e) {
-    appraisal.phase = "failed";
-    appraisal.error = String((e && e.message) || e);
-  }
-  renderAppraisal();
 }
 
 /// THE NAME AS TYPED, kept as it is typed: the banner is redrawn as the search
@@ -159,4 +134,24 @@ function renderAppraisal() {
     appraisalTyped = input.value;
     try { localStorage.setItem(APPRAISAL_NAME, input.value.trim()); } catch (_) { /* this visit only */ }
   };
+}
+
+// The task owns the chat reply even after its original page has closed.
+async function sendCapturedAppraisal(task, result) {
+  const best = (result.results || []).find((row) => row?.mods?.length);
+  if (!best) throw new Error("the search ranked nothing");
+  if (appraisal?.code === task.origin.appraisal.code) { appraisal.phase = "sending"; renderAppraisal(); }
+  let thanks = task.origin.appraisal.thanks;
+  try { thanks = localStorage.getItem(APPRAISAL_NAME) || thanks; } catch (_) { /* the captured preference remains */ }
+  const response = await fetch(`/api/appraise/${encodeURIComponent(task.origin.appraisal.code)}/result`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ build: boardPayloadFromResult(best, task.origin.board), thanks }),
+  });
+  const body = await response.json();
+  if (!response.ok || !body.ok) {
+    const error = new Error(body.error || "The build could not be sent."); error.retryable = response.status >= 500 || response.status === 429; throw error;
+  }
+  if (appraisal?.code === task.origin.appraisal.code) {
+    appraisal.phase = "sent"; appraisal.first = !!body.first; renderAppraisal();
+  }
 }

@@ -212,6 +212,8 @@ function copyRiven() {
 function renderRivens() {
   if (!META || !$("riven-block")) return;
   wireRivenOcr();
+  wireTypedRivens();
+  renderRivenAppraisalControls();
   renderRivenOcr();
   const w = weaponInfo($("weapon").value);
   const ps = ensureRivenList();
@@ -450,7 +452,7 @@ function renderRivenAll() {
         const nBonus = (st.bonuses || st.positives || []).length;
         return `<div class="rv-all ${p.id === active ? "sel" : ""}" data-open="${escHtml(p.id)}">
           <div class="rv-all-h">
-            ${cloudMark(RIVENS, p)}${imgTag(POL(cap(st.polarity || "madurai")), "pol")}
+            <input type="checkbox" data-appraise-riven="${escHtml(p.id)}" aria-label="${escHtml(tr("Select for appraisal"))}"${appraisalSelection.has(p.id) ? " checked" : ""}>${cloudMark(RIVENS, p)}${imgTag(POL(cap(st.polarity || "madurai")), "pol")}
             <b>${escHtml(p.name)}</b>
             ${meta.name ? `<span class="rv-official">${escHtml(meta.name)}</span>` : ""}${wm}
             <span class="rv-meta">${shape} · ${escHtml(tr("Rank"))} ${st.rank ?? 8} · ${2 + 2 * (st.rank ?? 8)} ${escHtml(tr("capacity"))}</span>
@@ -463,6 +465,13 @@ function renderRivenAll() {
         </div>`;
       }).join("")
     : `<div class="sim-empty">${escHtml(tr("no rivens for this weapon yet"))}</div>`;
+  box.querySelectorAll("[data-appraise-riven]").forEach((input) => {
+    input.onclick = (event) => event.stopPropagation();
+    input.onchange = () => {
+      if (input.checked) appraisalSelection.add(input.dataset.appraiseRiven); else appraisalSelection.delete(input.dataset.appraiseRiven);
+      renderRivenAppraisalControls();
+    };
+  });
   // THE CLOUD SWITCHES SYNC, the same as on the bar's chip, and opens nothing.
   box.querySelectorAll(".pcloud[data-cloud]").forEach((b) => b.addEventListener("click", (e) => {
     e.stopPropagation();

@@ -407,7 +407,7 @@ async function init() {
   // is why it is called here rather than beside the migrations it belongs with.
   foldRivensIntoOneList();
   initPresets();
-  reattachOptimize(); // resume progress display if a server-side job survives a reload
+  reattachOptimize(); // project the durable queue and offer a legacy checkpoint
   $("auto-forma").addEventListener("click", () => autoForma().then(() => renderMods()));
   $("clear-mods").addEventListener("click", () => { clearMods(); });
   document.addEventListener("click", (e) => {
@@ -427,7 +427,7 @@ async function init() {
   // place the project's no-native-dialogs rule does not reach. It only fires
   // while something is actually running.
   window.addEventListener("beforeunload", (e) => {
-    if (optJobId == null) return;
+    if (!userTasks?.view().some((task) => task.state === "running" && task.destination === "local")) return;
     e.preventDefault();
     e.returnValue = ""; // required by older engines to trigger the prompt
   });

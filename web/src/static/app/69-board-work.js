@@ -529,7 +529,7 @@ function workLeftMs() {
 }
 function boardSyncBody(id, { want, keep = null, results }) {
   const c = computeConsent(), idle = idleLoad();
-  return { verifier: id, engine: ENGINE_ID, protocol: 8, ...(c ? { consent: { v: c.v, at: c.at } } : {}),
+  return { verifier: id, engine: ENGINE_ID, protocol: 8, capabilities: ["calculation-reports-v1"], ...(c ? { consent: { v: c.v, at: c.at } } : {}),
     lanes: communityLanes(), ...(boardPaceMs ? { pace_ms: Math.min(syncDials.sync_lease_ms, Math.max(100, Math.round(boardPaceMs))) } : {}),
     want_ms: c && c.on ? Math.max(0, Math.round(want)) : 0, held: heldRows(),
     results: results.map(({ verifier: _v, engine: _e, at: _a, key: _k, ...r }) => r),
@@ -686,6 +686,7 @@ async function workOnce8(id) {
   } else if (due) r = await boardSync(id, { want: 0 });
   maybeReloadForRelease();
   if (boardProtocol !== 8) return false;
+  if (r?.work?.kind === "user_calculation") return userCalculationOnce(r.work, id);
   if (r && r.work && r.work.kind === "riven_gain") return rivenGainOnce(r.work, id);
   if (!heldPack && packQueue.length) { heldPack = packQueue.shift(); return packRowOnce(id, heldPack); }
   return false;
@@ -814,7 +815,7 @@ async function askWork(id, ahead = false) {
   if (!c) return null;
   const at = Date.now(), lanes = communityLanes();
   const idle = ahead ? {} : idleLoad();
-  const sent = await postBoardWork("/api/board/work", { verifier: id, engine: ENGINE_ID, protocol: 7, consent: { v: c.v, at: c.at },
+  const sent = await postBoardWork("/api/board/work", { verifier: id, engine: ENGINE_ID, protocol: 7, capabilities: ["calculation-reports-v1"], consent: { v: c.v, at: c.at },
     lanes, ...(boardPaceMs ? { pace_ms: Math.round(boardPaceMs) } : {}), ...(ahead ? { ahead: true } : {}),
     ...(Object.keys(idle).length ? { idle: Object.entries(idle).map(([hour, x]) => ({ hour, ...x })) } : {}) });
   const ask = sent, dropped = roadDropped;
@@ -928,6 +929,7 @@ async function workOnce() {
   if (!boardVerifyOn() || computeHeld()) { giveBack(); giveBackAhead(); return false; }
   const id = verifierId();
   if (!id) return false;
+  await flushCommunityReports();
   await claimDevice(id);
   if (!boardProtocol) boardProtocol = (await openResults()) ? 8 : 7;
   if (boardProtocol === 8) return workOnce8(id);
@@ -941,6 +943,7 @@ async function workOnce() {
     if (aheadAsk) { ask = await aheadAsk; aheadAsk = null; aheadHeld = null; }
     if (!(ask && (ask.pack || ask.work))) ask = await askWork(id);
     maybeReloadForRelease();
+    if (ask?.work?.kind === "user_calculation") return userCalculationOnce(ask.work, id);
     if (ask && ask.work && ask.work.kind === "riven_gain") return rivenGainOnce(ask.work, id);
     if (!(ask && ask.pack)) return false;
     heldPack = { lease: ask.pack.lease, verifier: id, tasks: ask.pack.tasks, next: 0, unsent: [], sentAt: Date.now(),

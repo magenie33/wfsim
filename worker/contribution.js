@@ -782,6 +782,8 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   const orders = [...ORDER_KINDS.map(([kind, k]) => ({ kind, total: by[k] || 0, dispatched: Math.min(by[k] || 0, counted.takenBy[k] || 0) })),
     { kind: "riven_gain", total: Number((gains.results[0] || {}).n || 0), dispatched: Number((gains.results[0] || {}).started || 0) }]
     .filter((o) => o.total > 0);
+  const userRequests = counted.openOf.filter((row) => ["simulate_report", "optimize_report"].includes(row.verb)).reduce((sum, row) => sum + row.n, 0);
+  if (userRequests) orders.push({ kind: "user_calculation", total: userRequests, dispatched: null });
   const reading = await nowOf(db, now);
   return { ok: true, v: 1, at, computing: await computingNow(env),
     owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0, refreshes: by[3] || 0 },

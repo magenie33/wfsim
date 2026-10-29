@@ -13,44 +13,8 @@ const squash = (s) => String(s || "").normalize("NFKC").toLowerCase().replace(/\
 /// "mk-1盗贼" and "MK1 盗贼" are both MK1-盗贼.
 const nameFold = (s) => squash(s).replace(/[-_.·・'’]/g, "");
 
-/// A RIVEN'S LINES AS TYPED, `暴伤160.9 多重+120.7 负弹匣43.9 变焦-50`, spaces
-/// already squashed: `{ lines: [{ id, value, malus, word }] }` or `{ error, word }`.
-///
-/// WHICH SIDE A LINE IS ON is said two ways, and both are read. A leading 正 or
-/// 负 says it outright; the number's SIGN says it against the stat's own
-/// direction, as the card prints it — 变焦-50 is the malus, 后坐力-50 the bonus,
-/// recoil being better down. Neither is a bonus; the two disagreeing is an error.
-export function readRivenLines(left, pool, locales, rivenQuery) {
-  const LINE = /([+\-−]?)([^\d.+\-−%]+)([+\-−]?)(\d+(?:\.\d+)?)%?/gy;
-  const lines = [];
-  let at = 0;
-  for (const m of left.matchAll(LINE)) {
-    at = m.index + m[0].length;
-    let [, before, word, sign, num] = m;
-    let said = before ? (before === "+" ? "bonus" : "malus") : null;
-    const lead = word.match(/^(正|负)/);
-    if (lead) {
-      const role = lead[1] === "正" ? "bonus" : "malus";
-      if (said && said !== role) return { error: "contradicts", word: m[0] };
-      said = role;
-      word = word.slice(1);
-    }
-    const q = rivenQuery(pool, locales, word);
-    if (q.unread.length) return { error: "unread", word: q.unread[0] };
-    if (q.bonuses.length !== 1 || q.malus) return { error: "ambiguous", word };
-    const stat = pool.find((x) => x.id === q.bonuses[0]);
-    const value = Number(num);
-    if (sign) {
-      const signed = sign === "+" ? value : -value;
-      const role = (signed > 0) === (stat.base > 0) ? "bonus" : "malus";
-      if (said && said !== role) return { error: "contradicts", word: m[0] };
-      said = role;
-    }
-    lines.push({ id: stat.id, value, malus: said === "malus", word });
-  }
-  if (!lines.length || at !== left.length) return { error: "format", word: left.slice(at) };
-  return { lines };
-}
+import { readRivenLines } from "../mcp/headless.js";
+export { readRivenLines };
 
 export function makeAnswer({ run, meta, zh, headless, host }) {
   const t = (s, p = {}) => Object.entries(p).reduce((x, [k, v]) => x.split(`{${k}}`).join(String(v)),
@@ -215,9 +179,8 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   }
 
   /// FX: THE ASKER'S OWN RIVEN, appraised by whoever opens its link — docs/AGENT.md
-  /// §"Riven appraisal". Each stat is a word and the number on the card; the
-  /// roll is that number over the engine's own value at roll 1, and a number the
-  /// card could not show is refused, not clamped.
+  /// §"Riven appraisal". The engine bounds each printed value and turns it into
+  /// a roll. Numbers outside the card's rounded range are refused, not clamped.
   async function fx(rest, ctx) {
     const example = "fx 托里德 暴伤148.5 多重111.3 腐蚀111.3 负弹匣40.5";
     if (!rest) return t(NO_WEAPON, { e: example });
@@ -227,7 +190,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const ruler = named.ruler || defaultRuler();
     const cls = hit.w.riven_class;
     const pool = (meta.riven_stats || {})[cls] || [];
-    const read = readRivenLines(named.left, pool, [zh], headless.rivenQuery);
+    const read = readRivenLines(named.left, pool, [zh]);
     if (read.error === "format") return t("Each stat needs the number on the card, like {e}. (・_・;)", { e: example });
     if (read.error === "unread") return t(UNREAD, { word: read.word });
     if (read.error === "ambiguous") return t("“{word}” names more than one stat; give each its own number. (・_・;)", { word: read.word });
@@ -241,23 +204,31 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     if (!base || base.ok === false) return t(NOT_FOUND);
     if ((base.illegal || []).length) return t("This riven is not a legal one: {why} (＞﹏＜)", { why: base.illegal.join("; ") });
     const slots = bonuses.map((b, i) => ({ ...b, slot: String(i) })).concat(maluses.map((m) => ({ ...m, slot: "malus" })));
-    const rolled = [];
+    const values = [];
     for (const sl of slots) {
       const st = (base.stats || []).find((x) => x.slot === sl.slot);
-      const one = st ? Math.abs(Number(st.shown)) : 0;
-      if (!one) return t(UNREAD, { word: sl.word });
+      if (!st) return t(UNREAD, { word: sl.word });
+      const value = st.unit === "x" ? sl.value : Math.sign(Number(st.shown)) * sl.value;
       // THE CARD ROUNDS TO ITS OWN DECIMALS, so a number at the edge of the band
       // may read a hair past it.
-      const slack = 0.5 * 10 ** -(st.decimals ?? 1) / one + 1e-9;
-      const roll = sl.value / one;
-      if (roll < 0.9 - slack || roll > 1.1 + slack) {
+      const slack = 0.5 * 10 ** -(st.decimals ?? 1) + 1e-9;
+      const [min, max] = [Number(st.min), Number(st.max)].sort((a, b) => a - b);
+      if (value < min - slack || value > max + slack) {
         const show = (x) => Math.abs(Number(x)).toFixed(st.decimals ?? 1);
         const [lo, hi] = [show(st.min), show(st.max)].sort((a, b) => a - b);
         return t("{stat} {value} is outside this weapon's range ({lo}–{hi}). (￣^￣)",
           { stat: statZh(cls, sl.id), value: sl.value, lo, hi });
       }
-      rolled.push({ id: sl.id, roll: Math.round(Math.min(1.1, Math.max(0.9, roll)) * 1000) / 1000, malus: sl.slot === "malus" });
+      values.push({ id: sl.id, value, malus: sl.slot === "malus" });
     }
+    const malusValue = values.find((s) => s.malus);
+    const resolved = await host.api("/api/riven", { weapon: hit.w.id, rank, polarity: "madurai",
+      bonuses: values.filter((s) => !s.malus).map(({ id, value }) => ({ id, value })),
+      malus: malusValue ? { id: malusValue.id, value: malusValue.value } : null });
+    if (!resolved || resolved.ok === false) return t(NOT_FOUND);
+    const rolled = slots.map((sl) => ({ id: sl.id, roll: (resolved.stats || []).find((s) => s.slot === sl.slot)?.roll,
+      malus: sl.slot === "malus" }));
+    if (rolled.some((s) => !Number.isFinite(s.roll))) return t(NOT_FOUND);
     const riven = { bonuses: rolled.filter((x) => !x.malus).map(({ id, roll }) => ({ id, roll })),
       malus: rolled.filter((x) => x.malus).map(({ id, roll }) => ({ id, roll }))[0] || null, rank };
     const opened = ctx && ctx.openAppraisal ? await ctx.openAppraisal({ weapon: hit.w.id, ruler: ruler.id, riven }) : null;

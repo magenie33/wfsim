@@ -933,11 +933,15 @@ what this line just wrote over it.
 
 ## Task center
 
-The top-right task center shows the local simulation queue and live quick
-calculation progress. Configuration and submission stay on their existing
-pages. Queue ordering, cancellation, retry and history do not replace the
-current editor; result links open the existing simulator in another tab.
-Contracts, persistence and execution are in [TASKS.md](TASKS.md).
+The top-right task center observes simulation, optimization and saved-riven
+appraisals submitted from their existing pages. It owns progress, waiting
+order, cancellation, retry and report links (`docs/TASKS.md`). Quick calculation
+occupies one replaceable automatic item. Work for other players is identified
+separately. The center contains no new-task or configuration form.
+
+The saved-riven list selects one or several editable cards and a ruler for
+appraisal. Text import feeds the same saved cards as the editor and screenshot
+reader. Each batch item retains its own failure, retry and saved report.
 
 ## Results
 

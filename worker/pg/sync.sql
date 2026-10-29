@@ -58,6 +58,7 @@ CREATE OR REPLACE FUNCTION factory_eligible(text, bigint, bigint, text, text, te
 RETURNS SETOF questions LANGUAGE sql STABLE AS $$
   SELECT q.* FROM questions q
   WHERE factory_takeable(q.lease_until, q.leased_at, $1, $9)
+    AND (q.verb NOT IN ('simulate_report', 'optimize_report') OR $5::jsonb ? 'cap:calculation-reports-v1')
     AND ($2 = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM answers x WHERE x.question = q.id)
          OR $3 >= (SELECT min((t ->> 'lanes')::numeric) FROM jsonb_array_elements(q.lanes::jsonb) t
                    WHERE (t ->> 'after_ms')::numeric <= extract(epoch FROM ($1::timestamptz - q.opened_at::timestamptz)) * 1000))

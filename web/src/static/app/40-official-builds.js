@@ -504,6 +504,11 @@ function boardRowsLanded(id) {
   const target = routeWeaponId();
   // The next route owns the page while its board is still loading.
   if (target && target !== id) return;
+  const reportWeapon = optimizationReport?.request?.weapon || simulationReport?.weapon;
+  if (reportWeapon === id || ((optimizationReport?.unavailable && new URLSearchParams(location.search).has("task-result"))
+      || (simulationReport?.id && new URLSearchParams(location.search).has("measurement")))) {
+    renderPresetBar(); return;
+  }
   try { initPresets(); renderPresetBar(); refreshPanel(); }
   catch (_) { /* nothing is showing it yet */ }
 }

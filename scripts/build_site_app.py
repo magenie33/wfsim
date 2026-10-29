@@ -2109,7 +2109,13 @@ account. This page says what it keeps, and why.</p>
 
 <h2>Without an account</h2>
 <ul>
-<li>Your builds, scenarios and rivens stay in your own browser.</li>
+<li>Your builds, scenarios and rivens stay in your own browser. Calculation
+requests and reports in the task center are saved there too. If you choose
+community execution, its volunteers receive the calculation inputs. A random
+browser secret retrieves the report; WFSim stores its hash, without an account
+association. Clearing that secret loses access. Your request expires after
+30 days; shared calculation inputs and reports are deleted after their last
+request expires. Aggregate contributions remain.</li>
 <li>Usage is counted under a random id your browser keeps, with no cookie, only
 to measure how WFSim itself is used; it is never shared, sold or combined with
 anything else. Your IP address is not kept: the country your connection comes

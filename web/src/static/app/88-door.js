@@ -331,7 +331,6 @@ const AGENT_EXEMPT = [
   { sel: "#topmenu", kind: "view", why: "moves between the site's pages" },
   { sel: "#tbmore-toggle", kind: "view", why: "opens the topbar's overflow" },
   { sel: "#rem-bell", kind: "view", why: "shows the reminders that fired" },
-  { sel: "#user-tasks", kind: "reader", why: "the reader manages their local queue and calculation history" },
   { sel: "#feedback", kind: "outward", why: "what a reader tells the owner is their own word, never an agent's" },
   { sel: "#account", kind: "reader", why: "signing in and the account are the reader's own" },
   { sel: "#sim-buffs-all", kind: "view", why: "shows every buff that could apply, not only this build's" },

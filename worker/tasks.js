@@ -962,7 +962,8 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
     // claim, and the volunteers' rows pushed out of memory until their syncs
     // timed out on locks. `CLAIM_SPARE` candidates a branch cover the rows
     // another claim holds; the lock re-reads the whole condition.
-    const takeable = `(q.lease_until IS NULL OR q.lease_until < ?4::text)
+    const takeable = `(q.verb NOT IN ('simulate_report', 'optimize_report') OR ?6::text LIKE '%user_calculation%')
+            AND (q.lease_until IS NULL OR q.lease_until < ?4::text)
             AND (?6::text IS NULL OR EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
                                        AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?6::text)::jsonb))))
             AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.device = ?2::text AND a.engine = ?7::text)`;

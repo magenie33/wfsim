@@ -304,8 +304,11 @@ const y = await evaluate(`(async () => {
   const theirs = api("/api/targets", {}, null, { community: true });
   out.community = readerInFlight === 0 && !readerBusy();
   await theirs;
-  optJobId = 12345; optHeardAt = Date.now(); out.search = readerBusy();
-  optHeardAt = Date.now() - 60000; out.searchLatched = !readerBusy(); optJobId = null;
+  await initUserTasks();
+  const rows = userTasks.rows;
+  userTasks.rows = [{ id: 'search-busy-check', kind: 'optimization', state: 'running', destination: 'local' }];
+  out.search = readerBusy();
+  userTasks.rows[0].state = 'interrupted'; out.searchLatched = !readerBusy(); userTasks.rows = rows;
   const scan = gainScan.running; gainScan.running = true; gainScan.beat = 0;
   out.scanLatched = !readerBusy(); gainScan.running = scan;
   const other = new BroadcastChannel("wfsim-reader-busy");
@@ -317,7 +320,7 @@ const yr = JSON.parse(y);
 check("[built site] the reader's own call counts as their computing, and a together call does not",
   yr.idle && yr.reader && yr.after && yr.community, y);
 check("...a search between calls counts, and so does another tab computing", yr.search && yr.otherTab, y);
-check("...but a scan or a search that stopped answering never counts for good, in this tab or any other",
+check("...but an interrupted search or a stale scan does not keep the reader busy",
   yr.searchLatched && yr.scanLatched, y);
 
 // A BOARD ORDER FIGHTS ON EVERY LANE ITS SHARE BUYS (69-board-work.js

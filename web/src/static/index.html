@@ -865,6 +865,13 @@
              other modules then consume as a mod. It reads as a file — a list
              you pick from, one open at a time, none open being a real state. -->
         <div class="cu-tools" id="riven-tools"></div>
+        <details class="sect"><summary data-i18n>Import card text</summary>
+          <label for="riven-text" data-i18n>Paste the card's stat names and values; separate cards with a blank line.</label>
+          <textarea id="riven-text" rows="4"></textarea>
+          <button type="button" class="ghost-btn" id="riven-text-import" data-i18n>Import cards</button>
+          <span id="riven-text-note" role="status"></span>
+        </details>
+        <div class="cu-tools" id="riven-appraisals"></div>
         <!-- READ OFF A SCREENSHOT: the button, Ctrl+V or a drop on this block.
              What it read, and the offer to send the card, land here. -->
         <input type="file" id="riven-ocr-file" accept="image/*" hidden>

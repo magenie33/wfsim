@@ -2,6 +2,7 @@
 // THE SITE'S FACT FACTORY (worker/tasks.js): its verbs, the deadlines that ARE
 // the dispatch policy, and the producers that ask. A new kind of task is one more
 // producer here and in its own file; worker/tasks.js does not change.
+import { USER_TASK_PRODUCERS, userCalculationWork, reportCanon, purgeUserCalculations } from "./user_tasks.js";
 import { factory, canon, nearAnswer, inIdOrder } from "./tasks.js";
 import { RIVEN_PRODUCERS, rivenWork } from "./appraise.js";
 import { BOARD_PRODUCERS, boardWork, boardPackTask, cellsFilling } from "./board_tasks.js";
@@ -28,6 +29,8 @@ export const SCENE_FIRST_MS = 3 * 86_400_000;
 /// and so all of it must be deterministic under every split of the work
 /// (`a_search_costs_the_same_work_however_the_fleet_splits_it`).
 export const VERBS = {
+  simulate_report: { cap: 3, lease_ms: 30 * 60_000, spot: 0, recheck: 0, canon: reportCanon },
+  optimize_report: { cap: 3, lease_ms: 30 * 60_000, spot: 0, recheck: 0, canon: reportCanon },
   // A board row: its score, the metric it is in, and the fight's work. Two
   // answers that differ are a dispute; leased half an hour, past the slowest row.
   // Seconds of work each, so handed out in packs (worker/verify.js `PACK_MS`).
@@ -44,7 +47,7 @@ export const VERBS = {
 let made = null, refusing = null;
 /// THE FACTORY, made on first use: its producers' modules import this one.
 export function facts() {
-  made ||= factory({ verbs: VERBS, producers: { ...BOARD_PRODUCERS, ...RIVEN_PRODUCERS }, threshold: CLIENTS_PER_FACT, spot: SPOT_SHARE,
+  made ||= factory({ verbs: VERBS, producers: { ...BOARD_PRODUCERS, ...RIVEN_PRODUCERS, ...USER_TASK_PRODUCERS }, threshold: CLIENTS_PER_FACT, spot: SPOT_SHARE,
     recheck: RECHECK_SHARE, refusing: refusing ?? REFUSING });
   return made;
 }
@@ -54,7 +57,7 @@ export function refusalsFor(on) { refusing = on; made = null; }
 /// A LEASED QUESTION IN THE SHAPE ITS PAGE RUNS, by the producer that asked it.
 export function workOf(leased) {
   const p = leased.demands[0] && leased.demands[0].producer;
-  return RIVEN_PRODUCERS[p] ? rivenWork(leased) : BOARD_PRODUCERS[p] ? boardWork(leased) : null;
+  return USER_TASK_PRODUCERS[p] ? userCalculationWork(leased) : RIVEN_PRODUCERS[p] ? rivenWork(leased) : BOARD_PRODUCERS[p] ? boardWork(leased) : null;
 }
 /// …AND ONE QUESTION OF A PACK (`nextPack`); only a board row is packed today.
 export function packTaskOf(q) {
@@ -64,6 +67,7 @@ export function packTaskOf(q) {
 
 /// WHAT A LEASED QUESTION IS, for a device list: its kind and its public facts.
 export function kindOf(producer, request, payload) {
+  if (USER_TASK_PRODUCERS[producer]) return { kind: "user_calculation", weapon: request.weapon || null };
   if (RIVEN_PRODUCERS[producer]) return { kind: "riven_gain", weapon: payload.weapon || null, ruler: payload.ruler || null };
   if (BOARD_PRODUCERS[producer]) return { kind: "board", weapon: (request.record || {}).weapon || null, ruler: request.ruler, mode: request.mode };
   return null;
@@ -207,6 +211,7 @@ export const SETTLER_SILENT_MS = 5 * 60_000;
 export async function watchdog(env, now = Date.now()) {
   if (!env.LIBRARY) return [];
   const db = env.LIBRARY;
+  await purgeUserCalculations(env, now);
   // THE SETTLER'S QUEUE, emptied here when the daemon beside the database has
   // not beaten in `SETTLER_SILENT_MS` (dial `settle_async`): its rows are handed
   // to anyone again after the grace, but nobody else settles them.

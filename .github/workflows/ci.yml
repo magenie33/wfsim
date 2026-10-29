@@ -318,6 +318,8 @@ jobs:
         run: node scripts/check_feedback.mjs
       - name: A riven typed for fx reads every way a line is written, its side as the card says it
         run: node scripts/check_fx_lines.mjs
+      - name: User calculations retain ownership, share verified reports and exclude incompatible clients
+        run: node scripts/check_user_task_service.mjs
       - name: A riven appraisal is asked once and answered once
         run: node scripts/check_appraise.mjs
       - name: A client's number reaches the board only when CLIENTS_PER_FACT clients agree
@@ -434,6 +436,10 @@ jobs:
         run: node scripts/check_calc_recovers.mjs
       - name: Calculation tasks retain their inputs, results and queue across pages
         run: node scripts/check_user_task_center.mjs
+      - name: Search tasks and saved-riven batches retain their captured inputs
+        run: node scripts/check_task_executors.mjs
+      - name: Community transfer completes through two real WASM witnesses
+        run: node scripts/check_task_service_browser.mjs
       - name: Protocol 8 on the page keeps every result and holds to the signal and next_ms
         run: node scripts/check_compute_queue.mjs
       - name: A new release is taken at once, and the reload loses the reader nothing

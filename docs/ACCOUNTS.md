@@ -277,3 +277,14 @@ A way in whose secrets are absent is simply not offered.
 
 `scripts/check_accounts.mjs` runs these rules against the real schema on PGlite
 (`scripts/pg/test_db.mjs`): no network, no browser.
+
+## Browser calculation requests
+
+The task center's remote requests are browser-owned, independently of accounts
+(`docs/TASKS.md`). A random browser secret is sent over the same-origin JSON
+door; only its hash is stored. No account id is associated with the request.
+Signing in neither publishes it nor syncs its queue to another browser.
+Accepted inputs are available to participating volunteers; results require the
+browser secret. Request ownership expires after 30 days, and shared input/report
+payloads are deleted after their last consumer expires. Aggregate contribution
+counters remain. Local queue and artifact storage is cleared with browser data.

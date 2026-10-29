@@ -801,7 +801,7 @@ const AGENT_ACTIONS = [
   {
     id: "optimizer.search.stop",
     writes: "none",
-    what: "Stop the running build search. What it has ranked so far is kept.",
+    what: "Stop the running build search. A compatible saved checkpoint remains available for retry.",
     anchor: "#run-opt",
     needs_weapon: true,
     args: {},

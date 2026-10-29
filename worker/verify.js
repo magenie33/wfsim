@@ -245,7 +245,7 @@ async function work(request, env) {
   const lanes = ahead ? 0 : Number.isInteger(b.lanes) && b.lanes > 0 && b.lanes <= 256 ? b.lanes : 1;
   const pace = Number.isInteger(b.pace_ms) && b.pace_ms >= 100 && b.pace_ms <= d.lease_ms ? b.pace_ms : null;
   const who = await witnessOf(env, id);
-  const w = { device: id, owner: who.owner, siblings: who.siblings, net: await netOf(request, env), lanes };
+  const w = { device: id, owner: who.owner, siblings: [...who.siblings, ...(b.capabilities?.includes("calculation-reports-v1") ? ["cap:calculation-reports-v1"] : [])], net: await netOf(request, env), lanes };
   const f = facts();
   const [, , held, me, fair, head] = await db.batch([
     // THE CLIENT, remembered by the id it made and nothing else; its day kept,

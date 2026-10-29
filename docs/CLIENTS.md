@@ -608,3 +608,24 @@ for (const row of JSON.parse(fs.readFileSync("tests/gas/rows.json", "utf8"))) {
 own native side is held to the same pkg by `node scripts/check_gas.mjs
 native=<wfsim-gas binary> pkg=/tmp/pkg`, over a tenth of each row's runs; a
 client's native build is held to it by item 7.
+
+## Complete calculation reports
+
+A client advertising `capabilities: ["calculation-reports-v1"]` can receive
+`work.kind: "user_calculation"`, with `calculation` (`simulation` or
+`optimization`), `question`, `lease` and the frozen engine `request`.
+No browser owner secret travels to a volunteer. Existing protocols and consent
+remain unchanged. Older clients are excluded by `factory_eligible`.
+
+The page executes simulation pieces in fixed index order and runs optimization
+through `quickFleet`. It respects the existing community power and foreground
+controls. It renews through `/api/board/renew`, releases through
+`/api/board/release`, and posts complete answers to `/api/user-tasks/answer`:
+`{ verifier, engine, question, lease, report, work, compute_ms, lanes }`.
+The maximum encoded answer is 8 MiB. The complete report, except wall-clock
+cost fields, participates in agreement; a winner's score alone is insufficient.
+An engine refusal uses the same endpoint with `refused: true`, without a report;
+the existing independent-refusal threshold withdraws the question. Worker or
+network failures release the lease for retry. Persist an answer before sending it. An acknowledged `taken: false` means the
+lease can no longer accept that answer. Official clients opt into the
+`user_calculation` producer only when they implement both report verbs.

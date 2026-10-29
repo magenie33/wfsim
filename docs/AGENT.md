@@ -525,3 +525,12 @@ Rotating the key is a new file and `wrangler secret put WEB_BOT_AUTH_JWK` from
 it; a site that cached the old directory stops trusting the old key within its
 five-minute cache. `check_bot_auth.mjs` holds the signer to RFC 8032's vectors
 and both signatures to Node's verifier, offline.
+
+## Calculation tasks
+
+`shell.tasks.read` observes explicit and automatic work without reading browser owner
+secrets. `shell.tasks.manage` cancels, retries, reorders or removes existing tasks.
+Transfers to community execution require the reader's own control.
+`builder.rivens.import` uses the shared typed-card reader and creates editable
+saved cards; `builder.rivens.appraise` submits selected saved ids and a ruler.
+All computations use the same frozen-input task lifecycle as their page buttons.

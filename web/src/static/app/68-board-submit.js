@@ -259,20 +259,21 @@ function boardPayloadFromResult(res, ctx = boardBuildContext()) {
 /// NO CAP ON HOW MANY. The finalist count is the searcher's setting, they are
 /// all real builds, and the store is keyed by identity — so twenty submissions
 /// of which twelve are already held collapse onto twelve rows.
-async function offerOptBoardSubmit(r) {
-  const box = $("opt-board");
-  if (!box) return;
+async function offerOptBoardSubmit(r, captured = null) {
+  const context = captured?.context || boardBuildContext();
+  const visible = () => !captured || optimizationShown === captured.task;
+  const paint = (html) => { const box = $("opt-board"); if (box && visible()) box.innerHTML = html; };
   const rows = (r.results || []).filter((x) => x && (x.mods || []).length);
   if (!rows.length) return;
   // AN APPRAISAL'S SEARCH IS SUBMITTED WITHOUT ASKING: the reader opened a
   // link whose whole purpose is to put this riven's best build on the board.
-  if (boardConsent() !== "yes" && !appraisalActive()) {
-    box.innerHTML = `<span class="ob-off">${escHtml(
-      tr("board upload is off, so these were not sent"))}</span>`;
+  if (boardConsent() !== "yes" && !(captured ? captured.appraisal : appraisalActive())) {
+    paint(`<span class="ob-off">${escHtml(
+      tr("board upload is off, so these were not sent"))}</span>`);
     return;
   }
-  box.innerHTML = `<span class="ob-run">${escHtml(
-    tr("sending {n} finalists to the board…").replace("{n}", rows.length))}</span>`;
+  paint(`<span class="ob-run">${escHtml(
+    tr("sending {n} finalists to the board…").replace("{n}", rows.length))}</span>`);
   let sent = 0;
   const refused = new Map();
   let failed = 0;
@@ -282,7 +283,7 @@ async function offerOptBoardSubmit(r) {
   const releasePage = holdPage();
   try {
     for (const res of rows) {
-      const body = boardPayloadFromResult(res);
+      const body = boardPayloadFromResult(res, context);
       try {
         const verdict = await boardVerdict(body);
         if (verdict && verdict.ok && verdict.accepted === false) {
@@ -308,8 +309,8 @@ async function offerOptBoardSubmit(r) {
     .replace("{n}", sent).replace("{of}", rows.length)];
   for (const [why, n] of refused) parts.push(`${n} × ${why}`);
   if (failed) parts.push(tr("{n} could not be sent").replace("{n}", failed));
-  box.innerHTML = `<span class="${sent ? "ob-sent" : "ob-off"}">${
-    escHtml(parts.join(" · "))}</span>`;
+  paint(`<span class="${sent ? "ob-sent" : "ob-off"}">${
+    escHtml(parts.join(" · "))}</span>`);
 }
 
 let boardState = "";   // "" | "sent" | "failed" | "onboard"

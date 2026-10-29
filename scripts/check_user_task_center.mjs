@@ -51,6 +51,7 @@ try {
     out.oneHeavy = held.length === 1 && userTasks.list().filter(task => task.state === 'running').length === 1;
     observer.location.href = '/';
     await until(() => observer?.__wfsimReady && observer.eval('!!userTasks'));
+    await until(() => observer.eval('userTasks.view().some(task => task.id === ' + JSON.stringify(taskA.id) + ')'));
     const observed = observer.eval('userTasks.view()');
     out.oneRunner = observed.filter(task => task.state === 'running').length === 1
       && observed.find(task => task.state === 'running').id === taskA.id

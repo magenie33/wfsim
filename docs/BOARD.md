@@ -758,7 +758,7 @@ through a Cloudflare Access TCP tunnel to `pg.wfsim.app`.
 
 | database | holds | worker binding | DDL |
 | --- | --- | --- | --- |
-| `wfsim` | the library and the fact factory, one database and one transaction — inbox, builds, scores, batches, queue, orders, shares, usage_days, usage_points, bot_inbox, appraisals, appraisal_results, fissures, donors, rates, donations; questions, demands, answers, verifiers, verifier_hours, watchdog_said, points_pool | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql`, `worker/pg/sync.sql` |
+| `wfsim` | the library and the fact factory, one database and one transaction — inbox, builds, scores, batches, queue, orders, shares, usage_days, usage_points, bot_inbox, appraisals, appraisal_results, user_calculations, calculation_reports, user_calculation_cancellations, fissures, donors, rates, donations; questions, demands, answers, verifiers, verifier_hours, watchdog_said, points_pool | `HYPERDRIVE` → `LIBRARY` | `worker/pg/schema.sql`, `worker/pg/library.sql`, `worker/pg/sync.sql` |
 | `wfsim_accounts` | the accounts — every table the open half and the paid half name, under their own role | `HYPERDRIVE_ACCOUNTS` → `ACCOUNTS` | `worker/pg/accounts.sql` |
 
 `withDatabases` opens each from its binding; every query is Postgres text.

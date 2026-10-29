@@ -9,6 +9,7 @@
 /// after its ask, so idle volunteers take it early and a busy fleet lets it wait.
 export const DEADLINE_MS = {
   chat: 2 * 60_000,
+  user_calculation: 6 * 3_600_000,
   new_build: 6 * 3_600_000,
   survey_build: 3 * 86_400_000,
   survey: 86_400_000,

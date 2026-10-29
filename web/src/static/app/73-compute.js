@@ -33,6 +33,11 @@ let computeRemoving = null;
 let computeDrawnAt = 0;
 
 const COMPUTE_KINDS = {
+  user_calculation: {
+    name: "Player calculation", verb: "Simulate",
+    what: (task) => [weaponInfo(task.weapon)?.name || task.weapon, tr(task.calculation === "simulation" ? "Simulation" : "Optimization")].filter(Boolean).join(" · "),
+    href: () => null,
+  },
   // `verb` is which of the three verbs the task is: one build fought, or a search.
   board: {
     name: "Leaderboard order",
@@ -155,15 +160,18 @@ function computeStart(task) {
   computedLast = 0; computedTick();
   computeRedraw();
   computeChrome();
+  scheduleUserTasks();
 }
 /// `search`: a search's own status (08-checkpoint-api.js `quickFleet`), its starts drawn as lanes.
 function computeProgress(done, total, search) {
   if (computeNow) { computeNow.done = done; computeNow.total = total; if (search) computeNow.search = search; computedTick(); }
   computeRedraw(true);
+  scheduleUserTasks("progress");
 }
 function computeEnd(result) {
   const t = computeNow;
   computeNow = null;
+  scheduleUserTasks();
   if (t) computedTick();
   computedLast = 0;
   if (t && result) {
@@ -731,7 +739,7 @@ function demandHours(h) {
 /// EACH KIND OF ORDER BY ITS NAME, as the worker lists them (worker/contribution.js
 /// `ORDER_KINDS`); a kind this page does not know yet is shown by its id.
 const ORDER_KIND_NAMES = { rescore: "rescores after a model change {n}", sweep: "a ruler's first pass over older builds {n}",
-  new_build: "new builds {n}", refresh: "scores three days old, measured again {n}", riven_gain: "riven gains {n}" };
+  new_build: "new builds {n}", refresh: "scores three days old, measured again {n}", riven_gain: "riven gains {n}", user_calculation: "player calculations {n}" };
 /// THE ORDERS AS A LIST: the worker's, or one made of an older object's counts.
 const demandOrders = (d) => d.orders || [["rescore", d.owed.rescores], ["sweep", d.owed.sweeps], ["new_build", d.owed.new_builds],
   ["refresh", d.owed.refreshes], ["riven_gain", d.riven_gains]].filter(([, v]) => v).map(([kind, total]) => ({ kind, total, dispatched: null }));

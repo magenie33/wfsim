@@ -142,7 +142,7 @@ async function sync(request, env) {
   const pace = Number.isInteger(b.pace_ms) && b.pace_ms >= 100 && b.pace_ms <= d.sync_lease_ms ? b.pace_ms : null;
   const want = Number.isInteger(b.want_ms) && b.want_ms >= 0 ? Math.min(b.want_ms, d.pack8_ms) : d.pack8_ms;
   const who = await witness(env, id, now);
-  const w = { device: id, owner: who.owner, siblings: who.siblings, net: await netOf(request, env), lanes };
+  const w = { device: id, owner: who.owner, siblings: [...who.siblings, ...(b.capabilities?.includes("calculation-reports-v1") ? ["cap:calculation-reports-v1"] : [])], net: await netOf(request, env), lanes };
   const f = facts();
   const x = { request, env, b, p, d, db, now, at, id, ms, say, served, release, grace, stale, consented, lanes, pace, want, who, w, f };
 

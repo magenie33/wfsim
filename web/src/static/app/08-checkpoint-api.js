@@ -164,7 +164,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     job.workers = [];
     if (finished && keep) fleetKeep(ws); else ws.forEach((w) => w && w.terminate());
   };
-  const fail = (why) => { if (!job.result) job.result = { ok: false, error: why }; stop(false); };
+  const fail = (why, engine = false) => { if (!job.result) job.result = { ok: false, error: why, worker_dead: !engine }; stop(false); };
   // One call to one worker; its progress, if any, to `onProgress`.
   const call = (i, b, onProgress) => new Promise((resolve) => {
     const w = job.workers[i];
@@ -238,7 +238,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       }));
       if (broken || outs.some((o) => !o) || job.cancelled) return;
       const bad = outs.find((o) => o.ok === false);
-      if (bad) { fail(bad.error || "a worker could not score its share"); return; }
+      if (bad) { fail(bad.error || "a worker could not score its share", true); return; }
       scores = outs.flatMap((o) => o.scores || []);
       done.builds += scores.length;
       done.fights += outs.reduce((a, o) => a + (o.fights || 0), 0);
@@ -251,7 +251,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
   return job;
 }
 
-function woptStart(body, checkpoint) {
+function woptStart(body, checkpoint, onCheckpoint) {
   if (wopt && wopt.workers && wopt.workers.length) {
     return { ok: false, error: "an optimization is already running — cancel it or wait", job_id: wopt.id };
   }
@@ -301,7 +301,9 @@ function woptStart(body, checkpoint) {
         const { board, ...cp } = e.data.payload;
         if (board) { job.boards[i] = board; job.board = woptMerge(job.boards.filter(Boolean)); }
         // Only an UNSHARDED run can be resumed from a checkpoint — see above.
-        if (shards === 1) saveCheckpoint(body, cp, board || job.board);
+        if (shards === 1) {
+          if (onCheckpoint) onCheckpoint(cp); else saveCheckpoint(body, cp, board || job.board);
+        }
       }
       if (e.data.kind === "result") {
         wd.done();
@@ -310,7 +312,7 @@ function woptStart(body, checkpoint) {
         job.workers[i] = null;
         if (job.parts.every(Boolean)) {
           job.result = woptMerge(job.parts);
-          clearCheckpoint();
+          if (!onCheckpoint) clearCheckpoint();
           job.workers = [];
         }
       }
@@ -384,9 +386,11 @@ async function api(path, body, onProgress, opts) {
       if (r.ok) return await r.json();
     } catch (_) { /* the engine answers it */ }
   }
-  if (path === "/api/optimize") return woptStart(body, body && body.__resume);
-  if (path === "/api/optimize/status") return woptStatus();
-  if (path === "/api/optimize/cancel") return woptCancel();
+  if (path === "/api/optimize") return woptStart(body, body && body.__resume, opts?.checkpoint);
+  if (path === "/api/optimize/status" || path === "/api/optimize/cancel") {
+    if (body?.id != null && wopt?.id !== body.id) return { ok: false, error: "no such optimize job" };
+    return path.endsWith("/cancel") ? woptCancel() : woptStatus();
+  }
   // A LANE THAT DIED MID-CALL IS DROPPED AND THE CALL RE-ASKED ON A FRESH ONE.
   //
   // ONCE WAS NOT ENOUGH, and the assumption behind once was wrong: a refusal

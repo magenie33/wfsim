@@ -402,3 +402,33 @@ CREATE TABLE IF NOT EXISTS producer_use (
   answer_ms DOUBLE PRECISION NOT NULL DEFAULT 0,
   weight    DOUBLE PRECISION NOT NULL DEFAULT 1
 );
+
+-- A browser secret owns a request; reports are shared immutable factory facts.
+CREATE TABLE IF NOT EXISTS user_calculations (
+  id TEXT COLLATE "C" PRIMARY KEY,
+  task TEXT COLLATE "C" NOT NULL,
+  owner TEXT COLLATE "C" NOT NULL,
+  kind TEXT COLLATE "C" NOT NULL,
+  engine TEXT COLLATE "C" NOT NULL,
+  question TEXT COLLATE "C" NOT NULL,
+  state TEXT COLLATE "C" NOT NULL,
+  created_at TEXT COLLATE "C" NOT NULL,
+  completed_at TEXT COLLATE "C",
+  expires_at TEXT COLLATE "C" NOT NULL
+);
+CREATE INDEX IF NOT EXISTS user_calculations_owner ON user_calculations (owner, state);
+CREATE INDEX IF NOT EXISTS user_calculations_expiry ON user_calculations (expires_at);
+CREATE TABLE IF NOT EXISTS calculation_reports (
+  question TEXT COLLATE "C" NOT NULL,
+  engine TEXT COLLATE "C" NOT NULL,
+  result TEXT COLLATE "C" NOT NULL,
+  at TEXT COLLATE "C" NOT NULL,
+  PRIMARY KEY (question, engine)
+);
+
+CREATE TABLE IF NOT EXISTS user_calculation_cancellations (
+  id TEXT COLLATE "C" NOT NULL,
+  owner TEXT COLLATE "C" NOT NULL,
+  expires_at TEXT COLLATE "C" NOT NULL,
+  PRIMARY KEY (id, owner)
+);

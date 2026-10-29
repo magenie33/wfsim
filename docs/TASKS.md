@@ -1,76 +1,124 @@
 # User calculation tasks
 
-The task center is global chrome in the top-right header. Calculation pages
-own configuration and submission; the center owns the queue, progress,+cancellation, retry and result links. It has no separate create/edit form.
+The top-right task center observes calculations started on their existing
+pages. Those pages own configuration and submission. The center owns waiting
+order, progress, cancellation, retry, executor transfers and saved report links;
+it has no separate creation or configuration form.
 
-Simulation uses the durable local queue. Quick calculation contributes one
-transient item read directly from `gainScan`; replacing its inputs does not
-add history. Its details retain worker health and the calculator reset action.
+## Types and executors
 
-## Boundaries
+`USER_TASK_TYPES` supplies a request schema, validation, presentation, execution,
+artifact storage and result links. `USER_TASK_EXECUTORS` supplies admission,
+execution and cancellation. The queue interprets neither game inputs nor
+result numbers. Adding a type does not require changing its lifecycle.
 
-`USER_TASK_TYPES` supplies input validation, request schema, labels, result
-storage and report links. `USER_TASK_EXECUTORS` declares supported types and
-executes their frozen requests. The local executor calls the existing engine
-operations. A type can exist without supporting community execution.
+Simulation, optimization and saved-riven appraisal use the durable queue.
+Appraisal uses `headlessRivenGainRequest`, followed by
+`headlessAppraisalReplay`, the search and grade used by the chat workflow.
+Saved cards remain editable in the original riven editor. Text import uses
+`readRivenLines`, shared with chat and screenshot stat naming. A batch is an
+atomic group of independent requests; each retains its own result and retry.
 
-`UserTaskQueue` interprets neither simulation inputs nor result numbers. Its
-states are `queued`, `running`, `interrupted`, `succeeded`, `failed` and
-`cancelled`. Changing input creates a new request through its calculation
-page. Retry preserves the accepted input and starts another attempt.
+`UserTransientTask` represents automatic work. A new quick-calculation input
+replaces its single slot and invalidates the previous generation. Its details
+retain worker health and the existing calculator reset. Work this device does
+for other players appears separately and reads the existing contribution log.
 
-## Persistence and execution
+## Local ownership
 
-IndexedDB stores accepted requests, captured origin context, ordering and task
-state in `wfsim-user-tasks`. Acceptance is acknowledged after the transaction
-commits. Progress is an in-memory observation of an attempt and is broadcast
-to other tabs; it does not rewrite the frozen request on every tick.
+Acceptance freezes the request and its origin before awaiting storage. IndexedDB
+`wfsim-user-tasks` stores lifecycle, ordering, artifact references, checkpoints
+and pending commands/events. Acceptance is acknowledged after its transaction
+commits. Progress is an in-memory observation broadcast between tabs.
 
-A Web Lock selects one runner across tabs. Another per-task lock serializes
-cancellation with artifact storage and terminal state. An attempt and
-generation identify the only execution allowed to settle a task. A stale
-progress message or result cannot change cancelled or retried work.
+A Web Lock selects one runner per executor across tabs. The local resource
+lock permits one explicit heavy calculation at a time, including an appraisal
+replay following a community search. Each operation retains its existing
+internal parallelism and power settings. Automatic calculations keep their
+existing foreground priority rules.
 
-One explicit local task uses the existing worker pool at a time. Simulation
-retains foreground priority over automatic quick calculations. Cancellation
-stops claiming simulation pieces and discards any late completion without
-terminating unrelated work. Native fetches receive the attempt's abort signal.
+States are `queued`, `running`, `interrupted`, `succeeded`, `failed` and
+`cancelled`. An attempt and generation identify the only execution allowed to
+settle a task. Per-task locks serialize cancellation, transfers and artifact
+storage. Late results cannot settle cancelled or superseded attempts.
 
-An abandoned running attempt becomes interrupted. A result committed before a
-crash is adopted by its stable attempt id. Queued work is eligible only when
-its engine and request schema match. Incompatible work remains inspectable
-and requires a fresh calculation from its page.
+A lost local runner leaves its attempt interrupted unless an already committed
+artifact can be adopted. Retry preserves inputs and identity. A compatible
+native optimizer job can be reattached; compatible engine checkpoints can
+resume their own task. Otherwise retry restarts. An incompatible engine or
+request schema requires a fresh request from the original page.
 
-Without IndexedDB or Web Locks, tasks are kept for the current session and the
-center says so. No cross-tab or reload recovery is promised for that queue.
+Without IndexedDB or Web Locks, the queue explicitly promises only this
+session. It does not promise cross-tab ownership or reload recovery.
 
-## Results
+## Artifacts and delivery
 
-Simulation captures the engine request, build, weapon, preset, scenario and
-comparison key before waiting. Completion writes into the existing results
-store using that captured context. The task stores only a reference; it does
-not keep a second editable copy of the summary. Replay data retains its
-existing in-memory policy.
+Simulation summaries remain in the existing result store. Optimizer artifacts
+retain every ranked result and its engine-produced replay request. Appraisal
+artifacts also retain the replay verdict and the captured reference board.
+The task stores references, never a second editable summary. The legacy optimizer
+session cache is presentation only; a task report always reads its artifact,
+and execution never reads that cache.
 
-The board upload projection is captured from the same submitted form. It is
-used only for the existing consent-controlled upload, never as execution input.
-Completion submits that captured build; an asynchronous board verdict repaints
-only the context it describes.
+A result is stored before terminal state is committed. Reports open the
+existing simulator or optimizer in another tab, without changing the original
+editor. Frozen riven references retain the card's submitted rolls, rank and
+polarity even if the owned card is subsequently edited or deleted. Local
+artifacts remain until browser storage is cleared; simulation keeps its existing
+bounded retention. An unavailable record is reported as unavailable.
 
-The result is stored before the task is marked complete. A report link opens
-the existing simulator in another tab at `?measurement=<record id>` so the
-current editor remains unchanged. Removing a task from the list preserves its
-result record. Normal result retention still applies; a trimmed or deleted
-record is reported as unavailable.
+Completion events are persisted with terminal state. The center marks unread
+completions. Board submission uses captured ownership and the existing consent;
+a chat appraisal reply uses its captured code. Delivery can be retried without
+re-running the calculation. Removing history preserves artifacts and pending
+delivery context. No browser notification permission is requested.
 
-## Checks
+## Community execution
 
-`node scripts/check_user_task_queue.mjs` checks an unrelated calculation type,
-input ownership, ordering, cancellation, recovery, compatibility and artifact
-references. Its negative control removes the attempt guard and must fail.
+`worker/user_tasks.js` is a producer of the existing fair fact factory.
+`simulate_report` and `optimize_report` compare complete reports, including all
+finalists and the fields needed to open or replay them. Wall-clock timings are
+excluded from agreement; calculation fields and engine work participate.
+Two independent witnesses are required. Disagreeing reports are shown as a
+failed request, never an unchecked result. The existing simulation and quick
+search entry points perform the work.
 
-`WFSIM_BASE=http://127.0.0.1:<port> node scripts/check_user_task_center.mjs`
-drives real simulation requests through the original Run button, queues work
-for different weapons, changes pages and checks record ownership, late results,
-report navigation, reload and phone layout. Existing storage, run-count,
-calculator recovery and agent-door checks cover the reused paths.
+Clients advertise `calculation-reports-v1`. The factory's shared eligibility
+rule excludes these verbs for older clients, on protocol 8's JavaScript and SQL
+paths and protocol 7. Official tooling must explicitly request this producer.
+The producer has the same fair-share weight as existing producers, a six-hour
+deadline, no fleet reservation and no paid priority. Its browser initiator
+uses the existing cap and forgetting rules. Batch requests do not assert that someone
+is actively waiting.
+
+A random browser secret owns remote commands and results. The server stores
+its hash, no account association. Losing that secret loses access; signing in
+does not sync this queue to another browser. Calculation inputs are disclosed
+to volunteers when the reader transfers them. A request expires after 30 days.
+Shared input/report payloads are removed once their last consumer expires;
+aggregate contributions remain. Cancellation withdraws only that consumer.
+
+Acceptance commands are stable and idempotent, including after a lost response.
+Cancellation tombstones prevent an earlier cancel from being lost to a later
+acceptance. Transfers retain the logical task and frozen input. Remote
+acceptance becomes durable before the old local attempt is stopped. If local
+completion wins, the duplicate remote request is cancelled. Transfers restart
+from identical inputs when no compatible checkpoint is available, as stated
+beside the controls.
+
+Remote observation batches pending ids and waits at least the server's stated
+interval. Idle browsers do not continuously poll account state. Volunteer
+reports are stored before submission and retried until acknowledged.
+
+## Validation and deployment
+
+`check_user_task_queue` exercises lifecycle, batches, transient generations,
+checkpoints, delivery and transfer races with a negative cancellation control.
+`check_user_task_service` runs the real schema and factory on PGlite.
+`check_user_task_center`, `check_task_executors` and
+`check_task_service_browser` drive the real page and WASM operations; the last
+uses an isolated service and two independent test witnesses.
+
+The release requires `schema.sql` and `sync.sql` to be applied before exposing
+community execution, following `docs/BOARD.md`'s migration procedure. A native
+dev server has no community backend and hides unsupported transfer controls.
