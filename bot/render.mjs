@@ -17,6 +17,8 @@ const HEADLESS = /headless-shell/.test(CHROME) ? [] : ["--headless=new", "--disa
 /// A CARD TAKES 20–35 s on the bot's server: the page ranks the weapon's whole
 /// board before it draws the card. QQ holds a reply open for minutes.
 const READY_MS = 60_000;
+/// The browser checks allow the same cold-start window before reading DevTools.
+const LAUNCH_MS = 30_000;
 /// THE SITE'S FILES OUTLIVE A BROWSER: every browser starts with a fresh profile,
 /// so without a cache kept apart from it each one fetches the wasm and app.js
 /// again. Hashed files never change. A cache serves one browser at a time, so a
@@ -46,14 +48,19 @@ async function launch() {
   const held = new Set([...browsers].map((b) => b.slot));
   let slot = 0;
   while (held.has(slot)) slot++;
-  const proc = spawn(CHROME, [...HEADLESS, "--no-sandbox", "--lang=zh-CN", "--remote-debugging-port=0", `--user-data-dir=${dir}`,
+  const proc = spawn(CHROME, [...HEADLESS, "--no-sandbox", "--no-first-run", "--no-default-browser-check",
+    "--lang=zh-CN", "--remote-debugging-port=0", `--user-data-dir=${dir}`,
     `--disk-cache-dir=${join(CACHE_ROOT, String(slot))}`, `--disk-cache-size=${CACHE_BYTES}`,
-    "--hide-scrollbars", "--disable-gpu", "about:blank"], { stdio: "ignore" });
+    "--hide-scrollbars", "--disable-gpu", "about:blank"], { stdio: ["ignore", "ignore", "pipe"] });
+  let stderr = "";
+  proc.stderr.on("data", (chunk) => { stderr = (stderr + chunk.toString()).slice(-4096); });
+  proc.stderr.unref();
   proc.unref();
   const c = { proc, dir, slot, base: "", pages: 0, open: 0, idle: null, retired: false };
   browsers.add(c);
   proc.once("exit", () => { browsers.delete(c); rmSync(dir, { recursive: true, force: true }); });
-  for (let i = 0; i < 50 && alive(c); i++) {
+  const until = Date.now() + LAUNCH_MS;
+  while (Date.now() < until && alive(c)) {
     try {
       const port = readFileSync(join(dir, "DevToolsActivePort"), "utf8").split("\n")[0].trim();
       if (port && (await fetch(`http://127.0.0.1:${port}/json/version`)).ok) {
@@ -64,7 +71,7 @@ async function launch() {
     await sleep(200);
   }
   quit(c);
-  throw new Error("chrome did not come up");
+  throw new Error(`chrome did not come up (${proc.exitCode ?? proc.signalCode ?? "timeout"}): ${stderr.trim()}`);
 }
 
 async function browser() {
