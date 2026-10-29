@@ -79,6 +79,22 @@ check("…and with every lane dead, freeLane still returns a live one",
 const s = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const out = {};
+  const Real = window.Worker;
+  let killed = 0, armed = true;
+  window.Worker = function (url, options) {
+    const worker = new Real(url, options), post = worker.postMessage.bind(worker);
+    worker.postMessage = (...args) => {
+      post(...args);
+      const msg = args[0];
+      if (armed && (msg.kind === 'shard' || (msg.kind === 'api' && msg.path === '/api/simulate'))) {
+        armed = false;
+        queueMicrotask(() => {
+          for (const lane of pool) if (lane && !lane.dead) { lane.abandon(); killed++; }
+        });
+      }
+    };
+    return worker;
+  };
   resetPool();
   gainScan = { key: null, want: null, running: false, base: 0, floor: 0, by: {},
     done: 0, total: 0, note: '', metric: '', failed: false, lanesLost: 0 };
@@ -88,11 +104,7 @@ const s = await evaluate(`(async () => {
   // asks nobody, which on a weapon with no evolutions is a scan that never
   // starts.
   openPicker(0, document.querySelector('.slot') || document.body);
-  // KILLED WHILE IT DEPENDS ON THEM, which is the failure being reproduced.
-  await sleep(400);
-  let killed = 0;
-  for (const l of pool) if (l && !l.dead) { l.abandon(); killed++; }
-  out.killed = killed;
+  // The first baseline request is killed before its worker can answer.
   out.sawStatus = false;
   for (let i = 0; i < 90; i++) {
     if (userTaskItems().some(t => t.id === 'quick')) out.sawStatus = true;
@@ -103,6 +115,8 @@ const s = await evaluate(`(async () => {
   out.ranked = Object.keys(gainScan.by).length;
   out.running = gainScan.running;
   out.note = String(gainScan.note || '');
+  out.killed = killed;
+  window.Worker = Real;
   return out;
 })()`);
 

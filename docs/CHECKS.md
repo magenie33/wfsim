@@ -1233,8 +1233,8 @@ and the check holds all three:
 - the fight's key is stamped only by a scan that measured everything, so a scan
   that died half way is asked again.
 
-**IT KILLS THE POOL**, which is the only honest way to test a recovery path, and
-asserts the calculator reaches a COMPLETE answer anyway — completion being the
+**IT KILLS THE POOL** when the first baseline request is sent, before it can
+answer, and asserts the calculator reaches a COMPLETE answer — completion being the
 key, which is now stamped only by a scan that measured everything. On the old
 behaviour it reports `86 of 87 could not be measured`, which is the bug as the
 reader met it.

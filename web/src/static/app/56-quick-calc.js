@@ -218,7 +218,7 @@ async function scanGains(axis, repaint) {
         gainScan.phase = label ? `${label} ${d}/${total}` : `${d}/${total}`;
         calcDirty();
       },
-      { background: true });
+      { background: true, live });
     if (!r || !r.ok) return null;
     return readGain(r, useKills);
   };

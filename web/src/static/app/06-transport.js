@@ -693,7 +693,15 @@ async function laneSimulate(lane, body, live) {
 /// few runs that a slice would be one engagement. Sharding costs a shard each
 /// on the wire and a merge at the end, not worth paying to halve a millisecond.
 async function simulateFleet(body, onProgress, opts) {
-  const cancelled = () => !!(opts && opts.signal && opts.signal.aborted);
+  const cancelled = () => !!opts?.signal?.aborted || !!(opts?.live && !opts.live());
+  // A current background scan retries a reclaimed pool; an explicit stop ends it.
+  const ask = async (send, retryDead = true) => {
+    if (cancelled()) return { ok: false, cancelled: true };
+    let result = await send(false);
+    if (!cancelled() && result && ((retryDead && result.worker_dead) || (result.cancelled && opts?.live)))
+      result = await send(true);
+    return cancelled() ? { ok: false, cancelled: true } : result;
+  };
   if (cancelled()) return { ok: false, cancelled: true };
   // ONLY IN THE WASM BUILD: `/worker.js` is generated into `site/` and the
   // native dev server has never served it. Without this, a simulation there
@@ -707,7 +715,7 @@ async function simulateFleet(body, onProgress, opts) {
   // back does not pay for a pool it will not use.
   const n = poolSize();
   if (n < 2 || runs < n * 2) {
-    return api("/api/simulate", body, onProgress, opts);
+    return ask(() => api("/api/simulate", body, onProgress, opts), false);
   }
   const ls = await lanes();
   // EVERY RUN COVERED EXACTLY ONCE, remainder to the first lanes. A gap or an
@@ -781,17 +789,13 @@ async function simulateFleet(body, onProgress, opts) {
       cursor += count;
       live.set(k, 0);
       const t0 = performance.now();
-      let r = await lane.send({ kind: "shard", body, from, count },
-        (d) => { live.set(k, d); tick(); });
       // A LOST LANE'S PIECE IS RE-ASKED ONCE, on a fresh worker, over the SAME
       // runs — a retry over a different range is a different answer wearing the
       // same name. Without the retry one reclaimed worker fails the whole
       // simulation, and for the quick calc this call is the baseline every
       // candidate is measured against.
-      if (r && r.worker_dead) {
-        r = await freeLane().send({ kind: "shard", body, from, count },
-          (d) => { live.set(k, d); tick(); });
-      }
+      const r = await ask((fresh) => (fresh ? freeLane() : lane).send({ kind: "shard", body, from, count },
+        (d) => { live.set(k, d); tick(); }));
       live.set(k, 0);
       // A CANCELLED PIECE CANCELS THE SIMULATION — there is no answer to merge
       // from a fraction of the runs, and the reader asked for it to stop.
@@ -821,7 +825,7 @@ async function simulateFleet(body, onProgress, opts) {
   // THE PIECES MERGE IN ANY ORDER AND ANY NUMBER: a shard carries sums, and the
   // median is chosen by ranking what every piece brought back. That is what
   // lets the split be decided while the work is already running.
-  return freeLane().send({ kind: "merge", body, shards: parts });
+  return ask(() => freeLane().send({ kind: "merge", body, shards: parts }));
 }
 
 /// STOP EVERY WASM CALL IN FLIGHT, which is the only way to interrupt one: it

@@ -20,8 +20,9 @@ Saved cards remain editable in the original riven editor. Text import uses
 atomic group of independent requests; each retains its own result and retry.
 
 `UserTransientTask` represents automatic work. A new quick-calculation input
-replaces its single slot and invalidates the previous generation. Its details
-retain worker health and the existing calculator reset. Work this device does
+replaces its single slot and invalidates the previous generation. A live scan
+retries a lost worker call once; cancellation or a new generation ends retries.
+Its details retain worker health and the existing calculator reset. Work this device does
 for other players appears separately and reads the existing contribution log.
 
 ## Local ownership
