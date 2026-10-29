@@ -565,7 +565,7 @@ function headlessLongCard(say, w, ask, got) {
     const cards = body();
     return `<header class="lc-top"><span class="brand">WF<span>Sim</span></span><span class="sb-empty">wfsim.app</span></header>
     <h1 class="lc-title">${esc(title)}</h1>
-    <div class="sb-empty lc-sub">${esc([bench ? say.t(bench.name) : "", updated ? trF("updated {t}", { t: updated }) : ""]
+    <div class="sb-empty lc-sub">${esc([bench ? headlessBenchmarkName(say.meta, bench.id, say.t) : "", updated ? trF("updated {t}", { t: updated }) : ""]
       .filter(Boolean).join(" · "))}</div>
     ${cards || `<p class="sim-empty">${esc(say.t("Nothing measured for this weapon yet."))}</p>`}
     <footer class="lc-foot"><div class="lc-qr">${qrSvg ? qrSvg.replace(/^<\?xml[^>]*>/, "") : ""}</div>

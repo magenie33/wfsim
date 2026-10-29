@@ -10,7 +10,7 @@
 const builtinScenarios = () => (META.benchmarks || []).map((b) => ({
   // TRANSLATED for display, like everything else on the page. Its identity is
   // the `builtin` id below, never this string — see `scenarioNamed`.
-  name: tr(b.name),
+  name: benchShort(b.id),
   // The id, not just a flag: a board row records WHICH ruler it was measured
   // under, and a retired version has to be recognisable as retired.
   builtin: b.id,
@@ -22,7 +22,8 @@ const scenarioList = () => builtinScenarios().concat(loadPresetList(SCENARIOS));
 // By NAME or by official ID. A benchmark's display name is translated, so the
 // name alone cannot be its identity: switching language would orphan the
 // pointer that says which scenario is open. The id is what gets stored.
-const scenarioNamed = (n) => presetFind(scenarioList(), n);
+const scenarioNamed = (n) => presetFind(scenarioList(), n)
+  || builtinScenarios().find((p) => tr(benchList().find((b) => b.id === p.builtin)?.name || "") === n);
 const scenarioKey = (n) => (scenarioNamed(n) || {}).builtin || n;
 /// Is the fight on screen the official one? Then nothing may write to it.
 const officialScenarioActive = () => !!(scenarioNamed(activeScenario) || {}).builtin;
@@ -45,6 +46,8 @@ function scenarioBarCfg() {
     pins: { key: () => "wfsim-opened-scenarios", ref: (p) => ({ id: p.builtin }), same: (a, b) => a.id === b.id },
     roGroup: tr("Benchmarks · read-only"),
     openable: builtinScenarios,
+    boardPicker: (anchor) => openBenchSelector(anchor, scenarioNamed(activeScenario)?.builtin,
+      (id) => pickPreset(cfg, id)),
     openLabel: tr("benchmark"),
     openHint: tr("the official rulers — the same fight on every weapon"),
     readonly: (p) => !!p.builtin,

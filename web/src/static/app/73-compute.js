@@ -44,8 +44,7 @@ const COMPUTE_KINDS = {
     verb: "Simulate",
     what: (t) => {
       const w = META && (META.weapons || []).find((x) => x.id === t.weapon);
-      const b = META && (META.benchmarks || []).find((x) => x.id === t.ruler);
-      return [w ? w.name : t.weapon, b ? tr(b.name) : t.ruler, t.mode && t.mode !== "base" && w ? modeLabel(w, t.mode) : ""]
+      return [w ? w.name : t.weapon, benchmarkName(t.ruler), t.mode && t.mode !== "base" && w ? modeLabel(w, t.mode) : ""]
         .filter(Boolean).join(" · ");
     },
     href: (t) => (META && t.weapon ? `${weaponPath(t.weapon)}?bench=${encodeURIComponent(t.ruler)}` : null),
@@ -57,8 +56,7 @@ const COMPUTE_KINDS = {
     verb: "Optimize",
     what: (t) => {
       const w = META && (META.weapons || []).find((x) => x.id === t.weapon);
-      const b = META && (META.benchmarks || []).find((x) => x.id === t.ruler);
-      return [w ? w.name : t.weapon, b ? tr(b.name) : t.ruler].filter(Boolean).join(" · ");
+      return [w ? w.name : t.weapon, benchmarkName(t.ruler)].filter(Boolean).join(" · ");
     },
     href: () => null,
   },
@@ -687,7 +685,6 @@ function computeTaskDetail(t, w) {
   const step = (on, label, note) => `<div class="tl-step${on ? " on" : ""}"><span class="tl-dot"></span><b>${aT(label)}</b><small>${escHtml(note || "")}</small></div>`;
   const third = st === "checking" ? step(true, "the server is checking", "") : st === "gone" ? step(false, "no longer owed", "")
     : step(st === "confirmed", "another volunteer confirmed", st === "confirmed" ? `${clock(t.confirmedAt)} · ${tr("another owner, another network")}` : tr("waiting"));
-  const bench = (META.benchmarks || []).find((b) => b.id === t.ruler);
   const sim = `${weaponPath(w.id)}/simulator?task=${encodeURIComponent(computeKeyOf(t))}`;
   // A SEARCH SHOWS WHAT IT TRIED AND WHAT IT CONCLUDED: the same build card, as its answer.
   const search = t.kind === "riven_gain";
@@ -699,7 +696,7 @@ function computeTaskDetail(t, w) {
       ${step(true, "task taken", clock(t.started))}${here}${third}
       ${step(st === "confirmed", "points credited", st === "confirmed" ? `+${taskPts(t)}` : st === "gone" ? tr("none") : "")}</div>
     <div class="rt-h">${aT("The fight")}</div><dl class="rt-fight">
-      <dt>${aT("Ruler")}</dt><dd>${escHtml(bench ? tr(bench.name) : t.ruler)}</dd>
+      <dt>${aT("Ruler")}</dt><dd>${escHtml(benchmarkName(t.ruler))}</dd>
       ${mode ? `<dt>${aT("Mode")}</dt><dd>${escHtml(modeLabel(w, mode))}</dd>` : ""}
       ${t.score != null ? `<dt>${aT(search ? "Best found" : "Result")}</dt><dd><b>${escHtml(fmtScore(t.score))}</b> ${escHtml(metricLabel(metricOf(t.metric)))}</dd>` : ""}</dl>
     <div class="rt-h">${aT(search ? "The answer: the best build the search found for this riven" : "The build")}</div>${cardOfState(boardRowState(w, taskRow(t)), w)}

@@ -337,7 +337,7 @@ async function init() {
   if (WASM) engineLoad().catch(() => {});
   const names = api("/api/i18n").catch(() => null);
   META = await bootMeta();
-  META.benchmarks = benchScenesFirst(META.benchmarks || []);
+  META.benchmarks = benchHierarchyFirst(META.benchmarks || []);
   // …AND THE FLOOR THE ARENA DRAWS ON IS THE ENGINE'S, before anything is drawn.
   adoptBodyRadius(META);
   {

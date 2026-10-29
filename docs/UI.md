@@ -362,6 +362,20 @@ every keystroke between fires `input` with `isComposing` set.
 `check_ime_keys` holds the second rule over every handler; `check_ime_search`
 types pinyin into each box that filters as it is typed in.
 
+## Board selection
+
+Every board entry point selects a fight, enemy strength, operating conditions,
+then other conditions. The default is Standard Single Target, Lv 9999 Steel
+Path, 100% headshots while aiming, and no special conditions. Names and options
+come from the same benchmark metadata. A full path names the selected cell in
+pickers, scenario presets, task details and reports.
+
+Changing a dimension preserves compatible choices in hierarchy order.
+Unmeasured cells remain selectable and show an empty result. Board ids and
+published measurements retain their identity. The official-scenario popover
+uses the same picker; the Forma planner groups its multiple selections in the
+same order.
+
 ## The build finder
 
 **EVERY BUILD IS IN THE BUILD BAR; THE FINDER ONLY FINDS.** The builder's top

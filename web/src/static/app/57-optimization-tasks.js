@@ -64,7 +64,7 @@ USER_TASK_TYPES.set("optimization", {
   validate(request) { if (!request.weapon || !Array.isArray(request.starts)) throw new Error("Invalid optimization request."); },
   describe(task) {
     return { title: `${weaponInfo(task.request.weapon)?.name || task.request.weapon} · ${tr("Optimization")}`,
-      note: [task.origin.preset_name, task.origin.scenario_name, tr(USER_TASK_EXECUTORS.get(task.destination)?.label || "This device")].filter(Boolean).join(" · ") };
+      note: [task.origin.preset_name, benchLabelOr(task.origin.scenario, task.origin.scenario_name), tr(USER_TASK_EXECUTORS.get(task.destination)?.label || "This device")].filter(Boolean).join(" · ") };
   },
   details(task) {
     const status = task.progress?.status;

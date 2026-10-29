@@ -270,7 +270,7 @@ function renderPresetBarIn(bar, cfg) {
     // lands in the group above like any other. A board build's way in is the
     // build finder, which searches rather than lists.
     (cfg.openable
-      ? `<span class="popen">${ddButton(`dd-open-${cfg.domain}`, {
+      ? `<span class="popen">${cfg.boardPicker ? `<button type="button" class="ghost-btn small" data-board-open>${escHtml(`+ ${cfg.openLabel}`)}</button>` : ddButton(`dd-open-${cfg.domain}`, {
           value: "", search: true, title: cfg.openHint || "",
           placeholder: `+ ${cfg.openLabel}`,
           items: cfg.openable().map((p) => ({ value: presetId(p), label: p.group || p.name })),
@@ -298,6 +298,8 @@ function renderPresetBarIn(bar, cfg) {
   });
   bar.querySelectorAll(".pchip:not(.add)").forEach((c) =>
     c.addEventListener("click", (e) => { if (!e.target.closest("a.pcloud")) pickPreset(cfg, c.dataset.name); }));
+  const boardOpen = bar.querySelector("[data-board-open]");
+  if (boardOpen) boardOpen.onclick = (event) => { event.stopPropagation(); cfg.boardPicker(boardOpen); };
   bar.querySelectorAll(".pcloud[data-cloud]").forEach((b) => b.addEventListener("click", (e) => {
     e.stopPropagation();
     if (setCloudSync(presetListKey(cfg.domain), b.dataset.cloud, !b.classList.contains("on"))) cfg.rerender();

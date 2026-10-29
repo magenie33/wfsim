@@ -204,7 +204,7 @@ const r = await evaluate(`(async () => {
   // THE SCENARIO BAR ASKS ONE QUESTION.
   const sbar = document.getElementById('preset-bar-simulator-scenarios');
   out.scenarioShape = sbar
-    ? Array.from(sbar.querySelectorAll('button.dd')).map((d) => d.id.replace(/-simulator-scenarios$/, ''))
+    ? Array.from(sbar.querySelectorAll('[data-board-open]')).map(() => 'board-picker')
     : [];
 
   // A WEAPON WITH NO ROWS draws the finder's empty state, not a stale table.
@@ -266,7 +266,7 @@ const r = await evaluate(`(async () => {
   Object.assign(finder, { b: 'standard_single_target', mo: 'base', rv: 'plain', shown: 500 });
   renderBuildFinder(); await sleep(200);
   const cards = Object.values(META.mod_pools || {}).flat();
-  const drain = (b) => (b.mods || []).reduce((s, id) => {
+  const drain = (b) => (b.mods || []).concat(b.exilus ? [b.exilus] : []).reduce((s, id) => {
     const [c, at] = String(id).split('@');
     const m = cards.find((x) => x.id === c);
     return s + (!m ? 0 : at == null ? m.drain : m.drain - m.max_rank + Number(at));
@@ -373,7 +373,7 @@ check("a board row says it is one WHERE IT IS OPEN: a locked chip, and inert blo
   r.officialChipLocked && r.officialLocked, `chip ${r.officialChipLocked}, locked ${r.officialLocked}`);
 check("...and a copy of it is an ordinary build you can edit",
   r.ownChip && r.ownEditable, `chip ${r.ownChip}, editable ${r.ownEditable}`);
-check("the SCENARIO bar asks one question: which ruler to open", JSON.stringify(r.scenarioShape) === JSON.stringify(["dd-open"]),
+check("the SCENARIO bar asks one question: which ruler to open", JSON.stringify(r.scenarioShape) === JSON.stringify(["board-picker"]),
   JSON.stringify(r.scenarioShape));
 check(`a weapon with no rows shows the finder's empty state (${r.bareId || "none found"})`, !!r.bareId && r.bareEmpty === true);
 // ---- ACROSS WEAPONS, ACROSS LOADS ---------------------------------------

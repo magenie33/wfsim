@@ -85,15 +85,6 @@ function finderTriggers(p) {
   return out;
 }
 
-/// A RULER'S NAME, SHORT: its first clause and the unit off its last one.
-/// "Standard Single Target · Thrax Centurion Lv 9999 SP · 180 s · KPM" ->
-/// "Standard Single Target · Thrax Centurion", and "KPM". The whole name rides
-/// the tooltip.
-const rulerShort = (name) => {
-  const parts = String(name || "").split(" · ");
-  const second = (parts[1] || "").replace(/\s*(Lv\s*)?\d.*$/, "").trim();
-  return second ? `${parts[0]} · ${second}` : parts[0];
-};
 const rulerUnit = (name) => {
   const last = String(name || "").split(" · ").pop();
   return last && last.length <= 6 ? last : "";
@@ -183,29 +174,17 @@ function renderBuildFinder() {
   // THE HEAD IS THE FOLD'S HEADING (`wireFolds`), redrawn with every render, so
   // it is rewired after each one; shut, the finder is its title line.
   const title = `<h2 class="fd-title">${escHtml(tr("Build finder"))}</h2>`;
+  if (!benchList().some((b) => b.id === finder.b)) finder.b = benchList()[0]?.id;
+  const benchOf = (id) => benchList().find((b) => b.id === id) || { name: id };
   if (!all.length) {
-    box.innerHTML = `<div class="fd-head fold-h">${title}</div>` +
-      `<div class="fd-empty">${escHtml(tr("Nobody has submitted a build for this weapon yet"))}</div>`;
+    box.innerHTML = `<div class="fd-head fold-h">${title}</div>` + benchSelectorHtml(finder.b)
+      + `<div class="fd-empty">${escHtml(tr("Nobody has submitted a build for this weapon yet"))}</div>`;
     wireFolds(box);
+    wireBenchSelector(box, (id) => { finder.b = id; renderBuildFinder(); });
     return;
   }
-  // A SCOPE THE BOARD NO LONGER HOLDS falls back to what it does hold.
-  if (!all.some((p) => p.benchmark === finder.b)) finder.b = all[0].benchmark;
-  // THE SCENE FIRST, then a ruler in it: a fight measured at two levels is two
-  // boards, and its rulers are read one scene at a time. A scene picked keeps
-  // the same fight where that scene has it.
-  const benchOf = (id) => (META.benchmarks || []).find((b) => b.id === id) || { name: id };
-  const sceneOfId = (id) => benchSceneOf(benchOf(id));
-  const scenes = benchScenes().filter((dir) => all.some((p) => sceneOfId(p.benchmark) === dir));
-  if (finder.b && sceneOfId(finder.b) !== finder.sc) {
-    const base = benchOf(finder.b).base;
-    const same = all.find((p) => sceneOfId(p.benchmark) === finder.sc && benchOf(p.benchmark).base === base);
-    const any = all.find((p) => sceneOfId(p.benchmark) === finder.sc);
-    if (same || any) finder.b = (same || any).benchmark;
-    else finder.sc = sceneOfId(finder.b);
-  }
   const inMo = (p) => p.benchmark === finder.b && (finder.mo === FINDER_EVERY_MODE || p.mode === finder.mo);
-  if (!all.some(inMo)) finder.mo = all.find((p) => p.benchmark === finder.b).mode;
+  if (!all.some(inMo)) finder.mo = all.find((p) => p.benchmark === finder.b)?.mode || w.modes?.[0] || "base";
   const everyMode = finder.mo === FINDER_EVERY_MODE;
   const inScope = (p) => inMo(p)
     && (finder.rv === "all" || (finder.rv === "riven") === !!p.riven);
@@ -330,7 +309,7 @@ function renderBuildFinder() {
     const isRef = ref === p;
     return `<tr class="fdet"><td colspan="3"><div class="fd-open-row">` +
       `<div class="fd-ans-head"><div class="fd-ans-t"><div class="fd-sd">${escHtml(trF("#{r} on the board", { r: p.rank }))} · ` +
-      `${escHtml(rulerShort(tr(benchOf(p.benchmark).name)))} · ${escHtml(p.modeName || "")}</div></div>` +
+      `${escHtml(benchmarkName(p.benchmark))} · ${escHtml(p.modeName || "")}</div></div>` +
       `<div class="fd-ans-score"><b>${escHtml(shown(p))}</b>${unit ? `<small>${escHtml(unit)}</small>` : ""}</div>` +
       `<button type="button" class="fd-refbtn${isRef ? " on" : ""}" data-fref="${escHtml(presetId(p))}">${escHtml(tr(isRef ? "Stop comparing" : "Compare others with this"))}</button>` +
       `${openBtn(p)}${SHARE_ENABLED ? `<button type="button" class="fd-share" data-fshare="${escHtml(presetId(p))}">${escHtml(tr("share"))}</button>` : ""}</div>` +
@@ -382,7 +361,8 @@ function renderBuildFinder() {
   };
 
   const listHtml = () => {
-    if (!list.length) return `<div class="fd-empty">${escHtml(tr("No build matches — remove a condition"))}</div>`;
+    if (!list.length) return `<div class="fd-empty">${escHtml(tr(all.some((p) => p.benchmark === finder.b)
+      ? "No build matches — remove a condition" : "No build has been measured under these board conditions."))}</div>`;
     const maxScore = Math.max(...list.map(score), 0) || 1;
     const rows = ties.slice(0, finder.shown).map((g) => rowHtml(g.members[0], maxScore, g, null)).join("");
     const more = ties.length > finder.shown || finder.shown > FINDER_FIRST
@@ -448,7 +428,6 @@ function renderBuildFinder() {
     }).join("") + `</div>`;
   };
   const segBtn = (key, v, text, n, hint) => `<button type="button" data-fseg="${key}" data-v="${escHtml(v)}" class="${finder[key] === v ? "on" : ""}"${n ? "" : " disabled"}${hint ? ` title="${escHtml(hint)}"` : ""}>${escHtml(text)}<em>${n}</em></button>`;
-  const rulers = [...new Set(all.filter((p) => sceneOfId(p.benchmark) === finder.sc).map((p) => p.benchmark))];
   const modes = [...new Set(all.filter((p) => p.benchmark === finder.b).map((p) => p.mode))];
   const inMode = all.filter(inMo);
 
@@ -456,12 +435,7 @@ function renderBuildFinder() {
     `<div class="fd-head fold-h">${title}<small class="fd-count">${escHtml(trF("{n} of {m} builds", { n: list.length, m: scopeTotal })
       + (updated ? " · " + trF("updated {t}", { t: updated }) : ""))}</small></div>` +
     `<div class="fd-scope">` +
-    (scenes.length > 1 ? `<div class="fd-seg"><span>${escHtml(tr("Fight"))}</span>${scenes.map((dir) =>
-      segBtn("sc", dir, benchSceneName(dir), all.filter((p) => sceneOfId(p.benchmark) === dir).length)).join("")}</div>` : "") +
-    `<div class="fd-seg"><span>${escHtml(tr("Ruler"))}</span>${rulers.map((id) => {
-      const name = tr(benchOf(id).name);
-      return segBtn("b", id, rulerShort(name), all.filter((p) => p.benchmark === id).length, name);
-    }).join("")}</div>` +
+    benchSelectorHtml(finder.b) +
     `<div class="fd-seg"><span>${escHtml(tr("Mode"))}</span>${modes.length > 1
       ? segBtn("mo", FINDER_EVERY_MODE, tr("All"), all.filter((p) => p.benchmark === finder.b).length) : ""}${modes.map((m) => segBtn("mo", m,
       (all.find((p) => p.benchmark === finder.b && p.mode === m) || {}).modeName || m,
@@ -478,6 +452,10 @@ function renderBuildFinder() {
     `<div class="fd-sugg" id="fd-sugg" hidden></div></div>${trigHtml()}</div>` +
     overviewHtml() + `<div class="fd-main">${listHtml()}</div>`;
 
+  wireBenchSelector(box, (id) => {
+    finder.b = id; finder.shown = FINDER_FIRST; finder.open = null; finder.ref = null;
+    renderBuildFinder();
+  });
   // ---- wiring --------------------------------------------------------------
   wireFolds(box);
   const rerender = (focus) => {

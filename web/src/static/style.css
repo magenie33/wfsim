@@ -3704,3 +3704,20 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 .task-batch { padding: 8px 12px; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 11px; }
 #riven-text { display: block; width: 100%; box-sizing: border-box; margin: 8px 0; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 8px; }
 #riven-appraisals { flex-wrap: wrap; gap: 8px; }
+
+.board-selector { width: 100%; min-width: 0; margin-bottom: 12px; }
+.board-choice-row { display: flex; align-items: baseline; gap: 10px; margin: 8px 0; }
+.board-choice-row > .slotf-lab { flex: 0 0 112px; }
+.board-choice-options { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.board-choice-options .bchip { margin: 0; }
+.board-choice-options .bchip:disabled { opacity: 1; cursor: default; }
+.board-choice-summary { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; margin-top: 10px; }
+.board-choice-popover { width: min(680px, calc(100vw - 24px)); padding: 14px; }
+.board-check-group { margin: 8px 0; }
+.board-check-group > summary { cursor: pointer; }
+.board-check-scene { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 10px 12px; }
+.board-check-scene > b { width: 100%; }
+@media (max-width: 600px) {
+  .board-choice-row { display: block; }
+  .board-choice-row > .slotf-lab { display: block; margin-bottom: 5px; }
+}

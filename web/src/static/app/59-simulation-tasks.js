@@ -9,7 +9,7 @@ USER_TASK_TYPES.set("simulation", {
   describe(task) {
     const weapon = weaponInfo(task.request.weapon);
     return { title: `${weapon?.name || task.request.weapon} · ${tr("Simulation")}`,
-      note: [task.origin.preset_name, task.origin.scenario_name, tr(USER_TASK_EXECUTORS.get(task.destination)?.label || "This device")].filter(Boolean).join(" · ") };
+      note: [task.origin.preset_name, benchLabelOr(task.origin.context?.scenario, task.origin.scenario_name), tr(USER_TASK_EXECUTORS.get(task.destination)?.label || "This device")].filter(Boolean).join(" · ") };
   },
   details(task) {
     return `<div>${escHtml(tr("running {n} simulations…").replace("{n}", task.request.runs))}</div><div>${escHtml(new Date(task.created_at).toLocaleString())}</div>`;

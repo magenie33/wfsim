@@ -11,6 +11,7 @@
 
 /// The cell the reader has open, as `<benchmark>#<mode>`. Null = the first row.
 let wbenchPick = null;
+let wbenchRuler = null;
 
 /// NO SCORE IS COMPARED ACROSS RULERS. Two rulers are two environments and
 /// their numbers are not like terms, so the only figure that crosses a row is
@@ -160,7 +161,10 @@ function renderWeaponBench() {
   // THE RANK NEEDS EVERY WEAPON'S BEST ROW, which is the index and not this
   // weapon's file. Asked here rather than at boot — a reader who never opens
   // this tab should not pay for it — and the table redraws when it lands.
-  const cells = wbenchCells(w.id);
+  if (!benchList().some((b) => b.id === wbenchRuler)) wbenchRuler = benchList()[0]?.id;
+  const cells = wbenchCells(w.id).filter((c) => c.benchmark === wbenchRuler);
+  const selector = benchSelectorHtml(wbenchRuler);
+  const wire = () => wireBenchSelector(box, (id) => { wbenchRuler = id; wbenchPick = null; renderWeaponBench(); });
   // EVERY SCENE'S, for a weapon measured in more than one.
   const asks = [...new Set(cells.map((c) => c.benchmark))]
     .map((id) => benchIndexOf(benchList().find((b) => b.id === id)))
@@ -176,9 +180,9 @@ function renderWeaponBench() {
   if (!cells.length) {
     // NOT MEASURED IS NOT BROKEN, and the page has to say which it is: a
     // weapon nobody has submitted a build for is an invitation, not a fault.
-    box.innerHTML = `<p class="wb-empty">${escHtml(tr(
+    box.innerHTML = selector + `<p class="wb-empty">${escHtml(tr(
       "No build has been measured for this weapon yet. Submitting one puts it in the queue."))}</p>`;
-    return;
+    wire(); return;
   }
   const pick = cells.find((c) => `${c.benchmark}#${c.mode}` === wbenchPick) || cells[0];
   const nameOf = benchShort;
@@ -207,14 +211,15 @@ function renderWeaponBench() {
       escHtml(String(pick.riven.shown != null ? pick.riven.shown : pick.riven.score.toFixed(4)))}</b>${
       measuredRecordHtml(pick.riven) ? ` <span class="fd-when">${measuredRecordHtml(pick.riven)}</span>` : ""}</p>`
     : "";
-  box.innerHTML = `<table class="wb-tab"><thead><tr>`
+  box.innerHTML = selector + `<table class="wb-tab"><thead><tr>`
     + `<th>${escHtml(tr("Ruler"))}</th><th>${escHtml(tr("Mode"))}</th>`
     + `<th>${escHtml(tr("Score"))}</th><th>${escHtml(tr("Board rank"))}</th><th>${escHtml(tr("Record"))}</th>`
     + `</tr></thead><tbody>${rows}</tbody></table>`
     + `<div class="wb-detail"><p class="wb-terms">${escHtml(tr(
-      ((META.benchmarks || []).find((x) => x.id === pick.benchmark) || {}).name || pick.benchmark))}</p>`
+      benchmarkName(pick.benchmark)))}</p>`
     + `<div class="wb-cards">${gear}${evos}</div>${measuredRecordHtml(pick.best)
       ? `<p class="fd-when" title="${escHtml(measuredNote())}">${measuredRecordHtml(pick.best)}</p>` : ""}${ceil}</div>`;
+  wire();
   box.querySelectorAll(".wb-row").forEach((tr_) => {
     tr_.addEventListener("click", () => {
       wbenchPick = tr_.dataset.cell;

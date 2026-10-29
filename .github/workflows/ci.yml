@@ -560,6 +560,9 @@ jobs:
       - name: The board's scene and shooting choices are independent and survive a link
         if: matrix.group == 'views'
         run: node scripts/check_board_ladder.mjs
+      - name: All board selectors and labels share the same hierarchy
+        if: matrix.group == 'views'
+        run: node scripts/check_board_selection.mjs
       - name: A built-in search is read-only, a click copies it, and the run button sends the page's own search
         if: matrix.group == 'views'
         run: node scripts/check_search_presets.mjs

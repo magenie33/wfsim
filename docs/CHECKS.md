@@ -33,6 +33,14 @@ Already installed packages make no network calls; site-only builds omit the
 desktop GUI packages; publishing retains them. An installation timeout keeps
 its failure status and diagnostic output. No packages are installed locally.
 
+## `check_board_selection`
+
+All 48 cells keep their full labels and URL identity. The benchmark page,
+build finder, weapon board, riven analyst and appraisal select the same cell
+through the same four dimensions. Official scenario selection opens that cell;
+an unmeasured selection remains available, and the picker fits a phone.
+The check fails against the shipping page without the shared picker.
+
 ## `check_board_ladder`
 
 The board's four fights cross four scenes and three shooting conditions.

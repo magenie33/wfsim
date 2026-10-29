@@ -21,28 +21,92 @@ const benchList = () => META.benchmarks || [];
 const benchCurrent = () =>
   benchList().find((b) => b.id === benchPick) || benchList()[0] || null;
 
-/// A RULER'S SCENE (`cell_dir`, "" the base) — the first scene every list
-/// reads before the next. The engine lists each fight's scenes together;
-/// boot regroups them (`benchScenesFirst`) so Lv 9999 comes whole, then Lv 200.
+/// Published cell directories identify files; visible selection starts with the fight.
 const benchSceneOf = (b) => (b && b.cell_dir) || "";
 const benchScenes = () => [...new Set(benchList().map(benchSceneOf))];
-function benchScenesFirst(list) {
-  const scenes = [...new Set(list.map(benchSceneOf))];
-  return list.map((b, i) => [scenes.indexOf(benchSceneOf(b)), i, b]).sort((x, y) => x[0] - y[0] || x[1] - y[1]).map((x) => x[2]);
+function benchHierarchyFirst(list) {
+  const bases = [...new Set(list.map((b) => b.base || b.id))];
+  return list.map((b, i) => [bases.indexOf(b.base || b.id), i, b]).sort((x, y) => x[0] - y[0] || x[1] - y[1]).map((x) => x[2]);
 }
 /// A SCENE IN WORDS, as its rulers' `scene_name` says it.
 const benchSceneName = (dir) => {
   const b = benchList().find((x) => benchSceneOf(x) === dir);
   return b && b.scene_name ? tr(b.scene_name) : dir;
 };
-/// A RULER'S SHORT NAME: its first clause, and its scene once a fight is
-/// measured in more than one — "Standard Single Target" alone would name two
-/// boards. The whole name is `tr(b.name)`.
-function benchShort(id) {
-  const b = benchList().find((x) => x.id === id);
-  if (!b) return id || "";
-  const head = tr(b.name).split(" · ")[0];
-  return benchScenes().length > 1 && b.scene_name ? `${head} · ${tr(b.scene_name)}` : head;
+const benchShort = (id) => headlessBenchmarkName(META, id, tr);
+const benchParts = (id) => headlessBenchmarkParts(META, id);
+const benchLabelOr = (id, fallback) => benchList().some((b) => b.id === id) ? benchShort(id) : fallback;
+
+/// Preserve compatible dimensions in hierarchy order when one choice changes.
+function benchChoose(id, axis, tag) {
+  const current = benchParts(id);
+  let choices = benchList().filter((b) => benchParts(b.id).some((x) => x.axis === axis && x.tag === tag));
+  for (const part of current) {
+    if (part.axis === axis) continue;
+    const same = choices.filter((b) => benchParts(b.id).some((x) => x.axis === part.axis && x.tag === part.tag));
+    if (same.length) choices = same;
+  }
+  return choices[0]?.id || id || benchList()[0]?.id;
+}
+function benchSelectorHtml(id, legacy = false) {
+  const selected = benchList().find((b) => b.id === id) || benchList()[0];
+  if (!selected) return "";
+  const parts = benchParts(selected.id), base = parts[0].tag;
+  const rows = parts.map((part) => {
+    const pool = part.axis === "base" ? benchList() : benchList().filter((b) => (b.base || b.id) === base);
+    const options = new Map();
+    for (const b of pool) {
+      const p = benchParts(b.id).find((x) => x.axis === part.axis);
+      if (p && !options.has(p.tag)) options.set(p.tag, p);
+    }
+    return `<div class="board-choice-row" data-board-axis="${part.axis}"><span class="slotf-lab">${escHtml(tr(part.label))}</span><div class="board-choice-options">${[...options.values()].map((p) => {
+      const next = benchChoose(selected.id, p.axis, p.tag);
+      const old = !legacy ? "" : p.axis === "base" ? ` data-bench="${escHtml(p.tag)}"`
+        : p.axis === "other" ? "" : ` data-axis="${p.axis}" data-scene="${escHtml(next)}"`;
+      return `<button type="button" class="bchip${p.tag === part.tag ? " sel" : ""}" data-board-choice="${escHtml(next)}"${old} aria-pressed="${p.tag === part.tag}"${options.size === 1 ? " disabled" : ""}>${escHtml(tr(p.name))}</button>`;
+    }).join("")}</div></div>`;
+  }).join("");
+  return `<div class="board-selector" data-board-selected="${escHtml(selected.id)}">${rows}<div class="board-choice-summary">${escHtml(benchShort(selected.id))}</div></div>`;
+}
+function wireBenchSelector(root, pick) {
+  root?.querySelectorAll("[data-board-choice]").forEach((button) => {
+    button.onclick = () => pick(button.dataset.boardChoice);
+  });
+}
+function openBenchSelector(anchor, id, pick) {
+  closePopovers(anchor);
+  let pop = $("board-choice-popover");
+  if (!pop) {
+    pop = document.createElement("div"); pop.id = "board-choice-popover";
+    pop.className = "popover board-choice-popover"; pop.setAttribute("role", "dialog");
+    pop.onclick = (event) => event.stopPropagation(); document.body.appendChild(pop);
+  }
+  pop.setAttribute("aria-label", tr("Choose a board"));
+  let selected = id || benchList()[0]?.id;
+  const draw = () => {
+    pop.innerHTML = benchSelectorHtml(selected) + `<button type="button" class="ghost-btn" data-board-apply>${escHtml(tr("Use this board"))}</button>`;
+    wireBenchSelector(pop, (next) => { selected = next; draw(); place(pop, anchor); });
+    pop.querySelector("[data-board-apply]").onclick = () => { pop.hidden = true; pick(selected); };
+  };
+  draw(); pop.hidden = false; place(pop, anchor);
+  pop.querySelector("[data-board-apply]").focus();
+}
+function benchChecklistHtml(ids, selected) {
+  const wanted = new Set(ids), rows = benchList().filter((b) => wanted.has(b.id));
+  const bases = [...new Set(rows.map((b) => (b.base || b.id)))];
+  return bases.map((base) => {
+    const mine = rows.filter((b) => (b.base || b.id) === base);
+    const scenes = [...new Set(mine.map((b) => benchParts(b.id).find((p) => p.axis === "scene")?.tag))];
+    return `<details class="board-check-group"><summary>${escHtml(tr(benchParts(mine[0].id)[0].name))}</summary>` + scenes.map((scene) => {
+      const cells = mine.filter((b) => benchParts(b.id).find((p) => p.axis === "scene")?.tag === scene);
+      const label = benchParts(cells[0].id).find((p) => p.axis === "scene")?.name || "";
+      const ticks = cells.map((b) => {
+        const rest = benchParts(b.id).filter((p) => !["base", "scene"].includes(p.axis)).map((p) => tr(p.name)).join(" › ");
+        return `<label class="fp-tick"><input type="checkbox" data-rb="${escHtml(b.id)}"${selected.has(b.id) ? " checked" : ""}><span title="${escHtml(benchShort(b.id))}">${escHtml(rest)}</span></label>`;
+      }).join("");
+      return `<div class="board-check-scene"><b>${escHtml(tr(label))}</b>${ticks}</div>`;
+    }).join("") + `</details>`;
+  }).join("");
 }
 
 /// THE FORM A CYCLE SPENDS — the gauge-fed one.
@@ -277,52 +341,16 @@ function benchArena(cur) {
   }
 }
 
-function renderBenchLadder(cur, bs) {
-  const into = $("bench-scenes");
-  if (!into) return;
-  const mine = cur ? bs.filter((b) => b.base === cur.base) : [];
-  const axes = (cur && cur.ladder) || [];
-  into.innerHTML = axes.map((selected) => {
-    const choices = mine.filter((b) => (b.ladder || []).every((r) =>
-      r.axis === selected.axis || axes.some((a) => a.axis === r.axis && a.tag === r.tag)));
-    const label = { scene: "Scene", shooting: "Shooting" }[selected.axis] || selected.axis;
-    return `<div class="bench-axis"><span class="slotf-lab">${escHtml(tr(label))}</span>${
-      choices.map((b) => {
-        const rung = b.ladder.find((r) => r.axis === selected.axis);
-        return `<button type="button" class="bchip${b.id === cur.id ? " sel" : ""}"
-          data-axis="${escHtml(selected.axis)}" data-scene="${escHtml(b.id)}">${escHtml(tr(rung.name))}</button>`;
-      }).join("")}</div>`;
-  }).join("");
-  into.querySelectorAll("[data-scene]").forEach((el) => {
-    el.onclick = () => { benchPick = el.dataset.scene; benchShowPicked(); };
-  });
-}
-
 function renderBenchBoard() {
   const box = $("bench-board");
   if (!box || !META) return;
   const picker = $("bench-picker");
-  const bs = benchList();
   const cur = benchCurrent();
   if (picker) {
-    // A RULER IS PICKED, not scrolled past. Two today and dozens later, so it
-    // is a list of chips rather than a stack of tables — the page shows one
-    // ranking at a time because two rankings side by side is a comparison
-    // nobody asked for yet.
-    //
-    // ONE CHIP PER FIGHT, its scenes on the row below: a cell is the same
-    // ruler at another level or mode, and a chip each would bury the fights
-    // under their scenes. A fight's chip names it in the scene on show, and
-    // switching fight keeps that scene where the fight has it.
-    const inScene = (base) => (cur && bs.find((b) => b.base === base && b.cell_dir === cur.cell_dir))
-      || bs.find((b) => b.id === base);
-    picker.innerHTML = bs.filter((b) => b.id === b.base).map((b) => `<button type="button" class="bchip${
-      cur && b.id === cur.base ? " sel" : ""}" data-bench="${escHtml(b.id)}">${escHtml(tr(inScene(b.id).name))}</button>`).join("");
-    picker.querySelectorAll("[data-bench]").forEach((el) => {
-      el.onclick = () => { benchPick = inScene(el.dataset.bench).id; benchShowPicked(); };
-    });
+    picker.innerHTML = benchSelectorHtml(cur?.id, true);
+    wireBenchSelector(picker, (id) => { benchPick = id; benchShowPicked(); });
   }
-  renderBenchLadder(cur, bs);
+  if ($("bench-scenes")) $("bench-scenes").replaceChildren();
   if (!cur) { box.innerHTML = ""; return; }
   // …AND WHICH ENTRANTS AND WHICH BUILDS, one panel above the list: the slot,
   // that slot's own chips, the riven view, measured-only and a name. Every row

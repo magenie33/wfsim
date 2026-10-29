@@ -425,16 +425,7 @@ async function runFormaReach() {
   formaReach = { at: w.id, r, groups, scope, sel: hit >= 0 ? hit : curve.length - 1 };
 }
 
-/// A ruler's name cut to its first two terms — what it is and what it fights —
-/// and its scene where a fight has more than one (`benchShort`). The whole name
-/// rides in the tooltip.
-const benchmarkShort = (id) => {
-  const b = benchList().find((x) => x.id === id);
-  const [first, second = ""] = benchmarkName(id).split(" · ");
-  if (!(b && b.scene_name && benchScenes().length > 1)) return second ? `${first} · ${second}` : first;
-  const what = second.replace(/\s*(Lv\s*)?\d.*$/, "").trim();
-  return [first, what, tr(b.scene_name)].filter(Boolean).join(" · ");
-};
+const benchmarkShort = (id) => benchShort(id);
 const reachPct = (x) => `${Math.floor(x * 1000) / 10}%`;
 const reachBill = (p) => [`${p.regular} Forma`, p.umbra ? `${p.umbra} Umbra` : null, p.omni ? `${p.omni} Omni` : null]
   .filter(Boolean).join(" · ");
@@ -447,8 +438,7 @@ function renderFormaReach() {
   const scope = formaReachScope(w);
   const rulers = boardRulersOf(w);
   const on = new Set(scope.benchmarks || rulers);
-  const tickR = rulers.map((b) => `<label class="fp-tick"><input type="checkbox" data-rb="${escHtml(b)}"`
-    + `${on.has(b) ? " checked" : ""}> <span title="${escHtml(benchmarkName(b))}">${escHtml(benchmarkShort(b))}</span></label>`).join("");
+  const tickR = benchChecklistHtml(rulers, on);
   const head = `<div class="exlabel">${escHtml(tr("Plan ahead"))} · ${escHtml(tr("one layout across the board"))}</div>`;
   if (!rulers.length) return head + `<div class="fp-dim">${escHtml(tr("no board builds in this scope"))}</div>`;
   let out = "";

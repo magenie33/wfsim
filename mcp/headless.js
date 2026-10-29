@@ -567,7 +567,7 @@ function headlessLongCard(say, w, ask, got) {
     const cards = body();
     return `<header class="lc-top"><span class="brand">WF<span>Sim</span></span><span class="sb-empty">wfsim.app</span></header>
     <h1 class="lc-title">${esc(title)}</h1>
-    <div class="sb-empty lc-sub">${esc([bench ? say.t(bench.name) : "", updated ? trF("updated {t}", { t: updated }) : ""]
+    <div class="sb-empty lc-sub">${esc([bench ? headlessBenchmarkName(say.meta, bench.id, say.t) : "", updated ? trF("updated {t}", { t: updated }) : ""]
       .filter(Boolean).join(" · "))}</div>
     ${cards || `<p class="sim-empty">${esc(say.t("Nothing measured for this weapon yet."))}</p>`}
     <footer class="lc-foot"><div class="lc-qr">${qrSvg ? qrSvg.replace(/^<\?xml[^>]*>/, "") : ""}</div>
@@ -1365,6 +1365,24 @@ function headlessStateAxes(meta, p, weapon, exilusId) {
 
 const headlessWeaponOf = (meta, id) => (meta.weapons || []).find((x) => x.id === id) || null;
 
+/// Every board label follows its fight, enemy strength, operation and other axes.
+function headlessBenchmarkParts(meta, id) {
+  const all = meta.benchmarks || [], b = all.find((x) => x.id === id);
+  if (!b) return [];
+  const base = all.find((x) => x.id === (b.base || b.id)) || b;
+  const axes = b.ladder || [];
+  return [{ axis: "base", tag: base.id, name: base.name.split(" · ")[0], label: "Board scenario" },
+    ...["scene", "shooting"].flatMap((axis) => axes.filter((x) => x.axis === axis)
+      .map((x) => ({ ...x, label: axis === "scene" ? "Enemy strength" : "Operating conditions" }))),
+    ...(axes.some((x) => !["scene", "shooting"].includes(x.axis))
+      ? axes.filter((x) => !["scene", "shooting"].includes(x.axis)).map((x) => ({ ...x, label: "Other conditions" }))
+      : [{ axis: "other", tag: "none", name: "No special conditions", label: "Other conditions" }])];
+}
+function headlessBenchmarkName(meta, id, translate = (x) => x) {
+  const parts = headlessBenchmarkParts(meta, id);
+  return parts.length ? parts.map((x) => translate(x.name)).join(" › ") : id || "—";
+}
+
 /// FIELDS A SCENARIO NO LONGER CARRIES, stripped in both directions so a stored
 /// one — or a benchmark yaml — cannot reintroduce them: how the weapon is fired
 /// belongs to the build, and how hard a fight is measured to the reader (the
@@ -1745,7 +1763,7 @@ const HEADLESS_QUERIES = [
         rows: picked.map(({ row: r, mode, riven: rv, rank, key, tied }) => {
           const bench = benches.find((b) => b.id === r.benchmark);
           return {
-            key, rank, ...(tied > 1 ? { tied } : {}), ruler: bench ? host.tr(bench.name) : r.benchmark, ruler_id: r.benchmark,
+            key, rank, ...(tied > 1 ? { tied } : {}), ruler: headlessBenchmarkName(host.meta(), r.benchmark, host.tr), ruler_id: r.benchmark,
             mode, riven: rv, score: String(r.shown != null ? r.shown : (r.score || 0).toFixed(4)),
             ...(r.measured_at ? { measured_at: r.measured_at } : {}), ...(r.measured_by ? { measured_by: r.measured_by } : {}),
             mods: (r.mods || []).filter((x) => x && x !== BOARD_RIVEN_SLOT).map(name),
@@ -1827,7 +1845,7 @@ const HEADLESS_QUERIES = [
           ? benches.map((b) => ({ ...pooledRivens(meta, w, rows, b.id), mode: null })).filter((g) => g.rivens.length)
           : rivenGroups(meta, w, rows)).filter((g) => (!ruler || g.ruler_id === ruler) && (!m || !g.mode || g.mode === m))
           .map((g) => ({
-            ruler: host.tr((benches.find((b) => b.id === g.ruler_id) || { name: g.ruler_id }).name),
+            ruler: headlessBenchmarkName(host.meta(), g.ruler_id, host.tr),
             ruler_id: g.ruler_id, mode: g.mode,
             riven_free: g.top ? { score: shown(g.top.row), mods: mods(g.top.row), link: link(g.top.row, false) } : null,
             rivens: placed(g.rivens.filter((x) => rivenMatches(x.row.riven, { bonuses, malus })), (x) => x.row.score || 0).map((x) => ({

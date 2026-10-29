@@ -74,10 +74,10 @@ function renderRivenAppraisalControls() {
   const cards = loadPresetList(RIVENS), rulers = META.benchmarks || [];
   for (const id of appraisalSelection) if (!cards.some((card) => card.id === id)) appraisalSelection.delete(id);
   if (!rulers.some((ruler) => ruler.id === appraisalRuler)) appraisalRuler = rulers[0]?.id;
-  box.innerHTML = `<label>${escHtml(tr("Ruler"))} <select id="riven-appraisal-ruler">${rulers.map((ruler) => `<option value="${escHtml(ruler.id)}"${ruler.id === appraisalRuler ? " selected" : ""}>${escHtml(benchmarkName(ruler.id))}</option>`).join("")}</select></label> `
+  box.innerHTML = benchSelectorHtml(appraisalRuler)
     + `<button type="button" class="ghost-btn" id="appraise-selected"${!appraisalSelection.size ? " disabled" : ""}>${escHtml(tr("Appraise selected"))} (${appraisalSelection.size})</button> `
     + `<button type="button" class="ghost-btn" id="appraise-all"${!cards.length ? " disabled" : ""}>${escHtml(tr("Appraise all"))} (${cards.length})</button><span id="riven-appraisal-note" role="status"></span>`;
-  $("riven-appraisal-ruler").onchange = (event) => { appraisalRuler = event.target.value; };
+  wireBenchSelector(box, (id) => { appraisalRuler = id; renderRivenAppraisalControls(); });
   const submit = async (ids) => {
     $("appraise-selected").disabled = true; $("appraise-all").disabled = true;
     try {

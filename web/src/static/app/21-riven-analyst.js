@@ -49,14 +49,14 @@ function renderRivenAnalyst() {
   // AS DEEP AS THE BUILD BAR READS, so every row drawn here is one it can open.
   const deep = boardGroupLeaders(BOARD[w.id]);
   const groups = rivenGroups(META, w, (BOARD[w.id] || []).filter((r) => deep(r, boardDepth)));
-  if (!groups.length) {
-    box.innerHTML = `<p class="wb-empty">${escHtml(tr("No riven build of this weapon has been measured yet."))}</p>`;
-    return;
+  if (!benchList().some((b) => b.id === raRuler)) raRuler = benchList()[0]?.id;
+  const ruler = raRuler;
+  const selector = benchSelectorHtml(ruler);
+  const wire = () => wireBenchSelector(box, (id) => { raRuler = id; raPick = null; renderRivenAnalyst(); });
+  if (!groups.some((g) => g.ruler_id === ruler)) {
+    box.innerHTML = selector + `<p class="wb-empty">${escHtml(tr("No riven build of this weapon has been measured yet."))}</p>`;
+    wire(); return;
   }
-  const rulers = [...new Set(groups.map((g) => g.ruler_id))];
-  const ruler = rulers.includes(raRuler) ? raRuler : rulers[0];
-  const segs = rulers.map((id) => `<span class="seg${id === ruler ? " on" : ""}" data-ruler="${escHtml(id)}">${
-    escHtml(benchShort(id))}</span>`).join("");
   const mine = groups.filter((g) => g.ruler_id === ruler);
   const all = mine.flatMap((g) => g.rivens);
   const pick = all.find((x) => x.key === raPick) || all[0];
@@ -73,14 +73,11 @@ function renderRivenAnalyst() {
   }).join("");
   const builds = [pick && raBuild(w, pick, tr("With this riven")),
     group && group.top && raBuild(w, group.top, tr("The board's best riven-free build"))].filter(Boolean).join("");
-  box.innerHTML = `<div class="ra-top"><span class="rv-lbl">${escHtml(tr("Ruler"))}</span><span class="oseg">${segs}</span></div>`
+  box.innerHTML = selector
     + `<p class="wb-terms">${escHtml(benchmarkName(ruler))}</p>` + tables
     + `<div class="ra-builds">${builds}</div>`;
   const byKey = new Map(mine.flatMap((g) => (g.top ? [g.top] : []).concat(g.rivens)).map((x) => [x.key, x]));
-  box.querySelectorAll("[data-ruler]").forEach((el) => el.addEventListener("click", () => {
-    raRuler = el.dataset.ruler;
-    renderRivenAnalyst();
-  }));
+  wire();
   box.querySelectorAll("[data-ra]").forEach((el) => el.addEventListener("click", () => {
     raPick = el.dataset.ra;
     renderRivenAnalyst();

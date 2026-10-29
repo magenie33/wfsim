@@ -765,10 +765,7 @@ const officialBuildActive = () => !!(buildNamed(activePreset) || {}).builtin;
 // rather than to nothing: a board row naming a benchmark this build of the site
 // does not carry is still a row, and hiding which ruler it used would make it
 // look like it had none.
-const benchmarkName = (id) => {
-  const b = (META.benchmarks || []).find((x) => x.id === id);
-  return b ? tr(b.name) : id || "—";
-};
+const benchmarkName = (id) => benchShort(id);
 
 /// The build collection's config, as a FACTORY like `scenarioBarCfg` — it used
 /// to be a local inside the renderer, which meant the only way to select a

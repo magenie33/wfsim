@@ -6,6 +6,21 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "No build has been measured under these board conditions.": "该榜单条件下暂无已测量配装。"
+  "Demolisher": "爆破使"
+  "Board scenario": "榜单场景"
+  "Enemy strength": "怪物强度"
+  "Operating conditions": "操作维度"
+  "Other conditions": "其他条件"
+  "No special conditions": "无特殊"
+  "Choose a board": "选择榜单"
+  "Use this board": "使用此榜单"
+  "Standard Single Target": "标准单体"
+  "Standard Multi Target": "标准群体"
+  "Heavy Gunner": "重型机枪手"
+  "100% headshots, aiming": "100%爆头·瞄准"
+  "50% headshots, aiming": "50%爆头·瞄准"
+  "0% headshots, aiming": "0%爆头·瞄准"
   "Task center": "任务中心"
   "Quick calculation": "快速计算"
   "Simulation": "模拟"
@@ -890,8 +905,8 @@ ui:
   "Orbs merge, and a full set collapses into a singularity dealing damage over time in 5 m (module). The engine resolves each shot on its own, so neither is counted; this is most of the weapon, and the number reads well low.": "光球会合并，叠满后坍缩成奇点，在 5 米内持续造成伤害（模块）。引擎逐发独立结算，所以两者都未计入；这是这把武器的主要部分，数字明显偏低。"
   "Orbs merge: a new orb joining one in the air triggers 'Orb Merging Damage' in 4 m, growing with the number merged (wiki). The engine resolves each shot on its own, so the merge is not counted and the number reads well low for a player stacking orbs.": "光球会合并：新的光球并入空中已有的光球时，会在 4 米内触发「Orb Merging Damage」，伤害随合并数量增长（wiki）。引擎逐发独立结算，所以合并未计入，对堆叠光球的玩家而言数字明显偏低。"
   "Official test scenario": 官方测试场景
-  "Lv 9999 SP": 9999 级 钢铁之路
-  "Lv 200 SP": 200 级 钢铁之路
+  "Lv 9999 SP": "钢铁9999"
+  "Lv 200 SP": "钢铁200"
   "Lv 500 Archimedea": "500 级 Archimedea"
   "Lv 1000 Icebind": "1000 级 Icebind"
   "Empowerment": "强化"
