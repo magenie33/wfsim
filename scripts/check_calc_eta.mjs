@@ -40,6 +40,8 @@ const r = await evaluate(`(async () => {
 
   const t0 = Date.now();
   openPicker(6, document.querySelector('.slot') || document.body);
+  userTaskPanelOpen = true;
+  renderUserTasks();
 
   let guess = null, guessAt = null;
   out.sawRow = false;
@@ -53,7 +55,7 @@ const r = await evaluate(`(async () => {
       out.guessAtDone = gainScan.done;
       out.guessOf = gainScan.total;
     }
-    const box = document.getElementById('calc-status');
+    const box = document.getElementById('user-tasks-panel');
     if (box && !box.hidden && /left/.test(box.innerText)) out.sawRow = true;
     if (!gainScan.running && gainScan.key !== null) break;
   }
@@ -63,7 +65,7 @@ const r = await evaluate(`(async () => {
   out.predictedMs = guess;
   out.actualAfterGuessMs = guessAt ? Date.now() - guessAt : null;
   // …AND IT IS GONE WHEN THERE IS NOTHING LEFT TO WAIT FOR.
-  const box = document.getElementById('calc-status');
+  const box = document.getElementById('user-tasks-panel');
   out.rowAfter = box ? /left/.test(box.innerText) : false;
   return out;
 })()`);
@@ -102,4 +104,4 @@ check(
   `row still there ${r.rowAfter}`,
 );
 
-process.exit(0);
+await app.finish("the task center reports the scan's remaining time");

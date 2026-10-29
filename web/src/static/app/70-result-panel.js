@@ -52,7 +52,7 @@ async function resultForShare() {
 /// KEYED BY WEAPON AND PRESET, because switching either one asks for a
 /// different result and both are legal to do without re-running.
 const resultMem = new Map();
-const resultMemKey = () => JSON.stringify([presetWeapon(), activePreset]);
+const resultMemKey = (weapon = presetWeapon(), preset = activePreset) => JSON.stringify([weapon, preset]);
 
 /// WHICH RECORD THE RESULT BLOCK SHOWS when it is not the newest — an id from
 /// the history, or null. It names the open build's record or it is dropped, so
@@ -62,6 +62,14 @@ let resultViewing = null;
 function renderStoredSimResult() {
   const box = $("sim-results");
   if (!box) return;
+  if (simulationReport && new URLSearchParams(location.search).get("measurement") === simulationReport.id) {
+    show("sim-results-block", true);
+    const report = results.find((record) => record.id === simulationReport.id);
+    if (report) renderResults(report.r, report.at, report.build);
+    else box.innerHTML = `<div class="placeholder">${escHtml(tr("This result is no longer available."))}</div>`;
+    return;
+  }
+  if (renderSimulationTask()) return;
   const viewing = resultViewing
     && results.find((x) => x.id === resultViewing && x.weapon === presetWeapon() && x.preset === activePreset);
   if (!viewing) resultViewing = null;
@@ -71,7 +79,7 @@ function renderStoredSimResult() {
     renderResults(viewing.r, viewing.at, viewing.build);
     return;
   }
-  let shown = resultLatest(presetWeapon(), activePreset);
+  let shown = resultLatest(presetWeapon(), activePreset) || simulationResultForPage();
   // WHAT IS ON SCREEN WINS over the record, and only for the build it was
   // measured on — a cache that outlived its build would attach a number to
   // something that never produced it. A RECORD HAS NO REPLAY, so memory is

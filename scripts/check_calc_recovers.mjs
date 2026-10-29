@@ -95,7 +95,7 @@ const s = await evaluate(`(async () => {
   out.killed = killed;
   out.sawStatus = false;
   for (let i = 0; i < 90; i++) {
-    if (!document.getElementById('calc-status').hidden) out.sawStatus = true;
+    if (userTaskItems().some(t => t.id === 'quick')) out.sawStatus = true;
     if (gainScan.key !== null) break;
     await sleep(500);
   }
@@ -202,11 +202,12 @@ const f = await evaluate(`(async () => {
     note: '', metric: '', failed: false, lanesLost: 0, ids: new Set() };
   gainPending = { axis: { kind: 'mods', idx: 3 }, repaint: () => {} };
   renderCalcStatus();
+  userTaskPanelOpen = true;
+  userTaskDetails = 'quick';
+  renderUserTasks();
   // THE SURFACE IS REACHABLE AT ALL, which is half of the guarantee.
-  out.boxShown = !document.getElementById('calc-status').hidden;
-  const tab = document.getElementById('cs-tab');
-  if (tab && !document.getElementById('cs-reset')) tab.click();
-  const btn = document.getElementById('cs-reset');
+  out.boxShown = !document.getElementById('user-tasks-panel').hidden && !!document.getElementById('calc-status');
+  const btn = document.querySelector('[data-user-task="quick"][data-user-task-action="reset"]');
   out.buttonThere = !!btn;
   if (btn) btn.click();
   out.clearedPending = gainPending === null;
@@ -290,12 +291,19 @@ const slowApp = await openApp({ boot: 30000, delay: { ".wasm": 16000 }, profile:
 const slowLane = await slowApp.evaluate(`(async () => {
   LANE_WATCHDOG.loading = 7500;
   engineModule = null;
+  // An external base owns its server; delay this tab's fetch instead.
+  const originalFetch = window.fetch;
+  if (${!!process.env.WFSIM_BASE}) window.fetch = async (url, options) => {
+    if (String(url).includes(ENGINE_WASM)) await new Promise(resolve => setTimeout(resolve, 16050));
+    return originalFetch(url, options);
+  };
   const t0 = performance.now();
   const r = await Promise.race([
     makeLane().call('/api/catalogue'),
     new Promise((res) => setTimeout(() => res({ timedOut: true }), 60000)),
   ]);
   LANE_WATCHDOG.loading = 90000;
+  window.fetch = originalFetch;
   return { dead: !!(r && r.worker_dead), timedOut: !!(r && r.timedOut), meta: !!(r && !r.error && !r.worker_dead && Object.keys(r).length), ms: Math.round(performance.now() - t0) };
 })()`);
 await slowApp.close();
@@ -457,4 +465,4 @@ check(
   !blocked.note && blocked.weapons > 0 && !!(blocked.answer && blocked.answer.worker_dead),
   `note "${blocked.note.replace(/\s+/g, " ").slice(0, 120)}", ${blocked.weapons} weapons, answer ${JSON.stringify(blocked.answer).slice(0, 120)}`,
 );
-process.exit(0);
+await app.finish("the calculator recovers and its task remains inspectable");

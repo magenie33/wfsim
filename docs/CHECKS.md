@@ -41,6 +41,14 @@ axis keeps the other, switching fights keeps both, and a URL round trip and
 a cold page load restore the same cell. Against the dev server:
 `WFSIM_BASE=http://127.0.0.1:<port> node scripts/check_board_ladder.mjs`.
 
+## `check_user_task_queue` and `check_user_task_center`
+
+The first checks the generic local lifecycle, immutable inputs, attempt guards
+and artifact ownership, including a broken-guard negative control. The second
+drives real calculations across pages and tabs, including unnamed builds,
+cancelled completions, report links and mobile layout. Contracts and commands
+are in [TASKS.md](TASKS.md).
+
 ## `check_page_bodies`
 
 `node --check` over every check script, and over `app.js` joined from its

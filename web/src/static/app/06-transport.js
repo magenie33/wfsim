@@ -693,19 +693,21 @@ async function laneSimulate(lane, body, live) {
 /// few runs that a slice would be one engagement. Sharding costs a shard each
 /// on the wire and a merge at the end, not worth paying to halve a millisecond.
 async function simulateFleet(body, onProgress, opts) {
+  const cancelled = () => !!(opts && opts.signal && opts.signal.aborted);
+  if (cancelled()) return { ok: false, cancelled: true };
   // ONLY IN THE WASM BUILD: `/worker.js` is generated into `site/` and the
   // native dev server has never served it. Without this, a simulation there
   // built workers that 404 and then waited for answers that could not come —
   // the Run button locked, on the one server the owner develops against and no
   // check script uses. On native there is nothing to gain either:
   // `api` is a fetch and the fetches already parallelise.
-  if (!WASM) return api("/api/simulate", body, onProgress);
+  if (!WASM) return api("/api/simulate", body, onProgress, opts);
   const runs = Math.max(1, Number(body.runs) || 1);
   // THE SIZE IS DECIDED BEFORE THE WORKERS EXIST, so a simulation that falls
   // back does not pay for a pool it will not use.
   const n = poolSize();
   if (n < 2 || runs < n * 2) {
-    return api("/api/simulate", body, onProgress);
+    return api("/api/simulate", body, onProgress, opts);
   }
   const ls = await lanes();
   // EVERY RUN COVERED EXACTLY ONCE, remainder to the first lanes. A gap or an
@@ -748,12 +750,12 @@ async function simulateFleet(body, onProgress, opts) {
 
   await Promise.all(ls.map(async (lane, k) => {
     for (;;) {
-      if (stopped || failed || cursor >= runs) return;
+      if (stopped || failed || cancelled() || cursor >= runs) return;
       // …AND BACKGROUND WORK WAITS FOR THE FOREGROUND FIRST. Between pieces
       // only: the piece already running is a quarter second, so a person's Run
       // waits for that rather than for the scan.
       if (opts && opts.background) await yieldToForeground();
-      if (stopped || failed || cursor >= runs) return;
+      if (stopped || failed || cancelled() || cursor >= runs) return;
       // A LANE DOES NOT CLAIM WORK IT CANNOT START. Claiming first and then
       // queueing behind whatever the lane is already holding takes a run out of
       // the pool that nobody else may take, which is the static split's fault
@@ -765,10 +767,10 @@ async function simulateFleet(body, onProgress, opts) {
       const until = Date.now() + 1500;
       // …AND IT STOPS WAITING THE MOMENT THERE IS NOTHING LEFT TO CLAIM, or the
       // pool holds an answer hostage to a lane with no work to do.
-      while (lane.busy > 0 && Date.now() < until && cursor < runs && !stopped && !failed) {
+      while (lane.busy > 0 && Date.now() < until && cursor < runs && !stopped && !failed && !cancelled()) {
         await new Promise((r) => setTimeout(r, 25));
       }
-      if (stopped || failed || cursor >= runs) return;
+      if (stopped || failed || cancelled() || cursor >= runs) return;
       const left = runs - cursor;
       // …AND NEVER SO BIG THAT THE TAIL IS ONE CHUNK. A piece is capped at an
       // even share of what is LEFT, so the last round is short whatever the
@@ -806,7 +808,7 @@ async function simulateFleet(body, onProgress, opts) {
     }
   }));
 
-  if (stopped) return { ok: false, cancelled: true };
+  if (stopped || cancelled()) return { ok: false, cancelled: true };
   if (failed) return failed;
   // EVERY RUN IS IN. The merge is arithmetic over sums and takes no time worth
   // reporting, so the bar completes here rather than sitting at 97% while the

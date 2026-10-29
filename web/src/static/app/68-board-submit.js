@@ -453,73 +453,42 @@ async function boardRowMatching(body) {
 const boardRowLabel = (r) =>
   `${r.group}${r.name ? ` · ${r.name}` : ""}`;
 
-async function offerBoardSubmit() {
-  // NO RULER GATE. Any fight can upload, because what is uploaded is the BUILD
-  // and the number is produced by the scorer under ITS fight. Of 914 distinct builds players had submitted, only 46 had ever
-  // been scored on more than one board — the gate was holding 95% of everything
-  // anyone contributed back from the boards it could also have answered.
-  if (officialBuildActive()) return;          // a board row does not resubmit itself
-  if (boardConsent() !== "yes") { renderBoardConsent(); renderBoardOutcome(); return; }
-  const body = boardPayload();
-  if (!body) return;
-  // ALREADY A ROW? Asked before the door is, because a build the board already
-  // holds has nothing to be refused ABOUT — sending it again would be answered
-  // by the store collapsing it onto the row it is, silently, after the reader
-  // has been told it was uploaded.
-  boardOnBoard = await boardRowMatching(body);
-  if (boardOnBoard) {
-    boardState = "onboard";
-    renderBoardConsent();
-    renderBoardOutcome();
-    return;
-  }
-  // THE BOARD'S OWN DOOR, ASKED BEFORE KNOCKING. The store accepts anything;
-  // the SCORER decides, an hour later, in a workflow log — so a build the board
-  // will never take looked exactly like one it took, forever. Three Kuva Nukor
-  // submissions sat there carrying no progenitor element, refused on every run
-  // since they arrived, while this panel said "sent".
-  //
-  // `/api/board/check` is `validate_for_board` itself, the same call the scorer
-  // makes — not a copy of its rules, because a second implementation is a
-  // second answer and the player has to be given the board's.
+/// The payload is captured by the submitting page; outcomes only repaint that context.
+async function submitBoardPayload(body) {
+  const outcome = { state: "failed", onBoard: null, boards: null, door: null, refusal: "" };
+  if (body.weapon === presetWeapon()) outcome.onBoard = await boardRowMatching(body);
+  if (outcome.onBoard) return { ...outcome, state: "onboard" };
   const verdict = await boardVerdict(body);
-  boardBoards = verdict && verdict.ok ? { n: verdict.boards, of: verdict.of } : null;
-  // ONE ANSWER, TWO READERS. The panel above the run and the line under it both
-  // say what the board thinks of this build, and they say it from here.
-  boardDoor = verdict && verdict.ok && verdict.accepted === false
-    ? (verdict.reason || "") : null;
+  outcome.boards = verdict && verdict.ok ? { n: verdict.boards, of: verdict.of } : null;
+  outcome.door = verdict && verdict.ok && verdict.accepted === false ? verdict.reason || "" : null;
   if (verdict && verdict.ok && verdict.accepted === false) {
-    boardState = "refused";
-    boardRefusal = verdict.reason || "";
-    renderBoardConsent();
-    renderBoardOutcome();
+    return { ...outcome, state: "refused", refusal: verdict.reason || "" };
+  }
+  try {
+    const response = await fetch("/api/board/submit", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    outcome.state = response.ok ? "sent" : "failed";
+    if (response.ok) track("board.submit", body.weapon);
+  } catch (_) { /* a board upload does not invalidate a measurement */ }
+  return outcome;
+}
+
+async function offerBoardSubmit(captured) {
+  if (!captured && officialBuildActive()) return;
+  const context = captured ? captured.context : resultContext();
+  const current = () => presetWeapon() === context.weapon && activePreset === context.preset && simKey() === context.key;
+  if (boardConsent() !== "yes") {
+    if (current()) { renderBoardConsent(); renderBoardOutcome(); }
     return;
   }
-  boardRefusal = "";
-  try {
-    // A REAL fetch, not `api()`. Every other endpoint is answered by the engine
-    // — locally by the dev server, in the browser by the wasm worker — and the
-    // board is the one thing neither of them can answer: it is a service, not a
-    // calculation. Routing it through `api()` would hand the path to a worker
-    // that has never heard of it.
-    //
-    // SAME ORIGIN, deliberately. A separate api domain is a second DNS name and
-    // a second thing that can be blocked, which is the failure the art rule was
-    // written about ("unreliable to blocked from mainland China, i.e. precisely
-    // where the players are"). The board lives under this site's own origin.
-    const res = await fetch("/api/board/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    boardState = res.ok ? "sent" : "failed";
-    if (res.ok) track("board.submit", body.weapon);
-  } catch (_) {
-    // Never an error dialog: a board that is unreachable is not a failed run.
-    boardState = "failed";
-  }
-  renderBoardConsent();
-  renderBoardOutcome();
+  const body = captured ? captured.body : boardPayload();
+  if (!body) return;
+  const outcome = await submitBoardPayload(body);
+  if (!current() || boardConsent() !== "yes") return;
+  boardState = outcome.state; boardOnBoard = outcome.onBoard;
+  boardBoards = outcome.boards; boardDoor = outcome.door; boardRefusal = outcome.refusal;
+  renderBoardConsent(); renderBoardOutcome();
 }
 
 /// THE LINE THE BOARD DRAWS, said to the person it applies to. A submission
@@ -1117,100 +1086,31 @@ function renderSimBuffs() {
 
 async function runSim() {
   const btn = $("run-sim");
-  btn.disabled = true; btn.textContent = "Simulating…";
-  show("sim-results-block", true);
-  // A BAR, BECAUSE THE WAIT IS UNBOUNDED. A single-target fight is a
-  // millisecond a run; a 361-body one is tens of them, so the rulers' 1000 runs
-  // is a minute in the browser — and a line that says "running 1000
-  // simulations…" for a minute reads as a hang.
-  //
-  // IT SAYS THE COUNT, not just a proportion: "412 / 1000" is a number a reader
-  // can act on (lower the runs, take the fight apart) where a bar alone is only
-  // a feeling.
-  $("sim-results").innerHTML = `<div class="placeholder simrun">
-    <div class="simrun-t">${escHtml(tr("running {n} simulations…").replace("{n}", simRuns()))}</div>
-    <div class="simrun-bar"><span id="sim-prog" style="width:0%"></span></div>
-    <div class="simrun-n" id="sim-prog-n"></div>
-    <button type="button" id="sim-stop" class="ghost-btn small">${escHtml(tr("stop"))}</button>
-  </div>`;
-  // STOPPABLE, because the wait is unbounded and a reader who realises the
-  // fight is too big should not have to reload the page.
-  $("sim-stop").onclick = () => {
-    cancelSim();
-    $("sim-results").innerHTML =
-      `<div class="placeholder">${escHtml(tr("stopped — nothing was measured"))}</div>`;
-  };
-  // THE READER IS WAITING FOR THIS ONE, so it outranks whatever the quick calc
-  // is measuring — released in the `finally` below, whichever way this ends.
-  const releasePriority = holdForeground();
+  const request = taskClone({ ...buildPayload(), ...theFight({ replay: true }) });
+  const origin = { context: resultContext(), build: taskClone(snapshotState()),
+    preset_name: presetLabel(buildNamed(activePreset)), scenario_name: presetLabel(scenarioNamed(activeScenario)),
+    board: officialBuildActive() ? null : taskClone(boardPayload()) };
+  const submitting = simulationContextId(origin.context);
+  const submission = crypto.randomUUID();
+  simulationSubmitting.set(submitting, submission);
+  const accepted = () => { if (simulationSubmitting.get(submitting) === submission) simulationSubmitting.delete(submitting); };
+  boardState = ""; boardOnBoard = null;
+  btn.disabled = true;
   try {
-    // `replay: true` only HERE. The gain scan hits the same endpoint once per
-    // candidate and shows no replay, so it must not pay for one.
-    const body = { ...buildPayload(), ...theFight({ replay: true }) };
-    // THE BUILD AS IT WAS SENT, copied now: a fight can take a minute, and an
-    // edit made while it runs must not become the build this number is about.
-    const build = snapshotState();
-    // STARTED, beside `simulator.run` for finished: the gap is what was stopped or failed.
-    track("simulator.start", body.weapon, simRuns());
-    // THROTTLED BY THE FRAME, not by the message: the worker already sends one
-    // per percent, and a DOM write per percent is still 100 of them for a fight
-    // that takes a second.
-    let painted = -1;
-    const began = Date.now();
-    const r = await simulateFleet(body, (done, total) => {
-      const pct = total ? Math.round((done / total) * 100) : 100;
-      if (pct === painted) return;
-      painted = pct;
-      const bar = $("sim-prog");
-      const num = $("sim-prog-n");
-      if (bar) bar.style.width = `${pct}%`;
-      // HOW LONG IS LEFT, from how long it has taken — free, because the run is
-      // already happening, and exact enough after a few runs because every run
-      // is the same fight. A 361-body ruler is ~28 ms a run, so the default
-      // 1000 is half a minute: the number a reader needs is not "how far" but
-      // "how much longer".
-      //
-      // AFTER 5% only. Before that the estimate is one or two runs' noise
-      // extrapolated a hundredfold, which reads as a wild guess and is one.
-      const secs = (Date.now() - began) / 1000;
-      const left = done > 0 && pct >= 5 ? (secs / done) * (total - done) : null;
-      if (num) {
-        num.textContent = `${done} / ${total}`
-          + (left !== null && left > 1
-            ? ` · ${tr("about {s}s left").replace("{s}", Math.ceil(left))}`
-            : "");
-      }
-    });
-    // A CANCEL IS NOT A FAILURE: the reader asked for it, and the panel already
-    // says so. Nothing to report and nothing to complain about.
-    if (r && r.cancelled) return;
-    if (!r || r.ok === false) {
-      $("sim-results").innerHTML = `<div class="error">sim failed: ${escHtml(r ? tr(r.error) : "no data")}</div>`;
-      return;
+    const queue = await initUserTasks();
+    const existing = queue.list().find((task) => task.kind === "simulation" && userTaskActive(task)
+      && task.origin.context.weapon === origin.context.weapon && task.origin.context.preset === origin.context.preset
+      && task.origin.context.key === origin.context.key && task.request.runs === request.runs);
+    const task = existing || await queue.create("simulation", request, origin);
+    accepted();
+    renderSimulationTask();
+    await queue.wait(task.id);
+    renderSimulationTask(true);
+  } catch (error) {
+    userTaskFailed(error);
+    if (presetWeapon() === origin.context.weapon && activePreset === origin.context.preset && simKey() === origin.context.key) {
+      show("sim-results-block", true);
+      $("sim-results").innerHTML = `<div class="error">${escHtml(tr(String(error.message || error)))}</div>`;
     }
-    // A NEW RUN IS A NEW VERDICT. `renderResults` draws the outcome line
-    // itself, so leaving the last run's answer standing would state it under a
-    // build that has not been asked about yet — and now that one of the answers
-    // is "already on the board", a stale one is a claim about the wrong build.
-    boardState = "";
-    boardOnBoard = null;
-    renderResults(r, undefined, build);
-    saveSimResult(r, build);
-    track("simulator.run", body.weapon, simRuns());
-    // ONE INTEGER PAIR, FOR THE READER'S OWN EYES. `/support` is the only thing
-    // that reads it and it never leaves this browser — see `SUPPORT_USE`. It is
-    // counted HERE rather than in the worker because what is being counted is a
-    // measurement the reader ASKED FOR: the quick calc and the optimizer run
-    // thousands of engagements nobody sat and watched.
-    noteSimRun(simRuns());
-    // A run under the OFFICIAL scenario is the only thing that can reach the
-    // board, and only after you have said so. Never blocks the result.
-    offerBoardSubmit();
-  } catch (e) {
-    $("sim-results").innerHTML = `<div class="error">sim failed: ${e}</div>`;
-  } finally {
-    releasePriority();
-    btn.disabled = false; btn.textContent = "Run Simulation";
-  }
+  } finally { accepted(); renderSimulationTask(); }
 }
-

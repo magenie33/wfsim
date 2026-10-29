@@ -65,22 +65,40 @@ async function loadResults() {
 
 /// THE RUN AS A RECORD. The replay stays out — it is the one part of a result
 /// a button regenerates, and it is `resultMem`'s for the session.
-function resultRecord(r, build) {
+function resultContext() {
+  return { weapon: presetWeapon(), preset: activePreset, scenario: activeScenario,
+    key: simKey(), fight: snapshotScenario() };
+}
+
+function resultRecord(r, build, context = resultContext(), id = presetNewId()) {
   return {
-    id: presetNewId(), schema: RESULT_SCHEMA, at: Date.now(),
+    id, schema: RESULT_SCHEMA, at: Date.now(),
     engine: ENGINE_ID, release: RELEASE_ID,
-    weapon: presetWeapon(), preset: activePreset, scenario: activeScenario,
-    key: simKey(), build, fight: snapshotScenario(),
+    ...context, build,
     kept: false, r: { ...r, replay: null },
   };
 }
 
 /// Every record of one build, newest first.
 const resultsFor = (weapon, preset) =>
-  results.filter((x) => x.weapon === weapon && x.preset === preset).reverse();
+  preset ? results.filter((x) => x.weapon === weapon && x.preset === preset).reverse() : [];
 /// THE BUILD'S NUMBER: its newest record, under whatever fight — `key` says
 /// whether that is still the fight and the build on screen.
 const resultLatest = (weapon, preset) => resultsFor(weapon, preset)[0] || null;
+
+/// Task completion adopts this stable record id after a crash between stores.
+async function resultAddCaptured(r, build, context, id, persistent) {
+  const existing = results.find((record) => record.id === id);
+  if (existing) return existing;
+  const rec = resultRecord(r, build, context, id);
+  const same = (record) => !record.kept && record.weapon === rec.weapon && record.preset === rec.preset && record.scenario === rec.scenario;
+  const drop = results.filter(same).slice(0, 1 - RESULT_KEEP).map((record) => record.id);
+  const stored = await resultsTx("readwrite", (store) => { store.put(rec); drop.forEach((key) => store.delete(key)); });
+  if (!stored && persistent) throw new Error("The result could not be saved. Retry this task.");
+  results = results.filter((record) => record.id !== id && !drop.includes(record.id)).concat(rec);
+  if (stored && resultsChannel) resultsChannel.postMessage("changed");
+  return rec;
+}
 
 /// Record a run, and trim what that build keeps for that fight. The blank
 /// (no preset open) records nothing: no build is there for a record to name.

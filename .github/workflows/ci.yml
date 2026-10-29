@@ -90,6 +90,7 @@ jobs:
       - run: node scripts/check_page_bodies.mjs
       - run: node scripts/check_comment_style.mjs
       - run: node scripts/check_time_storage.mjs
+      - run: node scripts/check_user_task_queue.mjs
       - run: node scripts/check_app_parts.mjs
       - run: node scripts/check_ime_keys.mjs
       - run: node scripts/check_engine_layers.mjs
@@ -431,6 +432,8 @@ jobs:
         run: node scripts/check_compute.mjs
       - name: A lost lane is replaced and says where, and a slow call is not taken for a dead one
         run: node scripts/check_calc_recovers.mjs
+      - name: Calculation tasks retain their inputs, results and queue across pages
+        run: node scripts/check_user_task_center.mjs
       - name: Protocol 8 on the page keeps every result and holds to the signal and next_ms
         run: node scripts/check_compute_queue.mjs
       - name: A new release is taken at once, and the reload loses the reader nothing

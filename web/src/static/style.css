@@ -3212,32 +3212,9 @@ table.lg-snap td.ar{color:var(--line);padding:0 2px}
    claim can be checked the day melee lands (MEASUREMENTS M61). */
 .rec-gate{color:var(--s1)}
 
-/* THE CALCULATOR'S OWN STATUS, bottom right and out of the way. It is a TAB
-   until it is opened: the reader wants it in two moments — while a scan runs
-   and after one that failed — and furniture the rest of the time is what makes
-   a warning invisible when it finally matters. */
-.calc-status{position:fixed;right:12px;bottom:12px;z-index:60;font-size:12px;
-  display:flex;flex-direction:column;align-items:flex-end;gap:0}
-.calc-status .cs-tab{font:inherit;font-size:12px;padding:5px 10px;cursor:pointer;
-  border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--text-2)}
-.calc-status .cs-tab:hover{border-color:var(--accent)}
-/* A LOSS IS GOLD, NOT RED. It is not an error — the pool rebuilds on the next
-   question — it is a fact the reader could not previously see at all. */
-.calc-status.bad .cs-tab{border-color:var(--gold);color:var(--gold)}
-.calc-status .cs-lost{color:var(--gold);font-variant-numeric:tabular-nums}
-.calc-status.open .cs-tab{border-bottom-left-radius:0;border-bottom-right-radius:0}
-.calc-status .cs-body{width:min(280px,80vw);padding:8px 10px;background:var(--panel2);
-  border:1px solid var(--line);border-top:none;border-radius:0 0 8px 8px;
-  display:flex;flex-direction:column;gap:5px}
-.calc-status .cs-row{display:flex;justify-content:space-between;gap:10px}
-.calc-status .cs-row span{color:var(--text-2)}
-.calc-status .cs-row b{color:var(--text);font-weight:600;text-align:right;
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
-.calc-status .cs-why{color:var(--gold);line-height:1.35}
-
 /* ---- THE JUMP MENU ---------------------------------------------------
    A floating index of the sections on the page. It is a GRIP until it is
-   opened, like the status tab above: the reader wants it when they are looking
+   opened: the reader wants it when they are looking
    for something, and furniture the rest of the time is what makes a page feel
    crowded. It DRAGS, so whichever corner is free on this window is where it
    can live; `left`/`top` are written by `renderJump` and clamped to the
@@ -3669,3 +3646,56 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 .support-details{margin:28px 0;max-width:1060px}.support-details>summary{cursor:pointer;font-size:13px;color:var(--text-2);padding:12px 0}.support-details[open]>summary{margin-bottom:12px}
 #ext-footer{display:inline}#ext-footer:empty{display:none}
 @media(max-width:700px){.support-count b{font-size:30px}.support-stories{gap:22px}.support-story+.support-story{border-top:1px solid var(--line);padding-top:22px}}
+
+/* The task list stays in global chrome while calculation pages change. */
+.topbar-inner>.user-tasks{order:4;flex:none}
+#user-tasks-toggle{gap:5px;min-width:30px}
+#user-tasks-toggle[aria-expanded="true"]{color:var(--accent);border-color:var(--accent);background:var(--panel2)}
+#user-tasks-toggle.has-error{color:var(--gold);border-color:var(--gold)}
+.task-count{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:5px;padding:0 3px;background:var(--accent);color:var(--surface);font-size:10px;font-weight:700}
+.task-center{position:fixed;z-index:40;top:60px;right:max(12px,calc((100vw - 1024px)/2));width:min(440px,calc(100vw - 24px));max-height:calc(100dvh - 76px);display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 40px #0004;overflow:hidden;font-size:13px}
+.task-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px 10px;gap:10px}
+.task-head h2{font-size:15px;font-weight:650;margin:0}
+.topbar-inner .task-head>.ghost-btn{border-color:transparent;color:var(--muted);font-size:20px;height:26px;width:26px;padding:0}
+.task-filters{display:flex;gap:6px;border-bottom:1px solid var(--line);padding:0 18px 12px}
+.task-filters .pchip{font-size:11.5px;height:25px;padding:0 8px;gap:6px;background:transparent}
+.task-filters .pchip.sel{border-color:var(--line);background:var(--panel2);box-shadow:none}
+.task-filters small{font-size:10px;color:var(--muted)}
+.task-list{overflow:auto;overscroll-behavior:contain;flex:1;min-height:0}
+.task-group{padding:14px 18px 5px;font-size:11px;color:var(--muted)}
+.task-row{padding:12px 18px;border-bottom:1px solid var(--line)}
+.task-row:last-child{border-bottom:0}
+.task-title-row{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.task-kind{width:28px;height:28px;border:1px solid var(--line);background:var(--panel3);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:none;color:var(--text-2);font-size:16px}
+.task-title{flex:1;min-width:0}
+.task-name{display:block;max-width:100%;border:0;padding:0;background:none;color:var(--text);font:inherit;font-weight:600;cursor:pointer;text-align:left;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+.task-name:hover{color:var(--accent)}
+.task-origin{font-size:11px;color:var(--muted);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-state{font-size:11px;color:var(--text-2);flex:none;padding-top:2px}
+.task-row[data-state="running"] .task-kind,.task-row[data-state="running"] .task-state{color:var(--accent)}
+.task-row[data-state="succeeded"] .task-state{color:var(--good-text)}
+.task-row[data-state="failed"] .task-state,.task-row[data-state="interrupted"] .task-state{color:var(--gold)}
+.task-progress{height:3px;border-radius:3px;background:var(--panel2);overflow:hidden;margin:11px 0 7px 38px}
+.task-progress i{height:100%;display:block;background:var(--accent);border-radius:3px}
+.task-progress.indeterminate i{animation:task-progress 2s ease-in-out infinite}
+@keyframes task-progress{0%,100%{transform:translateX(0)}50%{transform:translateX(220%)}}
+.task-progress-note{display:flex;justify-content:space-between;gap:9px;margin-left:38px;color:var(--text-2);font-size:11px;font-variant-numeric:tabular-nums}
+.task-progress-note>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.task-progress-note>span:last-child{white-space:nowrap}
+.task-actions{display:flex;align-items:center;gap:10px;margin:8px 0 0 38px;min-height:20px}
+.topbar-inner .task-actions .ghost-btn{height:20px;padding:0;border-color:transparent;color:var(--muted);font-size:11px;text-decoration:none}
+.topbar-inner .task-actions .task-result{color:var(--accent)}
+.task-actions .ghost-btn:disabled{opacity:.3;cursor:default}
+.task-order{display:flex;gap:10px;margin-left:auto}
+.topbar-inner .task-order>.ghost-btn{font-size:14px;width:18px}
+.task-details{margin:11px 0 0 38px;font-size:11px;color:var(--text-2);line-height:1.7}
+.task-details .error{font-size:11px;margin:6px 0;overflow-wrap:anywhere}
+.task-quick-status .cs-row{display:flex;justify-content:space-between;gap:12px}
+.task-quick-status .cs-row>span{color:var(--muted);flex:none}
+.task-quick-status b{text-align:right;font-weight:500;overflow-wrap:anywhere}
+.task-quick-status .cs-why{color:var(--gold)}
+.task-foot{padding:10px 18px;border-top:1px solid var(--line);background:var(--panel3);font-size:11px;color:var(--muted)}
+.task-empty{padding:35px 22px;text-align:center;color:var(--muted)}
+.task-error{padding:10px 18px;font-size:12px;color:var(--critical);overflow-wrap:anywhere}
+@media(max-width:520px){.task-center{right:10px;width:calc(100vw - 20px)}.task-actions .ghost-btn{min-height:26px}.task-row{padding:12px 15px}}
+@media(prefers-reduced-motion:reduce){.task-progress.indeterminate i{animation:none}}

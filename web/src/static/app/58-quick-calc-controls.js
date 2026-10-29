@@ -360,118 +360,18 @@ function renderEveryRankMenu(query) {
   }));
 }
 
-/// WHAT THE CALCULATOR IS DOING, AND WHAT IS LEFT OF IT.
-///
-/// THE POOL'S HEALTH WAS INVISIBLE. A lane dies quietly — the module did not
-/// download, the renderer reclaimed the worker, a stop abandoned the pool — and
-/// nothing on the page said so, so a scan that lost its workers looked exactly
-/// like one that was slow. The reader's only signal was that numbers stopped
-/// appearing, and their only move was a reload that rebuilt the same pool the
-/// same way.
-///
-/// IT IS COLLAPSED UNTIL IT HAS SOMETHING TO SAY. A panel that is always there
-/// is furniture; this one opens while a scan is running and stays open after
-/// one that failed, which are the two moments a reader wants it.
-/// OPEN UNTIL SOMEBODY CLOSES IT. A tab is what a reader does not notice, and
-/// not noticing is the whole failure this panel exists to end — the report was
-/// "the quick calc stopped and there is no indication of anything". Collapsing
-/// is remembered, so the reader who does not want it says so once.
-let calcStatusOpen = localStorage.getItem("wfsim-calc-status") !== "closed";
-/// Opened while there is NOTHING to report — the reader going looking for the
-/// rebuild button. Not persisted: an idle panel left open for ever is the
-/// clutter collapsing exists to avoid.
-let calcStatusPeek = false;
-function renderCalcStatus() {
-  const box = $("calc-status");
-  if (!box) return;
-  const made = pool.filter(Boolean);
-  const alive = made.filter((l) => !l.dead).length;
-  const lost = made.length - alive;
-  const busy = gainScan.running;
-  // NEVER HIDDEN, because the way out lives in here.
-  //
-  // A panel that disappears whenever there is nothing to report puts the
-  // rebuild button behind the very condition it exists for: a calculator wedged
-  // in a state that is neither busy nor failed shows no surface at all, and the
-  // reader whose list will not produce numbers has a reload and nothing else.
-  // IDLE COLLAPSES TO THE TAB instead — the panel is one click away at all
-  // times and costs a tab's worth of corner when quiet.
-  box.hidden = false;
-  const idle = !busy && !lost && !gainScan.failed;
-  const open = idle ? calcStatusPeek : calcStatusOpen;
-  // THE PHASE, WHERE THERE IS ONE. `0/77` is not a stall — it is the BASELINE
-  // being measured, which every candidate is compared against and which runs
-  // before any of them. It can be two of them, when nothing died under the
-  // ruler's own metric and the question falls back to DPS. A counter that only
-  // counts candidates has nothing to say through either, and the reader reads
-  // the silence as a hang.
-  // HOW LONG THIS WILL TAKE, from what the baseline actually cost — shown only
-  // while it is still true, and only when it is long enough to be worth
-  // reading. A number under a couple of seconds is noise a reader has to
-  // dismiss; a minute is the one they wanted before they started.
-  const left = busy && gainScan.etaMs ? Math.round(gainScan.etaMs / 1000) : 0;
-  const head = busy
-    ? (gainScan.phase
-        ? escHtml(gainScan.phase)
-        : `${escHtml(tr("calculating"))} ${gainScan.done}/${gainScan.total}`)
-    : (gainScan.failed ? escHtml(tr("the last calculation did not finish"))
-                       : escHtml(tr("calculator")));
-  if (!open) {
-    box.className = `calc-status${gainScan.failed ? " bad" : ""}`;
-    box.innerHTML = `<button class="cs-tab" id="cs-tab">⚡ ${head}${
-      lost ? ` <span class="cs-lost">${lost}</span>` : ""}</button>`;
-  } else {
-    box.className = `calc-status open${gainScan.failed ? " bad" : ""}`;
-    box.innerHTML =
-      `<button class="cs-tab" id="cs-tab">⚡ ${head} ▾</button>` +
-      `<div class="cs-body">` +
-      // WHICH FIGHT AND WHICH LIST, because "calculating" alone does not say
-      // whether it is the thing you are looking at.
-      `<div class="cs-row"><span>${escHtml(tr("fight"))}</span><b>${
-        escHtml(gainScenario().name)}</b></div>` +
-      `<div class="cs-row"><span>${escHtml(tr("measuring"))}</span><b>${
-        escHtml(gainScan.note && !gainScan.failed ? gainScan.note : "—")}</b></div>` +
-      // WHAT STEP, AND HOW FAR THROUGH IT. Two facts, because the counter is
-      // only meaningful during the candidate pass and the phase is only
-      // meaningful outside it.
-      `<div class="cs-row"><span>${escHtml(tr("step"))}</span><b>${
-        escHtml(gainScan.phase || tr("ranking the options"))}</b></div>` +
-      `<div class="cs-row"><span>${escHtml(tr("ranked"))}</span><b>${
-        gainScan.done} / ${gainScan.total}</b></div>` +
-      // THE ONE FACT THAT WAS MISSING. Workers alive against workers made: a
-      // pool that has lost half of itself is the difference between slow and
-      // broken, and nothing said it.
-      `<div class="cs-row"><span>${escHtml(tr("workers"))}</span><b>${alive} / ${
-        made.length || poolSize()}${lost ? ` — ${lost} ${escHtml(tr("lost"))}` : ""}</b></div>` +
-      (left > 2
-        ? `<div class="cs-row"><span>${escHtml(tr("about"))}</span><b>${
-          escHtml(tr("{s}s left").replace("{s}", left))}</b></div>`
-        : "") +
-      (gainScan.failed
-        ? `<div class="cs-why">${escHtml(gainScan.note || tr("unknown"))}</div>` : "") +
-      // A WAY OUT THAT IS NOT A RELOAD. A reload rebuilds the same pool the
-      // same way; this drops the dead workers so the next question opens fresh
-      // ones, which is the move a reader could not previously make at all.
-      `<button class="ghost-btn small" id="cs-reset">${
-        escHtml(tr("rebuild the calculator"))}</button>` +
-      `</div>`;
-  }
-  const tab = $("cs-tab");
-  if (tab) tab.onclick = () => {
-    if (idle) { calcStatusPeek = !calcStatusPeek; renderCalcStatus(); return; }
-    calcStatusOpen = !calcStatusOpen;
-    try {
-      localStorage.setItem("wfsim-calc-status", calcStatusOpen ? "open" : "closed");
-    } catch (_) { /* a browser with storage off still gets the panel */ }
-    renderCalcStatus();
-  };
-  const reset = $("cs-reset");
-  if (reset) reset.onclick = () => {
-    restartCalc();
-    calcStatusPeek = false;
-    renderCalcStatus();
-    refreshGains();
-  };
+/// The source remains gainScan; the task list is its only progress surface.
+function renderCalcStatus() { scheduleUserTasks("progress"); }
+
+function quickCalculationDetails() {
+  const made = pool.filter(Boolean), alive = made.filter((lane) => !lane.dead).length;
+  return `<div id="calc-status" class="task-quick-status">
+    <div class="cs-row"><span>${escHtml(tr("fight"))}</span><b>${escHtml(gainScenario().name)}</b></div>
+    <div class="cs-row"><span>${escHtml(tr("measuring"))}</span><b>${escHtml(gainScan.note || "—")}</b></div>
+    <div class="cs-row"><span>${escHtml(tr("step"))}</span><b>${escHtml(gainScan.phase || tr("ranking the options"))}</b></div>
+    <div class="cs-row"><span>${escHtml(tr("ranked"))}</span><b>${gainScan.done} / ${gainScan.total}</b></div>
+    <div class="cs-row"><span>${escHtml(tr("workers"))}</span><b>${alive} / ${made.length || poolSize()}</b></div>
+    ${gainScan.failed ? `<div class="cs-why">${escHtml(gainScan.note || tr("unknown"))}</div>` : ""}</div>`;
 }
 
 /// STOP EVERYTHING THE QUICK CALC IS DOING, and leave nothing that can write.

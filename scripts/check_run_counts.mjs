@@ -207,6 +207,12 @@ const r = await evaluate(`(async () => {
         if (!document.getElementById('run-sim').disabled) break;
       }
       out.stopRecovered = !!document.querySelector('#sim-results table, #sim-results .fold');
+      if (!out.stopRecovered) out.stopDetail = {
+        text: document.getElementById('sim-results').innerText.slice(0, 240),
+        tasks: userTasks.list().map(task => ({ state: task.state, runs: task.request.runs, error: task.error,
+          sameKey: task.origin.context.key === simKey(), samePreset: task.origin.context.preset === activePreset })),
+        submitting: simulationSubmitting.size,
+      };
 
       // ---- A FLEET ANSWERS WHAT ONE WORKER ANSWERS ---------------------
       //
@@ -285,7 +291,7 @@ check("...which takes effect at once", r.stopMs < 700, `${r.stopMs} ms`);
 check("...says nothing was measured rather than reporting a failure",
   /nothing was measured|没有测出/.test(r.stopSaid), r.stopSaid);
 check("...frees the button", r.stopFreed === true);
-check("...and the next run still answers", r.stopRecovered === true);
+check("...and the next run still answers", r.stopRecovered === true, JSON.stringify(r.stopDetail));
 // A FLEET ANSWERS WHAT ONE WORKER ANSWERS.
 check(`the sim shards across ${r.fleetLanes} workers`, r.fleetLanes > 1, String(r.fleetLanes));
 check("...and every one of the runs is still run once",

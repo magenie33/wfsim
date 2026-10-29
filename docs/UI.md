@@ -931,6 +931,14 @@ alone and the footer is drawn from both at boot — after `checkBuildMatches`,
 which reads the token the page was SERVED with and would otherwise be reading
 what this line just wrote over it.
 
+## Task center
+
+The top-right task center shows the local simulation queue and live quick
+calculation progress. Configuration and submission stay on their existing
+pages. Queue ordering, cancellation, retry and history do not replace the
+current editor; result links open the existing simulator in another tab.
+Contracts, persistence and execution are in [TASKS.md](TASKS.md).
+
 ## Results
 
 **A RUN IS A RECORD, WRITTEN ONCE** (`35-results.js`): the build and the fight
@@ -940,8 +948,9 @@ from, translations, prose and comments excluded — `engine_id` in the site buil
 from, and the summary `r`. A preset holds no result: "this build's number" is
 its newest record (`resultLatest`), so a second run does not erase the first.
 Every run is recorded; each build keeps its newest `RESULT_KEEP` unpinned
-records per scenario, and a pinned one (`kept`) until it is deleted. The blank
-records nothing, having no build to name.
+records per scenario, and a pinned one (`kept`) until it is deleted. A run
+without a saved build belongs to its task, and is not attached to another
+blank build. Its result is shown on the page only while the inputs match.
 
 **A RECORD IS NEVER MIGRATED.** A field it lacks was not measured when it was
 written, and a reader says "not recorded" rather than reading 0; a new field

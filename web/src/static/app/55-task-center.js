@@ -1,0 +1,176 @@
+// Types own their labels, capabilities and result readers; the list owns none of their inputs.
+let userTasks = null, userTasksReady = null, userTaskChannel = null;
+let userTaskPanelOpen = false, userTaskFilter = "all", userTaskDetails = null, userTaskError = "";
+let userTaskFrame = null, userTaskRenderState = false;
+const userTaskSources = new Map();
+const userTaskLocks = new Map();
+const userTaskLock = (name, work) => {
+  if (navigator.locks) return navigator.locks.request(`wfsim-user-tasks:${name}`, work);
+  const next = (userTaskLocks.get(name) || Promise.resolve()).catch(() => {}).then(work);
+  userTaskLocks.set(name, next);
+  return next;
+};
+
+async function initUserTasks() {
+  if (userTasksReady) return userTasksReady;
+  userTasksReady = (async () => {
+    let store;
+    try {
+      if (!navigator.locks || !await resultsDb()) throw new Error("Session storage only");
+      store = await UserTaskBrowserStore.open();
+    } catch (_) { store = new UserTaskMemoryStore(); }
+    if (store.persistent && typeof BroadcastChannel === "function") {
+      userTaskChannel = new BroadcastChannel("wfsim-user-tasks");
+    }
+    userTasks = new UserTaskQueue({ store, types: USER_TASK_TYPES, engine: ENGINE_ID, lock: userTaskLock,
+      changed: scheduleUserTasks, publish: (message) => userTaskChannel?.postMessage(message) });
+    if (userTaskChannel) userTaskChannel.onmessage = (event) => {
+      if (event.data.kind === "progress") userTasks.hearProgress(event.data);
+      else userTasks.refresh().then(() => userTasks.wake()).catch(userTaskFailed);
+    };
+    await userTasks.refresh();
+    userTasks.wake();
+    return userTasks;
+  })();
+  return userTasksReady;
+}
+function userTaskFailed(error) {
+  userTaskError = String(error.message || error);
+  scheduleUserTasks();
+}
+function scheduleUserTasks(kind) {
+  if (kind !== "progress") userTaskRenderState = true;
+  if (userTaskFrame != null) return;
+  userTaskFrame = requestAnimationFrame(() => {
+    userTaskFrame = null;
+    renderUserTasks();
+    if (typeof renderSimulationTask === "function") renderSimulationTask(userTaskRenderState);
+    userTaskRenderState = false;
+  });
+}
+const userTaskLabel = (state) => tr(({ queued: "Waiting", running: "Running", succeeded: "Completed",
+  failed: "Failed", cancelled: "Cancelled", interrupted: "Interrupted", ready: "Ready" })[state] || state);
+const userTaskActive = (task) => ["queued", "running"].includes(task.state);
+function userTaskItems() {
+  const stored = userTasks ? userTasks.view() : [];
+  const transient = [...userTaskSources].flatMap(([kind, source]) => source().map((task) => ({ ...task, kind, transient: true })));
+  return [...transient, ...stored];
+}
+function userTaskProgress(task) {
+  const progress = task.progress;
+  return { fraction: progress?.total > 0 ? Math.max(0, Math.min(1, progress.done / progress.total)) : null,
+    phase: tr(progress?.phase || "calculating"),
+    count: (progress?.total > 0 ? `${progress.done} / ${progress.total}` : "")
+      + (progress?.eta_seconds > 1 ? ` · ${tr("about {s}s left").replace("{s}", Math.ceil(progress.eta_seconds))}` : "") };
+}
+function userTaskRow(task, waiting) {
+  const type = USER_TASK_TYPES.get(task.kind), say = type?.describe ? type.describe(task) : { title: task.kind };
+  const { fraction, phase, count } = userTaskProgress(task);
+  const bar = task.state === "running" ? `<div class="task-progress${fraction == null ? " indeterminate" : ""}" role="progressbar" aria-label="${escHtml(say.title)}"${fraction == null ? "" : ` aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(fraction * 100)}"`}><i style="width:${fraction == null ? 30 : fraction * 100}%"></i></div>
+    <div class="task-progress-note"><span>${escHtml(phase)}</span><span>${escHtml(count)}</span></div>` : "";
+  const action = (name, label) => `<button type="button" class="ghost-btn" data-user-task="${escHtml(task.id)}" data-user-task-action="${name}">${escHtml(tr(label))}</button>`;
+  let actions = "";
+  if (task.transient) actions = type?.actions ? type.actions(task, action) : "";
+  else {
+    if (userTaskActive(task)) actions += action("cancel", "Cancel");
+    if (["failed", "cancelled", "interrupted"].includes(task.state) && task.engine === ENGINE_ID && type
+        && task.request_schema === type.schema && USER_TASK_EXECUTORS.get(task.destination || "local")?.supports(type)) actions += action("retry", "Retry");
+    if (task.result_ref && type?.resultLink) actions += `<a class="ghost-btn task-result" data-native target="_blank" rel="noopener" href="${escHtml(type.resultLink(task))}">${escHtml(tr("View result"))}</a>`;
+    if (!userTaskActive(task)) actions += action("remove", "Remove from list");
+    if (task.state === "queued") {
+      const index = waiting.findIndex((row) => row.id === task.id);
+      actions += `<span class="task-order"><button class="ghost-btn" data-user-task="${task.id}" data-user-task-action="up" aria-label="${escHtml(tr("Move earlier"))}" title="${escHtml(tr("Move earlier"))}"${index < 1 ? " disabled" : ""}>↑</button><button class="ghost-btn" data-user-task="${task.id}" data-user-task-action="down" aria-label="${escHtml(tr("Move later"))}" title="${escHtml(tr("Move later"))}"${index >= waiting.length - 1 ? " disabled" : ""}>↓</button></span>`;
+    }
+  }
+  const details = userTaskDetails === task.id;
+  return `<article class="task-row" data-task-id="${escHtml(task.id)}" data-state="${task.state}"><div class="task-title-row"><span class="task-kind" aria-hidden="true">${escHtml(type?.icon || "≡")}</span><div class="task-title"><button type="button" class="task-name" data-user-task="${escHtml(task.id)}" data-user-task-action="details" aria-expanded="${details}">${escHtml(say.title)}</button><div class="task-origin">${escHtml(say.note || "")}</div></div><span class="task-state">${escHtml(userTaskLabel(task.state))}</span></div>${bar}<div class="task-actions">${actions}</div>${details ? `<div class="task-details">${type?.details ? type.details(task) : ""}${task.error ? `<p class="error">${escHtml(tr(task.error))}</p>` : ""}</div>` : ""}</article>`;
+}
+function renderUserTasks() {
+  const toggle = $("user-tasks-toggle"), panel = $("user-tasks-panel");
+  if (!toggle || !panel || !META) return;
+  const items = userTaskItems(), active = items.filter(userTaskActive);
+  const history = items.filter((task) => !task.transient && !userTaskActive(task));
+  const count = $("user-tasks-count");
+  count.textContent = active.length;
+  count.hidden = !active.length;
+  toggle.setAttribute("aria-expanded", String(userTaskPanelOpen));
+  toggle.classList.toggle("has-error", items.some((task) => ["failed", "interrupted"].includes(task.state)));
+  toggle.title = tr("Task center");
+  toggle.setAttribute("aria-label", tr("Task center"));
+  panel.setAttribute("aria-label", tr("Task center"));
+  panel.hidden = !userTaskPanelOpen;
+  if (!userTaskPanelOpen) return;
+  const focused = document.activeElement;
+  const focusTask = focused?.dataset.userTask, focusAction = focused?.dataset.userTaskAction;
+  const focusFilter = focused?.dataset.userTaskFilter;
+  const oldScroll = panel.querySelector(".task-list")?.scrollTop || 0;
+  const visible = items.filter((task) => userTaskFilter === "all" || (userTaskFilter === "active" ? userTaskActive(task) : !task.transient && !userTaskActive(task)));
+  const signature = JSON.stringify([userTaskFilter, userTaskDetails, visible.map((task) => [task.id, task.state, task.error, task.result_ref]), userTaskError, userTasks?.error, userTasks?.store.persistent]);
+  if (panel.dataset.signature === signature) {
+    for (const row of panel.querySelectorAll("[data-task-id]")) {
+      const task = visible.find((item) => item.id === row.dataset.taskId);
+      if (!task) continue;
+      const type = USER_TASK_TYPES.get(task.kind), say = type?.describe ? type.describe(task) : { title: task.kind };
+      row.querySelector(".task-name").textContent = say.title;
+      row.querySelector(".task-origin").textContent = say.note || "";
+      const bar = row.querySelector(".task-progress");
+      if (bar) {
+        const { fraction, phase, count } = userTaskProgress(task);
+        bar.classList.toggle("indeterminate", fraction == null);
+        bar.querySelector("i").style.width = `${fraction == null ? 30 : fraction * 100}%`;
+        if (fraction == null) bar.removeAttribute("aria-valuenow"); else bar.setAttribute("aria-valuenow", Math.round(fraction * 100));
+        const notes = row.querySelector(".task-progress-note").children;
+        notes[0].textContent = phase; notes[1].textContent = count;
+      }
+      if (task.transient && userTaskDetails === task.id && type?.details) row.querySelector(".task-details").innerHTML = type.details(task);
+    }
+    return;
+  }
+  const groups = [["Automatic", visible.filter((task) => task.transient)], ["Queue", visible.filter((task) => !task.transient && userTaskActive(task))], ["History", visible.filter((task) => !task.transient && !userTaskActive(task)).reverse()]];
+  const waiting = items.filter((task) => !task.transient && task.state === "queued");
+  panel.innerHTML = `<div class="task-head"><h2>${escHtml(tr("Task center"))}</h2><button type="button" class="ghost-btn" data-user-task-action="close" aria-label="${escHtml(tr("Close"))}">×</button></div>
+    <div class="task-filters">${[["all", "All", items.length], ["active", "In progress", active.length], ["history", "History", history.length]].map(([id, word, n]) => `<button type="button" class="pchip${userTaskFilter === id ? " sel" : ""}" data-user-task-filter="${id}" aria-pressed="${userTaskFilter === id}">${escHtml(tr(word))}<small>${n}</small></button>`).join("")}</div>
+    <div class="task-list scroll-thin">${groups.map(([label, tasks]) => tasks.length ? `<div class="task-group">${escHtml(tr(label))} · ${tasks.length}</div>${tasks.map((task) => userTaskRow(task, waiting)).join("")}` : "").join("") || `<div class="task-empty">${escHtml(tr("Tasks from calculation pages appear here."))}</div>`}</div>
+    ${(userTaskError || userTasks?.error) ? `<div class="task-error" role="status">${escHtml(tr(userTaskError || userTasks.error))}</div>` : ""}<div class="task-foot">${escHtml(tr(userTasks?.store.persistent ? "Saved in this browser" : "Tasks are kept for this session only."))}</div>`;
+  panel.querySelector(".task-list").scrollTop = oldScroll;
+  panel.dataset.signature = signature;
+  if (focusTask && focusAction) [...panel.querySelectorAll("[data-user-task]")].find((element) => element.dataset.userTask === focusTask && element.dataset.userTaskAction === focusAction)?.focus({ preventScroll: true });
+  if (focusFilter) [...panel.querySelectorAll("[data-user-task-filter]")].find((element) => element.dataset.userTaskFilter === focusFilter)?.focus({ preventScroll: true });
+}
+async function userTaskAction(action, id) {
+  userTaskError = "";
+  if (action === "close") { userTaskPanelOpen = false; $("user-tasks-toggle").focus(); }
+  else if (action === "details") userTaskDetails = userTaskDetails === id ? null : id;
+  else {
+    const task = userTaskItems().find((row) => row.id === id);
+    if (!task) throw new Error("This task is no longer available.");
+    if (task.transient) await USER_TASK_TYPES.get(task.kind).act(action, task);
+    else if (action === "up" || action === "down") await userTasks.move(id, action === "up" ? -1 : 1);
+    else if (["cancel", "retry", "remove"].includes(action)) await userTasks[action](id);
+    else throw new Error("Unknown task action.");
+  }
+  renderUserTasks();
+}
+function wireUserTasks() {
+  const toggle = $("user-tasks-toggle"), panel = $("user-tasks-panel");
+  if (!toggle || !panel) return;
+  toggle.onclick = () => { userTaskPanelOpen = !userTaskPanelOpen; renderUserTasks(); };
+  panel.onclick = (event) => {
+    const filter = event.target.closest("[data-user-task-filter]");
+    if (filter) { userTaskFilter = filter.dataset.userTaskFilter; renderUserTasks(); return; }
+    const action = event.target.closest("[data-user-task-action]");
+    if (action && !action.disabled) userTaskAction(action.dataset.userTaskAction, action.dataset.userTask).catch(userTaskFailed);
+  };
+  document.addEventListener("click", (event) => {
+    if (userTaskPanelOpen && !event.composedPath().some((node) => node === panel || node === toggle)) {
+      userTaskPanelOpen = false; renderUserTasks();
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (imeComposing(event)) return;
+    if (event.key === "Escape" && userTaskPanelOpen) { userTaskPanelOpen = false; renderUserTasks(); toggle.focus(); }
+  });
+  initUserTasks().catch(userTaskFailed);
+  renderUserTasks();
+}
+window.addEventListener("wfsim:ready", wireUserTasks, { once: true });

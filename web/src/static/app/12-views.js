@@ -329,6 +329,7 @@ async function route() {
     // those fields on arrival — the other tab may have moved them, and the
     // tabs are CSS-hidden rather than re-rendered.
     if (mod === "simulator") renderSim();
+    if (mod === "simulator") await openSimulationReport(w);
     if (mod === "optimizer") { renderOptFight(); updateOptEstimate(); }
     if (mod === "rivens") renderRivens();
     if (mod === "riven-analyst") renderRivenAnalyst();

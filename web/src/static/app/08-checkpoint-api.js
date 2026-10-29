@@ -373,7 +373,7 @@ async function api(path, body, onProgress, opts) {
     // GET endpoints (the rest are POST-with-body):
     if (path === "/api/meta" || path === "/api/i18n") return (await fetch(path)).json();
     return (await fetch(path, {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}),
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body ?? {}), signal: opts && opts.signal,
     })).json();
   }
   // A FILE THE BUILD WROTE answers before any lane would; the engine is asked
