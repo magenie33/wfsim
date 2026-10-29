@@ -2000,7 +2000,7 @@ ui:
   "{n} of {m} capacity even fully forma'd": 极化拉满也要 {n} 容量，上限 {m}
   "{n} of {m} evolutions": "{n}/{m} 层进化"
   "{n} of {m} mods": "{n}/{m} 个 MOD"
-  "{n} of {t} entries measured · ranked by {m}": "{t} 个参赛位中已测 {n} 个 · 按 {m} 排名"
+  "{n} of {t} weapons measured · ranked by {m}": "{t} 把武器中 {n} 把已有测量结果 · 按 {m} 排序"
   "{n} {what} fill it, and the earned form fires {rounds} before it ends.": 需要 {n} 次{what}才能填满，换来的形态能打 {rounds} 发然后结束。
   "{p}% use it": "{p}% 在用"
   "{runs} fights · {rolls} damage instances rolled, on your own machine.": "{runs} 场战斗 · {rolls} 次伤害判定，全部跑在你自己的机器上。"

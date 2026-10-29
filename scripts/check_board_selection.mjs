@@ -6,6 +6,27 @@ try {
   const result = await app.evaluate(`(async () => {
     if (typeof benchSelectorHtml !== 'function') return { shared: false };
     const out = { shared: true }, all = benchList();
+    const weapons = META.weapons.slice(0, 2).map(w => ({ ...w, modes: ['base', 'cycle'] }));
+    const saved = weapons.map(w => BOARD[w.id]), priorView = benchRivenView, priorMeasured = benchMeasuredOnly;
+    try {
+      const ruler = all[0], row = (mode, score, riven = null) => ({ benchmark: ruler.id, mode, score, mods: [], riven });
+      const rows = [row('base', 30), row('cycle', 25), row('cycle', 40, { bonuses: [], malus: null })];
+      BOARD[weapons[0].id] = rows; BOARD[weapons[1].id] = [];
+      benchRivenView = 'all'; benchMeasuredOnly = false;
+      const entries = benchEntries(ruler, weapons), best = entries.find(e => e.w.id === weapons[0].id);
+      out.oneWeapon = entries.length === 2 && new Set(entries.map(e => e.w.id)).size === 2 && best.row.score === 40;
+      const html = benchRowHtml(ruler, best, 0);
+      out.winnerLink = html.includes('mode=cycle') && html.includes('riven=1') && !html.includes('class="bmode"');
+      benchRivenView = 'plain';
+      out.viewWinner = benchEntries(ruler, weapons).find(e => e.w.id === weapons[0].id).row.score === 30;
+      benchRivenView = 'all'; benchMeasuredOnly = true;
+      out.measuredWeapons = benchEntries(ruler, weapons).length === 1;
+      out.modeRecords = BOARD[weapons[0].id] === rows && rows.length === 3
+        && new Set(rankBoard(rows, [ruler.id], weapons[0].modes).map(e => e.mode)).size === 2;
+    } finally {
+      weapons.forEach((w, i) => { BOARD[w.id] = saved[i]; });
+      benchRivenView = priorView; benchMeasuredOnly = priorMeasured;
+    }
     const failures = [];
     for (const b of all) {
       benchPick = b.id; renderBenchBoard();
@@ -56,6 +77,11 @@ try {
   })()`);
   app.check('all board entry points use the shared hierarchy', result.shared === true);
   if (result.shared) {
+    app.check('the overview lists each weapon once at its highest score', result.oneWeapon);
+    app.check('winning-build links retain mode while the overview has no mode badge', result.winnerLink);
+    app.check('build filters choose the highest matching score for each weapon', result.viewWinner);
+    app.check('hiding unmeasured weapons retains one measured entry', result.measuredWeapons);
+    app.check('the overview preserves the original per-mode build groups', result.modeRecords);
     app.check('all cells retain their identity, order, summary and URL', result.cells.length === 0, JSON.stringify(result.cells));
     app.check('complete labels distinguish every board', result.unique);
     app.check('multiple-board selection preserves every cell and checked value', result.multiple);

@@ -376,6 +376,11 @@ published measurements retain their identity. The official-scenario popover
 uses the same picker; the Forma planner groups its multiple selections in the
 same order.
 
+The benchmark overview ranks each weapon once, using its highest measured score
+across the allowed modes and the selected build filter. It shows no mode badge.
+The link retains the winning build's mode and riven group. Detailed builds,
+admission thresholds and retention remain grouped by mode.
+
 ## The build finder
 
 **EVERY BUILD IS IN THE BUILD BAR; THE FINDER ONLY FINDS.** The builder's top

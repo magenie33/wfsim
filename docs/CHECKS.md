@@ -39,7 +39,10 @@ All 48 cells keep their full labels and URL identity. The benchmark page,
 build finder, weapon board, riven analyst and appraisal select the same cell
 through the same four dimensions. Official scenario selection opens that cell;
 an unmeasured selection remains available, and the picker fits a phone.
-The check fails against the shipping page without the shared picker.
+The overview selects one best result per weapon under each build filter,
+hides mode badges while retaining the winner's link, and preserves the original
+mode groups. The check fails against the shipping page without the shared picker
+and against the overview that lists each mode separately.
 
 ## `check_board_ladder`
 

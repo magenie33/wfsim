@@ -116,11 +116,6 @@ const earnedForm = (w) => headlessEarnedForm(w);
 const bareModeLabel = (w, id) => headlessBareModeLabel(pageSay(), w, id);
 const modeLabel = (w, id) => headlessModeLabel(pageSay(), w, id);
 
-/// One entry per WEAPON AND MODE: its best row under `id`, or null where nobody
-/// has submitted. A weapon with no row is not an error, it is the invitation —
-/// and a weapon with a row for one mode and none for the other is the sharpest
-/// version of it, because the missing one is a question somebody can answer
-/// this afternoon.
 /// WHICH BUILDS THE BOARD IS SHOWING — `all`, `plain` or `riven`.
 ///
 /// The RANKING is one list: a riven build does not always beat a plain one, so
@@ -226,13 +221,15 @@ const benchRowsUnder = (cur, id) => (cur.cell_dir ? (SCENE_INDEX[cur.cell_dir] |
 const benchEntries = (cur, weapons) => {
   const out = [];
   for (const w of weapons) {
+    let best = null, bestMode = (w.modes || ["base"])[0];
     for (const m of w.modes || ["base"]) {
       const rows = benchRowsUnder(cur, w.id)
         .filter((r) => r.benchmark === cur.id && (r.mode || "base") === m)
         .filter(inBenchView);
       const row = rows.length ? rows.reduce((a, r) => (r.score > a.score ? r : a), rows[0]) : null;
-      if (row || !benchMeasuredOnly) out.push({ w, mode: m, row });
+      if (row && (!best || row.score > best.score)) { best = row; bestMode = m; }
     }
+    if (best || !benchMeasuredOnly) out.push({ w, mode: bestMode, row: best });
   }
   return out;
 };
@@ -436,7 +433,7 @@ function renderBenchBoard() {
     slotFilterMatch(benchSlotFilter, w) && nameMatches(benchQuery, w.name, w.name_en)))
     .sort((a, b) => (b.row ? b.row.score : -1) - (a.row ? a.row.score : -1));
   const head = (rows) => `<div class="bench-meta">${escHtml(
-      tr("{n} of {t} entries measured · ranked by {m}")
+      tr("{n} of {t} weapons measured · ranked by {m}")
         .replace("{n}", rows.filter((r) => r.row).length).replace("{t}", rows.length).replace("{m}", metric))}${
       benchPendingNote(cur)}</div><p class="bench-note">${escHtml(measuredNote())}</p>`;
   const lists = [];
@@ -493,37 +490,15 @@ function benchShowPicked() {
 }
 let benchScroll = null;
 
-/// ONE BOARD ROW: its rank inside the list shown, the weapon and how it was
-/// played, and its best score under the ruler — or the invitation to measure it.
+/// One overview entry per weapon; its link retains the winning build's full identity.
 const benchRowHtml = (cur, { w, mode, row }, i) => `
       <a class="brow${row ? "" : " none"}" href="/weapons/${urlSlug(w)}${
-        // WHICH RULER YOU CAME FROM, not just how the weapon is played:
-        // without it the link lands on whatever official build is first, and
-        // the two boards' leaders are both called "#1 · Incarnon cycle". It
-        // selects the FIGHT as well as the build, because a board row is a
-        // build AND the ruler it was measured under — arriving with only the
-        // build is arriving with a number you cannot reproduce.
-        // …AND WHICH OF THE TWO LEADERS. The board holds a riven row and a
-        // plain one per weapon and mode, both called "#1", and the ruler and
-        // the mode tell them apart no better than they told the two rulers
-        // apart in 2026-08-08. Clicking the leader of the "riven only" view
-        // opened the PLAIN leader — a different build, with a riven slot the
-        // landing page then had nothing to put in.
-        //
-        // STATED EITHER WAY (`riven=1` / `riven=0`) rather than only when
-        // there is one, so an ABSENT parameter keeps meaning what it always
-        // meant. The MODE is stated on the same terms: a row is one weapon in
-        // one mode whether or not it has a second.
+        // The winner's ruler, mode and riven group reproduce the displayed score.
         `?bench=${encodeURIComponent(cur.id)}&mode=${encodeURIComponent(mode)}${
           row ? `&riven=${rowHasRiven(row) ? 1 : 0}` : ""}`}">
         <span class="brank">${row ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
         <span class="bname">${escHtml(w.name)}${
-          // ALWAYS NAMED, including a weapon with one way to be fired — the
-          // rule the simulator's build card already carries. A blank beside a
-          // neighbour that names its mode reads as "no mode", and this is where
-          // weapons are COMPARED.
-          ` <span class="bmode">${escHtml(modeLabel(w, mode))}</span>`}${
           // THE BOARD IS WHERE WEAPONS ARE COMPARED, so it is the one place a
           // weapon with unmodelled parts must not look like one without them.
           // A Stug row is four admissions deep and a Torid row is exact; side

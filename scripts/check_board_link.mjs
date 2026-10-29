@@ -16,7 +16,7 @@
 // here, so it keeps holding as the board moves under it.
 //
 // A THIRD concern, one level down: the board page lists a weapon's BEST row
-// per mode and the deeper ranks live in the builder's picker, where a rank only
+// across modes and the deeper ranks live in the builder's picker, where a rank only
 // means something inside one way of playing. See the section at the bottom.
 import { openApp } from "./cdp.mjs";
 
@@ -94,16 +94,8 @@ const r = await evaluate(`(async () => {
 
   // ---- TWO MODES, ONE WEAPON -------------------------------------------
   //
-  // The board LISTS every weapon in every mode it can be played in and always
-  // has; what it has never HELD is two measured rows for one weapon, because
-  // no submission has ever named a second mode. So the half of a board row's
-  // identity that says HOW the weapon was played has never been told apart
-  // from the other row of the same weapon — which is exactly the shape of the
-  // bug that made this check exist, one level down.
-  //
-  // Synthetic, because waiting for a player to submit a base-form Torid is not
-  // a test plan. The row is a real row: same benchmark, a real mode this
-  // weapon really has, a build the engine really accepts.
+  // Multiple measured modes share one overview row. Its link must open the
+  // highest-scoring build, including its mode, rather than the first mode.
   history.pushState({}, '', '/benchmark'); route(); await s(2000);
   // BACK TO A RULER THAT HAS ROWS. The loop above left the picker on the LAST
   // one, and a synthetic row built for one board clicked on another is a test
@@ -141,28 +133,28 @@ const r = await evaluate(`(async () => {
   out.twoModeWeapon = twoModes ? twoModes.id : null;
   out.synthetic = !live;
   if (twoModes) {
-    // THE LEADER OF EACH MODE, which is what the board lists and what the link
-    // opens — board.json is stored best-first, so find is the leader.
+    // Prefer live rows; otherwise make another valid mode the winner.
     const base = (BOARD[twoModes.id] || [])
       .find(r => r.benchmark === ruler && (r.mode || 'base') === 'base');
     const other = live
       ? modesOn(live).find(m => m !== 'base')
       : (twoModes.modes || []).find(m => m !== ((base || {}).mode || 'base'));
-    out.otherMode = other;
     if (!live) {
       const have = base || (BOARD[twoModes.id] || []).find(r => r.benchmark === ruler);
       BOARD[twoModes.id] = (BOARD[twoModes.id] || []).concat([
-        { ...have, mode: other, score: have.score / 3, shown: String(have.score / 3) },
+        { ...have, mode: other, score: have.score * 3, shown: String(have.score * 3) },
       ]);
     }
     const have = (BOARD[twoModes.id] || [])
-      .find(r => r.benchmark === ruler && (r.mode || 'base') === other);
+      .filter(r => r.benchmark === ruler && twoModes.modes.includes(r.mode || 'base'))
+      .reduce((best, r) => !best || r.score > best.score ? r : best, null);
+    out.otherMode = have.mode || 'base';
     renderBenchBoard(); await s(1200);
     const rows = [...document.querySelectorAll('.bench-rows .brow')]
       .filter(a => (a.getAttribute('href') || '').includes('/' + wikiSlug(twoModes) + '?'));
     out.bothListed = rows.length;
     out.bothMeasured = rows.filter(a => !a.classList.contains('none')).length;
-    const mine = rows.find(a => (a.getAttribute('href') || '').includes('mode=' + other));
+    const mine = rows[0];
     out.otherHref = mine ? mine.getAttribute('href') : null;
     if (mine) {
       history.pushState({}, '', out.otherHref); route(); await s(3200);
@@ -234,25 +226,19 @@ for (const e of r.each.filter((x) => x.href)) {
 // WHICH CASE RAN, in the title. A live two-mode weapon and an injected one are
 // two different amounts of evidence, and a check that does not say which it
 // found reads as the stronger one on the day it silently becomes the weaker.
-// ONCE PER MODE, AND AT LEAST TWICE — not exactly twice. The board lists a
-// weapon once for every mode it can be played in, and the live two-mode weapon
-// this finds is now a melee, which has seven. An equality here asserted the
-// roster rather than the property, and went red the day a melee won the search.
-check(`a weapon with two modes is on the board twice (${r.synthetic ? "injected" : "LIVE"})`,
-  r.bothListed >= 2, `${r.twoModeWeapon}: ${r.bothListed} rows`);
-check("...both measured, so both are rows and not placeholders",
-  r.bothMeasured >= 2 && r.bothMeasured === r.bothListed,
+check(`a weapon with two modes appears once (${r.synthetic ? "injected" : "LIVE"})`,
+  r.bothListed === 1, `${r.twoModeWeapon}: ${r.bothListed} rows`);
+check("...with a measured winner rather than a placeholder",
+  r.bothMeasured === 1,
   `${r.bothMeasured} measured of ${r.bothListed}`);
-check("...and the second one's link names ITS mode",
+check("...and the winner's link names its mode",
   !!r.otherHref && r.otherHref.includes(`mode=${r.otherMode}`), String(r.otherHref));
 check("...it opens that weapon", r.otherOpenedWeapon === r.twoModeWeapon,
   `${r.otherOpenedWeapon} vs ${r.twoModeWeapon}`);
-// THE POINT. Two rows of one weapon differ in exactly one thing, and clicking
-// the second must not land on the first.
-check("...played the way THAT row was, not the way the other one was",
+check("...played the way the winning row was",
   r.otherOpenedMode === r.otherMode, `${r.otherOpenedMode} vs ${r.otherMode}`);
-check("...under the ruler it was measured on", r.otherOpenedRuler === r.rulers[0],
-  `${r.otherOpenedRuler} vs ${r.rulers[0]}`);
+check("...under the ruler it was measured on", r.otherOpenedRuler === r.fixtureRuler,
+  `${r.otherOpenedRuler} vs ${r.fixtureRuler}`);
 check("...carrying that row's build",
   JSON.stringify(r.otherOpenedMods) === JSON.stringify(r.otherWantMods),
   `${JSON.stringify(r.otherOpenedMods)} vs ${JSON.stringify(r.otherWantMods)}`);
@@ -262,7 +248,7 @@ check("...its exilus slot included",
 
 // ---- and the RANK a picker shows is a rank WITHIN a mode ---------------
 //
-// The board page lists a weapon's BEST row per mode; the deeper ranks live in
+// The board page lists a weapon's BEST row across modes; the deeper ranks live in
 // the builder's own picker, where the mode is a CONTROL of its own and the row
 // list under it is one ranking. The failure: `builtinBuilds` sorted by ruler
 // only and inherited board.json's order, which is by SCORE and knows nothing
@@ -386,9 +372,9 @@ const pick = await evaluate(`(async () => {
     if (mbtns.length) {
       out.modeOpts = mbtns.map(el => el.dataset.v);
       out.modeShown = (mbtns.find(el => el.classList.contains('on')) || {}).dataset?.v;
-      const onRuler = ((box.querySelector('[data-fseg="b"].on') || {}).dataset || {}).v;
+      const onRuler = box.querySelector('[data-board-selected]')?.dataset.boardSelected;
       out.onRuler = onRuler;
-      out.wantModes = [...new Set(builtinBuilds()
+      out.wantModes = ['*', ...new Set(builtinBuilds()
         .filter(p => p.benchmark === onRuler).map(p => p.mode))];
     }
     out.groups = box ? box.querySelectorAll('.fd-main tbody th').length : 0;
@@ -422,7 +408,7 @@ check(`[${pick.drawn}] ...offering each mode exactly once`,
     && pick.modeOpts.length === new Set(pick.modeOpts).size,
   JSON.stringify(pick.modeOpts));
 // IN THE ORDER `builtinBuilds` PUT THEM IN, asserted above to be strongest first.
-check(`[${pick.drawn}] ...in the board's own order, strongest first`,
+check(`[${pick.drawn}] ...with all modes first, then the board's strongest groups`,
   JSON.stringify(pick.modeOpts) === JSON.stringify(pick.wantModes),
   `${JSON.stringify(pick.modeOpts)} vs ${JSON.stringify(pick.wantModes)}`);
 check(`[${pick.drawn}] ...and it opens on that one`,

@@ -2358,11 +2358,6 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .brow .brank{flex:0 0 44px;color:var(--text-2);font-size:12px;font-variant-numeric:tabular-nums}
 .brow .bimg{flex:0 0 auto;width:34px;height:34px;object-fit:contain}
 .brow .bname{flex:1 1 auto;font-size:13px}
-/* ON EVERY ROW, including a weapon with one way to be played. A tag that
-   appears on the neighbour and not here reads as "no mode" rather than as
-   "one mode", and this is the page where weapons are compared. */
-.brow .bmode{margin-left:6px;padding:1px 6px;border:1px solid var(--line);border-radius:6px;
-  color:var(--text-2);font-size:11px;white-space:nowrap}
 /* A weapon the sim knows it does not fully model, marked where weapons are
    COMPARED. Quiet on purpose — it is a footnote on the number, not a warning
    about the row — and it carries the whole list in its title. */
