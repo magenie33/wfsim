@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { testDb } from "./pg/test_db.mjs";
-import { userTasksRoute, reportCanon, purgeUserCalculations } from "../worker/user_tasks.js";
+import { userTasksRoute, reportCanon, purgeUserCalculations, USER_TASK_PRODUCERS } from "../worker/user_tasks.js";
 import { syncRoute } from "../worker/sync.js";
 import { setDial } from "../worker/dials.js";
 import { facts } from "../worker/factory.js";
@@ -125,6 +126,21 @@ await check("expiry removes ownership and reports after retention", async () => 
   await purgeUserCalculations(env); await purgeUserCalculations(env);
   assert.equal((await db.get("SELECT count(*) AS n FROM user_calculations")).n, 0);
   assert.equal((await db.get("SELECT count(*) AS n FROM calculation_reports")).n, 0);
+});
+await check("the deployed daemon role can deliver a completed calculation", async () => {
+  const pending = accepted();
+  const got = await call("accept", pending);
+  const grants = readFileSync(new URL("../deploy/factoryd_grants.sql", import.meta.url), "utf8");
+  const schema = (await db.get("SELECT current_schema() AS name")).name;
+  await db.exec(`CREATE ROLE wfsim_factoryd; GRANT USAGE ON SCHEMA ${schema} TO wfsim_factoryd;`);
+  await db.exec([...grants.matchAll(/GRANT (?!CONNECT)[^;]+;/g)].map((m) => m[0]).join("\n"));
+  await db.exec("SET ROLE wfsim_factoryd");
+  try {
+    const producer = USER_TASK_PRODUCERS.user_calculation;
+    assert.equal(await producer.still_wanted(env, { ref: pending.id }), true);
+    await producer.on_fact(env, { ref: pending.id, question: got.question }, { engine, result: { report } });
+  } finally { await db.exec("RESET ROLE"); }
+  assert.equal((await call("status", { owner, ids: [pending.id], include_results: true })).tasks[0].state, "succeeded");
 });
 await db.close();
 console.log(`\n${passed} user task service checks passed`);

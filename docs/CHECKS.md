@@ -1993,7 +1993,8 @@ The executor browser check runs a real optimizer, navigates away, opens its
 saved report and checks shared typed-card import and batch admission. The
 service check applies the real Postgres schema on PGlite and checks idempotent
 admission, secret ownership, full-report agreement, independent cancellation,
-capability filtering and retention. The service browser check runs the real
+capability filtering, retention and delivery with the deployed daemon role's
+grants. The service browser check runs the real
 producer and factory behind an isolated static frontend, transfers a simulation
 and completes simulation and optimization through two real WASM witnesses.
 Its test-only claim endpoint supplies independent test devices and networks;

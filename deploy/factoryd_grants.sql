@@ -14,3 +14,5 @@ GRANT SELECT, INSERT, UPDATE ON scores, verifier_hours TO wfsim_factoryd;
 GRANT SELECT, UPDATE, DELETE ON settle_queue TO wfsim_factoryd;
 GRANT DELETE ON queue TO wfsim_factoryd;
 GRANT SELECT (channel, request, at, done_at, weapon, ruler, agreed_at, started_at) ON appraisals TO wfsim_factoryd;
+GRANT SELECT, UPDATE ON user_calculations TO wfsim_factoryd;
+GRANT SELECT, INSERT ON calculation_reports TO wfsim_factoryd;
