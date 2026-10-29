@@ -2474,11 +2474,16 @@ holding the original.
 | the `library-backups` branch | for ever, versioned by git | `git clone --branch library-backups` |
 | a run artifact | 90 days | `gh run download --name library-<n>` |
 
-The server dumps both databases whole besides (`/usr/local/bin/wfsim-pg-backup`,
-nightly at 03:17 UTC): `pg_dump -Fc` of `wfsim` and `wfsim_accounts`, two days
-on its disk and thirty in the R2 bucket `wfsim-pg-backup`. That copy holds personal data
-and never leaves the owner's accounts. Postgres logs statements past five
-seconds, rotated weekly and four kept.
+The server backs up both databases and global roles nightly at 03:17 UTC
+(`/usr/local/bin/wfsim-pg-backup`, `scripts/pg_backup.py`). Custom-format dumps
+stream in 64MiB parts directly to private R2, without a full local staging file.
+Every part is read back and checked by byte count and SHA-256; the manifest is
+written last, after every dump succeeds. Concatenate each database's listed
+parts in order and check its whole digest before restoring. The manifest states
+whether an isolated restore was tested; readback alone does not claim one.
+Thirty days stay in `wfsim-pg-backup`, apart from explicitly held maintenance
+checkpoints. This copy includes personal data and stays in the owner's accounts.
+Postgres logs statements past five seconds, rotated weekly and four kept.
 
 **IT FETCHES COLD.** The backup reads the rows straight out of the database
 with no cache of any kind, because a copy that shares its input with the thing
