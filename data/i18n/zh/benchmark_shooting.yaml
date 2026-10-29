@@ -1,9 +1,9 @@
 ui:
   Scene: 场景
   Shooting: 射击
-  100% headshots, aiming: 100% 爆头 · 瞄准
-  50% headshots, aiming: 50% 爆头 · 瞄准
-  0% headshots, aiming: 0% 爆头 · 瞄准
+  100% headshots, aiming: 100%爆头·瞄准
+  50% headshots, aiming: 50%爆头·瞄准
+  0% headshots, aiming: 0%爆头·瞄准
   Shots are aimed, with a 100% headshot rate. A weapon's forced targeting and stance still apply.: 瞄准射击，爆头率为 100%。武器自身强制的命中位置和姿态仍然生效。
   Shots are aimed, with a 0% headshot rate. A weapon's forced targeting and stance still apply.: 瞄准射击，爆头率为 0%。武器自身强制的命中位置和姿态仍然生效。
   Shots are aimed, with a 50% headshot rate. A weapon's forced targeting and stance still apply.: 瞄准射击，爆头率为 50%。武器自身强制的命中位置和姿态仍然生效。
