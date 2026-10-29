@@ -29,7 +29,7 @@ const r = await evaluate(`(async () => {
   const all = await type('a');
   out.rows = all.length;
   out.noTools = !document.querySelector('#wsearch-panel .pchip, #wsearch-panel .dd');
-  const shotguns = oneCardPerChamber(META.weapons).filter((w) => w.mod_class === 'shotgun').map((w) => w.id);
+  const shotguns = META.weapons.filter((w) => w.mod_class === 'shotgun').map((w) => w.id);
   const word = tr('Shotgun');
   out.shotgunWord = word;
   const sg = await type(word);
@@ -37,6 +37,11 @@ const r = await evaluate(`(async () => {
   const sgEn = await type('shotgun');
   out.byKindEn = shotguns.every((id) => sgEn.includes(id));
   out.byName = (await type('托里德')).includes('torid');
+  const kits = await type('Gaze');
+  out.kitgunEntries = ['gaze_primary', 'gaze_secondary'].every(id => kits.includes(id));
+  out.kitgunLabels = [...document.querySelectorAll('#wsearch-list .opt')]
+    .filter(el => kits.includes(el.dataset.id) && weaponInfo(el.dataset.id)?.assembly)
+    .every(el => el.querySelector('.mn').textContent.includes(tr(ARC_POOL_LABEL[weaponInfo(el.dataset.id).slot])));
   return out;
 })()`);
 check("an empty box opens nothing", r.emptyShut === true, JSON.stringify(r));
@@ -45,6 +50,7 @@ check("the panel is one list, with no filter row or sort above it", r.noTools ==
 check(`a weapon's kind is found by its word in the page's language (${r.shotgunWord})`, r.byKindZh === true, JSON.stringify(r));
 check("...and by its English one", r.byKindEn === true, JSON.stringify(r));
 check("...and a name as before", r.byName === true);
+check("Kitgun search offers both weapon slots with distinct names", r.kitgunEntries && r.kitgunLabels, JSON.stringify(r));
 
 // ON A PHONE the results take the screen's width under the bar, what floats over
 // the screen steps aside while they are open, and every row's kind is in the

@@ -42,7 +42,7 @@ for (const chamber of chambers) {
     for (const slot of ['secondary', 'primary']) {
       jump.open = true;
       renderJump();
-      ddReg.get('dd-kitslot').onPick(slot);
+      nav(weaponPath(${JSON.stringify(chamber.chamber)} + '_' + slot));
       for (let i = 0; i < 100 && weaponInfo($('weapon').value).slot !== slot; i++) {
         await new Promise(r => setTimeout(r, 100));
       }
@@ -65,6 +65,8 @@ for (const chamber of chambers) {
       jumpLink.click();
       await new Promise(r => setTimeout(r, 1500));
       out.push({ kind: 'entry', slot, addressMatches, rerouted,
+        fixedSlot: !document.querySelector('#assembly-row #dd-kitslot')
+          && document.querySelector('#w-name').textContent.includes(tr(ARC_POOL_LABEL[slot])),
         jumped: buildPayload().weapon === weapon && document.body.classList.contains('on-simulator') });
       nav(weaponPath(weapon));
       await new Promise(r => setTimeout(r, 1000));
@@ -105,7 +107,7 @@ for (const chamber of chambers) {
   const entries = slotNavigation.filter(x => x.kind === 'entry');
   const modules = slotNavigation.filter(x => x.kind === 'module');
   check(chamber.chamber + ' keeps the selected slot through routing and the open jump menu',
-    entries.length === 2 && entries.every(x => x.addressMatches && x.rerouted && x.jumped),
+    entries.length === 2 && entries.every(x => x.addressMatches && x.rerouted && x.jumped && x.fixedSlot),
     JSON.stringify(entries));
   check(chamber.chamber + ' keeps its slot, build and parts through simulator, optimizer and builder',
     modules.length === 6 && modules.every(x => !x.missingLink
@@ -115,7 +117,7 @@ for (const chamber of chambers) {
   if (chamber.chamber === 'catchmoon') {
     for (const slot of ['secondary', 'primary']) {
       const saved = await evaluate(`(async () => {
-        ddReg.get('dd-kitslot').onPick(${JSON.stringify(slot)});
+        nav(weaponPath(${JSON.stringify(chamber.chamber)} + '_' + ${JSON.stringify(slot)}));
         for (let i = 0; i < 100 && weaponInfo($('weapon').value).slot !== ${JSON.stringify(slot)}; i++) {
           await new Promise(r => setTimeout(r, 100));
         }
@@ -130,7 +132,7 @@ for (const chamber of chambers) {
     }
     const shared = await evaluate(`(async () => {
       const pause = ms => new Promise(r => setTimeout(r, ms));
-      ddReg.get('dd-kitslot').onPick('secondary'); await pause(1500);
+      nav(weaponPath('catchmoon_secondary')); await pause(1500);
       flushPresetSaves();
       const before = seatPayload(snapshotState());
       const code = await shareCode();
@@ -152,7 +154,7 @@ for (const chamber of chambers) {
       };
       nav(weaponPath('catchmoon_primary')); await arrived('catchmoon_primary');
       const primary = snapshotState(); flushPresetSaves();
-      ddReg.get('dd-kitslot').onPick('secondary'); await arrived('catchmoon_secondary');
+      nav(weaponPath('catchmoon_secondary')); await arrived('catchmoon_secondary');
       const secondary = snapshotState(); flushPresetSaves();
       window.history.back(); await arrived('catchmoon_primary');
       const back = sameState(primary, snapshotState());

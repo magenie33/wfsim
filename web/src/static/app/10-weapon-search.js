@@ -83,17 +83,14 @@ function initWeaponSearch() {
   // above the list was the list's own room.
   const renderList = () => {
     const q = input.value.trim().toLowerCase();
-    // ONE ROW PER MODULAR WEAPON, for the reason the home grid shows one card:
-    // two entries with one name, one picture and one destination is a list that
-    // looks like it has a bug in it.
-    const list = oneCardPerChamber(META.weapons || [])
+    const list = (META.weapons || [])
       .filter((w) => searchHit(w, q))
       .sort((a, b) => a.name.localeCompare(b.name));
     if (countEl) countEl.textContent = tr("{n} results").replace("{n}", list.length);
     listEl.innerHTML = list.map((w) => `
       <div class="opt" data-id="${w.id}">
         ${imgTag(IMG(w.image), "mod")}
-        <div class="info"><div class="mn">${w.name}</div><div class="me"><div>${escHtml(tr(w.subtype || ""))}</div></div></div>
+        <div class="info"><div class="mn">${escHtml(weaponEntryName(w))}</div><div class="me"><div>${escHtml(tr(w.subtype || ""))}</div></div></div>
       </div>`).join("") || `<div class="sim-empty">${tr("No matches")}</div>`;
   };
   // WHILE THE RESULTS ARE OPEN the page says so (`wsearch-open`), so what

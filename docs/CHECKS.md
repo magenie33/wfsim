@@ -257,7 +257,8 @@ Verified to bite: a final round of 101 runs named every weapon.
 
 Every Kitgun chamber keeps its selected slot, mods and loader through the
 Simulator, Optimizer and Builder tabs in both directions; each slot also runs
-a real simulation through Run Simulation. The selected route and an already
+a real simulation through Run Simulation. Each weapon names its slot and has
+no slot-switch control among its parts. The selected route and an already
 open jump menu keep the slot through route re-entry. Catchmoon also covers cold
 reloads, Back/Forward, sharing from the other slot and a reload stash carrying
 the secondary build under the old chamber URL. A delayed destination board holds
@@ -1654,6 +1655,7 @@ width, the floating button steps aside while they are open, every row's kind
 is shown translated wherever a translation exists, and a close button over them
 shuts the list, empties the box and puts the keyboard away. An empty box opens
 nothing, and a burst of typing draws the list once, when it pauses.
+Primary and secondary Kitguns are both searchable with distinct slot-qualified names.
 
 ## `check_cloud_page`
 

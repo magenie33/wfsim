@@ -61,8 +61,8 @@ function renderRoster() {
   const host = $("sim-roster");
   if (!host || !META) return;
   const list = alsoActing();
-  const weapons = oneCardPerChamber(META.weapons || [])
-    .map((w) => ({ value: w.id, label: w.name, image: w.image }));
+  const weapons = (META.weapons || [])
+    .map((w) => ({ value: w.id, label: weaponEntryName(w), image: w.image }));
   const rows = list.map((ref, i) => `<div class="rs-row" data-seat="${i}">
       <span class="rs-n">${i + 2}</span>
       ${ddButton(`dd-seat-${i}`, {

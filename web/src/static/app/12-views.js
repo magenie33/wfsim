@@ -237,7 +237,7 @@ async function route() {
     : compHit ? `${compHit.name} — ${what.comp} | WFSim`
     : opRoute ? `${tr("Operator")} | WFSim`
     : stub ? `${tr(stub.name)} | WFSim`
-    : w ? `${w.name}${modTitle} — ${what.w} | WFSim` : `WFSim — ${tr("Warframe Calculator")}`;
+    : w ? `${weaponEntryName(w)}${modTitle} — ${what.w} | WFSim` : `WFSim — ${tr("Warframe Calculator")}`;
   if (!servedTitleKept()) document.title = title;
   trailPush();
   // A REMINDER IS WATCHED FROM EVERY PAGE, not only from /utility.
@@ -418,26 +418,11 @@ function slotFilterClick(st, el) {
 const nameMatches = (q, ...names) => !q || names.some((n) => n && String(n).toLowerCase().includes(q.trim().toLowerCase()));
 
 
-/// ONE ROW PER MODULAR WEAPON, in a list that picks a WEAPON (search, the fight
-/// roster). The chamber IS the weapon — one mastery track, one riven, one wiki
-/// page — so its two slot entries are one row there, and which one it opens is
-/// settled on the page by the Slot control. The home page groups by SLOT
-/// instead, so a Kitgun appears there once per slot.
-///
-/// IT OPENS THE PRIMARY, stated rather than left to roster ORDER — which
-/// happens to be alphabetical and happens to put `_primary` before
-/// `_secondary`. That is the right answer arrived at by accident, and an
-/// accident stops being right the day a chamber is named so that it is not.
-const oneCardPerChamber = (ws) => {
-  const best = new Map();
-  ws.forEach((w) => {
-    const key = w.assembly ? w.assembly.chamber : w.id;
-    const cur = best.get(key);
-    if (!cur || (w.slot === "primary" && cur.slot !== "primary")) best.set(key, w);
-  });
-  // A Map keeps insertion order, so this is the roster's order with the
-  // duplicates removed — the same list every caller sorted before.
-  return [...best.values()];
+/// Same-named weapons in different slots include the slot wherever chosen by name.
+const weaponEntryName = (w) => {
+  if (!w) return "";
+  const shared = (META.weapons || []).some((x) => x.name === w.name && x.slot !== w.slot);
+  return w.name + (shared ? ` (${tr(ARC_POOL_LABEL[w.slot] || w.slot)})` : "");
 };
 
 /// WHAT THE HOME PAGE IS FILTERED BY, kept for the visit: one search across

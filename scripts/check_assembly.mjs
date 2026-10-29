@@ -165,17 +165,17 @@ check("a beam chamber's grips say their reach",
 check("...and a projectile chamber's say their fire rate",
   /\/s/.test(drawn.text), drawn.text.slice(0, 160));
 
-// ---- ONE PAGE, TWO SLOTS ----------------------------------------------------
+// ---- TWO WEAPONS, EACH WITH ITS OWN PARTS -----------------------------------
 
-// Each slot's route identifies its own entry and build.
-check("...and it offers the other slot", !!drawn.sibling, JSON.stringify(drawn));
+check("...and the parts block has no slot-switch control",
+  !!drawn.sibling && !drawn.controls.includes('dd-kitslot'), JSON.stringify(drawn));
 
 const switched = await evaluate(`(async () => {
   ${open(KIT)}
   const before = { id: $('weapon').value, slot: weaponInfo($('weapon').value).slot,
                    grips: assemblySpec($('weapon').value).grips.map(g => g.id) };
   const path = location.pathname;
-  ddReg.get('dd-kitslot').onPick(weaponInfo(slotSibling(before.id)).slot);
+  nav(weaponPath(slotSibling(before.id)));
   // Wait for the selected entry's board and preset restore.
   await new Promise(r => setTimeout(r, 3000));
   const id = $('weapon').value;
@@ -189,7 +189,7 @@ const switched = await evaluate(`(async () => {
     sent: buildPayload().weapon,
   };
 })()`);
-check("picking the other slot moves to the other entry",
+check("opening the other weapon moves to its own entry",
   switched.after.id !== switched.before.id
     && switched.after.slot !== switched.before.slot
     && switched.sent === switched.after.id,

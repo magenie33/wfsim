@@ -99,7 +99,7 @@ function syncFramedPane(box, name, href, src) {
 }
 
 /// WHAT THE WEAPON IS CALLED IN THESE HANDS — "Valkyr Prime Talons".
-const weaponDisplayName = (w) => ((w && w.wielder_names) || {})[(buildWielder || {}).frame] || (w && w.name) || "";
+const weaponDisplayName = (w) => ((w && w.wielder_names) || {})[(buildWielder || {}).frame] || weaponEntryName(w);
 
 function renderWeaponName() {
   const w = weaponInfo($("weapon") && $("weapon").value);

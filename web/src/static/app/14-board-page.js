@@ -498,7 +498,7 @@ const benchRowHtml = (cur, { w, mode, row }, i) => `
           row ? `&riven=${rowHasRiven(row) ? 1 : 0}` : ""}`}">
         <span class="brank">${row ? `#${i + 1}` : "—"}</span>
         ${imgTag(IMG(w.image), "bimg")}
-        <span class="bname">${escHtml(w.name)}${w.assembly ? ` (${escHtml(tr(ARC_POOL_LABEL[w.slot] || w.slot))})` : ""}${
+        <span class="bname">${escHtml(weaponEntryName(w))}${
           // THE BOARD IS WHERE WEAPONS ARE COMPARED, so it is the one place a
           // weapon with unmodelled parts must not look like one without them.
           // A Stug row is four admissions deep and a Torid row is exact; side

@@ -336,40 +336,8 @@ function renderAssembly() {
     return rankedSlot(id, partCfgs[id]);
   };
 
-  // THE SLOT. In game the GRIP decides it; here it is picked first, because it
-  // decides the mod pool and therefore which build you are even editing. So the
-  // two are one control read in the other direction: choose the slot, then a
-  // grip from that slot's five.
-  const sibling = slotSibling(w);
-  const wSlot = (weaponInfo(w) || {}).slot;
-  const slotPick = sibling
-    ? `<label title="${escHtml(tr("the grip decides this in game; here it comes first, because it decides which mods the weapon can hold — and switching is switching weapons, so each slot keeps its own build"))}">${
-        escHtml(tr("Slot"))} ${ddButton("dd-kitslot", {
-        value: wSlot,
-        items: [w, sibling].map((id) => ({
-          value: (weaponInfo(id) || {}).slot,
-          label: tr(cap1((weaponInfo(id) || {}).slot)),
-        })).sort((a, b) => a.value.localeCompare(b.value)),
-        onPick: (v) => {
-          if (v === wSlot) return;
-          nav(weaponModPath(sibling));
-        },
-      })}</label>`
-    : "";
-
-  // THE CHAMBER IS NOT HERE AT ALL. It was stated as a
-  // read-only value on the reasoning that a reader should see what is missing
-  // on purpose — but the chamber IS the weapon, whose name is already at the
-  // top of the page, so the row said the same word twice and took the first
-  // line of the block to do it. What belongs in that line is the one thing
-  // about this weapon that IS a choice and is not offered anywhere else: the
-  // SLOT.
-  //
-  // NO SUMMARY LINE: the card each part draws carries its own stats, which is
-  // all a line under the shut dropdowns could say.
   const axis = { kind: "assembly", idx: 0 };
   box.innerHTML =
-    slotPick +
     pick("grip", "Grip", s.grips.map(gripItem),
       tr("the grip sets damage, fire rate and the charge — only this slot's five are offered, because a grip is what decides the slot")) +
     pick("loader", "Loader", s.loaders.map(loaderItem),

@@ -41,6 +41,8 @@ const r = await evaluate(`(async () => {
   out.seatHasWeapon = !!document.getElementById('dd-seat-0');
   out.seatHasPreset = !!document.getElementById('dd-seat-preset-0');
   out.seatHasRemove = !!document.querySelector('#sim-roster [data-drop="0"]');
+  const kitguns = (ddReg.get('dd-seat-0')?.items || []).filter(w => ['gaze_primary', 'gaze_secondary'].includes(w.value));
+  out.kitgunChoices = kitguns.length === 2 && new Set(kitguns.map(w => w.label)).size === 2;
   // …and the new seat starts on the weapon in front of you, unmodded.
   out.bornOn = (sim.also_acting || [])[0];
 
@@ -120,6 +122,7 @@ const r = await evaluate(`(async () => {
 check("the roster opens as you alone", r.youOnly === 1, `${r.youOnly} rows`);
 check("...and you cannot be taken out of your own fight", r.youHaveNoRemove === true);
 check("+ another gun adds a seat", r.afterAdd === 2, `${r.afterAdd} rows`);
+check("the weapon picker offers primary and secondary Kitguns separately", r.kitgunChoices);
 check("...with a weapon, one of its builds, and a way out",
   r.seatHasWeapon && r.seatHasPreset && r.seatHasRemove,
   JSON.stringify([r.seatHasWeapon, r.seatHasPreset, r.seatHasRemove]));
