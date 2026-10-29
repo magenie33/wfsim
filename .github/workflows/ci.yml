@@ -1,4 +1,5 @@
 name: CI
+run-name: "${{ inputs.hotfix && 'hotfix:' || 'CI:' }} ${{ github.ref_name }}"
 
 on:
   push:
@@ -10,6 +11,14 @@ on:
         description: Run every check without reusing an earlier run
         type: boolean
         default: false
+      hotfix:
+        description: Validate only registered hotfix scopes; never supplies a site release
+        type: boolean
+        default: false
+      reason:
+        description: Incident requiring scoped validation (required with hotfix)
+        type: string
+        default: ""
   schedule:
     - cron: '17 20 * * 0'
 
@@ -45,6 +54,8 @@ jobs:
       engine_apart: ${{ steps.scope.outputs.engine_apart }}
       published_board: ${{ steps.scope.outputs.published_board }}
       site: ${{ steps.scope.outputs.site }}
+      hotfix: ${{ steps.scope.outputs.hotfix }}
+      hotfix_matrix: ${{ steps.scope.outputs.hotfix_matrix }}
       reuse: ${{ steps.reuse.outputs.run }}
     steps:
       - uses: actions/checkout@v4
@@ -61,7 +72,7 @@ jobs:
       - id: reuse
         env:
           GH_TOKEN: ${{ github.token }}
-          FORCE_FULL: ${{ inputs.full }}
+          FORCE_FULL: ${{ inputs.full || inputs.hotfix }}
           CI_PLAN: ${{ steps.scope.outputs.plan }}
         run: node scripts/ci_runs.mjs reuse
 
@@ -73,6 +84,7 @@ jobs:
         with:
           node-version: '22.23.4'
       - run: node scripts/check_ci_policy.mjs
+      - run: node scripts/check_ci_hotfix.mjs
       - run: node scripts/check_ci_partitions.mjs
       - run: node scripts/check_site_setup.mjs
       - run: node scripts/check_page_bodies.mjs
@@ -84,6 +96,25 @@ jobs:
       - run: node scripts/test_nona_core.mjs
       - run: node scripts/check_nona_boundary.mjs
       - run: node scripts/check_rescore_paths.mjs
+
+  hotfix:
+    needs: [plan, quick]
+    if: needs.plan.outputs.hotfix == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.hotfix_matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - run: npm ci --silent --prefix scripts/pg
+      - name: Registered checks for the affected scope
+        env:
+          GROUP: ${{ matrix.group }}
+        run: node scripts/ci_hotfix.mjs "$GROUP"
 
   test:
     needs: [plan, quick]
@@ -661,7 +692,7 @@ jobs:
 
   ci-required:
     if: ${{ always() }}
-    needs: [plan, quick, commits, coordination, test, gas, engine-apart, published-board, site, checks, pipeline, page, parity, page-rest]
+    needs: [plan, quick, commits, coordination, hotfix, test, gas, engine-apart, published-board, site, checks, pipeline, page, parity, page-rest]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

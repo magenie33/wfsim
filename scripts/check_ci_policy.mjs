@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { assertGate, BROWSER_JOBS, browserCheckPaths, changedPaths, classify, PRODUCT_JOBS } from './ci_policy.mjs';
+import { ALL_CI_JOBS, assertGate, BROWSER_JOBS, browserCheckPaths, changedPaths, classify, PRODUCT_JOBS } from './ci_policy.mjs';
 import { trustedRun, validProof, verifiedBase } from './ci_runs.mjs';
 
 for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/src/optimize.rs',
@@ -40,7 +40,7 @@ assert(classify(['site/asset/app.123.js', 'worker/index.js']).jobs.includes('sit
 assert.equal(classify(['data/board_state.yaml', 'worker/index.js']).scope, 'full');
 assert.equal(classify(['docs/UI.md', 'data/board_state.yaml']).scope, 'snapshot');
 
-const needs = plan => Object.fromEntries(['plan', 'quick', 'commits', ...PRODUCT_JOBS].map(j =>
+const needs = plan => Object.fromEntries(['plan', 'quick', 'commits', ...ALL_CI_JOBS].map(j =>
   [j, { result: ['plan', 'quick', 'commits', ...plan.jobs].includes(j) ? 'success' : 'skipped' }]));
 for (const plan of [classify(['docs/UI.md']), classify(['worker/index.js']), classify(['engine/src/lib.rs'])]) {
   assertGate(plan, needs(plan));
@@ -78,7 +78,7 @@ const run = { id: 1, head_sha: 'abc', conclusion: 'success', status: 'completed'
 const context = { sha: 'abc', repository: 'owner/repo', workflow: 9, current: 2 };
 assert(trustedRun(run, context));
 for (const patch of [{ id: 2 }, { head_sha: 'other' }, { conclusion: 'failure' }, { status: 'in_progress' },
-  { event: 'pull_request' }, { workflow_id: 8 }, { head_repository: { full_name: 'fork/repo' } }]) {
+  { event: 'pull_request' }, { display_title: 'hotfix: task' }, { workflow_id: 8 }, { head_repository: { full_name: 'fork/repo' } }]) {
   assert(!trustedRun({ ...run, ...patch }, context), JSON.stringify(patch));
 }
 const baseline = candidate => ({
@@ -89,7 +89,8 @@ const baseline = candidate => ({
   api: path => path.endsWith('/ci.yml') ? { id: 9 } : { workflow_runs: candidate ? [candidate] : [] },
 });
 assert(verifiedBase('snapshot', 'owner/repo', baseline(run)));
-for (const bad of [null, { ...run, conclusion: 'failure' }, { ...run, event: 'pull_request' }, { ...run, head_sha: 'old' }]) {
+for (const bad of [null, { ...run, conclusion: 'failure' }, { ...run, event: 'pull_request' },
+  { ...run, display_title: 'hotfix: task' }, { ...run, head_sha: 'old' }]) {
   assert(!verifiedBase('snapshot', 'owner/repo', baseline(bad)));
 }
 assert.throws(() => verifiedBase('snapshot', 'owner/repo', {

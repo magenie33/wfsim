@@ -83,6 +83,45 @@ selected jobs. Do not request a second full run just because the same validated
 commit moves to main. A newer branch run cancels the previous run for that
 branch; main runs and shipping are not cancelled in progress.
 
+## Urgent scoped validation
+
+For an incident, manually dispatch CI with `hotfix=true` and a reason. The
+diff must fit the profiles in `scripts/ci_hotfix.mjs`; each profile declares
+its exact paths and required checks. Profiles combine when a diff spans them.
+Unregistered paths, an unverified baseline, an empty diff, a missing reason
+or `full=true` reject the request. Renames include both paths.
+
+| Profile | Changes | Required checks |
+| --- | --- | --- |
+| `factory-sql` | `worker/pg/sync.sql` and its registered regression checks | Factory, eligibility, fairness, settlement, retention and protocol checks; queued settlement and the sync procedure also run together |
+| `ci` | CI selection, gates, partitions and the hotfix workflow/runner | Selection, partitions and hotfix boundary/proof regressions |
+
+Quick checks, commit checks and coordination checks always run. Documentation
+may accompany a supported change; the client contract and measurements do not
+qualify. Engine, game data, UI, database table schemas and unknown tooling
+retain their ordinary coverage. A new profile adds explicit paths and tests
+that reject out-of-scope changes and incomplete evidence.
+
+```sh
+gh workflow run ci.yml --ref <branch> -f hotfix=true -f reason="<incident>"
+GITHUB_REPOSITORY=magenie33/wfsim node scripts/ci_runs.mjs hotfix <full-sha> <run-id>
+```
+
+The gate records the exact commit, baseline, diff, profiles, checks and policy
+digest in `ci-proof`. Failed, skipped or cancelled required checks block it.
+Hotfix runs are labelled `hotfix:` and cannot establish a regular CI baseline,
+replace full CI, or supply a site release artifact. The verification command
+checks the successful run and artifact against the current policy and actual
+diff before an operator applies the change.
+
+An authorized emergency push advances the exact validated commit to main.
+The main push starts ordinary CI in the background; its result stays separate.
+For a SQL hotfix, retain the installed function definitions for rollback,
+apply only the validated replacements as their owning role, and verify real
+task claims, request errors and fleet throughput. A source push alone does not
+replace installed database functions. A site release still uses the ordinary
+build and release proof.
+
 ## Required gate and reuse
 
 `ci-required` runs even when dependencies fail or skip. It requires the plan,

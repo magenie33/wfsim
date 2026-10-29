@@ -3,9 +3,11 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { appendFileSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
+import { hotfixPlan } from './ci_hotfix.mjs';
 
 export const PRODUCT_JOBS = ['test', 'gas', 'engine-apart', 'published-board', 'site', 'checks', 'pipeline', 'page', 'parity', 'page-rest'];
 export const BROWSER_JOBS = ['site', 'checks', 'pipeline', 'page', 'parity', 'page-rest'];
+export const ALL_CI_JOBS = [...PRODUCT_JOBS, 'hotfix'];
 
 export function browserCheckPaths(workflow) {
   const sections = workflow.split(/^  ([\w-]+):[ \t]*$/m);
@@ -60,7 +62,8 @@ export function policyDigest() {
   const h = createHash('sha256');
   for (const path of ['.github/workflows/ci.yml', '.github/actions/site-tools/action.yml',
     '.github/actions/built-site/action.yml', 'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs',
-    'scripts/check_ci_policy.mjs', 'scripts/ci_rust.mjs', 'scripts/check_ci_partitions.mjs', 'scripts/riven_request_cases.mjs',
+    'scripts/check_ci_policy.mjs', 'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs',
+    'scripts/ci_rust.mjs', 'scripts/check_ci_partitions.mjs', 'scripts/riven_request_cases.mjs',
     '.github/actions/site-tools/install.sh', 'scripts/check_site_setup.mjs', 'Cargo.toml', 'Cargo.lock']) {
     h.update(path).update('\0').update(readFileSync(path)).update('\0');
   }
@@ -92,12 +95,12 @@ export function assertGate(plan, needs, reused = false) {
   for (const name of ['plan', 'quick', 'commits']) {
     if (needs[name]?.result !== 'success') throw new Error(`${name}: ${needs[name]?.result || 'missing'}`);
   }
-  for (const name of PRODUCT_JOBS) {
+  for (const name of ALL_CI_JOBS) {
     const expected = !reused && plan.jobs.includes(name) ? 'success' : 'skipped';
     if (needs[name]?.result !== expected) throw new Error(`${name}: expected ${expected}, got ${needs[name]?.result || 'missing'}`);
   }
   for (const [name, job] of Object.entries(needs)) {
-    if (!PRODUCT_JOBS.includes(name) && job.result !== 'success') throw new Error(`${name}: ${job.result}`);
+    if (!ALL_CI_JOBS.includes(name) && job.result !== 'success') throw new Error(`${name}: ${job.result}`);
   }
 }
 
@@ -113,15 +116,18 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   try { paths = changedPaths(event, process.env); }
   catch (e) { console.log(`Cannot establish changed paths; running full CI: ${e.message}`); }
   const force = process.env.GITHUB_EVENT_NAME === 'schedule' || event.inputs?.full === true || event.inputs?.full === 'true';
+  const hotfix = event.inputs?.hotfix === true || event.inputs?.hotfix === 'true';
   let verified = false;
-  if (!force && classify(paths).scope !== 'full') {
+  if (!force && (hotfix || classify(paths).scope !== 'full')) {
     try {
       const base = changedBase(event, process.env);
       verified = execFileSync(process.execPath, ['scripts/ci_runs.mjs', 'base', base], { encoding: 'utf8' }).trim() === 'true';
     } catch (e) { console.log(`Cannot verify the comparison base; running full CI: ${e.message}`); }
   }
-  const plan = classify(paths, force, verified);
-  output({ plan, policy: policyDigest(), ...Object.fromEntries(PRODUCT_JOBS.map(j => [j.replaceAll('-', '_'), plan.jobs.includes(j)])) });
+  const plan = hotfix ? { ...hotfixPlan(paths, { verifiedBase: verified, reason: event.inputs?.reason || '',
+    event: process.env.GITHUB_EVENT_NAME, force }), base: changedBase(event, process.env) } : classify(paths, force, verified);
+  output({ plan, policy: policyDigest(), hotfix_matrix: plan.matrix || { group: [] },
+    ...Object.fromEntries(ALL_CI_JOBS.map(j => [j.replaceAll('-', '_'), plan.jobs.includes(j)])) });
   const summary = `## CI scope: ${plan.scope}\n\nSelected: ${plan.jobs.join(', ') || 'quick checks only'}.\n\n${plan.forced ? 'Full validation requested, baseline unverified, or no reliable diff available.\n' : ''}\n${plan.reasons.map(r => `- ${JSON.stringify(r.path)}: ${r.kind}`).join('\n')}\n`;
   console.log(summary);
   if (process.env.GITHUB_STEP_SUMMARY) appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
