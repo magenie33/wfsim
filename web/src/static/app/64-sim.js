@@ -86,6 +86,10 @@ async function renderSimWielder(host) {
     list.map((label) => `<span class="sb-chip"><span>${escHtml(label)}</span></span>`).join("")
     || `<span class="sb-empty">${escHtml(empty)}</span>`}</div>`;
   const name = (m) => (m || {}).name;
+  const modChip = (s) => {
+    const m = wfMod(s.mod);
+    return m ? { img: IMG(m.image), label: m.name, rank: s.rank ?? m.max_rank } : null;
+  };
   const shards = st.shards.filter(Boolean).map((p) => {
     const d = SHARDS().find((x) => x.id === p.shard);
     const o = d && d.options.find((x) => x.id === p.effect);
@@ -93,8 +97,11 @@ async function renderSimWielder(host) {
   }).filter(Boolean);
   host.innerHTML = `<div class="sb-h">${escHtml(tr("Wielder"))}</div><div class="wld-nest">`
     + title(f.name, b ? b.name : "", `${warframePath(f)}?build=${encodeURIComponent(wielderIdOf(held))}`)
-    + chips(tr("Aura"), [name(wfMod(st.slots[WF_AURA].mod))].filter(Boolean), tr("no aura"))
-    + chips(`${tr("Mods")}`, st.slots.slice(0, 9).map((s) => name(wfMod(s.mod))).filter(Boolean), tr("no mods equipped"))
+    + buildCardHtml({
+      aura: [modChip(st.slots[WF_AURA])].filter(Boolean),
+      mods: st.slots.slice(0, 8).map(modChip).filter(Boolean),
+      exilus: [modChip(st.slots[WF_EXILUS])].filter(Boolean),
+    })
     + chips(tr("Archon shards"), shards, tr("empty socket"))
     + `<div class="wld-op">`
     + title(tr("Operator"), opBuild ? opBuild.name : "", opBuild ? `/operator?build=${encodeURIComponent(opBuild.id)}` : "/operator")

@@ -429,9 +429,11 @@ reference — the board's #1 is only the reference if the reader makes it one.
 descriptor — mods, parts, arcane, evolutions, valence as chips with icons and
 full names — for the simulator's "what is being tested" block and for every
 finder row alike, so the page has one picture of a build. THE MODS RUN IN THE
-ORDER THE BUILD WAS SAVED, the exilus last: elements combine in slot order, so
-a row sorted any other way can read as another element build. The riven rides
-in the mods with its own section below: official stat text comes from
+ORDER THE BUILD WAS SAVED: elements combine in slot order, so a row sorted any
+other way can read as another element build. Aura or stance, main mods and
+Exilus each occupy a separate row, in that order. Slot position decides the
+row, so an Exilus-eligible mod in a main slot remains among the main mods.
+The riven rides in the mods with its own section below: official stat text comes from
 `/api/riven`, with each actual roll. The section heading is simply "Riven".
 Shared riven displays put spliced bonuses first and the malus last, keeping
 each stat's stored slot and roll intact.

@@ -285,11 +285,22 @@ function headlessEvoChips(w, ids) {
   }).filter(Boolean);
 }
 
+/// Slot positions, not mod eligibility, decide which row a card belongs to.
+function headlessWeaponModSections(meta, w, slots, chip) {
+  const card = headlessModOf(meta);
+  const pool = (w.mods || []).map(card).filter(Boolean);
+  const at = (i) => [chip(slots[i], i)].filter(Boolean);
+  return {
+    stance: pool.some((m) => m.stance) ? at(HEADLESS_STANCE) : null,
+    mods: slots.slice(0, 8).map(chip).filter(Boolean),
+    exilus: w.has_exilus_slot !== false && pool.some((m) => m.exilus) ? at(HEADLESS_EXILUS) : null,
+  };
+}
+
 /// A BUILD AS CHIPS — the one brief every surface that shows a build draws. It
 /// takes a DESCRIPTOR, never live state; a section given as null is not drawn,
-/// an empty one says so. The builder's own order: mode, mods, the riven spelled
-/// out, parts, arcane, evolutions, and the valence last — its percentage with
-/// the element, since 60% Heat and 25% Heat are two builds.
+/// an empty one says so. Aura or stance, main mods and exilus have their own
+/// rows in Builder order. Valence keeps its element and percentage together.
 function headlessBuildCardHtml(say, d) {
   const esc = headlessEsc;
   const chip = (c) => `<span class="sb-chip${c.cls ? " " + c.cls : ""}"${c.title ? ` title="${esc(c.title)}"` : ""}>` +
@@ -298,7 +309,10 @@ function headlessBuildCardHtml(say, d) {
     : `<div class="sb-h">${head}</div><div class="sb-chips">${chips.map(chip).join("") || `<span class="sb-empty">${empty}</span>`}</div>`;
   return [
     d.mode != null ? section(say.t("Mode"), [{ label: d.mode }]) : "",
+    section(say.t("Aura"), d.aura, say.t("no aura")),
+    section(say.t("Stance"), d.stance, say.t("empty slot")),
     section(`${say.t("Mods")} · ${d.mods.length}`, d.mods, say.t("no mods equipped")),
+    section(say.t("Exilus"), d.exilus, say.t("empty slot")),
     d.riven || "",
     d.parts ? section(say.t("Parts"), d.parts) : "",
     section(say.t("Arcane"), d.arcanes, say.t("no arcane")),
@@ -335,12 +349,12 @@ function headlessCardOfState(say, st, w, riven, pinned = () => "") {
   const rivenId = ((st.slots || []).find((s) => s && String(s.mod || "").startsWith("riven:")) || {}).mod;
   return headlessBuildCardHtml(say, {
     mode: headlessModeLabel(say, w, st.mode),
-    mods: (st.slots || []).map((s, i) => {
+    ...headlessWeaponModSections(say.meta, w, st.slots || [], (s, i) => {
       if (s && String(s.mod || "").startsWith("riven:")) return { label: riven(s.mod).name || say.t("Riven"), cls: pinned("mods:" + i) };
       const m = s && s.mod && has.has(s.mod) && card(s.mod);
       return m ? { img: headlessImg(m.image), label: m.name, rank: s.rank == null ? m.max_rank : s.rank,
         cls: pinned("mods:" + i) } : null;
-    }).filter(Boolean),
+    }),
     riven: rivenId ? riven(rivenId).section : "",
     arcanes: (w.arcane_slots || 0) >= 1
       ? arcs.map((id, i) => {

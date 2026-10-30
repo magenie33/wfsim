@@ -1179,8 +1179,11 @@ node against the served meta and two source files.
 ## `check_melee_slots`
 
 A melee weapon has TWO slots a gun does not, and one
-decides what it swings. Every assertion is on the WIRE or on a real
-`/api/simulate`. Its sharpest pair is the ROUND TRIP — `buildPayload` into
+decides what it swings. Slot wiring is asserted on the WIRE or on a real
+`/api/simulate`. Its info card puts stance, main mods and Exilus in separate
+rows, retains pinned positions and keeps an Exilus-eligible main mod in its
+main slot. Rendering leaves the build unchanged.
+Its sharpest pair is the ROUND TRIP — `buildPayload` into
 `stateFromBuild` must put the stance back in the STANCE slot rather than in
 slot 9. A complete bare Praedos input runs with no stance on the wire;
 Magistar's bare input produces a different fight from either stance. The mode explanation
@@ -1303,8 +1306,8 @@ board's builds and never a selection, so every row it lists must satisfy the
 query: a card required from the overview is carried by every listed build,
 excluded it is carried by none, and a third click clears it; "I don't have it"
 on a piece of an opened row excludes it the same way. A row's mods are in the
-order the build was saved, exilus last. The overview ships shut; any row opens
-in place into the same detail, one at a time; any build can be made the
+order the build was saved, with Exilus in its own row below. The overview ships
+shut; any row opens in place into the same detail, one at a time; any build can be made the
 reference, every other row then reads against it, an opened row lists what it
 has that the reference does not, and the reference is taken back as it was
 given. "Open" makes the build current AND puts it in the build bar as a
@@ -1758,7 +1761,8 @@ page with who links it, and deleting it lands the link on the read-only default
 The Simulator's build card carries the Warframe with its Operator nested under
 it, read-only, each with a link to the page that edits it (`?build=` names the
 preset); a build written for the frame shows up there from the same stored
-preset. It edits nothing.
+preset. Aura, main mods and Exilus occupy separate rows in that order.
+It edits nothing.
 
 ## `check_every_rank`
 
