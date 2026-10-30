@@ -22,7 +22,7 @@ const { evaluate, check, sleep } = app;
 const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
-  history.pushState({},'','/weapons/Verglas_Prime'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Verglas_Prime/builder'); route(); await sleep(3000);
   const out = {};
 
   // ---- the SIMULATOR's count is DECOUPLED from the fight ---------------

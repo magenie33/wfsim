@@ -370,6 +370,61 @@ function headlessCardOfState(say, st, w, riven, pinned = () => "") {
   });
 }
 
+const headlessRulerUnit = (name) => {
+  const last = String(name || "").split(" · ").pop();
+  return last && last.length <= 6 ? last : "";
+};
+
+/// Every summary claim is derived from published rows under one ruler.
+function headlessLibraryFacts(meta, w, rows, benchmark, mode) {
+  const scoped = rows.filter((r) => r.benchmark === benchmark && (!mode || r.mode === mode))
+    .slice().sort((a, b) => b.score - a.score);
+  const known = new Set(rows.map((r) => r.benchmark));
+  return { top: scoped[0], free: scoped.find((r) => !r.riven), riven: scoped.find((r) => r.riven),
+    count: scoped.length, modes: new Set(scoped.map((r) => r.mode)).size,
+    measured: (meta.benchmarks || []).filter((b) => known.has(b.id)).length,
+    total: (meta.benchmarks || []).length, updated: boardMeasuredAt(scoped) };
+}
+function headlessLibrarySummary(say, w, rows, benchmark, mode = null, label = null) {
+  const facts = headlessLibraryFacts(say.meta, w, rows, benchmark, mode);
+  const bench = (say.meta.benchmarks || []).find((b) => b.id === benchmark);
+  const esc = headlessEsc, t = say.t;
+  const unit = headlessRulerUnit(t(bench?.name || ""));
+  const shown = (r) => String(r.shown ?? r.score.toFixed(2)) + (unit ? " " + unit : "");
+  const link = (r, text, kind) => `<a href="${headlessWeaponPath(say.meta.weapons, w.id)}/builder?bench=${encodeURIComponent(benchmark)}&amp;mode=${encodeURIComponent(r.mode)}&amp;riven=${r.riven ? 1 : 0}" data-library-build="${kind}">${esc(text)}</a>`;
+  const fill = (s, values) => {
+    let out = esc(t(s));
+    for (const [key, value] of Object.entries(values)) out = out.replace("{" + key + "}", value);
+    return out;
+  };
+  const top = facts.top;
+  const lead = top ? fill("Among published builds under these conditions, {build} has the highest result: {score}.", {
+    build: link(top, headlessTrF(say, top.riven ? "the {mode} build with a riven" : "the {mode} build without a riven",
+      { mode: headlessModeLabel(say, w, top.mode) }), "top"), score: `<strong>${esc(shown(top))}</strong>`,
+  }) : esc(t("No build has been measured under these board conditions."));
+  let comparison = "";
+  if (facts.free && facts.riven) {
+    comparison = fill("The best published riven build reaches {riven}; the best riven-free build reaches {plain}.", {
+      riven: link(facts.riven, shown(facts.riven), "riven"), plain: link(facts.free, shown(facts.free), "free"),
+    });
+    if (facts.free.score > 0) {
+      const gap = facts.riven.score / facts.free.score - 1;
+      comparison += " " + esc(gap === 0 ? t("Their published results are equal.") : headlessTrF(say,
+        gap > 0 ? "The riven build is {gap}% higher." : "The riven build is {gap}% lower.", { gap: Math.abs(gap * 100).toFixed(1) }));
+    }
+  } else if (top) comparison = esc(t(facts.riven ? "No riven-free build has been published under these conditions yet."
+    : "No riven build has been published under these conditions yet."));
+  const gaps = ((w.unmodeled_parts || []).length ? w.unmodeled_parts : w.unmodeled || []).map((g) => headlessGap(g, t)).filter(Boolean);
+  return `<section class="fold sect library-summary shut" data-fold="library-summary"><h2 class="fold-h">${esc(t("Summary"))}`
+    + (top ? ` <span class="sim-hint">${esc(shown(top))}</span>` : "") + `</h2><div class="library-summary-body">`
+    + `<p class="library-summary-scope">${esc(label || t(bench?.name || benchmark))}${mode ? " · " + esc(headlessModeLabel(say, w, mode)) : ""}</p>`
+    + `<p data-library-lead>${lead}</p>` + (comparison ? `<p data-library-comparison>${comparison}</p>` : "")
+    + `<p class="library-summary-coverage">${esc(headlessTrF(say, "This scope contains {builds} build records across {modes} ways of using the weapon.", { builds: facts.count, modes: facts.modes }))} `
+    + `${esc(headlessTrF(say, "Published results cover {measured} of {total} board conditions for this weapon.", { measured: facts.measured, total: facts.total }))}</p>`
+    + (gaps.length ? `<details class="support-details"><summary>${esc(t("Not modelled here"))}</summary><ul>${gaps.map((g) => `<li>${esc(g)}</li>`).join("")}</ul></details>` : "")
+    + (facts.updated ? `<span class="fd-when">${esc(headlessTrF(say, "updated {t}", { t: measuredText(facts.updated, say.zone) }))}</span>` : "") + `</div></section>`;
+}
+
 // ---- the long image ------------------------------------------------------------------
 //
 // docs/AGENT.md §"The QQ bot". A weapon's answer laid out to be sent as one

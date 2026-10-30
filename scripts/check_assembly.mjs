@@ -30,7 +30,7 @@ const KIT = "Tombfinger";
 const PLAIN = "Lex";
 
 const open = (weapon) => `
-  history.pushState({}, '', '/weapons/${weapon}'); route();
+  history.pushState({}, '', '/weapons/${weapon}/builder'); route();
   await new Promise(r => setTimeout(r, 4000));`;
 
 // ---- the block draws, and only where it should ------------------------------
@@ -175,7 +175,7 @@ const switched = await evaluate(`(async () => {
   const before = { id: $('weapon').value, slot: weaponInfo($('weapon').value).slot,
                    grips: assemblySpec($('weapon').value).grips.map(g => g.id) };
   const path = location.pathname;
-  nav(weaponPath(slotSibling(before.id)));
+  nav(weaponPath(slotSibling(before.id)) + '/builder');
   // Wait for the selected entry's board and preset restore.
   await new Promise(r => setTimeout(r, 3000));
   const id = $('weapon').value;

@@ -27,7 +27,7 @@ const { evaluate, check, finish } = app;
 // THE FOUR TABS A WEAPON PAGE HAS, and the module each one owns. `enemies` is
 // reachable only from the simulator's target card, so it is not a tab a URL
 // lands on here; its blocks are covered by the "declares a module" sweep.
-const TABS = [["builder", ""], ["simulator", "/simulator"],
+const TABS = [["build-library", ""], ["builder", "/builder"], ["simulator", "/simulator"],
               ["optimizer", "/optimizer"], ["rivens", "/rivens"]];
 
 const r = await evaluate(`(async () => {
@@ -45,7 +45,7 @@ const r = await evaluate(`(async () => {
   // EVERY block in the config page, declared or not — the sweep that catches
   // one added tomorrow. Read on the last tab, since a block's ATTRIBUTES are
   // there whether or not it is on screen.
-  out.undeclared = [...document.querySelectorAll('.config-page .block')]
+  out.undeclared = [...document.getElementById('build-finder').closest('main').querySelectorAll('.block')]
     .filter(b => !b.dataset.module)
     .map(b => b.id || ('(no id) ' + b.textContent.trim().slice(0, 24)));
   out.modules = [...new Set([...document.querySelectorAll('[data-module]')]
@@ -61,7 +61,7 @@ check("every block in the config page declares its module",
 // The modules that exist. Asserted so that a typo — `data-module="build"` —
 // fails here rather than silently making a block belong to nobody and
 // therefore show everywhere.
-const KNOWN = ["builder", "enemies", "optimizer", "rivens", "simulator"];
+const KNOWN = ["build-library", "builder", "enemies", "optimizer", "rivens", "riven-analyst", "benchmark", "simulator"];
 check("...and every module named is one the page has",
   r.modules.every((m) => KNOWN.includes(m)),
   JSON.stringify(r.modules));

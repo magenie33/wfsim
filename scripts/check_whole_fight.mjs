@@ -14,7 +14,7 @@
 //
 // AND WHAT THE FIGHT ITSELF RULES, per weapon class (§5-6). OVERRIDES SIT
 // BEHIND LEGALITY, so the sharpest assertion is a NEGATIVE one: a Companion
-// settles three fields and may be ruled on for none, since all three are the
+// has settled fields and may be ruled on for none, since those are the
 // game's rule rather than the sim's simplification — an editor drawing a box
 // beside every settled row would pass everything else.
 import { openApp } from "./cdp.mjs";
@@ -35,12 +35,13 @@ const read = async (weapon) => {
     const rows = [...document.querySelectorAll('#sim-whole-fight-body .wf-row')];
     return {
       // The house-rules editor, and what it is offering.
-      house: [...document.querySelectorAll('#sim-whole-fight-body .hr-col')].map(c => ({
+      house: [...document.querySelectorAll('#sim-limits .hr-col')].map(c => ({
         head: c.querySelector('.hr-h').textContent.trim(),
         here: c.classList.contains('here'),
         offers: [...c.querySelectorAll('[data-cr]')].map(i => i.dataset.cr),
       })),
       overridable: ((META.class_rules || {}).overridable || []).map(p => p.join('|')),
+      classes: (META.class_rules || {}).classes || [],
       present: !!d,
       foldedByDefault: wasOpen === false,
       groups: [...document.querySelectorAll('#sim-whole-fight-body .wf-g-h')].map(e => e.textContent.trim()),
@@ -87,13 +88,11 @@ check("...and there are enough of them to be the whole fight",
 
 // ---- 3. WHAT IS FORCED, AND WHY -------------------------------------------
 //
-// An ordinary rifle forces nothing: the negative control, and the reason the
-// assertion under it means something. A panel that marked rows forced on every
-// weapon would pass a presence check just as well.
-check("an ordinary rifle forces nothing at all",
-  laetum.forced.length === 0, JSON.stringify(laetum.forced).slice(0, 160));
-check("a companion weapon forces three fields",
-  artax.forced.length === 3, artax.forced.map(f => f.id).join(", "));
+// Headshots distinguish a gun's adjustable field from a companion's rule.
+check("a rifle leaves its adjustable headshot rate unforced",
+  !laetum.forced.some(f => f.id === 'headshot_pct'), JSON.stringify(laetum.forced).slice(0, 160));
+check("a companion weapon forces ammo, aiming and headshots",
+  ['infinite_ammo','aiming','headshot_pct'].every(id=>artax.forced.some(f=>f.id===id)), artax.forced.map(f => f.id).join(", "));
 // THE PAGE'S ANSWER IS THE ENGINE'S. Compared against what meta served for this
 // weapon, so the check cannot pass by re-deriving the rule the page dropped.
 check("...and they are exactly the ones the ENGINE says",
@@ -139,7 +138,7 @@ check("...which is the opposite value from the opposite fact",
 // "in my fight, Arch-Guns have infinite ammo" something you write on a
 // Burston's page.
 check("every weapon class gets a column, on a weapon in none of the others",
-  laetum.house.length === 4, JSON.stringify(laetum.house.map(h => h.head)));
+  laetum.house.length === laetum.classes.length && laetum.classes.length > 0, JSON.stringify(laetum.house.map(h => h.head)));
 check("...and the one you are standing on is marked",
   laetum.house.filter(h => h.here).length === 1,
   JSON.stringify(laetum.house.map(h => [h.head, h.here])));
@@ -147,7 +146,7 @@ check("...and the one you are standing on is marked",
 // THE GUARD, AND IT IS THE WHOLE FEATURE. A control exists exactly where the
 // ENGINE says a fight may argue — which is where the sim's own simplification
 // is being argued with, never the game's rule. So the Arch-Gun column offers
-// its ammo and the Companion column offers NOTHING: a sentinel's three settled
+// its ammo and the Companion column offers NOTHING: a sentinel's settled
 // fields are all game facts, and a page that drew a box for them would let a
 // reader publish a number no one can reproduce in game.
 const offered = laetum.house.flatMap(h => h.offers).sort();
@@ -157,8 +156,8 @@ check("a control exists exactly where the engine says a fight may argue",
 check("...and the engine says exactly one thing today: the Arch-Gun's ammo",
   JSON.stringify(laetum.overridable) === JSON.stringify(["archgun|infinite_ammo"]),
   JSON.stringify(laetum.overridable));
-// THE NEGATIVE CONTROL, and it is the sharp one: a companion settles THREE
-// fields and may be ruled on for none of them. An editor that simply drew a box
+// THE NEGATIVE CONTROL: none of a companion's settled fields may be ruled on.
+// An editor that simply drew a box
 // beside every settled row would pass every assertion above.
 const companionCol = laetum.house.find(h => /Companion|守护/.test(h.head));
 check("a companion's settled fields are the GAME's, so none is offered",
@@ -183,7 +182,7 @@ check("a companion's settled fields are the GAME's, so none is offered",
 const ruled = await evaluate(`(async () => {
   const nap = (ms) => new Promise(r => setTimeout(r, ms));
   const grab = () =>
-    document.querySelector('#sim-whole-fight-body [data-cr="archgun|infinite_ammo"]');
+    document.querySelector('#sim-limits [data-cr="archgun|infinite_ammo"]');
   const onRuler = grab();
   const refusedByRuler = !!onRuler && onRuler.disabled
     && typeof officialScenarioActive === 'function' && officialScenarioActive();

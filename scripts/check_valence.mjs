@@ -20,7 +20,7 @@ const { evaluate, check } = app;
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Kuva_Nukor/builder'); route(); await sleep(3500);
 
   const spec = (weaponInfo('kuva_nukor') || {}).valence || null;
   const block = document.getElementById('element-block');
@@ -66,7 +66,7 @@ const r = await evaluate(`(async () => {
 
   // …AND NOTHING CROSSES BETWEEN WEAPONS. Open an ordinary weapon and the axis
   // is gone, along with the choice.
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(2500);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(2500);
   const otherShown = !!document.getElementById('element-block')
     && !document.getElementById('element-block').hidden;
   const otherValence = JSON.parse(JSON.stringify(valence));
@@ -120,7 +120,7 @@ check("an ordinary weapon has no such axis, and inherits no choice",
 const gain = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Kuva_Nukor/builder'); route(); await sleep(3500);
   // OPENING THE LIST IS WHAT STARTS THE SCAN (openRanked) — the
   // same moment the mod and arcane pickers use. It must not run
   // from the block's render, which is why this simply waited.
@@ -204,7 +204,7 @@ check("...and the builder numbers its steps from the blocks it actually has",
 const flip = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Kuva_Nukor/builder'); route(); await sleep(3500);
   const scan = async (el) => {
     valence.element = el; renderValence(); refreshPanel(); await sleep(1000);
     // OPEN THE LIST, which is what asks for the measurement.
@@ -337,7 +337,7 @@ const added = await evaluate(`(async () => {
 
   // …ON SCREEN, which is a different claim from "in the object": open the
   // preset the way a player does and read the live axis.
-  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(2500);
+  history.pushState({}, '', '/weapons/Kuva_Nukor/builder'); route(); await sleep(2500);
   pickPreset(buildBarCfg(), presetId(ps[ps.length - 1])); await sleep(1200);
   const live = { element: valence.element, bonus: valence.bonus };
 
@@ -392,7 +392,7 @@ check("...and it re-runs as the weapon it was scored on, not the default one",
 const build = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Kuva_Nukor/builder'); route(); await sleep(3500);
 
   const w = weaponInfo('kuva_nukor');
   const cap = document.getElementById('capacity').textContent;
@@ -422,7 +422,7 @@ const build = await evaluate(`(async () => {
 
   // …and an ORDINARY weapon is still 60, so the number is the weapon's and not
   // a new constant.
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(2500);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(2500);
   const plain = { cap: document.getElementById('capacity').textContent,
                   formaMin: formaMin('torid'), capacity: capOf('torid') };
 
@@ -483,7 +483,7 @@ check("...and a mode the recipient cannot derive would travel with it",
 const door = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Kuva_Nukor/builder'); route(); await sleep(3500);
   const eight = ['hornet_strike', 'barrel_diffusion', 'lethal_torrent',
                  'primed_pistol_gambit', 'primed_target_cracker',
                  'pathogen_rounds', 'primed_heated_charge', 'galvanized_shot'];
@@ -548,7 +548,7 @@ check("...and one it would refuse never leaves the page",
 const forma = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Kuva_Nukor/builder'); route(); await sleep(3500);
   // THE ELEMENT BACK ON, because the block before this one took it off to be
   // refused and routing to the address already on screen re-enters nothing.
   // This block is about CAPACITY, and a build refused for its valence would
@@ -571,7 +571,7 @@ const forma = await evaluate(`(async () => {
   // …and the positive control: eight mods that cannot fit however much Forma
   // you own. The Burston Prime's priciest eight are 64 against a 60 cap, which
   // is one of the rows sitting refused on the live board.
-  history.pushState({}, '', '/weapons/Burston_Prime'); route(); await sleep(2500);
+  history.pushState({}, '', '/weapons/Burston_Prime/builder'); route(); await sleep(2500);
   pickPreset(scenarioBarCfg(), presetId(sc)); await sleep(1000);
   const fams = [];
   const heavy = currentPool.filter(m => !m.exilus).sort((a, b) => b.drain - a.drain)

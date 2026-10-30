@@ -23,7 +23,7 @@ const setup = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   localStorage.clear();
   localStorage.setItem('wfsim-lang', 'zh');
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3500);
   const pool = currentPool.filter((m) => !m.exilus && !m.stance && !m.family);
   const by = (p) => pool.filter((m) => m.polarity === p).sort((a, b) => b.drain - a.drain);
   const st = (ids) => ({ ...snapshotState(), slots: Array.from({ length: 10 }, (_, i) =>
@@ -112,7 +112,7 @@ const r = await evaluate(`(async () => {
   }
 
   // …AND A FRAME PLANS THROUGH THE SAME BOX, under the same rules.
-  history.pushState({}, '', '/warframes/Valkyr'); route(); await sleep(4000);
+  history.pushState({}, '', '/warframes/Valkyr/builder'); route(); await sleep(4000);
   const heavy = WFCAT.mods.filter((m) => !m.aura && !m.exilus && m.polarity === 'Madurai')
     .sort((x, y) => y.drain - x.drain).slice(0, 8);
   heavy.forEach((m, i) => { wf.slots[i].mod = m.id; wf.slots[i].rank = null; });

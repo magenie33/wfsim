@@ -50,7 +50,7 @@ const walk = (dir) => readdirSync(dir).flatMap((f) => {
   return statSync(p).isDirectory() ? walk(p) : p.endsWith(".rs") ? [p] : [];
 });
 
-// The module a file belongs to: `fight/run.rs` is `fight`, `data/weapons/kitguns.rs`
+// The module a file belongs to: `fight/run.rs` is `fight`, `data/weapons/kitguns.rs/builder`
 // is `data::weapons` — a layer folder's children are its modules.
 const owner = (p) => {
   const parts = relative(SRC, p).split(sep).map((x) => x.replace(/\.rs$/, ""));

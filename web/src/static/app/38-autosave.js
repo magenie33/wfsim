@@ -134,13 +134,11 @@ let gainRefreshTimer = null;
 // The scenario's own auto-save. Same contract as the build's — the editor IS
 // the preset — but a different collection, because a build is tested against
 // several fights and each of them is worth keeping.
-/// CHANGING THE FIGHT IS ONE SEQUENCE — write, mark both collections dirty,
-/// redraw — and a caller that performs three of the four leaves a page that
-/// disagrees with what is stored. The enemy's own rule rides along, because it
-/// is a property of the FIGHT rather than of any one menu.
+/// Global scenario edits write the shared document, schedule its save and redraw.
+/// The enemy's own legality rule is shared by field controls and the agent door.
 function setScenarioFields(patch) {
   writeScenarioFields(patch);
-  markPresetDirty(); markScenarioDirty();
+  markScenarioDirty();
   renderSim();
 }
 

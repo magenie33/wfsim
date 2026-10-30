@@ -35,7 +35,7 @@ for (const lang of ["en", "zh"]) {
   const r = await evaluate(`(async () => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const out = { lang: ${JSON.stringify(lang)} };
-    history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3800);
+    history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3800);
     // THE FIGHT ARRIVES READ-ONLY: the default scenario is the OFFICIAL ruler,
     // and a ruler casts nothing. Take an editable copy first — the same flow a
     // player follows, and the reason the ruler assertion at the bottom means
@@ -196,7 +196,7 @@ for (const lang of ["en", "zh"]) {
     out.blockByTab = {};
     for (const [name, suffix] of [['builder', ''], ['simulator', '/simulator'],
                                   ['optimizer', '/optimizer']]) {
-      history.pushState({}, '', '/weapons/Torid' + suffix); route(); await sleep(2200);
+      history.pushState({}, '', '/weapons/Torid' + (suffix || '/builder')); route(); await sleep(2200);
       out.blockByTab[name] = seen('wfbuff-block');
     }
     history.pushState({}, '', '/weapons/Torid/simulator'); route(); await sleep(2200);

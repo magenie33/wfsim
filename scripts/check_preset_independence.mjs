@@ -18,7 +18,7 @@ const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const $$ = (s) => document.querySelector(s);
   localStorage.clear();
-  history.pushState({},'','/weapons/Torid'); route(); await sleep(2500);
+  history.pushState({},'','/weapons/Torid/builder'); route(); await sleep(2500);
 
   // Two builds, saved while two DIFFERENT scenarios are active. Under the old
   // model each build swallowed a copy of the fight it was made in.
@@ -102,7 +102,7 @@ const r = await evaluate(`(async () => {
   const aFight = { level: sim.level, dur: sim.duration, name: activeScenario };
   const aBuildMods = () => slots.filter(s => s.mod).map(s => s.mod);
   const aMods = aBuildMods();
-  history.pushState({},'','/weapons/Dual_Toxocyst'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Dual_Toxocyst/builder'); route(); await sleep(3000);
   const bFight = { level: sim.level, dur: sim.duration, name: activeScenario };
   const bMods = aBuildMods();
   // …and there is ONE list, not one per weapon.
@@ -111,7 +111,7 @@ const r = await evaluate(`(async () => {
   const sharedList = JSON.parse(localStorage.getItem('wfsim-presets-simulator-scenarios') || '[]');
   const staleResults = !!document.getElementById('stale-marker');
   sim.level = 4242; markScenarioDirty(); await sleep(900);
-  history.pushState({},'','/weapons/Torid'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Torid/builder'); route(); await sleep(3000);
   const backFight = { level: sim.level, dur: sim.duration };
 
   return { names, carriesSim, levelBefore, levelAfter, onScreen, modAfter,
@@ -196,7 +196,7 @@ check("...and the field the ruler DOES state was never at risk",
 const md = await evaluate(`(async () => {
   const s = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Torid'); route(); await s(3000);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await s(3000);
   // ON ONE OF YOUR OWN. An official build is read-only by construction — its
   // mode is the one it was MEASURED in and nothing may write it — so testing
   // "a mode change is saved" against one would be testing the opposite rule.
@@ -351,7 +351,7 @@ const tabs = await evaluate(`(async () => {
   };
   const out = {};
   // A weapon with a CHOICE of modes, so the control has something to offer.
-  history.pushState({}, '', '/weapons/Torid'); route(); await s(2200);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await s(2200);
   out.builderOffersIt = shown('#mode-block');
   history.pushState({}, '', '/weapons/Torid/simulator'); route(); await s(2200);
   out.simOffersIt = shown('#mode-block');

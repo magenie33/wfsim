@@ -118,7 +118,7 @@ function editStart(i) {
   flushPresetSaves();
   const w = $("weapon").value;
   startEdit = { idx: i, weapon: w, saved: snapshotState(), savedPreset: activePreset, fixed: new Set(s.fixed || []) };
-  history.pushState({}, "", weaponPath(w));
+  history.pushState({}, "", weaponPath(w) + "/builder");
   route();
   whileApplying(() => restoreState(s.build, w));
   renderStartEditBanner();
@@ -156,7 +156,7 @@ function finishStartEdit(save, navigate = true) {
 function leaveStartEdit() {
   if (!startEdit) return;
   const here = decodeURIComponent(location.pathname).replace(/\/$/, "");
-  if (here === decodeURIComponent(weaponPath(startEdit.weapon))) return;
+  if (here === decodeURIComponent(weaponPath(startEdit.weapon) + "/builder")) return;
   finishStartEdit(true, false);
 }
 

@@ -24,7 +24,7 @@ const app = await openApp({ boot: 20000 });
 const { evaluate, check, finish } = app;
 const tag = "board dedup";
 
-await app.load("/weapons/Acceltra_Prime", 22000);
+await app.load("/weapons/Acceltra_Prime/builder", 22000);
 
 // ---------------------------------------------------------------------------
 // 1. THE KEY, asked of the engine about a row and about the same row respelled.

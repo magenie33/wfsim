@@ -19,7 +19,7 @@ import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });
 const { evaluate, check } = app;
-await app.load("/weapons/Torid", 12000);
+await app.load("/weapons/Torid/builder", 12000);
 
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -133,7 +133,7 @@ check("...so the mark standing behind it is still inside the row", long.inside,
   `inside=${long.inside}`);
 
 // …AND ONE THAT DOES TRADE, so the rule above is not asserted on absence alone.
-await app.load("/weapons/Ballistica_Prime", 12000);
+await app.load("/weapons/Ballistica_Prime/builder", 12000);
 const t = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await sleep(2500);

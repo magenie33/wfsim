@@ -89,7 +89,7 @@ const r = await evaluate(`(async () => {
   localStorage.clear();
   await syncNow();
   out.bHas = [read(L).map((p) => p.id).sort().join(), read(RV).map((p) => p.id).join()];
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3000);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3000);
   clearNote();
   pickPreset(buildBarCfg(), 'b2');
   await sleep(500);
@@ -132,7 +132,7 @@ const r = await evaluate(`(async () => {
   // The former board-derived owned identity is already deleted on the account.
   await quiet();
   localStorage.clear(); srv.clear(); order.length = 0; attempts.length = 0;
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3000);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3000);
   const weapon = $('weapon').value;
   const rows = (BOARD[weapon] || []).filter(x => x.benchmark === 'standard_single_target');
   if (!rows.length) throw new Error('no board row for read-only sync fixture');

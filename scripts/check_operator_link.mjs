@@ -12,7 +12,7 @@ const { evaluate, check } = app;
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear(); sessionStorage.clear();
-  history.pushState({}, '', '/warframes/Prototype'); route(); await sleep(4000);
+  history.pushState({}, '', '/warframes/Prototype/builder'); route(); await sleep(4000);
   await loadWarframeCatalog();
   const school = WFCAT.focus[0].id;
   storePresetList(OPS, [
@@ -22,7 +22,7 @@ const r = await evaluate(`(async () => {
   storePresetList(WF_BUILDS, [{ id: 'w1', name: 'preset 1', savedAt: 1, state: { ...wfBlank('valkyr'), operator: 'o2' } }], 'valkyr');
   localStorage.setItem(presetActiveKey(WF_BUILDS, 'valkyr'), 'preset 1');
   history.pushState({}, '', '/'); route(); await sleep(1500);
-  history.pushState({}, '', '/warframes/Valkyr'); route(); await sleep(4000);
+  history.pushState({}, '', '/warframes/Valkyr/builder'); route(); await sleep(4000);
   const shown = () => ({ type: !!document.getElementById('dd-wf-operator-type'),
     typeText: (document.getElementById('dd-wf-operator-type') || {}).textContent,
     preset: (document.getElementById('dd-wf-operator') || {}).value,
@@ -39,7 +39,7 @@ const r = await evaluate(`(async () => {
   const armed = del().textContent;
   del().click(); await sleep(1200);
 
-  history.pushState({}, '', '/warframes/Valkyr'); route(); await sleep(4000);
+  history.pushState({}, '', '/warframes/Valkyr/builder'); route(); await sleep(4000);
   const after = shown();
   const menu = (() => { document.getElementById('dd-wf-operator').click(); return null; })();
   await sleep(400);

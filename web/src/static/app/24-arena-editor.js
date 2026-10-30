@@ -1,3 +1,51 @@
+// The expanded editor moves the target container, so field bindings and redraws stay live.
+let arenaEditorWindow = null;
+function closeArenaEditor(restoreFocus = true) {
+  const current = arenaEditorWindow;
+  if (!current) return;
+  arenaEditorWindow = null;
+  current.settings.zoom = false;
+  current.slot.after(current.root); current.slot.remove();
+  current.overlay.remove(); document.body.classList.remove("arena-editor-open");
+  const scene = current.root.querySelector(".arena")?.__arena;
+  scene?.refreshNavigation();
+  if (restoreFocus) {
+    window.scrollTo(current.scroll[0], current.scroll[1]);
+    current.root.querySelector("[data-arena-expand]")?.focus({preventScroll:true});
+  }
+}
+function openArenaEditor(host) {
+  if (arenaEditorWindow) { closeArenaEditor(); return; }
+  const root = host.parentElement, slot = document.createComment("arena editor home");
+  root.before(slot);
+  const overlay = document.createElement("div"); overlay.className = "arena-editor-window";
+  overlay.innerHTML = `<div class="arena-editor-dialog" role="dialog" aria-modal="true" aria-label="${escHtml(tr("The fight"))}">`
+    + `<div class="jump-head"><span class="jh-t">${escHtml(tr("The fight"))}</span><button type="button" class="ghost-btn small" data-arena-close>${escHtml(tr("Close"))} · Esc</button></div>`
+    + `<div class="arena-editor-content"></div></div>`;
+  arenaEditorWindow = {root,slot,overlay,settings:host.__arena.settings,scroll:[scrollX,scrollY]};
+  arenaEditorWindow.settings.zoom = true;
+  overlay.querySelector(".arena-editor-content").append(root);
+  document.body.append(overlay); document.body.classList.add("arena-editor-open");
+  host.__arena.refreshNavigation();
+  const dialog = overlay.querySelector(".arena-editor-dialog");
+  overlay.querySelector("[data-arena-close]").onclick = () => closeArenaEditor();
+  overlay.onclick = event => { if (event.target === overlay) closeArenaEditor(); };
+  overlay.addEventListener("keydown", event => {
+    if (imeComposing(event)) return;
+    if (event.key === "Escape" && !document.querySelector('.popover:not([hidden])')) {
+      event.preventDefault(); event.stopPropagation(); closeArenaEditor(); return;
+    }
+    if (event.key !== "Tab") return;
+    const nodes = [...dialog.querySelectorAll('button,input,select,textarea,a[href],[tabindex="0"]')]
+      .filter(node => !node.disabled && node.offsetParent !== null);
+    const target = event.shiftKey ? nodes.at(-1) : nodes[0];
+    if (target && (event.shiftKey ? document.activeElement === nodes[0] : document.activeElement === nodes.at(-1))) {
+      event.preventDefault(); target.focus();
+    }
+  }, true);
+  host.querySelector(".arc-wrap").focus({preventScroll:true});
+}
+
 /// THE ARENA AS AN EDITOR — an infinite canvas you pan, zoom and lay a fight
 /// out on: it should feel like Miro or n8n, not like a picture with chips
 /// beside it.
@@ -20,6 +68,7 @@
 /// default because it is the engine's own contact rule.
 function mountArenaCanvas(host, s, en, opts) {
   const ro = () => opts.readonly || officialScenarioActive();
+  const settings = arenaEditorWindow?.root === host.parentElement ? arenaEditorWindow.settings : {zoom:false,hidden:new Set()};
 
   // THE TARGET'S OWN CONTROLS ARE ALREADY HERE, rendered by the caller into
   // this host. They are MOVED into the scene rather than re-serialised: an
@@ -45,8 +94,15 @@ function mountArenaCanvas(host, s, en, opts) {
   // enemy you are placing and it is the only thing the right-hand side says.
   // One panel doing two jobs is why neither is findable.
   host.innerHTML =
-    `<div class="arc-wrap">
-       <canvas class="arc-cv"></canvas>
+    `<div class="arc-viewbar" data-view-only>
+       <button type="button" class="ghost-btn small" data-view-only data-arena-expand>${escHtml(tr("Expand editor"))} ⤢</button>
+       <button type="button" class="ghost-btn small" data-view-only data-arena-zoom aria-pressed="false"></button>
+       <div class="arc-panel-controls" role="group" aria-label="${escHtml(tr("Panels"))}">
+         ${[["tools","Tools"],["enemy","Enemy"],["selection","Selection"],["readout","Measurements"]].map(([id,label]) => `<button type="button" class="bchip" data-view-only data-arena-panel="${id}" aria-pressed="true">${escHtml(tr(label))}</button>`).join("")}
+       </div>
+     </div>
+     <div class="arc-wrap">
+       <canvas class="arc-cv" data-view-only></canvas>
        <div class="arc-left">
          <div class="arc-rail" role="toolbar" aria-label="${escHtml(tr("Tools"))}"></div>
          <div class="arc-brush"></div>
@@ -69,6 +125,29 @@ function mountArenaCanvas(host, s, en, opts) {
   const readout = host.querySelector(".arc-read");
   const chipbox = host.querySelector(".arc-chips");
   const insp = host.querySelector(".arc-insp");
+
+  const zoomButton = host.querySelector("[data-arena-zoom]");
+  function refreshNavigation() {
+    zoomButton.textContent = tr(settings.zoom ? "Disable scroll zoom" : "Enable scroll zoom");
+    zoomButton.setAttribute("aria-pressed", settings.zoom);
+    host.querySelector("[data-arena-expand]").textContent = tr(arenaEditorWindow?.root === host.parentElement ? "Close editor" : "Expand editor") + " ⤢";
+    for (const button of host.querySelectorAll("[data-arena-panel]")) {
+      const id = button.dataset.arenaPanel, hidden = settings.hidden.has(id);
+      host.classList.toggle("arc-hide-" + id, hidden); button.setAttribute("aria-pressed", !hidden);
+    }
+  }
+  zoomButton.onclick = () => { settings.zoom = !settings.zoom; refreshNavigation(); if (settings.zoom) wrap.focus({preventScroll:true}); };
+  host.querySelector("[data-arena-expand]").onclick = () => openArenaEditor(host);
+  host.querySelectorAll("[data-arena-panel]").forEach(button => { button.onclick = () => {
+    const id = button.dataset.arenaPanel;
+    if (settings.hidden.has(id)) settings.hidden.delete(id); else settings.hidden.add(id);
+    refreshNavigation();
+  }; });
+  host.addEventListener("pointerleave", () => {
+    if (arenaEditorWindow?.root === host.parentElement || !settings.zoom) return;
+    settings.zoom = false; refreshNavigation();
+  });
+  refreshNavigation();
 
   // ---- the view ---------------------------------------------------------
   // METRES ARE THE UNIT and `k` is pixels per metre. Nothing here is stored in
@@ -633,6 +712,7 @@ function mountArenaCanvas(host, s, en, opts) {
   cv.addEventListener("contextmenu", (e) => e.preventDefault());
 
   cv.addEventListener("wheel", (e) => {
+    if (!settings.zoom) return;
     e.preventDefault();
     const [lx, ly] = local(e);
     const before = mt(lx, ly);
@@ -647,6 +727,8 @@ function mountArenaCanvas(host, s, en, opts) {
   // it cannot delete the formation.
   wrap.tabIndex = 0;
   wrap.addEventListener("keydown", (e) => {
+    if (imeComposing(e)) return;
+    if (e.key === "Escape" && settings.zoom) { settings.zoom = false; refreshNavigation(); e.preventDefault(); return; }
     if (e.code === "Space" && !space) { space = true; cursor(); e.preventDefault(); return; }
     const k = e.key.toLowerCase();
     if (k === "v" || k === "b" || k === "e" || k === "h") {
@@ -688,7 +770,7 @@ function mountArenaCanvas(host, s, en, opts) {
   // rather than a set of stand-in DOM nodes keeps one geometry: whatever it says
   // is where the body was drawn.
   host.__arena = {
-    view,
+    view, settings, refreshNavigation,
     px, mt,
     fit: () => { fit(); draw(); },
     draw,

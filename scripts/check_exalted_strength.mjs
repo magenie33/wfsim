@@ -12,7 +12,7 @@ const { evaluate, check } = app;
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear(); sessionStorage.clear();
-  history.pushState({}, '', '/weapons/Valkyr_Talons'); route(); await sleep(4500);
+  history.pushState({}, '', '/weapons/Valkyr_Talons/builder'); route(); await sleep(4500);
   await loadWarframeCatalog();
   // WHAT THE PAGE ITSELF ASKS FOR, through the link the weapon holds — not a
   // number typed into the fight.
@@ -32,7 +32,7 @@ const r = await evaluate(`(async () => {
   // INTENSIFY IS +30% ABILITY STRENGTH.
   const strong = await seat(['intensify']);
   // …AND AN ORDINARY WEAPON IN THE SAME HANDS IS UNTOUCHED.
-  history.pushState({}, '', '/weapons/Magistar'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Magistar/builder'); route(); await sleep(3500);
   setWielder({ frame: 'valkyr', preset: 'v1' }); await sleep(1800);
   const otherStrong = await hit();
   setWielder({ frame: 'prototype', preset: null }); await sleep(1800);

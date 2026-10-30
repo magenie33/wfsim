@@ -7,7 +7,7 @@ import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 12000, lang: "en", base: process.env.WFSIM_BASE });
 const { evaluate, check } = app;
 
-await app.load("/weapons/Torid", 12000);
+await app.load("/weapons/Torid/builder", 12000);
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
   ['serration', 'split_chamber', 'point_strike'].forEach((m, i) => { slots[i].mod = m; slots[i].rank = modById(m).max_rank; });

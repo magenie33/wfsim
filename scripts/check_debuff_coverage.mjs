@@ -21,8 +21,8 @@ const { evaluate, check, sleep } = app;
 const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
-  const go = async (path) => { history.pushState({},'','/weapons/Torid'+path); route(); await sleep(700); };
-  history.pushState({},'','/weapons/Torid'); route(); await sleep(3500);
+  const go = async (path) => { history.pushState({},'','/weapons/Torid'+(path || '/builder')); route(); await sleep(700); };
+  history.pushState({},'','/weapons/Torid/builder'); route(); await sleep(3500);
   const out = {};
 
   // A Torid against the default ruler: innate Toxin, so Poison is certain and
@@ -352,7 +352,7 @@ check("...and moves nobody, because it is a picture of a fight already run",
 const mw = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
-  history.pushState({},'','/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  history.pushState({},'','/weapons/Kuva_Nukor/builder'); route(); await sleep(3500);
   history.pushState({},'','/weapons/Kuva_Nukor/simulator'); route(); await sleep(1200);
   const out = {};
   sim.duration = 20; setSimRuns(2);

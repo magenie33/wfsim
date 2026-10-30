@@ -90,9 +90,8 @@ await Promise.all(apps.map(async (app) => {
     // a search the page would not run, so a refusal is counted and printed.
     if (page.error) { refused++; console.log(`  note  ${weapon} under ${ruler}: the page refuses it (${page.error})`); continue; }
     // A BUFF AT ITS OWN DEFAULT is what an absent one means (the engine opens on
-    // it), and one the build does not carry is never read: the controls write
-    // each default whenever a panel answers (`syncBuffConfig`), for whichever
-    // build it answered, so both are set aside — judged by the engine's list for
+    // it), and one the build does not carry is never read. Both are set aside,
+    // judged by the engine's list for
     // THIS build, asked here, not `buffList`, which is whichever answer landed last.
     const shown = JSON.parse(await app.evaluate(`(async () => {
       const request = optimizeBody();

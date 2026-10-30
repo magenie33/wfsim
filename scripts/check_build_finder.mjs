@@ -25,7 +25,7 @@ const r = await evaluate(`(async () => {
   // EVERY BUILD LISTED, ONCE: each tie opened, and an opened tie's head left
   // out, since its first member is the same build.
   const everyBuild = async () => {
-    finder.shown = 1e4; renderBuildFinder(); await sleep(100);
+    renderBuildFinder(); finder.shown = 1e4; renderBuildFinder(); await sleep(100);
     for (;;) {
       const b = [...box().querySelectorAll('[data-ftie]')].find((x) => !finder.ties.has(x.dataset.ftie));
       if (!b) break;
@@ -48,26 +48,9 @@ const r = await evaluate(`(async () => {
   out.landingActive = activePreset;
   out.landingSel = !!selChip();
 
-  // IT FOLDS LIKE EVERY BOX, AND WITH NO BUILD OF YOUR OWN HERE IT SHIPS
-  // OPEN. The state is the reader's and outlives the weapon; a click in the
-  // search box is the search box's. Asked of the computed layout, not the class.
   const seen = (el) => !!el && el.offsetParent !== null;
-  const head = () => box().querySelector(':scope > .fd-head');
-  out.foldDefault = !box().classList.contains('shut') && seen(box().querySelector('.fd-main'));
-  out.foldUnstored = JSON.parse(localStorage.getItem('wfsim-folds') || '{}')['build-finder'] == null;
-  head().querySelector('.fd-title').click(); await sleep(150);
-  head().querySelector('.fd-title').click(); await sleep(150);
-  out.foldOpened = !box().classList.contains('shut') && seen(box().querySelector('.fd-main'));
-  out.foldStored = JSON.parse(localStorage.getItem('wfsim-folds') || '{}')['build-finder'] === false;
-  renderBuildFinder(); await sleep(150);
-  out.foldRedrawn = !box().classList.contains('shut') && !!head().querySelector(':scope > .fold-c');
-  box().querySelector('.fd-q').click(); await sleep(150);
+  box().querySelector('.fd-q').click();
   out.searchKept = !box().classList.contains('shut');
-  jump.open = true; renderJump(); await sleep(150);
-  const jr = document.querySelector('.jump-row[data-jump="build-finder"]');
-  out.jumpName = jr ? jr.querySelector('.jr-n').textContent.trim() : '';
-  jump.open = false; renderJump();
-
   out.firstPage = listed().length;
   // Every listed row matches the selected ruler and the mode filter, including All.
   const scoped = listed().map(byId);
@@ -132,15 +115,8 @@ const r = await evaluate(`(async () => {
   const un = box().querySelector('[data-funtok]');
   if (un) { un.click(); await sleep(250); }
   if (box().querySelector('tr.fdet')) { box().querySelector('tr.fr.x').click(); await sleep(250); }
-  // FIVE UNTIL ASKED: "more" adds rows, and "back to the top" folds them away.
-  out.inScope = builtinBuilds().filter((p) => p.benchmark === finder.b
-    && (finder.mo === FINDER_EVERY_MODE || p.mode === finder.mo)).length;
-  const more = box().querySelector('[data-fmore]');
-  if (more) { more.click(); await sleep(200); }
-  out.afterMore = listed().length;
-  const less = box().querySelector('[data-fless]');
-  if (less) { less.click(); await sleep(200); }
-  out.afterLess = listed().length;
+  out.inScope = tieGroups(builtinBuilds().filter((p) => p.benchmark === finder.b),
+    (p) => p.benchmark + '/' + p.mode + '/' + p.riven + '/' + p.board.score, (p) => p.board, META).length;
 
   // REQUIRE, THEN EXCLUDE, the most-used card — by clicking it in the overview.
   out.ovOpened = !!ov() && await tap(ov().querySelector(':scope > .fold-h')) && !ov().classList.contains('shut') && seen(ov().querySelector('.fold-b'));
@@ -192,6 +168,8 @@ const r = await evaluate(`(async () => {
   out.chipsAfter = roChips();
   out.oneChip = out.chipsAfter.filter((id) => boardRowIdentity(byId(id).board) === ident).length === 1;
 
+  history.pushState({}, '', '/weapons/Ballistica_Prime/builder'); await route();
+
   // × TAKES IT OUT OF THE BAR, and the page lands on an unsaved build.
   const x = bar().querySelector('.pchip.ro .pop.unpin');
   const unpinned = x.dataset.unpin;
@@ -201,6 +179,7 @@ const r = await evaluate(`(async () => {
   out.unpinSel = !!selChip();
 
   // A COPY is your own.
+  await open('Ballistica_Prime');
   const again = listed()[0];
   box().querySelector('[data-fopen="' + again + '"]').click(); await sleep(1200);
   copyActivePreset(buildBarCfg()); await sleep(800);
@@ -234,8 +213,6 @@ const r = await evaluate(`(async () => {
   out.allSeg = !!allSeg;
   if (allSeg) {
     allSeg.click(); await sleep(300);
-    const more = () => box().querySelector('[data-fmore]');
-    while (more()) { more().click(); await sleep(150); }
     const rows = await everyBuild();
     const sc = (p) => (p.board || {}).score || 0;
     const want = builtinBuilds().filter((p) => p.benchmark === finder.b);
@@ -255,7 +232,7 @@ const r = await evaluate(`(async () => {
   // is the next rank, a place is one row, and it opens into every exact build.
   await open('Felarx');
   Object.assign(finder, { b: 'standard_single_target', mo: 'cycle', rv: 'plain', shown: 500 });
-  renderBuildFinder(); await sleep(200);
+  renderBuildFinder(); finder.shown = 500; renderBuildFinder(); await sleep(200);
   const cell = builtinBuilds().filter((p) => p.benchmark === finder.b && p.mode === finder.mo && !p.riven);
   const scores = [...new Set(cell.map((p) => p.board.score))].sort((a, b) => b - a);
   out.tiePlaces = cell.length > 0 && cell.every((p) => p.rank === scores.indexOf(p.board.score) + 1);
@@ -314,33 +291,21 @@ const r = await evaluate(`(async () => {
     const none = await everyBuild();
     out.trgGroup = none.every((p) => !['kill', 'headshot_kill', 'melee_kill'].some((t) => asks(p, t)))
       && none.length === cell.filter((p) => !['kill', 'headshot_kill', 'melee_kill'].some((t) => asks(p, t))).length;
-    localStorage.removeItem('wfsim-finder-triggers-off'); renderBuildFinder(); await sleep(150);
+    setFinderOff(new Set()); renderBuildFinder(); await sleep(150);
   }
 
-  // Left SHUT, for the cross-weapon half below — which needs a real page load,
-  // not this one's navigation: the section element survives a route() with its
-  // class on it, so nothing there can tell a stored answer from a kept one.
-  if (!box().classList.contains('shut')) { box().querySelector('.fd-title').click(); await sleep(150); }
   return out;
 })()`);
 
 // THE CASE HAS TO EXIST. The native dev server does not serve the board, and
 // against it every assertion below would pass on an empty table.
 check("the weapon under test actually has board rows", r.rows > 0, `${r.rows} rows — is this running against site/?`);
-check("the finder is drawn in the builder", r.drawn === true);
+check("the finder is drawn in Build Library", r.drawn === true);
 check("...a click in its search box does not fold it", r.searchKept === true);
-check("...open with no build of the reader's own on the weapon, with nothing stored yet",
-  r.foldDefault && r.foldUnstored, `open ${r.foldDefault}, unstored ${r.foldUnstored}`);
-check("...and shutting then opening it is what gets stored", r.foldOpened && r.foldStored,
-  `opened ${r.foldOpened}, stored ${r.foldStored}`);
-check("...it stays as it is, caret and all, when it redraws", r.foldRedrawn === true);
-check("...the jump menu lists it by name", /Build finder|配装查找器/.test(r.jumpName), JSON.stringify(r.jumpName));
-check("...listing the top five of one scope", r.firstPage === Math.min(5, r.inScope) && r.oneCell,
+check("the library lists twenty places from its selected scope", r.firstPage === Math.min(20, r.inScope) && r.oneCell,
   `${r.firstPage} rows of ${r.inScope}`);
 check("...each row drawn as the build card, one chip per card the build carries",
   r.cardMods === r.boardMods && r.cardIcons > 0, `${r.cardMods} chips for ${r.boardMods} mods, ${r.cardIcons} icons`);
-check("...more on request, and folded back to five", r.inScope <= 5
-  || (r.afterMore === Math.min(25, r.inScope) && r.afterLess === 5), `${r.afterMore} then ${r.afterLess}`);
 check("...its mods in the order the build was saved", r.orderKept === true,
   `saved ${r.savedOrder} / shown ${r.shownOrder}`);
 check("...the exilus has its own row below the main mods", r.exilusRow === true);
@@ -371,7 +336,6 @@ check("...the reader's refusal is stored", r.trgStored === true);
 check("...and the kill group refuses every kill", r.trgGroup === true);
 check("Open makes the build current", r.opened === true);
 check("...and puts it in the build bar, read-only and selected", r.inBar && r.chipSel);
-check("...and the finder says it is already there", /\bin\b/.test(r.finderSays), r.finderSays);
 check("a rescore that renumbers the build leaves the bar on the same build", r.renumbered && r.followed,
   `renumbered ${r.renumbered}, followed ${r.followed}`);
 check("...and leaving and coming back reopens that build, not its old rank", r.activeFollowed && r.oneChip,
@@ -389,55 +353,5 @@ check("...and a copy of it is an ordinary build you can edit",
 check("the SCENARIO bar asks one question: which ruler to open", JSON.stringify(r.scenarioShape) === JSON.stringify(["board-picker"]),
   JSON.stringify(r.scenarioShape));
 check(`a weapon with no rows shows the finder's empty state (${r.bareId || "none found"})`, !!r.bareId && r.bareEmpty === true);
-// ---- ACROSS WEAPONS, ACROSS LOADS ---------------------------------------
-// What a reader folds is a habit, not a property of a gun: the state is keyed
-// by fold id alone. Asserted with REAL page loads on two other weapons, because
-// a route() keeps the section element — and its class — whatever is stored.
-const carried = async (path, then) => {
-  await app.load(path);
-  return evaluate(`(async () => {
-    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-    await sleep(3000);
-    const box = document.getElementById('build-finder');
-    const seen = { shut: box.classList.contains('shut'),
-      stored: JSON.parse(localStorage.getItem('wfsim-folds') || '{}')['build-finder'] };
-    ${then || ""}
-    return seen;
-  })()`);
-};
-const shutElsewhere = await carried("/weapons/Braton",
-  "box.querySelector('.fd-title').click(); await sleep(200);");
-check("shut on one weapon is shut on the next, loaded cold",
-  shutElsewhere.shut === true && shutElsewhere.stored === true, JSON.stringify(shutElsewhere));
-const openElsewhere = await carried("/weapons/Torid");
-check("...and opening it there opens it on a third weapon too",
-  openElsewhere.shut === false && openElsewhere.stored === false, JSON.stringify(openElsewhere));
 
-
-// ---- WHAT IT SHIPS AS, BEFORE THE READER ANSWERS -------------------------
-// Shut above a build of the reader's own on the weapon, open with none; decided
-// on arriving at the weapon, so a first edit does not shut it.
-const unanswered = (own) => evaluate(`(() => {
-  const f = JSON.parse(localStorage.getItem('wfsim-folds') || '{}');
-  delete f['build-finder'];
-  localStorage.setItem('wfsim-folds', JSON.stringify(f));
-  localStorage.setItem('wfsim-presets-builder-builds', JSON.stringify(${own} ? [{ id: 'own1', scope: 'torid', name: 'mine', savedAt: 1,
-    state: buildState('torid', { evoSel: {}, arcane: ['none'], arcaneRank: [null], slots: [{ mod: 'serration', rank: 0 }],
-      mode: null, valence: null, assembly: null, wielder: null }) }] : []));
-  return true;
-})()`);
-await unanswered(true);
-const withOwn = await carried("/weapons/Torid");
-check("with a build of the reader's own on the weapon, it ships shut",
-  withOwn.shut === true && withOwn.stored === undefined, JSON.stringify(withOwn));
-await unanswered(false);
-const firstEdit = await carried("/weapons/Torid", `
-  localStorage.setItem('wfsim-presets-builder-builds', JSON.stringify([{ id: 'own2', scope: 'torid', name: 'preset 1', savedAt: 2,
-    state: buildState('torid', { evoSel: {}, arcane: ['none'], arcaneRank: [null], slots: [{ mod: 'serration', rank: 0 }],
-      mode: null, valence: null, assembly: null, wielder: null }) }]));
-  renderPresetBar(); await sleep(200);
-  seen.afterEdit = box.classList.contains('shut');`);
-check("with none, it ships open, and a first build there does not shut it",
-  firstEdit.shut === false && firstEdit.afterEdit === false && firstEdit.stored === undefined, JSON.stringify(firstEdit));
-
-await app.finish("the finder finds, the bar holds");
+await app.finish("the library finds, the bar holds");

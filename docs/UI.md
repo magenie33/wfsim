@@ -239,10 +239,10 @@ column changes what a hit DEALS and leaves the proc draw alone; a status
 immunity changes what it PROCS, by leaving the denominator so the other types
 RENORMALIZE onto the roll (the wiki's own example moves the other four from
 18/5/9/23% to 33/8/17/42%).
-The optimizer owns no scenario — it RUNS the simulator's, drawn by the same
-renderer over the same state, READ-ONLY there, with a link to the simulator: a
-preset is edited in exactly one place. That includes the BUFFS. The chain is
-builder → simulator → optimizer, each reading upstream and writing nothing.
+The scenario is global and edited in its original Simulator section. Builder
+keeps Quick calc and links to that scenario editor; Optimizer reads the same
+fight. Every edit reaches the same global state, including buff settings.
+An official ruler stays read-only; its copy action creates an editable scenario.
 
 **NOTHING CROSSES BETWEEN WEAPONS — EXCEPT THE FIGHT, AND A RIVEN WITHIN ITS
 FAMILY.** A BUILD and a SEARCH are statements about ONE weapon and are never
@@ -253,8 +253,8 @@ is cleared rather than left on screen under the new weapon's name.
 A SCENARIO is not a statement about a weapon, so it is SHARED across the
 roster — one list, key `wfsim-presets-simulator-scenarios` with no weapon in
 it (`SHARED_DOMAINS`), and switching weapons keeps the fight you are measuring
-under. The one weapon-scoped knob it holds is headshot %, handled the way the
-rulers handle it: the SERVER forces 0 on a weapon that cannot headshot.
+under. Headshot % remains the global document value; the server forces 0 where
+the weapon cannot headshot, and the whole-fight view explains both values.
 
 **"HEADSHOTS WHILE CHARGING" IS THE AIM OF ONE PHASE.** On a weapon whose mode
 cycles into an Incarnon form, the scenario may say every hit lands on the head
@@ -385,25 +385,85 @@ roster and the overview. Same-named weapons in different slots include the slot
 in their names. Each Kitgun entry takes its own highest score across modes and
 assemblies; its configuration page offers only its own parts.
 
-## The build finder
+## Build Library
 
-**EVERY BUILD IS IN THE BUILD BAR; THE FINDER ONLY FINDS.** The builder's top
-box, the build finder (`renderBuildFinder`), answers "what do I equip" first
-and "why" on request. It is the board's builds as a LIST, best first, scoped by
-ruler, mode and riven and filtered by what a build CONTAINS — a mod, an arcane,
-an evolution, a part, an element, a riven stat, each "must have" or "I don't
-have". Mode defaults to "All": every mode in one
-list by score. Each row's build card shows Mode above Mods, in Builder order;
-its rank remains its own mode's. It lists the top five of a scope until asked
-for more (twenty at a time, folded back in one click). It holds a query and
-never a selection. "Open"
-puts the build in the build bar as a read-only chip and makes it current; THE
-BAR IS THE ONE PLACE THAT SAYS WHICH BUILD IS OPEN — its selected chip names the
-build and a lock marks a board row, so nothing else on the page repeats it.
-BUILDER ONLY: the simulator keeps the build bar and has no finder. It folds like
-every box on the page, to its title and count, and it SHIPS SHUT above a
-build of the reader's own on that weapon — with none there, it ships open
-(§"Every box folds").
+The weapon root is its Build Library; `/builder` edits the active build.
+`/build-library` and the weapon's `/benchmark` are aliases of the library.
+Existing root links carrying a shared build or board build open Builder;
+report parameters retain their Simulator or Optimizer destination. A library
+query carries `view=library`, separating its board conditions from a legacy
+link that opens a board build. The global `/benchmark` compares weapons.
+
+Board conditions, filters, sorting and results occupy four sibling cards in
+that order. Each has its own title, border and spacing. Equipment search,
+active conditions and Overview belong to filters; ordinary and advanced sort
+controls belong to sorting.
+Ordinary sort, priority fields and directions use the site's shared dropdown.
+The shared board selector sets the comparison context independently of filter
+editor mode. The results toolbar pins its count, board summary and navigation
+back to the control cards.
+
+The library starts on the benchmark marked `primary`: Standard Single Target,
+Steel9999, aimed headshots and Standard conditions. It does not inherit the
+active build's ruler. Mode starts at All. A query selects a ruler, modes,
+riven presence, required/excluded equipment, refused triggers, a minimum
+published score and a maximum unpolarized MOD drain. The drain uses the
+build's actual slots and ranks, with Exilus included and stance excluded;
+it is not a Forma estimate.
+
+Static attribute bounds cover critical chance, critical multiplier, status
+chance, multishot, fire rate and magazine size. Values include only permanent
+bonuses, resolved by the engine for the mode's main attack form (the transformed
+form for a cycle). A mixed card keeps its permanent half; aiming, stack, hit,
+kill, player-state and target-state bonuses do not enter these bounds. Such
+parts remain searchable by equipment. The batch endpoint `/api/build/static`
+resolves builds without a fight; the page requests it only for active bounds,
+keeps results by engine and full build identity, and reports unavailable values
+separately from zero. Bounds and equipment conditions compose in one query.
+
+Filters and sorting have independent Simple/Advanced switches. Both edit
+one query: a Boolean filter tree and an ordered list of sort keys. Simple
+selections project onto top-level AND conditions. Conditions that cannot be
+projected remain active as a retained-advanced summary and an explicit notice;
+additional simple filters join the original expression with AND. Custom sort
+priorities remain visible in a summary beside the ordinary sort control.
+Switching editors changes no rule; choosing a new ordinary sort replaces the
+sort list. Each area's text editor can change only that area's query part.
+Text is parsed as data, never executed; invalid text leaves the applied query
+intact and reports its error inline.
+
+The expression language uses field ids, numeric comparisons, quoted values,
+AND/OR and parentheses; AND binds more tightly than OR. ORDER BY supplies
+sort keys in priority order; without it, score descending applies. Attribute chance fields use percentage points;
+critical multiplier uses the multiplier itself. For example:
+
+```text
+crit_chance <= 50 AND (status_chance >= 100 OR equipment = "mod:galvanized_diffusion") ORDER BY score DESC, crit_chance ASC
+```
+
+The language is the URL's `filter` value. Board context and retained depth stay
+outside the expression: a score is comparable only within its ruler. Static
+attributes are calculated only when a comparison or sort needs them; unknown
+sort values stay last regardless of direction.
+
+Sorting offers score in either direction, calculation date and base MOD drain.
+Same-score alternatives retain their groups, with the selected sort's first
+member as the representative. The first twenty places render immediately;
+scrolling appends twenty more automatically. The results toolbar keeps the
+board context, result count and navigation in view; detailed filters expand
+on request in their own card. Back restores loaded places and position.
+Query conditions and sorting travel in the URL; opening a result enters
+Builder with that build.
+Restoring the same weapon's editor state leaves its Library address intact,
+including while published board rows arrive. Only the Library writes its query.
+Changing conditions does not scroll to the results; only explicit navigation
+and restoring a saved view move the viewport.
+
+Summary is a compact, expandable overview of the selected ruler and mode,
+independent of equipment filters. It quotes published best builds, the
+riven/free comparison, coverage and modelling admissions. Each quoted build
+opens its record in Builder. The same headless renderer writes the page's
+static HTML, so the search-readable summary uses the same published facts.
 
 **NOTHING IN IT IS A THRESHOLD SOMEBODY CHOSE.** Every number it shows is a
 count or a score off the board: no "just as good" band, no "core" cut, no
@@ -412,9 +472,12 @@ judgement written into the page is one more constant to keep true for every
 weapon and ruler, and the reader can draw it from the counts.
 
 **THREE PARTS, IN ORDER OF HOW OFTEN THEY ARE WANTED.** The OVERVIEW, folded by
-default (fold `finder-overview`): per module, every piece the scope's builds
-carry, how many carry it and the rank of the best of them; a click cycles it
-through "must have", "I don't have" and clear. The LIST. And a row OPENED in
+default (fold `finder-overview`): per module, equipment tiles use existing
+images and show matching counts, board-wide counts and the best matching rank.
+The selected board fixes their vocabulary and order; filtering keeps zero-count
+tiles and selected conditions visible. A click cycles through "must have",
+"I don't have" and clear while keeping the tile at the same viewport position.
+The LIST. And a row OPENED in
 place, the same for every row: the whole build and, piece by piece, how many
 builds here carry that piece and the best build here without it, against this
 one, with "I don't have it" beside each. That gap is to the best board build
@@ -695,9 +758,8 @@ private worker does not answer is removed.
 ## Every box folds, and a floating menu indexes them
 
 **A WEAPON PAGE IS ONE LONG SCROLL, AND THE READER WANTS THREE LINES OF IT.**
-So every box on it shuts from the header it already has: a `.block` from its
-`.bh`, a `.fold.sect` from its `h3.sim-h`, the build finder from its `.fd-head`
-(rewired on each of its renders, which redraw the head). Collapsed, the
+So each editor box shuts from the header it already has: a `.block` from its
+`.bh`, a `.fold.sect` from its `h3.sim-h`. Collapsed, the
 simulator is two header rows and the optimizer is one.
 
 **ONE MECHANISM, THREE SHAPES, ONE STATE.** The result panel's `foldBlock`s,
@@ -711,11 +773,8 @@ blocks anywhere.
 **A BOX MAY SHIP SHUT, AND ONLY UNTIL THE READER ANSWERS.** `shut` in the
 markup is the default `folded()` falls back to while `wfsim-folds` holds no
 entry for that box; the stored answer outranks it forever after, "open"
-included. The build finder is the one that ships shut — it is a page of table
-above the build you came to edit. With no build of your own on the weapon
-there is nothing to edit and the finder is the answer, so it ships open;
-which one is decided on arriving at the weapon, so a first edit does not shut
-it under the reader (`ships_open`).
+included. Build Library keeps its results open; its Summary and equipment
+overview ship shut, and detailed filters expand from the toolbar.
 
 **THE BODY IS EVERY CHILD BUT THE HEADING** (`.fold.sect.shut > :not(.fold-h)`)
 rather than a `.fold-b` the markup has to remember to wrap. A section that
@@ -762,6 +821,14 @@ gesture is the browser's it is gone. The answer is a MODE the reader turns on
 `navigator.maxTouchPoints > 0` (a touchscreen laptop reports a FINE pointer,
 so a `pointer: coarse` query is the wrong test). `touch-action` follows it:
 `pan-y` off, `none` on. A mouse is unaffected.
+
+Mouse wheels scroll the page over an inline arena by default. Enable scroll
+zoom opts into canvas zoom; Escape or leaving the inline arena turns it off.
+Expand editor moves the live target container into a large dialog and enables
+zoom there. Panel controls independently hide tools, enemy information,
+selection details and measurements. Closing restores the container and page
+scrolling. Field edits keep their ordinary scenario bindings, and official
+scenarios remain locked. Navigation closes the editor before changing pages.
 
 ## A section wider than the screen
 
@@ -816,6 +883,34 @@ that ranks bodies already leans on, read the other way round.
 
 ## There is one fight, and every module sends it
 
+A scenario is one global document. Current context and All settings are
+projections of the same controls; search covers the complete vocabulary.
+Battlefield, weapon use, external bonuses, starting buffs, simulation rules
+and measurement are its sections. Global inputs remain editable when a weapon
+forces a different effective value; that consequence is shown beside the input.
+Arch-Gun deployment and per-class rules are available from every weapon under
+All settings. Technical details read the full document without a second editor.
+Quick calc preferences stay in Builder; run counts stay in the bottom run block.
+
+The global buff catalog is the union of the existing legal scope enumeration
+for every weapon. Equal ids retain their metadata variants and applicable
+weapons. The current build's metadata wins, then that weapon's potential
+variant; other weapons' cards label differing caps and defaults by source.
+One buff id has one saved configuration. Rendering neither seeds defaults nor
+clamps stored stacks; the engine applies the current source's cap. A disabled
+trigger changes the effective result, leaving global inputs editable.
+All settings can introduce a buff that the current weapon cannot grant.
+
+The compact sticky shell and one-row page tabs stay available while scrolling.
+Long tab strips scroll horizontally; selecting a route reveals its active tab.
+Local sticky bars use the measured shell and tab heights and compact in that
+space. Weapon artwork and large titles remain in normal document flow.
+
+Simulation and optimization keep their bottom run blocks and original result
+views in their modules. Each run block has its own heading in the jump menu.
+Scenario and run cards use the same default width as the build card above.
+Side shortcuts click those same run controls and mirror their disabled state;
+they introduce no separate task state or result renderer.
 **THERE IS ONE FIGHT, AND EVERY MODULE SENDS IT.** `theFight()` is the only
 spelling, and THE LIVE `sim` IS THE FIGHT — not the preset behind it, which is
 a saved COPY that `applyScenario` seeds `sim` from and the auto-save writes
@@ -1256,3 +1351,15 @@ override per stat (health, shields, armor, energy, sprint). Unticked, the stat i
 the wielder's, as the server resolved it on the last panel (`panelWielder`);
 ticked, the typed number replaces it. There is no frame picker and no shard
 socket in a scenario any more: both are the linked Warframe build's.
+
+Independent content cards share browser layout preferences: dimensions and
+order within their module. Edit layout reveals resize and reorder handles;
+keyboard arrows support both operations. Restoring the default layout returns
+cards to their authored slots and natural dimensions without changing builds
+or scenarios. A module's layout is shared across weapons. The jump index reads
+the resulting DOM order. Fixed navigation remains outside the movable cards.
+
+Warframe roots open Build Library; `/builder` opens the existing editor.
+`?build=` and embedded links keep their editor intent. The library lists this
+browser's saved frame builds through the shared build card renderer and links
+each record to its existing editor. It does not claim published board results.

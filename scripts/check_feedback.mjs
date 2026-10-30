@@ -62,16 +62,16 @@ check("a screenshot past 1.5 MB is refused", (await send(ann, { text: "hi", imag
 check("nothing refused was kept or sent", (await A.prepare("SELECT COUNT(*) AS n FROM feedback").first()).n == 0 && told.length === 0);
 
 const words = "Hunter Munitions here reads 42.5%,\r\nthe game says 40%";
-const r = await send(ann, { text: words, route: "/weapons/Rubico_Prime", share: "https://wfsim.app/weapons/Rubico_Prime?b=abc",
+const r = await send(ann, { text: words, route: "/weapons/Rubico_Prime/builder", share: "https://wfsim.app/weapons/Rubico_Prime?b=abc",
   release: "e36e8563", lang: "zh", images: [jpeg(20), jpeg(30)] });
 const j = await r.json();
 check("a signed-in reader is heard", r.status === 200 && j.ok === true && j.id > 0, JSON.stringify(j));
 const row = await A.prepare("SELECT * FROM feedback WHERE id = ?1").bind(j.id).first();
 check("the words are kept as written, line ends made one", row && row.text === words.replace("\r\n", "\n"), row && row.text);
-check("where they were is kept", row && row.route === "/weapons/Rubico_Prime" && row.share.endsWith("?b=abc") && row.release === "e36e8563" && row.lang === "zh");
+check("where they were is kept", row && row.route === "/weapons/Rubico_Prime/builder" && row.share.endsWith("?b=abc") && row.release === "e36e8563" && row.lang === "zh");
 check("the screenshots are in the bucket under its id", bucket.get(feedbackImageKey(j.id, 0))?.length === 20 && bucket.get(feedbackImageKey(j.id, 1))?.length === 30 && Number(row.images) === 2);
 const t = told.at(-1);
-check("the owner is told who, where and the words", t && t.text.includes(`#${j.id}`) && t.text.includes("ann") && t.text.includes("/weapons/Rubico_Prime")
+check("the owner is told who, where and the words", t && t.text.includes(`#${j.id}`) && t.text.includes("ann") && t.text.includes("/weapons/Rubico_Prime/builder")
   && t.text.includes("> the game says 40%"), t && t.text);
 check("the screenshots go with the message", t && t.files?.length === 2 && Buffer.from(t.files[1].base64, "base64").length === 30 && t.files[0].type === "image/jpeg");
 

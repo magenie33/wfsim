@@ -26,7 +26,7 @@ for (const lang of ["en", "zh"]) {
   const r = await evaluate(`(async () => {
     const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     // A SHOTGUN, because Shotgun Vendetta is class-gated to one.
-    history.pushState({},'','/weapons/Boar_Prime'); route(); await sleep(4500);
+    history.pushState({},'','/weapons/Boar_Prime/builder'); route(); await sleep(4500);
     const out = { lang: '${lang}' };
     // BY ID, not by rendered text: the card's .bn carries the grants too, so
     // matching on text compares a name against a sentence.

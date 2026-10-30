@@ -22,7 +22,7 @@ import { openApp } from "./cdp.mjs";
 // written in rather than a locale's rendering of them.
 const app = await openApp({ lang: "en", boot: 12000 });
 const { evaluate, check } = app;
-await app.load("/weapons/Dual_Toxocyst", 12000);
+await app.load("/weapons/Dual_Toxocyst/builder", 12000);
 
 const MOD = "semi_pistol_cannonade";
 
@@ -41,12 +41,12 @@ const r = await evaluate(`(async () => {
   };
 
   out.incarnonOffered = (await offered()).includes('${MOD}');
-  await go('/weapons/Magnus');
+  await go('/weapons/Magnus/builder');
   out.plainOffered = (await offered()).includes('${MOD}');
 
   // A SAVED BUILD THAT STILL CARRIES THE PAIR — written before every tier was
   // installed. It is restored as it is and refused out loud, never repriced.
-  await go('/weapons/Dual_Toxocyst');
+  await go('/weapons/Dual_Toxocyst/builder');
   restoreState({ weapon: 'dual_toxocyst', slots: [{ mod: '${MOD}' }], evoSel: {} });
   await sleep(900);
   out.equipped = slots.some(s => s.mod === '${MOD}');
@@ -104,7 +104,7 @@ const r = await evaluate(`(async () => {
 
   // ...and NOW the click test, because it moves the build out of the blocked
   // mode and the two claims above only exist while it is in it.
-  await go('/weapons/Dual_Toxocyst');
+  await go('/weapons/Dual_Toxocyst/builder');
   restoreState({ weapon: 'dual_toxocyst', slots: [{ mod: '${MOD}' }], evoSel: {} });
   await sleep(900);
   const trigger2 = document.querySelector('#mode-row [data-dd]');
@@ -130,7 +130,7 @@ const r = await evaluate(`(async () => {
   closePopovers();
 
   // ---- THE LOCK, on a pistol that can wear the mod.
-  await go('/weapons/Magnus');
+  await go('/weapons/Magnus/builder');
   slots.forEach(s => { s.mod = null; s.rank = null; }); renderMods(); await sleep(600);
   // Equip it and read the panel: Fire Rate must sit at the weapon's own value
   // and say what pinned it there.

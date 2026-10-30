@@ -75,7 +75,7 @@ const script = String.raw`(async () => {
     // sticky across weapons and sessions, silently disagreeing with the fight
     // the simulator was on. The control that replaced it STATES the fight and
     // cannot be picked from; see theFight().
-    history.pushState({}, '', '/weapons/Burston_Prime'); route(); await s(2500);
+    history.pushState({}, '', '/weapons/Burston_Prime/builder'); route(); await s(2500);
     const scen = document.getElementById('gp-scen');
     out.scenExists = !!scen;
     out.scenIsDD = !!(scen && scen.dataset.dd);

@@ -758,7 +758,7 @@ function lockOfficialScenario() {
   // lock exists to stop. An escape hatch is a place to LOOK at the whole
   // document, not a second editor that outranks the rule.
   const boxes = ["sim-target", "sim-technique", "sim-wfbuffs", "sim-limits", "sim-run",
-                 "sim-buffs", "sim-roster", "sim-whole-fight-body"]
+                 "sim-buffs", "sim-roster", "sim-extra", "sim-squad", "sim-whole-fight-body"]
     .map((id) => $(id)).filter(Boolean);
   // The ARENA's bodies are SVG circles that no control sweep reaches,
   // so the scene is marked as well and refuses a drag itself.
@@ -787,19 +787,11 @@ function lockOfficialScenario() {
   }
 }
 
-// Section 2 — one card per configurable buff of the current build (from the
-// last /api/panel `buffs`). Each: initial stacks (stepper / on-off) + lock.
-// Missing configs default to the buff's `default_*`; ids no longer present are
-// dropped from the payload (kept in `sim.buffs` for preset round-trips).
-function syncBuffConfig(list, cfg) {
-  list.forEach((b) => {
-    if (!cfg[b.id]) cfg[b.id] = { stacks: b.default_stacks, locked: b.default_locked };
-    else if (!b.uncapped) cfg[b.id].stacks = Math.min(cfg[b.id].stacks, b.max_stacks);
-  });
-}
+// Global buff values use the current source's metadata for defaults and effective caps.
+const buffViewConfig = (b, cfg) => ({ stacks: b.default_stacks, locked: b.default_locked, ...cfg[b.id] });
 
 // Shared buff-card renderer (Sim panel + Optimizer scope). `list` = the buff
-// metadata; `cfg` = the mutated config map.
+// metadata; `cfg` = the global configuration map.
 /// A buff card's name, in the display language.
 ///
 /// The server names a buff after the mod or arcane that grants it — in
@@ -814,7 +806,7 @@ function buffCardName(name) {
   // EVOLUTIONS grant buffs too (Overwhelming Attrition, Lethal Rearmament),
   // and they were missing from this lookup — so those two cards were the only
   // ones on the page still in English.
-  const evos = (weaponInfo($("weapon").value).evolutions || [])
+  const evos = (META.weapons || []).flatMap(w => w.evolutions || [])
     .flatMap((tier) => tier.options || []);
   const owner = [...(META.mods || []), ...(META.arcanes || []), ...evos,
     ...Object.values(META.mod_pools || {}).flat()]
@@ -831,13 +823,12 @@ function buffCardName(name) {
 
 function renderBuffCards(box, list, cfg, have, opts = {}) {
   if (!box) return;
-  syncBuffConfig(list, cfg);
   if (!list.length) {
     box.innerHTML = `<div class="sim-empty">no configurable buffs here.</div>`;
     return;
   }
   const card = (b) => {
-    const c = cfg[b.id];
+    const c = buffViewConfig(b, cfg);
     // ONE control for every buff, a toggle included: a
     // one-stack buff reads "1 / 1" like the rest instead of a checkbox that
     // said "active" and meant the same thing in different words.
@@ -852,8 +843,8 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
     // ceiling until a big crit wipes it. `/ ∞` is the honest maximum, and the
     // input takes no `max` — clamping it to a number we invented would be the
     // one place the UI disagreed with the mechanic.
-    const cap = b.uncapped ? "∞" : b.max_stacks;
-    const ctl = `<span class="bstep" title="${escHtml(startWhy)}"><input type="number" data-b="${b.id}" data-f="stacks" min="0"${b.uncapped ? "" : ` max="${b.max_stacks}"`} value="${c.stacks}"><span class="bmax">/ ${cap}</span></span>`;
+    const cap = b.cap_varies ? tr("by source") : b.uncapped ? "∞" : b.max_stacks ?? "—";
+    const ctl = `<span class="bstep" title="${escHtml(startWhy)}"><input type="number" data-b="${b.id}" data-f="stacks" min="0" value="${b.default_varies && !cfg[b.id] ? "" : c.stacks ?? ""}" placeholder="${escHtml(tr("Default"))}" aria-label="${escHtml(tr("Starting stacks"))}"><span class="bmax" title="${escHtml(tr("This build's cap; the global setting is retained."))}">/ ${cap}</span></span>`;
     // NOT "lock": that read as "freeze this buff", so
     // locking one at zero looked like a way to switch it off forever. It only
     // removes the TIMEOUT — the count still starts where it is set and still
@@ -866,7 +857,7 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
     const off = have && !have.has(b.id);
     // …AND A BUFF THE FIGHT DENIES IS SHOWN, NOT HIDDEN: "no such buff" and
     // "nothing here triggers it" are the one pair a reader must tell apart.
-    const denied = buffDenied(b);
+    const denied = b.applicable !== false && buffDenied(b);
     // What one stack count buys, when the source grants more than one thing
     // off the same trigger — they are the same count by construction.
     const grants = b.grants ? `<small class="bgr">${escHtml(tf(b.grants))}</small>` : "";
@@ -875,81 +866,50 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
           tr("what would trigger it triggers no buff in this fight, so it stays at zero all run"))}">${
           escHtml(tr("not triggered here"))}</small>`
       : "";
-    return `<div class="buff-card${off ? " off" : ""}${denied ? " denied" : ""}">
-      <span class="bn">${escHtml(buffCardName(b.name))}${grants}${off ? ` <small class="bnot">${escHtml(tr("not equipped"))}</small>` : ""}${why}</span>
-      <span class="bctl">${ctl}</span>
-      ${lock}
+    const weapons = (b.source_weapons || []).map(id => {
+      const weapon = (META.weapons || []).find(row => row.id === id);
+      return weapon ? [weapon.name,weapon.name_en,weapon.slot,weapon.weapon_class].filter(Boolean).join(" ") : id;
+    });
+    const search = [b.name,...(b.source_names || []),...weapons].join(" ");
+    const effective = have?.has(b.id) && (denied || (c.stacks > b.max_stacks && !b.uncapped))
+      ? `<small class="scenario-effective">${escHtml(tr("Current effective value"))}: ${denied ? 0 : b.max_stacks}</small>` : "";
+    return `<div class="buff-card${off ? " off" : ""}${denied ? " denied" : ""}" data-buff-id="${escHtml(b.id)}" data-search="${escHtml(search)}">
+      <span class="bn">${escHtml(buffCardName(b.name))}${grants}<span class="buff-status">${b.applicable === false ? escHtml(tr("Not used by this weapon")) : off ? escHtml(tr("not equipped")) : ""}${why}</span></span>
+      <span class="bctl"><span class="buff-control-label">${escHtml(tr("Starting stacks"))}</span>${ctl}</span>
+      ${lock}${effective}
+      ${cfg[b.id] ? `<button type="button" class="ghost-btn small buff-reset" data-buff-reset="${escHtml(b.id)}">${escHtml(tr("Use source default"))}</button>` : `<small class="buff-default">${escHtml(tr(b.default_varies ? "Defaults depend on source" : "Source default"))}</small>`}
     </div>`;
   };
   box.innerHTML = list.map(card).join("");
+  for (const buff of list) if (buff.default_varies && !cfg[buff.id]) {
+    const checkbox = box.querySelector(`[data-b="${CSS.escape(buff.id)}"][data-f="locked"]`);
+    if (checkbox) checkbox.indeterminate = true;
+  }
   // READ-ONLY: the same cards, the same values, and no way to change them. A
   // preset is edited in exactly one place (the rule the fight above already
   // follows), so the optimizer SHOWS the buffs and links to the module that
   // owns them.
   if (opts.readonly) {
-    box.querySelectorAll("[data-b]").forEach((el) => {
+    box.querySelectorAll("[data-b],[data-buff-reset]").forEach((el) => {
       el.disabled = true;
       el.title = tr("edit this in the Simulator");
     });
     return;
   }
-  // A DENIED CARD'S KNOBS ARE DEAD, and say why — a control that cannot move
-  // the number is worse than none, because it looks like one that can.
   const byId = new Map(list.map((b) => [b.id, b]));
-  box.querySelectorAll("[data-b]").forEach((el) => {
-    const b = byId.get(el.dataset.b);
-    if (b && buffDenied(b)) {
-      el.disabled = true;
-      el.title = tr("what would trigger it triggers no buff in this fight, so it stays at zero all run");
-    }
-  });
+  box.querySelectorAll("[data-buff-reset]").forEach(button => { button.onclick = () => {
+    const next = {...cfg}; delete next[button.dataset.buffReset]; setScenarioFields({buffs:next});
+  }; });
   box.querySelectorAll("[data-b]").forEach((el) => {
     el.addEventListener("change", () => {
-      const id = el.dataset.b, f = el.dataset.f, c = cfg[id];
+      const id = el.dataset.b, f = el.dataset.f;
+      const c = {...buffViewConfig(byId.get(id),cfg)};
       if (f === "locked") c.locked = el.checked;
       else if (el.type === "checkbox") c.stacks = el.checked ? 1 : 0;
-      else c.stacks = Math.max(0, Number(el.value));
-      // A buff belongs to the FIGHT and to nothing else — including settings
-      // for mods this build does not carry. A build keeps no copy of the
-      // scenario, so this dirties the scenario alone.
-      markScenarioDirty();
-      // The optimizer's fight card lists the stacks a run starts with.
-      if (!opts.readonly) renderOptFight();
+      else c.stacks = Math.max(0,Number(el.value) || 0);
+      setScenarioFields({buffs:{...cfg,[id]:c}});
     });
   });
-}
-
-// The buff panel has TWO views. By default it lists what the current build
-// actually carries. "All potential" widens it to every buff this WEAPON could
-// ever have — every mod in its pool, every arcane it can seat, every
-// evolution option — because a scenario is meant to describe a fight, not a
-// build, and a setting for a mod you have not equipped yet is exactly what the
-// marginal-gain scan reads: settings reachable only once the mod is on are
-// settings nobody can use to decide whether to equip it.
-//
-// The union comes from `/api/opt-buffs`, which already answers "every buff
-// this SCOPE could produce" for the optimizer — handing it a scope of
-// everything is the same question, and a second implementation of it would be
-// a second thing to keep right.
-let simBuffsAll = false;
-let allBuffList = null;   // cached per weapon; null = not fetched
-let allBuffWeapon = null;
-
-async function fetchAllBuffs() {
-  const w = $("weapon").value;
-  if (allBuffWeapon === w && allBuffList) return allBuffList;
-  const mark = (ids) => Object.fromEntries(ids.map((id) => [id, "search"]));
-  const AX = weaponAxes(w);
-  const r = await api("/api/opt-buffs", {
-    weapon: w,
-    mods: mark([...AX.mods.map((m) => m.id), ...AX.exilus.map((m) => m.id)]),
-    arcanes: mark(AX.arcanes.flatMap((a) => a.options.map((x) => x.id))),
-    evolutions: Object.fromEntries(AX.evolutions.map((t, i) => [i, t.options.map((o) => o.id)])),
-    rivens: rivenPayload(),
-  });
-  allBuffList = r && r.ok ? r.buffs || [] : [];
-  allBuffWeapon = w;
-  return allBuffList;
 }
 
 /// WHICH TRIGGERS FIRE NO BUFF IN THIS FIGHT — the subject is docs/BUFFS.md and
@@ -1066,24 +1026,6 @@ function toggleBuffTriggerGroup(group, on) {
 /// server-side, which keeps the grey and the number together.
 const buffDenied = (b) =>
   !!b.trigger && (sim.buff_triggers_off || []).includes(b.trigger);
-
-function renderSimBuffs() {
-  const btn = $("sim-buffs-all");
-  const list = simBuffsAll && allBuffList ? allBuffList : buffList;
-  if (btn) {
-    btn.textContent = simBuffsAll ? tr("in this build") : tr("all potential buffs");
-    btn.title = tr("a scenario can set a buff for a mod this build does not carry — the gain scan reads it");
-    btn.onclick = async () => {
-      simBuffsAll = !simBuffsAll;
-      if (simBuffsAll) { btn.disabled = true; await fetchAllBuffs(); btn.disabled = false; }
-      renderSimBuffs();
-    };
-  }
-  // Which of them the build actually has, so the wider list still says where
-  // you are: everything else is a setting held for later.
-  const have = new Set(buffList.map((b) => b.id));
-  renderBuffCards($("sim-buffs"), list, sim.buffs, simBuffsAll ? have : null);
-}
 
 async function runSim() {
   const btn = $("run-sim");

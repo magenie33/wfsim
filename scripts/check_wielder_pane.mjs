@@ -11,7 +11,7 @@ const { evaluate, check } = app;
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear(); sessionStorage.clear();
-  history.pushState({}, '', '/weapons/Praedos'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Praedos/builder'); route(); await sleep(3500);
   const start = { link: JSON.stringify(buildWielder), stored: loadPresetList(WF_BUILDS, 'prototype').length };
   document.querySelector('#wielder-block > .bh').click(); await sleep(6000);
   const fr = document.querySelector('#wielder-detail iframe');
@@ -37,7 +37,7 @@ const r = await evaluate(`(async () => {
   w2.eval('wf.shards[0] = ' + JSON.stringify({ shard: sh.id, effect: sh.options[0].id, tauforged: false }));
   w2.eval('wfChanged()'); await sleep(2500);
   const reborn = { stored: loadPresetList(WF_BUILDS, 'prototype').length, resolved: wielderIdOf(buildWielder) };
-  history.pushState({}, '', '/weapons/Braton'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Braton/builder'); route(); await sleep(3500);
   const follows = { link: JSON.stringify(buildWielder), shards: ((wielderPayload() || {}).shards || []).length };
   return { start, framed, born, emptied, reborn, follows };
 })()`);

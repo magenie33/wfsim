@@ -31,7 +31,7 @@ function raBuild(w, x, head) {
   return `<div class="ra-build"><div class="sb-h">${escHtml(head)} · <b>${escHtml(raShown(x.row))}</b>${
     rec ? ` <span class="fd-when" title="${escHtml(measuredNote())}">${rec}</span>` : ""}</div>`
     + cardOfState(boardRowState(w, x.row), w)
-    + `<a class="ghost-btn small sb-edit" href="${weaponPath(w.id)}" data-ra-open="${escHtml(x.key)}">${
+    + `<a class="ghost-btn small sb-edit" href="${weaponPath(w.id)}/builder" data-ra-open="${escHtml(x.key)}">${
       escHtml(tr("open in Builder"))}</a></div>`;
 }
 
@@ -40,7 +40,7 @@ function raBuild(w, x, head) {
 async function raOpen(w, x) {
   await agentDo("shell.preset.open", { bar: "scenario", preset: x.row.benchmark });
   await agentDo("shell.preset.open", { bar: "build", preset: x.key });
-  nav(weaponPath(w.id));
+  nav(weaponPath(w.id) + "/builder");
 }
 
 function renderRivenAnalyst() {

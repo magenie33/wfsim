@@ -557,12 +557,12 @@
          that decides whether anyone finds this page never sees, because it
          indexes the page it rendered. The app keeps it current instead —
          `renderWeaponDoc`. -->
-    <div id="doc" class="doc" hidden></div>
 
     <!-- Module tabs: Builder | Simulator | Optimizer — one view per
          module (/weapons/<name>[/simulator|/optimizer]). Rendered by
          route(); body.on-* classes swap the visible sections. -->
     <nav class="module-tabs" id="module-tabs"></nav>
+    <div id="doc" class="doc" hidden></div>
 
     <!-- THE BENCHMARK TAB — this weapon's own board. Every ruler and mode it
          has been measured at, one line each, and the build behind the line the
@@ -579,13 +579,14 @@
          past 10 the bar grows a name filter. -->
     <!-- THE BUILD FINDER: the board's builds as a table you search, filter and
          sort. It never says which build is open — the bar below does — and
-         opening a row puts that build in the bar. Builder only. See
+         opening a row enters Builder with that build in the bar. See
          renderBuildFinder. -->
-    <section class="finder fold shut" id="build-finder" data-fold="build-finder" aria-label="Build finder"></section>
+    <section class="finder" id="build-finder" data-module="build-library" aria-label="Build Library"></section>
     <!-- EVERY BUILD: your own, and the board builds you opened (read-only).
          THE BAR IS THE ONLY PLACE THAT SAYS WHICH BUILD IS OPEN — its selected
          chip names it and marks a board row with a lock. -->
     <div id="share-by" class="share-by" hidden></div>
+    <div class="library-entry" id="library-entry" hidden></div>
     <div class="preset-bar" id="preset-bar-builder-builds"></div>
     <!-- EDITING AN OPTIMIZER START: shown only while one is open in the
          builder, in place of the build bar. 79-start-edit.js. -->
@@ -603,7 +604,7 @@
          answer below is measured with. Page level, above the mods, because it
          is one configuration for all of them — not a tool inside one slot's
          picker. -->
-    <div class="quick-calc" id="quick-calc"></div>
+    <div class="quick-calc calculation-conditions" id="quick-calc"></div>
 
     <!-- Block: Mods -->
     <!-- Block: Mode — HOW this build is played. Its own block, above the mods,
@@ -733,109 +734,68 @@
       <div class="bb"><div id="sim-build-info"></div></div>
     </section>
 
-    <!-- Block: Sim — the SIMULATOR tab's view (2D arena + scenario/buff
-         settings); Run simulates the current build against the enemy and
-         shows a summary + scene replay. -->
+    <!-- Scenario settings stay in the simulator; the fight is shared by every
+         calculation module. -->
     <section class="block" data-module="simulator" id="sim-block">
-      <div class="bh"><span class="n">▶</span><h2 data-i18n>Sim</h2><span class="sub" id="sim-sub"></span></div>
+      <div class="bh"><span class="n">▶</span><h2 data-i18n>Scenario</h2><span class="sub" id="sim-sub"></span></div>
       <div class="bb">
         <!-- The SCENARIO as a saved thing: enemy, technique and measurement
              together, because "the fight I test against" is one decision and
              a build is compared across several of them. -->
         <!-- BENCHMARK SCENARIOS: the official rulers, same treatment. -->
-        <div class="preset-bar" id="preset-bar-simulator-scenarios"></div>
-        <!-- Shown only while an OFFICIAL scenario is open: it says why the
-             controls below are inert and where the editable copy comes from. -->
-        <div id="sim-official" class="official-note" hidden></div>
-        <!-- The board's consent line. Shown only under the OFFICIAL scenario,
-             because that is the only fight whose results can reach a board. -->
-        <div id="board-consent" class="official-note" hidden></div>
-        <div class="fold sect" data-fold="sim-fight">
-          <h3 class="sim-h fold-h" data-i18n>1 · The fight <span class="sim-hint" data-i18n>who you are shooting at, where, and for how long</span></h3>
-          <div id="sim-target" class="sub-block"></div>
+        <div id="calculation-scenario-editor">
+          <div class="calculation-editor-heading"><h3 data-i18n>Global scenario settings</h3><span id="calculation-scenario-context"></span></div>
+          <p class="calculation-editor-hint" data-i18n>Changes apply to every weapon and calculation. This view highlights settings relevant to the current weapon.</p>
+          <div class="preset-bar" id="preset-bar-simulator-scenarios"></div>
+          <div id="sim-official" class="official-note" hidden></div>
+          <div id="scenario-viewbar" data-view-only></div>
+          <div class="fold sect scenario-section" id="scenario-fight-section" data-fold="sim-fight">
+            <h3 class="sim-h fold-h" data-i18n>1 · Battlefield</h3>
+            <div id="sim-target" class="sub-block"></div>
+          </div>
+          <div class="fold sect scenario-section" id="scenario-use-section" data-fold="sim-wielder">
+            <h3 class="sim-h fold-h" data-i18n>2 · Weapon use</h3>
+            <div id="sim-technique" class="field-grid"></div>
+            <div id="sim-roster" class="sub-block"></div>
+          </div>
+          <div class="fold sect scenario-section" id="scenario-external-section" data-fold="sim-external">
+            <h3 class="sim-h fold-h" data-i18n>3 · External bonuses</h3>
+            <div id="sim-squad" class="sub-block"></div>
+            <div class="fold sect" id="wfbuff-block" data-fold="sim-wfbuffs">
+              <h3 class="sim-h fold-h"><span data-i18n>Warframe buffs</span><span class="sim-h-sub" id="wfbuff-sub"></span></h3>
+              <div id="sim-wfbuffs"></div>
+            </div>
+            <div class="fold sect" data-fold="sim-extra">
+              <h3 class="sim-h fold-h" data-i18n>Extra stats</h3>
+              <div id="sim-extra" class="field-grid"></div>
+            </div>
+          </div>
+          <div class="fold sect scenario-section" id="scenario-buffs-section" data-fold="sim-buffs">
+            <h3 class="sim-h fold-h"><span data-i18n>4 · Starting buffs</span><button type="button" id="sim-buffs-all" class="ghost-btn small" data-view-only></button></h3>
+            <div id="sim-buffs"></div>
+          </div>
+          <div class="fold sect scenario-section" id="scenario-rules-section" data-fold="sim-limits">
+            <h3 class="sim-h fold-h" data-i18n>5 · Simulation rules</h3>
+            <div id="sim-limits" class="field-grid"></div>
+          </div>
+          <div class="fold sect scenario-section" id="scenario-measure-section" data-fold="sim-measure">
+            <h3 class="sim-h fold-h" data-i18n>6 · Measurement</h3>
+            <div id="sim-run" class="field-grid"></div>
+          </div>
+          <details id="sim-whole-fight" class="whole-fight">
+            <summary data-i18n>Scenario technical details</summary>
+            <div id="sim-whole-fight-body"></div>
+          </details>
         </div>
-        <!-- Block 1 is the other actor; this is YOU. What the player is doing
-             and what frame is behind the gun, which is one answer to "who is
-             shooting". It comes before Buffs because it GATES them: aiming
-             decides whether the while-aiming mods pay out at all. -->
-        <div class="fold sect" data-fold="sim-wielder">
-          <h3 class="sim-h fold-h" data-i18n>2 · External bonuses <span class="sim-hint" data-i18n>what the wielder is doing, and what others hand them — a ticked number replaces the wielder's own</span></h3>
-          <div id="sim-technique" class="field-grid"></div>
-          <!-- THE SQUAD'S AURAS. The fight's rather than the build's: two players
-               with the same gun and different squads are two different fights,
-               the same rule the ability buffs follow. The wielder's own shards
-               and aura come with the Warframe build the weapon links. -->
-          <div id="sim-squad" class="sub-block"></div>
-          <!-- …AND WHO ELSE IS FIRING. The enemy half of the fight has been a
-               list since the formation existed; this is the other half, and it
-               sits here because block 2 is the SHOOTING side — what the wielder
-               is doing, what the squad hands them, and who else is in the room
-               with a gun of their own. -->
-          <div id="sim-roster" class="sub-block"></div>
-        </div>
-        <!-- NOT a technique: nobody plays "infinite ammo". These say what the
-             run does not model, which is a different kind of claim. -->
-        <div class="fold sect" data-fold="sim-limits">
-          <h3 class="sim-h fold-h" data-i18n>3 · Limits <span class="sim-hint" data-i18n>what this run is allowed to assume</span></h3>
-          <div id="sim-limits" class="field-grid"></div>
-        </div>
-        <!-- What this block sets is the START of the run, not the buff's
-             worth: the fight goes on to grant and decay these on their own
-             triggers. The old hint said "locked = 100% uptime", which reads as
-             "this box decides how much of the buff you get" — the opposite of
-             what the sim does. -->
-        <div class="fold sect" data-fold="sim-buffs">
-          <h3 class="sim-h fold-h" data-i18n>4 · Buffs <span class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</span>
-            <button id="sim-buffs-all" class="ghost-btn small"></button></h3>
-          <div id="sim-buffs"></div>
-        </div>
-        <!-- THE FIGHT'S OWN STAT BONUSES. Everything this weapon is handed by
-             something that is not its build, expressed as what it is WORTH:
-. No trigger, no clock, no stack count — the
-             thing with a duration is the block below, and this is the thing
-             without one. It sits BEFORE the Warframe buffs because it is the
-             simpler claim
-             and because that block is still the last input before you run. -->
-        <div class="fold sect" data-fold="sim-extra">
-          <h3 class="sim-h fold-h" data-i18n>5 · Extra stats <span class="sim-hint" data-i18n>anything this weapon is handed from outside its build — it lands in the same bucket a mod would</span></h3>
-          <div id="sim-extra" class="field-grid"></div>
-        </div>
-        <!-- WARFRAME ABILITY BUFFS — INSIDE the fight, and wrapped so it still
-             reads as its own thing. It is a section of the
-             scenario because that is where it already lives — it saves with
-             the fight, travels with the fight across weapons, and the
-             optimizer reads it off the fight — and it sits last because it is
-             the final input before you run.
-             EARLY ACCESS: the strength is typed in here today and comes from
-             the frame once frames land. Said on screen, not only here. -->
-        <div class="fold sect" id="wfbuff-block" data-fold="sim-wfbuffs">
-          <h3 class="sim-h fold-h" data-i18n>6 · Warframe buffs <span class="sim-hint" data-i18n>abilities cast on this weapon — set your Ability Strength and the values follow</span>
-            <span class="sim-h-sub" id="wfbuff-sub"></span></h3>
-          <div id="sim-wfbuffs"></div>
-        </div>
-        <div class="fold sect" data-fold="sim-measure">
-          <h3 class="sim-h fold-h" data-i18n>7 · Measure <span class="sim-hint" data-i18n>what to read off the run — the scenario's own term, so an official ruler pins it</span></h3>
-          <div id="sim-run" class="field-grid"></div>
-        </div>
-        <!-- THE RUN COUNT — ITS OWN DIV, and deliberately outside every block
-             above. It is not part of the fight, so an
-             OFFICIAL ruler does not pin it: reading the board's scenario still
-             lets you decide how long you are willing to wait. That is also why
-             it is not in `lockOfficialScenario`'s list — the
-             lock is for the fight's terms, and this is not one. -->
+      </div>
+    </section>
+
+    <section class="block" data-module="simulator" id="sim-run-block">
+      <div class="bh"><span class="n">▷</span><h2 data-i18n>Simulate</h2></div>
+      <div class="bb">
         <div id="sim-runs-block" class="runs-row"></div>
-        <!-- THE WHOLE FIGHT, INCLUDING THE PART THIS WEAPON HIDES. The blocks above show what applies to the weapon in
-             front of you, which is the right default and leaves two things
-             invisible: a field this weapon FORCES (a sentinel's headshot rate
-             is 0 whatever the document says) and a field it merely does not
-             use, which is still part of the fight and still travels.
-             "The same fight across two weapons" was a claim nobody could
-             check; this is where it can be. Folded shut, because the ordinary
-             reader is not asked to care. -->
-        <details id="sim-whole-fight" class="whole-fight">
-          <summary data-i18n>The whole fight — every field, including the ones this weapon hides</summary>
-          <div id="sim-whole-fight-body"></div>
-        </details>
+        <!-- Submission belongs to this build's run, outside global settings. -->
+        <div id="board-consent" class="official-note" hidden></div>
         <button id="run-sim" class="run-btn" data-i18n>Run Simulation</button>
       </div>
     </section>
@@ -938,7 +898,7 @@
     <!-- Block: the fight (OPTIMIZER tab) — the simulator's scenario, read back
          as a card; edited over there, because a preset is edited in one place. -->
     <section class="block" data-module="optimizer" id="opt-fight-block">
-      <div class="bh"><span class="n">▶</span><h2 data-i18n>The fight</h2><span class="sub" data-i18n>the simulator's — every candidate is scored under it, and it is edited over there</span></div>
+      <div class="bh"><span class="n">▶</span><h2 data-i18n>The fight</h2><span class="sub" data-i18n>The global scenario, viewed for this build</span></div>
       <div class="bb">
         <div class="preset-bar" id="opt-scenario-ref"></div>
         <div id="opt-fight-brief"></div>
@@ -975,6 +935,8 @@
         <div id="wf-passive" class="wpassives"></div>
       </div>
     </div>
+    <nav class="module-tabs" id="wf-module-tabs"></nav>
+    <section id="wf-library" class="library-panel" hidden></section>
     <!-- WHAT THE BUILD CAN DO, as tags with their sources — a frame's build is
          read by these, not ranked by a number. -->
     <div id="wf-caps" class="wf-caps"></div>

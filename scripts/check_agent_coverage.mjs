@@ -111,6 +111,13 @@ for (const w of WEAPONS) {
     const r = await evaluate(SCAN);
     r.hit.forEach((s) => hit.add(s));
     r.uncovered.forEach((u) => { if (!uncovered.has(u)) uncovered.set(u, `${w}/${m}`); });
+    if (w === WEAPONS[0] && m === "simulator") {
+      await evaluate(`document.querySelector('#sim-target-arena [data-arena-expand]').click()`);
+      const expanded = await evaluate(SCAN);
+      expanded.hit.forEach(s => hit.add(s));
+      expanded.uncovered.forEach(u => { if (!uncovered.has(u)) uncovered.set(u, w + '/expanded-arena'); });
+      await evaluate(`document.querySelector('[data-arena-close]').click()`);
+    }
   }
 }
 

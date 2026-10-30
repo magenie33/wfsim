@@ -153,50 +153,34 @@ function gainSort(a, b, keys) {
 /// The gain for `id`, or null when this axis position has not been scanned.
 const gainOf = (id) => (gainAbout() === gainKey() ? gainScan.by[id] || null : null);
 
-/// QUICK CALC — page level, above the mods.
-///
-/// It is ONE configuration for every slot's question, so it does not live
-/// inside any slot's picker. Two settings: the SCENARIO (a
-/// saved one, which also decides KPM-or-DPS) and how many runs. There is no
-/// run button because there is no slot here to run against — opening a
-/// picker computes with these, which is what "sorted by effect by default"
-/// means in practice.
+function openCalculationScenario() {
+  nav(weaponPath(presetWeapon()) + "/simulator");
+}
+
+/// Builder preferences read the global fight; scenario editing stays in its module.
 function renderQuickCalc() {
   const box = $("quick-calc");
-  if (!box) return;
+  if (!box || !META) return;
+  box.hidden = !routeWeaponId() || modSuffix() !== "";
   const on = gainPrefs.on !== false;
+  const list = everyRank();
   box.innerHTML =
-    `<label class="pc-h" title="${escHtml(tr("rank a slot's options by what they would change — off, nothing is simulated"))}">` +
+    `<div class="calculation-heading"><h2>${escHtml(tr("Quick calc"))}</h2><span>${escHtml(tr("Global preferences"))}</span></div>` +
+    `<div class="calculation-scene"><div><span class="calculation-label">${escHtml(tr("Current scenario"))}</span>` +
+    `<b id="gp-scen">${escHtml(gainScenario().name)}</b></div><div class="calculation-actions">` +
+    `<button type="button" class="ghost-btn small" data-calculation-edit>${escHtml(tr("Edit scenario"))} →</button></div></div>` +
+    `<div class="calculation-quick"><div class="calculation-switch"><label class="pc-h" title="${escHtml(tr("rank a slot's options by what they would change — off, nothing is simulated"))}">` +
     `<input type="checkbox" id="gp-on"${on ? " checked" : ""}> ⚡ ${escHtml(tr("Quick calc"))}</label>` +
-    (!on ? "" :
-
-    // WHICH FIGHT, stated and not chosen. It is the simulator's, always — see
-    // `gainScenario`. Naming it here is the whole reason the old picker could
-    // lie for a session without being noticed: a reader could not see which
-    // fight the numbers beside every mod had come from.
-    `<span class="pc-scen" id="gp-scen" title="${escHtml(tr("the fight these numbers are measured in — the quick calc runs the Simulator's own scenario, so switch it there and every chip follows"))}">${escHtml(gainScenario().name)}</span>` +
-
-    // HOW MANY RUNS a chip's number is averaged over. Ten is the floor, not a
-    // suggestion: under it a status mod's chip is a coin flip. It is clamped on
-    // the way out (`gainRuns`) as well as here, because a number input accepts
-    // an empty string and a paste.
+    `<span class="calculation-help">${escHtml(tr("Open a slot to compare its options"))}</span></div>` +
     `<label class="pc-runs" title="${escHtml(tr("how many simulations each option is averaged over — 10 is the floor, and more costs proportionally more time"))}">` +
+    `<span>${escHtml(tr("Per option"))}</span>` +
     `<input type="number" id="gp-runs" min="${GAIN_RUNS_MIN}" max="${GAIN_RUNS_MAX}" step="10" value="${gainRuns()}">` +
-    `<span>${escHtml(tr("runs"))}</span></label>` +
-
-    // WHICH CARDS THE LISTS OFFER AT EVERY RANK, and not only at max.
-    `<button class="ghost-btn small" id="gp-ranks" aria-expanded="${everyRankOpen}" title="${escHtml(tr("cards every list offers at each of their ranks, not only at max — a card whose lower rank can beat its max, like Status Duration beside a malus"))}">${
-      escHtml(tr("every rank"))} · ${everyRank().mods.length + everyRank().arcanes.length}</button>` +
-
-    // PROGRESS while it runs, and an invitation before it has. The run counts
-    // ("1x -> 10x") are gone from here: they were a property
-    // of the algorithm back when there were two passes at two precisions. The
-    // count above is the reader's own, and every chip still carries the one its
-    // number came from.
-    `<span class="pc-note">${gainScan.running
-      ? `${gainScan.done}/${gainScan.total}`
-      : (gainScan.note ? "" : escHtml(tr("open a slot to rank its mods by effect")))}</span>` +
-    (everyRankOpen ? everyRankPanel() : ""));
+    `<span>${escHtml(tr("runs"))}</span></label></div>` +
+    `<button type="button" class="calculation-rank-toggle" id="gp-ranks" aria-expanded="${everyRankOpen}"><span>${everyRankOpen ? "▾" : "▸"} ${escHtml(tr("Global rank comparison"))}</span>` +
+    `<span class="calculation-label">${escHtml(tr("Mods"))} ${list.mods.length} · ${escHtml(tr("Arcanes"))} ${list.arcanes.length}</span></button>` +
+    (everyRankOpen ? `<div class="calculation-ranks"><p>${escHtml(tr("All weapons share this list. Selected cards are compared at each rank; other candidates use max rank."))}</p>${everyRankPanel()}</div>` : "");
+  if ($("calculation-scenario-context")) $("calculation-scenario-context").textContent = trF("View for {name}", { name: weaponInfo(presetWeapon()).name });
+  box.querySelector("[data-calculation-edit]").onclick = openCalculationScenario;
   // Every click stays inside: a redraw detaches these nodes, and the document
   // outside-click handler closes on a target whose `.popover` ancestor is gone.
   box.onclick = (e) => e.stopPropagation();
@@ -242,8 +226,6 @@ function renderQuickCalc() {
   }; });
   const add = $("gp-ranks-add");
   if (add) add.onclick = () => openEveryRankPicker(add);
-  const all = $("gp-ranks-all");
-  if (all) all.onclick = () => { everyRankAll = !everyRankAll; renderQuickCalc(); };
   const reset = $("gp-ranks-reset");
   if (reset) reset.onclick = () => setEveryRank(null);
 }
@@ -266,28 +248,16 @@ function setEveryRank(next) {
 const everyRankRow = (k, card, opts = {}) => (k === "mods"
   ? modRow(card, { ...opts, attrs: `data-id="${card.id}" ${opts.attrs || ""}` })
   : arcaneRow(card, opts));
+const everyRankMods = () => new Map(Object.values(META.mod_pools || {}).flat().map((m) => [m.id, m]));
 const everyRankCard = (k, id) => (k === "mods"
-  ? modById(id) || (META.mods || []).find((m) => m.id === id)
+  ? everyRankMods().get(id)
   : arcaneById(id));
-/// THE LIST IS ONE LIST FOR EVERY WEAPON; the panel shows this weapon's part
-/// of it, and `everyRankAll` shows the rest — kept, and applied on the weapons
-/// that take them.
-let everyRankAll = false;
-const everyRankHere = (k, id) => (k === "mods" ? !!modById(id) : arcaneFitsWeapon($("weapon").value, id));
 
-/// Every card that could go on the list: this weapon's ranked mods and its
-/// seats' ranked arcanes — or, with the whole list open, every ranked card.
+/// Global candidates and saved selections do not narrow when a weapon changes.
 function everyRankOffers() {
-  if (everyRankAll) {
-    return [
-      ...(META.mods || []).filter((m) => !m.riven && !m.stance && m.max_rank > 0).map((m) => ["mods", m]),
-      ...(META.arcanes || []).filter((a) => a.id !== "none" && (a.max_rank || 0) > 0).map((a) => ["arcanes", a]),
-    ];
-  }
-  const arcs = [...new Map(arcanePools().flatMap((_, i) => arcanePool(i)).map((a) => [a.id, a])).values()];
   return [
-    ...currentPool.filter((m) => !m.riven && m.max_rank > 0).map((m) => ["mods", m]),
-    ...arcs.filter((a) => (a.max_rank || 0) > 0).map((a) => ["arcanes", a]),
+    ...[...everyRankMods().values()].filter((m) => !m.riven && !m.stance && m.max_rank > 0).map((m) => ["mods", m]),
+    ...(META.arcanes || []).filter((a) => a.id !== "none" && (a.max_rank || 0) > 0).map((a) => ["arcanes", a]),
   ];
 }
 
@@ -300,17 +270,14 @@ function everyRankPanel() {
   const row = ([k, c]) => everyRankRow(k, c, {
     trailing: `<button class="rk-x" data-k="${k}" data-id="${escHtml(c.id)}" title="${escHtml(tr("remove"))}">×</button>`,
   });
-  const here = cards.filter(([k, c]) => everyRankHere(k, c.id));
-  const elsewhere = cards.filter(([k, c]) => !everyRankHere(k, c.id));
+  const groups = [["mods", "Mods"], ["arcanes", "Arcanes"]].map(([k, label]) => {
+    const selected = cards.filter(([kind]) => kind === k);
+    return `<div class="calculation-rank-group"><h3>${escHtml(tr(label))} <span>${selected.length}</span></h3>`
+      + (selected.length ? `<div class="combo-menu pc-rank-list">${selected.map(row).join("")}</div>`
+        : `<p>${escHtml(tr("No cards selected"))}</p>`) + `</div>`;
+  }).join("");
   return `<div class="pc-ranks">` +
-    (here.length ? `<div class="combo-menu pc-rank-list">${here.map(row).join("")}</div>`
-      : `<span class="pc-note">${escHtml(tr("every card at max rank only"))}</span>`) +
-    (everyRankAll && elsewhere.length
-      ? `<div class="pc-note">${escHtml(tr("on the list for other weapons"))}</div><div class="combo-menu pc-rank-list">${elsewhere.map(row).join("")}</div>`
-      : "") +
-    `<button class="ghost-btn small" id="gp-ranks-all">${escHtml(everyRankAll
-      ? tr("this weapon's cards only")
-      : tr("the whole list ({n} more for other weapons)").replace("{n}", elsewhere.length))}</button>` +
+    groups +
     `<button class="ghost-btn small" id="gp-ranks-add">+ ${escHtml(tr("add a card"))}</button>` +
     (gainPrefs.everyRank ? `<button class="ghost-btn small" id="gp-ranks-reset">${escHtml(tr("default list"))}</button>` : "") +
     `</div>`;

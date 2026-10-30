@@ -94,7 +94,7 @@ function browser() {
     async oauth(provider, person, intent = "login", tamper = null) {
       const code = `code-${Math.random()}`;
       people.set(code, person);
-      const start = await call("GET", `/api/auth/${provider}/start?intent=${intent}&return=/weapons/Torid`);
+      const start = await call("GET", `/api/auth/${provider}/start?intent=${intent}&return=/weapons/Torid/builder`);
       check(`${provider}: an authorization redirect is not cached`, start.headers.get("cache-control") === "no-store");
       const state = new URL(start.headers.get("location")).searchParams.get("state");
       const back = await call("GET", `/api/auth/${provider}/callback?code=${code}&state=${tamper || state}`);
@@ -138,7 +138,7 @@ let me = await a.me();
 check("a first sign-in makes an account holding that one slot",
   back.searchParams.get("auth") === "created" && me && me.identities.length === 1 && me.identities[0].provider === "google",
   back + " " + JSON.stringify(me));
-check("...and returns to the page it left from", back.pathname === "/weapons/Torid", back);
+check("...and returns to the page it left from", back.pathname === "/weapons/Torid/builder", back);
 const adaId = me.id;
 
 back = await browser().oauth("google", ada);

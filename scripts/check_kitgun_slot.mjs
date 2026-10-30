@@ -28,7 +28,7 @@ if (process.argv.includes("--arrival-only")) await app.finish("weapon arrivals p
 
 for (const [from, to] of [['catchmoon_primary', 'catchmoon_secondary'], ['arbucep', 'nikana_prime']]) {
   const arrival = await evaluate(`(async () => {
-    nav(weaponPath(${JSON.stringify(from)}));
+    nav(weaponPath(${JSON.stringify(from)}) + "/builder");
     await route();
     const load = loadWeaponBoard;
     let release;
@@ -57,13 +57,13 @@ check('the catalog has Kitgun chambers to exercise', chambers.length > 0);
 
 for (const chamber of chambers) {
   const slotNavigation = await evaluate(`(async () => {
-    nav(weaponPath(${JSON.stringify(chamber.id)}));
+    nav(weaponPath(${JSON.stringify(chamber.id)}) + "/builder");
     await new Promise(r => setTimeout(r, 4000));
     const out = [];
     for (const slot of ['secondary', 'primary']) {
       jump.open = true;
       renderJump();
-      nav(weaponPath(${JSON.stringify(chamber.chamber)} + '_' + slot));
+      nav(weaponPath(${JSON.stringify(chamber.chamber)} + '_' + slot) + "/builder");
       for (let i = 0; i < 100 && weaponInfo($('weapon').value).slot !== slot; i++) {
         await new Promise(r => setTimeout(r, 100));
       }
@@ -89,13 +89,13 @@ for (const chamber of chambers) {
         fixedSlot: !document.querySelector('#assembly-row #dd-kitslot')
           && document.querySelector('#w-name').textContent.includes(tr(ARC_POOL_LABEL[slot])),
         jumped: buildPayload().weapon === weapon && document.body.classList.contains('on-simulator') });
-      nav(weaponPath(weapon));
+      nav(weaponPath(weapon) + "/builder");
       await new Promise(r => setTimeout(r, 1000));
       if (!sameState(snapshotState(), before)) whileApplying(() => restoreState(before, weapon));
       activeScenario = null;
       sim.duration = 5;
       localStorage.setItem(SIM_RUNS_KEY, '1');
-      for (const module of ['simulator', 'optimizer', '']) {
+      for (const module of ['simulator', 'optimizer', 'builder']) {
         const link = [...document.querySelectorAll('#module-tabs a')]
           .find(a => a.getAttribute('href') === weaponPath(weapon) + (module ? '/' + module : ''));
         if (!link) { out.push({ kind: 'module', slot, module, weapon, missingLink: true }); continue; }
@@ -138,7 +138,7 @@ for (const chamber of chambers) {
   if (chamber.chamber === 'catchmoon') {
     for (const slot of ['secondary', 'primary']) {
       const saved = await evaluate(`(async () => {
-        nav(weaponPath(${JSON.stringify(chamber.chamber)} + '_' + ${JSON.stringify(slot)}));
+        nav(weaponPath(${JSON.stringify(chamber.chamber)} + '_' + ${JSON.stringify(slot)}) + "/builder");
         for (let i = 0; i < 100 && weaponInfo($('weapon').value).slot !== ${JSON.stringify(slot)}; i++) {
           await new Promise(r => setTimeout(r, 100));
         }
@@ -153,11 +153,11 @@ for (const chamber of chambers) {
     }
     const shared = await evaluate(`(async () => {
       const pause = ms => new Promise(r => setTimeout(r, ms));
-      nav(weaponPath('catchmoon_secondary')); await pause(1500);
+      nav(weaponPath('catchmoon_secondary') + "/builder"); await pause(1500);
       flushPresetSaves();
       const before = seatPayload(snapshotState());
       const code = await shareCode();
-      nav(weaponPath('catchmoon_primary')); await pause(1500);
+      nav(weaponPath('catchmoon_primary') + "/builder"); await pause(1500);
       jump.open = true; renderJump();
       const imported = await importShare(code); await pause(1500);
       return { imported, weapon: buildPayload().weapon, route: routeWeaponId(),
@@ -173,9 +173,9 @@ for (const chamber of chambers) {
       const arrived = async id => {
         for (let i = 0; i < 100 && $('weapon').value !== id; i++) await pause(100);
       };
-      nav(weaponPath('catchmoon_primary')); await arrived('catchmoon_primary');
+      nav(weaponPath('catchmoon_primary') + "/builder"); await arrived('catchmoon_primary');
       const primary = snapshotState(); flushPresetSaves();
-      nav(weaponPath('catchmoon_secondary')); await arrived('catchmoon_secondary');
+      nav(weaponPath('catchmoon_secondary') + "/builder"); await arrived('catchmoon_secondary');
       const secondary = snapshotState(); flushPresetSaves();
       window.history.back(); await arrived('catchmoon_primary');
       const back = sameState(primary, snapshotState());
@@ -189,7 +189,7 @@ for (const chamber of chambers) {
       sessionStorage.setItem('wfsim-lang-stash', JSON.stringify(state));
       return state;
     })()`);
-    await app.load('/weapons/Catchmoon', 8000);
+    await app.load('/weapons/Catchmoon/builder', 8000);
     const restored = await evaluate(`({ weapon: buildPayload().weapon, route: routeWeaponId(), state: snapshotState() })`);
     check('a reload stash from the old chamber URL restores the secondary route and build',
       restored.weapon === 'catchmoon_secondary' && restored.route === restored.weapon

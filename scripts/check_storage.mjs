@@ -170,7 +170,7 @@ const riven = await evaluate(`(async () => {
   const go = async (p) => { history.pushState({}, '', p); route(); await sleep(2500);
     presetParseCache.clear(); return loadPresetList('rivens').map(x => x.name).sort(); };
   localStorage.clear();
-  await go('/weapons/Burston_Prime');
+  await go('/weapons/Burston_Prime/builder');
   const put = (k, v) => localStorage.setItem(k, JSON.stringify(v));
   put('wfsim-customs-burston_prime-rivens', [${JSON.stringify(card("from the prime", 0.1))}]);
   put('wfsim-customs-burston-rifle-rivens', [${JSON.stringify(card("family card", 0.2))}]);
@@ -183,10 +183,10 @@ const riven = await evaluate(`(async () => {
   return {
     keys: Object.keys(localStorage).filter(k => k.includes('riven')).sort(),
     whole: loadPresetWhole('rivens').map(x => (x.scope || '?') + ' / ' + x.name).sort(),
-    onPrime: await go('/weapons/Burston_Prime'),
-    onBurston: await go('/weapons/Burston'),
-    onLaetum: await go('/weapons/Laetum'),
-    onTorid: await go('/weapons/Torid'),
+    onPrime: await go('/weapons/Burston_Prime/builder'),
+    onBurston: await go('/weapons/Burston/builder'),
+    onLaetum: await go('/weapons/Laetum/builder'),
+    onTorid: await go('/weapons/Torid/builder'),
   };
 })()`);
 

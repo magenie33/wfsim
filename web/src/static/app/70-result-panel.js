@@ -455,20 +455,14 @@ function foldTitle(box) {
   return c.textContent.replace(/\s+/g, " ").trim();
 }
 
-/// The module whose blocks are on screen — the same fact `route()` states in a
-/// body class, read back rather than parsed out of the path a second time.
-const jumpMod = () => ["simulator", "optimizer", "rivens", "enemies"]
-  .find((m) => document.body.classList.contains("on-" + m)) || "";
-
-const JUMP_TABS = [["", "Builder"], ["simulator", "Simulator"], ["optimizer", "Optimizer"],
-                   ["rivens", "Rivens"], ["enemies", "Enemies"]];
+// The module tabs and jump navigation share the router's paths.
+const jumpMod = () => modSuffix();
 
 function jumpRows() {
   const here = jumpMod();
-  const base = weaponPath($("weapon").value);
   // A WARFRAME OR OPERATOR PAGE HAS NO TABS, so it has no row of them.
-  let h = ["on-warframe", "on-operator"].some((c) => document.body.classList.contains(c)) ? "" : `<div class="jump-mods">` + JUMP_TABS.map(([m, label]) =>
-    `<a class="jump-mod${m === here ? " sel" : ""}" href="${base}${m ? "/" + m : ""}">${
+  let h = ["on-warframe", "on-operator"].some((c) => document.body.classList.contains(c)) ? "" : `<div class="jump-mods">` + WEAPON_TABS.map(([m, label]) =>
+    `<a class="jump-mod${m === here ? " sel" : ""}" href="${weaponTabPath($("weapon").value, m)}">${
       escHtml(tr(label))}</a>`).join("") + `</div>`;
   h += pageFolds().map((f) => {
     const shut = f.box.classList.contains("shut");
@@ -562,7 +556,8 @@ function jumpTo(id) {
   // UNDER THE STICKY TOPBAR, not behind it: the heading is the thing being
   // jumped to, and a bar covering it is a jump that missed.
   const bar = document.querySelector(".topbar");
-  const top = box.getBoundingClientRect().top + window.scrollY - ((bar ? bar.offsetHeight : 0) + 10);
+  const tabs = [...document.querySelectorAll(".module-tabs")].find(el => el.offsetParent !== null && el.children.length);
+  const top = box.getBoundingClientRect().top + window.scrollY - ((bar ? bar.offsetHeight : 0) + (tabs ? tabs.offsetHeight : 0) + 10);
   window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
 }
 

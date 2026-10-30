@@ -834,11 +834,11 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
 /// A mode as [`played_mode`] resolves it: its name, the evolutions it installs,
 /// the half a cycle returns to, the single form to fire, and the lines the
 /// mode itself adds to the action list (`WeaponPlayMode::rules`).
-struct PlayedMode {
+pub(crate) struct PlayedMode {
     mode_id: String,
-    evos: Vec<String>,
-    cycle_from: Option<&'static str>,
-    single_form: &'static str,
+    pub(crate) evos: Vec<String>,
+    pub(crate) cycle_from: Option<&'static str>,
+    pub(crate) single_form: &'static str,
     mode_rules: wfsim_engine::data::apl::Apl,
 }
 
@@ -852,7 +852,7 @@ struct PlayedMode {
 /// `form` is still READ when no mode is named, because share links and
 /// scenario presets written before this carry it. A stale `form` is not
 /// migrated, it is simply obeyed one last time.
-fn played_mode(v: &Value, info: &'static WeaponInfo) -> Result<PlayedMode, Value> {
+pub(crate) fn played_mode(v: &Value, info: &'static WeaponInfo) -> Result<PlayedMode, Value> {
     let modes = wfsim_engine::data::weapons::play_modes(&info.id);
     let asked = v.get("mode").and_then(Value::as_str);
     let form = match asked {

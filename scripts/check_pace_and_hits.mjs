@@ -27,7 +27,7 @@ const { evaluate, check, sleep } = app;
 const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
-  history.pushState({},'','/weapons/Torid'); route(); await sleep(3500);
+  history.pushState({},'','/weapons/Torid/builder'); route(); await sleep(3500);
   history.pushState({},'','/weapons/Torid/simulator'); route(); await sleep(700);
   const out = {};
 

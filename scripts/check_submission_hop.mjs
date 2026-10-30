@@ -48,7 +48,7 @@ const { check } = app;
 
 const seen = await app.evaluate(`(async () => {
   const s = (ms) => new Promise(r => setTimeout(r, ms));
-  history.pushState({}, '', '/weapons/Braton_Prime'); route(); await s(4000);
+  history.pushState({}, '', '/weapons/Braton_Prime/builder'); route(); await s(4000);
   const want = ${JSON.stringify(PLACED)};
   for (let i = 0; i < want.length; i++) {
     const slot = mainSlots()[i];

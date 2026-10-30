@@ -1302,50 +1302,58 @@ a newer one (docs/ANALYTICS.md).
 page's banner must name the engine, never a `TypeError` from reading the
 engine's first answer when there was none.
 
-## `check_build_finder`
+## `check_build_library` and `check_build_finder`
 
-**THE FINDER FINDS, THE BAR HOLDS.** The build finder is a query over the
-board's builds and never a selection, so every row it lists must satisfy the
-query: a card required from the overview is carried by every listed build,
-excluded it is carried by none, and a third click clears it; "I don't have it"
-on a piece of an opened row excludes it the same way. A row's mods are in the
-order the build was saved, with Exilus in its own row below. The overview ships
-shut; any row opens in place into the same detail, one at a time; any build can be made the
-reference, every other row then reads against it, an opened row lists what it
-has that the reference does not, and the reference is taken back as it was
-given. "Open" makes the build current AND puts it in the build bar as a
-read-only chip, and the finder then says it is already there. It folds like
-every box, ships SHUT above a build of the reader's own on the weapon and
-OPEN with none — a first build made there does not shut it — and the reader's
-answer is what gets stored, the stored answer
-carries to the next weapon in both directions, a redraw keeps it, a click in
-its search box does not fold it, and the jump menu lists it by name.
+The weapon root opens the library with Standard Single Target Steel9999 and
+all modes. Shared cards preserve their slot sections.
+Board, filters, sorting and results are four independently bordered sibling
+cards. Search and Overview stay in filters, sort controls stay in sorting,
+and the result card contains the builds and its pinned navigation.
+Sorts use the published score, calculation date and real base MOD drain;
+equipment, riven, capacity and score filters compose and survive URL reloads.
+Scrolling appends places without changing the existing prefix, result
+navigation remains pinned, and opening a result then going Back restores
+its loaded query and scroll position. Phone
+controls fit, and an empty ruler never borrows a winner from another ruler.
+On desktop and phone, consecutive board selections keep the scroll position;
+Overview tiles retain their order and viewport geometry through all three
+selection states, and their equipment pictures load from the same origin.
+A cold equipment-filter link and repeated board arrivals retain the query in
+every history update, including transient writes during preset restoration.
+The entry check fails against the page without Build Library.
+`check_library_attributes` exercises permanent-only bounds, combinations,
+query reloads, grouped conditions, text/graphical projections, sort priority,
+inline syntax errors and retry after an attribute request fails. Filter and
+sort editor modes switch independently, unprojected rules have explicit
+retained notices, and adding an ordinary condition preserves an OR group.
+The API tests preserve a mixed card's plain half, exclude aiming and Enervate,
+keep permanent evolutions and penalties, and distinguish missing from zero.
+`check_build_finder` covers required/excluded equipment, piece-by-piece
+comparisons, exact tie membership, trigger refusals and the published-build
+bar. It replaces a row to renumber it and verifies that the opened build
+follows its identity, then unpins and copies records through Builder.
+Both checks require actual published rows; an empty fixture is a failure.
 
-**A TIE IS ONE PLACE, AND A REFUSED TRIGGER IS PRECISE.** On Felarx's plain
-cycle board every build's rank is its score's place among the distinct scores,
-one row stands for each place, a tie names a position its builds differ in and
-opens into exactly its builds, each a different build on that one score and
-the costliest shown.
-Refusing weak-point kills lists exactly the builds with no part that asks for
-one — and still some whose parts ask for any kill — the refusal is stored, and
-the kill group refuses all three kill triggers. Counted with every tie opened.
+## `check_global_conditions`
 
-**KEPT BY WHAT THE BUILD IS.** A board build's id ends in its rank, so the check
-drops the opened build's score to renumber it, leaves the weapon and comes back:
-the bar must hold that same build once and the page must reopen on it — not on
-whatever now holds the old rank. × takes it out of the bar and leaves an unsaved
-build open rather than another board row.
+Quick calc stays in Builder and scenario editing stays in the Simulator. An
+official ruler stays locked until copied. Edits, quick-calc preferences and
+the full every-rank selection survive module and weapon changes and reloads.
+A companion view shows the editable global value beside its forced effective
+value. All settings introduces Arch-Gun buffs and deployment from a pistol page;
+weapon changes retain those edits. Global search survives asynchronous card
+redraws, and denied triggers leave global inputs editable. Rendering leaves stored stacks and missing defaults untouched; an explicit
+clamping fixture proves the preservation assertion can reject a mutating view.
+The editor fits a phone. The API catalog check compares every weapon's legal
+buff scope and metadata variants against the global union.
 
-**…AND THE BAR IS WHERE IT IS SAID.** A board row is a locked chip with every
-builder block inert, a copy of it is an ordinary chip you can edit, and the
-unsaved build the page lands on selects no chip at all. The scenario bar keeps
-its single control, and a weapon with no rows draws the finder's empty state
-rather than a stale table.
+## `check_working_navigation`
 
-**IT MUST RUN AGAINST `site/`.** `board/<weapon>.json` is FETCHED at runtime and
-the native dev server does not serve it, so a run pointed at 8787/8799 sees an
-empty board and every assertion passes on an empty table. The first check
-asserts the weapon under test has rows, which is what makes that loud.
+The side shortcuts submit through the original Simulation and Optimizer
+buttons, whose bottom run blocks remain in the jump index. Results stay in
+their original containers. Disabled controls also disable their shortcuts.
+Compact page tabs stay below the header on desktop and phone; the active phone
+tab and side controls remain inside the viewport.
 
 ## `check_riven_pool`
 

@@ -32,7 +32,7 @@ const app = await openApp({ boot: 12000 });
 const r = await app.evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Latron_Prime'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Latron_Prime/builder'); route(); await sleep(3500);
 
   // THE SERVER'S OWN ANSWER first, so the rest can be read against it.
   const sim = (mods, runs) => api('/api/simulate', {

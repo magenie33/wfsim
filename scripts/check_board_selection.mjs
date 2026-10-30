@@ -60,11 +60,11 @@ try {
     finder.weapon = null; renderBuildFinder();
     out.allModes = finder.mo === FINDER_EVERY_MODE && !!document.querySelector('#build-finder [data-fseg="mo"][data-v="*"].on');
     finder.b = custom.id; renderBuildFinder();
-    out.finder = document.querySelector('#build-finder [data-board-selected]')?.dataset.boardSelected === custom.id;
+    out.finder = document.querySelector('#library-board [data-board-selected]')?.dataset.boardSelected === custom.id;
     const before = BOARD.torid;
     try {
       BOARD.torid = []; renderBuildFinder();
-      out.empty = document.querySelector('#build-finder [data-board-selected]')?.dataset.boardSelected === custom.id;
+      out.empty = document.querySelector('#library-board [data-board-selected]')?.dataset.boardSelected === custom.id;
     } finally { BOARD.torid = before; renderBuildFinder(); }
     raRuler = custom.id; renderRivenAnalyst();
     appraisalRuler = custom.id; renderRivenAppraisalControls();
@@ -102,7 +102,7 @@ try {
     app.check('official scenario labels use the same complete path', result.scenarioNames);
     app.check('existing task records display the same official board label', result.history);
     await app.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-    await app.load('/benchmark', 1000);
+    await app.load('/benchmark', 8000);
     app.check('the board selector stays within a phone viewport', await app.evaluate(`document.querySelector('#bench-picker .board-selector').getBoundingClientRect().right <= innerWidth && document.documentElement.scrollWidth <= innerWidth`));
     const popoverBounds = () => app.evaluate(`(async () => {
       history.pushState(null, '', '/weapons/Torid/simulator'); await route(); renderScenarioBar();

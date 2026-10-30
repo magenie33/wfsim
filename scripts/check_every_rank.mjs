@@ -16,7 +16,7 @@ const app = await openApp({ boot: 12000, base: process.env.WFSIM_BASE });
 const { evaluate, check, send, sleep, BASE } = app;
 
 await evaluate("localStorage.clear(); localStorage.setItem('wfsim-lang', 'en')");
-await send("Page.navigate", { url: `${BASE}/weapons/Burston_Prime` });
+await send("Page.navigate", { url: `${BASE}/weapons/Burston_Prime/builder` });
 await sleep(14000);
 
 const out = await evaluate(`(async () => {
@@ -83,7 +83,7 @@ const ed = await evaluate(`(async () => {
   const listed = () => Array.from(document.querySelectorAll('#quick-calc .pc-rank-list .opt[data-id]')).map((o) => o.dataset.id);
   r.rows = listed();
   r.cardShaped = !!document.querySelector('#quick-calc .pc-rank-list .opt img.mod');
-  r.select = !!document.querySelector('#quick-calc select');
+  r.select = !!document.querySelector('#quick-calc .pc-ranks select');
   document.getElementById('gp-ranks-add').click();
   await sleep(200);
   const pop = document.getElementById('rank-popover');

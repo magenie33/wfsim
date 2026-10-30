@@ -29,7 +29,7 @@ const r = await evaluate(`(async () => {
   // THE FLOOR HOST NEVER OFFERS IT.
   const floorOffers = compPool('prototype_companion').some((m) => m.id === 'fired_up');
 
-  history.pushState({}, '', weaponPath('verglas')); route(); await sleep(4000);
+  history.pushState({}, '', weaponPath('verglas') + '/builder'); route(); await sleep(4000);
   setWielder({ frame: 'sentinel', preset: id }); await sleep(1500);
   const payload = wielderPayload();
   const body = { ...buildPayload(), runs: 4, seed: 7 };

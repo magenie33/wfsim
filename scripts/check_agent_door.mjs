@@ -52,7 +52,7 @@ check("the headless part reads nothing of the page", reaches.length === 0, reach
 check("the build bar ranks the board with the headless part's ranking",
   src.includes("return rankBoard(rows, benchList()"));
 
-await app.load("/weapons/Torid");
+await app.load("/weapons/Torid/builder");
 // Focus controls render after the weapon is ready; the anchor audit waits for them.
 await evaluate(`(async () => {
   await loadWarframeCatalog();

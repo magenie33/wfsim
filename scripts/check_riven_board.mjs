@@ -10,7 +10,7 @@ const { evaluate, check, finish } = app;
 const SHAPE = { bonuses: ["critical_damage", "damage", "multishot"], malus: "recoil" };
 
 const setup = `
-  history.pushState({}, '', '/weapons/Torid'); route();
+  history.pushState({}, '', '/weapons/Torid/builder'); route();
   await new Promise(r => setTimeout(r, 4500));
   const id = $('weapon').value;
   const rows = (BOARD[id] || []).filter(r => r.benchmark === 'standard_single_target');
@@ -246,7 +246,7 @@ check('elemental bonus order survives read-only resolution and distinguishes ref
 // riven group. Without this the whole file would pass just as well on a page
 // that made a riven for every build it opened.
 const plain = await evaluate(`(async () => {
-  history.pushState({}, '', '/weapons/Lex'); route();
+  history.pushState({}, '', '/weapons/Lex/builder'); route();
   await new Promise(r => setTimeout(r, 4000));
   const id = $('weapon').value;
   const before = loadPresetList(RIVENS).length;

@@ -1,7 +1,7 @@
 // ---- THE WARFRAME BUILDER ----------------------------------------------
 //
 // `/warframes/<Wiki_Name>`: a frame's mods, arcanes, shards and Helminth, and
-// what they resolve to. A builder and nothing else. The numbers are the
+// what they resolve to. The Build Library and Builder share this build state. The numbers are the
 // engine's (`/api/warframe/panel`); what this draws of its own is the slot
 // arithmetic the weapon builder also draws. docs/WARFRAMES.md.
 const WF_BUILDS = "warframes";
@@ -682,7 +682,7 @@ function wfBarCfg() {
 /// NO FRAME YET, NO BAR: the page shows before its catalogue arrives, and a bar
 /// redrawn meanwhile (the account answering, a sync) has no frame to list;
 /// `showWarframe` draws it once one is open.
-const renderWfPresetBar = () => { if (wf) renderPresetBarIn($("preset-bar-warframes"), wfBarCfg()); };
+const renderWfPresetBar = () => { if (wf) { renderPresetBarIn($("preset-bar-warframes"), wfBarCfg()); if (document.body.classList.contains("on-warframe")) renderWarframeLibrary(); } };
 function wfApply(st) {
   wf = wfNormalize(st, wf.frame);
   dropSave("warframes");

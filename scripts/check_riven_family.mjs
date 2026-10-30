@@ -182,7 +182,7 @@ const r = await evaluate(`(async () => {
   await mk();
   await pick('0', 'damage');
   const nm = activeRivenId();
-  await go('/weapons/Burston_Prime');
+  await go('/weapons/Burston_Prime/builder');
   slots[0].mod = 'riven:' + nm;
   renderMods(); refreshPanel(); markPresetDirty(); await sleep(1400);
   const was = modById('riven:' + nm);
@@ -193,7 +193,7 @@ const r = await evaluate(`(async () => {
   const rk = document.getElementById('rv-rank');
   out.rankFound = !!rk;
   if (rk) { rk.value = '0'; rk.dispatchEvent(new Event('input', { bubbles: true })); await sleep(1800); }
-  await go('/weapons/Burston_Prime');
+  await go('/weapons/Burston_Prime/builder');
   const now = modById('riven:' + nm);
   out.editAfter = { drain: now && now.drain, eff: ((now || {}).effects || []).join(' ') };
   out.stillEquipped = ((slots[0] || {}).mod === 'riven:' + nm);
