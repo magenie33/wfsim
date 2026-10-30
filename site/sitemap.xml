@@ -105,7 +105,7 @@
   <url><loc>https://wfsim.app/weapons/Cassowar</loc></url>
   <url><loc>https://wfsim.app/weapons/Castanas</loc></url>
   <url><loc>https://wfsim.app/weapons/Catabolyst</loc></url>
-  <url><loc>https://wfsim.app/weapons/Catchmoon</loc></url>
+  <url><loc>https://wfsim.app/weapons/catchmoon_primary</loc></url>
   <url><loc>https://wfsim.app/weapons/catchmoon_secondary</loc></url>
   <url><loc>https://wfsim.app/weapons/Caustacyst</loc></url>
   <url><loc>https://wfsim.app/weapons/Cedo</loc></url>
@@ -224,7 +224,7 @@
   <url><loc>https://wfsim.app/weapons/Garuda_Prime_Talons</loc></url>
   <url><loc>https://wfsim.app/weapons/Garuda_Talons</loc></url>
   <url><loc>https://wfsim.app/weapons/Gazal_Machete</loc></url>
-  <url><loc>https://wfsim.app/weapons/Gaze</loc></url>
+  <url><loc>https://wfsim.app/weapons/gaze_primary</loc></url>
   <url><loc>https://wfsim.app/weapons/gaze_secondary</loc></url>
   <url><loc>https://wfsim.app/weapons/Ghoulsaw</loc></url>
   <url><loc>https://wfsim.app/weapons/Glaive</loc></url>
@@ -446,7 +446,7 @@
   <url><loc>https://wfsim.app/weapons/Rakta_Ballistica</loc></url>
   <url><loc>https://wfsim.app/weapons/Rakta_Cernos</loc></url>
   <url><loc>https://wfsim.app/weapons/Rakta_Dark_Dagger</loc></url>
-  <url><loc>https://wfsim.app/weapons/Rattleguts</loc></url>
+  <url><loc>https://wfsim.app/weapons/rattleguts_primary</loc></url>
   <url><loc>https://wfsim.app/weapons/rattleguts_secondary</loc></url>
   <url><loc>https://wfsim.app/weapons/Rauta</loc></url>
   <url><loc>https://wfsim.app/weapons/Reaper_Prime</loc></url>
@@ -505,7 +505,7 @@
   <url><loc>https://wfsim.app/weapons/Spinnerex</loc></url>
   <url><loc>https://wfsim.app/weapons/Spira</loc></url>
   <url><loc>https://wfsim.app/weapons/Spira_Prime</loc></url>
-  <url><loc>https://wfsim.app/weapons/Sporelacer</loc></url>
+  <url><loc>https://wfsim.app/weapons/sporelacer_primary</loc></url>
   <url><loc>https://wfsim.app/weapons/sporelacer_secondary</loc></url>
   <url><loc>https://wfsim.app/weapons/Sporothrix</loc></url>
   <url><loc>https://wfsim.app/weapons/Stahlta</loc></url>
@@ -571,7 +571,7 @@
   <url><loc>https://wfsim.app/weapons/Tigris_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Tipedo</loc></url>
   <url><loc>https://wfsim.app/weapons/Tipedo_Prime</loc></url>
-  <url><loc>https://wfsim.app/weapons/Tombfinger</loc></url>
+  <url><loc>https://wfsim.app/weapons/tombfinger_primary</loc></url>
   <url><loc>https://wfsim.app/weapons/tombfinger_secondary</loc></url>
   <url><loc>https://wfsim.app/weapons/Tonbo</loc></url>
   <url><loc>https://wfsim.app/weapons/Tonkkatt</loc></url>
@@ -610,7 +610,7 @@
   <url><loc>https://wfsim.app/weapons/Verglas</loc></url>
   <url><loc>https://wfsim.app/weapons/Verglas_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Vericres</loc></url>
-  <url><loc>https://wfsim.app/weapons/Vermisplicer</loc></url>
+  <url><loc>https://wfsim.app/weapons/vermisplicer_primary</loc></url>
   <url><loc>https://wfsim.app/weapons/vermisplicer_secondary</loc></url>
   <url><loc>https://wfsim.app/weapons/Vesper_77</loc></url>
   <url><loc>https://wfsim.app/weapons/Vinquibus</loc></url>

@@ -293,7 +293,7 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Burston Prime](https://wfsim.app/weapons/Burston_Prime.md): Rifle · Primary · Mastery Rank 12
 - [Buzlok](https://wfsim.app/weapons/Buzlok.md): Rifle · Primary · Mastery Rank 11
 - [Carmine Penta](https://wfsim.app/weapons/Carmine_Penta.md): Launcher · Primary · Mastery Rank 6
-- [Catchmoon](https://wfsim.app/weapons/Catchmoon.md): Shotgun · Primary · Mastery Rank 0
+- [Catchmoon](https://wfsim.app/weapons/catchmoon_primary.md): Shotgun · Primary · Mastery Rank 0
 - [Cedo](https://wfsim.app/weapons/Cedo.md): Shotgun · Primary · Mastery Rank 8
 - [Cedo Prime](https://wfsim.app/weapons/Cedo_Prime.md): Shotgun · Primary · Mastery Rank 15
 - [Cernos](https://wfsim.app/weapons/Cernos.md): Bow · Primary · Mastery Rank 6
@@ -323,7 +323,7 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Flux Rifle](https://wfsim.app/weapons/Flux_Rifle.md): Rifle · Primary · Mastery Rank 6
 - [Fulmin](https://wfsim.app/weapons/Fulmin.md): Rifle · Primary · Mastery Rank 8
 - [Fulmin Prime](https://wfsim.app/weapons/Fulmin_Prime.md): Rifle · Primary · Mastery Rank 12
-- [Gaze](https://wfsim.app/weapons/Gaze.md): Rifle · Primary · Mastery Rank 0
+- [Gaze](https://wfsim.app/weapons/gaze_primary.md): Rifle · Primary · Mastery Rank 0
 - [Glaxion](https://wfsim.app/weapons/Glaxion.md): Rifle · Primary · Mastery Rank 8
 - [Glaxion Vandal](https://wfsim.app/weapons/Glaxion_Vandal.md): Rifle · Primary · Mastery Rank 12
 - [Gorgon](https://wfsim.app/weapons/Gorgon.md): Rifle · Primary · Mastery Rank 3
@@ -398,7 +398,7 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Quartakk](https://wfsim.app/weapons/Quartakk.md): Rifle · Primary · Mastery Rank 10
 - [Quellor](https://wfsim.app/weapons/Quellor.md): Rifle · Primary · Mastery Rank 12
 - [Rakta Cernos](https://wfsim.app/weapons/Rakta_Cernos.md): Bow · Primary · Mastery Rank 12
-- [Rattleguts](https://wfsim.app/weapons/Rattleguts.md): Rifle · Primary · Mastery Rank 0
+- [Rattleguts](https://wfsim.app/weapons/rattleguts_primary.md): Rifle · Primary · Mastery Rank 0
 - [Rauta](https://wfsim.app/weapons/Rauta.md): Shotgun · Primary · Mastery Rank 8
 - [Reconifex](https://wfsim.app/weapons/Reconifex.md): Rifle · Primary · Mastery Rank 14
 - [Rubico](https://wfsim.app/weapons/Rubico.md): Sniper · Primary · Mastery Rank 6
@@ -414,7 +414,7 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Sobek](https://wfsim.app/weapons/Sobek.md): Shotgun · Primary · Mastery Rank 7
 - [Soma](https://wfsim.app/weapons/Soma.md): Rifle · Primary · Mastery Rank 6
 - [Soma Prime](https://wfsim.app/weapons/Soma_Prime.md): Rifle · Primary · Mastery Rank 7
-- [Sporelacer](https://wfsim.app/weapons/Sporelacer.md): Shotgun · Primary · Mastery Rank 0
+- [Sporelacer](https://wfsim.app/weapons/sporelacer_primary.md): Shotgun · Primary · Mastery Rank 0
 - [Sporothrix](https://wfsim.app/weapons/Sporothrix.md): Sniper · Primary · Mastery Rank 13
 - [Stahlta](https://wfsim.app/weapons/Stahlta.md): Rifle · Primary · Mastery Rank 10
 - [Steflos](https://wfsim.app/weapons/Steflos.md): Shotgun · Primary · Mastery Rank 8
@@ -446,7 +446,7 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Tiberon Prime](https://wfsim.app/weapons/Tiberon_Prime.md): Rifle · Primary · Mastery Rank 14
 - [Tigris](https://wfsim.app/weapons/Tigris.md): Shotgun · Primary · Mastery Rank 7
 - [Tigris Prime](https://wfsim.app/weapons/Tigris_Prime.md): Shotgun · Primary · Mastery Rank 13
-- [Tombfinger](https://wfsim.app/weapons/Tombfinger.md): Rifle · Primary · Mastery Rank 0
+- [Tombfinger](https://wfsim.app/weapons/tombfinger_primary.md): Rifle · Primary · Mastery Rank 0
 - [Tonkor](https://wfsim.app/weapons/Tonkor.md): Launcher · Primary · Mastery Rank 5
 - [Torid](https://wfsim.app/weapons/Torid.md): Launcher · Primary · Mastery Rank 4
 - [Trumna](https://wfsim.app/weapons/Trumna.md): Rifle · Primary · Mastery Rank 13
@@ -456,7 +456,7 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Vectis](https://wfsim.app/weapons/Vectis.md): Sniper · Primary · Mastery Rank 2
 - [Vectis Prime](https://wfsim.app/weapons/Vectis_Prime.md): Sniper · Primary · Mastery Rank 14
 - [Veldt](https://wfsim.app/weapons/Veldt.md): Rifle · Primary · Mastery Rank 8
-- [Vermisplicer](https://wfsim.app/weapons/Vermisplicer.md): Rifle · Primary · Mastery Rank 0
+- [Vermisplicer](https://wfsim.app/weapons/vermisplicer_primary.md): Rifle · Primary · Mastery Rank 0
 - [Vinquibus](https://wfsim.app/weapons/Vinquibus.md): Rifle · Primary · Mastery Rank 14
 - [Vulkar](https://wfsim.app/weapons/Vulkar.md): Sniper · Primary · Mastery Rank 3
 - [Vulkar Wraith](https://wfsim.app/weapons/Vulkar_Wraith.md): Sniper · Primary · Mastery Rank 7

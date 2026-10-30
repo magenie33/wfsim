@@ -4,7 +4,7 @@ Chinese name: 葬铭
 
 Pistol · Secondary · Mastery Rank 8. 300 base damage (impact 120, puncture 45, slash 135), 48% crit chance, 2.6x crit multiplier, 4% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-29
+## Best riven-free build on the WFSim board, as of 2026-10-30
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

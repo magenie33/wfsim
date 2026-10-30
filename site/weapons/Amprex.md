@@ -4,7 +4,7 @@ Chinese name: 安培克斯
 
 Rifle · Primary · Mastery Rank 10. 22 base damage (electricity 22), 32% crit chance, 2.2x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-29
+## Best riven-free build on the WFSim board, as of 2026-10-30
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

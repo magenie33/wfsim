@@ -4,7 +4,7 @@ Chinese name: 响胆
 
 Rifle · Primary · Mastery Rank 0. 37 base damage (impact 6.5, puncture 9.5, radiation 13.5, slash 7.5), 19% crit chance, 2x crit multiplier, 19% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-29
+## Best riven-free build on the WFSim board, as of 2026-10-30
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -19,5 +19,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## In WFSim
 
-- Build, simulate and optimize it: https://wfsim.app/weapons/Rattleguts
+- Build, simulate and optimize it: https://wfsim.app/weapons/rattleguts_primary
 - Every published board row, as JSON: https://wfsim.app/board/rattleguts_primary.json

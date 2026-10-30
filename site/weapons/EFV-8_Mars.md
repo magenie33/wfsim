@@ -4,7 +4,7 @@ Chinese name: 艾弗旺-8 火星
 
 Pistol · Secondary · Mastery Rank 14. 75 base damage (impact 20, puncture 55), 27% crit chance, 2.1x crit multiplier, 17% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-29
+## Best riven-free build on the WFSim board, as of 2026-10-30
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

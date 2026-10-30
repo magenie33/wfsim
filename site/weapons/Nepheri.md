@@ -4,7 +4,7 @@ Chinese name: 赤炎流星
 
 Dual Daggers · Melee · Mastery Rank 13. 261 base damage (heat 92, impact 21, puncture 63, slash 85), 21% crit chance, 2.3x crit multiplier, 33% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-29
+## Best riven-free build on the WFSim board, as of 2026-10-30
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

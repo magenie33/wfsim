@@ -4,7 +4,7 @@ Chinese name: 病变
 
 Polearm · Melee · Mastery Rank 9. 237 base damage (impact 47.4, puncture 11.85, slash 177.75), 15% crit chance, 2x crit multiplier, 37% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-29
+## Best riven-free build on the WFSim board, as of 2026-10-30
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

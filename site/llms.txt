@@ -106,7 +106,7 @@
 - [Cassowar](https://wfsim.app/weapons/Cassowar.md): Polearm · Melee · Mastery Rank 5
 - [Castanas](https://wfsim.app/weapons/Castanas.md): Pistol · Secondary · Mastery Rank 3
 - [Catabolyst](https://wfsim.app/weapons/Catabolyst.md): Pistol · Secondary · Mastery Rank 11
-- [Catchmoon](https://wfsim.app/weapons/Catchmoon.md): Shotgun · Primary · Mastery Rank 0
+- [Catchmoon](https://wfsim.app/weapons/catchmoon_primary.md): Shotgun · Primary · Mastery Rank 0
 - [Catchmoon](https://wfsim.app/weapons/catchmoon_secondary.md): Pistol · Secondary · Mastery Rank 0
 - [Caustacyst](https://wfsim.app/weapons/Caustacyst.md): Scythe · Melee · Mastery Rank 7
 - [Cedo](https://wfsim.app/weapons/Cedo.md): Shotgun · Primary · Mastery Rank 8
@@ -225,7 +225,7 @@
 - [Garuda Prime Talons](https://wfsim.app/weapons/Garuda_Prime_Talons.md): Claws · Exalted · Mastery Rank 1
 - [Garuda Talons](https://wfsim.app/weapons/Garuda_Talons.md): Claws · Exalted · Mastery Rank 1
 - [Gazal Machete](https://wfsim.app/weapons/Gazal_Machete.md): Machete · Melee · Mastery Rank 5
-- [Gaze](https://wfsim.app/weapons/Gaze.md): Rifle · Primary · Mastery Rank 0
+- [Gaze](https://wfsim.app/weapons/gaze_primary.md): Rifle · Primary · Mastery Rank 0
 - [Gaze](https://wfsim.app/weapons/gaze_secondary.md): Pistol · Secondary · Mastery Rank 0
 - [Ghoulsaw](https://wfsim.app/weapons/Ghoulsaw.md): Assault Saw · Melee · Mastery Rank 7
 - [Glaive](https://wfsim.app/weapons/Glaive.md): Glaive · Melee · Mastery Rank 1
@@ -447,7 +447,7 @@
 - [Rakta Ballistica](https://wfsim.app/weapons/Rakta_Ballistica.md): Pistol · Secondary · Mastery Rank 6
 - [Rakta Cernos](https://wfsim.app/weapons/Rakta_Cernos.md): Bow · Primary · Mastery Rank 12
 - [Rakta Dark Dagger](https://wfsim.app/weapons/Rakta_Dark_Dagger.md): Dagger · Melee · Mastery Rank 8
-- [Rattleguts](https://wfsim.app/weapons/Rattleguts.md): Rifle · Primary · Mastery Rank 0
+- [Rattleguts](https://wfsim.app/weapons/rattleguts_primary.md): Rifle · Primary · Mastery Rank 0
 - [Rattleguts](https://wfsim.app/weapons/rattleguts_secondary.md): Pistol · Secondary · Mastery Rank 0
 - [Rauta](https://wfsim.app/weapons/Rauta.md): Shotgun · Primary · Mastery Rank 8
 - [Reaper Prime](https://wfsim.app/weapons/Reaper_Prime.md): Scythe · Melee · Mastery Rank 10
@@ -506,7 +506,7 @@
 - [Spinnerex](https://wfsim.app/weapons/Spinnerex.md): Whip · Melee · Mastery Rank 12
 - [Spira](https://wfsim.app/weapons/Spira.md): Pistol · Secondary · Mastery Rank 8
 - [Spira Prime](https://wfsim.app/weapons/Spira_Prime.md): Pistol · Secondary · Mastery Rank 10
-- [Sporelacer](https://wfsim.app/weapons/Sporelacer.md): Shotgun · Primary · Mastery Rank 0
+- [Sporelacer](https://wfsim.app/weapons/sporelacer_primary.md): Shotgun · Primary · Mastery Rank 0
 - [Sporelacer](https://wfsim.app/weapons/sporelacer_secondary.md): Pistol · Secondary · Mastery Rank 0
 - [Sporothrix](https://wfsim.app/weapons/Sporothrix.md): Sniper · Primary · Mastery Rank 13
 - [Stahlta](https://wfsim.app/weapons/Stahlta.md): Rifle · Primary · Mastery Rank 10
@@ -572,7 +572,7 @@
 - [Tigris Prime](https://wfsim.app/weapons/Tigris_Prime.md): Shotgun · Primary · Mastery Rank 13
 - [Tipedo](https://wfsim.app/weapons/Tipedo.md): Staff · Melee · Mastery Rank 3
 - [Tipedo Prime](https://wfsim.app/weapons/Tipedo_Prime.md): Staff · Melee · Mastery Rank 10
-- [Tombfinger](https://wfsim.app/weapons/Tombfinger.md): Rifle · Primary · Mastery Rank 0
+- [Tombfinger](https://wfsim.app/weapons/tombfinger_primary.md): Rifle · Primary · Mastery Rank 0
 - [Tombfinger](https://wfsim.app/weapons/tombfinger_secondary.md): Pistol · Secondary · Mastery Rank 0
 - [Tonbo](https://wfsim.app/weapons/Tonbo.md): Polearm · Melee · Mastery Rank 3
 - [Tonkkatt](https://wfsim.app/weapons/Tonkkatt.md): Tonfa · Melee · Mastery Rank 9
@@ -611,7 +611,7 @@
 - [Verglas](https://wfsim.app/weapons/Verglas.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Verglas Prime](https://wfsim.app/weapons/Verglas_Prime.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Vericres](https://wfsim.app/weapons/Vericres.md): Warfan · Melee · Mastery Rank 8
-- [Vermisplicer](https://wfsim.app/weapons/Vermisplicer.md): Rifle · Primary · Mastery Rank 0
+- [Vermisplicer](https://wfsim.app/weapons/vermisplicer_primary.md): Rifle · Primary · Mastery Rank 0
 - [Vermisplicer](https://wfsim.app/weapons/vermisplicer_secondary.md): Pistol · Secondary · Mastery Rank 0
 - [Vesper 77](https://wfsim.app/weapons/Vesper_77.md): Pistol · Secondary · Mastery Rank 14
 - [Vinquibus](https://wfsim.app/weapons/Vinquibus.md): Rifle · Primary · Mastery Rank 14

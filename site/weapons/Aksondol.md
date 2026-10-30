@@ -2,7 +2,7 @@
 
 Dual Pistols · Secondary · Mastery Rank 14. 140 base damage (cold 70, puncture 70), 24% crit chance, 2.6x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-29
+## Best riven-free build on the WFSim board, as of 2026-10-30
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

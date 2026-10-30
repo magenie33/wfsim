@@ -4,7 +4,7 @@ Chinese name: 孢射
 
 Shotgun · Primary · Mastery Rank 0. 21 base damage (impact 21), 21% crit chance, 2x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-29
+## Best riven-free build on the WFSim board, as of 2026-10-30
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +25,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## In WFSim
 
-- Build, simulate and optimize it: https://wfsim.app/weapons/Sporelacer
+- Build, simulate and optimize it: https://wfsim.app/weapons/sporelacer_primary
 - Every published board row, as JSON: https://wfsim.app/board/sporelacer_primary.json

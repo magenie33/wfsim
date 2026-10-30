@@ -4,7 +4,7 @@ Chinese name: 席尔火枪
 
 Pistol · Secondary · Mastery Rank 6. 140 base damage (impact 44.8, puncture 16.8, slash 78.4), 8% crit chance, 2x crit multiplier, 26% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-29
+## Best riven-free build on the WFSim board, as of 2026-10-30
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

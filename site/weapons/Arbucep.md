@@ -4,7 +4,7 @@ Chinese name: 蕈菇
 
 Archgun · Archgun · Mastery Rank 0. 32 base damage x6 multishot (blast 32), 10% crit chance, 2.9x crit multiplier, 34.9% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-29
+## Best riven-free build on the WFSim board, as of 2026-10-30
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

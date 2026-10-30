@@ -4,7 +4,7 @@ Chinese name: 墓指
 
 Rifle · Primary · Mastery Rank 0. 48 base damage (impact 35, radiation 13), 24% crit chance, 2x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-29
+## Best riven-free build on the WFSim board, as of 2026-10-30
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -25,5 +25,5 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## In WFSim
 
-- Build, simulate and optimize it: https://wfsim.app/weapons/Tombfinger
+- Build, simulate and optimize it: https://wfsim.app/weapons/tombfinger_primary
 - Every published board row, as JSON: https://wfsim.app/board/tombfinger_primary.json
