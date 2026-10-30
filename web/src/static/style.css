@@ -95,7 +95,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 /* ON A PHONE THE RESULTS TAKE THE SCREEN'S WIDTH, under the bar, the way a
    phone's own search does: the box's own width left half the screen showing
    the page behind a list of names. The sticky topbar is what it hangs from. */
-@media (max-width:768px){
+@media (max-width:900px){
   .topbar-inner .wsearch{position:static}
   .wsearch-panel{top:calc(100% + 4px);left:8px;right:8px}
   .wsearch-panel .combo-menu{max-height:calc(100dvh - 120px)}
@@ -1863,7 +1863,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .tnav.sel{background:var(--line);color:var(--text);font-weight:600}
 
 /* ---- the topbar menu: one set of controls, two shapes ------------------
-   `display:contents` is the whole trick. Above 700px `.topmenu` and
+   `display:contents` is the whole trick. Above the compact breakpoint `.topmenu` and
    `.tblinks` are not boxes at all — their children ARE the bar's flex items,
    so the desktop row is the row that existed before the wrapper was added and
    nothing is duplicated. Which means `order:` has to be spelled out, because
@@ -1882,7 +1882,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 
 /* ---- the topbar overflow: `⋯` -----------------------------------------
    The bar carries what a reader ACTS on; everything else is one click away
-. Below 700px this whole thing is `display:contents` and
+. Below the compact breakpoint this whole thing is `display:contents` and
    its children flatten into the phone menu — one copy of every control at both
    widths, which is the same trick `.topmenu` plays one level up. */
 /* ---- ACCOUNTS (`17-account.js`, docs/ACCOUNTS.md) ----
@@ -2251,7 +2251,7 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 @keyframes cmbreathe{0%,100%{opacity:.25}50%{opacity:.7}}
 @media (prefers-reduced-motion:reduce){ .compute-mark .cm-arc{transition:none;animation:none} .compute-mark.cm-spin svg{animation:none} }
 
-@media (max-width:768px){
+@media (max-width:900px){
   /* Below here the wrapper becomes a real box, hanging off the bar. The
      anchor is the bar itself so the panel tracks the sticky header. */
   .topbar-inner{position:relative}
@@ -2429,7 +2429,7 @@ a.nrow{color:inherit;text-decoration:none}
 .nset{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 /* On a phone the panel hangs off the bar, as the menu does: off the bell, a
    panel wider than the space left of it runs off the screen. */
-@media (max-width:768px){
+@media (max-width:900px){
   .topbar-inner>.rbell{position:static}
   .rbell-panel{top:calc(100% + 8px);right:18px}
 }

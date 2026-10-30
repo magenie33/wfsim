@@ -94,7 +94,7 @@ for (const c of [CODE, "3102.4.5~~", "1eJyrVkrLz1eyUkpKLFKqBQAdegQp", "0W1sxLDJd
 
 served.length = 0;
 const page = await call(`/weapons/Dual_Toxocyst/s/${a.j.id}`);
-check("the short path serves the weapon's own page", page.status === 200 && served[0] === "/weapons/Dual_Toxocyst/builder",
+check("the short path serves the weapon's own page", page.status === 200 && served[0] === "/weapons/Dual_Toxocyst",
   `${page.status} ${served.join(",")}`);
 
 // THE PREVIEW: a chat reads the head, so the head must describe THIS build.

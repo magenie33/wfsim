@@ -374,7 +374,7 @@ const aimField = (w,state) => `<label class="check"><input type="checkbox" data-
 const zoomField = (w,state) => {
   const local = w.zoom_levels || [];
   if (local.length < 2 && !scenarioAll()) return "";
-  const levels = [...new Set((META.weapons || []).flatMap(weapon => weapon.zoom_levels || []))].sort((a,b) => a-b);
+  const levels = scenarioAll() ? (META.weapons || []).flatMap(weapon => weapon.zoom_levels || []) : local;
   const current = state.scope_zoom || 0;
   return `<label data-search="scope sniper zoom">${escHtml(tr("Zoom"))}<select data-k="scope_zoom" data-num="1"><option value="0"${current === 0 ? " selected" : ""}>${escHtml(tr("Highest zoom"))}</option>`
     + [...new Set([...levels,...(current ? [current] : [])])].sort((a,b) => a-b).map(value => `<option value="${value}"${value === current ? " selected" : ""}>${value.toFixed(1)}x</option>`).join("")

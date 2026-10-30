@@ -134,7 +134,7 @@
       <select id="weapon" hidden></select>
       <!-- THE PHONE'S MENU. Navigation and settings after this line are ONE
            element on a phone and the same desktop row at wider sizes:
-           `.topmenu`/`.tblinks` are `display:contents` above 768px, so their
+           `.topmenu`/`.tblinks` are `display:contents` above 900px, so their
            children are direct flex items of the bar and the desktop row is
            byte-for-byte the row that was here before. Below it they become a
            real box and this button opens it.
@@ -772,6 +772,7 @@
           </div>
           <div class="fold sect scenario-section" id="scenario-buffs-section" data-fold="sim-buffs">
             <h3 class="sim-h fold-h"><span data-i18n>4 · Starting buffs</span><button type="button" id="sim-buffs-all" class="ghost-btn small" data-view-only></button></h3>
+            <p class="sim-hint" data-i18n>the stacks the run STARTS with — the fight still grants and decays them on their own triggers</p>
             <div id="sim-buffs"></div>
           </div>
           <div class="fold sect scenario-section" id="scenario-rules-section" data-fold="sim-limits">
