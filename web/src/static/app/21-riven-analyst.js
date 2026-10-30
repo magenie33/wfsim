@@ -19,9 +19,10 @@ const raShown = (r) => String(r.shown != null ? r.shown : (r.score || 0).toFixed
 /// A board riven's stats WITH the roll each was stored at — the shape alone is
 /// not the card the score was measured on.
 const raRolls = (rv) => {
-  const roll = (i) => ((rv.rolls || [])[i] != null ? ` ×${Number(rv.rolls[i]).toFixed(2)}` : "");
-  return rv.bonuses.map((id, i) => `+${raStat(id)}${roll(i)}`)
-    .concat(rv.malus ? [`−${raStat(rv.malus)}${roll(rv.bonuses.length)}`] : []).join(" · ");
+  const rows = rv.bonuses.map((id, i) => ({ id, slot: String(i), roll: rv.rolls?.[i] }))
+    .concat(rv.malus ? [{ id: rv.malus, slot: "malus", roll: rv.rolls?.[rv.bonuses.length] }] : []);
+  return rivenDisplayOrder(rivenPoolAll(), rows).map((s) => `${s.slot === "malus" ? "−" : "+"}${raStat(s.id)}`
+    + (s.roll == null ? "" : ` ×${Number(Number(s.roll).toFixed(3))}`)).join(" · ");
 };
 
 /// A BOARD ROW AS THE SIMULATOR DRAWS A BUILD, and the way into the Builder.

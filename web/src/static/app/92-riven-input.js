@@ -4,6 +4,13 @@
 const rivenStatNameEn = (s) =>
   s.text.replace("|val|", "").replace(/^\s*[%s]\s*/, "").replace(/\s+/g, " ").trim();
 
+/// Display spliced bonuses first and the malus last without changing stored slots or rolls.
+function rivenDisplayOrder(pool, rows) {
+  const spliced = new Set(pool.filter((s) => s.spliced).map((s) => s.id));
+  const group = (s) => s.slot === "malus" || s.malus === true ? 2 : spliced.has(s.id) ? 0 : 1;
+  return rows.slice().sort((a, b) => group(a) - group(b));
+}
+
 // ---- reading a riven off a screenshot ---------------------------------------
 //
 // The OCR's lines in, a riven out: which stat each line names and the number it

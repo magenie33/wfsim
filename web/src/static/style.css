@@ -387,6 +387,8 @@ body.on-wbench [data-module="builder"]{display:none}
    of its own: each section's heading on the left, its chips on the right. */
 .fd-card{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 10px;align-items:center}
 .fd-card .sb-h{margin:0;letter-spacing:.04em}
+.fd-card [data-riven-card]{display:contents}
+.fd-card [data-riven-card]>.sb-h{max-width:160px;overflow-wrap:anywhere}
 .fd-card .sb-chips{gap:4px}
 .fd-card .sb-chip{padding:1px 7px 1px 3px;gap:4px;font-size:11.5px}
 .fd-card .sb-chip img{width:20px;height:20px}

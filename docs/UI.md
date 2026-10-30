@@ -393,9 +393,10 @@ and "why" on request. It is the board's builds as a LIST, best first, scoped by
 ruler, mode and riven and filtered by what a build CONTAINS — a mod, an arcane,
 an evolution, a part, an element, a riven stat, each "must have" or "I don't
 have". Mode defaults to "All": every mode in one
-list by score, each row naming its mode beside a rank that is still its own
-mode's. It lists the top five of a scope until asked for more (twenty at a
-time, folded back in one click). It holds a query and never a selection. "Open"
+list by score. Each row's build card shows Mode above Mods, in Builder order;
+its rank remains its own mode's. It lists the top five of a scope until asked
+for more (twenty at a time, folded back in one click). It holds a query and
+never a selection. "Open"
 puts the build in the build bar as a read-only chip and makes it current; THE
 BAR IS THE ONE PLACE THAT SAYS WHICH BUILD IS OPEN — its selected chip names the
 build and a lock marks a board row, so nothing else on the page repeats it.
@@ -430,7 +431,10 @@ full names — for the simulator's "what is being tested" block and for every
 finder row alike, so the page has one picture of a build. THE MODS RUN IN THE
 ORDER THE BUILD WAS SAVED, the exilus last: elements combine in slot order, so
 a row sorted any other way can read as another element build. The riven rides
-in the mods as its stats.
+in the mods with its own section below: official stat text comes from
+`/api/riven`, with each actual roll and its permitted band. Shared riven displays
+put spliced bonuses first and the malus last, keeping each stat's stored slot
+and roll intact.
 
 **A TIE IS ONE ROW.** Builds on one exact score share a place (BOARD.md §"A
 place is a score"), and the finder lists a place once (`tieGroups`): its

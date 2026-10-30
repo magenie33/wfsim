@@ -141,9 +141,13 @@ function rivenCardGot(w, sp) {
   const key = JSON.stringify([w.id, sp]);
   let got = rivenCardStats.get(key);
   if (got) return got;
-  const rows = (sp.bonuses || []).concat(sp.malus ? [sp.malus] : []).filter((x) => x && x.id);
-  const stats = rows.map((x, i) => ({ label: (i < (sp.bonuses || []).length ? "+" : "−")
-    + (rivenStat(x.id) ? rivenStatName(rivenStat(x.id)) : x.id), roll: x.roll, malus: i >= (sp.bonuses || []).length }));
+  const pool = (META.riven_stats || {})[w.riven_class || w.mod_class] || [];
+  const rows = (sp.bonuses || []).map((x, i) => ({ ...x, slot: String(i) }))
+    .concat(sp.malus ? [{ ...sp.malus, slot: "malus" }] : []).filter((x) => x.id);
+  const stats = rivenDisplayOrder(pool, rows).map((x) => {
+    const def = pool.find((s) => s.id === x.id);
+    return { label: def ? rivenStatName(def) : x.id, roll: x.roll, malus: x.slot === "malus" };
+  });
   got = { stats, generated: "" };
   rivenCardStats.set(key, got);
   const ask = api("/api/riven", { weapon: w.id, ...sp }).then((a) => {

@@ -117,6 +117,8 @@ const ranked = await evaluate(`(async () => {
   const at = slots.findIndex((s) => s.mod && String(s.mod).startsWith('riven:'));
   if (at < 0) return null;
   const cell = () => document.querySelectorAll('#mod-slots > .slot')[at];
+  // A published build's first click creates an editable copy.
+  if (officialBuildActive()) { cell().click(); await sleep(1200); }
   const nums = () => Array.from(cell().querySelectorAll('.me > div'))
     .map((d) => parseFloat((d.textContent.match(/[0-9.]+/) || [])[0])).filter((x) => !isNaN(x));
   const before = nums();
@@ -175,5 +177,41 @@ check(
   boot.drew === 8,
   `drew ${boot.drew}`,
 );
+
+const display = await evaluate(`(async () => {
+  if (typeof rivenDisplayOrder !== 'function') return {};
+  const spec = { bonuses: [{ id: 'critical_damage', roll: 0.93 }, { id: 'weak_point_damage', roll: 1.066 },
+    { id: 'multishot', roll: 1.04 }], malus: { id: 'status_duration', roll: 1.05 }, rank: 8 };
+  const before = JSON.stringify(spec), answer = await api('/api/riven', { weapon: 'furis', ...spec });
+  const box = document.createElement('div');
+  box.innerHTML = headlessRivenSection(pageSay(), weaponInfo('furis'), { name: '', spec }, headlessRivenAnswer(pageSay(), answer));
+  const ids = ['weak_point_damage', 'critical_damage', 'multishot', 'status_duration'];
+  const labels = [...box.querySelectorAll('.sb-chip > span:first-child')].map(el => el.textContent);
+  const rolls = [...box.querySelectorAll('.sb-chip .rk')].map(el => Number(el.textContent.slice(1)));
+  const out = {
+    official: JSON.stringify(labels) === JSON.stringify(ids.map(id => tf(answer.stats.find(s => s.id === id).text))),
+    rolls: JSON.stringify(rolls) === JSON.stringify([1.066, 0.93, 1.04, 1.05]),
+    band: box.querySelector('.sb-h').textContent.includes(rivenRules().roll_min + '–' + rivenRules().roll_max),
+    malus: box.querySelector('.sb-chip:last-child').classList.contains('neg'),
+  };
+  const oldWeapon = $('weapon').value, oldRiven = riven, oldHtml = $('riven-stats').innerHTML;
+  try {
+    $('weapon').value = 'furis'; riven = spec; renderRivenStats();
+    out.editor = document.querySelector('#riven-stats .rv-pick').dataset.slot === '1';
+    const summary = raRolls({ bonuses: spec.bonuses.map(s => s.id), malus: spec.malus.id,
+      rolls: spec.bonuses.map(s => s.roll).concat(spec.malus.roll) });
+    out.summary = summary.startsWith('+' + raStat('weak_point_damage') + ' ×1.066')
+      && summary.endsWith('−' + raStat('status_duration') + ' ×1.05');
+    out.unchanged = JSON.stringify(spec) === before;
+  } finally {
+    $('weapon').value = oldWeapon; riven = oldRiven;
+    if (riven) renderRivenStats(); else $('riven-stats').innerHTML = oldHtml;
+  }
+  return out;
+})()`);
+check('riven text uses the official card lines with spliced stats first', display.official === true);
+check('each stat keeps its actual roll, including an interior malus roll', display.rolls === true);
+check('the riven card shows the permitted roll band and marks its malus', display.band && display.malus);
+check('the editor and analyst put spliced stats first while retaining slots and stored values', display.editor && display.summary && display.unchanged);
 
 await app.finish("an equipped riven prints its roll and links to the mechanic");
