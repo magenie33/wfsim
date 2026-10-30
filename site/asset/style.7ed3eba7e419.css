@@ -82,7 +82,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 .topbar{border-bottom:1px solid var(--line);background:var(--surface);position:sticky;top:0;z-index:20}
 /* The shell shares ONE content width (the widest page, home's 1060px) so
    header content aligns with the page below it. */
-.topbar-inner{max-width:1060px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:12px 18px}
+.topbar-inner{max-width:1060px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:8px 18px}
 .wsearch{position:relative;flex:1 1 auto;max-width:430px}
 .wsearch input{width:100%;padding:6px 11px;font:inherit;font-size:13px;background:var(--plane);border:1px solid var(--line);border-radius:8px;color:var(--text)}
 .wsearch input:focus{outline:none;border-color:var(--accent)}
@@ -95,7 +95,7 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
 /* ON A PHONE THE RESULTS TAKE THE SCREEN'S WIDTH, under the bar, the way a
    phone's own search does: the box's own width left half the screen showing
    the page behind a list of names. The sticky topbar is what it hangs from. */
-@media (max-width:768px){
+@media (max-width:900px){
   .topbar-inner .wsearch{position:static}
   .wsearch-panel{top:calc(100% + 4px);left:8px;right:8px}
   .wsearch-panel .combo-menu{max-height:calc(100dvh - 120px)}
@@ -107,29 +107,12 @@ body{background:var(--plane);color:var(--text);font-family:system-ui,"Segoe UI",
   .wsearch-panel .combo-menu{max-height:calc(100dvh - 160px)}
 }
 .brand{font-weight:800;font-size:20px;letter-spacing:-.01em}.brand span{color:var(--gold)}
-/* Module tabs under the weapon strip: Builder | Optimizer. The sim is
-   NOT a tab — it sits at the bottom of the builder as the build's test
-   bench. body.on-simulator / body.on-optimizer swap which module's
-   sections show (Builder | Simulator | Optimizer). */
-/* FIVE TABS, AND THEY MAY NOT PUSH THE DOCUMENT. `display:flex` with no wrap
-   let them overflow in normal flow, so the DOCUMENT grew to their width and
-   the browser fitted that into the screen: at 360px the English strip measured
-   474px, every page shrank to 76%, and the right quarter — which is where a
-   mod card keeps its ⋯ — went off the edge. It reads as "the mod area is too
-   big", because the mod cards are the widest thing being cut; the exilus slot
-   looks fine beside them only because its right-hand side is empty.
-   ONLY ENGLISH SHOWED IT. The Chinese labels are short enough to fit at every
-   phone width, which is why eight weapons swept clean in zh and every one of
-   them overflowed in en. `wrap` is the GUARANTEE — a sixth tab, a longer
-   translation or a narrower phone costs a second row rather than the page —
-   and the tighter padding below is what usually keeps it to one. */
-.module-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:16px 0 14px;border-bottom:1px solid var(--line)}
-.mtab{display:inline-flex;align-items:center;line-height:1;padding:9px 16px;font-size:13.5px;color:var(--muted);text-decoration:none;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0}
+/* Page tabs stay in one compact sticky row; overflow scrolls inside the strip. */
+.module-tabs{display:flex;flex-wrap:nowrap;align-items:stretch;gap:4px;margin:16px 0 14px;border-bottom:1px solid var(--line);position:sticky;top:var(--shell-header-height,50px);z-index:19;height:34px;box-sizing:border-box;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;background:var(--plane)}
+.module-tabs::-webkit-scrollbar{display:none}
+.mtab{display:inline-flex;flex:none;align-items:center;white-space:nowrap;line-height:1;padding:7px 12px;font-size:13px;color:var(--muted);text-decoration:none;border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0}
 .mtab:hover{color:var(--text)}
 .mtab.sel{color:var(--text);font-weight:600;border-color:var(--line);background:var(--panel2);position:relative;top:1px}
-/* Measured at 360px: 16px of side padding puts the five English labels at
-   474px, 9px puts them at 366 — one row on all but the narrowest phone, and
-   `wrap` above catches the rest. */
 @media(max-width:520px){.mtab{padding:8px 9px;font-size:12.5px}.module-tabs{gap:2px}}
 
 /* EVERY BLOCK DECLARES WHOSE IT IS, and the rules below are DERIVED from that
@@ -150,13 +133,14 @@ body:not(.on-rivens) [data-module="rivens"],
 body:not(.on-ranalyst) [data-module="riven-analyst"],
 body:not(.on-enemies) [data-module="enemies"],
 body:not(.on-wbench) [data-module="benchmark"],
+body:not(.on-build-library) [data-module="build-library"],
 body:not(.on-simulator) [data-module="simulator"]{display:none}
 body.on-optimizer [data-module="builder"],
 body.on-simulator [data-module="builder"],
 body.on-rivens [data-module="builder"],
 body.on-ranalyst [data-module="builder"],
 body.on-enemies [data-module="builder"],
-body.on-wbench [data-module="builder"]{display:none}
+body.on-wbench [data-module="builder"],body.on-build-library [data-module="builder"]{display:none}
 /* THE SIMULATOR'S BLOCKS, and `#wfbuff-block` is one of them: a Warframe buff
    is not part of the weapon. It is something done TO this
    weapon for a while, which is the fight's business — the builder answers
@@ -225,7 +209,7 @@ body.on-wbench [data-module="builder"]{display:none}
 .on-wbench #forma-block{display:none}
 /* The builder's furniture that is not a `.block`: its preset bar and the quick
    calc travel with the blocks the other modules hide. */
-.on-optimizer #preset-bar-builder-builds,.on-optimizer #quick-calc{display:none}
+.on-optimizer #preset-bar-builder-builds{display:none}
 /* The RIVENS tab is its own bench: the builder's blocks step aside, the same
    way they do for the other two modules. */
 .on-ranalyst #preset-bar-builder-builds,.on-ranalyst #quick-calc,.on-ranalyst #mode-block,.on-ranalyst #mod-block,.on-ranalyst #arcane-block,.on-ranalyst #evo-block,.on-ranalyst #element-block,.on-ranalyst #stats-block,
@@ -312,7 +296,6 @@ body.on-wbench [data-module="builder"]{display:none}
    is not the builder.
    NOT hidden on the optimizer, which still reads `mode` off this control and
    has no scope axis of its own for it yet. */
-.on-simulator #quick-calc{display:none}
 
 /* Preset bar above the Mods block: chips CRUD in place. */
 .preset-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 12px;padding:8px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
@@ -322,7 +305,7 @@ body.on-wbench [data-module="builder"]{display:none}
 /* THE BUILD FINDER — a table of the board's builds. It holds a QUERY and never a
    selection, so it carries no gold edge and no "selected" chip: what is open is
    the build bar's to say. */
-.finder{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:0 0 12px;--req:var(--s7)}
+.finder{--req:var(--s7);overflow-anchor:none}
 .finder[hidden]{display:none}
 .fd-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line)}
 .fd-title{margin:0;font-weight:700;font-size:13.5px;white-space:nowrap}
@@ -387,6 +370,7 @@ body.on-wbench [data-module="builder"]{display:none}
    of its own: each section's heading on the left, its chips on the right. */
 .fd-card{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 10px;align-items:center}
 .fd-card .sb-h{margin:0;letter-spacing:.04em}
+.fd-card [data-riven-card]{display:contents}
 .fd-card .sb-chips{gap:4px}
 .fd-card .sb-chip{padding:1px 7px 1px 3px;gap:4px;font-size:11.5px}
 .fd-card .sb-chip img{width:20px;height:20px}
@@ -439,12 +423,24 @@ body.on-wbench [data-module="builder"]{display:none}
 .fd-main tr.fr.mem td:first-child{box-shadow:inset 3px 0 0 color-mix(in srgb,var(--gold) 55%,transparent)}
 .fd-ov{padding:8px 12px;border-bottom:1px solid var(--line)}
 .fd-ov>.fold-h{margin:0;font-size:12.5px}
-.fd-ov-body{display:grid;gap:10px;padding-top:8px}
-.fd-ov-g h4{margin:0 0 4px;font-size:11px;color:var(--muted);font-weight:600;display:flex;gap:10px}
+.fd-ov-body{display:grid;gap:16px;padding-top:14px}
+.fd-ov-g h4{margin:0 0 8px;font-size:12px;color:var(--text-2);font-weight:600;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:baseline}
 .fd-ov-g h4 small{font-weight:400}
-.fd-ov .fd-use{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:6px}
+.fd-ov .fd-use{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 @media (max-width:640px){.fd-ov .fd-use{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.fd-ov-u{grid-template-columns:1fr 34px 42px}
+.fd-ov-u{grid-template-columns:44px minmax(0,1fr) 14px;grid-template-rows:1fr auto;gap:4px 8px;height:84px;padding:9px;border-color:var(--line);border-radius:9px;background:var(--panel3);align-items:start}
+.fd-ov-u .fd-ov-media{grid-row:1/3;display:flex;align-items:center;justify-content:center;width:44px;height:62px;font-size:10px;color:var(--muted)}
+.fd-ov-media img{width:44px;height:56px;object-fit:contain}
+.fd-ov-u .fd-ov-name{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:17px;max-height:34px}
+.fd-ov-state{width:14px;text-align:center;color:var(--req)}
+.fd-ov-u .fd-ov-meta{grid-column:2/4;display:flex;justify-content:space-between;gap:6px;color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums}
+.fd-ov-count b{font-weight:600;color:var(--text-2)}
+.fd-ov-u.req{background:color-mix(in srgb,var(--req) 8%,var(--surface))}
+.fd-ov-u.exc{background:color-mix(in srgb,var(--critical) 6%,var(--surface));opacity:1}
+.fd-ov-u.exc .fd-ov-state{color:var(--critical)}
+.fd-ov-u.exc .fd-ov-name{text-decoration:line-through;color:var(--muted)}
+.fd-ov-u.exc span:first-of-type{text-decoration:none}
+@media (max-width:480px){.fd-ov-u{grid-template-columns:32px minmax(0,1fr) 12px;padding:7px;column-gap:5px;height:90px}.fd-ov-u .fd-ov-media,.fd-ov-media img{width:32px}}
 .fd-refbar{padding:7px 12px;font-size:12px;border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--accent) 7%,var(--surface))}
 .fd-refbar.off{background:transparent;color:var(--muted)}
 .fd-refbar button,.fd-refbtn{height:24px;padding:0 9px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--text-2);cursor:pointer;font:inherit;font-size:12px;white-space:nowrap;margin-left:6px}
@@ -1867,7 +1863,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 .tnav.sel{background:var(--line);color:var(--text);font-weight:600}
 
 /* ---- the topbar menu: one set of controls, two shapes ------------------
-   `display:contents` is the whole trick. Above 700px `.topmenu` and
+   `display:contents` is the whole trick. Above the compact breakpoint `.topmenu` and
    `.tblinks` are not boxes at all — their children ARE the bar's flex items,
    so the desktop row is the row that existed before the wrapper was added and
    nothing is duplicated. Which means `order:` has to be spelled out, because
@@ -1886,7 +1882,7 @@ span.warn{color:var(--critical);font-size:11px;align-self:center}
 
 /* ---- the topbar overflow: `⋯` -----------------------------------------
    The bar carries what a reader ACTS on; everything else is one click away
-. Below 700px this whole thing is `display:contents` and
+. Below the compact breakpoint this whole thing is `display:contents` and
    its children flatten into the phone menu — one copy of every control at both
    widths, which is the same trick `.topmenu` plays one level up. */
 /* ---- ACCOUNTS (`17-account.js`, docs/ACCOUNTS.md) ----
@@ -2255,7 +2251,7 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 @keyframes cmbreathe{0%,100%{opacity:.25}50%{opacity:.7}}
 @media (prefers-reduced-motion:reduce){ .compute-mark .cm-arc{transition:none;animation:none} .compute-mark.cm-spin svg{animation:none} }
 
-@media (max-width:768px){
+@media (max-width:900px){
   /* Below here the wrapper becomes a real box, hanging off the bar. The
      anchor is the bar itself so the panel tracks the sticky header. */
   .topbar-inner{position:relative}
@@ -2358,11 +2354,6 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .brow .brank{flex:0 0 44px;color:var(--text-2);font-size:12px;font-variant-numeric:tabular-nums}
 .brow .bimg{flex:0 0 auto;width:34px;height:34px;object-fit:contain}
 .brow .bname{flex:1 1 auto;font-size:13px}
-/* ON EVERY ROW, including a weapon with one way to be played. A tag that
-   appears on the neighbour and not here reads as "no mode" rather than as
-   "one mode", and this is the page where weapons are compared. */
-.brow .bmode{margin-left:6px;padding:1px 6px;border:1px solid var(--line);border-radius:6px;
-  color:var(--text-2);font-size:11px;white-space:nowrap}
 /* A weapon the sim knows it does not fully model, marked where weapons are
    COMPARED. Quiet on purpose — it is a footnote on the number, not a warning
    about the row — and it carries the whole list in its title. */
@@ -2438,7 +2429,7 @@ a.nrow{color:inherit;text-decoration:none}
 .nset{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 /* On a phone the panel hangs off the bar, as the menu does: off the bell, a
    panel wider than the space left of it runs off the screen. */
-@media (max-width:768px){
+@media (max-width:900px){
   .topbar-inner>.rbell{position:static}
   .rbell-panel{top:calc(100% + 8px);right:18px}
 }
@@ -2610,20 +2601,6 @@ body:has(.dtup:not([hidden])) .rtoasts{bottom:130px}
    Nothing appears in two places, and neither side does the other's job -- one
    card being both at once is why neither would be findable. */
 .arena{container-type:inline-size}
-/* THE FLOOR IS NOT PROSE, so it does not live inside the reading column: the
-   page caps itself at 760px, which is right for text and wrong for a thing you
-   lay a formation out on.
-   THE BLOCK BREAKS OUT, NOT THE ARENA. Widening the arena alone put it outside
-   its own section, and `.block` is `overflow:hidden` so that its rounded
-   corners clip the header's background — so the floor's left and right edges,
-   which is exactly where its two panels live, were cut off. Moving the breakout up one level keeps the clip doing its
-   job at the section's own, wider bounds.
-   `:has()` rather than an id, so a block that gains a floor tomorrow gets the
-   room without anybody remembering to grant it. The parent is centred, so 50%
-   of it is the viewport's middle and the arithmetic is exact. */
-@media (min-width:900px){
-  .block:has(.arena){width:min(1220px,94vw); margin-inline:calc(50% - min(610px,47vw))}
-}
 .arc-wrap{position:relative; width:100%; height:min(66vh,620px); min-height:380px;
   border-radius:10px; overflow:hidden; border:1px solid var(--line);
   background:var(--panel3)}
@@ -3652,7 +3629,7 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 #user-tasks-toggle{gap:5px;min-width:30px}
 #user-tasks-toggle[aria-expanded="true"]{color:var(--accent);border-color:var(--accent);background:var(--panel2)}
 #user-tasks-toggle.has-error{color:var(--gold);border-color:var(--gold)}
-.task-count{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:5px;padding:0 3px;background:var(--accent);color:var(--surface);font-size:10px;font-weight:700}
+.task-count{display:inline-flex;align-items:center;justify-content:center;min-width:2ch;height:16px;border-radius:5px;padding:0 3px;background:var(--accent);color:var(--surface);font-size:10px;font-weight:700;font-variant-numeric:tabular-nums}
 .task-center{position:fixed;z-index:40;top:60px;right:max(12px,calc((100vw - 1024px)/2));width:min(440px,calc(100vw - 24px));max-height:calc(100dvh - 76px);display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 40px #0004;overflow:hidden;font-size:13px}
 .task-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px 10px;gap:10px}
 .task-head h2{font-size:15px;font-weight:650;margin:0}
@@ -3704,3 +3681,257 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 .task-batch { padding: 8px 12px; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 11px; }
 #riven-text { display: block; width: 100%; box-sizing: border-box; margin: 8px 0; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 8px; }
 #riven-appraisals { flex-wrap: wrap; gap: 8px; }
+
+.board-selector { width: 100%; min-width: 0; margin-bottom: 12px; }
+.board-choice-row { display: flex; align-items: baseline; gap: 10px; margin: 8px 0; }
+.board-choice-row > .slotf-lab { flex: 0 0 112px; }
+.board-choice-options { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+.board-choice-options .bchip { margin: 0; }
+.board-choice-options .bchip:disabled { opacity: 1; cursor: default; }
+.board-choice-summary { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; margin-top: 10px; }
+.board-choice-popover { width: min(680px, calc(100vw - 24px)); padding: 14px;
+  max-height: calc(100dvh - 12px); overflow-y: auto; overscroll-behavior: contain; }
+.board-check-group { margin: 8px 0; }
+.board-check-group > summary { cursor: pointer; }
+.board-check-scene { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 10px 12px; }
+.board-check-scene > b { width: 100%; }
+@media (max-width: 600px) {
+  .board-choice-row { display: block; }
+  .board-choice-row > .slotf-lab { display: block; margin-bottom: 5px; }
+}
+
+/* The query stays within reach while the result list grows. */
+body:not(.on-build-library) #doc{display:none}
+body.on-build-library #preset-bar-builder-builds,body.on-build-library #forma-block,
+body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-library #jump{display:none}
+.library-entry{display:flex;justify-content:flex-end;margin:0 0 10px}
+.library-entry[hidden],.fd-scope[hidden]{display:none}
+.library-toolbar{position:sticky;top:calc(var(--shell-header-height,50px) + var(--page-tabs-height,0px));z-index:18;background:var(--surface);border-radius:12px 12px 0 0;border-bottom:1px solid var(--line)}
+.library-toolbar-row{display:flex;align-items:center;gap:8px;padding:10px 12px 4px}
+.library-context{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:0;background:none;color:var(--text-2);text-align:left;cursor:pointer;font-size:12px}
+.library-sort{display:flex;flex-direction:row;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.library-sort .dd{width:auto;max-width:190px;font-size:12px;padding:5px 7px}
+.library-result-count{padding:0 12px 6px;font-size:11px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.library-toolbar h2{font-size:13px;margin:0;flex:none}
+.library-numeric{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.library-numeric label{font-size:12px;flex:1;min-width:140px}
+.library-numeric input{margin-top:4px}
+.library-more{text-align:center;padding:16px;color:var(--muted);font-size:12px;min-height:48px}
+.library-summary{margin-bottom:12px}
+.library-summary>.fold-h{display:flex;align-items:center;gap:8px;font-size:13px}
+.library-summary-body{font-size:13px;line-height:1.7}
+.library-summary-body p{margin:0 0 10px}
+.library-summary-scope,.library-summary-coverage{font-size:12px;color:var(--text-2)}
+.library-summary a{color:var(--accent)}
+.library-summary .fd-when{display:block;margin-top:10px}
+@media(max-width:520px){.library-toolbar-row{gap:5px;padding:8px 8px 4px}.library-context{font-size:11px}.library-sort .dd{max-width:138px;font-size:11px}.library-result-count{padding-left:8px}.library-filter-panel .fd-conds{padding:8px}.library-filter-panel .fd-q{flex-wrap:wrap}}
+
+.library-stat-status{font-size:11px;color:var(--muted);padding:0 12px 8px}
+.library-stat-status:empty{display:none}
+
+.library-simple-controls{width:100%}
+.library-simple-controls[hidden]{display:none}
+.library-advanced{flex:1 1 100%;min-width:0;margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
+.library-advanced h3{font-size:13px;margin:12px 0 8px}
+.library-advanced p{font-size:11px;color:var(--muted);margin:0 0 12px}
+.library-query-group{border:1px solid var(--line);border-radius:8px;padding:8px;margin:8px 0;background:var(--panel2)}
+.library-query-group .library-query-group{margin-left:12px;background:var(--surface)}
+.library-query-group-head,.library-query-add{display:flex;align-items:center;gap:8px;font-size:12px}
+.library-query-group-head>select{width:auto;max-width:220px}
+.library-query-group-head>button{margin-left:auto}
+.library-query-add{margin-top:8px}.library-query-add>b{margin-left:auto}
+.library-query-rule{display:grid;grid-template-columns:minmax(110px,1.2fr) 62px minmax(80px,1fr) 26px;gap:6px;align-items:center;margin:8px 0}
+.library-query-rule select,.library-query-rule input,.library-query-rule .dd-btn{min-width:0;width:100%;box-sizing:border-box;font-size:12px}
+.library-query-rule button:not(.dd),.library-query-group-head>button,.library-query-order-row>button:not(.dd){border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px}
+.library-query-number{display:flex;align-items:center;gap:4px;min-width:0;flex-direction:row;font-size:11px}
+.library-query-number input{flex:1}.library-query-number span{color:var(--muted)}
+.library-query-order-row{display:grid;grid-template-columns:18px minmax(100px,1fr) 95px 24px 24px;gap:6px;align-items:center;margin:8px 0;font-size:12px}
+.library-query-order-row .dd{min-width:0;width:100%;font-size:12px}
+.library-query-language{display:block;font-size:12px;margin:16px 0 8px}
+.library-query-language textarea{display:block;box-sizing:border-box;width:100%;min-height:85px;margin-top:6px;padding:10px;font:12px/1.6 ui-monospace,monospace;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:7px;resize:vertical}
+.library-query-actions{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--critical)}
+.library-expression-chip{max-width:100%;box-sizing:border-box}
+.library-expression-chip b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(56vw,480px)}
+@media(max-width:520px){.library-toolbar-row{flex-wrap:wrap}.library-context{flex-basis:100%;order:3}.library-query-rule{grid-template-columns:minmax(0,1fr) 58px minmax(0,1fr) 22px;gap:4px}.library-query-group{padding:6px}.library-query-group .library-query-group{margin-left:4px}.library-query-order-row{grid-template-columns:14px minmax(0,1fr) 82px 20px 20px;gap:4px}}
+
+.library-panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:0 0 12px;scroll-margin-top:72px;overflow-anchor:none;min-width:0}
+.library-panel-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px}
+.library-panel-heading h2{font-size:13px;margin:0}
+.library-panel-actions{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.library-filter-panel>.fd-scope{border-top:1px solid var(--line)}
+.library-filter-panel>.fd-ov{border-bottom:0}
+.library-filter-panel>.library-retained-filter{margin:0 12px 12px;width:auto}
+.library-sort-control{display:flex;align-items:center;gap:7px;flex:none}
+.library-sort[hidden]{display:none}
+.library-retained-filter,.library-retained-sort{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted)}
+.library-retained-filter{width:100%;border:1px solid var(--line);border-radius:7px;padding:8px;box-sizing:border-box}
+.library-retained-sort{padding:0 12px 8px}
+.library-retained-filter>span,.library-retained-sort>span{min-width:0;flex:1;overflow-wrap:anywhere}
+.library-retained-filter>button,.library-retained-sort>button{flex:none}
+.library-sort-editor{padding:0 12px 12px}
+.library-sort-editor h3{font-size:13px;margin:0 0 10px}
+.library-expression-chip .library-expression-edit{font-size:11px;white-space:nowrap;width:auto}
+@media(max-width:520px){.library-sort-control{gap:5px}.library-sort .dd{max-width:120px}.library-sort-control>.ghost-btn{font-size:11px;padding-inline:6px}}
+
+.library-board-panel{padding:12px}
+.library-board-panel[hidden]{display:none}
+.library-board-panel>h2{font-size:13px;margin:0 0 12px}
+.library-board-panel .board-selector{margin-bottom:0}
+.page-tabs-stuck .library-toolbar{display:flex;flex-wrap:wrap;align-items:center}
+.page-tabs-stuck .library-toolbar-row{flex:1;min-width:0;padding:6px 10px}
+.page-tabs-stuck .library-toolbar .library-context{display:none}
+.page-tabs-stuck .library-result-count{padding:0 10px 0 0;margin-left:auto;white-space:nowrap}
+.page-tabs-stuck .library-stat-status{flex-basis:100%}
+.block,.fold,.library-panel,.calculation-conditions{scroll-margin-top:calc(var(--shell-header-height,50px) + var(--page-tabs-height,0px) + 12px)}
+
+.quick-calc.calculation-conditions{display:block;padding:0;background:var(--surface);border-radius:12px;margin-bottom:12px;scroll-margin-top:72px}
+.quick-calc[hidden],#calculation-scenario-editor[hidden]{display:none}
+.calculation-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px 12px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.calculation-heading h2{font-size:13px;margin:0}
+.calculation-heading>span,.calculation-label,.calculation-help{font-size:11px;color:var(--muted)}
+.calculation-scene{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:11px 12px}
+.calculation-scene>div:first-child{display:grid;gap:5px;min-width:0}
+.calculation-scene b{font-size:12px;font-weight:500;line-height:1.6;overflow-wrap:anywhere;color:var(--text)}
+.calculation-actions{display:flex;gap:6px;flex:none}
+.calculation-quick{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-top:1px solid var(--line);background:var(--panel3)}
+.calculation-switch{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.calculation-conditions .pc-h{display:inline-flex;flex-direction:row;align-items:center;gap:7px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);letter-spacing:0;text-transform:none}
+.calculation-conditions .pc-h input{accent-color:var(--accent);margin:0}
+.calculation-conditions .pc-runs{flex-direction:row;font-size:12px;gap:5px}
+.calculation-conditions .pc-runs input{width:60px;padding:4px 7px}
+.calculation-rank-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;border:0;border-top:1px solid var(--line);padding:10px 12px;background:none;color:var(--text);font:inherit;font-size:12px;cursor:pointer;text-align:left}
+.calculation-rank-toggle:hover{background:var(--panel3)}
+.calculation-ranks{padding:0 12px 12px}
+.calculation-ranks p,.calculation-editor-hint{margin:0 0 10px;font-size:11px;color:var(--muted)}
+.calculation-rank-group{flex-basis:100%;min-width:0}
+.calculation-rank-group h3{display:flex;align-items:center;gap:8px;font-size:12px;margin:8px 0}
+.calculation-rank-group h3 span{font-size:11px;font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}
+#calculation-scenario-editor{min-width:0}
+.calculation-editor-heading{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.calculation-editor-heading h3{font-size:13px;margin:0}
+.calculation-editor-heading>span{font-size:11px;color:var(--muted);flex:1}
+.calculation-editor-heading>button{margin-left:auto}
+.calculation-retained-buffs{margin-top:12px;font-size:12px}
+.calculation-retained-buffs summary{cursor:pointer;color:var(--text-2)}
+.calculation-retained-buffs>p{color:var(--muted);font-size:11px}
+.calculation-retained-buff{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--line)}
+.calculation-retained-buff>span{flex:1;min-width:120px;overflow-wrap:anywhere}
+.calculation-retained-buff label{display:inline-flex;flex-direction:row;align-items:center;gap:6px;font-size:11px}
+.calculation-retained-buff input[type=number]{width:64px}
+#execution-dock{position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:30;display:flex;flex-direction:column;gap:6px}
+#execution-dock[hidden]{display:none}
+.execution-shortcut{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:64px;min-height:52px;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text-2);font:inherit;font-size:11px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.18)}
+.execution-shortcut>span:first-child{font-size:17px;line-height:1;color:var(--accent)}
+.execution-shortcut:hover:not(:disabled){border-color:var(--accent);color:var(--text)}
+.execution-shortcut:disabled{opacity:.5;cursor:default}
+.execution-shortcut:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:520px){#execution-dock{right:8px}.execution-shortcut{min-width:44px;min-height:44px;padding:5px;font-size:10px}}
+@media(max-width:520px){.calculation-heading>span{font-size:10px}.calculation-scene{align-items:flex-start;gap:8px}.calculation-actions{flex-direction:column}.calculation-quick{align-items:flex-start}.calculation-switch{gap:4px;display:grid}.calculation-help{font-size:10px}.calculation-conditions .pc-runs{padding-top:1px;font-size:11px;flex:none}.calculation-conditions .pc-runs input{width:48px}}
+
+.arc-viewbar{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-bottom:8px}
+.arc-viewbar [data-arena-zoom][aria-pressed="true"]{color:var(--accent);border-color:var(--accent)}
+.arc-panel-controls{display:none;align-items:center;gap:5px;flex-wrap:wrap;margin-left:auto}
+.arc-panel-controls [aria-pressed="false"]{opacity:.5}
+.arc-hide-tools .arc-rail,.arc-hide-tools .arc-opts,.arc-hide-tools .arc-chips,.arc-hide-enemy .arc-brush,.arc-hide-selection .arc-insp,.arc-hide-readout .arc-read{display:none}
+.arena-editor-open{overflow:hidden}
+.arena-editor-open .popover{z-index:80}
+.arena-editor-window{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.55)}
+.arena-editor-dialog{display:flex;flex-direction:column;width:min(1600px,100%);height:calc(100dvh - 32px);max-height:100%;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 12px 36px rgba(0,0,0,.32);overflow:hidden}
+.arena-editor-dialog>.jump-head{cursor:default;flex:none;justify-content:space-between}
+.arena-editor-content{flex:1;min-height:0;overflow:auto;padding:12px}
+.arena-editor-content>.sub-block{display:flex;flex-direction:column;height:100%;margin:0;min-height:0}
+.arena-editor-content .arena{display:flex;flex-direction:column;flex:1;min-height:380px}
+.arena-editor-content .arc-wrap{flex:1;height:auto;min-height:300px}
+.arena-editor-content .arc-viewbar{flex:none}
+.arena-editor-content .arc-panel-controls{display:flex}
+.arena-editor-content .field-grid{flex:none}
+@media(max-width:640px){.arena-editor-window{padding:0}.arena-editor-dialog{height:100dvh;border-radius:0}.arena-editor-content{padding:8px}.arc-panel-controls{margin-left:0}.arena-editor-content .arena{min-height:0;flex:none}.arena-editor-content .arc-wrap{flex:none;height:auto;min-height:300px}}
+
+.arena-editor-content [data-arena-expand]{display:none}
+
+#scenario-viewbar{display:flex;align-items:center;flex-wrap:wrap;gap:9px;padding:10px 0 14px}
+.scenario-view-options{display:flex;gap:5px;flex:none}
+.scenario-search{display:flex;flex:1;min-width:160px;margin:0}
+.scenario-search>span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.scenario-search input{width:100%;min-width:0;height:30px;padding:5px 9px;font:inherit;font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--plane);color:var(--text);appearance:none}
+.scenario-search input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.scenario-search-count{font-size:11px;color:var(--muted);flex-basis:100%}
+.scenario-search-count:empty{display:none}
+.scenario-section{min-width:0;border:1px solid var(--line);border-radius:10px;margin:0 0 12px;padding:12px;background:var(--plane);overflow:clip}
+.scenario-section>.sim-h{margin:0 0 12px;display:flex;align-items:center;gap:7px}
+.scenario-section.shut>.sim-h{margin-bottom:0}
+.scenario-section>.sim-h>button{margin-left:auto}
+.scenario-section .field-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))}
+.scenario-section .field-grid>label{min-width:0;flex-wrap:wrap;overflow-wrap:anywhere}
+.scenario-section .field-grid>label>input,.scenario-section .field-grid>label>select{max-width:100%}
+.scenario-section .field-grid>.check{align-content:start}
+.scenario-effective{display:block;flex-basis:100%;font-size:11px;font-weight:400;color:var(--muted);line-height:1.5;white-space:normal}
+.scenario-rule-card,.scenario-trigger-rules{grid-column:1/-1;min-width:0}
+.scenario-rule-card h4{font-size:12px;margin:6px 0 10px}
+.scenario-rule-card .wf-why{display:block;margin-top:8px;color:var(--muted);font-size:11px;line-height:1.5}
+.scenario-section .hr-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,185px),1fr))}
+#sim-buffs,#opt-buffs{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));min-width:0}
+.buff-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;min-width:0;align-items:start}
+.buff-card .bn{grid-column:1/-1;white-space:normal;overflow:visible;overflow-wrap:anywhere;line-height:1.5}
+.buff-card .bgr{display:block;margin-left:0}
+.buff-card .bctl{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.buff-control-label{font-size:11px;color:var(--muted);flex-basis:100%}
+.buff-card .block-lock{padding-left:0;border:0;align-self:end;white-space:normal;margin:0;font-size:11px}
+.buff-card .bstep{min-width:0;flex-wrap:wrap}
+.buff-card .bstep .bmax{white-space:normal}
+.buff-status{display:block;color:var(--muted);font-size:10px;font-weight:400}
+.buff-default{font-size:10px;color:var(--muted)}
+.buff-reset{justify-self:start;font-size:10px;grid-column:1/-1}
+.buff-card .scenario-effective{grid-column:1/-1}
+.scenario-more,.scenario-catalog-status,.calculation-retained-buffs{grid-column:1/-1;min-width:0;font-size:12px}
+.scenario-catalog-status{color:var(--muted);overflow-wrap:anywhere}
+.scenario-search-item[hidden],.scenario-section[hidden],.scenario-section .fold[hidden]{display:none!important}
+@media(max-width:520px){#scenario-viewbar{align-items:stretch}.scenario-search{flex-basis:100%}.scenario-section{padding:10px}.scenario-view-options{flex-wrap:wrap}.scenario-section>.sim-h{flex-wrap:wrap}}
+
+.layout-tools{display:flex;align-items:center;gap:7px;margin:0 auto 12px;font-size:11px;color:var(--muted)}
+.layout-tools>span{margin-right:auto}
+.layout-tools [hidden]{display:none}
+.layout-active.config-page{max-width:1280px}
+.layout-active>:not(#build-finder){width:min(724px,100%);margin-inline:auto}
+.layout-active #build-finder{width:100%;max-width:none}
+.layout-active .layout-card{position:relative;width:min(724px,100%);max-width:100%;margin-inline:auto;box-sizing:border-box}
+.layout-active .layout-sized{overflow:auto;overscroll-behavior:contain}
+.layout-size-handle{display:none}
+.layout-editing .layout-card:not(.shut)>.layout-size-handle{display:block;position:absolute;bottom:1px;right:1px;z-index:15;width:25px;height:25px;padding:0;border:0;border-radius:7px 0 8px 0;color:var(--accent);background:var(--panel2);font-size:19px;line-height:1;cursor:nwse-resize;touch-action:none}
+.layout-editing .layout-card{outline:1px dashed color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:2px}
+.layout-size-handle:focus-visible{outline:2px solid var(--accent)}
+.layout-status{font-size:10px;color:var(--muted);white-space:nowrap}
+.layout-move-tools{display:none}
+.layout-editing .layout-move-tools{display:inline-flex;align-items:center;gap:3px;margin-left:auto;flex:none}
+.layout-move-tools button{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;border:1px solid var(--line);border-radius:6px;background:var(--panel2);color:var(--text-2);font:inherit;font-size:14px;cursor:pointer}
+.layout-move-tools button:disabled{opacity:.3;cursor:default}
+.layout-move-tools button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.layout-move-tools [data-layout-drag]{cursor:grab;touch-action:none;font-size:19px}
+.layout-dragging{opacity:.45}
+.layout-drop-before{box-shadow:inset 0 3px var(--accent)}
+.layout-drop-after{box-shadow:inset 0 -3px var(--accent)}
+@media(max-width:520px){.layout-tools{flex-wrap:wrap}.layout-move-tools button{width:28px;height:28px}}
+@media(max-width:520px){
+  .layout-editing.config-page{padding-right:64px}
+  .layout-editing .layout-card>.bh .sub{display:none}
+  .layout-editing .layout-card>.bh h2{white-space:nowrap;flex-shrink:0}
+}
+
+#warframe-page.wf-library>section:not(#wf-library),
+#warframe-page.wf-library>#wf-caps,#warframe-page.wf-library>#wf-gate,
+#warframe-page.wf-library>#preset-bar-warframes{display:none}
+#wf-library{border:1px solid var(--line);border-radius:12px;margin-top:14px}
+#wf-library[hidden]{display:none}
+#wf-module-tabs{margin-top:16px}
+#wf-library .library-toolbar-row>b{font-size:13px}
+#wf-library .library-toolbar-row>a{margin-left:auto;text-decoration:none}
+.wf-library-empty{padding:54px 20px;text-align:center}
+.wf-library-empty h2{font-size:16px;margin:0 0 12px}
+.wf-library-empty p{font-size:13px;color:var(--muted);margin-bottom:24px}
+.wf-library-empty a{text-decoration:none}
+.wf-library-entry{padding:16px;border-bottom:1px solid var(--line)}
+.wf-library-entry:last-child{border-bottom:0}
+.wf-library-build-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:13px}
+.wf-library-build-head a{text-decoration:none}
+
+.module-tabs[hidden]{display:none}
