@@ -84,6 +84,12 @@ try {
   check("shared info cards retain mode and separate Exilus", initial.card);
   check("a compact generated summary links to its published build", initial.summary && initial.compact);
   check("normal browsing needs no load-more button", initial.noButton);
+  await app.send('Emulation.setDeviceMetricsOverride', {width:800,height:900,deviceScaleFactor:1,mobile:false});
+  await sleep(300);
+  check("a narrow desktop keeps navigation compact and search usable", await evaluate(`(() => {
+    const menu=$('menu-toggle').getBoundingClientRect(), search=$('wsearch-input').getBoundingClientRect();
+    return menu.width>0&&menu.right<=innerWidth&&search.width>=140&&document.documentElement.scrollWidth<=innerWidth;
+  })()`));
   const desktop=await evaluate(interactions);
   for(const [key,ok] of Object.entries(desktop))check("desktop board and Overview interaction: "+key,ok);
 

@@ -157,7 +157,7 @@ const r = await evaluate(`(async () => {
   await settle();
 
   // The wording: the block says what the numbers in it MEAN.
-  const hint = document.querySelector('#sim-buffs')?.previousElementSibling?.querySelector('.sim-hint');
+  const hint = document.querySelector('#scenario-buffs-section .sim-hint');
   out.hint = (hint?.textContent || '').trim();
   // ---- A SWITCH RE-ASKS, not just repaints ------------------------------
   //

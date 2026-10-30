@@ -220,7 +220,7 @@ bindCopyButton("clan-copy", CLAN_NAME);
     .addEventListener("click", () => set(false));
   // Above the breakpoint the panel is `display:contents` again and the class
   // means nothing — but it would still be there on the way back down.
-  addEventListener("resize", () => { if (innerWidth > 768) set(false); });
+  addEventListener("resize", () => { if (innerWidth > 900) set(false); });
 })();
 
 // THE READER'S OWN GROUP FIRST in the community menu. A Chinese reader will
