@@ -49,6 +49,28 @@ check(`${tag} ...with its own class's stances in it`,
 check(`${tag} ...as a tenth slot beside the eight and the exilus`,
   slot.slots === 10, String(slot.slots));
 
+const info = await evaluate(`(() => {
+  const w = weaponInfo($('weapon').value), st = snapshotState();
+  const stance = weaponAxes().stance[0], utilities = weaponAxes().exilus;
+  const main = utilities[0], ex = utilities.find(m => m.id !== main.id);
+  st.slots.forEach(s => { s.mod = null; s.rank = null; });
+  st.slots[0].mod = main.id; st.slots[EXILUS].mod = ex.id; st.slots[STANCE].mod = stance.id;
+  const before = JSON.stringify(st), box = document.createElement('div');
+  box.innerHTML = cardOfState(st, w, new Set(['mods:0', 'mods:8', 'mods:9']));
+  const heads = [...box.querySelectorAll('.sb-h')], sections = heads.slice(1, 4);
+  const expected = [stance, main, ex];
+  return {
+    order: JSON.stringify(sections.map(el => el.textContent)) === JSON.stringify([tr('Stance'), tr('Mods') + ' · 1', tr('Exilus')]),
+    seated: expected.every((m, i) => {
+      const chips = sections[i]?.nextElementSibling.querySelectorAll('.sb-chip');
+      return chips?.length === 1 && chips[0].textContent.startsWith(m.name) && chips[0].classList.contains('fixed');
+    }),
+    unchanged: JSON.stringify(st) === before,
+  };
+})()`);
+check(`${tag} the info card separates stance, main mods and exilus in slot order`, info.order && info.seated);
+check(`${tag} rendering the info card preserves the saved slots`, info.unchanged);
+
 // ---------------------------------------------------------------------------
 // 2. THE NEGATIVE CONTROL. A gun shows nothing — not an empty slot, which
 //    reads as "something is missing here" (the rule the exilus block already

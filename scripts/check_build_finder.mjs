@@ -76,14 +76,19 @@ const r = await evaluate(`(async () => {
   // A ROW IS THE SIMULATOR'S BUILD CARD, holding every card the build carries.
   const row0 = box().querySelector('tr.fr');
   const b0 = byId(row0.dataset.frow).board;
-  const ex0 = b0.exilus && b0.exilus !== 'none' && !(b0.mods || []).includes(b0.exilus) ? [b0.exilus] : [];
-  const saved = [...(b0.mods || []).filter(Boolean), ...ex0];
+  const saved = (b0.mods || []).filter(id => id && id !== b0.exilus && !modById(splitRank(id)[0])?.stance).slice(0, 8);
   const secs = [...row0.querySelectorAll('.fd-card .sb-h')];
   const mods = secs.find(s => s.textContent.startsWith(tr('Mods') + ' ·'));
   const chips = mods ? [...mods.nextElementSibling.querySelectorAll('.sb-chip')] : [];
   out.cardMods = secs.length ? chips.length : -1;
   out.boardMods = saved.length;
   out.cardIcons = row0.querySelectorAll('.fd-card .sb-chip img').length;
+  const exHead = secs.find(s => s.textContent === tr('Exilus'));
+  const exChips = exHead ? [...exHead.nextElementSibling.querySelectorAll('.sb-chip')] : [];
+  out.exilusRow = !!exHead && secs.indexOf(exHead) > secs.indexOf(mods)
+    && (b0.exilus && b0.exilus !== 'none'
+      ? exChips.length === 1 && exChips[0].textContent.startsWith(modById(splitRank(b0.exilus)[0]).name)
+      : exChips.length === 0);
   // THE MODS RUN IN THE ORDER THE BUILD WAS SAVED: elements combine in slot
   // order, so a row sorted any other way can read as another element build.
   out.orderKept = chips.length === saved.length && saved.every((id, i) => {
@@ -338,6 +343,7 @@ check("...more on request, and folded back to five", r.inScope <= 5
   || (r.afterMore === Math.min(25, r.inScope) && r.afterLess === 5), `${r.afterMore} then ${r.afterLess}`);
 check("...its mods in the order the build was saved", r.orderKept === true,
   `saved ${r.savedOrder} / shown ${r.shownOrder}`);
+check("...the exilus has its own row below the main mods", r.exilusRow === true);
 check("the overview ships shut, with nothing stored yet", r.ovShut === true);
 check("...and opens on a click", r.ovOpened === true);
 check("a row opens in place into the whole build, piece by piece", r.detail0 === true);

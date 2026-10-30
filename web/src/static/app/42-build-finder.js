@@ -224,7 +224,6 @@ function renderBuildFinder() {
   // what it does not is marked.
   const card = (p, lead, big) => {
     const r = p.board || {};
-    const ex = r.exilus && r.exilus !== "none" ? r.exilus : null;
     const mark = (t) => [lead ? (toks.get(lead).includes(t) ? "same" : "diff") : "", finder.req.has(t) ? "hit" : ""]
       .filter(Boolean).join(" ");
     const modChip = (id) => {
@@ -237,13 +236,13 @@ function renderBuildFinder() {
       const [c, rank] = splitRank(id);
       const m = modById(c);
       return { img: m ? IMG(m.image) : null, label: (m ? m.name : prettify(c)) + (rank != null ? ` R${rank}` : ""),
-        title: id === ex ? "Exilus" : "", cls: mark("mod:" + id) };
+        cls: mark("mod:" + id) };
     };
     const marked = (chips) => chips.map((c) => ({ ...c, cls: mark(c.key) }));
     return `<div class="fd-card${lead ? " cmp" : ""}${big ? " big" : ""}">` + buildCardHtml({
       mode: p.modeName || modeLabel(w, p.mode),
-      // THE EXILUS RIDES AT THE END when the list does not already hold it.
-      mods: [...(r.mods || []).filter(Boolean), ...(ex && !(r.mods || []).includes(ex) ? [ex] : [])].map(modChip),
+      ...headlessWeaponModSections(META, w, headlessBoardRowAxes(pageSay(), w, r, {}).slots, (s) => s?.mod
+        ? modChip(s.mod.startsWith("riven:") ? BOARD_RIVEN_SLOT : rankedId(s.mod, s.rank)) : null),
       riven: r.riven ? rivenSpecCardHtml(w, { name: "", spec: boardRivenState(r.riven) }) : "",
       parts: r.grip ? marked(partChipsOf(w.id, r.grip, r.loader)) : null,
       arcanes: (w.arcane_slots || 0) >= 1
