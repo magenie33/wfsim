@@ -69,6 +69,11 @@ drives real calculations across pages and tabs, including unnamed builds,
 cancelled completions, report links and mobile layout. Contracts and commands
 are in [TASKS.md](TASKS.md).
 
+`check_task_executors` also opens the saved-card analysis window, compares its
+accepted request with the fx builder, runs the shared search/replay/grade,
+then deletes the card and queue item. The artifact still supplies analysis
+history, the optimizer record and a shared build retaining its original rolls.
+
 ## `check_page_bodies`
 
 `node --check` over every check script, and over `app.js` joined from its

@@ -80,7 +80,7 @@ const SCAN = `(() => {
 })()`;
 
 const WEAPONS = ["Torid", "Kuva_Bramma", "Catchmoon"];
-const MODULES = ["builder", "simulator", "optimizer", "rivens", "enemies"];
+const MODULES = ["builder", "simulator", "optimizer", "rivens", "riven-analyst", "enemies"];
 const uncovered = new Map();
 const hit = new Set();
 for (const w of WEAPONS) {
@@ -111,6 +111,13 @@ for (const w of WEAPONS) {
     const r = await evaluate(SCAN);
     r.hit.forEach((s) => hit.add(s));
     r.uncovered.forEach((u) => { if (!uncovered.has(u)) uncovered.set(u, `${w}/${m}`); });
+    if (w === WEAPONS[0] && m === "riven-analyst") {
+      await evaluate("openRivenAnalysisDialog()");
+      const dialog = await evaluate(SCAN);
+      dialog.hit.forEach(s => hit.add(s));
+      dialog.uncovered.forEach(u => { if (!uncovered.has(u)) uncovered.set(u, w + '/analysis-dialog'); });
+      await evaluate("closeRivenAnalysisDialog()");
+    }
     if (w === WEAPONS[0] && m === "simulator") {
       await evaluate(`document.querySelector('#sim-target-arena [data-arena-expand]').click()`);
       const expanded = await evaluate(SCAN);

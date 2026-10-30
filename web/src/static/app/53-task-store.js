@@ -15,6 +15,7 @@ class UserTaskMemoryStore {
     if (arguments.length > 1) this.values.set(key, taskClone(value));
     return this.values.has(key) ? taskClone(this.values.get(key)) : null;
   }
+  async entries(prefix) { return [...this.values].filter(([key]) => key.startsWith(prefix)).map(([, value]) => taskClone(value)); }
   async change(transform) {
     const state = taskClone(this.state);
     const result = transform(state);
@@ -47,6 +48,15 @@ class UserTaskBrowserStore {
       const tx = this.db.transaction("queue", write ? "readwrite" : "readonly");
       const request = write ? tx.objectStore("queue").put(value, key) : tx.objectStore("queue").get(key);
       tx.oncomplete = () => resolve(write ? value : request.result || null);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+  entries(prefix) {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction("queue", "readonly");
+      const request = tx.objectStore("queue").getAll(IDBKeyRange.bound(prefix, prefix + "\uffff"));
+      tx.oncomplete = () => resolve(request.result);
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);
     });

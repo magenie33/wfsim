@@ -1070,9 +1070,12 @@ order, cancellation, retry and report links (`docs/TASKS.md`). Quick calculation
 occupies one replaceable automatic item. Work for other players is identified
 separately. The center contains no new-task or configuration form.
 
-The saved-riven list selects one or several editable cards and a ruler for
-appraisal. Text import feeds the same saved cards as the editor and screenshot
-reader. Each batch item retains its own failure, retry and saved report.
+The saved-riven list selects one or several editable cards. Analyze beside the
+market link opens the Riven Analyst page and a submission window: the shared
+four-axis ruler picker, the submitted card preview and local or available
+community execution. Import, export and editing remain in Rivens. Text import
+feeds the same saved cards as the editor and screenshot reader. Each batch
+item retains its own failure, retry and saved report.
 
 ## Results
 
@@ -1272,9 +1275,15 @@ opened, and never a tab of its own. `docs/SHAPLEY.md`.
 
 **…EXCEPT A REPORT WHOSE SUBJECT IS NOT THE BUILD ON SCREEN.** The Riven
 Analyst (`/weapons/<Name>/riven-analyst`, `21-riven-analyst.js`) reports on
-every riven the weapon's board has measured, so it belongs to no one module's
-open build and has a tab.
-Its numbers are the headless query's (docs/BOARD.md §"The Riven Analyst").
+the player's saved cards and every riven the weapon's board has measured, so
+it belongs to no one module's open build and has a tab. Personal analysis
+reuses the fx search, official replay and grade. Reports and history read the
+optimization artifact; deleting a card or removing a queue item preserves it.
+The optimizer's history opens that same artifact. Sharing copies the dated
+report text and the frozen build's ordinary share link: the link carries the
+build, and the text carries the score and its reference conditions.
+Published comparisons remain separate and use the headless query's numbers
+(docs/BOARD.md §"The Riven Analyst").
 
 ---
 

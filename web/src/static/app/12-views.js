@@ -1,6 +1,6 @@
 // Report ids are captured before restoring a weapon canonicalizes its address.
 let initialTaskReport = { path: location.pathname, measurement: new URLSearchParams(location.search).get("measurement"),
-  optimization: new URLSearchParams(location.search).get("task-result") };
+  optimization: new URLSearchParams(location.search).get("task-result"), analysis: location.search };
 // ---- views: '/' = the weapon list (home); '/weapons/<Wiki_Name>' = the
 // BUILD LIBRARY; '/weapons/<Wiki_Name>/builder' = the BUILDER;
 // '/weapons/<Wiki_Name>/simulator' = the SIMULATOR (tests the
@@ -296,6 +296,7 @@ async function route() {
       || (initialTaskReport?.path === location.pathname ? initialTaskReport.measurement : null);
     const optimizationId = new URLSearchParams(location.search).get("task-result")
       || (initialTaskReport?.path === location.pathname ? initialTaskReport.optimization : null);
+    const analysisQuery = mod === "riven-analyst" ? (location.search || (initialTaskReport?.path === location.pathname ? initialTaskReport.analysis : "")) : "";
     initialTaskReport = null;
     const libraryAddress = mod === "build-library" ? location.pathname + location.search + location.hash : null;
     const wantMode = libraryAddress ? null : new URLSearchParams(location.search).get("mode");
@@ -350,10 +351,11 @@ async function route() {
     // tabs are CSS-hidden rather than re-rendered.
     if (mod === "simulator") renderSim();
     if (mod === "simulator") await openSimulationReport(w, measurement);
-    if (mod === "optimizer") { renderOptFight(); updateOptEstimate(); await openOptimizationReport(optimizationId); }
+    if (mod === "optimizer") { renderOptFight(); updateOptEstimate(); await openOptimizationReport(optimizationId); await refreshOptimizerHistory(true); }
     else optimizationReport = null;
     if (mod === "rivens") renderRivens();
-    if (mod === "riven-analyst") renderRivenAnalyst();
+    if (mod === "riven-analyst") { history.replaceState(history.state, "", weaponPath(w.id) + "/riven-analyst" + analysisQuery); renderRivenAnalyst(); }
+    else closeRivenAnalysisDialog(false);
     if (mod === "card") renderCardPage(w, cardAsk);
     if (mod === "enemies") renderEnemies();
     if (mod === "benchmark") renderWeaponBench();

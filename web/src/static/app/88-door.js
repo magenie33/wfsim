@@ -17,7 +17,7 @@
 /// event names, for the same reason. A name that dies with a button breaks
 /// every agent that already learned it, and an agent cannot be migrated.
 const AGENT_DOOR_V = 1;
-const AGENT_MODULES = ["build-library", "builder", "simulator", "optimizer", "rivens", "enemies"];
+const AGENT_MODULES = ["build-library", "builder", "simulator", "optimizer", "rivens", "riven-analyst", "enemies"];
 const AGENT_ID = /^[a-z]+\.[a-z]+\.[a-z]+$/;
 
 /// Where the reader is, READ OFF THE PAGE rather than parsed a second time.
@@ -26,7 +26,7 @@ const AGENT_ID = /^[a-z]+\.[a-z]+\.[a-z]+$/;
 /// first the day a route is added.
 const agentRoute = () => {
   const onWeapon = !document.querySelector(".config-page").hidden;
-  const mod = AGENT_MODULES.find((x) => document.body.classList.contains("on-" + x));
+  const mod = AGENT_MODULES.find((x) => document.body.classList.contains("on-" + (x === "riven-analyst" ? "ranalyst" : x)));
   return {
     module: onWeapon ? (mod || "builder") : null,
     weapon: onWeapon ? $("weapon").value : null,
@@ -178,7 +178,7 @@ const AGENT_SKILLS = {
   builder: "the build on screen: weapon, mods, arcanes, evolutions, mode, valence, Forma, the stats panel, finders and the leaderboard",
   simulator: "the fight: the scenario, enemy and level, buffs, abilities, auras, the arena, who else is firing, and running it",
   optimizer: "the build search: its scope, starting it, reading it, stopping it, saving a result",
-  rivens: "riven cards: listing, making, copying, opening and writing one",
+  rivens: "riven cards: listing, making, copying, opening, editing and reading saved analysis reports",
   enemies: "custom targets: listing, making, copying, opening and editing one",
   shell: "documents and moving around: saved builds and scenarios, copies, undo, opening a module, and how WFSim judges a build",
 };

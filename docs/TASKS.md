@@ -64,8 +64,10 @@ session cache is presentation only; a task report always reads its artifact,
 and execution never reads that cache.
 
 A result is stored before terminal state is committed. Reports open the
-existing simulator or optimizer in another tab, without changing the original
-editor. Frozen riven references retain the card's submitted rolls, rank and
+simulator, optimizer or personal Riven Analyst report in another tab, without
+changing the original editor. The analysis page and optimizer history read the
+same artifact. A prefix scan of the artifact store keeps those histories
+available after the queue item is removed. Frozen riven references retain the card's submitted rolls, rank and
 polarity even if the owned card is subsequently edited or deleted. Local
 artifacts remain until browser storage is cleared; simulation keeps its existing
 bounded retention. An unavailable record is reported as unavailable.

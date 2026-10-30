@@ -69,7 +69,9 @@ try {
     raRuler = custom.id; renderRivenAnalyst();
     appraisalRuler = custom.id; renderRivenAppraisalControls();
     wbenchRuler = custom.id; renderWeaponBench();
-    out.surfaces = ['riven-analyst', 'riven-appraisals', 'wbench'].every(id => document.querySelector('#' + id + ' [data-board-selected]')?.dataset.boardSelected === custom.id);
+    openRivenAnalysisDialog([], custom.id);
+    out.surfaces = ['riven-analyst', 'analysis-board', 'wbench'].every(id => document.querySelector('#' + id + ' [data-board-selected]')?.dataset.boardSelected === custom.id);
+    closeRivenAnalysisDialog();
     renderScenarioBar();
     const anchor = document.querySelector('[data-board-open]'); anchor.click();
     const pop = document.getElementById('board-choice-popover');

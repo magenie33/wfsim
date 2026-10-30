@@ -400,6 +400,12 @@ the optimizer, run by the community's computers or in the browser of whoever
 opens the link — never by re-scoring known builds, which is the board's
 question (docs/BOARD.md §"The Riven Analyst").
 
+Saved cards use `builder.rivens.appraise` to queue the same request and replay.
+`rivens.analyses.read` returns the saved grades, captured cards and links;
+`rivens.analysis.open` opens a winner as a new build with its submitted card.
+The Riven Analyst page hosts personal reports and a separate published
+comparison. Executor disclosure and queue ownership are in `docs/TASKS.md`.
+
 1. A chat's bot reads the card (`fx` in Chinese chats: `fx <weapon> [ruler]`
    then each stat and its number, `readRivenLines` in `bot/answer.mjs`; a
    line's side is its 正/负 or its number's sign against the stat's direction,
