@@ -8,6 +8,7 @@
 /// this; a refresh is due when its row turns `REFRESH_WITHIN_MS` old, not a span
 /// after its ask, so idle volunteers take it early and a busy fleet lets it wait.
 export const DEADLINE_MS = {
+  board_review: 15 * 60_000,
   chat: 2 * 60_000,
   user_calculation: 6 * 3_600_000,
   new_build: 6 * 3_600_000,

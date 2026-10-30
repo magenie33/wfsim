@@ -3521,6 +3521,26 @@ ui:
   "Analyze selected": "分析所选裂罅"
   "Analyze all": "分析全部裂罅"
 
+  "Expedited board review": "加急榜单复核"
+  "View board": "查看榜单"
+  "Hide": "隐藏"
+  "The published score stays until independent verification finishes.": "独立复核完成前，榜单保留原成绩。"
+  "Hiding this item keeps the shared review running.": "隐藏此项不会停止公共复核任务。"
+  "Verified score": "复核成绩"
+  "Requesting board review": "正在申请榜单复核"
+  "Board review verified": "榜单复核已确认"
+  "The board was updated while this review ran.": "复核期间榜单已更新，保留较新的成绩。"
+  "Board review is unavailable.": "榜单复核暂不可用。"
+  "Expedited board review queued": "已进入加急榜单复核队列"
+  "Verified scores appear on the board after publication.": "复核成绩将在榜单发布后显示。"
+  "Automatically review matching board scores": "自动复核条件相同的榜单成绩"
+  "This build is already on the board. Matching official runs can request an independent review.": "该配装已在榜单中。与官方条件完全一致的测试可自动发起独立复核。"
+  "this build is already on the board ({row})": "该配装已在榜单中（{row}）"
+  "Too many review requests. Try again later.": "复核请求过于频繁，请稍后重试。"
+  "This row is no longer on the board.": "该条目已不在榜单中。"
+  "The review queue is full. Try again later.": "复核队列已满，请稍后重试。"
+  "The board changed. Run this calculation again.": "榜单已更新，请重新运行这次计算。"
+
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']
   - ['Self-Stagger Reduction', '自我击退减免']

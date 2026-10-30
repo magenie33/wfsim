@@ -12,6 +12,8 @@ use crate::registry::{WeaponInfo, enemies, evo_group, form_unlock_evo, incarnon_
 use crate::request::{err_json, get_bool, get_f64, get_str, get_u32};
 use crate::tenno::tenno_from;
 
+pub(crate) const DEFAULT_SEED: u64 = 0xC0FFEE;
+
 /// **WHAT THIS FIGHT SAYS ABOUT THE CLASS THIS WEAPON IS IN.**
 ///
 /// `class_rules` is `{ "<slot>": { "<axis>": value } }` on the wire — a fight
@@ -582,7 +584,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let duration = get_f64(v, "duration", 180.0).clamp(1.0, 3600.0);
     let (player_at, target_at) = positions(v);
     let runs = get_u32(v, "runs", 100).clamp(1, 20_000);
-    let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(0xC0FFEE);
+    let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(DEFAULT_SEED);
 
     // ---- WARFRAME ABILITY BUFFS (`data/abilities/`) -----------------------
     // `ability_strength` is a FRACTION (1.0 = 100%), because that is what it

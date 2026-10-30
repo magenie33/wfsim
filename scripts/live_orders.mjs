@@ -18,7 +18,8 @@ import { execFileSync } from "node:child_process";
 import { cpus } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { official, tell, BOARD_KINDS } from "./order_credit.mjs";
+import { official, tell } from "./order_credit.mjs";
+import { BOARD_WORK_KINDS } from "../worker/board_kinds.js";
 import { witness } from "./wasm_witness.mjs";
 
 const SETTLE_PER_CYCLE = 3;
@@ -42,11 +43,16 @@ async function settle() {
   const dir = join(work, "settle");
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
-  const facts = [];
+  const facts = [], reviews = [];
   let claimed = 0;
   try {
     const { tasks } = await official("claim", { witness: WITNESS, engine: w.engine, states: ["disputed", "spot", "nondeterministic"],
-      producers: BOARD_KINDS, max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
+      producers: BOARD_WORK_KINDS, max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
+    if (tasks.length < SETTLE_PER_CYCLE) {
+      const fallback = await official("claim", { witness: WITNESS, engine: w.engine, states: ["open"], producers: ["board_review"],
+        max: SETTLE_PER_CYCLE - tasks.length, lease_ms: 2 * SETTLE_FIGHT_MS });
+      tasks.push(...fallback.tasks);
+    }
     claimed = tasks.length;
     for (const t of tasks) {
       const d = t.demands[0];
@@ -64,10 +70,15 @@ async function settle() {
       if (stuck) break;
       if (!got) continue;
       const done = new Date();
+      if (d.producer === "board_review") {
+        reviews.push({ ref: d.ref, result: { score: got.score, metric: got.metric }, work: got.work });
+        continue;
+      }
       facts.push({ identity: row.identity, ruler: row.ruler, metric: got.metric, mode: row.mode, measured_by: w.engine || "",
         score: got.score, cost_seconds: (done - began) / 1000, started_at: began.toISOString(), finished_at: done.toISOString(), work: got.work });
     }
   } finally { await w.close(); }
+  if (reviews.length) await official("answer", { witness: WITNESS, engine: w.engine, producers: ["board_review"], answers: reviews });
   if (facts.length) {
     writeFileSync(join(dir, "facts.ndjson"), facts.map((f) => `${JSON.stringify(f)}\n`).join(""));
     execFileSync("bash", [join(HERE, "ship_facts.sh"), join(dir, "facts.ndjson")], { stdio: ["ignore", "ignore", "inherit"] });

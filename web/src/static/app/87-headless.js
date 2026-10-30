@@ -484,6 +484,7 @@ function headlessDefaultScenario(meta, contact, metric) {
     ...(d.wf_energy === undefined ? {} : { wf_energy: d.wf_energy }),
     ...(d.wf_sprint === undefined ? {} : { wf_sprint: d.wf_sprint }),
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || metric,
+    ...(d.seed === undefined ? {} : { seed: d.seed }),
     // NO `form`: how the weapon is played belongs to the build.
     duration: d.duration, buffs: {},
     // WARFRAME ABILITY BUFFS. `ability_strength` is a TYPED OVERRIDE, a

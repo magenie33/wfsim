@@ -282,7 +282,7 @@ pub fn board_order_json(v: &Value) -> Value {
         .into_iter()
         .find(|(p, _)| (if p.id.is_empty() { "base" } else { p.id }) == mode)
     {
-        Some((_, req)) => json!({ "ok": true, "request": req }),
+        Some((_, req)) => json!({ "ok": true, "request": req, "identity": wfsim_engine::board::builds::build_id(&b) }),
         None => crate::request::err_json("the weapon cannot sustain that mode"),
     }
 }

@@ -27,6 +27,13 @@ retries a lost worker call once; cancellation or a new generation ends retries.
 Its details retain worker health and the existing calculator reset. Work this device does
 for other players appears separately and reads the existing contribution log.
 
+`board-review` observes an independent review triggered by a matching official
+simulation. Its persisted outbox and remote identity survive reloads without
+holding a local calculation lock. Completion delivery creates the outbox before
+it is acknowledged. Hiding an observation leaves the shared review running.
+The server owns its verified number; browser storage keeps only linkage and
+submission state, with at most fifty observations.
+
 ## Local ownership
 
 Acceptance freezes the request and its origin before awaiting storage. IndexedDB

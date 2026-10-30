@@ -936,7 +936,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// after them (`later`).
   function deliverPlan(env, q, now, answerOf, demands, writes, later) {
     const db = env.LIBRARY;
-    const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon,
+    const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon, at: q.fact_at || iso(now),
       result: answerOf ? JSON.parse(answerOf.result) : null, work: answerOf ? answerOf.work : 0,
       engine: answerOf ? answerOf.engine : null, official: !!(answerOf && answerOf.official) };
     for (const d of demands) {

@@ -12,7 +12,7 @@
 //   POST /api/board/ask    { batch, rows: [{ identity, ruler, mode }] }  → { asked, skipped }   (factory token)
 //                          { backfill: true }                           → { asked, left }: owed rows nobody asked for
 //   POST /api/board/adopt  {}                                                      → { adopted, left }   (factory token)
-import { BOARD_KINDS } from "./board_kinds.js";
+import { BOARD_KINDS, BOARD_WORK_KINDS } from "./board_kinds.js";
 import { iso, PACE_HOURS } from "./instant.js";
 import { witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, VERBS, factoryAuthed } from "./factory.js";
@@ -60,9 +60,10 @@ const boardProducer = {
         `INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
          VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
          ON CONFLICT (identity, ruler, mode) DO UPDATE SET measured_by = excluded.measured_by, score = excluded.score,
-           metric = excluded.metric, cost_seconds = 0, started_at = excluded.started_at, finished_at = excluded.finished_at
-         WHERE EXISTS (SELECT 1 FROM queue q WHERE q.build_id = scores.identity AND q.ruler = scores.ruler AND q.mode = scores.mode)`)
-        .bind(identity, ruler, mode, `verified:${fact.engine}`, fact.result.score, fact.result.metric, at, at),
+           metric = excluded.metric, cost_seconds = 0, started_at = excluded.started_at, finished_at = excluded.finished_at, review_id = NULL
+         WHERE (scores.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM board_reviews r JOIN questions proof ON proof.id = r.question
+           WHERE r.id = scores.review_id AND r.engine = ?9::text AND proof.fact_at > ?10::text)) AND EXISTS (SELECT 1 FROM queue q WHERE q.build_id = scores.identity AND q.ruler = scores.ruler AND q.mode = scores.mode)`)
+        .bind(identity, ruler, mode, `verified:${fact.engine}`, fact.result.score, fact.result.metric, at, at, fact.engine, fact.at || at),
       db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ?").bind(identity, ruler, mode),
     ];
   },
@@ -71,16 +72,16 @@ const boardProducer = {
   on_retract: async (env, d) => {
     const { identity, ruler, mode, batch } = d.payload, db = env.LIBRARY;
     await db.batch([
-      db.prepare("DELETE FROM scores WHERE identity = ? AND ruler = ? AND mode = ? AND measured_by LIKE 'verified:%'").bind(identity, ruler, mode),
+      db.prepare("DELETE FROM scores WHERE identity = ? AND ruler = ? AND mode = ? AND measured_by LIKE 'verified:%' AND review_id IS NULL").bind(identity, ruler, mode),
       db.prepare(`INSERT INTO queue (batch, build_id, ruler, mode) SELECT ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM batches WHERE id = ?)
         ON CONFLICT DO NOTHING`)
         .bind(batch, identity, ruler, mode, batch),
     ]);
   },
 };
-export const BOARD_PRODUCERS = Object.fromEntries(BOARD_KINDS.map((kind) => [kind, boardProducer]));
+export const BOARD_PRODUCERS = Object.fromEntries(BOARD_WORK_KINDS.map((kind) => [kind, boardProducer]));
 /// THE BOARD'S KINDS as an SQL list, for a query over its demands.
-export const BOARD_KINDS_SQL = `(${Object.keys(BOARD_PRODUCERS).map((k) => `'${k}'`).join(", ")})`;
+export const BOARD_KINDS_SQL = `(${BOARD_KINDS.map((k) => `'${k}'`).join(", ")})`;
 
 /// A SCENE'S RULERS STILL FILLING, for the watchdog: per cell ruler (an id with
 /// `__`, docs/BOARD.md §"A ruler's ladder"), the rows measured, those measured

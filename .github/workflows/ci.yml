@@ -320,6 +320,8 @@ jobs:
         run: node scripts/check_fx_lines.mjs
       - name: User calculations retain ownership, share verified reports and exclude incompatible clients
         run: node scripts/check_user_task_service.mjs
+      - name: Expedited board reviews preserve old scores until fresh independent agreement
+        run: node scripts/check_board_reviews.mjs
       - name: A riven appraisal is asked once and answered once
         run: node scripts/check_appraise.mjs
       - name: A client's number reaches the board only when CLIENTS_PER_FACT clients agree
@@ -376,6 +378,7 @@ jobs:
           node scripts/check_tasks.mjs
           node scripts/check_board_verify.mjs
           node scripts/check_board_sync.mjs
+          node scripts/check_board_reviews.mjs
           node scripts/check_fair.mjs
       - name: A sync as one call answers and writes what the statements do, in two round trips at most
         run: node scripts/check_sync_proc.mjs
@@ -395,6 +398,7 @@ jobs:
         run: |
           node scripts/check_board_sync.mjs
           WFSIM_SETTLE_ASYNC=1 node scripts/check_board_sync.mjs
+          WFSIM_SETTLE_ASYNC=1 node scripts/check_board_reviews.mjs
       - name: A row its page still computes is kept for it, and only a silent one loses it
         run: node scripts/check_renew.mjs
       - name: A riven gain is run by the community and credited when two owners agree
@@ -438,6 +442,8 @@ jobs:
         run: node scripts/check_user_task_center.mjs
       - name: Search tasks and saved-riven batches retain their captured inputs
         run: node scripts/check_task_executors.mjs
+      - name: Exact official simulations request durable independent board reviews
+        run: node scripts/check_board_review_page.mjs
       - name: Community transfer completes through two real WASM witnesses
         run: node scripts/check_task_service_browser.mjs
       - name: Protocol 8 on the page keeps every result and holds to the signal and next_ms

@@ -109,6 +109,13 @@ check("a fact is shipped and its row spent", await run("ship_facts.sh", "facts.n
 file("facts-again.ndjson", `${JSON.stringify({ ...fact, score: 13 })}\n`);
 check("...and measured again it is overwritten", await run("ship_facts.sh", "facts-again.ndjson") === 0
   && (await query("SELECT score FROM scores"))[0]?.score === 13);
+await query("UPDATE scores SET review_id = 'verified-review', score = 14, finished_at = '2026-10-02T00:00:00.000Z' WHERE identity = 'b1'");
+file("facts-late.ndjson", JSON.stringify({ ...fact, score: 1 }) + "\n");
+check("an older native fact cannot replace a newer verified review", await run("ship_facts.sh", "facts-late.ndjson") === 0
+  && (await query("SELECT score FROM scores WHERE identity = 'b1'"))[0]?.score === 14);
+file("facts-newer.ndjson", JSON.stringify({ ...fact, score: 13, finished_at: "2026-10-03T00:00:00.000Z" }) + "\n");
+check("a fresh native measurement supersedes a review and clears its proof pointer", await run("ship_facts.sh", "facts-newer.ndjson") === 0
+  && (await query("SELECT review_id FROM scores WHERE identity = 'b1'"))[0]?.review_id === null);
 check("the facts are read", await run("fetch_facts.sh", "facts-read.ndjson") === 0 && JSON.parse(read("facts-read.ndjson")[0]).score === 13);
 check("the library is read", await run("fetch_library.sh", "library.json") === 0 && readFileSync(join(dir, "library.json"), "utf8").includes("torid"));
 file("snapshot.ndjson", `${JSON.stringify({ k: "b2", v: { at: "2026-10-02", weapon: "braton", mods: [] } })}\n`);

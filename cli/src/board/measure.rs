@@ -191,6 +191,7 @@ mod tests {
                 "record": record, "ruler": ruler, "mode": mode,
             }));
             assert_eq!(order["request"], want, "the order names a different {mode} fight");
+            assert_eq!(order["identity"], json!(wfsim_engine::board::builds::build_id(&v)), "a review must target the library record being measured");
 
             let mut req = want.clone();
             req["runs"] = json!(9);

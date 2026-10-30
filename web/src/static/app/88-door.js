@@ -325,6 +325,7 @@ function agentSearchResults(limit) {
 /// so a feature added to the page without a door row is loud rather than a
 /// thing Nona silently cannot do. `todo` only shrinks: it is the door's backlog.
 const AGENT_EXEMPT = [
+  { sel: "#sim-board-review-auto", kind: "pref", why: "whether matching runs request independent board reviews, for this browser" },
   { sel: "#scenario-viewbar,[data-global-scenario]", kind: "view", why: "filters the scenario editor or navigates to its global settings" },
   { sel: ".layout-tools,.layout-move-tools,.layout-size-handle", kind: "pref", why: "card sizes and ordering are browser layout preferences" },
   { sel: ".bh", kind: "view", why: "a block's header folds it" },

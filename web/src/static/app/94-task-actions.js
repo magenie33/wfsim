@@ -11,7 +11,7 @@ AGENT_ACTIONS.push(
     },
   },
   {
-    id: "shell.tasks.manage", writes: "none", what: "Cancel, retry, remove or reorder a calculation in the task center.", anchor: "#user-tasks, #riven-analysis-queue",
+    id: "shell.tasks.manage", writes: "none", what: "Cancel, retry, remove or reorder a calculation, or hide an automatic observation.", anchor: "#user-tasks, #riven-analysis-queue",
     args: { task: { kind: "string", required: true, what: "id from shell.tasks.read" }, action: { kind: "string", required: true,
       what: "cancel, retry, remove, up, down, reset" } },
     async run({ task, action }) { if (["community", "local"].includes(action)) return agentNo("reader_gesture_required"); await initUserTasks(); await userTaskAction(action, task); return { text: "task updated" }; },

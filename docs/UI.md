@@ -928,6 +928,16 @@ calc's RUN COUNT — the reader's precision, not an edit to the fight. It lands
 LAST in the spread, or the box silently does nothing while every chip's
 tooltip quotes it.
 
+The simulator defaults to 1000 runs. An explicit browser preference survives
+reloads. Its global automatic board-review preference defaults on. Completion
+compares the frozen request with an existing published row: build, actual riven
+rolls and ranks, ruler, mode, seed, run count and fight must agree. The engine's
+buff list excludes settings this build never reads; class rules for other
+weapon classes do not affect the match. Unknown request fields prevent a match.
+An old engine stamp or a changed score requests independent verification.
+The result and task center observe that shared review; its verified number
+appears in the published board on the normal publication cycle.
+
 THE BUFF MAP TRAVELS WHOLE, because buff settings are the FIGHT's and it is
 the BUILD that decides which have a source (the server's `BuffCfg` is a
 lookup, so an entry nothing grants is never read). Pruning it to the current

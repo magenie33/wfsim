@@ -2033,6 +2033,21 @@ static server for `site/`, the Chrome launch, `evaluate`, `check`, `finish`.
 A check's page-side body is a TEMPLATE LITERAL: an unescaped backtick in it,
 including in a comment, ends the literal early.
 
+## `check_board_reviews`, `check_board_review_page`
+
+The service check applies real Postgres schemas on PGlite. It holds fresh
+rounds against cached facts, admission coalescing, frozen retry input,
+independent agreement, baseline races, protocol 8's statement and procedure
+paths, official fallback, withdrawn retries and proof retraction. Removing the
+stale-fact guard must make its cached-fact case fail. It also runs with
+`WFSIM_SETTLE_ASYNC=1` and `WFSIM_SYNC_PROC=1`.
+
+The page check uses published Laetum builds, including an actual riven corner.
+It checks the 1000-run default, saved preferences, effective global settings,
+changed-input rejection, durable outbox, score-free admission, hiding during an
+in-flight request and verified observation without a local executor. Only
+review transport is stubbed; engine parsing and published row matching are real.
+
 ## `check_task_executors`, `check_user_task_service`, `check_task_service_browser`
 
 The executor browser check runs a real optimizer, navigates away, opens its

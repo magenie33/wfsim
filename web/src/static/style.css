@@ -3964,3 +3964,4 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 #analysis-card-preview{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
 .analysis-card-choice,.analysis-executors label{flex-direction:row}.analysis-card-choice>input,.analysis-executors input{width:auto;flex:none}
 .analysis-executors label:has(:disabled){opacity:.5}
+.sim-review-auto{display:inline-flex;flex-direction:row;align-items:center;gap:6px;font-size:12px;color:var(--text-2)}.sim-review-auto input{width:auto;margin:0}
