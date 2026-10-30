@@ -5,6 +5,27 @@ import { isDeepStrictEqual } from "node:util";
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, finish } = app;
 
+const imageProbe = await app.send("Page.addScriptToEvaluateOnNewDocument", { source: `
+  window.weaponArrivalImages = [];
+  const imageSrc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, 'src');
+  Object.defineProperty(HTMLImageElement.prototype, 'src', { ...imageSrc, set(value) {
+    if (this.id === 'w-img') window.weaponArrivalImages.push(value);
+    imageSrc.set.call(this, value);
+  } });
+` });
+for (const [path, weapon] of [["Furis", "furis"], ["catchmoon_secondary", "catchmoon_secondary"]]) {
+  await app.load("/weapons/" + path + "/riven-analyst", 8000);
+  const first = await evaluate(`(() => {
+    const expected = IMG(weaponInfo(${JSON.stringify(weapon)}).image);
+    return { weapon: $('weapon').value, images: window.weaponArrivalImages,
+      correct: window.weaponArrivalImages.length > 0 && window.weaponArrivalImages.every(src => src === expected) };
+  })()`);
+  check(path + " cold-boots a hyphenated tab without painting another weapon first",
+    first.weapon === weapon && first.correct, JSON.stringify(first));
+}
+await app.send("Page.removeScriptToEvaluateOnNewDocument", { identifier: imageProbe.result.identifier });
+if (process.argv.includes("--arrival-only")) await app.finish("weapon arrivals paint the requested weapon first");
+
 for (const [from, to] of [['catchmoon_primary', 'catchmoon_secondary'], ['arbucep', 'nikana_prime']]) {
   const arrival = await evaluate(`(async () => {
     nav(weaponPath(${JSON.stringify(from)}));

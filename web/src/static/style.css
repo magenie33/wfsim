@@ -3648,7 +3648,7 @@ iframe.wld-frame{width:100%;height:480px;border:1px solid var(--line);border-rad
 #user-tasks-toggle{gap:5px;min-width:30px}
 #user-tasks-toggle[aria-expanded="true"]{color:var(--accent);border-color:var(--accent);background:var(--panel2)}
 #user-tasks-toggle.has-error{color:var(--gold);border-color:var(--gold)}
-.task-count{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:5px;padding:0 3px;background:var(--accent);color:var(--surface);font-size:10px;font-weight:700}
+.task-count{display:inline-flex;align-items:center;justify-content:center;min-width:2ch;height:16px;border-radius:5px;padding:0 3px;background:var(--accent);color:var(--surface);font-size:10px;font-weight:700;font-variant-numeric:tabular-nums}
 .task-center{position:fixed;z-index:40;top:60px;right:max(12px,calc((100vw - 1024px)/2));width:min(440px,calc(100vw - 24px));max-height:calc(100dvh - 76px);display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 40px #0004;overflow:hidden;font-size:13px}
 .task-head{display:flex;align-items:center;justify-content:space-between;padding:15px 18px 10px;gap:10px}
 .task-head h2{font-size:15px;font-weight:650;margin:0}
