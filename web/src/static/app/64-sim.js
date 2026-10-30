@@ -155,7 +155,7 @@ function rivenCardGot(w, sp) {
     const done = headlessRivenAnswer(pageSay(), a);
     rivenCardStats.set(key, done);
     document.querySelectorAll("[data-riven-card]").forEach((el) => {
-      if (el.dataset.rivenCard === key) el.innerHTML = headlessRivenCardBody(pageSay(), el.dataset.rivenName, done);
+      if (el.dataset.rivenCard === key) el.innerHTML = headlessRivenCardBody(pageSay(), done);
     });
   }, () => {}).finally(() => rivenCardPending.delete(ask));
   rivenCardPending.add(ask);
