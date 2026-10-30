@@ -312,13 +312,11 @@ async function fetchJson(url) {
 /// The router resolves the same slug and cannot be called yet — it draws, and
 /// boot has not filled the page. This answers the ONE question boot needs
 /// before it can fetch the right board: which weapon is about to be opened.
-/// Spelled the same way `route` spells it, id first and the wiki slug second.
+/// Uses the router's canonical id and wiki-name resolver.
 function routeWeaponId() {
-  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/[a-z]+)?\/?$/);
+  const m = location.pathname.match(/^\/weapons\/([^/]+?)(\/[a-z-]+)?\/?$/);
   if (!m) return "";
-  const slug = decodeURIComponent(m[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
-  const w = (META.weapons || []).find((x) => x.id === slug)
-    || (META.weapons || []).find((x) => wikiSlug(x).toLowerCase() === slug);
+  const w = headlessWeaponAt(META.weapons || [], m[1]);
   return w ? w.id : "";
 }
 

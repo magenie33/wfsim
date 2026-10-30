@@ -4,6 +4,8 @@ The top-right task center observes calculations started on their existing
 pages. Those pages own configuration and submission. The center owns waiting
 order, progress, cancellation, retry, executor transfers and saved report links;
 it has no separate creation or configuration form.
+The entry reserves two tabular digits for its active count and shows `00`
+while idle.
 
 ## Types and executors
 

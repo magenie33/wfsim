@@ -106,8 +106,8 @@ function renderUserTasks() {
   const queueError = userTasks?.error || userTasks?.commandError || userTasks?.eventError;
   const history = items.filter((task) => !task.transient && !userTaskActive(task));
   const count = $("user-tasks-count");
-  count.textContent = active.length;
-  count.hidden = !active.length;
+  count.textContent = String(active.length).padStart(2, "0");
+  count.hidden = false;
   toggle.classList.toggle("has-unread", items.some((task) => !task.transient && USER_TASK_TERMINAL.has(task.state) && !task.read_at));
   toggle.setAttribute("aria-expanded", String(userTaskPanelOpen));
   toggle.classList.toggle("has-error", items.some((task) => ["failed", "interrupted"].includes(task.state)));

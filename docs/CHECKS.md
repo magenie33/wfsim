@@ -272,6 +272,9 @@ reloads, Back/Forward, sharing from the other slot and a reload stash carrying
 the secondary build under the old chamber URL. A delayed destination board holds
 the route open while the previous weapon's rows land; neither Kitgun slots nor
 unrelated weapons may be routed back by that arrival.
+Cold loads of a hyphenated weapon tab record every weapon-image assignment;
+all must name the requested weapon, including a Kitgun slot. This fails if
+boot first applies the default weapon. Run this portion with `--arrival-only`.
 
 ## `check_accounts`
 
