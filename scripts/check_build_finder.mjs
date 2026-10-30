@@ -79,7 +79,8 @@ const r = await evaluate(`(async () => {
   const ex0 = b0.exilus && b0.exilus !== 'none' && !(b0.mods || []).includes(b0.exilus) ? [b0.exilus] : [];
   const saved = [...(b0.mods || []).filter(Boolean), ...ex0];
   const secs = [...row0.querySelectorAll('.fd-card .sb-h')];
-  const chips = secs.length ? [...secs[0].nextElementSibling.querySelectorAll('.sb-chip')] : [];
+  const mods = secs.find(s => s.textContent.startsWith(tr('Mods') + ' ·'));
+  const chips = mods ? [...mods.nextElementSibling.querySelectorAll('.sb-chip')] : [];
   out.cardMods = secs.length ? chips.length : -1;
   out.boardMods = saved.length;
   out.cardIcons = row0.querySelectorAll('.fd-card .sb-chip img').length;
@@ -236,8 +237,13 @@ const r = await evaluate(`(async () => {
     out.allCount = rows.length + '/' + want.length;
     out.allModes = new Set(rows.map((p) => p.mode)).size;
     out.allSorted = rows.every((p, i) => i === 0 || sc(rows[i - 1]) >= sc(p));
-    out.allNamed = [...box().querySelectorAll('tr.fr:not(.tie)')].every((tr, i) =>
-      tr.querySelector('.fd-sd').textContent.includes(rows[i].modeName));
+    out.allNamed = [...box().querySelectorAll('tr.fr:not(.tie)')].every((row, i) => {
+      const sections = [...row.querySelectorAll('.fd-card .sb-h')];
+      return sections[0]?.textContent === tr('Mode')
+        && sections[0].nextElementSibling.textContent.trim() === rows[i].modeName
+        && sections[1]?.textContent.startsWith(tr('Mods') + ' ·')
+        && !row.cells[0].textContent.includes(rows[i].modeName);
+    });
   }
 
   // A TIE IS ONE PLACE: builds on one exact score share a rank, the next score
@@ -347,7 +353,7 @@ check("Mode offers All when a ruler holds more than one mode", r.allSeg === true
 check("...listing every mode's builds in one list, best first",
   r.allSeg && r.allCount.split('/')[0] === r.allCount.split('/')[1] && r.allModes > 1 && r.allSorted,
   `${r.allCount} rows, ${r.allModes} modes, sorted ${r.allSorted}`);
-check("...each row naming its mode", r.allNamed === true);
+check("...each row shows its mode above mods in the build card, separate from the score", r.allNamed === true);
 check("a tie is one place: one exact score, one rank, and the next score the next rank", r.tiePlaces === true);
 check("...one row per place", r.tieHeads > 0 && r.tieRows.split('/')[0] === r.tieRows.split('/')[1], `${r.tieRows} rows/places, ${r.tieHeads} ties`);
 check("...naming the positions its builds differ in", r.tieFree === true);

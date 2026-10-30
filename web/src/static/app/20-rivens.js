@@ -1,8 +1,6 @@
 // ---- Rivens ------------------------------------------------------------
-// A CONSTRUCTOR, not a roller. Every control is bounded by the formula, so
-// the only rivens it can express are legal ones — including the corner where
-// every bonus rolls maximal and the malus minimal, which is not an edge
-// case here but the CEILING, the riven an optimizer wants to know about.
+// A constructor bounded by the formula: every legal roll is available,
+// including values inside the band rather than only its endpoints.
 //
 // The arithmetic is NOT duplicated: every change asks `/api/riven`, so a
 // slider can never drift from what the sim would build, and a typed value
@@ -316,9 +314,9 @@ function renderRivenStats() {
       <span class="rv-unit" data-slot="${slot}"></span>
     </div>`;
   };
-  $("riven-stats").innerHTML =
-    riven.bonuses.map((s, i) => row(String(i), s, false)).join("") +
-    (riven.malus ? row("malus", riven.malus, true) : "");
+  const displayed = rivenDisplayOrder(rivenPoolAll(), riven.bonuses.map((s, i) => ({ id: s.id, slot: String(i), stat: s }))
+    .concat(riven.malus ? [{ id: riven.malus.id, slot: "malus", stat: riven.malus }] : []));
+  $("riven-stats").innerHTML = displayed.map((s) => row(s.slot, s.stat, s.slot === "malus")).join("");
 
   const at = (slot) => (slot === "malus" ? riven.malus : riven.bonuses[Number(slot)]);
   $("riven-stats").querySelectorAll(".rv-pick").forEach((el) =>

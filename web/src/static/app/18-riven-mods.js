@@ -113,14 +113,15 @@ async function refreshRivenNames() {
   for (const p of ps) {
     try {
       const r = await api("/api/riven", { weapon, ...(p.state || {}) });
+      const stats = rivenDisplayOrder((META.riven_stats || {})[r.class] || [], r.stats || []);
       out[p.id] = {
         name: r.name || "",
-        lines: (r.stats || []).map((s) => s.text),
+        lines: stats.map((s) => s.text),
         // …AND WHICH OF THEM PAY NOTHING. A riven's stats are DE's rather than
         // ours, so a card can carry one this engine does not model — a melee
         // card's Finisher Damage — and it gets the same "partly modelled" line
         // a mod with a dead clause gets, naming the line that is dead.
-        unmodeled: (r.stats || []).filter((s) => !s.modeled).map((s) => s.text),
+        unmodeled: stats.filter((s) => !s.modeled).map((s) => s.text),
       };
     } catch (_) { /* a name is a nicety; the riven still equips */ }
   }

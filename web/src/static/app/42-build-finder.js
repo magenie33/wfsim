@@ -185,7 +185,6 @@ function renderBuildFinder() {
   }
   const inMo = (p) => p.benchmark === finder.b && (finder.mo === FINDER_EVERY_MODE || p.mode === finder.mo);
   if (finder.mo !== FINDER_EVERY_MODE && !all.some(inMo)) finder.mo = FINDER_EVERY_MODE;
-  const everyMode = finder.mo === FINDER_EVERY_MODE;
   const inScope = (p) => inMo(p)
     && (finder.rv === "all" || (finder.rv === "riven") === !!p.riven);
   const toks = new Map(all.map((p) => [p, finderTokens(p)]));
@@ -212,8 +211,12 @@ function renderBuildFinder() {
   const pct = (g) => `${g >= 0 ? "+" : "−"}${Math.abs(g * 100).toFixed(1)}%`;
   const sgn = (g) => (g > 0 ? "up" : g < 0 ? "down" : "");
   const rivenKey = (r) => JSON.stringify([((r || {}).bonuses || []).slice().sort(), (r || {}).malus || ""]);
-  const rivenStats = (rv) => [...(rv.bonuses || []).map((s) => finderTokenName("rv+:" + s)),
-    rv.malus ? finderTokenName("rv-:" + rv.malus) : ""].filter(Boolean).join(" ");
+  const rivenStats = (rv) => {
+    const rows = (rv.bonuses || []).map((id, i) => ({ id, slot: String(i), roll: rv.rolls?.[i] }))
+      .concat(rv.malus ? [{ id: rv.malus, slot: "malus", roll: rv.rolls?.[(rv.bonuses || []).length] }] : []);
+    return rivenDisplayOrder(rivenPoolAll(), rows).map((s) => finderTokenName((s.slot === "malus" ? "rv-:" : "rv+:") + s.id)
+      + (s.roll == null ? "" : ` ×${Number(Number(s.roll).toFixed(3))}`)).join(" ");
+  };
 
   // THE BUILD CARD (`buildCardHtml`). THE MODS RUN IN THE ORDER THE BUILD WAS
   // SAVED: elements combine in slot order, so a reordered row can read as a
@@ -228,7 +231,7 @@ function renderBuildFinder() {
       if (id === BOARD_RIVEN_SLOT) {
         const rv = r.riven || {};
         const same = lead ? rivenKey((lead.board || {}).riven) === rivenKey(rv) : null;
-        return { label: `${tr("Riven")} ${rivenStats(rv)}`, title: rivenStats(rv),
+        return { label: tr("Riven"), title: rivenStats(rv),
           cls: ["rv", same === true ? "same" : same === false ? "diff" : ""].filter(Boolean).join(" ") };
       }
       const [c, rank] = splitRank(id);
@@ -238,8 +241,10 @@ function renderBuildFinder() {
     };
     const marked = (chips) => chips.map((c) => ({ ...c, cls: mark(c.key) }));
     return `<div class="fd-card${lead ? " cmp" : ""}${big ? " big" : ""}">` + buildCardHtml({
+      mode: p.modeName || modeLabel(w, p.mode),
       // THE EXILUS RIDES AT THE END when the list does not already hold it.
       mods: [...(r.mods || []).filter(Boolean), ...(ex && !(r.mods || []).includes(ex) ? [ex] : [])].map(modChip),
+      riven: r.riven ? rivenSpecCardHtml(w, { name: "", spec: boardRivenState(r.riven) }) : "",
       parts: r.grip ? marked(partChipsOf(w.id, r.grip, r.loader)) : null,
       arcanes: (w.arcane_slots || 0) >= 1
         ? (r.arcanes || []).filter((id) => id && id !== "none").map((id) => {
@@ -350,8 +355,7 @@ function renderBuildFinder() {
     return `<tr class="fr${lead ? " mem" : ""}${n > 1 ? " tie" : ""}${finder.open === presetId(p) && !opened ? " x" : ""}${ref === p ? " ref" : ""}" data-frow="${escHtml(presetId(p))}">` +
       `<td><div class="fd-sv"><span class="fd-rank">#${p.rank}</span><b>${escHtml(shown(p))}</b></div>` +
       (n > 1 ? `<div class="fd-tie">${escHtml(trF("tied · {n} builds", { n }))}</div>` : "") +
-      `<div class="fd-sd">${ref === p ? escHtml(tr("reference")) : d != null ? `<span class="${sgn(d)}">${escHtml(pct(d))}</span>` : escHtml(unit)}` +
-      `${everyMode ? ` · ${escHtml(p.modeName || "")}` : ""}</div>` +
+      `<div class="fd-sd">${ref === p ? escHtml(tr("reference")) : d != null ? `<span class="${sgn(d)}">${escHtml(pct(d))}</span>` : escHtml(unit)}</div>` +
       `<div class="fd-sbar"><i style="width:${(score(p) / maxScore * 100).toFixed(1)}%"></i></div></td>` +
       `<td>${card(p, ref && ref !== p ? ref : lead && lead !== p ? lead : null)}${n > 1 ? freeHtml(g) +
         `<button type="button" class="fd-tiex" data-ftie="${escHtml(g.key)}">${escHtml(opened ? tr("Hide the exact builds") : trF("Show the {n} exact builds", { n }))}</button>` : ""}</td>` +

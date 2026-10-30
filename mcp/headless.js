@@ -312,16 +312,18 @@ function headlessBuildCardHtml(say, d) {
 /// A RIVEN SECTION'S HEADING: the reader's name for the card, then the name the
 /// game generates from its stats.
 const headlessRivenCardHead = (say, name, generated) => `<div class="sb-h">${headlessEsc(say.t("Riven"))}${
-  [name, generated].filter(Boolean).map((x) => ` · ${headlessEsc(x)}`).join("")}</div>`;
+  [name, generated].filter(Boolean).map((x) => ` · ${headlessEsc(x)}`).join("")}${say.meta.riven_rules
+    ? ` <span class="rk">(×${say.meta.riven_rules.roll_min}–${say.meta.riven_rules.roll_max})</span>` : ""}</div>`;
 /// RED IS THE MALUS, by its slot: a sign says nothing on recoil, whose bonus is a minus.
 const headlessRivenCardChips = (stats) => stats.map((x) => `<span class="sb-chip${x.malus ? " neg" : ""}"><span>${
-  headlessEsc(x.label)}</span>${x.roll != null ? `<span class="rk">×${Number(x.roll).toFixed(2)}</span>` : ""}</span>`).join("");
+  headlessEsc(x.label)}</span>${x.roll != null ? `<span class="rk">×${Number(Number(x.roll).toFixed(3))}</span>` : ""}</span>`).join("");
 const headlessRivenCardBody = (say, name, got) => headlessRivenCardHead(say, name, got.generated)
   + `<div class="sb-chips">${headlessRivenCardChips(got.stats)}</div>`;
 /// A RIVEN AS `/api/riven` PRINTED IT: the name the game gives it and each stat
 /// line in the locale — the page never computes a riven value itself.
 const headlessRivenAnswer = (say, a) => ({ generated: a.name || "",
-  stats: (a.stats || []).map((x) => ({ label: say.tf(x.text), roll: x.roll, malus: x.slot === "malus" })) });
+  stats: rivenDisplayOrder((say.meta.riven_stats || {})[a.class] || [], a.stats || [])
+    .map((x) => ({ label: say.tf(x.text), roll: x.roll, malus: x.slot === "malus" })) });
 /// THE RIVEN SECTION OF A BUILD CARD for `r` (`{ name, spec }`), its stats `got`
 /// (`headlessRivenAnswer`'s shape), keyed so a later answer can fill it in place.
 const headlessRivenSection = (say, w, r, got) => !r ? ""
@@ -598,6 +600,13 @@ const HEADLESS_WEAPON_ARG = { kind: "string", what: "weapon id; on the page, the
 /// A riven stat's English name off its card template — `|val|` and the unit go.
 const rivenStatNameEn = (s) =>
   s.text.replace("|val|", "").replace(/^\s*[%s]\s*/, "").replace(/\s+/g, " ").trim();
+
+/// Display spliced bonuses first and the malus last without changing stored slots or rolls.
+function rivenDisplayOrder(pool, rows) {
+  const spliced = new Set(pool.filter((s) => s.spliced).map((s) => s.id));
+  const group = (s) => s.slot === "malus" || s.malus === true ? 2 : spliced.has(s.id) ? 0 : 1;
+  return rows.slice().sort((a, b) => group(a) - group(b));
+}
 
 // ---- reading a riven off a screenshot ---------------------------------------
 //
