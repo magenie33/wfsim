@@ -22,7 +22,7 @@ const { evaluate, check } = app;
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Magistar'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Magistar/builder'); route(); await sleep(3500);
   const cap = () => document.getElementById('capacity').textContent;
   const forma = () => document.getElementById('forma').textContent;
   const out = { slotPol: stancePolOf(document.getElementById('weapon').value) };

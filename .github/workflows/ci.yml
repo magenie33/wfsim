@@ -530,6 +530,18 @@ jobs:
       - name: Kitgun module navigation keeps the selected slot and build
         if: matrix.group == 'views'
         run: node scripts/check_kitgun_slot.mjs
+      - name: The Build Library filters sorts and streams published builds
+        if: matrix.group == 'views'
+        run: node scripts/check_build_library.mjs
+      - name: Simple and advanced filters compile to one query
+        if: matrix.group == 'views'
+        run: node scripts/check_library_attributes.mjs
+      - name: Global calculation conditions keep one editable state
+        if: matrix.group == 'views'
+        run: node scripts/check_global_conditions.mjs
+      - name: Working navigation and execution controls remain accessible
+        if: matrix.group == 'views'
+        run: node scripts/check_working_navigation.mjs
       # THE DOWNLOAD OFFER, which has three answers and only one of them is
       # visible on the machine it was written on. Its failure modes are silent
       # and plausible — a Mac or Linux reader handed an .exe, a phone reader

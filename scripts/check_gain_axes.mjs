@@ -15,7 +15,7 @@ const { evaluate, check } = app;
 const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
-  history.pushState({},'','/weapons/Torid'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Torid/builder'); route(); await sleep(3000);
   const held = { ...evoSel };
   const cands = await gainCandidates({kind:'evo',idx:0});
   const swap = cands.find(c=>c.id==='torid_plentiful_mayhem');
@@ -41,7 +41,7 @@ check("a swap replaces ONE tier and leaves the rest alone",
 // and still not measured.
 const m = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-  history.pushState({},'','/weapons/Torid'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Torid/builder'); route(); await sleep(3000);
   slots.forEach(s => { s.mod = null; s.rank = null; });
   const w = weaponInfo('torid');
   const cands = () => gainCandidates({kind:'mode',idx:0});

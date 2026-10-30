@@ -23,7 +23,7 @@ const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const out = {};
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Braton_Prime'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Braton_Prime/builder'); route(); await sleep(3500);
 
   // A RUN COUNT HIGH ENOUGH THAT THE SCAN IS WATCHABLE. At the floor it can
   // finish inside one repaint and the strip would never be sampled — which
@@ -156,7 +156,7 @@ const r = await evaluate(`(async () => {
     return rec;
   };
 
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3500);
   await heavy(); await sleep(400);
   // CLIMB THE LADDER THROUGH THE CONTROL. A tier is locked until the one below
   // it is installed and EVERY weapon's tier 1 offers exactly one option (the
@@ -168,14 +168,14 @@ const r = await evaluate(`(async () => {
   if (await openSlot('dd-evo-2')) await pickFirst();
   out.evo = await watch('dd-evo-3');
 
-  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Kuva_Nukor/builder'); route(); await sleep(3500);
   await heavy(); await sleep(400);
   out.valence = await watch('dd-valence');
 
   // THE SHARPEST DENOMINATOR CASE, and the one that produced this rule: a
   // Kitgun's grip list is five rows and reported 12/23, because ONE scan
   // covers the grip and the loader and only one of the two is ever open.
-  history.pushState({}, '', '/weapons/Tombfinger'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Tombfinger/builder'); route(); await sleep(3500);
   await heavy(); await sleep(400);
   out.grip = await watch('dd-grip');
   return out;

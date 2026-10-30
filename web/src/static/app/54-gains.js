@@ -81,7 +81,7 @@ const gainRuns = () =>
 // A gain READS with its sign — "12.3%" and "+12.3%" are different claims.
 const gainPct = (x) => (x >= 0 ? "+" : "−") + sig2(Math.abs(x) * 100) + "%";
 
-// Quick calc's TWO settings: which saved scenario, and how many runs.
+// Quick calculation owns its run count; it reads the shared live scenario.
 //
 // A run count is the one knob whose right value nobody but the reader knows: it
 // depends on how close the answers turn out to be and on how long you are

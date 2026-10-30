@@ -23,7 +23,7 @@ await sleep(12000);
 
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  history.pushState({}, '', '/weapons/Ballistica_Prime'); route(); await sleep(4500);
+  history.pushState({}, '', '/weapons/Ballistica_Prime/builder'); route(); await sleep(4500);
   const out = { rounds: [] };
 
   // A MATURE BUILD, because an empty one is the cheap case and the reports are
@@ -122,7 +122,7 @@ const r = await evaluate(`(async () => {
   //    evolutions change the trigger, so one of the eighty candidates is
   //    legally refused — and a refusal counted as a hole meant that list could
   //    never be complete, never stamped, and re-ran for ever.
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(4500);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(4500);
   openPicker(0, anchor());
   const okT = await settled(120);
   out.toridRefused = Object.keys(gainScan.refused || {}).length;

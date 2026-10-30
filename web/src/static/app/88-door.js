@@ -17,7 +17,7 @@
 /// event names, for the same reason. A name that dies with a button breaks
 /// every agent that already learned it, and an agent cannot be migrated.
 const AGENT_DOOR_V = 1;
-const AGENT_MODULES = ["builder", "simulator", "optimizer", "rivens", "enemies"];
+const AGENT_MODULES = ["build-library", "builder", "simulator", "optimizer", "rivens", "enemies"];
 const AGENT_ID = /^[a-z]+\.[a-z]+\.[a-z]+$/;
 
 /// Where the reader is, READ OFF THE PAGE rather than parsed a second time.
@@ -325,8 +325,11 @@ function agentSearchResults(limit) {
 /// so a feature added to the page without a door row is loud rather than a
 /// thing Nona silently cannot do. `todo` only shrinks: it is the door's backlog.
 const AGENT_EXEMPT = [
+  { sel: "#scenario-viewbar,[data-global-scenario]", kind: "view", why: "filters the scenario editor or navigates to its global settings" },
+  { sel: ".layout-tools,.layout-move-tools,.layout-size-handle", kind: "pref", why: "card sizes and ordering are browser layout preferences" },
   { sel: ".bh", kind: "view", why: "a block's header folds it" },
   { sel: ".fold-h", kind: "view", why: "a section's header folds it" },
+  { sel: ".arena-editor-window", kind: "view", why: "expands the same fight editor and controls its visible panels" },
   { sel: "#jump-grip", kind: "view", why: "the jump menu scrolls the page" },
   { sel: "#topmenu", kind: "view", why: "moves between the site's pages" },
   { sel: "#tbmore-toggle", kind: "view", why: "opens the topbar's overflow" },

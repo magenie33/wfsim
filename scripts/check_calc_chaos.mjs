@@ -47,7 +47,7 @@ const r = await evaluate(`(async () => {
   // than outliving the whole check. The product default is 45 s / 90 s.
   LANE_WATCHDOG.loading = 4000;
   LANE_WATCHDOG.stall = 4000;
-  history.pushState({}, '', '/weapons/Ballistica_Prime'); route(); await sleep(4500);
+  history.pushState({}, '', '/weapons/Ballistica_Prime/builder'); route(); await sleep(4500);
   ['hornet_strike', 'galvanized_diffusion', 'galvanized_shot', 'lethal_torrent',
    'primed_convulsion', 'primed_heated_charge', 'galvanized_crosshairs']
     .forEach((id, i) => { if (slots[i + 1]) slots[i + 1].mod = id; });

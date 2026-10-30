@@ -2,7 +2,8 @@
 let initialTaskReport = { path: location.pathname, measurement: new URLSearchParams(location.search).get("measurement"),
   optimization: new URLSearchParams(location.search).get("task-result") };
 // ---- views: '/' = the weapon list (home); '/weapons/<Wiki_Name>' = the
-// BUILDER; '/weapons/<Wiki_Name>/simulator' = the SIMULATOR (tests the
+// BUILD LIBRARY; '/weapons/<Wiki_Name>/builder' = the BUILDER;
+// '/weapons/<Wiki_Name>/simulator' = the SIMULATOR (tests the
 // current build); '/weapons/<Wiki_Name>/optimizer' = the OPTIMIZER — one
 // tab per module (the page's three modules, "Simulator
 // sits in the middle"). URLs mirror wiki page names
@@ -56,6 +57,10 @@ let routeGen = 0;
 async function route() {
   // BOOT DRAWS THE FIRST PAGE, from whatever address a redirect left by then.
   if (!bootRouted) return;
+  closeArenaEditor(false);
+  libraryBeforeRoute();
+  normalizeLibraryAddress();
+  normalizeWarframeLibraryAddress();
   // AN EXTENSION'S PAGES ARE ROUTES TOO, so nothing is routed before it mounts.
   if (!extSettled) await extReady;
   leaveStartEdit();
@@ -121,7 +126,7 @@ async function route() {
   const authKind = authKindOf(location.pathname);
   // `/warframes/<Wiki_Name>` — the Warframe builder, a page of its own that
   // belongs to no weapon. Matched by id or by the wiki name, like a weapon.
-  const wfRoute = location.pathname.match(/^\/warframes\/([^/]+?)\/?$/);
+  const wfRoute = location.pathname.match(/^\/warframes\/([^/]+?)(?:\/(?:builder|build-library))?\/?$/);
   const wfSlug = wfRoute && decodeURIComponent(wfRoute[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
   const wfHit = wfSlug && wfFrames().find((f) =>
     f.id === wfSlug || f.name.toLowerCase().replace(/[\s-]+/g, "_") === wfSlug) || null;
@@ -134,7 +139,7 @@ async function route() {
     c.id === compSlug || c.name.toLowerCase().replace(/[\s-]+/g, "_") === compSlug) || null;
   // `/<name>` — a category the builder does not hold yet (`holds: placeholder`).
   const stub = placeholderSlots().find((sl) => location.pathname.replace(/\/$/, "").toLowerCase() === placeholderPath(sl)) || null;
-  const m = (support || bench || dl || util || wfHit || opRoute || compHit || stub || authKind) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/simulator|\/optimizer|\/rivens|\/riven-analyst|\/enemies|\/benchmark|\/card)?\/?$/);
+  const m = (support || bench || dl || util || wfHit || opRoute || compHit || stub || authKind) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/builder|\/build-library|\/simulator|\/optimizer|\/rivens|\/riven-analyst|\/enemies|\/benchmark|\/card)?\/?$/);
   // A hand-typed URL is not the canonical slug. Fold case and treat spaces
   // (and their %20) as underscores, so "/weapons/Dual Toxocyst" reaches the
   // same weapon as "/weapons/Dual_Toxocyst" instead of silently falling back
@@ -144,7 +149,7 @@ async function route() {
   // the shared name and the second slot would be unreachable again.
   const w = m && headlessWeaponAt(META.weapons || [], m[1]);
   // The active module: "" = builder, "simulator", "optimizer".
-  const mod = (w && m[2]) ? m[2].slice(1) : "";
+  const mod = w ? (m[2] === "/builder" ? "" : m[2] ? m[2].slice(1) : "build-library") : "";
   // THE ROWS BEFORE ANYTHING IS SHOWN. Waiting after the page was unhidden put
   // the PREVIOUS weapon on screen for the whole round trip. A route that another
   // navigation overtook while it waited draws nothing.
@@ -152,7 +157,7 @@ async function route() {
   if (w) await loadWeaponBoard(w.id);
   if (gen !== routeGen) return;
   if (w) {
-    const path = weaponPath(w.id) + (m[2] || "");
+    const path = weaponPath(w.id) + (mod === "build-library" ? "" : "/" + (mod || "builder"));
     if (location.pathname !== path) history.replaceState(history.state, "", path + location.search + location.hash);
   }
   // WHICH PAGE, as a kind and never an address: one point per kind per load.
@@ -194,6 +199,8 @@ async function route() {
   // means the site-wide ranking page, and one class with two meanings is
   // two pages hiding each other's blocks.
   document.body.classList.toggle("on-wbench", mod === "benchmark");
+  document.body.classList.toggle("on-build-library", mod === "build-library");
+  libraryLeaving(mod);
   // THE BODY THIS DOCUMENT DID NOT SHIP, before anything draws into it. The
   // four pages below are the ones a document carries only when it IS one of
   // them (`11-page-bodies.js`), and the route runs again once the file lands —
@@ -219,7 +226,7 @@ async function route() {
   const community = $("community-toggle");
   if (community) community.classList.toggle("sel", ["compute", "contributors", "clan"].includes(authKind));
   document.querySelector(".config-page").hidden = !w;
-  const modName = { simulator: "Simulator", optimizer: "Optimizer", rivens: "Rivens", "riven-analyst": "Riven Analyst", enemies: "Enemies", benchmark: "Benchmark" }[mod];
+  const modName = { "build-library": "Build Library", simulator: "Simulator", optimizer: "Optimizer", rivens: "Rivens", "riven-analyst": "Riven Analyst", enemies: "Enemies", benchmark: "Benchmark" }[mod];
   const modTitle = modName ? ` · ${tr(modName)}` : "";
   // A TITLE CARRIES THE SEARCH TERMS, not the headline: nobody looks for
   // "Simulacrum Prime", and the tab/result/share-card is the one place that
@@ -248,6 +255,7 @@ async function route() {
   renderAccountEntry();
   if (wfHit) {
     await showWarframe(wfHit.id);
+    renderWarframeLibrary();
     if (gen !== routeGen) return;
   } else if (compHit) {
     await showCompanion(compHit.id);
@@ -289,14 +297,15 @@ async function route() {
     const optimizationId = new URLSearchParams(location.search).get("task-result")
       || (initialTaskReport?.path === location.pathname ? initialTaskReport.optimization : null);
     initialTaskReport = null;
-    const wantMode = new URLSearchParams(location.search).get("mode");
+    const libraryAddress = mod === "build-library" ? location.pathname + location.search + location.hash : null;
+    const wantMode = libraryAddress ? null : new URLSearchParams(location.search).get("mode");
     // …AND THE CARD'S OWN QUESTION, for the same reason (45-card-page.js).
     const cardAsk = mod === "card" ? cardParams() : null;
     // WHICH RULER, from a board row. A row is a build AND the ruler it was
     // measured under; arriving with only the build gives you a number you
     // cannot reproduce, and arriving with neither gave you the FIRST ruler's
     // leader whichever board you clicked.
-    const wantBench = new URLSearchParams(location.search).get("bench");
+    const wantBench = libraryAddress ? null : new URLSearchParams(location.search).get("bench");
     // WHICH OF THE TWO LEADERS — see the link builder. Null when the link
     // predates the parameter, which means "whichever row leads".
     const rivenParam = new URLSearchParams(location.search).get("riven");
@@ -309,6 +318,7 @@ async function route() {
     if ($("weapon").value !== w.id) {
       switchWeapon(w.id);
     }
+    if (libraryAddress && location.pathname + location.search + location.hash !== libraryAddress) history.replaceState(history.state, "", libraryAddress);
     if (wantBench) applyBenchLink(w, wantBench, wantMode, wantRiven);
     // A TASK THIS BROWSER COMPUTED (73-compute.js), opened from its list.
     const wantTask = new URLSearchParams(location.search).get("task");
@@ -347,30 +357,29 @@ async function route() {
     if (mod === "card") renderCardPage(w, cardAsk);
     if (mod === "enemies") renderEnemies();
     if (mod === "benchmark") renderWeaponBench();
-    // THE PAGE'S OWN ANSWER, on every module: it describes the WEAPON and
-    // not the tab, so it stands above them rather than inside one.
-    renderWeaponDoc();
+    renderBuildLibrary();
+    renderQuickCalc();
   } else {
     renderHome();
   }
   // LAST: the jump menu indexes whatever the page has just become, and which
   // blocks a module shows is decided above.
+  refreshExecutionDock();
+  if (document.body.classList.contains("on-simulator")) { renderSimBuffs(); renderScenarioEditorView(); }
   renderJump();
 }
 
 // The current module's path suffix — weapon switches (search, select,
 // preset load) keep the visitor on the tab they are on.
-const modSuffix = () => (location.pathname.match(/\/(simulator|optimizer|rivens|riven-analyst|benchmark)\/?$/) || [null, ""])[1];
-const weaponModPath = (id) => weaponPath(id) + (modSuffix() ? "/" + modSuffix() : "");
+const modSuffix = () => libraryModuleSuffix();
+const weaponTabPath = (id, module) => weaponPath(id) + (module === "build-library" ? "" : "/" + (module || "builder"));
+const weaponModPath = (id) => weaponTabPath(id, modSuffix());
+const WEAPON_TABS = [["build-library", "Build Library"], ["", "Builder"], ["simulator", "Simulator"],
+  ["optimizer", "Optimizer"], ["rivens", "Rivens"], ["riven-analyst", "Riven Analyst"], ["enemies", "Enemies"]];
 
 // Module links follow the active weapon entry.
 function renderModuleTabs(mod = modSuffix()) {
-  const path = weaponPath($("weapon").value);
-  $("module-tabs").innerHTML = [
-    ["", "Builder"], ["simulator", "Simulator"], ["optimizer", "Optimizer"],
-    ["rivens", "Rivens"], ["riven-analyst", "Riven Analyst"],
-    ["benchmark", "Benchmark"], ["enemies", "Enemies"],
-  ].map(([id, label]) => `<a class="mtab ${mod === id ? "sel" : ""}" href="${path}${id ? "/" + id : ""}">${tr(label)}</a>`).join("");
+  $("module-tabs").innerHTML = WEAPON_TABS.map(([id, label]) => `<a class="mtab ${mod === id ? "sel" : ""}" href="${weaponTabPath($("weapon").value, id)}">${tr(label)}</a>`).join("");
 }
 
 // WHAT AN ARCANE SEAT IS CALLED: the pool it draws, which is a weapon type or

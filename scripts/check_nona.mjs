@@ -129,7 +129,7 @@ const MOCK = `http://127.0.0.1:${mock.address().port}`;
 
 const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
 const { evaluate, check, finish } = app;
-await app.load("/weapons/Torid");
+await app.load("/weapons/Torid/builder");
 
 const run = (provider, base) => evaluate(`(async () => {
   const wait = (ms) => new Promise(r => setTimeout(r, ms));
@@ -241,7 +241,7 @@ const PICKER = `(async () => {
   return [...document.querySelectorAll("#dd-menu .opt[data-v]")];
 })()`;
 
-await app.load("/weapons/Torid");
+await app.load("/weapons/Torid/builder");
 const kept = await evaluate(`(async () => {
   const wait = (ms) => new Promise(r => setTimeout(r, ms));
   document.getElementById("nona-fab").click();

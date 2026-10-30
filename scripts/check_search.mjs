@@ -26,7 +26,7 @@ const { evaluate, check, sleep, send } = app;
 const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
-  history.pushState({},'','/weapons/Verglas_Prime'); route(); await sleep(3500);
+  history.pushState({},'','/weapons/Verglas_Prime/builder'); route(); await sleep(3500);
   const out = {};
   // A scope the browser can exhaust in seconds: six mods, full builds only.
   const req = {

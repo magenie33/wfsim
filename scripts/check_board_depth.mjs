@@ -106,7 +106,7 @@ check("#1 still means #1 — the shown ranks do not move with the depth",
 
 // …and the choice is the reader's, so it outlives the page.
 await evaluate(`setBoardDepth(0)`);
-await app.load("/weapons/Braton_Prime");
+await app.load("/weapons/Braton_Prime/builder");
 await sleep(3000);
 const kept = await evaluate(`String(boardDepth)`);
 check("the depth survives a reload", kept === "0", kept);

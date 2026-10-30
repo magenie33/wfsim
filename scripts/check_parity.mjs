@@ -155,7 +155,7 @@ const settled = async (id) => {
       const n = Array.isArray(v[0]) ? v.map((x) => x.length).join(",") : v.length;
       notes.push(`${k} ${n}`);
     }
-    await send("Page.navigate", { url: `${url}/weapons/${r.weapon}` });
+    await send("Page.navigate", { url: `${url}/weapons/${r.weapon}/builder` });
     await settled(r.weapon);
     const shownBuilder = await evaluate(VISIBLE);
     const diffs = [];
@@ -213,7 +213,7 @@ const VIS = await app.evaluate(`(async () => {
       for (const o of t.options) if ((o.unmodeled || []).length) flagged.push(o.id);
     }
     if (!flagged.length) continue;
-    history.pushState({}, '', weaponPath(w.id)); route(); await s(900);
+    history.pushState({}, '', weaponPath(w.id) + '/builder'); route(); await s(900);
     for (const id of flagged) {
       // THE ROW YOU CHOOSE FROM. A tier is a dropdown, so what to read is a
       // list row — rendered with ddRender, the same function the popover
@@ -274,7 +274,7 @@ const NOT_A_ROW = [
 const AXES = await app.evaluate(`(async () => {
   const s = (ms) => new Promise(r => setTimeout(r, ms));
   // A weapon that HAS every axis, so nothing is missing for want of a subject.
-  history.pushState({}, '', weaponPath('kuva_nukor')); route(); await s(2500);
+  history.pushState({}, '', weaponPath('kuva_nukor') + '/builder'); route(); await s(2500);
   const sc = builtinScenarios().find(x => x.builtin === 'standard_single_target');
   pickPreset(scenarioBarCfg(), presetId(sc)); await s(900);
   return { build: Object.keys(snapshotState()), payload: Object.keys(boardPayload() || {}) };

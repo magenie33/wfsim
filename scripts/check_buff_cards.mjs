@@ -22,7 +22,7 @@ const { evaluate, check, sleep, send } = app;
 
 const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-  history.pushState({},'','/weapons/Laetum'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Laetum/builder'); route(); await sleep(3000);
   evoSel = {1:'laetum_evo1_incarnon_form',2:'laetum_rapid_wrath',3:'laetum_lethal_rearmament',
             4:'laetum_caput_mortuum',5:'laetum_overwhelming_attrition'};
   markPresetDirty(); renderEvo(); refreshPanel(); await sleep(2500);
@@ -50,7 +50,7 @@ const r = await evaluate(`(async () => {
   const atZero = [...document.querySelectorAll('.rp-now')].map(e=>e.textContent.trim());
   // The UNCAPPED card: Secondary Enervate ramps with no ceiling, so its card
   // must show an infinity rather than a number somebody invented.
-  history.pushState({},'','/weapons/Dual_Toxocyst'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Dual_Toxocyst/builder'); route(); await sleep(3000);
   arcanes = ['secondary_enervate']; markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
   document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
   await sleep(1500);
@@ -65,7 +65,7 @@ const r = await evaluate(`(async () => {
   // the weapon — and Sentient Surge is the mod that reads the count. The card
   // has to exist, cap at the WEAPON's 4, and REACH the fight: set it and the
   // replay must show the count it was set to.
-  history.pushState({},'','/weapons/Ocucor'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Ocucor/builder'); route(); await sleep(3000);
   slots[0] = { mod:'sentient_surge', pol:slots[0].pol, rank:null };
   markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
   document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
@@ -100,7 +100,7 @@ const r = await evaluate(`(async () => {
   // the BASE form of an Incarnon cycle, and it exists only while the fight is
   // scoped in — so this walks all three: the card is there aiming, it is GONE
   // from the hip, and setting it moves the number.
-  history.pushState({},'','/weapons/Vectis_Prime'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Vectis_Prime/builder'); route(); await sleep(3000);
   slots.forEach(s => { s.mod = null; s.rank = null; });
   ['serration','split_chamber','point_strike','vital_sense'].forEach((id,i) => {
     slots[i] = { mod:id, pol:slots[i].pol, rank:null };
@@ -163,7 +163,7 @@ const r = await evaluate(`(async () => {
   // hit is what a player would count. Galvanized Chamber rides along as the
   // negative control: an ordinary stack-capped buff in the same run must still
   // read a count out of a count.
-  history.pushState({},'','/weapons/Soma_Prime'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Soma_Prime/builder'); route(); await sleep(3000);
   slots.forEach(s => { s.mod = null; s.rank = null; });
   slots[0] = { mod:'hata_satya', pol:slots[0].pol, rank:null };
   slots[1] = { mod:'galvanized_chamber', pol:slots[1].pol, rank:null };
@@ -187,7 +187,7 @@ const r = await evaluate(`(async () => {
   // text says a mission never takes the buff, so it is not one a player keeps
   // up — it is one they walk in carrying, and a card at 0/2 models somebody who
   // just spawned. Every other buff on the same weapon still opens earned.
-  history.pushState({},'','/weapons/Soma_Prime'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Soma_Prime/builder'); route(); await sleep(3000);
   slots.forEach(s => { s.mod = null; s.rank = null; });
   slots[0] = { mod:'galvanized_chamber', pol:slots[0].pol, rank:null };
   // The whole ladder, because a tier only unlocks under the ones below it.
@@ -335,7 +335,7 @@ check("...while an ordinary earned buff beside it still opens at zero",
 // coarse set: a weak-point kill is not a kill.
 const bev = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-  history.pushState({},'','/weapons/Ocucor'); route(); await sleep(3500);
+  history.pushState({},'','/weapons/Ocucor/builder'); route(); await sleep(3500);
   const at = (box, k) => [...document.querySelectorAll('#'+box+' ['+k+']')].map(x => x.dataset[k === 'data-bev' ? 'bev' : 'bevg']);
   const out = {
     vocab: (META.buff_triggers || []).map(t => t.id),

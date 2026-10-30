@@ -46,7 +46,7 @@ for (const [label, w, h, mobile] of SCREENS) {
 
   const r = await evaluate(`(async () => {
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-    history.pushState({}, '', '/weapons/Ocucor'); route(); await sleep(2600);
+    history.pushState({}, '', '/weapons/Ocucor/builder'); route(); await sleep(2600);
     // The static check server has no account providers. Draw the signed-out
     // production entry so phone geometry covers the control readers need.
     accountState = { providers: ['email'], account: null, loaded: true };
@@ -146,7 +146,7 @@ for (const [label, w, h, mobile] of SCREENS) {
   // empty mod grid and every opening threw on a null - which reads exactly
   // like the bug it is here to catch. A block that depends on where the last
   // one left the page is a block that reports the wrong thing.
-  history.pushState({}, '', '/weapons/Ocucor'); route(); await sleep(2600);
+  history.pushState({}, '', '/weapons/Ocucor/builder'); route(); await sleep(2600);
   const pool2 = (META.weapons.find(x => x.id === 'ocucor') || {}).mods || [];
   for (let i = 0; i < 8 && i < pool2.length; i++) slots[i] = { mod: pool2[i], pol: null, rank: null };
   renderMods(); await sleep(1400);
@@ -345,7 +345,7 @@ for (const lang of ["en", "zh"]) {
   for (const w of [360, 390, 430]) {
     await send("Emulation.setDeviceMetricsOverride",
       { width: w, height: 800, deviceScaleFactor: 2, mobile: true });
-    await send("Page.navigate", { url: BASE + "/weapons/Ocucor" });
+    await send("Page.navigate", { url: BASE + "/weapons/Ocucor/builder" });
     await sleep(9000);
     const g = await evaluate(`(async () => {
       const sleep = (ms) => new Promise(r => setTimeout(r, ms));

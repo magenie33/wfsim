@@ -56,7 +56,7 @@ check("the ids survive the next load", JSON.stringify(second) === JSON.stringify
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   const list = () => loadPresetList('builder-builds');
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3000);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3000);
   const bar = () => document.querySelector('#preset-bar-builder-builds');
   bar().querySelector('.pchip.add').click(); await sleep(800);
   // Past the undo coalescing window, so the Ctrl+Z below undoes the edit alone.
@@ -96,7 +96,7 @@ await evaluate(`(() => {
   localStorage.setItem('wfsim-custom-open-enemies', 'boss');
   put('wfsim-presets-simulator-scenarios', [{ id: 's1', name: 'my fight', savedAt: 1, state: { enemy: 'custom:boss', level: 100 } }]);
 })()`);
-await app.load("/weapons/Torid");
+await app.load("/weapons/Torid/builder");
 const m = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   const get = (k) => JSON.parse(localStorage.getItem(k) || 'null');

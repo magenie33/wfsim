@@ -17,7 +17,7 @@ const { evaluate, check, sleep, send } = app;
 const r = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
-  history.pushState({},'','/weapons/Cernos_Prime'); route(); await sleep(3000);
+  history.pushState({},'','/weapons/Cernos_Prime/builder'); route(); await sleep(3000);
   ['primed_cryo_rounds','serration','point_strike','vital_sense'].forEach((m,i)=>{
     if (modById(m)) { slots[i].mod=m; slots[i].rank=modById(m).max_rank; }});
   arcanes=['primary_frostbite'];

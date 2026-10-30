@@ -27,7 +27,7 @@ await sleep(12000);
 // same throttle window as the rest.
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  history.pushState({}, '', '/weapons/Ballistica_Prime'); route(); await sleep(4000);
+  history.pushState({}, '', '/weapons/Ballistica_Prime/builder'); route(); await sleep(4000);
   const out = {};
   const fill = ['hornet_strike', 'galvanized_diffusion', 'galvanized_shot',
     'lethal_torrent', 'primed_convulsion', 'primed_heated_charge', 'galvanized_crosshairs'];

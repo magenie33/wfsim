@@ -132,7 +132,7 @@ const r = await evaluate(`(async () => {
     b_before: out.bBefore, pushes: window.__b1Pushes, a_known_at: ka.at, a_cursor: JSON.parse(localStorage.getItem('wfsim-sync') || '{}').cursor, clock };
 
   // A REMOTE EDIT TO THE BUILD ON SCREEN REACHES THE SCREEN.
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3000);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3000);
   const onScreen = builds().find((p) => p.id === 'b1');
   if (onScreen) pickPreset(buildBarCfg(), onScreen.name);
   await sleep(600);
@@ -146,7 +146,7 @@ const r = await evaluate(`(async () => {
   srv.acc1.set('zz1', { list: 'wfsim-presets-torid-builder-builds', body: { id: 'zz1', name: 'from an agent', savedAt: Date.now(), state: st('point_strike') },
     updated_at: Date.now(), synced_at: clock++, version: 1 });
   // Arriving from elsewhere, as a link does: a weapon is opened, not re-shown.
-  history.pushState({}, '', '/weapons/Braton'); route(); await sleep(2500);
+  history.pushState({}, '', '/weapons/Braton/builder'); route(); await sleep(2500);
   history.pushState({}, '', '/weapons/Torid?build=zz1'); route(); await sleep(3000);
   out.linkBefore = activePreset;
   await syncNow(); await sleep(800);
@@ -186,7 +186,7 @@ const r = await evaluate(`(async () => {
   await sleep(300);
   out.rivenOff = (loadPresetList(RIVENS).find((p) => p.id === rid) || {}).cloud_sync === false
     && !!rcloud() && !rcloud().classList.contains('on') && !activeRivenId();
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(1400);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(1400);
   // "UPLOAD NEW ITEMS" OFF: a new entry stays here.
   setSyncAuto(false);
   const add = (id) => localStorage.setItem(L, JSON.stringify(builds().concat([{ id, scope: 'torid', name: id, savedAt: Date.now(), state: st('serration') }])));
@@ -301,7 +301,7 @@ const r = await evaluate(`(async () => {
   if (other) other.click();
   await sleep(600);
   out.signedOutPicks = [!!other, activePreset === pickedBefore, location.pathname];
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(1400);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(1400);
   who = 'none'; await loadAccount();
   out.noAccounts = document.querySelectorAll('#preset-bar-builder-builds .pcloud').length;
   window.fetch = realFetch;
@@ -357,7 +357,7 @@ check("an account without the feature says so, and pushes nothing more",
   r.notIncluded === "not_included" && r.acc3Calls === 1, ok([r.notIncluded, r.acc3Calls]));
 
 check("signed out, a chip's cloud is a link to sign in that comes back here",
-  r.signedOut[0] && r.signedOut[1] === "/login?return=" + encodeURIComponent("/weapons/Torid") && r.signedOut[2] === 0, ok(r.signedOut));
+  r.signedOut[0] && r.signedOut[1] === "/login?return=" + encodeURIComponent("/weapons/Torid/builder") && r.signedOut[2] === 0, ok(r.signedOut));
 check("...and a click on it opens sign-in, picking no entry", ok(r.signedOutPicks) === ok([true, true, "/login"]), ok(r.signedOutPicks));
 check("with no way to sign in, no chip carries a cloud", r.noAccounts === 0, r.noAccounts);
 

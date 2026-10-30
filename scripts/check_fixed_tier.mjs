@@ -8,7 +8,7 @@ import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 11000 });
 const { evaluate, check, sleep, send, BASE } = app;
 
-await send("Page.navigate", { url: BASE + "/weapons/Torid" });
+await send("Page.navigate", { url: BASE + "/weapons/Torid/builder" });
 await sleep(11000);
 const r = await evaluate(String.raw`(async () => {
   const nap = (ms) => new Promise((r) => setTimeout(r, ms));

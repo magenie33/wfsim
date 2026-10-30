@@ -28,7 +28,7 @@ await sleep(12000);
 
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  history.pushState({}, '', '/weapons/Kuva_Nukor'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Kuva_Nukor/builder'); route(); await sleep(3500);
   const out = {};
 
   // THE PAYLOAD IS THE ROW'S. Built from a result that shares no axis with the

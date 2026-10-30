@@ -20,7 +20,7 @@ function renderSimBuild() {
     rec ? ` <span class="fd-when" title="${escHtml(measuredNote())}">· ${rec}</span>` : ""}` : "";
   const w = weaponInfo($("weapon").value);
   box.innerHTML = cardOfState(snapshotState(), w)
-    + aplHtml(w) + `<div class="sb-wielder"></div><div class="sb-frame"></div><a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}">${tr("edit in Builder")}</a>`;
+    + aplHtml(w) + `<div class="sb-wielder"></div><div class="sb-frame"></div><a class="ghost-btn small sb-edit" href="${weaponPath($("weapon").value)}/builder">${tr("edit in Builder")}</a>`;
   renderSimWielder(box.querySelector(".sb-wielder"));
   renderSimFrame(box.querySelector(".sb-frame"));
   // The part value analysis lists THIS build's parts, so it follows the card.
@@ -308,31 +308,18 @@ const wfOverride = (key, label, floorKey, min, max, step, why) => {
     + `</label>`;
 };
 
-// The SCENARIO — enemy, technique, measurement — is the SIMULATOR's, and the
-// optimizer borrows it rather than keeping a lookalike: one state, one
-// renderer, so a search is scored under the fight you are simulating with by
-// construction. `ids` names the host per section and a section with no host is
+// The scenario has one global state and renderer across calculation modules.
+// `ids` names the host per section and a section with no host is
 // not drawn. ENGAGEMENT LENGTH sits with the enemy rather than the measurement,
 // which is why the optimizer needs it and needs neither Runs nor Measure.
-/// **THE WHOLE FIGHT — every axis, including the ones this weapon hides.**
-///
-/// The blocks above show what APPLIES to the weapon in front of you, which
-/// leaves a field this weapon FORCES and one it merely does not use invisible;
-/// both still travel. SO IT IS A READING SURFACE FIRST: a forced row says what
-/// it will run as and WHY — `sim.headshot_pct` can be 100 on a Verglas while
-/// the run is computed at 0. EDITABLE WHERE A CONTROL CAN MEAN IT: a flag and a
-/// number here, while a formation or a buff map is edited in its own panel.
-/// **EVERY RULE THIS FIGHT MAKES, FOR EVERY CLASS** — the one surface where a
-/// scenario is edited as the whole document it is. DERIVED FROM THE ENGINE'S
-/// OWN LEGALITY TABLE: exactly the (class, axis) pairs
-/// `META.class_rules.overridable` lists. A CLASS WITH NOTHING TO ARGUE ABOUT IS
-/// STILL LISTED, saying so — dropping it would read as "we did not check".
+// Class rules offer only the overrides declared legal by the engine.
 function houseRulesRow(w) {
   const classes = ((META && META.class_rules) || {}).classes || [];
   const here = w && w.weapon_class;
   const NAMES = {
     primary: tr("Primary"), secondary: tr("Secondary"),
     archgun: tr("Arch-Gun"), sentinel: tr("Companion Weapon"),
+    melee: tr("Melee"),
   };
   const cols = classes.map((cls) => {
     const pairs = overridablePairs().filter((p) => p[0] === cls);
@@ -344,19 +331,19 @@ function houseRulesRow(w) {
           const on = rule === undefined ? !!dflt : !!rule;
           return `<label class="check" title="${escHtml(f ? tr(f.why) : "")}">`
             + `<input type="checkbox" data-cr="${escHtml(cls)}|${escHtml(id)}" data-crdef="${!!dflt}"`
-            + `${on ? " checked" : ""}> <code>${escHtml(id)}</code>`
+            + `${on ? " checked" : ""}> <span>${escHtml(scenarioAxisLabel(id))}</span>`
             + (rule === undefined
                 ? ` <span class="wf-was">${escHtml(tr("default"))}</span>`
                 : ` <b>${escHtml(tr("ruled by this fight"))}</b>`)
             + `</label>`;
         }).join("")
       : `<i class="wf-absent">${escHtml(tr("nothing to decide"))}</i>`;
-    return `<div class="hr-col${cls === here ? " here" : ""}">`
+    return `<div class="hr-col${cls === here ? " here" : ""}" data-context-applicable="${cls === here}">`
       + `<div class="hr-h">${escHtml(NAMES[cls] || cls)}`
       + (cls === here ? ` <span class="wf-was">${escHtml(tr("this weapon"))}</span>` : "")
       + `</div>${body}</div>`;
   }).join("");
-  return `<div class="wf-row wf-hr"><code>class_rules</code>`
+  return `<div class="scenario-rule-card"><h4>${escHtml(tr("Weapon class rules"))}</h4>`
     + `<div class="hr-grid">${cols}</div>`
     + `<span class="wf-why">${escHtml(tr(
         "rules this fight makes for a whole weapon class, so any weapon can be measured against this one document. Only what the sim SIMPLIFIES can be ruled on — the game's own limits are not offered"))}</span>`
@@ -381,13 +368,6 @@ function renderWholeFight() {
   };
   host.innerHTML = GROUPS.map(([g, label]) => {
     const rows = axes.filter((a) => a.group === g).map((a) => {
-      // THE HOUSE RULES ARE THE "GLOBAL EDIT", and they are
-      // the reason this panel is more than a reading surface: the ordinary
-      // blocks show the fight AS IT APPLIES TO THE WEAPON IN FRONT OF YOU,
-      // which is the right default and cannot say what this same document does
-      // to an Arch-Gun. This row is where a reader edits the classes they are
-      // not currently pointed at.
-      if (a.id === "class_rules") return houseRulesRow(w);
       const f = settledAxis(w, a.id);
       const live = sim[a.id];
       // THE FORCED ROW SHOWS BOTH NUMBERS. What the document says and what the
@@ -407,37 +387,16 @@ function renderWholeFight() {
               : escHtml(tr("ruled by this fight for the {c} class").replace("{c}", cls))
           }</span>`
         : shown(live);
-      const editable = !f && (a.kind.t === "flag" || a.kind.t === "number");
-      const ctl = editable
-        ? (a.kind.t === "flag"
-            ? `<input type="checkbox" data-k="${a.id}"${live ? " checked" : ""}>`
-            : `<input type="number" data-k="${a.id}" min="${a.kind.min}" max="${a.kind.max}" value="${
-                live === undefined || live === null ? "" : live}">`)
-        : "";
       return `<div class="wf-row${f ? " forced" : ""}">`
         + `<code>${escHtml(a.id)}</code>`
         + `<span class="wf-val">${val}</span>`
-        + `<span class="wf-ctl">${ctl}</span>`
+
         + (f ? `<span class="wf-why">${escHtml(tr(f.why))}</span>` : "")
         + `</div>`;
     }).join("");
     return `<div class="wf-group"><div class="wf-g-h">${escHtml(label)}</div>${rows}</div>`;
   }).join("");
-  // The same generic binding every other scenario field uses, so a change here
-  // is a change to the fight and nothing else has to know about this panel.
-  host.querySelectorAll("[data-cr]").forEach((el) => {
-    el.addEventListener("change", () => { applyClassRule(el); renderSim(); });
-  });
-  host.querySelectorAll("[data-k]").forEach((el) => {
-    el.addEventListener("change", () => {
-      const k = el.dataset.k;
-      // See the other binding below for why an empty number DELETES the key.
-      writeScenarioFields({ [k]: el.type === "number" && el.value === "" ? null
-        : el.type === "checkbox" ? el.checked : Number(el.value) });
-      markScenarioDirty();
-      renderSim();
-    });
-  });
+
 }
 
 function renderScenarioFields(ids, opts = {}) {
@@ -590,7 +549,7 @@ function renderScenarioFields(ids, opts = {}) {
   // is a statement about what this run does not model, and the things that
   // will join it are the same kind of statement.
   if (ids.limits) {
-    $(ids.limits).innerHTML = ammoField(w, sim) + pickupFields(sim) + buffTriggersField();
+    $(ids.limits).innerHTML = ammoField(w, sim) + pickupFields(sim) + houseRulesRow(w) + `<div class="scenario-trigger-rules">${buffTriggersField()}</div>`;
   }
 
   // ---- 3b. THE FIGHT'S OWN STAT BONUSES --------------------------------
@@ -635,11 +594,7 @@ function renderScenarioFields(ids, opts = {}) {
   const boxes = [ids.target, ids.technique, ids.limits, ids.extra, ids.run]
     .filter(Boolean)
     .map($);
-  // READ-ONLY hosts get the same fields, in the same order, showing the same
-  // values — and no way to change them. A preset is edited in exactly ONE
-  // place: two editors over one document is how a document
-  // gets edited twice and saved once. The optimizer therefore SHOWS the fight
-  // and links to the module that owns it.
+  // A read-only projection uses the same values; edits use the shared editor.
   if (opts.readonly) {
     boxes.forEach((box) => box.querySelectorAll("[data-k],[data-xk],[data-bev],[data-bevg]").forEach((el) => {
       el.disabled = true;

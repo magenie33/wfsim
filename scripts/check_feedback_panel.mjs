@@ -30,7 +30,7 @@ await page(`
   window.fetch = (u, o) => String(u).endsWith('/api/feedback')
     ? (window.__sent.push(JSON.parse(o.body)), Promise.resolve(new Response(JSON.stringify(window.__answer))))
     : real(u, o);
-  history.pushState({}, '', '/weapons/Rubico_Prime'); await route();
+  history.pushState({}, '', '/weapons/Rubico_Prime/builder'); await route();
   accountState = { providers: ['google'], account: null, loaded: true };
   renderAccountEntry();
 `);
@@ -102,7 +102,7 @@ await page(`window.__answer = { ok: true, id: 7 };
   document.getElementById('feedback-text').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true }));`);
 await sleep(800);
 const sent = await page(`return window.__sent.at(-1);`);
-check("Ctrl+Enter sends the words with where the reader was", sent && sent.text.startsWith("Hunter") && sent.route === "/weapons/Rubico_Prime"
+check("Ctrl+Enter sends the words with where the reader was", sent && sent.text.startsWith("Hunter") && sent.route === "/weapons/Rubico_Prime/builder"
   && typeof sent.release === "string" && sent.lang === "zh" && /\/weapons\/Rubico_Prime\?/.test(sent.share || ""), JSON.stringify(sent).slice(0, 300));
 check("…and the screenshots as JPEG", sent && sent.images.length === 2 && sent.images.every((u) => u.startsWith("data:image/jpeg;base64,")));
 check("…and nothing that asks what it is about", sent && Object.keys(sent).sort().join() === "images,lang,release,route,share,text", sent && Object.keys(sent).join());

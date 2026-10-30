@@ -27,7 +27,7 @@ const r = await evaluate(`(async () => {
   const names = { praedos: META.weapons.find(w => w.id === 'praedos').name, braton: META.weapons.find(w => w.id === 'braton').name };
   history.pushState({}, '', '/'); route(); await sleep(1500);
 
-  history.pushState({}, '', '/warframes/Prototype'); route(); await sleep(3500);
+  history.pushState({}, '', '/warframes/Prototype/builder'); route(); await sleep(3500);
   const chips = () => [...document.querySelectorAll('#preset-bar-warframes .pchip:not(.add)')]
     .map(c => ({ name: c.dataset.name, by: (c.querySelector('.pby') || {}).title || '' }));
   const listed = chips();
@@ -53,7 +53,7 @@ check("...and it moved neither weapon's link",
 // lands on the DEFAULT — the read-only blank — not on some other preset.
 const d = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-  history.pushState({}, '', '/warframes/Prototype'); route(); await sleep(3500);
+  history.pushState({}, '', '/warframes/Prototype/builder'); route(); await sleep(3500);
   const twoSel = () => '#preset-bar-warframes .pchip[data-name="' + (wfBarCfg().load().find((p) => p.name === 'preset 2') || {}).id + '"]';
   document.querySelector(twoSel()).click(); await sleep(800);
   const del = () => document.querySelector('#preset-bar-warframes .pchip.sel .pop.del');

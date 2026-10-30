@@ -48,6 +48,7 @@ function rivenMods() {
 }
 
 /// A resolved definition as an equippable card, independent of its ownership.
+const rivenDrainAt = (rank) => 2 + 2 * (rank ?? 8);
 function rivenModOf(p, w = rivenContextWeapon || presetWeapon()) {
   const st = p.state || {};
   const stats = (st.bonuses || st.positives || []).concat(st.malus || st.curse || []);
@@ -69,7 +70,7 @@ function rivenModOf(p, w = rivenContextWeapon || presetWeapon()) {
     family: "riven",
     rarity: "legendary",
     polarity: (st.polarity || "madurai").replace(/^./, (c) => c.toUpperCase()),
-    drain: 2 + 2 * (st.rank ?? 8),
+    drain: rivenDrainAt(st.rank),
     max_rank: 8,
     // THE CARD'S RANK IS THE SLOT'S. The engine prints and fights a riven at
     // the rank its spec carries and never reads a slot rank for one, so the
@@ -197,31 +198,18 @@ const stancePool = () => poolWithRivens().filter((m) => m.stance);
 /// AN AXIS IS SHOWN IFF IT HAS OPTIONS — one rule in place of three category
 /// guesses (`!sentinel`, `arcane_slots >= 1`, `uses_evo2`) standing in for "is
 /// there anything to choose here", each remembered twice.
-// INFINITE AMMO — on by DEFAULT for every weapon, because the sim models no
-// ammo PICKUPS: a finite reserve is the pessimistic half of a mechanic we only
-// half have. A weapon whose reserve is infinite IN GAME cannot be switched off
-// it (every sentinel prints "Ammo Max: infinity / Ammo Type: None"), which
-// shows as a TICKED, DISABLED box rather than a hidden one.
-// WHERE the fight happens, when that changes the weapon. An Arch-Gun on the
-// ground and in Archwing is the SAME weapon — same damage, same mod pool, same
-// riven — and only its sustain differs (reload 2.50 vs 4.50, a finite 400-round
-// reserve vs a regenerating magazine), so it is a scenario axis rather than a
-// second entry. Shown only where there is a choice.
+// Deployment choices come from weapon data; the full view edits them from any weapon.
 const deployField = (w, state) => {
-  const opts = w.deployments || [];
-  if (opts.length < 2) return "";
-  const cur = opts.includes(state.deployment) ? state.deployment : opts[0];
-  return `<label title="${escHtml(tr("where the weapon is fired — it changes reload and ammo, nothing else"))}">${escHtml(tr("Environment"))} ` +
-    ddButton("dd-deployment", {
-      value: cur,
-      dataK: "deployment",
-      // The data keys are lowercase; the LABEL is the wiki's own column head,
-      // keyed apart because "Archwing" alone is the equipment category.
-      items: opts.map((o) => {
-        const en = o[0].toUpperCase() + o.slice(1), key = `${en} (environment)`, t = tr(key);
-        return { value: o, label: t === key ? en : t };
-      }),
-    }) + `</label>`;
+  const local = w.deployments || [];
+  if (local.length < 2 && !scenarioAll()) return "";
+  const options = [...new Set((META.weapons || []).flatMap(weapon => weapon.deployments || []))];
+  const selected = state.deployment || options[0];
+  return `<label data-search="${escHtml(tr("Arch-Gun"))} Archgun deployment environment">${escHtml(tr("Environment"))} ` + ddButton("dd-deployment", {
+    value:selected,dataK:"deployment",items:options.map(value => {
+      const name = value[0].toUpperCase() + value.slice(1), key = name + " (environment)", label = tr(key);
+      return {value,label:label === key ? name : label};
+    }),
+  }) + (local.length < 2 ? `<small class="scenario-effective">${escHtml(tr("Not used by this weapon"))}</small>` : "") + `</label>`;
 };
 
 // IS THE TARGET ITS ELITE VARIANT? Offered only where one EXISTS, because
@@ -381,101 +369,23 @@ const setClassRule = (cls, id, v) => {
   if (Object.keys(rules).length) sim.class_rules = rules; else delete sim.class_rules;
   markScenarioDirty();
 };
-// A SENTINEL WEAPON IS ALWAYS AIMING — it just never aims
-// at the HEAD, which is why its headshot default is 0 and every on-headshot
-// trigger stays dead anyway. Ticked and disabled, the same shape as infinite
-// ammo: the state is real, the control is honestly unavailable.
-const aimField = (w, state) => {
-  const f = settledAxis(w, "aiming");
-  const forced = !!f;
-  const on = forced ? !!f.value : state.aiming;
-  const why = forced
-    ? tr(f.why)
-    : tr("mods that only work while aiming (Galvanized Crosshairs, Argon Scope, Sharpened Bullets…) grant nothing when this is off");
-  return `<label class="check" title="${escHtml(why)}"><input type="checkbox" data-k="aiming"${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Aiming"))}</label>`;
+// Global inputs remain editable; the engine's settled value is a separate readback.
+const aimField = (w,state) => `<label class="check"><input type="checkbox" data-k="aiming"${state.aiming ? " checked" : ""}> ${escHtml(tr("Aiming"))}${scenarioEffective(w,"aiming")}</label>`;
+const zoomField = (w,state) => {
+  const local = w.zoom_levels || [];
+  if (local.length < 2 && !scenarioAll()) return "";
+  const levels = [...new Set((META.weapons || []).flatMap(weapon => weapon.zoom_levels || []))].sort((a,b) => a-b);
+  const current = state.scope_zoom || 0;
+  return `<label data-search="scope sniper zoom">${escHtml(tr("Zoom"))}<select data-k="scope_zoom" data-num="1"><option value="0"${current === 0 ? " selected" : ""}>${escHtml(tr("Highest zoom"))}</option>`
+    + [...new Set([...levels,...(current ? [current] : [])])].sort((a,b) => a-b).map(value => `<option value="${value}"${value === current ? " selected" : ""}>${value.toFixed(1)}x</option>`).join("")
+    + `</select>${scenarioEffective(w,"scope_zoom")}${local.length < 2 ? `<small class="scenario-effective">${escHtml(tr("Not used by this weapon"))}</small>` : ""}</label>`;
 };
-/// …AND AT WHICH ZOOM LEVEL. A sniper's scope has two or three, each with its
-/// own buff, and the top one is what every ruler fights at — stored as 0, so a
-/// fight that never touched this keeps meaning the top level on every weapon.
-/// Shown only where there is a level to pick (`settledAxis`).
-const zoomField = (w, state) => {
-  const levels = (w && w.zoom_levels) || [];
-  if (settledAxis(w, "scope_zoom") || levels.length < 2) return "";
-  const top = levels[levels.length - 1];
-  const cur = levels.includes(state.scope_zoom) && state.scope_zoom !== top ? state.scope_zoom : 0;
-  const options = levels.map((m) => {
-    const v = m === top ? 0 : m;
-    return `<option value="${v}"${v === cur ? " selected" : ""}>${m.toFixed(1)}x</option>`;
-  }).join("");
-  const why = tr("the scope's zoom level: each grants its own buff while aiming, and the top one is what every ruler fights at");
-  return `<label title="${escHtml(why)}">${escHtml(tr("Zoom"))} <select data-k="scope_zoom" data-num="1">${options}</select></label>`;
+const headshotField = (w,state) => `<label>${escHtml(tr("Headshot %"))}<input type="number" data-k="headshot_pct" min="0" max="100" value="${state.headshot_pct}">${scenarioEffective(w,"headshot_pct")}</label>`;
+const chargingHeadshotField = (w,state) => {
+  if (!w.has_cycle && !scenarioAll()) return "";
+  return `<label class="check"><input type="checkbox" data-k="gauge_charging_headshots"${state.gauge_charging_headshots ? " checked" : ""}> ${escHtml(tr("Headshots while charging"))}${scenarioEffective(w,"gauge_charging_headshots")}${!w.has_cycle ? `<small class="scenario-effective">${escHtml(tr("Not used by this weapon"))}</small>` : ""}</label>`;
 };
-/// …AND ITS HEADSHOT RATE IS 0 AND NOT YOURS.
-///
-/// The VALUE was already right from both ends — `defaultHeadshotPct` opens a
-/// sentinel at 0, and `parse_fight` forces 0 on one whatever the request
-/// carries. The CONTROL was not: a bare number input, editable, so a reader
-/// could type 100 on a Verglas, watch the page accept it, and get a run
-/// computed at 0 with nothing on screen saying why. A column that is shown and
-/// not applied looks exactly like one that works — the same fault
-/// `check_custom_enemies` was written for, in another panel.
-///
-/// It is DISPLAY-ONLY, and that is deliberate: `sim.headshot_pct` belongs to a
-/// scenario SHARED across the whole roster (`SHARED_DOMAINS`), so writing 0
-/// into it here would rewrite the fight every time a sentinel was opened and
-/// auto-save would store it — which is the exact trap `switchWeapon` documents
-/// and avoids. So the field shows 0 and disables itself while the underlying
-/// scenario keeps whatever the reader set for the rest of the roster.
-const headshotField = (w, state) => {
-  const f = settledAxis(w, "headshot_pct");
-  const forced = !!f;
-  const val = forced ? f.value : state.headshot_pct;
-  const why = forced
-    ? tr(f.why)
-    : tr("a per-PELLET aim weight on the body the shot STRUCK, not a whole-spread promise — the landing spot is rolled for each pellet, and nothing a blast or a chain reaches can be a headshot");
-  return `<label title="${escHtml(why)}">${escHtml(tr("Headshot %"))} <input type="number" data-k="headshot_pct" min="0" max="100" value="${val}"${forced ? " disabled" : ""}></label>`;
-};
-/// …AND EVERY HIT A HEADSHOT WHILE THE BASE FORM CHARGES THE GAUGE, on a
-/// weapon that has a cycle: a player putting every shot on the head to fill
-/// it, then playing the form at the rate beside it. Off is what every ruler
-/// plays.
-const chargingHeadshotField = (w, state) => {
-  if (!(w && w.has_cycle)) return "";
-  const f = settledAxis(w, "gauge_charging_headshots");
-  const forced = !!f;
-  const on = forced ? !!f.value : !!state.gauge_charging_headshots;
-  const why = forced
-    ? tr(f.why)
-    : tr("while the weapon is in its base form charging the Incarnon gauge, every hit is a headshot; once it transforms, the headshot % beside this applies");
-  return `<label class="check" title="${escHtml(why)}"><input type="checkbox" data-k="gauge_charging_headshots"${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Headshots while charging"))}</label>`;
-};
-/// …AND THE AMMO BOX IS THE ONE FIELD A FIGHT MAY ARGUE WITH.
-///
-/// Settled OFF on a ground Arch-Gun because it cannot be resupplied — but that
-/// is OUR pessimistic stand-in for ammo pickups the sim has no entities for,
-/// not a rule of the game, so a scenario is allowed to say otherwise. When it
-/// is, the box stays LIVE and writes this fight's rule for the class rather
-/// than the scenario's own field: the setting is about Arch-Guns, so it is
-/// stored against Arch-Guns and applies to every one of them.
-const ammoField = (w, state) => {
-  const f = settledAxis(w, "infinite_ammo");
-  const cls = w && w.weapon_class;
-  const ruled = f && f.overridable && cls;
-  const rule = ruled ? classRuleOf(cls, "infinite_ammo") : undefined;
-  const forced = !!f && !ruled;
-  const on = ruled
-    ? (rule === undefined ? !!f.value : !!rule)
-    : (f ? !!f.value : state.infinite_ammo !== false);
-  const why = ruled
-    ? tr(f.why) + " — " + tr("this fight can rule otherwise for the whole class, and that is what this box writes")
-    : f
-      ? tr(f.why)
-      : tr("on = ammo pickups keep the reserve topped up, which the sim has no entities for; off = it runs dry. The magazine and its reloads apply either way");
-  const attr = ruled
-    ? `data-cr="${escHtml(cls)}|infinite_ammo" data-crdef="${!!f.value}"`
-    : `data-k="infinite_ammo"`;
-  return `<label class="check${ruled && rule !== undefined ? " ruled" : ""}" title="${escHtml(why)}"><input type="checkbox" ${attr}${on ? " checked" : ""}${forced ? " disabled" : ""}> ${escHtml(tr("Infinite ammo"))}</label>`;
-};
+const ammoField = (w,state) => `<label class="check"><input type="checkbox" data-k="infinite_ammo"${state.infinite_ammo !== false ? " checked" : ""}> ${escHtml(tr("Infinite ammo"))}${scenarioEffective(w,"infinite_ammo")}</label>`;
 
 /// THE AMMO ECONOMY — what the bodies leave, and how far it is collected from.
 ///

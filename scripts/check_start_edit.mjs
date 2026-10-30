@@ -16,7 +16,7 @@ const app = await openApp({ boot: 12000 });
 const r = await app.evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Verglas_Prime'); route(); await sleep(3000);
+  history.pushState({}, '', '/weapons/Verglas_Prime/builder'); route(); await sleep(3000);
   const out = {};
   // The player's own build: three cards, which autosave makes a preset.
   ['serration','split_chamber','vital_sense'].forEach((m, i) => equipMod(i, m, null));

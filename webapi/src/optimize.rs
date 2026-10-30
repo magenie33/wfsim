@@ -25,6 +25,9 @@ mod quick;
 // over the WHOLE scope, not one build. `apply_buff_config` applies each per
 // candidate where present.
 pub fn opt_buffs_json(v: &Value) -> Value {
+    if v.get("global").and_then(Value::as_bool) == Some(true) {
+        return crate::scenario_catalog::buff_catalog_json();
+    }
     let info = match crate::registry::weapon_of(v) {
         Ok(info) => info,
         Err(no) => return no,

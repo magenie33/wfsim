@@ -767,7 +767,7 @@ const AGENT_ACTIONS = [
     id: "optimizer.search.start",
     writes: "none",
     what: "Start a build search with the optimizer's current scope against the current fight. Returns at once; a search takes minutes — read its progress with optimizer.search.read.",
-    anchor: "#run-opt",
+    anchor: '#run-opt, [data-execution-run="run-opt"]',
     needs_weapon: true,
     args: {},
     async run() {
@@ -802,7 +802,7 @@ const AGENT_ACTIONS = [
     id: "optimizer.search.stop",
     writes: "none",
     what: "Stop the running build search. A compatible saved checkpoint remains available for retry.",
-    anchor: "#run-opt",
+    anchor: '#run-opt, [data-execution-run="run-opt"]',
     needs_weapon: true,
     args: {},
     async run() {
@@ -1028,7 +1028,7 @@ const AGENT_ACTIONS = [
       if (module === "home") { nav("/"); return { text: "opened the roster" }; }
       const id = weapon || agentRoute().weapon;
       if (!id) return agentNo("no_weapon_open", { argument: "weapon" });
-      nav(weaponPath(id) + (module === "builder" ? "" : "/" + module));
+      nav(weaponTabPath(id, module));
       return { text: `opened ${module} on ${weaponInfo(id).name}` };
     },
   },
@@ -1217,7 +1217,7 @@ const AGENT_ACTIONS = [
     id: "simulator.run.start",
     writes: "none",
     what: "Run the fight and return the headline number. Takes as long as the reader's own run takes.",
-    anchor: "#run-sim",
+    anchor: '#run-sim, [data-execution-run="run-sim"]',
     needs_weapon: true,
     args: {},
     async run() {

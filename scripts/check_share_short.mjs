@@ -94,7 +94,7 @@ for (const c of [CODE, "3102.4.5~~", "1eJyrVkrLz1eyUkpKLFKqBQAdegQp", "0W1sxLDJd
 
 served.length = 0;
 const page = await call(`/weapons/Dual_Toxocyst/s/${a.j.id}`);
-check("the short path serves the weapon's own page", page.status === 200 && served[0] === "/weapons/Dual_Toxocyst",
+check("the short path serves the weapon's own page", page.status === 200 && served[0] === "/weapons/Dual_Toxocyst/builder",
   `${page.status} ${served.join(",")}`);
 
 // THE PREVIEW: a chat reads the head, so the head must describe THIS build.
@@ -113,7 +113,7 @@ const HEAD = `<html><head><title>Torid — board</title>
 <meta name="description" content="the board's best" />
 <meta property="og:title" content="Torid — board" />
 <meta property="og:description" content="the board's best" />
-<meta property="og:url" content="https://wfsim.app/weapons/Torid" />
+<meta property="og:url" content="https://wfsim.app/weapons/Torid/builder" />
 </head><body></body></html>`;
 const envP = {
   LIBRARY,

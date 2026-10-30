@@ -21,20 +21,18 @@ function renderOpt() {
   updateOptEstimate();
 }
 
-/// THE FIGHT, READ BACK: which scenario, where it is edited, and the card. Not
-/// a preset bar — that bar renames, duplicates and deletes, and the scenario
-/// collection is the simulator's to edit. Redrawn wherever the fight changes.
+/// The fight read back, with an entry to the one global scenario editor.
 function renderOptFight() {
   if (!META) return;
   const box = $("opt-fight-brief");
   if (box) box.innerHTML = fightCardHtml();
   const ref = $("opt-scenario-ref");
   if (ref) {
-    const w = weaponInfo($("weapon").value) || {};
     ref.innerHTML =
       `<span class="plabel">${escHtml(tr("Scenario"))}</span>` +
       `<span class="pchip sel" title="${escHtml(tr("the scenario the simulator is set to"))}">${escHtml(presetLabel(scenarioNamed(activeScenario)) || tr("current"))}</span>` +
-      `<a class="pchip" href="${weaponPath(w.id)}/simulator">${escHtml(tr("edit in the Simulator"))} →</a>`;
+      `<button type="button" class="pchip" data-global-scenario>${escHtml(tr("Edit global scenario"))} →</button>`;
+    ref.querySelector("[data-global-scenario]").onclick = openCalculationScenario;
   }
 }
 

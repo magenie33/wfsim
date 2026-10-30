@@ -34,7 +34,7 @@ const r = await evaluate(`(async () => {
   // WHAT THE OPEN ENTRY IS CALLED: the pointer holds its id.
   const nameOf = (d, id) => (id ? ((loadPresetList(d).find((p) => p.id === id) || {}).name || id) : id);
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3000);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3000);
   const fresh = Object.assign(${counts}, {
     active: nameOf('builder-builds', activePreset),
     bareWeapon: slots.every(s => !s.mod) && (arcanes || []).every(a => !a || a === 'none'),
@@ -67,7 +67,7 @@ const r = await evaluate(`(async () => {
   const scoped = Object.assign(${counts}, { active: nameOf('optimizer', activeOptPreset) });
 
   // AND THE FIRST BUILD EDIT MAKES A BUILD.
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(2600);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(2600);
   slots[0].mod = 'serration'; slots[0].rank = 10;
   markPresetDirty(); renderMods(); await sleep(1400);
   const edited = Object.assign(${counts}, {

@@ -29,7 +29,7 @@ const PROBE = (lang) => `(async () => {
   // in an already-booted page — switch the live pair the way the picker does.
   LANG = ${JSON.stringify(lang)};
   I18N = LANG === 'en' ? null : ((await api('/api/i18n'))[LANG] || null);
-  history.pushState({},'','/weapons/Boar_Prime'); route(); await sleep(4500);
+  history.pushState({},'','/weapons/Boar_Prime/builder'); route(); await sleep(4500);
   const out = { lang: ${JSON.stringify(lang)} };
 
   // 1. IT EXISTS, and its identity is the benchmark id rather than its name.
@@ -170,7 +170,7 @@ for (const lang of ["en", "zh"]) {
 const BUILDS_PROBE = `(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
-  history.pushState({},'','/weapons/Torid'); route(); await sleep(4500);
+  history.pushState({},'','/weapons/Torid/builder'); route(); await sleep(4500);
   const out = {};
   // AN EMPTY BOARD IS A REAL STATE — a weapon nobody has submitted for shows no
   // chips, which is right rather than a bug to work around.
@@ -269,7 +269,7 @@ check("...and the copy is an ordinary editable build",
 const CONSENT_PROBE = `(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   localStorage.clear();
-  history.pushState({},'','/weapons/Torid'); route(); await sleep(4500);
+  history.pushState({},'','/weapons/Torid/builder'); route(); await sleep(4500);
   const out = {};
   // Watch the WIRE, not the function: what matters is whether a request left.
   const real = window.fetch;

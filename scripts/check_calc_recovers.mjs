@@ -48,7 +48,7 @@ check("the engine is one download, asked for before app.js has arrived",
 
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  history.pushState({}, '', '/weapons/Braton'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Braton/builder'); route(); await sleep(3500);
   const out = {};
 
   // A DEAD SLOT IS REPLACED. The unit of the whole fix: everything else follows

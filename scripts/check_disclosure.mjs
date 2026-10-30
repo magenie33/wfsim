@@ -65,7 +65,7 @@ for (const lang of ["en", "zh"]) {
       return null;
     };
 
-    history.pushState({}, '', '/weapons/Stug'); route(); await sleep(3800);
+    history.pushState({}, '', '/weapons/Stug/builder'); route(); await sleep(3800);
     const out = { lang: ${JSON.stringify(lang)} };
 
     // 1. THE WEAPON BANNER. The Stug is the roster's most-disclaimed weapon:
@@ -89,7 +89,7 @@ for (const lang of ["en", "zh"]) {
     //     same screen, prints DE's 180%. The engine carried that as
     //     echo_multiplier and said so nowhere a reader could see, which is how
     //     it was reported.
-    history.pushState({}, '', '/weapons/Laetum'); route(); await sleep(3200);
+    history.pushState({}, '', '/weapons/Laetum/builder'); route(); await sleep(3200);
     const lb = document.getElementById('stats-livebug');
     out.bugShown = lb && !lb.hidden;
     out.bugHead = lb ? (lb.querySelector('.unmod-h') || {}).textContent || '' : '';
@@ -108,7 +108,7 @@ for (const lang of ["en", "zh"]) {
     out.evoScope = evoRows('.exchip.scope')
         .map(e => ({ text: e.textContent.trim(), why: e.getAttribute('title') || '' }));
     // …AND BACK TO THE STUG, which every step below reads as the open weapon.
-    history.pushState({}, '', '/weapons/Stug'); route(); await sleep(3200);
+    history.pushState({}, '', '/weapons/Stug/builder'); route(); await sleep(3200);
     // …AND THE THIRD, which is not a shortfall of ours at all: a clause the
     // GAME does not pay out. The mod and arcane cards have carried live bugs
     // since 2026-08-08 and the evolutions had no arm for one until an owner
@@ -172,7 +172,7 @@ for (const lang of ["en", "zh"]) {
     //    has nothing — every pistol mod is modelled — so asserting there would
     //    be asserting against an empty set. The Torid's rifle pool carries
     //    both kinds, and it doubles as the control below.
-    history.pushState({}, '', '/weapons/Torid'); route(); await sleep(2800);
+    history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(2800);
     openPicker(0, document.querySelector('.slot'));
     await sleep(400);
     out.modChips = [...document.querySelectorAll('#mod-menu .unmodeled')]
@@ -241,7 +241,7 @@ for (const lang of ["en", "zh"]) {
     //
     // The day nothing in the roster is inert, this stops finding a weapon and
     // says so, which is the right way to learn that the ratchet reached zero.
-    history.pushState({}, '', '/weapons/Felarx'); route(); await sleep(3200);
+    history.pushState({}, '', '/weapons/Felarx/builder'); route(); await sleep(3200);
     out.todoChips = evoRows('.exchip.unmod').map(e => e.textContent.trim());
     out.todoScope = evoRows('.exchip.scope').map(e => e.textContent.trim());
 
@@ -260,7 +260,7 @@ for (const lang of ["en", "zh"]) {
     // mean anything: Riddled Target sits beside it, has no such note, and must
     // carry no chip. A check that only asserts presence passes just as well on
     // a page that stamps "card is wrong" on everything.
-    history.pushState({}, '', '/weapons/Latron_Prime'); route(); await sleep(3800);
+    history.pushState({}, '', '/weapons/Latron_Prime/builder'); route(); await sleep(3800);
     const pick = evoOpt;
     out.misprintDeclared = ((META.weapons || [])
       .find((w) => w.id === 'latron_prime') || {}).evolutions || [];
@@ -289,7 +289,7 @@ for (const lang of ["en", "zh"]) {
     // aim state, so every while-aiming bonus resolves to nothing in it. A mod
     // that silently contributes zero is indistinguishable from a broken one, so
     // the panel names the form and the reason.
-    history.pushState({}, '', '/weapons/Vasto_Prime'); route(); await sleep(3200);
+    history.pushState({}, '', '/weapons/Vasto_Prime/builder'); route(); await sleep(3200);
     slots[0] = { mod: 'galvanized_crosshairs' };
     evoSel[1] = 'vasto_prime_evo1_incarnon_form';
     markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
@@ -297,7 +297,7 @@ for (const lang of ["en", "zh"]) {
         .filter(e => /aim down sights/.test(e.textContent))
         .map(e => e.textContent.replace(/[ ]+/g, ' ').trim());
     // …and the SAME mod on a weapon whose forms all zoom gets no such line.
-    history.pushState({}, '', '/weapons/Lex_Prime'); route(); await sleep(3000);
+    history.pushState({}, '', '/weapons/Lex_Prime/builder'); route(); await sleep(3000);
     slots[0] = { mod: 'galvanized_crosshairs' };
     markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
     out.zoomFalsePositives = [...document.querySelectorAll('#stats-conditionals .scond')]
@@ -316,7 +316,7 @@ for (const lang of ["en", "zh"]) {
     //    fixed by reading the per-ATTACK spread the wiki module publishes
     //    instead, which is the primary value anyway.
     //    (No backticks in here: this block lives inside a template literal.)
-    history.pushState({}, '', '/weapons/Torid'); route(); await sleep(3200);
+    history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3200);
     out.cleanBanner = document.querySelector('.unmod-h') ? 'shown' : 'absent';
     out.cleanEvoChips = evoRows('.exchip.unmod').length;
     return out;

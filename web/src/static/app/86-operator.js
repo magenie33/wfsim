@@ -371,7 +371,8 @@ async function showWarframe(id) {
       wfChanged();
     });
   }
-  if (!wf || wf.frame !== id) {
+  const requested = new URLSearchParams(location.search).get("build");
+  if (!wf || wf.frame !== id || (requested && requested !== wfActive)) {
     const list = presetListWithIds(WF_BUILDS, id);
     const last = localStorage.getItem(presetActiveKey(WF_BUILDS, id));
     // `?build=` NAMES THE BUILD TO OPEN — a weapon's wielder link.
@@ -382,3 +383,53 @@ async function showWarframe(id) {
   renderWarframe();
 }
 
+
+function normalizeWarframeLibraryAddress() {
+  const hit = location.pathname.match(/^\/warframes\/([^/]+?)(?:\/(builder|build-library))?\/?$/);
+  if (!hit) return;
+  const q = new URLSearchParams(location.search);
+  const editor = hit[2] === 'builder' || q.has('embed') || q.has('build');
+  const next = '/warframes/' + hit[1] + (editor ? '/builder' : '') + location.search + location.hash;
+  if (location.pathname + location.search + location.hash !== next) history.replaceState(history.state, '', next);
+}
+function warframeLibraryCard(state) {
+  const st = wfNormalize(state, wf.frame);
+  const mod = s => {
+    const m = s && wfMod(s.mod);
+    return m ? {label:m.name, img:IMG(m.image), rank:s.rank ?? m.max_rank} : null;
+  };
+  const chips = (title, values) => `<div class="sb-h">${escHtml(title)}</div><div class="sb-chips">${values.length ? values.map(label => `<span class="sb-chip"><span>${escHtml(label)}</span></span>`).join('') : `<span class="sb-empty">${escHtml(tr('none selected'))}</span>`}</div>`;
+  const shards = st.shards.filter(Boolean).map(s => {
+    const d = SHARDS().find(x => x.id === s.shard), o = d?.options.find(x => x.id === s.effect);
+    return d && o ? wfShardLine(d,o,s.tauforged) : '';
+  }).filter(Boolean);
+  return buildCardHtml({aura:[mod(st.slots[WF_AURA])].filter(Boolean), mods:st.slots.slice(0,8).map(mod).filter(Boolean),
+    exilus:[mod(st.slots[WF_EXILUS])].filter(Boolean), arcanes:st.arcanes.map(a=>{
+      const arc=wfArcane(a.id);return arc ? {label:arc.name,img:IMG(arc.image),rank:a.rank ?? arc.max_rank} : null;
+    }).filter(Boolean)}) + chips(tr('Archon Shards'),shards)
+    + chips(tr('Helminth'),st.helminth.ability ? [(wfAbility(st.helminth.ability)?.name || st.helminth.ability)] : []);
+}
+function renderWarframeLibrary() {
+  const page=$('warframe-page'), f=wfFrames().find(f=>f.id===wf?.frame);
+  if (!f || page.hidden) return;
+  const base=warframePath(f), editor=/\/builder\/?$/.test(location.pathname);
+  page.classList.toggle('wf-library',!editor);
+  $('wf-module-tabs').innerHTML=[['',tr('Build Library')],['/builder',tr('Builder')]]
+    .map(([suffix,label])=>`<a class="mtab${editor === (suffix === '/builder') ? ' sel' : ''}" href="${base+suffix}">${escHtml(label)}</a>`).join('');
+  $('wf-module-tabs').hidden=!!EMBED;
+  const box=$('wf-library');box.hidden=editor;
+  if (editor) return;
+  const entries=presetListWithIds(WF_BUILDS,f.id);
+  box.innerHTML=`<div class="library-toolbar"><div class="library-toolbar-row"><b>${escHtml(tr('Build Library'))}</b>`
+    + `<a class="ghost-btn small" href="${base}/builder">${escHtml(tr('Builder'))} →</a></div>`
+    + `<div class="library-result-count">${escHtml(tr('Saved builds on this browser'))} · ${entries.length}</div></div>`
+    + (entries.length ? entries.map(p=>`<article class="wf-library-entry"><div class="wf-library-build-head"><b>${escHtml(p.name)}</b>`
+      + `<a class="ghost-btn small" data-wf-library-open="${escHtml(p.id)}" href="${base}/builder?build=${encodeURIComponent(p.id)}">${escHtml(tr('Open'))}</a></div>`
+      + `<div class="fd-card">${warframeLibraryCard(p.state)}</div></article>`).join('')
+      : `<div class="wf-library-empty"><h2>${escHtml(tr('No saved builds yet'))}</h2>`
+      + `<p>${escHtml(tr('Create a build in Builder, then find it here.'))}</p>`
+      + `<a class="ghost-btn" href="${base}/builder">${escHtml(tr('Open Builder'))} →</a></div>`);
+  box.querySelectorAll('[data-wf-library-open]').forEach(a=>a.addEventListener('click',()=>{
+    flushPresetSaves();const p=entries.find(p=>p.id===a.dataset.wfLibraryOpen);if(p){wfActive=p.id;wfBarCfg().setActive(p.id);wfApply(p.state);}
+  }));
+}

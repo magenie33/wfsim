@@ -293,8 +293,10 @@ function renderSim() {
   renderScenarioBar();
   $("sim-sub").textContent = "current build vs the enemy";
   renderSimBuffs();
+  renderScenarioEditorView();
   lockOfficialScenario();
   renderBoardConsent();
   refreshBoardDoor();
+  renderQuickCalc();
 }
 

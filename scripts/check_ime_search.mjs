@@ -83,7 +83,7 @@ await ime("cloud list search", "/", "#cloud-q", `
   const names = [...document.querySelectorAll("#cloud-items tbody tr:not(.grp) .nm")].map((x) => x.textContent);
   return names.length === 1 && names[0].includes("绝路");`);
 
-await ime("preset bar filter", "/weapons/Rubico_Prime", "#preset-bar-builder-builds .pfilter", `
+await ime("preset bar filter", "/weapons/Rubico_Prime/builder", "#preset-bar-builder-builds .pfilter", `
   for (let i = 0; i < 11; i++) await window.wfsim.do("shell.preset.new", { bar: "build" });
   await new Promise((r) => setTimeout(r, 800));`, "绝路", `
   // The preset being edited stays listed whatever the filter says.

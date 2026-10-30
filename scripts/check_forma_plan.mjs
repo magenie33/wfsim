@@ -28,7 +28,7 @@ const { evaluate, check } = app;
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   localStorage.clear();
-  history.pushState({}, '', '/weapons/Ballistica_Prime'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Ballistica_Prime/builder'); route(); await sleep(3500);
   const w = document.getElementById('weapon').value;
   const cap = () => capOf(w) + stanceGrant();
   const bill = () => { const f = formaCount(); return f.regular + f.umbra + f.omni; };

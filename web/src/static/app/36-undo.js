@@ -426,7 +426,9 @@ function restoreState(st, weapon) {
   $("weapon").value = w;
   // A weapon page names the exact entry, including its Kitgun slot.
   const here = routeWeaponId();
-  if (!document.querySelector(".config-page").hidden || (here && here !== w)) {
+  // Restoring the editor must leave the same weapon's Library query intact.
+  const libraryAddress = here === w && modSuffix() === "build-library";
+  if (!libraryAddress && (!document.querySelector(".config-page").hidden || (here && here !== w))) {
     history.replaceState(null, "", weaponModPath(w));
   }
   applyWeapon(w, null); // resets pool/innate/visibility
@@ -603,8 +605,8 @@ let activePreset = null;
 let buildWanted = null;
 
 // A stored buff config outlives the RULE it was written under. A stacking buff
-// opens EARNED at zero, and `syncBuffConfig` only seeds an id it has never
-// seen — so a scenario saved under an open-at-full-stacks rule keeps the old
+// opens EARNED at zero; rendering uses defaults without changing stored
+// settings, so a scenario saved under an open-at-full-stacks rule keeps the old
 // numbers, and the current rule looks broken on exactly the builds that have
 // been tested most.
 //

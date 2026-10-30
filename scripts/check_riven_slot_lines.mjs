@@ -159,7 +159,7 @@ check(
 // orders have to draw a build. Whether the page BOOTED is not asked here —
 // `cdp.mjs` asks it of every evaluate now, so a crash on either path fails this
 // check without it carrying a rule of its own.
-await send("Page.navigate", { url: `${BASE}/weapons/Ballistica_Prime` });
+await send("Page.navigate", { url: `${BASE}/weapons/Ballistica_Prime/builder` });
 await sleep(14000);
 
 const boot = await evaluate(`(() => ({

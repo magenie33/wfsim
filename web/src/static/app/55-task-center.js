@@ -196,3 +196,38 @@ function wireUserTasks() {
   renderUserTasks();
 }
 window.addEventListener("wfsim:ready", wireUserTasks, { once: true });
+
+// Side shortcuts delegate to the page controls and mirror their availability.
+let executionDockFrame = 0;
+function scheduleExecutionDock() {
+  if (executionDockFrame) return;
+  executionDockFrame = requestAnimationFrame(() => { executionDockFrame = 0; refreshExecutionDock(); });
+}
+function refreshExecutionDock() {
+  let dock = $("execution-dock");
+  const enabled = !!META && !!routeWeaponId() && !EMBED && ["", "simulator", "optimizer"].includes(modSuffix());
+  if (!dock && !enabled) return;
+  if (!dock) {
+    dock = document.createElement("aside"); dock.id = "execution-dock";
+    dock.setAttribute("aria-label", tr("Simulation and optimization"));
+    dock.innerHTML = [["run-sim", "▷", "Simulate"], ["run-opt", "★", "Optimize"]].map(([id, icon, label]) =>
+      `<button type="button" class="execution-shortcut" data-execution-run="${id}"><span aria-hidden="true">${icon}</span><span>${escHtml(tr(label))}</span></button>`).join("");
+    document.body.append(dock);
+    dock.querySelectorAll("[data-execution-run]").forEach(button => {
+      button.onclick = () => { const source = $(button.dataset.executionRun); if (source && !source.disabled) source.click(); };
+    });
+    const observer = new MutationObserver(scheduleExecutionDock);
+    for (const id of ["run-sim", "run-opt", "opt-estimate"]) {
+      const node = $(id); if (!node) continue;
+      observer.observe(node, {subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:["disabled","title"]});
+    }
+  }
+  dock.hidden = !enabled;
+  dock.querySelectorAll("[data-execution-run]").forEach(button => {
+    const source = $(button.dataset.executionRun);
+    button.disabled = !source || source.disabled;
+    const label = source?.textContent.trim() || "";
+    button.setAttribute("aria-label", label);
+    button.title = label + (source?.disabled && button.dataset.executionRun === "run-opt" ? " · " + $("opt-estimate").textContent.trim() : "");
+  });
+}

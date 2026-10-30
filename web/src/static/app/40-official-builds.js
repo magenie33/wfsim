@@ -507,7 +507,14 @@ function boardRowsLanded(id) {
       || (simulationReport?.id && new URLSearchParams(location.search).has("measurement")))) {
     renderPresetBar(); return;
   }
-  try { initPresets(); renderPresetBar(); refreshPanel(); }
+  try {
+    // A scene can land inside an edit's debounce; save before restoring it.
+    flushPresetSaves();
+    const address = location.pathname + location.search + location.hash;
+    if (!startEdit) initPresets();
+    if (location.pathname + location.search + location.hash !== address) history.replaceState(history.state, "", address);
+    renderPresetBar(); refreshPanel();
+  }
   catch (_) { /* nothing is showing it yet */ }
 }
 

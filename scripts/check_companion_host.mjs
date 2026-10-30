@@ -14,7 +14,7 @@ const r = await evaluate(`(async () => {
   localStorage.clear(); sessionStorage.clear();
   const weapon = META.weapons.find((w) => w.sentinel);
   const frame = META.weapons.find((w) => !w.sentinel);
-  history.pushState({}, '', weaponPath(weapon.id)); route(); await sleep(4000);
+  history.pushState({}, '', weaponPath(weapon.id) + '/builder'); route(); await sleep(4000);
   const start = { link: JSON.stringify(buildWielder), payload: wielderPayload() === undefined,
     floor: META.sentinel_floor };
   // THE PICKER OFFERS HOSTS AND NO WARFRAME.
@@ -32,7 +32,7 @@ const r = await evaluate(`(async () => {
   const held = { resolved: wielderIdOf(buildWielder), payload: wielderPayload() === undefined,
     sub: document.getElementById('wielder-sub').textContent };
   // AND AN ORDINARY WEAPON IS UNTOUCHED: it still holds a Warframe.
-  history.pushState({}, '', weaponPath(frame.id)); route(); await sleep(3500);
+  history.pushState({}, '', weaponPath(frame.id) + '/builder'); route(); await sleep(3500);
   const ordinary = { link: JSON.stringify(buildWielder),
     offers: [...document.getElementById('dd-wielder').parentElement.querySelectorAll('button')].length };
   return { weapon: weapon.id, start, offered, framed, held, ordinary };

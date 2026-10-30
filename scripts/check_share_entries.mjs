@@ -31,7 +31,7 @@ const r = await evaluate(`(async () => {
   const out = {};
 
   // THE BAR'S OWN BUTTON.
-  history.pushState({}, '', '/weapons/Ballistica_Prime'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Ballistica_Prime/builder'); route(); await sleep(3500);
   bar().querySelector('.pchip.share').click(); await sleep(300);
   out.barShown = shown();
   await copy();

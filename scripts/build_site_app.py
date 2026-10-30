@@ -1392,81 +1392,6 @@ def measured_record(row) -> str:
     return " · ".join(x for x in (at.strip(), row.get("measured_by") or "") if x)
 
 
-def brief_block(board_rows, caveats) -> str:
-    """THE WEAPON'S OWN CONTENT, as data rather than as sentences.
-
-    A ruler's answer is tabular; as English prose it was three near-identical
-    paragraphs for three answers that differ by 13x. A table says the same
-    thing in the same tokens and shows the difference at a glance.
-
-    IT SHIPS IN THE SERVED HTML AND IT FOLDS. A fold is CSS — the body stays in
-    the document whether it is open or shut — so a reader that never runs
-    JavaScript, which is most of what reads a page on a machine's behalf, still
-    reads every figure here. Anything drawn after boot is invisible to them.
-
-    IT SHIPS SHUT. The page is a TOOL before it is an answer: whoever opens it
-    every day came for the builder, and the reader this block is for arrives
-    once, from a search, and opens it. The stored answer outranks the default
-    forever after (`folded`), so opening it once opens it for good.
-
-    IT SAYS ONLY WHAT THE PAGE DOES NOT. The weapon's name is the h1 directly
-    above, its class and rank are the tags beside that, and every stat is in
-    the panel the app draws — so the block carries the BOARD's answer and the
-    admissions, which nothing else on a weapon page says.
-    """
-    e = html_mod.escape
-    # …AND THE ONE LINE A SHUT FOLD SHOWS EARNS ITS PLACE: what is behind it,
-    # and that an admission is behind it when there is one. Hidden is not the
-    # same as unsaid, and this is the only place a weapon page admits a gap.
-    #
-    # AND IT NAMES WHAT IS ACTUALLY BEHIND IT. A weapon nobody has measured has
-    # no board half, and a header promising one is the fold lying about its own
-    # contents to the one reader who cannot check without opening it.
-    if board_rows:
-        hint = "the board's best riven-free build for each ruler"
-        if caveats:
-            hint += ", and what this weapon's number does not account for"
-        title = "Measured builds"
-    else:
-        hint = "what this weapon's number does not account for"
-        title = "Not modelled here"
-    head = ('      <div class="fold-h"><b>' + e(title) + '</b>'
-            '<span class="sim-hint">' + e(hint) + '</span></div>\n')
-    answers = ""
-    if board_rows:
-        cap = "Best riven-free build on the WFSim board"
-        if board_asof():
-            cap += ", as of " + board_asof()
-        body = ""
-        for ruler, fight, mode, score, gear, measured in board_rows:
-            body += ("          <tr><td>" + e(ruler) + "</td><td>" + e(fight) + "</td><td>"
-                     + e(mode) + '</td><td class="w-num">' + e(score) + "</td><td>"
-                     + e(gear) + '</td><td class="w-when">' + e(measured) + "</td></tr>\n")
-        answers = (
-            '      <table class="w-tab w-answers">\n'
-            "        <caption>" + e(cap) + "</caption>\n"
-            "        <thead><tr><th>Ruler</th><th>Fight</th><th>Mode</th>"
-            "<th>Score</th><th>Build</th><th>Measured</th></tr></thead>\n"
-            "        <tbody>\n" + body + "        </tbody>\n      </table>\n"
-        )
-    # NOTHING IS SAID WHERE THERE IS NOTHING TO SAY. The slot carries what this
-    # weapon's number does not account for and nothing else, so text here is a
-    # signal rather than filler — and a weapon with no admission shows none.
-    notes = ""
-    if caveats:
-        items = "".join("        <li>" + e(c) + "</li>\n" for c in caveats)
-        # The label only where the header does not already carry it.
-        label = "<b>Not modelled here</b>\n        " if board_rows else ""
-        notes = ('      <div class="w-notes">' + label + "<ul>\n"
-                 + items + "        </ul>\n      </div>\n")
-    return (
-        '    <div class="fold sect w-brief shut" data-fold="w-brief">\n'
-        + head
-        + '      <div class="fold-b">\n'
-        + answers + notes
-        + "      </div>\n    </div>\n"
-    )
-
 
 def page_ld(name: str, desc: str, url: str, cn: str | None = None) -> dict:
     """One page's structured data: what it is, and where it sits.
@@ -1685,7 +1610,7 @@ def titled_page(subject: str, what: str | None = None, zh: str | None = None) ->
     return f"{subject}{' — ' + tail if tail else ''} | WFSim"
 
 
-def prerender(flagged: str) -> None:
+def prerender(flagged: str, catalog: Path) -> None:
     """Write a real HTML file per weapon, plus robots.txt and sitemap.xml.
 
     WHY, in one line: before this, every URL returned the identical 16 KB app
@@ -1710,6 +1635,11 @@ def prerender(flagged: str) -> None:
     zh_names = zh.get("weapons", {})
 
     REASONS = unmodelled_reasons()
+    summaries = subprocess.run(
+        ["node", str(ROOT / "scripts" / "library_summaries.mjs"), str(APP), str(catalog)],
+        cwd=ROOT, stdout=subprocess.PIPE, text=True, encoding="utf-8", check=True,
+    )
+    summary_docs = json.loads(summaries.stdout)
     for spec in roster():
         wid, name = spec["id"], spec["name"]
         cn = zh_names.get(wid)
@@ -1764,7 +1694,7 @@ def prerender(flagged: str) -> None:
                                row.get("shown") or f"{row['score']:.4g}", ", ".join(gear),
                                measured_record(row)))
         caveats = caveats_of(spec, REASONS)
-        seo = brief_block(board_rows, caveats)
+        seo = summary_docs[wid]
         out = APP / "weapons" / url_slug(spec) / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
         page = shell(flagged, title, desc, url, og_img, seo, "w-name", name, cn)
@@ -2018,7 +1948,7 @@ def md_cell(text: str) -> str:
 
 
 def weapon_md(spec, name, cn, facts, stats, board_rows, caveats) -> str:
-    """The weapon page as markdown — the same facts `brief_block` and the page's
+    """The weapon page as markdown — the same published facts as the page's
     description state, from the same values, for a reader that runs no script."""
     url = SITE + wiki_path(spec)
     out = f"# {name}\n\n"
@@ -2982,7 +2912,7 @@ def main() -> None:
     ship_pinned("ocr", "25-riven-ocr.js")
     ship_pinned("lib", "73-compute.js")
     board_files()
-    prerender(flagged)
+    prerender(flagged, APP / "pkg" / pkg["views"]["/api/meta"])
     ship_share_names()
 
     # WHAT THIS RELEASE IS, served beside the files it names. A mirror is asked

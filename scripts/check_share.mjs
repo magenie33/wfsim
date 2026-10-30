@@ -50,7 +50,7 @@ if (!on) {
   const off = await evaluate(`(async () => {
     const s = (ms) => new Promise(r => setTimeout(r, ms));
     localStorage.clear();
-    history.pushState({}, '', '/weapons/Torid'); route(); await s(2500);
+    history.pushState({}, '', '/weapons/Torid/builder'); route(); await s(2500);
     const out = { button: !!document.querySelector('.pchip.share') };
     // A link from when it was on: the query goes, a page arrives, and it says why.
     history.pushState({}, '', '/weapons/Torid?b=1abcNOTAREALCODE'); route(); await s(2500);
@@ -80,7 +80,7 @@ const sent = await evaluate(`(async () => {
   riven.bonuses[2] = { id: 'multishot', roll: 0.95 };
   riven.malus = { id: 'zoom', roll: 1.0 };
   markRivenDirty(); await sleep(1000);
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(1400);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(1400);
   ['serration','split_chamber','point_strike','vital_sense','hellfire']
     .forEach((m, i) => { if (modById(m)) { slots[i].mod = m; slots[i].rank = modById(m).max_rank; } });
   slots[6].mod = rivenMods()[0].id;
@@ -368,7 +368,7 @@ check("...and the sender's measurement did not land", bo.landedResult === false)
 // and the link stays plain: nothing is signed by an option nobody can tick.
 const locked = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  history.pushState({}, '', '/weapons/Torid'); route(); await sleep(1400);
+  history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(1400);
   const was = EXT.hooks.shareSigner, sent = [], realTrack = window.track;
   window.track = (e, s) => { sent.push(e + ':' + s); };
   EXT.hooks.shareSigner = async () => ({ locked: true, option: 'sign it with my name · <a href="/membership">for Members</a>' });
