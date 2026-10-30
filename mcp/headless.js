@@ -309,15 +309,11 @@ function headlessBuildCardHtml(say, d) {
   ].join("");
 }
 
-/// A RIVEN SECTION'S HEADING: the reader's name for the card, then the name the
-/// game generates from its stats.
-const headlessRivenCardHead = (say, name, generated) => `<div class="sb-h">${headlessEsc(say.t("Riven"))}${
-  [name, generated].filter(Boolean).map((x) => ` · ${headlessEsc(x)}`).join("")}${say.meta.riven_rules
-    ? ` <span class="rk">(×${say.meta.riven_rules.roll_min}–${say.meta.riven_rules.roll_max})</span>` : ""}</div>`;
+const headlessRivenCardHead = (say) => `<div class="sb-h">${headlessEsc(say.t("Riven"))}</div>`;
 /// RED IS THE MALUS, by its slot: a sign says nothing on recoil, whose bonus is a minus.
 const headlessRivenCardChips = (stats) => stats.map((x) => `<span class="sb-chip${x.malus ? " neg" : ""}"><span>${
   headlessEsc(x.label)}</span>${x.roll != null ? `<span class="rk">×${Number(Number(x.roll).toFixed(3))}</span>` : ""}</span>`).join("");
-const headlessRivenCardBody = (say, name, got) => headlessRivenCardHead(say, name, got.generated)
+const headlessRivenCardBody = (say, got) => headlessRivenCardHead(say)
   + `<div class="sb-chips">${headlessRivenCardChips(got.stats)}</div>`;
 /// A RIVEN AS `/api/riven` PRINTED IT: the name the game gives it and each stat
 /// line in the locale — the page never computes a riven value itself.
@@ -327,8 +323,8 @@ const headlessRivenAnswer = (say, a) => ({ generated: a.name || "",
 /// THE RIVEN SECTION OF A BUILD CARD for `r` (`{ name, spec }`), its stats `got`
 /// (`headlessRivenAnswer`'s shape), keyed so a later answer can fill it in place.
 const headlessRivenSection = (say, w, r, got) => !r ? ""
-  : `<div data-riven-card="${headlessEsc(JSON.stringify([w.id, r.spec]))}" data-riven-name="${headlessEsc(r.name)}">${
-    headlessRivenCardBody(say, r.name, got)}</div>`;
+  : `<div data-riven-card="${headlessEsc(JSON.stringify([w.id, r.spec]))}">${
+    headlessRivenCardBody(say, got)}</div>`;
 
 /// A BUILD STATE AS THE SIMULATOR'S CARD, drawn with ITS weapon's mods. `riven`
 /// answers a riven id with `{ name, section }` — its name and its drawn section,

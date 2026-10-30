@@ -432,9 +432,9 @@ finder row alike, so the page has one picture of a build. THE MODS RUN IN THE
 ORDER THE BUILD WAS SAVED, the exilus last: elements combine in slot order, so
 a row sorted any other way can read as another element build. The riven rides
 in the mods with its own section below: official stat text comes from
-`/api/riven`, with each actual roll and its permitted band. Shared riven displays
-put spliced bonuses first and the malus last, keeping each stat's stored slot
-and roll intact.
+`/api/riven`, with each actual roll. The section heading is simply "Riven".
+Shared riven displays put spliced bonuses first and the malus last, keeping
+each stat's stored slot and roll intact.
 
 **A TIE IS ONE ROW.** Builds on one exact score share a place (BOARD.md §"A
 place is a score"), and the finder lists a place once (`tieGroups`): its

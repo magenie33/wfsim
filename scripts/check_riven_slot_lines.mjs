@@ -191,7 +191,7 @@ const display = await evaluate(`(async () => {
   const out = {
     official: JSON.stringify(labels) === JSON.stringify(ids.map(id => tf(answer.stats.find(s => s.id === id).text))),
     rolls: JSON.stringify(rolls) === JSON.stringify([1.066, 0.93, 1.04, 1.05]),
-    band: box.querySelector('.sb-h').textContent.includes(rivenRules().roll_min + '–' + rivenRules().roll_max),
+    heading: box.querySelector('.sb-h').textContent === tr('Riven'),
     malus: box.querySelector('.sb-chip:last-child').classList.contains('neg'),
   };
   const oldWeapon = $('weapon').value, oldRiven = riven, oldHtml = $('riven-stats').innerHTML;
@@ -211,7 +211,7 @@ const display = await evaluate(`(async () => {
 })()`);
 check('riven text uses the official card lines with spliced stats first', display.official === true);
 check('each stat keeps its actual roll, including an interior malus roll', display.rolls === true);
-check('the riven card shows the permitted roll band and marks its malus', display.band && display.malus);
+check('the riven heading is just Riven and the malus remains marked', display.heading && display.malus);
 check('the editor and analyst put spliced stats first while retaining slots and stored values', display.editor && display.summary && display.unchanged);
 
 await app.finish("an equipped riven prints its roll and links to the mechanic");
