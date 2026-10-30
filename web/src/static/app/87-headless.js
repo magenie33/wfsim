@@ -124,6 +124,7 @@ function boardRowParts(r) {
 
 /// What the order below reads of `meta`: each card's drain at its full rank,
 /// rank and name, each arcane's name, each evolution's tier and place in it.
+// Published rows are immutable; replacing a row or metadata expires its preference.
 let preferMemo = null;
 function preferTables(meta) {
   if (!preferMemo || preferMemo.meta !== meta) {
@@ -133,7 +134,7 @@ function preferTables(meta) {
     for (const w of (meta && meta.weapons) || []) {
       for (const t of w.evolutions || []) (t.options || []).forEach((o, i) => evolutions.set(o.id, [t.tier, i + 1]));
     }
-    preferMemo = { meta, mods, arcanes, evolutions };
+    preferMemo = { meta, mods, arcanes, evolutions, rows: new WeakMap() };
   }
   return preferMemo;
 }
@@ -146,6 +147,7 @@ function preferTables(meta) {
 function preferredBuild(a, b, meta) {
   const t = preferTables(meta);
   const read = (r) => {
+    if (t.rows.has(r)) return t.rows.get(r);
     const parts = boardRowParts(r);
     const cards = parts.filter((p) => p.axis === "mods").map((p) => {
       const [id, rank] = String(p.id).split("@");
@@ -153,13 +155,15 @@ function preferredBuild(a, b, meta) {
       return { name: m ? m.name : id, drain: !m ? 0 : rank == null ? m.drain : m.drain - m.max_rank + Number(rank) };
     });
     const names = (xs) => xs.slice().sort();
-    return {
+    const value = {
       drain: cards.reduce((s, c) => s + c.drain, 0),
       cards: names(cards.map((c) => c.name)),
       arcanes: names(parts.filter((p) => p.axis === "arcanes").map((p) => t.arcanes.get(String(p.id).split("@")[0]) || p.id)),
       evolutions: parts.filter((p) => p.axis === "evolutions").map((p) => t.evolutions.get(p.id) || [0, 0])
         .sort((x, y) => x[0] - y[0]).map((x) => x[1]),
     };
+    t.rows.set(r, value);
+    return value;
   };
   const list = (x, y) => {
     for (let i = 0; i < Math.min(x.length, y.length); i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1;
@@ -185,26 +189,35 @@ function tieGroups(list, key, rowOf, meta) {
   }
   return out.map((g) => {
     const members = g.members.slice().sort((a, b) => preferredBuild(rowOf(a), rowOf(b), meta));
-    const each = members.map((x) => boardRowParts(rowOf(x)));
-    const k = (p) => `${p.pos}=${p.id}`;
-    const count = new Map();
-    each.forEach((ps) => new Set(ps.map(k)).forEach((x) => count.set(x, (count.get(x) || 0) + 1)));
-    const core = new Set([...count].filter(([, c]) => c === each.length).map(([x]) => x));
-    const free = [];
-    let multi = false;
-    for (const pos of [...new Set(each.flat().map((p) => p.pos))]) {
-      const alts = new Map();
-      for (const ps of each) {
-        const here = ps.filter((p) => p.pos === pos && !core.has(k(p)));
-        if (here.length > 1) multi = true;
-        if (here.length) here.forEach((p) => alts.set(p.id, p));
-        else alts.set("", null);
-      }
-      if ([...alts.keys()].some(Boolean)) free.push([pos, [...alts.values()]]);
-    }
-    const product = free.reduce((t, [, v]) => t * v.length, 1);
-    return { key: g.key, members, core, free, every: !multi && product === members.length };
+    const preferred = members.slice();
+    let choices;
+    const describe = () => choices || (choices = tieChoices(preferred, rowOf));
+    return { key: g.key, members, get core() { return describe().core; },
+      get free() { return describe().free; }, get every() { return describe().every; } };
   });
+}
+
+// Detail order follows the preferred members even when a caller sorts its view.
+function tieChoices(members, rowOf) {
+  const each = members.map((x) => boardRowParts(rowOf(x)));
+  const k = (p) => `${p.pos}=${p.id}`;
+  const count = new Map();
+  each.forEach((ps) => new Set(ps.map(k)).forEach((x) => count.set(x, (count.get(x) || 0) + 1)));
+  const core = new Set([...count].filter(([, c]) => c === each.length).map(([x]) => x));
+  const free = [];
+  let multi = false;
+  for (const pos of [...new Set(each.flat().map((p) => p.pos))]) {
+    const alts = new Map();
+    for (const ps of each) {
+      const here = ps.filter((p) => p.pos === pos && !core.has(k(p)));
+      if (here.length > 1) multi = true;
+      if (here.length) here.forEach((p) => alts.set(p.id, p));
+      else alts.set("", null);
+    }
+    if ([...alts.keys()].some(Boolean)) free.push([pos, [...alts.values()]]);
+  }
+  const product = free.reduce((t, [, v]) => t * v.length, 1);
+  return { core, free, every: !multi && product === members.length };
 }
 
 /// THE BOARD IN ITS READING ORDER, each row with its place inside its group.

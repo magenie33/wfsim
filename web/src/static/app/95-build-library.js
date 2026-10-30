@@ -42,18 +42,18 @@ function renderLibrarySummary(w, all) {
   const box = $("doc");
   if (!box) return;
   const rows = BOARD[w.id] || all.map((p) => p.board), mode = finder.mo === FINDER_EVERY_MODE ? null : finder.mo;
-  const key = JSON.stringify([w.id, finder.b, mode, rows.length, boardMeasuredAt(rows), LANG]);
-  if (box.dataset.libraryKey !== key || box.libraryRows !== rows) {
+  const key = JSON.stringify([w.id, finder.b, mode, LANG]);
+  if (box.dataset.libraryKey !== key || box.libraryRows !== rows || box.libraryLocale !== I18N) {
     box.innerHTML = headlessLibrarySummary(pageSay(), w, rows, finder.b, mode, benchmarkName(finder.b));
-    box.dataset.libraryKey = key; box.libraryRows = rows; wireFolds(box);
+    box.dataset.libraryKey = key; box.libraryRows = rows; box.libraryLocale = I18N; wireFolds(box);
+    const facts = headlessLibraryFacts(META, w, rows, finder.b, mode);
+    box.querySelectorAll("[data-library-build]").forEach((a) => { a.onclick = (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const row = facts[a.dataset.libraryBuild];
+      openLibraryBuild(all.find((p) => boardRowIdentity(p.board) === boardRowIdentity(row) && p.benchmark === row.benchmark && p.mode === row.mode));
+    }; });
   }
   box.hidden = false;
-  const facts = headlessLibraryFacts(META, w, rows, finder.b, mode);
-  box.querySelectorAll("[data-library-build]").forEach((a) => { a.onclick = (e) => {
-    e.preventDefault(); e.stopPropagation();
-    const row = facts[a.dataset.libraryBuild];
-    openLibraryBuild(all.find((p) => boardRowIdentity(p.board) === boardRowIdentity(row) && p.benchmark === row.benchmark && p.mode === row.mode));
-  }; });
 }
 function libraryLeaving(mod) {
   if (libraryActive && mod !== "build-library") {
@@ -185,7 +185,7 @@ function libraryAfterRender(w, all, list, groups, drawList) {
   const changed = libraryWriteQuery();
   renderLibrarySummary(w, all);
   const box = $("build-finder");
-  if (changed) {
+  if (changed && finder.shown !== FINDER_FIRST) {
     finder.shown = FINDER_FIRST;
     box.querySelector(".fd-main").innerHTML = drawList();
   }

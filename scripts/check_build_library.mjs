@@ -84,6 +84,40 @@ try {
   check("shared info cards retain mode and separate Exilus", initial.card);
   check("a compact generated summary links to its published build", initial.summary && initial.compact);
   check("normal browsing needs no load-more button", initial.noButton);
+  const work=await evaluate(`(() => {
+    const weapon=presetWeapon(), rows=BOARD[weapon], originalTokens=finderTokens, originalTriggers=finderTriggers;
+    const seen={tokens:[],triggers:[]}, first=()=>[...document.querySelectorAll('#build-finder tr.fr')].map(el=>el.dataset.frow).join();
+    finderTokens=p=>{seen.tokens.push(p.benchmark);return originalTokens(p);};
+    finderTriggers=p=>{seen.triggers.push(p.benchmark);return originalTriggers(p);};
+    try {
+      const before=first();renderBuildFinder();
+      const warm=seen.tokens.length===0&&seen.triggers.length===0&&before===first();
+      seen.tokens=[];seen.triggers=[];BOARD[weapon]=rows.slice();renderBuildFinder();
+      const scope=builtinBuilds().filter(p=>p.benchmark===finder.b).length;
+      const bounded=scope>0&&builtinBuilds().length>scope&&['tokens','triggers'].every(key=>seen[key].length>0
+        &&seen[key].length<=scope&&seen[key].every(id=>id===finder.b));
+      return {warm,bounded,stable:before===first(),scope,tokens:seen.tokens.length,triggers:seen.triggers.length};
+    } finally {finderTokens=originalTokens;finderTriggers=originalTriggers;BOARD[weapon]=rows;}
+  })()`);
+  check("unchanged board renders reuse equipment and trigger data",work.warm,JSON.stringify(work));
+  check("new board data is parsed only for the selected ruler",work.bounded&&work.stable,JSON.stringify(work));
+  const deferred=await evaluate(`(() => {
+    const original=boardRowParts, row=builtinBuilds()[0].board;let calls=0;
+    boardRowParts=r=>{calls++;return original(r);};
+    try {
+      const ids=row.mods.filter(id=>id!==BOARD_RIVEN_SLOT).slice(0,2);
+      const rows=[0,1,2,3].map(i=>({group:i<2?'a':'b',row:{...row,mods:[ids[i%2]],exilus:''}}));
+      const groups=tieGroups(rows,p=>p.group,p=>p.row,META), before=calls;
+      const preferred=groups[0].members.map(p=>p.row.mods[0]);groups[0].members.reverse();
+      void groups[0].free;const once=calls;
+      void groups[0].core;void groups[0].every;
+      const reused=calls===once;void groups[1].free;
+      return {lazy:once===before+2&&reused&&calls===once+2,
+        order:ids.length===2&&JSON.stringify(groups[0].free.find(([pos])=>pos==='mods')[1].map(p=>p.id))===JSON.stringify(preferred)};
+    } finally {boardRowParts=original;}
+  })()`);
+  check("tie alternatives are derived only when read and reused thereafter",deferred.lazy);
+  check("a custom sort preserves the preferred order of tie alternatives",deferred.order);
   await app.send('Emulation.setDeviceMetricsOverride', {width:800,height:900,deviceScaleFactor:1,mobile:false});
   await sleep(300);
   check("a narrow desktop keeps navigation compact and search usable", await evaluate(`(() => {

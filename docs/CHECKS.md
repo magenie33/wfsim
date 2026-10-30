@@ -1321,6 +1321,9 @@ selection states, and their equipment pictures load from the same origin.
 A cold equipment-filter link and repeated board arrivals retain the query in
 every history update, including transient writes during preset restoration.
 The entry check fails against the page without Build Library.
+Unchanged renders reuse row data; replacing the board derives it only for the
+selected ruler without changing the visible builds. Tie alternatives are lazy
+and memoized. These assertions fail against eager full-board rendering.
 `check_library_attributes` exercises permanent-only bounds, combinations,
 query reloads, grouped conditions, text/graphical projections, sort priority,
 inline syntax errors and retry after an attribute request fails. Filter and

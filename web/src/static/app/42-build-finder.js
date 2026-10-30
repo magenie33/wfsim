@@ -146,6 +146,27 @@ const depthOfSlider = (el) => {
   const p = 100 + finderDepthFloor() - Number(el.value);
   return p <= finderDepthFloor() ? 0 : p / 100;
 };
+// Builtin collections change with their rows, depth, weapon pool or locale.
+// Trigger metadata is an additional input; none of these derived maps is saved.
+let finderDataMemo = null;
+function finderData(all) {
+  if (finderDataMemo?.all === all && finderDataMemo.source === META.part_triggers) return finderDataMemo;
+  const boards = new Map();
+  for (const p of all) {
+    if (!boards.has(p.benchmark)) boards.set(p.benchmark, []);
+    boards.get(p.benchmark).push(p);
+  }
+  finderDataMemo = { all, source: META.part_triggers, boards, tokens: new Map(), triggers: new Map(), available: new Map(), vocabulary: null };
+  return finderDataMemo;
+}
+function finderVocabulary(data) {
+  if (!data.vocabulary) {
+    const tokens = new Set();
+    for (const p of data.all) for (const token of data.tokens.get(p) || finderTokens(p)) tokens.add(token);
+    data.vocabulary = [...tokens];
+  }
+  return data.vocabulary;
+}
 function finderDepthLabel(w, d) {
   const text = d ? `≥${Math.round(d * 100)}%` : `${tr("All")} (≥${finderDepthFloor()}%)`;
   return `<span title="${escHtml(d ? trF("builds scoring at least {p}% of their group's leader", { p: Math.round(d * 100) })
@@ -169,19 +190,23 @@ function renderBuildFinder() {
   box.hidden = false;
   box.classList.remove("shut");
   if (!benchList().some((b) => b.id === finder.b)) finder.b = benchList()[0]?.id;
+  const data = finderData(all), scope = data.boards.get(finder.b) || [];
   const benchOf = (id) => benchList().find((b) => b.id === id) || { name: id };
   const inMo = (p) => p.benchmark === finder.b && (finder.mo === FINDER_EVERY_MODE || p.mode === finder.mo);
   const inScope = (p) => inMo(p)
     && (finder.rv === "all" || (finder.rv === "riven") === !!p.riven);
-  const toks = new Map(all.map((p) => [p, finderTokens(p)]));
+  const toks = data.tokens, trigs = data.triggers;
+  for (const p of scope) {
+    if (!toks.has(p)) toks.set(p, finderTokens(p));
+    if (!trigs.has(p)) trigs.set(p, finderTriggers(p));
+  }
   const off = finderOff();
-  const trigs = new Map(all.map((p) => [p, finderTriggers(p)]));
   const passes = (p) => libraryAttributePasses(p, toks.get(p), trigs.get(p));
   const score = (p) => (p.board || {}).score || 0;
   // A TIE IS ONE PLACE OF ONE RANKING (`placed`): consecutive, so builds of two
   // modes on one score stay two answers.
   const tieKey = (p) => `${p.benchmark}#${p.mode}#${p.riven ? "r" : "p"}#${p.rank}`;
-  const list = all.filter((p) => p.benchmark === finder.b && passes(p))
+  const list = scope.filter(passes)
     .sort((a, b) => score(b) - score(a) || (tieKey(a) < tieKey(b) ? -1 : tieKey(a) > tieKey(b) ? 1 : 0));
   const ties = tieGroups(list, tieKey, (p) => p.board || {}, META);
   if (finder.query.orderBy.some((o) => o.field !== "score")) ties.forEach((g) => g.members.sort(libraryCompare));
@@ -369,10 +394,16 @@ function renderBuildFinder() {
   // Board counts fix the vocabulary and order; filters change matching counts
   // and ranks without moving the condition under the reader's pointer.
   const overviewHtml = () => {
-    const scope = all.filter((p) => p.benchmark === finder.b);
-    const available = new Map(), count = new Map();
-    for (const p of scope) for (const t of new Set(toks.get(p))) available.set(t, (available.get(t) || 0) + 1);
-    for (const p of list) for (const t of new Set(toks.get(p))) count.set(t, (count.get(t) || 0) + 1);
+    if (!data.available.has(finder.b)) {
+      const counts = new Map();
+      for (const p of scope) for (const t of new Set(toks.get(p))) counts.set(t, (counts.get(t) || 0) + 1);
+      data.available.set(finder.b, counts);
+    }
+    const available = new Map(data.available.get(finder.b)), count = new Map(), bestOf = new Map();
+    for (const p of list) for (const t of new Set(toks.get(p))) {
+      count.set(t, (count.get(t) || 0) + 1);
+      if (!bestOf.has(t)) bestOf.set(t, p);
+    }
     for (const t of [...finder.req, ...finder.exc]) if (!available.has(t)) available.set(t, 0);
     const groups = [["mod", tr("Mods")], ["part", tr("Parts")], ["arc", tr("Arcane")], ["evo", tr("Evolutions")],
       ["val", tr("Valence")], ["rv", tr("Riven stats")]];
@@ -382,7 +413,7 @@ function renderBuildFinder() {
       return `<div class="fd-ov-g"><h4>${escHtml(head)}<small>${escHtml(tr("matching / on this board · best rank"))}</small></h4><div class="fd-use mods">${items.map(([t, total]) => {
         const c = count.get(t) || 0, img = finderTokenImage(t, w);
         const state = finder.req.has(t) ? "req" : finder.exc.has(t) ? "exc" : "";
-        const best = list.find((p) => toks.get(p).includes(t));
+        const best = bestOf.get(t);
         const label = finderTokenName(t) + (state ? ` · ${tr(state === "req" ? "must have" : "I don't have")}` : "");
         return `<button type="button" class="fd-u fd-ov-u ${state}" data-fcyc="${escHtml(t)}" aria-pressed="${!!state}" aria-label="${escHtml(label)}" title="${escHtml(label)}">` +
           `<span class="fd-ov-media" aria-hidden="true">${img ? `<img src="${escHtml(img)}" alt="" loading="lazy" width="44" height="56">` : escHtml(finderTokenKind(t))}</span>` +
@@ -398,7 +429,7 @@ function renderBuildFinder() {
   // Every trigger a build here asks for, grouped as the fight's own switches are;
   // a group refuses its members. Each says how many builds here carry it, and
   // names the parts that do.
-  const inScopeAll = all.filter(inScope);
+  const inScopeAll = scope.filter(inScope);
   const trigHtml = () => {
     const groups = buffTriggerGroups().map((g) => ({ ...g, shown: g.ids.filter((id) => off.has(id) || inScopeAll.some((p) => trigs.get(p).has(id))) }))
       .filter((g) => g.shown.length);
@@ -415,16 +446,16 @@ function renderBuildFinder() {
     }).join("") + `</div>`;
   };
   const segBtn = (key, v, text, n, hint) => `<button type="button" data-fseg="${key}" data-v="${escHtml(v)}" class="${finder[key] === v ? "on" : ""}"${n ? "" : " disabled"}${hint ? ` title="${escHtml(hint)}"` : ""}>${escHtml(text)}<em>${n}</em></button>`;
-  const modes = [...new Set(all.filter((p) => p.benchmark === finder.b).map((p) => p.mode))];
-  const inMode = all.filter(inMo);
+  const modes = [...new Set(scope.map((p) => p.mode))];
+  const inMode = scope.filter(inMo);
 
   box.innerHTML =
     `<div class="library-panel library-board-panel" id="library-board" aria-label="${escHtml(tr("Board conditions"))}"></div>` +
     `<div class="library-panel library-filter-panel" id="library-filters" aria-labelledby="library-filter-title">` + libraryFilterHeading() +
     libraryRetainedFilters() + `<div class="fd-scope"${finder.filters ? "" : " hidden"}>` +
-    `<div class="library-simple-controls"${finder.advanced ? " hidden" : ""}><div class="fd-seg"><span>${escHtml(tr("Mode"))}</span>${segBtn("mo", FINDER_EVERY_MODE, tr("All"), all.filter((p) => p.benchmark === finder.b).length)}${modes.map((m) => segBtn("mo", m,
-      (all.find((p) => p.benchmark === finder.b && p.mode === m) || {}).modeName || m,
-      all.filter((p) => p.benchmark === finder.b && p.mode === m).length)).join("")}</div>` +
+    `<div class="library-simple-controls"${finder.advanced ? " hidden" : ""}><div class="fd-seg"><span>${escHtml(tr("Mode"))}</span>${segBtn("mo", FINDER_EVERY_MODE, tr("All"), scope.length)}${modes.map((m) => segBtn("mo", m,
+      (scope.find((p) => p.mode === m) || {}).modeName || m,
+      scope.filter((p) => p.mode === m).length)).join("")}</div>` +
     `<div class="fd-seg"><span>${escHtml(tr("Riven"))}</span>` +
     segBtn("rv", "all", tr("All"), inMode.length) +
     segBtn("rv", "riven", tr("With riven"), inMode.filter((p) => p.riven).length) +
@@ -447,11 +478,10 @@ function renderBuildFinder() {
   };
   const input = $("fd-input");
   const sugg = $("fd-sugg");
-  const vocab = [...new Set(all.flatMap((p) => toks.get(p)))];
   const hits = () => {
     const q = input.value.trim().toLowerCase();
     if (!q) return [];
-    return vocab.filter((t) => !finder.req.has(t) && !finder.exc.has(t)
+    return finderVocabulary(data).filter((t) => !finder.req.has(t) && !finder.exc.has(t)
       && (finderTokenName(t).toLowerCase().includes(q) || t.toLowerCase().includes(q))).slice(0, 8);
   };
   const drawSugg = () => {

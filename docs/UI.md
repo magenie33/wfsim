@@ -459,6 +459,13 @@ including while published board rows arrive. Only the Library writes its query.
 Changing conditions does not scroll to the results; only explicit navigation
 and restoring a saved view move the viewport.
 
+Refreshing conditions parses equipment and triggers only for the selected
+ruler. Cached equipment and trigger data expires with its builtin collection or
+trigger metadata;
+published row arrays are replaced when data arrives. Search vocabulary still
+covers the weapon's full board and is built when searched. Tie alternatives are
+derived when displayed, in the preferred member order even under another sort.
+
 Summary is a compact, expandable overview of the selected ruler and mode,
 independent of equipment filters. It quotes published best builds, the
 riven/free comparison, coverage and modelling admissions. Each quoted build

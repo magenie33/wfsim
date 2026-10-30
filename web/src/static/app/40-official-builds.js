@@ -638,10 +638,18 @@ function boardGroupLeaders(rows) {
 /// How many rows a weapon's board would show at `depth`. Counted from the raw
 /// rows, because the control has to say what each depth WOULD give, not what
 /// the depth in force already gave.
+// Published row arrays are replaced on reload; their derived counts expire together.
+const boardDepthCounts = new WeakMap();
 const depthCount = (w, depth) => {
   const rows = BOARD[(w || {}).id] || [];
-  const deep = boardGroupLeaders(rows);
-  return rows.filter((r) => deep(r, depth)).length;
+  if (depth === 0) return rows.length;
+  if (!boardDepthCounts.has(rows)) boardDepthCounts.set(rows, new Map());
+  const counts = boardDepthCounts.get(rows);
+  if (!counts.has(depth)) {
+    const deep = boardGroupLeaders(rows);
+    counts.set(depth, rows.reduce((n, r) => n + Number(deep(r, depth)), 0));
+  }
+  return counts.get(depth);
 };
 
 /// ONE CONVERSION PER BOARD, NOT PER CALLER. A render asks for these five times

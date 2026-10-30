@@ -83,6 +83,15 @@ check("All shows every row the board holds", all === "400,210,100,50,49.9,10,0,0
 const quarter = await at(0.25);
 check("a quarter keeps the 49.9 and still drops the 10",
   quarter === "400,210,100,50,49.9,0,0", quarter);
+const refreshed=await evaluate(`(() => {
+  const w=weaponInfo('braton_prime'),rows=BOARD[w.id];
+  try {
+    const before=depthCount(w,0.5);
+    BOARD[w.id]=rows.concat({...rows[0],score:75});
+    return before===6&&depthCount(w,0.5)===7&&depthCount(w,0)===9;
+  } finally {BOARD[w.id]=rows;}
+})()`);
+check("depth counts refresh when published rows are replaced",refreshed);
 
 const steps = await evaluate(`[isBoardDepth(0.35), isBoardDepth(0.33), isBoardDepth(0), isBoardDepth(1.2)].join()`);
 check("the slider stops every 5% and at everything, nowhere else", steps === "true,false,true,false", steps);
