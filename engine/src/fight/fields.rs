@@ -273,6 +273,7 @@ pub(super) fn field_tick_seeded(
     // The field is its own attack part, so the ability elements are sized off
     // ITS ModifiedBase — same rule as the explosion's.
     let qvec = params.with_live_elements(f.damage.quantized_against(f.modified_base), f.modified_base, at, w);
+    let status_vector = params.with_live_elements_unquantized(f.damage, f.modified_base, at, w);
     let qtotal = qvec.total();
     let shares = TypeShares::of(&qvec);
 
@@ -409,10 +410,10 @@ pub(super) fn field_tick_seeded(
     let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);
     if is_blast {
         r.sources.radial += effective;
-        add_by_type(&mut r.sources.radial_by_type, &qvec, effective, &col);
+        add_by_type(&mut r.sources.radial_by_type, shares, effective, &col);
     } else {
         r.sources.field += effective;
-        add_by_type(&mut r.sources.field_by_type, &qvec, effective, &col);
+        add_by_type(&mut r.sources.field_by_type, shares, effective, &col);
     }
     ledger::settle(
         r, rec, at, owner, body_index, DamageType::Cinematic,
@@ -484,7 +485,7 @@ pub(super) fn field_tick_seeded(
     let procs = status::procs_for_hit(
         forced,
         f.status_chance * debuffs.received_status_chance(at),
-        &qvec,
+        &status_vector,
         &foe.status_immunities,
         &mut d.status,
     );

@@ -229,6 +229,7 @@ path, so an entry may be renamed but never renumbered.
 | [M126](measurements/M126-stug-blazing-barrel-resets.md) | Stug's Blazing Barrel stacks in both forms without a timer and clears on reload, entering Incarnon and exiting Incarnon; installing the adapter removes charged alternate fire | ✅ 2026-10-26 (owner) |
 | [M127](measurements/M127-stug-base-blob-ticks-and-multishot.md) | Stug: both forms have a 1.5 s lifespan refreshed independently of the entity's damage clock and never combine piles; base-form ticks start at creation then every second, ten stacks detonate immediately, +300 yields attached damage 304/308/312 and explosions 375/525/1050; fractional multishot gives discrete stacks | ✅ 2026-10-26 (owner) |
 | [M129](measurements/M129-glaive-throw-clock-and-recall.md) | Glaive charge uses wind-up speed and release motion uses attack speed; recall and detonation return at outbound speed, with no input or catch recovery delay; first and consecutive throws are distinct | ✅ 2026-10-28 (owner, qualitative) |
+| [M130](measurements/M130-status-weights-before-quantization.md) | Laetum direct damage permits a positive Impact component to quantize to zero; owner-relayed Ocucor video shows Puncture with a −98.2% Puncture riven; proc draws use unquantized composition, with no component floor | 2026-10-31 (owner; proc presence, no frequency measurement) |
 | [M118](measurements/M118-vectis-prime-compression-and-combo-order.md) | Vectis Prime Incarnon: Primary Compression pays +12% at rank 5 and multiplies, on the direct hit and the orb; the shot combo counts a hit before it pays it; a frozen body takes +1.0 crit damage on the direct hit only; Galvanized Aptitude adds on the weapon's own base, not on Inciting Incident's +200 | ✅ 2026-10-22 (owner) |
 | [M128](measurements/M128-aksondol-reload-wave-start.md) | Aksondol applies its Cold wave at reload start; the count, range and trigger interactions follow the wiki and remain unverified in game | ✅ 2026-10-27 (owner: timing only) |
 
@@ -265,14 +266,14 @@ settles a RULE rather than a weapon has no row and is found by number above.
 | Haalvu | `haalvu` | [M121](measurements/M121-haalvu-battery-refill-and-empty-animation.md) · [M122](measurements/M122-tau-status-chance-vulnerability.md) |
 | Kuva Nukor | `kuva_nukor` | [M78](measurements/M78-kuva-nukor-valence-in-co-base.md) |
 | Kuva Ogris | `kuva_ogris` | [M106](measurements/M106-assault-rifle-mods-take-launchers.md) |
-| Laetum | `laetum` | [M9](measurements/M09-incarnon-transition-timings.md) · [M10](measurements/M10-incarnon-reload-buff-reach.md) · [M11](measurements/M11-on-hit-per-trigger-or-instance.md) · [M15](measurements/M15-torid-incarnon-chain-nodes.md) · [M46](measurements/M46-chill-ladder.md) · [M59](measurements/M59-laetum-incarnon-irradiate-echo.md) · [M60](measurements/M60-headshot-bonuses-add.md) · [M61](measurements/M61-shield-break-spillover.md) · [M62](measurements/M62-volley-settles-per-pellet.md) |
+| Laetum | `laetum` | [M9](measurements/M09-incarnon-transition-timings.md) · [M10](measurements/M10-incarnon-reload-buff-reach.md) · [M11](measurements/M11-on-hit-per-trigger-or-instance.md) · [M15](measurements/M15-torid-incarnon-chain-nodes.md) · [M46](measurements/M46-chill-ladder.md) · [M59](measurements/M59-laetum-incarnon-irradiate-echo.md) · [M60](measurements/M60-headshot-bonuses-add.md) · [M61](measurements/M61-shield-break-spillover.md) · [M62](measurements/M62-volley-settles-per-pellet.md) · [M130](measurements/M130-status-weights-before-quantization.md) |
 | Latron Prime | `latron_prime` | [M102](measurements/M102-latron-prime-double-tap-flensing-riddled.md) · [M103](measurements/M103-latron-bounces-punch-through-and-the-gauge.md) · [M104](measurements/M104-primary-compression-multiplies-on-the-latron-incarnon.md) |
 | Larkspur Prime | `larkspur_prime` | [M19](measurements/M19-deadhead-stacking.md) |
 | Magistar | `magistar` | [M69](measurements/M69-slam-radial-and-flat-add.md) · [M79](measurements/M79-flat-base-add-and-eclipse.md) |
 | Mandonel | `mandonel` | [M47](measurements/M47-body-radius-on-the-floor.md) |
 | Mausolon | `mausolon` | [M45](measurements/M45-mausolon-lifted-synergy.md) |
 | Nukor | `nukor` | [M78](measurements/M78-kuva-nukor-valence-in-co-base.md) |
-| Ocucor | `ocucor` | [M39](measurements/M39-secondary-fortifier-level-shaped.md) |
+| Ocucor | `ocucor` | [M39](measurements/M39-secondary-fortifier-level-shaped.md) · [M130](measurements/M130-status-weights-before-quantization.md) |
 | Opticor | `opticor` | [M41](measurements/M41-hitscan-incarnon-explosion-cadence.md) |
 | Opticor Vandal | `opticor_vandal` | [M72](measurements/M72-opticor-vandal-co-base-and-ramp.md) |
 | Paris Prime | `paris_prime` | [M83](measurements/M83-gated-flat-add-and-the-co-base.md) · [M84](measurements/M84-paris-prime-incarnon-co-reads-the-evolved-base.md) |

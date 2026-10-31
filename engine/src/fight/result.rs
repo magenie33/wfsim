@@ -284,18 +284,20 @@ pub(super) fn write_row(
     }
 }
 
+/// Split dealt damage using its quantized shares, never its status weights.
 #[wfsim_gas_macro::metered]
 pub(super) fn add_by_type(
     dst: &mut [f64; DamageType::ALL.len()],
-    v: &DamageVector,
+    shares: TypeShares,
     effective: f64,
     col: &crate::data::factions::Column,
 ) {
-    let weighted: f64 = v.iter_nonzero().map(|(t, a)| a * col.get(t)).sum();
+    let parts = || DamageType::ALL.into_iter().map(|t| (t, shares.share(t))).filter(|&(_, a)| a > 0.0);
+    let weighted: f64 = parts().map(|(t, a)| a * col.get(t)).sum();
     if weighted <= 0.0 {
         return;
     }
-    for (t, amount) in v.iter_nonzero() {
+    for (t, amount) in parts() {
         dst[t as usize] += effective * amount * col.get(t) / weighted;
     }
 }

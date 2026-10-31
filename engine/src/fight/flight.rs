@@ -24,6 +24,7 @@ pub(super) struct Landing {
     pub(super) shot: Option<u32>,
     pub(super) flash: bool,
     pub(super) qvec: DamageVector,
+    /// Raw composition travels with the projectile alongside its damage snap.
     pub(super) direct_pre_snap: DamageVector,
     pub(super) modded_base: f64,
     pub(super) co_base: crate::model::CoBase,

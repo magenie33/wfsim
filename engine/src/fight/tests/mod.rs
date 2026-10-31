@@ -57,6 +57,7 @@ mod ripper_rounds;
 mod sniper_combo_fight;
 mod spliced_riven;
 mod status_crit_parts;
+mod status_composition;
 mod stormburst;
 mod stream_independence;
 mod m125_reflex_floor_hold;

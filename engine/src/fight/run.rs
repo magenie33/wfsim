@@ -744,26 +744,29 @@ pub fn run_once_traced(
         me.windows.sync_frenzy(&me.bar);
         let resting =
             if me.incarnon.in_base_form { &me.fixed.base_resting } else { &me.fixed.main_resting };
-        let qvec = match resting {
-            Some(down) if t >= me.windows.frenzy => down,
-            _ => qvec,
+        let (qvec, pre_quantization) = match resting {
+            Some(down) if t >= me.windows.frenzy => (
+                down,
+                &active.resting.as_ref().expect("resting vector needs resting panel").damage,
+            ),
+            _ => (qvec, &active.damage),
         };
         // …AND A COMPANION'S PILE, settled on the hits landed so far and read
         // for this shot: the vector its count resolved to. No robotic weapon
         // has Frenzy, so the two never meet.
         let piled_q;
-        let qvec = match &active.per_hit_element {
+        let (qvec, pre_quantization) = match &active.per_hit_element {
             Some(p) => {
                 me.windows.element_pile.settle(&p.spec, r.pellets, me.last_shot_t);
                 match me.windows.element_pile.stacks_at(&p.spec, t) {
-                    0 => qvec,
+                    0 => (qvec, pre_quantization),
                     k => {
                         piled_q = p.damage[k as usize - 1].quantized_against(modded_base);
-                        &piled_q
+                        (&piled_q, &p.damage[k as usize - 1])
                     }
                 }
             }
-            None => qvec,
+            None => (qvec, pre_quantization),
         };
         // ---- THE MELEE SWING THIS SHOT IS — see [`swing_this_shot`] ------
         let Swung {
@@ -790,6 +793,7 @@ pub fn run_once_traced(
             active,
             t,
             qvec,
+            pre_quantization,
             modded_base,
             &mut me.buff_stacks,
             &mut me.melee,

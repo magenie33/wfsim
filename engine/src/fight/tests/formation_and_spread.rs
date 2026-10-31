@@ -1734,6 +1734,10 @@ fn the_tail_drains_the_crowd_and_not_only_the_aimed_body() {
     p.infinite_reserve = false;
     p.reserve_ammo = 60.0;
     p.duration_seconds = 30.0;
+    // A guaranteed burn isolates tail drainage from random proc distribution.
+    p.status_chance = 0.0;
+    p.forced_procs = vec![DamageType::Heat];
+    p.base_crit_chance = 0.0;
 
     let r = run_once(&p, &mut Rng::new(0x5EED));
     let (aimed, behind) = (r.taken.by_body().0[0], r.taken.by_body().0[1]);

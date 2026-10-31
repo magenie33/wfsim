@@ -28,6 +28,7 @@ pub(super) struct Strike<'a> {
     pub(super) seat: Seat,
     pub(super) active: &'a FightParams,
     pub(super) qvec: &'a DamageVector,
+    /// Unquantized composition after the swing, before live added elements.
     pub(super) direct_pre_snap: DamageVector,
     pub(super) variants: &'a [(DamageVector, f64, f64)],
     pub(super) variant_rad: &'a [DamageVector],
@@ -1253,11 +1254,14 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         // hit's grid for an explosion would be a different weapon's
         // arithmetic.
         let pre_quantization = match &rad {
-            None => direct_pre_snap,
-            Some(r) => r.damage,
+            None => own.map_or(direct_pre_snap, |i| active.pellet_damage[i].0),
+            Some(r) => own.map_or(r.damage, |i| active.pellet_damage[i].1),
         };
         let pre_ability_total = qvec.total();
         let qvec = params.with_live_elements(qvec, stage_mb, t, windows);
+        let status_vector = params.with_live_elements_unquantized(
+            pre_quantization, stage_mb, t, windows,
+        );
         // A merged beam tick carries the SUM of its beams. `qtotal`
         // is what the instance deals; the crit CHANCE that produced
         // `tier` above was deliberately left at one beam's.
@@ -1520,7 +1524,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 spread_from_blast(
                     seat, windows, det, bodies, params, active, &rr,
                     body_only(raw_at_epicentre / bucket),
-                    shares, crit_multiplier, tier, attrition, spread_mb, status_chance, forced, &qvec,
+                    shares, crit_multiplier, tier, attrition, spread_mb, status_chance, forced, &status_vector,
                     &mut *gal, &mut *arc, &mut *r, rec, d, t,
                 );
             }
@@ -1542,7 +1546,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             if !follows && params.beam.is_none() && struck.len() > 1 {
                 spread_from_punch_through(
                     seat, windows, bodies, params, active, struck, raw / bucket, shares, punch,
-                    spread_mb, status_chance, forced, &qvec, part.is_head, part_factor,
+                    spread_mb, status_chance, forced, &status_vector, part.is_head, part_factor,
                     landing, &mut *gal, &mut *arc, &mut *r, rec, d, t,
                 );
             }
@@ -1602,7 +1606,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 spread_mb,
                 status_chance,
                 forced,
-                &qvec,
+                &status_vector,
                 &mut *gal,
                 &mut *arc,
                 &mut *r,
@@ -1647,7 +1651,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     spread_mb,
                     status_chance,
                     forced,
-                    &qvec,
+                    &status_vector,
                     &mut *gal,
                     &mut *arc,
                     &mut *r,
@@ -1731,7 +1735,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     modded_base: spread_mb * unmerged,
                     status_chance: (status_chance - weakpoint_sc) * unmerged + weakpoint_sc,
                     forced: forced.to_vec(),
-                    vector: qvec,
+                    status_vector,
                 });
             }
             // …AND EVERY BOUNCE'S COLLISION. The projectile arriving
@@ -1756,7 +1760,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     spread_mb,
                     status_chance,
                     forced,
-                    &qvec,
+                    &status_vector,
                     &head_factor,
                     head_landing,
                     &mut *gal,
@@ -1784,7 +1788,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 spread_mb,
                 status_chance,
                 forced,
-                &qvec,
+                &status_vector,
                 &mut *gal,
                 &mut *arc,
                 &mut *r,
@@ -1821,7 +1825,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     spread_mb,
                     status_chance,
                     forced,
-                    &qvec,
+                    &status_vector,
                     &mut *gal,
                     &mut *arc,
                     &mut *r,
@@ -1847,7 +1851,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     spread_mb,
                     status_chance,
                     forced,
-                    &qvec,
+                    &status_vector,
                     head_direct,
                     part_factor,
                     landing,
@@ -1879,7 +1883,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     spread_mb,
                     status_chance,
                     forced,
-                    &qvec,
+                    &status_vector,
                     &mut *gal,
                     &mut *arc,
                     &mut *r,
@@ -1947,10 +1951,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 sniper_combo.last_hit = t;
             }
             r.sources.direct += effective;
-            add_by_type(&mut r.sources.direct_by_type, &qvec, effective, &col);
+            add_by_type(&mut r.sources.direct_by_type, shares, effective, &col);
         } else {
             r.sources.radial += effective;
-            add_by_type(&mut r.sources.radial_by_type, &qvec, effective, &col);
+            add_by_type(&mut r.sources.radial_by_type, shares, effective, &col);
         }
         // THE ONE SITE THAT KNOWS ALL FOUR SHAPES: a hit is plain, a
         // crit, a weak point, or both — and "both" is its own number in
@@ -2272,12 +2276,12 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             continue;
         }
         // Per-INSTANCE proc roll (wiki Multishot/Status_Effect):
-        // forced ++ SC draws weighted by the QUANTIZED vector, unit
+        // forced ++ SC draws weighted by the UNQUANTIZED vector, unit
         // immunities renormalized.
         let mut procs = status::procs_for_hit(
             forced,
             status_chance * bodies[0].debuffs.received_status_chance(t),
-            &qvec,
+            &status_vector,
             &params.foe.status_immunities,
             &mut d.status,
         );

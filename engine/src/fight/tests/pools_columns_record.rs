@@ -105,13 +105,19 @@ fn the_by_type_breakdown_follows_the_column_too() {
     let grineer = crate::data::factions::column("grineer");
     let mut dst = [0.0f64; DamageType::ALL.len()];
     // 125 effective is what 50 Impact ×1.5 + 50 Slash ×1.0 comes to.
-    add_by_type(&mut dst, &v, 125.0, &grineer);
+    add_by_type(&mut dst, TypeShares::of(&v), 125.0, &grineer);
     assert!((dst[DamageType::Impact as usize] - 75.0).abs() < 1e-9, "{dst:?}");
     assert!((dst[DamageType::Slash as usize] - 50.0).abs() < 1e-9, "{dst:?}");
     // Neutral: the plain proportional split it always was.
     let mut flat = [0.0f64; DamageType::ALL.len()];
-    add_by_type(&mut flat, &v, 100.0, &crate::data::factions::Column::NEUTRAL);
+    add_by_type(&mut flat, TypeShares::of(&v), 100.0, &crate::data::factions::Column::NEUTRAL);
     assert!((flat[DamageType::Impact as usize] - 50.0).abs() < 1e-9);
+
+    let removed = v.with(DamageType::Impact, -2.0);
+    let mut only_slash = [0.0f64; DamageType::ALL.len()];
+    add_by_type(&mut only_slash, TypeShares::of(&removed), 50.0, &grineer);
+    assert_eq!(only_slash[DamageType::Impact as usize], 0.0);
+    assert!((only_slash[DamageType::Slash as usize] - 50.0).abs() < 1e-9);
 }
 
 /// Overguard is a LAYER over the unit, with its own table — the unit's

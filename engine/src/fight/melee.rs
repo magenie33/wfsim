@@ -816,6 +816,7 @@ pub(super) fn swing_this_shot(
     active: &FightParams,
     t: f64,
     qvec: &DamageVector,
+    pre_quantization: &DamageVector,
     modded_base: f64,
     buff_stacks: &mut [LiveStacks],
     melee: &mut MeleeState,
@@ -1013,6 +1014,8 @@ pub(super) fn swing_this_shot(
     // one of M79's four readings.
     let unswung = active.unswung_fraction.clamp(0.0, 1.0);
     let swung;
+    // Status selection and the ledger retain the swung, unquantized vector.
+    let mut direct_pre_snap = *pre_quantization;
     // What the fold did to the whole base, and to the WEAPON's half of it.
     // The two differ exactly when a flat add is present, and the GunCO
     // bracket needs the second: it reads the weapon's base and takes the
@@ -1021,10 +1024,13 @@ pub(super) fn swing_this_shot(
     let (qvec, modded_base) = if (swing_mult - 1.0).abs() > 1e-12 || any_physical {
         let flat = qvec.scale(unswung);
         let mut v = qvec.scale((1.0 - unswung) * swing_mult);
+        direct_pre_snap = pre_quantization.scale((1.0 - unswung) * swing_mult);
         for (ty, bonus) in physical_bonus {
             if (bonus - 1.0).abs() > 1e-12 {
                 let extra = v.get(ty) * (bonus - 1.0);
                 v.add(ty, extra);
+                let status_extra = direct_pre_snap.get(ty) * (bonus - 1.0);
+                direct_pre_snap.add(ty, status_extra);
             }
         }
         // The ModifiedBase grows by the same share the vector did, so
@@ -1037,17 +1043,14 @@ pub(super) fn swing_this_shot(
         for (ty, amount) in flat.iter_nonzero() {
             v.add(ty, amount);
         }
+        for (ty, amount) in pre_quantization.scale(unswung).iter_nonzero() {
+            direct_pre_snap.add(ty, amount);
+        }
         swung = v;
         (&swung, mb)
     } else {
         (qvec, modded_base)
     };
-    // THE SWUNG VECTOR, kept for the LEDGER. Its quantization layer is
-    // drawn against `stage_mb`, which the fold has already grown, so
-    // handing it the unswung vector printed a grid and a set of components
-    // that were never on it — the ledger's own product then fell short of
-    // the number by exactly the swing, on every melee row.
-    let direct_pre_snap = *qvec;
     // …AND THE CO BRACKET FOLLOWS THE WEAPON'S HALF. `active`'s fraction is
     // read against the UNSWUNG base; once the swing has landed on one half
     // only, the share the term reads is a different number.
