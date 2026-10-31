@@ -34,6 +34,11 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const n = statNames(cls).find((x) => x.stat.id === id);
     return (n && n.names[1]) || headless.rivenStatNameEn(s);
   };
+  const signedStatZh = (cls, id, malus = false) => {
+    const s = ((meta.riven_stats || {})[cls] || []).find((x) => x.id === id);
+    const negative = s ? (s.base < 0) !== (malus && s.bonus !== false) : malus;
+    return (negative ? "−" : "+") + statZh(cls, id);
+  };
 
   /// `zk 托里德 5` → { cmd: "zk", rest: "托里德 5" }. A COMMAND PANEL sends it
   /// as `/zk`, so a leading slash, either width, is the same command.
@@ -134,8 +139,8 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=zk&ruler=${encodeURIComponent(g.ruler_id)}&n=${shown}`
       + (ask.bonuses.length ? `&has=${ask.bonuses.map(encodeURIComponent).join(",")}` : "")
       + (ask.malus ? `&malus=${encodeURIComponent(ask.malus)}` : "");
-    const line = (x) => `#${x.rank} ${x.stat_ids.bonuses.map((id) => "+" + statZh(cls, id)).join(" ")}${
-      x.stat_ids.malus ? " −" + statZh(cls, x.stat_ids.malus) : ""}  ${x.score}${x.gain == null ? "" : `（${x.gain >= 0 ? "+" : "−"}${Math.abs(x.gain * 100).toFixed(1)}%）`}`;
+    const line = (x) => `#${x.rank} ${x.stat_ids.bonuses.map((id) => signedStatZh(cls, id)).join(" ")}${
+      x.stat_ids.malus ? " " + signedStatZh(cls, x.stat_ids.malus, true) : ""}  ${x.score}${x.gain == null ? "" : `（${x.gain >= 0 ? "+" : "−"}${Math.abs(x.gain * 100).toFixed(1)}%）`}`;
     const text = [`${weaponName(hit.w)} · ${t(g.ruler).split(" · ")[0]}`,
       `${t("The board's best riven-free build")}: ${g.riven_free ? g.riven_free.score : "—"}`]
       .concat(top.map(line)).join("\n");
@@ -237,7 +242,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
         : "Nona could not start the riven gain just now. Try again in a moment. (＞﹏＜)");
     }
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=appraise&code=${opened.code}`;
-    const line = rolled.map((x) => `${x.malus ? "−" : "+"}${statZh(cls, x.id)} ×${x.roll.toFixed(2)}`).join(" ");
+    const line = rolled.map((x) => `${signedStatZh(cls, x.id, x.malus)} ×${x.roll.toFixed(2)}`).join(" ");
     return { line: t("Nona read it. The volunteers' devices are computing it together — usually a minute or two — and Nona will post the answer here. Can't wait? Scan the code to run it on your own device, riven gain {code}. (๑•̀ㅂ•́)و✧", { code: opened.code }),
       card, text: `${weaponName(hit.w)} · ${rulerShort(ruler)} · ${line}\n${SITE}/appraise/${opened.code}` };
   }

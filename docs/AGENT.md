@@ -406,11 +406,17 @@ Saved cards use `builder.rivens.appraise` to queue the same request and replay.
 The Riven Analyst page hosts personal reports and a separate published
 comparison. Executor disclosure and queue ownership are in `docs/TASKS.md`.
 
-1. A chat's bot reads the card (`fx` in Chinese chats: `fx <weapon> [ruler]`
-   then each stat and its number, `readRivenLines` in `bot/answer.mjs`; a
-   line's side is its 正/负 or its number's sign against the stat's direction,
-   so 变焦-50 is the malus and 后坐力-50 a bonus), checks it with the
-   engine's own riven rules and opens an appraisal at `/api/appraise/new`
+1. A chat's bot reads the card (`fx <weapon> [ruler]` then each stat and its
+   number) with `readRivenLines` in `92-riven-input.js`, shared with the page
+   through `mcp/headless.js`. Official Chinese and English card names take
+   precedence over aliases; either the name or value may come first. Faction
+   multipliers accept `x0.64`, `0.64` or `-0.64`, including 对Infested伤害.
+   正 and 负 mean literal `+` and `-`, before either the name or number;
+   conflicting signs are refused. The stat's direction determines its slot:
+   负后坐力50, -后坐力50 and 后坐力-50 are bonuses; 正后坐力50 is a malus.
+   Named `zk` filters follow the same sign rule. The engine checks the shape
+   and printed range and converts values to rolls. The bot opens an appraisal
+   at `/api/appraise/new`
    (`worker/appraise.js`): weapon, ruler, the card's rolls, and the channel's
    own note of where to answer, which nothing else reads.
 2. `/appraise/<code>` opens that weapon's optimizer under the official ruler
