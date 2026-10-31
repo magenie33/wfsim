@@ -928,8 +928,9 @@ calc's RUN COUNT — the reader's precision, not an edit to the fight. It lands
 LAST in the spread, or the box silently does nothing while every chip's
 tooltip quotes it.
 
-The simulator defaults to 1000 runs. An explicit browser preference survives
-reloads. Its global automatic board-review preference defaults on. Completion
+The simulator, API and fx share the metadata's default of 1000 runs. An explicit
+browser preference survives reloads, and an explicit request keeps its run count.
+The simulator's global automatic board-review preference defaults on. Completion
 compares the frozen request with an existing published row: build, actual riven
 rolls and ranks, ruler, mode, seed, run count and fight must agree. The engine's
 buff list excludes settings this build never reads; class rules for other

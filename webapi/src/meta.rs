@@ -1387,7 +1387,7 @@ pub fn meta_json() -> Value {
             // alone. Only the DEFAULT moves: a saved scenario carries its own
             // duration and keeps it.
             "duration": 180.0,
-            "runs": 100,
+            "runs": crate::fight::DEFAULT_RUNS,
             // The final-round contract, for an API caller. The WEB does not
             // read these: `final_runs` is the scenario's `runs` and
             // `finalists` is a fixed 10, because neither is a setting the

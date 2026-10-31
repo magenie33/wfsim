@@ -13,6 +13,7 @@ use crate::request::{err_json, get_bool, get_f64, get_str, get_u32};
 use crate::tenno::tenno_from;
 
 pub(crate) const DEFAULT_SEED: u64 = 0xC0FFEE;
+pub(crate) const DEFAULT_RUNS: u32 = 1000;
 
 /// **WHAT THIS FIGHT SAYS ABOUT THE CLASS THIS WEAPON IS IN.**
 ///
@@ -583,7 +584,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     let landscape = get_bool(v, "landscape", false);
     let duration = get_f64(v, "duration", 180.0).clamp(1.0, 3600.0);
     let (player_at, target_at) = positions(v);
-    let runs = get_u32(v, "runs", 100).clamp(1, 20_000);
+    let runs = get_u32(v, "runs", DEFAULT_RUNS).clamp(1, 20_000);
     let seed = v.get("seed").and_then(|x| x.as_u64()).unwrap_or(DEFAULT_SEED);
 
     // ---- WARFRAME ABILITY BUFFS (`data/abilities/`) -----------------------
@@ -1497,5 +1498,19 @@ mod empowered_enemies {
     fn an_unknown_mission_refuses_the_fight() {
         let v = json!({ "weapon": "braton", "empowered": "sortie", "duration": 10 });
         assert!(super::parse_fight(&v).is_err());
+    }
+}
+
+#[cfg(test)]
+mod measurement_defaults {
+    use serde_json::json;
+
+    #[test]
+    fn metadata_and_the_api_share_precision_without_overriding_explicit_runs() {
+        let default = super::parse_fight(&json!({ "weapon": "laetum" })).unwrap();
+        assert_eq!(default.runs, 1000);
+        assert_eq!(crate::meta::meta_json()["defaults"]["runs"], json!(default.runs));
+        let explicit = super::parse_fight(&json!({ "weapon": "laetum", "runs": 7 })).unwrap();
+        assert_eq!(explicit.runs, 7);
     }
 }

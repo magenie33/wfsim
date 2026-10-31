@@ -611,13 +611,12 @@ function renderPresetBar() {
 /// want to measure right now" is a fact about the person and not about the
 /// engagement.
 const SIM_RUNS_KEY = "wfsim-sim-runs";
-const SIM_RUNS_DEFAULT = 1000;
 const simRuns = () => {
   const v = Math.round(Number(localStorage.getItem(SIM_RUNS_KEY)));
-  return Number.isFinite(v) && v >= 1 && v <= 20000 ? v : SIM_RUNS_DEFAULT;
+  return Number.isFinite(v) && v >= 1 && v <= 20000 ? v : headlessDefaultRuns(META);
 };
 const setSimRuns = (n) => {
-  const v = Math.max(1, Math.min(20000, Math.round(Number(n)) || SIM_RUNS_DEFAULT));
+  const v = Math.max(1, Math.min(20000, Math.round(Number(n)) || headlessDefaultRuns(META)));
   localStorage.setItem(SIM_RUNS_KEY, String(v));
   if (META) updateOptEstimate();
 };
