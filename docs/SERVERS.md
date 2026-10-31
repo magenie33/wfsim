@@ -90,6 +90,19 @@ advisory lock and losing that session stops it. Copying deployment configuration
 to another host does not create another primary database or a second settler.
 Move the active daemon by stopping the old service before starting the new one.
 
+## Database storage
+
+`worker/pg/library.sql` sets vacuum thresholds on the factory and board tables:
+2% of dead versions plus a fixed floor, with an earlier insert threshold to keep
+new pages visible to index-only reads. `scores_pace` covers both time-ordered
+score reads and rolling provenance counts; they share one timestamp index.
+
+Routine vacuum makes dead tuple and index space reusable by later writes;
+reusable space inside a relation is distinct from free filesystem space.
+Maintenance runs serially with a disk budget for WAL, temporary files and any
+replacement index, and stops before the reserve is exhausted. `VACUUM FULL`
+requires a replacement table and is unsuitable for an almost-full filesystem.
+
 ## One instance
 
 **A service runs on one host.** Two bots claim the same messages, and a chat

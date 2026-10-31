@@ -809,7 +809,7 @@ async function demand(env) {
 /// THE HOME HERO'S TALLY: every score the board holds, by who computed it, and
 /// how many an hour over the pace window (`PACE_HOURS`). Counting the whole table costs a scan, so that count is a
 /// BASE kept `TALLY_BASE_MS` at the edge and each answer adds the rows finished
-/// since it, read on `scores_oldest`. A row replaced since the base is counted
+/// since it, read on `scores_pace`. A row replaced since the base is counted
 /// again until the next base; the volunteers' count stays exact either way.
 export const TALLY_BASE_MS = 60 * 60_000;
 const SPLIT = `SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official`;

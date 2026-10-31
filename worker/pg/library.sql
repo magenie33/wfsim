@@ -102,11 +102,10 @@ CREATE TABLE IF NOT EXISTS scores (
 -- "What has this ruler measured" is one indexed query, which is what the set
 -- difference is asked through.
 CREATE INDEX IF NOT EXISTS scores_ruler ON scores (ruler);
--- …and "what has gone longest without being measured" is the order to repair
--- in, which is the one thing a clock here is allowed to decide.
-CREATE INDEX IF NOT EXISTS scores_oldest ON scores (finished_at);
--- THE ROLLING PACE reads who measured a score without fetching its heap row.
+-- THE TIME ORDER AND ROLLING PACE share one leading timestamp; the included
+-- provenance lets the pace read who measured a score without its heap row.
 CREATE INDEX IF NOT EXISTS scores_pace ON scores (finished_at) INCLUDE (measured_by);
+DROP INDEX IF EXISTS scores_oldest;
 
 -- WHAT SOMEBODY ASKED TO BE COMPUTED, AND HOW FAR IT GOT. The queue may only
 -- ever CAUSE work: it may not prevent work and it may not decide a number, so
@@ -383,3 +382,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_round ON board_reviews (ref, eng
 CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_pending ON board_reviews (ref, engine) WHERE state = 'waiting';
 CREATE INDEX IF NOT EXISTS board_reviews_waiting ON board_reviews (engine, state, created_at);
 ALTER TABLE scores ADD COLUMN IF NOT EXISTS review_id TEXT COLLATE "C";
+
+-- HOT TABLES RECYCLE SMALLER BATCHES: a fixed floor bounds the work on small
+-- tables, while fractional thresholds keep dead versions and newly inserted
+-- pages from waiting for a fifth of a large table before vacuuming.
+DO $$
+DECLARE relation text;
+BEGIN
+  FOREACH relation IN ARRAY ARRAY['questions', 'answers', 'demands', 'scores', 'queue'] LOOP
+    EXECUTE format('ALTER TABLE %I SET (
+      autovacuum_vacuum_scale_factor = 0.02,
+      autovacuum_vacuum_threshold = 50000,
+      autovacuum_vacuum_insert_scale_factor = 0.01,
+      autovacuum_vacuum_insert_threshold = 50000)', relation);
+  END LOOP;
+END $$;
