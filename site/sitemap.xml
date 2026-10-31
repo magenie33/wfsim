@@ -71,6 +71,8 @@
   <url><loc>https://wfsim.app/weapons/Attica</loc></url>
   <url><loc>https://wfsim.app/weapons/Azima</loc></url>
   <url><loc>https://wfsim.app/weapons/Azothane</loc></url>
+  <url><loc>https://wfsim.app/weapons/balla_one_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/balla_two_handed</loc></url>
   <url><loc>https://wfsim.app/weapons/Ballistica</loc></url>
   <url><loc>https://wfsim.app/weapons/Ballistica_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Basmu</loc></url>
@@ -143,6 +145,8 @@
   <url><loc>https://wfsim.app/weapons/Cronus</loc></url>
   <url><loc>https://wfsim.app/weapons/Cryotra</loc></url>
   <url><loc>https://wfsim.app/weapons/Cyanex</loc></url>
+  <url><loc>https://wfsim.app/weapons/cyath_one_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/cyath_two_handed</loc></url>
   <url><loc>https://wfsim.app/weapons/Cycron</loc></url>
   <url><loc>https://wfsim.app/weapons/Cyngas</loc></url>
   <url><loc>https://wfsim.app/weapons/Daikyu</loc></url>
@@ -153,6 +157,8 @@
   <url><loc>https://wfsim.app/weapons/Dark_Sword</loc></url>
   <url><loc>https://wfsim.app/weapons/Deconstructor</loc></url>
   <url><loc>https://wfsim.app/weapons/Deconstructor_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/dehtat_two_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/dehtat_one_handed</loc></url>
   <url><loc>https://wfsim.app/weapons/Dera</loc></url>
   <url><loc>https://wfsim.app/weapons/Dera_Vandal</loc></url>
   <url><loc>https://wfsim.app/weapons/Despair</loc></url>
@@ -165,6 +171,8 @@
   <url><loc>https://wfsim.app/weapons/Dex_Furis</loc></url>
   <url><loc>https://wfsim.app/weapons/Dex_Nikana</loc></url>
   <url><loc>https://wfsim.app/weapons/Dex_Sybaris</loc></url>
+  <url><loc>https://wfsim.app/weapons/dokrahm_two_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/dokrahm_one_handed</loc></url>
   <url><loc>https://wfsim.app/weapons/Dorrclave</loc></url>
   <url><loc>https://wfsim.app/weapons/Dragon_Nikana</loc></url>
   <url><loc>https://wfsim.app/weapons/Drakgoon</loc></url>
@@ -298,6 +306,8 @@
   <url><loc>https://wfsim.app/weapons/Krohkur</loc></url>
   <url><loc>https://wfsim.app/weapons/Kronen</loc></url>
   <url><loc>https://wfsim.app/weapons/Kronen_Prime</loc></url>
+  <url><loc>https://wfsim.app/weapons/kronsh_one_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/kronsh_two_handed</loc></url>
   <url><loc>https://wfsim.app/weapons/Kulstar</loc></url>
   <url><loc>https://wfsim.app/weapons/Kunai</loc></url>
   <url><loc>https://wfsim.app/weapons/Kuva_Ayanga</loc></url>
@@ -354,6 +364,8 @@
   <url><loc>https://wfsim.app/weapons/Masseter</loc></url>
   <url><loc>https://wfsim.app/weapons/Masseter_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Mausolon</loc></url>
+  <url><loc>https://wfsim.app/weapons/mewan_two_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/mewan_one_handed</loc></url>
   <url><loc>https://wfsim.app/weapons/Mios</loc></url>
   <url><loc>https://wfsim.app/weapons/Mire</loc></url>
   <url><loc>https://wfsim.app/weapons/Miter</loc></url>
@@ -383,6 +395,8 @@
   <url><loc>https://wfsim.app/weapons/Okina</loc></url>
   <url><loc>https://wfsim.app/weapons/Okina_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Onos</loc></url>
+  <url><loc>https://wfsim.app/weapons/ooltha_two_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/ooltha_one_handed</loc></url>
   <url><loc>https://wfsim.app/weapons/Opticor</loc></url>
   <url><loc>https://wfsim.app/weapons/Opticor_Vandal</loc></url>
   <url><loc>https://wfsim.app/weapons/Orthos</loc></url>
@@ -408,6 +422,10 @@
   <url><loc>https://wfsim.app/weapons/Phantasma</loc></url>
   <url><loc>https://wfsim.app/weapons/Phantasma_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Phenmor</loc></url>
+  <url><loc>https://wfsim.app/weapons/plague_keewar_one_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/plague_keewar_two_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/plague_kripath_two_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/plague_kripath_one_handed</loc></url>
   <url><loc>https://wfsim.app/weapons/Plasma_Sword</loc></url>
   <url><loc>https://wfsim.app/weapons/Plinx</loc></url>
   <url><loc>https://wfsim.app/weapons/Pox</loc></url>
@@ -443,6 +461,8 @@
   <url><loc>https://wfsim.app/weapons/Quassus_Prime</loc></url>
   <url><loc>https://wfsim.app/weapons/Quatz</loc></url>
   <url><loc>https://wfsim.app/weapons/Quellor</loc></url>
+  <url><loc>https://wfsim.app/weapons/rabvee_two_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/rabvee_one_handed</loc></url>
   <url><loc>https://wfsim.app/weapons/Rakta_Ballistica</loc></url>
   <url><loc>https://wfsim.app/weapons/Rakta_Cernos</loc></url>
   <url><loc>https://wfsim.app/weapons/Rakta_Dark_Dagger</loc></url>
@@ -477,6 +497,8 @@
   <url><loc>https://wfsim.app/weapons/Secura_Lecta</loc></url>
   <url><loc>https://wfsim.app/weapons/Secura_Penta</loc></url>
   <url><loc>https://wfsim.app/weapons/Seer</loc></url>
+  <url><loc>https://wfsim.app/weapons/sepfahn_one_handed</loc></url>
+  <url><loc>https://wfsim.app/weapons/sepfahn_two_handed</loc></url>
   <url><loc>https://wfsim.app/weapons/Sepulcrum</loc></url>
   <url><loc>https://wfsim.app/weapons/Serro</loc></url>
   <url><loc>https://wfsim.app/weapons/Shaku</loc></url>

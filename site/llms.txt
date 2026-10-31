@@ -72,6 +72,8 @@
 - [Attica](https://wfsim.app/weapons/Attica.md): Crossbow · Primary · Mastery Rank 7
 - [Azima](https://wfsim.app/weapons/Azima.md): Pistol · Secondary · Mastery Rank 6
 - [Azothane](https://wfsim.app/weapons/Azothane.md): Two Handed Nikana · Melee · Mastery Rank 0
+- [Balla (Dagger)](https://wfsim.app/weapons/balla_one_handed.md): Dagger · Melee · Mastery Rank 0
+- [Balla (Staff)](https://wfsim.app/weapons/balla_two_handed.md): Staff · Melee · Mastery Rank 0
 - [Ballistica](https://wfsim.app/weapons/Ballistica.md): Pistol · Secondary · Mastery Rank 2
 - [Ballistica Prime](https://wfsim.app/weapons/Ballistica_Prime.md): Pistol · Secondary · Mastery Rank 14
 - [Basmu](https://wfsim.app/weapons/Basmu.md): Rifle · Primary · Mastery Rank 11
@@ -144,6 +146,8 @@
 - [Cronus](https://wfsim.app/weapons/Cronus.md): Sword · Melee · Mastery Rank 0
 - [Cryotra](https://wfsim.app/weapons/Cryotra.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Cyanex](https://wfsim.app/weapons/Cyanex.md): Pistol · Secondary · Mastery Rank 8
+- [Cyath (Machete)](https://wfsim.app/weapons/cyath_one_handed.md): Machete · Melee · Mastery Rank 0
+- [Cyath (Polearm)](https://wfsim.app/weapons/cyath_two_handed.md): Polearm · Melee · Mastery Rank 0
 - [Cycron](https://wfsim.app/weapons/Cycron.md): Pistol · Secondary · Mastery Rank 8
 - [Cyngas](https://wfsim.app/weapons/Cyngas.md): Archgun · Archgun · Mastery Rank 4
 - [Daikyu](https://wfsim.app/weapons/Daikyu.md): Bow · Primary · Mastery Rank 10
@@ -154,6 +158,8 @@
 - [Dark Sword](https://wfsim.app/weapons/Dark_Sword.md): Sword · Melee · Mastery Rank 8
 - [Deconstructor](https://wfsim.app/weapons/Deconstructor.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Deconstructor Prime](https://wfsim.app/weapons/Deconstructor_Prime.md): Sentinel Weapon · Sentinel · Mastery Rank 0
+- [Dehtat (Polearm)](https://wfsim.app/weapons/dehtat_two_handed.md): Polearm · Melee · Mastery Rank 0
+- [Dehtat (Rapier)](https://wfsim.app/weapons/dehtat_one_handed.md): Rapier · Melee · Mastery Rank 0
 - [Dera](https://wfsim.app/weapons/Dera.md): Rifle · Primary · Mastery Rank 4
 - [Dera Vandal](https://wfsim.app/weapons/Dera_Vandal.md): Rifle · Primary · Mastery Rank 7
 - [Despair](https://wfsim.app/weapons/Despair.md): Pistol · Secondary · Mastery Rank 4
@@ -166,6 +172,8 @@
 - [Dex Furis](https://wfsim.app/weapons/Dex_Furis.md): Dual Pistols · Secondary · Mastery Rank 10
 - [Dex Nikana](https://wfsim.app/weapons/Dex_Nikana.md): Nikana · Melee · Mastery Rank 8
 - [Dex Sybaris](https://wfsim.app/weapons/Dex_Sybaris.md): Rifle · Primary · Mastery Rank 7
+- [Dokrahm (Heavy Blade)](https://wfsim.app/weapons/dokrahm_two_handed.md): Heavy Blade · Melee · Mastery Rank 0
+- [Dokrahm (Scythe)](https://wfsim.app/weapons/dokrahm_one_handed.md): Scythe · Melee · Mastery Rank 0
 - [Dorrclave](https://wfsim.app/weapons/Dorrclave.md): Blade And Whip · Melee · Mastery Rank 8
 - [Dragon Nikana](https://wfsim.app/weapons/Dragon_Nikana.md): Nikana · Melee · Mastery Rank 8
 - [Drakgoon](https://wfsim.app/weapons/Drakgoon.md): Shotgun · Primary · Mastery Rank 5
@@ -299,6 +307,8 @@
 - [Krohkur](https://wfsim.app/weapons/Krohkur.md): Sword · Melee · Mastery Rank 9
 - [Kronen](https://wfsim.app/weapons/Kronen.md): Tonfa · Melee · Mastery Rank 3
 - [Kronen Prime](https://wfsim.app/weapons/Kronen_Prime.md): Tonfa · Melee · Mastery Rank 13
+- [Kronsh (Machete)](https://wfsim.app/weapons/kronsh_one_handed.md): Machete · Melee · Mastery Rank 0
+- [Kronsh (Polearm)](https://wfsim.app/weapons/kronsh_two_handed.md): Polearm · Melee · Mastery Rank 0
 - [Kulstar](https://wfsim.app/weapons/Kulstar.md): Pistol · Secondary · Mastery Rank 5
 - [Kunai](https://wfsim.app/weapons/Kunai.md): Pistol · Secondary · Mastery Rank 0
 - [Kuva Ayanga](https://wfsim.app/weapons/Kuva_Ayanga.md): Archgun · Archgun · Mastery Rank 13
@@ -355,6 +365,8 @@
 - [Masseter](https://wfsim.app/weapons/Masseter.md): Heavy Blade · Melee · Mastery Rank 8
 - [Masseter Prime](https://wfsim.app/weapons/Masseter_Prime.md): Heavy Blade · Melee · Mastery Rank 14
 - [Mausolon](https://wfsim.app/weapons/Mausolon.md): Archgun · Archgun · Mastery Rank 14
+- [Mewan (Polearm)](https://wfsim.app/weapons/mewan_two_handed.md): Polearm · Melee · Mastery Rank 0
+- [Mewan (Sword)](https://wfsim.app/weapons/mewan_one_handed.md): Sword · Melee · Mastery Rank 0
 - [Mios](https://wfsim.app/weapons/Mios.md): Blade And Whip · Melee · Mastery Rank 8
 - [Mire](https://wfsim.app/weapons/Mire.md): Sword · Melee · Mastery Rank 5
 - [Miter](https://wfsim.app/weapons/Miter.md): Rifle · Primary · Mastery Rank 6
@@ -384,6 +396,8 @@
 - [Okina](https://wfsim.app/weapons/Okina.md): Dual Daggers · Melee · Mastery Rank 5
 - [Okina Prime](https://wfsim.app/weapons/Okina_Prime.md): Dual Daggers · Melee · Mastery Rank 12
 - [Onos](https://wfsim.app/weapons/Onos.md): Pistol · Secondary · Mastery Rank 14
+- [Ooltha (Staff)](https://wfsim.app/weapons/ooltha_two_handed.md): Staff · Melee · Mastery Rank 0
+- [Ooltha (Sword)](https://wfsim.app/weapons/ooltha_one_handed.md): Sword · Melee · Mastery Rank 0
 - [Opticor](https://wfsim.app/weapons/Opticor.md): Rifle · Primary · Mastery Rank 14
 - [Opticor Vandal](https://wfsim.app/weapons/Opticor_Vandal.md): Rifle · Primary · Mastery Rank 14
 - [Orthos](https://wfsim.app/weapons/Orthos.md): Polearm · Melee · Mastery Rank 2
@@ -409,6 +423,10 @@
 - [Phantasma](https://wfsim.app/weapons/Phantasma.md): Shotgun · Primary · Mastery Rank 9
 - [Phantasma Prime](https://wfsim.app/weapons/Phantasma_Prime.md): Shotgun · Primary · Mastery Rank 14
 - [Phenmor](https://wfsim.app/weapons/Phenmor.md): Rifle · Primary · Mastery Rank 14
+- [Plague Keewar (Scythe)](https://wfsim.app/weapons/plague_keewar_one_handed.md): Scythe · Melee · Mastery Rank 0
+- [Plague Keewar (Staff)](https://wfsim.app/weapons/plague_keewar_two_handed.md): Staff · Melee · Mastery Rank 0
+- [Plague Kripath (Polearm)](https://wfsim.app/weapons/plague_kripath_two_handed.md): Polearm · Melee · Mastery Rank 0
+- [Plague Kripath (Rapier)](https://wfsim.app/weapons/plague_kripath_one_handed.md): Rapier · Melee · Mastery Rank 0
 - [Plasma Sword](https://wfsim.app/weapons/Plasma_Sword.md): Sword · Melee · Mastery Rank 4
 - [Plinx](https://wfsim.app/weapons/Plinx.md): Pistol · Secondary · Mastery Rank 6
 - [Pox](https://wfsim.app/weapons/Pox.md): Pistol · Secondary · Mastery Rank 9
@@ -444,6 +462,8 @@
 - [Quassus Prime](https://wfsim.app/weapons/Quassus_Prime.md): Warfan · Melee · Mastery Rank 13
 - [Quatz](https://wfsim.app/weapons/Quatz.md): Pistol · Secondary · Mastery Rank 9
 - [Quellor](https://wfsim.app/weapons/Quellor.md): Rifle · Primary · Mastery Rank 12
+- [Rabvee (Hammer)](https://wfsim.app/weapons/rabvee_two_handed.md): Hammer · Melee · Mastery Rank 0
+- [Rabvee (Machete)](https://wfsim.app/weapons/rabvee_one_handed.md): Machete · Melee · Mastery Rank 0
 - [Rakta Ballistica](https://wfsim.app/weapons/Rakta_Ballistica.md): Pistol · Secondary · Mastery Rank 6
 - [Rakta Cernos](https://wfsim.app/weapons/Rakta_Cernos.md): Bow · Primary · Mastery Rank 12
 - [Rakta Dark Dagger](https://wfsim.app/weapons/Rakta_Dark_Dagger.md): Dagger · Melee · Mastery Rank 8
@@ -478,6 +498,8 @@
 - [Secura Lecta](https://wfsim.app/weapons/Secura_Lecta.md): Whip · Melee · Mastery Rank 8
 - [Secura Penta](https://wfsim.app/weapons/Secura_Penta.md): Launcher · Primary · Mastery Rank 12
 - [Seer](https://wfsim.app/weapons/Seer.md): Pistol · Secondary · Mastery Rank 0
+- [Sepfahn (Nikana)](https://wfsim.app/weapons/sepfahn_one_handed.md): Nikana · Melee · Mastery Rank 0
+- [Sepfahn (Staff)](https://wfsim.app/weapons/sepfahn_two_handed.md): Staff · Melee · Mastery Rank 0
 - [Sepulcrum](https://wfsim.app/weapons/Sepulcrum.md): Pistol · Secondary · Mastery Rank 14
 - [Serro](https://wfsim.app/weapons/Serro.md): Polearm · Melee · Mastery Rank 6
 - [Shaku](https://wfsim.app/weapons/Shaku.md): Nunchaku · Melee · Mastery Rank 10
