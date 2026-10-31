@@ -4,7 +4,7 @@ Chinese name: 棱晶·空刃
 
 Sword · Melee · Mastery Rank 8. 170 base damage (impact 25.5, puncture 25.5, slash 119), 28% crit chance, 2.2x crit multiplier, 16% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

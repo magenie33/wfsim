@@ -4,7 +4,7 @@ Chinese name: 翁 Prime
 
 Dual Daggers · Melee · Mastery Rank 12. 184 base damage (impact 9.2, puncture 64.4, slash 110.4), 30% crit chance, 2.6x crit multiplier, 24% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | block forward | 4.6487 | Shocking Touch, Blood Rush, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Gnashing Payara, Dreamer's Wrath, Melee Influence | 2026-10-23 11:48 UTC · 4296a0964da6 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 8.1194 | Blood Rush, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Magnetic Rush, Gnashing Payara, Dreamer's Wrath, Melee Influence | 2026-10-30 15:11 UTC · d1db2cced411 |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | slide | 322.8237 | Shocking Touch, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Gnashing Payara, Dreamer's Wrath, Melee Influence | 2026-10-22 20:35 UTC · 62a82930d1d3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.2664 | Vicious Frost, Virulent Scourge, Shocking Touch, Condition Overload, Primed Fury, Primed Pressure Point, Galvanized Elementalist, Weeping Wounds, Spinning Needle, Dreamer's Wrath, Melee Influence | 2026-10-24 02:20 UTC · 5c64c380e5f2 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.3925 | Shocking Touch, Voltaic Strike, Sacrificial Pressure, Blood Rush, Galvanized Elementalist, Galvanized Steel, Organ Shatter, Weeping Wounds, Spinning Needle, Dreamer's Wrath, Melee Influence | 2026-10-24 02:04 UTC · 5c64c380e5f2 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | forward | 0.8842 | Blood Rush, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Organ Shatter, Weeping Wounds, Gnashing Payara, Dreamer's Wrath, Melee Influence | 2026-10-30 14:52 UTC · d1db2cced411 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 4.5457 | Blood Rush, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Organ Shatter, Weeping Wounds, Gnashing Payara, Dreamer's Wrath, Melee Influence | 2026-10-30 14:56 UTC · d1db2cced411 |
 
 ## Not modelled here
 

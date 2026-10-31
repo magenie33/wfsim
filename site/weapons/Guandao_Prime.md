@@ -4,7 +4,7 @@ Chinese name: 关刀 Prime
 
 Polearm · Melee · Mastery Rank 12. 240 base damage (impact 60, puncture 12, slash 168), 32% crit chance, 2.4x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

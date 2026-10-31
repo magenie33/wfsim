@@ -4,7 +4,7 @@ Chinese name: 信条·循环离子枪
 
 Pistol · Secondary · Mastery Rank 14. 22 base damage (heat 22), 20% crit chance, 1.8x crit multiplier, 40% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

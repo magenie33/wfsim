@@ -4,7 +4,7 @@ Chinese name: 巴兹火枪
 
 Rifle · Primary · Mastery Rank 11. 60 base damage (impact 30, puncture 24, slash 6), 23% crit chance, 2.5x crit multiplier, 21% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

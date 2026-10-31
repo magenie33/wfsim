@@ -4,7 +4,7 @@ Chinese name: 执法者
 
 Hammer · Melee · Mastery Rank 1. 210 base damage (impact 168, puncture 31.5, slash 10.5), 20% crit chance, 2x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

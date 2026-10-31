@@ -4,7 +4,7 @@ Chinese name: 瓦斯托
 
 Pistol · Secondary · Mastery Rank 4. 90 base damage (impact 22.5, puncture 22.5, slash 45), 20% crit chance, 1.8x crit multiplier, 8% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

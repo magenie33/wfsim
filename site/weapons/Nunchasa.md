@@ -2,7 +2,7 @@
 
 Bow · Primary · Mastery Rank 14. 400 base damage (cold 200, puncture 200), 32% crit chance, 2.4x crit multiplier, 32% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

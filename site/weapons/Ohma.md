@@ -4,7 +4,7 @@ Chinese name: 欧玛
 
 Tonfa · Melee · Mastery Rank 8. 224 base damage (electricity 110, impact 76, slash 38), 15% crit chance, 2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

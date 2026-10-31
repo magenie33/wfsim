@@ -4,7 +4,7 @@ Chinese name: 狂鲨 Prime
 
 Rifle · Primary · Mastery Rank 14. 48 base damage (impact 14.4, puncture 19.2, slash 14.4), 28% crit chance, 3x crit multiplier, 20% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

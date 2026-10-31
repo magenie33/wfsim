@@ -4,7 +4,7 @@ Chinese name: 战刃 Prime
 
 Glaive · Melee · Mastery Rank 10. 164 base damage (impact 24.6, puncture 24.6, slash 114.8), 22% crit chance, 2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

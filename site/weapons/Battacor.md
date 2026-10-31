@@ -4,7 +4,7 @@ Chinese name: 武使之力
 
 Rifle · Primary · Mastery Rank 10. 66 base damage (magnetic 42, puncture 24), 32% crit chance, 2.4x crit multiplier, 18% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-30
+## Best riven-free build on the WFSim board, as of 2026-10-31
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
