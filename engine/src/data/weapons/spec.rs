@@ -271,7 +271,7 @@ pub struct WeaponSpec {
     #[serde(default)]
     pub kitgun: Option<String>,
     #[serde(default)]
-    pub zaw: Option<super::zaws::Reference>,
+    pub zaw: Option<Box<super::zaws::Reference>>,
     /// ROUNDS A SECOND under Pax Charge, filled in by [`spec_assembled`] from
     /// the chamber. Not written in any weapon yaml: it is the chamber's, and a
     /// roster entry that restated it would be the same number written twice.
@@ -518,9 +518,9 @@ pub struct WeaponSpec {
     pub transforms_to: Option<String>,
     pub attack: AttackSpec,
     #[serde(default)]
-    pub gauge_form: Option<GaugeFormSpec>,
+    pub gauge_form: Option<Box<GaugeFormSpec>>,
     #[serde(default)]
-    pub pseudo_reload: Option<PseudoReloadSpec>,
+    pub pseudo_reload: Option<Box<PseudoReloadSpec>>,
     /// The weapon's perks: id references into `data/perks/` or inline
     /// one-off definitions (each entry of a transform group lists its own —
     /// Frenzy is active in both Dual Toxocyst forms).

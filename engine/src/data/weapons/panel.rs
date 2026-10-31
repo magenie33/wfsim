@@ -298,7 +298,7 @@ pub fn base_panel_assembled(
             co_base: v.total(),
         }
     };
-    let radial = s.attack.radial.as_ref().map(&a_radial);
+    let radial = s.attack.radial.as_deref().map(&a_radial);
     // THE WEAPON'S SLAM IS WRITTEN ONCE, on its default entry, and every form
     // reads it from there: a form states its `attack:` whole and `inherits:`
     // fills top-level keys only, so a stance slam in any other mode fired
@@ -306,12 +306,12 @@ pub fn base_panel_assembled(
     let slam = s
         .attack
         .slam
-        .as_ref()
+        .as_deref()
         .or_else(|| {
             all()
                 .iter()
                 .find(|e| e.group() == s.group() && e.default_form)
-                .and_then(|e| e.attack.slam.as_ref())
+                .and_then(|e| e.attack.slam.as_deref())
         })
         .map(&a_radial);
     // THE BLOB'S EXPLOSION is one stack's, and a pile is a count of them —

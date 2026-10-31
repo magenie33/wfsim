@@ -272,7 +272,7 @@ pub struct AttackSpec {
     /// `radial:` like any other AoE attack; this is the one a light combo ends
     /// on, and it is stated at 100% so a swing's own multiplier scales it.
     #[serde(default)]
-    pub slam: Option<RadialSpec>,
+    pub slam: Option<Box<RadialSpec>>,
     /// The ground shockwave this form's slam sends — see
     /// [`crate::model::Shockwave`]. On a combo form it rides the combo's
     /// closing slam; on a heavy slam, the slam itself.
@@ -462,7 +462,7 @@ pub struct AttackSpec {
     pub consecutive_hit_radial_only: bool,
     /// A radial (AoE) part fired with every projectile of this attack.
     #[serde(default)]
-    pub radial: Option<RadialSpec>,
+    pub radial: Option<Box<RadialSpec>>,
     /// See [`ExtraHitReads`] — the shares an Extra Hit off this attack's
     /// direct hit reads, where they are not the attack's own.
     #[serde(default)]
