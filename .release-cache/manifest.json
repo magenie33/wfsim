@@ -1,0 +1,99 @@
+{
+  "images": [
+    {
+      "file": "InfestedTipOne.png",
+      "bytes": 14136,
+      "sha256": "db6113607b8d31942ff33329e5d896001a057823b5058f55cfc35b6aa3c31f56"
+    },
+    {
+      "file": "InfestedTipTwo.png",
+      "bytes": 50292,
+      "sha256": "4e3b47b9dc602002cd48636c329ac7c8485e66ed8e7b2095761a094984fdee82"
+    },
+    {
+      "file": "MeleeArcaneA.png",
+      "bytes": 76226,
+      "sha256": "a6ebe037c58e59f50ccc99446b1e72ac861f9759c111d9110586b8663bb03b67"
+    },
+    {
+      "file": "MeleeArcaneB.png",
+      "bytes": 72710,
+      "sha256": "94965af4fee42a85c786545ca8d883984ea8a5d464ece4cb31f53f71e19ad939"
+    },
+    {
+      "file": "MeleeArcaneC.png",
+      "bytes": 62400,
+      "sha256": "23dd1103bf792df17ec24b848ce0c4066e51f24a2049c13bbda07abb490f2299"
+    },
+    {
+      "file": "MeleeArcaneD.png",
+      "bytes": 71838,
+      "sha256": "92556b1357ba6739416b396c930af3f9371e01868fcc2d8efc9a9cdc29bc7d25"
+    },
+    {
+      "file": "MeleeArcaneE.png",
+      "bytes": 70079,
+      "sha256": "54832767a7175752c24b3a8003275eb6249099cadb4c08579f8834a351eae4d9"
+    },
+    {
+      "file": "MeleeArcaneF.png",
+      "bytes": 67618,
+      "sha256": "4f4a8892625b47e8d280a84183cdfa9a7c3aaafa231b798bbeed1c7a8b33574c"
+    },
+    {
+      "file": "MeleeArcaneProjectileOnJump.png",
+      "bytes": 33696,
+      "sha256": "4fef33838606cbfcb21aea836b7a1ff7334ad5b8a9f499084ec8546711c84601"
+    },
+    {
+      "file": "MeleeArcaneShockwaveOnJump.png",
+      "bytes": 48013,
+      "sha256": "5ff7d9615618fc265d6f7fbda3912d06e6e9395b1f8c423bddbe276b47e3078e"
+    },
+    {
+      "file": "TipEleven.png",
+      "bytes": 35092,
+      "sha256": "1367afacb5c90536591e834de8680b1b1da90118a7bff372c1f94934846227ce"
+    },
+    {
+      "file": "TipFive.png",
+      "bytes": 15662,
+      "sha256": "6c7d375cc4d71836109176002aff6c029822eef2bd0680554c42d1c0eb50ac17"
+    },
+    {
+      "file": "TipFour.png",
+      "bytes": 21851,
+      "sha256": "6a29e76bc646f4cebfa5459266b264f8c495f0af2dac7b53db8c1f48b08d9567"
+    },
+    {
+      "file": "TipNine.png",
+      "bytes": 17478,
+      "sha256": "a7a7f40fe3a3b8d3c8538f7978f3085bb0a72fa2719db42475249a4f1e3f4662"
+    },
+    {
+      "file": "TipOne.png",
+      "bytes": 24354,
+      "sha256": "4000447a026990de6b551a9cbd38cd90cb34b5d42187140d783c3ab8cea28515"
+    },
+    {
+      "file": "TipSix.png",
+      "bytes": 36131,
+      "sha256": "8014d788846a7c962188f4f84946e8a8e8312f8edf12650c25a47c9009eaa102"
+    },
+    {
+      "file": "TipTen.png",
+      "bytes": 35212,
+      "sha256": "e8ff42a13baccc583944366209420da910dd0aa1d0319b0a1b8348fac527a14c"
+    },
+    {
+      "file": "TipThree.png",
+      "bytes": 42455,
+      "sha256": "2e611d5b08b9b4ea7d90807e0b50130fb9949e9b5903602589fbd13ca21424b9"
+    },
+    {
+      "file": "TipTwo.png",
+      "bytes": 39156,
+      "sha256": "4547ac9c12ece48c9a3c69e9e68f7cf6669cd80b5b64c856f08347941f36415b"
+    }
+  ]
+}
