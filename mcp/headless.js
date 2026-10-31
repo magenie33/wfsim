@@ -715,6 +715,10 @@ const rivenInputFold = (x) => String(x || "").normalize("NFKC").toLowerCase()
 function rivenStatWords(pool, locales) {
   const words = rivenStatLabels(pool, locales).flatMap(({ stat, names }) =>
     names.map((name) => ({ w: rivenInputFold(name), ids: [stat.id], official: true })));
+  // The faction phrase also accepts the omitted particle: 对 Infested 伤害.
+  for (const { w, ids } of words.slice()) {
+    if (/^对.+的伤害$/.test(w)) words.push({ w: w.replace(/的伤害$/, "伤害"), ids, official: false });
+  }
   for (const l of locales || []) for (const [name, ids] of Object.entries(l.riven_words || {})) {
     words.push({ w: rivenInputFold(name), ids: ids.filter((id) => pool.some((s) => s.id === id)), official: false });
   }
@@ -727,26 +731,27 @@ const rivenValueMalus = (stat, value) =>
   ((value > (stat.unit === "x" ? 1 : 0)) !== (stat.base > 0)) !== (stat.bonus === false);
 
 /// A typed card in either order: stat + value, or the card's value + stat.
-/// 正/负 and a sign before a name state the slot; a number's sign follows the
-/// stat's direction. An unsigned multiplier states its direction on its own.
+/// 正/负 mean +/− wherever the sign precedes the name or number. Slot direction
+/// follows the stat's base; an unsigned multiplier states its own direction.
 function readRivenLines(text, pool, locales) {
   const src = rivenInputFold(text), words = rivenStatWords(pool, locales), lines = [];
   const nameAt = (at) => words.find((w) => w.w && src.startsWith(w.w, at));
   const numberAt = (at) => {
-    const m = src.slice(at).match(/^([+-]?)([x×]?)(\d+(?:\.\d+)?|\.\d+)(%?)/);
-    return m && { sign: m[1], times: m[2], value: Number(m[3]), percent: m[4], end: at + m[0].length };
+    const m = src.slice(at).match(/^([+正负-]?)([x×]?)(\d+(?:\.\d+)?|\.\d+)(%?)/);
+    const sign = m && (m[1] === "负" ? "-" : m[1] === "正" ? "+" : m[1]);
+    return m && { sign, times: m[2], value: Number(m[3]), percent: m[4], end: at + m[0].length };
   };
   const no = (error, at) => ({ error, word: src.slice(at) });
   let at = 0;
   while (at < src.length) {
     const start = at;
     let said = null;
-    if (/^[正负]/.test(src.slice(at))) said = src[at++] === "负";
+    if (/^[正负]/.test(src.slice(at))) said = src[at++] === "负" ? "-" : "+";
     let n = numberAt(at), hit;
     if (n) {
       at = n.end;
       hit = nameAt(at);
-      if (!hit && src[at] === "s") {
+      if (src[at] === "s") {
         const seconds = nameAt(at + 1);
         if (seconds && seconds.ids.every((id) => pool.find((s) => s.id === id).text.includes("|val|s"))) {
           at++;
@@ -757,9 +762,9 @@ function readRivenLines(text, pool, locales) {
       at += hit.w.length;
     } else {
       if (/^[+-]/.test(src.slice(at))) {
-        const role = src[at++] === "-";
-        if (said !== null && said !== role) return no("contradicts", start);
-        said = role;
+        const sign = src[at++];
+        if (said !== null && said !== sign) return no("contradicts", start);
+        said = sign;
       }
       hit = nameAt(at);
       if (!hit) return no("unread", at);
@@ -767,19 +772,18 @@ function readRivenLines(text, pool, locales) {
       n = numberAt(at);
       if (!n) return no("format", at);
       at = n.end;
-      if (src[at] === "s" && !nameAt(at)
+      if (src[at] === "s" && (!nameAt(at) || nameAt(at + 1))
           && hit.ids.every((id) => pool.find((s) => s.id === id).text.includes("|val|s"))) at++;
     }
     if (!hit.ids.length) return no("unread", start);
     if (hit.ids.length !== 1) return no("ambiguous", start);
     const stat = pool.find((s) => s.id === hit.ids[0]);
     if ((n.times && stat.unit !== "x") || (n.percent && stat.unit === "x")) return no("format", start);
-    if (n.sign || stat.unit === "x") {
-      const role = rivenValueMalus(stat, n.sign === "-" ? -n.value : n.value);
-      if (said !== null && said !== role) return no("contradicts", start);
-      said = role;
-    }
-    lines.push({ id: stat.id, value: n.value, malus: said ?? stat.bonus === false, word: hit.w });
+    if (said !== null && n.sign && said !== n.sign) return no("contradicts", start);
+    const sign = n.sign || said;
+    const malus = sign || stat.unit === "x"
+      ? rivenValueMalus(stat, sign === "-" ? -n.value : n.value) : stat.bonus === false;
+    lines.push({ id: stat.id, value: n.value, malus, word: hit.w });
   }
   return lines.length ? { lines } : no("format", 0);
 }
@@ -838,9 +842,9 @@ function rivenFromOcr(pool, locales, lines) {
 // by plus each locale's `riven_words` (what players type) and
 // `riven_query_words` (the grammar). Only stats of the weapon's pool count.
 
-/// Folded like a card's line, with `-` kept for a malus.
+/// Folded like a card's line, retaining literal signs.
 const rivenQueryFold = (x) => String(x || "").normalize("NFKC").toLowerCase()
-  .replace(/[−–]/g, "-").replace(/[^\p{L}-]/gu, "");
+  .replace(/[−–]/g, "-").replace(/[^\p{L}+-]/gu, "");
 
 /// `{ bonuses: [ids], malus: id | "any" | "none" | null, unread }`.
 function rivenQuery(pool, locales, text) {
@@ -852,18 +856,29 @@ function rivenQuery(pool, locales, text) {
   words.sort((a, b) => b.w.length - a.w.length);
   const q = rivenQueryFold(text);
   const out = { bonuses: [], malus: null, unread: [] };
-  let next = "bonus";
+  let next = null;
   for (let i = 0; i < q.length;) {
     const hit = words.find((x) => x.w && q.startsWith(x.w, i));
+    if (/^[+正-]/.test(q.slice(i)) || (hit && hit.role === "malus")) {
+      const sign = /^[+正]/.test(q.slice(i)) ? "+" : "-";
+      if (next !== null && next !== sign) out.unread.push(q[i]);
+      next = sign;
+      i += hit && hit.role === "malus" ? hit.w.length : 1;
+      continue;
+    }
     if (!hit) { out.unread.push(q[i]); i += 1; continue; }
     i += hit.w.length;
-    if (hit.role === "malus") { next = "malus"; continue; }
     if (hit.role) { out.malus = hit.role === "any_malus" ? "any" : "none"; continue; }
     if (!hit.ids.length) { out.unread.push(hit.w); continue; }
-    if (next === "malus") out.malus = hit.ids[0];
-    else for (const id of hit.ids) if (!out.bonuses.includes(id)) out.bonuses.push(id);
-    next = "bonus";
+    for (const id of hit.ids) {
+      const stat = pool.find((s) => s.id === id);
+      const malus = next !== null && rivenValueMalus(stat, next === "-" ? -1 : stat.unit === "x" ? 2 : 1);
+      if (malus) out.malus = id;
+      else if (!out.bonuses.includes(id)) out.bonuses.push(id);
+    }
+    next = null;
   }
+  if (next !== null) out.unread.push(next);
   out.unread = out.unread.join("") ? [out.unread.join("")] : [];
   return out;
 }

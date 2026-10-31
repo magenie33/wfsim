@@ -227,10 +227,20 @@ bar and its panel on screen.
 
 ## `check_fx_lines`
 
-The bot's `fx` reader with a fixture pool, no network: a line reads with or
-without spaces, `+` or 正, and its side follows 正/负 or the number's sign against
-the stat's direction (变焦-50 a malus, 后坐力-50 a bonus); the two disagreeing, a
-missing number or an unknown word is an error rather than a guess.
+The shared typed riven reader against every real pool and the official locale,
+with no browser or network (Python and PyYAML required). Official Chinese and
+English names work before or after the value and win alias collisions. 正/负
+mean literal `+`/`-`; every stat is checked with both signs, before its name
+or value, including recoil and malus-only stats. Named `zk` filters use the
+same direction. Faction multipliers accept 对Infested伤害 with or without 的,
+`x` and a sign. The four-line Verglas Prime report is a regression case.
+Conflicting signs, unknown words, missing values and ambiguous aliases fail.
+The command keeps the exact rolls returned by the engine's value inversion.
+Every declared input alias is checked against each pool that holds its stats,
+in card order and name-first order. Multi-stat aliases are refused where a
+single rolled value is required. Prime weapon suffixes accept P/p in fx, zk
+and pz without selecting the base weapon. Replies keep the engine's printed
+value-before-name lines; Combo Duration's seconds cannot become the SC alias.
 
 ## `check_appraise`
 

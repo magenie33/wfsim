@@ -25,7 +25,10 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   const evoName = (id) => (zh.evolutions && zh.evolutions[id]) || id;
   // EVERY NAME A WEAPON GOES BY, longest first, so "Boar Prime" wins over "Boar".
   const weaponNames = (meta.weapons || []).flatMap((w) => [w.id, w.name, w.name_en, zh.weapons && zh.weapons[w.id]]
-    .filter(Boolean).map((n) => ({ w, n: nameFold(n) }))).sort((a, b) => b.n.length - a.n.length);
+    .filter(Boolean).flatMap((n) => {
+      const full = nameFold(n);
+      return (full.endsWith("prime") ? [full, full.slice(0, -5) + "p"] : [full]).map((n) => ({ w, n }));
+    })).sort((a, b) => b.n.length - a.n.length);
   const rulerShort = (b) => t(b.name).split(" · ")[0];
   const statNames = (cls) => headless.rivenStatNames((meta.riven_stats || {})[cls] || [], [zh]);
   const statZh = (cls, id) => {
@@ -33,6 +36,11 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     if (!s) return id;
     const n = statNames(cls).find((x) => x.stat.id === id);
     return (n && n.names[1]) || headless.rivenStatNameEn(s);
+  };
+  const signedStatZh = (cls, id, malus = false) => {
+    const s = ((meta.riven_stats || {})[cls] || []).find((x) => x.id === id);
+    const negative = s ? (s.base < 0) !== (malus && s.bonus !== false) : malus;
+    return (negative ? "−" : "+") + statZh(cls, id);
   };
 
   /// `zk 托里德 5` → { cmd: "zk", rest: "托里德 5" }. A COMMAND PANEL sends it
@@ -134,8 +142,8 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=zk&ruler=${encodeURIComponent(g.ruler_id)}&n=${shown}`
       + (ask.bonuses.length ? `&has=${ask.bonuses.map(encodeURIComponent).join(",")}` : "")
       + (ask.malus ? `&malus=${encodeURIComponent(ask.malus)}` : "");
-    const line = (x) => `#${x.rank} ${x.stat_ids.bonuses.map((id) => "+" + statZh(cls, id)).join(" ")}${
-      x.stat_ids.malus ? " −" + statZh(cls, x.stat_ids.malus) : ""}  ${x.score}${x.gain == null ? "" : `（${x.gain >= 0 ? "+" : "−"}${Math.abs(x.gain * 100).toFixed(1)}%）`}`;
+    const line = (x) => `#${x.rank} ${x.stat_ids.bonuses.map((id) => signedStatZh(cls, id)).join(" ")}${
+      x.stat_ids.malus ? " " + signedStatZh(cls, x.stat_ids.malus, true) : ""}  ${x.score}${x.gain == null ? "" : `（${x.gain >= 0 ? "+" : "−"}${Math.abs(x.gain * 100).toFixed(1)}%）`}`;
     const text = [`${weaponName(hit.w)} · ${t(g.ruler).split(" · ")[0]}`,
       `${t("The board's best riven-free build")}: ${g.riven_free ? g.riven_free.score : "—"}`]
       .concat(top.map(line)).join("\n");
@@ -182,7 +190,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   /// §"Riven appraisal". The engine bounds each printed value and turns it into
   /// a roll. Numbers outside the card's rounded range are refused, not clamped.
   async function fx(rest, ctx) {
-    const example = "fx 托里德 暴伤148.5 多重111.3 腐蚀111.3 负弹匣40.5";
+    const example = "fx 托里德 148.5暴伤 111.3多重 111.3腐蚀 -40.5弹匣";
     if (!rest) return t(NO_WEAPON, { e: example });
     const hit = weaponOf(rest);
     if (!hit) return t(NOT_FOUND);
@@ -237,7 +245,8 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
         : "Nona could not start the riven gain just now. Try again in a moment. (＞﹏＜)");
     }
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=appraise&code=${opened.code}`;
-    const line = rolled.map((x) => `${x.malus ? "−" : "+"}${statZh(cls, x.id)} ×${x.roll.toFixed(2)}`).join(" ");
+    const say = headless.headlessSpeaker({}, { zh }, "zh");
+    const line = slots.map((sl) => say.tf(resolved.stats.find((s) => s.slot === sl.slot).text)).join(" ");
     return { line: t("Nona read it. The volunteers' devices are computing it together — usually a minute or two — and Nona will post the answer here. Can't wait? Scan the code to run it on your own device, riven gain {code}. (๑•̀ㅂ•́)و✧", { code: opened.code }),
       card, text: `${weaponName(hit.w)} · ${rulerShort(ruler)} · ${line}\n${SITE}/appraise/${opened.code}` };
   }
