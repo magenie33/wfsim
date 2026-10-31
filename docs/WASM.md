@@ -281,7 +281,7 @@ pays it N times. The cost to watch is therefore a LOADER's transient peak: a
 catalog that builds its whole input at once and then throws it away keeps that
 input's size anyway.
 
-- **The weapon catalog holds only parents' yaml trees** (`weapons::catalog::all`):
+- **The weapon catalog holds only parents' inherited fields** (`weapons::catalog::all`):
   the parents are read off the text first, and every other file is parsed,
   merged and converted one at a time. Holding all of them, plus a copy of each
   for the id lookup, made every lane 50 MB where it is now 20.

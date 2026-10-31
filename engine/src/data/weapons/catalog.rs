@@ -105,8 +105,13 @@ pub fn all() -> &'static [WeaponSpec] {
             .iter()
             .filter(|(_, text)| top_level(text, "id").is_some_and(|i| parents.contains(i)))
             .filter_map(|(p, text)| {
-                let v = parse(p, text);
-                v.get("id").and_then(Value::as_str).map(str::to_string).map(|i| (i, v))
+                let mut v = parse(p, text);
+                let id = v.get("id").and_then(Value::as_str)?.to_string();
+                // Children inherit metadata, never their parent's attack tree.
+                // Retaining that tree raises every wasm lane's lifetime peak.
+                v.as_mapping_mut()?.retain(|k, _| k.as_str().is_some_and(|k|
+                    INHERITED.contains(&k) || INHERITED_BLOCKS.contains(&k)));
+                Some((id, v))
             })
             .collect();
         files
