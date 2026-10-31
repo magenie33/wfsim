@@ -178,6 +178,15 @@ await check("clearing a task keeps its authoritative result artifact", async () 
   assert.equal(queue.list().length, 0);
   assert.equal(artifacts.size, 1);
 });
+await check("artifact histories read isolated records by prefix", async () => {
+  const { store } = fixture();
+  await store.value("artifact:one", { id: "one", result: { grade: 75 } });
+  await store.value("checkpoint:one", { id: "checkpoint" });
+  const records = await store.entries("artifact:");
+  assert.equal(records.length, 1);
+  records[0].result.grade = 0;
+  assert.equal((await store.entries("artifact:"))[0].result.grade, 75);
+});
 await check("captured result records do not read the current editor", async () => {
   const resultSource = readFileSync(new URL("../web/src/static/app/35-results.js", import.meta.url), "utf8");
   const from = resultSource.indexOf("function resultRecord(");

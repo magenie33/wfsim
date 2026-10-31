@@ -452,7 +452,7 @@ function renderRivenAll() {
           <div class="rv-all-h">
             <input type="checkbox" data-appraise-riven="${escHtml(p.id)}" aria-label="${escHtml(tr("Select for appraisal"))}"${appraisalSelection.has(p.id) ? " checked" : ""}>${cloudMark(RIVENS, p)}${imgTag(POL(cap(st.polarity || "madurai")), "pol")}
             <b>${escHtml(p.name)}</b>
-            ${meta.name ? `<span class="rv-official">${escHtml(meta.name)}</span>` : ""}${wm}
+            ${meta.name ? `<span class="rv-official">${escHtml(meta.name)}</span>` : ""}${wm}${rivenAnalysisLink(RIVEN_PREFIX + p.id)}
             <span class="rv-meta">${shape} · ${escHtml(tr("Rank"))} ${st.rank ?? 8} · ${2 + 2 * (st.rank ?? 8)} ${escHtml(tr("capacity"))}</span>
           </div>
           <div class="rv-all-s">${
@@ -478,7 +478,7 @@ function renderRivenAll() {
   // Clicking one opens it, the same as clicking its chip in the bar.
   // Clicking a card OPENS it — the list is the folder, this is the file.
   box.querySelectorAll("[data-open]").forEach((el) => el.onclick = (e) => {
-    if (e.target.closest("a.pcloud")) return;
+    if (e.target.closest("a,button")) return;
     const p = loadPresetList(RIVENS).find((x) => x.id === el.dataset.open);
     if (!p) return;
     activeRiven = p.id;

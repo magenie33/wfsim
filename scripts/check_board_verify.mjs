@@ -21,6 +21,7 @@ import { officialRoute, refusalsFor } from "../worker/factory.js";
 refusalsFor(true);
 import { coolDownMs } from "../worker/tasks.js";
 import { tell } from "./order_credit.mjs";
+import { BOARD_KINDS } from "../worker/board_kinds.js";
 import { testDb } from "./pg/test_db.mjs";
 import { execFileSync } from "node:child_process";
 
@@ -258,8 +259,8 @@ await L.run("UPDATE questions SET lease = 'x', lease_until = '2999-01-01T00:00:0
 // THE SCORER'S OWN READ, run on the schema: the batches in order, then each
 // one's rows after a cursor along the key.
 const body = (...a) => JSON.parse(execFileSync("bash", ["scripts/fetch_queue.sh", "--body", ...a]).toString());
-check("the scorer claims every board producer the worker asks by",
-  JSON.stringify(body("claim").producers) === JSON.stringify(Object.keys(BOARD_PRODUCERS)), JSON.stringify(body("claim").producers));
+check("the scorer claims every queued board producer, leaving fresh review rounds to their own backstop",
+  JSON.stringify(body("claim").producers) === JSON.stringify(BOARD_KINDS), JSON.stringify(body("claim").producers));
 const listed = body("batches");
 check("the read lists the batch that holds rows", (await L.all(listed.sql, ...listed.params)).some((b) => b.batch === arrivals));
 const page = body("page", "100", arrivals);

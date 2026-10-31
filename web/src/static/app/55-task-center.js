@@ -53,6 +53,8 @@ function scheduleUserTasks(kind) {
     renderUserTasks();
     if (typeof renderSimulationTask === "function") renderSimulationTask(userTaskRenderState);
     if (typeof renderOptimizationTask === "function") renderOptimizationTask(userTaskRenderState);
+    if (typeof refreshRivenAnalysis === "function") refreshRivenAnalysis().catch(userTaskFailed);
+    if (typeof refreshOptimizerHistory === "function") refreshOptimizerHistory().catch(userTaskFailed);
     userTaskRenderState = false;
   });
 }

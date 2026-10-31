@@ -653,7 +653,7 @@ function renderResults(r, testedAt, build) {
         ${recordMarkup(r)}
         ${curveBlocks}`)}
       ${zone(6, tr("Next"), tr("what happened to this run, and what can be done with it"), `
-        <div id="sim-board-outcome" class="board-outcome"></div>
+        <div id="sim-board-outcome" class="board-outcome"></div><div id="sim-board-review"></div>
         <div class="exits">
           <button type="button" id="exit-optimize" class="ghost-btn">${escHtml(tr("Send this build to the optimizer"))}</button>
           <button type="button" id="exit-share" class="ghost-btn">${escHtml(tr("Share this result"))}</button>
@@ -665,7 +665,7 @@ function renderResults(r, testedAt, build) {
   // `offerBoardSubmit` is about to repaint when its verdict lands. Filling it
   // only from there would leave "submitting…" standing for ever on the two
   // paths that submit nothing: a scenario of your own, and a board row.
-  renderBoardOutcome();
+  renderBoardOutcome(); renderBoardReviewNote();
   // THE TWO EXITS. A result that ends in a number is a dead end: the reader has
   // an answer and nowhere to take it. Neither of these is new machinery — the
   // optimizer is a module of this page and the link is `shareUrl` — they are

@@ -356,3 +356,30 @@ CREATE TABLE IF NOT EXISTS donations (
 );
 CREATE INDEX IF NOT EXISTS donations_donor_id ON donations (donor_id);
 CREATE INDEX IF NOT EXISTS donations_paid_at ON donations (paid_at);
+
+-- One independently verified review per published row; the submitted score is never input.
+CREATE TABLE IF NOT EXISTS board_reviews (
+  ref TEXT COLLATE "C" NOT NULL,
+  id TEXT COLLATE "C" PRIMARY KEY,
+  round_at TEXT COLLATE "C" NOT NULL,
+  identity TEXT COLLATE "C" NOT NULL,
+  ruler TEXT COLLATE "C" NOT NULL,
+  mode TEXT COLLATE "C" NOT NULL,
+  engine TEXT COLLATE "C" NOT NULL,
+  question TEXT COLLATE "C" NOT NULL,
+  record TEXT COLLATE "C" NOT NULL,
+  state TEXT COLLATE "C" NOT NULL,
+  baseline_score DOUBLE PRECISION NOT NULL,
+  baseline_metric TEXT COLLATE "C" NOT NULL,
+  baseline_cost_seconds DOUBLE PRECISION NOT NULL,
+  baseline_review_id TEXT COLLATE "C",
+  baseline_by TEXT COLLATE "C" NOT NULL,
+  baseline_started_at TEXT COLLATE "C" NOT NULL,
+  baseline_finished_at TEXT COLLATE "C" NOT NULL,
+  created_at TEXT COLLATE "C" NOT NULL,
+  completed_at TEXT COLLATE "C"
+);
+CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_round ON board_reviews (ref, engine, round_at);
+CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_pending ON board_reviews (ref, engine) WHERE state = 'waiting';
+CREATE INDEX IF NOT EXISTS board_reviews_waiting ON board_reviews (engine, state, created_at);
+ALTER TABLE scores ADD COLUMN IF NOT EXISTS review_id TEXT COLLATE "C";

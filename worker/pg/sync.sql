@@ -342,6 +342,11 @@ CREATE OR REPLACE FUNCTION board_owed(text, text, text) RETURNS boolean LANGUAGE
   SELECT EXISTS (SELECT 1 FROM queue WHERE build_id = $1 AND ruler = $2 AND mode = $3)
 $$;
 
+CREATE OR REPLACE FUNCTION board_review_wanted(text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT EXISTS (SELECT 1 FROM board_reviews r JOIN scores s ON s.identity = r.identity AND s.ruler = r.ruler AND s.mode = r.mode
+    WHERE r.ref = $1 AND r.question = $2 AND r.state = 'waiting')
+$$;
+
 -- A CLIENT THAT ASKS (worker/verify.js `/work`, worker/sync.js): remembered by
 -- its id, its yes kept when given ($4, $5), a refusal lifted once over at $3,
 -- its day ($2).
@@ -698,7 +703,8 @@ BEGIN
       RAISE EXCEPTION 'board_sync: a pack demand of a producer not owed in sql' USING ERRCODE = 'WS001';
     END IF;
     v_unwanted := COALESCE((SELECT jsonb_agg(jsonb_build_array(e ->> 'producer', e ->> 'ref', e ->> 'question')) FROM jsonb_array_elements(v_ds) e
-      WHERE NOT board_owed((e ->> 'payload')::jsonb ->> 'identity', (e ->> 'payload')::jsonb ->> 'ruler', (e ->> 'payload')::jsonb ->> 'mode')),
+      WHERE NOT CASE WHEN e ->> 'producer' = 'board_review' THEN board_review_wanted(e ->> 'ref', e ->> 'question')
+        ELSE board_owed((e ->> 'payload')::jsonb ->> 'identity', (e ->> 'payload')::jsonb ->> 'ruler', (e ->> 'payload')::jsonb ->> 'mode') END),
       '[]'::jsonb);
     IF jsonb_array_length(v_unwanted) > 0 THEN
       UPDATE demands SET state = 'withdrawn' WHERE (producer, ref) IN (SELECT d.producer, d.ref FROM demands d

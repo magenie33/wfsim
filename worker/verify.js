@@ -472,7 +472,7 @@ async function mine(request, env) {
             (SELECT max(credited) FROM answers a WHERE a.question = q.id AND a.device = ?1::text AND a.void = 0) AS credited,
             (SELECT count(*) FROM answers a WHERE a.question = q.id AND a.device = ?1::text AND a.void = 0) AS mine
        FROM jsonb_array_elements_text((?2::text)::jsonb) k
-       JOIN questions q ON q.id = (SELECT d.question FROM demands d WHERE d.ref = k.value AND d.producer IN ${BOARD_KINDS_SQL}
+       JOIN questions q ON q.id = (SELECT d.question FROM demands d WHERE d.ref = k.value AND (d.producer IN ${BOARD_KINDS_SQL} OR d.producer = 'board_review')
                                      ORDER BY d.asked_at DESC LIMIT 1)`)
     .bind(b.verifier, JSON.stringify(refs)).all();
   const byRef = new Map(results.map((r) => [r.ref, r]));

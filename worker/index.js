@@ -33,6 +33,7 @@ import { worldRoute } from "./world.js";
 import { userTasksRoute } from "./user_tasks.js";
 import { appraiseRoute } from "./appraise.js";
 import { watchdog, WATCHDOG_CRON, officialRoute } from "./factory.js";
+import { boardReviewsRoute } from "./board_reviews.js";
 import { boardTasksRoute } from "./board_tasks.js";
 import { verifyRoute } from "./verify.js";
 import { syncRoute } from "./sync.js";
@@ -813,6 +814,7 @@ async function serve(request, env, ctx) {
     if (path.startsWith("/api/user-tasks/")) return userTasksRoute(request, env, path);
     if (path.startsWith("/api/appraise/")) return appraiseRoute(request, env, path);
     if (["/api/board/work", "/api/board/answers", "/api/board/verify", "/api/board/release", "/api/board/renew", "/api/board/mine", "/api/board/ping"].includes(path)) return verifyRoute(request, env, path);
+    if (path === "/api/board/review" || path === "/api/board/review/status") return boardReviewsRoute(request, env, path);
     if (path === "/api/board/sync") return noteFactoryCall(request, env, path, () => syncRoute(request, env));
     if (path === "/api/board/ask" || path === "/api/board/adopt") return boardTasksRoute(request, env, path);
     if (path.startsWith("/api/tasks/official/")) return officialRoute(request, env, path);

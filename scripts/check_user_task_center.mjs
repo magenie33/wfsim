@@ -15,6 +15,8 @@ try {
     await initUserTasks();
     gainPrefs = { ...gainPrefs, on: false };
     restartCalc();
+    await loadBoard(presetWeapon());
+    await sleep(SCENE_ROWS_WITHIN_MS + 500);
     await userTasks.store.change(state => { state.tasks = []; });
     await userTasks.refresh();
     const out = {};

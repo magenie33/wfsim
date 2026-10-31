@@ -517,7 +517,7 @@ const boardCutNote = () =>
 /// which is what `/api/board/check` exists not to have.
 function boardRunOutcome() {
   if (officialBuildActive()) {
-    return { kind: "none", text: tr("this build is already a row on the board — running it sends nothing") };
+    return { kind: "none", text: tr("This build is already on the board. Matching official runs can request an independent review.") };
   }
 
   if (boardConsent() !== "yes") return { kind: "none", text: tr("nothing is sent from here") };
@@ -534,7 +534,7 @@ function boardRunOutcome() {
     // is indistinguishable from a page that declined to send for its own
     // reasons, which is the silence this whole panel exists to end.
     return { kind: "none",
-      text: tr("this build is already on the board ({row}) — nothing was sent")
+      text: tr("this build is already on the board ({row})")
         .replace("{row}", boardRowLabel(boardOnBoard)) };
   }
   if (boardState === "refused") {
@@ -1031,6 +1031,7 @@ async function runSim() {
   const btn = $("run-sim");
   const request = taskClone({ ...buildPayload(), ...theFight({ replay: true }) });
   const origin = { context: resultContext(), build: taskClone(snapshotState()),
+    fight: taskClone(snapshotScenario()), benchmark: (scenarioNamed(activeScenario) || {}).builtin || null,
     preset_name: presetLabel(buildNamed(activePreset)), scenario_name: presetLabel(scenarioNamed(activeScenario)),
     board: officialBuildActive() ? null : taskClone(boardPayload()) };
   const submitting = simulationContextId(origin.context);

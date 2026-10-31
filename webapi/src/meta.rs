@@ -1374,19 +1374,7 @@ pub fn meta_json() -> Value {
             "guardian_aura": false,
             // AN ANCIENT PROTECTOR'S 800%-of-health Overguard, off.
             "ancient_protector_aura": false,
-            // Test precision, and the optimizer's last
-            // round is the run count on the top 10. Kept in step with
-            // `simulate_json` / `parse_optimize`, whose own fallbacks are what
-            // an API caller naming none of these gets.
-            //
-            // 100 RUNS, and DECOUPLED FROM THE SCENARIO.
-            // It briefly matched the rulers' 1,000 so a first number would be
-            // comparable with the board — but that made one field answer two
-            // questions, and only one of them is the fight's. The RULERS
-            // still say 1,000
-            // in their own yaml and the SCORER still uses it, which is what
-            // makes a board row reproducible; the page measures at whatever
-            // the reader set, and the box says so.
+            "seed": crate::fight::DEFAULT_SEED,
             // WHAT THE RUN IS JUDGED BY. EVERY scenario carries one, so
             // whatever ranks — the headline number, the picker's gain scan, a
             // ruler's published row — ranks by the same thing. The default is

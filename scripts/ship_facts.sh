@@ -55,7 +55,8 @@ batches() {
                  | join(","))
               + " ON CONFLICT (identity, ruler, mode) DO UPDATE SET measured_by = excluded.measured_by,"
               + " score = excluded.score, metric = excluded.metric, cost_seconds = excluded.cost_seconds,"
-              + " started_at = excluded.started_at, finished_at = excluded.finished_at"),
+              + " started_at = excluded.started_at, finished_at = excluded.finished_at, review_id = NULL"
+              + " WHERE scores.review_id IS NULL OR excluded.finished_at > scores.finished_at"),
         params: [$chunk[]
                  | .identity, .ruler, .mode, (.measured_by // ""),
                    .score, .metric,

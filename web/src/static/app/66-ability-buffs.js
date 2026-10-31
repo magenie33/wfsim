@@ -270,7 +270,9 @@ function renderSimRuns() {
   box.innerHTML =
     `<label title="${escHtml(tr("how many times to replay this fight HERE. Not part of the scenario: it follows you across fights and weapons, and an official ruler does not pin it. The boards themselves are scored at 1,000 by the server whatever this says"))}">${
       escHtml(tr("Runs"))} <input type="number" id="sim-runs-input" min="1" max="20000" step="10" value="${simRuns()}"></label>` +
-    `<span class="sim-hint">${escHtml(tr("yours, not the fight's — the boards score at 1,000"))}</span>`;
+    `<span class="sim-hint">${escHtml(tr("yours, not the fight's — the boards score at 1,000"))}</span>`
+    + `<label class="sim-review-auto"><input id="sim-board-review-auto" type="checkbox"${boardReviewEnabled() ? " checked" : ""}> ${escHtml(tr("Automatically review matching board scores"))}</label>`;
+  $("sim-board-review-auto").onchange = event => localStorage.setItem("wfsim-board-review", event.target.checked ? "on" : "off");
   const el = $("sim-runs-input");
   el.addEventListener("change", () => {
     setSimRuns(el.value);

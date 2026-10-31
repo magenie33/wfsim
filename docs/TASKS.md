@@ -27,6 +27,13 @@ retries a lost worker call once; cancellation or a new generation ends retries.
 Its details retain worker health and the existing calculator reset. Work this device does
 for other players appears separately and reads the existing contribution log.
 
+`board-review` observes an independent review triggered by a matching official
+simulation. Its persisted outbox and remote identity survive reloads without
+holding a local calculation lock. Completion delivery creates the outbox before
+it is acknowledged. Hiding an observation leaves the shared review running.
+The server owns its verified number; browser storage keeps only linkage and
+submission state, with at most fifty observations.
+
 ## Local ownership
 
 Acceptance freezes the request and its origin before awaiting storage. IndexedDB
@@ -64,8 +71,10 @@ session cache is presentation only; a task report always reads its artifact,
 and execution never reads that cache.
 
 A result is stored before terminal state is committed. Reports open the
-existing simulator or optimizer in another tab, without changing the original
-editor. Frozen riven references retain the card's submitted rolls, rank and
+simulator, optimizer or personal Riven Analyst report in another tab, without
+changing the original editor. The analysis page and optimizer history read the
+same artifact. A prefix scan of the artifact store keeps those histories
+available after the queue item is removed. Frozen riven references retain the card's submitted rolls, rank and
 polarity even if the owned card is subsequently edited or deleted. Local
 artifacts remain until browser storage is cleared; simulation keeps its existing
 bounded retention. An unavailable record is reported as unavailable.

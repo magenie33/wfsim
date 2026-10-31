@@ -8,9 +8,10 @@ USER_TASK_TYPES.set("appraisal", {
     if (!request.rivens?.length) throw new Error("An appraisal needs a riven.");
   },
   describe(task) {
-    return { title: `${task.origin.riven_name || tr("Riven")} · ${tr("Riven appraisal")}`,
+    return { title: `${task.origin.riven_name || tr("Riven")} · ${tr("Riven analysis")}`,
       note: [weaponInfo(task.request.weapon)?.name, benchmarkName(task.origin.ruler), tr(USER_TASK_EXECUTORS.get(task.destination)?.label || "This device")].filter(Boolean).join(" · ") };
   },
+  resultLink(task) { return `${weaponPath(task.request.weapon)}/riven-analyst?analysis-result=${encodeURIComponent(task.result_ref)}`; },
   async execute(task, execution) {
     const checkpoint = await execution.checkpoint();
     const saved = checkpoint?.engine === task.engine && checkpoint.schema === task.request_schema ? checkpoint.value?.search : null;
@@ -42,8 +43,9 @@ async function replaySavedAppraisal(task, execution, search) {
   if (!verdict.ok) throw new Error(verdict.reason || "the replay did not run");
   return { search, verdict };
 }
-async function submitSavedAppraisals(ids, ruler, destination = "local") {
-  const weapon = presetWeapon(), saved = taskClone(loadPresetList(RIVENS).filter((card) => ids.includes(card.id)));
+async function submitSavedAppraisals(ids, ruler, destination = "local", capture = null) {
+  const weapon = capture?.weapon || presetWeapon();
+  const saved = taskClone((capture?.cards || loadPresetList(RIVENS, weapon)).filter((card) => ids.includes(card.id)));
   if (!saved.length) throw new Error("Select at least one saved riven.");
   await loadBoard(weapon);
   const batch = crypto.randomUUID(), queue = await initUserTasks();
@@ -55,15 +57,15 @@ async function submitSavedAppraisals(ids, ruler, destination = "local") {
     const asked = headlessRivenGainRequest(META, { weapon, ruler, card: card.state, rivenId: card.id });
     if (!asked) throw new Error("Choose a ruler.");
     entries.push({ kind: "appraisal", request: asked.request, destination, origin: { weapon, ruler,
-      riven_id: card.id, riven_name: card.name, board: asked.context, reference_rows: taskClone(BOARD[weapon] || []),
-      batch, batch_name: "Riven appraisal", appraisal: null } });
+      riven_id: card.id, riven_name: card.name, board: asked.context, reference_rows: taskClone((BOARD[weapon] || []).filter(row => row.benchmark === ruler)),
+      preset_name: META.search_presets.presets.find(preset => preset.riven)?.name, scenario: ruler, batch, batch_name: "Riven analysis", appraisal: null } });
   }
   return queue.createMany(entries);
 }
 function renderSavedAppraisal(record) {
   const verdict = record.result.verdict, box = $("opt-results");
   const summary = document.createElement("div"); summary.className = "appraisal";
-  summary.innerHTML = `<b>${escHtml(record.origin.riven_name || tr("Riven appraisal"))}</b> · ${escHtml(tr("Riven grade"))}: ${verdict.grade}/100`
+  summary.innerHTML = `<b>${escHtml(record.origin.riven_name || tr("Riven analysis"))}</b> · ${escHtml(tr("Riven grade"))}: ${verdict.grade}/100`
     + `<div>${escHtml(verdict.shown)} · ${escHtml(tr("vs the best riven-free build"))}: ${verdict.gain == null ? "—" : escHtml(gainPct(verdict.gain))}</div>`
     + `<div>${escHtml(tr("Graded {g}.").replace("{g}", new Date(verdict.at).toLocaleString()))} · ${escHtml(record.request.weapon)}</div>`;
   box.prepend(summary);
@@ -74,18 +76,11 @@ function renderRivenAppraisalControls() {
   const cards = loadPresetList(RIVENS), rulers = META.benchmarks || [];
   for (const id of appraisalSelection) if (!cards.some((card) => card.id === id)) appraisalSelection.delete(id);
   if (!rulers.some((ruler) => ruler.id === appraisalRuler)) appraisalRuler = rulers[0]?.id;
-  box.innerHTML = benchSelectorHtml(appraisalRuler)
-    + `<button type="button" class="ghost-btn" id="appraise-selected"${!appraisalSelection.size ? " disabled" : ""}>${escHtml(tr("Appraise selected"))} (${appraisalSelection.size})</button> `
-    + `<button type="button" class="ghost-btn" id="appraise-all"${!cards.length ? " disabled" : ""}>${escHtml(tr("Appraise all"))} (${cards.length})</button><span id="riven-appraisal-note" role="status"></span>`;
-  wireBenchSelector(box, (id) => { appraisalRuler = id; renderRivenAppraisalControls(); });
-  const submit = async (ids) => {
-    $("appraise-selected").disabled = true; $("appraise-all").disabled = true;
-    try {
-      await submitSavedAppraisals(ids, appraisalRuler);
-      userTaskPanelOpen = true; renderUserTasks();
-      $("riven-appraisal-note").textContent = tr("Added to queue");
-    } catch (error) { $("riven-appraisal-note").textContent = tr(error.message); }
-    finally { $("appraise-selected").disabled = !appraisalSelection.size; $("appraise-all").disabled = !cards.length; }
+  box.innerHTML = `<button type="button" class="ghost-btn" id="appraise-selected"${!appraisalSelection.size ? " disabled" : ""}>${escHtml(tr("Analyze selected"))} (${appraisalSelection.size})</button> `
+    + `<button type="button" class="ghost-btn" id="appraise-all"${!cards.length ? " disabled" : ""}>${escHtml(tr("Analyze all"))} (${cards.length})</button><span id="riven-appraisal-note" role="status"></span>`;
+  const submit = (ids) => {
+    pendingRivenAnalysis = { weapon: presetWeapon(), ids: [...ids], ruler: appraisalRuler };
+    nav(weaponPath(presetWeapon()) + "/riven-analyst");
   };
   $("appraise-selected").onclick = () => submit([...appraisalSelection]);
   $("appraise-all").onclick = () => submit(cards.map((card) => card.id));
@@ -123,4 +118,17 @@ function wireTypedRivens() {
     catch (error) { $("riven-text-note").textContent = tr(error.message); }
     finally { button.disabled = false; }
   };
+}
+
+let optimizerHistorySignature = "", optimizerHistoryGeneration = 0;
+async function refreshOptimizerHistory(force = false) {
+  if (!META || !document.body.classList.contains("on-optimizer") || !$("optimizer-history-rows")) return;
+  const weapon = presetWeapon(), queue = await initUserTasks();
+  const signature = JSON.stringify([weapon, LANG, queue.view().filter(task => ["optimization", "appraisal"].includes(task.kind) && task.request.weapon === weapon).map(task => [task.id, task.state, task.result_ref])]);
+  if (!force && signature === optimizerHistorySignature) return;
+  optimizerHistorySignature = signature;
+  const generation = ++optimizerHistoryGeneration;
+  const records = (await queue.store.entries("artifact:")).filter(record => ["optimization", "appraisal"].includes(record.kind) && record.request.weapon === weapon).sort((a, b) => b.at.localeCompare(a.at));
+  if (generation !== optimizerHistoryGeneration || presetWeapon() !== weapon || !document.body.classList.contains("on-optimizer")) return;
+  $("optimizer-history-rows").innerHTML = records.length ? records.map(record => `<div class="analysis-history-item"><div><b>${escHtml(record.origin.riven_name || record.origin.preset_name || tr("Optimization"))}</b><p class="sim-hint">${escHtml(benchmarkName(record.origin.ruler || record.origin.scenario) || record.origin.scenario_name || "")} · ${escHtml(new Date(record.at).toLocaleString())}</p></div><div class="analysis-actions">${record.kind === "appraisal" ? `<a class="ghost-btn" href="${rivenAnalysisPath(weapon, record.id)}">${escHtml(tr("Riven grade"))}: ${record.result.verdict.grade}/100</a>` : ""}<a class="ghost-btn" href="${analysisOptimizerLink(record)}">${escHtml(tr("View result"))}</a></div></div>`).join("") : `<p class="wb-empty">${escHtml(tr("No saved optimization results yet."))}</p>`;
 }

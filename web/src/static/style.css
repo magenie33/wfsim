@@ -3935,3 +3935,33 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .wf-library-build-head a{text-decoration:none}
 
 .module-tabs[hidden]{display:none}
+
+/* Analysis reports and the shared-ruler submission window. */
+.analysis-panel{border:1px solid var(--line);border-radius:10px;padding:20px;margin-bottom:16px;min-width:0}
+.analysis-panel>summary,.analysis-build>summary,.analysis-standard>summary{cursor:pointer;font-weight:600;padding:8px 0}
+.analysis-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.analysis-heading h3{margin:0 0 7px}.analysis-heading p{margin:0 0 14px}
+.analysis-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.analysis-report{border-top:1px solid var(--line);margin-top:16px;padding-top:20px}
+.analysis-grade{text-align:right;white-space:nowrap;display:flex;flex-direction:column;color:var(--gold)}
+.analysis-grade>b{font-size:42px;line-height:1}.analysis-grade small{font-size:16px;color:var(--muted)}.analysis-grade>span{font-size:12px;margin-top:6px}
+.analysis-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.analysis-metrics>div{padding:14px;background:var(--panel3);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;gap:8px}
+.analysis-metrics span{font-size:12px;color:var(--text-2)}.analysis-metrics b{font-size:24px;font-variant-numeric:tabular-nums}
+.analysis-standard{font-size:12px;color:var(--text-2);margin-bottom:16px}.analysis-standard p{line-height:1.6}
+.analysis-build{margin:16px 0}.analysis-share{margin:16px 0}.analysis-share textarea{display:block;width:100%;margin:8px 0;resize:vertical}
+.analysis-table-wrap{overflow-x:auto}.analysis-table-wrap td,.analysis-table-wrap th{font-size:12px}.analysis-table-wrap td:nth-child(2){min-width:220px}
+.analysis-overlay{position:fixed;inset:0;z-index:75;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:20px}
+.analysis-dialog{width:min(840px,100%);max-height:calc(100dvh - 40px);display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 16px 48px rgba(0,0,0,.25);overflow:hidden}
+.analysis-dialog>.jump-head{justify-content:space-between;flex:none;cursor:default}.analysis-dialog h3{margin:0}
+.analysis-dialog-body{padding:20px;overflow-y:auto;overscroll-behavior:contain}.analysis-dialog-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-top:1px solid var(--line)}
+.analysis-dialog-open{overflow:hidden}.analysis-executors{border:0;padding:0;margin:20px 0 8px;display:flex;gap:20px;flex-wrap:wrap}.analysis-executors legend{font-weight:600;margin-bottom:10px}.analysis-executors label{display:flex;gap:6px;align-items:center}
+.analysis-card-choice{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:8px;padding:12px;margin:8px 0;cursor:pointer}
+.analysis-card-choice:has(:checked){border-color:var(--gold);background:var(--panel3)}.analysis-card-choice>span{display:flex;flex-direction:column;gap:5px;min-width:0}.analysis-card-choice span>span{font-size:12px;color:var(--text-2);overflow-wrap:anywhere}
+#analysis-board{margin-top:20px}.rv-analyze{vertical-align:middle}
+@media(max-width:640px){.analysis-panel{padding:12px}.analysis-heading{flex-wrap:wrap}.analysis-metrics{grid-template-columns:1fr}.analysis-metrics>div{flex-direction:row;align-items:center;justify-content:space-between}.analysis-metrics span{max-width:65%}.analysis-overlay{padding:8px}.analysis-dialog{max-height:calc(100dvh - 16px)}.analysis-dialog-body{padding:12px}.analysis-dialog-foot{padding:12px}.analysis-grade>b{font-size:36px}}
+.analysis-history-item{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:12px 0}.analysis-history-item p{margin:5px 0}
+#analysis-card-preview{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.analysis-card-choice,.analysis-executors label{flex-direction:row}.analysis-card-choice>input,.analysis-executors input{width:auto;flex:none}
+.analysis-executors label:has(:disabled){opacity:.5}
+.sim-review-auto{display:inline-flex;flex-direction:row;align-items:center;gap:6px;font-size:12px;color:var(--text-2)}.sim-review-auto input{width:auto;margin:0}

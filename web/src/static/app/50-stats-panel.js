@@ -330,7 +330,7 @@ const marketLink = (url, title) => (!url || marketPrefs.on === false ? "" :
 const modMarketLink = (m) => marketLink(
   m.riven ? m.market_url : (m.market_slug && marketItemUrl(m.market_slug)),
   tr(m.riven ? "find rivens with these stats on warframe.market"
-    : "price on warframe.market"));
+    : "price on warframe.market")) + (m.riven ? rivenAnalysisLink(m.id) : "");
 
 /// THE MARK ON AN ARCANE CARD. Three lists draw an arcane — the equipped slot,
 /// the picker and the optimizer's scope — and they are three copies of the

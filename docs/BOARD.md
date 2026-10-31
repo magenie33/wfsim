@@ -820,7 +820,48 @@ two paths to the same replies and tables. What stays in the worker, and why:
 
 `sync_proc` at 0 is the statements, and the way back.
 
+#### Expedited board reviews
+
+`POST /api/board/review` accepts only an existing `(identity, ruler, mode)` and
+the served engine. It accepts no client score or build payload. The service
+freezes the library record and current score in `board_reviews`. Its
+`board_review` producer asks the existing `simulate` verb with a fresh review
+nonce: a cached fact for an ordinary refresh cannot answer this round.
+Pending rounds coalesce per row and engine; completed rounds have a one-hour
+cooldown, with a unique UTC-hour key bounding concurrent admissions. The
+existing anonymous rate limiter and a thousand pending rounds per engine
+bound admission.
+
+The normal independent-owner/network agreement and sampling rules apply.
+The round waits on the fair factory with a fifteen-minute deadline; hourly
+settlement claims overdue open reviews when its dispute budget has space.
+An official result follows the review producer's own publication path.
+Ordinary scorer receipts and queue cancellation address `BOARD_KINDS`;
+review-aware dispatch and settlement address `BOARD_WORK_KINDS`.
+
+Publication updates the score and round state in one transaction, only while
+the captured baseline still matches. A newer score makes the round
+`superseded`. `scores.review_id` retains the proof: older cached facts and
+older native shipments cannot overwrite it. A fresh native measurement clears
+that pointer. Retracting an older ordinary fact preserves a reviewed score;
+retracting a review restores its previous valid review proof or native baseline,
+skipping invalidated review ancestors, and fails the round. An ordinary
+community baseline without a retained proof is requeued instead of restored.
+Historical rounds remain available for that proof chain. The normal board delta publisher reads
+the changed score; verification and CDN publication are separate events.
+
+`POST /api/board/review/status` reports up to fifty review identities. It
+discloses aggregate progress, never witness identities. Withdrawing a question
+fails its round, allowing another after cooldown. Browser observations can be
+hidden independently of the shared computation.
+
 #### Setting a server up
+
+Schema updates apply `worker/pg/library.sql`, then `worker/pg/sync.sql`, then
+`deploy/factoryd_grants.sql` before the corresponding Worker and daemon release.
+The board-review producer needs the daemon's read/update grant on
+`board_reviews`; the pipeline continues to write `scores` through its existing
+grant.
 
 The databases, their owners, the DDL — applied as each file's header says — and
 the pipeline's roles:
