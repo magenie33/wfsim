@@ -1,0 +1,1320 @@
+{
+  "schema": 1,
+  "status": "source intake; no runtime support implied",
+  "counts": {
+    "strikes": 11,
+    "grips": 10,
+    "links": 16,
+    "proposed_weapons": 22,
+    "assemblies": 1760,
+    "exodia": 8
+  },
+  "sources": [
+    {
+      "page": "Module:Modular/data",
+      "url": "https://wiki.warframe.com/w/Module:Modular/data?action=raw",
+      "bytes": 31607,
+      "sha256": "d8d24a13d7124c1a6c430727e45138f9a03324f5bd5f5fc5dc6e7ce2d6147eb2",
+      "keys": [
+        "KitgunSecondary",
+        "KitgunPrimary",
+        "MOA",
+        "Hound",
+        "Zaw"
+      ]
+    },
+    {
+      "page": "Module:Modular",
+      "url": "https://wiki.warframe.com/w/Module:Modular?action=raw",
+      "bytes": 41849,
+      "sha256": "31f8fa336ab0fbd807461a316cf455fd8bb374e12f677e6c296848f178b8f73b"
+    },
+    {
+      "page": "Module:Weapons/data/modular",
+      "url": "https://wiki.warframe.com/w/Module:Weapons/data/modular?action=raw",
+      "bytes": 44064,
+      "sha256": "00e43434f9f0e2d6b11d44d701714680e9428007327b10be86133bf32f511fcb",
+      "keys": [
+        "Cantic Prism",
+        "Dissic Scaffold",
+        "Exard Scaffold",
+        "Granmu Prism",
+        "Klamora Prism",
+        "Klebrik Scaffold",
+        "Lega Prism",
+        "Mote Amp",
+        "Pencha Scaffold",
+        "Phahd Scaffold",
+        "Propa Scaffold",
+        "Rahn Prism",
+        "Raplak Prism",
+        "Shraksun Scaffold",
+        "Shwaak Prism",
+        "Sirocco",
+        "Catchmoon (Secondary)",
+        "Catchmoon (Primary)"
+      ]
+    },
+    {
+      "page": "Module:Arcane/data",
+      "url": "https://wiki.warframe.com/w/Module:Arcane/data?action=raw",
+      "bytes": 96367,
+      "sha256": "b5c1a8052385c3fe354ec94698d27b86dd5c6089dc82cfbf5bf07aada3aa6f81",
+      "keys": [
+        "Arcanes"
+      ]
+    },
+    {
+      "page": "Zaw",
+      "url": "https://wiki.warframe.com/w/Zaw?action=raw",
+      "bytes": 27466,
+      "sha256": "f3ff010d55e673563f914b364b49aaff3d9f84effa8fe3bba2f6409cfb6655d2"
+    },
+    {
+      "page": "Exodia_Triumph",
+      "url": "https://wiki.warframe.com/w/Exodia_Triumph?action=raw",
+      "bytes": 1660,
+      "sha256": "d3fedcae4183dcb1bcf7f80fda2c5a2a0c28bf3f60992b8822dd9bff748705c1"
+    },
+    {
+      "page": "Exodia_Valor",
+      "url": "https://wiki.warframe.com/w/Exodia_Valor?action=raw",
+      "bytes": 1533,
+      "sha256": "799a96671884c0453e6af482ebf312ada16c163f4aca383a84b5d4299a86b664"
+    },
+    {
+      "page": "Exodia_Force",
+      "url": "https://wiki.warframe.com/w/Exodia_Force?action=raw",
+      "bytes": 4397,
+      "sha256": "cf3f03bab4d25a4fe2ac7090ae63aa129a6d875b44baeae8a6d725eacf092dcf"
+    },
+    {
+      "page": "Exodia_Contagion",
+      "url": "https://wiki.warframe.com/w/Exodia_Contagion?action=raw",
+      "bytes": 13768,
+      "sha256": "0b8af99de1369a94499ed88cb1c87c2655660d9eaf36d1e7dc1f72c518bbcada"
+    },
+    {
+      "page": "Exodia_Epidemic",
+      "url": "https://wiki.warframe.com/w/Exodia_Epidemic?action=raw",
+      "bytes": 5654,
+      "sha256": "b5f59aeceb9d351b6a9cc104c9975c510b1a23262057321d30e0dcf29d3ec204"
+    },
+    {
+      "page": "Exodia_Brave",
+      "url": "https://wiki.warframe.com/w/Exodia_Brave?action=raw",
+      "bytes": 3018,
+      "sha256": "b302be5e663524dec050b0c88233e812f46d02747f9df6d318d2c14f75c5d7b2"
+    },
+    {
+      "page": "Exodia_Hunt",
+      "url": "https://wiki.warframe.com/w/Exodia_Hunt?action=raw",
+      "bytes": 4298,
+      "sha256": "ce480ac75a2b4329a6348921769c4e4e4620eab92c616ddb49629217a92a5e3b"
+    },
+    {
+      "page": "Exodia_Might",
+      "url": "https://wiki.warframe.com/w/Exodia_Might?action=raw",
+      "bytes": 3203,
+      "sha256": "91d7fe8bda8655335e556fe45924f30726d1bc4626173aeaec9540215ba05d69"
+    },
+    {
+      "page": "Balla",
+      "url": "https://wiki.warframe.com/w/Balla?action=raw",
+      "bytes": 1327,
+      "sha256": "eee16d4dcab807fe95e80d44a34ac0101e05ce53ddd545d468f57f2323f02aac"
+    },
+    {
+      "page": "Cyath",
+      "url": "https://wiki.warframe.com/w/Cyath?action=raw",
+      "bytes": 1158,
+      "sha256": "c3984be8e1f49d3a944902ba465f27c7640594b97f0d71068aa4d42f106d7226"
+    },
+    {
+      "page": "Dehtat",
+      "url": "https://wiki.warframe.com/w/Dehtat?action=raw",
+      "bytes": 986,
+      "sha256": "0ba193d29a079272877009d2f0f306270185fc787d05ce16a9b3a4c08edc832a"
+    },
+    {
+      "page": "Dokrahm",
+      "url": "https://wiki.warframe.com/w/Dokrahm?action=raw",
+      "bytes": 1207,
+      "sha256": "7efe37143c08bdac451047839397bf3f25a597409dec649c54f95e0a64e00710"
+    },
+    {
+      "page": "Kronsh",
+      "url": "https://wiki.warframe.com/w/Kronsh?action=raw",
+      "bytes": 954,
+      "sha256": "2f6304b0a49dc2d9e8f1f86909b698bafb70a9acfd56ba730e2ba0296a3d6a00"
+    },
+    {
+      "page": "Mewan",
+      "url": "https://wiki.warframe.com/w/Mewan?action=raw",
+      "bytes": 1123,
+      "sha256": "f20d9c524e341f5d9c2d6774cb155177bc04fda3a88dac87926741092c3354c8"
+    },
+    {
+      "page": "Ooltha",
+      "url": "https://wiki.warframe.com/w/Ooltha?action=raw",
+      "bytes": 877,
+      "sha256": "cfacfca453746c3e3a90c58ac6d4351aab8f85585b7bb66c6d2f26e70cd317a0"
+    },
+    {
+      "page": "Plague_Keewar",
+      "url": "https://wiki.warframe.com/w/Plague_Keewar?action=raw",
+      "bytes": 1689,
+      "sha256": "c26ee08f64b9546cd2cef0af863bf242e593eae1fc124c3c444b0d76c6b12dfc"
+    },
+    {
+      "page": "Plague_Kripath",
+      "url": "https://wiki.warframe.com/w/Plague_Kripath?action=raw",
+      "bytes": 1937,
+      "sha256": "6a0320e505193b73545f998975ed7a4a2294eed99aea4663e98b4ff1a217ec96"
+    },
+    {
+      "page": "Rabvee",
+      "url": "https://wiki.warframe.com/w/Rabvee?action=raw",
+      "bytes": 1606,
+      "sha256": "2c000b71b0f5eeec4b247d01644988d12c79f569f49533c9ee46896902b257f0"
+    },
+    {
+      "page": "Sepfahn",
+      "url": "https://wiki.warframe.com/w/Sepfahn?action=raw",
+      "bytes": 2080,
+      "sha256": "6edb79dba54045a63ad4b2f5faa886b4a6283643858706e7968efe39d666390e"
+    },
+    {
+      "file": "vendor/public-export/en/ExportWeapons_en.json",
+      "sha256": "c40c2bc40f770d0f9eedb5110c5a2225275509bfec1f77389422fd28018db62b",
+      "scope": "internal identities and transcribed names only"
+    },
+    {
+      "file": "vendor/public-export/en/ExportRelicArcane_en.json",
+      "sha256": "3475b6fbd4bd636428a822377cce93e8d388490486b99431284457d3d46b0b7d",
+      "scope": "internal identities and transcribed names only"
+    },
+    {
+      "file": "vendor/public-export/en/ExportResources_en.json",
+      "sha256": "a9a8aef16df5c624d5ceb58fc1b760adb245809c42cfacfc2937b08a847b3fda",
+      "scope": "internal identities and transcribed names only"
+    },
+    {
+      "file": "vendor/public-export/en/ExportUpgrades_en.json",
+      "sha256": "df5c898b3e4b8574b9a2c39170c8a8756ba75d6caec1317d260b9aee49105ad2",
+      "scope": "internal identities and transcribed names only"
+    },
+    {
+      "file": "vendor/public-export/zh/ExportWeapons_zh.json",
+      "sha256": "58c462a19b61982dc85c41a01465086bf1bada1b0b99bc808b2f448eb02ad9ce",
+      "scope": "internal identities and transcribed names only"
+    },
+    {
+      "file": "vendor/public-export/zh/ExportRelicArcane_zh.json",
+      "sha256": "0bf6372a72e655a90ff10d0e5243edf0e41048c293486c4e0aab0e71ddbe91a2",
+      "scope": "internal identities and transcribed names only"
+    },
+    {
+      "file": "vendor/public-export/zh/ExportResources_zh.json",
+      "sha256": "3ed29b435f6f13270f458972865ba1874fdc436a38670b5eab22e111a140589a",
+      "scope": "internal identities and transcribed names only"
+    },
+    {
+      "file": "vendor/public-export/zh/ExportUpgrades_zh.json",
+      "sha256": "3d7ff4ad00fe8d10639a70495ea4d873fb62e393febc06818c171fc6e7036bd8",
+      "scope": "internal identities and transcribed names only"
+    },
+    {
+      "measurement": "docs/measurements/M124-the-package-states-the-rank-value.md",
+      "artifact": "all_ranks.json",
+      "sha256": "e63ecefb3c95b8393de72e63431965b1293297f3342f0cda1043b7b6d172cd58",
+      "scope": "native rank-zero parameters; script-driven zeros do not define runtime formulas"
+    },
+    {
+      "file": "tests/fixtures/melee/package-2026-10-08.json",
+      "sha256": "5a2b4050b0229163d13a0fb16ce5ba7b8b39e3376147d60a2a309e481347075a",
+      "build_label": "2026.10.08",
+      "sources": {
+        "animHeaders": "Warframe-Exporter-CLI --write-raw /Lotus/Animations/... (_H, 1/duration before 'Take 001')",
+        "packagesBin": "Packages.bin_H",
+        "packagesBinSha256": "0d5881641f87e9746fb307a4fae76422cbba314bf4f808f9d5ca57bd20f0ea78"
+      }
+    }
+  ],
+  "strikes": [
+    {
+      "id": "balla",
+      "name": "Balla",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipOne",
+      "base_damage": {
+        "impact": 11.2,
+        "puncture": 134.4,
+        "slash": 78.4
+      },
+      "speed_delta": 0.083,
+      "crit_chance": 0.18,
+      "crit_multiplier": 2,
+      "status_chance": 0.18,
+      "disposition": 1.2,
+      "riven_family": "Balla",
+      "damage_allocation": "proportional",
+      "wiki_url": "https://wiki.warframe.com/w/Balla"
+    },
+    {
+      "id": "cyath",
+      "name": "Cyath",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipFour",
+      "base_damage": {
+        "impact": 46,
+        "puncture": 11.5,
+        "slash": 172.5
+      },
+      "speed_delta": 0,
+      "crit_chance": 0.18,
+      "crit_multiplier": 2,
+      "status_chance": 0.18,
+      "disposition": 1.2,
+      "riven_family": "Cyath",
+      "damage_allocation": "proportional",
+      "wiki_url": "https://wiki.warframe.com/w/Cyath"
+    },
+    {
+      "id": "dehtat",
+      "name": "Dehtat",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipFive",
+      "base_damage": {
+        "impact": 22.4,
+        "puncture": 112,
+        "slash": 89.6
+      },
+      "speed_delta": 0.083,
+      "crit_chance": 0.18,
+      "crit_multiplier": 2,
+      "status_chance": 0.18,
+      "disposition": 1.2,
+      "riven_family": "Dehtat",
+      "damage_allocation": "proportional",
+      "wiki_url": "https://wiki.warframe.com/w/Dehtat"
+    },
+    {
+      "id": "dokrahm",
+      "name": "Dokrahm",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipEleven",
+      "base_damage": {
+        "impact": 46.4,
+        "puncture": 108.1,
+        "slash": 154.5
+      },
+      "speed_delta": 0.083,
+      "crit_chance": 0.18,
+      "crit_multiplier": 2,
+      "status_chance": 0.18,
+      "disposition": 1.2,
+      "riven_family": "Dokrahm",
+      "damage_allocation": "proportional",
+      "wiki_url": "https://wiki.warframe.com/w/Dokrahm"
+    },
+    {
+      "id": "kronsh",
+      "name": "Kronsh",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipSix",
+      "base_damage": {
+        "impact": 163.8,
+        "slash": 70.2
+      },
+      "speed_delta": -0.067,
+      "crit_chance": 0.18,
+      "crit_multiplier": 2,
+      "status_chance": 0.18,
+      "disposition": 1.2,
+      "riven_family": "Kronsh",
+      "damage_allocation": "proportional",
+      "wiki_url": "https://wiki.warframe.com/w/Kronsh"
+    },
+    {
+      "id": "mewan",
+      "name": "Mewan",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipThree",
+      "base_damage": {
+        "impact": 56,
+        "puncture": 78.4,
+        "slash": 89.6
+      },
+      "speed_delta": -0.067,
+      "crit_chance": 0.18,
+      "crit_multiplier": 2,
+      "status_chance": 0.18,
+      "disposition": 1.2,
+      "riven_family": "Mewan",
+      "damage_allocation": "proportional",
+      "wiki_url": "https://wiki.warframe.com/w/Mewan"
+    },
+    {
+      "id": "ooltha",
+      "name": "Ooltha",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipTwo",
+      "base_damage": {
+        "impact": 22.4,
+        "puncture": 89.6,
+        "slash": 112
+      },
+      "speed_delta": 0,
+      "crit_chance": 0.18,
+      "crit_multiplier": 2,
+      "status_chance": 0.18,
+      "disposition": 1.2,
+      "riven_family": "Ooltha",
+      "damage_allocation": "proportional",
+      "wiki_url": "https://wiki.warframe.com/w/Ooltha"
+    },
+    {
+      "id": "plague_keewar",
+      "name": "Plague Keewar",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Tips/InfestedTipTwo",
+      "base_damage": {
+        "impact": 88,
+        "puncture": 57,
+        "slash": 91,
+        "viral": 70
+      },
+      "speed_delta": -0.033,
+      "crit_chance": 0.18,
+      "crit_multiplier": 2,
+      "status_chance": 0.22,
+      "disposition": 1.2,
+      "riven_family": "Plague Keewar",
+      "damage_allocation": "equal_absolute_delta",
+      "wiki_url": "https://wiki.warframe.com/w/Plague_Keewar"
+    },
+    {
+      "id": "plague_kripath",
+      "name": "Plague Kripath",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Tips/InfestedTipOne",
+      "base_damage": {
+        "impact": 30,
+        "puncture": 70,
+        "slash": 49,
+        "viral": 64
+      },
+      "speed_delta": 0.033,
+      "crit_chance": 0.22,
+      "crit_multiplier": 2.2,
+      "status_chance": 0.18,
+      "disposition": 1.2,
+      "riven_family": "Plague Kripath",
+      "damage_allocation": "equal_absolute_delta",
+      "wiki_url": "https://wiki.warframe.com/w/Plague_Kripath"
+    },
+    {
+      "id": "rabvee",
+      "name": "Rabvee",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipTen",
+      "base_damage": {
+        "impact": 140.4,
+        "puncture": 11.7,
+        "slash": 81.9
+      },
+      "speed_delta": -0.067,
+      "crit_chance": 0.18,
+      "crit_multiplier": 2,
+      "status_chance": 0.18,
+      "disposition": 1.2,
+      "riven_family": "Rabvee",
+      "damage_allocation": "proportional",
+      "wiki_url": "https://wiki.warframe.com/w/Rabvee"
+    },
+    {
+      "id": "sepfahn",
+      "name": "Sepfahn",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipNine",
+      "base_damage": {
+        "impact": 22.6,
+        "puncture": 56.5,
+        "slash": 146.9
+      },
+      "speed_delta": 0,
+      "crit_chance": 0.2,
+      "crit_multiplier": 2,
+      "status_chance": 0.2,
+      "disposition": 1.2,
+      "riven_family": "Sepfahn",
+      "damage_allocation": "proportional",
+      "wiki_url": "https://wiki.warframe.com/w/Sepfahn"
+    }
+  ],
+  "grips": [
+    {
+      "id": "jayap",
+      "name": "Jayap",
+      "handedness": "two_handed",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleFive",
+      "damage_delta": 0,
+      "base_speed": 0.917
+    },
+    {
+      "id": "korb",
+      "name": "Korb",
+      "handedness": "one_handed",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee02/Handle/HandleNine",
+      "damage_delta": 28,
+      "base_speed": 0.783
+    },
+    {
+      "id": "kroostra",
+      "name": "Kroostra",
+      "handedness": "two_handed",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleSix",
+      "damage_delta": 14,
+      "base_speed": 0.85
+    },
+    {
+      "id": "kwath",
+      "name": "Kwath",
+      "handedness": "one_handed",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleThree",
+      "damage_delta": 14,
+      "base_speed": 0.85
+    },
+    {
+      "id": "laka",
+      "name": "Laka",
+      "handedness": "one_handed",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleTwo",
+      "damage_delta": 0,
+      "base_speed": 0.917
+    },
+    {
+      "id": "peye",
+      "name": "Peye",
+      "handedness": "one_handed",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleOne",
+      "damage_delta": -4,
+      "base_speed": 1
+    },
+    {
+      "id": "plague_akwin",
+      "name": "Plague Akwin",
+      "handedness": "one_handed",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Handles/InfestedHandleOne",
+      "damage_delta": -2,
+      "base_speed": 0.95
+    },
+    {
+      "id": "plague_bokwin",
+      "name": "Plague Bokwin",
+      "handedness": "two_handed",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Handles/InfestedHandleTwo",
+      "damage_delta": 7,
+      "base_speed": 0.883
+    },
+    {
+      "id": "seekalla",
+      "name": "Seekalla",
+      "handedness": "two_handed",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleFour",
+      "damage_delta": -4,
+      "base_speed": 1
+    },
+    {
+      "id": "shtung",
+      "name": "Shtung",
+      "handedness": "two_handed",
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee02/Handle/HandleTen",
+      "damage_delta": 28,
+      "base_speed": 0.783
+    }
+  ],
+  "links": [
+    {
+      "id": "ekwana_ii_jai",
+      "name": "Ekwana II Jai",
+      "damage_delta": -4,
+      "speed_delta": 0.083,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedIStatusII",
+      "crit_chance_delta": -0.08,
+      "status_chance_delta": 0.14
+    },
+    {
+      "id": "ekwana_ii_ruhang",
+      "name": "Ekwana II Ruhang",
+      "damage_delta": 14,
+      "speed_delta": -0.067,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageIStatusII",
+      "crit_chance_delta": -0.08,
+      "status_chance_delta": 0.14
+    },
+    {
+      "id": "ekwana_jai",
+      "name": "Ekwana Jai",
+      "damage_delta": -4,
+      "speed_delta": 0.083,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedIStatusI",
+      "crit_chance_delta": -0.04,
+      "status_chance_delta": 0.07
+    },
+    {
+      "id": "ekwana_jai_ii",
+      "name": "Ekwana Jai II",
+      "damage_delta": -8,
+      "speed_delta": 0.167,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedIIStatusI",
+      "crit_chance_delta": -0.04,
+      "status_chance_delta": 0.07
+    },
+    {
+      "id": "ekwana_ruhang",
+      "name": "Ekwana Ruhang",
+      "damage_delta": 14,
+      "speed_delta": -0.067,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageIStatusI",
+      "crit_chance_delta": -0.04,
+      "status_chance_delta": 0.07
+    },
+    {
+      "id": "ekwana_ruhang_ii",
+      "name": "Ekwana Ruhang II",
+      "damage_delta": 28,
+      "speed_delta": -0.133,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageIIStatusI",
+      "crit_chance_delta": -0.04,
+      "status_chance_delta": 0.07
+    },
+    {
+      "id": "jai",
+      "name": "Jai",
+      "damage_delta": -4,
+      "speed_delta": 0.083,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedI",
+      "crit_chance_delta": 0,
+      "status_chance_delta": 0
+    },
+    {
+      "id": "jai_ii",
+      "name": "Jai II",
+      "damage_delta": -8,
+      "speed_delta": 0.167,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedII",
+      "crit_chance_delta": 0,
+      "status_chance_delta": 0
+    },
+    {
+      "id": "ruhang",
+      "name": "Ruhang",
+      "damage_delta": 14,
+      "speed_delta": -0.067,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageI",
+      "crit_chance_delta": 0,
+      "status_chance_delta": 0
+    },
+    {
+      "id": "ruhang_ii",
+      "name": "Ruhang II",
+      "damage_delta": 28,
+      "speed_delta": -0.133,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageII",
+      "crit_chance_delta": 0,
+      "status_chance_delta": 0
+    },
+    {
+      "id": "vargeet_ii_jai",
+      "name": "Vargeet II Jai",
+      "damage_delta": -4,
+      "speed_delta": 0.083,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedICritII",
+      "crit_chance_delta": 0.14,
+      "status_chance_delta": -0.08
+    },
+    {
+      "id": "vargeet_ii_ruhang",
+      "name": "Vargeet II Ruhang",
+      "damage_delta": 14,
+      "speed_delta": -0.067,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageICritII",
+      "crit_chance_delta": 0.14,
+      "status_chance_delta": -0.08
+    },
+    {
+      "id": "vargeet_jai",
+      "name": "Vargeet Jai",
+      "damage_delta": -4,
+      "speed_delta": 0.083,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedICritI",
+      "crit_chance_delta": 0.07,
+      "status_chance_delta": -0.04
+    },
+    {
+      "id": "vargeet_jai_ii",
+      "name": "Vargeet Jai II",
+      "damage_delta": -8,
+      "speed_delta": 0.167,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedIICritI",
+      "crit_chance_delta": 0.07,
+      "status_chance_delta": -0.04
+    },
+    {
+      "id": "vargeet_ruhang",
+      "name": "Vargeet Ruhang",
+      "damage_delta": 14,
+      "speed_delta": -0.067,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageICritI",
+      "crit_chance_delta": 0.07,
+      "status_chance_delta": -0.04
+    },
+    {
+      "id": "vargeet_ruhang_ii",
+      "name": "Vargeet Ruhang II",
+      "damage_delta": 28,
+      "speed_delta": -0.133,
+      "internal_name": "/Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageIICritI",
+      "crit_chance_delta": 0.07,
+      "status_chance_delta": -0.04
+    }
+  ],
+  "proposed_weapons": [
+    {
+      "proposed_id": "balla_one_handed",
+      "strike": "balla",
+      "handedness": "one_handed",
+      "class": "dagger",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "balla_two_handed",
+      "strike": "balla",
+      "handedness": "two_handed",
+      "class": "staff",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffMeleeTree",
+      "available_bare_contexts": [
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "cyath_one_handed",
+      "strike": "cyath",
+      "handedness": "one_handed",
+      "class": "machete",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/MacheteMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "cyath_two_handed",
+      "strike": "cyath",
+      "handedness": "two_handed",
+      "class": "polearm",
+      "base_damage_multiplier": 1.08,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_BRANCH_A",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "dehtat_one_handed",
+      "strike": "dehtat",
+      "handedness": "one_handed",
+      "class": "rapier",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/RapierMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "dehtat_two_handed",
+      "strike": "dehtat",
+      "handedness": "two_handed",
+      "class": "polearm",
+      "base_damage_multiplier": 1.09,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_BRANCH_A",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "dokrahm_one_handed",
+      "strike": "dokrahm",
+      "handedness": "one_handed",
+      "class": "scythe",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/ScytheMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "dokrahm_two_handed",
+      "strike": "dokrahm",
+      "handedness": "two_handed",
+      "class": "heavy_blade",
+      "base_damage_multiplier": 0.93,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/AxeMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "kronsh_one_handed",
+      "strike": "kronsh",
+      "handedness": "one_handed",
+      "class": "machete",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/MacheteMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "kronsh_two_handed",
+      "strike": "kronsh",
+      "handedness": "two_handed",
+      "class": "polearm",
+      "base_damage_multiplier": 1.07,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_BRANCH_A",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "mewan_one_handed",
+      "strike": "mewan",
+      "handedness": "one_handed",
+      "class": "sword",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND_BRANCH_A",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "mewan_two_handed",
+      "strike": "mewan",
+      "handedness": "two_handed",
+      "class": "polearm",
+      "base_damage_multiplier": 1.09,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_BRANCH_A",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "ooltha_one_handed",
+      "strike": "ooltha",
+      "handedness": "one_handed",
+      "class": "sword",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND_BRANCH_A",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "ooltha_two_handed",
+      "strike": "ooltha",
+      "handedness": "two_handed",
+      "class": "staff",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffMeleeTree",
+      "available_bare_contexts": [
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "plague_keewar_one_handed",
+      "strike": "plague_keewar",
+      "handedness": "one_handed",
+      "class": "scythe",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/ScytheMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "plague_keewar_two_handed",
+      "strike": "plague_keewar",
+      "handedness": "two_handed",
+      "class": "staff",
+      "base_damage_multiplier": 0.85,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffMeleeTree",
+      "available_bare_contexts": [
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "plague_kripath_one_handed",
+      "strike": "plague_kripath",
+      "handedness": "one_handed",
+      "class": "rapier",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/RapierMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "plague_kripath_two_handed",
+      "strike": "plague_kripath",
+      "handedness": "two_handed",
+      "class": "polearm",
+      "base_damage_multiplier": 1.08,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_BRANCH_A",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "rabvee_one_handed",
+      "strike": "rabvee",
+      "handedness": "one_handed",
+      "class": "machete",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/MacheteMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "rabvee_two_handed",
+      "strike": "rabvee",
+      "handedness": "two_handed",
+      "class": "hammer",
+      "base_damage_multiplier": 1.08,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/HammerMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND_BRANCH_A",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "sepfahn_one_handed",
+      "strike": "sepfahn",
+      "handedness": "one_handed",
+      "class": "nikana",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/KatanaMeleeTree",
+      "available_bare_contexts": [
+        "CC_GROUND",
+        "CC_GROUND_HEAVY",
+        "CC_SLIDING"
+      ]
+    },
+    {
+      "proposed_id": "sepfahn_two_handed",
+      "strike": "sepfahn",
+      "handedness": "two_handed",
+      "class": "staff",
+      "base_damage_multiplier": 1,
+      "package_tree": "/Lotus/Weapons/Tenno/Melee/MeleeTrees/StaffMeleeTree",
+      "available_bare_contexts": [
+        "CC_SLIDING"
+      ]
+    }
+  ],
+  "arcanes": [
+    {
+      "id": "exodia_brave",
+      "name": "Exodia Brave",
+      "internal_name": "/Lotus/Upgrades/CosmeticEnhancers/Offensive/ChannelKillEnergyRate",
+      "max_rank": 3,
+      "rarity": "rare",
+      "seat": "zaw",
+      "mechanics": {
+        "trigger": "direct heavy-attack kill",
+        "energy_per_second": [
+          1.25,
+          2.5,
+          3.75,
+          5
+        ],
+        "duration_seconds": 4,
+        "max_stacks": 3,
+        "needs": "energy regeneration and refresh/channel rules"
+      },
+      "package_rank0": [
+        {
+          "field": "Upgrades[0]",
+          "token": "1.25",
+          "upgrade_type": "AVATAR_POWER_RATE",
+          "scripted": false
+        }
+      ],
+      "source_url": "https://wiki.warframe.com/w/Exodia_Brave"
+    },
+    {
+      "id": "exodia_contagion",
+      "name": "Exodia Contagion",
+      "internal_name": "/Lotus/Upgrades/CosmeticEnhancers/Offensive/MeleeArcaneProjectileOnJump",
+      "max_rank": 3,
+      "rarity": "legendary",
+      "seat": "zaw",
+      "mechanics": {
+        "trigger": "aim-gliding melee after a bullet or double jump",
+        "travel_threshold_m": 30,
+        "distant_rank_factor_table": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "direct_multiplier": 2,
+        "direct_types": [
+          "impact",
+          "puncture",
+          "slash"
+        ],
+        "explosion_multiplier": 5,
+        "explosion_type": "viral",
+        "explosion_radius_m": 8,
+        "embedded_tick_multiplier": 1,
+        "embedded_tick_type": "blast",
+        "needs": "direct/tick/explosion timing; inherited stats; stance and combo brackets; double-dipping buffs; measurement"
+      },
+      "package_rank0": [
+        {
+          "field": "Upgrades[0]",
+          "token": "0",
+          "upgrade_type": "NONE",
+          "scripted": true
+        },
+        {
+          "field": "Upgrades[1]",
+          "token": "0",
+          "upgrade_type": "NONE",
+          "scripted": true
+        },
+        {
+          "field": "Upgrades[2]",
+          "token": "0",
+          "upgrade_type": "NONE",
+          "scripted": true
+        },
+        {
+          "field": "Upgrades[3]",
+          "token": "0",
+          "upgrade_type": "NONE",
+          "scripted": true
+        }
+      ],
+      "source_url": "https://wiki.warframe.com/w/Exodia_Contagion"
+    },
+    {
+      "id": "exodia_epidemic",
+      "name": "Exodia Epidemic",
+      "internal_name": "/Lotus/Upgrades/CosmeticEnhancers/Offensive/MeleeArcaneShockwaveOnJump",
+      "max_rank": 3,
+      "rarity": "legendary",
+      "seat": "zaw",
+      "mechanics": {
+        "trigger": "slam after a bullet or double jump",
+        "suspension_seconds": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "wave_damage": 10,
+        "wave_type": "blast",
+        "approx_wave_width_m": 5,
+        "approx_wave_range_m": 31,
+        "approx_explosion_radius_m": 7,
+        "approx_weapon_explosion_multiplier": 0.3,
+        "explosion_type": "viral",
+        "needs": "separate wave/explosion; stomp suspension is not generic Lifted; approximate page values require measurement"
+      },
+      "package_rank0": [
+        {
+          "field": "Upgrades[0]",
+          "token": "0",
+          "upgrade_type": "NONE",
+          "scripted": true
+        },
+        {
+          "field": "Upgrades[1]",
+          "token": "0",
+          "upgrade_type": "NONE",
+          "scripted": true
+        },
+        {
+          "field": "Upgrades[2]",
+          "token": "0",
+          "upgrade_type": "NONE",
+          "scripted": true
+        },
+        {
+          "field": "Upgrades[3]",
+          "token": "0",
+          "upgrade_type": "NONE",
+          "scripted": true
+        }
+      ],
+      "source_url": "https://wiki.warframe.com/w/Exodia_Epidemic"
+    },
+    {
+      "id": "exodia_force",
+      "name": "Exodia Force",
+      "internal_name": "/Lotus/Upgrades/CosmeticEnhancers/Offensive/StatusTriggerRadialDamage",
+      "max_rank": 3,
+      "rarity": "rare",
+      "seat": "zaw",
+      "mechanics": {
+        "trigger": "weapon status application",
+        "trigger_chance": 0.5,
+        "weapon_damage_multiplier": [
+          0.5,
+          1,
+          1.5,
+          2
+        ],
+        "radius_m": 6,
+        "falloff_reduction": 1,
+        "can_crit": false,
+        "can_proc_status": false,
+        "needs": "player-centered radial hit; stance, faction and quarter-combo scaling; exclude CO and crit"
+      },
+      "package_rank0": [
+        {
+          "field": "Upgrades[0]",
+          "token": "0",
+          "upgrade_type": "NONE",
+          "scripted": true
+        }
+      ],
+      "source_url": "https://wiki.warframe.com/w/Exodia_Force"
+    },
+    {
+      "id": "exodia_hunt",
+      "name": "Exodia Hunt",
+      "internal_name": "/Lotus/Upgrades/CosmeticEnhancers/Offensive/GroundSlamPull",
+      "max_rank": 3,
+      "rarity": "rare",
+      "seat": "zaw",
+      "mechanics": {
+        "trigger": "slam",
+        "trigger_chance": 0.5,
+        "radius_m": [
+          6,
+          8,
+          10,
+          12
+        ],
+        "needs": "pull geometry and short persistent pull window"
+      },
+      "package_rank0": [
+        {
+          "field": "Upgrades[0]",
+          "token": "0",
+          "upgrade_type": "NONE",
+          "scripted": true
+        }
+      ],
+      "source_url": "https://wiki.warframe.com/w/Exodia_Hunt"
+    },
+    {
+      "id": "exodia_might",
+      "name": "Exodia Might",
+      "internal_name": "/Lotus/Upgrades/CosmeticEnhancers/Offensive/FinisherLifesteal",
+      "max_rank": 3,
+      "rarity": "rare",
+      "seat": "zaw",
+      "mechanics": {
+        "trigger": "finisher kill",
+        "trigger_chance": 0.5,
+        "lifesteal": [
+          0.075,
+          0.15,
+          0.225,
+          0.3
+        ],
+        "duration_seconds": 8,
+        "needs": "finisher activation and wielder healing"
+      },
+      "package_rank0": [
+        {
+          "field": "Upgrades[0]",
+          "token": "0.075000003",
+          "upgrade_type": "WEAPON_LIFE_STEAL",
+          "scripted": false
+        }
+      ],
+      "source_url": "https://wiki.warframe.com/w/Exodia_Might"
+    },
+    {
+      "id": "exodia_triumph",
+      "name": "Exodia Triumph",
+      "internal_name": "/Lotus/Upgrades/CosmeticEnhancers/Offensive/StatusChannelingDamage",
+      "max_rank": 3,
+      "rarity": "uncommon",
+      "seat": "zaw",
+      "mechanics": {
+        "trigger": "melee hit",
+        "rank_values": [
+          0.125,
+          0.25,
+          0.375,
+          0.5
+        ],
+        "stat": "additional combo count chance",
+        "reuse": "ComboCountChance / M96"
+      },
+      "package_rank0": [
+        {
+          "field": "Upgrades[0]",
+          "token": "0.125",
+          "upgrade_type": "WEAPON_MELEE_COMBO_GAIN_EXTRA_CHANCE",
+          "scripted": false
+        }
+      ],
+      "source_url": "https://wiki.warframe.com/w/Exodia_Triumph"
+    },
+    {
+      "id": "exodia_valor",
+      "name": "Exodia Valor",
+      "internal_name": "/Lotus/Upgrades/CosmeticEnhancers/Offensive/CritChannelingDamage",
+      "max_rank": 3,
+      "rarity": "uncommon",
+      "seat": "zaw",
+      "mechanics": {
+        "trigger": "melee hit on a lifted enemy",
+        "rank_values": [
+          0.5,
+          1,
+          1.5,
+          2
+        ],
+        "stat": "additional combo count chance",
+        "reuse": "ComboCountChanceOnLifted / M96"
+      },
+      "package_rank0": [
+        {
+          "field": "Upgrades[0]",
+          "token": "0.5",
+          "upgrade_type": "WEAPON_MELEE_COMBO_GAIN_EXTRA_CHANCE",
+          "scripted": false
+        }
+      ],
+      "source_url": "https://wiki.warframe.com/w/Exodia_Valor"
+    }
+  ],
+  "conflicts": [
+    {
+      "strike": "balla",
+      "field": "disposition",
+      "assembly_table": 0.9,
+      "weapon_module": 1.2,
+      "selected_source": "Module:Weapons/data/modular"
+    },
+    {
+      "strike": "cyath",
+      "field": "disposition",
+      "assembly_table": 0.95,
+      "weapon_module": 1.2,
+      "selected_source": "Module:Weapons/data/modular"
+    },
+    {
+      "strike": "dokrahm",
+      "field": "disposition",
+      "assembly_table": 0.75,
+      "weapon_module": 1.2,
+      "selected_source": "Module:Weapons/data/modular"
+    },
+    {
+      "strike": "kronsh",
+      "field": "disposition",
+      "assembly_table": 1.3,
+      "weapon_module": 1.2,
+      "selected_source": "Module:Weapons/data/modular"
+    },
+    {
+      "strike": "mewan",
+      "field": "disposition",
+      "assembly_table": 1.1,
+      "weapon_module": 1.2,
+      "selected_source": "Module:Weapons/data/modular"
+    },
+    {
+      "strike": "ooltha",
+      "field": "disposition",
+      "assembly_table": 1.25,
+      "weapon_module": 1.2,
+      "selected_source": "Module:Weapons/data/modular"
+    },
+    {
+      "strike": "plague_keewar",
+      "field": "disposition",
+      "assembly_table": 0.75,
+      "weapon_module": 1.2,
+      "selected_source": "Module:Weapons/data/modular"
+    },
+    {
+      "strike": "plague_kripath",
+      "field": "disposition",
+      "assembly_table": 0.65,
+      "weapon_module": 1.2,
+      "selected_source": "Module:Weapons/data/modular"
+    },
+    {
+      "strike": "rabvee",
+      "field": "disposition",
+      "assembly_table": 1.3,
+      "weapon_module": 1.2,
+      "selected_source": "Module:Weapons/data/modular"
+    },
+    {
+      "strike": "sepfahn",
+      "field": "disposition",
+      "assembly_table": 0.7,
+      "weapon_module": 1.2,
+      "selected_source": "Module:Weapons/data/modular"
+    }
+  ],
+  "validation": {
+    "positive_finite_assemblies": 1760,
+    "package_tree_bindings": 22,
+    "negative_control": "missing strike rejected"
+  },
+  "open_data": [
+    "Component package precision for source speed decimals",
+    "Assembled reach and follow-through: strike infobox values are not a complete finished weapon",
+    "Independent Exodia attack timing and scaling require measurement"
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "source": "DE Public Export, joined by internal_name == uniqueName",
+  "strikes": {
+    "balla": "宝拉",
+    "cyath": "西亚什",
+    "dehtat": "德塔特",
+    "dokrahm": "多克拉姆",
+    "kronsh": "客隆什",
+    "mewan": "密丸",
+    "ooltha": "乌尔萨",
+    "plague_keewar": "瘟疫 奇沃",
+    "plague_kripath": "瘟疫 克里帕丝",
+    "rabvee": "拉比威",
+    "sepfahn": "瑟普梵"
+  },
+  "arcanes": {
+    "exodia_brave": "神威·勇武",
+    "exodia_contagion": "神威·触染",
+    "exodia_epidemic": "神威·流行病",
+    "exodia_force": "神威·气力",
+    "exodia_hunt": "神威·狩猎",
+    "exodia_might": "神威·力量",
+    "exodia_triumph": "神威·凯旋",
+    "exodia_valor": "神威·勇猛"
+  },
+  "grips": {
+    "jayap": "查亚普",
+    "korb": "科布",
+    "kroostra": "克鲁斯查",
+    "kwath": "库阿斯",
+    "laka": "拉卡",
+    "peye": "佩耶",
+    "plague_akwin": "瘟疫 艾克文",
+    "plague_bokwin": "瘟疫 柏克文",
+    "seekalla": "斯卡拉",
+    "shtung": "石当"
+  },
+  "links": {
+    "ekwana_ii_jai": "伊克瓦纳 II 翟",
+    "ekwana_ii_ruhang": "伊克瓦纳 II 如杭",
+    "ekwana_jai": "伊克瓦纳 翟",
+    "ekwana_jai_ii": "伊克瓦纳 翟 II",
+    "ekwana_ruhang": "伊克瓦纳 如杭",
+    "ekwana_ruhang_ii": "伊克瓦纳 如杭 II",
+    "jai": "翟",
+    "jai_ii": "翟 II",
+    "ruhang": "如杭",
+    "ruhang_ii": "如杭 II",
+    "vargeet_ii_jai": "瓦吉特 II 翟",
+    "vargeet_ii_ruhang": "瓦吉特 II 如杭",
+    "vargeet_jai": "瓦吉特 翟",
+    "vargeet_jai_ii": "瓦吉特 翟 II",
+    "vargeet_ruhang": "瓦吉特 如杭",
+    "vargeet_ruhang_ii": "瓦吉特 如杭 II"
+  }
+}
