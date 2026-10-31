@@ -54,7 +54,7 @@ pub fn validate_for_board_with(
     valence: &str,
     riven: Option<&crate::build::rivens::RivenShape>,
     exilus: Option<&str>,
-    assembly: Option<&crate::data::weapons::kitguns::Assembly>,
+    assembly: Option<&crate::data::weapons::assembly::Assembly>,
     wielder: Option<&crate::data::warframes::Build>,
 ) -> Result<ValidBuild, String> {
     // WHO SUPPLIES THE WARFRAME — `with_wielder`, which is where that rule
@@ -207,7 +207,7 @@ pub fn validate_with(
     // THE PARTS, on a weapon that takes them. Its own argument for the same
     // reason: the parts are not mods, nothing in `mods` could stand for them,
     // and a build scored with a different grip is a different weapon.
-    assembly: Option<&crate::data::weapons::kitguns::Assembly>,
+    assembly: Option<&crate::data::weapons::assembly::Assembly>,
 ) -> Result<ValidBuild, String> {
     let spec = crate::data::weapons::spec(weapon)
         .ok_or_else(|| format!("unknown weapon: {weapon}"))?;
@@ -473,19 +473,19 @@ pub fn validate_with(
     // FIGHT, where there has to be something to draw; a board record is a
     // statement about one build, and quietly scoring a different assembly is
     // exactly the divergence a record exists to prevent.
-    let asm = match (spec.kitgun.as_deref(), assembly) {
-        (None, None) => None,
-        (None, Some(_)) => {
+    let asm = match (crate::data::weapons::assembly::is_modular(spec), assembly) {
+        (false, None) => None,
+        (false, Some(_)) => {
             return Err(format!("{} is not assembled from parts", spec.name));
         }
         // NAMED NOTHING? THE WEAPON'S OWN DEFAULT, which is what an arsenal
         // slot holds before anyone touches it — a Kitgun is never unassembled.
-        (Some(record), None) => crate::data::weapons::kitguns::default_assembly(record),
-        (Some(_), Some(a)) => {
+        (true, None) => crate::data::weapons::assembly::default_for(spec),
+        (true, Some(a)) => {
             if crate::data::weapons::spec_assembled(spec, Some(a)).is_none() {
                 return Err(format!(
                     "{} and {} do not make a {}",
-                    a.grip, a.loader, spec.name
+                    a.grip(), a.component(), spec.name
                 ));
             }
             Some(a.clone())

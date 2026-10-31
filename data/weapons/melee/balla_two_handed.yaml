@@ -1,0 +1,59 @@
+# see notes: zaw_assembly
+# see notes: melee_shared_package_actions
+id: balla_two_handed
+name: Balla (Staff)
+slot: melee
+weapon_type: melee
+class: staff
+form: neutral
+default_form: true
+transform_group: balla_two_handed
+mod_pools:
+- melee
+- staff
+mastery_rank: 0
+max_rank: 30
+riven_family: Balla
+disposition: 1.2
+polarities: []
+stance_polarity: madurai
+internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipOne
+zaw:
+  strike: balla
+  handedness: two_handed
+combo_duration_seconds: 5.0
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Balla
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.083
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  punch_through_m: 0.0
+  range_m: 3.0
+  follow_through: 0.5
+  heavy:
+    multiplier: 5
+    windup_seconds: 0.69999999
+  damage:
+    impact: 11.0
+    puncture: 132.0
+    slash: 77.0
+  slam:
+    damage:
+      blast: 440.0
+    radius_m: 6.0
+    blast_kind: slam
+    status_chance: 0.1
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    forced_procs:
+    - impact
+    takes_multishot: false
+  combo_script: []

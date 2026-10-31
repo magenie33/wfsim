@@ -20,8 +20,17 @@ use super::*;
 /// no numbers, and inventing some would be worse than saying so.
 pub fn spec_assembled<'a>(
     s: &'a WeaponSpec,
-    a: Option<&crate::data::weapons::kitguns::Assembly>,
+    a: Option<&super::assembly::Assembly>,
 ) -> Option<std::borrow::Cow<'a, WeaponSpec>> {
+    if s.zaw.is_some() {
+        let owned;
+        let a = match a {
+            Some(a) => a,
+            None => { owned = super::assembly::default_for(s)?; &owned }
+        };
+        let super::assembly::Assembly::Zaw(parts) = a else { return None; };
+        return super::zaws::compose(s, parts).map(std::borrow::Cow::Owned);
+    }
     let Some(chamber_id) = s.kitgun.as_deref() else {
         return Some(std::borrow::Cow::Borrowed(s));
     };
@@ -37,10 +46,11 @@ pub fn spec_assembled<'a>(
     let a = match a {
         Some(a) => a,
         None => {
-            owned = crate::data::weapons::kitguns::default_assembly(chamber_id)?;
+            owned = super::assembly::default_for(s)?;
             &owned
         }
     };
+    let super::assembly::Assembly::Kitgun(a) = a else { return None; };
     let built = crate::data::weapons::kitguns::assemble(a)?;
     // THE ASSEMBLY MUST BE THIS ENTRY'S. The grip picks the slot and the slot
     // picks the chamber record, so a secondary grip on the primary entry
@@ -150,7 +160,7 @@ pub fn base_panel(id: &str, frenzy_active: bool) -> WeaponBase {
 pub fn base_panel_assembled(
     id: &str,
     frenzy_active: bool,
-    assembly: Option<&crate::data::weapons::kitguns::Assembly>,
+    assembly: Option<&super::assembly::Assembly>,
 ) -> WeaponBase {
     let raw = spec(id).unwrap_or_else(|| panic!("unknown weapon id: {id}"));
     let composed = spec_assembled(raw, assembly).unwrap_or_else(|| {

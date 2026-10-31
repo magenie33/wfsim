@@ -1,0 +1,34 @@
+# see notes: zaw_assembly
+# see notes: melee_shared_package_actions
+id: plague_kripath_two_handed_forward
+name: Plague Kripath (Polearm)
+inherits: plague_kripath_two_handed
+form: forward
+transform_group: plague_kripath_two_handed
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Plague_Kripath
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0330000000000001
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.22
+  crit_multiplier: 2.2
+  status_chance: 0.18
+  punch_through_m: 0.0
+  range_m: 3.0
+  follow_through: 0.60000002
+  heavy:
+    multiplier: 6
+    windup_seconds: 0.69999999
+  damage:
+    impact: 33.18000000000001
+    puncture: 73.18
+    slash: 52.18000000000001
+    viral: 67.18
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmMeleeTree
+    context: CC_GROUND_BRANCH_A

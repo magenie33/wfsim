@@ -1,0 +1,18 @@
+id: exodia_force
+name: Exodia Force
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/StatusTriggerRadialDamage
+rarity: rare
+max_rank: 3
+description: "On Status Effect:\r\n50% chance to deal X% Weapon Damage to enemies within 6m."
+equip_traits:
+- zaw
+seats:
+- zaw
+source:
+  url: https://wiki.warframe.com/w/Exodia_Force
+effects:
+- kind: unmodelled
+  rank0: 0.5
+  rankMax: 2
+unmodeled:
+- Status effects do not create the separate radial damage burst.

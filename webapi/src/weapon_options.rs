@@ -19,39 +19,11 @@ use crate::request::{get_f64, get_str};
 /// other slot, a loader that does not exist — which would otherwise compose to
 /// nothing and panic the panel, and which arrives from a stale share link
 /// rather than from an omission.
-pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::data::weapons::kitguns::Assembly> {
+pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::data::weapons::assembly::Assembly> {
     let spec = wfsim_engine::data::weapons::spec(id)?;
-    let record = spec.kitgun.as_deref()?;
-    let fallback = wfsim_engine::data::weapons::kitguns::default_assembly(record);
-    let Some(a) = v.get("assembly") else { return fallback };
-    let mut asked = wfsim_engine::data::weapons::kitguns::Assembly {
-        // THE CHAMBER IS THE WEAPON'S, never the request's. A request that could
-        // name one would be naming a different weapon than the id it sent.
-        chamber: fallback.as_ref().map(|f| f.chamber.clone()).unwrap_or_default(),
-        grip: get_str(a, "grip", "").to_string(),
-        loader: get_str(a, "loader", "").to_string(),
-    };
-    // PART BY PART, not all or nothing: a stale link naming a grip from the
-    // other slot must not also throw away a loader it named correctly. That is
-    // `valence_element_of`'s rule — it repairs the ELEMENT and leaves the bonus
-    // alone — and the difference is visible, since a discarded loader moves the
-    // magazine, the reload and all three of crit, crit damage and status.
-    let f = fallback?;
-    if !wfsim_engine::data::weapons::kitguns::grips()
-        .iter()
-        .any(|g| g.id == asked.grip && Some(g.slot.as_str()) == kitgun_slot(spec))
-    {
-        asked.grip = f.grip.clone();
-    }
-    if !wfsim_engine::data::weapons::kitguns::loaders().iter().any(|l| l.id == asked.loader) {
-        asked.loader = f.loader.clone();
-    }
-    // …and if the pair still does not compose, the whole default, because a
-    // panel is about to be derived from it and there is nothing else to give.
-    match wfsim_engine::data::weapons::spec_assembled(spec, Some(&asked)) {
-        Some(_) => Some(asked),
-        None => Some(f),
-    }
+    let a = v.get("assembly").unwrap_or(&Value::Null);
+    wfsim_engine::data::weapons::assembly::repaired(spec,
+        get_str(a, "grip", ""), get_str(a, "loader", ""), get_str(a, "link", ""))
 }
 
 /// THE PARTS A BOARD PAYLOAD NAMES, as the engine's own shape.
@@ -64,35 +36,9 @@ pub(crate) fn assembly_of(v: &Value, id: &str) -> Option<wfsim_engine::data::wea
 /// there has to be something to draw; this is answering whether a BUILD is one
 /// the board can take, and quietly swapping a part would accept a record that
 /// scores as something else.
-pub(crate) fn board_assembly_of(v: &Value) -> Option<wfsim_engine::data::weapons::kitguns::Assembly> {
-    let grip = get_str(v, "grip", "");
-    let loader = get_str(v, "loader", "");
-    if grip.is_empty() && loader.is_empty() {
-        return None;
-    }
-    // THE CHAMBER'S WEAPON ID, not the per-slot RECORD id `spec.kitgun` holds:
-    // `Assembly::chamber_record` looks the record up by (chamber, slot) and the
-    // slot follows from the grip, so a record id here resolves to nothing and
-    // every legal pair reads as "these do not make a Tombfinger".
-    let chamber = wfsim_engine::data::weapons::spec(get_str(v, "weapon", ""))
-        .and_then(|s| s.kitgun.clone())
-        .and_then(|r| wfsim_engine::data::weapons::kitguns::default_assembly(&r))
-        .map(|d| d.chamber)
-        .unwrap_or_default();
-    Some(wfsim_engine::data::weapons::kitguns::Assembly {
-        chamber,
-        grip: grip.to_string(),
-        loader: loader.to_string(),
-    })
-}
-
-/// Which slot a modular entry's grips must belong to.
-fn kitgun_slot(spec: &wfsim_engine::data::weapons::WeaponSpec) -> Option<&str> {
-    let record = spec.kitgun.as_deref()?;
-    wfsim_engine::data::weapons::kitguns::chambers()
-        .iter()
-        .find(|c| c.id == record)
-        .map(|c| c.slot.as_str())
+pub(crate) fn board_assembly_of(v: &Value) -> Option<wfsim_engine::data::weapons::assembly::Assembly> {
+    wfsim_engine::data::weapons::assembly::of(get_str(v,"weapon",""),
+        get_str(v,"grip",""), get_str(v,"loader",""), get_str(v,"link",""))
 }
 
 /// THE VALENCE BONUS a request asked for, applied to a base.

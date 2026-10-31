@@ -79,7 +79,7 @@ pub(super) const INHERITED: [&str; 31] = [
 /// ...and `deployments` and `valence`, which are MAPS and would need a deep
 /// merge to inherit partially. They are all-or-nothing: a form that states
 /// neither takes its weapon's whole block.
-pub(super) const INHERITED_BLOCKS: [&str; 4] = ["deployments", "valence", "sniper_combo", "scope"];
+pub(super) const INHERITED_BLOCKS: [&str; 5] = ["deployments", "valence", "sniper_combo", "scope", "zaw"];
 
 /// Every weapon entry in `data/weapons/` (embedded), parsed once.
 pub fn all() -> &'static [WeaponSpec] {
@@ -232,6 +232,7 @@ pub const WEAPON_TAGS: &[(&str, &str, &str)] = &[
     ("syndicate", "Syndicate", "syndicate"),
     ("incarnon", "Incarnon", "incarnon"),
     ("kitgun", "Kitgun", ""),
+    ("zaw", "Zaw", ""),
 ];
 
 impl WeaponSpec {
@@ -240,7 +241,11 @@ impl WeaponSpec {
     pub fn tags(&self) -> Vec<&'static str> {
         WEAPON_TAGS
             .iter()
-            .filter(|(id, _, t)| if *id == "kitgun" { self.kitgun.is_some() } else { self.traits.iter().any(|x| x == t) })
+            .filter(|(id, _, t)| match *id {
+                "kitgun" => self.kitgun.is_some(),
+                "zaw" => self.zaw.is_some(),
+                _ => self.traits.iter().any(|x| x == t),
+            })
             .map(|(id, _, _)| *id)
             .collect()
     }

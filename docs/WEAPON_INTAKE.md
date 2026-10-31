@@ -52,7 +52,9 @@ Primary Compression rows — is read off the chamber's own page and the catalogs
 exactly as for any weapon. `every_modular_entry_matches_its_chamber` holds the
 facts both files state.
 
-ZAWS stay out: they are the same shape and MELEE, and out by class.
+ZAWS are in as 22 entries, one per strike and handedness. Their class fixes
+the stance pool; grips and links compose through the shared `assembly` axis
+(`docs/ZAW.md`).
 `spectra_vandal`'s `internal_name` contains `CorpusModularPistol`, which is DE's
 folder for the Kitgun rig it shares and not a statement that it is modular.
 

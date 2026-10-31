@@ -198,5 +198,28 @@ else {
     p.description);
 }
 
+// Exercise both compact encoders with indexed parts as well as today's literal-id fallback.
+const codecSource = readFileSync(new URL('../worker/share_codec.js', import.meta.url), 'utf8');
+const codec = await import('data:text/javascript;base64,' + Buffer.from(codecSource
+  + '\nexport { packV3, packV4 };').toString('base64'));
+const ids = ['sepfahn_one_handed', 'peye', 'vargeet_ii_jai', 'tombfinger_secondary', 'haymaker', 'killstream'];
+codec.useShareHost({ index: { to: new Map(ids.map((v, i) => [v, i])), from: new Map(ids.map((v, i) => [i, v])) },
+  evoPrefixFor: () => '', rivenName: () => '' });
+for (const [weapon, parts, expected] of [
+  ['sepfahn_one_handed', ['peye', 'vargeet_ii_jai', 'link'], { grip: 'peye', link: 'vargeet_ii_jai' }],
+  ['tombfinger_secondary', ['haymaker', 'killstream'], { grip: 'haymaker', loader: 'killstream' }],
+]) {
+  const payload = [2, weapon, 0, [], [], [], [], 0, 0, 0, 0, parts];
+  for (const [version, pack] of [['3', codec.packV3], ['4', codec.packV4]]) {
+    const packed = pack(payload);
+    const back = await codec.decodeShare(version + packed);
+    check(version + ' preserves ' + (parts[2] || 'loader') + ' as its component kind',
+      JSON.stringify(back.assembly) === JSON.stringify(expected), JSON.stringify(back.assembly));
+    if (version === '4' && parts.length === 2) {
+      check('legacy Kitgun v4 bytes stay fixed', packed === '03~~~~~~~~0405', packed);
+    }
+  }
+}
+
 console.log(failures ? `\n${failures} failed` : "\nshort links store a build and nothing else");
 process.exit(failures ? 1 : 0);

@@ -22,7 +22,7 @@ fn an_assembly_composes_all_the_way_into_a_panel() {
         "tombfinger_secondary",
         false,
         &[],
-        Some(&dflt),
+        Some(&dflt.clone().into()),
     );
     assert_eq!(unnamed.base_vector, named.base_vector);
     assert_eq!(unnamed.base_fire_rate, named.base_fire_rate);
@@ -42,7 +42,7 @@ fn an_assembly_composes_all_the_way_into_a_panel() {
         "tombfinger_secondary",
         false,
         &[],
-        Some(&haymaker),
+        Some(&haymaker.clone().into()),
     );
 
     // THE DIRECT HIT IS WHAT THE EXPLOSION LEAVES. Haymaker is 32 Impact +
@@ -86,12 +86,12 @@ fn an_assembly_composes_all_the_way_into_a_panel() {
         loader: "thunderdrum".into(),
     };
     assert!(
-        spec_assembled(spec("tombfinger_secondary").unwrap(), Some(&tremor)).is_none(),
+        spec_assembled(spec("tombfinger_secondary").unwrap(), Some(&tremor.clone().into())).is_none(),
         "a primary grip composed into the secondary entry"
     );
     // …and the same grip on the PRIMARY entry does.
     assert!(
-        spec_assembled(spec("tombfinger_primary").unwrap(), Some(&tremor)).is_some()
+        spec_assembled(spec("tombfinger_primary").unwrap(), Some(&tremor.clone().into())).is_some()
     );
 }
 
@@ -218,7 +218,7 @@ fn every_grip_of_every_modular_entry_builds_and_fires() {
         let c = crate::data::weapons::kitguns::chamber(s.kitgun.as_deref().unwrap()).unwrap();
         for g in crate::data::weapons::kitguns::grips().iter().filter(|g| g.slot == c.slot) {
             let a = Assembly { chamber: c.chamber.clone(), grip: g.id.clone(), loader: "bellows".into() };
-            let base = crate::model::WeaponBase::from_data_assembled(&s.id, false, &[], Some(&a));
+            let base = crate::model::WeaponBase::from_data_assembled(&s.id, false, &[], Some(&a.clone().into()));
             let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
             let p = crate::fight::FightParams::from_panel(
                 &panel, &arena, &crate::data::arcanes::ArcaneFx::none());
@@ -237,14 +237,14 @@ fn a_beam_kitguns_reach_is_its_grips() {
     use crate::data::weapons::kitguns::Assembly;
     let reach = |grip: &str| {
         let a = Assembly { chamber: "gaze".into(), grip: grip.into(), loader: "bellows".into() };
-        let s = spec_assembled(spec("gaze_secondary").unwrap(), Some(&a)).expect("composes");
+        let s = spec_assembled(spec("gaze_secondary").unwrap(), Some(&a.clone().into())).expect("composes");
         s.attack.beam.as_ref().expect("a beam").range_m
     };
     assert_eq!(reach("haymaker"), 22.0);
     assert_eq!(reach("gibber"), 41.0);
     // A FLAT REACH LANDS ON THE ATTACK: Catchmoon's 42 m wall.
     let a = Assembly { chamber: "catchmoon".into(), grip: "brash".into(), loader: "bellows".into() };
-    let s = spec_assembled(spec("catchmoon_primary").unwrap(), Some(&a)).expect("composes");
+    let s = spec_assembled(spec("catchmoon_primary").unwrap(), Some(&a.clone().into())).expect("composes");
     assert_eq!(s.attack.range_m.as_ref().map(super::RangeSpec::metres), Some(42.0));
     // …AND THE PAGE'S INFINITE BODY PUNCH THROUGH SURVIVES a module that states none.
     assert!(s.attack.infinite_body_punch_through);

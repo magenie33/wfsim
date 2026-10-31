@@ -1,0 +1,32 @@
+# see notes: zaw_assembly
+# see notes: melee_shared_package_actions
+id: kronsh_one_handed_slide
+name: Kronsh (Machete)
+inherits: kronsh_one_handed
+form: slide
+transform_group: kronsh_one_handed
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Kronsh
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 0.933
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  punch_through_m: 0.0
+  range_m: 2.6
+  follow_through: 0.69999999
+  heavy:
+    multiplier: 3.75
+    windup_seconds: 0.69999999
+  damage:
+    impact: 161.0
+    slash: 69.0
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/MacheteMeleeTree
+    context: CC_SLIDING

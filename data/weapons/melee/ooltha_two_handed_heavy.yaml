@@ -1,0 +1,52 @@
+# see notes: zaw_assembly
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
+id: ooltha_two_handed_heavy
+name: Ooltha (Staff)
+inherits: ooltha_two_handed
+form: heavy
+transform_group: ooltha_two_handed
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Ooltha
+unmodeled:
+- reason: heavy_charge_share_assumed
+  published: 0.5
+  charge: 0.16666666666666666
+  swing: 0.3333333333333333
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  punch_through_m: 0.0
+  range_m: 3.0
+  follow_through: 0.5
+  heavy:
+    multiplier: 5
+    windup_seconds: 0.69999999
+  damage:
+    impact: 22.0
+    puncture: 88.0
+    slash: 110.0
+  spends_combo: true
+  combo_script:
+  - multiplier: 5
+    windup_seconds: 0.16666666666666666
+    delay_seconds: 0.3333333333333333
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0
+  - multiplier: 5
+    windup_seconds: 0.16666666666666666
+    delay_seconds: 0.3333333333333333
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0

@@ -815,6 +815,15 @@ Steflos and Steflos Prime use the published approximate 2 m projectile width, da
 
 Corufell and Corufell Prime have a Charged Projectile heavy mode, with their own damage, crit, status, flight speed, falloff, infinite body punch through and combo spending. Projectile width and maximum flight range are unpublished. The loop fires one projectile per heavy input and uses the listed rate as recovery plus wind-up; opening-hit timing and the consecutive two-shot sequence are not calibrated. Prime’s innate wind-up factor is multiplied by the mod factor, with no measured stacking rule. The Citrine signature bonus, sliding scythe heavy and converting light-combo Tennokai into a projectile are not modelled. Each limitation is disclosed on the relevant entry.
 
+## Zaw Exodia
+
+Triumph and Valor use the existing additional-combo mechanism. Contagion and
+Force require independent damage instances; Epidemic needs its wave and
+suspension; Hunt needs pull movement; Brave and Might need energy regeneration,
+finishers and wielder healing. Those six are explicitly marked as unmodelled
+on their cards and contribute no effects. [ZAW.md](ZAW.md) owns their source
+rules and calibration requirements.
+
 ## Narin
 
 The builder resolves Narin’s base stats, ability costs and entered max-rank ability numbers with their stated strength, range and duration scaling. The Ice meter, Sangodae drops and pickups, its 50% Cold Extra Hit with a guaranteed Cold status, its fixed 15 s window, and the 25% ability damage multiplier are not run in combat. The passive is marked as weapon-affecting and unmodelled.

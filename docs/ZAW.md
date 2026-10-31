@@ -1,10 +1,13 @@
-# Zaw source intake
+# Zaws — weapon identity and assembly
 
-Zaws and Exodia arcanes are not enabled in the calculator. The
-[source bundle](zaws/source-intake.json) contains component statistics,
-weapon identities, package action bindings and eight Exodia records for their
-implementation. [Chinese names](zaws/names-zh.json) are transcribed from DE's
-Public Export, joined by internal name. No existing score changes here.
+Each strike has independent one-handed and two-handed weapons. Their parts
+compose before the shared weapon panel; the simulator, quick calculation,
+optimizer and library replay read that same composed weapon.
+
+`data/zaws/parts.yaml` is the authoritative runtime component table. The
+[source intake](zaws/source-intake.json) is a provenance snapshot, not a second
+runtime input. [Chinese names](zaws/names-zh.json) record DE's Public Export
+joins; runtime names and card text live in `data/i18n/zh/zaws.yaml`.
 
 ## Weapon identity
 
@@ -27,10 +30,9 @@ on its page belong to that handedness; links fit either entry. This follows
 | Rabvee | Machete | Hammer |
 | Sepfahn | Nikana | Staff |
 
-The proposed ids are `<strike>_one_handed` and `<strike>_two_handed`, with the
-class in their display labels. They are design candidates, not saved wire
-identifiers. Each pair shares its strike's internal name, wiki page, mastery
-track and riven family. Ordinary melee inputs remain modes of each weapon.
+The ids are `<strike>_one_handed` and `<strike>_two_handed`, with the
+class in their display labels. They identify saved builds and published
+records. Each pair shares its strike's internal name, wiki page, mastery track and riven family. Ordinary melee inputs remain modes of each weapon.
 
 Eleven strikes, five grips per handedness and sixteen links give 22 weapon
 entries, 80 assemblies per entry and 1,760 assemblies in total. A complete
@@ -67,9 +69,19 @@ The export's empty or placeholder combat statistics are not assembled stats.
 
 Component speed values retain the wiki's decimal precision. The package
 fixture's unassembled weapon has its own placeholder stats; it does not
-establish more precise grip/link speed values. Finished reach and follow-through
-also need their own source or measurement; the strike infobox is not a complete
-assembled weapon.
+establish more precise grip/link speed values. Reach comes from the finished
+weapon table on the
+[Zaw page](https://wiki.warframe.com/w/Zaw), not the strike infobox's 1 m
+preview. Follow Through comes from each handedness's package action tree.
+Slam elements, radii and forced effects use the package's per-strike/handedness
+records. Final slam damage, inherited critical stats and falloff follow the
+shared melee rule and [M69](measurements/M69-slam-radial-and-flat-add.md). The
+measured Magistar carries the same raw canCrit=false and obsolete event
+attenuation, so those native event fields are not final attack statistics.
+The staff and polearm heavy inputs retain the common melee class fallback:
+the package lacks complete attack events, so their charge/swing timing split
+is disclosed as assumed, like the existing melee entries. Heavy-slam recovery
+uses the existing 2 s maximum-height approximation.
 
 ## Existing engine paths
 
@@ -80,10 +92,11 @@ references support reuse of the existing melee timeline; they do not verify
 assembled component damage or special Exodia attacks in game.
 
 The existing `assembly` build axis is retained. Kitgun payloads keep
-`{grip, loader}`; the proposed Zaw payload is `{grip, link}`. The weapon's
+`{grip, loader}`; the Zaw payload is `{grip, link}`. The weapon's
 declared assembly family determines how the payload is validated and composed.
-The current `kitguns::Assembly` type and metadata helper cannot accept links
-without extension. Composition belongs before the shared weapon panel, so
+`weapons::assembly::Assembly` dispatches to Kitgun or Zaw composition. A
+wrong-handed grip is rejected for a library record; a stale saved build
+repairs only the invalid part and keeps its valid partner. Composition belongs before the shared weapon panel, so
 simulation and search receive the same assembled stats.
 
 Each Zaw has its ordinary `melee` arcane seat and an independent `zaw` seat.
@@ -96,12 +109,15 @@ field. Pax/Residual remains in the `kitgun` seat.
 All eight records include internal names, rarity, max rank, rank parameters
 and source links in the bundle. Their package rank-zero records distinguish
 native stat grants from script-driven attacks; a scripted zero is not a
-zero-damage effect. No row in this table implies a working runtime effect.
+zero-damage effect. Triumph and Valor are implemented through the measured M96/M97 combo
+mechanism. The other six remain selectable with an explicit not-modelled
+marker; their special attacks, control and wielder effects do not contribute
+to simulation or scores.
 
 | Arcane | Source rule at max rank | Integration requirement |
 | --- | --- | --- |
-| [Triumph](https://wiki.warframe.com/w/Exodia_Triumph) | +50% additional combo count chance | Reuse the measured combo mechanism, M96; package rank zero is 0.125. |
-| [Valor](https://wiki.warframe.com/w/Exodia_Valor) | +200% additional combo count chance against Lifted enemies | Reuse the existing target-conditioned combo stat; package rank zero is 0.5. |
+| [Triumph](https://wiki.warframe.com/w/Exodia_Triumph) | +50% additional combo count chance | Implemented: additional combo chance; package rank zero is 0.125. |
+| [Valor](https://wiki.warframe.com/w/Exodia_Valor) | +200% additional combo count chance against Lifted enemies | Implemented: the target must currently be Lifted; package rank zero is 0.5. |
 | [Brave](https://wiki.warframe.com/w/Exodia_Brave) | Direct heavy-attack kills grant 5 energy/s for 4 s, up to three stacks | Energy regeneration, channeling exclusions and refresh behavior need support. |
 | [Might](https://wiki.warframe.com/w/Exodia_Might) | Finisher kills have 50% chance to grant 30% melee lifesteal for 8 s | Finisher activation and wielder healing; ground finishers are excluded by the page. |
 | [Hunt](https://wiki.warframe.com/w/Exodia_Hunt) | Slams have 50% chance to pull within 12 m | Pull geometry and its short persistent window; it is not extra melee reach. |
@@ -128,9 +144,12 @@ finite stats and damage components that sum to their total; all 22 package
 tree bindings resolve. Removing a strike was rejected by the intake guard.
 These are source consistency checks, not golden game measurements.
 
-Runtime work includes assembling the two weapon identities, metadata/UI,
-request validation, sharing, optimizer enumeration and board persistence.
-Triumph and Valor can use existing measured mechanics. Special attacks need
-their own calibration before they contribute scores. All 37 components and
-eight arcanes have official localized names and internal ids in the intake;
-assembled geometry and component precision remain open source work.
+The `assembly` axis retains each complete pair in presets, requests, shares,
+optimizer replays and canonical library records. Kitgun shares keep the existing
+two-id tuple; Zaw shares append `link` as the component tag. The compact v4
+assembly field adds an `l` suffix; older Kitgun fields are unchanged. Ordinary
+weapon identities are unchanged. Quick calculation enumerates the compatible
+parts; optimization keeps the chosen assembly fixed, as it does for Kitguns.
+
+New special Exodia attacks require their own in-game calibration. Source-derived
+composition and integration tests do not replace golden game measurements.

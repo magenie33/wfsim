@@ -76,6 +76,18 @@ def transform_groups():
     return out
 
 
+def modular_subjects(groups):
+    # One modular strike/chamber supplies art for its two independent entries.
+    families = {}
+    for path in sorted((ROOT / "data" / "weapons").rglob("*.yaml")):
+        text = path.read_text(encoding="utf-8")
+        mid = re.search(r"^id:\s*(\S+)", text, re.M)
+        internal = re.search(r"^internal_name:\s*(\S+)", text, re.M)
+        if mid and internal and (re.search(r"^kitgun:", text, re.M) or re.search(r"^zaw:", text, re.M)):
+            families[groups[mid.group(1)]] = internal.group(1)
+    return {mid: families.get(group, group) for mid, group in groups.items()}
+
+
 def texture_names(internal):
     """File names for DE's texture of an item, shortest first: the file's own
     name, then with one more folder in front each time — `CritChanceWhileAiming.jpg`,
@@ -108,9 +120,14 @@ def main():
         taken[m.group(1)] = m.group(2).removeprefix("wiki:")
 
     group = transform_groups()
+    subject = modular_subjects(group)
 
     def stem(weapon_id):
         return group.get(weapon_id, weapon_id)
+
+    for mid in group:
+        if not texture_of.get(mid):
+            texture_of[mid] = texture_of.get(stem(mid))
 
     missing, unresolved, collided = {}, [], []
     for kind, section in SECTIONS:
@@ -144,9 +161,9 @@ def main():
             owners = [
                 other
                 for other, img in taken.items()
-                if img == image and stem(other) != stem(mid)
+                if img == image and subject.get(other, stem(other)) != subject.get(mid, stem(mid))
             ]
-            already = [i for i, _ in missing.get(section, []) if stem(i) != stem(mid)]
+            already = [i for i, _ in missing.get(section, []) if subject.get(i, stem(i)) != subject.get(mid, stem(mid))]
             owners += [
                 i for i, img in missing.get(section, []) if img == image and i in already
             ]

@@ -759,7 +759,7 @@ def engine_files() -> dict:
         body = code[rel].encode("utf-8") if rel in code else p.read_bytes().replace(bytes([13, 10]), bytes([10]))
         if rel.startswith("data/"):
             body = without_prose(lean_yaml(body.decode("utf-8"))).encode("utf-8")
-        if rel.startswith(("data/weapons/", "data/kitguns/")) and rel.endswith(".yaml"):
+        if rel.startswith(("data/weapons/", "data/kitguns/", "data/zaws/")) and rel.endswith(".yaml"):
             out[rel] = hashlib.sha256(body).hexdigest()[:12]
         else:
             rest.update(rel.encode("utf-8") + bytes(1) + body + bytes(1))
@@ -792,6 +792,8 @@ def changed_weapons(paths) -> set | None:
             ids |= {s["id"] for s in specs if s.get("kitgun") == Path(rel).stem}
         elif rel.startswith("data/kitguns/"):
             ids |= {s["id"] for s in specs if s.get("kitgun")}
+        elif rel.startswith("data/zaws/"):
+            ids |= {s["id"] for s in specs if s.get("zaw")}
         elif rel.startswith("data/weapons/"):
             p = ROOT / rel
             spec = yload(p.read_text(encoding="utf-8")) if p.is_file() else None

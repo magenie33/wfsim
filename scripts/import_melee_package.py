@@ -234,7 +234,15 @@ def main():
             root = weapons[root["inherits"]]
         if root.get("slot") != "melee":
             continue
-        source = raw["weapons"].get(root.get("internal_name"))
+        if root.get("zaw"):
+            hand = {"one_handed": "one", "two_handed": "two"}[root["zaw"]["handedness"]]
+            source = dict(raw["weapons"]["/Lotus/Weapons/Ostron/Melee/LotusModularWeapon"])
+            source.update(raw["zaws"][root["internal_name"]][hand])
+            # Unassembled package scalars are placeholders; parts own the panel.
+            source["damage"] = {"amount": 0}
+            source["attackSpeed"] = 0
+        else:
+            source = raw["weapons"].get(root.get("internal_name"))
         if source is None:
             weapon_gaps.append([w["id"], "weapon absent from package export"])
             continue

@@ -1,0 +1,52 @@
+# see notes: zaw_assembly
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
+id: dehtat_two_handed_heavy
+name: Dehtat (Polearm)
+inherits: dehtat_two_handed
+form: heavy
+transform_group: dehtat_two_handed
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Dehtat
+unmodeled:
+- reason: heavy_charge_share_assumed
+  published: 0.9
+  charge: 0.3
+  swing: 0.6
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.083
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  punch_through_m: 0.0
+  range_m: 3.0
+  follow_through: 0.60000002
+  heavy:
+    multiplier: 6
+    windup_seconds: 0.69999999
+  damage:
+    impact: 23.979999999999997
+    puncture: 119.9
+    slash: 95.91999999999999
+  spends_combo: true
+  combo_script:
+  - multiplier: 6
+    windup_seconds: 0.3
+    delay_seconds: 0.6
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0
+  - multiplier: 6
+    windup_seconds: 0.3
+    delay_seconds: 0.6
+    forced_procs:
+    - knockdown
+    combo_points: 0
+    combo_points_base: 0

@@ -37,8 +37,7 @@ pub(crate) struct Row {
     /// BUILD — a grip sets damage, fire rate and the charge — so a row that
     /// dropped them would publish a number for a weapon nobody submitted, and
     /// two assemblies of one chamber would be one row.
-    pub(crate) grip: String,
-    pub(crate) loader: String,
+    pub(crate) assembly: Option<wfsim_engine::data::weapons::assembly::Assembly>,
     /// THE RIVEN THIS BUILD CARRIES, as a SHAPE — which stats and which is the
     /// malus, never a roll. A row states a shape and the shape is stored at its
     /// own ceiling — the god roll at max rank — for the reason every row is
@@ -190,11 +189,9 @@ pub(crate) fn page_row(bench_id: &str, r: &Row) -> Value {
     // …AND THE PARTS. The builder reads `row.grip` / `row.loader` to open a
     // board row as a build, so a row that omitted them opened as the chamber's
     // DEFAULT assembly — a different weapon from the one the number is for.
-    if !r.grip.is_empty() {
-        if let Some(o) = row.as_object_mut() {
-            o.insert("grip".into(), json!(r.grip));
-            o.insert("loader".into(), json!(r.loader));
-        }
+    if let Some(a) = &r.assembly {
+        row.as_object_mut().expect("row object")
+            .extend(a.parts().as_object().expect("parts object").clone());
     }
     row
 }
@@ -261,23 +258,9 @@ mod page_row_tests {
                     bonuses: strings(rv, "bonuses"),
                     malus: rv.get("malus").and_then(Value::as_str).map(str::to_owned),
                 });
-                let grip = r.get("grip").and_then(Value::as_str).unwrap_or("");
-                let assembly = (!grip.is_empty()).then(|| {
-                    let chamber = wfsim_engine::data::weapons::spec(&weapon)
-                        .and_then(|s| s.kitgun.clone())
-                        .and_then(|k| wfsim_engine::data::weapons::kitguns::default_assembly(&k))
-                        .map(|d| d.chamber)
-                        .unwrap_or_default();
-                    wfsim_engine::data::weapons::kitguns::Assembly {
-                        chamber,
-                        grip: grip.to_string(),
-                        loader: r
-                            .get("loader")
-                            .and_then(Value::as_str)
-                            .unwrap_or_default()
-                            .to_string(),
-                    }
-                });
+                let part = |key| r.get(key).and_then(Value::as_str).unwrap_or("");
+                let assembly = wfsim_engine::data::weapons::assembly::of(
+                    &weapon, part("grip"), part("loader"), part("link"));
                 let v = wfsim_engine::board::builds::validate_for_board_with(
                     bench,
                     &weapon,
@@ -339,11 +322,31 @@ mod page_row_tests {
             arcanes: vec!["secondary_deadhead".into()],
             valence: String::new(),
             exilus: String::new(),
-            grip: String::new(),
-            loader: String::new(),
+            assembly: None,
             riven,
             measured_at: "2026-10-05T13:52:07Z".into(),
             measured_by: "verified:67e27b73c3ee".into(),
+        }
+    }
+
+    #[test]
+    fn published_modular_rows_keep_their_component_kind() {
+        for (weapon, grip, loader, link) in [
+            ("sepfahn_one_handed", "peye", "", "vargeet_ii_jai"),
+            ("tombfinger_secondary", "haymaker", "killstream", ""),
+        ] {
+            let mut r = row(None);
+            r.weapon = weapon.into();
+            r.assembly = wfsim_engine::data::weapons::assembly::of(weapon, grip, loader, link);
+            let out = page_row("standard_single_target", &r);
+            assert_eq!(out["grip"], grip);
+            if link.is_empty() {
+                assert_eq!(out["loader"], loader);
+                assert!(out.get("link").is_none());
+            } else {
+                assert_eq!(out["link"], link);
+                assert!(out.get("loader").is_none());
+            }
         }
     }
 

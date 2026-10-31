@@ -17,10 +17,11 @@ fn no_two_weapons_want_the_same_url() {
         let slug = w.name.split(" (").next().unwrap_or(&w.name).replace(' ', "_");
         by_slug.entry(slug).or_default().push(w);
     }
-    let chamber = |w: &super::WeaponSpec| {
+    fn chamber(w: &super::WeaponSpec) -> Option<&str> {
+        if let Some(z) = &w.zaw { return Some(z.strike.as_str()); }
         let r = w.kitgun.as_deref()?;
         crate::data::weapons::kitguns::chamber(r).map(|c| c.chamber.as_str())
-    };
+    }
     let clashes: Vec<String> = by_slug
         .iter()
         .filter(|(_, ws)| ws.len() > 1)
@@ -40,5 +41,5 @@ fn no_two_weapons_want_the_same_url() {
     );
     // …AND THE EXCEPTION IS USED: every chamber is two entries on one slug.
     let shared = by_slug.values().filter(|ws| ws.len() == 2 && chamber(ws[0]).is_some()).count();
-    assert_eq!(shared, 6, "six chambers, each one page for its two slots");
+    assert_eq!(shared, 17, "six chambers and eleven strikes each share a wiki page");
 }

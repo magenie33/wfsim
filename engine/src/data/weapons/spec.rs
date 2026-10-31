@@ -270,6 +270,8 @@ pub struct WeaponSpec {
     /// `base_panel` has to learn what a Kitgun is.
     #[serde(default)]
     pub kitgun: Option<String>,
+    #[serde(default)]
+    pub zaw: Option<super::zaws::Reference>,
     /// ROUNDS A SECOND under Pax Charge, filled in by [`spec_assembled`] from
     /// the chamber. Not written in any weapon yaml: it is the chamber's, and a
     /// roster entry that restated it would be the same number written twice.

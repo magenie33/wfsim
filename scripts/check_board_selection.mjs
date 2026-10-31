@@ -6,7 +6,7 @@ try {
   const result = await app.evaluate(`(async () => {
     if (typeof benchSelectorHtml !== 'function') return { shared: false };
     const out = { shared: true }, all = benchList();
-    const kitguns = META.weapons.filter(w => w.assembly);
+    const kitguns = META.weapons.filter(w => w.assembly && w.assembly.chamber);
     out.kitgunSlots = kitguns.length > 0 && kitguns.every(w => {
       const pair = kitguns.filter(k => k.assembly.chamber === w.assembly.chamber);
       const entries = benchEntries(all[0], pair);

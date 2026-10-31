@@ -808,6 +808,10 @@ mod under one display name, and the bare path is the player's card: join by
 
 ## 9. Sources and shared action data
 
+[Zaws](ZAW.md) share these actions. Each strike has two weapon entries with
+fixed classes; their compatible grips and links compose before this timeline.
+Exodia occupies its own seat alongside the ordinary melee arcane.
+
 The package export supplies available base stats and attack sequences. Weapon
 metadata, reach, geometry and properties absent from the export retain their
 wiki sources (`notes: melee_from_the_modules`). Fixed-stance measured damage

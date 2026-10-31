@@ -22,6 +22,8 @@ impl ArcaneDef {
         for e in &self.effects {
             match e {
                 ArcEffect::Buff { scale, .. }
+                | ArcEffect::ComboCountChance(scale)
+                | ArcEffect::ComboCountChanceOnLifted(scale)
                 | ArcEffect::TennoScaled { cap: scale, .. }
                 | ArcEffect::CondCritChance(scale)
                 | ArcEffect::WeakpointCritChance(scale)

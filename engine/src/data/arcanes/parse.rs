@@ -80,6 +80,8 @@ pub(super) fn effect(v: &Value) -> Option<ArcEffect> {
     let kind = s(v, "kind")?;
     let inert = |why: &str| Some(ArcEffect::Inert(why.to_string()));
     Some(match kind {
+        "combo_count_chance" => ArcEffect::ComboCountChance(scale(v)),
+        "combo_count_chance_on_lifted" => ArcEffect::ComboCountChanceOnLifted(scale(v)),
         "buff" => {
             let trigger = s(v, "trigger")?;
             let grants = s(v, "grants")?;

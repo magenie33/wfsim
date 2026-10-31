@@ -1,0 +1,16 @@
+id: exodia_triumph
+name: Exodia Triumph
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/StatusChannelingDamage
+rarity: uncommon
+max_rank: 3
+description: +X% Additional Combo Count Chance
+equip_traits:
+- zaw
+seats:
+- zaw
+source:
+  url: https://wiki.warframe.com/w/Exodia_Triumph
+effects:
+- kind: combo_count_chance
+  rank0: 0.125
+  rankMax: 0.5

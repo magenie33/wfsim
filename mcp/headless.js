@@ -26,6 +26,10 @@ function headlessApplyNames(meta, i18n) {
   const over = (x, table) => { x.name_en = x.name; x.name = headlessLN(i18n, table, x.id, x.name); };
   for (const w of meta.weapons || []) {
     over(w, "weapons");
+    for (const key of ["grips", "loaders", "links"]) for (const p of (w.assembly || {})[key] || []) {
+      p.name_en = p.name;
+      p.name = (i18n.ui || {})[p.name] || p.name;
+    }
     for (const t of w.evolutions || []) for (const o of t.options || []) over(o, "evolutions");
   }
   for (const e of meta.enemies || []) over(e, "enemies");
@@ -265,18 +269,18 @@ function headlessBoardRowAxes(say, w, row, defs) {
     arcane: (row.arcanes || []).length ? row.arcanes : ["none"],
     arcaneRank: [null],
     valence: row.valence ? { element: row.valence, bonus: (w.valence || {}).max || 0 } : null,
-    assembly: row.grip ? { grip: row.grip, loader: row.loader } : null,
+    assembly: row.grip ? { grip: row.grip, ...(row.link ? { link: row.link } : { loader: row.loader }) } : null,
   };
 }
 
 // ---- a build as a card -------------------------------------------------------------
 
 /// A MODULAR WEAPON'S TWO PARTS AS CHIPS, named from its own assembly spec.
-function headlessPartChips(w, grip, loader) {
+function headlessPartChips(w, grip, component) {
   const s = (w || {}).assembly || {};
   const name = (list, id) => ((list || []).find((x) => x.id === id) || {}).name || headlessPrettify(id);
   return [grip && { label: name(s.grips, grip), key: "part:" + grip },
-    loader && { label: name(s.loaders, loader), key: "part:" + loader }].filter(Boolean);
+    component && { label: name(s[(s.component || "loader") + "s"], component), key: "part:" + component }].filter(Boolean);
 }
 
 /// A WEAPON'S EVOLUTIONS AS CHIPS, tier first, by id.
@@ -365,7 +369,7 @@ function headlessCardOfState(say, st, w, riven, pinned = () => "") {
           cls: pinned("arcane:" + i) } : null;
       }).filter(Boolean)
       : null,
-    parts: st.assembly ? headlessPartChips(w, st.assembly.grip, st.assembly.loader) : null,
+    parts: st.assembly ? headlessPartChips(w, st.assembly.grip, st.assembly.link || st.assembly.loader) : null,
     evolutions: w.uses_evo2 ? headlessEvoChips(w, Object.values(st.evoSel || {}).filter(Boolean)) : null,
     valence: w.valence && st.valence
       ? `${say.dt(st.valence.element)} +${Math.round(st.valence.bonus * 1000) / 10}%` : null,
@@ -987,7 +991,7 @@ function boardRowParts(r) {
   if (ex) out.push({ axis: "mods", pos: "exilus", id: ex });
   (r.arcanes || []).forEach((id, i) => { if (id && id !== "none") out.push({ axis: "arcanes", pos: `arcanes#${i}`, id }); });
   (r.evolutions || []).forEach((id, i) => { if (id) out.push({ axis: "evolutions", pos: `evolutions#${i}`, id }); });
-  if (r.grip) out.push({ axis: "assembly", pos: "assembly#grip", id: r.grip }, { axis: "assembly", pos: "assembly#loader", id: r.loader });
+  if (r.grip) out.push({ axis: "assembly", pos: "assembly#grip", id: r.grip }, { axis: "assembly", pos: r.link ? "assembly#link" : "assembly#loader", id: r.link || r.loader });
   if (r.valence) out.push({ axis: "valence", pos: "valence", id: r.valence });
   return out;
 }
@@ -1253,7 +1257,7 @@ function headlessBoardBuild(w, row) {
     evolutions: (row.evolutions || []).filter(Boolean),
     mode: row.mode || "base",
     ...(row.valence ? { valence_element: row.valence, valence_bonus: (w.valence || {}).max || 0 } : {}),
-    ...(row.grip ? { assembly: { grip: row.grip, loader: row.loader } } : {}),
+    ...(row.grip ? { assembly: { grip: row.grip, ...(row.link ? { link: row.link } : { loader: row.loader }) } } : {}),
   };
 }
 
@@ -1526,10 +1530,11 @@ function headlessDefaultAssembly(meta, weapon, st) {
   const s = (headlessWeaponOf(meta, weapon) || {}).assembly || null;
   if (!s) return null;
   const d = s.default || {};
+  const component = s.component || "loader";
   const has = (list, v) => list.some((x) => x.id === v);
   return {
     grip: st && has(s.grips, st.grip) ? st.grip : d.grip,
-    loader: st && has(s.loaders, st.loader) ? st.loader : d.loader,
+    [component]: st && has(s[component + "s"], st[component]) ? st[component] : d[component],
   };
 }
 
@@ -1671,7 +1676,7 @@ function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = headles
     limits: headlessBlankLimits(meta, weapon),
   };
   const context = { benchmark: bench.id, weapon, mode, stance, valence: valence.element,
-    grip: (assembly && assembly.grip) || "", loader: (assembly && assembly.loader) || "",
+    grip: (assembly && assembly.grip) || "", loader: (assembly && assembly.loader) || "", link: (assembly && assembly.link) || "",
     ...(wielder ? { wielder } : {}), rivens: { [mod]: headlessRivenShape(spec) } };
   return { request, context };
 }

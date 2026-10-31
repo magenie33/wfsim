@@ -16,3 +16,4 @@ mod play_mode;
 mod sniper;
 mod url;
 mod valence;
+mod zaws;

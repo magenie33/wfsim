@@ -42,6 +42,8 @@ pub struct WielderBuff {
 /// load as `Inert` so the arcane still resolves).
 #[derive(Debug, Clone, PartialEq)]
 pub enum ArcEffect {
+    ComboCountChance(Scale),
+    ComboCountChanceOnLifted(Scale),
     Buff {
         trigger: ArcTrigger,
         grant: ArcGrant,

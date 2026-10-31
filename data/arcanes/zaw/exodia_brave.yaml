@@ -1,0 +1,18 @@
+id: exodia_brave
+name: Exodia Brave
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/ChannelKillEnergyRate
+rarity: rare
+max_rank: 3
+description: "On Heavy Attack Kill:\r\n+X Energy Rate for 4s. Stacks up to 3x."
+equip_traits:
+- zaw
+seats:
+- zaw
+source:
+  url: https://wiki.warframe.com/w/Exodia_Brave
+effects:
+- kind: unmodelled
+  rank0: 1.25
+  rankMax: 5
+unmodeled:
+- Heavy-attack kills do not grant energy regeneration.

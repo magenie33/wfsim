@@ -437,8 +437,7 @@ fn assemble(lib: &Library, facts: &Facts, r: usize, bench: &str, weapon: &str) -
                 arcanes: v.arcanes.clone(),
                 valence: v.valence.clone(),
                 exilus: v.exilus.clone().unwrap_or_default(),
-                grip: v.assembly.as_ref().map(|a| a.grip.clone()).unwrap_or_default(),
-                loader: v.assembly.as_ref().map(|a| a.loader.clone()).unwrap_or_default(),
+                assembly: v.assembly.clone(),
                 riven: b.riven.clone(),
                 measured_at: match f.minute {
                     NO_MINUTE => String::new(),

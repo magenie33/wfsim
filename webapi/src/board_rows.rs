@@ -10,7 +10,7 @@
 use serde_json::{json, Value};
 use wfsim_engine::board::builds::ValidBuild;
 
-use crate::kitgun::board_assembly_of;
+use crate::weapon_options::board_assembly_of;
 use crate::request::get_str;
 use crate::simulate::{riven_request, simulate_merged_json, simulate_request, simulate_shard_json};
 
@@ -40,10 +40,11 @@ pub fn library_build(rec: &Value) -> Result<ValidBuild, String> {
             malus: Some(get_str(rec, "riven_neg", "").to_string()).filter(|m| !m.is_empty()),
         })
     };
-    let assembly = wfsim_engine::data::weapons::kitguns::assembly_of(
+    let assembly = wfsim_engine::data::weapons::assembly::of(
         weapon,
         get_str(rec, "grip", ""),
         get_str(rec, "loader", ""),
+        get_str(rec, "link", ""),
     );
     let mods: Vec<String> = ids(rec, "mods").iter().map(|m| at_max_rank(m)).collect();
     let exilus = at_max_rank(get_str(rec, "exilus", ""));
@@ -91,8 +92,7 @@ pub fn canonical_record(v: &ValidBuild) -> Value {
         o.insert("exilus".into(), json!(x));
     }
     if let Some(a) = &v.assembly {
-        o.insert("grip".into(), json!(a.grip));
-        o.insert("loader".into(), json!(a.loader));
+        o.extend(a.parts().as_object().expect("parts object").clone());
     }
     if let Some(w) = &v.wielder {
         o.insert("wielder".into(), serde_json::to_value(w).unwrap_or(Value::Null));

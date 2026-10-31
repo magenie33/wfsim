@@ -1,0 +1,32 @@
+# see notes: zaw_assembly
+# see notes: melee_shared_package_actions
+id: plague_keewar_two_handed_block
+name: Plague Keewar (Staff)
+inherits: plague_keewar_two_handed
+form: block
+transform_group: plague_keewar_two_handed
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Plague_Keewar
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 0.967
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.22
+  punch_through_m: 0.0
+  range_m: 3.0
+  follow_through: 0.5
+  heavy:
+    multiplier: 5
+    windup_seconds: 0.69999999
+  damage:
+    impact: 75.675
+    puncture: 44.675
+    slash: 78.675
+    viral: 57.675
+  combo_script: []

@@ -521,7 +521,7 @@ fn two_assemblies_of_one_chamber_are_two_rows() {
                         chamber: record.clone(),
                         grip: g.id.clone(),
                         loader: default.loader.clone(),
-                    }),
+                    }.into()),
                 )
                 .is_some()
         })
@@ -540,7 +540,7 @@ fn two_assemblies_of_one_chamber_are_two_rows() {
                 chamber: record.clone(),
                 grip: grip.to_string(),
                 loader: default.loader.clone(),
-            }),
+            }.into()),
         )
         .map(|b| identity(&b))
     };
@@ -584,7 +584,7 @@ fn parts_that_do_not_make_the_weapon_are_refused() {
             chamber: w.kitgun.clone().unwrap(),
             grip: "not_a_grip".into(),
             loader: "not_a_loader".into(),
-        }),
+        }.into()),
     )
     .unwrap_err();
     assert!(err.contains("not_a_grip"), "{err}");
@@ -601,7 +601,7 @@ fn parts_that_do_not_make_the_weapon_are_refused() {
             chamber: String::new(),
             grip: "gaze".into(),
             loader: "ramble".into(),
-        }),
+        }.into()),
     )
     .unwrap_err();
     assert!(err.contains("not assembled from parts"), "{err}");

@@ -12,7 +12,7 @@ use wfsim_optimizer::{
 use wfsim_engine::fight::Summary;
 use crate::buffs::{BuffMeta, arcane_at_rank, arcane_in_pools, buffs_json, enumerate_buffs, evo_buffs};
 use crate::fight::parse_fight;
-use crate::kitgun::valence_element_of;
+use crate::weapon_options::valence_element_of;
 use crate::registry::{WeaponInfo, form_unlock_evo, innate_slots_for, mod_not_here, weapon, wspec};
 use crate::request::{err_json, get_f64, get_str, get_u32};
 use crate::rivens::{mod_pool_with_rivens, riven_stat_ids_ok};

@@ -117,7 +117,7 @@ function boardRowParts(r) {
   if (ex) out.push({ axis: "mods", pos: "exilus", id: ex });
   (r.arcanes || []).forEach((id, i) => { if (id && id !== "none") out.push({ axis: "arcanes", pos: `arcanes#${i}`, id }); });
   (r.evolutions || []).forEach((id, i) => { if (id) out.push({ axis: "evolutions", pos: `evolutions#${i}`, id }); });
-  if (r.grip) out.push({ axis: "assembly", pos: "assembly#grip", id: r.grip }, { axis: "assembly", pos: "assembly#loader", id: r.loader });
+  if (r.grip) out.push({ axis: "assembly", pos: "assembly#grip", id: r.grip }, { axis: "assembly", pos: r.link ? "assembly#link" : "assembly#loader", id: r.link || r.loader });
   if (r.valence) out.push({ axis: "valence", pos: "valence", id: r.valence });
   return out;
 }
@@ -383,7 +383,7 @@ function headlessBoardBuild(w, row) {
     evolutions: (row.evolutions || []).filter(Boolean),
     mode: row.mode || "base",
     ...(row.valence ? { valence_element: row.valence, valence_bonus: (w.valence || {}).max || 0 } : {}),
-    ...(row.grip ? { assembly: { grip: row.grip, loader: row.loader } } : {}),
+    ...(row.grip ? { assembly: { grip: row.grip, ...(row.link ? { link: row.link } : { loader: row.loader }) } } : {}),
   };
 }
 
@@ -656,10 +656,11 @@ function headlessDefaultAssembly(meta, weapon, st) {
   const s = (headlessWeaponOf(meta, weapon) || {}).assembly || null;
   if (!s) return null;
   const d = s.default || {};
+  const component = s.component || "loader";
   const has = (list, v) => list.some((x) => x.id === v);
   return {
     grip: st && has(s.grips, st.grip) ? st.grip : d.grip,
-    loader: st && has(s.loaders, st.loader) ? st.loader : d.loader,
+    [component]: st && has(s[component + "s"], st[component]) ? st[component] : d[component],
   };
 }
 
@@ -801,7 +802,7 @@ function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = headles
     limits: headlessBlankLimits(meta, weapon),
   };
   const context = { benchmark: bench.id, weapon, mode, stance, valence: valence.element,
-    grip: (assembly && assembly.grip) || "", loader: (assembly && assembly.loader) || "",
+    grip: (assembly && assembly.grip) || "", loader: (assembly && assembly.loader) || "", link: (assembly && assembly.link) || "",
     ...(wielder ? { wielder } : {}), rivens: { [mod]: headlessRivenShape(spec) } };
   return { request, context };
 }

@@ -1,0 +1,18 @@
+id: exodia_epidemic
+name: Exodia Epidemic
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/MeleeArcaneShockwaveOnJump
+rarity: legendary
+max_rank: 3
+description: "After a Bullet Jump or Double Jump:\r\nSlam emits a shockwave forwards that suspends enemies in the air for a short period"
+equip_traits:
+- zaw
+seats:
+- zaw
+source:
+  url: https://wiki.warframe.com/w/Exodia_Epidemic
+effects:
+- kind: unmodelled
+  rank0: 0
+  rankMax: 0
+unmodeled:
+- The post-jump wave, explosion and suspension are not simulated.

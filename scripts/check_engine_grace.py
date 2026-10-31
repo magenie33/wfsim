@@ -26,6 +26,9 @@ check("a test is not in what the grace compares", not any("/tests/" in k for k i
 check("a kitgun chamber moves the weapon built on it", "gaze_secondary" in (w(["data/kitguns/chambers/gaze_secondary.yaml"]) or set())
       and "catchmoon_primary" not in (w(["data/kitguns/chambers/gaze_secondary.yaml"]) or set()))
 check("...a grip moves every kitgun", {"gaze_primary", "catchmoon_primary"} <= (w(["data/kitguns/grips_primary.yaml"]) or set()))
+check("zaw parts move the zaw families, preserving ordinary weapons", w(["data/zaws/parts.yaml"]) is not None
+      and {"balla_one_handed", "balla_two_handed", "sepfahn_one_handed"} <= w(["data/zaws/parts.yaml"])
+      and "nikana_prime" not in w(["data/zaws/parts.yaml"]))
 check("mechanics move everything", w(["engine/src/fight/run.rs", "data/weapons/archgun/arbucep.yaml"]) is None)
 check("...and so does shared data", w(["data/mods/serration.yaml"]) is None)
 

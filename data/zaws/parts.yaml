@@ -1,0 +1,338 @@
+# Composition and sourcing: docs/ZAW.md. This is the runtime component table.
+strikes:
+- id: balla
+  name: Balla
+  speed_delta: 0.083
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  damage:
+    impact: 11.2
+    puncture: 134.4
+    slash: 78.4
+  equal_damage_delta: false
+  base_multiplier:
+    one_handed: 1
+    two_handed: 1
+- id: cyath
+  name: Cyath
+  speed_delta: 0
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  damage:
+    impact: 46
+    puncture: 11.5
+    slash: 172.5
+  equal_damage_delta: false
+  base_multiplier:
+    one_handed: 1
+    two_handed: 1.08
+- id: dehtat
+  name: Dehtat
+  speed_delta: 0.083
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  damage:
+    impact: 22.4
+    puncture: 112
+    slash: 89.6
+  equal_damage_delta: false
+  base_multiplier:
+    one_handed: 1
+    two_handed: 1.09
+- id: dokrahm
+  name: Dokrahm
+  speed_delta: 0.083
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  damage:
+    impact: 46.4
+    puncture: 108.1
+    slash: 154.5
+  equal_damage_delta: false
+  base_multiplier:
+    one_handed: 1
+    two_handed: 0.93
+- id: kronsh
+  name: Kronsh
+  speed_delta: -0.067
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  damage:
+    impact: 163.8
+    slash: 70.2
+  equal_damage_delta: false
+  base_multiplier:
+    one_handed: 1
+    two_handed: 1.07
+- id: mewan
+  name: Mewan
+  speed_delta: -0.067
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  damage:
+    impact: 56
+    puncture: 78.4
+    slash: 89.6
+  equal_damage_delta: false
+  base_multiplier:
+    one_handed: 1
+    two_handed: 1.09
+- id: ooltha
+  name: Ooltha
+  speed_delta: 0
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  damage:
+    impact: 22.4
+    puncture: 89.6
+    slash: 112
+  equal_damage_delta: false
+  base_multiplier:
+    one_handed: 1
+    two_handed: 1
+- id: plague_keewar
+  name: Plague Keewar
+  speed_delta: -0.033
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.22
+  damage:
+    impact: 88
+    puncture: 57
+    slash: 91
+    viral: 70
+  equal_damage_delta: true
+  base_multiplier:
+    one_handed: 1
+    two_handed: 0.85
+- id: plague_kripath
+  name: Plague Kripath
+  speed_delta: 0.033
+  crit_chance: 0.22
+  crit_multiplier: 2.2
+  status_chance: 0.18
+  damage:
+    impact: 30
+    puncture: 70
+    slash: 49
+    viral: 64
+  equal_damage_delta: true
+  base_multiplier:
+    one_handed: 1
+    two_handed: 1.08
+- id: rabvee
+  name: Rabvee
+  speed_delta: -0.067
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  damage:
+    impact: 140.4
+    puncture: 11.7
+    slash: 81.9
+  equal_damage_delta: false
+  base_multiplier:
+    one_handed: 1
+    two_handed: 1.08
+- id: sepfahn
+  name: Sepfahn
+  speed_delta: 0
+  crit_chance: 0.2
+  crit_multiplier: 2
+  status_chance: 0.2
+  damage:
+    impact: 22.6
+    puncture: 56.5
+    slash: 146.9
+  equal_damage_delta: false
+  base_multiplier:
+    one_handed: 1
+    two_handed: 1
+grips:
+- id: jayap
+  name: Jayap
+  handedness: two_handed
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleFive
+  damage_delta: 0
+  base_speed: 0.917
+- id: korb
+  name: Korb
+  handedness: one_handed
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee02/Handle/HandleNine
+  damage_delta: 28
+  base_speed: 0.783
+- id: kroostra
+  name: Kroostra
+  handedness: two_handed
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleSix
+  damage_delta: 14
+  base_speed: 0.85
+- id: kwath
+  name: Kwath
+  handedness: one_handed
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleThree
+  damage_delta: 14
+  base_speed: 0.85
+- id: laka
+  name: Laka
+  handedness: one_handed
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleTwo
+  damage_delta: 0
+  base_speed: 0.917
+- id: peye
+  name: Peye
+  handedness: one_handed
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleOne
+  damage_delta: -4
+  base_speed: 1
+- id: plague_akwin
+  name: Plague Akwin
+  handedness: one_handed
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Handles/InfestedHandleOne
+  damage_delta: -2
+  base_speed: 0.95
+- id: plague_bokwin
+  name: Plague Bokwin
+  handedness: two_handed
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Handles/InfestedHandleTwo
+  damage_delta: 7
+  base_speed: 0.883
+- id: seekalla
+  name: Seekalla
+  handedness: two_handed
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Handle/HandleFour
+  damage_delta: -4
+  base_speed: 1
+- id: shtung
+  name: Shtung
+  handedness: two_handed
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee02/Handle/HandleTen
+  damage_delta: 28
+  base_speed: 0.783
+links:
+- id: ekwana_ii_jai
+  name: Ekwana II Jai
+  damage_delta: -4
+  speed_delta: 0.083
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedIStatusII
+  crit_chance_delta: -0.08
+  status_chance_delta: 0.14
+- id: ekwana_ii_ruhang
+  name: Ekwana II Ruhang
+  damage_delta: 14
+  speed_delta: -0.067
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageIStatusII
+  crit_chance_delta: -0.08
+  status_chance_delta: 0.14
+- id: ekwana_jai
+  name: Ekwana Jai
+  damage_delta: -4
+  speed_delta: 0.083
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedIStatusI
+  crit_chance_delta: -0.04
+  status_chance_delta: 0.07
+- id: ekwana_jai_ii
+  name: Ekwana Jai II
+  damage_delta: -8
+  speed_delta: 0.167
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedIIStatusI
+  crit_chance_delta: -0.04
+  status_chance_delta: 0.07
+- id: ekwana_ruhang
+  name: Ekwana Ruhang
+  damage_delta: 14
+  speed_delta: -0.067
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageIStatusI
+  crit_chance_delta: -0.04
+  status_chance_delta: 0.07
+- id: ekwana_ruhang_ii
+  name: Ekwana Ruhang II
+  damage_delta: 28
+  speed_delta: -0.133
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageIIStatusI
+  crit_chance_delta: -0.04
+  status_chance_delta: 0.07
+- id: jai
+  name: Jai
+  damage_delta: -4
+  speed_delta: 0.083
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedI
+  crit_chance_delta: 0
+  status_chance_delta: 0
+- id: jai_ii
+  name: Jai II
+  damage_delta: -8
+  speed_delta: 0.167
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedII
+  crit_chance_delta: 0
+  status_chance_delta: 0
+- id: ruhang
+  name: Ruhang
+  damage_delta: 14
+  speed_delta: -0.067
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageI
+  crit_chance_delta: 0
+  status_chance_delta: 0
+- id: ruhang_ii
+  name: Ruhang II
+  damage_delta: 28
+  speed_delta: -0.133
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageII
+  crit_chance_delta: 0
+  status_chance_delta: 0
+- id: vargeet_ii_jai
+  name: Vargeet II Jai
+  damage_delta: -4
+  speed_delta: 0.083
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedICritII
+  crit_chance_delta: 0.14
+  status_chance_delta: -0.08
+- id: vargeet_ii_ruhang
+  name: Vargeet II Ruhang
+  damage_delta: 14
+  speed_delta: -0.067
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageICritII
+  crit_chance_delta: 0.14
+  status_chance_delta: -0.08
+- id: vargeet_jai
+  name: Vargeet Jai
+  damage_delta: -4
+  speed_delta: 0.083
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedICritI
+  crit_chance_delta: 0.07
+  status_chance_delta: -0.04
+- id: vargeet_jai_ii
+  name: Vargeet Jai II
+  damage_delta: -8
+  speed_delta: 0.167
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceSpeedIICritI
+  crit_chance_delta: 0.07
+  status_chance_delta: -0.04
+- id: vargeet_ruhang
+  name: Vargeet Ruhang
+  damage_delta: 14
+  speed_delta: -0.067
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageICritI
+  crit_chance_delta: 0.07
+  status_chance_delta: -0.04
+- id: vargeet_ruhang_ii
+  name: Vargeet Ruhang II
+  damage_delta: 28
+  speed_delta: -0.133
+  internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Balance/BalanceDamageIICritI
+  crit_chance_delta: 0.07
+  status_chance_delta: -0.04
+defaults:
+  one_handed:
+    grip: laka
+    link: jai
+  two_handed:
+    grip: jayap
+    link: jai

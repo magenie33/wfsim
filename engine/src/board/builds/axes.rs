@@ -187,7 +187,7 @@ pub struct ValidBuild {
     /// builds with two answers, so an identity that could not tell them apart
     /// would file the second under the first's number — the same failure the
     /// valence and the exilus slot each had before they were part of it.
-    pub assembly: Option<crate::data::weapons::kitguns::Assembly>,
+    pub assembly: Option<crate::data::weapons::assembly::Assembly>,
     /// Forma the cheapest legal polarity layout needs. Not a legality term —
     /// two builds that are the same FIGHT can cost different amounts to reach,
     /// and the board should show the cheaper one.

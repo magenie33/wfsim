@@ -2110,6 +2110,13 @@
     "azothane_block_forward",
     "azothane_forward",
     "azothane_heavy",
+    "balla_one_handed",
+    "balla_one_handed_block",
+    "balla_one_handed_block_forward",
+    "balla_one_handed_forward",
+    "balla_one_handed_heavy",
+    "balla_one_handed_slide",
+    "balla_two_handed_slide",
     "bo_prime_slide",
     "bo_slide",
     "boltace",
@@ -2200,6 +2207,17 @@
     "cronus_forward",
     "cronus_heavy",
     "cronus_slide",
+    "cyath_one_handed",
+    "cyath_one_handed_block",
+    "cyath_one_handed_block_forward",
+    "cyath_one_handed_forward",
+    "cyath_one_handed_heavy",
+    "cyath_one_handed_slide",
+    "cyath_two_handed",
+    "cyath_two_handed_block",
+    "cyath_two_handed_block_forward",
+    "cyath_two_handed_forward",
+    "cyath_two_handed_slide",
     "dakra_prime",
     "dakra_prime_block",
     "dakra_prime_block_forward",
@@ -2224,6 +2242,17 @@
     "dark_sword_forward",
     "dark_sword_heavy",
     "dark_sword_slide",
+    "dehtat_one_handed",
+    "dehtat_one_handed_block",
+    "dehtat_one_handed_block_forward",
+    "dehtat_one_handed_forward",
+    "dehtat_one_handed_heavy",
+    "dehtat_one_handed_slide",
+    "dehtat_two_handed",
+    "dehtat_two_handed_block",
+    "dehtat_two_handed_block_forward",
+    "dehtat_two_handed_forward",
+    "dehtat_two_handed_slide",
     "destreza",
     "destreza_block",
     "destreza_block_forward",
@@ -2248,6 +2277,18 @@
     "dex_nikana_forward",
     "dex_nikana_heavy",
     "dex_nikana_slide",
+    "dokrahm_one_handed",
+    "dokrahm_one_handed_block",
+    "dokrahm_one_handed_block_forward",
+    "dokrahm_one_handed_forward",
+    "dokrahm_one_handed_heavy",
+    "dokrahm_one_handed_slide",
+    "dokrahm_two_handed",
+    "dokrahm_two_handed_block",
+    "dokrahm_two_handed_block_forward",
+    "dokrahm_two_handed_forward",
+    "dokrahm_two_handed_heavy",
+    "dokrahm_two_handed_slide",
     "dorrclave",
     "dorrclave_block",
     "dorrclave_block_forward",
@@ -2649,6 +2690,17 @@
     "kronen_prime_heavy",
     "kronen_prime_slide",
     "kronen_slide",
+    "kronsh_one_handed",
+    "kronsh_one_handed_block",
+    "kronsh_one_handed_block_forward",
+    "kronsh_one_handed_forward",
+    "kronsh_one_handed_heavy",
+    "kronsh_one_handed_slide",
+    "kronsh_two_handed",
+    "kronsh_two_handed_block",
+    "kronsh_two_handed_block_forward",
+    "kronsh_two_handed_forward",
+    "kronsh_two_handed_slide",
     "kuva_ghoulsaw",
     "kuva_ghoulsaw_block",
     "kuva_ghoulsaw_block_forward",
@@ -2707,6 +2759,17 @@
     "masseter_prime_heavy",
     "masseter_prime_slide",
     "masseter_slide",
+    "mewan_one_handed",
+    "mewan_one_handed_block",
+    "mewan_one_handed_block_forward",
+    "mewan_one_handed_forward",
+    "mewan_one_handed_heavy",
+    "mewan_one_handed_slide",
+    "mewan_two_handed",
+    "mewan_two_handed_block",
+    "mewan_two_handed_block_forward",
+    "mewan_two_handed_forward",
+    "mewan_two_handed_slide",
     "mios",
     "mios_block",
     "mios_block_forward",
@@ -2796,6 +2859,13 @@
     "okina_prime_heavy",
     "okina_prime_slide",
     "okina_slide",
+    "ooltha_one_handed",
+    "ooltha_one_handed_block",
+    "ooltha_one_handed_block_forward",
+    "ooltha_one_handed_forward",
+    "ooltha_one_handed_heavy",
+    "ooltha_one_handed_slide",
+    "ooltha_two_handed_slide",
     "orthos",
     "orthos_block",
     "orthos_block_forward",
@@ -2841,6 +2911,24 @@
     "pennant_block_forward",
     "pennant_forward",
     "pennant_heavy",
+    "plague_keewar_one_handed",
+    "plague_keewar_one_handed_block",
+    "plague_keewar_one_handed_block_forward",
+    "plague_keewar_one_handed_forward",
+    "plague_keewar_one_handed_heavy",
+    "plague_keewar_one_handed_slide",
+    "plague_keewar_two_handed_slide",
+    "plague_kripath_one_handed",
+    "plague_kripath_one_handed_block",
+    "plague_kripath_one_handed_block_forward",
+    "plague_kripath_one_handed_forward",
+    "plague_kripath_one_handed_heavy",
+    "plague_kripath_one_handed_slide",
+    "plague_kripath_two_handed",
+    "plague_kripath_two_handed_block",
+    "plague_kripath_two_handed_block_forward",
+    "plague_kripath_two_handed_forward",
+    "plague_kripath_two_handed_slide",
     "plasma_sword",
     "plasma_sword_block",
     "plasma_sword_block_forward",
@@ -2918,6 +3006,18 @@
     "quassus_prime_block",
     "quassus_prime_block_forward",
     "quassus_prime_forward",
+    "rabvee_one_handed",
+    "rabvee_one_handed_block",
+    "rabvee_one_handed_block_forward",
+    "rabvee_one_handed_forward",
+    "rabvee_one_handed_heavy",
+    "rabvee_one_handed_slide",
+    "rabvee_two_handed",
+    "rabvee_two_handed_block",
+    "rabvee_two_handed_block_forward",
+    "rabvee_two_handed_forward",
+    "rabvee_two_handed_heavy",
+    "rabvee_two_handed_slide",
     "rakta_dark_dagger",
     "rakta_dark_dagger_block",
     "rakta_dark_dagger_block_forward",
@@ -2996,6 +3096,13 @@
     "secura_lecta_forward",
     "secura_lecta_heavy",
     "secura_lecta_slide",
+    "sepfahn_one_handed",
+    "sepfahn_one_handed_block",
+    "sepfahn_one_handed_block_forward",
+    "sepfahn_one_handed_forward",
+    "sepfahn_one_handed_heavy",
+    "sepfahn_one_handed_slide",
+    "sepfahn_two_handed_slide",
     "serro",
     "serro_block",
     "serro_block_forward",
@@ -3264,6 +3371,14 @@
       "package context or attack events incomplete"
     ],
     [
+      "balla_two_handed",
+      "package context or attack events incomplete"
+    ],
+    [
+      "balla_two_handed_heavy",
+      "package context or attack events incomplete"
+    ],
+    [
       "bo",
       "package context or attack events incomplete"
     ],
@@ -3328,6 +3443,14 @@
       "weapon absent from package export"
     ],
     [
+      "cyath_two_handed_heavy",
+      "package context or attack events incomplete"
+    ],
+    [
+      "dehtat_two_handed_heavy",
+      "package context or attack events incomplete"
+    ],
+    [
       "guandao_heavy",
       "package context or attack events incomplete"
     ],
@@ -3356,7 +3479,15 @@
       "package context or attack events incomplete"
     ],
     [
+      "kronsh_two_handed_heavy",
+      "package context or attack events incomplete"
+    ],
+    [
       "lesion_heavy",
+      "package context or attack events incomplete"
+    ],
+    [
+      "mewan_two_handed_heavy",
       "package context or attack events incomplete"
     ],
     [
@@ -3368,11 +3499,31 @@
       "package context or attack events incomplete"
     ],
     [
+      "ooltha_two_handed",
+      "package context or attack events incomplete"
+    ],
+    [
+      "ooltha_two_handed_heavy",
+      "package context or attack events incomplete"
+    ],
+    [
       "orthos_heavy",
       "package context or attack events incomplete"
     ],
     [
       "orthos_prime_heavy",
+      "package context or attack events incomplete"
+    ],
+    [
+      "plague_keewar_two_handed",
+      "package context or attack events incomplete"
+    ],
+    [
+      "plague_keewar_two_handed_heavy",
+      "package context or attack events incomplete"
+    ],
+    [
+      "plague_kripath_two_handed_heavy",
       "package context or attack events incomplete"
     ],
     [
@@ -3397,6 +3548,14 @@
     ],
     [
       "sarpa",
+      "package context or attack events incomplete"
+    ],
+    [
+      "sepfahn_two_handed",
+      "package context or attack events incomplete"
+    ],
+    [
+      "sepfahn_two_handed_heavy",
       "package context or attack events incomplete"
     ],
     [
@@ -3460,6 +3619,9 @@
     "amphis_block",
     "amphis_block_forward",
     "amphis_forward",
+    "balla_two_handed_block",
+    "balla_two_handed_block_forward",
+    "balla_two_handed_forward",
     "bo_block",
     "bo_block_forward",
     "bo_forward",
@@ -3475,6 +3637,12 @@
     "mk1_bo_block",
     "mk1_bo_block_forward",
     "mk1_bo_forward",
+    "ooltha_two_handed_block",
+    "ooltha_two_handed_block_forward",
+    "ooltha_two_handed_forward",
+    "plague_keewar_two_handed_block",
+    "plague_keewar_two_handed_block_forward",
+    "plague_keewar_two_handed_forward",
     "redeemer_block",
     "redeemer_block_forward",
     "redeemer_forward",
@@ -3484,6 +3652,9 @@
     "sarpa_block",
     "sarpa_block_forward",
     "sarpa_forward",
+    "sepfahn_two_handed_block",
+    "sepfahn_two_handed_block_forward",
+    "sepfahn_two_handed_forward",
     "stropha_block",
     "stropha_block_forward",
     "stropha_forward",
@@ -3620,6 +3791,21 @@
     ],
     [
       "azothane_forward",
+      "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "balla_one_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "balla_one_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "balla_one_handed_forward",
       "CC_GROUND_BRANCH_A",
       "CC_GROUND"
     ],
@@ -3804,6 +3990,31 @@
       "CC_GROUND_BRANCH_A"
     ],
     [
+      "cyath_one_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "cyath_one_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "cyath_one_handed_forward",
+      "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "cyath_two_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "cyath_two_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
       "dakra_prime",
       "CC_GROUND",
       "CC_GROUND_BRANCH_A"
@@ -3864,6 +4075,31 @@
       "CC_GROUND_BRANCH_A"
     ],
     [
+      "dehtat_one_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "dehtat_one_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "dehtat_one_handed_forward",
+      "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "dehtat_two_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "dehtat_two_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
       "destreza_block",
       "CC_GROUND_BRANCH_C",
       "CC_GROUND"
@@ -3915,6 +4151,36 @@
     ],
     [
       "dex_nikana_forward",
+      "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "dokrahm_one_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "dokrahm_one_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "dokrahm_one_handed_forward",
+      "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "dokrahm_two_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "dokrahm_two_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "dokrahm_two_handed_forward",
       "CC_GROUND_BRANCH_A",
       "CC_GROUND"
     ],
@@ -4704,6 +4970,31 @@
       "CC_GROUND"
     ],
     [
+      "kronsh_one_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "kronsh_one_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "kronsh_one_handed_forward",
+      "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "kronsh_two_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "kronsh_two_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
       "kuva_ghoulsaw_block",
       "CC_GROUND_BRANCH_C",
       "CC_GROUND"
@@ -4836,6 +5127,31 @@
     [
       "masseter_prime_forward",
       "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "mewan_one_handed",
+      "CC_GROUND",
+      "CC_GROUND_BRANCH_A"
+    ],
+    [
+      "mewan_one_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND_BRANCH_A"
+    ],
+    [
+      "mewan_one_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND_BRANCH_A"
+    ],
+    [
+      "mewan_two_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "mewan_two_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
       "CC_GROUND"
     ],
     [
@@ -5039,6 +5355,21 @@
       "CC_GROUND"
     ],
     [
+      "ooltha_one_handed",
+      "CC_GROUND",
+      "CC_GROUND_BRANCH_A"
+    ],
+    [
+      "ooltha_one_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND_BRANCH_A"
+    ],
+    [
+      "ooltha_one_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND_BRANCH_A"
+    ],
+    [
       "orthos_block",
       "CC_GROUND_BRANCH_C",
       "CC_GROUND"
@@ -5101,6 +5432,46 @@
     [
       "pennant_forward",
       "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "plague_keewar_one_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "plague_keewar_one_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "plague_keewar_one_handed_forward",
+      "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "plague_kripath_one_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "plague_kripath_one_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "plague_kripath_one_handed_forward",
+      "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "plague_kripath_two_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "plague_kripath_two_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
       "CC_GROUND"
     ],
     [
@@ -5289,6 +5660,36 @@
       "CC_GROUND"
     ],
     [
+      "rabvee_one_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "rabvee_one_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "rabvee_one_handed_forward",
+      "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "rabvee_two_handed",
+      "CC_GROUND",
+      "CC_GROUND_BRANCH_A"
+    ],
+    [
+      "rabvee_two_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND_BRANCH_A"
+    ],
+    [
+      "rabvee_two_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND_BRANCH_A"
+    ],
+    [
       "rakta_dark_dagger_block",
       "CC_GROUND_BRANCH_C",
       "CC_GROUND"
@@ -5466,6 +5867,21 @@
     [
       "secura_lecta_block_forward",
       "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "sepfahn_one_handed_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "sepfahn_one_handed_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "sepfahn_one_handed_forward",
+      "CC_GROUND_BRANCH_A",
       "CC_GROUND"
     ],
     [

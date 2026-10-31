@@ -1,0 +1,49 @@
+# see notes: zaw_assembly
+# see notes: combo_points_from_multiplier
+# see notes: melee_shared_package_actions
+id: plague_keewar_one_handed_heavy_slam
+name: Plague Keewar (Scythe)
+inherits: plague_keewar_one_handed
+form: heavy_slam
+transform_group: plague_keewar_one_handed
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Plague_Keewar
+unmodeled:
+- reason: heavy_slam_cycle_assumed
+  cycle: 2
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 0.967
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.22
+  punch_through_m: 0.0
+  range_m: 1.7
+  follow_through: 0.60000002
+  heavy:
+    multiplier: 6.0
+    windup_seconds: 0.69999999
+  damage:
+    impact: 0.0
+  radial:
+    damage:
+      blast: 906.0
+    radius_m: 9.0
+    blast_kind: slam
+    status_chance: 0.1
+    falloff_start_m: 0.0
+    falloff_reduction: 0.3
+    forced_procs:
+    - lifted
+    takes_multishot: false
+  spends_combo: true
+  combo_script:
+  - multiplier: 1.0
+    delay_seconds: 2.0
+    combo_points: 0
+    combo_points_base: 0

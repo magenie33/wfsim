@@ -1,0 +1,33 @@
+# see notes: zaw_assembly
+# see notes: melee_shared_package_actions
+id: dehtat_one_handed_slide
+name: Dehtat (Rapier)
+inherits: dehtat_one_handed
+form: slide
+transform_group: dehtat_one_handed
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Dehtat
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.083
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  punch_through_m: 0.0
+  range_m: 2.5
+  follow_through: 0.69999999
+  heavy:
+    multiplier: 4.5
+    windup_seconds: 0.69999999
+  damage:
+    impact: 22.0
+    puncture: 110.0
+    slash: 88.0
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/RapierMeleeTree
+    context: CC_SLIDING

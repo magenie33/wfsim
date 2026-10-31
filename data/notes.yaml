@@ -9,6 +9,14 @@
 # an entry from being orphaned.
 
 notes:
+  zaw_assembly: |
+    data/zaws/parts.yaml owns component statistics; the entry's scalar panel
+    is its default assembly (docs/ZAW.md). Reach is the finished Zaw table;
+    Follow Through is the package tree's value. Slam event records supply
+    radius, element and forced procs, not final damage or critical behavior:
+    the same raw canCrit/attenuation fields disagree with measured Magistar
+    slams. M69 and the shared melee rule set 2x/3x damage, inherited critical
+    stats and 50%/30% falloff. Unpublished heavy timing retains its admission.
   melee_shared_package_actions: |
     data/melee/actions.yaml owns shared melee animations and attack events.
     Stance and weapon scripts bind its package tree/context ids; reuse names

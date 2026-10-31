@@ -230,8 +230,8 @@ function sharePayload(build) {
   // order the control draws them.
   const da = defaultAssembly(st.weapon, null);
   const asm = st.assembly && da
-      && (st.assembly.grip !== da.grip || st.assembly.loader !== da.loader)
-    ? [st.assembly.grip, st.assembly.loader] : 0;
+      && (st.assembly.grip !== da.grip || st.assembly.loader !== da.loader || st.assembly.link !== da.link)
+    ? (st.assembly.link ? [st.assembly.grip, st.assembly.link, "link"] : [st.assembly.grip, st.assembly.loader]) : 0;
 
   // A NAME THE SHARER CHOSE TRAVELS; A MACHINE-GENERATED ONE DOES NOT — and
   // "+ new"'s `build 1` is as machine-generated as a board build's

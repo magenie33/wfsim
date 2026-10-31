@@ -145,6 +145,8 @@ impl ArcaneDef {
         let assumed = policy == StackPolicy::AssumedMax;
         for e in &self.effects {
             match e {
+                ArcEffect::ComboCountChance(scale) => fx.combo_count_chance += scale.at(rank, self.max_rank),
+                ArcEffect::ComboCountChanceOnLifted(scale) => fx.combo_count_chance_on_lifted += scale.at(rank, self.max_rank),
                 ArcEffect::Buff { trigger, grant, scale, max_stacks, duration, all_drop, one_per_instance } => {
                     if policy == StackPolicy::BaseOnly {
                         continue; // sentinel: conditional never fires
@@ -367,6 +369,8 @@ impl ArcaneDef {
         for e in &self.effects {
             let at = |sc: &Scale| sc.at(rank, self.max_rank);
             match e {
+                ArcEffect::ComboCountChance(sc) => out.push(format!("{} additional Combo Count Chance", pct(at(sc)))),
+                ArcEffect::ComboCountChanceOnLifted(sc) => out.push(format!("{} additional Combo Count Chance against Lifted enemies", pct(at(sc)))),
                 ArcEffect::Buff { trigger, grant, scale, max_stacks, duration, all_drop, one_per_instance } => {
                     let what = match grant {
                         ArcGrant::BaseDamage => "Base Damage",

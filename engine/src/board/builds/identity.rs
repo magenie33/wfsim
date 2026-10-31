@@ -175,7 +175,7 @@ pub fn identity(b: &ValidBuild) -> String {
     // it is the weapon, and `b.weapon` already carries it.
     let key = match &b.assembly {
         None => key,
-        Some(a) => format!("{key}|a:{}+{}", a.grip, a.loader),
+        Some(a) => format!("{key}|a:{}+{}", a.grip(), a.component()),
     };
     // THE ROLLS, AND THEY GO LAST. Every identity already computed for a build
     // that states only a shape is unchanged byte for byte — the same reason the

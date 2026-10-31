@@ -329,8 +329,7 @@ mod entry_line_tests {
             arcanes: vec!["primary_deadhead".into()],
             valence: String::new(),
             exilus: String::new(),
-            grip: String::new(),
-            loader: String::new(),
+            assembly: None,
             riven: riven.then(|| RowRiven {
                 bonuses: vec!["multishot".into()],
                 malus: None,

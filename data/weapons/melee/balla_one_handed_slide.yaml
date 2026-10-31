@@ -1,0 +1,33 @@
+# see notes: zaw_assembly
+# see notes: melee_shared_package_actions
+id: balla_one_handed_slide
+name: Balla (Dagger)
+inherits: balla_one_handed
+form: slide
+transform_group: balla_one_handed
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Balla
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.083
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  punch_through_m: 0.0
+  range_m: 1.7
+  follow_through: 0.89999998
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.69999999
+  damage:
+    impact: 11.0
+    puncture: 132.0
+    slash: 77.0
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerMeleeTree
+    context: CC_SLIDING

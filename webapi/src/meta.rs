@@ -13,6 +13,31 @@ use crate::tenno::floor_json;
 /// `Value::Null` for every weapon that is not one.
 pub(crate) fn assembly_meta(id: &str) -> Value {
     use wfsim_engine::data::weapons::kitguns as kg;
+    use wfsim_engine::data::weapons::zaws as z;
+    if let Some(spec) = wfsim_engine::data::weapons::spec(id).filter(|s| s.zaw.is_some()) {
+        let r = spec.zaw.as_ref().unwrap();
+        let d = z::default_assembly(spec).unwrap();
+        let grips: Vec<_> = z::grips().iter().filter(|g| g.handedness == r.handedness).collect();
+        return json!({
+            "kind": "zaw", "family": r.strike, "component": "link", "handedness": r.handedness,
+            "grips": grips.iter().map(|g| json!({"id": g.id, "name": g.name})).collect::<Vec<_>>(),
+            "grip_stats": grips.iter().map(|g| {
+                let s = z::stats(r, &g.id, &d.link).unwrap();
+                (g.id.clone(), json!({"damage": s.damage.values().sum::<f64>(), "fire_rate": s.attack_speed}))
+            }).collect::<serde_json::Map<String, Value>>(),
+            "grip_stats_by_link": z::links().iter().map(|l| (l.id.clone(), json!(
+                grips.iter().map(|g| {
+                    let s = z::stats(r, &g.id, &l.id).unwrap();
+                    (g.id.clone(), json!({"damage": s.damage.values().sum::<f64>(), "fire_rate": s.attack_speed}))
+                }).collect::<serde_json::Map<String, Value>>()
+            ))).collect::<serde_json::Map<String, Value>>(),
+            "links": z::links().iter().map(|l| json!({
+                "id": l.id, "name": l.name, "damage_delta": l.damage_delta, "speed_delta": l.speed_delta,
+                "crit_chance": l.crit_chance_delta, "status_chance": l.status_chance_delta,
+            })).collect::<Vec<_>>(),
+            "default": {"grip": d.grip, "link": d.link},
+        });
+    }
     let Some(record) = wfsim_engine::data::weapons::spec(id).and_then(|s| s.kitgun.as_deref())
     else {
         return Value::Null;
@@ -21,6 +46,7 @@ pub(crate) fn assembly_meta(id: &str) -> Value {
         return Value::Null;
     };
     json!({
+        "kind": "kitgun", "family": c.chamber, "component": "loader",
         // The CHAMBER is the weapon and is not a choice here — it is named so
         // the page can say which one this is without knowing the id scheme.
         "chamber": c.chamber,

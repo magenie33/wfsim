@@ -23,6 +23,70 @@ import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, finish } = app;
+for (let i = 0; i < 100 && !(await evaluate("!!META")); i++) await app.sleep(250);
+
+async function checkZaws() {
+  for (let i = 0; i < 100 && !(await evaluate("!!META")); i++) await app.sleep(250);
+  const catalog = await evaluate(`(() => {
+    const ws = META.weapons.filter(w => w.assembly && w.assembly.kind === 'zaw');
+    return { count: ws.length, distinct: ws.every(w => w.name.includes('(')
+      && slotSibling(slotSibling(w.id)) === w.id),
+      paths: new Set(ws.map(w => weaponPath(w.id))).size };
+  })()`);
+  check('Zaws are 22 named weapons with independent paths and reciprocal siblings',
+    catalog.count === 22 && catalog.distinct && catalog.paths === 22, JSON.stringify(catalog));
+  if (catalog.count !== 22) return;
+  for (const [id, grip] of [['plague_kripath_one_handed', 'peye'], ['plague_kripath_two_handed', 'seekalla']]) {
+    await app.load('/weapons/' + id + '/builder', 5000);
+    for (let i = 0; i < 100 && !(await evaluate("!!META && $('weapon').value === " + JSON.stringify(id))); i++) await app.sleep(250);
+    const out = await evaluate(`(async () => {
+      const id = ${JSON.stringify(id)}, grip = ${JSON.stringify(grip)};
+      setAssemblyPart('grip', grip); setAssemblyPart('link', 'vargeet_ii_jai');
+      const spec = assemblySpec(id);
+      setAssemblyPart('link', 'ekwana_ruhang_ii');
+      const hint = ddReg.get('dd-grip').items.find(it => it.value === grip).hint;
+      const expectedDamage = spec.grip_stats_by_link.ekwana_ruhang_ii[grip].damage;
+      const hintFollowsLink = hint.includes(String(Math.round(expectedDamage * 100) / 100));
+      setAssemblyPart('link', 'vargeet_ii_jai');
+      const state = snapshotState();
+      const saved = JSON.stringify(state.assembly);
+      const code = await shareCode();
+      const back = await decodeShare(code);
+      const payload = sharePayload();
+      const v3 = await decodeShare('3' + packV3(payload));
+      const req = buildPayload();
+      const c = await api('/api/candidates', { ...req, axis: { kind: 'assembly' } });
+      const stance = currentPool.find(m => m.stance);
+      const sim = await api('/api/simulate', { ...req, mods: stance ? [stance.id] : [],
+        enemy: 'corrupted_heavy_gunner', level: 30, duration: 2, runs: 2, seed: 17 });
+      assembly = null;
+      restoreState(state, id);
+      renderAssembly();
+      return { id: $('weapon').value, parts: assembly,
+        grips: spec.grips.length, links: spec.links.length, hintFollowsLink,
+        controls: !!document.querySelector('[data-slot="dd-link"]') && !document.querySelector('[data-slot="dd-loader"]'),
+        sent: req.assembly, back: back.assembly, v3: v3.assembly,
+        restored: saved === JSON.stringify(assembly),
+        seats: weaponInfo(id).arcane_pools, exodia: arcanePool(0).filter(a => a.id.startsWith('exodia_')).length,
+        leak: arcanePool(1).some(a => a.id.startsWith('exodia_')),
+        candidates: c.candidates.length, dps: sim.dps, error: sim.error,
+        pending: META.arcanes.filter(a => a.id.startsWith('exodia_') && a.not_modeled).map(a => a.id),
+      };
+    })()`);
+    const parts = { grip, link: 'vargeet_ii_jai' };
+    const same = value => JSON.stringify(value) === JSON.stringify(parts);
+    check(id + ' offers five matching grips and sixteen links', out.id === id && out.grips === 5 && out.links === 16 && out.controls && out.hintFollowsLink, JSON.stringify(out));
+    check(id + ' preserves parts through requests, presets and sharing', same(out.sent) && same(out.back) && same(out.v3) && same(out.parts) && out.restored, JSON.stringify(out));
+    check(id + ' simulates its assembly and enumerates nineteen part swaps', out.dps > 0 && out.candidates === 19, JSON.stringify(out));
+    check(id + ' has independent Exodia and ordinary melee seats', out.seats.join(',') === 'zaw,melee' && out.exodia === 8 && !out.leak, JSON.stringify(out));
+    check(id + ' explicitly marks the six unsupported Exodia effects', out.pending.length === 6 && !out.pending.includes('exodia_triumph') && !out.pending.includes('exodia_valor'), JSON.stringify(out.pending));
+  }
+}
+if (process.argv.includes('--zaw-only')) {
+  await checkZaws();
+  await finish('Zaw parts, shares, simulation and arcane seats agree');
+}
+
 
 const KIT = "Tombfinger";
 // The negative control. An ordinary secondary: same page, same controls, no
@@ -95,7 +159,7 @@ const drawn = await evaluate(`(async () => {
     // The grips on offer, as the engine states them for THIS entry...
     grips: (assemblySpec(id).grips || []).map(g => g.id),
     // ...and every grip the game has, so "only this slot's" is a real claim.
-    allGrips: [...new Set(META.weapons.filter(w => w.assembly)
+    allGrips: [...new Set(META.weapons.filter(w => w.assembly && w.assembly.chamber)
       .flatMap(w => w.assembly.grips.map(g => g.id)))].sort(),
     text: row.textContent,
   };
@@ -410,5 +474,7 @@ check("a grip from the other slot is repaired and the loader kept",
 check("...and a loader that does not exist falls back without erroring",
   repaired.none > 0 && Math.abs(repaired.none - repaired.good) > 1e-6,
   JSON.stringify(repaired));
+
+await checkZaws();
 
 await finish("a modular weapon is assembled, and the assembly is the number");

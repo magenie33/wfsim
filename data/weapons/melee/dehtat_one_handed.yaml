@@ -1,0 +1,61 @@
+# see notes: zaw_assembly
+# see notes: melee_shared_package_actions
+id: dehtat_one_handed
+name: Dehtat (Rapier)
+slot: melee
+weapon_type: melee
+class: rapier
+form: neutral
+default_form: true
+transform_group: dehtat_one_handed
+mod_pools:
+- melee
+- rapier
+mastery_rank: 0
+max_rank: 30
+riven_family: Dehtat
+disposition: 1.2
+polarities: []
+stance_polarity: naramon
+internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipFive
+zaw:
+  strike: dehtat
+  handedness: one_handed
+combo_duration_seconds: 5.0
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Dehtat
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.083
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  punch_through_m: 0.0
+  range_m: 2.5
+  follow_through: 0.69999999
+  heavy:
+    multiplier: 4.5
+    windup_seconds: 0.69999999
+  damage:
+    impact: 22.0
+    puncture: 110.0
+    slash: 88.0
+  slam:
+    damage:
+      blast: 440.0
+    radius_m: 6.0
+    blast_kind: slam
+    status_chance: 0.1
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    forced_procs:
+    - impact
+    takes_multishot: false
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/RapierMeleeTree
+    context: CC_GROUND

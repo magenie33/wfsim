@@ -1,0 +1,34 @@
+# see notes: zaw_assembly
+# see notes: melee_shared_package_actions
+id: ooltha_one_handed_heavy
+name: Ooltha (Sword)
+inherits: ooltha_one_handed
+form: heavy
+transform_group: ooltha_one_handed
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Ooltha
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  punch_through_m: 0.0
+  range_m: 2.5
+  follow_through: 0.60000002
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.69999999
+  damage:
+    impact: 22.0
+    puncture: 88.0
+    slash: 110.0
+  spends_combo: true
+  combo_script:
+    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordMeleeTree
+    context: CC_GROUND_HEAVY

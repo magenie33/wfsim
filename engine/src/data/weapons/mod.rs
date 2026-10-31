@@ -20,6 +20,8 @@ use crate::rules::capacity::Polarity;
 use crate::model::{Battery, BurstSpec, ChargeCadence, CompressionSpec, FalloffSpec, FormKind, HeavyAttack, KillStreakSummonSpec, MeterSpec, OrbSpec, SniperCombo, SpawnOnKillSpec, SpreadSpec, SuperCritSpec, SustainedFireRate, WeakpointStacksSpec};
 
 pub mod kitguns;
+pub mod zaws;
+pub mod assembly;
 use crate::model::{BlastKind, ComboHit};
 
 mod valence;

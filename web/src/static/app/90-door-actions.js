@@ -732,31 +732,31 @@ const AGENT_ACTIONS = [
   {
     id: "builder.parts.list",
     query: true,
-    what: "List a Kitgun's grips and loaders, with the pair installed now; read their numbers with builder.stats.read after installing.",
+    what: "List a modular weapon's compatible parts, with the pair installed now; read their numbers with builder.stats.read after installing.",
     anchor: "#assembly-row",
     needs_weapon: true,
     args: {},
     run() {
       const s = assemblySpec($("weapon").value);
-      if (!s) return agentNo("no_parts", { because: "this weapon is not a Kitgun" });
+      if (!s) return agentNo("no_parts", { because: "this weapon has no modular parts" });
       const row = (x) => ({ id: x.id, name: x.name });
-      return { installed: assembly, grips: s.grips.map(row), loaders: s.loaders.map(row), other_slot: slotSibling($("weapon").value) || null };
+      return { installed: assembly, grips: s.grips.map(row), [ (s.component || "loader") + "s" ]: s[(s.component || "loader") + "s"].map(row), other_slot: slotSibling($("weapon").value) || null };
     },
   },
   {
     id: "builder.part.set",
     writes: "build",
-    what: "Swap a Kitgun's grip or loader. The chamber is the weapon itself; the other slot's version of the same chamber is another weapon id (builder.weapon.set).",
+    what: "Swap a modular weapon part. The sibling slot or weapon class has its own weapon id (builder.weapon.set).",
     anchor: "#assembly-row",
     needs_weapon: true,
     args: {
-      part: { kind: "string", required: true, what: "grip or loader", enum: () => ["grip", "loader"] },
+      part: { kind: "string", required: true, what: "grip, loader or link", enum: () => ["grip", (assemblySpec($("weapon").value) || {}).component || "loader"] },
       id: { kind: "string", required: true, what: "the part's id" },
     },
     run({ part, id }) {
       const s = assemblySpec($("weapon").value);
-      if (!s) return agentNo("no_parts", { because: "this weapon is not a Kitgun" });
-      const list = part === "grip" ? s.grips : s.loaders;
+      if (!s) return agentNo("no_parts", { because: "this weapon has no modular parts" });
+      const list = s[part + "s"] || [];
       const hit = list.find((x) => x.id === id);
       if (!hit) return agentNo("bad_argument", { argument: "id", alternatives: list.map((x) => x.id) });
       setAssemblyPart(part, id);

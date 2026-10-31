@@ -1,0 +1,18 @@
+id: exodia_might
+name: Exodia Might
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/FinisherLifesteal
+rarity: rare
+max_rank: 3
+description: "On Finisher Kill:\r\n50% chance for +X% Life Steal for 8s"
+equip_traits:
+- zaw
+seats:
+- zaw
+source:
+  url: https://wiki.warframe.com/w/Exodia_Might
+effects:
+- kind: unmodelled
+  rank0: 0.075
+  rankMax: 0.3
+unmodeled:
+- Finisher kills do not grant melee lifesteal.

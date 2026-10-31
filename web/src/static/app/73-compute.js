@@ -398,7 +398,7 @@ const taskRow = (t) => {
   const r = t.record || {};
   return { mods: r.mods, arcanes: r.arcanes, evolutions: r.evolutions, exilus: r.exilus, valence: r.valence, mode: t.mode || r.mode,
     ...(r.riven_pos && r.riven_pos.length ? { riven: { bonuses: r.riven_pos, malus: r.riven_neg || null, rolls: r.riven_rolls } } : {}),
-    ...(r.assembly ? { grip: r.assembly.grip, loader: r.assembly.loader } : {}) };
+    ...(r.assembly ? { ...r.assembly } : {}) };
 };
 const taskPts = (t) => Math.round(Number(t.work || 0) / 1e9);
 /// THE LIVE BLOCK (`#rt-live`) — today's tiles, the task being computed and the

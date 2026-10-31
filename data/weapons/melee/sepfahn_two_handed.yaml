@@ -1,0 +1,59 @@
+# see notes: zaw_assembly
+# see notes: melee_shared_package_actions
+id: sepfahn_two_handed
+name: Sepfahn (Staff)
+slot: melee
+weapon_type: melee
+class: staff
+form: neutral
+default_form: true
+transform_group: sepfahn_two_handed
+mod_pools:
+- melee
+- staff
+mastery_rank: 0
+max_rank: 30
+riven_family: Sepfahn
+disposition: 1.2
+polarities: []
+stance_polarity: madurai
+internal_name: /Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipNine
+zaw:
+  strike: sepfahn
+  handedness: two_handed
+combo_duration_seconds: 5.0
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Sepfahn
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.2
+  crit_multiplier: 2
+  status_chance: 0.2
+  punch_through_m: 0.0
+  range_m: 3.0
+  follow_through: 0.5
+  heavy:
+    multiplier: 5
+    windup_seconds: 0.69999999
+  damage:
+    impact: 22.200000000000003
+    puncture: 55.5
+    slash: 144.3
+  slam:
+    damage:
+      blast: 444.0
+    radius_m: 6.0
+    blast_kind: slam
+    status_chance: 0.1
+    falloff_start_m: 0.0
+    falloff_reduction: 0.5
+    forced_procs:
+    - impact
+    takes_multishot: false
+  combo_script: []

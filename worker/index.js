@@ -132,6 +132,7 @@ export const AXES = [
   { key: "exilus", kind: "id", axis: "mods", ranked: true },
   { key: "grip", kind: "id", axis: "assembly" },
   { key: "loader", kind: "id", axis: "assembly" },
+  { key: "link", kind: "id", axis: "assembly" },
   // A RIVEN, AS A SHAPE — which stats it rolled and which is the malus. The
   // ROLLS are not here and never will be: a row states a shape and the scorer
   // finds that shape's own best corner for the ruler's fight, the same way

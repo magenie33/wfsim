@@ -76,6 +76,8 @@ resolved:
   ax_52:                         /Lotus/Weapons/Lasria/AK47/TC2024AK47Weapon
   azima:                         /Lotus/Weapons/Tenno/Pistols/SundialGun/SundialPistol
   azothane:                      /Lotus/Weapons/Tenno/Melee/Swords/DaxDuviriTwoHandedKatana/DaxDuviriTwoHandedKatanaWeapon
+  balla_one_handed:              /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipOne
+  balla_two_handed:              /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipOne
   ballistica:                    /Lotus/Weapons/Tenno/Pistols/AutomaticHandCrossbow/AutoCrossBow
   ballistica_prime:              /Lotus/Weapons/Tenno/Pistols/PrimeBallistica/PrimeBallistica
   basmu:                         /Lotus/Weapons/Sentients/SentRifleNewWar/SentRifleNewWarGun
@@ -148,6 +150,8 @@ resolved:
   cronus:                        /Lotus/Weapons/Tenno/Melee/CronusSword/CronusLongSword
   cryotra:                       /Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon
   cyanex:                        /Lotus/Weapons/Corpus/Pistols/CrpSentAmalgPistol/CrpSentAmalgPistol
+  cyath_one_handed:              /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipFour
+  cyath_two_handed:              /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipFour
   cycron:                        /Lotus/Weapons/Corpus/Pistols/CrpChargeGun/CrpChargeGun
   cyngas:                        /Lotus/Weapons/Tenno/Archwing/Primary/ArchBurstGun/ArchBurstGun
   daikyu:                        /Lotus/Weapons/Tenno/Bows/AsymetricalBow/AsymetricalBow
@@ -158,6 +162,8 @@ resolved:
   dark_sword:                    /Lotus/Weapons/Tenno/Melee/Swords/DarkSword/DarkLongSword
   deconstructor:                 /Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon
   deconstructor_prime:           /Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon
+  dehtat_one_handed:             /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipFive
+  dehtat_two_handed:             /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipFive
   dera:                          /Lotus/Weapons/ClanTech/Energy/EnergyRifle
   dera_vandal:                   /Lotus/Weapons/ClanTech/Energy/DeraVandal
   despair:                       /Lotus/Weapons/Tenno/ThrowingWeapons/StalkerKunai
@@ -170,6 +176,8 @@ resolved:
   dex_furis:                     /Lotus/Weapons/Tenno/Pistols/DexFuris/DexFuris
   dex_nikana:                    /Lotus/Weapons/Tenno/Melee/Swords/KatanaAndWakizashi/Dex2023Nikana/Dex2023Nikana
   dex_sybaris:                   /Lotus/Weapons/Tenno/LongGuns/DexTheThird/DexTheThird
+  dokrahm_one_handed:            /Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipEleven
+  dokrahm_two_handed:            /Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipEleven
   dorrclave:                     /Lotus/Weapons/Tenno/Melee/Swords/TnDagathBladeWhip/TnDagathBladeWhip
   dragon_nikana:                 /Lotus/Weapons/Tenno/Melee/Swords/KatanaAndWakizashi/LowKatana
   drakgoon:                      /Lotus/Weapons/Grineer/LongGuns/GrineerFlakCannon/FlakCannon
@@ -303,6 +311,8 @@ resolved:
   krohkur:                       /Lotus/Weapons/Grineer/Melee/GrnEgyptSwd/GrnEgyptSwdWeapon
   kronen:                        /Lotus/Weapons/Tenno/Melee/Tonfa/TonfaContestWinner/TennoTonfa
   kronen_prime:                  /Lotus/Weapons/Tenno/Melee/Tonfa/TonfaContestWinnerPrime/TonfaContestWinnerPrimeWeapon
+  kronsh_one_handed:             /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipSix
+  kronsh_two_handed:             /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipSix
   kulstar:                       /Lotus/Weapons/Grineer/Pistols/GrnTorpedoPistol/GrnTorpedoPistol
   kunai:                         /Lotus/Weapons/Tenno/ThrowingWeapons/Kunai
   kuva_ayanga:                   /Lotus/Weapons/Grineer/HeavyWeapons/GrnHeavyGrenadeLauncher
@@ -354,6 +364,8 @@ resolved:
   masseter:                      /Lotus/Weapons/Tenno/Melee/Swords/TnChiselKanabo/TnChiselKanabo
   masseter_prime:                /Lotus/Weapons/Tenno/Melee/Swords/PrimeMasseter/PrimeMasseter
   mausolon:                      /Lotus/Weapons/Tenno/Archwing/Primary/ThanoTechArchLongGun/ThanoTechLongGun
+  mewan_one_handed:              /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipThree
+  mewan_two_handed:              /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipThree
   mios:                          /Lotus/Weapons/Infested/Melee/Swords/Mios/Mios
   mire:                          /Lotus/Weapons/Infested/Melee/Swords/Mire/MireSword
   miter:                         /Lotus/Weapons/Grineer/LongGuns/GrineerSawbladeGun/SawBladeGun
@@ -388,6 +400,8 @@ resolved:
   okina:                         /Lotus/Weapons/Tenno/Melee/Swords/TennoSai/TennoSais
   okina_prime:                   /Lotus/Weapons/Tenno/Melee/Swords/PrimeOkina/PrimeOkina
   onos:                          /Lotus/Weapons/Thanotech/EntratiWristGun/EntratiWristGunWeapon
+  ooltha_one_handed:             /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipTwo
+  ooltha_two_handed:             /Lotus/Weapons/Ostron/Melee/ModularMelee01/Tip/TipTwo
   opticor:                       /Lotus/Weapons/Corpus/LongGuns/CrpBFG/CrpBFG
   opticor_vandal:                /Lotus/Weapons/Corpus/LongGuns/CrpBFG/Vandal/VandalCrpBFG
   orthos:                        /Lotus/Weapons/Tenno/Melee/Polearms/PolearmWeapon
@@ -413,6 +427,10 @@ resolved:
   phantasma:                     /Lotus/Weapons/Tenno/LongGuns/RevenantShotgun/RevenantShotgun
   phantasma_prime:               /Lotus/Weapons/Tenno/LongGuns/PrimePhantasma/PhantasmaPrimeShotgun
   phenmor:                       /Lotus/Weapons/Tenno/Zariman/LongGuns/SemiAutoRifle/ZarimanSemiAutoRifle
+  plague_keewar_one_handed:      /Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Tips/InfestedTipTwo
+  plague_keewar_two_handed:      /Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Tips/InfestedTipTwo
+  plague_kripath_one_handed:     /Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Tips/InfestedTipOne
+  plague_kripath_two_handed:     /Lotus/Weapons/Ostron/Melee/ModularMeleeInfested/Tips/InfestedTipOne
   plasma_sword:                  /Lotus/Weapons/Tenno/Melee/Swords/PlasmaSword/PlasmaLongSword
   plinx:                         /Lotus/Weapons/Corpus/Pistols/CrpSonificBlastor/CrpBlastorWeapon
   pox:                           /Lotus/Weapons/Infested/Pistols/InfProximityStars/InfProximityStars
@@ -448,6 +466,8 @@ resolved:
   quassus_prime:                 /Lotus/Weapons/Tenno/Melee/Warfan/PrimeQuassus/PrimeQuassusWeapon
   quatz:                         /Lotus/Weapons/Grineer/Pistols/GrnAmphisPistol/GrnAmphisPistol
   quellor:                       /Lotus/Weapons/Tenno/LongGuns/TnRailjackRifle/RailjackRifleGun
+  rabvee_one_handed:             /Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipTen
+  rabvee_two_handed:             /Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipTen
   rakta_ballistica:              /Lotus/Weapons/Syndicates/RedVeil/Pistols/RVBallistica
   rakta_cernos:                  /Lotus/Weapons/Syndicates/RedVeil/Bows/RVCernos
   rakta_dark_dagger:             /Lotus/Weapons/Syndicates/RedVeil/Melee/RVDarkDagger
@@ -482,6 +502,8 @@ resolved:
   secura_lecta:                  /Lotus/Weapons/Syndicates/PerrinSequence/Melee/PSLecta
   secura_penta:                  /Lotus/Weapons/Syndicates/PerrinSequence/LongGuns/PSPenta
   seer:                          /Lotus/Weapons/Grineer/GrineerPistol/GrnScopedPistolPlayer
+  sepfahn_one_handed:            /Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipNine
+  sepfahn_two_handed:            /Lotus/Weapons/Ostron/Melee/ModularMelee02/Tip/TipNine
   sepulcrum:                     /Lotus/Weapons/Thanotech/ThanoPistol/ThanotechPistol
   serro:                         /Lotus/Weapons/Corpus/Melee/Polearm/CorpusPolearm01/CorpusPolearmWeapon
   shaku:                         /Lotus/Weapons/Tenno/Melee/Nunchaku/TnoNunchaku/TnoNunchaku

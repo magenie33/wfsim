@@ -195,7 +195,7 @@ impl WeaponBase {
         id: &str,
         frenzy_active: bool,
         evo_ids: &[&str],
-        assembly: Option<&crate::data::weapons::kitguns::Assembly>,
+        assembly: Option<&crate::data::weapons::assembly::Assembly>,
     ) -> Self {
         crate::data::weapons::base_panel_assembled(id, frenzy_active, assembly)
             .apply_evolution_ids(evo_ids)

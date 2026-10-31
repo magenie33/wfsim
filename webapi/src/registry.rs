@@ -7,7 +7,7 @@ use wfsim_engine::data::enemies::EnemySpec;
 use wfsim_engine::model::WeaponBase;
 use wfsim_engine::model::ModDef;
 use wfsim_engine::rules::capacity::Polarity;
-use crate::kitgun::{apply_valence_from, assembly_of};
+use crate::weapon_options::{apply_valence_from, assembly_of};
 use crate::request::get_str;
 
 // ---- Enemy library (the engine's embedded data/enemies/**) -------------
@@ -251,6 +251,8 @@ pub(crate) fn weapons() -> &'static [WeaponInfo] {
                     // answer a reader looking for a Kitgun is after.
                     subtype: if s.kitgun.is_some() {
                         "Kitgun".to_string()
+                    } else if s.zaw.is_some() {
+                        "Zaw".to_string()
                     } else {
                         title_case(&s.class)
                     },
@@ -501,6 +503,7 @@ mod one_picture_one_weapon {
     /// data/kitguns/README.md.
     fn subject(id: &str) -> &str {
         let Some(s) = wfsim_engine::data::weapons::spec(id) else { return id };
+        if let Some(z) = &s.zaw { return &z.strike; }
         match s.kitgun.as_deref().and_then(|k| {
             wfsim_engine::data::weapons::kitguns::chambers().iter().find(|c| c.id == k)
         }) {

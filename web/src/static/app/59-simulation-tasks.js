@@ -197,7 +197,7 @@ function boardReviewRequest(value) {
 }
 function boardReviewRecord(weapon, row) {
   return { weapon, mods: row.mods || [], evolutions: row.evolutions || [], arcanes: row.arcanes || [],
-    valence: row.valence || "", exilus: row.exilus || "", grip: row.grip || "", loader: row.loader || "",
+    valence: row.valence || "", exilus: row.exilus || "", grip: row.grip || "", loader: row.loader || "", link: row.link || "",
     ...(row.wielder ? { wielder: taskClone(row.wielder) } : {}),
     ...(row.riven ? { riven_pos: row.riven.bonuses, riven_neg: row.riven.malus || "", riven_rolls: row.riven.rolls } : {}) };
 }

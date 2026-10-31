@@ -101,7 +101,7 @@ function finderTokens(p) {
     for (const s of r.riven.bonuses || []) out.push("rv+:" + s);
     if (r.riven.malus) out.push("rv-:" + r.riven.malus);
   }
-  if (r.grip) out.push("part:" + r.grip, "part:" + r.loader);
+  if (r.grip) out.push("part:" + r.grip, "part:" + (r.link || r.loader));
   if (r.valence) out.push("val:" + r.valence);
   return out;
 }
@@ -253,7 +253,7 @@ function renderBuildFinder() {
       ...headlessWeaponModSections(META, w, headlessBoardRowAxes(pageSay(), w, r, {}).slots, (s) => s?.mod
         ? modChip(s.mod.startsWith("riven:") ? BOARD_RIVEN_SLOT : rankedId(s.mod, s.rank)) : null),
       riven: r.riven ? rivenSpecCardHtml(w, { name: "", spec: boardRivenState(r.riven) }) : "",
-      parts: r.grip ? marked(partChipsOf(w.id, r.grip, r.loader)) : null,
+      parts: r.grip ? marked(partChipsOf(w.id, r.grip, r.link || r.loader)) : null,
       arcanes: (w.arcane_slots || 0) >= 1
         ? (r.arcanes || []).filter((id) => id && id !== "none").map((id) => {
           const a = arcaneById(id);

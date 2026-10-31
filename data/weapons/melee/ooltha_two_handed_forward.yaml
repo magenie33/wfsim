@@ -1,0 +1,31 @@
+# see notes: zaw_assembly
+# see notes: melee_shared_package_actions
+id: ooltha_two_handed_forward
+name: Ooltha (Staff)
+inherits: ooltha_two_handed
+form: forward
+transform_group: ooltha_two_handed
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Ooltha
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.18
+  crit_multiplier: 2
+  status_chance: 0.18
+  punch_through_m: 0.0
+  range_m: 3.0
+  follow_through: 0.5
+  heavy:
+    multiplier: 5
+    windup_seconds: 0.69999999
+  damage:
+    impact: 22.0
+    puncture: 88.0
+    slash: 110.0
+  combo_script: []

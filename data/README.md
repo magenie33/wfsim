@@ -20,6 +20,10 @@ item  ──references──▶  perk (trigger + grants)
 (weapon / arcane / mod)   (data/perks/, carries its granted effects inline)
 ```
 
+- Modular weapons retain their parts on the `assembly` build axis. Kitguns
+  use `kitguns/` and `{grip, loader}`; Zaws use `zaws/parts.yaml` and
+  `{grip, link}`. Composition runs before the shared weapon panel
+  ([Zaws](../docs/ZAW.md), [Kitguns](../docs/KITGUNS.md)).
 - A perk carries its `grants` block inline; a separate buff table returns
   only if two perks ever grant the same effect.
 - Melee stance and weapon inputs reference `melee/actions.yaml` by package

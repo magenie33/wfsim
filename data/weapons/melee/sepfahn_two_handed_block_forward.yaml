@@ -1,0 +1,31 @@
+# see notes: zaw_assembly
+# see notes: melee_shared_package_actions
+id: sepfahn_two_handed_block_forward
+name: Sepfahn (Staff)
+inherits: sepfahn_two_handed
+form: block_forward
+transform_group: sepfahn_two_handed
+co_behavior: additive_with_base_damage
+source:
+  url: https://wiki.warframe.com/w/Sepfahn
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.2
+  crit_multiplier: 2
+  status_chance: 0.2
+  punch_through_m: 0.0
+  range_m: 3.0
+  follow_through: 0.5
+  heavy:
+    multiplier: 5
+    windup_seconds: 0.69999999
+  damage:
+    impact: 22.200000000000003
+    puncture: 55.5
+    slash: 144.3
+  combo_script: []

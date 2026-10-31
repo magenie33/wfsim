@@ -187,7 +187,7 @@ function packV4(a) {
     encName(name),
     md || "",
     val ? `${val[0]}:${val[1]}` : "",
-    asm ? id(asm[0]) + id(asm[1]) : "",
+    asm ? id(asm[0]) + id(asm[1]) + (asm[2] === "link" ? "l" : "") : "",
     extra.join("."),
   ];
   if (bad) return null;
@@ -253,7 +253,7 @@ function unpackV4(text) {
   const val = f[7] ? f[7].split(":") : null;
   return [2, weapon, decName(f[5]) || 0, slots9, arcs, evos, rivens, 0, 0,
     f[6] || 0, val ? [val[0], Number(val[1])] : 0,
-    f[8] ? [si62Back(f[8].slice(0, 2)), si62Back(f[8].slice(2, 4))] : 0];
+    f[8] ? [si62Back(f[8].slice(0, 2)), si62Back(f[8].slice(2, 4)), ...(f[8][4] === "l" ? ["link"] : [])] : 0];
 }
 
 function packV3(a) {
@@ -300,7 +300,7 @@ function packV3(a) {
     (rivens || []).map(riven).join("!"),
     md || "",
     val ? `${val[0]}:${val[1]}` : "",
-    asm ? `${siOf(asm[0])}:${siOf(asm[1])}` : "",
+    asm ? `${siOf(asm[0])}:${siOf(asm[1])}${asm[2] === "link" ? ":link" : ""}` : "",
   ];
   while (out.length > 3 && out[out.length - 1] === "") out.pop();
   const text = out.join("~");
@@ -346,7 +346,7 @@ function unpackV3(text) {
   const asm = f[8] ? f[8].split(":") : null;
   return [2, weapon, decName(f[1]) || 0, slots9, arcs, evos, rivens, 0, 0,
     f[6] || 0, val ? [val[0], Number(val[1])] : 0,
-    asm ? [siBack(asm[0]), siBack(asm[1])] : 0];
+    asm ? [siBack(asm[0]), siBack(asm[1]), ...(asm[2] === "link" ? ["link"] : [])] : 0];
 }
 
 const b64urlEnc = (u8) => {
@@ -433,7 +433,7 @@ async function decodeShare(code) {
     // Absent means this weapon's default, the same as the two above — so a link
     // posted before parts travelled still lands where it always did, and an
     // ordinary weapon (which has none) is unaffected either way.
-    assembly: asm ? { grip: asm[0], loader: asm[1] } : undefined,
+    assembly: asm ? { grip: asm[0], [asm[2] === "link" ? "link" : "loader"]: asm[1] } : undefined,
     slots: (slots9 || []).map((s) => {
       if (!s) return { mod: null, pol: null, rank: null };
       const [id, pol, rank] = typeof s === "string" ? [s] : s;

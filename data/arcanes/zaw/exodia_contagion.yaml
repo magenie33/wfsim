@@ -1,0 +1,18 @@
+id: exodia_contagion
+name: Exodia Contagion
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/MeleeArcaneProjectileOnJump
+rarity: legendary
+max_rank: 3
+description: "After a Bullet Jump or Double Jump:\r\nMelee while Aim Gliding launches a projectile that explodes on impact"
+equip_traits:
+- zaw
+seats:
+- zaw
+source:
+  url: https://wiki.warframe.com/w/Exodia_Contagion
+effects:
+- kind: unmodelled
+  rank0: 0
+  rankMax: 0
+unmodeled:
+- The airborne projectile, embedded ticks and explosion are not simulated; their damage is omitted.

@@ -152,6 +152,7 @@ function boardPayload() {
     // at.
     grip: (assembly && assembly.grip) || "",
     loader: (assembly && assembly.loader) || "",
+    link: (assembly && assembly.link) || "",
     // WHO IS HOLDING IT, and it is part of the BUILD on exactly one kind of
     // weapon. Every ruler scores a gun in a frameless Tenno's hands, so the
     // door drops this and two players who tested one build on two frames send
@@ -199,6 +200,7 @@ function boardBuildContext() {
     valence: valence.element,
     grip: (assembly && assembly.grip) || "",
     loader: (assembly && assembly.loader) || "",
+    link: (assembly && assembly.link) || "",
     wielder: wielderPayload(),
   };
 }
@@ -240,7 +242,7 @@ function boardPayloadFromResult(res, ctx = boardBuildContext()) {
     valence: res.valence || ctx.valence,
     exilus: exilusOf(res),
     grip: ctx.grip,
-    loader: ctx.loader,
+    loader: ctx.loader, link: ctx.link,
     // …AND THE WARFRAME, from the page for the reason the riven and the
     // assembly are: the search was run in these hands, so they are the row's.
     wielder: ctx.wielder,

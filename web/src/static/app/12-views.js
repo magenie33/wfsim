@@ -388,7 +388,7 @@ function renderModuleTabs(mod = modSuffix()) {
 // a Kitgun's own. "add Kitgun arcane" is the sentence, so the Kitgun label is
 // singular here.
 const ARC_POOL_LABEL = { primary: "Primary", secondary: "Secondary", melee: "Melee",
-  kitgun: "Kitgun", archgun: "Arch-Gun" };
+  kitgun: "Kitgun", zaw: "Zaw", archgun: "Arch-Gun" };
 
 /// THE FILTERS INSIDE ONE SLOT — the weapon type where the slot is not one, the
 /// class, the tags — one state shape and one drawing, read by the home page's
@@ -478,7 +478,7 @@ function renderHome() {
   const weaponCard = (w) => {
     const tags = [
       tag(weaponClassKey(w)),
-      ...(w.tags || []).filter((t) => t !== "prime" && !(t === "kitgun" && weaponClassKey(w) === "Kitgun"))
+      ...(w.tags || []).filter((t) => t !== "prime" && weaponTagLabel(t) !== tr(weaponClassKey(w)))
         .map((t) => `<span class="tag">${escHtml(weaponTagLabel(t))}</span>`),
       w.weapon_type && w.weapon_type !== w.slot ? tag(ARC_POOL_LABEL[w.weapon_type] || w.weapon_type) : "",
     ].join("");

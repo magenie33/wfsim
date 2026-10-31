@@ -243,7 +243,7 @@ const slotSibling = (id) => {
   const s = assemblySpec(id);
   if (!s) return null;
   const w = (META.weapons || []).find(
-    (x) => x.id !== id && x.assembly && x.assembly.chamber === s.chamber);
+    (x) => x.id !== id && x.assembly && (x.assembly.family || x.assembly.chamber) === (s.family || s.chamber));
   return w ? w.id : null;
 };
 
@@ -289,7 +289,8 @@ function renderAssembly() {
   const sign = (v, unit) => (v > 0 ? "+" : "") + n(v) + (unit || "");
   const pc = (v) => Math.round(Number(v) * 1000) / 10;
   const gripItem = (g) => {
-    const d = s.grip_stats && s.grip_stats[g.id];
+    const table = (s.grip_stats_by_link || {})[assembly.link] || s.grip_stats;
+    const d = table && table[g.id];
     // A BEAM GRIP'S TRADE IS REACH, and its fire rate is the same on all five,
     // so the reach is what the hint shows in its place.
     const bits = d
@@ -298,7 +299,7 @@ function renderAssembly() {
          d.charge_seconds != null ? `${n(d.charge_seconds)} s ${tr("charge")}` : ""]
         .filter(Boolean)
       : [];
-    return { id: g.id, label: g.name, hint: bits.join(" · ") };
+    return { id: g.id, label: tr(g.name), hint: bits.join(" · ") };
   };
   const loaderItem = (l) => {
     // ONLY WHAT IT MOVES. Two of the three deltas are zero on most loaders and
@@ -311,7 +312,7 @@ function renderAssembly() {
       l.crit_multiplier ? `${sign(l.crit_multiplier)}x` : "",
       l.status_chance ? `${sign(pc(l.status_chance), "%")} ${tr("status")}` : "",
     ].filter(Boolean);
-    return { id: l.id, label: l.name, hint: bits.join(" · ") };
+    return { id: l.id, label: tr(l.name), hint: bits.join(" · ") };
   };
 
   // THE PARTS, on the page's one ranked control — see `rankedSlot`. A part can
@@ -336,12 +337,19 @@ function renderAssembly() {
     return rankedSlot(id, partCfgs[id]);
   };
 
+  const component = s.component || "loader";
+  const linkItem = (l) => ({ id: l.id, label: tr(l.name), hint: [
+    l.damage_delta ? `${sign(l.damage_delta)} ${tr("damage")}` : "",
+    l.speed_delta ? `${sign(l.speed_delta)}/s` : "",
+    l.crit_chance ? `${sign(pc(l.crit_chance), "%")} ${tr("crit")}` : "",
+    l.status_chance ? `${sign(pc(l.status_chance), "%")} ${tr("status")}` : "",
+  ].filter(Boolean).join(" · ") });
   const axis = { kind: "assembly", idx: 0 };
   box.innerHTML =
     pick("grip", "Grip", s.grips.map(gripItem),
-      tr("the grip sets damage, fire rate and the charge — only this slot's five are offered, because a grip is what decides the slot")) +
-    pick("loader", "Loader", s.loaders.map(loaderItem),
-      tr("the loader sets the magazine and the reload, and adds three deltas that can be negative"));
+      tr(s.kind === "zaw" ? "the grip adjusts damage and attack speed within this weapon class" : "the grip sets damage, fire rate and the charge — only this slot's five are offered, because a grip is what decides the slot")) +
+    pick(component, component === "link" ? "Link" : "Loader", s[component + "s"].map(component === "link" ? linkItem : loaderItem),
+      tr(component === "link" ? "the link adjusts damage, attack speed, critical chance and status chance" : "the loader sets the magazine and the reload, and adds three deltas that can be negative"));
   // THE SCAN FIRES WHEN A LIST IS OPENED — see `openRanked`. The strip that
   // reports it lives inside that list, where the ranking is being read.
   bindRankedSlots(box, partCfgs);

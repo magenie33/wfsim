@@ -1184,6 +1184,16 @@ declare which axis their fields cover. It asserts coverage BOTH ways and that
 the worker's record and identity key are still DERIVED from its table. Plain
 node against the served meta and two source files.
 
+## `check_assembly`
+
+Compatible modular parts reach the panel, simulation, presets and share links.
+Kitgun grips stay within their slot. Zaws have 22 independent weapon entries,
+five matching grips and sixteen links per entry, current-link grip previews,
+and separate Exodia/melee arcane seats. The six unsupported Exodia effects
+remain visibly marked. `--zaw-only` runs that section; it fails on a page
+without Zaw support. The worker's compact v3/v4 link tags and unchanged legacy
+Kitgun bytes are also exercised by `check_share_short`.
+
 ## `check_melee_slots`
 
 A melee weapon has TWO slots a gun does not, and one

@@ -98,7 +98,8 @@ fn parse(v: &Value) -> Result<Build<'_>, Value> {
         mode: v.get("mode").and_then(Value::as_str).unwrap_or("base").to_string(),
         valence_element: v.get("valence_element").and_then(Value::as_str).unwrap_or("").to_string(),
         valence_bonus: v.get("valence_bonus").cloned().unwrap_or(Value::Null),
-        assembly: v.get("assembly").and_then(Value::as_object).cloned().unwrap_or_default(),
+        assembly: crate::weapon_options::assembly_of(v, &info.id)
+            .and_then(|a| a.parts().as_object().cloned()).unwrap_or_default(),
         every_mods: every_list("mods", &every.mods),
         every_arcanes: every_list("arcanes", &every.arcanes),
         req: v,
@@ -267,7 +268,7 @@ fn assembly(b: &Build) -> Vec<Value> {
         return Vec::new();
     }
     let mut out = Vec::new();
-    for (part, key) in [("grip", "grips"), ("loader", "loaders")] {
+    for (part, key) in [("grip", "grips"), ("loader", "loaders"), ("link", "links")] {
         for it in spec.get(key).and_then(Value::as_array).into_iter().flatten() {
             let Some(id) = it.get("id").and_then(Value::as_str) else { continue };
             if b.assembly.get(part).and_then(Value::as_str) == Some(id) {

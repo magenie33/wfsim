@@ -36,6 +36,8 @@ pub struct ArcBuffSpec {
 /// multiplier fields default to their 1.0 identity, NOT zero).
 #[derive(Debug, Clone, PartialEq)]
 pub struct ArcaneFx {
+    pub combo_count_chance: f64,
+    pub combo_count_chance_on_lifted: f64,
     /// AN ECHO — a fraction of THIS hit dealt to every other body within
     /// [`Self::echo_radius_m`] of it. Secondary Irradiate is the only member.
     ///
@@ -160,6 +162,8 @@ pub struct ArcaneFx {
 impl Default for ArcaneFx {
     fn default() -> Self {
         Self {
+            combo_count_chance: 0.0,
+            combo_count_chance_on_lifted: 0.0,
             id: String::new(),
             buffs: Vec::new(),
             enervate_rank: None,
@@ -248,6 +252,8 @@ impl ArcaneFx {
                     ..ArcaneFx::none()
                 };
                 for a in live {
+                    out.combo_count_chance += a.combo_count_chance;
+                    out.combo_count_chance_on_lifted += a.combo_count_chance_on_lifted;
                     out.buffs.extend(a.buffs.iter().cloned());
                     out.enervate_rank = out.enervate_rank.or(a.enervate_rank);
                     out.headshot_multiplier_bonus += a.headshot_multiplier_bonus;

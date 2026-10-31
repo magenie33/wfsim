@@ -36,8 +36,8 @@ pub fn arcane_pools(weapon: &str) -> Vec<&'static str> {
     // FIRST, because it is the seat this weapon has that no other weapon does:
     // the ordinary one is the same seat every gun in the roster carries, and
     // putting the distinctive one after it reads as an afterthought.
-    if s.kitgun.is_some() {
-        let mut out = vec!["kitgun"];
+    if s.kitgun.is_some() || s.zaw.is_some() {
+        let mut out = vec![if s.zaw.is_some() { "zaw" } else { "kitgun" }];
         out.extend(own);
         return out;
     }

@@ -91,9 +91,10 @@ pub(super) fn traits_for(s: &WeaponSpec) -> &'static [&'static str] {
         // and the eight Pax and Residual arcanes go on neither. DERIVED from the
         // one field that makes the weapon modular rather than written on the entry
         // beside it, so a chamber transcribed tomorrow cannot arrive without it.
-        if s.kitgun.is_some() {
+        if super::assembly::is_modular(s) {
             out.push("modular");
         }
+        if s.zaw.is_some() { out.push("zaw"); }
         Box::leak(out.into_boxed_slice())
     })
 }

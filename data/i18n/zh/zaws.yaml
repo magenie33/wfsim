@@ -1,0 +1,237 @@
+# DE Public Export names and card text joined by internal_name; docs/zaws/names-zh.json.
+weapons:
+  balla_one_handed: 宝拉 (匕首)
+  balla_one_handed_forward: 宝拉 (匕首)
+  balla_one_handed_block: 宝拉 (匕首)
+  balla_one_handed_block_forward: 宝拉 (匕首)
+  balla_one_handed_heavy: 宝拉 (匕首)
+  balla_one_handed_slide: 宝拉 (匕首)
+  balla_one_handed_heavy_slam: 宝拉 (匕首)
+  balla_two_handed: 宝拉 (长棍)
+  balla_two_handed_forward: 宝拉 (长棍)
+  balla_two_handed_block: 宝拉 (长棍)
+  balla_two_handed_block_forward: 宝拉 (长棍)
+  balla_two_handed_heavy: 宝拉 (长棍)
+  balla_two_handed_slide: 宝拉 (长棍)
+  balla_two_handed_heavy_slam: 宝拉 (长棍)
+  cyath_one_handed: 西亚什 (砍刀)
+  cyath_one_handed_forward: 西亚什 (砍刀)
+  cyath_one_handed_block: 西亚什 (砍刀)
+  cyath_one_handed_block_forward: 西亚什 (砍刀)
+  cyath_one_handed_heavy: 西亚什 (砍刀)
+  cyath_one_handed_slide: 西亚什 (砍刀)
+  cyath_one_handed_heavy_slam: 西亚什 (砍刀)
+  cyath_two_handed: 西亚什 (长柄武器)
+  cyath_two_handed_forward: 西亚什 (长柄武器)
+  cyath_two_handed_block: 西亚什 (长柄武器)
+  cyath_two_handed_block_forward: 西亚什 (长柄武器)
+  cyath_two_handed_heavy: 西亚什 (长柄武器)
+  cyath_two_handed_slide: 西亚什 (长柄武器)
+  cyath_two_handed_heavy_slam: 西亚什 (长柄武器)
+  dehtat_one_handed: 德塔特 (细剑)
+  dehtat_one_handed_forward: 德塔特 (细剑)
+  dehtat_one_handed_block: 德塔特 (细剑)
+  dehtat_one_handed_block_forward: 德塔特 (细剑)
+  dehtat_one_handed_heavy: 德塔特 (细剑)
+  dehtat_one_handed_slide: 德塔特 (细剑)
+  dehtat_one_handed_heavy_slam: 德塔特 (细剑)
+  dehtat_two_handed: 德塔特 (长柄武器)
+  dehtat_two_handed_forward: 德塔特 (长柄武器)
+  dehtat_two_handed_block: 德塔特 (长柄武器)
+  dehtat_two_handed_block_forward: 德塔特 (长柄武器)
+  dehtat_two_handed_heavy: 德塔特 (长柄武器)
+  dehtat_two_handed_slide: 德塔特 (长柄武器)
+  dehtat_two_handed_heavy_slam: 德塔特 (长柄武器)
+  dokrahm_one_handed: 多克拉姆 (镰刀)
+  dokrahm_one_handed_forward: 多克拉姆 (镰刀)
+  dokrahm_one_handed_block: 多克拉姆 (镰刀)
+  dokrahm_one_handed_block_forward: 多克拉姆 (镰刀)
+  dokrahm_one_handed_heavy: 多克拉姆 (镰刀)
+  dokrahm_one_handed_slide: 多克拉姆 (镰刀)
+  dokrahm_one_handed_heavy_slam: 多克拉姆 (镰刀)
+  dokrahm_two_handed: 多克拉姆 (巨刃)
+  dokrahm_two_handed_forward: 多克拉姆 (巨刃)
+  dokrahm_two_handed_block: 多克拉姆 (巨刃)
+  dokrahm_two_handed_block_forward: 多克拉姆 (巨刃)
+  dokrahm_two_handed_heavy: 多克拉姆 (巨刃)
+  dokrahm_two_handed_slide: 多克拉姆 (巨刃)
+  dokrahm_two_handed_heavy_slam: 多克拉姆 (巨刃)
+  kronsh_one_handed: 客隆什 (砍刀)
+  kronsh_one_handed_forward: 客隆什 (砍刀)
+  kronsh_one_handed_block: 客隆什 (砍刀)
+  kronsh_one_handed_block_forward: 客隆什 (砍刀)
+  kronsh_one_handed_heavy: 客隆什 (砍刀)
+  kronsh_one_handed_slide: 客隆什 (砍刀)
+  kronsh_one_handed_heavy_slam: 客隆什 (砍刀)
+  kronsh_two_handed: 客隆什 (长柄武器)
+  kronsh_two_handed_forward: 客隆什 (长柄武器)
+  kronsh_two_handed_block: 客隆什 (长柄武器)
+  kronsh_two_handed_block_forward: 客隆什 (长柄武器)
+  kronsh_two_handed_heavy: 客隆什 (长柄武器)
+  kronsh_two_handed_slide: 客隆什 (长柄武器)
+  kronsh_two_handed_heavy_slam: 客隆什 (长柄武器)
+  mewan_one_handed: 密丸 (剑)
+  mewan_one_handed_forward: 密丸 (剑)
+  mewan_one_handed_block: 密丸 (剑)
+  mewan_one_handed_block_forward: 密丸 (剑)
+  mewan_one_handed_heavy: 密丸 (剑)
+  mewan_one_handed_slide: 密丸 (剑)
+  mewan_one_handed_heavy_slam: 密丸 (剑)
+  mewan_two_handed: 密丸 (长柄武器)
+  mewan_two_handed_forward: 密丸 (长柄武器)
+  mewan_two_handed_block: 密丸 (长柄武器)
+  mewan_two_handed_block_forward: 密丸 (长柄武器)
+  mewan_two_handed_heavy: 密丸 (长柄武器)
+  mewan_two_handed_slide: 密丸 (长柄武器)
+  mewan_two_handed_heavy_slam: 密丸 (长柄武器)
+  ooltha_one_handed: 乌尔萨 (剑)
+  ooltha_one_handed_forward: 乌尔萨 (剑)
+  ooltha_one_handed_block: 乌尔萨 (剑)
+  ooltha_one_handed_block_forward: 乌尔萨 (剑)
+  ooltha_one_handed_heavy: 乌尔萨 (剑)
+  ooltha_one_handed_slide: 乌尔萨 (剑)
+  ooltha_one_handed_heavy_slam: 乌尔萨 (剑)
+  ooltha_two_handed: 乌尔萨 (长棍)
+  ooltha_two_handed_forward: 乌尔萨 (长棍)
+  ooltha_two_handed_block: 乌尔萨 (长棍)
+  ooltha_two_handed_block_forward: 乌尔萨 (长棍)
+  ooltha_two_handed_heavy: 乌尔萨 (长棍)
+  ooltha_two_handed_slide: 乌尔萨 (长棍)
+  ooltha_two_handed_heavy_slam: 乌尔萨 (长棍)
+  plague_keewar_one_handed: 瘟疫 奇沃 (镰刀)
+  plague_keewar_one_handed_forward: 瘟疫 奇沃 (镰刀)
+  plague_keewar_one_handed_block: 瘟疫 奇沃 (镰刀)
+  plague_keewar_one_handed_block_forward: 瘟疫 奇沃 (镰刀)
+  plague_keewar_one_handed_heavy: 瘟疫 奇沃 (镰刀)
+  plague_keewar_one_handed_slide: 瘟疫 奇沃 (镰刀)
+  plague_keewar_one_handed_heavy_slam: 瘟疫 奇沃 (镰刀)
+  plague_keewar_two_handed: 瘟疫 奇沃 (长棍)
+  plague_keewar_two_handed_forward: 瘟疫 奇沃 (长棍)
+  plague_keewar_two_handed_block: 瘟疫 奇沃 (长棍)
+  plague_keewar_two_handed_block_forward: 瘟疫 奇沃 (长棍)
+  plague_keewar_two_handed_heavy: 瘟疫 奇沃 (长棍)
+  plague_keewar_two_handed_slide: 瘟疫 奇沃 (长棍)
+  plague_keewar_two_handed_heavy_slam: 瘟疫 奇沃 (长棍)
+  plague_kripath_one_handed: 瘟疫 克里帕丝 (细剑)
+  plague_kripath_one_handed_forward: 瘟疫 克里帕丝 (细剑)
+  plague_kripath_one_handed_block: 瘟疫 克里帕丝 (细剑)
+  plague_kripath_one_handed_block_forward: 瘟疫 克里帕丝 (细剑)
+  plague_kripath_one_handed_heavy: 瘟疫 克里帕丝 (细剑)
+  plague_kripath_one_handed_slide: 瘟疫 克里帕丝 (细剑)
+  plague_kripath_one_handed_heavy_slam: 瘟疫 克里帕丝 (细剑)
+  plague_kripath_two_handed: 瘟疫 克里帕丝 (长柄武器)
+  plague_kripath_two_handed_forward: 瘟疫 克里帕丝 (长柄武器)
+  plague_kripath_two_handed_block: 瘟疫 克里帕丝 (长柄武器)
+  plague_kripath_two_handed_block_forward: 瘟疫 克里帕丝 (长柄武器)
+  plague_kripath_two_handed_heavy: 瘟疫 克里帕丝 (长柄武器)
+  plague_kripath_two_handed_slide: 瘟疫 克里帕丝 (长柄武器)
+  plague_kripath_two_handed_heavy_slam: 瘟疫 克里帕丝 (长柄武器)
+  rabvee_one_handed: 拉比威 (砍刀)
+  rabvee_one_handed_forward: 拉比威 (砍刀)
+  rabvee_one_handed_block: 拉比威 (砍刀)
+  rabvee_one_handed_block_forward: 拉比威 (砍刀)
+  rabvee_one_handed_heavy: 拉比威 (砍刀)
+  rabvee_one_handed_slide: 拉比威 (砍刀)
+  rabvee_one_handed_heavy_slam: 拉比威 (砍刀)
+  rabvee_two_handed: 拉比威 (锤)
+  rabvee_two_handed_forward: 拉比威 (锤)
+  rabvee_two_handed_block: 拉比威 (锤)
+  rabvee_two_handed_block_forward: 拉比威 (锤)
+  rabvee_two_handed_heavy: 拉比威 (锤)
+  rabvee_two_handed_slide: 拉比威 (锤)
+  rabvee_two_handed_heavy_slam: 拉比威 (锤)
+  sepfahn_one_handed: 瑟普梵 (侍刃)
+  sepfahn_one_handed_forward: 瑟普梵 (侍刃)
+  sepfahn_one_handed_block: 瑟普梵 (侍刃)
+  sepfahn_one_handed_block_forward: 瑟普梵 (侍刃)
+  sepfahn_one_handed_heavy: 瑟普梵 (侍刃)
+  sepfahn_one_handed_slide: 瑟普梵 (侍刃)
+  sepfahn_one_handed_heavy_slam: 瑟普梵 (侍刃)
+  sepfahn_two_handed: 瑟普梵 (长棍)
+  sepfahn_two_handed_forward: 瑟普梵 (长棍)
+  sepfahn_two_handed_block: 瑟普梵 (长棍)
+  sepfahn_two_handed_block_forward: 瑟普梵 (长棍)
+  sepfahn_two_handed_heavy: 瑟普梵 (长棍)
+  sepfahn_two_handed_slide: 瑟普梵 (长棍)
+  sepfahn_two_handed_heavy_slam: 瑟普梵 (长棍)
+arcanes:
+  exodia_brave: 神威·勇武
+  exodia_contagion: 神威·触染
+  exodia_epidemic: 神威·流行病
+  exodia_force: 神威·气力
+  exodia_hunt: 神威·狩猎
+  exodia_might: 神威·力量
+  exodia_triumph: 神威·凯旋
+  exodia_valor: 神威·勇猛
+arcane_descriptions:
+  exodia_brave:
+  - "重击击杀时:\r\n+1.3 能量恢复率，持续 4 秒。最多叠加到 3 层。"
+  - "重击击杀时:\r\n+2.5 能量恢复率，持续 4 秒。最多叠加到 3 层。"
+  - "重击击杀时:\r\n+3.8 能量恢复率，持续 4 秒。最多叠加到 3 层。"
+  - "重击击杀时:\r\n+5 能量恢复率，持续 4 秒。最多叠加到 3 层。"
+  exodia_contagion:
+  - "旋身飞跃或二段跳后：\r\n飞身瞄准时进行近战会射出一个投射物，并在撞击后爆炸"
+  - "旋身飞跃或二段跳后：\r\n飞身瞄准时进行近战会射出一个投射物，并在撞击后爆炸"
+  - "旋身飞跃或二段跳后：\r\n飞身瞄准时进行近战会射出一个投射物，并在撞击后爆炸"
+  - "旋身飞跃或二段跳后：\r\n飞身瞄准时进行近战会射出一个投射物，并在撞击后爆炸"
+  exodia_epidemic:
+  - "旋身飞跃或二段跳后：\r\n震地攻击向前放出一道冲击波，将敌人悬停在空中一小段时间。"
+  - "旋身飞跃或二段跳后：\r\n震地攻击向前放出一道冲击波，将敌人悬停在空中一小段时间。"
+  - "旋身飞跃或二段跳后：\r\n震地攻击向前放出一道冲击波，将敌人悬停在空中一小段时间。"
+  - "旋身飞跃或二段跳后：\r\n震地攻击向前放出一道冲击波，将敌人悬停在空中一小段时间。"
+  exodia_force:
+  - "触发异常状态时：\r\n50% 的几率对 6 米内的敌人造成 50% 的武器伤害。"
+  - "触发异常状态时：\r\n50% 的几率对 6 米内的敌人造成 100% 的武器伤害。"
+  - "触发异常状态时：\r\n50% 的几率对 6 米内的敌人造成 150% 的武器伤害。"
+  - "触发异常状态时：\r\n50% 的几率对 6 米内的敌人造成 200% 的武器伤害。"
+  exodia_hunt:
+  - "震地攻击时：\r\n50% 的几率将 6 米内的敌人拉至近战范围。"
+  - "震地攻击时：\r\n50% 的几率将 8 米内的敌人拉至近战范围。"
+  - "震地攻击时：\r\n50% 的几率将 10 米内的敌人拉至近战范围。"
+  - "震地攻击时：\r\n50% 的几率将 12 米内的敌人拉至近战范围。"
+  exodia_might:
+  - "处决击杀时：\r\n50% 几率得到 +7.5% 生命窃取，持续 8 秒"
+  - "处决击杀时：\r\n50% 几率得到 +15% 生命窃取，持续 8 秒"
+  - "处决击杀时：\r\n50% 几率得到 +22.5% 生命窃取，持续 8 秒"
+  - "处决击杀时：\r\n50% 几率得到 +30% 生命窃取，持续 8 秒"
+  exodia_triumph:
+  - +12.5% 额外连击数几率
+  - +25% 额外连击数几率
+  - +37.5% 额外连击数几率
+  - +50% 额外连击数几率
+  exodia_valor:
+  - 对浮空敌人有 +50% 额外连击数几率
+  - 对浮空敌人有 +100% 额外连击数几率
+  - 对浮空敌人有 +150% 额外连击数几率
+  - 对浮空敌人有 +200% 额外连击数几率
+ui:
+  Jayap: 查亚普
+  Korb: 科布
+  Kroostra: 克鲁斯查
+  Kwath: 库阿斯
+  Laka: 拉卡
+  Peye: 佩耶
+  Plague Akwin: 瘟疫 艾克文
+  Plague Bokwin: 瘟疫 柏克文
+  Seekalla: 斯卡拉
+  Shtung: 石当
+  Ekwana II Jai: 伊克瓦纳 II 翟
+  Ekwana II Ruhang: 伊克瓦纳 II 如杭
+  Ekwana Jai: 伊克瓦纳 翟
+  Ekwana Jai II: 伊克瓦纳 翟 II
+  Ekwana Ruhang: 伊克瓦纳 如杭
+  Ekwana Ruhang II: 伊克瓦纳 如杭 II
+  Jai: 翟
+  Jai II: 翟 II
+  Ruhang: 如杭
+  Ruhang II: 如杭 II
+  Vargeet II Jai: 瓦吉特 II 翟
+  Vargeet II Ruhang: 瓦吉特 II 如杭
+  Vargeet Jai: 瓦吉特 翟
+  Vargeet Jai II: 瓦吉特 翟 II
+  Vargeet Ruhang: 瓦吉特 如杭
+  Vargeet Ruhang II: 瓦吉特 如杭 II
+  Link: 连接部件
+  the grip adjusts damage and attack speed within this weapon class: 握柄调整伤害和攻击速度，仅列出适用于当前武器类型的握柄
+  the link adjusts damage, attack speed, critical chance and status chance: 连接部件调整伤害、攻击速度、暴击几率和触发几率
+  "The heavy-slam loop uses a {cycle} s recovery and the maximum-height radius; the time spent climbing is not simulated.": "重击震地循环采用 {cycle} 秒恢复时间和最大高度的范围；模拟不计攀升所需的时间。"

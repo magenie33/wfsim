@@ -277,10 +277,11 @@ const cardParts = (c) => {
   const s = assemblySpec($("weapon").value);
   if (!s || !assembly) return null;
   const grip = (s.grips || []).find((x) => x.id === assembly.grip);
-  const loader = (s.loaders || []).find((x) => x.id === assembly.loader);
+  const component = s.component || "loader";
+  const loader = (s[component + "s"] || []).find((x) => x.id === assembly[component]);
   return cardItems(c, tr("Parts"), [
-    grip && { name: grip.name, note: tr("Grip"), img: grip.image ? IMG(grip.image) : null },
-    loader && { name: loader.name, note: tr("Loader"), img: loader.image ? IMG(loader.image) : null },
+    grip && { name: tr(grip.name), note: tr("Grip"), img: grip.image ? IMG(grip.image) : null },
+    loader && { name: tr(loader.name), note: tr(component === "link" ? "Link" : "Loader"), img: loader.image ? IMG(loader.image) : null },
   ].filter(Boolean), true);
 };
 

@@ -23,7 +23,7 @@ mod catalogue;
 mod fight;
 mod forma;
 mod i18n;
-mod kitgun;
+mod weapon_options;
 mod log;
 mod meta;
 mod optimize;
@@ -38,6 +38,8 @@ mod simulate;
 mod static_stats;
 mod tenno;
 mod warframe;
+#[cfg(test)]
+mod zaw_tests;
 
 pub use board::{board_check_json, build_keys_json, targets_json};
 pub use candidates::candidates_json;

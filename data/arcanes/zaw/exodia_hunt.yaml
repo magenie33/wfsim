@@ -1,0 +1,18 @@
+id: exodia_hunt
+name: Exodia Hunt
+internal_name: /Lotus/Upgrades/CosmeticEnhancers/Offensive/GroundSlamPull
+rarity: rare
+max_rank: 3
+description: "On Ground Slam:\r\n50% chance to pull enemies within Xm into melee range."
+equip_traits:
+- zaw
+seats:
+- zaw
+source:
+  url: https://wiki.warframe.com/w/Exodia_Hunt
+effects:
+- kind: unmodelled
+  rank0: 6
+  rankMax: 12
+unmodeled:
+- Slam attacks do not pull enemies into melee range.

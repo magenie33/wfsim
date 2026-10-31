@@ -4,7 +4,7 @@
 
 use serde_json::{json, Value};
 use wfsim_engine::target::TargetMode;
-use crate::kitgun::board_assembly_of;
+use crate::weapon_options::board_assembly_of;
 use crate::tenno::wielder_build_of;
 use crate::registry::enemies;
 use crate::request::{get_str, get_u32};

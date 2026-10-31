@@ -101,7 +101,7 @@ pub fn simulate_request(
     // assembly, so a submitted grip is stored, validated and then silently not
     // used — the number published would be for a weapon nobody built.
     if let Some(a) = &v.assembly {
-        o.insert("assembly".into(), json!({ "grip": a.grip, "loader": a.loader }));
+        o.insert("assembly".into(), a.parts());
     }
     o.insert("mode".into(), json!(played.id));
     // ONE SPELLING OF ONE FACT. `form` is what a request carries when it names

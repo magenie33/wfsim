@@ -23,6 +23,8 @@
 # repeat. A reason earns its place by being used more than twice OR by having
 # more than one numeric spelling.
 reasons:
+  heavy_slam_cycle_assumed:
+    text: "The heavy-slam loop uses a {cycle} s recovery and the maximum-height radius; the time spent climbing is not simulated."
   blob_over_cap:
     text: "Unmeasured: a shot already over the cap (multishot over {cap}) is read as holding the pile at {cap} and waiting 1.5 s, refreshed by each later shot, so steady fire never sets it off."
   blob_crossing_cap:
