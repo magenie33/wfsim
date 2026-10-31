@@ -125,8 +125,9 @@ pub struct FightParams {
     /// stack ceiling at the proc.
     pub squad: crate::data::tenno::SquadEffects,
     /// The weapon's (modded) base damage vector. Quantized once per run for
-    /// dealing damage and proc-type weighting. With Frenzy UP when the panel
-    /// injects; [`Self::resting`] is the same hit with it down.
+    /// dealing damage; proc-type weighting keeps this unquantized vector.
+    /// With Frenzy UP when the panel injects; [`Self::resting`] is the same
+    /// hit with it down.
     pub damage: DamageVector,
     /// See [`crate::build::loadout::ResolvedPanel::resting`]. Every shot picks
     /// between the two by [`super::state::CardWindows::frenzy`].

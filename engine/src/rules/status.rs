@@ -6,8 +6,8 @@
 //! - The listed status chance `SC` rolls **per pellet/hit**. `SC > 100%`
 //!   gives `floor(SC)` guaranteed rolls plus a `fraction(SC)` chance of one more.
 //! - Only a successful roll draws a **type**, weighted by the hit's (modded)
-//!   damage vector: `P(type) = damage / total`. Draws are independent — the
-//!   same type can repeat within one hit.
+//!   unquantized damage vector: `P(type) = damage / total` (MECHANICS §6).
+//!   Draws are independent — the same type can repeat within one hit.
 //! - **Forced procs** are weapon-data attributes declared per attack part.
 //!   They are independent of both `SC` and the distribution, and are appended
 //!   **outside** the rolling pipeline ("not the same as 100% status chance").

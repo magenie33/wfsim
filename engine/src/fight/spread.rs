@@ -294,7 +294,7 @@ pub(super) fn spread_hit(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    vector: &DamageVector,
+    status_vector: &DamageVector,
     params: &FightParams,
     active: &FightParams,
     gal: &mut GalStacks,
@@ -455,10 +455,10 @@ pub(super) fn spread_hit(
     // question, which has its own panel.
     if by.meter_row() {
         r.sources.radial += eff;
-        add_by_type(&mut r.sources.radial_by_type, vector, eff, &col);
+        add_by_type(&mut r.sources.radial_by_type, shares, eff, &col);
     } else {
         r.sources.direct += eff;
-        add_by_type(&mut r.sources.direct_by_type, vector, eff, &col);
+        add_by_type(&mut r.sources.direct_by_type, shares, eff, &col);
     }
     if killed && by.is_the_shot_itself() && leaves_one(active, params.player_at, spec.at) {
         r.ghost_kills += 1;
@@ -502,7 +502,7 @@ pub(super) fn spread_hit(
     let procs = crate::rules::status::procs_for_hit(
         forced,
         status_chance * foe.debuffs.received_status_chance(t),
-        vector,
+        status_vector,
         &spec.params.status_immunities,
         &mut d.status,
     );
@@ -576,6 +576,7 @@ pub(super) fn spread_hit(
 /// which is the owner's call and needs a measurement, not a wiki line.
 pub(super) struct SpreadStrike {
     pub(super) raw_per_bucket: f64,
+    /// Quantized direct-damage shares, also used by the damage meter.
     pub(super) shares: TypeShares,
     pub(super) crit_multiplier: f64,
     pub(super) crit_tier: u32,
@@ -583,7 +584,8 @@ pub(super) struct SpreadStrike {
     pub(super) modded_base: f64,
     pub(super) status_chance: f64,
     pub(super) forced: Vec<DamageType>,
-    pub(super) vector: DamageVector,
+    /// Unquantized composition; spread targets draw statuses from this alone.
+    pub(super) status_vector: DamageVector,
 }
 
 /// PUNCH THROUGH — the sixth way a shot reaches a body, and the only one that
@@ -628,7 +630,7 @@ pub(super) fn spread_from_follow_through(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    vector: &DamageVector,
+    status_vector: &DamageVector,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -657,7 +659,7 @@ pub(super) fn spread_from_follow_through(
             seat,
             w,
             &inst, foe, &spec, raw_per_bucket, shares, crit_multiplier, crit_tier, attrition,
-            modded_base, status_chance, forced, vector, params, active, gal, arc, r, rec, d, t,
+            modded_base, status_chance, forced, status_vector, params, active, gal, arc, r, rec, d, t,
             SpreadBy::FollowThrough,
             tennokai_heavy,
             true,
@@ -701,7 +703,7 @@ pub(super) fn spread_from_punch_through(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    vector: &DamageVector,
+    status_vector: &DamageVector,
     // WHETHER THE AIMED PELLET FOUND A HEAD, and WHAT THE PART WAS WORTH.
     // Both carried rather than re-rolled: the same round flying in a straight
     // line enters the same part of whatever is behind. The multiplier is
@@ -820,7 +822,7 @@ pub(super) fn spread_from_punch_through(
                 modded_base,
                 status_chance,
                 forced,
-                vector,
+                status_vector,
                 params,
                 active,
                 gal,
@@ -894,7 +896,7 @@ pub(super) fn spread_from_ricochet(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    vector: &DamageVector,
+    status_vector: &DamageVector,
     head_factor: &dyn Fn(&BodySpec<'_>) -> f64,
     // What an Electricity or Gas tick is worth on a head (`Dot::landing`).
     head_landing: f64,
@@ -941,7 +943,7 @@ pub(super) fn spread_from_ricochet(
             modded_base,
             status_chance,
             forced,
-            vector,
+            status_vector,
             params,
             active,
             gal,
@@ -996,7 +998,7 @@ pub(super) fn spread_from_echo(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    vector: &DamageVector,
+    status_vector: &DamageVector,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -1058,7 +1060,7 @@ pub(super) fn spread_from_echo(
             modded_base,
             status_chance,
             forced,
-            vector,
+            status_vector,
             params,
             active,
             gal,
@@ -1113,7 +1115,7 @@ pub(super) fn spread_from_tendrils(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    vector: &DamageVector,
+    status_vector: &DamageVector,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -1169,7 +1171,7 @@ pub(super) fn spread_from_tendrils(
             modded_base,
             status_chance,
             forced,
-            vector,
+            status_vector,
             params,
             active,
             gal,
@@ -1227,7 +1229,7 @@ pub(super) fn spread_from_blast(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    vector: &DamageVector,
+    status_vector: &DamageVector,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -1251,7 +1253,7 @@ pub(super) fn spread_from_blast(
         modded_base,
         status_chance,
         forced,
-        vector,
+        status_vector,
         gal,
         arc,
         r,
@@ -1290,7 +1292,7 @@ pub(super) fn blast_at(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    vector: &DamageVector,
+    status_vector: &DamageVector,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -1337,7 +1339,7 @@ pub(super) fn blast_at(
             modded_base,
             status_chance,
             forced,
-            vector,
+            status_vector,
             params,
             active,
             gal,
@@ -1392,7 +1394,7 @@ pub(super) fn spread_from_seeds(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    vector: &DamageVector,
+    status_vector: &DamageVector,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -1459,7 +1461,7 @@ pub(super) fn spread_from_seeds(
             modded_base,
             status_chance,
             forced,
-            vector,
+            status_vector,
             params,
             active,
             gal,
@@ -1659,7 +1661,7 @@ pub(super) fn spread_beyond_the_target(
             s.modded_base,
             s.status_chance,
             &s.forced,
-            &s.vector,
+            &s.status_vector,
             gal,
             arc,
             r,
@@ -1689,7 +1691,7 @@ pub(super) fn spread_beyond_the_target(
             s.modded_base,
             s.status_chance,
             &s.forced,
-            &s.vector,
+            &s.status_vector,
             gal,
             arc,
             r,
