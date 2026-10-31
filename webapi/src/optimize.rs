@@ -2947,8 +2947,8 @@ mod whole_scope_tests {
     use super::*;
 
     /// A QUICK REQUEST WITH NO SCOPE searches every card and answers with the
-    /// N rows it asked for, from ONE start: the start's answer names the start,
-    /// and every other row names that answer and what differs from it.
+    /// N rows it asked for, from ONE start: either fill order's answer names
+    /// that start, and every other row names the answer it is nearest to.
     #[test]
     fn a_quick_request_answers_with_the_n_it_asked_for() {
         let blank = json!({ "slots": [], "evolutions": [], "arcane": [], "fixed": [] });
@@ -2965,8 +2965,13 @@ mod whole_scope_tests {
         let rows = out["results"].as_array().unwrap();
         assert_eq!(rows.len(), 4, "{out}");
         let answers: Vec<&Value> = rows.iter().filter(|r| r.get("from_starts").is_some()).collect();
-        assert_eq!(answers.len(), 1, "one start, one answer: {out}");
-        assert_eq!(answers[0]["from_starts"][0]["start"], json!(0), "{out}");
+        assert!((1..=2).contains(&answers.len()), "one start has at most two fill orders: {out}");
+        assert_eq!(out["starts"], json!(1), "fill orders are not additional starts: {out}");
+        for answer in answers {
+            let starts = answer["from_starts"].as_array().unwrap();
+            assert_eq!(starts.len(), 1, "each answer names the single input start: {answer}");
+            assert_eq!(starts[0]["start"], json!(0), "{answer}");
+        }
         for r in rows.iter().filter(|r| r.get("from_starts").is_none()) {
             assert_eq!(r["near"]["starts"], json!([0]), "a runner-up names the answer it is near: {r}");
             assert!(!r["near"]["changes"].as_array().unwrap().is_empty(), "{r}");

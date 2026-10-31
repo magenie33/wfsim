@@ -681,7 +681,8 @@ the work from 6,569 builds to 1,876 and reached the same build.
 
 - **THE BEST N BUILDS THE SEARCH SCORED**, N the request's `finalists` (the
   page's "How many results", 10 by default; 1 is the best of the starts).
-  Each start settles on ONE build, its ANSWER; starts that settle on the same
+  Each descent settles on ONE build, its ANSWER. A start descends from either
+  fill order, so it can contribute two answers. Answers that settle on the same
   canonical build — the same cards in any order, the same resolved damage, the
   same exilus, arcane and variant — merge. The list is not the answers alone:
   a start's last sweep has scored every build one change from its answer, and
