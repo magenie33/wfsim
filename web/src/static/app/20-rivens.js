@@ -314,8 +314,8 @@ function renderRivenStats() {
       <span class="rv-unit" data-slot="${slot}"></span>
     </div>`;
   };
-  const displayed = rivenDisplayOrder(rivenPoolAll(), riven.bonuses.map((s, i) => ({ id: s.id, slot: String(i), stat: s }))
-    .concat(riven.malus ? [{ id: riven.malus.id, slot: "malus", stat: riven.malus }] : []));
+  const displayed = riven.bonuses.map((s, i) => ({ slot: String(i), stat: s }))
+    .concat(riven.malus ? [{ slot: "malus", stat: riven.malus }] : []);
   $("riven-stats").innerHTML = displayed.map((s) => row(s.slot, s.stat, s.slot === "malus")).join("");
 
   const at = (slot) => (slot === "malus" ? riven.malus : riven.bonuses[Number(slot)]);

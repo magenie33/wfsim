@@ -21,6 +21,37 @@ import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 12000 });
 const { evaluate, check } = app;
 
+async function checkManualOrder() {
+  await app.load('/weapons/Burston_Prime/rivens');
+  for (const slot of [1, 2]) {
+    const out = await evaluate(`(async () => {
+      const pool = rivenPool(), spliced = pool.find(s => s.spliced);
+      const plain = pool.filter(s => !s.spliced && s.bonus !== false).slice(0, 3);
+      newRiven({ shape: '3+1', rank: 8, polarity: 'madurai',
+        bonuses: plain.map((s, i) => ({ id: s.id, roll: 0.95 + i * 0.05 })),
+        malus: { id: pool.find(s => s.malus && !plain.includes(s)).id, roll: 1 } });
+      document.querySelector('#riven-stats .rv-pick[data-slot="${slot}"]').click();
+      document.querySelector('#riven-menu [data-rvid="' + spliced.id + '"]').click();
+      await resolveRiven();
+      const rows = [...document.querySelectorAll('#riven-stats .rv-pick')].map(el => el.dataset.slot);
+      const saved = snapshotRiven();
+      const display = rivenDisplayOrder(pool, rivenResolved.stats).map(s => s.id);
+      return { rows, edited: riven.bonuses[${slot}].id, saved: saved.bonuses[${slot}],
+        spliced: spliced.id, display, roll: riven.bonuses[${slot}].roll };
+    })()`);
+    check('a manually spliced bonus stays in slot ' + (slot + 1),
+      out.rows.join(',') === '0,1,2,malus' && out.edited === out.spliced
+        && out.saved.id === out.spliced && out.saved.roll === out.roll, JSON.stringify(out));
+    check('normalized card display still puts the spliced bonus first',
+      out.display[0] === out.spliced, JSON.stringify(out));
+  }
+}
+
+if (process.argv.includes('--manual-order')) {
+  await checkManualOrder();
+  await app.finish('manual riven slots stay in order while normalized cards put spliced stats first');
+}
+
 // weapon -> [stat, must it be offered, why]. `[bonus, malus]` where the two
 // slots differ, which is what a bonus-only or malus-only stat means.
 const CASES = [
@@ -176,4 +207,5 @@ check("...and a RENAME keeps them", shown.afterRename.length === 2
   && shown.afterRename.some((t) => t.includes("a new label")),
   JSON.stringify(shown.afterRename));
 
+await checkManualOrder();
 await app.finish("a riven editor offers the stats that weapon's rivens roll");

@@ -1394,6 +1394,9 @@ M35).
 
 THE TWO SLOTS ARE DIFFERENT LISTS, which is why a case may state one answer per
 slot: five stats are bonus-only and one melee stat is malus-only.
+Manually placing a spliced bonus in the second or third slot keeps that
+position and roll through editing and saving. Normalized card displays
+continue to put the spliced bonus first.
 
 ## `check_riven_family`
 
