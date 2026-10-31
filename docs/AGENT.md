@@ -406,8 +406,8 @@ Saved cards use `builder.rivens.appraise` to queue the same request and replay.
 The Riven Analyst page hosts personal reports and a separate published
 comparison. Executor disclosure and queue ownership are in `docs/TASKS.md`.
 
-1. A chat's bot reads the card (`fx <weapon> [ruler]` then each stat and its
-   number) with `readRivenLines` in `92-riven-input.js`, shared with the page
+1. A chat's bot reads the card (`fx <weapon> [ruler]` then each value and stat
+   name in card order) with `readRivenLines` in `92-riven-input.js`, shared with the page
    through `mcp/headless.js`. Official Chinese and English card names take
    precedence over aliases; either the name or value may come first. Faction
    multipliers accept `x0.64`, `0.64` or `-0.64`, including 对Infested伤害.
@@ -419,6 +419,8 @@ comparison. Executor disclosure and queue ownership are in `docs/TASKS.md`.
    at `/api/appraise/new`
    (`worker/appraise.js`): weapon, ruler, the card's rolls, and the channel's
    own note of where to answer, which nothing else reads.
+   Replies use the engine's printed stat lines, value before name. Prime
+   weapon names also accept a trailing `P` or `p`, with or without a space.
 2. `/appraise/<code>` opens that weapon's optimizer under the official ruler
    with the appraisal's own BUILT-IN search and searches at once
    (`81-appraisal.js`): `riven_appraisal` in `data/search/presets.yaml` — four

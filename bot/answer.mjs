@@ -25,7 +25,10 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   const evoName = (id) => (zh.evolutions && zh.evolutions[id]) || id;
   // EVERY NAME A WEAPON GOES BY, longest first, so "Boar Prime" wins over "Boar".
   const weaponNames = (meta.weapons || []).flatMap((w) => [w.id, w.name, w.name_en, zh.weapons && zh.weapons[w.id]]
-    .filter(Boolean).map((n) => ({ w, n: nameFold(n) }))).sort((a, b) => b.n.length - a.n.length);
+    .filter(Boolean).flatMap((n) => {
+      const full = nameFold(n);
+      return (full.endsWith("prime") ? [full, full.slice(0, -5) + "p"] : [full]).map((n) => ({ w, n }));
+    })).sort((a, b) => b.n.length - a.n.length);
   const rulerShort = (b) => t(b.name).split(" · ")[0];
   const statNames = (cls) => headless.rivenStatNames((meta.riven_stats || {})[cls] || [], [zh]);
   const statZh = (cls, id) => {
@@ -187,7 +190,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   /// §"Riven appraisal". The engine bounds each printed value and turns it into
   /// a roll. Numbers outside the card's rounded range are refused, not clamped.
   async function fx(rest, ctx) {
-    const example = "fx 托里德 暴伤148.5 多重111.3 腐蚀111.3 负弹匣40.5";
+    const example = "fx 托里德 148.5暴伤 111.3多重 111.3腐蚀 -40.5弹匣";
     if (!rest) return t(NO_WEAPON, { e: example });
     const hit = weaponOf(rest);
     if (!hit) return t(NOT_FOUND);
@@ -242,7 +245,8 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
         : "Nona could not start the riven gain just now. Try again in a moment. (＞﹏＜)");
     }
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=appraise&code=${opened.code}`;
-    const line = rolled.map((x) => `${signedStatZh(cls, x.id, x.malus)} ×${x.roll.toFixed(2)}`).join(" ");
+    const say = headless.headlessSpeaker({}, { zh }, "zh");
+    const line = slots.map((sl) => say.tf(resolved.stats.find((s) => s.slot === sl.slot).text)).join(" ");
     return { line: t("Nona read it. The volunteers' devices are computing it together — usually a minute or two — and Nona will post the answer here. Can't wait? Scan the code to run it on your own device, riven gain {code}. (๑•̀ㅂ•́)و✧", { code: opened.code }),
       card, text: `${weaponName(hit.w)} · ${rulerShort(ruler)} · ${line}\n${SITE}/appraise/${opened.code}` };
   }

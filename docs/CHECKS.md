@@ -236,6 +236,11 @@ same direction. Faction multipliers accept 对Infested伤害 with or without 的
 `x` and a sign. The four-line Verglas Prime report is a regression case.
 Conflicting signs, unknown words, missing values and ambiguous aliases fail.
 The command keeps the exact rolls returned by the engine's value inversion.
+Every declared input alias is checked against each pool that holds its stats,
+in card order and name-first order. Multi-stat aliases are refused where a
+single rolled value is required. Prime weapon suffixes accept P/p in fx, zk
+and pz without selecting the base weapon. Replies keep the engine's printed
+value-before-name lines; Combo Duration's seconds cannot become the SC alias.
 
 ## `check_appraise`
 

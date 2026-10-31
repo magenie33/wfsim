@@ -85,7 +85,7 @@ function readRivenLines(text, pool, locales) {
     if (n) {
       at = n.end;
       hit = nameAt(at);
-      if (!hit && src[at] === "s") {
+      if (src[at] === "s") {
         const seconds = nameAt(at + 1);
         if (seconds && seconds.ids.every((id) => pool.find((s) => s.id === id).text.includes("|val|s"))) {
           at++;
@@ -106,7 +106,7 @@ function readRivenLines(text, pool, locales) {
       n = numberAt(at);
       if (!n) return no("format", at);
       at = n.end;
-      if (src[at] === "s" && !nameAt(at)
+      if (src[at] === "s" && (!nameAt(at) || nameAt(at + 1))
           && hit.ids.every((id) => pool.find((s) => s.id === id).text.includes("|val|s"))) at++;
     }
     if (!hit.ids.length) return no("unread", start);
