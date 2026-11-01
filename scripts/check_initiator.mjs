@@ -103,7 +103,8 @@ const okIn = (await submit("wfsim_session=tok")).ok, okOut = (await submit(null)
 const inbox = (await L.all("SELECT initiator FROM inbox ORDER BY initiator")).map((r) => r.initiator);
 check("a submission signed in keeps its account's code, one signed out `anonymous`, and nothing else about either",
   okIn && okOut && inbox.length === 2 && inbox[0] === "anonymous" && inbox[1] === await initiatorCode(env, "user", "acc1")
-  && (await L.all("SELECT * FROM inbox")).every((r) => Object.keys(r).sort().join() === "at,id,initiator,record"), JSON.stringify(inbox));
+  && (await L.all("SELECT * FROM inbox")).every((r) => Object.keys(r).sort().join() === "at,family_source,id,initiator,record"
+    && r.family_source === null), JSON.stringify(inbox));
 
 // ---- an arrival asked ----
 await L.run("INSERT INTO batches (id, at, why, total) VALUES ('arrivals-2026-10-14', 'a', 't', 1), ('backfill-2026-10-14', 'b', 't', 1)");
