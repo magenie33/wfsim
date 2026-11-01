@@ -28,6 +28,25 @@ CREATE TABLE IF NOT EXISTS inbox (
 -- WHO ASKED (docs/BOARD.md §"Who asked"): 'user:<code>' signed in, 'anonymous'
 -- signed out, NULL for the bot's own; carried to `queue` by intake.
 ALTER TABLE inbox ADD COLUMN IF NOT EXISTS initiator TEXT COLLATE "C";
+-- Trusted derivation provenance, outside the build and never accepted from a client.
+ALTER TABLE inbox ADD COLUMN IF NOT EXISTS family_source TEXT COLLATE "C";
+
+-- Arrivals alone create transfers. Retaining their keys prevents a later
+-- resubmission from repeating a completed sibling search.
+CREATE TABLE IF NOT EXISTS family_transfers (
+  id TEXT COLLATE "C" PRIMARY KEY,
+  source TEXT COLLATE "C" NOT NULL,
+  weapon TEXT COLLATE "C" NOT NULL,
+  ruler TEXT COLLATE "C" NOT NULL,
+  request TEXT COLLATE "C" NOT NULL,
+  context TEXT COLLATE "C" NOT NULL,
+  engine TEXT COLLATE "C" NOT NULL,
+  asked_engine TEXT COLLATE "C",
+  state TEXT COLLATE "C" NOT NULL,
+  created_at TEXT COLLATE "C" NOT NULL,
+  completed_at TEXT COLLATE "C"
+);
+CREATE INDEX IF NOT EXISTS family_transfers_waiting ON family_transfers (created_at, id) WHERE state = 'waiting';
 
 -- ONE ROW PER BUILD, keyed by a HASH of the canonical build
 -- `engine::board::builds::identity` states — its riven's ROLLS included — hashed

@@ -18,3 +18,5 @@ GRANT SELECT, UPDATE ON user_calculations TO wfsim_factoryd;
 GRANT SELECT, INSERT ON calculation_reports TO wfsim_factoryd;
 
 GRANT SELECT, UPDATE ON board_reviews TO wfsim_factoryd;
+GRANT SELECT, UPDATE ON family_transfers TO wfsim_factoryd;
+GRANT SELECT, INSERT ON inbox TO wfsim_factoryd;

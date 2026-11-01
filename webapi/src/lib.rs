@@ -16,6 +16,7 @@
 //! optimizer use — this crate only shapes JSON.
 
 mod board;
+pub mod board_family;
 pub mod board_rows;
 mod buffs;
 mod candidates;

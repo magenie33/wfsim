@@ -142,7 +142,7 @@ def card_assets(t: dict) -> None:
 LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/wasm_witness.mjs", "scripts/order_credit.mjs",
                 "scripts/live_publish.mjs", "scripts/board_heads.mjs",
                 "scripts/board_meta.py", "scripts/fetch_library.sh", "scripts/fetch_facts.sh",
-                "scripts/ship_facts.sh", "scripts/ship_builds.sh",
+                "scripts/ship_facts.sh", "scripts/ship_builds.sh", "scripts/ship_family.mjs",
                 "scripts/ship_queue.sh", "scripts/db.sh", "scripts/db.mjs", "scripts/pgq.mjs"]
 
 

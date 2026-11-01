@@ -218,7 +218,7 @@ fn intake(
         // WHAT THIS RECORD ALREADY PRODUCED, if a copy of it came through
         // earlier in this pass: the row is still DONE and the build still
         // remembers it, and nothing has to be searched for again.
-        let rkey = rec.to_string();
+        let rkey = format!("{}:{rec}", row.get("family_source").is_some_and(Value::is_string));
         if let Some(keys) = already.get(&rkey) {
             for k in keys {
                 // …and a fight or an order a copy asked for without a name takes this one's.
@@ -325,6 +325,9 @@ fn intake(
             // riven nobody would publish costs one fight here, not four.
             if nth > 0 {
                 continue;
+            }
+            if !row.get("family_source").is_some_and(Value::is_string) {
+                entry["family"] = json!(wfsim_webapi::board_family::transfers(&rec, &sent.0, &sent.1));
             }
             // …AND EVERY ROW IT OWES, AS A COMPUTE ORDER — the live board opens
             // them the moment the build arrives (docs/BOARD.md §"Compute
@@ -467,6 +470,38 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn family_arrival(derived: bool, riven: bool) -> String {
+        let mut record = json!({ "weapon": "burston_prime", "mods": ["serration", "split_chamber", "point_strike",
+            "vital_sense", "hellfire", "infected_clip", "stormbringer", "gilded_truth"], "arcanes": ["primary_merciless"] });
+        if riven {
+            record["mods"][0] = json!("riven");
+            record["riven_pos"] = json!(["critical_damage", "multishot"]);
+        }
+        let mut row = json!({ "id": if derived { "derived" } else { "original" }, "at": "2026-11-01", "record": record });
+        if derived { row["family_source"] = json!("trusted-transfer"); }
+        row.to_string()
+    }
+
+    #[test]
+    fn a_new_family_arrival_seeds_one_sibling_and_derived_arrivals_stop() {
+        for riven in [false, true] {
+            let (root, ..) = intake(vec![family_arrival(false, riven)].into_iter(), None, None);
+            assert!(!root.is_empty());
+            assert_eq!(root[0]["family"].as_array().unwrap().len(), 1);
+            assert_eq!(root[0]["family"][0]["source"], root[0]["id"]);
+            assert_eq!(root[0]["family"][0]["weapon"], "burston");
+            let (derived, ..) = intake(vec![family_arrival(true, riven)].into_iter(), None, None);
+            assert!(derived.iter().all(|b| b.get("family").is_none()));
+        }
+    }
+
+    #[test]
+    fn an_independent_arrival_is_not_hidden_by_a_derived_copy_in_the_same_pass() {
+        let (builds, ..) = intake(vec![family_arrival(true, false), family_arrival(false, false)].into_iter(), None, None);
+        assert_eq!(builds.len(), 1);
+        assert_eq!(builds[0]["family"].as_array().unwrap().len(), 1);
+    }
 
     /// A record as the door stores one, around a mod list.
     fn row(inbox_id: &str, mods: &[&str], extra: Value) -> String {

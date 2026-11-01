@@ -14,6 +14,7 @@ export const DEADLINE_MS = {
   new_build: 6 * 3_600_000,
   survey_build: 3 * 86_400_000,
   survey: 86_400_000,
+  family_build: 3 * 86_400_000,
   refresh: 12 * 86_400_000,
   sweep: 7 * 86_400_000,
 };
