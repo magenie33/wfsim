@@ -65,6 +65,24 @@ Damage measurements remain the overrides for the rules they measured.
 Imported animation timing and per-swing properties use the pinned package;
 wiki-only delivery and geometry rules retain their stated limitations.
 
+### Physical-mod passives
+
+`physical_mods` declares a weapon's physical-mod potency and the stat grants
+for each dominant physical type. The declaration is inherited by every form.
+Mod and riven physical bonuses share that multiplier; progenitor damage remains
+base damage. Wheel selection uses the weapon's own physical split before
+valence, with the equipped physical modifiers applied before quantization.
+The selected attack-speed and status bonuses join their ordinary additive
+buckets; range adds metres without changing slam radius.
+
+Source: [Coda Motovore](https://wiki.warframe.com/w/Coda_Motovore),
+Characteristics and Notes. M131 confirms the additive status bracket and
+Collision Force's amplified coefficient. Exact physical ties use the last
+maximum in Impact, Puncture, Slash order; other stacking, wheel selection and
+negative-riven cases remain in the measurement queue.
+Valence follows the existing build axis and reaches direct damage, heavy-slam
+radials and the normal slam profile used by stance events.
+
 ### The combo counter
 
 - **Points are each row's own `combo_points`**, set per attack beside its

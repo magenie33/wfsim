@@ -7,10 +7,7 @@ form: slide
 transform_group: coda_motovore
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_valence_unmodelled
-    family: Coda
-  - reason: melee_passive_unmodelled
-    passive: "Impact, Puncture and Slash mods are six times as potent on it, and its dominant physical type grants +40% attack speed, +1.5 m range or +100% Status Chance"
+- reason: physical_mod_passive_unmeasured
 attack:
   trigger: melee
   shot_type: hit_scan

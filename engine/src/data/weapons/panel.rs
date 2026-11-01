@@ -594,6 +594,17 @@ pub fn base_panel_assembled(
         has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
         ammo_pickup: s.ammo_pickup.unwrap_or(0.0),
         super_crit_on_status: s.super_crit_on_status,
+        physical_mods: s.physical_mods.as_deref().copied().map(|rules| {
+            assert!(rules.multiplier.is_finite() && rules.multiplier >= 0.0, "invalid physical mod potency");
+            let mut owner = raw;
+            while let Some(parent) = owner.inherits.as_deref() {
+                owner = spec(parent).expect("physical mod owner");
+            }
+            Box::new(crate::model::PhysicalModBase {
+                spec: rules,
+                damage: ["impact", "puncture", "slash"].map(|t| owner.attack.damage.get(t).copied().unwrap_or(0.0)),
+            })
+        }),
         weakpoint_stacks: s.weakpoint_stacks,
         spawn_on_kill: s.spawn_on_kill,
         kill_streak_summon: s.kill_streak_summon,

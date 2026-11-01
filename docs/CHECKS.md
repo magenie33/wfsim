@@ -33,6 +33,14 @@ Already installed packages make no network calls; site-only builds omit the
 desktop GUI packages; publishing retains them. An installation timeout keeps
 its failure status and diagnostic output. No packages are installed locally.
 
+## `check_motovore`
+
+Motovore uses the shared mandatory progenitor control, rank40 capacity and
+saved-build element. Simulator panels cover the default Slash wheel, physical
+mod potency, attack-speed/status brackets and pure-radial heavy-slam mode.
+Panel source rows attribute amplified physical mods and the active wheel.
+The control assertion fails on a build without Motovore's valence declaration.
+
 ## `check_board_selection`
 
 All 48 cells keep their full labels and URL identity. The benchmark page,

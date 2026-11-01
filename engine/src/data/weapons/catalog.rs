@@ -79,7 +79,7 @@ pub(super) const INHERITED: [&str; 31] = [
 /// ...and `deployments` and `valence`, which are MAPS and would need a deep
 /// merge to inherit partially. They are all-or-nothing: a form that states
 /// neither takes its weapon's whole block.
-pub(super) const INHERITED_BLOCKS: [&str; 5] = ["deployments", "valence", "sniper_combo", "scope", "zaw"];
+pub(super) const INHERITED_BLOCKS: [&str; 6] = ["deployments", "valence", "sniper_combo", "scope", "zaw", "physical_mods"];
 
 /// Every weapon entry in `data/weapons/` (embedded), parsed once.
 pub fn all() -> &'static [WeaponSpec] {

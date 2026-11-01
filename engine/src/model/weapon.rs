@@ -940,6 +940,7 @@ pub struct WeaponBase {
     /// Gotva Prime's passive: a status-triggered crit-chance SET. See
     /// `data::weapons::SuperCritSpec`.
     pub super_crit_on_status: Option<crate::model::SuperCritSpec>,
+    pub physical_mods: Option<Box<crate::model::PhysicalModBase>>,
     /// [`crate::data::weapons::WeaponSpec::weakpoint_stacks`] — no mod moves it.
     pub weakpoint_stacks: Option<crate::model::WeakpointStacksSpec>,
     /// [`crate::data::weapons::WeaponSpec::spawn_on_kill`] — counted, no more.

@@ -171,6 +171,8 @@ reasons:
     text: "A gunblade's heavy attack fires, which is not modelled, so there is no heavy mode and a Tennokai window converts nothing."
   melee_heavy_is_special:
     text: "This weapon's heavy attack is {what}, which is not modelled, so there is no heavy mode and a Tennokai window converts nothing."
+  physical_mod_passive_unmeasured:
+    text: "Attack-speed/range stacking, exact physical-damage ties, negative physical rivens and progenitor Impact's wheel selection await in-game calibration."
   melee_passive_unmodelled:
     text: "Not modelled: {passive}."
   melee_heavy_unpublished:

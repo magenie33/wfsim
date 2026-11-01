@@ -1,0 +1,16 @@
+{
+  "measurement": "M131",
+  "weapon": "coda_motovore",
+  "source": "owner in-game panel readings, 2026-11-01",
+  "status": {
+    "mods": ["melee_prowess"],
+    "physical_damage_mods": false,
+    "reported_status_chance": 0.87,
+    "valence": null
+  },
+  "physical_mod": {
+    "id": "collision_force",
+    "reported_card_bonus": 7.2
+  },
+  "limits": "Progenitor element/roll and other loadout details were not supplied. The physical reading is a mod-card value, not a measured damage pop-up."
+}

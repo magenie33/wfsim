@@ -16,6 +16,13 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
     let Some(s) = spec(weapon) else { return Vec::new() };
     let mut out = Vec::new();
 
+    if let Some(p) = s.physical_mods.as_deref() {
+        out.push(format!(
+            "Physical damage mods have {:.0}x potency. The dominant modded physical type grants: Impact +{:.0}% Attack Speed; Puncture +{:.1}m Range; Slash +{:.0}% Status Chance. Progenitor Impact does not select the physical-type bonus.",
+            p.multiplier, p.impact.fire_rate_bonus * 100.0, p.puncture.range_m, p.slash.status_chance_bonus * 100.0,
+        ));
+    }
+
     if let Some(w) = s.weakpoint_stacks {
         out.push(format!(
             "A WEAK-POINT HIT grants a stack, up to {}, each lasting {:.0}s from the last one — worth +{:.1}x on the finished crit multiplier and +{:.0}% on the finished status chance apiece{}. Per pellet, so one shot can fill the pile.",

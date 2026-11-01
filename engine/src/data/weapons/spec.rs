@@ -204,6 +204,9 @@ pub struct WeaponSpec {
     /// [`ValenceSpec`]; absent on every weapon that is not one.
     #[serde(default)]
     pub valence: Option<ValenceSpec>,
+    /// Physical mod potency and stat grants; shared by the weapon's forms.
+    #[serde(default)]
+    pub physical_mods: Option<Box<crate::model::PhysicalModSpec>>,
     /// Does this weapon apply MICROWAVE — the Nukor family's own invisible
     /// status? See `fight::DebuffState::microwave`. Two weapons in the game
     /// have it and the wiki names both.
