@@ -74,15 +74,15 @@ function savesImport(text) {
     for (const raw of ps) {
       const p = repoint(savesBody(raw));
       const had = here.find((x) => x && x.id === p.id);
-      if (had && savesSame(had, p)) { same++; continue; }
+      if (had && savesSame(isCustomDomain(domain) ? had : { ...had, name: p.name }, p)) { same++; continue; }
       if (had) {
         const id = presetNewId();
         if (ref) moved.set(ref + p.id, ref + id);
-        here.push({ ...p, id, name: tr("{name} (imported)").replace("{name}", p.name || "") });
+        here.push({ ...p, id, name: isCustomDomain(domain) ? tr("{name} (imported)").replace("{name}", p.name || "") : newPresetName(here) });
         ids.add(id);
         copied++;
       } else {
-        here.push(p);
+        here.push(isCustomDomain(domain) ? p : { ...p, name: newPresetName(here) });
         ids.add(p.id);
         added++;
       }

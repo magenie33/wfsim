@@ -316,7 +316,7 @@ function renderFormaPlan(box, ctx) {
     + `${ctx.activeLabel ? ` <span class="fp-dim">(${escHtml(tr("open"))})</span>` : ""}</label>`
     + (partners
       ? partners.map((p) => `<label class="fp-tick"><input type="checkbox" data-g="${escHtml(p.id)}"`
-        + `${group.has(p.id) ? " checked" : ""}> ${escHtml(p.name)}</label>`).join("")
+        + `${group.has(p.id) ? " checked" : ""}> ${escHtml(p.name)}${ctx.presetCfg ? presetInfoButton(ctx.presetCfg, p) : ""}</label>`).join("")
       : `<span class="fp-dim">${escHtml(tr("a board build is planned on its own"))}</span>`)
     + `</div><div class="exhint">${escHtml(tr("Builds of one item share its polarities. The plan finds one layout every ticked build fits, and moves the other builds' mods onto it."))}</div>`
     + `<div class="fp-foot"><button class="ghost-btn small fp-run">${escHtml(tr("plan Forma"))}</button>`
@@ -335,6 +335,7 @@ function renderFormaPlan(box, ctx) {
     el.addEventListener("change", () => setFormaPartner(ctx.item, el.dataset.g, el.checked));
   });
   box.querySelector(".fp-run").addEventListener("click", ctx.plan);
+  if (ctx.presetCfg) wirePresetInfo(box, ctx.presetCfg, partners || []);
 }
 
 function renderBuilderFormaPlan() {
@@ -344,8 +345,9 @@ function renderBuilderFormaPlan() {
     at: `${w}\u0000${activePreset}`,
     item: w,
     activeLabel: presetLabel(buildNamed(activePreset)),
+    presetCfg: buildBarCfg(),
     partners: officialBuildActive() ? null : loadPresetList(BUILDS)
-      .filter((p) => presetId(p) !== activePreset).map((p) => ({ id: presetId(p), name: presetLabel(p) })),
+      .filter((p) => presetId(p) !== activePreset),
     catalystLabel: "Orokin Catalyst",
     grantLabel: weaponAxes().hasStance ? "Stance slot first" : null,
     plan: async () => { await autoForma(); renderMods(); },
@@ -507,7 +509,7 @@ function saveReachBuild(gi) {
   const st = JSON.parse(JSON.stringify(b.st));
   placeFormaPlan(st.slots, { layout: pt.plan.layout, loadouts: [k.placed] }, 0);
   const ps = loadPresetList(BUILDS);
-  const name = freeName(ps, (n) => `${benchmarkShort(x.groups[gi].benchmark)} ${reachPct(k.ratio)}${n > 1 ? ` ${n}` : ""}`);
+  const name = newPresetName(ps, BUILDS);
   ps.push({ name, savedAt: Date.now(), state: st });
   storePresetList(BUILDS, ps);
   renderPresetBar();

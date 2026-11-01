@@ -1532,11 +1532,11 @@ languages.
 
 ## `check_gain_freshness`
 
-A scenario edit reaches the quick calc immediately,
-including a field nobody has invented yet: the scan's cache key is DERIVED
-from the fight it will run. It asserts the EVOLUTION axis (which ranks with no
-picker open, so it tests the re-ask and not a repaint) and probes the scan's
-own BASELINE rather than a candidate's gain.
+A scenario edit reaches the quick calc immediately, including a field nobody
+has invented yet: the scan cache key derives from the fight. A visible ranked
+list re-asks after an edit; switching through the preset menu invalidates its
+prior values and reopening the ranked list measures the newly selected fight.
+The probe is the scan's own baseline, rather than a candidate's relative gain.
 
 ## `check_buff_cards`
 
@@ -2083,3 +2083,23 @@ producer and factory behind an isolated static frontend, transfers a simulation
 and completes simulation and optimization through two real WASM witnesses.
 Its test-only claim endpoint supplies independent test devices and networks;
 it never contacts the production task service.
+
+## `check_preset_library`
+
+Drives the shared preset browser: exact numeric allocation, hole reuse and
+unbounded padding; new, duplicate, rename and file-import identity; content
+search and site-styled sort; and info for all six preset domains without
+changing the current build or fight. The scenario card is read from saved
+state, and importing the same unchanged file twice adds no second identity.
+The check fails against the previous name-only preset bar. Runs in page-rest's
+views group; accepts `WFSIM_BASE` for the native dev server.
+
+## `check_preset_compact`
+
+Stores 100 builds and checks that their bar has one current entry and the same
+height as one build. The recent list is bounded, equipment search reaches a
+non-recent build, usage times survive independently of modification times, and
+info leaves the selection alone. Management rows keep info and actions folded
+and load more on scroll. All six preset domains retain access to 100 entries.
+The unchanged expanded bar fails the same 100-build fixture. Runs in the
+page-rest views group; accepts `WFSIM_BASE`.

@@ -154,7 +154,7 @@ const boardReviewEnded = state => ["succeeded", "superseded", "failed", "unavail
 const boardReviewLink = task => `${weaponPath(task.weapon)}/benchmark?bench=${encodeURIComponent(task.ruler)}`;
 USER_TASK_TYPES.set("board-review", {
   icon: "↻",
-  describe(task) { return { title: tr("Expedited board review"), note: `${weaponInfo(task.weapon)?.name || task.weapon} · ${benchmarkName(task.ruler)}` }; },
+  describe(task) { return { title: tr("Board calibration"), note: `${weaponInfo(task.weapon)?.name || task.weapon} · ${benchmarkName(task.ruler)}` }; },
   actions(task, action) { return `<a class="ghost-btn" data-review-board="${escHtml(task.id)}" href="${boardReviewLink(task)}">${escHtml(tr("View board"))}</a>` + action("hide", "Hide"); },
   details(task) { return `<p>${escHtml(tr("The published score stays until independent verification finishes."))}</p>`
     + `<p>${escHtml(tr("Hiding this item keeps the shared review running."))}</p>`
@@ -257,7 +257,7 @@ async function requestBoardReview(task, result, record) {
   if (by === task.engine && Math.abs(measured - old) <= 1e-12 * Math.max(Math.abs(measured), Math.abs(old))) return;
   const id = "board-review-request:" + record.id;
   boardReviewTrackers.set(id, { id, identity: matched.identity, weapon: matched.weapon, ruler: matched.ruler, mode: matched.mode,
-    engine: task.engine, source: record.id, sources: [record.id], state: "submitting", phase: "Requesting board review" });
+    engine: task.engine, source: record.id, sources: [record.id], state: "submitting", phase: "Requesting board calibration" });
   await saveBoardReviewTrackers(); renderBoardReviewNote(); scheduleUserTasks(); scheduleBoardReviews(0);
 }
 async function acceptBoardReview(task) {
@@ -335,8 +335,8 @@ function renderBoardReviewNote() {
     || resultLatest(presetWeapon(), activePreset) || simulationResultForPage();
   const task = [...boardReviewTrackers.values()].find(task => (task.sources || [task.source]).includes(record?.id));
   if (!task) { box.innerHTML = ""; return; }
-  const text = task.state === "submitting" ? tr("Requesting board review") : task.state === "succeeded" ? tr("Board review verified") : task.state === "superseded" ? tr("The board was updated while this review ran.")
-    : boardReviewEnded(task.state) ? tr("Board review is unavailable.") : tr("Expedited board review queued");
+  const text = task.state === "submitting" ? tr("Requesting board calibration") : task.state === "succeeded" ? tr("Board calibration verified") : task.state === "superseded" ? tr("The board was updated while this review ran.")
+    : boardReviewEnded(task.state) ? tr("Board review is unavailable.") : tr("Board calibration queued");
   box.innerHTML = `<div class="board-outcome"><b>${escHtml(text)}</b>${task.score == null ? "" : ` · ${escHtml(tr("Verified score"))}: ${escHtml(fmtScore(task.score))}`}
     <p>${escHtml(tr(["succeeded", "superseded"].includes(task.state) ? "Verified scores appear on the board after publication." : "The published score stays until independent verification finishes."))}</p>
     <a class="ghost-btn small" data-review-board="${escHtml(task.id)}" href="${boardReviewLink(task)}">${escHtml(tr("View board"))}</a></div>`;

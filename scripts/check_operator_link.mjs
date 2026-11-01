@@ -31,7 +31,8 @@ const r = await evaluate(`(async () => {
 
   history.pushState({}, '', '/operator'); route(); await sleep(3500);
   // A CHIP IS KNOWN BY ITS ENTRY'S ID; this one is the entry called "preset 2".
-  const two = '#preset-bar-operators .pchip[data-name="' + (opList().find((p) => p.name === 'preset 2') || {}).id + '"]';
+  const two = '#dd-menu .opt[data-v="' + (opList().find((p) => p.name === 'preset 2') || {}).id + '"]';
+  document.querySelector('[data-dd="dd-preset-operators"]').click();
   const by = (document.querySelector(two + ' .pby') || {}).title || '';
   document.querySelector(two).click(); await sleep(600);
   const del = () => document.querySelector('#preset-bar-operators .pchip.sel .pop.del');

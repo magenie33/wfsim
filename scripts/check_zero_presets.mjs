@@ -1,8 +1,8 @@
 /// THE THIRTY-SIXTH: YOU OWN NOTHING UNTIL YOU MAKE SOMETHING.
 ///
-/// Opening a weapon must not write a blank "preset 1" into storage, opening the
+/// Opening a weapon must not write a blank "01" into storage, opening the
 /// app must not write a "scenario 1", and opening the optimizer must not write
-/// a "preset 1" — or a reader who browsed forty weapons owns forty builds they
+/// a "01" — or a reader who browsed forty weapons owns forty builds they
 /// never made. That is invisible while a preset is listed only in the bar of
 /// the weapon you are standing on, and stops being invisible the moment one
 /// page lists everything you own, where the answer becomes "everything".
@@ -72,7 +72,7 @@ const r = await evaluate(`(async () => {
   markPresetDirty(); renderMods(); await sleep(1400);
   const edited = Object.assign(${counts}, {
     active: nameOf('builder-builds', activePreset),
-    chips: [...document.querySelectorAll('#preset-bar-builder-builds .pchip:not(.add):not(.share)')].map(c => c.textContent.replace(/[⧉✎✕]/g, '').trim()),
+    chips: [...document.querySelectorAll('#preset-bar-builder-builds .pchip:not(.add):not(.share)')].map(c => c.querySelector('.dd-v').textContent.trim()),
     kept: ((((loadPresetList('builder-builds')[0] || {}).state || {}).slots || [])[0] || {}).mod,
   });
 
@@ -118,19 +118,19 @@ check("browsing three more weapons creates nothing", r.browsed.builds === 0,
 check("opening the optimizer creates nothing", r.opened.searches === 0,
   `${r.opened.searches} searches from a render`);
 check("...but changing the scope creates exactly one", r.scoped.searches === 1
-  && /copy$/.test(r.scoped.active), `${r.scoped.searches} · active="${r.scoped.active}"`);
+  && r.scoped.active === "01", `${r.scoped.searches} · active="${r.scoped.active}"`);
 
 check("the first build edit creates exactly one build", r.edited.builds === 1
-  && r.edited.active === "preset 1", `${r.edited.builds} · active="${r.edited.active}"`);
+  && r.edited.active === "01", `${r.edited.builds} · active="${r.edited.active}"`);
 check("...carrying the edit that created it", r.edited.kept === "serration", String(r.edited.kept));
 
-check("...as the one chip in the bar", r.edited.chips.length === 1 && r.edited.chips[0] === "preset 1",
+check("...as the one chip in the bar", r.edited.chips.length === 1 && r.edited.chips[0] === "01",
   JSON.stringify(r.edited.chips));
 
 check("a build edited back to the blank is deleted: the default again",
   r.emptied.builds === 0 && r.emptied.chips === 0 && r.emptied.bareWeapon === true && r.emptied.active === "",
   JSON.stringify(r.emptied));
-check("...and the next effective edit writes one again", r.reborn.builds === 1 && r.reborn.active === "preset 1",
+check("...and the next effective edit writes one again", r.reborn.builds === 1 && r.reborn.active === "01",
   JSON.stringify(r.reborn));
 
 check("the last build can be deleted", r.deleted.builds === 0,

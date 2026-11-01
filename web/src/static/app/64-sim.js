@@ -180,54 +180,59 @@ const buildCardHtml = (d) => headlessBuildCardHtml(pageSay(), d);
 /// THE FIGHT AS A CARD — the scenario read back in the build card's own chips,
 /// for a surface that runs the simulator's fight and does not edit it. A section
 /// the fight leaves empty says so, the way the build card does.
-function fightCardHtml() {
+function fightCardHtml(s = sim) {
   const chip = (label, title) => `<span class="sb-chip"${title ? ` title="${escHtml(title)}"` : ""}><span>${escHtml(label)}</span></span>`;
   const section = (head, chips, empty) => `<div class="sb-h">${escHtml(head)}</div><div class="sb-chips">${
     chips.join("") || `<span class="sb-empty">${escHtml(empty)}</span>`}</div>`;
-  const en = allEnemies().find((e) => e.id === sim.enemy) || {};
-  const gap = Math.hypot((sim.target_at || [0, 0])[0] - (sim.player_at || [0, 0])[0],
-    (sim.target_at || [0, 0])[1] - (sim.player_at || [0, 0])[1]);
-  const emp = empowermentLabel(sim.steel_path, sim.empowered, true);
-  const enemy = [chip(`${en.name || sim.enemy} Lv ${sim.level}${emp ? ` (${emp})` : ""}`)];
-  if (sim.eximus) enemy.push(chip(tr("Eximus")));
+  const en = allEnemies().find((e) => e.id === s.enemy) || {};
+  const gap = Math.hypot((s.target_at || [0, 0])[0] - (s.player_at || [0, 0])[0],
+    (s.target_at || [0, 0])[1] - (s.player_at || [0, 0])[1]);
+  const emp = empowermentLabel(s.steel_path, s.empowered, true);
+  const enemy = [chip(`${en.name || s.enemy} Lv ${s.level}${emp ? ` (${emp})` : ""}`)];
+  if (s.eximus) enemy.push(chip(tr("Eximus")));
   const play = [
-    chip(`${sim.duration} s`),
-    chip(`${sim.headshot_pct}% ${tr("headshots")}`),
-    ...(sim.gauge_charging_headshots && (weaponInfo($("weapon").value) || {}).has_cycle
+    chip(`${s.duration} s`),
+    chip(`${s.headshot_pct}% ${tr("headshots")}`),
+    ...(s.gauge_charging_headshots && (weaponInfo($("weapon").value) || {}).has_cycle
       ? [chip(tr("headshots while charging"))] : []),
-    chip(tr(sim.aiming ? "Aiming" : "hip-fire")),
+    chip(tr(s.aiming ? "Aiming" : "hip-fire")),
     chip(`${Math.round(gap * 10) / 10} m`),
-    chip(metricLabel(metricOf(sim.metric))),
+    chip(metricLabel(metricOf(s.metric))),
   ];
-  if (sim.invisible) play.push(chip(tr("invisible")));
-  if (sim.airborne) play.push(chip(tr("airborne")));
-  if (sim.sliding) play.push(chip(tr("sliding")));
-  if (sim.aim_gliding) play.push(chip(tr("aim gliding")));
-  if (!sim.infinite_ammo) play.push(chip(tr("ammo counts")));
-  const squad = alsoActing().map((ref) => chip(weaponExists(ref.weapon) ? tf(weaponInfo(ref.weapon).name) : ref.weapon));
-  const frame = (META.warframes || []).find((f) => f.id === sim.frame);
+  if (s.invisible) play.push(chip(tr("invisible")));
+  if (s.airborne) play.push(chip(tr("airborne")));
+  if (s.sliding) play.push(chip(tr("sliding")));
+  if (s.aim_gliding) play.push(chip(tr("aim gliding")));
+  if (!s.infinite_ammo) play.push(chip(tr("ammo counts")));
+  const squad = (s.also_acting || []).map((ref) => chip(weaponExists(ref.weapon) ? tf(weaponInfo(ref.weapon).name) : ref.weapon));
+  const frame = (META.warframes || []).find((f) => f.id === s.frame);
   const wf = [
     ...(frame ? [chip(frame.name)] : []),
-    ...wfAbilities().filter((a) => wfPick(a.id)).map((a) => chip(wfName(a), wfValueLabel(a))),
-    ...(sim.auras || []).map((a) => chip(`${(AURAS().find((x) => x.id === a.id) || {}).name || a.id}${a.count > 1 ? ` ×${a.count}` : ""}`)),
-    ...(sim.shards || []).map((p) => {
+    ...wfAbilities().filter((a) => (s.abilities || []).some(p => p.id === a.id)).map((a) => chip(wfName(a), s === sim ? wfValueLabel(a) : null)),
+    ...(s.auras || []).map((a) => chip(`${(AURAS().find((x) => x.id === a.id) || {}).name || a.id}${a.count > 1 ? ` ×${a.count}` : ""}`)),
+    ...(s.shards || []).map((p) => {
       const d = SHARDS().find((x) => x.id === p.shard);
       const o = d && d.options.find((x) => x.id === p.effect);
       return d && o ? chip(wfShardLine(d, o, p.tauforged)) : "";
     }),
   ];
-  if (wf.length && typeof sim.ability_strength === "number") {
-    wf.push(chip(`${Math.round(sim.ability_strength * 100)}% ${tr("Ability Strength")}`));
+  if (wf.length && typeof s.ability_strength === "number") {
+    wf.push(chip(`${Math.round(s.ability_strength * 100)}% ${tr("Ability Strength")}`));
   }
-  const extra = EXTRA_STAT_KEYS.filter(([k]) => Number((sim.extra_stats || {})[k]))
+  const extra = EXTRA_STAT_KEYS.filter(([k]) => Number((s.extra_stats || {})[k]))
     .map(([k, label, , unit = "pct"]) => chip(`${tr(label)} +${unit === "pct"
-      ? Math.round(sim.extra_stats[k] * 1000) / 10 + "%"
-      : Math.round(sim.extra_stats[k] * 100) / 100 + (unit === "x" ? "x" : "")}`));
-  const buffs = Object.entries(sim.buffs || {}).filter(([, c]) => c && c.stacks > 0).map(([id, c]) => {
-    const b = buffList.find((x) => x.id === id) || {};
-    return chip(`${b.name ? buffCardName(b.name) : prettify(id)} ${c.stacks}${b.max_stacks > 1 ? `/${b.max_stacks}` : ""}`);
+      ? Math.round(s.extra_stats[k] * 1000) / 10 + "%"
+      : Math.round(s.extra_stats[k] * 100) / 100 + (unit === "x" ? "x" : "")}`));
+  const buffs = Object.entries(s.buffs || {}).filter(([, c]) => c && (c.stacks > 0 || c.locked)).map(([id, c]) => {
+    const b = (scenarioCatalog || buffList).find((x) => x.id === id) || {};
+    return chip(`${b.name ? buffCardName(b.name) : prettify(id)} ${c.stacks || 0}${b.max_stacks > 1 ? `/${b.max_stacks}` : ""}${c.locked ? ` · ${tr("no timeout")}` : ""}`);
+  });
+  const targets = (s.formation || []).map(body => {
+    const e = allEnemies().find(e => e.id === (body.enemy || s.enemy));
+    return chip(`${e?.name || body.enemy || s.enemy} Lv ${body.level ?? s.level}`);
   });
   return section(tr("Enemy"), enemy)
+    + (targets.length ? section(tr("Targets"), targets) : "")
     + section(tr("The Tenno"), play)
     + section(tr("Who else is firing"), squad, tr("nobody else"))
     + section(tr("Warframe buffs"), wf, tr("none"))

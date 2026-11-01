@@ -113,7 +113,7 @@ function markPresetDirty() {
     if (!activePreset) {
       // Reaching here is not evidence of an edit — see `pristineBuild`.
       if (buildIsUntouched()) return;
-      const e = presetEntry(newPresetName(ps), snapshotState());
+      const e = presetEntry(newPresetName(ps, BUILDS), snapshotState());
       ps.push(e);
       storePresetList(BUILDS, ps);
       activePreset = e.id;

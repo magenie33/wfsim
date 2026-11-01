@@ -35,7 +35,7 @@ function closePopovers(keep) {
 // means the author expected a behaviour this component does not have, and loud
 // is cheap here.
 const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick", "search",
-  "data", "disabled", "axis", "axisLabel"];
+  "data", "disabled", "axis", "axisLabel", "limit", "footer"];
 // `badge` IS THE ONE RAW-HTML FIELD, and it exists because escaped text cannot
 // carry a quick-calc gain. A gain is MARKUP — a class that colours
 // it, a title that explains the band it was measured to, and a "…" while it is
@@ -53,7 +53,7 @@ const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick"
 // `image` IS A CARD'S PICTURE, an id in `data/assets.yaml` that `IMG` resolves: the
 // row and the trigger both carry it, so a list of things that have a face (a
 // Warframe) reads as the picker every other list of them is.
-const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group", "badge", "key", "image"];
+const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group", "badge", "key", "image", "info", "searchText"];
 
 function ddCheck(id, cfg) {
   const stray = (obj, known) => Object.keys(obj).filter((k) => !known.includes(k));
@@ -108,7 +108,7 @@ function ddRender(id, query) {
     : cfg.items;
   const hits = items.filter((i) => {
     if (!q) return true;
-    const blob = [i.label, i.hint, i.group].filter(Boolean).join(" ").toLowerCase();
+    const blob = [i.label, i.hint, i.group, i.searchText].filter(Boolean).join(" ").toLowerCase();
     // …and space-insensitively, for the same reason the mod list is: a
     // localized label carries spaces the player does not type.
     return blob.includes(q) || squash(blob).includes(squash(q));
@@ -137,19 +137,33 @@ function ddRender(id, query) {
   // a dropdown that ranks nothing declares no `axis` and gets none.
   const strip = cfg.axis
     ? scanStrip(gainScan, cfg.axis, hits.map((i) => i.key)) : "";
-  $("dd-menu").innerHTML = strip + (hits.length
-    ? hits.map((i) => {
+  const shown = !q && cfg.limit ? hits.slice(0, cfg.limit) : hits;
+  $("dd-menu").innerHTML = strip + (shown.length
+    ? shown.map((i) => {
       const head = (i.group && i.group !== group)
         ? `<div class="ddgroup">${escHtml(i.group)}</div>` : "";
       group = i.group || group;
       const chip = cfg.axis && i.key ? gainChipFor(i.key, cfg.axisLabel || "") : "";
       return head + `<div class="opt${String(i.value) === String(cfg.value) ? " cur" : ""}${
         i.disabled ? " dis" : ""}" data-v="${escHtml(String(i.value))}">
-        ${i.image ? imgTag(IMG(i.image), "mod") : ""}<div class="info"><div class="mn">${escHtml(i.label)}${chip}${i.badge || ""}</div>${
-          i.hint ? `<div class="me"><div>${escHtml(i.hint)}</div></div>` : ""}</div>
+        ${i.image ? imgTag(IMG(i.image), "mod") : ""}<div class="info"><div class="mn">${escHtml(i.label)}${chip}${i.badge || ""}${i.info ? `<button type="button" class="pop pinfo" data-dd-info="${escHtml(String(i.value))}" aria-label="${escHtml(tr("Info") + ": " + i.label)}">ⓘ</button>` : ""}</div>${
+          i.hint ? `<div class="me"><div>${escHtml(i.hint)}</div></div>` : ""}${i.info ? `<div class="preset-info-body" data-dd-info-body hidden></div>` : ""}</div>
       </div>`;
     }).join("")
-    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`);
+    : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`)
+    + (cfg.footer ? `<button type="button" class="ghost-btn dd-footer" data-dd-footer>${escHtml(cfg.footer.label)}</button>` : "");
+  const footer = $("dd-menu").querySelector("[data-dd-footer]");
+  if (footer) footer.onclick = event => {
+    event.stopPropagation(); $("dd-popover").hidden = true; cfg.footer.onClick();
+  };
+  $("dd-menu").querySelectorAll("[data-dd-info]").forEach(button => button.onclick = event => {
+    event.stopPropagation();
+    const body = button.closest(".info").querySelector("[data-dd-info-body]");
+    const item = cfg.items.find(i => String(i.value) === button.dataset.ddInfo);
+    body.onclick = event => event.stopPropagation();
+    body.hidden = !body.hidden;
+    if (!body.hidden) body.innerHTML = item.info();
+  });
   $("dd-menu").querySelectorAll(".opt[data-v]:not(.dis)").forEach((el) => {
     el.onclick = (e) => {
       e.stopPropagation();

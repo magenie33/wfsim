@@ -418,10 +418,7 @@ async function importShare(code) {
     wielder: null,
   });
   const builds = loadPresetList(BUILDS);
-  // Named for where it came from. Without it a link lands as "build 1 2",
-  // which says nothing about being someone else's work.
-  const base = `${data.n || "build"} (shared)`;
-  const entry = presetEntry(freeName(builds, (n) => base + (n > 1 ? " " + n : "")), null);
+  const entry = presetEntry(newPresetName(builds, BUILDS), null);
   activePreset = entry.id;
   localStorage.setItem(presetActiveKey(BUILDS), entry.id);
   // THE BUILD, AND NOTHING ELSE TOUCHES THE FIGHT. `applyScenario` is the only
@@ -443,7 +440,7 @@ async function importShare(code) {
   // can be, so nothing here is conditional on what the link happened to carry.
   const bits = [tr("build")];
   if ((data.rivens || []).length) bits.push(`${data.rivens.length} ${tr("riven")}`);
-  presetToast(`${tr("imported")}: ${name} · ${bits.join(" + ")}` +
+  presetToast(`${tr("imported")}: ${entry.name} · ${bits.join(" + ")}` +
     (dropped.length ? ` · ${tr("dropped")} ${dropped.length}` : ""));
   return true;
 }

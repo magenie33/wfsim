@@ -43,6 +43,8 @@ function opNormalize(st) {
 function opBarCfg() {
   return {
     domain: OPS,
+    info: p => operatorPresetInfo(p.state),
+    summary: (p,names) => [focusSchool(p.state.school)?.name, presetEquipmentSummary(p.state,names)].filter(Boolean).join(" · "),
     label: tr("Operator builds"),
     noun: "operator",
     load: opList,
@@ -80,7 +82,7 @@ function opMarkDirty() {
     const at = ps.findIndex((p) => presetId(p) === opActive);
     if (at < 0) {
       if (sameState(op, opBlank())) return;
-      const e = presetEntry(newPresetName(ps), cfg.snapshot());
+      const e = presetEntry(newPresetName(ps, OPS), cfg.snapshot());
       ps.push(e);
       cfg.store(ps);
       cfg.setActive(e.id);
@@ -297,7 +299,7 @@ function renderWfOperator() {
   // THE SAME TWO CONTROLS AS A WEAPON'S WIELDER — the type, then which preset of
   // it — though there is one Operator: one shape for every link. The default is
   // always the last entry, and the only one while none is owned.
-  const items = [...ps.map((p) => ({ value: p.id, label: p.name,
+  const items = [...ps.map((p) => ({ value: p.id, label: p.name, info: () => operatorPresetInfo(p.state),
     hint: (focusSchool((p.state || {}).school) || {}).name || tr("no school picked") })),
     { value: DEFAULT_PRESET_ID, label: `${tr("Default")} · ${tr("read-only")}`, hint: tr("no Operator") }];
   const box = $("wf-operator");
@@ -392,8 +394,8 @@ function normalizeWarframeLibraryAddress() {
   const next = '/warframes/' + hit[1] + (editor ? '/builder' : '') + location.search + location.hash;
   if (location.pathname + location.search + location.hash !== next) history.replaceState(history.state, '', next);
 }
-function warframeLibraryCard(state) {
-  const st = wfNormalize(state, wf.frame);
+function warframeLibraryCard(state, frame = state?.frame || wf.frame) {
+  const st = wfNormalize(state, frame);
   const mod = s => {
     const m = s && wfMod(s.mod);
     return m ? {label:m.name, img:IMG(m.image), rank:s.rank ?? m.max_rank} : null;
@@ -407,7 +409,8 @@ function warframeLibraryCard(state) {
     exilus:[mod(st.slots[WF_EXILUS])].filter(Boolean), arcanes:st.arcanes.map(a=>{
       const arc=wfArcane(a.id);return arc ? {label:arc.name,img:IMG(arc.image),rank:a.rank ?? arc.max_rank} : null;
     }).filter(Boolean)}) + chips(tr('Archon Shards'),shards)
-    + chips(tr('Helminth'),st.helminth.ability ? [(wfAbility(st.helminth.ability)?.name || st.helminth.ability)] : []);
+    + chips(tr('Helminth'),st.helminth.ability ? [(wfAbility(st.helminth.ability)?.name || st.helminth.ability)] : [])
+    + chips(tr('Operator'),[opBuildOf(st.operator)?.name || tr('Default')]);
 }
 function renderWarframeLibrary() {
   const page=$('warframe-page'), f=wfFrames().find(f=>f.id===wf?.frame);

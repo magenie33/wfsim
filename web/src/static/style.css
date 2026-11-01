@@ -697,13 +697,16 @@ body.on-wbench [data-module="builder"],body.on-build-library [data-module="build
 .fp-ok{color:var(--good,#2fb36d);font-size:11px}
 
 /* floating popovers */
-.popover{position:absolute;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);width:340px;max-width:92vw;overflow:hidden}
-.popover.menu{width:200px}
-.popover .mi{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:13px}
-.popover .mi:hover{background:var(--panel2)}
-.popover .mi.sel{color:var(--accent)}
-.popover .mi.danger{color:var(--critical)}
-.popover .mi .pol{width:15px;height:15px}
+.popover,.context-menu{position:absolute;z-index:50;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.35);width:340px;max-width:92vw;overflow:hidden}
+.popover.menu,.context-menu{width:200px}
+.popover .mi,.context-menu .mi{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:13px}
+.popover .mi:hover,.context-menu .mi:hover{background:var(--panel2)}
+.popover .mi.sel,.context-menu .mi.sel{color:var(--accent)}
+.popover .mi.danger,.context-menu .mi.danger{color:var(--critical)}
+.popover .mi .pol,.context-menu .mi .pol{width:15px;height:15px}
+.popover button.mi,.context-menu button.mi{width:100%;height:auto;margin:0;border:0;border-radius:0;background:transparent;color:inherit;font-family:inherit;font-size:13px;line-height:1.4;text-align:left;white-space:normal}
+.popover button.mi:hover,.context-menu button.mi:hover{background:var(--panel2)}
+.popover button.mi.danger,.context-menu button.mi.danger{color:var(--critical)}
 /* The search affordance is DRAWN, not typed. It was an emoji magnifier, and an
    emoji is the one thing on the page the platform renders in its own colour and
    its own shape — the only colour glyph in a monochrome UI, different on every
@@ -3835,8 +3838,8 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .arc-hide-tools .arc-rail,.arc-hide-tools .arc-opts,.arc-hide-tools .arc-chips,.arc-hide-enemy .arc-brush,.arc-hide-selection .arc-insp,.arc-hide-readout .arc-read{display:none}
 .arena-editor-open{overflow:hidden}
 .arena-editor-open .popover{z-index:80}
-.arena-editor-window{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.55)}
-.arena-editor-dialog{display:flex;flex-direction:column;width:min(1600px,100%);height:calc(100dvh - 32px);max-height:100%;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 12px 36px rgba(0,0,0,.32);overflow:hidden}
+.arena-editor-window,.preset-library-window{position:fixed;inset:0;z-index:70;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.55)}
+.arena-editor-dialog,.preset-library-dialog{display:flex;flex-direction:column;width:min(1600px,100%);height:calc(100dvh - 32px);max-height:100%;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:0 12px 36px rgba(0,0,0,.32);overflow:hidden}
 .arena-editor-dialog>.jump-head{cursor:default;flex:none;justify-content:space-between}
 .arena-editor-content{flex:1;min-height:0;overflow:auto;padding:12px}
 .arena-editor-content>.sub-block{display:flex;flex-direction:column;height:100%;margin:0;min-height:0}
@@ -3965,3 +3968,67 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .analysis-card-choice,.analysis-executors label{flex-direction:row}.analysis-card-choice>input,.analysis-executors input{width:auto;flex:none}
 .analysis-executors label:has(:disabled){opacity:.5}
 .sim-review-auto{display:inline-flex;flex-direction:row;align-items:center;gap:6px;font-size:12px;color:var(--text-2)}.sim-review-auto input{width:auto;margin:0}
+
+/* The saved collections share one browser and the existing info cards. */
+.pchip .pinfo{font-size:14px;color:var(--muted);margin-left:4px}
+.pchip .pinfo:hover{color:var(--accent)}
+.preset-info-popover{width:580px;max-width:calc(100vw - 20px);max-height:min(75dvh,800px);overflow:auto;padding:12px}
+.preset-info-head{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.preset-info-head>span{color:var(--muted);font-size:12px;flex:1}
+.preset-info-body{padding:6px 0;overflow-wrap:anywhere}
+.preset-info-body .sb-chips{flex-wrap:wrap}
+.preset-library-open{overflow:hidden}
+.preset-library-window{z-index:80}
+.preset-library-dialog{width:min(1100px,100%);height:min(850px,calc(100dvh - 32px))}
+.preset-library-head{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--line)}
+.preset-library-head b{font-size:18px}
+.preset-library-head p{margin:6px 0 0;font-size:12px;color:var(--muted)}
+.preset-library-tools{display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px;border-bottom:1px solid var(--line)}
+.preset-library-tools .preset-library-search{flex:1;min-width:180px}
+.preset-library-tools .addbar input{min-width:0}
+.preset-library-tools .dd{width:auto;min-width:120px}
+.preset-library-results{padding:12px 20px 24px;overflow:auto;overscroll-behavior:contain;flex:1}
+.preset-library-count{font-size:12px;color:var(--muted);margin-bottom:10px;font-variant-numeric:tabular-nums}
+.preset-library-item{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;background:var(--panel2)}
+.preset-library-item.active{border-color:var(--accent)}
+.preset-library-row{display:flex;gap:12px;justify-content:space-between;align-items:flex-start}
+.preset-library-row b{font-size:15px;overflow-wrap:anywhere}
+.preset-library-context{margin-left:12px;color:var(--text-2);font-size:12px}
+.preset-library-row time{display:block;margin-top:4px;font-size:11px;color:var(--muted)}
+.preset-library-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.preset-library-info{margin-top:10px;font-size:12px}
+.preset-library-info>summary,.preset-start-info>summary{cursor:pointer;color:var(--text-2);padding:5px 0}
+.preset-library-feedback{color:var(--gold);font-size:12px;margin-top:6px}
+.preset-library-feedback:empty{display:none}
+.preset-library-rename{display:flex;gap:8px}
+.preset-library-rename input{flex:1;min-width:0}
+@media(max-width:640px){.preset-library-window{padding:0}.preset-library-dialog{height:100dvh;border-radius:0}.preset-library-head,.preset-library-tools{padding:12px}.preset-library-head{align-items:flex-start}.preset-library-results{padding:10px}.preset-library-row{flex-wrap:wrap}.preset-library-actions{margin-left:auto}.preset-library-context{display:block;margin:4px 0 0}.preset-library-tools .preset-library-search{flex-basis:100%}}
+.preset-library-open .popover{z-index:86}
+.dd .pinfo,.combo-menu .pinfo{margin-left:8px;color:var(--muted)}
+.combo-menu .preset-info-body{white-space:normal;cursor:default}
+
+.preset-library-rename input{background:var(--plane);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:8px 12px;font:inherit;font-size:13px}
+
+/* One current preset; the collection stays in the searchable switcher. */
+.preset-current.pchip{padding:0 5px;gap:3px;height:30px;max-width:100%;cursor:default}
+.preset-current .dd{max-width:min(290px,48vw);min-width:100px;border:0;background:transparent;padding:4px}
+.preset-current .dd-v{max-width:240px}
+.preset-current.pnote{display:inline-flex;align-items:center;gap:4px}
+.preset-current .preset-actions{margin-left:2px}
+.preset-bar .pchip.add{font-size:17px;min-width:28px;justify-content:center}
+.preset-count{font-variant-numeric:tabular-nums;color:var(--muted);margin-left:5px}
+.preset-actions{display:inline-flex;align-self:flex-start;flex-shrink:0}
+.preset-actions>summary{display:flex;align-items:center;justify-content:center;width:28px;height:26px;list-style:none;font-size:19px}
+.preset-actions>summary::-webkit-details-marker{display:none}
+.preset-action-menu{position:fixed;z-index:90}
+
+.preset-library-row>div:first-child{min-width:0;flex:1}
+.preset-library-summary{font-size:12px;color:var(--text-2);margin:5px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.preset-library-info{margin-top:4px}
+.preset-library-item{padding:10px 12px;margin-bottom:7px}
+.dd-footer{width:100%;border:0;border-top:1px solid var(--line);border-radius:0;padding:10px;text-align:left}
+@media(max-width:640px){.preset-current .dd{max-width:45vw;min-width:80px}.preset-library-actions{margin-left:0}.preset-library-context{display:inline;margin-left:8px}.preset-library-row{flex-wrap:nowrap}.preset-library-summary{max-width:100%}.preset-library-row time{font-size:10px}}
+.preset-actions:not([open]) .preset-action-menu{display:none}
+.preset-count{display:inline-block;min-width:3ch;text-align:right}
+.combo-menu .pinfo{background:transparent;border:0;border-radius:4px;padding:2px 4px;font:inherit;cursor:pointer}
+.combo-menu .pinfo:hover{background:var(--panel2);color:var(--accent)}

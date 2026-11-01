@@ -1,19 +1,6 @@
-// ---- The ONE preset-bar component -------------------------------------
-// Every preset bar on the page (the build bar and the optimizer's three
-// scope bars) is the same template on the same document model: label +
-// count, the chips (the active one carries duplicate / rename / delete),
-// "+ new". OWNING NONE, THE BAR IS EMPTY and the editor shows the DEFAULT, the
-// blank: the first effective edit writes "preset 1", and a preset edited back to
-// the blank is deleted, so what is left is the default again. Edits AUTO-SAVE into the active preset, so there is no save
-// button and no dirty marker. "+ new" creates an EMPTY preset instantly
-// under an auto-name ("preset N") and switches to it — no naming step; rename after via ✎. Branching an existing preset
-// is the ⧉ duplicate on the active chip.
-// Counts are UNLIMITED, so past PRESET_FILTER_AT chips the bar grows a
-// name filter; the active chip always shows (it is the document being
-// edited).
-const PRESET_FILTER_AT = 10;
+// The shared quick switcher for every preset domain. Edits autosave; creating
+// and duplicating allocate a numeric label, while info reads without applying.
 let deleteArmed = null; // "<bar>:<preset>" whose delete has said who links it
-const presetFilters = {}; // per-bar filter text — survives re-renders, not persisted
 
 // SELECT and COPY, lifted out of the bar so the BENCHMARK bar performs the
 // same two actions rather than its own versions of them.
@@ -106,20 +93,19 @@ const pickPreset = (cfg, key) => {
   // A BOARD ROW is the one built-in that carries its ruler; a scenario does not.
   if (p.builtin && p.benchmark) track("board.open", $("weapon").value);
   cfg.setActive(presetId(p));
+  notePresetUse(cfg.domain, presetId(p));
   whileApplying(() => cfg.apply(p.state)); // a load is not an edit
   cfg.rerender();
 };
 
-/// "+ new": a blank document of this bar's kind, made active, named with the
-/// bar's own noun ("riven N" on the riven bar). Activated FIRST so everything
-/// that renders during apply() (the sim's per-preset stored result) already
-/// sees the new one; the stored state is the live snapshot after the blank is
-/// applied, so it matches exactly what the editor shows.
+/// Activate before applying, so renderers observe the new identity. Capture
+/// the realised blank after apply, exactly as the editor shows it.
 const newPreset = (cfg) => {
   flushPresetSaves();
   const ps = cfg.load();
-  const e = presetEntry(newPresetName(ps), null);
+  const e = presetEntry(newPresetName(ps, cfg.domain), null);
   cfg.setActive(e.id);
+  notePresetUse(cfg.domain, e.id);
   whileApplying(() => cfg.apply(cfg.blank()));
   // THE BLANK, SEEN: what "edited back to the blank" is compared against.
   if (cfg.pristine) cfg.pristine();
@@ -154,12 +140,12 @@ function deleteIfBlank(cfg, stored) {
 const copyActivePreset = (cfg) => {
   flushPresetSaves();
   const ps = cfg.load();
-  const base = presetLabel(presetFind(barEntries(cfg), cfg.active()));
   const state = cfg.copyState ? cfg.copyState(cfg.snapshot()) : cfg.snapshot();
-  const e = presetEntry(freeName(ps, (n) => base + " copy" + (n > 1 ? " " + n : "")), state);
+  const e = presetEntry(newPresetName(ps, cfg.domain), state);
   ps.push(e);
   cfg.store(ps);
   cfg.setActive(e.id);
+  notePresetUse(cfg.domain, e.id);
   if (cfg.copyState) whileApplying(() => cfg.apply(e.state));
   cfg.rerender();
   return e.id;
@@ -203,112 +189,60 @@ function lockReadOnly(el, on, cfg) {
 }
 
 function renderPresetBarIn(bar, cfg) {
-  // WHAT ONE OF THESE IS CALLED. "Preset" is the CATEGORY — a saved state of
-  // a module, as opposed to a custom — and no collection is named after its
-  // category. A build is a build, a scenario a scenario, a
-  // search a search; the noun names new ones and every tooltip that has to
-  // refer to one.
   const noun = cfg.noun || "preset";
-  // YOURS, and then — where the collection publishes any — the READ-ONLY
-  // entries opened into it (a board build, an official ruler). `ps` is yours
-  // alone, so the filter threshold and the delete rule count what you own; the
-  // label counts every entry in the bar, because every one is in it.
-  const ps = cfg.load();
-  const ro = cfg.pins ? openedPublished(cfg) : [];
-  const active = cfg.active();
-  const ftext = presetFilters[bar.id] || "";
-  const f = ftext.trim().toLowerCase();
-  const shown = f ? ps.filter((p) => presetId(p) === active || p.name.toLowerCase().includes(f)) : ps;
-  const hint = cfg.hint ? ` (${cfg.hint})` : "";
-  // OWNING NONE SAYS WHERE THE EDITOR STANDS: on the default, the blank. A
-  // scenario owning none is on a pinned official ruler (`pinned`) and a
-  // custom's editor stands down (`optional`); neither has a blank to name.
-  const onDefault = cfg.blank && !cfg.optional && !cfg.pinned && ps.length === 0 && !ro.length;
-  const defaultNote = onDefault
-    ? `<span class="pnote" title="${escHtml(tr("the default is read-only"))}">${escHtml(tr("Default"))} · ${escHtml(tr("your first change is saved as"))} ${escHtml(autoPresetName(PRESET_NAME, 1))}</span>`
-    : "";
-  const chip = (p) => {
-    const sel = presetId(p) === active;
-    const ops = !sel
-      ? ""
-      : `<button class="pop dup" title="${escHtml(tr("duplicate"))}">⧉</button>` +
-        `<button class="pop ren" title="rename">✎</button>` +
-        // DELETABLE TO ZERO. "There is always one" was true
-        // while one was auto-created; now that nothing is, the last one is as
-        // deletable as the first — and a collection you cannot empty is one the
-        // config page can never show you an honest count of. `cfg.optional` was
-        // already the customs' flag for exactly this and is simply no longer
-        // the thing that distinguishes them.
-        `<button class="pop del" title="delete">✕</button>`;
-    // WHO LINKS IT, where the collection is one others link to: the linked side
-    // only says so, and choosing here moves no link.
-    const by = cfg.usedBy ? cfg.usedBy(p) : [];
-    const used = by.length
-      ? `<span class="pby" title="${escHtml(tr("linked by") + ": " + by.join(" · "))}">↩${by.length}</span>` : "";
-    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(presetId(p))}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${cloudMark(cfg.domain, p)}${escHtml(p.name)}${used}${ops}</span>`;
+  const ps = cfg.load(), ro = cfg.pins ? openedPublished(cfg) : [];
+  const entries = ps.concat(ro), active = cfg.active();
+  const current = presetFind(entries, active);
+  const items = () => {
+    const names = presetSearchNames(), recent = presetRecentUses(cfg.domain), selected = cfg.active();
+    const choices = cfg.load().concat(cfg.pins ? openedPublished(cfg) : []).sort((a,b) =>
+      Number(presetId(b) === selected) - Number(presetId(a) === selected)
+      || (recent[presetId(b)] || b.savedAt || 0) - (recent[presetId(a)] || a.savedAt || 0));
+    return choices.map(p => {
+      const by = cfg.usedBy ? cfg.usedBy(p) : [];
+      const links = by.length ? `<span class="pby" title="${escHtml(tr('linked by') + ': ' + by.join(' · '))}">↩${by.length}</span>` : "";
+      return {value:presetId(p), label:p.name, hint:presetSummary(cfg, p, names),
+        badge:(p.builtin ? LOCK_SVG : "") + links, searchText:presetSearchText(cfg, p, names), info:() => cfg.info(p)};
+    });
   };
-  // A READ-ONLY ENTRY: select, ⧉ on the one you are on, and × to take it out of
-  // the bar — which removes nothing from where it came from.
-  const roChip = (p) => {
-    const sel = presetId(p) === active;
-    return `<span class="pchip ro ${sel ? "sel" : ""}" data-name="${escHtml(presetId(p))}" title="${escHtml(cfg.roTitle ? cfg.roTitle(p) : "")}">${LOCK_SVG}${escHtml(presetLabel(p))}` +
-      (sel ? `<button class="pop dup" title="${escHtml(tr("copy it into a {thing} of your own — the official one cannot be edited").replace("{thing}", tr(noun)))}">⧉</button>` : "") +
-      `<button class="pop unpin" data-unpin="${escHtml(presetId(p))}" title="${escHtml(tr("take it out of the bar — the board keeps it"))}">×</button></span>`;
-  };
-  bar.innerHTML =
-    // Every bar says the shortcut: auto-save means a slip is written before
-    // you can regret it, so the way back has to be visible on the thing that
-    // slipped.
-    `<span class="plabel" title="${escHtml(tr("Ctrl+Z undoes the last change"))}">${cfg.label} <b>${ps.length + ro.length}</b></span>` +
-    (ps.length > PRESET_FILTER_AT ? `<input class="pfilter" type="text" placeholder="${escHtml(tr("filter…"))}" value="${escHtml(ftext)}">` : "") +
-    (ro.length ? `<span class="pgroup">${escHtml(tr("Mine"))}</span>` : "") +
-    defaultNote + shown.map(chip).join("") +
-    (ro.length || cfg.openable
-      ? `<span class="psep" aria-hidden="true"></span><span class="pgroup">${escHtml(cfg.roGroup)}</span>` + ro.map(roChip).join("")
-      : "") +
-    // …AND THE WAY IN, where the bar is it: a published entry picked from a list
-    // lands in the group above like any other. A board build's way in is the
-    // build finder, which searches rather than lists.
-    (cfg.openable
-      ? `<span class="popen">${cfg.boardPicker ? `<button type="button" class="ghost-btn small" data-board-open>${escHtml(`+ ${cfg.openLabel}`)}</button>` : ddButton(`dd-open-${cfg.domain}`, {
-          value: "", search: true, title: cfg.openHint || "",
-          placeholder: `+ ${cfg.openLabel}`,
-          items: cfg.openable().map((p) => ({ value: presetId(p), label: p.group || p.name })),
-          onPick: (v) => pickPreset(cfg, v),
-        })}</span>`
-      : "") +
-    // One template, not two words joined by a space: Chinese does not put one
-    // between them, so concatenating produced "新建空白 配装".
-    `<span class="pchip add" title="${escHtml(
-      tr("new empty {thing}").replace("{thing}", tr(noun)) + (cfg.hint ? " · " + cfg.hint : "")
-    )}">+ new</span>` +
-    (cfg.extra || "") +
-    undoButtons(cfg.domain) +
-    `<div class="pshare" hidden></div>`;
+  const switcher = ddButton(`dd-preset-${cfg.domain}`, {
+    value: current ? presetId(current) : "", placeholder:tr("Default"), search:true, disabled:!entries.length, limit:8,
+    title:tr("Search presets"), get items() { return items(); },
+    onPick:id => pickPreset(cfg, id),
+    footer:{label:tr("Manage presets") + ` · ${ps.length}`, onClick:() => openPresetLibrary(cfg, bar)},
+  });
+  const ownOps = current && !current.builtin
+    ? `<button type="button" class="pop dup">⧉ ${escHtml(tr("duplicate"))}</button><button type="button" class="pop ren">✎ ${escHtml(tr("rename"))}</button><button type="button" class="pop del">× ${escHtml(tr("delete"))}</button>` : "";
+  const roOps = current?.builtin
+    ? `<button type="button" class="pop dup">⧉ ${escHtml(tr("duplicate"))}</button><button type="button" class="pop unpin" data-unpin="${escHtml(presetId(current))}">× ${escHtml(tr("take it out of the bar — the board keeps it"))}</button>` : "";
+  const published = cfg.openable ? `<span class="popen">${cfg.boardPicker
+    ? `<button type="button" class="ghost-btn small" data-board-open>+ ${escHtml(cfg.openLabel)}</button>`
+    : ddButton(`dd-open-${cfg.domain}`, {value:"", search:true, placeholder:`+ ${cfg.openLabel}`,
+      items:cfg.openable().map(p => ({value:presetId(p), label:p.group || p.name})), onPick:id => pickPreset(cfg, id)})}</span>` : "";
+  const usedBy = current && cfg.usedBy ? cfg.usedBy(current) : [];
+  bar.innerHTML = `<span class="plabel">${cfg.label}</span><span class="preset-current ${current ? `pchip sel${current.builtin ? ' ro' : ''}` : 'pnote'}"${current ? ` data-name="${escHtml(presetId(current))}"` : ''}>`
+    + (current ? current.builtin ? LOCK_SVG : cloudMark(cfg.domain, current) : "")
+    + switcher + (current ? presetInfoButton(cfg, current) : "")
+    + (usedBy.length ? `<span class="pby" title="${escHtml(tr("linked by") + ': ' + usedBy.join(' · '))}">↩${usedBy.length}</span>` : "")
+    + ((ownOps || roOps || published || cfg.extra) ? presetActionsHtml(ownOps + roOps + published + (cfg.extra || "")) : "") + `</span>`
+    + `<button type="button" class="pchip add" title="${escHtml(tr("new empty {thing}").replace('{thing}',tr(noun)))}">＋</button>`
+    + `<button type="button" class="ghost-btn small" data-preset-manage>${escHtml(tr("Manage presets"))} <span class="preset-count">${ps.length}</span></button>`
+    + undoButtons(cfg.domain) + `<div class="pshare" hidden></div>`;
   wireUndoButtons(bar, cfg.domain);
   if (cfg.onExtra) cfg.onExtra(bar);
-
-  // Typing re-renders the bar (chips re-filter), so hand focus back.
-  const filt = bar.querySelector(".pfilter");
-  if (filt) onTyped(filt, () => {
-    presetFilters[bar.id] = filt.value;
-    cfg.rerender();
-    const nf = bar.querySelector(".pfilter");
-    if (nf) { nf.focus(); nf.setSelectionRange(nf.value.length, nf.value.length); }
-  });
-  bar.querySelectorAll(".pchip:not(.add)").forEach((c) =>
-    c.addEventListener("click", (e) => { if (!e.target.closest("a.pcloud")) pickPreset(cfg, c.dataset.name); }));
+  wirePresetInfo(bar, cfg, entries); wirePresetActions(bar);
+  bar.querySelector("[data-preset-manage]").onclick = () => openPresetLibrary(cfg, bar);
   const boardOpen = bar.querySelector("[data-board-open]");
-  if (boardOpen) boardOpen.onclick = (event) => { event.stopPropagation(); cfg.boardPicker(boardOpen); };
-  bar.querySelectorAll(".pcloud[data-cloud]").forEach((b) => b.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (setCloudSync(presetListKey(cfg.domain), b.dataset.cloud, !b.classList.contains("on"))) cfg.rerender();
-  }));
+  if (boardOpen) boardOpen.onclick = event => { event.stopPropagation(); cfg.boardPicker(boardOpen); };
+  bar.querySelectorAll(".pcloud[data-cloud]").forEach(button => button.onclick = event => {
+    event.stopPropagation();
+    if (setCloudSync(presetListKey(cfg.domain), button.dataset.cloud, !button.classList.contains("on"))) cfg.rerender();
+  });
   // No prompt()/alert()/confirm() anywhere — the browser can block those
   // dialogs, which made saving silently fail. Naming
   // happens in an INLINE input: Enter commits, Esc cancels.
   const nameInput = (placeholderEl, initial, onCommit) => {
-    placeholderEl.outerHTML = `<input class="pname" type="text" value="${escHtml(initial)}" placeholder="name, then Enter…" maxlength="24">`;
+    placeholderEl.outerHTML = `<input class="pname" type="text" value="${escHtml(initial)}" placeholder="name, then Enter…" maxlength="80">`;
     const inp = bar.querySelector(".pname");
     inp.focus();
     if (initial) inp.select();
@@ -325,8 +259,6 @@ function renderPresetBarIn(bar, cfg) {
     });
     inp.addEventListener("blur", commit);
   };
-  // Unique auto-names: "+ new" takes the smallest free "preset N";
-  // duplicate takes "<name> copy", then "<name> copy 2", …
   const addBtn = bar.querySelector(".pchip.add");
   addBtn.addEventListener("click", (e) => { e.stopPropagation(); newPreset(cfg); });
   const on = (sel, fn) => { const b = bar.querySelector(sel); if (b) b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); };
@@ -364,35 +296,22 @@ function renderPresetBarIn(bar, cfg) {
       return;
     }
     deleteArmed = null;
-    // YOURS ONLY: `load()` is the reader's own, so deleting your last build
-    // leaves the default rather than falling through to a published one.
-    const ps2 = cfg.load().filter((p) => presetId(p) !== cfg.active());
-    // EVERY COLLECTION MAY GO TO ZERO, not only the OPTIONAL ones. A module
-    // always has a state and "no build" is not a thing the builder can show —
-    // both true, and neither needs a stored row: nothing is
-    // auto-created any more (`initPresets`), so the state the builder shows
-    // when you own nothing is `cfg.blank()`, and a preset comes back the moment
-    // you edit it.
-    //
-    // `cfg.blank` is what the three modules already declare for "+ new", so the
-    // state after deleting the last one is the state a new one would start
-    // from — one answer, not two. A CUSTOM keeps `null`, which is how its
-    // editor knows to stand down.
-    cfg.store(ps2);
-    // …AND A COLLECTION THAT PUBLISHES ITS DEFAULT goes back to it (`fallback`:
-    // the first official ruler, the first built-in search), as unpinning does.
-    const next = ps2[0] || (cfg.fallback ? cfg.fallback() : null);
-    cfg.setActive(next ? presetId(next) : "");
-    whileApplying(() => cfg.apply(
-      next ? next.state : (cfg.optional || !cfg.blank ? null : cfg.blank())));
-    // A DELETE IS NOT AN EDIT, and the state it leaves behind is the pristine
-    // one — recorded here so the re-render this very handler causes cannot
-    // create the row that was just removed.
-    if (!ps2.length && cfg.pristine) cfg.pristine();
-    cfg.rerender();
-    dropSave("builds");
-    dropSave("search");
+    deleteOwnedPreset(cfg, cfg.active());
   });
+}
+
+function deleteOwnedPreset(cfg, id) {
+  flushPresetSaves();
+  const ps = cfg.load().filter(p => presetId(p) !== id);
+  cfg.store(ps);
+  if (id === cfg.active()) {
+    const next = ps[0] || (cfg.fallback ? cfg.fallback() : null);
+    cfg.setActive(next ? presetId(next) : "");
+    whileApplying(() => cfg.apply(next ? next.state : cfg.blank()));
+    if (!ps.length && cfg.pristine) cfg.pristine();
+  }
+  cfg.rerender();
+  dropSave("builds"); dropSave("search");
 }
 
 // An EMPTY build for "+ new": the CURRENT weapon (the page is a weapon

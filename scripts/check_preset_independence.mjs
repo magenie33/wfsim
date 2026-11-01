@@ -40,9 +40,9 @@ const r = await evaluate(`(async () => {
   // THE ENTRY CALLED "preset 1", by its id — not by position: the bar also
   // carries read-only board rows, so "the first chip" is not "the first build
   // I made".
-  const chips = [...bar.querySelectorAll('.pchip[data-name]')];
-  const first = loadPresetList('builder-builds').find((p) => p.name === 'preset 1');
-  chips.find((c) => c.dataset.name === (first && first.id)).click(); await sleep(1600);
+  const first = loadPresetList('builder-builds').find((p) => p.name === '01');
+  bar.querySelector('[data-dd="dd-preset-builder-builds"]').click();
+  document.querySelector('#dd-menu .opt[data-v="' + first.id + '"]').click(); await sleep(1600);
   const levelAfter = sim.level;
   const onScreen = ($$('#sim-target [data-k="level"]')||{}).value;
   const modAfter = slots[0].mod;
@@ -64,7 +64,9 @@ const r = await evaluate(`(async () => {
   setOptSizes({ candidate_runs: 1 }); await sleep(900);
   document.querySelectorAll('.tab').forEach(x => { if(/Build/i.test(x.textContent)) x.click(); });
   await sleep(800);
-  chips[1].click(); await sleep(1600);
+  const second = loadPresetList(BUILDS).find(p => p.id !== first.id);
+  bar.querySelector('[data-dd="dd-preset-builder-builds"]').click();
+  document.querySelector('#dd-menu .opt[data-v="' + second.id + '"]').click(); await sleep(1600);
   document.querySelectorAll('.tab').forEach(x => { if(/Optim/i.test(x.textContent)) x.click(); });
   await sleep(1800);
   const scope = opt.starts.length, fin = optRun.candidate_runs;
@@ -201,8 +203,8 @@ const md = await evaluate(`(async () => {
   // mode is the one it was MEASURED in and nothing may write it — so testing
   // "a mode change is saved" against one would be testing the opposite rule.
   if (officialBuildActive()) {
-    const own = [...document.querySelectorAll('#preset-bar-builder-builds .pchip')][0];
-    if (own) own.click();
+    const own = loadPresetList(BUILDS)[0];
+    if (own) pickPreset(buildBarCfg(), own.id);
     await s(1500);
   }
   const out = { start: mode, official: officialBuildActive() };
@@ -322,7 +324,8 @@ const cross = await evaluate(`(async () => {
   // ...then a weapon never visited, reached the way the search bar reaches one.
   switchWeapon('sybaris'); await s(2000);
   out.next = { arcanes: arcanes.slice(), mods: slots.filter(x => x.mod).length,
-               evos: Object.values(evoSel).filter(Boolean).length };
+               evos: Object.values(evoSel).filter(Boolean).length,
+               defaultEvos: sameState(evoSel, defaultEvolutions("sybaris", null)) };
   const stored = loadPresetList('builder-builds', 'sybaris')[0];
   out.stored = (stored || {}).state || null;
   return out;
@@ -332,7 +335,7 @@ check("a board build loads its own arcane", (cross.fromBoard || [])[0] === cross
   `${JSON.stringify(cross.fromBoard)} vs ${cross.seeded}`);
 check("...and NOTHING of it crosses to the next weapon",
   (cross.next.arcanes || []).every((a) => a === "none")
-    && cross.next.mods === 0 && cross.next.evos === 0,
+    && cross.next.mods === 0 && cross.next.defaultEvos,
   JSON.stringify(cross.next));
 check("...not even into what gets written as that weapon's first build",
   ((cross.stored || {}).arcane || ["none"]).every((a) => a === "none"),

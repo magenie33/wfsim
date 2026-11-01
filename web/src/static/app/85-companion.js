@@ -243,10 +243,14 @@ function compAnnounceBuild() {
 function compBarCfg() {
   return {
     domain: COMP_BUILDS,
+    info: p => companionPresetInfo(p.state),
+    context: p => compHost(p.scope || p.state.companion || comp.companion)?.name || p.scope,
+    libraryScope: () => comp.companion,
+    libraryPath: p => companionPath(compHost(p.scope)) + "?build=" + encodeURIComponent(p.id),
     label: tr("Companion builds"),
     noun: "companion",
     load: () => compList(comp.companion),
-    usedBy: (p) => linkersOfCompanionPreset(comp.companion, p.id),
+    usedBy: (p) => linkersOfCompanionPreset(p.scope || comp.companion, p.id),
     store: (ps) => storePresetList(COMP_BUILDS, ps, comp.companion),
     active: () => compActive,
     setActive: (n) => {
@@ -280,7 +284,7 @@ function compMarkDirty() {
     const at = ps.findIndex((p) => presetId(p) === compActive);
     if (at < 0) {
       if (sameState(comp, compBlank(comp.companion))) return;
-      const e = presetEntry(newPresetName(ps), cfg.snapshot());
+      const e = presetEntry(newPresetName(ps, COMP_BUILDS), cfg.snapshot());
       ps.push(e);
       cfg.store(ps);
       cfg.setActive(e.id);

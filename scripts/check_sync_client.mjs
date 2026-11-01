@@ -118,7 +118,7 @@ const r = await evaluate(`(async () => {
   // the server keeps on a tie: the edit must still be the newer write.
   const realNow = Date.now;
   Date.now = () => kb.at;
-  b1.state = st('hornet_strike'); b1.savedAt = kb.at;
+  b1.state = st('point_strike'); b1.savedAt = kb.at;
   localStorage.setItem(L, JSON.stringify(bl));
   await quiet();
   try { await syncNow(); } finally { Date.now = realNow; }
@@ -134,7 +134,7 @@ const r = await evaluate(`(async () => {
   // A REMOTE EDIT TO THE BUILD ON SCREEN REACHES THE SCREEN.
   history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3000);
   const onScreen = builds().find((p) => p.id === 'b1');
-  if (onScreen) pickPreset(buildBarCfg(), onScreen.name);
+  if (onScreen) pickPreset(buildBarCfg(), onScreen.id);
   await sleep(600);
   const cur = srv.acc1.get('b1');
   srv.acc1.set('b1', { ...cur, body: { ...cur.body, state: st('vital_sense'), savedAt: Date.now() }, updated_at: Date.now(), synced_at: clock++, version: (cur.version || 0) + 1 });
@@ -157,13 +157,15 @@ const r = await evaluate(`(async () => {
   // keep theirs, with a body that carries nothing of the build.
   await quiet();
   renderPresetBar();
-  const cloudOf = (id) => document.querySelector('#preset-bar-builder-builds .pcloud[data-cloud="' + id + '"]');
+  const cloudOf = (id) => document.querySelector('.preset-library-window .pcloud[data-cloud="' + id + '"]');
+  openPresetLibrary(buildBarCfg(), document.getElementById('preset-bar-builder-builds'));
   out.markShown = !!cloudOf('b1') && cloudOf('b1').classList.contains('on');
   if (cloudOf('b1')) cloudOf('b1').click();
   await quiet(); await syncNow();
   const sOff = (srv.acc1.get('b1') || {}).body || {};
   out.offHere = (builds().find((p) => p.id === 'b1') || {}).cloud_sync === false && !!cloudOf('b1') && !cloudOf('b1').classList.contains('on');
   out.offServer = sOff.cloud_sync === false && !('state' in sOff) && !('name' in sOff);
+  document.querySelector('.preset-library-window [data-library-close]').click();
   const X = await keep();
   await become(B);
   await syncNow();
@@ -172,9 +174,11 @@ const r = await evaluate(`(async () => {
   // ON AGAIN, the whole entry travels.
   await become(X);
   renderPresetBar();
+  openPresetLibrary(buildBarCfg(), document.getElementById('preset-bar-builder-builds'));
   if (cloudOf('b1')) cloudOf('b1').click();
   await quiet(); await syncNow();
   out.onAgain = !!(((srv.acc1.get('b1') || {}).body || {}).state);
+  document.querySelector('.preset-library-window [data-library-close]').click();
   // …AND ON A RIVEN IN ITS LIST: the cloud switches sync and opens nothing.
   history.pushState({}, '', '/weapons/Torid/rivens'); route(); await sleep(1800);
   document.querySelector('.cu-new').click(); await sleep(700);
@@ -297,7 +301,7 @@ const r = await evaluate(`(async () => {
   out.signedOut = [!!out1, out1 ? out1.getAttribute('href') : null,
     document.querySelectorAll('#preset-bar-builder-builds .pcloud[data-cloud]').length];
   const pickedBefore = activePreset;
-  const other = document.querySelector('#preset-bar-builder-builds .pchip:not(.sel) a.pcloud');
+  const other = document.querySelector('#preset-bar-builder-builds .preset-current a.pcloud');
   if (other) other.click();
   await sleep(600);
   out.signedOutPicks = [!!other, activePreset === pickedBefore, location.pathname];
@@ -318,7 +322,7 @@ check("a second browser's first sync is a union, and two builds keep the one nam
 check("...and the rename is pushed, so the server agrees", ok(r.serverAfterB) === ok(r.bAfterFirst), ok(r.serverAfterB));
 check("the first browser ends on the same two names", ok(r.aAfterB) === ok(r.bAfterFirst), ok(r.aAfterB));
 check("a deletion on one browser reaches the other", ok(r.bAfterDelete) === ok(["b1=preset 1"]), ok(r.bAfterDelete));
-check("an edit on one browser reaches the other, even in the millisecond of the last agreed write", r.aSeesEdit === "hornet_strike", ok([r.aSeesEdit, r.editWhy]));
+check("an edit on one browser reaches the other, even in the millisecond of the last agreed write", r.aSeesEdit === "point_strike", ok([r.aSeesEdit, r.editWhy]));
 check("a remote edit to the build on screen reaches the screen", r.screen === "vital_sense", r.screen);
 check("a link to a saved build not here yet opens it once the sync brings it",
   r.linkBefore !== "zz1" && r.linkAfter === "zz1" && r.linkScreen === "point_strike",
