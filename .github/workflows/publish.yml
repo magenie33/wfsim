@@ -38,6 +38,8 @@ jobs:
     runs-on: ubuntu-latest
     # Capped for the reason `scores.yml` states — this one reads the database too.
     timeout-minutes: 45
+    env:
+      SNAPSHOT_REF: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || 'main' }}
     permissions:
       contents: write
       # NAMING ONE PERMISSION SETS EVERY OTHER TO NONE, so the CI check below
@@ -165,14 +167,14 @@ jobs:
             exit 0
           fi
           for attempt in 1 2 3; do
-            # Hold the generated files, take whatever main is now, put them back.
+            # Keep the projection on the requested branch, including release candidates.
             rm -rf /tmp/out && mkdir -p /tmp/out
             cp -r --parents $GENERATED /tmp/out/
-            git fetch origin main
-            git reset --hard origin/main
+            git fetch origin "$SNAPSHOT_REF"
+            git reset --hard "origin/$SNAPSHOT_REF"
             cp -r /tmp/out/. .
             if git diff --quiet -- $GENERATED; then
-              echo "board already current on main — nothing to commit"
+              echo "board already current on $SNAPSHOT_REF — nothing to commit"
               exit 0
             fi
             git add $GENERATED
@@ -181,7 +183,7 @@ jobs:
             # one thing you want from this line is WHICH rescore you are looking
             # at.
             git commit -m "board: rescore $(date -u +'%Y-%m-%d %H:%M') UTC"
-            if git push; then exit 0; fi
+            if git push origin "HEAD:$SNAPSHOT_REF"; then exit 0; fi
             echo "push raced (attempt $attempt) — taking the new base and rewriting"
           done
           echo "::error::could not land the board after three attempts"
