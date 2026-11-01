@@ -1014,7 +1014,7 @@ pub(super) fn swing_this_shot(
     // one of M79's four readings.
     let unswung = active.unswung_fraction.clamp(0.0, 1.0);
     let swung;
-    // Status selection and the ledger retain the swung, unquantized vector.
+    // The ledger retains the swung, unquantized vector.
     let mut direct_pre_snap = *pre_quantization;
     // What the fold did to the whole base, and to the WEAPON's half of it.
     // The two differ exactly when a flat add is present, and the GunCO
@@ -1029,8 +1029,8 @@ pub(super) fn swing_this_shot(
             if (bonus - 1.0).abs() > 1e-12 {
                 let extra = v.get(ty) * (bonus - 1.0);
                 v.add(ty, extra);
-                let status_extra = direct_pre_snap.get(ty) * (bonus - 1.0);
-                direct_pre_snap.add(ty, status_extra);
+                let pre_snap_extra = direct_pre_snap.get(ty) * (bonus - 1.0);
+                direct_pre_snap.add(ty, pre_snap_extra);
             }
         }
         // The ModifiedBase grows by the same share the vector did, so

@@ -692,17 +692,17 @@ element procs are weighted, not uniform.
   opportunities, not the per-hit chance). Each enemy touched by one attack
   rolls separately.
 - **Type is drawn only after a roll succeeds**, weighted by damage share of
-  the hit's modded, **unquantized** vector:
-  `P(type) = unquantized_damage_type / total_unquantized_damage`.
-  Keep this composition separately from the quantized vector used for direct
-  damage and its per-type accounting. A positive component can deal zero
-  direct damage after quantization while still contributing to the proc draw;
-  there is no minimum-one-quantum floor. Physical and elemental bonuses,
-  projectile variants, stance multipliers and live elemental additions belong
-  in both compositions before their respective readers use them. The attack
-  part owns its composition, including on spread targets and field ticks.
+  the hit's modded, **quantized** vector:
+  `P(type) = quantized_damage_type / total_quantized_damage`.
+  A component quantized to zero has no random draw weight; there is no
+  minimum-one-quantum floor. Each attack part owns its composition, including
+  projectile variants, stance multipliers, live elemental additions, spread
+  targets and field ticks. Immunity excludes a type and renormalizes the rest.
+  The unquantized vector remains the input to quantization and the ledger's
+  breakdown; measured pre-quantization Extra Hit brackets also read it (M40).
+  It is not a second source of status weights.
   [M130](measurements/M130-status-weights-before-quantization.md) records the
-  observations and the adopted weighting rule; no exact proc frequency was
+  Focus-controlled observations and their limits; no exact proc frequency was
   measured.
 - **SC > 100%**: `floor(SC)` guaranteed rolls + `frac(SC)` chance of one
   more; **each roll's type is drawn independently** (the same type can

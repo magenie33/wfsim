@@ -273,7 +273,7 @@ pub(super) fn field_tick_seeded(
     // The field is its own attack part, so the ability elements are sized off
     // ITS ModifiedBase — same rule as the explosion's.
     let qvec = params.with_live_elements(f.damage.quantized_against(f.modified_base), f.modified_base, at, w);
-    let status_vector = params.with_live_elements_unquantized(f.damage, f.modified_base, at, w);
+    let status_vector = qvec;
     let qtotal = qvec.total();
     let shares = TypeShares::of(&qvec);
 

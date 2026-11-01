@@ -584,7 +584,7 @@ pub(super) struct SpreadStrike {
     pub(super) modded_base: f64,
     pub(super) status_chance: f64,
     pub(super) forced: Vec<DamageType>,
-    /// Unquantized composition; spread targets draw statuses from this alone.
+    /// Quantized attack-part composition, also used by spread status draws.
     pub(super) status_vector: DamageVector,
 }
 
