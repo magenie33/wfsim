@@ -50,6 +50,14 @@ export async function loadEngine({ site = SITE } = {}) {
     async board(id) {
       return kept(`${site}/board/${id}.json`);
     },
+    async boardNow(id, ruler) {
+      const dir = meta.benchmarks.find(item => item.id === ruler)?.cell_dir;
+      const response = await fetch(`${site}/board/${dir ? dir + "/" : ""}${id}.json`,
+        { cache: "no-cache", signal: AbortSignal.timeout(30_000) });
+      if (response.status === 404) return [];
+      if (!response.ok) throw new Error(`board: ${response.status}`);
+      return response.json();
+    },
     // THE HEADS, for a top-N answer (docs/BOARD.md §"The heads"); every row
     // where a weapon has none yet.
     async boardHeads(id) {

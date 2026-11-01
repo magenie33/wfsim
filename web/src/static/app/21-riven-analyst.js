@@ -136,7 +136,7 @@ function openRivenAnalysisDialog(ids = [], ruler = appraisalRuler || benchList()
     + `<div class="analysis-dialog-body"><p class="sim-hint">${escHtml(tr("Your card's actual rolls, the fx search and the official fight."))}</p><div id="analysis-cards"></div><div id="analysis-card-preview"></div><div id="analysis-board"></div>`
     + `<fieldset class="analysis-executors"><legend>${escHtml(tr("Compute with"))}</legend><label><input type="radio" name="analysis-executor" value="local" checked> ${escHtml(tr("This device"))}</label>`
     + `<label><input type="radio" name="analysis-executor" value="community"${communityTaskCapable({ kind: "appraisal" }) ? "" : " disabled"}> ${escHtml(tr("Community compute"))}</label></fieldset>`
-    + `<p class="sim-hint" id="analysis-executor-note"></p><p class="sim-hint">${escHtml(tr("The card and board are fixed when you start. Editing your riven later leaves this report unchanged."))}</p>`
+    + `<p class="sim-hint" id="analysis-executor-note"></p><p class="sim-hint">${escHtml(tr("The card is fixed when you start. Grading reads the current board. Editing your riven later leaves this report unchanged."))}</p>`
     + `<a class="ghost-btn" href="${weaponPath(weapon)}/rivens">${escHtml(tr("Import or edit in Rivens"))} →</a></div>`
     + `<div class="analysis-dialog-foot"><span id="analysis-submit-note" role="status"></span><button class="cu-btn" id="analysis-submit">${escHtml(tr("Start analysis"))}</button></div></div>`;
   document.body.append(overlay); document.body.classList.add("analysis-dialog-open");

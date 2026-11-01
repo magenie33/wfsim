@@ -3500,7 +3500,7 @@ ui:
   "Analyze a riven": "分析裂罅"
   "Published rivens": "榜单裂罅"
   "Compute with": "计算方式"
-  "The card and board are fixed when you start. Editing your riven later leaves this report unchanged.": "开始时固定裂罅和榜单条件。之后编辑裂罅不会改变这份报告。"
+  "The card is fixed when you start. Grading reads the current board. Editing your riven later leaves this report unchanged.": "开始时固定裂罅，评分时读取当前榜单。之后编辑裂罅不会改变这份报告。"
   "Import or edit in Rivens": "前往裂罅页导入或编辑"
   "Start analysis": "开始分析"
   "Community compute receives these calculation inputs. The official replay runs on this device; keep WFSim open.": "一起算会接收这些计算输入。官方回放在本机执行，请保持 WFSim 打开。"

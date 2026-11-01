@@ -313,8 +313,12 @@ ways and the verdicts must match field for field — the raw score and gain to
 by the page's so both print one time. The style is the one the page under test
 links, the pictures `site/img`; a page shot that differs is taken again twice,
 since a picture that failed to arrive is hidden rather than an error. Against a
-dev server, `web/cache/img` must hold `site/img`'s files (the dev server serves
-that cache). Verified to bite: `#card-page` moved one pixel failed every card,
+dev server, copy `site/img`'s WebP bytes into `web/cache/img` with the final
+`.webp` suffix removed: the native server strips that suffix when reading its
+cache. This keeps both renderers on identical image bytes.
+`WFSIM_CARD_MATCH` optionally filters fixture URLs by regex and refuses an empty
+selection; without it every fixture runs.
+Verified to bite: `#card-page` moved one pixel failed every card,
 and the bot's card at rank 8 failed both verdicts.
 
 ## `check_agent_door`
@@ -2065,6 +2069,13 @@ paths, official fallback, withdrawn retries and proof retraction. Removing the
 stale-fact guard must make its cached-fact case fail. It also runs with
 `WFSIM_SETTLE_ASYNC=1` and `WFSIM_SYNC_PROC=1`.
 
+Calibration cases skip more than ten current-engine rows before filling both
+categories, grow the per-category dial, coalesce concurrent triggers, and check
+background acknowledgment and chat freeze integration. The shared appraisal
+replay is exercised with a board changed during simulation: grading must read
+it afterwards and select the corrected leader. Reversing the engine filter or
+removing that late read must fail these cases.
+
 The page check uses published Laetum builds, including an actual riven corner.
 It checks the 1000-run default, saved preferences, effective global settings,
 changed-input rejection, durable outbox, score-free admission, hiding during an
@@ -2075,6 +2086,8 @@ review transport is stubbed; engine parsing and published row matching are real.
 
 The executor browser check runs a real optimizer, navigates away, opens its
 saved report and checks shared typed-card import and batch admission. The
+appraisal artifact retains the board fetched at grading, and submission fires
+one independent calibration trigger for its batch. The
 service check applies the real Postgres schema on PGlite and checks idempotent
 admission, secret ownership, full-report agreement, independent cancellation,
 capability filtering, retention and delivery with the deployed daemon role's

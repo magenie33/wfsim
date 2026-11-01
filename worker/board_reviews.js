@@ -6,6 +6,7 @@ import { questionId } from "./tasks.js";
 import { sameSite, limited } from "./accounts.js";
 import { json, servedRelease, ENGINE_ID } from "./verify.js";
 import { iso } from "./instant.js";
+import { dialsOf } from "./dials.js";
 
 export const BOARD_REVIEW_COOLDOWN_MS = 3_600_000;
 const ID = /^[a-f0-9]{32}$/, SLUG = /^[a-z0-9_]{1,128}$/, UUID = /^[a-f0-9-]{36}$/;
@@ -62,7 +63,7 @@ export const BOARD_REVIEW_PRODUCER = {
   },
 };
 
-export async function boardReviewsRoute(request, env, path) {
+export async function boardReviewsRoute(request, env, path, ctx) {
   const db = env.LIBRARY;
   if (!db) return json({ ok: false, error: "Board review is unavailable." }, 503);
   if (request.method !== "POST" || !sameSite(request)) return json({ ok: false, error: "bad request" }, 403);
@@ -71,6 +72,16 @@ export async function boardReviewsRoute(request, env, path) {
   let body;
   try { body = JSON.parse(raw); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
   if (!body || typeof body !== "object" || Array.isArray(body)) return json({ ok: false, error: "bad request" }, 400);
+  if (path === "/api/board/calibrate") {
+    if (!SLUG.test(body.weapon || "") || !SLUG.test(body.ruler || "") || !ENGINE_ID.test(body.engine || "")
+        || Object.keys(body).some(key => !["weapon", "ruler", "engine"].includes(key)))
+      return json({ ok: false, error: "invalid board" }, 400);
+    if ((await servedRelease(env)).engine !== body.engine) return json({ ok: false, error: "The engine changed." }, 409);
+    if (env.FACTORY_PAUSED === "1") return json({ ok: false, error: "Community execution is paused." }, 503);
+    if (await limited(env, request, "board-review")) return json({ ok: false, error: "Too many review requests. Try again later." }, 429);
+    await triggerBoardCalibration(env, body, ctx);
+    return json({ ok: true });
+  }
   if (path === "/api/board/review/status") {
     if (!Array.isArray(body.ids) || !body.ids.length || body.ids.length > 50 || !body.ids.every(id => UUID.test(id)))
       return json({ ok: false, error: "invalid review ids" }, 400);
@@ -84,7 +95,11 @@ export async function boardReviewsRoute(request, env, path) {
   if (!served.engine || served.engine !== body.engine) return json({ ok: false, error: "The engine changed. Run this calculation again from its page." }, 409);
   if (env.FACTORY_PAUSED === "1") return json({ ok: false, error: "Community execution is paused." }, 503);
   if (await limited(env, request, "board-review")) return json({ ok: false, error: "Too many review requests. Try again later." }, 429);
-  const baseline = await db.prepare(`SELECT s.*, b.record FROM scores s JOIN builds b ON b.id = s.identity
+  return requestReview(env, body);
+}
+async function requestReview(env, body, captured = null) {
+  const db = env.LIBRARY;
+  const baseline = captured || await db.prepare(`SELECT s.*, b.record FROM scores s JOIN builds b ON b.id = s.identity
     WHERE s.identity = ? AND s.ruler = ? AND s.mode = ?`).bind(body.identity, body.ruler, body.mode).first();
   if (!baseline) return json({ ok: false, error: "This row is no longer on the board." }, 404);
   const ref = rowRef(body.identity, body.ruler, body.mode), now = Date.now();
@@ -112,6 +127,33 @@ export async function boardReviewsRoute(request, env, path) {
   if (!review) return json({ ok: false, error: "The board changed. Run this calculation again." }, 409);
   if (review.state === "waiting") await askReview(env, review);
   return json({ ok: true, accepted: review.id === id, id: review.id, next_ms: 10_000 });
+}
+
+// Current-engine rows do not consume either category's calibration allowance.
+export async function calibrateBoard(env, { weapon, ruler, engine }) {
+  if (!env.LIBRARY || env.FACTORY_PAUSED === "1" || (await servedRelease(env)).engine !== engine) return;
+  const limit = (await dialsOf(env)).appraisal_calibration_rows;
+  if (!limit) return;
+  const { results } = await env.LIBRARY.prepare(`SELECT * FROM (
+    SELECT s.*, b.record, row_number() OVER (
+      PARTITION BY coalesce(jsonb_array_length(b.record::jsonb -> 'riven_pos'), 0) > 0
+      ORDER BY s.score DESC, s.identity, s.mode) AS position
+    FROM builds b JOIN scores s ON s.identity = b.id
+    WHERE b.weapon = ?1::text AND s.ruler = ?2::text
+      AND regexp_replace(s.measured_by, '^verified:', '') <> ?3::text
+    ) ranked WHERE position <= ?4::bigint ORDER BY position, identity, mode`)
+    .bind(weapon, ruler, engine, limit).all();
+  for (const row of results) {
+    const response = await requestReview(env, { identity: row.identity, ruler, mode: row.mode, engine }, row);
+    if (response.status === 429) break;
+  }
+}
+export async function triggerBoardCalibration(env, input, ctx) {
+  const work = calibrateBoard(env, input).catch(error => {
+    console.log(JSON.stringify({ event: "board.calibration_failed", weapon: input.weapon, ruler: input.ruler, error: String(error) }));
+  });
+  if (ctx?.waitUntil) ctx.waitUntil(work);
+  else await work;
 }
 async function askReview(env, row) {
   await facts().demand(env, { producer: "board_review", ref: row.ref, verb: "simulate",

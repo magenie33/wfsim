@@ -13,6 +13,7 @@ import { netOf, servedRelease, countsOf, unrecognised } from "./verify.js";
 import { canon, questionId, witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, VERBS } from "./factory.js";
 import { initiatorCode } from "./accounts.js";
+import { triggerBoardCalibration } from "./board_reviews.js";
 
 const CODE_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // no 0/O, 1/I/L
 const CODE_LEN = 5;
@@ -71,7 +72,7 @@ const botAuthed = (request, env) => {
 
 import { nameBlocked } from "./names.js";
 
-export async function appraiseRoute(request, env, path) {
+export async function appraiseRoute(request, env, path, ctx) {
   if (!env.LIBRARY) return json({ ok: false, error: "not offered here" }, 501);
   if (path === "/api/appraise/new") return open(request, env);
   if (path === "/api/appraise/claim") return claim(request, env);
@@ -80,7 +81,7 @@ export async function appraiseRoute(request, env, path) {
   const m = path.match(/^\/api\/appraise\/([A-Za-z0-9]{3,12})(\/result|\/request|\/renew)?$/);
   if (!m) return json({ ok: false, error: "not found" }, 404);
   const code = m[1].toUpperCase();
-  if (m[2] === "/request") return freeze(request, env, code);
+  if (m[2] === "/request") return freeze(request, env, code, ctx);
   if (m[2] === "/renew") return renew(request, env);
   return m[2] ? handBack(request, env, code) : read(request, env, code);
 }
@@ -137,7 +138,7 @@ async function read(request, env, code) {
 /// request its clean page built (81-appraisal.js `?freeze`) and what turns a
 /// result into a build, stored once — every computer that runs this riven gain
 /// runs exactly it.
-async function freeze(request, env, code) {
+async function freeze(request, env, code, ctx) {
   if (request.method !== "POST") return json({ ok: false, error: "POST only" }, 405);
   if (!botAuthed(request, env)) return json({ ok: false, error: "unauthorized" }, 401);
   const text = await request.text();
@@ -158,6 +159,7 @@ async function freeze(request, env, code) {
   const a = await env.LIBRARY.prepare(`SELECT code, channel, asker, weapon, ruler, request FROM appraisals a WHERE code = ?
       AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = a.code AND d.producer IN ('chat', 'survey'))`).bind(code).first();
   if (a && a.request) await askRiven(env, a, JSON.parse(a.request), Date.now());
+  if (a && a.channel !== SURVEY_CHANNEL) await triggerBoardCalibration(env, { weapon: a.weapon, ruler: a.ruler, engine: b.engine }, ctx);
   return json({ ok: true, stored: !!r.meta.changes });
 }
 
