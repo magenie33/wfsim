@@ -174,6 +174,9 @@ work by identity. Info reads saved state without applying it: builds reuse the
 build card; scenarios reuse the fight card; searches show starts, exclusions
 and run terms. Warframe, companion and Operator presets show their own
 loadouts. Linked-preset dropdowns expose the same info without selecting a row.
+The management window reuses the arena dialog frame, the shared search bar,
+site dropdowns and buttons; context actions use the same menu surface and
+rows as the mod pickers. Preset-specific styles own layout and density.
 
 **EVERY SAVED COLLECTION IS ONE ROW OF `COLLECTIONS`** (`34-presets.js`): its
 `kind` — preset or custom — and its `scope`, what one entry is about (a weapon,

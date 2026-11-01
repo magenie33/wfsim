@@ -153,7 +153,7 @@ function openPresetLibrary(cfg, anchor) {
     }
   };
   function render() {
-    tools.innerHTML = `<input type="search" class="preset-library-search" aria-label="${escHtml(tr("Search presets"))}" placeholder="${escHtml(tr("Search names, equipment and settings…"))}" value="${escHtml(state.query)}">`
+    tools.innerHTML = `<div class="addbar preset-library-search"><input type="search" aria-label="${escHtml(tr("Search presets"))}" placeholder="${escHtml(tr("Search names, equipment and settings…"))}" value="${escHtml(state.query)}"></div>`
       + ddButton("preset-library-sort", { value:state.sort, items:[{value:"recent",label:tr("Recently modified")},{value:"name",label:tr("Name")},{value:"oldest",label:tr("Oldest first")}], onPick:value => {state.sort=value; render();} })
       + (scope !== null && cfg.libraryPath ? ddButton("preset-library-scope", {value:state.scope, items:[{value:"current",label:tr("Current item")},{value:"all",label:tr("All items")}],onPick:value=>{state.scope=value;state.visible=30;render();}}) : "")
       + (cfg.pins ? ddButton("preset-library-source",{value:state.source,items:[{value:"mine",label:tr("Mine")},{value:"published",label:cfg.roGroup},{value:"all",label:tr("All")}],onPick:value=>{state.source=value;state.visible=30;render();}}) : "")
@@ -227,7 +227,7 @@ function scenarioPresetSummary(p) {
   const enemy = allEnemies().find(e => e.id === s.enemy);
   return `${enemy?.name || s.enemy} Lv ${s.level} · ${empowermentLabel(s.steel_path, s.empowered, true)} · ${s.headshot_pct}% ${tr('headshots')} · ${tr(s.aiming ? 'Aiming' : 'hip-fire')}`;
 }
-const presetActionsHtml = body => body ? `<details class="preset-actions"><summary aria-label="${escHtml(tr('More actions'))}" title="${escHtml(tr('More actions'))}">⋯</summary><div class="preset-action-menu">${body}</div></details>` : "";
+const presetActionsHtml = body => body ? `<details class="preset-actions"><summary class="ghost-btn small" aria-label="${escHtml(tr('More actions'))}" title="${escHtml(tr('More actions'))}">⋯</summary><div class="context-menu preset-action-menu">${body}</div></details>` : "";
 function wirePresetActions(host) {
   host.querySelectorAll('.preset-actions').forEach(details => {
     details.ontoggle = () => {
@@ -237,9 +237,13 @@ function wirePresetActions(host) {
       menu.style.left = Math.max(8, Math.min(box.right - menu.offsetWidth, innerWidth - menu.offsetWidth - 8)) + 'px';
       menu.style.top = Math.max(8, Math.min(box.bottom + 4, innerHeight - menu.offsetHeight - 8)) + 'px';
     };
-    details.querySelectorAll('button').forEach(button => button.addEventListener('click', () => {
-      if (!button.matches('.del,[data-library-delete]')) queueMicrotask(() => { details.open = false; });
-    }));
+    details.querySelectorAll('button').forEach(button => {
+      button.classList.add('mi');
+      if (button.matches('.del,[data-library-delete]')) button.classList.add('danger');
+      button.addEventListener('click', () => {
+        if (!button.matches('.del,[data-library-delete]')) queueMicrotask(() => { details.open = false; });
+      });
+    });
   });
 }
 document.addEventListener('click', event => document.querySelectorAll('.preset-actions[open]').forEach(details => {
