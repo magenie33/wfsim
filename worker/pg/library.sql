@@ -400,6 +400,7 @@ CREATE TABLE IF NOT EXISTS board_reviews (
 CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_round ON board_reviews (ref, engine, round_at);
 CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_pending ON board_reviews (ref, engine) WHERE state = 'waiting';
 CREATE INDEX IF NOT EXISTS board_reviews_waiting ON board_reviews (engine, state, created_at);
+CREATE INDEX IF NOT EXISTS board_reviews_question ON board_reviews (question);
 ALTER TABLE scores ADD COLUMN IF NOT EXISTS review_id TEXT COLLATE "C";
 
 -- HOT TABLES RECYCLE SMALLER BATCHES: a fixed floor bounds the work on small

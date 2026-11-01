@@ -149,6 +149,25 @@ CREATE TABLE IF NOT EXISTS questions (
   -- 1 when its answers were found not deterministic: settled, nobody refused, said aloud.
   odd              BIGINT NOT NULL DEFAULT 0
 );
+-- A cancellation starts its retention window when it closes, not when the
+-- question opened. Legacy rows fall back to their known activity timestamps.
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS withdrawn_at TEXT COLLATE "C";
+CREATE OR REPLACE FUNCTION factory_withdrawn_at() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.state = 'withdrawn' THEN
+    IF TG_OP = 'INSERT' THEN
+      NEW.withdrawn_at := COALESCE(NEW.withdrawn_at, to_char(clock_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'));
+    ELSIF OLD.state IS DISTINCT FROM NEW.state THEN
+      NEW.withdrawn_at := to_char(clock_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+    END IF;
+  ELSE
+    NEW.withdrawn_at := NULL;
+  END IF;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS questions_withdrawn_at ON questions;
+CREATE TRIGGER questions_withdrawn_at BEFORE INSERT OR UPDATE OF state ON questions
+  FOR EACH ROW EXECUTE FUNCTION factory_withdrawn_at();
 -- IN THE ORDER A WITNESS IS HANDED WORK (worker/pg/sync.sql `factory_head`).
 CREATE INDEX IF NOT EXISTS questions_order ON questions (state, waits DESC, due_at, id);
 CREATE INDEX IF NOT EXISTS questions_holder ON questions (leased_to);

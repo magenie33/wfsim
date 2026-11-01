@@ -594,14 +594,15 @@ engine, on a lease kept, and on a re-ask that leaves the dispute.
 ## `check_forget_past`
 
 Plain node on PGlite: the library's window (docs/BOARD.md §"The settler").
-`factory_forget_past` takes a fact of an engine no longer served and a
-withdrawn question settled before `KEPT_MS`, with their answers and demands,
-and keeps the served engine's facts, a recent fact, a question a live demand
-or a producer outside the board holds, a refused question, open and disputed
-ones; a call takes at most its batch and the questions it may not take never
-fill one; a forgotten row asked again opens anew; `refuse` reopens and takes
-back only inside the window. Fails on a pick that ignores the served engine or
-the refusals, and on a refusal without the window.
+`factory_forget_past` expires settled task detail across engines and producers
+before `KEPT_MS`. Live or recently served demands, recent answers, outstanding
+witness credit, settlement, leases and refusal markers remain protected, as do
+open, spot and disputed questions. Batches skip ineligible rows. Scores and
+credit aggregates and a current calibration proof survive; an expired lease
+cannot earn credit, and a fresh ask
+can open the forgotten question again. Refusals reach back only the window.
+Fails on either legacy blanket exemption and on deletion before delivery or
+credit completes.
 
 ## `check_initiator`
 

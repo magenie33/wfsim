@@ -939,10 +939,10 @@ console.log("many asks in two statements a chunk leave every table as one write 
       if (r() < 0.4) continue;
       const id = await questionId("simulate", { n: k }), state = pick(r, ["open", "fact", "fact", "spot", "withdrawn", "disputed"]);
       const lanes = r() < 0.3 ? JSON.stringify([{ lanes: 4, after_ms: 0 }]) : null;
-      await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, waits, canon, fact_engine)
-          VALUES (?, 'simulate', ?, ?, ?, ?, ?, ?, ?, ?)`, id, canon({ n: k }), state, iso(NOW + Math.floor((r() - 0.5) * 7_200_000)),
+      await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, waits, canon, fact_engine, withdrawn_at)
+          VALUES (?, 'simulate', ?, ?, ?, ?, ?, ?, ?, ?, ?)`, id, canon({ n: k }), state, iso(NOW + Math.floor((r() - 0.5) * 7_200_000)),
         iso(NOW - 600_000), lanes, r() < 0.2 ? 1 : 0, ["fact", "spot"].includes(state) ? "c" : null,
-        ["fact", "spot"].includes(state) ? pick(r, ["e1", "e0", null]) : null);
+        ["fact", "spot"].includes(state) ? pick(r, ["e1", "e0", null]) : null, state === "withdrawn" ? iso(NOW - 600_000) : null);
       if (["fact", "spot"].includes(state)) {
         for (const official of r() < 0.5 ? [0] : [0, 1]) {
           await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, at)

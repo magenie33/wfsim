@@ -197,7 +197,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
         if (Number(n) < PAST_BATCH) break;
       }
     },
-    // WHAT IS SETTLED AND PAST `KEPT_MS` IS FORGOTTEN; the served engine's facts stay.
+    // Settled detail expires after KEPT_MS; delivery and credit finish first.
     past: async () => {
       if (!release.engine) return;
       const before = iso(Date.now() - KEPT_MS);

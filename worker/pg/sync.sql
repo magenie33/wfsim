@@ -305,28 +305,40 @@ BEGIN
   RETURN cardinality(v) + n;
 END $$;
 
--- WHAT IS PAST THE WINDOW IS FORGOTTEN, so the library's size follows the board
--- and the window, never the days it has run (worker/tasks.js `KEPT_MS`, the
--- settler's `past` tick): a fact of an engine no longer served and a withdrawn
--- question, settled before $1, go with their answers, their board demands no
--- longer live and their refusals. Kept: a fact of the served engine $2, the
--- cache a row asked again is told at once; a question a demand still waits on,
--- or one any producer outside the board kinds $3 (json) asked; one its engine
--- refused (`refusal_withdrawals`), which must stay withdrawn. At most $4
--- questions a call; returns how many went. Definer: the settler's role is
--- granted no delete on the tables it empties.
+-- Delivery and credit must finish before task detail can expire. Recent asks
+-- and answers restart its window; refusal markers still prevent unsafe re-asks.
+CREATE OR REPLACE FUNCTION factory_past_safe(text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
+  SELECT NOT EXISTS (SELECT 1 FROM demands d WHERE d.question = $1
+                        AND (d.state = 'live' OR d.asked_at >= $2 OR d.served_at >= $2))
+     AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = $1 AND a.at >= $2)
+     AND NOT EXISTS (SELECT 1 FROM refusal_withdrawals r WHERE r.question = $1)
+     AND NOT EXISTS (SELECT 1 FROM settle_queue s WHERE s.question = $1)
+     AND NOT EXISTS (SELECT 1 FROM board_reviews r WHERE r.question = $1 AND EXISTS
+          (SELECT 1 FROM scores s WHERE s.identity = r.identity AND s.ruler = r.ruler AND s.mode = r.mode AND s.review_id = r.id))
+     AND NOT EXISTS (SELECT 1 FROM questions q WHERE q.id = $1 AND (q.lease_until >= $2 OR q.lease_prev_until >= $2))
+     AND NOT EXISTS (SELECT 1 FROM answers a JOIN questions q ON q.id = a.question
+          WHERE a.question = $1 AND q.state = 'fact' AND a.credited = 0 AND a.void = 0 AND a.official = 0
+            AND a.canon = q.canon AND a.at <= q.fact_at
+            AND NOT EXISTS (SELECT 1 FROM answers c WHERE c.question = a.question AND c.credited = 1 AND c.void = 0 AND c.official = 0
+                              AND (c.owner = a.owner OR (coalesce(a.net, '') <> '' AND c.net = a.net))))
+$$;
+
+-- Settled detail expires across engines and producers; scores and credit
+-- aggregates are independent records. $2/$3 remain for deployed callers.
+-- Recheck after locking with a fresh statement snapshot: an ask that committed
+-- while the row lock was awaited must keep its question and demand together.
 CREATE OR REPLACE FUNCTION factory_forget_past(text, text, text, bigint) RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v text[];
 BEGIN
   SELECT coalesce(array_agg(t.id), '{}') INTO v FROM (
     SELECT q.id FROM questions q
-     WHERE ((q.state = 'fact' AND q.fact_at < $1 AND q.fact_engine IS DISTINCT FROM $2)
-            OR (q.state = 'withdrawn' AND q.opened_at < $1))
-       AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
-                        AND (d.state = 'live' OR d.producer NOT IN (SELECT jsonb_array_elements_text($3::jsonb))))
-       AND NOT EXISTS (SELECT 1 FROM refusal_withdrawals r WHERE r.question = q.id)
+     WHERE ((q.state = 'fact' AND q.fact_at < $1) OR (q.state = 'withdrawn' AND q.opened_at < $1 AND coalesce(q.withdrawn_at, q.opened_at) < $1))
+       AND factory_past_safe(q.id, $1)
      LIMIT $4 FOR UPDATE OF q SKIP LOCKED) t;
+  SELECT coalesce(array_agg(q.id), '{}') INTO v FROM questions q WHERE q.id = ANY (v)
+     AND ((q.state = 'fact' AND q.fact_at < $1) OR (q.state = 'withdrawn' AND q.opened_at < $1 AND coalesce(q.withdrawn_at, q.opened_at) < $1))
+     AND factory_past_safe(q.id, $1);
   IF cardinality(v) = 0 THEN RETURN 0; END IF;
   DELETE FROM answers WHERE question = ANY (v);
   DELETE FROM demands WHERE question = ANY (v) AND state <> 'live';

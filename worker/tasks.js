@@ -1143,10 +1143,9 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
 export const FACTS_PER_REFUSAL_FORGIVEN = 1000;
 /// HOW LONG A REFUSAL LASTS: a day, three times as long at each one before it.
 export const coolDownMs = (refusals) => 86_400_000 * 3 ** Math.max(0, refusals || 0);
-/// HOW LONG THE LIBRARY KEEPS WHAT IS SETTLED: a fact of an engine no longer
-/// served and a withdrawn question, with their answers and demands, go once
-/// this old (worker/pg/sync.sql `factory_forget_past`); a refusal reaches back
-/// this far and no further.
+/// Settled task detail expires after this window, across engines and producers.
+/// Live delivery, unpaid credit, recent activity and refusals remain protected
+/// (worker/pg/sync.sql `factory_forget_past`); scores and credit aggregates stay.
 export const KEPT_MS = 14 * 86_400_000;
 
 /// ONE QUERY DECIDES WHAT A WITNESS MAY ANSWER (the LIVENESS property): a

@@ -973,15 +973,21 @@ the copy in). It writes:
 - `fair_shares`, every minute: the fair-share table for the served engine;
 - an official check of another engine undone, every minute
   (`factory_moot_checks`, §"A release carries a result");
-- nothing past the window, every minute (`factory_forget_past`): **THE
-  LIBRARY KEEPS FOURTEEN DAYS** (`KEPT_MS`), so its size follows the board and
-  the window, never the days it has run. A fact of an engine no longer served
-  and a withdrawn question, settled before the window, go with their answers,
-  their board demands and their refusals; the served engine's facts stay, the
-  cache a row asked again is told at once, and so does a question a demand
-  waits on, one a producer outside the board asked, and one its engine refused.
-  What a device earned is in `verifier_hours` and stays; a ledger's per-answer
-  counts and a refusal reach back the window;
+- settled task detail expires after fourteen days (`KEPT_MS`), every minute
+  (`factory_forget_past`), across engines and producers. Completed facts and
+  withdrawn questions go with their answers, closed demands and engine-refusal
+  detail. Live demands, recent asks/deliveries/answers, queued settlement,
+  outstanding witness credit, leases and refusal-withdrawal markers protect a
+  question. The proof backing a current calibrated score stays with that score.
+  A cancellation starts its window at `questions.withdrawn_at`; legacy
+  rows fall back to their known activity. Open, spot, disputed and
+  nondeterministic questions stay. Scores,
+  builds, producer results and credit aggregates are separate records and stay;
+  a ledger's per-answer counts and a refusal reach back the window. A fresh ask
+  after expiry opens new work; a delayed packet carrying an expired lease cannot
+  record an answer or earn credit. Cleanup locks a bounded batch and rechecks
+  eligibility before deleting. PostgreSQL reuses freed pages; deleting rows does
+  not promise an immediate reduction of the filesystem's allocated bytes;
 - `factory_findings`: what its comparisons found, one row a kind.
 
 ITS ROLE, `wfsim_factoryd`, reads only what its ticks read. A tick that reads
