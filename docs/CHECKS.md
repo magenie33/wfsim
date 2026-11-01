@@ -2060,6 +2060,22 @@ static server for `site/`, the Chrome launch, `evaluate`, `check`, `finish`.
 A check's page-side body is a TEMPLATE LITERAL: an unescaped backtick in it,
 including in a comment, ends the literal early.
 
+## `check_board_family`
+
+The service check runs the real schemas and factory on PGlite. It checks
+trusted admission, source-before-transfer ordering, retries while paused,
+concurrent deduplication, retention, both sync paths, independent agreement,
+deterministic delivery after an interrupted completion, unforgeable inbox
+provenance and the deployed daemon role. Empty admission must create no work
+from existing library rows. It also runs with queued settlement.
+
+The webapi family tests use Burston Prime's exclusive Gilded Truth: its slot
+must become empty for Burston, compatible elemental order must survive, and
+the real optimizer must fill the hole with a legal target card. Riven starts
+pin the shape. Intake tests assert that original arrivals emit sibling work,
+including the stored corner's exact identity, while derived arrivals stop;
+removing the provenance guard must fail that case.
+
 ## `check_board_reviews`, `check_board_review_page`
 
 The service check applies real Postgres schemas on PGlite. It holds fresh

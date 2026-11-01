@@ -206,47 +206,8 @@ function boardBuildContext() {
 }
 
 function boardPayloadFromResult(res, ctx = boardBuildContext()) {
-  const bench = ctx.benchmark;
-  const arcs = asArcaneList(res.arcane, (res.arcane || []).length)
-    .filter((a) => a && a !== "none");
-  const rivenId = (res.mods || []).find(isRivenId) || "-";
-  return {
-    benchmark: bench || undefined,
-    weapon: ctx.weapon,
-    mode: res.mode || ctx.mode,
-    // AS RANKED, not sorted — the order pairs the elementals, and a sorted list
-    // is a build the search never measured. The same rule `boardPayload` states.
-    // THE EIGHT MAIN SLOTS, and the exilus one is DROPPED — the same rule
-    // `boardPayload` states above, and it has to be stated twice because this
-    // path builds its list from a RESULT rather than from the slots. A flat
-    // list has no positions and an exilus-eligible mod is legal in a main slot,
-    // so the endpoint reads a ninth entry as a ninth MAIN mod and refuses the
-    // build for having nine. Which one it is, is `exilus` below.
-    // …AND THE STANCE RIDES WITH THEM, the same rule `boardPayload` states. The
-    // search is HANDED the builder's stance and pins it into every candidate,
-    // so a result already names it — the append is for a result that predates
-    // that (a saved checkpoint), and it is conditional so the same card cannot
-    // arrive twice.
-    mods: (() => {
-      const st = ctx.stance;
-      const out = (res.mods || [])
-        .filter((m) => !exilusOf(res) || m !== exilusOf(res))
-        .map((m) => (isRivenId(m) ? BOARD_RIVEN_SLOT : m));
-      return st && !out.includes(st) ? out.concat([st]) : out;
-    })(),
-    // THE RESULT'S OWN RIVEN, not the builder's: the search may have been
-    // handed a different card than the one the builder holds, or none.
-    ...(ctx.rivens ? ctx.rivens[rivenId] || { riven_pos: [], riven_neg: "" } : boardRivenShape(rivenId)),
-    evolutions: (res.evolutions || []).slice(),
-    arcanes: arcs,
-    valence: res.valence || ctx.valence,
-    exilus: exilusOf(res),
-    grip: ctx.grip,
-    loader: ctx.loader, link: ctx.link,
-    // …AND THE WARFRAME, from the page for the reason the riven and the
-    // assembly are: the search was run in these hands, so they are the row's.
-    wielder: ctx.wielder,
-  };
+  const riven = (res.mods || []).find(isRivenId) || "-";
+  return headlessBoardPayloadFromResult(res, ctx.rivens ? ctx : { ...ctx, rivens: { [riven]: boardRivenShape(riven) } });
 }
 
 /// EVERY FINALIST, THROUGH THE BOARD'S OWN DOOR.

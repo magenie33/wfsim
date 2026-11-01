@@ -50,9 +50,11 @@ export async function purgeUserCalculations(env, now = Date.now()) {
   await db.prepare("DELETE FROM user_calculation_cancellations WHERE expires_at < ?").bind(iso(now)).run();
   await db.prepare("UPDATE user_calculations SET state = 'expired' WHERE expires_at < ?").bind(iso(now)).run();
   const { results: orphaned } = await db.prepare(`SELECT q.id FROM questions q WHERE q.verb IN ('simulate_report', 'optimize_report')
-      AND NOT EXISTS (SELECT 1 FROM user_calculations t WHERE t.question = q.id)`).all();
+      AND NOT EXISTS (SELECT 1 FROM user_calculations t WHERE t.question = q.id)
+      AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id AND d.producer = 'family_build')`).all();
   for (const row of orphaned) {
-    const unowned = "NOT EXISTS (SELECT 1 FROM user_calculations t WHERE t.question = ?2::text)";
+    const unowned = `NOT EXISTS (SELECT 1 FROM user_calculations t WHERE t.question = ?2::text)
+      AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.question = ?2::text AND d.producer = 'family_build')`;
     const tables = ["demands", "answers", "engine_refusals", "settle_queue", "led_questions"];
     await db.batch([
       db.prepare("SELECT id FROM questions WHERE id = ? FOR UPDATE").bind(row.id),

@@ -34,6 +34,7 @@ import { userTasksRoute } from "./user_tasks.js";
 import { appraiseRoute } from "./appraise.js";
 import { watchdog, WATCHDOG_CRON, officialRoute } from "./factory.js";
 import { boardReviewsRoute } from "./board_reviews.js";
+import { familyRoute } from "./board_family.js";
 import { boardTasksRoute } from "./board_tasks.js";
 import { verifyRoute } from "./verify.js";
 import { syncRoute } from "./sync.js";
@@ -200,11 +201,11 @@ function record(b) {
 /// A BUILD INTO THE BOARD'S DOOR from inside the worker — an agreed riven gain
 /// (appraise.js) — checked and stored exactly as a reader's submission is, with
 /// who asked for it (docs/BOARD.md §"Who asked").
-export async function submitRecord(env, build, initiator = null) {
+export async function submitRecord(env, build, initiator = null, origin = {}) {
   const built = record(build || {});
   if (built.err || !env.LIBRARY) return false;
-  await env.LIBRARY.prepare("INSERT INTO inbox (id, at, record, initiator) VALUES (?, ?, ?, ?)")
-    .bind(crypto.randomUUID(), built.rec.at, JSON.stringify(built.rec), initiator).run();
+  await env.LIBRARY.prepare("INSERT INTO inbox (id, at, record, initiator, family_source) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING")
+    .bind(origin.id || crypto.randomUUID(), built.rec.at, JSON.stringify(built.rec), initiator, origin.family_source || null).run();
   return true;
 }
 
@@ -815,6 +816,7 @@ async function serve(request, env, ctx) {
     if (path.startsWith("/api/user-tasks/")) return userTasksRoute(request, env, path);
     if (path.startsWith("/api/appraise/")) return appraiseRoute(request, env, path, ctx);
     if (["/api/board/work", "/api/board/answers", "/api/board/verify", "/api/board/release", "/api/board/renew", "/api/board/mine", "/api/board/ping"].includes(path)) return verifyRoute(request, env, path);
+    if (path === "/api/board/family") return familyRoute(request, env);
     if (["/api/board/review", "/api/board/review/status", "/api/board/calibrate"].includes(path)) return boardReviewsRoute(request, env, path, ctx);
     if (path === "/api/board/sync") return noteFactoryCall(request, env, path, () => syncRoute(request, env));
     if (path === "/api/board/ask" || path === "/api/board/adopt") return boardTasksRoute(request, env, path);

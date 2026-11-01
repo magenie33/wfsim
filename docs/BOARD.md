@@ -49,6 +49,46 @@ number**. Everything else follows from it:
   why serde_json runs with `float_roundtrip` and the scorer reads a score's
   literal (`exact_score`).
 
+## Family candidates
+
+An arriving library build seeds one quick search for each other roster weapon
+with the same nonempty riven family and weapon slot. Intake emits these
+requests for the default corner alone; it never simulates or searches. It reads
+only arrivals, with no historical library sweep.
+
+`webapi::board_family` builds each target request from the ruler's scenario and
+the source configuration. Compatible main cards keep their relative element
+order, unavailable cards become empty positions, and unavailable evolutions
+are left for the target to choose. Modular parts and stances use the target's
+legal choices. A riven keeps its shape, is pinned in the start, and resolves
+its rolls through the target weapon. The existing quick search fills missing
+positions and descends over the target's full candidate scope, including its
+exclusive cards. Its result is a candidate, with no claim of global optimality.
+
+`ship_builds.sh` lands the source builds, then sends the emitted requests to
+factory-authenticated `POST /api/board/family`, then spends the source inbox
+rows. `family_transfers` retains one key per source build, target weapon, ruler
+and served engine. Repeated arrivals share it. Interrupted admission resumes
+from that table; completed transfers are not recreated by a library scan.
+
+The `family_build` producer asks the existing `optimize_report` verb as system
+work, without a waiting player, under the normal fair scheduler. Clients with
+`calculation-reports-v1` reproduce complete reports; independent agreement
+submits the winner through the board's ordinary door. The website and Worker
+use the same result-to-record function. No optimizer score becomes a published
+board score: the target record goes through intake and owes its own formal
+measurements across every admitted ruler and sustainable mode.
+
+The derived inbox row carries trusted `family_source` provenance outside the
+build. Public submissions cannot supply it. Intake stores and queues derived
+records normally but emits no further family requests from them. Delivery
+retries use one deterministic inbox id, including a retry after submission
+landed but completion did not. This bounds propagation to one generation.
+
+Apply `worker/pg/library.sql` and the daemon's grants before deploying the Worker
+and the intake scripts. The mechanism starts with subsequent arrivals; no
+backfill or manual resubmission is required.
+
 ## Who computes the board
 
 **EVERY NUMBER THE BOARD PUBLISHES IS A COMPUTE ORDER, FILLED BY THE COMMUNITY'S

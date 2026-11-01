@@ -7,6 +7,20 @@
 // the page and every surface with no page. The rule is 87-headless.js's: no DOM
 // and no page global; `mcp/headless.js` is this part and that one, joined.
 
+/// One optimizer result as a board submission, with its captured build context.
+function headlessBoardPayloadFromResult(res, ctx) {
+  const exilus = res.exilus && res.exilus !== "none" ? res.exilus : undefined;
+  const isRiven = id => typeof id === "string" && id.startsWith("riven:");
+  const riven = (res.mods || []).find(isRiven) || "-";
+  const mods = (res.mods || []).filter(id => !exilus || id !== exilus).map(id => isRiven(id) ? "riven" : id);
+  if (ctx.stance && !mods.includes(ctx.stance)) mods.push(ctx.stance);
+  const arcs = Array.isArray(res.arcane) ? res.arcane : res.arcane == null ? [] : [res.arcane];
+  return { benchmark: ctx.benchmark || undefined, weapon: ctx.weapon, mode: res.mode || ctx.mode, mods,
+    ...(ctx.rivens?.[riven] || { riven_pos: [], riven_neg: "" }),
+    evolutions: (res.evolutions || []).slice(), arcanes: arcs.filter(id => id && id !== "none"),
+    valence: res.valence || ctx.valence, exilus, grip: ctx.grip, loader: ctx.loader, link: ctx.link, wielder: ctx.wielder || undefined };
+}
+
 // ---- words, for a surface with no page ---------------------------------------
 //
 // A SPEAKER is what a drawing needs to say anything: `{ meta, t, tf, dt, zone }`

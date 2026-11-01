@@ -37,7 +37,7 @@ touch new-builds.ndjson
 # own key.
 intake_arrivals() {
   # WHO ASKED rides with the record to the rows it owes (docs/BOARD.md §"Who asked").
-  db_query '{"sql":"SELECT id, at, record, initiator FROM inbox ORDER BY id LIMIT 500"}' \
+  db_query '{"sql":"SELECT id, at, record, initiator, family_source FROM inbox ORDER BY id LIMIT 500"}' \
     || { echo "live: inbox read refused [HTTP $DB_CODE]" >&2; return 1; }
   jq -c '.result[0].results[]' < "$DB_OUT" > inbox-new.ndjson
   [ -s inbox-new.ndjson ] || return 1

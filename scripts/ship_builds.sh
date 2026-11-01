@@ -21,6 +21,7 @@ set -euo pipefail
 BUILD_COLUMNS=3
 BUILD_BATCH=$((100 / BUILD_COLUMNS))
 DELETE_BATCH=100
+SHIP_FAMILY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ship_family.mjs"
 
 . "$(dirname "${BASH_SOURCE[0]}")/db.sh"
 configured() { db_configured; }
@@ -110,6 +111,7 @@ ship() {
     # a submission nothing in the library holds.
     [ "$2" = "0" ] || return 1
   fi
+  node "$SHIP_FAMILY" "$builds" || return 1
   if [ "$n_done" != "0" ]; then
     r=$(delete_batches "$done_ids" | send "delete")
     set -- $r
@@ -180,6 +182,28 @@ OK
   [ "$(cat a.txt)" -lt "$(cat b.txt)" ] \
     && say ok "...with every build written before any queue row is spent" \
     || say FAIL "the delete went first"
+
+  node() { printf '%s\n' 'family transfers' >> "$PWD/sent.log"; [ "${FAMILY_TEST_FAIL:-0}" = 0 ]; }
+  : > sent.log
+  ship builds.ndjson done.txt > out.txt 2>&1 || say FAIL "$(cat out.txt)"
+  local before_family after_family
+  before_family=$(grep -n 'INSERT INTO builds' sent.log | head -1 | cut -d: -f1)
+  after_family=$(grep -n 'DELETE FROM inbox' sent.log | head -1 | cut -d: -f1)
+  local family_at; family_at=$(grep -n 'family transfers' sent.log | head -1 | cut -d: -f1)
+  [ "$before_family" -lt "$family_at" ] && [ "$family_at" -lt "$after_family" ] \
+    && say ok "family admission is after source storage and before spending arrivals" \
+    || say FAIL "family admission was outside its durable boundary"
+  : > sent.log
+  export FAMILY_TEST_FAIL=1
+  if ship builds.ndjson done.txt > out.txt 2>&1; then
+    say FAIL "a failed family admission spent its arrivals"
+  else
+    grep -q 'DELETE FROM inbox' sent.log \
+      && say FAIL "arrivals were spent before family admission" \
+      || say ok "an interrupted family admission leaves arrivals available for retry"
+  fi
+  unset FAMILY_TEST_FAIL
+  unset -f node
 
   cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash

@@ -576,6 +576,11 @@ above runs only when a tool asks for it by name.
 
 ### Positions and candidates
 
+Family transfer requests use the ordinary build-shaped start: target-incompatible
+cards are empty positions, compatible cards remain initial choices, and the
+riven alone is pinned. The same fill and descent adapt the configuration to
+the target (`docs/BOARD.md` §"Family candidates").
+
 - The positions are the quick calc's axes, in this order: mode, each
   evolution tier, valence, each arcane seat, mod slots 1–8, the exilus slot.
   WHAT SHAPES THE WEAPON COMES FIRST: a card chosen before the mode or the
