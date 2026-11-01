@@ -236,9 +236,9 @@ function renderWfFormaPlan() {
     note: "warframe",
     at: `${wf.frame}\u0000${wfActive}`,
     item: wfItem(),
-    activeLabel: wfActive,
-    partners: wfBarCfg().load().filter((p) => p.id !== (open || {}).id)
-      .map((p) => ({ id: p.id, name: presetLabel(p) })),
+    activeLabel: presetLabel(open),
+    presetCfg: wfBarCfg(),
+    partners: wfBarCfg().load().filter((p) => p.id !== (open || {}).id),
     catalystLabel: "Orokin Reactor",
     grantLabel: "Aura slot first",
     plan: async () => { await wfAutoForma(); wfChanged(); },
@@ -657,11 +657,15 @@ function wfAnnounceBuild() {
 function wfBarCfg() {
   return {
     domain: WF_BUILDS,
+    info: p => warframeLibraryCard(p.state, p.scope || p.state.frame || wf.frame),
+    context: p => (wfFrames().find(f => f.id === (p.scope || p.state.frame || wf.frame)) || {}).name || p.scope,
+    libraryScope: () => wf.frame,
+    libraryPath: p => warframePath(wfFrames().find(f => f.id === p.scope)) + "/builder?build=" + encodeURIComponent(p.id),
     label: tr("Builds"),
     noun: BUILD_NOUN,
     // AN `id` ON EVERY BUILD, because a weapon's wielder links to one by it.
     load: () => presetListWithIds(WF_BUILDS, wf.frame),
-    usedBy: (p) => linkersOfWarframePreset(wf.frame, p.id),
+    usedBy: (p) => linkersOfWarframePreset(p.scope || wf.frame, p.id),
     store: (ps) => storePresetList(WF_BUILDS, ps, wf.frame),
     active: () => wfActive,
     setActive: (n) => {
@@ -699,7 +703,7 @@ function wfMarkDirty() {
     const at = ps.findIndex((p) => presetId(p) === wfActive);
     if (at < 0) {
       if (sameState(wf, wfBlank(wf.frame))) return;
-      const e = presetEntry(newPresetName(ps), cfg.snapshot());
+      const e = presetEntry(newPresetName(ps, WF_BUILDS), cfg.snapshot());
       ps.push(e);
       cfg.store(ps);
       cfg.setActive(e.id);

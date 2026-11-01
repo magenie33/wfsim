@@ -133,13 +133,15 @@ replay, so `replay: true` is opt-in and only the Simulator's Run sends it.
 
 ## Presets and customs — two kinds of collection
 
-**PRESETS vs CUSTOMS** — two kinds of collection, and the difference is who
-CONSUMES them. **EVERY PRESET IS BORN "preset N"**, whatever it is a preset of —
-a build, a scenario, a search, a Warframe or Operator build are one concept and
-carry one name (`newPresetName`); a stored one may still carry its collection's
-old noun and is read as generated (`isGeneratedName`). Each bar declares a
-`noun`, which words its tooltips. A riven or an enemy is a custom, not a preset,
-and is named for what it is ("riven 2").
+**PRESETS vs CUSTOMS** — two kinds of collection, distinguished by who
+consumes them. A new preset takes the smallest unused exact numeric label in
+its collection: `01`, `02`, … `99`, `100`, with two digits as a minimum width.
+Names are checked across every scope of that collection. Only the exact
+candidate occupies a number: `1`, `001` and `preset 1` do not occupy `01`.
+Deleted labels are reusable; existing labels are never normalised or renamed.
+Every creation path uses this rule, including duplicate, share import, file
+import and saving a result. Opening or syncing an existing identity keeps its
+label. Customs (rivens and enemies) keep their own naming rules.
 A **preset** is a saved state of something that always exists, read only by
 its own module: `builder-builds` (a build), `simulator-scenarios` (a fight,
 buff settings included), `optimizer` (a search: the SCOPE and `finalists`, and
@@ -161,6 +163,14 @@ disabled swallows its click silently, which reads as a broken page. A bar's
 published ones, and a collection publishes exactly when its bar config has
 them. No separate bar exists for published entries.
 
+Every preset bar opens the same management browser: search names and saved
+contents, sort by modification time or name, and filter to the current item or
+all scopes, or to owned and opened read-only entries. Renaming and deleting
+work by identity. Info reads saved state without applying it: builds reuse the
+build card; scenarios reuse the fight card; searches show starts, exclusions
+and run terms. Warframe, companion and Operator presets show their own
+loadouts. Linked-preset dropdowns expose the same info without selecting a row.
+
 **EVERY SAVED COLLECTION IS ONE ROW OF `COLLECTIONS`** (`34-presets.js`): its
 `kind` — preset or custom — and its `scope`, what one entry is about (a weapon,
 a riven family, a frame, a companion, or `global`). Anything new a reader can
@@ -172,8 +182,7 @@ by a rename, and everything that points at an entry points at it: the open one
 (`presetId`, and every stored pointer), a link's `?build=`, a build's riven slot
 (`riven:<id>`), a fight's custom target (`custom:<id>`), a roster seat, a
 Warframe build's Operator link, a Forma group. So TWO ENTRIES MAY SHARE A NAME,
-and a rename moves nothing. A name is still generated unique ("preset N",
-"… copy"), because a reader tells chips apart by it; nothing depends on it.
+and a rename moves nothing. A new preset label is still generated unique within its collection, because a reader tells chips apart by it; nothing depends on it.
 `presetFind` resolves a pointer by id first and by name only for what an older
 page stored or a caller typed, and one-time migrations at boot rewrite the
 pointers, custom-target references and Forma groups an older page wrote by name.
@@ -185,7 +194,7 @@ it.
 **THE DEFAULT IS THE BLANK, AND NOTHING IS OWNED UNTIL IT IS MADE.** Every
 collection has a DEFAULT: the blank (`cfg.blank()`), always there, read-only,
 never stored and never listed in its own bar. Owning none, the bar is empty and
-the editor stands on the default; the first EFFECTIVE edit writes "preset 1", and
+the editor stands on the default; the first EFFECTIVE edit writes the next numeric label, and
 a preset edited back to the blank is DELETED — by CONTENT it is the default
 again, so what is left is the default. Only an edit deletes it: a blank one made
 by "+ new" stays until it has been worked on. Whether a state is the blank is read
@@ -334,7 +343,7 @@ collection `COLLECTIONS` names as one file and imports one back
 | rule | where it is held |
 | --- | --- |
 | the file is `{ format: "wfsim-saves", version, exported_at, lists: { <domain>: [entry] } }`; a board row, a sync choice and a stored result do not travel | `savesExport`, `savesBody` |
-| import never overwrites: an item missing here is added as it was, one held unchanged is skipped, one held changed is added beside it as `(imported)` | `savesImport` |
+| import never overwrites: unchanged identities are skipped; additions and changed copies get numeric labels for presets, while customs keep their names or an `(imported)` suffix; a preset label alone does not make a content conflict | `savesImport` |
 | a custom added as a copy has every reference to it in the file repointed at the copy, so customs are read first | `savesImport` |
 | a file from a newer version is refused, not half-read | `SAVES_VERSION` |
 | imported items are ordinary new items: signed in, they sync under the account's rules | `syncSoon` |

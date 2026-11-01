@@ -1,16 +1,5 @@
-// ---- The ONE preset-bar component -------------------------------------
-// Every preset bar on the page (the build bar and the optimizer's three
-// scope bars) is the same template on the same document model: label +
-// count, the chips (the active one carries duplicate / rename / delete),
-// "+ new". OWNING NONE, THE BAR IS EMPTY and the editor shows the DEFAULT, the
-// blank: the first effective edit writes "preset 1", and a preset edited back to
-// the blank is deleted, so what is left is the default again. Edits AUTO-SAVE into the active preset, so there is no save
-// button and no dirty marker. "+ new" creates an EMPTY preset instantly
-// under an auto-name ("preset N") and switches to it — no naming step; rename after via ✎. Branching an existing preset
-// is the ⧉ duplicate on the active chip.
-// Counts are UNLIMITED, so past PRESET_FILTER_AT chips the bar grows a
-// name filter; the active chip always shows (it is the document being
-// edited).
+// The shared quick switcher for every preset domain. Edits autosave; creating
+// and duplicating allocate a numeric label, while info reads without applying.
 const PRESET_FILTER_AT = 10;
 let deleteArmed = null; // "<bar>:<preset>" whose delete has said who links it
 const presetFilters = {}; // per-bar filter text — survives re-renders, not persisted
@@ -110,15 +99,12 @@ const pickPreset = (cfg, key) => {
   cfg.rerender();
 };
 
-/// "+ new": a blank document of this bar's kind, made active, named with the
-/// bar's own noun ("riven N" on the riven bar). Activated FIRST so everything
-/// that renders during apply() (the sim's per-preset stored result) already
-/// sees the new one; the stored state is the live snapshot after the blank is
-/// applied, so it matches exactly what the editor shows.
+/// Activate before applying, so renderers observe the new identity. Capture
+/// the realised blank after apply, exactly as the editor shows it.
 const newPreset = (cfg) => {
   flushPresetSaves();
   const ps = cfg.load();
-  const e = presetEntry(newPresetName(ps), null);
+  const e = presetEntry(newPresetName(ps, cfg.domain), null);
   cfg.setActive(e.id);
   whileApplying(() => cfg.apply(cfg.blank()));
   // THE BLANK, SEEN: what "edited back to the blank" is compared against.
@@ -154,9 +140,8 @@ function deleteIfBlank(cfg, stored) {
 const copyActivePreset = (cfg) => {
   flushPresetSaves();
   const ps = cfg.load();
-  const base = presetLabel(presetFind(barEntries(cfg), cfg.active()));
   const state = cfg.copyState ? cfg.copyState(cfg.snapshot()) : cfg.snapshot();
-  const e = presetEntry(freeName(ps, (n) => base + " copy" + (n > 1 ? " " + n : "")), state);
+  const e = presetEntry(newPresetName(ps, cfg.domain), state);
   ps.push(e);
   cfg.store(ps);
   cfg.setActive(e.id);
@@ -225,7 +210,7 @@ function renderPresetBarIn(bar, cfg) {
   // custom's editor stands down (`optional`); neither has a blank to name.
   const onDefault = cfg.blank && !cfg.optional && !cfg.pinned && ps.length === 0 && !ro.length;
   const defaultNote = onDefault
-    ? `<span class="pnote" title="${escHtml(tr("the default is read-only"))}">${escHtml(tr("Default"))} · ${escHtml(tr("your first change is saved as"))} ${escHtml(autoPresetName(PRESET_NAME, 1))}</span>`
+    ? `<span class="pnote" title="${escHtml(tr("the default is read-only"))}">${escHtml(tr("Default"))} · ${escHtml(tr("your first change is saved as"))} ${escHtml(newPresetName(ps, cfg.domain))}</span>`
     : "";
   const chip = (p) => {
     const sel = presetId(p) === active;
@@ -245,13 +230,13 @@ function renderPresetBarIn(bar, cfg) {
     const by = cfg.usedBy ? cfg.usedBy(p) : [];
     const used = by.length
       ? `<span class="pby" title="${escHtml(tr("linked by") + ": " + by.join(" · "))}">↩${by.length}</span>` : "";
-    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(presetId(p))}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${cloudMark(cfg.domain, p)}${escHtml(p.name)}${used}${ops}</span>`;
+    return `<span class="pchip ${sel ? "sel" : ""}" data-name="${escHtml(presetId(p))}" title="switch to ${escHtml(p.name)}${escHtml(hint)}">${cloudMark(cfg.domain, p)}${escHtml(p.name)}${used}${presetInfoButton(cfg, p)}${ops}</span>`;
   };
   // A READ-ONLY ENTRY: select, ⧉ on the one you are on, and × to take it out of
   // the bar — which removes nothing from where it came from.
   const roChip = (p) => {
     const sel = presetId(p) === active;
-    return `<span class="pchip ro ${sel ? "sel" : ""}" data-name="${escHtml(presetId(p))}" title="${escHtml(cfg.roTitle ? cfg.roTitle(p) : "")}">${LOCK_SVG}${escHtml(presetLabel(p))}` +
+    return `<span class="pchip ro ${sel ? "sel" : ""}" data-name="${escHtml(presetId(p))}" title="${escHtml(cfg.roTitle ? cfg.roTitle(p) : "")}">${LOCK_SVG}${escHtml(presetLabel(p))}${presetInfoButton(cfg, p)}` +
       (sel ? `<button class="pop dup" title="${escHtml(tr("copy it into a {thing} of your own — the official one cannot be edited").replace("{thing}", tr(noun)))}">⧉</button>` : "") +
       `<button class="pop unpin" data-unpin="${escHtml(presetId(p))}" title="${escHtml(tr("take it out of the bar — the board keeps it"))}">×</button></span>`;
   };
@@ -283,10 +268,13 @@ function renderPresetBarIn(bar, cfg) {
       tr("new empty {thing}").replace("{thing}", tr(noun)) + (cfg.hint ? " · " + cfg.hint : "")
     )}">+ new</span>` +
     (cfg.extra || "") +
+    `<button type="button" class="ghost-btn small" data-preset-manage>${escHtml(tr("Manage presets"))}</button>` +
     undoButtons(cfg.domain) +
     `<div class="pshare" hidden></div>`;
   wireUndoButtons(bar, cfg.domain);
   if (cfg.onExtra) cfg.onExtra(bar);
+  bar.querySelector("[data-preset-manage]").onclick = () => openPresetLibrary(cfg, bar);
+  wirePresetInfo(bar, cfg, ps.concat(ro));
 
   // Typing re-renders the bar (chips re-filter), so hand focus back.
   const filt = bar.querySelector(".pfilter");
@@ -325,8 +313,6 @@ function renderPresetBarIn(bar, cfg) {
     });
     inp.addEventListener("blur", commit);
   };
-  // Unique auto-names: "+ new" takes the smallest free "preset N";
-  // duplicate takes "<name> copy", then "<name> copy 2", …
   const addBtn = bar.querySelector(".pchip.add");
   addBtn.addEventListener("click", (e) => { e.stopPropagation(); newPreset(cfg); });
   const on = (sel, fn) => { const b = bar.querySelector(sel); if (b) b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); };
@@ -364,35 +350,22 @@ function renderPresetBarIn(bar, cfg) {
       return;
     }
     deleteArmed = null;
-    // YOURS ONLY: `load()` is the reader's own, so deleting your last build
-    // leaves the default rather than falling through to a published one.
-    const ps2 = cfg.load().filter((p) => presetId(p) !== cfg.active());
-    // EVERY COLLECTION MAY GO TO ZERO, not only the OPTIONAL ones. A module
-    // always has a state and "no build" is not a thing the builder can show —
-    // both true, and neither needs a stored row: nothing is
-    // auto-created any more (`initPresets`), so the state the builder shows
-    // when you own nothing is `cfg.blank()`, and a preset comes back the moment
-    // you edit it.
-    //
-    // `cfg.blank` is what the three modules already declare for "+ new", so the
-    // state after deleting the last one is the state a new one would start
-    // from — one answer, not two. A CUSTOM keeps `null`, which is how its
-    // editor knows to stand down.
-    cfg.store(ps2);
-    // …AND A COLLECTION THAT PUBLISHES ITS DEFAULT goes back to it (`fallback`:
-    // the first official ruler, the first built-in search), as unpinning does.
-    const next = ps2[0] || (cfg.fallback ? cfg.fallback() : null);
-    cfg.setActive(next ? presetId(next) : "");
-    whileApplying(() => cfg.apply(
-      next ? next.state : (cfg.optional || !cfg.blank ? null : cfg.blank())));
-    // A DELETE IS NOT AN EDIT, and the state it leaves behind is the pristine
-    // one — recorded here so the re-render this very handler causes cannot
-    // create the row that was just removed.
-    if (!ps2.length && cfg.pristine) cfg.pristine();
-    cfg.rerender();
-    dropSave("builds");
-    dropSave("search");
+    deleteOwnedPreset(cfg, cfg.active());
   });
+}
+
+function deleteOwnedPreset(cfg, id) {
+  flushPresetSaves();
+  const ps = cfg.load().filter(p => presetId(p) !== id);
+  cfg.store(ps);
+  if (id === cfg.active()) {
+    const next = ps[0] || (cfg.fallback ? cfg.fallback() : null);
+    cfg.setActive(next ? presetId(next) : "");
+    whileApplying(() => cfg.apply(next ? next.state : cfg.blank()));
+    if (!ps.length && cfg.pristine) cfg.pristine();
+  }
+  cfg.rerender();
+  dropSave("builds"); dropSave("search");
 }
 
 // An EMPTY build for "+ new": the CURRENT weapon (the page is a weapon

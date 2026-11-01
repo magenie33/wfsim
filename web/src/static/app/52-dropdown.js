@@ -53,7 +53,7 @@ const DD_CFG_KEYS = ["value", "items", "dataK", "title", "placeholder", "onPick"
 // `image` IS A CARD'S PICTURE, an id in `data/assets.yaml` that `IMG` resolves: the
 // row and the trigger both carry it, so a list of things that have a face (a
 // Warframe) reads as the picker every other list of them is.
-const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group", "badge", "key", "image"];
+const DD_ITEM_KEYS = ["value", "label", "hint", "disabled", "group", "badge", "key", "image", "info"];
 
 function ddCheck(id, cfg) {
   const stray = (obj, known) => Object.keys(obj).filter((k) => !known.includes(k));
@@ -145,11 +145,19 @@ function ddRender(id, query) {
       const chip = cfg.axis && i.key ? gainChipFor(i.key, cfg.axisLabel || "") : "";
       return head + `<div class="opt${String(i.value) === String(cfg.value) ? " cur" : ""}${
         i.disabled ? " dis" : ""}" data-v="${escHtml(String(i.value))}">
-        ${i.image ? imgTag(IMG(i.image), "mod") : ""}<div class="info"><div class="mn">${escHtml(i.label)}${chip}${i.badge || ""}</div>${
-          i.hint ? `<div class="me"><div>${escHtml(i.hint)}</div></div>` : ""}</div>
+        ${i.image ? imgTag(IMG(i.image), "mod") : ""}<div class="info"><div class="mn">${escHtml(i.label)}${chip}${i.badge || ""}${i.info ? `<button type="button" class="pop pinfo" data-dd-info="${escHtml(String(i.value))}" aria-label="${escHtml(tr("Info") + ": " + i.label)}">ⓘ</button>` : ""}</div>${
+          i.hint ? `<div class="me"><div>${escHtml(i.hint)}</div></div>` : ""}${i.info ? `<div class="preset-info-body" data-dd-info-body hidden></div>` : ""}</div>
       </div>`;
     }).join("")
     : `<div class="opt dis">${escHtml(tr("no matches"))}</div>`);
+  $("dd-menu").querySelectorAll("[data-dd-info]").forEach(button => button.onclick = event => {
+    event.stopPropagation();
+    const body = button.closest(".info").querySelector("[data-dd-info-body]");
+    const item = cfg.items.find(i => String(i.value) === button.dataset.ddInfo);
+    body.onclick = event => event.stopPropagation();
+    body.hidden = !body.hidden;
+    if (!body.hidden) body.innerHTML = item.info();
+  });
   $("dd-menu").querySelectorAll(".opt[data-v]:not(.dis)").forEach((el) => {
     el.onclick = (e) => {
       e.stopPropagation();

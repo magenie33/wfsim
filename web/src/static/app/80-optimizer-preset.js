@@ -129,6 +129,9 @@ function renderOptPresetBars() {
 function optBarCfg() {
   const cfg = {
     domain: OPT_DOMAIN,
+    info: p => searchPresetInfo(p),
+    context: p => tf(weaponInfo(p.scope || presetWeapon()).name),
+    libraryPath: p => weaponPath(p.scope) + "/optimizer",
     label: tr("Searches"),
     noun: "search",
     hint: "starts, limits, results and runs per candidate",
@@ -202,7 +205,7 @@ function updateOptEstimate() {
     // STATE: a search that is still `blankOpt()` is a search nobody has made.
     if (!activeOptPreset) {
       if (sameState(snapshotOpt(), blankOpt())) return;
-      const e = presetEntry(newPresetName(ps), snapshotOpt());
+      const e = presetEntry(newPresetName(ps, OPT_DOMAIN), snapshotOpt());
       ps.push(e);
       storeOptPresets(ps);
       activeOptPreset = e.id;
@@ -536,14 +539,11 @@ async function resultToState(res) {
 
 // "+ add" (not load): the result becomes a NEW preset
 // appended after the existing builds; the build being edited is never
-// clobbered. Auto-named "opt N" (rename in the preset bar if it earns a
-// real name).
+// clobbered. It takes the next available numeric preset label.
 async function addResult(res, btn) {
   const state = materialiseReferencedRivens(await resultToState(res));
   const ps = loadPresetList(BUILDS);
-  let n = 1;
-  while (ps.some((p) => p.name === "opt " + n)) n++;
-  const e = presetEntry("opt " + n, state);
+  const e = presetEntry(newPresetName(ps, BUILDS), state);
   ps.push(e);
   storePresetList(BUILDS, ps);
   renderPresetBar(); // the builder's bar shows the new chip when you switch back

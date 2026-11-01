@@ -47,7 +47,7 @@ const alsoActingPayload = () => alsoActing().map((ref) => seatPayload(seatState(
 /// The presets a seat can point at, the blank last — the same list and the
 /// same ordering the wielder's preset control offers.
 const seatPresetItems = (weapon) => [
-  ...presetListWithIds(BUILDS, weapon).map((p) => ({ value: p.id, label: p.name })),
+  ...presetListWithIds(BUILDS, weapon).map((p) => ({ value: p.id, label: p.name, info: () => weaponPresetInfo(p, weapon) })),
   { value: DEFAULT_PRESET_ID, label: `${tr("Default")} · ${tr("read-only")}`,
     hint: tr("no build — unmodded") },
 ];

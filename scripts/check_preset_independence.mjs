@@ -41,7 +41,7 @@ const r = await evaluate(`(async () => {
   // carries read-only board rows, so "the first chip" is not "the first build
   // I made".
   const chips = [...bar.querySelectorAll('.pchip[data-name]')];
-  const first = loadPresetList('builder-builds').find((p) => p.name === 'preset 1');
+  const first = loadPresetList('builder-builds').find((p) => p.name === '01');
   chips.find((c) => c.dataset.name === (first && first.id)).click(); await sleep(1600);
   const levelAfter = sim.level;
   const onScreen = ($$('#sim-target [data-k="level"]')||{}).value;
@@ -322,7 +322,8 @@ const cross = await evaluate(`(async () => {
   // ...then a weapon never visited, reached the way the search bar reaches one.
   switchWeapon('sybaris'); await s(2000);
   out.next = { arcanes: arcanes.slice(), mods: slots.filter(x => x.mod).length,
-               evos: Object.values(evoSel).filter(Boolean).length };
+               evos: Object.values(evoSel).filter(Boolean).length,
+               defaultEvos: sameState(evoSel, defaultEvolutions("sybaris", null)) };
   const stored = loadPresetList('builder-builds', 'sybaris')[0];
   out.stored = (stored || {}).state || null;
   return out;
@@ -332,7 +333,7 @@ check("a board build loads its own arcane", (cross.fromBoard || [])[0] === cross
   `${JSON.stringify(cross.fromBoard)} vs ${cross.seeded}`);
 check("...and NOTHING of it crosses to the next weapon",
   (cross.next.arcanes || []).every((a) => a === "none")
-    && cross.next.mods === 0 && cross.next.evos === 0,
+    && cross.next.mods === 0 && cross.next.defaultEvos,
   JSON.stringify(cross.next));
 check("...not even into what gets written as that weapon's first build",
   ((cross.stored || {}).arcane || ["none"]).every((a) => a === "none"),

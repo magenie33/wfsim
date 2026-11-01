@@ -124,7 +124,7 @@ function renderWielder() {
   const own = wielderList(buildWielder.frame);
   const linkedId = wielderIdOf(buildWielder);
   const floorHint = buildWielder.frame === PROTOTYPE_ID || isHostId(buildWielder.frame);
-  const presetItems = [...own.map((p) => ({ value: p.id, label: p.name })),
+  const presetItems = [...own.map((p) => ({ value: p.id, label: p.name, info: () => w.sentinel ? companionPresetInfo(p.state) : warframeLibraryCard(p.state, buildWielder.frame) })),
     { value: DEFAULT_PRESET_ID, label: `${tr("Default")} · ${tr("read-only")}`,
       hint: floorHint ? tr("the floor every board is scored on") : tr("no build — unmodded") }];
   host.innerHTML = `<label>${escHtml(tr("Wielder"))} ${ddButton("dd-wielder", {
@@ -787,6 +787,9 @@ const benchmarkName = (id) => benchShort(id);
 function buildBarCfg() {
   const cfg = {
     domain: BUILDS,
+    info: p => weaponPresetInfo(p),
+    context: p => tf(weaponInfo(p.scope || p.state.weapon || presetWeapon()).name),
+    libraryPath: p => weaponPath(p.scope) + "/builder?build=" + encodeURIComponent(p.id),
     label: tr("Builds"),
     noun: BUILD_NOUN,
     // Sharing belongs to the BUILD bar: what travels is the open build, plus

@@ -2083,3 +2083,13 @@ producer and factory behind an isolated static frontend, transfers a simulation
 and completes simulation and optimization through two real WASM witnesses.
 Its test-only claim endpoint supplies independent test devices and networks;
 it never contacts the production task service.
+
+## `check_preset_library`
+
+Drives the shared preset browser: exact numeric allocation, hole reuse and
+unbounded padding; new, duplicate, rename and file-import identity; content
+search and site-styled sort; and info for all six preset domains without
+changing the current build or fight. The scenario card is read from saved
+state, and importing the same unchanged file twice adds no second identity.
+The check fails against the previous name-only preset bar. Runs in page-rest's
+views group; accepts `WFSIM_BASE` for the native dev server.

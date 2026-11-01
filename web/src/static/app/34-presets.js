@@ -528,15 +528,17 @@ const freeName = (ps, mk) => {
 };
 /// THE NAME "+ new" GIVES A PRESET, written down once.
 const autoPresetName = (noun, n) => `${noun} ${n}`;
-/// EVERY PRESET IS BORN "preset N", WHATEVER IT IS A PRESET OF: a build, a
-/// search, a fight and an Operator build are one concept on this site, so they
-/// carry one name. The noun (`cfg.noun`) only words a tooltip. A custom (a
-/// riven, an enemy) is a different kind of thing and keeps its own.
+/// New presets take the smallest unused exact label in their collection.
+/// Padding is a minimum width; legacy names are neither renamed nor normalised.
 const PRESET_NAME = "preset";
-const newPresetName = (ps) => freeName(ps, (n) => autoPresetName(PRESET_NAME, n));
+const presetNumber = (n) => String(n).padStart(2, "0");
+const newPresetName = (ps, domain) => {
+  const names = new Set((domain ? loadPresetWhole(domain).concat(ps) : ps).map(p => p.name));
+  for (let n = 1; ; n++) if (!names.has(presetNumber(n))) return presetNumber(n);
+};
 /// THE DEFAULT: a preset that always exists and cannot be edited, stored or
 /// deleted — the blank. Owning nothing, the editor IS it, and the first
-/// effective edit there is what writes "preset 1"; a preset edited back to the
+/// effective edit there allocates its numeric label; a preset edited back to the
 /// blank is deleted, so what is left is it again. It is where a link lands when
 /// its preset is gone, and no collection's own bar lists it.
 const DEFAULT_PRESET_ID = "default";
@@ -559,7 +561,8 @@ const isAutoPresetName = (noun, name) => {
 };
 /// Whether a name is one the app generated — "preset N", or the per-collection
 /// nouns a stored preset may still carry.
-const isGeneratedName = (name) => [PRESET_NAME, "build", "search", "scenario", "operator"]
+const isGeneratedName = (name) => (Number.isSafeInteger(Number(name)) && Number(name) >= 1
+  && name === presetNumber(Number(name))) || [PRESET_NAME, "build", "search", "scenario", "operator"]
   .some((noun) => isAutoPresetName(noun, name));
 /// The builds collection's noun, which words its tooltips.
 const BUILD_NOUN = "build";

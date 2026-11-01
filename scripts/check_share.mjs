@@ -167,7 +167,7 @@ check("the builder is on screen without a refresh", got.configVisible && !got.ho
   `config=${got.configVisible} home=${got.homeVisible}`);
 check("the mod slots are drawn", got.slotsDrawn === 8, `${got.slotsDrawn} slots`);
 check("the query is stripped", got.search === "", got.search);
-check("the build is the shared one", /\(shared\)/.test(got.activeBuild || ""), got.activeBuild);
+check("the shared build gets a numeric preset label", got.activeBuild === "01", got.activeBuild);
 check("the riven travelled", got.rivens.length === 1, JSON.stringify(got.rivens));
 check("the riven is equipped in its slot", /^riven:/.test(got.mods[6] || ""), got.mods[6]);
 // AND THE SCENARIO DOES NOT TRAVEL, which is the inversion of what this line
@@ -243,7 +243,7 @@ const bo = await evaluate(`(async () => {
     said: (document.querySelector('.preset-toast, .ptoast') || {}).textContent || '',
   };
 })()`);
-check("a legacy link still lands the build", /\(shared\)/.test(bo.activeBuild || "")
+check("a legacy link still lands the build", bo.activeBuild === "01"
   && bo.weapon === "torid", `weapon=${bo.weapon} build=${bo.activeBuild}`);
 check("...and its riven with it", bo.rivens.length === 1 && /^riven:/.test(bo.mods[6] || ""),
   `${JSON.stringify(bo.rivens)} slot6=${bo.mods[6]}`);

@@ -45,7 +45,7 @@ console.log(JSON.stringify(r, null, 1));
 check("nothing stored and the unbuilt Prototype linked to begin with", r.start.stored === 0 && r.start.link === '{"frame":"prototype","preset":null}');
 check("the pane is the Warframe page, framed, with the shell's chrome off and the Operator inside it",
   r.framed.embed && r.framed.chrome === "none" && r.framed.opFrame && r.framed.wf === "prototype", JSON.stringify(r.framed));
-check("an edit inside the pane is born as preset 1 and becomes the wielder", r.born.stored.length === 1 && r.born.stored[0] === "preset 1"
+check("an edit inside the pane is born as 01 and becomes the wielder", r.born.stored.length === 1 && r.born.stored[0] === "01"
   && r.born.resolved === r.born.ids[0] && r.born.shards === 1, JSON.stringify(r.born));
 check("edited back to the blank in the pane, the preset is deleted and the link is the default",
   r.emptied.stored === 0 && r.emptied.resolved === "default" && r.emptied.wire === true, JSON.stringify(r.emptied));
