@@ -58,6 +58,11 @@ known defect. Work with unresolved relevant failures is blocked for integration.
 
 The merger takes only explicitly handed-off, ready features, leaving unfinished
 work on its task branch. A feature handoff does not require its own full CI run.
+When build admission changes, refresh the committed board snapshot with
+`gh workflow run publish.yml --ref <integration-branch>` before final validation.
+Manual projection writes to the requested branch; scheduled projection writes
+to main. It reads existing score facts without fighting or assigning missing
+build choices. Inspect the generated result, then validate the resulting candidate.
 Before moving the batch to main, run CI on the integration branch's final
 commit. The path selection above chooses the required jobs; a batch containing
 core or unknown changes runs full CI. Separate branches' green results never
