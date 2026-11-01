@@ -12,8 +12,8 @@ fn residual(amount: f64) -> DamageVector {
     DamageVector::new().with(DamageType::Puncture, amount).with(DamageType::Radiation, 10.0)
 }
 
-// M130 reports presence, not a proc frequency. Extra rolls expose the same
-// rare-event path deterministically without asserting a measured frequency.
+// Synthetic residuals distinguish raw composition from quantized weights;
+// their proc counts are regression checks, not measured game frequencies.
 fn ocucor(amount: f64, crowd: bool) -> FightParams {
     let mut p = weapon("ocucor", 180.0);
     p.damage = residual(amount);
@@ -54,14 +54,35 @@ fn has_debuff(rec: &crate::record::Record, id: &str, body: u16) -> bool {
 }
 
 #[test]
-fn ocucor_residual_puncture_procs_on_main_beam_and_tendril_without_direct_puncture() {
+fn quantized_away_puncture_never_procs_on_main_beam_or_tendril() {
     let p = ocucor(1.0 - 0.982, true);
     assert!(p.damage.get(DamageType::Puncture) > 0.0);
     assert_eq!(p.damage.quantized_against(11.0).get(DamageType::Puncture), 0.0);
     let (r, rec) = traced(&p);
     assert!(r.taken.by_body().0[1] > 0.0, "the tendril acquired its target");
-    assert!(proc_count(&rec, DamageType::Puncture, 0) > 0, "main beam keeps the residual weight");
-    assert!(has_debuff(&rec, "weakened", 1), "tendril keeps the residual weight");
+    assert_eq!(proc_count(&rec, DamageType::Puncture, 0), 0);
+    assert!(!has_debuff(&rec, "weakened", 1));
+    assert!(r.procs > 0, "other quantized types still proc");
+    assert_eq!(r.sources.direct_by_type[DamageType::Puncture as usize], 0.0);
+}
+
+#[test]
+fn retained_quantized_puncture_procs_on_main_beam_and_tendril() {
+    let p = ocucor(1.0, true);
+    let (r, rec) = traced(&p);
+    assert!(proc_count(&rec, DamageType::Puncture, 0) > 0);
+    assert!(has_debuff(&rec, "weakened", 1));
+    assert!(r.sources.direct_by_type[DamageType::Puncture as usize] > 0.0);
+}
+
+#[test]
+fn forced_puncture_still_procs_when_its_damage_quantizes_to_zero() {
+    let mut p = ocucor(0.018, true);
+    p.status_chance = 0.0;
+    p.forced_procs = vec![DamageType::Puncture];
+    let (r, rec) = traced(&p);
+    assert!(proc_count(&rec, DamageType::Puncture, 0) > 0);
+    assert!(has_debuff(&rec, "weakened", 1));
     assert_eq!(r.sources.direct_by_type[DamageType::Puncture as usize], 0.0);
 }
 
@@ -73,8 +94,8 @@ fn removed_puncture_never_procs() {
 }
 
 #[test]
-fn immune_puncture_is_excluded_even_when_its_raw_weight_is_positive() {
-    let mut p = ocucor(0.018, true);
+fn immune_puncture_is_excluded_even_when_its_quantized_weight_is_positive() {
+    let mut p = ocucor(1.0, true);
     p.foe.status_immunities.push(DamageType::Puncture);
     p.others[0].params.status_immunities.push(DamageType::Puncture);
     let (_, rec) = traced(&p);
@@ -84,52 +105,57 @@ fn immune_puncture_is_excluded_even_when_its_raw_weight_is_positive() {
 }
 
 #[test]
-fn live_added_element_keeps_its_raw_weight_without_direct_element_damage() {
+fn quantized_away_live_element_never_procs() {
     let mut p = ocucor(0.0, true);
     p.arcane.added_elements = vec![(DamageType::Toxin, 0.001)];
     let (r, rec) = traced(&p);
-    assert!(proc_count(&rec, DamageType::Toxin, 0) > 0);
-    assert!(has_debuff(&rec, "poison", 1));
+    assert_eq!(proc_count(&rec, DamageType::Toxin, 0), 0);
+    assert!(!has_debuff(&rec, "poison", 1));
+    assert!(r.procs > 0, "other quantized types still proc");
     assert_eq!(r.sources.direct_by_type[DamageType::Toxin as usize], 0.0);
 }
 
 #[test]
-fn resting_form_uses_its_own_unquantized_composition() {
+fn resting_form_uses_its_own_quantized_composition() {
     let mut p = ocucor(0.0, false);
     p.frenzy = true;
     p.resting = Some(crate::build::loadout::ResolvedResting {
         damage: residual(0.018), elem_dot_bonus: Vec::new(), injected: Vec::new(),
     });
     let (r, rec) = traced(&p);
-    assert!(proc_count(&rec, DamageType::Puncture, 0) > 0);
+    assert_eq!(proc_count(&rec, DamageType::Puncture, 0), 0);
+    assert!(r.procs > 0, "other quantized types still proc");
     assert_eq!(r.sources.direct_by_type[DamageType::Puncture as usize], 0.0);
 }
 
 #[test]
-fn each_projectile_keeps_its_own_unquantized_composition() {
+fn each_projectile_uses_its_own_quantized_composition() {
     let mut p = ocucor(0.0, false);
     p.beam = None;
     p.continuous = false;
-    p.multishot = 2.0;
-    p.base_multishot = 2.0;
+    p.multishot = 3.0;
+    p.base_multishot = 3.0;
     p.pellet_damage = vec![
         (residual(0.018), DamageVector::new()),
         (residual(0.0), DamageVector::new()),
+        (residual(1.0), DamageVector::new()),
     ];
     let (r, rec) = traced(&p);
-    assert!(proc_count(&rec, DamageType::Puncture, 0) > 0);
-    assert_eq!(r.sources.direct_by_type[DamageType::Puncture as usize], 0.0);
+    assert!(r.sources.direct_by_type[DamageType::Puncture as usize] > 0.0);
     let rows: Vec<_> = rec.events().iter().filter_map(|e| match &e.kind {
         Kind::Damage(row) if matches!(row.origin, Origin::Own | Origin::Multishot) && !row.radial => Some(row),
         _ => None,
     }).collect();
     assert!(rows.len() > 2);
+    assert!(rows.iter().any(|r| r.pellet == Some(1)));
     assert!(rows.iter().any(|r| r.pellet == Some(2)));
+    assert!(rows.iter().filter(|r| r.pellet == Some(1)).all(|r| !r.procs.contains(&DamageType::Puncture)));
     assert!(rows.iter().filter(|r| r.pellet == Some(2)).all(|r| !r.procs.contains(&DamageType::Puncture)));
+    assert!(rows.iter().any(|r| r.pellet == Some(3) && r.procs.contains(&DamageType::Puncture)));
 }
 
 #[test]
-fn explosion_and_its_spread_use_the_explosions_raw_composition() {
+fn explosion_and_its_spread_use_the_explosions_quantized_composition() {
     let mut p = weapon("akarius", 180.0);
     p.damage = residual(0.0);
     p.status_chance = 0.0;
@@ -145,13 +171,14 @@ fn explosion_and_its_spread_use_the_explosions_raw_composition() {
     rad.crit_chance = 0.0;
     rad.radius_m = 10.0;
     let (r, rec) = traced(&p);
-    assert!(proc_count(&rec, DamageType::Puncture, 0) > 0);
-    assert!(has_debuff(&rec, "weakened", 1));
+    assert_eq!(proc_count(&rec, DamageType::Puncture, 0), 0);
+    assert!(!has_debuff(&rec, "weakened", 1));
+    assert!(r.procs > 0);
     assert_eq!(r.sources.radial_by_type[DamageType::Puncture as usize], 0.0);
 }
 
 #[test]
-fn field_ticks_keep_the_fields_raw_composition() {
+fn field_ticks_use_the_fields_quantized_composition() {
     let mut p = weapon("torid", 30.0);
     p.damage = DamageVector::new();
     p.status_chance = 0.0;
@@ -167,12 +194,13 @@ fn field_ticks_keep_the_fields_raw_composition() {
     field.tick_rate = 100.0;
     field.duration_seconds = 30.0;
     let (r, rec) = traced(&p);
-    assert!(has_debuff(&rec, "weakened", 0));
+    assert!(!has_debuff(&rec, "weakened", 0));
+    assert!(r.procs > 0);
     assert_eq!(r.sources.field_by_type[DamageType::Puncture as usize], 0.0);
 }
 
 #[test]
-fn per_hit_element_pile_keeps_its_unquantized_composition() {
+fn per_hit_element_pile_uses_its_quantized_composition() {
     let mut p = ocucor(0.0, false);
     p.per_hit_element = Some(crate::build::loadout::ResolvedPerHitElement {
         spec: crate::model::ElementPerHit {
@@ -182,12 +210,13 @@ fn per_hit_element_pile_keeps_its_unquantized_composition() {
         radial: Vec::new(),
     });
     let (r, rec) = traced(&p);
-    assert!(proc_count(&rec, DamageType::Heat, 0) > 0);
+    assert_eq!(proc_count(&rec, DamageType::Heat, 0), 0);
+    assert!(r.procs > 0, "other quantized types still proc");
     assert_eq!(r.sources.direct_by_type[DamageType::Heat as usize], 0.0);
 }
 
 #[test]
-fn melee_swings_keep_unquantized_status_weights() {
+fn melee_swings_use_quantized_status_weights() {
     let mut p = weapon("magistar", 180.0);
     p.damage = residual(0.018);
     p.dot_modified_base = Some(11.0);
@@ -195,7 +224,8 @@ fn melee_swings_keep_unquantized_status_weights() {
     p.base_crit_chance = 0.0;
     p.crit_multiplier = 1.0;
     let (r, rec) = traced(&p);
-    assert!(proc_count(&rec, DamageType::Puncture, 0) > 0);
+    assert_eq!(proc_count(&rec, DamageType::Puncture, 0), 0);
+    assert!(r.procs > 0, "other quantized types still proc");
     assert_eq!(r.sources.direct_by_type[DamageType::Puncture as usize], 0.0);
 }
 

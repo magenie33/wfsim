@@ -1259,9 +1259,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         };
         let pre_ability_total = qvec.total();
         let qvec = params.with_live_elements(qvec, stage_mb, t, windows);
-        let status_vector = params.with_live_elements_unquantized(
-            pre_quantization, stage_mb, t, windows,
-        );
+        let status_vector = qvec;
         // A merged beam tick carries the SUM of its beams. `qtotal`
         // is what the instance deals; the crit CHANCE that produced
         // `tier` above was deliberately left at one beam's.
@@ -2276,7 +2274,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             continue;
         }
         // Per-INSTANCE proc roll (wiki Multishot/Status_Effect):
-        // forced ++ SC draws weighted by the UNQUANTIZED vector, unit
+        // forced ++ SC draws weighted by the QUANTIZED vector, unit
         // immunities renormalized.
         let mut procs = status::procs_for_hit(
             forced,

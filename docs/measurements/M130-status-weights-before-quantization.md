@@ -28,7 +28,7 @@ The enemy identity and full recording were not supplied. The test uses a
 neutral body to reproduce the reported totals; it does not invent a target
 or claim a measured change in that target's health.
 
-## Ocucor status presence
+## Ocucor status presence and the Madurai confound
 
 The owner relayed that a community member recorded Puncture status occurring
 with an Ocucor riven carrying −98.2% Puncture. The original video and complete
@@ -40,11 +40,41 @@ Reading the unquantized vector gives Puncture a positive draw weight of
 `0.018 / 10.018`, about 0.18% per successful status roll before other mods.
 That is a model prediction, not a measured frequency from the video.
 
-The owner's adopted rule is to retain the unquantized modified composition for
-status selection and the quantized composition for direct damage. This rule
-applies to all attack parts; it introduces no weapon-specific exception or
-minimum damage component. A truly removed component has no random status
-weight, and status immunity still excludes a type and renormalizes the rest.
+On 2026-11-01, the owner identified Madurai in the footage. The school was not
+controlled in the original report. Its Phoenix Talons adds physical damage
+after physical mods, according to the [Focus calculation notes](https://wiki.warframe.com/w/Focus/Madurai#Phoenix_Talons).
+With only Puncture as Ocucor's physical type, that contribution can leave
+positive Puncture even after quantization. Madurai's Rain of Arrows also has
+forced Puncture procs if active. The footage therefore cannot distinguish
+quantized from unquantized status weights.
+
+## Phantasma Prime Focus comparison (owner, 2026-11-01)
+
+The owner relayed a community comparison with a Phantasma Prime riven whose
+panel displayed −100% Impact:
+
+| Focus condition | Observation |
+| --- | --- |
+| Without Madurai | No Impact status observed |
+| With Madurai | Impact status observed again |
+
+The hidden precision of the riven, full loadout, sample size and proc counts
+were not supplied. A value such as −99.95% is a hypothesis, not a measurement.
+This comparison establishes Focus as a relevant control. Absence in a finite
+sample does not by itself measure a zero probability or prove a rounding stage.
+
+## Applied rule
+
+The owner requested restoring quantized status weights on 2026-11-01 after
+the confound was identified. Random status types use each attack part's
+quantized modified composition, including live elements. A component quantized
+to zero has no random weight; forced procs remain independent. No minimum
+damage component is introduced. The Laetum direct-damage readings above remain
+independent evidence and are unchanged.
+
+The complete unquantized vector remains available for the ledger's quantization
+breakdown and measured pre-quantization Extra Hit brackets (M40). Retaining that
+input does not give it authority over status selection.
 
 The wiki's [status distribution formula](https://wiki.warframe.com/w/Status_Effect)
 states `Damage / Total Damage` without specifying the quantization stage.
@@ -52,5 +82,6 @@ A [2024 Galatine Prime experiment](https://forums.warframe.com/topic/1403973-whe
 reported no Impact or Puncture procs under the older 1/16 grid. That old
 weapon/setup is not a measurement of current Ocucor proc frequency.
 
-Tests: `fight::tests::status_composition`. Presence tests deliberately increase
-status rolls to expose rare weights; their counts are not game measurements.
+Tests: `fight::tests::status_composition`. Synthetic residuals and increased
+status rolls distinguish pre- and post-quantization selection across attack
+parts; neither their input values nor counts are additional game measurements.

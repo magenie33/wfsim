@@ -652,7 +652,7 @@ impl FightParams {
         if out == qvec { out } else { out.quantized_against(stage_mb) }
     }
 
-    /// [`Self::with_live_elements`] before the snap, for status weights and extra hits.
+    /// [`Self::with_live_elements`] before the snap, for Extra Hit brackets.
     pub(super) fn with_live_elements_unquantized(
         &self,
         qvec: DamageVector,

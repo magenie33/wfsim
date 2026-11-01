@@ -124,8 +124,8 @@ pub struct FightParams {
     /// wherever a squad effect lands — the armour multiplier at mitigation, the
     /// stack ceiling at the proc.
     pub squad: crate::data::tenno::SquadEffects,
-    /// The weapon's (modded) base damage vector. Quantized once per run for
-    /// dealing damage; proc-type weighting keeps this unquantized vector.
+    /// The weapon's unquantized (modded) base damage vector, retained for the
+    /// ledger and Extra Hit brackets. Damage and status draws use its quantized form.
     /// With Frenzy UP when the panel injects; [`Self::resting`] is the same
     /// hit with it down.
     pub damage: DamageVector,
