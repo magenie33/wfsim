@@ -105,10 +105,6 @@ pub fn combo_error(weapon: &str, form: FormKind, seated: Option<crate::model::St
     }
 }
 
-/// The board's refusal of a melee row with an empty stance slot.
-pub const STANCE_REQUIRED: &str =
-    "no stance in the slot, and a board row on a melee weapon carries one — equip a stance";
-
 /// The refusal a stanceless ground combo gets, in one wording for every caller.
 pub const STANCELESS_COMBO: &str =
     "no stance in the slot: this stanceless input is not modelled — equip a stance or choose a supported input";

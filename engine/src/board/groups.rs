@@ -18,7 +18,7 @@ pub struct Group {
 }
 
 /// THE MODES A WEAPON IS SCORED IN on any ruler — those it can sustain, the
-/// default one named `base`. The rows a build owes take theirs from here.
+/// default one named `base`. A build's supported subset is `ValidBuild::board_modes`.
 pub fn board_modes(weapon: &str) -> Vec<String> {
     play_modes(weapon)
         .into_iter()

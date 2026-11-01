@@ -120,6 +120,30 @@ check(`${tag} a bare package combo runs with no stance on the wire`,
   bare.ok === true && bare.damage > 0 && bare.sent.length === 0, JSON.stringify(bare));
 check(`${tag} the mode explanation includes this weapon's heavy charge`,
   Math.abs(bare.seconds - 2.73333398) < 0.002, JSON.stringify(bare));
+
+const admission = await evaluate(`(async () => {
+  slots[STANCE].mod = null;
+  const ctx = { ...boardBuildContext(), benchmark: 'standard_single_target' };
+  const row = {
+    mods: ['primed_pressure_point', 'sacrificial_steel', 'organ_shatter', 'primed_reach',
+      'primed_fever_strike', 'north_wind', 'shocking_touch', 'weeping_wounds'],
+    evolutions: ['praedos_evo1_incarnon_form', 'praedos_seismic_slam', 'praedos_adept_reflexes',
+      'praedos_evolved_ascension', 'praedos_universal_readiness'],
+    arcane: ['melee_influence'], mode: 'base',
+  };
+  const payload = boardPayloadFromResult(row, ctx);
+  return {
+    stance: optimizeBody().stance, mods: payload.mods,
+    full: await api('/api/board/check', payload),
+    short: await api('/api/board/check', { ...payload, mods: payload.mods.slice(0, 7) }),
+  };
+})()`);
+check(`${tag} optimization sends an empty stance slot without adding a card`,
+  admission.stance === '' && admission.mods.length === 8, JSON.stringify(admission));
+check(`${tag} the board accepts a complete stanceless winner`,
+  admission.full.accepted === true, JSON.stringify(admission.full));
+check(`${tag} leaving the stance empty does not waive the eight main slots`,
+  admission.short.accepted === false && /main slots/.test(admission.short.reason || ''), JSON.stringify(admission.short));
 await app.load("/weapons/Magistar/builder", 22000);
 
 // ---------------------------------------------------------------------------

@@ -1220,6 +1220,8 @@ Its sharpest pair is the ROUND TRIP — `buildPayload` into
 slot 9. A complete bare Praedos input runs with no stance on the wire;
 Magistar's bare input produces a different fight from either stance. The mode explanation
 also resolves the heavy's weapon-specific charge alongside its motion time.
+The optimizer sends an empty stance slot unchanged, and the board accepts a
+complete stanceless result while still refusing seven main mods.
 
 ## `check_stance_capacity`
 

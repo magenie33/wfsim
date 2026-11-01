@@ -1924,6 +1924,11 @@ and nowhere else; the exilus needs `exilus` as its own key, because an
 exilus-eligible mod is legal in a main slot too and a flat list cannot say which
 one came out of which.
 
+An empty stance slot uses the weapon's own attack timeline. A build owes and
+publishes only modes supported by its seated or bare script; this is
+`ValidBuild::board_modes`, using the simulator's combo availability rule.
+An ability weapon's fixed stance remains mandatory.
+
 ## The exilus slot is OPTIONAL
 
 A row MAY wear an exilus mod, and a row without one is not a lesser build. Both

@@ -140,7 +140,7 @@ fn asked_row(
     key: &str,
 ) -> Option<Value> {
     // ONLY A ROW THE BOARD ADMITS. `owed` is `owed_rows`: a ruler the roster no
-    // longer has, a mode the weapon cannot sustain and a build the ruler refuses
+    // longer has, an unsupported mode and a build the ruler refuses
     // (a melee row with an empty stance slot) all ask for nothing, since no
     // client's `/api/board/order` could open that row. The ruler is matched by
     // family — a `_vN` record names the ruler it is a version of — and the mode
@@ -389,7 +389,7 @@ fn sweep_admission(lines: impl Iterator<Item = String>) -> (Vec<Value>, BTreeMap
         let reason = match wfsim_webapi::board_rows::scored_build(&record, &ruler) {
             Err(e) => e,
             Ok(_) if wfsim_engine::board::benchmarks::get(&ruler).is_none() => "a ruler the roster does not have".into(),
-            Ok(_) => "a mode the weapon cannot sustain".into(),
+            Ok(_) => "an unsupported or unsustainable mode".into(),
         };
         *why.entry(reason).or_default() += 1;
         refused.push(json!({ "build_id": build, "ruler": ruler, "mode": mode }));
@@ -596,10 +596,7 @@ mod tests {
         assert!(orders.iter().any(|o| o["mode"] == "cycle") && orders.iter().any(|o| o["mode"] == "base"));
     }
 
-    /// THE FIGHT AN ARRIVAL NAMED IS ASKED ONLY WHERE THE BOARD ADMITS THE
-    /// BUILD. A melee build with an empty stance slot is legal to equip and kept
-    /// in the library, but no ruler takes it, so a row asked for it is one no
-    /// client's `/api/board/order` can open — handed out and returned for ever.
+    /// An arrival opens only supported rows admitted by its ruler.
     #[test]
     fn the_fight_an_arrival_named_is_asked_only_where_the_board_admits_it() {
         let mods = |stance: Option<&'static str>| {
@@ -615,12 +612,12 @@ mod tests {
             "arcanes": ["melee_duplicate"], "exilus": "dreamers_wrath",
             "benchmark": "standard_single_target", "mode": "slide",
         }}).to_string();
-        let (builds, asked, ..) = intake(vec![line("bare", None)].into_iter(), None, None);
-        assert_eq!(builds.len(), 1, "the library keeps a legal build the board refuses");
-        assert!(asked.is_empty(), "no stance, no row: {asked:?}");
-        let (_, asked, ..) = intake(vec![line("stance", Some("crushing_ruin"))].into_iter(), None, None);
-        assert_eq!(asked.len(), 1, "with a stance it is admitted: {asked:?}");
-        assert_eq!((asked[0]["ruler"].as_str(), asked[0]["mode"].as_str()), (Some("standard_single_target"), Some("slide")));
+        for (id, stance) in [("bare", None), ("stance", Some("crushing_ruin"))] {
+            let (builds, asked, ..) = intake(vec![line(id, stance)].into_iter(), None, None);
+            assert_eq!(builds.len(), 1, "the library keeps the {id} build");
+            assert_eq!(asked.len(), 1, "the supported {id} input is admitted: {asked:?}");
+            assert_eq!((asked[0]["ruler"].as_str(), asked[0]["mode"].as_str()), (Some("standard_single_target"), Some("slide")));
+        }
     }
 
     /// THE SWEEP NAMES A QUEUED ROW THE BOARD REFUSES, WITH ITS REASON, and
@@ -637,10 +634,15 @@ mod tests {
         if let Some(m) = stance["mods"].as_array_mut() {
             m.push(json!("crushing_ruin"));
         }
-        let q = |build: &str, rec: &Value| json!({ "build_id": build, "ruler": "standard_single_target", "mode": "slide", "record": rec }).to_string();
-        let (refused, why) = sweep_admission(vec![q("bare", &bare), q("stance", &stance)].into_iter());
-        assert_eq!(refused, vec![json!({ "build_id": "bare", "ruler": "standard_single_target", "mode": "slide" })]);
-        assert_eq!(why.get(wfsim_engine::data::weapons::STANCE_REQUIRED), Some(&1), "{why:?}");
+        let mut incomplete = bare.clone();
+        incomplete["weapon"] = json!("corufell_prime");
+        incomplete["evolutions"] = json!([]);
+        let q = |build: &str, rec: &Value, mode: &str| json!({ "build_id": build, "ruler": "standard_single_target", "mode": mode, "record": rec }).to_string();
+        let (refused, why) = sweep_admission(vec![
+            q("bare", &bare, "slide"), q("stance", &stance, "slide"), q("incomplete", &incomplete, "block"),
+        ].into_iter());
+        assert_eq!(refused, vec![json!({ "build_id": "incomplete", "ruler": "standard_single_target", "mode": "block" })]);
+        assert_eq!(why.get("an unsupported or unsustainable mode"), Some(&1), "{why:?}");
     }
 
     #[test]

@@ -875,8 +875,10 @@ replaces them with its own tree. Simulation, replay and search share
 `data::weapons::combo_error`: a complete bare input is playable without a
 stance. Absent bare branches reuse the default combo; a default stored only in
 branch A also supplies the neutral input. An explicitly exported but incomplete
-branch is left empty rather than replaced with another attack. The benchmark's
-separate stance requirement remains a legality rule.
+branch is left empty rather than replaced with another attack. An empty stance
+slot is legal in a search and on the board. Board orders and published rows
+include only sustainable inputs supported by the build's seated or bare script,
+using the simulator's combo availability rule.
 
 Missing projectile/sweep events retain the existing unmodelled declaration;
 the importer does not create a mid-animation melee hit for them. Existing

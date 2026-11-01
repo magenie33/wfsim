@@ -971,7 +971,7 @@ fn a_full_adversary_build_is_admissible() {
 /// THE BOARD'S ENTRY STANDARD, STATED AS A TABLE.
 ///
 /// Eight main slots FULL, every arcane seat and every evolution tier FULL,
-/// a STANCE on a melee weapon whose pool offers one, and the exilus optional.
+/// the stance and exilus optional unless fixed on the weapon.
 /// A ruler may still narrow it; this is the shape a ruler that wants a
 /// complete build is asking for.
 ///
@@ -1004,6 +1004,8 @@ fn the_entry_standard_takes_a_full_build_with_or_without_the_optional_slots() {
     for (what, mods, ex) in [
         ("eight mains and a stance", stance(), None),
         ("…and an exilus", stance(), Some("conditions_perfection")),
+        ("eight mains without a stance", s(&MAINS), None),
+        ("…and an exilus without a stance", s(&MAINS), Some("conditions_perfection")),
         // AN EXILUS-ELIGIBLE MOD IN A MAIN SLOT IS A MAIN MOD. What is
         // optional is the SLOT, not the mod: the game lets one of these sit
         // anywhere, and a build that spends a main slot on it has eight
@@ -1019,10 +1021,6 @@ fn the_entry_standard_takes_a_full_build_with_or_without_the_optional_slots() {
     // …AND WHAT IS NOT COMPLETE IS REFUSED, each for its own reason.
     let short = go(s(&[&MAINS[..7], &["sovereign_outcast"]].concat()), s(&EVOS), arc(), None).unwrap_err();
     assert!(short.contains("main slots"), "seven mains: {short}");
-    for ex in [None, Some("conditions_perfection")] {
-        let bare = go(s(&MAINS), s(&EVOS), arc(), ex).unwrap_err();
-        assert!(bare.contains("no stance"), "no stance: {bare}");
-    }
     let no_arc = go(stance(), s(&EVOS), vec![], None).unwrap_err();
     assert!(no_arc.contains("arcane"), "no arcane: {no_arc}");
     // THREE TIERS NAMED IS FIVE INSTALLED: the two left out hold their first
