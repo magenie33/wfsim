@@ -19,6 +19,8 @@ use crate::rivens::{mod_pool_with_rivens, riven_stat_ids_ok};
 use crate::tenno::tenno_from;
 
 mod quick;
+#[cfg(test)]
+mod stance_tests;
 
 // All buffs the scope could produce (union over every fixed/search mod + every
 // searched arcane + the weapon passive) — the optimizer's buff panel enumerates
@@ -411,24 +413,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         }
     }
 
-    // ---- THE STANCE, IN EVERY CANDIDATE ---------------------------------
-    //
-    // IT IS NOT A SEARCH AXIS AND IT IS NOT OPTIONAL. A stance is the card that
-    // decides what a swing IS — the combo script, its multipliers, its forced
-    // procs — so a melee search that leaves the slot empty ranks builds nobody
-    // holds: measured on a Praedos, 4 kills against 5 and 15% of the DPS. It
-    // was left empty because the page's mod list filters stances out (a stance
-    // is legal in the stance slot and nowhere else) and nothing put it back.
-    //
-    // PINNED, THE WAY THE VALENCE AND THE ASSEMBLY ARE: the page holds one and
-    // the search does not range over it, so it is a constant of every candidate
-    // rather than a dimension. `require` is exactly that mechanism.
-    //
-    // ITS SLOT IS ITS OWN, so the ceiling rises with it — otherwise pinning it
-    // would cost a MAIN slot and the search would rank seven-mod builds. It
-    // costs no capacity either (`base_drain: 0`, see notes
-    // `stance_grants_capacity`); what it does is HAND capacity back, which is
-    // the grant below.
+    // An equipped stance rides every candidate in its own slot. An empty
+    // slot uses the weapon's package timeline, checked by combo_error below.
     let stance_def = match get_str(v, "stance", "") {
         "" => None,
         id => match full.iter().find(|m| m.id == id) {
@@ -2454,13 +2440,7 @@ mod optimizer_evolution_tests {
         assert!(two.iter().all(|s| s.len() == 4 && s[0] == "torid_evo1_incarnon_form"), "{two:?}");
     }
 
-    /// THE SEARCH WEARS THE STANCE IT WAS HANDED, in every candidate.
-    ///
-    /// A stance decides what a swing IS, so a melee search without one ranks
-    /// builds nobody holds: measured on a Praedos, the same four cards scored
-    /// 0.65 kills bare and 0.95 wearing Sovereign Outcast. It is pinned rather
-    /// than searched, so it belongs in `require` — and its SLOT is its own, so
-    /// the ceiling has to rise with it or pinning it costs a main slot.
+    /// An equipped stance is fixed in its own slot; an empty one stays empty.
     #[test]
     fn a_melee_search_is_handed_the_stance_and_it_costs_no_main_slot() {
         let base = json!({

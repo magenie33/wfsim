@@ -105,9 +105,8 @@ fn derive(raw: &RawValue, rulers: &[Ruler]) -> Option<Built> {
             Err(e) => refusal(&rec, weapon, Some(&ruler.id), &e),
         }
     }
-    let modes: Vec<&'static str> = wfsim_engine::data::weapons::play_modes(&v.weapon)
+    let modes: Vec<&'static str> = v.board_modes()
         .into_iter()
-        .filter(|m| m.sustainable)
         .map(|m| m.id)
         .collect();
     if modes.is_empty() {
@@ -869,6 +868,21 @@ fn swap(root: &Path, next: &Path) {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn a_bare_build_projects_only_supported_modes() {
+        let record = json!({
+            "weapon": "corufell_prime",
+            "mods": ["primed_pressure_point", "sacrificial_steel", "organ_shatter", "primed_reach",
+                "primed_fever_strike", "north_wind", "shocking_touch", "weeping_wounds"],
+            "arcanes": ["melee_influence"],
+        });
+        let raw = serde_json::value::to_raw_value(&record).unwrap();
+        let built = derive(&raw, &roster()).expect("a legal stanceless build");
+        assert_ne!(built.admit, 0, "the rulers accept the build");
+        assert!(!built.modes.contains(&"block") && !built.modes.contains(&"block_forward"));
+        assert!(built.modes.contains(&"heavy") && built.modes.contains(&"heavy_slam"));
+    }
 
     fn braton(last: &str) -> Value {
         json!({

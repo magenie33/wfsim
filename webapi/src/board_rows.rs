@@ -181,16 +181,13 @@ pub fn card_of(v: &ValidBuild, shape: &wfsim_engine::build::rivens::RivenShape) 
     g.bonuses.iter().map(|b| b.roll).chain(g.malus.iter().map(|m| m.roll)).collect()
 }
 
-/// ONE FIGHT PER MODE THE WEAPON CAN SUSTAIN, under one ruler's scenario. An
-/// unsustainable mode ("Always Incarnon") is not a way to play for the length
-/// of a ruler, so an empty list is a refusal.
+/// One fight per sustainable, supported input of this build, under one ruler.
 pub fn row_requests(
     v: &ValidBuild,
     scenario: &Value,
 ) -> Vec<(wfsim_engine::data::weapons::WeaponPlayMode, Value)> {
-    wfsim_engine::data::weapons::play_modes(&v.weapon)
+    v.board_modes()
         .into_iter()
-        .filter(|m| m.sustainable)
         .map(|played| {
             let mut req = simulate_request(scenario, v, played);
             if let Some(shape) = &v.riven {
@@ -207,10 +204,11 @@ pub fn row_requests(
 
 /// EVERY (RULER, MODE) A LIBRARY RECORD CAN BE SCORED ON — the rows a new
 /// build owes, opened as compute orders the moment it arrives. A ruler that
-/// refuses the build owes nothing, and so does a mode it cannot sustain.
+/// refuses the build owes nothing, and so does an unsupported or unsustainable mode.
 pub fn owed_rows(record: &Value) -> Vec<(String, String)> {
     let Ok(b) = board_build(record) else { return Vec::new() };
-    let modes = wfsim_engine::board::groups::board_modes(&b.weapon);
+    let modes: Vec<String> = b.board_modes().iter()
+        .map(|m| if m.id.is_empty() { "base" } else { m.id }.to_string()).collect();
     wfsim_engine::board::benchmarks::all()
         .iter()
         .filter(|bench| admitted(record, &bench.id, &b).is_ok())
@@ -283,7 +281,7 @@ pub fn board_order_json(v: &Value) -> Value {
         .find(|(p, _)| (if p.id.is_empty() { "base" } else { p.id }) == mode)
     {
         Some((_, req)) => json!({ "ok": true, "request": req, "identity": wfsim_engine::board::builds::build_id(&b) }),
-        None => crate::request::err_json("the weapon cannot sustain that mode"),
+        None => crate::request::err_json("this build has no supported sustainable input for that mode"),
     }
 }
 

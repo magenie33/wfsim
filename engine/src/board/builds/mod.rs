@@ -29,6 +29,7 @@ mod canonical;
 mod element_order;
 mod validate;
 mod identity;
+mod modes;
 mod prefer;
 #[cfg(test)]
 mod tests;

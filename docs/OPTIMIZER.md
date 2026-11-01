@@ -145,6 +145,9 @@ build answers.
 **The stance slot is not searched.** A stance decides what the weapon swings
 (Crushing Ruin against Shattering Storm is 1,275 against 1,162 DPS on the same
 Magistar), so it is a real axis; every candidate carries the builder's.
+An empty stance slot stays empty and uses the weapon's own event timeline.
+Inputs without a complete seated or bare script are filtered by the simulator's
+combo availability rule; a scope with no supported input is refused.
 
 ## A card is searched at max rank, unless it is named
 

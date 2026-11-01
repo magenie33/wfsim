@@ -101,15 +101,6 @@ pub fn admit_for_board(benchmark: &str, weapon: &str, b: &ValidBuild) -> Result<
         ));
     }
 
-    // A MELEE ROW CARRIES A STANCE whenever its pool offers one. A stanceless
-    // combo is not modelled, so such a row was either refused at the fight on
-    // every run, owed forever, or ranked as a heavy-attack row beside builds
-    // that could have fought the same form from a stance. A class whose stances
-    // nobody has transcribed yet offers none, and is not asked for one.
-    if main == b.mods.len() && pool.iter().any(|m| m.stance.is_some()) {
-        return Err(crate::data::weapons::STANCE_REQUIRED.to_string());
-    }
-
     // THE EXILUS SLOT, which is OPTIONAL rather than excluded as of 2026-08-25.
     //
     // OPTIONAL AND NOT `full`, deliberately. Requiring one would force a choice
