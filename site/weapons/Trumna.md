@@ -4,7 +4,7 @@ Chinese name: 灭杀者
 
 Rifle · Primary · Mastery Rank 13. 82 base damage (heat 53, impact 29), 24% crit chance, 2.2x crit multiplier, 30% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-31
+## Best riven-free build on the WFSim board, as of 2026-11-01
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 5.7674 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-24 05:51 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 5.7674 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-24 05:45 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.3200 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-24 05:45 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.3827 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Primary Acuity, Galvanized Aptitude, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-24 06:32 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 12.7275 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-31 13:03 UTC · ea828b371375 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 12.7301 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Galvanized Aptitude, Bladed Rounds, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-31 13:13 UTC · ea828b371375 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.3503 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-31 13:03 UTC · ea828b371375 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 5.9154 | Primed Cryo Rounds, Malignant Force, Primary Acuity, Galvanized Aptitude, Hammer Shot, Vile Acceleration, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Deadhead | 2026-10-31 13:03 UTC · ea828b371375 |
 
 ## Not modelled here
 

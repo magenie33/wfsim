@@ -4,7 +4,7 @@ Chinese name: 终幕·低音爆囊
 
 Shotgun · Primary · Mastery Rank 17. 808 base damage (blast 789, radiation 19), 18% crit chance, 2.2x crit multiplier, 40% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-31
+## Best riven-free build on the WFSim board, as of 2026-11-01
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 17.1439 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Deadhead | 2026-10-24 05:14 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 89.0483 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Deadhead | 2026-10-24 05:09 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 17.7961 | Frigid Blast, Toxic Barrage, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-31 12:38 UTC · ea828b371375 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 95.4508 | Frigid Blast, Toxic Barrage, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-10-31 12:52 UTC · ea828b371375 |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.0480 | Incendiary Coat, Blaze, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Crux | 2026-10-24 05:25 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 11.4066 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Deadhead | 2026-10-24 05:16 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 11.7381 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Vigilante Supplies, Primary Deadhead | 2026-10-31 12:52 UTC · ea828b371375 |
 
 ## Not modelled here
 

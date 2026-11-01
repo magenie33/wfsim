@@ -4,7 +4,7 @@ Chinese name: 信条·德特昂
 
 Shotgun Sidearm · Secondary · Mastery Rank 16. 26 base damage x10 multishot (radiation 26), 18% crit chance, 2x crit multiplier, 10% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-10-31
+## Best riven-free build on the WFSim board, as of 2026-11-01
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -12,8 +12,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 14.3468 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Cascadia Flare | 2026-10-22 13:29 UTC · 99dec9ad6d01 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 14.3468 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Cascadia Flare | 2026-10-23 01:17 UTC · 62a82930d1d3 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 16.0810 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Enervate | 2026-10-31 13:48 UTC · ea828b371375 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 16.0810 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Enervate | 2026-10-31 13:48 UTC · ea828b371375 |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 1.2052 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Cascadia Flare | 2026-10-23 01:17 UTC · 62a82930d1d3 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 7.4618 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Primed Pistol Gambit, Lethal Torrent, Cascadia Flare | 2026-10-23 01:17 UTC · 62a82930d1d3 |
 
