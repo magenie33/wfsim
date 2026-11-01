@@ -55,6 +55,14 @@ elemental combination. All percentages are expressed as fractions unless noted.
 
 ## 2. Mod resolution (pipeline layer [1])
 
+Weapon-declared `physical_mods` multiplies physical MOD bonuses, including riven
+lines, before physical components are built. Each component floors at zero;
+the multiplier does not change the base total used by elemental mods. Its
+physical-type stat grants use the shared resolver (MELEE §2, physical-mod
+passives). Source: Coda Motovore's wiki Characteristics and Notes.
+Status: M131 verifies the status-chance bracket and Collision Force coefficient;
+the measurement queue records the remaining cases.
+
 **Definition.** Collect every active bonus and sort each into the correct
 *multiplicative bucket*. Bonuses of the same bucket add together; buckets
 multiply against each other.

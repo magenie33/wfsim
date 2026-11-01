@@ -6,6 +6,9 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "Physical mod passive": "物理词条被动"
+  "Physical damage mods have 6x potency. The dominant modded physical type grants: Impact +40% Attack Speed; Puncture +1.5m Range; Slash +100% Status Chance. Progenitor Impact does not select the physical-type bonus.": "物理伤害 MOD 的词条效果为 6 倍。主导物理类型提供：冲击 +40% 攻击速度；穿刺 +1.5 米范围；切割 +100% 触发几率。先天冲击加成不参与轮形选择。"
+  "Attack-speed/range stacking, exact physical-damage ties, negative physical rivens and progenitor Impact's wheel selection await in-game calibration.": "攻速与范围的叠加方式、物理伤害恰好相等、负物理紫卡及先天冲击的轮形选择仍待游戏实测校准。"
   "No build has been measured under these board conditions.": "该榜单条件下暂无已测量配装。"
   "Demolisher": "爆破使"
   "Board scenario": "榜单场景"

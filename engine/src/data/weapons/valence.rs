@@ -110,7 +110,7 @@ pub fn apply_valence(base: &mut WeaponBase, id: &str, element: &str, bonus: f64)
     let Some(ty) = crate::rules::damage::DamageType::from_name(element) else { return };
     let fraction = bonus.clamp(s.min, s.max);
     let total = base.base_vector.total();
-    if total <= 0.0 || fraction <= 0.0 {
+    if fraction <= 0.0 {
         return;
     }
     let add = total * fraction;
@@ -138,6 +138,9 @@ pub fn apply_valence(base: &mut WeaponBase, id: &str, element: &str, bonus: f64)
     };
     if let Some(r) = base.radial.as_mut() {
         scale_part(r);
+    }
+    if let Some(slam) = base.slam.as_mut() {
+        scale_part(slam);
     }
     if let Some(c) = base.cluster.as_mut() {
         scale_part(&mut c.contact);

@@ -593,6 +593,9 @@ jobs:
       - name: One hundred presets keep a compact searchable switcher
         if: matrix.group == 'views'
         run: node scripts/check_preset_compact.mjs
+      - name: Motovore physical mods and progenitor bonus reach the shared simulator
+        if: matrix.group == 'views'
+        run: node scripts/check_motovore.mjs
       # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
       # browser, no engine, no network — it imports `worker/index.js` and runs
       # it against a KV stub. It is here rather than on demand because the two

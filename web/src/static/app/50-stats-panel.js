@@ -131,7 +131,7 @@ function renderPanel(r) {
   // the number above, and a line that looks like every other line claims the
   // opposite.
   const srcLine = (s) =>
-    `<div class="ssrc${s.ignored ? " sdead" : ""}"${s.ignored ? ` title="${escHtml(tr("ignored — this stat is locked at the weapon's default"))}"` : ""}>${s.value} — ${s.mod}${s.note ? ` <span class="snote">(${s.note})</span>` : ""}${s.ignored ? ` <span class="snote">(${escHtml(tr("ignored"))})</span>` : ""}</div>`;
+    `<div class="ssrc${s.ignored ? " sdead" : ""}"${s.ignored ? ` title="${escHtml(tr("ignored — this stat is locked at the weapon's default"))}"` : ""}>${s.value} — ${escHtml(tr(s.mod))}${s.note ? ` <span class="snote">(${s.note})</span>` : ""}${s.ignored ? ` <span class="snote">(${escHtml(tr("ignored"))})</span>` : ""}</div>`;
 
   // THE MULTIPLICATIVE BUCKET, DRAWN (community request, 2026-08-05: the app
   // does the hard arithmetic and then shows only its answer, so the mechanics

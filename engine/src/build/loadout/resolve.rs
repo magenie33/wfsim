@@ -594,6 +594,7 @@ pub fn resolve_for(
                 // Physical (IPS) bonus: accumulate per type; applied to the
                 // BASE physical component below (NOT the elemental hierarchy).
                 ModEffect::Physical(t, v) => {
+                    let v = v * base.physical_mods.as_ref().map_or(1.0, |p| p.spec.multiplier);
                     if let Some(x) = phys_bonus.iter_mut().find(|(a, _)| *a == t) {
                         x.1 += v;
                     } else {
@@ -908,6 +909,11 @@ pub fn resolve_for(
     } else {
         base.base_multishot
     };
+    // Wiki Coda_Motovore: the wheel grants the ordinary stat brackets. The
+    // physical buckets already contain amplified mods, including rivens.
+    let physical_bonus = base.physical_mods.as_ref().map_or(crate::model::PhysicalModBonus::default(), |p| p.bonus(&phys_bonus));
+    sc += physical_bonus.status_chance_bonus;
+    melee_range_add += physical_bonus.range_m;
     let evo_ms_bonus = if locked_stat("multishot") {
         0.0
     } else {
@@ -921,7 +927,7 @@ pub fn resolve_for(
         // Tenno is; the neutral player sprints at 0.9 — the slowest frame — so
         // a perk gated on speed pays nothing until someone says which frame is
         // holding the gun.
-        base.evo_fire_rate_bonus + gate(GatedGrant::FireRate)
+        base.evo_fire_rate_bonus + gate(GatedGrant::FireRate) + physical_bonus.fire_rate_bonus
     };
     // PRELUDE OF MIGHT, resolved here because it is the one evolution whose
     // condition is the BUILD's own output: "with Critical Chance below 40%".
@@ -1106,7 +1112,7 @@ pub fn resolve_for(
                 // `scale` carries the base-damage multiplier; the physical bucket is
                 // multiplicative with it (wiki Damage/Calculation).
                 let pb = phys_bonus.iter().find(|(a, _)| *a == t).map_or(0.0, |(_, x)| *x);
-                physical.add(t, v * scale * (1.0 + pb));
+                physical.add(t, v * scale * (1.0 + pb).max(0.0));
             }
         }
 
@@ -2056,6 +2062,7 @@ pub fn resolve_for(
             .map_or(0.0, |(_, v)| *v),
         no_resupply: base.no_resupply,
         super_crit_on_status: base.super_crit_on_status,
+        physical_mod_bonus: base.physical_mods.as_ref().map(|_| Box::new(physical_bonus)),
         weakpoint_stacks: base.weakpoint_stacks,
         spawn_on_kill: base.spawn_on_kill,
         kill_streak_summon: base.kill_streak_summon,

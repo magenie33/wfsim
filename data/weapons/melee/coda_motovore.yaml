@@ -24,15 +24,28 @@ ammo_max: ~
 
 combo_duration_seconds: 5.0
 
+valence:
+  elements: [impact, heat, cold, electricity, toxin, magnetic, radiation]
+  min: 0.25
+  max: 0.60
+
+# see notes: physical_mod_potency_wiki
+# M131: the status wheel joins Melee Prowess; Collision Force's card is +720%.
+physical_mods:
+  multiplier: 6.0
+  impact:
+    fire_rate_bonus: 0.4
+  puncture:
+    range_m: 1.5
+  slash:
+    status_chance_bonus: 1.0
+
 co_behavior: additive_with_base_damage
 
 unmodeled:
 - 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
   reads low.'
-- reason: melee_valence_unmodelled
-  family: Coda
-- reason: melee_passive_unmodelled
-  passive: Impact, Puncture and Slash mods are six times as potent on it, and its dominant physical type grants +40% attack speed, +1.5 m range or +100% Status Chance
+- reason: physical_mod_passive_unmeasured
 attack:
   trigger: melee
   shot_type: hit_scan

@@ -9,6 +9,13 @@
 # an entry from being orphaned.
 
 notes:
+  physical_mod_potency_wiki: |
+    https://wiki.warframe.com/w/Coda_Motovore Characteristics and Notes:
+    physical damage mods have sixfold potency; the dominant modded physical
+    type grants attack speed, range or status chance. Progenitor Impact is
+    base damage, not an amplified physical mod. M131 confirms the status
+    bracket and Collision Force coefficient. Other stacking, wheel selection
+    ties and negative physical rivens remain uncalibrated.
   zaw_assembly: |
     data/zaws/parts.yaml owns component statistics; the entry's scalar panel
     is its default assembly (docs/ZAW.md). Reach is the finished Zaw table;

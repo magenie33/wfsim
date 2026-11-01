@@ -592,7 +592,9 @@ fn mod_sources(
                 }
                 // Physical (IPS) mod: scales the base of that physical type.
                 Physical(t, x) => {
-                    src.push(("physical", name.clone(), x, Some(format!("{t:?}"))));
+                    let multiplier = forms_list.first().and_then(|(_, _, base)| base.physical_mods.as_ref())
+                        .map_or(1.0, |p| p.spec.multiplier);
+                    src.push(("physical", name.clone(), x * multiplier, Some(format!("{t:?}"))));
                 }
                 // SENTIENT SURGE: the bonuses scale with ACTIVE TENDRILS, and
                 // a tendril costs a kill — so the panel cannot state a number
@@ -1139,7 +1141,7 @@ fn form_section(
             .filter(move |(k, _, _, _)| *k == key && tag.is_none())
             .map(|(_, name, v, note)| json!({ "mod": name, "value": v, "note": note }));
         let heavy_again = key == "crit_chance" && base.form.is_heavy();
-        evo.chain(
+        let mut out: Vec<Value> = evo.chain(
             src.iter()
                 .filter(move |(k, _, _, note)| {
                     (*k == key || (heavy_again && *k == CRIT_CHANCE_HEAVY_AGAIN))
@@ -1161,7 +1163,18 @@ fn form_section(
                         "note": if tag.is_some() { Value::Null } else { json!(note) } })
                 }),
         )
-        .collect()
+        .collect();
+        if let Some(bonus) = panel.physical_mod_bonus.as_ref().filter(|_| tag.is_none()) {
+            let amount = match key {
+                "fire_rate" => bonus.fire_rate_bonus,
+                "status_chance" => bonus.status_chance_bonus,
+                _ => 0.0,
+            };
+            if amount != 0.0 {
+                out.push(json!({"mod": "Physical mod passive", "value": fpct(amount), "fraction": amount, "note": null}));
+            }
+        }
+        out
     };
     // An explosion that IS a heavy attack (a detonated glaive) takes the
     // heavy-doubled cards' second copy on any form, as `resolve` pays it.
@@ -1614,6 +1627,18 @@ fn form_section(
         elem_rows.push(json!({ "key": "elements", "label": t, "base": "—",
         "final": format!("{} of modified base", fpct(total)),
         "sources": sources("elements", Some(t)) }));
+    }
+
+    if base.physical_mods.is_some() {
+        for t in ["Impact", "Puncture", "Slash"] {
+            let terms = sources("physical", Some(t));
+            if terms.is_empty() { continue; }
+            let total: f64 = src.iter()
+                .filter(|(k, _, _, note)| *k == "physical" && note.as_deref() == Some(t))
+                .map(|(_, _, amount, _)| *amount).sum();
+            elem_rows.push(json!({ "key": "physical", "label": t, "base": "—",
+                "final": format!("{} of base {t}", fpct(total)), "sources": terms }));
+        }
     }
 
     // Indirect stats (recoil, accuracy, ammo…): not in theoretical DPS,
