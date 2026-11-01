@@ -855,6 +855,17 @@ discloses aggregate progress, never witness identities. Withdrawing a question
 fails its round, allowing another after cooldown. Browser observations can be
 hidden independently of the shared computation.
 
+`POST /api/board/calibrate` accepts `{ weapon, ruler, engine }` on the served
+engine. It independently asks the same review producer for each category's
+highest-scoring old-engine rows across modes. Current-engine measurements,
+official or `verified:`, are skipped before counting the
+`appraisal_calibration_rows` allowance (default 10 per category, adjustable
+0–500; 0 disables it). A short category stops at its last row. Existing rounds,
+cooldowns and admission limits still apply. The Worker continues this work
+after acknowledging the trigger; an appraisal never waits on its completion.
+Saved-card analysis triggers it once per submitted batch; a chat appraisal
+triggers it when frozen. Bulk surveys do not trigger it.
+
 #### Setting a server up
 
 Schema updates apply `worker/pg/library.sql`, then `worker/pg/sync.sql`, then

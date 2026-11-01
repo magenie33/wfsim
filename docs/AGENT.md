@@ -487,6 +487,13 @@ comparison. Executor disclosure and queue ownership are in `docs/TASKS.md`.
    as a passive reply while QQ's window is open (`bot/qq.mjs`), past it as an
    active message, and only if that fails on the room's next message.
 
+Personal appraisal submission independently triggers calibration of each
+category's highest-scoring old-engine rows, skipping current-engine rows and
+continuing to the configured count (`docs/BOARD.md`). The shared replay reads
+the current published board after simulating, immediately before grading;
+neither the website nor a chat waits for calibration to complete. Saved browser
+reports retain the reference rows; chat verdicts retain the graded values.
+
 The page and the door are channel-blind: a Discord bot claims `channel:
 "discord"` the way the QQ bot claims `"qq"`.
 

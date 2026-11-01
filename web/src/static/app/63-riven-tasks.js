@@ -33,7 +33,8 @@ async function replaySavedAppraisal(task, execution, search) {
   if (!best) throw new Error("the search ranked nothing");
   const job = { ruler: task.origin.ruler, riven: task.request.rivens[0].spec,
     result: { build: boardPayloadFromResult(best, task.origin.board) } };
-  const verdict = await headlessAppraisalReplay(pageSay(), weaponInfo(task.request.weapon), job, task.origin.reference_rows, {
+  const verdict = await headlessAppraisalReplay(pageSay(), weaponInfo(task.request.weapon), job, [], {
+    board: appraisalBoardNow,
     check: (body) => api("/api/board/check", body),
     simulate: (body) => {
       if (execution.signal.aborted) throw new Error("Cancelled");
@@ -47,7 +48,6 @@ async function submitSavedAppraisals(ids, ruler, destination = "local", capture 
   const weapon = capture?.weapon || presetWeapon();
   const saved = taskClone((capture?.cards || loadPresetList(RIVENS, weapon)).filter((card) => ids.includes(card.id)));
   if (!saved.length) throw new Error("Select at least one saved riven.");
-  await loadBoard(weapon);
   const batch = crypto.randomUUID(), queue = await initUserTasks();
   const entries = [];
   for (const card of saved) {
@@ -57,10 +57,22 @@ async function submitSavedAppraisals(ids, ruler, destination = "local", capture 
     const asked = headlessRivenGainRequest(META, { weapon, ruler, card: card.state, rivenId: card.id });
     if (!asked) throw new Error("Choose a ruler.");
     entries.push({ kind: "appraisal", request: asked.request, destination, origin: { weapon, ruler,
-      riven_id: card.id, riven_name: card.name, board: asked.context, reference_rows: taskClone((BOARD[weapon] || []).filter(row => row.benchmark === ruler)),
+      riven_id: card.id, riven_name: card.name, board: asked.context,
       preset_name: META.search_presets.presets.find(preset => preset.riven)?.name, scenario: ruler, batch, batch_name: "Riven analysis", appraisal: null } });
   }
-  return queue.createMany(entries);
+  const tasks = await queue.createMany(entries);
+  fetch("/api/board/calibrate", { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ weapon, ruler, engine: ENGINE_ID }), keepalive: true }).catch(() => {});
+  return tasks;
+}
+async function appraisalBoardNow(weapon, ruler) {
+  const bench = benchList().find(item => item.id === ruler);
+  const base = boardOffOrigin || window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : "";
+  const path = `${base}/board/${bench?.cell_dir ? bench.cell_dir + "/" : ""}${weapon}.json`;
+  const response = await fetch(path, { cache: "no-cache", signal: timeoutSignal(15_000) });
+  if (response.status === 404) return [];
+  if (!response.ok) throw new Error("The board could not be reached.");
+  return response.json();
 }
 function renderSavedAppraisal(record) {
   const verdict = record.result.verdict, box = $("opt-results");

@@ -103,6 +103,8 @@ export const DIALS = {
     says: "how often the settler writes stats/tally.json, the home page's count" },
   stats_contributors_ms: { default: 600_000, min: 600_000, max: 86_400_000, unit: "ms",
     says: "how often the worker's ten-minute cron writes stats/contributors.json, the ranking" },
+  appraisal_calibration_rows: { default: 10, min: 0, max: 500, unit: "rows",
+    says: "old-engine rows per riven category calibrated alongside an appraisal; 0 disables the trigger" },
 };
 /// …AND THE ONES A CLIENT READS, sent with every hand-out so no client
 /// hard-codes them (docs/CLIENTS.md §"Values").

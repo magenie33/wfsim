@@ -17,6 +17,11 @@ result numbers. Adding a type does not require changing its lifecycle.
 Simulation, optimization and saved-riven appraisal use the durable queue.
 Appraisal uses `headlessRivenGainRequest`, followed by
 `headlessAppraisalReplay`, the search and grade used by the chat workflow.
+Acceptance independently triggers old-engine board calibration in both riven
+categories (`docs/BOARD.md`). The grade fetches the current published rows
+for its ruler after the official replay, bypassing the page or bot's retained
+board. Calibration failures and unfinished rounds do not delay the search or
+grade; later published corrections benefit later appraisals.
 Saved cards remain editable in the original riven editor. Text import uses
 `readRivenLines`, shared with chat and screenshot stat naming. A batch is an
 atomic group of independent requests; each retains its own result and retry.
@@ -65,7 +70,7 @@ session. It does not promise cross-tab ownership or reload recovery.
 
 Simulation summaries remain in the existing result store. Optimizer artifacts
 retain every ranked result and its engine-produced replay request. Appraisal
-artifacts also retain the replay verdict and the captured reference board.
+artifacts also retain the replay verdict and its grade-time reference board.
 The task stores references, never a second editable summary. The legacy optimizer
 session cache is presentation only; a task report always reads its artifact,
 and execution never reads that cache.

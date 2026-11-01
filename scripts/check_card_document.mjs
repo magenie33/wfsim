@@ -40,6 +40,9 @@ const FIXTURES = [
   "Laetum/card?kind=appraise&code=CHECK1",
   "Laetum/card?kind=appraise&code=CHECK1&result=1",
 ];
+const cases = process.env.WFSIM_CARD_MATCH
+  ? FIXTURES.filter(fixture => new RegExp(process.env.WFSIM_CARD_MATCH).test(fixture)) : FIXTURES;
+if (!cases.length) throw new Error("WFSIM_CARD_MATCH selected no card fixtures");
 /// A PAGE PICTURE THAT FAILED TO ARRIVE is hidden, not an error, so a page shot
 /// that differs is taken again before it counts.
 const PAGE_TRIES = 3;
@@ -102,7 +105,7 @@ const sameVerdict = (a, b) => !a === !b && (!a || Object.keys({ ...a, ...b }).ev
 const out = mkdtempSync(join(tmpdir(), "wfsim-card-document-"));
 let failures = 0, compared = 0;
 const fail = (what) => { failures++; console.log(`  FAIL  ${what}`); };
-for (const f of FIXTURES) for (const lang of ["zh", "en"]) {
+for (const f of cases) for (const lang of ["zh", "en"]) {
   const url = `${PAGE}/weapons/${f}`;
   let page = null, doc = null, same = false;
   for (let i = 0; i < PAGE_TRIES && !same; i++) {

@@ -74,6 +74,7 @@ export async function cardDocument(engine, url, { lang = "zh", css = siteStyle()
   const rows = ask.kind === "appraise" && !(job && job.result) ? [] : (await engine.host.board(w.id)) || [];
   // THE NUMBER A CHAT IS TOLD is this replay's, never the searcher's.
   const verdict = job && job.result ? await h.headlessAppraisalReplay(say, w, job, rows, {
+    board: (id, ruler) => engine.host.boardNow(id, ruler),
     check: async (b) => engine.api("/api/board/check", b), simulate: (body) => simulateFleet(engine.wasm, body), now }) : null;
   // A RIVEN'S STATS FROM THE ENGINE, whole: the page fills them in afterwards.
   const riven = (wp, spec) => h.headlessRivenAnswer(say, engine.api("/api/riven", { weapon: wp.id, ...spec }));

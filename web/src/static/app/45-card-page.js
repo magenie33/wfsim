@@ -19,7 +19,7 @@ const cardParams = () => headlessCardAsk(location.search);
 /// THE REPLAY (`headlessAppraisalReplay`), the bot's own: the simulation spread
 /// over this page's fleet.
 const appraisalReplay = (w, job) => headlessAppraisalReplay(pageSay(), w, job, BOARD[w.id] || [],
-  { check: (b) => api("/api/board/check", b), simulate: (body) => simulateFleet(body) });
+  { check: (b) => api("/api/board/check", b), simulate: (body) => simulateFleet(body), board: appraisalBoardNow });
 
 const cardBox = (head, body) => headlessCardBox(head, body);
 

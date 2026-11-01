@@ -813,9 +813,9 @@ async function serve(request, env, ctx) {
     if (path === "/api/qq" || path.startsWith("/api/qq/")) return qqRoute(request, env, path);
     if (path === "/api/world" || path.startsWith("/api/world/")) return worldRoute(request, env, ctx, path);
     if (path.startsWith("/api/user-tasks/")) return userTasksRoute(request, env, path);
-    if (path.startsWith("/api/appraise/")) return appraiseRoute(request, env, path);
+    if (path.startsWith("/api/appraise/")) return appraiseRoute(request, env, path, ctx);
     if (["/api/board/work", "/api/board/answers", "/api/board/verify", "/api/board/release", "/api/board/renew", "/api/board/mine", "/api/board/ping"].includes(path)) return verifyRoute(request, env, path);
-    if (path === "/api/board/review" || path === "/api/board/review/status") return boardReviewsRoute(request, env, path);
+    if (["/api/board/review", "/api/board/review/status", "/api/board/calibrate"].includes(path)) return boardReviewsRoute(request, env, path, ctx);
     if (path === "/api/board/sync") return noteFactoryCall(request, env, path, () => syncRoute(request, env));
     if (path === "/api/board/ask" || path === "/api/board/adopt") return boardTasksRoute(request, env, path);
     if (path.startsWith("/api/tasks/official/")) return officialRoute(request, env, path);

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { testDb } from './pg/test_db.mjs';
-import { boardReviewsRoute, BOARD_REVIEW_PRODUCER } from '../worker/board_reviews.js';
+import { boardReviewsRoute, BOARD_REVIEW_PRODUCER, calibrateBoard } from '../worker/board_reviews.js';
 import { BOARD_PRODUCERS } from '../worker/board_tasks.js';
 import { facts } from '../worker/factory.js';
 import { questionId, canon } from '../worker/tasks.js';
@@ -8,6 +8,8 @@ import { syncRoute } from '../worker/sync.js';
 import { setDial } from '../worker/dials.js';
 import { readFileSync } from 'node:fs';
 import { tell } from './order_credit.mjs';
+import { runInNewContext } from 'node:vm';
+import { appraiseRoute } from '../worker/appraise.js';
 
 const realRandom = Math.random; Math.random = () => 0.5;
 const db = await testDb('library');
@@ -165,6 +167,94 @@ await check('engine changes cannot publish an old review into the new release',a
  const who=witness('7'),work=await facts().next(env,who,engine);
  if(work)await facts().answer(env,who,{lease:work.lease,engine,result:{score:999,metric:'kpm'},work:100});
  assert.equal((await score()).score,20);
+});
+const expected = [];
+await check('calibration scans past current-engine rows to fill ten in each category',async()=>{
+ for(const category of [0,1])for(let i=0;i<26;i++){
+  const id=(1000+category*100+i).toString(16).padStart(32,'0');
+  const entry={weapon:'torid',mods:category?['riven']:['serration'],...(category?{riven_pos:['critical_damage','multishot']}: {})};
+  const by=i<12?(i%2?'verified:e2':'e2'):i===12?'e20':'old';
+  await db.run('INSERT INTO builds(id,at,record) VALUES (?,?,?)',id,old,JSON.stringify(entry));
+  await db.run('INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES (?,?,?,?,?,?,?,?,?)',id,ruler,mode,by,100-i,'kpm',1,old,old);
+  if(i>=12&&i<22)expected.push(id);
+ }
+ await calibrateBoard(env,{weapon:'torid',ruler,engine});
+ const rows=await db.all("SELECT identity FROM board_reviews WHERE record::jsonb ->> 'weapon' = 'torid'");
+ assert.deepEqual(rows.map(row=>row.identity).sort(),expected.sort());
+ assert.equal(rows.length,20);
+});
+await check('parallel appraisal triggers reuse the same pending row reviews',async()=>{
+ await Promise.all([calibrateBoard(env,{weapon:'torid',ruler,engine}),calibrateBoard(env,{weapon:'torid',ruler,engine})]);
+ assert.equal((await db.get("SELECT count(*) AS n FROM board_reviews WHERE record::jsonb ->> 'weapon' = 'torid'")).n,20);
+});
+await check('the per-category calibration count is a dial and can exceed ten',async()=>{
+ await setDial(env,'appraisal_calibration_rows',12,'check');
+ await calibrateBoard(env,{weapon:'torid',ruler,engine});
+ assert.equal((await db.get("SELECT count(*) AS n FROM board_reviews WHERE record::jsonb ->> 'weapon' = 'torid'")).n,24);
+});
+await check('same-engine rows need no review proof and another ruler adds nothing',async()=>{
+ await db.run("UPDATE scores SET measured_by='verified:e2',review_id=NULL WHERE identity IN(SELECT id FROM builds WHERE weapon='torid')");
+ await calibrateBoard(env,{weapon:'torid',ruler,engine});
+ await calibrateBoard(env,{weapon:'torid',ruler:'another_ruler',engine});
+ assert.equal((await db.get("SELECT count(*) AS n FROM board_reviews WHERE record::jsonb ->> 'weapon' = 'torid'")).n,24);
+});
+await check('disabled calibration and a stale engine enqueue no work',async()=>{
+ await setDial(env,'appraisal_calibration_rows',0,'check');
+ await calibrateBoard(env,{weapon:'torid',ruler,engine});
+ await setDial(env,'appraisal_calibration_rows',10,'check');
+ await calibrateBoard(env,{weapon:'torid',ruler,engine:'e1'});
+ assert.equal((await db.get("SELECT count(*) AS n FROM board_reviews WHERE record::jsonb ->> 'weapon' = 'torid'")).n,24);
+});
+await check('calibration acknowledgment does not wait for its database scan',async()=>{
+ let release;
+ const blocked=new Promise(resolve=>{release=resolve;});
+ const {forgetDials}=await import('../worker/dials.js'); forgetDials();
+ const statement={all:()=>blocked,bind(){return this;}};
+ const fake={...env,LIBRARY:{prepare:()=>statement}},background=[];
+ const response=await boardReviewsRoute(new Request('https://wfsim.test/api/board/calibrate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({weapon:'torid',ruler,engine})}),fake,'/api/board/calibrate',{waitUntil:work=>background.push(work)});
+ assert.equal(response.status,200);assert.equal(background.length,1);
+ release({results:[]});await Promise.all(background);forgetDials();
+});
+await check('the trigger rejects client scores and old engines',async()=>{
+ assert.equal((await call({weapon:'torid',ruler,engine,score:999},'/api/board/calibrate')).status,400);
+ assert.equal((await call({weapon:'torid',ruler,engine:'old'},'/api/board/calibrate')).status,409);
+});
+await check('a chat appraisal freeze triggers shared calibration in the background',async()=>{
+ const id=(1000+25).toString(16).padStart(32,'0');
+ await db.run("UPDATE scores SET measured_by='old' WHERE identity=?",id);
+ const background=[],ctx={waitUntil:work=>background.push(work)},botEnv={...env,BOT_RELAY_TOKEN:'check'};
+ const invoke=async(path,body)=>{
+  const response=await appraiseRoute(new Request('https://wfsim.test'+path,{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer check'},body:JSON.stringify(body)}),botEnv,path,ctx);
+  assert.equal(response.status,200);return response.json();
+ };
+ const opened=await invoke('/api/appraise/new',{channel:'qq',asker:'calibration',weapon:'torid',ruler,riven:{bonuses:[]}});
+ await invoke('/api/appraise/'+opened.code+'/request',{engine,request:{weapon:'torid',strategy:'quick'},context:{weapon:'torid'}});
+ assert.equal(background.length,1);await Promise.all(background);
+ assert.ok(await db.get('SELECT id FROM board_reviews WHERE identity=?',id));
+ await invoke('/api/appraise/'+opened.code+'/request',{engine,request:{weapon:'torid',strategy:'quick'},context:{weapon:'torid'}});
+ assert.equal(background.length,1);
+});
+
+const headless=runInNewContext(['83-headless-card.js','87-headless.js'].map(name=>readFileSync(new URL('../web/src/static/app/'+name,import.meta.url),'utf8')).join('\n')+`
+headlessBoardRowAxes=()=>({slots:[]}); headlessWithDrafts=(_meta,card)=>card;
+headlessSeat=()=>({}); headlessScenarioOnto=()=>({}); headlessBuiltinStarts=()=>[];
+headlessAppraisalReplay;
+`);
+await check('grading reads the current board after replay and reranks corrected leaders',async()=>{
+ const say={meta:{metrics:[{id:'kpm',field:'score'}],benchmarks:[{id:ruler,scenario:{metric:'kpm',runs:1}}]},t:x=>x};
+ const w={id:'torid',modes:['base','cycle']},job={ruler,riven:{bonuses:[]},result:{build:{mods:[]}}};
+ const row=(score,riven,mode='base')=>({benchmark:ruler,mode,score,...(riven?{riven:{bonuses:['multishot'],rolls:[1.1]}}:{})});
+ let replayed=false;
+ const current=[row(120,false),row(200,true),row(240,true,'cycle')];
+ const verdict=await headless(say,w,job,[row(100,false),row(300,true)],{
+  check:async()=>({ok:true}),simulate:async()=>{replayed=true;return {score:180};},
+  board:async(weapon,scene)=>{assert.ok(replayed);assert.equal(weapon,'torid');assert.equal(scene,ruler);return current;},
+ });
+ assert.equal(verdict.grade,50);assert.equal(verdict.top,'120.0000');assert.equal(verdict.best,'240.0000');
+ assert.equal(verdict.reference_rows.length,3);
+ current[2]={...current[2],score:999};assert.equal(verdict.grade,50);
+ const failed=await headless(say,w,job,[],{check:async()=>({ok:true}),simulate:async()=>({score:180}),board:async()=>null});
+ assert.equal(failed.ok,false);
 });
 Math.random = realRandom;
 console.log('\n'+passed+' board review checks passed');

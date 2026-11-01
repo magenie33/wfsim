@@ -529,11 +529,13 @@ async function headlessAppraisalReplay(say, w, job, rows, host) {
     ...sim, runs, custom_enemies: [], buffs: sim.buffs || {}, also_acting: [] });
   if (!r || r.ok === false) return { ok: false, reason: (r && r.error) || say.t("the replay did not run") };
   const score = headlessMetricValue(met, r);
+  if (host.board) rows = await host.board(w.id, job.ruler);
+  if (!Array.isArray(rows)) return { ok: false, reason: say.t("the board could not be reached") };
   const mine = rows.filter((x) => x.benchmark === job.ruler);
   const free = pooledRanking(rankBoard(mine.filter((x) => !x.riven), [job.ruler], w.modes))[0];
   const rivens = pooledRivens(meta, w, mine, job.ruler).rivens;
   const preset = ((meta.search_presets || {}).presets || []).find((p) => p.riven) || {};
-  return { ok: true, score, shown: headlessFmtScore(score), state, riven, metric: met.id,
+  return { ok: true, score, shown: headlessFmtScore(score), state, riven, metric: met.id, reference_rows: mine,
     top: free ? headlessCardShown(free.row) : null, gain: free ? score / free.row.score - 1 : null,
     of: rivens.length, rank: rivens.filter((x) => x.row.score > score).length + 1, runs,
     // THE STARTS THE SEARCH WAS GIVEN, counted by the function that gave them
