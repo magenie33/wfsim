@@ -103,6 +103,26 @@ Maintenance runs serially with a disk budget for WAL, temporary files and any
 replacement index, and stops before the reserve is exhausted. `VACUUM FULL`
 requires a replacement table and is unsuitable for an almost-full filesystem.
 
+## Database volume lifecycle
+
+Large indexes and temporary query files may use a separate PostgreSQL tablespace
+on a mounted data volume. PostgreSQL must require that mount before starting;
+a mounted volume is part of the database, even when it holds only indexes.
+Move indexes individually with bounded lock waits, or rebuild them concurrently
+in the target tablespace to preserve foreground writes. Keep filesystem reserve
+for WAL and cancel maintenance before it exhausts that reserve.
+
+Logical database backups include the objects in every tablespace. A restore
+must create the tablespace directories and ownership before restoring globals,
+or omit tablespace definitions and use `pg_restore --no-tablespaces` on the
+custom archives. Provider server snapshots do not include attached volumes.
+
+Before removing a volume, move every table and index back, reset every role or
+database setting that uses its tablespace, and drop the empty tablespace. Remove
+the mount dependency only after PostgreSQL no longer references it; then unmount,
+detach and delete the volume. The destination needs space for the moved objects
+and normal database operations.
+
 ## One instance
 
 **A service runs on one host.** Two bots claim the same messages, and a chat
