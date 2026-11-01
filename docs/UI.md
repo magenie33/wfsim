@@ -147,14 +147,16 @@ its own module: `builder-builds` (a build), `simulator-scenarios` (a fight,
 buff settings included), `optimizer` (a search: the SCOPE and `finalists`, and
 nothing else — never buffs, never a run count, never a thread count).
 
-**EVERY PRESET BAR IS ONE COMPONENT, THE BUILD BAR'S** (`renderPresetBarIn`):
-your own entries, then — where the collection PUBLISHES entries — a read-only
-group of the ones opened into it, then "+ new". A published entry is one the
-reader did not make: a board build, an official ruler. It is read-only
-(⧉ copies it into one of your own, × takes it out of the bar without touching
-it), it is kept in the bar by what it IS (`cfg.pins`, never by a rank), and the
-open one is always among them. It comes in from the collection's way in: the
-build finder for a board build, the bar's own list for a ruler.
+**EVERY PRESET BAR IS ONE COMPONENT** (`renderPresetBarIn`), showing the
+current entry, info, an action menu, new and management. The switcher searches
+all owned and opened read-only entries by name and contents; its unfiltered
+list shows up to eight recent choices. Local usage times live in
+`wfsim-preset-recent-<domain>`, separate from modification times and saved state.
+Duplicate, rename, delete, share and published-entry controls live under `⋯`.
+A published entry is read-only, copied into ownership through duplicate, and
+unpinned without touching its source. Pins use identity (`cfg.pins`), never rank;
+the current published entry is always retained. Board entries come from the
+build library; official scenarios also have the shared benchmark picker.
 **EDITING A READ-ONLY ENTRY FORKS IT** (`lockReadOnly`): every region of the
 editor that the entry owns shows a not-allowed cursor, and a click anywhere in
 it makes your own copy and opens it — the same copy as ⧉. A control that is only
@@ -165,7 +167,9 @@ them. No separate bar exists for published entries.
 
 Every preset bar opens the same management browser: search names and saved
 contents, sort by modification time or name, and filter to the current item or
-all scopes, or to owned and opened read-only entries. Renaming and deleting
+all scopes, or to owned and opened read-only entries. Rows show a compact
+configuration summary and hide their actions under `⋯`; full info is expanded
+on demand. Scrolling loads more rows. Renaming and deleting
 work by identity. Info reads saved state without applying it: builds reuse the
 build card; scenarios reuse the fight card; searches show starts, exclusions
 and run terms. Warframe, companion and Operator presets show their own

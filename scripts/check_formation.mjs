@@ -63,6 +63,7 @@ const r = await evaluate(`(async () => {
   };
 
   // 1. A FORMATION OF ONE is the old fight, untouched.
+  out.contact = CONTACT_M;
   out.startFoes = foes();
   out.startPayload = (theFight().formation || []).length;
   out.startAim = theFight().aim_at;
@@ -192,7 +193,8 @@ const r = await evaluate(`(async () => {
       || bar.querySelector('.pchip:not(.add)');
     const mineName = mine.dataset.name;
     bar.querySelector('.pchip.add').click(); await sleep(900);
-    bar.querySelector('.pchip[data-name="' + mineName + '"]').click();
+    bar.querySelector('[data-dd="dd-preset-simulator-scenarios"]').click();
+    document.querySelector('#dd-menu .opt[data-v="' + mineName + '"]').click();
     await sleep(1000);
     const was = sim.enemy;
     out.legacyPinned = (sim.formation || []).every(f => f.enemy === was);
@@ -228,8 +230,8 @@ const r = await evaluate(`(async () => {
   //     here is its own plus one.
   {
     const A = [4, 8];
-    const B = [4.4, 8];        // exactly contact from A
-    const D = [4, 8.4];        // …and sitting where a push off A would land
+    const B = [4 + CONTACT_M, 8];        // exactly contact from A
+    const D = [4, 8 + CONTACT_M];        // …and sitting where a push off A would land
     sim.formation = [A, B, D].map(at => ({ at: [...at], enemy: '', level: null }));
     renderSim(); await sleep(900);
     const snap = () => JSON.stringify(sim.formation.map(f => f.at));
@@ -364,11 +366,11 @@ check("a formation of ONE is the fight this app has always run",
 check("adding bodies draws them", r.grownFoes === 9, `${r.grownFoes} bodies`);
 check("...and sends them", r.grownSent === 8, `${r.grownSent} in the payload`);
 check("...and none of them stands on another",
-  r.minGap > 0.399, `closest pair ${Number(r.minGap).toFixed(2)} m apart`);
+  r.minGap > r.contact - 1e-6, `closest pair ${Number(r.minGap).toFixed(2)} m apart`);
 check("any body can be dragged", r.dragged === true);
 // A DRAG MOVES ONE BODY AND ONLY ONE.
 check("...a body pushed into another stops at contact",
-  r.pushedOut !== null && Math.abs(r.pushedOut - 0.4) < 0.01, `${r.pushedOut} m from it`);
+  r.pushedOut !== null && Math.abs(r.pushedOut - r.contact) < 0.01, `${r.pushedOut} m from it`);
 check("...and nothing else on the floor moved", r.othersHeld === true);
 check("...a body with nowhere legal to go does not move at all",
   r.refused === true && r.stillThere === true,

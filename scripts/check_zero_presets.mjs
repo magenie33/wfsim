@@ -72,7 +72,7 @@ const r = await evaluate(`(async () => {
   markPresetDirty(); renderMods(); await sleep(1400);
   const edited = Object.assign(${counts}, {
     active: nameOf('builder-builds', activePreset),
-    chips: [...document.querySelectorAll('#preset-bar-builder-builds .pchip:not(.add):not(.share)')].map(c => c.textContent.replace(/[⧉✎✕ⓘ]/g, '').trim()),
+    chips: [...document.querySelectorAll('#preset-bar-builder-builds .pchip:not(.add):not(.share)')].map(c => c.querySelector('.dd-v').textContent.trim()),
     kept: ((((loadPresetList('builder-builds')[0] || {}).state || {}).slots || [])[0] || {}).mod,
   });
 

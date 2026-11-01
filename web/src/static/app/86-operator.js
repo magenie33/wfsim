@@ -44,6 +44,7 @@ function opBarCfg() {
   return {
     domain: OPS,
     info: p => operatorPresetInfo(p.state),
+    summary: (p,names) => [focusSchool(p.state.school)?.name, presetEquipmentSummary(p.state,names)].filter(Boolean).join(" · "),
     label: tr("Operator builds"),
     noun: "operator",
     load: opList,

@@ -33,7 +33,7 @@ const r = await evaluate(`(async () => {
   openPresetLibrary(cfg, document.getElementById('preset-bar-builder-builds'));
   const manager = document.querySelector('.preset-library-window');
   const row = manager.querySelector('[data-entry="'+id1+'"]');
-  row.querySelector('details').open = true; await sleep(50);
+  row.querySelector('.preset-library-info').open = true; await sleep(50);
   const expanded = !!row.querySelector('.preset-info-body .sb-chips');
   row.querySelector('[data-library-rename]').click();
   row.querySelector('input').value = 'My test build';

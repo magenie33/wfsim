@@ -35,7 +35,7 @@ const r = await evaluate(`(async () => {
   };
   const byId = (id) => builtinBuilds().find((p) => presetId(p) === id);
   const selChip = () => bar().querySelector('.pchip.sel');
-  const roChips = () => Array.from(bar().querySelectorAll('.pchip.ro')).map((c) => c.dataset.name);
+  const roChips = () => ddReg.get('dd-preset-builder-builds').items.filter(i => i.badge).map(i => i.value);
   const open = async (name) => {
     history.pushState({}, '', '/weapons/' + name); route(); await sleep(3500);
   };

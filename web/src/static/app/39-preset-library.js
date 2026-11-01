@@ -36,6 +36,7 @@ function presetSearchNames() {
   const names = new Map();
   const add = values => (Array.isArray(values) ? values : []).forEach(x => { if (x?.id) names.set(x.id, x.name || x.id); });
   Object.values(META.mod_pools || {}).forEach(add);
+  (META.weapons || []).forEach(w => (w.evolutions || []).forEach(t => add(t.options)));
   [META.weapons, META.enemies, META.warframes, META.companions, META.abilities, META.buffs, META.arcanes].forEach(add);
   if (WFCAT) Object.values(WFCAT).filter(Array.isArray).forEach(add);
   COLLECTIONS.filter(c => c.kind === "custom").forEach(c => add(loadPresetWhole(c.domain)));
@@ -78,7 +79,7 @@ function openPresetLibrary(cfg, anchor) {
   }, true);
   const tools = overlay.querySelector(".preset-library-tools"), results = overlay.querySelector(".preset-library-results");
   let currentRows = [], armed = "";
-  const expanded = new Set([cfg.active()]);
+  const expanded = new Set();
   const current = p => scope === null || (p.scope || scope) === scope;
   const store = (p, entries) => storePresetList(cfg.domain, entries, p.scope || scope);
   const refresh = () => { cfg.rerender(); render(); };
@@ -93,7 +94,7 @@ function openPresetLibrary(cfg, anchor) {
     const published = cfg.pins ? openedPublished(cfg) : [];
     const source = state.source === "published" ? published : state.source === "all" ? own.concat(published) : own;
     const terms = state.query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-    const names = terms.length ? presetSearchNames() : null;
+    const names = presetSearchNames();
     currentRows = source.filter(p => {
       if (!terms.length) return true;
       const text = presetSearchText(cfg, p, names);
@@ -103,13 +104,13 @@ function openPresetLibrary(cfg, anchor) {
       : (Number(b.savedAt) || 0) - (Number(a.savedAt) || 0)) || presetId(a).localeCompare(presetId(b)));
     if (state.sort === "oldest") currentRows.reverse();
     results.innerHTML = `<div class="preset-library-count">${currentRows.length} / ${source.length}</div>`
-      + currentRows.slice(0, state.visible).map(p => `<article class="preset-library-item${presetId(p) === cfg.active() ? ' active' : ''}" data-entry="${escHtml(presetId(p))}"><div class="preset-library-row"><div><b>${escHtml(p.name)}</b><span class="preset-library-context">${escHtml(presetContext(cfg, p))}${p.builtin ? ' · ' + escHtml(tr("read-only")) : ''}</span><time>${p.savedAt ? escHtml(new Date(p.savedAt).toLocaleString(LANG)) : ''}</time></div><div class="preset-library-actions">${p.builtin ? '' : cloudMark(cfg.domain, p)}<button class="ghost-btn small" data-library-open>${escHtml(tr("Open"))}</button>${current(p) ? `<button class="ghost-btn small" data-library-copy title="${escHtml(tr("duplicate"))}">⧉</button>` : ''}${p.builtin ? '' : `<button class="ghost-btn small" data-library-rename title="${escHtml(tr("rename"))}">✎</button><button class="ghost-btn small" data-library-delete title="${escHtml(tr("delete"))}">×</button>`}</div></div><details class="preset-library-info"${expanded.has(presetId(p)) ? " open" : ""}><summary>${escHtml(tr("Info"))}</summary><div class="preset-info-body"></div></details><div class="preset-library-feedback"></div></article>`).join("")
+      + currentRows.slice(0, state.visible).map(p => `<article class="preset-library-item${presetId(p) === cfg.active() ? ' active' : ''}" data-entry="${escHtml(presetId(p))}"><div class="preset-library-row"><div><b>${escHtml(p.name)}</b><span class="preset-library-context">${escHtml(presetContext(cfg, p))}${p.builtin ? ' · ' + escHtml(tr("read-only")) : ''}</span><p class="preset-library-summary" title="${escHtml(presetSummary(cfg,p,names))}">${escHtml(presetSummary(cfg,p,names))}</p><time>${p.savedAt ? escHtml(new Date(p.savedAt).toLocaleString(LANG)) : ''}</time></div><div class="preset-library-actions">${p.builtin ? '' : cloudMark(cfg.domain, p)}<button class="ghost-btn small" data-library-open>${escHtml(tr("Open"))}</button>${presetActionsHtml((current(p) ? `<button class="ghost-btn small" data-library-copy>⧉ ${escHtml(tr("duplicate"))}</button>` : "") + (p.builtin ? "" : `<button class="ghost-btn small" data-library-rename>✎ ${escHtml(tr("rename"))}</button><button class="ghost-btn small" data-library-delete>× ${escHtml(tr("delete"))}</button>`))}</div></div><details class="preset-library-info"${expanded.has(presetId(p)) ? " open" : ""}><summary>${escHtml(tr("Info"))}</summary><div class="preset-info-body"></div></details><div class="preset-library-feedback"></div></article>`).join("")
       + (!currentRows.length ? `<p class="sb-empty">${escHtml(tr("No matching presets"))}</p>` : "")
       + (currentRows.length > state.visible ? `<button class="ghost-btn" data-library-more>${escHtml(tr("Show more"))}</button>` : "");
     results.querySelectorAll("[data-entry]").forEach(row => {
       const p = currentRows.find(p => presetId(p) === row.dataset.entry);
       row.querySelector("[data-library-open]").onclick = () => open(p);
-      const details = row.querySelector("details");
+      const details = row.querySelector(".preset-library-info");
       const fillInfo = () => { if (details.open && !details.dataset.loaded) { renderPresetInfo(details.querySelector(".preset-info-body"), cfg, p); details.dataset.loaded = "1"; } };
       details.ontoggle = () => { if (details.open) expanded.add(presetId(p)); else expanded.delete(presetId(p)); fillInfo(); };
       fillInfo();
@@ -142,9 +143,15 @@ function openPresetLibrary(cfg, anchor) {
       const cloud = row.querySelector("[data-cloud]");
       if (cloud) cloud.onclick = () => { setCloudSync(presetListKey(cfg.domain), p.id, !cloud.classList.contains("on")); refresh(); };
     });
+    wirePresetActions(results);
     const more = results.querySelector("[data-library-more]");
     if (more) more.onclick = () => { state.visible += 30; renderRows(); };
   }
+  results.onscroll = () => {
+    if (currentRows.length > state.visible && results.scrollTop + results.clientHeight >= results.scrollHeight - 180) {
+      const at = results.scrollTop; state.visible += 30; renderRows(); results.scrollTop = at;
+    }
+  };
   function render() {
     tools.innerHTML = `<input type="search" class="preset-library-search" aria-label="${escHtml(tr("Search presets"))}" placeholder="${escHtml(tr("Search names, equipment and settings…"))}" value="${escHtml(state.query)}">`
       + ddButton("preset-library-sort", { value:state.sort, items:[{value:"recent",label:tr("Recently modified")},{value:"name",label:tr("Name")},{value:"oldest",label:tr("Oldest first")}], onPick:value => {state.sort=value; render();} })
@@ -194,3 +201,55 @@ function companionPresetInfo(state) {
     const m = compMod(s.mod); return {label:m?.name || s.mod, img:m ? IMG(m.image) : null, rank:s.rank ?? m?.max_rank};
   })});
 }
+
+function presetRecentUses(domain) {
+  try { return Object.assign(Object.create(null), JSON.parse(localStorage.getItem(`wfsim-preset-recent-${domain}`) || '{}')); }
+  catch (_) { return Object.create(null); }
+}
+function notePresetUse(domain, id) {
+  const recent = presetRecentUses(domain); recent[id] = Date.now();
+  try { localStorage.setItem(`wfsim-preset-recent-${domain}`, JSON.stringify(recent)); } catch (_) { /* optional view preference */ }
+}
+function presetEquipmentSummary(state, names) {
+  const ids = [...(state.slots || []).map(s => s?.mod), ...(state.arcane || []), ...(state.arcanes || []).map(a => a?.id),
+    ...(state.artifact?.mods || []), state.artifact?.arcane, state.helminth?.ability].filter(id => id && id !== 'none');
+  const labels = ids.map(id => names.get(String(id).replace(/^riven:/, '').split('@')[0]) || prettify(id));
+  if ((state.shards || []).some(Boolean)) labels.push(`${tr('Archon Shards')} ${(state.shards || []).filter(Boolean).length}`);
+  return labels.slice(0, 3).join(' · ') + (labels.length > 3 ? ` +${labels.length - 3}` : '') || tr('none selected');
+}
+const presetSummary = (cfg, p, names) => cfg.summary ? cfg.summary(p, names) : presetEquipmentSummary(p.state || {}, names);
+function weaponPresetSummary(p, names) {
+  const w = weaponInfo(p.scope || p.state.weapon || presetWeapon());
+  return [modeLabel(w, p.state.mode || defaultMode(w.id, null)), presetEquipmentSummary(p.state, names)].filter(Boolean).join(' · ');
+}
+function scenarioPresetSummary(p) {
+  const s = headlessScenarioOnto(META, p.state, CONTACT_M, METRIC_FALLBACK.id);
+  const enemy = allEnemies().find(e => e.id === s.enemy);
+  return `${enemy?.name || s.enemy} Lv ${s.level} · ${empowermentLabel(s.steel_path, s.empowered, true)} · ${s.headshot_pct}% ${tr('headshots')} · ${tr(s.aiming ? 'Aiming' : 'hip-fire')}`;
+}
+const presetActionsHtml = body => body ? `<details class="preset-actions"><summary aria-label="${escHtml(tr('More actions'))}" title="${escHtml(tr('More actions'))}">⋯</summary><div class="preset-action-menu">${body}</div></details>` : "";
+function wirePresetActions(host) {
+  host.querySelectorAll('.preset-actions').forEach(details => {
+    details.ontoggle = () => {
+      if (!details.open) return;
+      document.querySelectorAll('.preset-actions[open]').forEach(other => { if (other !== details) other.open = false; });
+      const box = details.querySelector('summary').getBoundingClientRect(), menu = details.querySelector('.preset-action-menu');
+      menu.style.left = Math.max(8, Math.min(box.right - menu.offsetWidth, innerWidth - menu.offsetWidth - 8)) + 'px';
+      menu.style.top = Math.max(8, Math.min(box.bottom + 4, innerHeight - menu.offsetHeight - 8)) + 'px';
+    };
+    details.querySelectorAll('button').forEach(button => button.addEventListener('click', () => {
+      if (!button.matches('.del,[data-library-delete]')) queueMicrotask(() => { details.open = false; });
+    }));
+  });
+}
+document.addEventListener('click', event => document.querySelectorAll('.preset-actions[open]').forEach(details => {
+  if (!details.contains(event.target)) details.open = false;
+}));
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape' || imeComposing(event)) return;
+  document.querySelectorAll('.preset-actions[open]').forEach(details => { details.open = false; details.querySelector('summary').focus({preventScroll:true}); });
+});
+document.addEventListener('scroll', event => {
+  if (event.target instanceof Element && event.target.closest('.preset-action-menu')) return;
+  document.querySelectorAll('.preset-actions[open]').forEach(details => { details.open = false; });
+}, true);

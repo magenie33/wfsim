@@ -36,6 +36,7 @@ function scenarioBarCfg() {
   const cfg = {
     domain: SCENARIOS,
     prepareInfo: fetchScenarioCatalog,
+    summary: scenarioPresetSummary,
     info: p => fightCardHtml(headlessScenarioOnto(META, p.state, CONTACT_M, METRIC_FALLBACK.id)),
     label: tr("Scenarios"),
     noun: "scenario",

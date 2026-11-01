@@ -130,6 +130,7 @@ function optBarCfg() {
   const cfg = {
     domain: OPT_DOMAIN,
     info: p => searchPresetInfo(p),
+    summary: p => `${(p.state.starts || []).length} ${tr("starts")} · ${tr("finalists")} ${p.state.finalists || 1} · ${p.state.candidate_runs || 10} ${tr("runs per candidate")}`,
     context: p => tf(weaponInfo(p.scope || presetWeapon()).name),
     libraryPath: p => weaponPath(p.scope) + "/optimizer",
     label: tr("Searches"),

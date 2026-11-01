@@ -117,7 +117,7 @@ const m = await evaluate(`(async () => {
   out.twinB2 = (slots[0] || {}).mod;
   pickPreset(cfg, 'b1'); await sleep(400);
   out.twinB1 = (slots[0] || {}).mod;
-  out.chips = [...document.querySelectorAll('#preset-bar-builder-builds .pchip:not(.add):not(.share)')].map((c) => c.dataset.name);
+  out.chips = ddReg.get('dd-preset-builder-builds').items.map(i => i.value).sort();
   // A RENAMED TARGET MOVES NOTHING: the fight still names it.
   const en = get('wfsim-customs-enemies');
   en[0].name = 'renamed boss';

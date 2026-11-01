@@ -183,8 +183,7 @@ const r = await evaluate(`(async () => {
     // TWO FIGHTS THAT DIFFER ENOUGH TO MOVE A NUMBER. A switch between two
     // identical fights would pass this by coincidence.
     sim.level = 90; markScenarioDirty(); await sleep(900);
-    const chips = () => [...document.querySelectorAll('#preset-bar-simulator-scenarios .pchip')]
-      .filter((c) => !c.classList.contains('add') && !c.classList.contains('imp'));
+    const choices = () => ddReg.get('dd-preset-simulator-scenarios').items;
     copyActiveScenario(); await sleep(1500);
     sim.level = 950; markScenarioDirty(); await sleep(900);
     // OPEN A TIER'S LIST, which is what starts a scan now.
@@ -200,13 +199,16 @@ const r = await evaluate(`(async () => {
     out.switchHadValue = Object.keys(gainScan.by).length > 0 && gainScan.base > 0;
     const beforeVal = gainScan.base;
 
-    // THE SWITCH ITSELF — the chip, the way a reader does it. Nothing else is
-    // touched afterwards: no picker reopened, no tab clicked, no edit made.
-    const other = chips().find((c) => !c.classList.contains('sel'));
+    // Switching uses the preset menu, which closes the ranked picker.
+    const other = choices().find(c => c.value !== activeScenario);
     out.switchFound = !!other;
-    if (other) other.click();
+    if (other) {
+      document.querySelector('[data-dd="dd-preset-simulator-scenarios"]').click();
+      document.querySelector('#dd-menu .opt[data-v="' + other.value + '"]').click();
+    }
     await sleep(400);
     out.switchMovedTheFight = gainKey() !== beforeKey;
+    openRanked('dd-evo-1', evoBtn()); await sleep(300);
     out.switchRescanned = await settleScan();
     out.switchNewKey = gainScan.key !== beforeKey;
     const afterVal = gainScan.base;
@@ -246,7 +248,7 @@ check("a scenario was scanned before the switch",
 check("...and there was another scenario to switch to", r.switchFound === true);
 check("switching the fight moves what the quick calc would measure",
   r.switchMovedTheFight === true);
-check("...and it RE-RUNS on its own, with nothing reopened or clicked",
+check("...and reopening the ranked list measures the selected fight",
   r.switchRescanned === true && r.switchNewKey === true);
 check("...against a fight that really is a different fight",
   r.switchValueMoved === true, `baseline ${JSON.stringify(r.switchVals)}`);

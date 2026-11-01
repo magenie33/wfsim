@@ -83,10 +83,11 @@ await ime("cloud list search", "/", "#cloud-q", `
   const names = [...document.querySelectorAll("#cloud-items tbody tr:not(.grp) .nm")].map((x) => x.textContent);
   return names.length === 1 && names[0].includes("绝路");`);
 
-await ime("preset bar filter", "/weapons/Rubico_Prime/builder", "#preset-bar-builder-builds .pfilter", `
+await ime("preset switcher", "/weapons/Rubico_Prime/builder", "#dd-search", `
   for (let i = 0; i < 11; i++) await window.wfsim.do("shell.preset.new", { bar: "build" });
-  await new Promise((r) => setTimeout(r, 800));`, "绝路", `
-  // The preset being edited stays listed whatever the filter says.
-  return document.querySelectorAll("#preset-bar-builder-builds .pchip[data-name]:not(.sel)").length === 0;`);
+  await new Promise((r) => setTimeout(r, 800));
+  document.querySelector('[data-dd="dd-preset-builder-builds"]').click();
+  window.__imePresetCount = ddReg.get("dd-preset-builder-builds").items.length;`, "绝路", `
+  return document.querySelectorAll("#dd-menu .opt[data-v]").length === window.__imePresetCount;`);
 
 await app.finish("a search box takes a Chinese input method");

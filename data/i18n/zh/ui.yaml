@@ -3567,6 +3567,8 @@ ui:
   "new": "新建"
   "no arcane": "无赋能"
 
+  "More actions": "更多操作"
+
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']
   - ['Self-Stagger Reduction', '自我击退减免']
