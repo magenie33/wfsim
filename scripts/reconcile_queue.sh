@@ -46,11 +46,18 @@ parts=$(mktemp -d)
 # once, each ruler into its own files, joined in roster order.
 "$BOARD" --each-ruler --dry-run --gate --facts-in "$FACTS" --queue-in "$OUT" \
   --queue-missing "$parts/{id}.missing" --queue-orphans "$parts/{id}.orphans" < "$LIB" > /dev/null
-for id in $("$BOARD" --rulers | tr -d '\r'); do
-  cat "$parts/$id.missing" >> "$missing" 2>/dev/null || true
-  cat "$parts/$id.orphans" >> "$orphans" 2>/dev/null || true
-done
+roster=$(mktemp)
+"$BOARD" --rulers | tr -d '\r' > "$roster"
+test -s "$roster"
+while IFS= read -r id; do
+  cat "$parts/$id.missing" >> "$missing"
+  cat "$parts/$id.orphans" >> "$orphans"
+done < "$roster"
 rm -rf "$parts"
+
+# Count the complete engine-admitted workload before any dispatch pacing.
+node scripts/compute_inventory.mjs "$OUT" "$missing" "$orphans" "$FACTS" "$roster"
+rm -f "$roster"
 
 # A SCENE'S FIRST PASS IS PACED: a new rung owes every build a row at once, and
 # one run asking a whole board floods the factory's open questions. At most

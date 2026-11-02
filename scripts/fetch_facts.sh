@@ -55,11 +55,17 @@ page_body() {
 
 fetch() {
   local out="$1" after="" got total=0 last
-  :
+  : > "$out"
   while :; do
     if ! db_query "$(page_body "$PAGE" "$after")"; then
       echo "::error::facts: the database refused the read [HTTP $DB_CODE]"
       [ -s "$DB_OUT" ] && { head -c 500 "$DB_OUT"; echo; }
+      return 1
+    fi
+    if ! jq -e '.result[0].results | type == "array" and all(.[];
+      type == "object" and ([.identity,.ruler,.mode,.finished_at] | all(.[]; type == "string" and length > 0))
+      and (.score | type == "number"))' < "$DB_OUT" >/dev/null; then
+      echo "::error::facts: invalid fact page"
       return 1
     fi
     got=$(jq -r '.result[0].results | length' < "$DB_OUT")
@@ -138,6 +144,21 @@ PAGES
   jq -e -s '.[3].identity == "last" and .[0].identity == "k0"' < got.ndjson >/dev/null \
     && say ok "...and the second page is appended, not written over the first" \
     || say FAIL "$(head -c 200 got.ndjson)"
+  fetch got.ndjson > out.txt 2>&1 && [ "$(wc -l < got.ndjson | tr -d ' ')" = "4" ] \
+    && say ok "a repeated export replaces the prior snapshot" || say FAIL "stale facts were appended"
+
+  cat > "$DIR/bin/db" <<'NULL_PAGE'
+#!/usr/bin/env bash
+printf '{"success":true,"result":[{"results":[null]}]}'
+NULL_PAGE
+  chmod +x "$DIR/bin/db"
+  if fetch got.ndjson > out.txt 2>&1; then
+    say FAIL "a null fact entered the workload scan"
+  elif grep -q 'invalid fact page' out.txt && [ ! -s got.ndjson ]; then
+    say ok "an invalid page fails before a false workload can be published"
+  else
+    say FAIL "$(cat out.txt)"
+  fi
 
   cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash

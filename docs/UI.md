@@ -1152,6 +1152,10 @@ scan state that list reads, mounted in all five places a scan ranks something.
 
 ## The compute page changes in place
 
+The community goal reads the complete workload inventory and shows its scan
+time. Queue admission is independent of that total. Missing or expired complete
+inventory shows an unknown total until a successful scan is available.
+
 **/compute IS WATCHED, NOT READ ONCE.** A volunteer leaves it open for hours,
 so today's tiles and the current task (`#rt-live`, 73-compute.js), and the
 separate task history (`#compute-history`), stay mounted and update in place.

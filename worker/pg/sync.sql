@@ -157,6 +157,16 @@ BEGIN
   END IF;
 END $$;
 
+-- A consumer transaction may apply only the fact and demand it read.
+CREATE OR REPLACE FUNCTION factory_delivery_guard(text,text,text,text,text,text,text) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM 1 FROM questions WHERE id=$1 AND state IN ('fact','spot')
+    AND canon IS NOT DISTINCT FROM $2 AND fact_engine IS NOT DISTINCT FROM $3 FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'stale task delivery' USING ERRCODE='WS002'; END IF;
+  PERFORM 1 FROM demands WHERE producer=$4 AND ref=$5 AND question=$1 AND asked_at=$6 AND payload=$7 AND state='live' FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'stale task delivery' USING ERRCODE='WS002'; END IF;
+END $$;
+
 -- THE LED QUESTIONS KEPT (schema.sql `led_questions`): a volunteer's answer on an
 -- open question adds its row, the question leaving `open` drops every row of it.
 -- An answer voided later leaves its row: the pick reads no answers, which on
@@ -311,6 +321,8 @@ CREATE OR REPLACE FUNCTION factory_past_safe(text, text) RETURNS boolean LANGUAG
   SELECT NOT EXISTS (SELECT 1 FROM demands d WHERE d.question = $1
                         AND (d.state = 'live' OR d.asked_at >= $2 OR d.served_at >= $2))
      AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = $1 AND a.at >= $2)
+     AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = $1
+          AND a.credit_work IS NOT NULL AND a.credited = 0 AND a.void = 0 AND a.official = 0)
      AND NOT EXISTS (SELECT 1 FROM refusal_withdrawals r WHERE r.question = $1)
      AND NOT EXISTS (SELECT 1 FROM settle_queue s WHERE s.question = $1)
      AND NOT EXISTS (SELECT 1 FROM board_reviews r WHERE r.question = $1 AND EXISTS
