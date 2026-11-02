@@ -4,7 +4,7 @@ Chinese name: 溶灵尊
 
 Two Handed Nikana · Melee · Mastery Rank 0. 170 base damage (impact 51, puncture 34, slash 85), 34% crit chance, 3x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-02
+## Best riven-free build on the WFSim board, as of 2026-11-03
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 

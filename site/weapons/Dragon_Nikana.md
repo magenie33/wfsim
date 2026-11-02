@@ -4,7 +4,7 @@ Chinese name: 龙之侍刃
 
 Nikana · Melee · Mastery Rank 8. 188 base damage (impact 9.4, puncture 18.8, slash 159.8), 22% crit chance, 2x crit multiplier, 22% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-02
+## Best riven-free build on the WFSim board, as of 2026-11-03
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
