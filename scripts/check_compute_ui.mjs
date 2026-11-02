@@ -10,7 +10,6 @@ const ui = await evaluate(`(async () => {
   const demandLoader = loadComputeDemand;
   loadComputeDemand = async () => {};
   computeDemand = { orders: [{ kind: 'new_build', total: 100, dispatched: 20 }], owed: {}, per_hour: { volunteers: 5, official: 1 }, clear_hours: 1, surveys: [] };
-  history.pushState({}, "", "/compute"); route(); await wait();
   clearInterval(computeTimer); computeTimer = setInterval(() => {}, 60000);
   accountState.loaded = true; accountState.providers = ["email"]; accountState.account = { id: "paged-account" };
   computeAskedFor = "paged-account";
@@ -21,6 +20,7 @@ const ui = await evaluate(`(async () => {
   devicePoints = { points: 17, recent: 5, today: { tasks: 99, points: 12, ms: 0 } };
   localStorage.setItem(COMPUTE_LOG_KEY, JSON.stringify(Array.from({ length: 25 }, (_, i) => ({ kind: "unknown", at: Date.now() - i * 60000, ms: 1000, work: 1e9, state: "confirmed" }))));
   computeJustDone = null;
+  history.pushState({}, "", "/compute"); route();
   renderAuthPage("compute"); await wait();
   const out = {};
   out.contributors = !!document.querySelector('#compute-community a[href="/contributors"]');
