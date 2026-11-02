@@ -954,33 +954,32 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
   /// checked again has only served ones.
   async function claim(env, w, { states = ["open", ...OFFICIAL_STATES], producers = null, max = 100, lease_ms = 6 * 3_600_000 }, engine, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now);
-    const open = states.includes("open") ? 1 : 0;
-    const theirs = states.filter((x) => OFFICIAL_STATES.includes(x));
-    // EACH STATE IS READ ALONG `questions_order` AND ONLY THEN LOCKED. One
-    // predicate that ORs the open questions with the official states can use no
-    // index, so every claim scanned the whole table off the disk: seconds a
-    // claim, and the volunteers' rows pushed out of memory until their syncs
-    // timed out on locks. `CLAIM_SPARE` candidates a branch cover the rows
-    // another claim holds; the lock re-reads the whole condition.
-    const takeable = `(q.verb NOT IN ('simulate_report', 'optimize_report') OR ?6::text LIKE '%user_calculation%')
-            AND (q.lease_until IS NULL OR q.lease_until < ?4::text)
-            AND (?6::text IS NULL OR EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
-                                       AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?6::text)::jsonb))))
-            AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.device = ?2::text AND a.engine = ?7::text)`;
-    const take = (max) => db.prepare(`WITH c AS (
-          (SELECT q.id FROM questions q WHERE ?3::bigint = 1 AND q.state = 'open' AND q.due_at < ?4::text AND ${takeable}
-            ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?9::bigint)
-          UNION ALL
-          (SELECT q.id FROM questions q WHERE q.state = ANY(?10::text[]) AND ${takeable}
-            ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?9::bigint))
+    max = Math.trunc(Number(max));
+    const wanted = ["open", ...OFFICIAL_STATES].filter((state) => states.includes(state));
+    if (!Number.isSafeInteger(max) || max <= 0 || !wanted.length) return [];
+    // EACH WHITELISTED STATE HAS ITS OWN ORDERED INDEX READ. A bound state
+    // array lets a generic prepared plan scan and sort the whole table. Limits
+    // are safe integers in the SQL so that plan knows the candidate budget.
+    // Spare candidates cover held rows; the lock rechecks eligibility.
+    const stateOf = (state) => `q.state = '${state}'${state === "open" ? " AND q.due_at < ?3::text" : ""}`;
+    const takeable = `(q.verb NOT IN ('simulate_report', 'optimize_report') OR ?4::text LIKE '%user_calculation%')
+            AND (q.lease_until IS NULL OR q.lease_until < ?3::text)
+            AND (?4::text IS NULL OR EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
+                                       AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?4::text)::jsonb))))
+            AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.device = ?2::text AND a.engine = ?5::text)`;
+    const take = (n) => {
+      const candidates = wanted.map((state) => `(SELECT q.id FROM questions q WHERE ${stateOf(state)} AND ${takeable}
+            ORDER BY q.waits DESC, q.due_at, q.id LIMIT ${n * CLAIM_SPARE})`).join(" UNION ALL ");
+      return db.prepare(`WITH c AS (${candidates})
         UPDATE questions SET lease = replace(gen_random_uuid()::text, '-', ''), lease_until = ?1::text, leased_to = ?2::text, leased_at = NULL
         WHERE id IN (SELECT q.id FROM questions q
           WHERE q.id IN (SELECT id FROM c)
-            AND ((?3::bigint = 1 AND q.state = 'open' AND q.due_at < ?4::text) OR q.state IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb)))
+            AND (${wanted.map((state) => `(${stateOf(state)})`).join(" OR ")})
             AND ${takeable}
-          ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?8::bigint FOR UPDATE OF q SKIP LOCKED)
+          ORDER BY q.waits DESC, q.due_at, q.id LIMIT ${n} FOR UPDATE OF q SKIP LOCKED)
         RETURNING id, verb, request, state, lease, waits, due_at`)
-      .bind(iso(now + lease_ms), w.device, open, at, JSON.stringify(theirs), producers ? JSON.stringify(producers) : null, engine, max, max * CLAIM_SPARE, `{${theirs.join(",")}}`).all();
+        .bind(iso(now + lease_ms), w.device, at, producers ? JSON.stringify(producers) : null, engine).all();
+    };
     // AN OPEN ROW NOBODY OWES ANY MORE is withdrawn where it is found and the
     // claim picks again (`PICK_ROUNDS`), as a pack does.
     const results = [];

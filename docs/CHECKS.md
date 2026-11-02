@@ -825,6 +825,9 @@ never one before it, and a credit that fails holds the cursor at its fact.
 A new engine absent from the database's statistics still offers every eligible
 open question. Its plan reads answers for that field rather than the engine's
 answers on closed questions; the check loads the latter after `ANALYZE`.
+Official claims keep bounded index plans under both generic and custom prepared
+planning. Random books compare their mixed-state order, producer filter,
+deadlines, leases and prior answers with the eligible head.
 
 ## `check_settler`
 

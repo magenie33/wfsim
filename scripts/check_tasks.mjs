@@ -6,6 +6,7 @@
 // have had their turn. Then the cases that once failed in production, one each.
 //   node scripts/check_tasks.mjs [trials=400]
 import { factory, questionId, canon, nearAnswer } from "../worker/tasks.js";
+import { placeholders } from "../worker/placeholders.js";
 import { testDb } from "./pg/test_db.mjs";
 
 let failures = 0;
@@ -1010,6 +1011,76 @@ console.log("\na new engine before its first statistics refresh");
   check("a new engine still offers every eligible open question", plan["Actual Rows"] === open, JSON.stringify(plan));
   check("eligibility reads answers for the open field, not the engine's other answers", read <= 4 * open, `${read} answers for ${open} questions`);
   await db.close();
+}
+
+console.log("\nofficial claims keep bounded index plans when prepared statements are reused");
+{
+  const db = await testDb("library"), f = factory({ verbs: VERBS, producers: PRODUCERS });
+  await db.exec(`INSERT INTO questions (id, verb, request, state, due_at, opened_at)
+    SELECT 'claim-'||i, 'simulate', '{}', CASE WHEN i <= 1000 THEN 'open'
+      WHEN i <= 1003 THEN (ARRAY['disputed','spot','nondeterministic'])[i-1000] ELSE 'fact' END,
+      '2026-10-09', '2026-10-08' FROM generate_series(1, 20000) i;
+    INSERT INTO demands (producer, ref, question, state, asked_at, due_at)
+    SELECT 'p', id, id, 'live', opened_at, due_at FROM questions;
+    ANALYZE questions; ANALYZE demands; ANALYZE answers;`);
+  let sql, args;
+  const capture = { prepare: (text) => ({ bind: (...values) => {
+    sql = placeholders(text); args = values;
+    return { all: async () => ({ results: [] }) };
+  } }) };
+  const literal = (v) => v === null ? "NULL" : typeof v === "number" ? String(v) : `'${String(v).replaceAll("'", "''")}'`;
+  for (const states of [["open"], ["disputed", "spot", "nondeterministic"], undefined]) {
+    await f.claim({ LIBRARY: capture }, { device: "official" }, { states, max: 2, producers: ["p"] }, "fresh", NOW);
+    await db.exec(`PREPARE official_claim AS ${sql}`);
+    for (const mode of ["force_generic_plan", "force_custom_plan"]) {
+      await db.exec(`SET plan_cache_mode = ${mode}`);
+      const row = await db.get(`EXPLAIN (FORMAT JSON) EXECUTE official_claim(${args.map(literal).join(",")})`);
+      const scans = [], walk = (p) => {
+        if (p["Relation Name"] === "questions" && p["Node Type"] !== "ModifyTable"
+            && (p["Node Type"] === "Seq Scan" || p["Plan Rows"] > 1003)) scans.push({ scan: p["Node Type"], rows: p["Plan Rows"] });
+        for (const child of p.Plans || []) walk(child);
+      };
+      walk(row["QUERY PLAN"][0].Plan);
+      check(`${mode} (${states || "all"}): a small official claim never plans to read the closed field`, !scans.length, JSON.stringify(scans));
+    }
+    await db.exec("DEALLOCATE official_claim; RESET plan_cache_mode");
+  }
+  await db.close();
+}
+
+console.log("\nofficial claims follow the requested states, producers, deadlines and leases");
+{
+  let bad = 0, first = "";
+  for (let trial = 0; trial < 40; trial++) {
+    const r = rng(9000 + trial), db = await testDb("library"), env = { LIBRARY: db };
+    const f = factory({ verbs: VERBS, producers: PRODUCERS }), rows = [];
+    for (let i = 0; i < 16; i++) {
+      const q = { id: `official-${i}`, state: pick(r, ["open", "disputed", "spot", "nondeterministic", "fact", "withdrawn"]),
+        producer: pick(r, ["p", "q"]), waits: pick(r, [0, 1]), due: NOW + pick(r, [-1000, 1000]),
+        held: r() < 0.25, answered: r() < 0.25, old: r() < 0.5 };
+      rows.push(q);
+      await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, waits, lease_until)
+        VALUES (?, 'simulate', '{}', ?, ?, ?, ?, ?)`, q.id, q.state, iso(q.due), iso(NOW - 2000), q.waits, q.held ? iso(NOW + 1000) : null);
+      await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at)
+        VALUES (?, ?, ?, 'live', ?, ?)`, q.producer, q.id, q.id, iso(NOW - 2000), iso(q.due));
+      if (q.answered) await db.run(`INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at)
+        VALUES (?, ?, 'official', 'official', '', 'c', '{}', 1, ?)`, q.id, q.old ? "e0" : "e1", iso(NOW));
+    }
+    const states = pick(r, [["open"], ["disputed", "spot", "nondeterministic"], ["open", "spot", "disputed"], [], ["fact", "spot", "spot", "'invalid"]]);
+    const producers = pick(r, [null, [], ["p"], ["q"]]), max = 1 + Math.floor(r() * 5);
+    const expected = rows.filter((q) => states.includes(q.state) && ["open", "disputed", "spot", "nondeterministic"].includes(q.state)
+      && (q.state !== "open" || q.due < NOW) && !q.held && !(q.answered && !q.old) && (!producers || producers.includes(q.producer)))
+      .sort((a, b) => b.waits - a.waits || a.due - b.due || (a.id < b.id ? -1 : 1)).slice(0, max).map((q) => q.id);
+    const actual = (await f.claim(env, { device: "official" }, { states, producers, max }, "e1", NOW)).map((q) => q.question);
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) { bad++; first ||= `trial ${trial}: ${actual} vs ${expected}`; }
+    await db.close();
+  }
+  check("40 random books: official claims are exactly the eligible head, across states and producers", !bad, first);
+  const f = factory({ verbs: VERBS, producers: PRODUCERS });
+  const env = { LIBRARY: { prepare: () => { throw new Error("invalid claim reached SQL"); } } };
+  for (const max of [0, -1, NaN, Infinity, "1; SELECT 1"]) {
+    check(`an invalid claim limit (${max}) reaches no SQL`, !(await f.claim(env, { device: "official" }, { max }, "e1", NOW)).length);
+  }
 }
 
 console.log("\nlocks: every statement that gives back many leases takes their rows in id order");

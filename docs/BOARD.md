@@ -1327,7 +1327,10 @@ questions, never a heavier client.
   rows nobody asked the factory for — so a row never goes to both. Its facts are
   its answers (`order_credit.mjs`): a client whose bits it reproduced is paid
   (§"Contribution" rule 1), one it did not is not, and the run's last job
-  releases what it left. A FACT WITHOUT WORK — a native build's, which counts
+  releases what it left. Official claims read each allowed state separately
+  along `questions_order`, with bounded integer limits visible to prepared
+  plans, then merge candidates in priority order and recheck eligibility under
+  `FOR UPDATE SKIP LOCKED`. A FACT WITHOUT WORK — a native build's, which counts
   none — witnesses the score alone: the row is the fact, and one a client gave
   that score is a `spot`, its work checked by `settle` before anyone is paid. **A LEASE IS GIVEN BACK, NOT LEFT TO LAPSE**: a page
   that stops — closed, reloaded, paused — sends its pack's answers so far
