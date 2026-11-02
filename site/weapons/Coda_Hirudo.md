@@ -4,7 +4,7 @@ Chinese name: 终幕·蚂蟥
 
 Sparring · Melee · Mastery Rank 17. 175 base damage (impact 26.25, puncture 140, slash 8.75), 34% crit chance, 3.1x crit multiplier, 18% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-01
+## Best riven-free build on the WFSim board, as of 2026-11-02
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
