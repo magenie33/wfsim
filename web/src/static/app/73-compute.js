@@ -295,24 +295,34 @@ function computeTaskHtml(t) {
   return `${escHtml(tr(k.name))}${what ? ` · ${href ? `<a href="${escHtml(href)}">${what}</a>` : what}` : ""}`;
 }
 
-/// THIS BROWSER: whether it computes and why not, what it is on, what it earned.
+/// Detailed controls use the same shares as the top bar; the overview opens this card.
 function computeHereHtml() {
-  const on = boardVerifyOn();
-  const state = computeState().text;
-  const again = on && boardStale ? ` <button class="ghost-btn btn-sm" data-auth="compute-reload">${aT("refresh now")}</button>` : "";
-  // ITS POINTS ARE ITS NOTEBOOK: what no account holds yet, empty once one does (worker/contribution.js §"Spans").
-  const d = devicePoints;
-  const pts = !d ? "" : d.claimed
-    ? `<div class="kv"><dt>${aT("Points")}</dt><dd>${aT("Everything this browser computes counts under the account signed in on it.")}</dd></div>`
-    : `<div class="kv"><dt>${aT("Points")}</dt><dd>${computePts(d.points)} · ${
-      escHtml(tr("{n} in the last 30 days").replace("{n}", Number(d.recent || 0).toLocaleString(accountLocale())))}<br><span class="set-note">${
-      aT("Kept for this browser until you sign in here; the first account to sign in takes them all.")}</span>${
-      accountState.account ? "" : ` <a href="/login?return=${encodeURIComponent("/compute")}">${aT("Sign in to count it under your name")}</a>`}</dd></div>`;
-  return `<div class="block" id="compute-browser"><div class="bh"><h2>${aT("This device")}</h2></div><div class="bb"><dl class="kvs">
-    <div class="kv"><dt>${aT("State")}</dt><dd><span id="compute-state">${escHtml(state)}</span>${on ? `<br><span class="set-note">${
-      escHtml(tr("Computing together with the volunteers, with {pct}% of this device's processing power.").replace("{pct}", communityShare()))}</span>` : ""}</dd>${again}</div>
-    <div class="kv"><dt>${aT("Processing power")}</dt><dd><div class="cs"></div></dd></div>${pts}</dl>${on && computeSlept ? `<p class="set-note" style="margin:8px 0 0">${
+  return `<div class="block shut" id="compute-browser"><div class="bh"><h2>${aT("Compute settings")}</h2></div><div class="bb"><div class="cs"></div>${boardVerifyOn() && computeSlept ? `<p class="set-note" style="margin:8px 0 0">${
       aT("The browser put this page to sleep a moment ago, and computing together stopped while it slept. To keep it computing while you are away, add wfsim.app to the sites your browser keeps active: in Edge, Settings › System and performance › Never put these sites to sleep; in Chrome, Settings › Performance › Always keep these sites active.")}</p>` : ""}</div></div>`;
+}
+
+function computeCommunityHtml() {
+  const signed = !!accountState.account, d = signed ? devicesState : devicePoints;
+  const points = d && (signed || !d.claimed) ? `<div class="kv"><dt>${aT(signed ? "Account" : "This device")}</dt><dd><b>${computePts(d.points)}</b> ${aT("Points")}
+    <span class="set-note"> · ${escHtml(tr("{n} in the last 30 days").replace("{n}", computeCount(d.recent)))}</span></dd></div>` : "";
+  const identity = signed ? `${computeHonourHtml(d)}${d?.contributor_rank ? `<div class="kv"><dt>${aT("Contributor rank")}</dt><dd>${contributorRankBar(d.contributor_rank)}</dd></div>` : ""}`
+    : accountState.providers.length ? `<p class="set-note">${d && !d.claimed ? aT("Kept for this browser until you sign in here; the first account to sign in takes them all.") : ""}
+      <a href="/login?return=${encodeURIComponent("/compute")}">${aT("Sign in to count it under your name")}</a></p>` : "";
+  return `<div class="block" id="compute-community"><div class="bh"><h2>${aT("Together")}</h2>
+    <a class="ghost-btn btn-sm" href="/contributors">${aT("Contributors")}</a></div><div class="bb">
+    <div class="compute-community-totals"><div><b data-community="devices">—</b><span>${aT("devices computing together now")}</span></div>
+      <div><b data-community="scores">—</b><span>${aT("scores computed by players' devices")}</span></div></div>
+    <div data-community-identity><dl class="kvs">${points}${signed ? identity : ""}</dl>${signed ? "" : identity}</div></div></div>`;
+}
+function computeCommunityPaint() {
+  const root = $("compute-community");
+  if (!root) return;
+  for (const [key, value] of [["devices", computingCount], ["scores", tallyTo?.volunteers ?? null]]) {
+    const el = root.querySelector(`[data-community="${key}"]`);
+    if (value === null) el.textContent = "—";
+    else if (key === "devices") el.textContent = computeCount(value);
+    else computeRoll(el, value, n => computeCount(Math.round(n)));
+  }
 }
 
 /// THE HONOUR, once earned: a device of the account said yes and has been
@@ -364,8 +374,7 @@ function computeDevicesHtml() {
   const removed = s.removed && s.removed.count ? `<p class="set-note" style="margin:4px 0 0">${escHtml(tr("{n} removed devices, their {p} points still counted")
     .replace("{n}", Number(s.removed.count).toLocaleString(accountLocale())).replace("{p}", Number(s.removed.points).toLocaleString(accountLocale())))}</p>` : "";
   return `<div class="block" id="compute-devices"><div class="bh"><h2>${aT("Your devices")}</h2></div><div class="bb">${rows
-    ? `<dl class="kvs">${s.contributor_rank ? `<div class="kv"><dt>${aT("Contributor rank")}</dt><dd>${contributorRankBar(s.contributor_rank)}</dd></div>` : ""}${
-      rows}</dl>${computePagerHtml(page)}<dl class="kvs">${computeHonourHtml(s)}</dl><p class="set-note" style="margin:8px 0 0">${aT("All together")}: ${total}</p>${removed}`
+    ? `<dl class="kvs">${rows}</dl>${computePagerHtml(page)}<p class="set-note" style="margin:8px 0 0">${aT("All together")}: ${total}</p>${removed}`
     : `<p class="set-note" style="margin:0">${aT("No device yet: leave WFSim open on a device while you are signed in.")}</p>`}</div></div>`;
 }
 
@@ -444,17 +453,25 @@ function computeDayHtml() {
   const zone = new Intl.DateTimeFormat(accountLocale(), { timeZoneName: "short" }).formatToParts(midnight).find((x) => x.type === "timeZoneName");
   return `<p class="set-note" data-day style="margin:6px 0 0">${escHtml(trF(tr("Today starts over every day at {time} ({zone}), for everyone at once."), { time: at, zone: zone ? zone.value : "" }))}</p>`;
 }
-function computeRecentHtml() {
+function computeOverviewHtml() {
   // NOT BEFORE THE META: a reader landing on /compute is drawn once before it
   // arrives, and a task names its weapon, ruler and metric through it.
   if (typeof META === "undefined" || !META) return "";
-  return `<div class="block" id="rt-live"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb">
+  const toggle = WASM ? `<label class="compute-toggle"><input type="checkbox" data-cs="on">${aT("Compute together")} <span class="set-note" data-cs-v="together"></span></label>` : "";
+  return `<div class="block" id="rt-live"><div class="bh"><h2>${aT("Your contribution today")}</h2><span class="sub">${aT("This device")}</span></div><div class="bb">
+    <div class="compute-overview-controls">${toggle}<button type="button" class="ghost-btn btn-sm" data-auth="compute-settings">${aT("Compute settings")}</button>
+      <button type="button" class="ghost-btn btn-sm" data-auth="compute-reload"${boardStale ? "" : " hidden"}>${aT("refresh now")}</button></div>
+    <p class="set-note" id="compute-state">${escHtml(computeState().text)}</p><div data-now></div>
     <div class="rt-today"><div class="rt-tile"><b data-tile="tasks"></b><span>${aT("tasks finished today")}</span></div>
       <div class="rt-tile gold" data-gold><b data-tile="points"></b><span>${aT("points credited today")}</span></div>
       <div class="rt-tile"><b data-tile="pending"></b><span>${aT("points pending verification")}</span></div>
       <div class="rt-tile"><b data-tile="ms"></b><span>${aT("time computing today")}</span></div></div>
-    ${computeDayHtml()}
-    <div data-now></div><div class="rt-list" data-list></div><div data-pager></div>
+    ${computeDayHtml()}</div></div>`;
+}
+function computeRecentHtml() {
+  if (typeof META === "undefined" || !META) return "";
+  return `<div class="block" id="compute-history"><div class="bh"><h2>${aT("Recent tasks on this browser")}</h2></div><div class="bb">
+    <div class="rt-list" data-list></div><div data-pager></div>
     <p class="set-note" data-empty hidden style="margin:8px 0 0">${aT("Nothing yet.")}</p>
     <p class="set-note" style="margin:8px 0 0">${aT("A result counts once another device, of another owner on another network, computes exactly the same number. Open a task to see the build and the fight. This list stays in this browser.")}</p></div></div>`;
 }
@@ -469,7 +486,12 @@ function computeDraw(main) {
     for (const el of [...fresh.children]) {
       const old = el.id && document.getElementById(el.id);
       if (!old || !col.contains(old)) { col.append(el); continue; }
-      if (el.id === "rt-live" || (old.contains(document.activeElement) && document.activeElement.matches("input, textarea, select, [contenteditable]"))) continue;
+      if (["rt-live", "compute-history"].includes(el.id) || (old.contains(document.activeElement) && document.activeElement.matches("input, textarea, select, [contenteditable]"))) continue;
+      if (el.id === "compute-community") {
+        const identity = old.querySelector("[data-community-identity]"), next = el.querySelector("[data-community-identity]").innerHTML;
+        if (identity.innerHTML !== next) identity.innerHTML = next;
+        continue;
+      }
       if (el.classList.contains("block")) old.querySelector(":scope > .bb").replaceChildren(...el.querySelector(":scope > .bb").childNodes);
     }
   } else main.replaceChildren(t.content);
@@ -483,10 +505,14 @@ function computeLive() {
   const root = document.getElementById("rt-live");
   const state = document.getElementById("compute-state");
   if (state && state.textContent !== computeState().text) state.textContent = computeState().text;
+  const reload = root?.querySelector('[data-auth="compute-reload"]');
+  if (reload) reload.hidden = !boardStale;
+  computeCommunityPaint();
   if (!root) return;
   computeLiveTiles(root);
   computeLiveNow(root);
-  computeLiveList(root);
+  const history = $("compute-history");
+  if (history) computeLiveList(history);
 }
 
 /// A NUMBER COUNTS to its new value instead of jumping; drawn the first time as it is.
@@ -795,7 +821,7 @@ function computeDemandHtml() {
         g.clear_hours == null ? "" : ` · ${escHtml(tr("done in {t}").replace("{t}", demandHours(g.clear_hours)))}`}</div></div></div>`;
   }).join("");
   const eta = d.clear_hours == null || !owed ? "" : demandHours(d.clear_hours);
-  return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
+  return `<div class="block shut" id="compute-demand"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
     aT("All devices together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
     <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(n(owed))} ${aT("tasks")}${known && owed ? `
@@ -848,12 +874,11 @@ setInterval(navComputing, COMPUTING_EVERY_MS);
 addEventListener("visibilitychange", navComputing);
 
 function computePage() {
-  const cards = [computeHereHtml(), computeRecentHtml(), computeDevicesHtml(), ledgerHereHtml(), ledgerAccountHtml(), computeDemandHtml()]
-    .map((html, i) => html.replace('class="block"', `class="block" data-layout-order="${i}"`)).join("");
+  const cards = [computeOverviewHtml(), computeCommunityHtml(), computeHereHtml(), computeDevicesHtml(), computeRecentHtml(), ledgerHereHtml(), ledgerAccountHtml(), computeDemandHtml()]
+    .map((html, i) => html.replace('id="', `data-layout-order="${i}" id="`)).join("");
   return `<div id="compute-workspace" class="compute-workspace" data-card-layout data-lang="${escHtml(LANG)}">
     <div id="compute-intro" class="compute-intro" data-layout-header><div><h1 class="page">${aT("Compute together")}</h1>
-      <p class="set-note">${aT("The volunteers' devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.")}</p></div>
-      <a class="ghost-btn btn-sm" href="/contributors">${aT("Contributors")}</a></div>${cards}</div>`;
+      <p class="set-note">${aT("The volunteers' devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.")}</p></div></div>${cards}</div>`;
 }
 
 /// DRAWN: this browser's points asked, the account's devices asked once per
@@ -879,7 +904,7 @@ function computeOpened() {
   // for here redrew for ever — the page froze.
   if (!computeTimer) {
     computeTimer = setInterval(computeRefresh, 30000);
-    Promise.all([loadComputeDemand(), navComputing(), loadTaskStates(), loadLedgers()]).then(computeRedraw);
+    Promise.all([loadComputeDemand(), navComputing(), loadTaskStates(), loadLedgers(), Date.now() - tallyAt >= TALLY_EVERY_MS ? loadHomeTally() : null]).then(computeRedraw);
   }
 }
 async function computeRefresh() {
@@ -901,6 +926,11 @@ async function computeRefresh() {
 async function computeAct(el, what) {
   const id = el.dataset.id;
   if (what === "compute-reload") return reloadForRelease();
+  if (what === "compute-settings") {
+    const settings = $("compute-browser");
+    if (settings) { setFold(settings, false); settings.scrollIntoView({ block: "nearest", behavior: computeStill() ? "instant" : "smooth" }); }
+    return;
+  }
   if (what === "compute-page") {
     computePages[el.dataset.pageKey] = Math.max(0, Number(el.dataset.page) || 0);
     if (el.dataset.pageKey === "recent") computeOpenTask = null;

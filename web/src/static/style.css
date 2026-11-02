@@ -3915,6 +3915,15 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .compute-intro>a{flex:none;white-space:nowrap}
 .compute-pager{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0;font-size:12px;color:var(--muted)}
 .compute-pager>span{text-align:center}
+.compute-overview-controls{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.compute-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer}
+.compute-toggle input{width:auto;margin:0;accent-color:var(--accent)}
+.compute-overview-controls>[hidden]{display:none}
+.compute-community-totals{display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-bottom:14px}
+.compute-community-totals>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.compute-community-totals b{font-size:22px;font-variant-numeric:tabular-nums}
+.compute-community-totals span{font-size:12px;color:var(--muted)}
+.compute-community-totals+[data-community-identity]{border-top:1px solid var(--line);padding-top:10px}
 @media(max-width:520px){.compute-intro{flex-wrap:wrap}.compute-intro>div{flex-basis:100%}.compute-pager{flex-wrap:wrap}.compute-pager>span{order:-1;flex-basis:100%}}
 @media(max-width:520px){.layout-tools{flex-wrap:wrap}.layout-move-tools button{width:28px;height:28px}}
 @media(max-width:520px){

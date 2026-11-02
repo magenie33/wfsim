@@ -126,7 +126,7 @@ async function statsFile(name, staleMs) {
   return s && s.v === 1 && serverNow() - Date.parse(s.at) <= staleMs ? s : null;
 }
 async function loadHomeTally() {
-  if (document.hidden || ($("home-page")?.hidden && $("support-page")?.hidden)) return;
+  if (document.hidden || ($("home-page")?.hidden && $("support-page")?.hidden && location.pathname !== "/compute")) return;
   if (tallyLoading) return tallyLoading;
   tallyLoading = (async () => {
   const r = await statsFile("tally", TALLY_STALE_MS)
@@ -141,6 +141,7 @@ async function loadHomeTally() {
   tallyAt = Date.now();
   renderHomeTally();
   if (!$("support-page")?.hidden) renderSupportCounts();
+  if (location.pathname === "/compute") computeCommunityPaint();
   })().finally(() => { tallyLoading = null; });
   return tallyLoading;
 }

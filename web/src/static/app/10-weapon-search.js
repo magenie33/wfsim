@@ -45,6 +45,7 @@ function renderComputePicker() {
     if (!host.firstElementChild || host.dataset.words !== words) { host.innerHTML = computeSharesHtml(); host.dataset.words = words; }
     paintComputeShares(host);
   });
+  document.querySelectorAll(".compute-toggle").forEach(host => paintComputeShares(host));
 }
 /// …AND WHAT IT DOES: a slider moved is said at once, and set when it is let go
 /// — solo's share drops the reader's pool (`setComputePct`), so not on every
@@ -57,7 +58,7 @@ document.addEventListener("input", (e) => {
   paintComputeShares(host, el.dataset.cs === "solo" ? v : computePct, el.dataset.cs === "together" ? v : communityShare());
 });
 document.addEventListener("change", (e) => {
-  const el = e.target.closest && e.target.closest(".cs [data-cs]");
+  const el = e.target.closest && e.target.closest(".cs [data-cs], .compute-toggle [data-cs]");
   if (!el) return;
   const k = el.dataset.cs;
   if (k === "solo") setComputePct(Number(el.value));

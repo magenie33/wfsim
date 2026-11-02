@@ -74,11 +74,12 @@ const r = await evaluate(`(async () => {
   };
   const out = {};
   history.pushState({}, "", "/compute"); route(); await loadAccount(); await sleep(500);
-  const cards = () => [...page().querySelectorAll("#rt-live .rt-card")];
+  const cards = () => [...page().querySelectorAll("#compute-history .rt-card")];
   out.recent = cards().map((k) => k.textContent.replace(/\\s+/g, " ").trim());
   // EVERY BLOCK FOLDS, the site's way, and stays folded when the page is drawn again.
   out.folds = [...page().querySelectorAll(".block[id]")].map((b) => [b.id, !!b.querySelector(":scope > .bh > .fold-c")]);
   const demand = document.getElementById("compute-browser");
+  setFold(demand, false);
   demand.querySelector(":scope > .bh").click();
   out.shut = demand.classList.contains("shut");
   renderAuthPage("compute"); await sleep(200);
@@ -88,13 +89,13 @@ const r = await evaluate(`(async () => {
   out.secret = page().textContent.includes("secret");
   // OPENED, a task shows its build and the way to its weapon's board; the list
   // node is the same one after the page is drawn again around it.
-  const live = document.getElementById("rt-live");
+  const live = document.getElementById("compute-history");
   cards()[0].click(); await sleep(300);
-  out.took = (page().querySelector("#rt-live .rt-detail") || { textContent: "" }).textContent.replace(/\\s+/g, " ");
-  out.link = (page().querySelector('#rt-live .rt-detail a[href$="/benchmark"]') || { getAttribute: () => null }).getAttribute("href");
-  out.kept = document.getElementById("rt-live") === live;
+  out.took = (page().querySelector("#compute-history .rt-detail") || { textContent: "" }).textContent.replace(/\\s+/g, " ");
+  out.link = (page().querySelector('#compute-history .rt-detail a[href$="/benchmark"]') || { getAttribute: () => null }).getAttribute("href");
+  out.kept = document.getElementById("compute-history") === live;
   cards()[0].click(); await sleep(200);
-  out.closed = !page().querySelector("#rt-live .rt-detail");
+  out.closed = !page().querySelector("#compute-history .rt-detail");
   out.signIn = !!page().querySelector('a[href^="/login"]');
   // THIS BROWSER'S LEDGER: the split, the unpaid by why, its days, a day opening into its hours.
   const lg = document.getElementById("compute-ledger");

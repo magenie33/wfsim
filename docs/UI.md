@@ -1153,11 +1153,10 @@ scan state that list reads, mounted in all five places a scan ranks something.
 ## The compute page changes in place
 
 **/compute IS WATCHED, NOT READ ONCE.** A volunteer leaves it open for hours,
-so the block that moves — today's tiles, the task being computed, the list of
-recent tasks (`#rt-live`, 73-compute.js) — is drawn once and changed in place
-from then on. A redraw of the page replaces every other block around it and
-never takes it out of the document, because a node moved restarts every
-animation in it. A progress tick changes that block alone.
+so today's tiles and the current task (`#rt-live`, 73-compute.js), and the
+separate task history (`#compute-history`), stay mounted and update in place.
+Redraws preserve card nodes and layout slots. A progress tick changes live
+content alone; moving a node would restart its animation.
 
 - A new task's card slides in and the cards under it glide down; a card whose
   state changes keeps its place and changes colour.
@@ -1169,10 +1168,18 @@ animation in it. A progress tick changes that block alone.
   words, and opened, the build it concluded on as the builder's card.
 - With reduced motion asked for, only colours and numbers change.
 
-The page opens with this device's controls and recent tasks, followed by the
-account's devices, device and account ledgers, and global demand. Its header
-links to Contributors. Cards use the shared layout controls: order and size
-persist through refreshes, and restoring defaults returns the authored order.
+The page opens with this device's status, current task and today's contribution.
+A compact switch shares the settings menu's control; a settings shortcut opens
+the detailed controls. Together follows with the live device count, verified
+volunteer score total, personal points, honour and contributor level, and the
+Contributors link. Unavailable figures are dashes. Personal figures keep their
+scope: today's tiles are this device's, account points span its claimed devices.
+Detailed settings, device management, task history, ledgers and demand follow.
+Settings and demand start folded. Community totals read the same public tally
+as the home page at its existing refresh cadence.
+
+Cards use the shared layout controls: order and size persist through refreshes,
+and restoring defaults returns the authored order.
 Recent tasks, device lists and each ledger show ten entries per page, keeping
 their page through refreshes. A ledger entry is a day; its hours open inline.
 Showing all history extends the date range while retaining pagination.
