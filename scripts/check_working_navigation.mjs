@@ -5,12 +5,17 @@ try {
   await app.load('/weapons/Laetum/builder',6000);
   const initial=await app.evaluate(`(()=>{
     window.navigationRunButtons=[$('run-sim'),$('run-opt')];
-    return {ready:!!$('execution-dock')&&!$('execution-dock').hidden,
+    const count=$('compute-count'),mark=$('compute-mark'),original={count:count.innerHTML,countHidden:count.hidden,markHidden:mark.hidden};
+    count.innerHTML='<span class="online-dot"></span>45';count.hidden=false;mark.hidden=false;computeLinkPaint();
+    const state={ready:!!$('execution-dock')&&!$('execution-dock').hidden,
       separate:$('quick-calc').offsetParent!==null&&$('sim-block').contains($('calculation-scenario-editor'))&&!$('quick-calc').contains($('calculation-scenario-editor')),
-      compact:document.querySelector('.topbar').offsetHeight<=52&&$('module-tabs').offsetHeight<=36};
+      header:document.querySelector('.topbar').offsetHeight,tabs:$('module-tabs').offsetHeight};
+    state.compact=state.header<=52&&state.tabs<=36;
+    count.innerHTML=original.count;count.hidden=original.countHidden;mark.hidden=original.markHidden;computeLinkPaint();
+    return state;
   })()`);
   app.check('Builder keeps quick calculation and the separate scenario editor',initial.separate);
-  app.check('the compact floating execution controls are available',initial.ready&&initial.compact);
+  app.check('the compact floating execution controls are available with both compute indicators',initial.ready&&initial.compact,JSON.stringify(initial));
   const inline=await app.evaluate(`(()=>{
     window.navigationResults=[$('sim-results-block'),$('opt-results')].map(node=>({node,parent:node.parentNode}));
     return $('sim-run-block')?.contains($('run-sim'))&&$('opt-runbar').contains($('run-opt'))&&!$('execution-dock').contains($('run-sim'));

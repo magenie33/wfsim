@@ -2225,7 +2225,7 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .topbar-inner .tblinks>.sup-link{margin-left:auto}
 .topbar-inner:has(>.compute-online:not([hidden])) .tblinks>.sup-link{margin-left:0}
 /* The count is a quiet link: a dot and a number, a word on hover. */
-.topbar-inner .compute-online{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:2px 8px;border-radius:8px;
+.topbar-inner .compute-online{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:2px 8px;border-radius:8px;white-space:nowrap;flex-shrink:0;
   font-size:12px;color:var(--text-2);text-decoration:none}
 .topbar-inner .compute-online[hidden]{display:none}
 .compute-online [hidden]{display:none}
