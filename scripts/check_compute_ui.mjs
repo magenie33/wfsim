@@ -63,6 +63,7 @@ const ui = await evaluate(`(async () => {
   renderAuthPage("compute"); await wait();
   document.querySelector('#compute-workspace [data-layout-reset]').click(); await wait();
   out.reset = order() === defaults && browser.style.width === '';
+  await ensurePageBodies('support-page');
   const oldTally = tallyTo, oldFrom = tallyFrom, oldCount = computingCount;
   tallyTo = { volunteers: 1, official: 2, computing: 999 }; tallyFrom = tallyTo;
   computingCount = 7;
