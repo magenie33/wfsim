@@ -1088,9 +1088,10 @@ console.log("\nlocks: every statement that gives back many leases takes their ro
   // A DEADLOCK NEEDS TWO ORDERS: a lease given back over many rows, and a
   // settlement over the same rows, each in the order its scan met them. Read off
   // the source, since one PGlite connection cannot race two transactions.
-  const { readFileSync } = await import("node:fs");
+  const { readFileSync, readdirSync } = await import("node:fs");
   const loose = [];
-  for (const f of ["tasks.js", "factory.js", "pg/sync.sql"]) {
+  const modules = readdirSync(new URL("../worker/", import.meta.url)).filter(f => /^task_.*\.js$/.test(f));
+  for (const f of ["tasks.js", ...modules, "factory.js", "pg/sync.sql"]) {
     const src = readFileSync(new URL(`../worker/${f}`, import.meta.url), "utf8");
     for (const m of src.matchAll(/UPDATE questions SET (?:state = 'withdrawn', )?lease = NULL[\s\S]{0,160}?WHERE([\s\S]{0,240})/g)) {
       const where = m[1];

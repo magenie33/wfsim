@@ -344,6 +344,10 @@ jobs:
         run: node scripts/check_ledger.mjs
       - name: Every question becomes a fact, and nobody waits on one that cannot
         run: node scripts/check_tasks.mjs
+      - name: Task modules isolate dispatch, committed results and retryable consumers
+        run: node scripts/check_task_modules.mjs
+      - name: Complete demand includes unadmitted work without counting it twice
+        run: node scripts/check_task_inventory.mjs
       - name: A computer on but idle is found by what the server keeps, and said once
         run: node scripts/check_idle_devices.mjs
 

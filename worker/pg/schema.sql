@@ -216,6 +216,8 @@ CREATE INDEX IF NOT EXISTS demands_live ON demands (state, producer);
 -- THE QUESTIONS SOMEBODY STILL WAITS ON, a tenth of every demand: a redelivery
 -- starts here, not from every settled question (worker/tasks.js `redeliver`).
 CREATE INDEX IF NOT EXISTS demands_live_question ON demands (question) WHERE state = 'live';
+ALTER TABLE demands ADD COLUMN IF NOT EXISTS delivery_at TEXT COLLATE "C";
+CREATE INDEX IF NOT EXISTS demands_delivery ON demands (delivery_at, question) WHERE state = 'live' AND delivery_at IS NOT NULL;
 -- THE LIVE DEMANDS PAST DUE, a thousand of a million and a half (worker/tasks.js
 -- `audit`): the planner prices `due_at` over every state, where served rows are
 -- all past due, so without its own index it scans every live row.
@@ -249,6 +251,10 @@ CREATE TABLE IF NOT EXISTS answers (
   counts     TEXT COLLATE "C",
   lanes      BIGINT
 );
+ALTER TABLE answers ADD COLUMN IF NOT EXISTS credit_work BIGINT;
+ALTER TABLE answers ADD COLUMN IF NOT EXISTS credit_at TEXT COLLATE "C";
+CREATE INDEX IF NOT EXISTS answers_credit_pending ON answers (credit_at, id)
+  WHERE credit_work IS NOT NULL AND credited = 0 AND void = 0 AND official = 0;
 CREATE INDEX IF NOT EXISTS answers_by_question ON answers (question, engine);
 CREATE INDEX IF NOT EXISTS answers_by_device ON answers (device, at);
 -- A DEVICE'S ANSWERS THAT EARNED NOTHING, the ledger's few among its many

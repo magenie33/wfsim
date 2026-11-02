@@ -32,7 +32,7 @@ const KEYS = {
   gas_price_per_million: ["GAS_PRICE_PER_MILLION", ["engine/src/fight/gas.rs"]],
   run_price: ["RUN_PRICE", ["engine/src/fight/gas.rs"]],
   work_per_point: ["WORK_PER_POINT", ["worker/contribution.js"]],
-  score_near_relative: ["SCORE_NEAR", ["worker/tasks.js"]],
+  score_near_relative: ["SCORE_NEAR", ["worker/task_contract.js"]],
   lease_ms: [DIAL, ["lease_ms"]],
   pack_ms: [DIAL, ["pack_ms"]],
   pack_first: [DIAL, ["pack_first"]],
@@ -42,7 +42,7 @@ const KEYS = {
   renew_ms: [DIAL, ["renew_ms"]],
   row_ceiling_ms: [DIAL, ["row_ceiling_ms"]],
   clients_per_fact: ["CLIENTS_PER_FACT", ["worker/verify.js"]],
-  facts_per_refusal_forgiven: ["FACTS_PER_REFUSAL_FORGIVEN", ["worker/tasks.js"]],
+  facts_per_refusal_forgiven: ["FACTS_PER_REFUSAL_FORGIVEN", ["worker/task_contract.js"]],
   engine_grace_days: ["ENGINE_GRACE_DAYS", ["scripts/build_site_app.py"]],
 };
 

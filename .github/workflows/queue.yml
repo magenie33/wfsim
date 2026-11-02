@@ -84,6 +84,9 @@ jobs:
     timeout-minutes: ${{ inputs.rescore != '' && 180 || 75 }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22.23.4"
 
       # NOT CONFIGURED YET IS NOT A FAILURE. Without the credentials there is
       # nothing to read, and a job that fails hourly for a reason nobody is
@@ -171,6 +174,7 @@ jobs:
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
+          export WFSIM_SCAN_STARTED_AT="$(date -u +'%Y-%m-%dT%H:%M:%S.000Z')"
           bash scripts/fetch_library.sh library.json
           bash scripts/fetch_facts.sh facts-known.ndjson
           bash scripts/reconcile_queue.sh library.json facts-known.ndjson queue.ndjson
