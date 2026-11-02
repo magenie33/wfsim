@@ -439,6 +439,8 @@ jobs:
         run: node scripts/check_agent_coverage.mjs
       - name: The compute page shows what each device does, by kind, and nothing private
         run: node scripts/check_compute.mjs
+      - name: Compute cards retain layout, paginate records and share one live count
+        run: node scripts/check_compute_ui.mjs
       - name: A lost lane is replaced and says where, and a slow call is not taken for a dead one
         run: node scripts/check_calc_recovers.mjs
       - name: Calculation tasks retain their inputs, results and queue across pages

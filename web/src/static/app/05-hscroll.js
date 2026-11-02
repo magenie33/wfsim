@@ -236,13 +236,13 @@ refreshStickyHeader();
   }
   function refresh() {
     if (EMBED || dragging) return;
-    for (const page of document.querySelectorAll('.config-page')) {
+    for (const page of document.querySelectorAll('.config-page, [data-card-layout]')) {
       if (page.hidden) continue;
       let tools = page.querySelector(':scope > .layout-tools');
       if (!tools) {
         tools = document.createElement('div'); tools.className = 'layout-tools';
         tools.innerHTML = `<span>${escHtml(tr('Layout'))}</span><span class="layout-status"></span><button type="button" class="ghost-btn small" data-layout-edit>${escHtml(tr('Edit layout'))}</button><button type="button" class="ghost-btn small" data-layout-reset>${escHtml(tr('Restore default layout'))}</button>`;
-        const tabs = page.querySelector('.module-tabs'); if (tabs) tabs.after(tools); else page.prepend(tools);
+        const tabs = page.querySelector('.module-tabs, :scope > [data-layout-header]'); if (tabs) tabs.after(tools); else page.prepend(tools);
         tools.querySelector('[data-layout-edit]').onclick = () => { editing = !editing; refresh(); };
         tools.querySelector('[data-layout-reset]').onclick = () => {
           saved.cards = {}; saved.orders = {};
@@ -264,7 +264,9 @@ refreshStickyHeader();
         let group = groups.get(name);
         if (!group || group.rows.length !== cards.length || group.rows.some(({card,slot}) => !cards.includes(card) || !slot.isConnected)) {
           group?.rows.forEach(({slot}) => slot.remove());
-          group = {key:name,parent:cards[0].parentElement,rows:cards.map(card => { const slot = document.createComment('layout slot'); card.before(slot); return {card,slot}; })};
+          const defaults = cards.slice().sort((a,b) => Number(a.dataset.layoutOrder || 0) - Number(b.dataset.layoutOrder || 0));
+          const first = page.matches('[data-card-layout]') ? cards[0] : null;
+          group = {key:name,parent:cards[0].parentElement,rows:defaults.map(card => { const slot = document.createComment('layout slot'); (first || card).before(slot); return {card,slot}; })};
           groups.set(name,group);
         }
         apply(group);

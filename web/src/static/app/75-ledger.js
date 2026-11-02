@@ -88,7 +88,8 @@ function ledgerHtml(l, key) {
     if (!days.has(day)) days.set(day, []);
     days.get(day).push(h);
   }
-  const rows = [...days].reverse().map(([day, hours]) => {
+  const page = computeSlice([...days].sort((a, b) => b[0].localeCompare(a[0])), `ledger:${key}`);
+  const rows = page.rows.map(([day, hours]) => {
     const open = ledgerOpenDay === `${key}|${day}`;
     const sum = (k) => hours.reduce((t, h) => t + h[k], 0);
     const given = (hs) => {
@@ -103,7 +104,7 @@ function ledgerHtml(l, key) {
   const more = l.earlier || ledgerAll ? `<button class="ghost-btn btn-sm" data-auth="compute-ledger-span">${
     aT(ledgerAll ? "Show the last 30 days" : "Show all history")}</button>` : "";
   return top + (rows ? `<table class="w-tab lg-tab"><thead><tr><th>${aT("Day")}</th><th>${aT("Results")}</th><th>${aT("Points")}</th><th>${aT("Went to")}</th></tr></thead><tbody>${rows}</tbody></table>`
-    : `<p class="set-note" style="margin:0">${aT("Nothing computed yet")}</p>`) + more;
+    : `<p class="set-note" style="margin:0">${aT("Nothing computed yet")}</p>`) + computePagerHtml(page) + more;
 }
 
 /// THIS BROWSER'S LEDGER, under its own block.
@@ -133,18 +134,24 @@ function ledgerAccountHtml() {
     m.set(h.id, (m.get(h.id) || 0) + h.points);
     days.set(day, m);
   }
-  const rows = [...days].sort((x, y) => (x[0] < y[0] ? 1 : -1)).map(([day, m]) =>
+  const page = computeSlice([...days].sort((x, y) => (x[0] < y[0] ? 1 : -1)), "ledger:account");
+  const rows = page.rows.map(([day, m]) =>
     `<tr><td>${escHtml(day)}</td><td class="w-num">${computePts([...m.values()].reduce((t, p) => t + p, 0))}</td><td>${
       [...m].map(([id, p]) => `${name(id)} ${computePts(p)}`).join(" · ")}</td></tr>`).join("");
   return `<div class="block" id="compute-account-ledger"><div class="bh"><h2>${aT("Points by day")}</h2></div><div class="bb"><p class="set-note">${
-    aT("What came in to your account each day, device by device.")}</p><table class="w-tab lg-tab"><thead><tr><th>${aT("Day")}</th><th>${aT("Points")}</th><th>${aT("Devices")}</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    aT("What came in to your account each day, device by device.")}</p><table class="w-tab lg-tab"><thead><tr><th>${aT("Day")}</th><th>${aT("Points")}</th><th>${aT("Devices")}</th></tr></thead><tbody>${rows}</tbody></table>${computePagerHtml(page)}</div></div>`;
 }
 
 /// THE LEDGER'S BUTTONS: a day opened or shut, all history or the last 30 days,
 /// and a listed device's ledger opened or shut.
 async function ledgerAct(el, what) {
   if (what === "compute-ledger-day") ledgerOpenDay = ledgerOpenDay === el.dataset.day ? null : el.dataset.day;
-  else if (what === "compute-ledger-span") { ledgerAll = !ledgerAll; await loadLedgers(); }
+  else if (what === "compute-ledger-span") {
+    ledgerAll = !ledgerAll;
+    for (const key of Object.keys(computePages)) if (key.startsWith("ledger:")) delete computePages[key];
+    ledgerOpenDay = null;
+    await loadLedgers();
+  }
   else if (what === "compute-ledger-device") {
     const id = el.dataset.id;
     ledgerOpenDevice = ledgerOpenDevice === id ? null : id;

@@ -132,11 +132,11 @@ async function loadHomeTally() {
   const r = await statsFile("tally", TALLY_STALE_MS)
     || await fetch("/api/board/tally", { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (!r || !r.totals) return;
-  const next = { volunteers: r.totals.volunteers, official: r.totals.official, computing: r.computing | 0 };
+  const next = { volunteers: r.totals.volunteers, official: r.totals.official };
   // THE FIRST ANSWER WALKS FROM A MINUTE BEFORE IT, at the day's pace per hour,
   // so a count moves the moment the page opens and shows only what it held.
   const back = (k) => Math.max(0, next[k] - Math.round((r.per_hour?.[k] | 0) / 60));
-  tallyFrom = tallyShown || { volunteers: back("volunteers"), official: back("official"), computing: next.computing };
+  tallyFrom = tallyShown || { volunteers: back("volunteers"), official: back("official") };
   tallyTo = next;
   tallyAt = Date.now();
   renderHomeTally();
@@ -149,13 +149,13 @@ function renderHomeTally() {
   if (!box || !el || !tallyTo) return;
   const f = Math.min(1, (Date.now() - tallyAt) / TALLY_EVERY_MS);
   const at = (k) => Math.round(tallyFrom[k] + (tallyTo[k] - tallyFrom[k]) * f);
-  tallyShown = { volunteers: at("volunteers"), official: at("official"), computing: tallyTo.computing };
-  const b = (n) => `<b>${escHtml(n.toLocaleString())}</b>`;
+  tallyShown = { volunteers: at("volunteers"), official: at("official") };
+  const b = (n) => `<b>${escHtml(n.toLocaleString(accountLocale()))}</b>`;
   const line = (s, n, dot) => `<span class="hf">${dot ? '<span class="online-dot"></span>' : ""}${
     escHtml(tr(s)).replace("{n}", b(n))}</span>`;
   el.innerHTML = line("{n} scores computed by players' devices, each agreed by two", tallyShown.volunteers)
     + line("{n} by the official servers", tallyShown.official)
-    + (tallyShown.computing ? line("{n} devices computing together now", tallyShown.computing, true) : "");
+    + (computingCount !== null ? line("{n} devices computing together now", computingCount, true) : "");
   box.hidden = false;
 }
 loadHomeTally();
@@ -295,8 +295,8 @@ function renderSupportCounts() {
   drawSupportCounts($("support-community-facts"), rows);
   const computing = $("support-computing");
   if (computing) {
-    computing.hidden = !tallyTo?.computing;
-    if (!computing.hidden) computing.textContent = tr("{n} devices computing together now").replace("{n}", tallyTo.computing.toLocaleString());
+    computing.hidden = computingCount === null;
+    if (!computing.hidden) computing.textContent = tr("{n} devices computing together now").replace("{n}", computingCount.toLocaleString(accountLocale()));
   }
 }
 

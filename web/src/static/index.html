@@ -150,13 +150,15 @@
       <!-- HOW MANY COMPUTERS ARE COMPUTING FOR WFSIM NOW, on every page and to
            everyone, zero included (`73-compute.js` `navComputing`): the way in
            to computing, beside this tab's own ring. -->
-      <a id="compute-count" class="tcount compute-online" href="/compute" hidden></a>
+      <a id="compute-link" class="compute-online" href="/compute" hidden>
+      <span id="compute-count" class="tcount" hidden></span>
       <!-- THIS TAB COMPUTES FOR THE COMMUNITY, as a ring of fixed size that
            fills with the task (`73-compute.js` `computeChrome`). Drawn
            while computing is on, whether or not a task runs, so a task
            starting or ending never moves the bar — and ON the bar at every
            width, outside the phone menu: a narrow desktop window computes too. -->
-      <a id="compute-mark" class="compute-mark" href="/compute" hidden aria-label="Compute together"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle class="cm-track" cx="12" cy="12" r="9" pathLength="100"/><circle class="cm-arc" cx="12" cy="12" r="9" pathLength="100"/></svg></a>
+      <span id="compute-mark" class="compute-mark" hidden><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle class="cm-track" cx="12" cy="12" r="9" pathLength="100"/><circle class="cm-arc" cx="12" cy="12" r="9" pathLength="100"/></svg></span>
+      </a>
       <button id="menu-toggle" class="ghost-btn menu-toggle" aria-expanded="false"
               aria-controls="topmenu" aria-label="Menu" title="Menu" data-i18n-title>☰</button>
       <div id="topmenu" class="topmenu">

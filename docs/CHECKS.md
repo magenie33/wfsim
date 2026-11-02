@@ -724,6 +724,15 @@ taken since is dropped unanswered, another engine's fold never renewed, and
 turning computing off drops it. These board-order cases run on protocol 7, the
 one a page falls back to.
 
+## `check_compute_ui`
+
+A 25-entry fixture checks ten entries per page in device and account ledgers
+and recent tasks, page retention through redraws, and the final partial page.
+The same page resizes and reorders cards, preserves the live node and saved
+layout through a refresh, then restores authored order after a ledger leaves
+and returns. A conflicting historical tally must not change the shared live
+device count, including zero; ring and count must share one navigation link.
+
 ## `check_release_follow`
 
 A page told of a newer release, on the dev server or the built site: not

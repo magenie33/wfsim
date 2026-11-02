@@ -2220,19 +2220,15 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .cs label.cs-road select{width:auto;height:auto;font-size:12px;padding:1px 4px}
 .cs label input[type="checkbox"]{width:auto;margin:0}
 .cs-sum{font-size:12px;color:var(--text-2)}
-/* THE RIGHT-HAND GROUP is pushed over by its first box: the computers-online
-   count, else the compute ring, else Support. The count and the ring are
-   direct children of the bar and sort first among the right-hand boxes by
-   their place in the markup. */
-.topbar-inner>.compute-online,.topbar-inner>.compute-mark{order:4;margin-left:auto}
+/* The combined compute link or Support pushes the right-hand group over. */
+.topbar-inner>.compute-online{order:4;margin-left:auto}
 .topbar-inner .tblinks>.sup-link{margin-left:auto}
-.topbar-inner:has(>.compute-online:not([hidden]))>.compute-mark,
-.topbar-inner:has(>.compute-online:not([hidden])) .tblinks>.sup-link,
-.topbar-inner:has(>.compute-mark:not([hidden])) .tblinks>.sup-link{margin-left:0}
+.topbar-inner:has(>.compute-online:not([hidden])) .tblinks>.sup-link{margin-left:0}
 /* The count is a quiet link: a dot and a number, a word on hover. */
-.topbar-inner .compute-online{display:inline-flex;align-items:center;height:28px;padding:0 8px;margin-right:-6px;border-radius:8px;
+.topbar-inner .compute-online{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:2px 8px;border-radius:8px;
   font-size:12px;color:var(--text-2);text-decoration:none}
 .topbar-inner .compute-online[hidden]{display:none}
+.compute-online [hidden]{display:none}
 .topbar-inner .compute-online:hover{background:var(--line);color:var(--text)}
 
 /* ---- the compute ring: the bar's one sign that this tab computes --------
@@ -2241,7 +2237,6 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .compute-mark{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;flex:0 0 28px;
   border-radius:8px;text-decoration:none}
 .compute-mark[hidden]{display:none}
-.compute-mark:hover{background:var(--line)}
 .compute-mark svg{width:18px;height:18px;transform:rotate(-90deg)}
 .compute-mark circle{fill:none;stroke-width:3}
 .compute-mark .cm-track{stroke:var(--line)}
@@ -3894,7 +3889,7 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .layout-tools{display:flex;align-items:center;gap:7px;margin:0 auto 12px;font-size:11px;color:var(--muted)}
 .layout-tools>span{margin-right:auto}
 .layout-tools [hidden]{display:none}
-.layout-active.config-page{max-width:1280px}
+.layout-active.config-page,.compute-workspace.layout-active{max-width:1280px}
 .layout-active>:not(#build-finder){width:min(724px,100%);margin-inline:auto}
 .layout-active #build-finder{width:100%;max-width:none}
 .layout-active .layout-card{position:relative;width:min(724px,100%);max-width:100%;margin-inline:auto;box-sizing:border-box}
@@ -3913,11 +3908,21 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .layout-dragging{opacity:.45}
 .layout-drop-before{box-shadow:inset 0 3px var(--accent)}
 .layout-drop-after{box-shadow:inset 0 -3px var(--accent)}
+.compute-workspace{max-width:760px;margin:0 auto;padding:18px;box-sizing:border-box}
+.compute-intro{display:flex;align-items:flex-start;gap:16px;margin-bottom:18px}
+.compute-intro>div{flex:1;min-width:0}
+.compute-intro .page{margin-top:0}
+.compute-intro>a{flex:none;white-space:nowrap}
+.compute-pager{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0;font-size:12px;color:var(--muted)}
+.compute-pager>span{text-align:center}
+@media(max-width:520px){.compute-intro{flex-wrap:wrap}.compute-intro>div{flex-basis:100%}.compute-pager{flex-wrap:wrap}.compute-pager>span{order:-1;flex-basis:100%}}
 @media(max-width:520px){.layout-tools{flex-wrap:wrap}.layout-move-tools button{width:28px;height:28px}}
 @media(max-width:520px){
   .layout-editing.config-page{padding-right:64px}
   .layout-editing .layout-card>.bh .sub{display:none}
   .layout-editing .layout-card>.bh h2{white-space:nowrap;flex-shrink:0}
+  .compute-workspace.layout-editing .layout-card>.bh{flex-wrap:wrap;row-gap:6px}
+  .compute-workspace.layout-editing .layout-card>.bh h2{white-space:normal;flex:1;min-width:0}
 }
 
 #warframe-page.wf-library>section:not(#wf-library),

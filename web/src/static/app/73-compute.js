@@ -115,6 +115,7 @@ function computeChrome() {
   if (!mark) return;
   mark.hidden = !(WASM && boardVerifyOn());
   if (!mark.hidden) computeMarkPaint(mark);
+  computeLinkPaint();
 }
 function computeMarkPaint(mark) {
   const st = computeState(), f = computeFraction();
@@ -125,6 +126,17 @@ function computeMarkPaint(mark) {
   const label = `${st.text}${st.key === "computing" && f !== null ? ` ${Math.round(f * 100)}%` : ""}`;
   mark.title = label;
   mark.setAttribute("aria-label", label);
+  computeLinkPaint();
+}
+function computeLinkPaint() {
+  const link = $("compute-link"), count = $("compute-count"), mark = $("compute-mark");
+  if (!link) return;
+  link.hidden = (!count || count.hidden) && (!mark || mark.hidden);
+  const parts = [];
+  if (computingCount !== null) parts.push(tr("{n} devices computing WFSim together now").replace("{n}", computeCount(computingCount)));
+  if (mark && !mark.hidden) parts.push(mark.title);
+  link.title = parts.join(" · ");
+  link.setAttribute("aria-label", parts.join(" · ") || tr("Compute together"));
 }
 /// THE STATE, one answer for the ring and the page's own line: `{ key, text }`,
 /// where `key` is what the ring draws — computing, waiting, paused, held or off.
@@ -325,7 +337,8 @@ function computeDevicesHtml() {
   const s = devicesState;
   if (!s) return "";
   const own = computeOwnId();
-  const rows = s.devices.map((d) => {
+  const page = computeSlice(s.devices, "devices");
+  const rows = page.rows.map((d) => {
     const name = d.label || tr("Device {id}").replace("{id}", d.id);
     const here = d.id === own ? ` <span class="set-note">${aT("(this browser)")}</span>` : "";
     const status = d.now ? `${aT("Computing")}: ${computeTaskHtml(d.now)}`
@@ -352,7 +365,7 @@ function computeDevicesHtml() {
     .replace("{n}", Number(s.removed.count).toLocaleString(accountLocale())).replace("{p}", Number(s.removed.points).toLocaleString(accountLocale())))}</p>` : "";
   return `<div class="block" id="compute-devices"><div class="bh"><h2>${aT("Your devices")}</h2></div><div class="bb">${rows
     ? `<dl class="kvs">${s.contributor_rank ? `<div class="kv"><dt>${aT("Contributor rank")}</dt><dd>${contributorRankBar(s.contributor_rank)}</dd></div>` : ""}${
-      rows}${computeHonourHtml(s)}</dl><p class="set-note" style="margin:8px 0 0">${aT("All together")}: ${total}</p>${removed}`
+      rows}</dl>${computePagerHtml(page)}<dl class="kvs">${computeHonourHtml(s)}</dl><p class="set-note" style="margin:8px 0 0">${aT("All together")}: ${total}</p>${removed}`
     : `<p class="set-note" style="margin:0">${aT("No device yet: leave WFSim open on a device while you are signed in.")}</p>`}</div></div>`;
 }
 
@@ -408,6 +421,20 @@ const taskPts = (t) => Math.round(Number(t.work || 0) / 1e9);
 /// cut off every second and everything under it jumped. docs/UI.md §"The compute
 /// page changes in place".
 let computeOpenTask = null;
+const computePages = Object.create(null);
+function computeSlice(rows, key, size = 10) {
+  const pages = Math.max(1, Math.ceil(rows.length / size));
+  const page = Math.max(0, Math.min(computePages[key] || 0, pages - 1));
+  computePages[key] = page;
+  return { rows: rows.slice(page * size, (page + 1) * size), key, page, pages, total: rows.length };
+}
+function computePagerHtml({ key, page, pages, total }) {
+  if (pages <= 1) return "";
+  const button = (to, label, disabled) => `<button type="button" class="ghost-btn btn-sm" data-auth="compute-page" data-page-key="${escHtml(key)}" data-page="${to}"${disabled ? " disabled" : ""}>${aT(label)}</button>`;
+  return `<nav class="compute-pager" aria-label="${escHtml(tr("Pagination"))}">${button(page - 1, "Previous page", page === 0)}
+    <span aria-live="polite">${escHtml(trF("Page {page} of {pages} · {total} entries", { page: page + 1, pages, total }))}</span>
+    ${button(page + 1, "Next page", page === pages - 1)}</nav>`;
+}
 const computeStill = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const computeCount = (x) => Number(x || 0).toLocaleString(accountLocale());
 /// WHEN "TODAY" STARTS OVER: 00:00 UTC, said in the reader's own time and zone.
@@ -427,27 +454,23 @@ function computeRecentHtml() {
       <div class="rt-tile"><b data-tile="pending"></b><span>${aT("points pending verification")}</span></div>
       <div class="rt-tile"><b data-tile="ms"></b><span>${aT("time computing today")}</span></div></div>
     ${computeDayHtml()}
-    <div data-now></div><div class="rt-list" data-list></div>
+    <div data-now></div><div class="rt-list" data-list></div><div data-pager></div>
     <p class="set-note" data-empty hidden style="margin:8px 0 0">${aT("Nothing yet.")}</p>
     <p class="set-note" style="margin:8px 0 0">${aT("A result counts once another device, of another owner on another network, computes exactly the same number. Open a task to see the build and the fight. This list stays in this browser.")}</p></div></div>`;
 }
-/// THE PAGE DRAWN AGAIN AROUND THE LIVE BLOCK: every other block is replaced,
-/// the live one is never taken out of the page — moving it would restart what
-/// it is in the middle of.
+/// Keep card nodes and layout slots mounted; update their bodies around the live block.
 function computeDraw(main) {
-  const live = document.getElementById("rt-live");
   const t = document.createElement("template");
   t.innerHTML = computePage();
-  const col = live && live.parentNode;
-  const fresh = t.content.getElementById("rt-live");
-  // …UNLESS ITS OWN WORDS CHANGED — another language — which only a new one says.
-  const same = live && fresh && live.querySelector("h2").textContent === fresh.querySelector("h2").textContent;
-  if (same && col && main.contains(col)) {
-    for (const el of [...col.children]) if (el !== live) el.remove();
-    let after = false;
-    for (const el of [...fresh.parentNode.children]) {
-      if (el === fresh) { after = true; continue; }
-      if (after) col.append(el); else col.insertBefore(el, live);
+  const col = main.querySelector("#compute-workspace"), fresh = t.content.getElementById("compute-workspace");
+  if (col && col.dataset.lang === fresh.dataset.lang) {
+    const ids = new Set([...fresh.children].map(el => el.id));
+    for (const el of [...col.children]) if (el.id && !ids.has(el.id)) el.remove();
+    for (const el of [...fresh.children]) {
+      const old = el.id && document.getElementById(el.id);
+      if (!old || !col.contains(old)) { col.append(el); continue; }
+      if (el.id === "rt-live" || (old.contains(document.activeElement) && document.activeElement.matches("input, textarea, select, [contenteditable]"))) continue;
+      if (el.classList.contains("block")) old.querySelector(":scope > .bb").replaceChildren(...el.querySelector(":scope > .bb").childNodes);
     }
   } else main.replaceChildren(t.content);
   // EVERY BLOCK FOLDS, as the rest of the site's do (70-result-panel.js `wireBlockFolds`).
@@ -588,8 +611,11 @@ let computeDetail = null;
 function computeLiveList(root) {
   const list = root.querySelector("[data-list]");
   const held = computeJustDone && Date.now() < computeJustDone.until ? computeJustDone.task.at : null;
-  const log = computeLog().filter((t) => t.at !== held);
-  root.querySelector("[data-empty]").hidden = log.length > 0 || held !== null;
+  const page = computeSlice(computeLog().filter((t) => t.at !== held), "recent");
+  const log = page.rows;
+  root.querySelector("[data-empty]").hidden = page.total > 0 || held !== null;
+  const pager = root.querySelector("[data-pager]"), signature = `${page.page}|${page.pages}|${page.total}|${LANG}`;
+  if (pager.dataset.signature !== signature) { pager.innerHTML = computePagerHtml(page); pager.dataset.signature = signature; }
   const have = new Map([...list.querySelectorAll(":scope > .rt-card")].map((el) => [el.dataset.key, el]));
   const first = !list.dataset.drawn;
   list.dataset.drawn = "1";
@@ -792,9 +818,7 @@ function computeDemandHtml() {
 /// answers and no worker sees — when the page starts, each minute on the compute
 /// page and at most every five minutes anywhere else. The number as it is, zero
 /// too, and nothing where it cannot be read.
-/// ONE SOURCE FOR THE COUNT: the bar and the compute page's "computing now"
-/// both draw `computingCount`, and only this asks for it — so the two are the
-/// same number at every moment.
+/// Home, support, the bar and the compute page draw this same live count.
 let computingCount = null;
 let computingAskedAt = 0;
 const COMPUTING_EVERY_MS = 60_000;
@@ -803,17 +827,20 @@ async function navComputing() {
   const el = document.getElementById("compute-count");
   // NOT ON A DEV SERVER: it hands out no work, and the live count is not its own.
   if (!el || document.hidden || !WASM) return;
-  const every = authKindOf(location.pathname) === "compute" ? COMPUTING_EVERY_MS : COMPUTING_AWAY_EVERY_MS;
+  const every = ["/", "/weapons", "/compute", "/support"].includes(location.pathname) ? COMPUTING_EVERY_MS : COMPUTING_AWAY_EVERY_MS;
   // A SECOND OF SLACK so the minute's tick is not skipped by its own jitter.
   if (Date.now() - computingAskedAt < every - 1000) return;
   computingAskedAt = Date.now();
   const r = await fetch(SIGNAL_URL, { cache: "no-cache" }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
-  if (!r || typeof r.computing !== "number") return;
+  if (!r || !Number.isSafeInteger(r.computing) || r.computing < 0) return;
   computingCount = r.computing;
   const n = computingCount.toLocaleString(accountLocale());
   el.innerHTML = `<span class="online-dot"></span>${escHtml(n)}`;
   el.title = tr("{n} devices computing WFSim together now").replace("{n}", n);
   el.hidden = false;
+  computeLinkPaint();
+  renderHomeTally();
+  renderSupportCounts();
   computeRedraw();
 }
 navComputing();
@@ -821,10 +848,12 @@ setInterval(navComputing, COMPUTING_EVERY_MS);
 addEventListener("visibilitychange", navComputing);
 
 function computePage() {
-  return `<div class="settings solo"><div class="set-main"><h1 class="page">${aT("Compute together")}</h1>
-    <p class="set-note">${aT("The volunteers' devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.")}
-      <a href="/contributors">${aT("Contributors")}</a></p>
-    ${computeDemandHtml()}${computeHereHtml()}${ledgerHereHtml()}${computeDevicesHtml()}${ledgerAccountHtml()}${computeRecentHtml()}</div></div>`;
+  const cards = [computeHereHtml(), computeRecentHtml(), computeDevicesHtml(), ledgerHereHtml(), ledgerAccountHtml(), computeDemandHtml()]
+    .map((html, i) => html.replace('class="block"', `class="block" data-layout-order="${i}"`)).join("");
+  return `<div id="compute-workspace" class="compute-workspace" data-card-layout data-lang="${escHtml(LANG)}">
+    <div id="compute-intro" class="compute-intro" data-layout-header><div><h1 class="page">${aT("Compute together")}</h1>
+      <p class="set-note">${aT("The volunteers' devices compute WFSim's free features together. Everything they compute is free for every player, and WFSim never makes money from it.")}</p></div>
+      <a class="ghost-btn btn-sm" href="/contributors">${aT("Contributors")}</a></div>${cards}</div>`;
 }
 
 /// DRAWN: this browser's points asked, the account's devices asked once per
@@ -872,6 +901,10 @@ async function computeRefresh() {
 async function computeAct(el, what) {
   const id = el.dataset.id;
   if (what === "compute-reload") return reloadForRelease();
+  if (what === "compute-page") {
+    computePages[el.dataset.pageKey] = Math.max(0, Number(el.dataset.page) || 0);
+    if (el.dataset.pageKey === "recent") computeOpenTask = null;
+  }
   if (what.startsWith("compute-ledger")) return ledgerAct(el, what);
   else if (what === "device-rename") computeEditing = id;
   else if (what === "device-rename-cancel" || what === "device-remove-cancel") { computeEditing = null; computeRemoving = null; }

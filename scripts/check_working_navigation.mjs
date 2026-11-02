@@ -1,5 +1,5 @@
 import {openApp} from './cdp.mjs';
-const app=await openApp({boot:8000,lang:'en'});
+const app=await openApp({boot:8000,lang:'en',base:process.env.WFSIM_BASE});
 try {
   await app.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await app.load('/weapons/Laetum/builder',6000);

@@ -1169,6 +1169,19 @@ animation in it. A progress tick changes that block alone.
   words, and opened, the build it concluded on as the builder's card.
 - With reduced motion asked for, only colours and numbers change.
 
+The page opens with this device's controls and recent tasks, followed by the
+account's devices, device and account ledgers, and global demand. Its header
+links to Contributors. Cards use the shared layout controls: order and size
+persist through refreshes, and restoring defaults returns the authored order.
+Recent tasks, device lists and each ledger show ten entries per page, keeping
+their page through refreshes. A ledger entry is a day; its hours open inline.
+Showing all history extends the date range while retaining pagination.
+
+The home page, support page, top bar and compute page use the same live device
+count from the work signal, including zero. Historical score tallies supply
+only cumulative totals. The top bar's count and task ring share one link to
+`/compute` and one accessible label containing both states.
+
 ## Compute: solo and together
 
 The page names its two shares SOLO and TOGETHER (自己算 and 一起算), never
