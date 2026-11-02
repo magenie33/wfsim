@@ -212,14 +212,26 @@ the panel.
 
 ## `check_compute_orders`
 
-The orders on the compute page (`73-compute.js` `computeDemandHtml`), drawn
-from a stubbed demand object: the total is every order listed, said as what is
-dispatched and what waits on the server over a bar of the share dispatched;
-each kind is one row of a list with what was dispatched of it, a kind the page
-does not know shown by its id; the old Queued row is gone and the countdown
-stays; an older object without `orders` still lists its kinds and claims no
-split. It failed with the split drawn from the totals and with an unknown kind
-left out.
+The community goal (`73-compute.js` `computeDemandHtml`) reads complete
+inventory independently of the partial queue. Admission leaves the total
+unchanged; confirmed completion reduces the next inventory. Each task kind is
+listed, unknown kinds keep their ids, and update time and clearance estimate
+belong to that inventory. Missing or expired inventory has an unknown total
+and no estimate; a confirmed empty inventory is zero.
+
+## `check_task_modules` and `check_task_inventory`
+
+Task modules depend on common contracts and receive interfaces through their
+composition root. A new registered verb and producer work without dispatch
+type branches; an alternative dispatcher receives no result or credit access.
+Consumer and contribution failures preserve verified work. Delivery and payment
+retry independently and idempotently. Normal pack delivery uses a bounded
+number of database calls independent of its task count.
+
+Inventory unions missing and queued task identities, removes orphans and
+retired rulers, and counts undispatched work before admission pacing. A new
+task kind is included automatically. Partial, invalid, expired or older-input
+scans cannot supply a fresh complete total.
 
 ## `check_reminder_notices`
 

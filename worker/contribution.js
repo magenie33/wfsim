@@ -45,6 +45,7 @@ import { noteFactoryCall } from "./factory_calls.js";
 import { meritTotals } from "./merit.js";
 import { dialsOf } from "./dials.js";
 import { BOARD_KINDS } from "./board_kinds.js";
+import { readInventory } from "./task_inventory.js";
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
@@ -785,10 +786,22 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   const userRequests = counted.openOf.filter((row) => ["simulate_report", "optimize_report"].includes(row.verb)).reduce((sum, row) => sum + row.n, 0);
   if (userRequests) orders.push({ kind: "user_calculation", total: userRequests, dispatched: null });
   const reading = await nowOf(db, now);
+  const inventory = await readInventory(db, now);
+  let goal = null;
+  if (inventory) {
+    let work = 0;
+    for (const [verb, count] of Object.entries(inventory.verbs)) {
+      if (!count) continue;
+      if (!factsOf[verb]) { work = null; break; }
+      work += count * (msOf[verb] || 0) / factsOf[verb];
+    }
+    goal = { ...inventory, clear_hours: work !== null && msPerHour > 0 ? work / msPerHour : null };
+  }
   return { ok: true, v: 1, at, computing: await computingNow(env),
     owed: { new_builds: by[0] || 0, rescores: by[1] || 0, sweeps: by[2] || 0, refreshes: by[3] || 0 },
     riven_gains: Number((gains.results[0] || {}).n || 0),
     orders,
+    goal,
     surveys: surveys.results.map(({ lately, ...g }) => {
       const s = { weapon: g.weapon, ruler: g.ruler, shapes: Number(g.shapes), agreed: Number(g.agreed), started: Number(g.started) };
       const pace = Number(lately || 0) / (PACE_HOURS);

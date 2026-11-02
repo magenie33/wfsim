@@ -9,7 +9,7 @@ const ui = await evaluate(`(async () => {
   const wait = () => new Promise(resolve => setTimeout(resolve, 150));
   const demandLoader = loadComputeDemand;
   loadComputeDemand = async () => {};
-  computeDemand = { orders: [{ kind: 'new_build', total: 100, dispatched: 20 }], owed: {}, per_hour: { volunteers: 5, official: 1 }, clear_hours: 1, surveys: [] };
+  computeDemand = { orders: [{ kind: 'new_build', total: 20, dispatched: 20 }], goal: { v: 1, at: new Date().toISOString(), expires_at: new Date(Date.now() + 3600000).toISOString(), total: 100, orders: [{ kind: 'board', total: 100 }], clear_hours: 1 }, owed: {}, per_hour: { volunteers: 5, official: 1 }, clear_hours: 1, surveys: [] };
   clearInterval(computeTimer); computeTimer = setInterval(() => {}, 60000);
   accountState.loaded = true; accountState.providers = ["email"]; accountState.account = { id: "paged-account" };
   computeAskedFor = "paged-account";
@@ -31,7 +31,7 @@ const ui = await evaluate(`(async () => {
   const defaults = 'compute-demand,rt-live,compute-community,compute-browser,compute-devices,compute-history,compute-ledger,compute-account-ledger';
   out.hierarchy = order() === defaults && !document.querySelector('#rt-live .rt-list');
   const goal = document.getElementById('compute-demand');
-  out.goal = document.querySelector('#compute-workspace > .block') === goal && !goal.classList.contains('shut') && goal.querySelector('#orders-bar > div').style.width === '20%';
+  out.goal = document.querySelector('#compute-workspace > .block') === goal && !goal.classList.contains('shut') && goal.textContent.includes('leaderboard calculations 100');
   out.identity = document.querySelector('#compute-community').textContent.includes('WFSim Volunteer') && !!document.querySelector('#compute-community .cr-badge') && !document.querySelector('#compute-devices .cr-badge');
   const browser = document.getElementById("compute-browser"), live = document.getElementById("rt-live"), historyCard = document.getElementById("compute-history");
   const foldedSettings = browser.classList.contains('shut');

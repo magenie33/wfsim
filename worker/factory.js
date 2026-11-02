@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// THE SITE'S FACT FACTORY (worker/tasks.js): its verbs, the deadlines that ARE
-// the dispatch policy, and the producers that ask. A new kind of task is one more
+// THE SITE'S FACT FACTORY (worker/tasks.js): its verbs, deadlines and producers.
+// A new kind of task is one more
 // producer here and in its own file; worker/tasks.js does not change.
 import { USER_TASK_PRODUCERS, userCalculationWork, reportCanon, purgeUserCalculations } from "./user_tasks.js";
 import { factory, canon, nearAnswer, inIdOrder } from "./tasks.js";
@@ -15,12 +15,10 @@ import { iso } from "./instant.js";
 import { fairShadow, settleBatch } from "./settler.js";
 import { DEMAND_KEY } from "./contribution.js";
 
-/// HOW LONG EACH ASK MAY WAIT — THE WHOLE DISPATCH POLICY, stated in
-/// worker/deadlines.js.
+/// How long each ask may wait, stated in worker/deadlines.js.
 export { DEADLINE_MS } from "./deadlines.js";
-/// THE OLDEST A BOARD ROW MAY GROW: its refresh is due when its fact is this old
-/// (`.github/workflows/queue.yml` asks from three days on). `DEADLINE_MS.refresh`
-/// is only for a row with no fact time.
+/// An explicitly requested refresh is due at this fact age. The hourly queue
+/// reconciles missing measurements only; `DEADLINE_MS.refresh` covers no fact time.
 export const REFRESH_WITHIN_MS = 15 * 86_400_000;
 /// A SCENE'S FIRST PASS: a cell row with no fact yet, whichever batch asked it,
 /// is due this long after its ask — ahead of every refresh still days from its
@@ -31,8 +29,8 @@ export const SCENE_FIRST_MS = 3 * 86_400_000;
 /// and so all of it must be deterministic under every split of the work
 /// (`a_search_costs_the_same_work_however_the_fleet_splits_it`).
 export const VERBS = {
-  simulate_report: { cap: 3, lease_ms: 30 * 60_000, spot: 0, recheck: 0, canon: reportCanon },
-  optimize_report: { cap: 3, lease_ms: 30 * 60_000, spot: 0, recheck: 0, canon: reportCanon },
+  simulate_report: { cap: 3, lease_ms: 30 * 60_000, spot: 0, recheck: 0, canon: reportCanon, official_producers: ["user_calculation"] },
+  optimize_report: { cap: 3, lease_ms: 30 * 60_000, spot: 0, recheck: 0, canon: reportCanon, official_producers: ["user_calculation"] },
   // A board row: its score, the metric it is in, and the fight's work. Two
   // answers that differ are a dispute; leased half an hour, past the slowest row.
   // Seconds of work each, so handed out in packs (worker/verify.js `PACK_MS`).

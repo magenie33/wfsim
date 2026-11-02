@@ -30,7 +30,8 @@ assert "INCLUDE (measured_by)" in sql and "WHERE odd = 1" in sql
 assert "BEGIN" not in sql and "DROP" not in sql
 with tarfile.open(fileobj=io.BytesIO(module.bundle("c0ffee")), mode="r:gz") as archive:
     names = archive.getnames()
-    for name in ["scripts/factoryd.mjs", "scripts/factory_capacity.mjs", "scripts/sigv4.mjs", "worker/contribution.js", "COMMIT"]:
+    for name in ["scripts/factoryd.mjs", "scripts/factory_capacity.mjs", "scripts/sigv4.mjs", "worker/contribution.js", "COMMIT",
+                 *[f"worker/task_{part}.js" for part in ("contract", "ledger", "dispatch", "usage", "verification", "delivery", "credit", "observation", "inventory")]]:
         assert name in names, name
     assert any(name.startswith("scripts/pg/node_modules/postgres/src/") for name in names)
     assert not any(name.startswith("private/") or name.endswith(".env") for name in names)

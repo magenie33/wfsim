@@ -141,6 +141,9 @@ jobs:
       byruler: ${{ steps.work.outputs.byruler }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22.23.4"
 
       # NOT CONFIGURED YET IS NOT A FAILURE. Without the credentials there is
       # nothing to read, and a job that fails for a reason nobody is acting on
@@ -244,6 +247,7 @@ jobs:
           FLOOR: ${{ steps.floor.outputs.floor }}
         run: |
           set -euo pipefail
+          echo "WFSIM_SCAN_STARTED_AT=$(date -u +'%Y-%m-%dT%H:%M:%S.000Z')" >> "$GITHUB_ENV"
           bash scripts/fetch_library.sh library.json
 
       # THE LIST IS ALSO THE ONLY OFF-SITE COPY OF THE LIBRARY, which is the one

@@ -270,13 +270,13 @@ including the empty ones, because a 404 and an empty list are the same thing to
 | | who starts it | what it does | what it costs |
 | --- | --- | --- | --- |
 | `queue.yml` | the clock, hourly at `:00` | what ARRIVED becomes a build; what has no score is asked for | one runner, minutes |
-| `queue.yml` | the clock, once at 16:00 UTC | …and the weapons that have gone LONGEST are asked for again | the same runner |
 | `scores.yml` | the clock, hourly at `:30` | what is asked for is MEASURED | as many shards as the work needs |
 | `publish.yml` | the clock, once a day | `scores` is ranked into the `site/board` SNAPSHOT, which the site does not read | one runner, seconds |
 | `live_board.sh` | every 20 s, on the board server | `scores` is ranked into the LIVE board in R2, which the site reads | two cores: seconds for the weapons a cycle moved; minutes to start, deriving the library once |
 
-**EVERY ONE OF THEM IS ALSO A BUTTON, AND IT IS THE SAME RUN.** None takes an
-input, so a hand-started run and a scheduled one differ in nothing at all.
+The hourly queue supplements missing measurements. Age alone does not request
+another measurement. Explicit rescore inputs request selected measured rows
+again; their existing deadlines govern dispatch.
 
 **AN HOUR THAT DOES NOT FINISH LOSES NOTHING.** A queue row is deleted in
 exactly one place — beside the fact that settles it, after the score is banked —
@@ -712,6 +712,9 @@ only when one of its files is newer. `heads/` is no scene (`board_meta.py`
 `HEADS`), and the daily snapshot carries none.
 
 ## The fact factory
+
+Module boundaries, delivery isolation and complete demand inventory are specified
+in [`COMPUTE_TASKS.md`](COMPUTE_TASKS.md).
 
 **ONE THING IS DONE WITH THE VOLUNTEERS' COMPUTERS: A QUESTION BECOMES A
 FACT** (`worker/tasks.js`). A QUESTION is a verb on a canonical request, its id
@@ -1536,13 +1539,19 @@ see two.
   riven_gains, orders: [{ kind, total, dispatched }],
   surveys: [{ weapon, ruler, shapes, agreed, started, clear_hours }],
   per_hour: { volunteers, official }, clear_hours,
-  now: { window_seconds, asking, held, answered, starved } }
+  now: { window_seconds, asking, held, answered, starved },
+  goal: { v: 1, started_at, at, expires_at, source, total, registered,
+          orders: [{ kind, total }], verbs: { verb: count }, clear_hours } | null }
 ```
 
-**THE TOTAL IS EVERY ORDER THERE IS NOW.** The page heads the picture with
-it, said as what is dispatched and what waits on the server: an order
-withdrawn leaves it, one the system asks for joins it, and nothing else moves
-it. The countdown under it is that total's.
+**THE COMMUNITY GOAL IS THE COMPLETE WORKLOAD SNAPSHOT.** `goal.total` includes
+engine-admitted missing rows not yet in the dispatch queue, with duplicates,
+orphans and retired rulers removed. Registered active task types outside the
+scan's producer coverage join it at publication. The page states the scan's
+input time and uses its workload for the clearance estimate. Admission pacing
+does not change membership. A partial, invalid or expired scan supplies no
+goal; partial queue counts never replace it. `COMPUTE_TASKS.md` defines its
+freshness and publication rules.
 
 - `owed`: the queue's rows by why, a row in two batches counted once as the
   first of a new build's, a rescore's, a sweep's, a refresh's.

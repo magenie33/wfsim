@@ -788,26 +788,22 @@ function demandHours(h) {
 /// EACH KIND OF ORDER BY ITS NAME, as the worker lists them (worker/contribution.js
 /// `ORDER_KINDS`); a kind this page does not know yet is shown by its id.
 const ORDER_KIND_NAMES = { rescore: "rescores after a model change {n}", sweep: "a ruler's first pass over older builds {n}",
-  new_build: "new builds {n}", refresh: "scores three days old, measured again {n}", riven_gain: "riven gains {n}", user_calculation: "player calculations {n}" };
-/// THE ORDERS AS A LIST: the worker's, or one made of an older object's counts.
-const demandOrders = (d) => d.orders || [["rescore", d.owed.rescores], ["sweep", d.owed.sweeps], ["new_build", d.owed.new_builds],
-  ["refresh", d.owed.refreshes], ["riven_gain", d.riven_gains]].filter(([, v]) => v).map(([kind, total]) => ({ kind, total, dispatched: null }));
+  new_build: "new builds {n}", refresh: "requested score refreshes {n}", riven_gain: "riven gains {n}", user_calculation: "player calculations {n}",
+  board: "leaderboard calculations {n}", board_review: "leaderboard reviews {n}", chat: "riven analyses {n}", survey: "survey searches {n}",
+  family_build: "related weapon searches {n}", verification: "result checks {n}" };
 function computeDemandHtml() {
   const d = computeDemand;
   if (!d) return "";
   const n = (x) => Number(x || 0).toLocaleString(accountLocale());
   const big = (x) => `<b style="font-size:16px">${escHtml(x)}</b>`;
-  // THE TOTAL IS EVERY ORDER THERE IS NOW: what a device has taken and what
-  // still waits on the server. An order withdrawn leaves it; one the system
-  // asks for joins it.
-  const orders = demandOrders(d);
-  const owed = orders.reduce((a, o) => a + o.total, 0);
-  const known = orders.every((o) => o.dispatched != null);
-  const sent = orders.reduce((a, o) => a + (o.dispatched || 0), 0);
+  // The complete scan includes work not yet admitted to the dispatcher.
+  const goal = d.goal?.v === 1 && Number.isSafeInteger(d.goal.total) && d.goal.total >= 0
+    && Number.isFinite(Date.parse(d.goal.at)) && Date.parse(d.goal.expires_at) > Date.now() && Array.isArray(d.goal.orders) ? d.goal : null;
+  const orders = goal?.orders || [];
+  const owed = goal?.total;
   const done = d.per_hour.volunteers + d.per_hour.official;
   const share = done ? Math.round((100 * d.per_hour.volunteers) / done) : 0;
-  const list = orders.map((o) => `<li><span>${escHtml(tr(ORDER_KIND_NAMES[o.kind] || `${o.kind} {n}`).replace("{n}", n(o.total)))}</span>${
-    o.dispatched == null ? "" : `<span class="set-note">${escHtml(tr("dispatched {n}").replace("{n}", n(o.dispatched)))}</span>`}</li>`).join("");
+  const list = orders.filter(o => o.total).map(o => `<li><span>${escHtml(tr(ORDER_KIND_NAMES[o.kind] || `${o.kind} {n}`).replace("{n}", n(o.total)))}</span></li>`).join("");
   // EACH SURVEY IS A GOAL the reader can watch close: every riven shape of one
   // weapon, how many are confirmed and how many begun.
   const goals = (d.surveys || []).map((g) => {
@@ -820,14 +816,12 @@ function computeDemandHtml() {
       <div class="set-note">${escHtml(tr("{n} begun · each shape is searched from four element starts, and counts once two owners on two networks agree").replace("{n}", n(g.started)))}${
         g.clear_hours == null ? "" : ` · ${escHtml(tr("done in {t}").replace("{t}", demandHours(g.clear_hours)))}`}</div></div></div>`;
   }).join("");
-  const eta = d.clear_hours == null || !owed ? "" : demandHours(d.clear_hours);
+  const eta = goal?.clear_hours == null || !owed ? "" : demandHours(goal.clear_hours);
+  const updated = goal ? tr("Updated {time}").replace("{time}", new Date(goal.started_at || goal.at).toLocaleString(accountLocale())) : tr("Checking total demand");
   return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Community goal")}</h2><span class="set-note" style="margin-left:auto">${
-    aT("All devices together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
+    escHtml(updated)}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
-    <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(n(owed))} ${aT("tasks")}${known && owed ? `
-      <div class="set-note" style="margin-top:4px">${escHtml(tr("dispatched {n}").replace("{n}", n(sent)))} · ${
-        escHtml(tr("waiting on the server {n}").replace("{n}", n(owed - sent)))}</div>
-      <div class="demand-bar" id="orders-bar"><div style="width:${Math.round((100 * sent) / owed)}%"></div></div>` : ""}${
+    <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(goal ? n(owed) : "—")} ${aT("tasks")}${
       list ? `<ul class="order-list">${list}</ul>` : ""}</dd></div>
     ${goals ? `<div class="kv"><dt>${aT("Goals")}</dt><dd style="min-width:0">${goals}</dd></div>` : ""}
     <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(n(done))} ${aT("rows of scores")}
