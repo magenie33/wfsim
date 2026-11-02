@@ -28,10 +28,10 @@ web/cache/
 *.swp
 .DS_Store
 Thumbs.db
+.playwright-mcp/
 
 # Coding agents' local state. The repo's instructions are AGENTS.md alone;
 # a tool's own folder holds that tool's session state, never project rules.
-.claude/
 .codex/
 .cursor/
 .gemini/
