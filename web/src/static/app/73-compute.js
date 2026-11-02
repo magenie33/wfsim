@@ -821,7 +821,7 @@ function computeDemandHtml() {
         g.clear_hours == null ? "" : ` · ${escHtml(tr("done in {t}").replace("{t}", demandHours(g.clear_hours)))}`}</div></div></div>`;
   }).join("");
   const eta = d.clear_hours == null || !owed ? "" : demandHours(d.clear_hours);
-  return `<div class="block shut" id="compute-demand"><div class="bh"><h2>${aT("Demand and compute")}</h2><span class="set-note" style="margin-left:auto">${
+  return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Community goal")}</h2><span class="set-note" style="margin-left:auto">${
     aT("All devices together · updated every minute")}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
     <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(n(owed))} ${aT("tasks")}${known && owed ? `
@@ -874,7 +874,7 @@ setInterval(navComputing, COMPUTING_EVERY_MS);
 addEventListener("visibilitychange", navComputing);
 
 function computePage() {
-  const cards = [computeOverviewHtml(), computeCommunityHtml(), computeHereHtml(), computeDevicesHtml(), computeRecentHtml(), ledgerHereHtml(), ledgerAccountHtml(), computeDemandHtml()]
+  const cards = [computeDemandHtml(), computeOverviewHtml(), computeCommunityHtml(), computeHereHtml(), computeDevicesHtml(), computeRecentHtml(), ledgerHereHtml(), ledgerAccountHtml()]
     .map((html, i) => html.replace('id="', `data-layout-order="${i}" id="`)).join("");
   return `<div id="compute-workspace" class="compute-workspace" data-card-layout data-lang="${escHtml(LANG)}">
     <div id="compute-intro" class="compute-intro" data-layout-header><div><h1 class="page">${aT("Compute together")}</h1>

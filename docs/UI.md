@@ -1168,14 +1168,16 @@ content alone; moving a node would restart its animation.
   words, and opened, the build it concluded on as the builder's card.
 - With reduced motion asked for, only colours and numbers change.
 
-The page opens with this device's status, current task and today's contribution.
+The page opens with the expanded community goal: total outstanding orders,
+dispatch status, surveys, pace and estimated time to clear the current demand.
+This device's status, current task and today's contribution follow.
 A compact switch shares the settings menu's control; a settings shortcut opens
 the detailed controls. Together follows with the live device count, verified
 volunteer score total, personal points, honour and contributor level, and the
 Contributors link. Unavailable figures are dashes. Personal figures keep their
 scope: today's tiles are this device's, account points span its claimed devices.
-Detailed settings, device management, task history, ledgers and demand follow.
-Settings and demand start folded. Community totals read the same public tally
+Detailed settings, device management, task history and ledgers follow.
+Settings start folded. Community totals read the same public tally
 as the home page at its existing refresh cadence.
 
 Cards use the shared layout controls: order and size persist through refreshes,

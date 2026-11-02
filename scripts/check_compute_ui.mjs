@@ -7,6 +7,9 @@ const { evaluate, check } = app;
 await app.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
 const ui = await evaluate(`(async () => {
   const wait = () => new Promise(resolve => setTimeout(resolve, 150));
+  const demandLoader = loadComputeDemand;
+  loadComputeDemand = async () => {};
+  computeDemand = { orders: [{ kind: 'new_build', total: 100, dispatched: 20 }], owed: {}, per_hour: { volunteers: 5, official: 1 }, clear_hours: 1, surveys: [] };
   history.pushState({}, "", "/compute"); route(); await wait();
   clearInterval(computeTimer); computeTimer = setInterval(() => {}, 60000);
   accountState.loaded = true; accountState.providers = ["email"]; accountState.account = { id: "paged-account" };
@@ -25,8 +28,10 @@ const ui = await evaluate(`(async () => {
   out.first = [rows("compute-ledger"), rows("compute-account-ledger"), document.querySelectorAll('#compute-history .rt-card').length];
   if (!document.querySelector('#compute-history') || !document.querySelector('#compute-workspace [data-layout-edit]')) return out;
   const order = () => [...document.querySelectorAll('#compute-workspace > .block')].map(el => el.id).join(',');
-  const defaults = 'rt-live,compute-community,compute-browser,compute-devices,compute-history,compute-ledger,compute-account-ledger';
-  out.hierarchy = order().split(',').slice(0, 7).join(',') === defaults && !document.querySelector('#rt-live .rt-list');
+  const defaults = 'compute-demand,rt-live,compute-community,compute-browser,compute-devices,compute-history,compute-ledger,compute-account-ledger';
+  out.hierarchy = order() === defaults && !document.querySelector('#rt-live .rt-list');
+  const goal = document.getElementById('compute-demand');
+  out.goal = document.querySelector('#compute-workspace > .block') === goal && !goal.classList.contains('shut') && goal.querySelector('#orders-bar > div').style.width === '20%';
   out.identity = document.querySelector('#compute-community').textContent.includes('WFSim Volunteer') && !!document.querySelector('#compute-community .cr-badge') && !document.querySelector('#compute-devices .cr-badge');
   const browser = document.getElementById("compute-browser"), live = document.getElementById("rt-live"), historyCard = document.getElementById("compute-history");
   const foldedSettings = browser.classList.contains('shut');
@@ -50,14 +55,14 @@ const ui = await evaluate(`(async () => {
   browser.querySelector('.layout-size-handle').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
   await wait();
   renderAuthPage("compute"); await wait();
-  out.layoutKept = document.querySelector('#compute-workspace > .block').id === 'compute-community' && document.getElementById("rt-live") === live && document.getElementById("compute-history") === historyCard && browser.getBoundingClientRect().width < baseline;
+  out.layoutKept = order().startsWith('compute-demand,compute-community,rt-live,') && document.getElementById("rt-live") === live && document.getElementById("compute-history") === historyCard && browser.getBoundingClientRect().width < baseline;
   const after = JSON.parse(localStorage.getItem('wfsim-layout'));
-  out.saved = !!after.cards['compute-browser'] && after.orders['compute-workspace:page'][1] === 'rt-live';
+  out.saved = !!after.cards['compute-browser'] && after.orders['compute-workspace:page'][2] === 'rt-live';
   ledgerHere = null; renderAuthPage("compute"); await wait();
   ledgerHere = { summary: { points: 325, device: 0, you: 325, other: 0 }, unpaid: {}, hours };
   renderAuthPage("compute"); await wait();
   document.querySelector('#compute-workspace [data-layout-reset]').click(); await wait();
-  out.reset = order().split(',').slice(0, 7).join(',') === defaults && browser.style.width === '';
+  out.reset = order() === defaults && browser.style.width === '';
   const oldTally = tallyTo, oldFrom = tallyFrom, oldCount = computingCount;
   tallyTo = { volunteers: 1, official: 2, computing: 999 }; tallyFrom = tallyTo;
   computingCount = 7;
@@ -72,6 +77,7 @@ const ui = await evaluate(`(async () => {
   accountState.account = null; renderAuthPage('compute'); await wait();
   out.anonymous = !!document.querySelector('#compute-community a[href^="/login"]') && document.querySelector('#compute-community dt').textContent === 'This device' && document.querySelector('#compute-community dd b').textContent === '17';
   tallyTo = oldTally; tallyFrom = oldFrom; computingCount = oldCount;
+  loadComputeDemand = demandLoader;
   return out;
 })()`);
 check("compute ledgers and recent tasks show ten entries per page", ui.first.every(n => n === 10), JSON.stringify(ui));
@@ -80,7 +86,7 @@ check("compute cards share saved resizing and order while the live node stays mo
 check("default layout restores authored order after a ledger is removed and returns", ui.reset, JSON.stringify(ui));
 check("home and support use the nav's live device count, including zero", ui.sameCount && ui.zero, JSON.stringify(ui));
 check("the ring and device count share one link, and compute has a contributors entry", ui.oneLink && ui.contributors, JSON.stringify(ui));
-check("the default view leads with current contribution and community, ahead of settings and history", ui.hierarchy && ui.identity && ui.tiles, JSON.stringify(ui));
+check("the default view leads with an expanded community goal, then personal contribution and identity", ui.goal && ui.hierarchy && ui.identity && ui.tiles, JSON.stringify(ui));
 check("overview opens the folded shared settings and community shows the authoritative totals", ui.settings && ui.communityCount, JSON.stringify(ui));
 check("signed-out contribution retains browser points and a sign-in entry", ui.anonymous, JSON.stringify(ui));
 

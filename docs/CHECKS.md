@@ -732,8 +732,9 @@ The same page resizes and reorders cards, preserves the live node and saved
 layout through a refresh, then restores authored order after a ledger leaves
 and returns. A conflicting historical tally must not change the shared live
 device count, including zero; ring and count must share one navigation link.
-The default order puts the live overview and community identity ahead of
-settings and history. The overview's settings shortcut unfolds the shared
+The default order leads with the expanded community goal, then the live
+overview and community identity ahead of settings and history.
+The overview's settings shortcut unfolds the shared
 controls; history paging preserves the overview and its day tiles. Community
 figures use the live signal and public tally, and signed-out points retain
 their browser scope.

@@ -6,6 +6,7 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "Community goal": "全服目标"
   "Your contribution today": "今日贡献"
   "Compute settings": "计算设置"
   "Together": "一起算"
