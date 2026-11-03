@@ -10,6 +10,54 @@
 const LIVE_ORIGIN = "https://wfsim.app";
 const LIVE_HOSTS = ["wfsim.app", "wfsim.localhost"];
 
+// Timings carry page kinds and durations only; no target, input or event text.
+let pageTiming = { started: 0, kind: "boot", usable: null, longest: 0, blocking: 0, interaction: 0 };
+let pageTimingTimer = null;
+const pageTimingSupport = { longtask: false, event: false };
+function flushPageTiming() {
+  if (pageTiming.usable === null) return;
+  const kind = pageTiming.kind;
+  if (pageTimingSupport.longtask) {
+    track("app.longtask", kind, Math.round(pageTiming.longest));
+    track("app.blocking", kind, Math.round(pageTiming.blocking));
+  }
+  if (pageTimingSupport.event && pageTiming.interaction) track("app.interaction", kind, Math.round(pageTiming.interaction));
+}
+function beginPageTiming() {
+  flushPageTiming(); clearTimeout(pageTimingTimer);
+  const boot = !window.__wfsimReady;
+  pageTiming = { started: boot ? 0 : performance.now(), kind: "boot", usable: null,
+    longest: boot ? pageTiming.longest : 0, blocking: boot ? pageTiming.blocking : 0, interaction: 0 };
+  window.__wfsimPerformance = pageTiming;
+}
+function markPageUsable(gen) {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (!bootRouted || gen !== routeGen || pageTiming.kind === "boot" || pageTiming.usable !== null || document.hidden) return;
+    pageTiming.usable = performance.now() - pageTiming.started;
+    track("app.usable", pageTiming.kind, Math.round(pageTiming.usable));
+    pageTimingTimer = setTimeout(flushPageTiming, 30_000);
+  }));
+}
+if (typeof PerformanceObserver === "function") {
+  for (const type of ["longtask", "event"]) {
+    try {
+      if (PerformanceObserver.supportedEntryTypes && !PerformanceObserver.supportedEntryTypes.includes(type)) continue;
+      new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          if (document.hidden || entry.startTime < pageTiming.started) continue;
+          if (type === "longtask") {
+            pageTiming.longest = Math.max(pageTiming.longest, entry.duration);
+            pageTiming.blocking += Math.max(0, entry.duration - 50);
+          } else pageTiming.interaction = Math.max(pageTiming.interaction, entry.duration);
+        }
+      }).observe(type === "event" ? { type, buffered: true, durationThreshold: 16 } : { type, buffered: true });
+      pageTimingSupport[type] = true;
+    } catch (_) { /* this browser does not report this timing */ }
+  }
+}
+addEventListener("pagehide", flushPageTiming);
+addEventListener("visibilitychange", () => { if (document.hidden) flushPageTiming(); else if (pageTiming.usable === null) markPageUsable(routeGen); });
+
 /// A random id per browser, and nothing else about the reader. Clearable like
 /// every other `wfsim-*` key; a browser that cannot store one gets one per page.
 /// AN ID LIVES 13 MONTHS (`USAGE_CID_DAYS`), the ceiling audience measurement

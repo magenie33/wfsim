@@ -550,7 +550,9 @@ function boardProjection() {
   if (!body || !body.benchmark) return null;
   if ((body.mods || []).includes(BOARD_RIVEN_SLOT) || body.valence) return null;
   const w = weaponInfo(body.weapon) || {};
-  if (!BOARD_HAVE.has(w.id)) return null;
+  if (!boardHasCell(w.id, body.benchmark)) {
+    ensureBoardCell(w.id, body.benchmark, renderMods); return null;
+  }
   const p = loadPresetList(BUILDS).find((z) => presetId(z) === activePreset);
   const r = p && (resultLatest(presetWeapon(), presetId(p)) || {}).r;
   if (!r || !w.id) return null;

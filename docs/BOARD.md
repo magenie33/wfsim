@@ -249,19 +249,23 @@ is the one piece that changes without a release — once an hour, if people are
 playing — and compiling it in made every update cost a full site rebuild:
 install wasm-bindgen, fetch 300 images, recompile, to change a few numbers.
 
-**ONE FILE PER WEAPON, because a weapon page shows one weapon.** A reader who
-opens the Braton Prime fetches the Braton Prime, and a rescore that moved twenty
-weapons moves twenty small files in git rather than rewriting the board. The one
-surface that ranks ACROSS weapons reads `index.json`, which holds each weapon's
-leader per (ruler, mode, riven) — 37 KB on the wire where the whole board is
-249 — and which is DERIVED from the weapon files, so it cannot disagree with
-one.
+Each weapon has a base file and a file per scene at
+`board/<cell_dir>/<weapon>.json`. A weapon page reads the complete selected
+scene, including every mode, plus scenes referenced by explicitly opened
+builds. Scene changes request their files; inactive scene rows are released,
+and leaving the weapon releases its public rows and derived entries. Ranking
+and filters cover every row of the selected ruler. Forma planning explicitly
+waits for every scene before constructing its groups; top-N cards use heads.
 
-An unreachable or absent file is an EMPTY board, never an error: before the
-first submissions there is nothing to show, and the page has to render that
-state anyway. Every weapon in the roster has a file for the same reason —
-including the empty ones, because a 404 and an empty list are the same thing to
-`fetch` and opposite things to a page that states a weapon's standing.
+The surface that ranks across weapons reads the scene's `index.json`, derived
+from the corresponding weapon files and containing each group's leader.
+A partially loaded weapon never substitutes for an unloaded scene's index.
+Desktop shells read non-base scenes from the live board; their offline copy
+contains the base.
+
+A loaded empty file or a scene's explicit absence in `scene_weapons` means no
+published rows. An unreachable source remains unknown and offers retry; a
+standing is shown only after the exact cell has loaded.
 
 ## When it updates
 

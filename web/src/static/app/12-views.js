@@ -154,6 +154,8 @@ async function route() {
   // the PREVIOUS weapon on screen for the whole round trip. A route that another
   // navigation overtook while it waited draws nothing.
   const gen = ++routeGen;
+  beginPageTiming();
+  releaseBoardCache(w ? w.id : null);
   if (w) await loadWeaponBoard(w.id);
   if (gen !== routeGen) return;
   if (w) {
@@ -161,9 +163,11 @@ async function route() {
     if (location.pathname !== path) history.replaceState(history.state, "", path + location.search + location.hash);
   }
   // WHICH PAGE, as a kind and never an address: one point per kind per load.
-  track("app.view", w ? `weapon_${mod || "builder"}` : support ? "support" : bench ? "benchmark"
+  const viewKind = w ? `weapon_${mod || "builder"}` : support ? "support" : bench ? "benchmark"
     : dl ? "download" : util ? `utility_${util}` : wfHit ? "warframe" : opRoute ? "operator"
-    : compHit ? "companion" : stub ? "placeholder" : authKind ? authView(authKind) : "home");
+    : compHit ? "companion" : stub ? "placeholder" : authKind ? authView(authKind) : "home";
+  pageTiming.kind = viewKind;
+  track("app.view", viewKind);
   // WHICH WAY IN, where the link that led here names it (`?from=`): said once,
   // then taken off the address so a copied link does not carry it on.
   const door = new URLSearchParams(location.search).get("from");
@@ -316,7 +320,7 @@ async function route() {
     // and `applyBenchLink` opens one BY NAME. A board that lands afterwards is
     // a deep link that opens the wrong build, which is what a board link exists
     // to stop. Awaited at the top of this function, before the page is shown.
-    if ($("weapon").value !== w.id) {
+    if (!weaponEditorReady || $("weapon").value !== w.id) {
       switchWeapon(w.id);
     }
     if (libraryAddress && location.pathname + location.search + location.hash !== libraryAddress) history.replaceState(history.state, "", libraryAddress);
@@ -351,7 +355,7 @@ async function route() {
     // tabs are CSS-hidden rather than re-rendered.
     if (mod === "simulator") renderSim();
     if (mod === "simulator") await openSimulationReport(w, measurement);
-    if (mod === "optimizer") { renderOptFight(); updateOptEstimate(); await openOptimizationReport(optimizationId); await refreshOptimizerHistory(true); }
+    if (mod === "optimizer") { renderOpt(); await openOptimizationReport(optimizationId); await refreshOptimizerHistory(true); }
     else optimizationReport = null;
     if (mod === "rivens") renderRivens();
     if (mod === "riven-analyst") { history.replaceState(history.state, "", weaponPath(w.id) + "/riven-analyst" + analysisQuery); renderRivenAnalyst(); }
@@ -369,6 +373,7 @@ async function route() {
   refreshExecutionDock();
   if (document.body.classList.contains("on-simulator")) { renderSimBuffs(); renderScenarioEditorView(); }
   renderJump();
+  markPageUsable(gen);
 }
 
 // The current module's path suffix — weapon switches (search, select,

@@ -78,7 +78,8 @@ reachable through `observe()`; until it is, it is missing rather than guessed.
 
 **An action is something a reader can do, and nothing else.** Every entry
 names the control it stands for (`anchor`) and the check asserts that control
-is on the page. This is what keeps an agent's work VISIBLE — the action moves
+exists on its module's page, including controls initialized on entry. This is
+what keeps an agent's work VISIBLE — the action moves
 the state the click moves, and the page redraws for both — and it is what stops
 the table growing an entrance no reader has, which is a second UI with no
 pixels.

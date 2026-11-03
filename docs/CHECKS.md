@@ -1421,6 +1421,18 @@ bar. It replaces a row to renumber it and verifies that the opened build
 follows its identity, then unpins and copies records through Builder.
 Both checks require actual published rows; an empty fixture is a failure.
 
+## `check_frontend_performance`
+
+Intercepted board files provide a large complete scene fixture under fourfold
+CPU throttling. Home must become usable without a hidden weapon editor, frame
+catalog or weapon board download. Concurrent frame catalog readers share a
+promise and retry failures. Tally digits animate through stable text nodes and
+stop repainting while hidden. Every scene remains reachable, opening downloads
+only the selected scene, rendering stays bounded, and switching away releases
+public rows and derived caches. Timing observations contain page kinds and
+numeric durations only. `WFSIM_PERF_EAGER=1` deliberately restores eager scene
+fetching; the request-scope and cache-lifetime assertions must fail.
+
 ## `check_global_conditions`
 
 Quick calc stays in Builder and scenario editing stays in the Simulator. An
@@ -2007,12 +2019,15 @@ off halves the capacity line, a Forma limit refuses in Chinese, and a Warframe
 plans through the same box with a capacity line that agrees with the plan.
 With mods kept in place neither build's mods move. Planning ahead over the
 Torid's whole board draws a curve where each point costs more and reaches
-further, marks the first point on the line, saves a pick already wearing the
-point's layout with every card of its row, and places the ticked builds onto
+further, marks the first point on the line or the final point when unreachable,
+saves a pick already wearing the point's layout with every card of its row,
+and places the ticked builds onto
 the point's exact positions. HOW MANY points that curve has is the board's and
 not the code's — it stops at the ceiling its groups reach, which the scoring bot
 moves — so that a curve has depth at all is `coverage_climbs_with_forma`, on a
 fixture. `WFSIM_BASE` points it at a dev server.
+The engine's pinned-layout regression includes a free main-to-Exilus swap and
+must fail without the slot-kind constraint.
 
 ## `check_rescore_paths`
 

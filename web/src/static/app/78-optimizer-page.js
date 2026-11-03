@@ -14,6 +14,7 @@ function renderOpt() {
     optSeeded = true;
     bootstrapOptPresets();
   }
+  if (modSuffix() !== "optimizer") return;
   renderOptPresetBars();
   renderOptStarts();
   renderOptLimits();

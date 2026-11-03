@@ -43,7 +43,11 @@ const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await sleep(1500);
   const box = document.getElementById('forma-plan');
-  const under = (id) => (document.getElementById(id).previousElementSibling || {}).id;
+  const under = (id) => {
+    let before=document.getElementById(id).previousElementSibling;
+    while(before?.hidden)before=before.previousElementSibling;
+    return before?.id;
+  };
   const out = { active: (loadPresetList('builder-builds').find((p) => p.id === activePreset) || {}).name || activePreset, live0: slots.slice(0, 8).map((s) => s.mod),
     under: under('forma-block'), inMods: !!document.querySelector('#mod-block .forma-plan') };
   box.querySelector('.fp-run').click();
@@ -104,10 +108,11 @@ const r = await evaluate(`(async () => {
       layout: pt.plan.layout.main.map((p) => p || null).join(),
       mods: made.state.slots.slice(0, 9).map((s) => s.mod).filter(Boolean).length,
       rowMods: (row.mods || []).length + (row.exilus && row.exilus !== 'none' ? 1 : 0) };
+    const previous=formaNotes.builder;
     document.getElementById('forma-plan').querySelector('[data-apply]').click();
-    await sleep(3000);
+    for(let i=0;i<100&&formaNotes.builder===previous;i++)await sleep(100);
     const n = formaNotes.builder && formaNotes.builder.r;
-    out.applied = { fits: !!(n && n.fits), live: slots.slice(0, 8).map((s) => s.pol || null).join(),
+    out.applied = { updated:formaNotes.builder!==previous, fits: !!(n && n.fits), live: slots.slice(0, 8).map((s) => s.pol || null).join(),
       layout: pt.plan.layout.main.map((p) => p || null).join() };
   }
 
@@ -150,10 +155,10 @@ check("plan ahead reads every ruler of the board", r.reach.ok && r.reach.groups 
 check("…and each point costs more and reaches further than the last",
   pts.length >= 1 && pts.every((p, i) => i === 0 || (p[0] > pts[i - 1][0] && p[1] > pts[i - 1][1])), JSON.stringify(pts));
 check("…and the marked point is the first on the line",
-  pts.findIndex((p) => p[1] >= 0.8 - 1e-9) === r.reach.sel, JSON.stringify(r.reach));
+  (pts.findIndex((p) => p[1] >= 0.8 - 1e-9) >= 0 ? pts.findIndex((p) => p[1] >= 0.8 - 1e-9) : pts.length-1) === r.reach.sel, JSON.stringify(r.reach));
 check("a saved pick wears the point's layout", r.saved && r.saved.pols === r.saved.layout, JSON.stringify(r.saved));
 check("…with every card of its row", r.saved && r.saved.mods === r.saved.rowMods, JSON.stringify(r.saved));
-check("the ticked builds are placed onto the point", r.applied && r.applied.fits
+check("the ticked builds are placed onto the point", r.applied && r.applied.updated && r.applied.fits
   && r.applied.live === r.applied.layout, JSON.stringify(r.applied));
 check("a frame plans through the same box", r.frame && r.frame.fits, JSON.stringify(r.frame));
 check("…and its capacity line agrees", r.frame && r.frameCap === `${r.frame.loadouts[0].drain} / ${r.frame.capacity}`, r.frameCap);

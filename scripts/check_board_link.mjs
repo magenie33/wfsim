@@ -30,7 +30,7 @@ const r = await evaluate(`(async () => {
   const out = { rulers: [] };
   const chips = [...document.querySelectorAll('#bench-picker [data-bench]')];
   out.rulers = chips.map(c => c.dataset.bench);
-  out.boardWeapons = Object.keys(BOARD || {}).length;
+  out.boardWeapons = Object.keys(BOARD_INDEX || {}).length;
   // EVERY RULER, not just the second one: the bug was that one of them was
   // reachable and the rest resolved to it.
   out.each = [];
@@ -103,7 +103,7 @@ const r = await evaluate(`(async () => {
   // on it, which is what a NEW ruler is. rulers[0] is the PRIMARY one and
   // therefore the populated one today, but that is a fact about the board
   // rather than a guarantee, so this reads it.
-  const ruler = out.rulers.find(id => Object.values(BOARD).some(rs =>
+  const ruler = out.rulers.find(id => Object.values(BOARD_INDEX || {}).some(rs =>
     (rs || []).some(r => r.benchmark === id))) || out.rulers[0];
   out.fixtureRuler = ruler;
   [...document.querySelectorAll('#bench-picker [data-bench]')]
@@ -123,33 +123,33 @@ const r = await evaluate(`(async () => {
   // injection stays as the FALLBACK — the case has to keep being covered on a
   // board that loses its last two-mode weapon, which is how it was covered for
   // the nine days before one arrived.
-  const modesOn = (w) => [...new Set((BOARD[w.id] || [])
+  const modesOn = (w) => [...new Set(benchRows(w.id)
     .filter(r => r.benchmark === ruler).map(r => r.mode || 'base'))];
   const live = (META.weapons || []).find(w =>
     (w.modes || []).length > 1 && modesOn(w).length > 1);
   const twoModes = live || (META.weapons || []).find(w =>
     (w.modes || []).length > 1 &&
-    (BOARD[w.id] || []).some(r => r.benchmark === ruler));
+    benchRows(w.id).some(r => r.benchmark === ruler));
   out.twoModeWeapon = twoModes ? twoModes.id : null;
   out.synthetic = !live;
   if (twoModes) {
     // Prefer live rows; otherwise make another valid mode the winner.
-    const base = (BOARD[twoModes.id] || [])
+    const base = benchRows(twoModes.id)
       .find(r => r.benchmark === ruler && (r.mode || 'base') === 'base');
     const other = live
       ? modesOn(live).find(m => m !== 'base')
       : (twoModes.modes || []).find(m => m !== ((base || {}).mode || 'base'));
     if (!live) {
-      const have = base || (BOARD[twoModes.id] || []).find(r => r.benchmark === ruler);
-      BOARD[twoModes.id] = (BOARD[twoModes.id] || []).concat([
+      const have = base || benchRows(twoModes.id).find(r => r.benchmark === ruler);
+      BOARD[twoModes.id] = benchRows(twoModes.id).concat([
         { ...have, mode: other, score: have.score * 3, shown: String(have.score * 3) },
       ]);
     }
-    const have = (BOARD[twoModes.id] || [])
+    const have = benchRows(twoModes.id)
       .filter(r => r.benchmark === ruler && twoModes.modes.includes(r.mode || 'base'))
       .reduce((best, r) => !best || r.score > best.score ? r : best, null);
     out.otherMode = have.mode || 'base';
-    renderBenchBoard(); await s(1200);
+    benchQuery=twoModes.name_en||twoModes.name;renderBenchBoard(); await s(1200);
     const rows = [...document.querySelectorAll('.bench-rows .brow')]
       .filter(a => (a.getAttribute('href') || '').includes(weaponPath(twoModes.id) + '?'));
     out.bothListed = rows.length;
@@ -157,7 +157,10 @@ const r = await evaluate(`(async () => {
     const mine = rows[0];
     out.otherHref = mine ? mine.getAttribute('href') : null;
     if (mine) {
-      history.pushState({}, '', out.otherHref); route(); await s(3200);
+      const originalFetch=window.fetch, fixture=JSON.stringify(BOARD[twoModes.id]);
+      if(!live)window.fetch=(url,options)=>new URL(String(url),location.origin).pathname==='/board/'+twoModes.id+'.json'
+        ?Promise.resolve(new Response(fixture,{headers:{'Content-Type':'application/json'}})):originalFetch(url,options);
+      try {history.pushState({}, '', out.otherHref);await route();await s(3200);}finally{window.fetch=originalFetch;}
       out.otherOpenedWeapon = document.getElementById('weapon').value;
       out.otherOpenedMode = mode;
       out.otherOpenedRuler = activeScenario;

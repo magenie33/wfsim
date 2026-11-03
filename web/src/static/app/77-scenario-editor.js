@@ -49,6 +49,7 @@ function scenarioBuffProjection() {
   return scenarioAll() ? all : all.filter(buff => buff.applicable);
 }
 function renderSimBuffs() {
+  if (modSuffix() !== "simulator") return;
   const host = $("sim-buffs"); if (!host) return;
   const button = $("sim-buffs-all");
   if (button) {

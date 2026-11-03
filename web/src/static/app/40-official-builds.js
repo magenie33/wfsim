@@ -277,9 +277,8 @@ const wielderChoices = () => {
 // hourly update a full site rebuild. This is one small file on the same origin,
 // written by the scoring job beside the canonical yaml.
 //
-// An absent or unreachable board is an EMPTY board, not an error: before the
-// first submissions there is nothing to show, and that is a state the page has
-// to render anyway.
+// Empty rows and an unreachable source are separate states: only a loaded
+// cell can support a standing or an explicit "no builds" answer.
 let BOARD = {};
 /// WHICH BOARD THIS IS — `site/board.meta.json`, written by both writers of the
 /// board itself (`scripts/board_meta.py`). It is small on purpose: the payload
@@ -320,10 +319,49 @@ function routeWeaponId() {
   return w ? w.id : "";
 }
 
-/// WHICH WEAPONS' ROWS ARE IN HAND — and it is NOT `Object.keys(BOARD)`. A
-/// weapon nobody has submitted has an empty list, and "loaded and empty" is a
-/// different answer from "never fetched" to everything that states a rank.
+/// Weapons with a loaded source. `boardHasCell` additionally checks its scene;
+/// a loaded empty cell is distinct from one whose source has not answered.
 const BOARD_HAVE = new Set();
+const boardFiles = new Map();
+const boardFileState = (id) => {
+  if (!boardFiles.has(id)) boardFiles.set(id, { loaded: new Set(), pending: new Map(), failed: new Set(), controller: new AbortController() });
+  return boardFiles.get(id);
+};
+const boardCellDir = (benchmark) => benchSceneOf(benchList().find((b) => b.id === benchmark));
+function boardFileSignal(state) {
+  const timer = timeoutSignal(SCENE_ROWS_WITHIN_MS);
+  if (AbortSignal.any) return AbortSignal.any([state.controller.signal, timer]);
+  const controller = new AbortController();
+  for (const signal of [state.controller.signal, timer]) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener("abort", () => controller.abort(), { once: true });
+  }
+  return controller.signal;
+}
+const boardHasCell = (id, benchmark) => BOARD_HAVE.has(id) && (!boardFiles.has(id) || boardFiles.get(id).loaded.has(boardCellDir(benchmark)));
+function boardRequestedDirs(id) {
+  if (/\/card\/?$/.test(location.pathname)) return benchScenes();
+  const query = new URLSearchParams(location.search);
+  const benchmark = query.get("bench") || (finder.weapon === id && modSuffix() === "build-library" ? finder.b
+    : modSuffix() === "riven-analyst" ? raRuler : null) || libraryDefaultBenchmark();
+  const dirs = new Set([boardCellDir(benchmark)]);
+  try {
+    const active = JSON.parse(localStorage.getItem(boardActiveKey(id)) || "null");
+    if (active?.b) dirs.add(boardCellDir(active.b));
+    const opened = JSON.parse(localStorage.getItem(openedBoardKey(id)) || "[]");
+    if (Array.isArray(opened)) for (const ref of opened) if (ref?.b) dirs.add(boardCellDir(ref.b));
+  } catch (_) { /* no opened published build */ }
+  return [...dirs];
+}
+function releaseBoardCache(keep) {
+  for (const id of new Set([...Object.keys(BOARD), ...boardFiles.keys()])) {
+    if (id === keep) continue;
+    boardFiles.get(id)?.controller.abort(); boardFiles.delete(id);
+    delete BOARD[id]; BOARD_HAVE.delete(id);
+  }
+  if (builtinMemo?.w !== keep) builtinMemo = null;
+  if (builtinRowsMemo?.w !== keep) builtinRowsMemo = null;
+}
 
 /// EVERY WEAPON'S GROUP LEADERS, which is the only thing that ranks ACROSS
 /// weapons — `site/board/index.json`, derived by the publisher from the weapon
@@ -347,65 +385,121 @@ let BOARD_INDEX = null;
 /// and the rows one weapon draws are different files, so a client served only
 /// the first has a populated benchmark page and an empty board everywhere else.
 async function loadWeaponBoard(id, base = boardOffOrigin ? BOARD_ORIGIN : "") {
-  if (!id || BOARD_HAVE.has(id)) return;
+  if (!id) return;
+  if (boardFiles.get(id)?.heads && !(/\/card\/?$/.test(location.pathname) && cardParams().kind === "pz")) {
+    boardFiles.get(id).controller.abort(); boardFiles.delete(id); BOARD_HAVE.delete(id); delete BOARD[id];
+  }
+  if (BOARD_HAVE.has(id)) { await loadSceneRows(id, base); return; }
+  const state = boardFileState(id);
+  if (state.pending.has("initial")) { await state.pending.get("initial"); await loadSceneRows(id, base); return; }
+  const pending = readWeaponBoard(id, base, state);
+  state.pending.set("initial", pending);
+  try { await pending; } finally { state.pending.delete("initial"); }
+  if (BOARD_HAVE.has(id)) await loadSceneRows(id, base);
+}
+async function readWeaponBoard(id, base, state) {
   let rows = null;
+  const dir = boardRequestedDirs(id)[0] || "";
   // A TOP-N CARD READS THE HEADS, every scene in one file (docs/BOARD.md §"The
   // heads"): its places are every row's, from a fraction of the rows. A weapon
   // with no heads yet, and every other page, reads every row.
   if (/\/card\/?$/.test(location.pathname) && cardParams().kind === "pz") {
     try { rows = await fetchJsonPatient(`${base}/board/heads/${id}.json`); } catch (_) { /* every row, below */ }
     if (rows) {
+      if (boardFiles.get(id) !== state) return;
       BOARD[id] = rows;
       BOARD_HAVE.add(id);
+      state.heads = true;
+      benchScenes().forEach((dir) => state.loaded.add(dir));
       return;
     }
   }
-  try { rows = await fetchJsonPatient(`${base}/board/${id}.json`); } catch (_) { /* unreachable */ }
+  const listed = BOARD_META?.scene_weapons?.[dir];
+  if (dir && Array.isArray(listed) && !listed.includes(id)) rows = [];
+  else try {
+    const source = dir && window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : base;
+    rows = await fetchJsonPatient(`${source}/board/${dir ? dir + "/" : ""}${id}.json`, 3, boardFileSignal(state));
+  } catch (_) { /* unreachable */ }
   // NULL IS NOT AN EMPTY BOARD. A dev server has no `board/` at all, and a
   // weapon left unloaded is what `boardProjection` refuses to speak about.
-  if (!rows) return;
+  if (!rows || boardFiles.get(id) !== state) return;
   BOARD[id] = rows;
   BOARD_HAVE.add(id);
-  loadSceneRows(id, base);
+  state.loaded.add(dir);
+  state.failed.delete(dir);
 }
 
-/// …AND ITS ROWS IN EVERY OTHER SCENE, `board/<cell_dir>/<id>.json`, joined
-/// as they land: a cell is an ordinary ruler, so every reader of `BOARD` groups
-/// them by `benchmark`. NEVER AWAITED — a route waits on the base rows alone,
-/// and a desktop shell asks the site for these (its offline copy holds the base
-/// alone, `scripts/board_meta.py`), which a slow network must not turn into a
-/// page that never opens. A scene that has not measured this weapon has no file,
-/// and one the stamp lists without it (`scene_weapons`) is not asked.
+/// Complete files for the requested scenes, shared while in flight. Ordinary
+/// readers retain their current scene and explicitly opened build references;
+/// whole-board tools request every scene. Desktop scene files come from the
+/// live board because the offline copy contains the base alone.
 const SCENE_ROWS_WITHIN_MS = 8000;
-function loadSceneRows(id, base) {
+async function loadSceneRows(id, base, dirs = boardRequestedDirs(id)) {
   const sceneBase = window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : base;
   const listed = (BOARD_META && BOARD_META.scene_weapons) || {};
-  for (const dir of benchScenes().filter(Boolean)) {
-    if (Array.isArray(listed[dir]) && !listed[dir].includes(id)) continue;
-    fetch(`${sceneBase}/board/${dir}/${id}.json`, { cache: "no-cache", signal: timeoutSignal(SCENE_ROWS_WITHIN_MS) })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((more) => {
-        if (!Array.isArray(more) || !more.length || !BOARD[id]) return;
-        BOARD[id] = BOARD[id].concat(more);
-        boardRowsLanded(id);
-      }, () => { /* the base rows stand alone */ });
+  const state = boardFileState(id);
+  if (state.heads) return;
+  await Promise.all([...new Set(dirs)].map((dir) => {
+    if (state.loaded.has(dir) || state.failed.has(dir)) return null;
+    if (state.pending.has(dir)) return state.pending.get(dir);
+    if (Array.isArray(listed[dir]) && !listed[dir].includes(id)) { state.loaded.add(dir); return null; }
+    const pending = fetch(`${sceneBase}/board/${dir ? dir + "/" : ""}${id}.json`, { cache: "no-cache", signal: boardFileSignal(state) })
+      .then(async (r) => {
+        if (r.status === 404) return [];
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      }).then((more) => {
+        if (boardFiles.get(id) !== state || !BOARD[id]) return;
+        if (!Array.isArray(more)) throw new Error("invalid board rows");
+        const cells = new Set(benchList().filter((b) => benchSceneOf(b) === dir).map((b) => b.id));
+        BOARD[id] = BOARD[id].filter((row) => !cells.has(row.benchmark)).concat(more);
+        state.loaded.add(dir);
+      }).catch(() => { if (boardFiles.get(id) === state) state.failed.add(dir); })
+      .finally(() => state.pending.delete(dir));
+    state.pending.set(dir, pending);
+    return pending;
+  }));
+  if (boardFiles.get(id) === state && BOARD[id]) {
+    const keep = new Set([...dirs, ...boardRequestedDirs(id)]);
+    const rows = BOARD[id].filter((row) => keep.has(boardCellDir(row.benchmark)));
+    if (rows.length !== BOARD[id].length) BOARD[id] = rows;
+    for (const dir of state.loaded) if (!keep.has(dir)) state.loaded.delete(dir);
   }
+}
+function ensureBoardCell(id, benchmark, redraw) {
+  if (boardHasCell(id, benchmark)) return true;
+  if (routeWeaponId() !== id) return false;
+  const dir = boardCellDir(benchmark), state = boardFileState(id);
+  if (!BOARD_HAVE.has(id)) { state.failed.add(dir); return false; }
+  if (state.failed.has(dir) || state.pending.has(dir)) return false;
+  loadSceneRows(id, boardOffOrigin ? BOARD_ORIGIN : "", [dir]).then(() => {
+    if (routeWeaponId() === id) redraw();
+  });
+  return false;
+}
+async function loadAllWeaponBoard(id) {
+  boardFileState(id).failed.clear();
+  await loadWeaponBoard(id);
+  if (!BOARD_HAVE.has(id) || routeWeaponId() !== id) throw new Error("The board could not be reached.");
+  await loadSceneRows(id, boardOffOrigin ? BOARD_ORIGIN : "", benchScenes());
+  if (boardFiles.get(id)?.failed.size || !BOARD_HAVE.has(id)) throw new Error("The board could not be reached.");
 }
 
 /// A BOARD FILE THROUGH A BAD NETWORK: a request that never arrived is asked
 /// again, and a file that is not there is not. Resolves null for an absent or
 /// unparseable file and THROWS once every try failed to arrive — the page tells
 /// "this board is empty" from "the board could not be reached" by that.
-async function fetchJsonPatient(url, tries = 3) {
+async function fetchJsonPatient(url, tries = 3, signal) {
   for (let i = 0; ; i++) {
     try {
-      const r = await fetch(url, { cache: "no-cache" });
+      const r = await fetch(url, { cache: "no-cache", signal });
       if (r.ok) {
         try { return await r.json(); } catch (e) { if (e instanceof SyntaxError) return null; throw e; }
       }
       if (r.status < 500) return null;
       if (i + 1 >= tries) throw new Error(`HTTP ${r.status}`);
     } catch (e) {
+      if (signal?.aborted) throw e;
       if (i + 1 >= tries) throw e;
     }
     await new Promise((res) => setTimeout(res, 600 * 2 ** i));
@@ -476,10 +570,10 @@ function showBenchBoard() {
 /// are usually in hand when the weapon's scenes are asked.
 async function loadBoard(weapon) {
   const stamp = fetchJson(`${boardOffOrigin ? BOARD_ORIGIN : ""}/board.meta.json`).then((m) => (BOARD_META = m));
-  await loadWeaponBoard(weapon);
+  if (weapon) await loadWeaponBoard(weapon);
   if (!(await stamp) && !boardOffOrigin) {
     boardOffOrigin = true;
-    boardFromSite(weapon);
+    if (weapon) boardFromSite(weapon);
   }
 }
 
@@ -491,17 +585,14 @@ async function loadBoard(weapon) {
 /// the board's address.
 let boardOffOrigin = location.hostname === new URL(LIVE_ORIGIN).hostname;
 
-/// The rows for `id` landed — and they are PRESETS, so this is `initPresets`
-/// and not a repaint: a bar redrawn without them is a bar with no benchmark
-/// builds in it, which is what the reader came for.
-///
-/// ONLY IF THE READER IS STILL THERE. A slow answer for a weapon they have
-/// already left must not redraw the one they are looking at.
+/// Redraw the current weapon's published references. Restore the editor only
+/// when its active reference moved; arrivals must not repeat every module's
+/// initialization or redraw a weapon the reader already left.
 function boardRowsLanded(id) {
   if (!$("weapon") || $("weapon").value !== id) return;
   const target = routeWeaponId();
   // The next route owns the page while its board is still loading.
-  if (target && target !== id) return;
+  if (!target || target !== id) return;
   const reportWeapon = optimizationReport?.request?.weapon || simulationReport?.weapon;
   if (reportWeapon === id || ((optimizationReport?.unavailable && new URLSearchParams(location.search).has("task-result"))
       || (simulationReport?.id && new URLSearchParams(location.search).has("measurement")))) {
@@ -511,9 +602,9 @@ function boardRowsLanded(id) {
     // A scene can land inside an edit's debounce; save before restoring it.
     flushPresetSaves();
     const address = location.pathname + location.search + location.hash;
-    if (!startEdit) initPresets();
+    if (!startEdit && resolveBoardActive(activePreset) !== activePreset) initPresets();
     if (location.pathname + location.search + location.hash !== address) history.replaceState(history.state, "", address);
-    renderPresetBar(); refreshPanel();
+    renderPresetBar(); renderBuildLibrary();
   }
   catch (_) { /* nothing is showing it yet */ }
 }
@@ -659,19 +750,19 @@ const depthCount = (w, depth) => {
 /// weapon, its pool and the language — so a stale answer needs one of them to
 /// change without being replaced.
 let builtinMemo = null, builtinRowsMemo = null;
-const builtinBuilds = () => {
+const builtinBuilds = (benchmark = null) => {
   const w = weaponInfo($("weapon").value) || {};
   const m = builtinMemo;
-  if (m && m.w === w.id && m.rows === BOARD[w.id] && m.pool === currentPool && m.lang === LANG
-      && m.i18n === I18N && m.depth === boardDepth) {
-    return m.out;
-  }
-  const out = builtinBuildsUncached(w);
-  builtinMemo = { w: w.id, rows: BOARD[w.id], pool: currentPool, lang: LANG, i18n: I18N,
-    depth: boardDepth, out };
+  const valid = m && m.w === w.id && m.rows === BOARD[w.id] && m.pool === currentPool && m.lang === LANG
+    && m.i18n === I18N && m.depth === boardDepth;
+  if (valid && m.views.has(benchmark)) return m.views.get(benchmark);
+  const out = builtinBuildsUncached(w, benchmark);
+  if (!valid) builtinMemo = { w: w.id, rows: BOARD[w.id], pool: currentPool, lang: LANG, i18n: I18N,
+    depth: boardDepth, views: new Map() };
+  builtinMemo.views.set(benchmark, out);
   return out;
 };
-const builtinBuildsUncached = (w) => {
+const builtinBuildsUncached = (w, benchmark = null) => {
   // Scene arrivals replace the array while retaining its existing immutable rows.
   if (!builtinRowsMemo || builtinRowsMemo.w !== w.id
       || (builtinRowsMemo.pool !== currentPool && (builtinRowsMemo.pool.length !== currentPool.length
@@ -688,8 +779,9 @@ const builtinBuildsUncached = (w) => {
   // exactly on the line is shown. FILTERING BEFORE THE RANK IS WHAT KEEPS `#1`
   // MEANING `#1`: what survives is always a prefix of a group, and every
   // group's leader survives it.
-  const deep = boardGroupLeaders(BOARD[w.id]);
-  const rows = (BOARD[w.id] || []).filter((r) => deep(r, boardDepth));
+  const scope = benchmark ? (BOARD[w.id] || []).filter((r) => r.benchmark === benchmark) : BOARD[w.id];
+  const deep = boardGroupLeaders(scope);
+  const rows = (scope || []).filter((r) => deep(r, boardDepth));
   return rankBoard(rows, benchList().map((b) => b.id), w.modes).map(({ row, mode, riven: rv, rank: n, key }) => {
     const previous = memo.get(row);
     if (previous && previous.builtin === key && previous.rank === n) return previous;
@@ -790,7 +882,9 @@ const buildList = () => builtinBuilds().concat(loadPresetList(BUILDS));
 const buildNamed = (n) => {
   if (!n) return null;
   const own = loadPresetList(BUILDS).find((p) => presetId(p) === n);
-  return own || presetFind(buildList(), n);
+  if (own) return own;
+  const ref = openedBoardActive(presetWeapon()), opened = ref && openedBoardBuild(ref);
+  return opened && presetId(opened) === n ? opened : presetFind(buildList(), n);
 };
 /// Is the build on screen one of the official ones? Then nothing may write it.
 const officialBuildActive = () => !!(buildNamed(activePreset) || {}).builtin;
@@ -826,7 +920,8 @@ function buildBarCfg() {
     // THE BOARD'S BUILDS, read-only; one opened from the finder or a board link
     // is kept by what it is, never by its rank (`boardRef`).
     published: builtinBuilds,
-    pins: { key: () => openedBoardKey(presetWeapon()), ref: boardRef, same: sameBoardRef },
+    pins: { key: () => openedBoardKey(presetWeapon()), ref: boardRef, same: sameBoardRef,
+      find: openedBoardBuild, current: () => { const ref = openedBoardActive(presetWeapon()); return ref ? openedBoardBuild(ref) : null; } },
     roGroup: tr("From the board · read-only"),
     readonly: (p) => !!p.builtin,
     roTitle: (p) =>

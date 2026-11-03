@@ -85,7 +85,7 @@ try {
   check("a compact generated summary links to its published build", initial.summary && initial.compact);
   check("normal browsing needs no load-more button", initial.noButton);
   const deferredStates=await evaluate(`(() => {
-    const w=weaponInfo(presetWeapon()), original=boardRowState, memo=builtinRowsMemo, rows=BOARD[w.id], pool=currentPool;let calls=0;
+    const w=weaponInfo(presetWeapon()), original=boardRowState, memo=builtinRowsMemo, collection=builtinMemo, rows=BOARD[w.id], pool=currentPool;let calls=0;
     boardRowState=(...args)=>{calls++;return original(...args);};
     try {
       builtinRowsMemo=null;
@@ -102,7 +102,7 @@ try {
         deferred:before===0&&listed===0,once:opened===1&&calls===1&&state===again,
         exact:JSON.stringify(state)===JSON.stringify(expected)&&JSON.stringify(roundtrip)===JSON.stringify(expected),
         reused:entries.every((p,i)=>p===repeated[i]),calls,rows:entries.length};
-    } finally {boardRowState=original;builtinRowsMemo=memo;BOARD[w.id]=rows;currentPool=pool;}
+    } finally {boardRowState=original;builtinRowsMemo=memo;builtinMemo=collection;BOARD[w.id]=rows;currentPool=pool;}
   })()`);
   check("all published builds remain available without expanding editor state",deferredStates.available&&deferredStates.deferred,JSON.stringify(deferredStates));
   check("opening a published build expands its state once",deferredStates.once,JSON.stringify(deferredStates));

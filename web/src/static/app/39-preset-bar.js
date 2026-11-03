@@ -62,12 +62,12 @@ function rememberPublished(cfg, p) {
 function openedPublished(cfg) {
   const refs = pinRefs(cfg), active = cfg.active();
   if (!refs.length && (!active || cfg.load().some((p) => presetId(p) === active))) return [];
-  const all = cfg.published();
-  const act = all.find((p) => presetId(p) === active);
+  const all = cfg.pins.find ? null : cfg.published();
+  const act = cfg.pins.current ? cfg.pins.current() : all.find((p) => presetId(p) === active);
   if (act) rememberPublished(cfg, act);
   const out = [];
   for (const ref of pinRefs(cfg)) {
-    const p = all.find((x) => cfg.pins.same(cfg.pins.ref(x), ref));
+    const p = cfg.pins.find ? cfg.pins.find(ref) : all.find((x) => cfg.pins.same(cfg.pins.ref(x), ref));
     if (p && !out.includes(p)) out.push(p);
   }
   return out;
