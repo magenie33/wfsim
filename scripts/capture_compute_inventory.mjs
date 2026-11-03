@@ -30,7 +30,10 @@ export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS)
         const write = async text => { if (failed) throw failed; if (!out.write(text)) await once(out, 'drain'); };
         try {
           if (name === 'library') await write('[');
-          await tx.unsafe(query, args).cursor(5000, async rows => {
+          // Separate FETCH statements bound server work without timing the whole transfer.
+          await tx.unsafe(`DECLARE inventory_scan NO SCROLL CURSOR FOR ${query}`, args);
+          for (;;) {
+            const rows = await tx.unsafe('FETCH FORWARD 5000 FROM inventory_scan');
             for (const row of rows) {
               if (name === 'library') {
                 const record = typeof row.record === 'string' ? JSON.parse(row.record) : row.record;
@@ -40,12 +43,15 @@ export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS)
               } else await write(JSON.stringify(row) + '\n');
               n++;
             }
-          });
+            if (rows.length < 5000) break;
+          }
+          await tx.unsafe('CLOSE inventory_scan');
           if (name === 'library') await write(']');
           out.end(); await once(out, 'finish'); if (failed) throw failed;
           if (builds) { builds.end(); await once(builds, 'finish'); if (failed) throw failed; }
         } catch (error) { out.destroy(); builds?.destroy(); throw error; }
         counts[name] = n;
+        console.log(`inventory: captured ${name} ${n} rows`);
       }
       return { ...stamp, engine, covers, counts };
     });

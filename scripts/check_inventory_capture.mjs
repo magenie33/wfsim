@@ -10,6 +10,7 @@ const pg = new PGlite();
 try {
   await pg.exec(['schema.sql', 'library.sql', 'sync.sql'].map(name => readFileSync(new URL(`../worker/pg/${name}`, import.meta.url), 'utf8')).join('\n'));
   await pg.query("INSERT INTO builds(id,at,record) VALUES ('a','x','{\"weapon\":\"torid\"}')");
+  await pg.query("INSERT INTO builds(id,at,record) SELECT 'b'||i,'x','{\"weapon\":\"torid\"}' FROM generate_series(1,5000) i");
   await pg.query("INSERT INTO batches(id,at,why,total) VALUES ('b','x','test',1)");
   await pg.query("INSERT INTO queue(batch,build_id,ruler,mode) VALUES ('b','a','r','base')");
   const paths = Object.fromEntries(['library', 'builds', 'facts', 'queue', 'tasks', 'meta'].map(k => [k, join(dir, k)]));
@@ -22,17 +23,19 @@ try {
       assert.equal(settings.ro, 'on'); assert.equal(settings.isolation, 'repeatable read');
       return fn({ unsafe: (query, params = []) => {
         assert(params.every(value => !Array.isArray(value)), 'wire parameters must be scalar values');
-        if (!query.startsWith('SELECT')) return tx.query(query, params).then(r => r.rows);
-        const pending = { then: (ok, bad) => tx.query(query, params).then(r => r.rows).then(ok, bad),
-          cursor: async (size, consume) => { assert.equal(size, 5000); if (fail && ++reads === 2) throw new Error('connection lost'); await consume((await tx.query(query, params)).rows); } };
-        return pending;
+        if (query.startsWith('FETCH')) {
+          assert.equal(query, 'FETCH FORWARD 5000 FROM inventory_scan');
+          if (fail && ++reads === 2) return Promise.reject(new Error('connection lost'));
+        }
+        return tx.query(query, params).then(r => r.rows);
       } });
     });
   } };
   const meta = await captureInventory(sql, paths, '4393e1730621');
-  assert.deepEqual(meta.counts, { library: 1, facts: 0, queue: 1, tasks: 0 });
+  assert.deepEqual(meta.counts, { library: 5001, facts: 0, queue: 1, tasks: 0 });
+  assert.equal(JSON.parse(readFileSync(paths.library)).length, 5001);
   assert.equal(JSON.parse(readFileSync(paths.library))[0].weapon, 'torid');
-  assert.equal(JSON.parse(readFileSync(paths.builds)).id, 'a');
+  assert.equal(JSON.parse(readFileSync(paths.builds, 'utf8').split('\n')[0]).id, 'a');
   assert.equal(JSON.parse(readFileSync(paths.queue)).build_id, 'a');
   assert(JSON.parse(readFileSync(paths.meta)).snapshot);
   const prior = readFileSync(paths.meta, 'utf8'); fail = true;
@@ -40,5 +43,5 @@ try {
   assert.equal(readFileSync(paths.meta, 'utf8'), prior);
   assert(!readdirSync(dir).some(name => name.includes('.partial-')));
   assert(existsSync(paths.tasks));
-  console.log('ok: a read-only repeatable-read capture writes complete inputs; a cut rolls back and preserves the previous manifest without partial files');
+  console.log('ok: bounded SQL fetches retain one read-only snapshot across pages; a cut rolls back and preserves the previous manifest without partial files');
 } finally { await pg.close(); rmSync(dir, { recursive: true, force: true }); }
