@@ -34,6 +34,11 @@ pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
         .filter(|e| !(e.base_form_only && base.form == crate::model::FormKind::Incarnon))
     {
         for eff in &e.effects {
+            if !base.evolution_damage_mods_apply && matches!(eff,
+                EvoEffect::FlatBaseDamage(_) | EvoEffect::BaseDamageBonus(_)
+                | EvoEffect::GatedByTenno { grant: crate::model::GatedGrant::FlatBaseDamage, .. }) {
+                continue;
+            }
             match eff {
                 // NOTHING TO APPLY. The form it unlocks is a separate weapon
                 // entry with its own stats, so applying anything here would

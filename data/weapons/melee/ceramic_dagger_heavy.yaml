@@ -104,6 +104,7 @@ attack:
       spends_combo: true
       melee_damage_mods_apply: false
       universal_damage_mods_apply: true
+      evolution_damage_mods_apply: false
       co_behavior: independent
       co_base_fraction: 1.0
       damage:

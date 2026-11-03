@@ -823,6 +823,7 @@ pub struct WeaponBase {
     pub damage_loss_per_body: f64,
     pub melee_damage_mods_apply: bool,
     pub universal_damage_mods_apply: bool,
+    pub evolution_damage_mods_apply: bool,
     /// WHICH FORM this panel is, from the yaml entry's own `form:`.
     ///
     /// A two-weapons pair is two entries and two panels, and until now neither

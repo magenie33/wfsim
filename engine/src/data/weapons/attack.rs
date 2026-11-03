@@ -113,6 +113,9 @@ pub struct AttackSpec {
     pub melee_damage_mods_apply: bool,
     #[serde(default = "yes")]
     pub universal_damage_mods_apply: bool,
+    /// Whether evolution base-damage grants reach this attack profile.
+    #[serde(default = "yes")]
+    pub evolution_damage_mods_apply: bool,
     pub trigger: String,
     /// Ammo spent per SHOT (per tick on a continuous weapon). Default 1.
     ///

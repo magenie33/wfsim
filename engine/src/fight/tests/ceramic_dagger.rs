@@ -52,3 +52,16 @@ fn spectral_daggers_emit_only_while_incarnon_is_armed() {
     assert!(after.sources.direct > 0.0, "the two projectiles must reach beyond the physical dagger");
     assert!(after.sources.radial > 0.0, "each spectral dagger also explodes");
 }
+
+#[test]
+fn spectral_daggers_exclude_evolution_base_damage_but_keep_critical_chance() {
+    let plain = panel(&[], true);
+    for evo in ["ceramic_dagger_gun_and_blade", "ceramic_dagger_breachers_opportunity"] {
+        let evos = ["ceramic_dagger_evo1_incarnon_form", evo, "ceramic_dagger_absolute_valor"];
+        let base = crate::model::WeaponBase::from_data("ceramic_dagger_heavy", false, &evos);
+        let evolved = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+        assert!(evolved.modified_base > plain.modified_base);
+        assert_eq!(evolved.melee_profiles["spectral_dagger"].modified_base, 350.0);
+        assert!(evolved.melee_profiles["spectral_dagger"].crit_chance > plain.melee_profiles["spectral_dagger"].crit_chance);
+    }
+}
