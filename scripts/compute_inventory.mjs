@@ -19,6 +19,7 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   const [queue, missing, orphans, facts, roster, prefix] = process.argv.slice(2);
   if (!prefix) throw new Error("usage: compute_inventory.mjs queue missing orphans facts roster snapshot-prefix");
   const plan = await classifyInventory({ queue, missing, orphans, builds: `${prefix}.builds`, tasks: `${prefix}.tasks`,
+    canonical: `${prefix}.canonical`,
     meta: JSON.parse(readFileSync(`${prefix}.json`, "utf8")), rulers: readFileSync(roster, "utf8").trim().split(/\s+/) });
   plan.source = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   await publishInventory(plan);
