@@ -103,6 +103,35 @@ function woptMerge(parts) {
   };
 }
 
+// Loading timers prove contact; an engine callback proves observed work.
+function optimizerWorkerSignals() {
+  const workers = [];
+  let engineAt = null, responseAt = null;
+  return {
+    start(i, activity, warm = false) {
+      workers[i] = { loaded: workers[i]?.loaded || warm, activity };
+    },
+    heard(i, message) {
+      responseAt = Date.now();
+      const worker = workers[i];
+      if (!worker) return;
+      if (message.kind === "alive" && message.source === "engine") engineAt = responseAt;
+      if ((message.kind === "alive" && message.source === "engine")
+        || ["progress", "result", "board", "checkpoint", "rested"].includes(message.kind)) worker.loaded = true;
+    },
+    finish(i) { if (workers[i]) workers[i].activity = null; },
+    read(activity) {
+      const pending = workers.filter((w) => w?.activity);
+      const active = pending.filter((w) => w.loaded && w.activity !== "resting");
+      const loading = pending.filter((w) => !w.loaded);
+      return { activity: !active.length && loading.length ? "loading"
+        : pending.length && pending.every((w) => w.activity === "resting") ? "resting" : activity,
+        workers_active: active.length, workers_loading: loading.length,
+        engine_last_at: engineAt, response_last_at: responseAt };
+    },
+  };
+}
+
 /// THE QUICK DESCENT ACROSS THE FLEET (docs/WASM.md). A worker is one thread
 /// and cannot wait on another, so worker 0 LEADS: it runs the descent on the
 /// scores it holds and answers with the builds its starts wait for; every
@@ -149,15 +178,22 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
   // between calls not in it (`cpu_ms`), and how many rounds the leader ran.
   const done = { builds: 0, fights: 0, work: 0, cpu_ms: 0, steps: 0 };
   const live = [];
+  const signals = optimizerWorkerSignals();
+  const warm = [];
+  let activity = "planning", finalStatus = null;
   // Where each start stands, as the leader last reported it.
   let starts = [];
-  let round = { builds: 0, fights: 0 };
+  const emptyRound = () => ({ builds: 0, fights: 0, total: 0, slices_done: 0, slices_total: 0 });
+  let round = emptyRound();
   const show = () => {
     const cur = live.filter(Boolean);
-    job.status = { phase: "searching", round: 0, rounds: 0, round_jobs: 0, round_runs: 0, sims_planned: 0, notes: [],
+    job.status = { phase: "searching", round: 0, rounds: 0, round_jobs: 0, round_runs: 0, sims_planned: 0, notes: [], ...finalStatus,
       workers: job.workers.length, starts,
       enumerated: done.builds + round.builds + cur.reduce((a, s) => a + (s.enumerated || 0), 0),
-      sims_done: done.fights + round.fights + cur.reduce((a, s) => a + (s.sims_done || 0), 0) };
+      sims_done: done.fights + round.fights + cur.reduce((a, s) => a + (s.sims_done || 0), 0) + (finalStatus?.sims_done || 0),
+      batches_completed: done.steps, batch_builds_done: round.builds, batch_builds_total: round.total,
+      batch_slices_done: round.slices_done, batch_slices_total: round.slices_total,
+      ...signals.read(activity) };
   };
   const stop = (finished) => {
     const ws = job.workers;
@@ -172,10 +208,14 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     const wd = watchSilence(() => { fail("worker stopped answering"); resolve(null); });
     w.onmessage = (e) => {
       wd.heard();
+      signals.heard(i, e.data);
       if (e.data.kind === "progress" && onProgress) onProgress(e.data.payload);
-      if (e.data.kind === "result") { wd.done(); resolve(e.data.payload); }
+      if (e.data.kind === "result") { wd.done(); signals.finish(i); resolve(e.data.payload); }
+      show();
     };
     w.onerror = (e) => { wd.clear(); fail(String((e && e.message) || "worker error")); resolve(null); };
+    signals.start(i, activity, warm[i]);
+    show();
     w.postMessage({ kind: "optimize", body: b });
     wd.start();
   });
@@ -184,7 +224,13 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     if (!(r > 0) || !job.workers[i]) return Promise.resolve();
     return new Promise((resolve) => {
       const w = job.workers[i];
-      w.onmessage = (e) => { if (e.data.kind === "rested") resolve(); };
+      signals.start(i, "resting", true);
+      show();
+      w.onmessage = (e) => {
+        signals.heard(i, e.data);
+        if (e.data.kind === "rested") { signals.finish(i); resolve(); }
+        show();
+      };
       w.postMessage({ kind: "rest", ms: r });
     });
   };
@@ -196,17 +242,27 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     if (o) await pause(i, ms);
     return o;
   };
-  const grow = (k) => { while (job.workers.length < k) job.workers.push(fleetKept.pop() || spawnEngine()); };
+  const grow = (k) => {
+    while (job.workers.length < k) {
+      const held = fleetKept.pop();
+      warm.push(!!held);
+      job.workers.push(held || spawnEngine());
+    }
+  };
   grow(job.shards);
   show();
   (async () => {
     let scores = [];
     for (let step = 0; ; step++) {
+      activity = "resting";
+      show();
       await pace();
       if (job.cancelled || job.result) return;
-      // The leader's own progress matters only once it reaches the final round.
+      activity = "planning";
       const r = await timed(0, { ...body, quick_fleet: { lead: true, fresh: step === 0, scores } },
-        (p) => { if (p.rounds) job.status = p; });
+        (p) => {
+          if (p.phase === "running" && p.jobs != null) { finalStatus = p; activity = "final_simulation"; }
+        });
       if (!r || job.cancelled) return;
       if (!r.pending) {
         job.result = { ...r, work: done.work + (r.final_work || 0), fights: done.fights, builds: done.builds, steps: step, cpu_ms: Math.round(done.cpu_ms) };
@@ -223,7 +279,9 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       for (let at = 0; at < r.pending.length; at += size) slices.push(r.pending.slice(at, at + size));
       const outs = new Array(slices.length).fill(null);
       let next = 0, broken = false;
-      round = { builds: 0, fights: 0 };
+      activity = "scoring";
+      round = { ...emptyRound(), total: r.pending.length, slices_total: slices.length };
+      show();
       await Promise.all(Array.from({ length: k }, async (_, i) => {
         while (!broken && !job.cancelled && next < slices.length) {
           const at = next++;
@@ -233,6 +291,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
           outs[at] = o;
           round.builds += (o.scores || []).length;
           round.fights += o.fights || 0;
+          round.slices_done += 1;
           show();
         }
       }));
@@ -243,7 +302,8 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       done.builds += scores.length;
       done.fights += outs.reduce((a, o) => a + (o.fights || 0), 0);
       done.work += outs.reduce((a, o) => a + (o.work || 0), 0);
-      round = { builds: 0, fights: 0 };
+      done.steps += 1;
+      round = emptyRound();
       live.fill(null);
       show();
     }
@@ -267,21 +327,23 @@ function woptStart(body, checkpoint, onCheckpoint) {
     parts: new Array(shards).fill(null), result: null, board: null, boards: new Array(shards).fill(null),
     cancelled: false, shards, t0: Date.now(),
   };
+  const signals = optimizerWorkerSignals();
   // One STATUS out of many: the fleet's progress is the sum of its workers,
   // and the phase is the least advanced of them — a run is still searching
   // while any worker still is.
   const rollup = () => {
     const live = job.statuses.filter(Boolean);
-    if (!live.length) return null;
     const sum = (k) => live.reduce((n, s) => n + (Number(s[k]) || 0), 0);
     const searching = live.some((s) => s.phase === "searching") || live.length < shards;
     return {
+      round: 0, rounds: 0, round_jobs: 0, round_runs: 0, notes: [],
       ...live[0],
       phase: searching ? "searching" : "running",
       sims_done: sum("sims_done"), sims_planned: sum("sims_planned"),
       enumerated: sum("enumerated"),
       round_jobs: sum("round_jobs"),
       workers: shards, workers_done: job.parts.filter(Boolean).length,
+      ...signals.read("scoring"),
     };
   };
   for (let i = 0; i < shards; i++) {
@@ -295,7 +357,8 @@ function woptStart(body, checkpoint, onCheckpoint) {
     const wd = watchSilence(() => gone("worker stopped answering"));
     w.onmessage = (e) => {
       wd.heard();
-      if (e.data.kind === "progress") { job.statuses[i] = e.data.payload; job.status = rollup(); }
+      signals.heard(i, e.data);
+      if (e.data.kind === "progress") job.statuses[i] = e.data.payload;
       if (e.data.kind === "board") { job.boards[i] = e.data.payload; job.board = woptMerge(job.boards.filter(Boolean)); }
       if (e.data.kind === "checkpoint") {
         const { board, ...cp } = e.data.payload;
@@ -307,6 +370,7 @@ function woptStart(body, checkpoint, onCheckpoint) {
       }
       if (e.data.kind === "result") {
         wd.done();
+        signals.finish(i);
         job.parts[i] = e.data.payload;
         w.terminate();
         job.workers[i] = null;
@@ -316,17 +380,22 @@ function woptStart(body, checkpoint, onCheckpoint) {
           job.workers = [];
         }
       }
+      job.status = rollup();
     };
     // ONE WAY A SHARD ENDS BADLY, however it went bad: it has an answer that
     // says so, its worker is let go, and the run completes on what it has.
     const gone = (why) => {
       wd.clear();
       if (job.parts[i]) return;
+      signals.finish(i);
       job.parts[i] = { ok: false, error: why };
       if (job.workers[i]) { job.workers[i].terminate(); job.workers[i] = null; }
       if (job.parts.every(Boolean)) { job.result = woptMerge(job.parts); job.workers = []; }
+      job.status = rollup();
     };
     w.onerror = (e) => gone(String((e && e.message) || "worker error"));
+    signals.start(i, "scoring");
+    job.status = rollup();
     w.postMessage({
       kind: "optimize",
       body: { ...body, shard: i, shards },

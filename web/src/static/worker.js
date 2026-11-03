@@ -49,7 +49,7 @@ ready.catch((err) => {
 // …AND ONE STILL WAITING FOR IT SAYS SO, so a slow line is not taken for a dead
 // lane: the page's watchdog resets on any word. The page's download ends on
 // its own clock (`ENGINE_STALL_MS`), so this ends with it.
-const arriving = setInterval(() => postMessage({ kind: "alive" }), 5000);
+const arriving = setInterval(() => postMessage({ kind: "alive", source: "loading" }), 5000);
 ready.then(() => clearInterval(arriving), () => clearInterval(arriving));
 // …AND ONCE LOADED IT SAYS SO FROM INSIDE EVERY ENGINE CALL (wasm
 // `set_heartbeat`): the call blocks this thread, so a long one was silence the
@@ -57,7 +57,7 @@ ready.then(() => clearInterval(arriving), () => clearInterval(arriving));
 let beatAt = 0;
 ready.then(() => wasm_bindgen.set_heartbeat(() => {
   const now = performance.now();
-  if (now - beatAt >= 2000) { beatAt = now; postMessage({ kind: "alive" }); }
+  if (now - beatAt >= 2000) { beatAt = now; postMessage({ kind: "alive", source: "engine" }); }
 }), () => {});
 
 onmessage = async (e) => {

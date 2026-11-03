@@ -1194,6 +1194,7 @@ fn measured_by_the_simulator(rows: Vec<Value>, finalists: usize, state: &FunnelS
         .map(|mut row| {
             let sim = crate::simulate::simulate_json_reporting(&row["replay"], &mut |_, _| {
                 state.sims_done.fetch_add(1, Relaxed);
+                wfsim_optimizer::tick();
             });
             if sim.get("ok").and_then(Value::as_bool) == Some(false) {
                 row["simulator_error"] = sim.get("error").cloned().unwrap_or(Value::Null);
