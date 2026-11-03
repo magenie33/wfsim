@@ -697,6 +697,7 @@ pub fn run_once_traced(
             Some(cy) if me.incarnon.in_base_form => &cy.base_form,
             _ => me.params,
         };
+        let active = melee_profile(active, &me.melee);
         if current_melee_event(active, &me.melee).is_some_and(|h| h.event_timing.is_some()) {
             let event_rate = cadence_rate(me.params, active, t, &mut me.bar, &mut me.buff_stacks, &me.windows);
             if let Some(wait) = prepare_melee_event(active, &me.apl, t, event_rate, r.kills, &mut me.melee) {
@@ -724,6 +725,7 @@ pub fn run_once_traced(
                 continue;
             }
         }
+        let active = melee_profile(active, &me.melee);
         if me.params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot) {
             t += charged_shot_span(me.params, active, &me.windows, &me.bar, &mut me.buff_stacks, t);
             if t >= me.params.duration_seconds { break; }
@@ -732,7 +734,10 @@ pub fn run_once_traced(
         // vulnerability column) are derived PER STAGE now — each attack part
         // has its own vector — so only the vector and ModifiedBase survive at
         // pellet scope.
-        let (qvec, modded_base) = if me.incarnon.in_base_form {
+        let heavy_pre = if me.incarnon.in_base_form { &me.fixed.base_heavy_pre } else { &me.fixed.heavy_pre };
+        let (qvec, modded_base) = if let Some(p) = heavy_pre.as_ref().filter(|_| me.melee.input.as_ref().is_some_and(|i| i.converted)) {
+            (&p.0, p.2)
+        } else if me.incarnon.in_base_form {
             let p = me.fixed.base_pre.as_ref().expect("cycle state needs base pre");
             (&p.0, p.2)
         } else {
@@ -1030,6 +1035,7 @@ pub fn run_once_traced(
         let landing = Landing {
             t,
             base_form: me.incarnon.in_base_form,
+            special_heavy: heavy_pre.is_some() && me.melee.input.as_ref().is_some_and(|i| i.converted),
             shot: rec.shot(),
             flash,
             qvec,

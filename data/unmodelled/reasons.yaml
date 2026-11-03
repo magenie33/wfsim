@@ -169,8 +169,20 @@ reasons:
     text: "Melee Animosity counts a throw as a heavy attack that pays its bonus and spends no stack; here a throw is a light input."
   gunblade_heavy_is_a_shot:
     text: "A gunblade's heavy attack fires, which is not modelled, so there is no heavy mode and a Tennokai window converts nothing."
+  gunblade_light_shots_unmodelled:
+    text: "Gunblade shooting within light stance combos is not modelled. Its separate heavy-shot mode uses the ranged attack's own profile."
+  gunblade_heavy_package_limits:
+    text: "Heavy charge and shot multipliers use the package, which disagrees with the wiki's wind-up and some damage totals. Only the first GunbladeGunshot marker in each action emits a shot; the second marker's handler behavior is uncalibrated."
+  gunblade_sarpa_burst_limits:
+    text: "Sarpa's burst uses five rounds 0.05 s apart, with the package's 3x shot multiplier and 1.25x physical modifier. The wiki's heavy totals disagree. Attack-speed scaling inside the burst is not calibrated."
+  gunblade_stropha_geometry:
+    text: "The shockwave's width is unpublished. The listed multi-stage distance falloff is applied; the effective hitbox and its flight are not calibrated in game."
+  heavy_status_detonation_unmeasured:
+    text: "Heavy-hit detonation includes the hit's own Slash, Heat, Toxin, Electricity and Gas procs. Its retained damage types, tick-time mitigation and headshot-cap behavior are not calibrated in game. The allied duration grant and Jade's Ensemble are not modelled; the wielder's ordinary weapon status procs receive the 30% grant for 30 s."
   melee_heavy_is_special:
     text: "This weapon's heavy attack is {what}, which is not modelled, so there is no heavy mode and a Tennokai window converts nothing."
+  special_heavy_profile_limits:
+    text: "This weapon has a separate heavy-attack profile. Its timing, geometry and unsupported components are disclosed on that heavy mode."
   physical_mod_passive_unmeasured:
     text: "Attack-speed/range stacking, exact physical-damage ties, negative physical rivens and progenitor Impact's wheel selection await in-game calibration."
   melee_passive_unmodelled:
@@ -194,10 +206,10 @@ reasons:
   steflos_signature_speed:
     text: "Citrine and Citrine Prime grant this weapon +40% Projectile Speed; that signature bonus is not modelled."
   corufell_projectile_timing:
-    text: "The two consecutive heavy projectiles have no published input timings. This loop fires one projectile per heavy input and uses the listed 0.833 attacks/s as recovery, plus the 1.3 s wind-up (divided by 1.5 on Prime). The melee scheduler places wind-up after the hit; the opening hit and exact two-shot cadence are not calibrated."
+    text: "Both heavy inputs use the package's GunbladeGunshot release event and animation. The package charge is 2 s, conflicting with the wiki's 1.3 s; the Prime's innate factor divides it by 1.5. Charge and motion timing are not calibrated in game."
   corufell_projectile_width:
     text: "The heavy projectile is wide, but its width and maximum flight range are unpublished. It is simulated as a ray with infinite body punch through and no maximum range."
   corufell_signature_windup:
     text: "Citrine and Citrine Prime grant +20% Heavy Attack Wind Up Speed; that signature bonus is not modelled. The stacking of Prime's innate 1.5x wind-up speed with wind-up mods is unmeasured; this loop multiplies their speed factors."
   corufell_light_tennokai:
-    text: "A Tennokai window does not convert a light combo into the heavy projectile. Heavy-attack mode can use Tennokai's combo-free heavy attacks. The sliding heavy attack that swings the scythe is not modelled."
+    text: "The sliding heavy attack that swings the scythe is not modelled. Tennokai uses the ranged heavy's own damage and delivery."

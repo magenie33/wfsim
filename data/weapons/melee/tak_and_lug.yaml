@@ -1,37 +1,34 @@
 # see notes: melee_shared_package_actions
 id: tak_and_lug
-name: "Tak & Lug"
+name: Tak & Lug
 slot: melee
 weapon_type: melee
 class: sword_and_shield
-# see notes: melee_from_the_modules
 form: neutral
 default_form: true
 transform_group: tak_and_lug
-mod_pools: [melee, sword_and_shield]
+mod_pools:
+- melee
+- sword_and_shield
 mastery_rank: 9
 max_rank: 30
-
-accuracy: ~
+accuracy: null
 disposition: 1.2
-polarities: [vazarin]
+polarities:
+- vazarin
 stance_polarity: madurai
-introduced: "Update 38.5.11"
+introduced: Update 38.5.11
 internal_name: /Lotus/Weapons/Tenno/Melee/SwordsAndBoards/MortiforShieldAndSword/MortiforShieldAndSword
-traits: [grineer]
-
-ammo_max: ~
-
+traits:
+- grineer
+ammo_max: null
 combo_duration_seconds: 5.0
-
 co_behavior: additive_with_base_damage
-
 unmodeled:
-- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
-  reads low.'
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that
+  passive the number reads low.'
 - reason: melee_slide_unpublished
-- reason: melee_heavy_is_special
-  what: a thrown shield that reaches 7 m and explodes three times in 3 m, each explosion with a forced Blast status
+- reason: special_heavy_profile_limits
 attack:
   trigger: melee
   shot_type: hit_scan

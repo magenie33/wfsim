@@ -303,6 +303,8 @@ def main():
                     bounce["falloff_reduction"] = round(projectile["falloff"], 6)
         if root.get("class") == "glaive" and source["heavy"]["chargeDuration"] is not None:
             attack["throw_charge_seconds"] = source["heavy"]["chargeDuration"]
+        if projectile_heavy and isinstance(attack.get("combo_script"), dict) and "inputs" in attack["combo_script"]:
+            continue
         if context in trees.get(tree, {}):
             attack["combo_script"] = {"tree": tree, "context": context}
             weapon_modes.append(w["id"])

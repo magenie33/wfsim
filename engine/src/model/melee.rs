@@ -4,6 +4,8 @@
 use super::ComboHit;
 use serde::Deserialize;
 
+fn one_instance() -> u32 { 1 }
+
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum MeleeCombo {
@@ -64,6 +66,8 @@ pub struct MeleeEvent {
     pub hand: Option<u32>,
     pub multiplier: f64,
     pub combo_points: f64,
+    #[serde(default = "one_instance")]
+    pub hits: u32,
     #[serde(default)]
     pub forced_procs: Vec<String>,
     #[serde(default)]
@@ -128,7 +132,7 @@ impl MeleeTimeline {
                 let mut previous = 0.0;
                 let idle = MeleeEvent {
                     at_seconds: a.duration_seconds, kind: MeleeEventKind::Idle,
-                    hand: None, multiplier: 0.0, combo_points: 0.0, forced_procs: Vec::new(),
+                    hand: None, multiplier: 0.0, combo_points: 0.0, hits: 1, forced_procs: Vec::new(),
                     all_around: false, slash_multiplier: 1.0, impact_multiplier: 1.0,
                     puncture_multiplier: 1.0, status_multiplier: 1.0,
                     damage_type_multipliers: Default::default(),
@@ -151,7 +155,7 @@ impl MeleeTimeline {
                         next_swing_index: None,
                         windup_seconds: if event == 0 { charge } else { 0.0 },
                         all_around: e.all_around,
-                        hits: 1,
+                        hits: e.hits,
                         impact_multiplier: e.impact_multiplier,
                         puncture_multiplier: e.puncture_multiplier,
                         slash_multiplier: e.slash_multiplier,

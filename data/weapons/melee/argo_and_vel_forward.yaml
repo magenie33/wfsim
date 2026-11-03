@@ -1,19 +1,15 @@
 # see notes: melee_shared_package_actions
 id: argo_and_vel_forward
-name: "Argo & Vel"
-# see notes: melee_from_the_modules
+name: Argo & Vel
 inherits: argo_and_vel
 form: forward
 transform_group: argo_and_vel
 co_behavior: additive_with_base_damage
 unmodeled:
-- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
-  reads low.'
-- reason: melee_attack_unmodelled
-  attacks: Heavy Attack Glaive and Heavy Attack Glaive AoE
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that
+  passive the number reads low.'
 - reason: melee_slide_unpublished
-- reason: melee_heavy_is_special
-  what: a thrown glaive at 3x that bounces once, ricochets to one more enemy and explodes
+- reason: special_heavy_profile_limits
 attack:
   trigger: melee
   shot_type: hit_scan

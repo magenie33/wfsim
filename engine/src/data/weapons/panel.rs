@@ -716,6 +716,12 @@ pub fn base_panel_assembled(
         no_magazine: s.attack.no_magazine,
         combo_script: s.attack.combo_script.to_vec(),
         throw_charge_seconds: s.attack.throw_charge_seconds,
+        melee_heavy: (s.form_kind() != crate::model::FormKind::Heavy).then(|| all().iter()
+            .find(|e| e.group() == s.group() && e.form_kind() == crate::model::FormKind::Heavy
+                && e.attack.combo_script.iter().any(|h| h.event_timing.is_some_and(|t|
+                    matches!(t.kind, crate::model::MeleeEventKind::Ranged))))
+            .map(|e| Box::new(base_panel_assembled(&e.id, frenzy_active, assembly))))
+            .flatten(),
         heavy_script: all().iter()
             .find(|e| e.group() == s.group() && e.form_kind() == crate::model::FormKind::Heavy)
             .map(|e| &e.attack.combo_script)

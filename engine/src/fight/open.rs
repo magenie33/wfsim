@@ -145,6 +145,8 @@ pub(super) struct Fixed<'a> {
     pub(super) main_variant_rad: Vec<crate::rules::damage::DamageVector>,
     pub(super) main_pre: (crate::rules::damage::DamageVector, f64, f64),
     pub(super) base_pre: Option<(crate::rules::damage::DamageVector, f64, f64)>,
+    pub(super) heavy_pre: Option<(crate::rules::damage::DamageVector, f64, f64)>,
+    pub(super) base_heavy_pre: Option<(crate::rules::damage::DamageVector, f64, f64)>,
     /// The two above with Frenzy DOWN, when the form's panel injects anything.
     pub(super) main_resting: Option<crate::rules::damage::DamageVector>,
     pub(super) base_resting: Option<crate::rules::damage::DamageVector>,
@@ -502,6 +504,8 @@ pub(super) fn open<'a>(
     let main_variants = variant_pre(params);
     let main_variant_rad = variant_rad(params);
     let main_pre = precompute(params);
+    let heavy_pre = params.melee_heavy.as_deref().map(precompute);
+    let base_heavy_pre = params.cycle.as_ref().and_then(|c| c.base_form.melee_heavy.as_deref()).map(precompute);
     let base_pre = params.cycle.as_ref().map(|c| precompute(&c.base_form));
     // Same denominator: an injected element is outside ModifiedBase.
     let resting = |p: &FightParams| {
@@ -773,6 +777,8 @@ pub(super) fn open<'a>(
                 main_variant_rad,
                 main_pre,
                 base_pre,
+                heavy_pre,
+                base_heavy_pre,
                 main_resting,
                 base_resting,
                 base_variants,

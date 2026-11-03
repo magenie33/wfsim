@@ -1,16 +1,12 @@
 # see notes: melee_shared_package_actions
 id: syam_slide
 name: Syam
-# see notes: melee_from_the_modules
 inherits: syam
 form: slide
 transform_group: syam
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_attack_unmodelled
-    attacks: "First Shockwave and Second Shockwave"
-  - reason: melee_heavy_is_special
-    what: "two shockwaves that travel 230 m and pierce: 500 Heat with a forced Impact status, then 1500 Heat"
+- reason: special_heavy_profile_limits
 attack:
   trigger: melee
   shot_type: hit_scan

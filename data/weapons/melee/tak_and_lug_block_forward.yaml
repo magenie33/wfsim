@@ -1,17 +1,15 @@
 # see notes: melee_shared_package_actions
 id: tak_and_lug_block_forward
-name: "Tak & Lug"
-# see notes: melee_from_the_modules
+name: Tak & Lug
 inherits: tak_and_lug
 form: block_forward
 transform_group: tak_and_lug
 co_behavior: additive_with_base_damage
 unmodeled:
-- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
-  reads low.'
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that
+  passive the number reads low.'
 - reason: melee_slide_unpublished
-- reason: melee_heavy_is_special
-  what: a thrown shield that reaches 7 m and explodes three times in 3 m, each explosion with a forced Blast status
+- reason: special_heavy_profile_limits
 attack:
   trigger: melee
   shot_type: hit_scan

@@ -911,6 +911,8 @@ pub struct WeaponBase {
     pub heavy: Option<crate::model::HeavyAttack>,
     /// The weapon's own event-timed heavy inputs when no stance overrides them.
     pub heavy_script: Vec<crate::model::ComboHit>,
+    /// A heavy input with its own damage and delivery, resolved with the same build.
+    pub melee_heavy: Option<Box<WeaponBase>>,
     pub throw_charge_seconds: Option<f64>,
     /// See [`crate::data::weapons::AttackSpec::spends_combo`].
     pub spends_combo: bool,

@@ -215,6 +215,7 @@ impl Default for FightParams {
             crit_chance_per_hit: None,
             combo_script: Vec::new(),
             heavy_script: Vec::new(),
+            melee_heavy: None,
             follow_through: None,
             slam: None,
             shockwave: None,

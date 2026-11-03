@@ -4,35 +4,31 @@ name: Syam
 slot: melee
 weapon_type: melee
 class: nikana
-# see notes: melee_from_the_modules
 form: neutral
 default_form: true
 transform_group: syam
-mod_pools: [melee, nikana]
+mod_pools:
+- melee
+- nikana
 mastery_rank: 0
 max_rank: 30
-
-accuracy: ~
+accuracy: null
 disposition: 1.2
-polarities: [madurai, madurai]
+polarities:
+- madurai
+- madurai
 stance_polarity: madurai
-introduced: "Update 33"
+introduced: Update 33
 internal_name: /Lotus/Weapons/Tenno/Melee/Swords/DaxDuviriKatana/DaxDuviriKatanaWeapon
-traits: [duviri]
-
-ammo_max: ~
-
+traits:
+- duviri
+ammo_max: null
 combo_duration_seconds: 5.0
-
 co_behavior: additive_with_base_damage
-
 unmodeled:
-- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
-  reads low.'
-- reason: melee_attack_unmodelled
-  attacks: First Shockwave and Second Shockwave
-- reason: melee_heavy_is_special
-  what: 'two shockwaves that travel 230 m and pierce: 500 Heat with a forced Impact status, then 1500 Heat'
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that
+  passive the number reads low.'
+- reason: special_heavy_profile_limits
 attack:
   trigger: melee
   shot_type: hit_scan

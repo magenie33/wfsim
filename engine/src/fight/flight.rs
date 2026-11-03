@@ -20,6 +20,7 @@ pub(super) struct Landing {
     /// THE FORM THAT FIRED IT. A transform while it flies does not turn a base
     /// form round into an Incarnon one.
     pub(super) base_form: bool,
+    pub(super) special_heavy: bool,
     /// The record's id for the pull, so what it deals points back at it.
     pub(super) shot: Option<u32>,
     pub(super) flash: bool,
@@ -84,10 +85,12 @@ pub(super) struct Landing {
 impl Landing {
     /// The panel of the form that fired it — `run_once_traced`'s own rule.
     pub(super) fn active<'p>(&self, params: &'p FightParams) -> &'p FightParams {
-        match &params.cycle {
+        let active = match &params.cycle {
             Some(cy) if self.base_form => &cy.base_form,
             _ => params,
-        }
+        };
+        if self.special_heavy { active.melee_heavy.as_deref().expect("ranged heavy needs its profile") }
+        else { active }
     }
 }
 
@@ -136,7 +139,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     // for this shot; with none, the engagement's list stands.
     let struck_live: Vec<usize>;
     let struck: &[usize] = match &me.fixed.base_struck {
-        _ if l.pierce_live_m > 0.0 => {
+        _ if l.pierce_live_m > 0.0 || l.special_heavy => {
             struck_live = active.struck_bodies_with(l.pierce_live_m);
             &struck_live
         }

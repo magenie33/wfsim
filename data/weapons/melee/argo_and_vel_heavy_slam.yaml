@@ -1,19 +1,16 @@
+# see notes: melee_shared_package_actions
 id: argo_and_vel_heavy_slam
-name: "Argo & Vel"
-# see notes: melee_from_the_modules
+name: Argo & Vel
 inherits: argo_and_vel
 form: heavy_slam
 transform_group: argo_and_vel
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
-  - reason: melee_attack_unmodelled
-    attacks: "Heavy Attack Glaive and Heavy Attack Glaive AoE"
-  - reason: melee_slide_unpublished
-  - reason: melee_heavy_is_special
-    what: "a thrown glaive at 3x that bounces once, ricochets to one more enemy and explodes"
+- 'The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops
+  instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart.'
+- reason: melee_slide_unpublished
+- reason: special_heavy_profile_limits
 attack:
-  # see notes: swing_trigger_pull_engine
   trigger: melee
   shot_type: hit_scan
   fire_rate: 0.8
@@ -26,9 +23,11 @@ attack:
   punch_through_m: 0.0
   range_m: 2.5
   spends_combo: true
-  damage: { impact: 0.0 }
+  damage:
+    impact: 0.0
   radial:
-    damage: { slash: 900 }
+    damage:
+      slash: 900
     radius_m: 7.0
     blast_kind: slam
     status_chance: 0.1
@@ -36,9 +35,12 @@ attack:
     falloff_reduction: 0.3
     forced_procs: []
     takes_multishot: false
-  # see notes: combo_points_from_multiplier
   combo_script:
-    - { multiplier: 1.0, delay_seconds: 2.0, forced_procs: [lifted], combo_points: 0, combo_points_base: 0 }
-
+  - multiplier: 1.0
+    delay_seconds: 2.0
+    forced_procs:
+    - lifted
+    combo_points: 0
+    combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Argo_&_Vel

@@ -4,35 +4,32 @@ name: Edun
 slot: melee
 weapon_type: melee
 class: polearm
-# see notes: melee_from_the_modules
 form: neutral
 default_form: true
 transform_group: edun
-mod_pools: [melee, polearm]
+mod_pools:
+- melee
+- polearm
 mastery_rank: 0
 max_rank: 30
-
-accuracy: ~
+accuracy: null
 disposition: 1.2
-polarities: [madurai, madurai, madurai]
+polarities:
+- madurai
+- madurai
+- madurai
 stance_polarity: zenurik
-introduced: "Update 33"
+introduced: Update 33
 internal_name: /Lotus/Weapons/Tenno/Melee/Polearms/DaxDuviriPolearm/DaxDuviriPolearmWeapon
-traits: [duviri]
-
-ammo_max: ~
-
+traits:
+- duviri
+ammo_max: null
 combo_duration_seconds: 5.0
-
 co_behavior: additive_with_base_damage
-
 unmodeled:
-- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
-  reads low.'
-- reason: melee_attack_unmodelled
-  attacks: Polearm Throw and Polearm Explosion
-- reason: melee_heavy_is_special
-  what: 'a thrown polearm: 480 damage on contact with a forced Impact status, then a 400 Blast explosion in 5 m a second later'
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that
+  passive the number reads low.'
+- reason: special_heavy_profile_limits
 attack:
   trigger: melee
   shot_type: hit_scan

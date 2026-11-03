@@ -1,21 +1,17 @@
-# see notes: combo_points_from_multiplier
 # see notes: melee_shared_package_actions
 id: quassus_prime_heavy_slam
 name: Quassus Prime
-# see notes: melee_from_the_modules
 inherits: quassus_prime
 form: heavy_slam
 transform_group: quassus_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
-  - reason: melee_attack_unmodelled
-    attacks: "First Heavy Attack - Ethereal Daggers and Second Heavy Attack - Ethereal Daggers"
-  - reason: melee_slide_unpublished
-  - reason: melee_heavy_is_special
-    what: "a spread of thrown ethereal daggers, 76 base each: 18 at 2.5x, then 9 at 5x, each with a forced Slash status"
-  - reason: melee_passive_unmodelled
-    passive: "a Warfan's slam hits twice, the heavy slam's second hit at the normal slam's figures"
+- 'The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops
+  instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart.'
+- reason: melee_slide_unpublished
+- reason: melee_passive_unmodelled
+  passive: a Warfan's slam hits twice, the heavy slam's second hit at the normal slam's figures
+- reason: special_heavy_profile_limits
 attack:
   trigger: melee
   shot_type: hit_scan

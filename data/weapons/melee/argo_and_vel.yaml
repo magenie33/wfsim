@@ -1,39 +1,36 @@
 # see notes: melee_shared_package_actions
 id: argo_and_vel
-name: "Argo & Vel"
+name: Argo & Vel
 slot: melee
 weapon_type: melee
 class: sword_and_shield
-# see notes: melee_from_the_modules
 form: neutral
 default_form: true
 transform_group: argo_and_vel
-mod_pools: [melee, sword_and_shield]
+mod_pools:
+- melee
+- sword_and_shield
 mastery_rank: 0
 max_rank: 30
-
-accuracy: ~
+accuracy: null
 disposition: 1.2
-polarities: [madurai, madurai, vazarin]
+polarities:
+- madurai
+- madurai
+- vazarin
 stance_polarity: madurai
-introduced: "Update 33.6"
+introduced: Update 33.6
 internal_name: /Lotus/Weapons/Tenno/Melee/SwordsAndBoards/DaxDuviriMaceShieldWeapon
-traits: [duviri]
-
-ammo_max: ~
-
+traits:
+- duviri
+ammo_max: null
 combo_duration_seconds: 5.0
-
 co_behavior: additive_with_base_damage
-
 unmodeled:
-- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
-  reads low.'
-- reason: melee_attack_unmodelled
-  attacks: Heavy Attack Glaive and Heavy Attack Glaive AoE
+- 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that
+  passive the number reads low.'
 - reason: melee_slide_unpublished
-- reason: melee_heavy_is_special
-  what: a thrown glaive at 3x that bounces once, ricochets to one more enemy and explodes
+- reason: special_heavy_profile_limits
 attack:
   trigger: melee
   shot_type: hit_scan

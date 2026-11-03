@@ -1,16 +1,12 @@
 # see notes: melee_shared_package_actions
 id: edun_slide
 name: Edun
-# see notes: melee_from_the_modules
 inherits: edun
 form: slide
 transform_group: edun
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_attack_unmodelled
-    attacks: "Polearm Throw and Polearm Explosion"
-  - reason: melee_heavy_is_special
-    what: "a thrown polearm: 480 damage on contact with a forced Impact status, then a 400 Blast explosion in 5 m a second later"
+- reason: special_heavy_profile_limits
 attack:
   trigger: melee
   shot_type: hit_scan

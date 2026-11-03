@@ -1626,10 +1626,14 @@ pub fn resolve_for(
     });
     let projectile_speed_mps = base.projectile_speed_mps.map(|v| v * ps);
 
+    let melee_heavy = base.melee_heavy.as_ref().map(|b| Box::new(resolve_for(b, mods, policy, tenno)));
     let stance_heavy = mods.iter().find_map(|m| m.stance)
         .and_then(|c| c.iter().find(|(f, _)| *f == "heavy").map(|(_, h)| *h))
         .filter(|h| h.iter().any(|r| r.event_timing.is_some()))
         .filter(|h| h.iter().all(|r| r.event_timing.is_none_or(|e| !matches!(e.kind, crate::model::MeleeEventKind::Throw | crate::model::MeleeEventKind::Ranged))))
+        .filter(|_| melee_heavy.is_none())
+        .filter(|_| !base.combo_script.iter().any(|h| h.event_timing.is_some_and(|e|
+            matches!(e.kind, crate::model::MeleeEventKind::Ranged))))
         .or_else(|| (!base.heavy_script.is_empty()).then_some(base.heavy_script.as_slice()));
     let heavy = stance_heavy.map(|script| {
         let input = script[0].event_timing.unwrap().input;
@@ -1731,6 +1735,7 @@ pub fn resolve_for(
         // Crushing Ruin and under Shattering Storm. The entry's own script is
         // the UNSTANCED fallback, which is what an empty stance slot gives you.
         heavy_script: stance_heavy.map_or_else(Vec::new, |h| h.to_vec()),
+        melee_heavy,
         combo_script: {
             let script = mods
                 .iter()

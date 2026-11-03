@@ -929,6 +929,7 @@ impl FightParams {
         // (diluted by Serration, and it reaches status payloads through
         // ModifiedBase); `multiplies` is a final multiplier on the instance
         // that an adding CO's term does not see (`scale::beside_adding_co`).
+        let melee_heavy = panel.melee_heavy.as_ref().map(|p| Box::new(Self::from_panel(p, arena, arcane)));
         let (compression_multiplier, mut compression_base_damage) = match panel.compression {
             Some(c) => {
                 let bonus = arcane.compression_damage_per_m * c.radius_lost_m;
@@ -1416,6 +1417,7 @@ impl FightParams {
             crit_chance_per_hit: panel.crit_chance_per_hit,
             combo_script: panel.combo_script.clone(),
             heavy_script: panel.heavy_script.clone(),
+            melee_heavy,
             follow_through: panel.follow_through,
             slam: panel.slam,
             shockwave: panel.shockwave,
