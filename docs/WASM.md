@@ -39,11 +39,14 @@ wfsim.app is two workers, and the custom domain points at the first.
 placed front door carried every reader's download to the database's city and
 back (`Cf-Placement: remote-LHR` on `/` and on the module). The two configs
 share one assets block, which `scripts/check_edge_worker.mjs` holds equal.
-**EACH WORKER HAS ITS OWN DEPLOY.** The Workers Build (`scripts/deploy.sh`)
-deploys `wfsim` alone: it is bound to that worker and deploys any config under
-its name, so the edge config there replaced `wfsim` with a script whose backend
-was itself. `scripts/ship.py` deploys the edge after the push, as it does the
-MCP server.
+`scripts/ship.py` deploys `wfsim` first, then `wfsim-edge`, from the same CI
+artifact after the push. A failed backend deployment stops the release before
+the edge advances. Both workers need the same assets because routes passed to
+`BACKEND`, including weapon builders, can return the backend's HTML.
+`scripts/check_edge_worker.mjs` exercises this publication order and failure
+path without deploying. The separate Workers Build (`scripts/deploy.sh`) is
+bound to `wfsim`; its command must use only `wrangler.jsonc`, since an edge
+config under that bound name would make `BACKEND` call itself.
 
 A request the edge passes on keeps its headers, so the placed worker reads the
 reader's address from `cf-connecting-ip` and the country from `cf-ipcountry`

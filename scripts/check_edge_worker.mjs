@@ -3,12 +3,15 @@
 // placed and binds the worker the other config names, and `edgeServe` answers
 // the site's files without the backend while passing on everything else.
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { edgeServe } from "../worker/pages.js";
 import edge from "../worker/edge.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+execFileSync(process.platform === "win32" ? "python" : "python3", [resolve(ROOT, "scripts/check_ship_workers.py")],
+  { cwd: ROOT, stdio: "inherit" });
 let failed = 0;
 const check = (name, ok, detail = "") => {
   console.log(`${ok ? "  ok" : "FAIL"}  ${name}${ok ? "" : `  — ${String(detail).slice(0, 300)}`}`);

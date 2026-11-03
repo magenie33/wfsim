@@ -143,6 +143,10 @@ over a fake asset layer answers the page, its twin and the hashed files itself
 (a gone hashed file a 404) while every endpoint reaches `BACKEND`. With one
 route added to the edge's list the first assertion fails; with `edgeServe`
 claiming no hashed file, three do.
+Its Python publication check runs `ship.main --built` with fake process calls:
+the backend, edge and MCP deploy from one artifact after the push, and a backend
+failure prevents the edge, MCP, bot and verification from running. The same
+check fails against a release path that deploys only the edge.
 
 ## `check_page_cache`
 

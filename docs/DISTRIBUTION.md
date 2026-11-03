@@ -167,8 +167,10 @@ content-addressed and cacheable for ever.
    `parity`, `page-rest`) run in parallel on that build.
 2. Once CI passes on main, `.github/workflows/ship.yml` lays that artifact over
    main — all but `site/board/`, the bots' — and runs `ship.py --built`:
-   commit, push, stage and sign the channel, the engine library, the MCP
-   server, the bot, and the read-back that all four serve one engine.
+   commit, push, stage and sign the channel, publish the engine library,
+   deploy the backend and edge from that same build, then deploy the MCP
+   server and bot. A failed backend deployment stops the edge deployment.
+   The channel, MCP server and bot are read back against the build.
 3. What is due is decided by commit: the newest touching anything but the
    build's products and the board bots', against the commit
    `site/release.json` names. Equal, nothing ships — so any trigger may fire
