@@ -40,6 +40,7 @@ mod m119_multishot_rides_the_round;
 mod m123_laetum_acuity;
 mod melee;
 mod heavy_status;
+mod ceramic_dagger;
 mod okina;
 mod orbs_fields_beams;
 mod overguard_status;

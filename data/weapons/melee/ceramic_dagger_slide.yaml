@@ -7,8 +7,7 @@ form: slide
 transform_group: ceramic_dagger
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_attack_unmodelled
-    attacks: "Spectral Dagger and Spectral Dagger Explosion"
+- reason: ceramic_dagger_projectile_timing
 attack:
   trigger: melee
   shot_type: hit_scan

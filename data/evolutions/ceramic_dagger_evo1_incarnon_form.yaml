@@ -16,7 +16,6 @@ effects:
   # from: "+100% Melee Damage"
   - kind: base_damage_bonus
     value: 1.0
-  - kind: unmodelled_heavy_attacks_send_forth_spectral_daggers
   - kind: out_of_scope
     clause: "+25% Sprint Speed, +25% to Parkour Velocity"
     reason: no_movement

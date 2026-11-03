@@ -22,7 +22,7 @@ REPORT = ROOT / "docs/melee/package-coverage.json"
 CONTEXTS = {"neutral": "CC_GROUND", "forward": "CC_GROUND_BRANCH_A",
             "block_forward": "CC_GROUND_BRANCH_B", "block": "CC_GROUND_BRANCH_C",
             "heavy": "CC_GROUND_HEAVY", "slide": "CC_SLIDING"}
-PROCS = {"PT_KNOCKBACK": "impact", "PT_BLEEDING": "slash", "PT_KNOCKED_DOWN": "knockdown",
+PROCS = {"PT_KNOCKBACK": "impact", "PT_BLEEDING": "slash", "PT_KNOCKED_DOWN": "knockdown", "PT_FLASHBANG": "blast",
          "PT_LIFT_HIT": "lifted", "PT_ELECTROCUTION": "electricity", "PT_FRAILTY": "puncture",
          "PT_INFECTED": "viral", "PT_POISONED": "toxin", "PT_CHILLED": "cold"}
 PHYSICAL = {"DT_IMPACT": "impact_multiplier", "DT_PUNCTURE": "puncture_multiplier", "DT_SLASH": "slash_multiplier"}
@@ -137,12 +137,26 @@ def damage_vector(amount, current, types=None):
 
 def replace_mapping(text, key, value, indent=0):
     # Preserve unrelated numbers, sourcing comments and measured rules.
-    pattern = rf"(?m)^{' ' * indent}{key}:.*\n(?:^(?:{' ' * (indent + 1)}[^\n]*|[ \t]*|[ \t]*#.*)\n)*"
+    pattern = rf"(?m)^{' ' * indent}{key}:.*\n(?:^(?:{' ' * (indent + 1)}[^\n]*|{' ' * indent}-[^\n]*|[ \t]*|[ \t]*#.*)\n)*"
     replacement = "".join(" " * indent + line + "\n" for line in dump({key: value}).splitlines())
     changed, n = re.subn(pattern, lambda _: replacement, text, count=1)
     if n != 1:
         raise ValueError("cannot replace " + key)
     return changed
+
+
+def verify_authored_actions(timeline, actions):
+    for item in timeline["inputs"]:
+        for authored in item["actions"]:
+            source = actions.get(authored["source"])
+            if source is None:
+                continue
+            for field in ("animation", "duration_seconds"):
+                if authored.get(field) != source.get(field):
+                    raise ValueError(f"{authored['source']}: authored {field} differs from package")
+            physical = [event for event in authored["events"] if not event.get("profile")]
+            if any(event["kind"] == "sweep" for event in physical) and physical != source["events"]:
+                raise ValueError(f"{authored['source']}: authored package events differ")
 
 
 def main():
@@ -303,7 +317,10 @@ def main():
                     bounce["falloff_reduction"] = round(projectile["falloff"], 6)
         if root.get("class") == "glaive" and source["heavy"]["chargeDuration"] is not None:
             attack["throw_charge_seconds"] = source["heavy"]["chargeDuration"]
-        if projectile_heavy and isinstance(attack.get("combo_script"), dict) and "inputs" in attack["combo_script"]:
+        if isinstance(attack.get("combo_script"), dict) and "inputs" in attack["combo_script"]:
+            verify_authored_actions(attack["combo_script"], actions)
+            if context in trees.get(tree, {}):
+                weapon_modes.append(w["id"])
             continue
         if context in trees.get(tree, {}):
             attack["combo_script"] = {"tree": tree, "context": context}

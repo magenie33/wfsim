@@ -7,8 +7,7 @@ form: heavy
 transform_group: ceramic_dagger
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: melee_attack_unmodelled
-  attacks: Spectral Dagger and Spectral Dagger Explosion
+- reason: ceramic_dagger_projectile_timing
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -30,7 +29,99 @@ attack:
     impact: 14
     puncture: 126
   combo_script:
-    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/DaggerMeleeTree
-    context: CC_GROUND_HEAVY
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/DaggerMelee30ChargeB
+        animation: /Lotus/Animations/Tenno/Melee/Dagger/ChargeAttack/Charge02Strike
+        duration_seconds: 0.633333
+        charge:
+          animation: /Lotus/Animations/Tenno/Melee/Dagger/ChargeAttack/Charge02Charge
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.04679057744
+          kind: sweep
+          hand: 0
+          multiplier: 2.5
+          combo_points: 0
+          forced_procs:
+          - impact
+          - slash
+        - at_seconds: 0.04679057744
+          kind: ranged
+          profile: spectral_dagger
+          incarnon_only: true
+          hits: 2
+          multiplier: 1.0
+          combo_points: 0
+        - at_seconds: 0.289044954204
+          kind: sweep
+          hand: 0
+          multiplier: 2.5
+          combo_points: 0
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/DaggerMelee30ChargeA
+        animation: /Lotus/Animations/Tenno/Melee/Dagger/ChargeAttack/Charge01Strike
+        duration_seconds: 0.633333
+        charge:
+          animation: /Lotus/Animations/Tenno/Melee/Dagger/ChargeAttack/Charge01Charge
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.141126225723
+          kind: sweep
+          hand: 0
+          multiplier: 2.5
+          combo_points: 0
+          forced_procs:
+          - impact
+          - slash
+        - at_seconds: 0.141126225723
+          kind: ranged
+          profile: spectral_dagger
+          incarnon_only: true
+          hits: 2
+          multiplier: 1.0
+          combo_points: 0
+        - at_seconds: 0.369041866101
+          kind: sweep
+          hand: 0
+          multiplier: 2.5
+          combo_points: 0
+          forced_procs:
+          - knockdown
+  profiles:
+    spectral_dagger:
+      trigger: melee
+      shot_type: projectile
+      fire_rate: 1.0
+      projectile_speed_mps: 60.0
+      multishot: 1.0
+      ammo_cost: 0
+      no_magazine: true
+      crit_chance: 0.1
+      crit_multiplier: 1.5
+      status_chance: 0.2
+      punch_through_m: 0.0
+      spends_combo: true
+      melee_damage_mods_apply: false
+      universal_damage_mods_apply: true
+      co_behavior: independent
+      co_base_fraction: 1.0
+      damage:
+        impact: 35.0
+        puncture: 116.67
+        slash: 198.33
+      radial:
+        damage:
+          heat: 350.0
+        radius_m: 4.0
+        blast_kind: contact
+        crit_chance: 0.1
+        crit_multiplier: 1.5
+        status_chance: 0.2
+        forced_procs:
+        - impact
+        falloff_start_m: 0.0
+        falloff_reduction: 0.3
+        takes_multishot: true
 source:
   url: https://wiki.warframe.com/w/Ceramic_Dagger
