@@ -82,7 +82,7 @@ const r = await app.evaluate(`(async () => {
     strategy: 'quick', candidate_runs: 3, starts: opt.starts.map(startPayload) };
   await api('/api/optimize', body);
   let s = null;
-  for (let i = 0; i < 600 && !(s && s.done); i++) { await sleep(500); s = await api('/api/optimize/status', {}); }
+  for (let i = 0; i < 600 && !(s && (s.done || s.phase === 'done' || s.phase === 'error')); i++) { await sleep(500); s = await api('/api/optimize/status', {}); }
   const res = (s && s.result) || {};
   out.optOk = res.ok; out.optStrategy = res.strategy; out.optStarts = res.starts;
   out.rows = (res.results || []).length;

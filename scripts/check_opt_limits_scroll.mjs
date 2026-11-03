@@ -12,6 +12,7 @@ const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear(); sessionStorage.clear();
   history.pushState({}, '', '/weapons/Braton/optimizer'); route(); await sleep(3000);
+  copyActivePreset(optBarCfg()); await sleep(300);
   const fold = document.querySelector('[data-fold="opt-limits"]');
   if (fold && fold.classList.contains('shut')) fold.querySelector('.fold-h').click();
   await sleep(400);

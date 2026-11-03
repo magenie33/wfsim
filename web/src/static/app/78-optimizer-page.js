@@ -1,8 +1,8 @@
 // ---- The optimizer tab: the run bar, the starts, the results, the fight ----
 //
 // There is no scope to mark: the candidates are the quick calc's (docs/
-// OPTIMIZER.md, "The quick descent"), and a start's pins are the one way to
-// keep something. The fight is the simulator's, drawn as a card.
+// OPTIMIZER.md, "The quick descent"). Pins fix a start's positions; global
+// requirements apply to every final build. The fight is the simulator's card.
 
 function renderOpt() {
   ["opt-block", "opt-fight-block", "opt-run-block"].forEach((id) => show(id, !!META));
@@ -52,6 +52,7 @@ function normalizeLimits(l) {
   const w = weaponInfo($("weapon").value) || {};
   const out = headlessBlankLimits(META, w.id);
   const ex = (l && l.exclude) || {};
+  out.require.mods = [...new Set(((l && l.require) || {}).mods || [])];
   // A RIVEN THIS BROWSER DOES NOT HOLD stays excluded (`holdAbsent`): the
   // search reads the list as a filter, so an id it does not know costs nothing.
   out.exclude.mods = (ex.mods || []).filter((id) => excludedCard(id) || (isRivenId(id) && !customHeld(id)));
@@ -68,7 +69,7 @@ function normalizeLimits(l) {
 
 /// The builder's list for this weapon: every card, and a row per rank for the
 /// cards on the every-rank list.
-const excludeOffers = (q) => buildPool()
+const excludeOffers = (q) => poolWithRivens()
   .filter((m) => !m.stance && (!q || searchHit(m, q)))
   .flatMap((m) => [m, ...lowerRanks(m)])
   .sort((a, b) => ((b.riven ? 1 : 0) - (a.riven ? 1 : 0))
@@ -81,6 +82,11 @@ function excludedCard(id) {
   const m = modById(card);
   return m && (rank == null ? m : { ...m, id, card, rank });
 }
+
+const requiredLabel = (id) => {
+  const m = excludedCard(id);
+  return (m && m.name || id) + (m && m.card ? ` R${m.rank}` : "");
+};
 
 const isOut = (axis, id) => opt.limits.exclude[axis].includes(id);
 const outChip = () => ` <span class="slotchip cur">${escHtml(tr("excluded"))}</span>`;
@@ -105,7 +111,9 @@ function renderOptLimits() {
   const L = opt.limits;
   const q = (($("opt-limit-filter") || {}).value || "").trim().toLowerCase();
   const toggle = (on, key, label) => `<label class="check"><input type="checkbox" data-fill="${key}"${on ? " checked" : ""}> ${escHtml(label)}</label>`;
-  let html = "";
+  const required = (id) => L.require.mods.includes(id);
+  let html = `<p class="sim-hint">${escHtml(tr("Required mods must appear in every final build, in any eligible slot, from every start."))}</p>`
+    + `<div class="sb-chips">${L.require.mods.map((id) => `<button type="button" class="pchip sel" data-require="${escHtml(id)}">${escHtml(requiredLabel(id))} ×</button>`).join("")}</div>`;
   if ((w.modes || []).length > 1) {
     html += limitHead("mode-block", "Mode") + `<div class="combo-menu opt-limit-list">${
       w.modes.map((id) => plainRow("modes", id, modeLabel(w, id))).join("")}</div>`;
@@ -117,6 +125,7 @@ function renderOptLimits() {
     + `<input id="opt-limit-filter" type="text" data-view-only placeholder="${escHtml(tr("search mods by name or effect…"))}" value="${escHtml(q)}" autocomplete="off">`
     + `<div class="combo-menu opt-limit-list" id="opt-limit-mods">${sectionedRows(excludeOffers(q), (m) => (m.riven ? "Riven" : "Mods"),
       (m) => modRow(m, { rank: m.card ? m.rank : m.max_rank, attrs: `data-axis="mods" data-id="${m.id}"`,
+        trailing: `<button type="button" class="pchip${required(m.id) ? " sel" : ""}" data-require="${escHtml(m.id)}" aria-pressed="${required(m.id)}">${escHtml(tr(required(m.id) ? "required" : "require"))}</button>`,
         cls: isOut("mods", m.id) ? "cur opt-out" : "",
         chips: `${m.card ? ` <span class="rkchip">R${m.rank}</span>` : ""}${isOut("mods", m.id) ? outChip() : ""}` }))}</div>`;
   if (AX.arcanes.length) {
@@ -150,8 +159,15 @@ function renderOptLimits() {
   // A BUILT-IN CANNOT BE EDITED, and a row is a click target the lock's
   // `disabled` does not reach — so a row asks, and a redraw locks again.
   box.querySelectorAll(".opt[data-axis]").forEach((o) => o.addEventListener("click", (e) => {
-    if (e.target.closest("a") || builtinSearchActive()) return;
+    if (e.target.closest("a, [data-require]") || builtinSearchActive()) return;
     toggleLimit(o.dataset.axis, o.dataset.id);
+  }));
+  box.querySelectorAll("[data-require]").forEach((el) => el.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (builtinSearchActive()) return;
+    const id = el.dataset.require;
+    opt.limits.require.mods = required(id) ? L.require.mods.filter((x) => x !== id) : [...L.require.mods, id];
+    limitsChanged();
   }));
   box.querySelectorAll("[data-fill]").forEach((el) => el.addEventListener("change", () => {
     const k = el.dataset.fill;
@@ -224,8 +240,51 @@ function startConflicts(s) {
   if (b.mode && isOut("modes", b.mode)) note("mode:0", tr("{x} is excluded").replace("{x}", modeLabel(weaponInfo($("weapon").value) || {}, b.mode)));
   const el = (b.valence || {}).element;
   if (el && isOut("valence", el)) note("valence:0", tr("{x} is excluded").replace("{x}", DT(el)));
+  out.blocked.push(...requiredConflicts(s));
   return out;
 }
 
 /// Any start a limit blocks — the run waits until one side changes.
-const startsBlocked = () => opt.starts.some((s) => startConflicts(s).blocked.length);
+const startsBlocked = () => requiredConflicts({}).length || opt.starts.some((s) => startConflicts(s).blocked.length);
+
+/// Requirements and pins share the weapon's equip families and available slots.
+function requiredConflicts(s) {
+  const L = opt.limits, b = s.build || {}, errors = [];
+  const required = L.require.mods;
+  const pinned = (i) => (s.fixed || []).includes("mods:" + i);
+  const offered = new Set(poolWithRivens().filter((m) => !m.stance).map((m) => m.id));
+  const cards = new Map();
+  for (const id of required) {
+    const [card, rank] = splitRank(id), m = excludedCard(id);
+    if (!offered.has(card) || !m || (rank != null && (rank < 0 || rank >= m.max_rank))) errors.push(tr("{x} is required but unavailable").replace("{x}", requiredLabel(id)));
+    if (L.exclude.mods.includes(id)) errors.push(tr("{x} is both required and excluded").replace("{x}", requiredLabel(id)));
+    cards.set(id, excludedCard(id));
+  }
+  const pinnedMain = new Set();
+  let ex = null, empty = 0;
+  (b.slots || []).slice(0, 9).forEach((x, i) => {
+    if (!pinned(i)) return;
+    if (!x || !x.mod) { if (i < L.mods) empty++; return; }
+    const id = rankedId(x.mod, x.rank);
+    cards.set(id, excludedCard(id));
+    if (i < 8) pinnedMain.add(id); else ex = id;
+  });
+  const all = [...cards].filter(([, m]) => m);
+  const family = (id, m) => m.family || splitRank(id)[0];
+  all.forEach(([id, m], i) => all.slice(0, i).forEach(([other, n]) => {
+    if (family(id, m) === family(other, n)) errors.push(tr("{a} and {b} are mutually exclusive").replace("{a}", requiredLabel(id)).replace("{b}", requiredLabel(other)));
+  }));
+  const ax = weaponAxes($("weapon").value);
+  const canExilus = ax.hasExilus && L.exilus && all.some(([id, m]) => m.exilus && !pinnedMain.has(id) && (!pinned(8) || ex === id));
+  if (cards.size - (canExilus ? 1 : 0) > L.mods - empty) errors.push(tr("required and pinned mods exceed the available slots"));
+  const w = weaponInfo($("weapon").value) || {};
+  for (const [id, m] of all) {
+    for (const t of weaponEvos(w.id)) {
+      const choices = (s.fixed || []).includes("evo:0") ? [b.evoSel && b.evoSel[t.tier]].filter(Boolean)
+        : t.options.map((o) => o.id).filter((e) => !L.exclude.evolutions.includes(e));
+      if (choices.length && choices.every((e) => ((w.evo_forbids || {})[e] || []).includes(splitRank(id)[0])))
+        errors.push(tr("{x} conflicts with the allowed evolutions").replace("{x}", m.name));
+    }
+  }
+  return [...new Set(errors)];
+}

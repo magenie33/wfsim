@@ -3,7 +3,7 @@
 //! "The quick descent — the quick calc, repeated").
 //!
 //! A build is indices into the plan: eight mod slots, an exilus option, an
-//! arcane set, an evolution set, a mode and a valence. That makes "inside the
+//! arcane set, an evolution set, a mode, a valence and an assembly. That makes "inside the
 //! scope" a lookup — a candidate the quick calc offers is kept when it maps onto
 //! the plan's tables and dropped when it does not. The candidates themselves are
 //! `/api/candidates`'; a build fits when the enumerator can plan its Forma; it
@@ -33,21 +33,22 @@ pub(crate) struct QBuild {
     pub(crate) evo: usize,
     pub(crate) mode: usize,
     pub(crate) val: usize,
+    pub(crate) assembly: usize,
 }
 
 impl QBuild {
     /// Indices as they travel between workers: the eight slots (-1 empty),
-    /// then exilus, arcane, evolution set, mode, valence. Only a worker that
+    /// then exilus, arcane, evolution set, mode, valence, assembly. Only a worker that
     /// parsed the same request can read them.
     fn to_json(&self) -> Value {
         let mut v: Vec<i64> = self.mods.iter().map(|m| m.map_or(-1, |i| i as i64)).collect();
-        v.extend([self.exilus, self.arcane, self.evo, self.mode, self.val].map(|x| x as i64));
+        v.extend([self.exilus, self.arcane, self.evo, self.mode, self.val, self.assembly].map(|x| x as i64));
         json!(v)
     }
 
     fn from_json(v: &Value) -> Option<Self> {
         let a: Vec<i64> = v.as_array()?.iter().map(|x| x.as_i64()).collect::<Option<_>>()?;
-        if a.len() != 13 {
+        if a.len() != 14 {
             return None;
         }
         let mut mods = [None; 8];
@@ -55,7 +56,7 @@ impl QBuild {
             *m = usize::try_from(a[i]).ok();
         }
         let at = |i: usize| usize::try_from(a[i]).ok();
-        Some(QBuild { mods, exilus: at(8)?, arcane: at(9)?, evo: at(10)?, mode: at(11)?, val: at(12)? })
+        Some(QBuild { mods, exilus: at(8)?, arcane: at(9)?, evo: at(10)?, mode: at(11)?, val: at(12)?, assembly: at(13)? })
     }
 }
 
@@ -100,8 +101,10 @@ pub(crate) struct QuickCtx<'a> {
     /// Per pool index: not forbidden by the scope.
     pub(crate) usable: Vec<bool>,
     pub(crate) required: Vec<usize>,
+    pub(crate) final_required: &'a [String],
     pub(crate) forms: &'a [wfsim_engine::model::WeaponBase],
-    pub(crate) variants: &'a [(usize, usize, usize)],
+    pub(crate) variants: &'a [(usize, usize, usize, usize)],
+    pub(crate) assemblies: &'a [Value],
     pub(crate) variant_forbids: &'a [Vec<bool>],
     pub(crate) evo_sets: &'a [Vec<String>],
     pub(crate) mode_ids: Vec<String>,
@@ -114,7 +117,7 @@ pub(crate) struct QuickCtx<'a> {
     pub(crate) cap: u32,
     pub(crate) scenario: &'a wfsim_optimizer::Scenario,
     /// The request, for what a candidate list needs that the plan does not
-    /// hold: the visitor's rivens, the pinned assembly and stance.
+    /// hold: the visitor's rivens, the stance and simulator settings.
     pub(crate) request: &'a Value,
     pub(crate) runs: u32,
     pub(crate) seed: u64,
@@ -172,7 +175,7 @@ fn split_rank(s: &str) -> (&str, Option<u64>) {
 
 impl QuickCtx<'_> {
     fn variant(&self, b: &QBuild) -> Option<usize> {
-        self.variants.iter().position(|&(m, e, l)| m == b.mode && e == b.evo && l == b.val)
+        self.variants.iter().position(|&(m, e, l, a)| m == b.mode && e == b.evo && l == b.val && a == b.assembly)
     }
 
     /// Every distinct element order of the build that can exist — empty when
@@ -193,6 +196,7 @@ impl QuickCtx<'_> {
     fn orders_now(&self, b: &QBuild) -> Vec<Candidate> {
         let Some(vi) = self.variant(b) else { return Vec::new() };
         let mut subset: Vec<usize> = b.mods.iter().flatten().copied().collect();
+        subset.extend(self.pool.iter().enumerate().filter(|(_, m)| m.stance.is_some()).map(|(i, _)| i));
         let forbids = &self.variant_forbids[self.variants[vi].1];
         if subset.iter().any(|&i| forbids[i]) {
             return Vec::new();
@@ -255,7 +259,9 @@ impl QuickCtx<'_> {
     }
 
     fn has_required(&self, b: &QBuild) -> bool {
-        self.required.iter().all(|r| b.mods.contains(&Some(*r)))
+        self.required.iter().all(|r| self.pool[*r].stance.is_some() || b.mods.contains(&Some(*r))) && self.final_required.iter().all(|id|
+            b.mods.iter().flatten().any(|&i| self.pool[i].id == id)
+                || self.exilus_defs[b.exilus].as_ref().is_some_and(|m| m.id == id))
     }
 
     /// The build as `/api/candidates` reads it.
@@ -289,7 +295,7 @@ impl QuickCtx<'_> {
             "mode": self.mode_ids.get(b.mode),
             "valence_element": self.valences.get(b.val).cloned().unwrap_or_default(),
             "valence_bonus": self.valence_bonus,
-            "assembly": self.request.get("assembly").cloned().unwrap_or(Value::Null),
+            "assembly": self.assemblies[b.assembly],
             "rivens": self.request.get("rivens").cloned().unwrap_or(Value::Null),
             "axis": { "kind": p.kind, "idx": p.idx },
         })
@@ -298,19 +304,7 @@ impl QuickCtx<'_> {
     /// The seat list a candidate names, spelled the way the plan's arcane sets
     /// are: `id@rank` below the card's max, `none` for an empty seat.
     fn arcane_set_of(&self, ids: &[Value], ranks: &[Value]) -> Option<usize> {
-        let spelled: Vec<String> = ids
-            .iter()
-            .enumerate()
-            .map(|(i, id)| {
-                let id = id.as_str().unwrap_or("none");
-                let rank = ranks.get(i).and_then(Value::as_u64);
-                match (wfsim_engine::data::arcanes::secondary(id), rank) {
-                    (Some(a), Some(r)) if r < u64::from(a.max_rank) => format!("{id}@{r}"),
-                    _ => id.to_string(),
-                }
-            })
-            .collect();
-        self.arcane_sets.iter().position(|s| *s == spelled)
+        self.arcane_sets.iter().position(|set| set.iter().enumerate().all(|(i, a)| arcane_matches(ids, ranks, i, a)))
     }
 
     /// The request's BUILD-SHAPED starts — the page's: ten slots, the axes, and
@@ -374,14 +368,6 @@ impl QuickCtx<'_> {
                 Some(v) => b.val = v,
                 None => unnamed.push(Position { kind: "valence", idx: 0 }),
             }
-            // Required cards ride in every start, in the first free slots.
-            for r in &self.required {
-                if !b.mods.contains(&Some(*r)) {
-                    if let Some(slot) = b.mods.iter().position(Option::is_none) {
-                        b.mods[slot] = Some(*r);
-                    }
-                }
-            }
             let mut fixed: Vec<Position> = s
                 .get("fixed")
                 .and_then(Value::as_array)
@@ -394,15 +380,33 @@ impl QuickCtx<'_> {
                         "evo" => "evo",
                         "mode" => "mode",
                         "valence" => "valence",
+                        "assembly" => "assembly",
                         _ => return None,
                     };
                     Some(Position { kind, idx: p.get("idx").and_then(Value::as_u64)? as usize })
                 })
                 .collect();
-            for (slot, m) in b.mods.iter().enumerate() {
-                if m.is_some_and(|m| self.required.contains(&m)) {
-                    fixed.push(Position { kind: "mods", idx: slot });
-                }
+            if let Some((i, _)) = self.arcane_sets.iter().enumerate().filter(|(_, set)| set.iter().enumerate()
+                .all(|(i, a)| !fixed.contains(&Position { kind: "arcane", idx: i }) || arcane_matches(&ids, &ranks, i, a)))
+                .max_by_key(|(i, set)| (set.iter().enumerate().filter(|(i, a)| arcane_matches(&ids, &ranks, *i, a)).count(), std::cmp::Reverse(*i))) { b.arcane = i; }
+            if let Some(a) = s.get("assembly") {
+                let matches = |x: &Value| {
+                    (!fixed.contains(&Position { kind: "assembly", idx: 0 }) || x.get("grip") == a.get("grip"))
+                        && (!fixed.contains(&Position { kind: "assembly", idx: 1 }) || x.get("loader").or_else(|| x.get("link")) == a.get("loader").or_else(|| a.get("link")))
+                };
+                if let Some((i, _)) = self.assemblies.iter().enumerate().filter(|(_, x)| matches(x)).min_by_key(|(_, x)|
+                    usize::from(x.get("grip") != a.get("grip")) + usize::from(x.get("loader").or_else(|| x.get("link")) != a.get("loader").or_else(|| a.get("link")))) { b.assembly = i; }
+            }
+            self.seed_required(&mut b, &fixed);
+            if !fixed.iter().any(|p| p.kind == "evo") && b.mods.iter().flatten().any(|&i| self.variant_forbids[b.evo][i]) {
+                let hard = |slot: usize, i: usize| fixed.contains(&Position { kind: "mods", idx: slot })
+                    || self.required.contains(&i) || self.final_required.iter().any(|r| r == self.pool[i].id);
+                if let Some(e) = self.variant_forbids.iter().position(|f| b.mods.iter().enumerate()
+                    .all(|(slot, m)| m.is_none_or(|i| !hard(slot, i) || !f[i]))) { b.evo = e; }
+            }
+            for (slot, m) in b.mods.iter_mut().enumerate() {
+                if !fixed.contains(&Position { kind: "mods", idx: slot }) && m.is_some_and(|i|
+                    self.variant_forbids[b.evo][i] && !self.required.contains(&i) && !self.final_required.iter().any(|r| r == self.pool[i].id)) { *m = None; }
             }
             // The page pins the evolution BLOCK; each tier is a position here.
             if fixed.iter().any(|p| p.kind == "evo") {
@@ -412,6 +416,47 @@ impl QuickCtx<'_> {
             out.push(QuickStart { build: b, fixed, unnamed });
         }
         out
+    }
+
+    fn seed_required(&self, b: &mut QBuild, fixed: &[Position]) {
+        let ids: Vec<&str> = self.required.iter().filter(|&&i| self.pool[i].stance.is_none()).map(|&i| self.pool[i].id)
+            .chain(self.final_required.iter().map(String::as_str)).collect();
+        let pinned = |i| fixed.contains(&Position { kind: "mods", idx: i });
+        for id in &ids {
+            if b.mods.iter().flatten().any(|&i| self.pool[i].id == *id)
+                || self.exilus_defs[b.exilus].as_ref().is_some_and(|m| m.id == *id) { continue; }
+            if !pinned(8) && !self.required.iter().any(|&i| self.pool[i].id == *id)
+                && !self.exilus_defs[b.exilus].as_ref().is_some_and(|m| ids.contains(&m.id)) {
+                if let Some(x) = self.exilus_defs.iter().position(|m| m.as_ref().is_some_and(|m| m.id == *id)) {
+                    b.exilus = x;
+                    continue;
+                }
+            }
+            let pi = self.pool.iter().position(|m| m.id == *id);
+            // Displace an unfixed family conflict before trying a free main slot.
+            if let Some(pi) = pi {
+                for i in 0..self.mod_slots {
+                    if !pinned(i) && b.mods[i].is_some_and(|m| self.clashes_with(&self.pool[pi], &self.pool[m])) {
+                        b.mods[i] = None;
+                    }
+                }
+            }
+            let slot = (0..self.mod_slots).filter(|&i| !pinned(i))
+                .filter(|&i| b.mods[i].is_none_or(|m| !ids.contains(&self.pool[m].id)))
+                .min_by_key(|&i| b.mods[i].is_some());
+            match (pi, slot) {
+                (Some(pi), Some(i)) => b.mods[i] = Some(pi),
+                _ if !pinned(8) => {
+                    if let Some(x) = self.exilus_defs.iter().position(|m| m.as_ref().is_some_and(|m| m.id == *id)) { b.exilus = x; }
+                }
+                _ => {}
+            }
+        }
+    }
+
+    fn clashes_with(&self, a: &ModDef, b: &ModDef) -> bool {
+        a.family.unwrap_or_else(|| a.id.split('@').next().unwrap_or(a.id))
+            == b.family.unwrap_or_else(|| b.id.split('@').next().unwrap_or(b.id))
     }
 
     /// The evolution tiers the scope ranges over, in tier order.
@@ -436,6 +481,7 @@ impl QuickCtx<'_> {
             evo: 0,
             mode: 0,
             val: 0,
+            assembly: 0,
         }
     }
 
@@ -458,7 +504,7 @@ impl QuickCtx<'_> {
         list.into_iter()
             .map(|s| {
                 let mut b = self.blank();
-                let mut order: Vec<usize> = self.required.clone();
+                let mut order: Vec<usize> = self.required.iter().copied().filter(|&i| self.pool[i].stance.is_none()).collect();
                 order.extend(s.mods.iter().copied().filter(|m| !self.required.contains(m)));
                 let mut fixed = Vec::new();
                 for (slot, m) in order.into_iter().take(8).enumerate() {
@@ -473,6 +519,7 @@ impl QuickCtx<'_> {
                         fixed.extend(arcane_seats.iter().copied());
                     }
                 }
+                self.seed_required(&mut b, &fixed);
                 QuickStart { build: b, fixed, unnamed: Vec::new() }
             })
             .collect()
@@ -482,13 +529,16 @@ impl QuickCtx<'_> {
 impl QuickSpace for QuickCtx<'_> {
     type Build = QBuild;
 
-    /// WHAT SHAPES THE WEAPON FIRST: how it is played, its evolutions tier by
+    /// WHAT SHAPES THE WEAPON FIRST: its parts, how it is played, its evolutions tier by
     /// tier, its element, its arcane — then the cards, then the exilus. A card
     /// chosen before the mode or the evolutions is chosen for another weapon:
     /// on Burston Prime the cycle doubled the score and half the work before it
     /// had been spent on the base form.
     fn positions(&self, _: &QBuild) -> Vec<Position> {
         let mut out: Vec<Position> = Vec::new();
+        if self.assemblies.len() > 1 {
+            out.extend((0..2).map(|idx| Position { kind: "assembly", idx }));
+        }
         if self.mode_ids.len() > 1 {
             out.push(Position { kind: "mode", idx: 0 });
         }
@@ -632,6 +682,10 @@ impl QuickSpace for QuickCtx<'_> {
     /// scored as one there.
     fn repair(&self, b: &QBuild, free: &[Position]) -> Option<QBuild> {
         let mut slots: Vec<usize> = free.iter().filter(|p| p.kind == "mods").map(|p| p.idx).collect();
+        slots.retain(|&i| {
+            let m = if i < 8 { b.mods[i].map(|m| self.pool[m].id) } else { self.exilus_defs[b.exilus].as_ref().map(|m| m.id) };
+            m.is_none_or(|id| !self.final_required.iter().any(|r| r == id))
+        });
         slots.sort_by_key(|&i| std::cmp::Reverse(self.slot_drain(b, i)));
         let mut cur = b.clone();
         for i in slots {
@@ -684,7 +738,7 @@ impl QuickSpace for QuickCtx<'_> {
     fn key(&self, b: &QBuild) -> String {
         let mut mods: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
         mods.sort_unstable();
-        format!("{mods:?} x{} a{} e{} m{} v{}", b.exilus, b.arcane, b.evo, b.mode, b.val)
+        format!("{mods:?} x{} a{} e{} m{} v{} p{}", b.exilus, b.arcane, b.evo, b.mode, b.val, b.assembly)
     }
 
     /// The canonical form: the same cards whatever their slots, the same
@@ -814,6 +868,14 @@ impl QuickCtx<'_> {
                     }
                     None => false,
                 },
+                "assembly" => {
+                    let key = if p.idx == 0 { "grip" } else if self.assemblies[b.assembly].get("link").is_some() { "link" } else { "loader" };
+                    match payload.get("assembly").filter(|a| a.get(key) != self.assemblies[b.assembly].get(key))
+                        .and_then(|a| self.assemblies.iter().position(|x| x == a)) {
+                        Some(a) => { n.assembly = a; true }
+                        None => false,
+                    }
+                }
                 "valence" => match self.valences.iter().position(|v| v == id) {
                     Some(v) => {
                         n.val = v;
@@ -1077,6 +1139,11 @@ impl QuickCtx<'_> {
         if from.mode != to.mode {
             out.push(json!({ "axis": "mode", "from": self.mode_ids.get(from.mode), "to": self.mode_ids.get(to.mode) }));
         }
+        for key in ["grip", "loader", "link"] {
+            if self.assemblies[from.assembly].get(key) != self.assemblies[to.assembly].get(key) {
+                out.push(json!({"axis": "assembly", "from": self.assemblies[from.assembly].get(key), "to": self.assemblies[to.assembly].get(key)}));
+            }
+        }
         if from.val != to.val {
             out.push(json!({ "axis": "valence", "from": self.valences.get(from.val), "to": self.valences.get(to.val) }));
         }
@@ -1207,7 +1274,7 @@ pub(crate) fn run_quick(
 }
 
 /// THE QUICK CALC'S WHOLE SCOPE, for a quick request that names none: every
-/// card, exilus card, arcane, evolution, mode and element the weapon takes, and
+/// card, exilus card, arcane, evolution, mode, element and part the weapon takes, and
 /// each lower rank the every-rank lists ask for — what `/api/candidates` offers
 /// at each position, so the descent's candidates are the quick calc's — less
 /// what the request's `limits` rule out: an excluded option on any axis (a
@@ -1230,6 +1297,7 @@ pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
             .unwrap_or_else(|| dflt.to_vec())
     };
     let every_mods = every_list("mods", &every.mods);
+    let required = super::requirements::ids(v);
     let every_arcanes = every_list("arcanes", &every.arcanes);
     let ranked = |id: &str, max: u32, every: &[String]| -> Vec<String> {
         let mut ids = vec![id.to_string()];
@@ -1250,10 +1318,15 @@ pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
     let (no_mods, no_arcanes, no_evos, no_modes, no_valence) =
         (out_of("mods"), out_of("arcanes"), out_of("evolutions"), out_of("modes"), out_of("valence"));
     let pool = crate::rivens::mod_pool_with_rivens(v, info, &[]);
+    let pinned_empty = |kind: &str, idx: usize, field: &str| v.get("starts").and_then(Value::as_array).is_some_and(|a| a.iter().any(|s|
+        s.get("fixed").and_then(Value::as_array).is_some_and(|f| f.iter().any(|p| p["kind"] == kind && p["idx"] == idx))
+            && s.get(field).and_then(|a| a.get(idx)).and_then(Value::as_str).is_none_or(|id| id == "none")));
     let mut mods = serde_json::Map::new();
     let mut exilus = serde_json::Map::new();
     for m in pool.iter().filter(|m| m.stance.is_none()) {
-        for id in ranked(m.id, m.max_rank, &every_mods).into_iter().filter(|id| !no_mods.contains(id)) {
+        let ids = ranked(m.id, m.max_rank, &every_mods).into_iter().chain(required.iter().filter(|id|
+            wfsim_engine::data::mods::split_rank(id).0 == m.id).cloned());
+        for id in ids.filter(|id| !no_mods.contains(id)) {
             mods.insert(id.clone(), json!("search"));
             if m.exilus {
                 exilus.insert(id, json!("search"));
@@ -1266,6 +1339,8 @@ pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
         || !wfsim_engine::data::weapons::has_exilus_slot(&info.id)
     {
         exilus = serde_json::Map::from_iter([("none".to_string(), json!("fixed"))]);
+    } else if pinned_empty("mods", 8, "slots") {
+        exilus.insert("none".into(), json!("search"));
     }
     let seat_filled = |i: usize| -> bool {
         limits.get("arcane_seats").and_then(|a| a.get(i)).and_then(Value::as_bool) != Some(false)
@@ -1275,6 +1350,9 @@ pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
         if !seat_filled(i) {
             arcanes.insert(format!("none:{seat}"), json!("fixed"));
             continue;
+        }
+        if pinned_empty("arcane", i, "arcane") {
+            arcanes.insert(format!("none:{seat}"), json!("search"));
         }
         for a in wfsim_engine::data::arcanes::pool_for_weapon(&info.id, seat) {
             if a.id != "none" && !no_arcanes.contains(&a.id) {
@@ -1317,7 +1395,41 @@ pub(crate) fn whole_scope(v: &Value) -> Option<Value> {
     if !valence.is_empty() {
         o.insert("valence".into(), Value::Object(valence));
     }
+    if let Some(spec) = wfsim_engine::data::weapons::spec(&info.id).filter(|s| wfsim_engine::data::weapons::assembly::is_modular(s)) {
+        let meta = crate::meta::assembly_meta(&spec.id);
+        let component = meta.get("component").and_then(Value::as_str).unwrap_or("loader");
+        let mut parts = Vec::new();
+        for g in meta["grips"].as_array().into_iter().flatten() {
+            for c in meta[format!("{component}s")].as_array().into_iter().flatten() {
+                parts.push(json!({"grip": g["id"], component: c["id"]}));
+            }
+        }
+        o.insert("assemblies".into(), json!(parts));
+    }
     o.insert("build_size".into(), json!(most));
     o.insert("build_min".into(), json!(0));
     Some(out)
+}
+
+/// Explicit scopes name complete pairs; the ordinary quick scope fills every legal pair.
+pub(crate) fn assemblies(v: &Value, weapon: &str) -> Result<Vec<Value>, Value> {
+    let fallback = crate::weapon_options::assembly_of(v, weapon).map_or(Value::Null, |a| a.parts());
+    let Some(list) = v.get("assemblies").and_then(Value::as_array) else { return Ok(vec![fallback]) };
+    if list.is_empty() { return Err(super::err_json("no assemblies in search scope")); }
+    let mut out = Vec::new();
+    for a in list {
+        let r = json!({"assembly": a});
+        let actual = crate::weapon_options::assembly_of(&r, weapon).map_or(Value::Null, |a| a.parts());
+        if *a != actual { return Err(super::err_json("invalid assembly in search scope")); }
+        if !out.contains(a) { out.push(a.clone()); }
+    }
+    Ok(out)
+}
+
+pub(super) fn arcane_matches(ids: &[Value], ranks: &[Value], i: usize, option: &str) -> bool {
+    let (id, r) = split_rank(ids.get(i).and_then(Value::as_str).unwrap_or("none"));
+    let max = |id: &str| wfsim_engine::data::arcanes::secondary(id).map_or(0, |a| u64::from(a.max_rank));
+    let rank = ranks.get(i).and_then(Value::as_u64).or(r).unwrap_or_else(|| max(id));
+    let (card, r) = split_rank(option);
+    id == card && rank == r.unwrap_or_else(|| max(card))
 }
