@@ -67,7 +67,8 @@ psql -d wfsim -X -v ON_ERROR_STOP=1 -f task-delivery.sql
 The output adds nullable delivery and payment readiness, creates their partial
 indexes concurrently and installs delivery and retention guards. Run outside a transaction
 and confirm `demands_delivery` and `answers_credit_pending` are valid and ready
-before deploying code. Existing binaries
+before deploying code. The same upgrade installs the restricted inventory reader
+and grants its execution to the existing pipeline role. Existing binaries
 ignore the additive schema. A lock timeout or failed index build must be
 resolved before deployment; an invalid concurrent index must be removed before
 retrying. Deploy the Worker and daemon from the same validated commit, then
@@ -77,24 +78,31 @@ retains the additive schema and inventory; no task or score backfill is needed.
 
 ## Complete demand
 
-The engine's complete admitted missing-row scan and the registered board queue
-form one deduplicated inventory by `(build_id, ruler, mode)`. Refused orphans
-and retired rulers are excluded. Counting precedes scene-admission pacing.
-Moving a row into the dispatch queue does not change its inventory membership.
+The pipeline captures builds, scores, queue rows and task lifecycle in one
+read-only repeatable-read transaction. A lost connection aborts the capture;
+partial files never become a published inventory. The engine walks that
+snapshot with the existing admission gate before scene pacing. Retired rulers
+and refused orphan rows are excluded.
 
-The scan publishes a compact snapshot in `factory_findings.task_inventory`
-through `POST /api/board/inventory`, authenticated with the factory token.
-The pipeline role needs no access to task or account tables. The board adapter
-owns its declared coverage; a submitted scan cannot replace other task kinds.
-The publication statement adds registered active questions outside the scan's
-declared producer coverage, using live demands rather than a question's stored
-dispatch producer. Shared live board demands remain covered by the board scan;
-an independent consumer of a re-opened fact counts under its own live producer.
-Open questions with no live consumer are excluded. Official spot checks and
-unresolved disputes retain their verification work after consumers leave.
-It records scan start, completion and source commit. An older
-scan cannot overwrite newer inputs, and a partial or invalid scan publishes
-nothing. Consumers read this as a derived snapshot, never as task input.
+The board adapter derives each candidate's canonical `simulate` question id
+from its stored record, ruler and mode. Equal questions count once across
+batches, build aliases and consumers. Current-engine verified facts awaiting
+delivery count as zero computation. A spot check counts once even when its
+board result is still owed. Independent registered consumers and current
+verification work join the same question-id union. A missing build record or
+incomplete lifecycle export rejects publication.
+
+`factory_inventory_rows` exposes ids, lifecycle, verbs and live consumer kinds;
+it exposes no requests or witness identity. Its owner-controlled search path
+is captured when the schema is installed. Only the pipeline role receives
+execution permission; it receives no direct task-table grants. Business
+registration, cancellation and eligibility remain owned by their producers.
+
+The authenticated inventory endpoint stores the classified snapshot without
+adding a later database reading. It records input time, source commit, engine
+and database snapshot. An older scan cannot overwrite newer inputs, and an
+engine change invalidates its cached goal. The snapshot is derived observation
+and never task input.
 
 The community goal displays the last complete inventory and its update time.
 It changes when a complete scan is published; the minute's work signal remains

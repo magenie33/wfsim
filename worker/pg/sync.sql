@@ -366,6 +366,25 @@ CREATE OR REPLACE FUNCTION board_owed(text, text, text) RETURNS boolean LANGUAGE
   SELECT EXISTS (SELECT 1 FROM queue WHERE build_id = $1 AND ruler = $2 AND mode = $3)
 $$;
 
+-- Inventory exposes task identity and lifecycle, never requests or witnesses.
+SELECT set_config('search_path',quote_ident(current_schema())||',pg_catalog,pg_temp',false);
+CREATE OR REPLACE FUNCTION factory_inventory_rows(text, text[])
+RETURNS TABLE(id text, verb text, state text, fact_engine text, kind text, served_answered boolean)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+  WITH other_live AS MATERIALIZED (
+    SELECT d.question,min(d.producer) kind FROM demands d
+    WHERE d.state='live' AND NOT (d.producer=ANY($2)) GROUP BY d.question)
+  SELECT q.id,q.verb,q.state,q.fact_engine,l.kind,
+    CASE WHEN q.state IN ('disputed','nondeterministic')
+      THEN EXISTS(SELECT 1 FROM answers a WHERE a.question=q.id AND a.engine=$1) ELSE false END
+  FROM questions q LEFT JOIN other_live l ON l.question=q.id
+  WHERE q.state<>'withdrawn' AND ((q.state IN ('fact','spot') AND q.fact_engine=$1)
+    OR q.state IN ('disputed','nondeterministic') OR l.question IS NOT NULL)
+  UNION ALL SELECT r.question,'','refused',r.engine,NULL,false FROM refusal_withdrawals r
+    WHERE r.engine=$1 AND NOT EXISTS(SELECT 1 FROM questions q WHERE q.id=r.question AND q.state<>'withdrawn')
+$$;
+REVOKE ALL ON FUNCTION factory_inventory_rows(text,text[]) FROM PUBLIC;
+
 CREATE OR REPLACE FUNCTION board_review_wanted(text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
   SELECT EXISTS (SELECT 1 FROM board_reviews r JOIN scores s ON s.identity = r.identity AND s.ruler = r.ruler AND s.mode = r.mode
     WHERE r.ref = $1 AND r.question = $2 AND r.state = 'waiting')

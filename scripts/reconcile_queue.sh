@@ -30,7 +30,8 @@ BOARD="${WFSIM_BOARD:-./target/release/wfsim-board}"
 # EVERY OWED ROW, whoever is measuring it: a hold here would claim and hide rows.
 unset CLAIMED
 
-bash scripts/fetch_queue.sh "$OUT"
+inventory=$(mktemp)
+node scripts/capture_compute_inventory.mjs "$LIB" "$FACTS" "$OUT" "$inventory"
 
 missing=$(mktemp)
 : > "$missing"
@@ -56,7 +57,8 @@ done < "$roster"
 rm -rf "$parts"
 
 # Count the complete engine-admitted workload before any dispatch pacing.
-node scripts/compute_inventory.mjs "$OUT" "$missing" "$orphans" "$FACTS" "$roster"
+node scripts/compute_inventory.mjs "$OUT" "$missing" "$orphans" "$FACTS" "$roster" "$inventory"
+rm -f "$inventory" "$inventory.builds" "$inventory.tasks" "$inventory.json"
 rm -f "$roster"
 
 # A SCENE'S FIRST PASS IS PACED: a new rung owes every build a row at once, and
