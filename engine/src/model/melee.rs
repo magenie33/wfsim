@@ -4,6 +4,7 @@
 use super::ComboHit;
 use serde::Deserialize;
 
+#[wfsim_gas_macro::metered]
 fn one_instance() -> u32 { 1 }
 
 #[derive(Debug, Deserialize)]

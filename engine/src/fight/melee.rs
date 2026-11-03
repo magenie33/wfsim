@@ -309,6 +309,7 @@ pub(super) struct MeleeInputState {
     pub(super) combo_now: Option<f64>,
 }
 
+#[wfsim_gas_macro::metered]
 pub(super) fn melee_profile<'a>(active: &'a FightParams, melee: &MeleeState) -> &'a FightParams {
     if melee.input.as_ref().is_some_and(|i| i.converted) {
         active.melee_heavy.as_deref().unwrap_or(active)
