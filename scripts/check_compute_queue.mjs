@@ -195,6 +195,42 @@ check("a signal is aged by the server's clock: fresh to a page whose clock is fa
 check("an unreadable signal falls back to a direct sync, at most every two minutes", !three.wasm || (three.failFellBack && three.failHeld === 0), JSON.stringify(three));
 check("told fallback: 7, the page speaks protocol 7 for the rest of the session", !three.wasm || (three.fellBackTo === 7 && three.askedWork), JSON.stringify(three));
 
+// A closed page retains its results; reopening with a large expired backlog stays interactive.
+await evaluate(`(async () => {
+  localStorage.setItem(CONSENT_KEY, JSON.stringify({v:COMPUTE_CONSENT_V,on:false,at:new Date().toISOString()}));
+  const db=await openResults();
+  for(const store of ['results','pending']) {
+    let tx=db.transaction(store,'readwrite'),done=idbDone(tx);tx.objectStore(store).clear();await done;
+    for(let from=0;from<50000;from+=500) {
+      tx=db.transaction(store,'readwrite');done=idbDone(tx);
+      for(let i=from;i<from+500;i++)tx.objectStore(store).put({question:crypto.randomUUID().replaceAll('-',''),verifier:'a1'.repeat(12),engine:ENGINE_ID,work:1e9,at:Date.now()-4*86400000});
+      await done;
+    }
+    tx=db.transaction(store,'readwrite');done=idbDone(tx);
+    for(let i=0;i<10;i++)tx.objectStore(store).put({question:store+'-live-'+i,verifier:'a1'.repeat(12),engine:ENGINE_ID,work:1e9,at:Date.now()});
+    await done;
+  }
+})()`);
+await app.send('Page.reload');
+await app.sleep(5000);
+await app.send('Emulation.setCPUThrottlingRate',{rate:4});
+const reopened=await evaluate(`(async () => {
+  window.__syncReply=(body,def)=>({...def,taken:[],states:[],next_ms:600000});
+  window.__calls.length=0;
+  let last=performance.now(),gap=0,beats=0;
+  const timer=setInterval(()=>{const now=performance.now();gap=Math.max(gap,now-last-25);last=now;beats++;},25);
+  const began=performance.now();setBoardVerify(true);if(computeWake)computeWake();
+  while(performance.now()-began<60000&&!(window.__calls.some(c=>c.kind==='sync')&&resultsMem.length===10&&pendingMem.length===10))await new Promise(r=>setTimeout(r,30));
+  await new Promise(r=>setTimeout(r,100));clearInterval(timer);
+  const db=await openResults();
+  const counts=await Promise.all(['results','pending'].map(store=>new Promise(ok=>{const r=db.transaction(store).objectStore(store).count();r.onsuccess=()=>ok(r.result);})));
+  return {gap,beats,counts,results:resultsMem.length,pending:pendingMem.length,synced:window.__calls.some(c=>c.kind==='sync'),points:pendingPoints()};
+})()`);
+await app.send('Emulation.setCPUThrottlingRate',{rate:1});
+check('reopening together clears a large expired backlog without blocking interaction',reopened.synced&&reopened.beats>10&&reopened.gap<1500,JSON.stringify(reopened));
+check('reopening retains valid unsent and unconfirmed results in memory and IndexedDB',reopened.results===10&&reopened.pending===10&&reopened.counts.every(n=>n===10)&&reopened.points===20,JSON.stringify(reopened));
+console.log('  reopened result queue: '+JSON.stringify(reopened));
+
 // 4. NO INDEXEDDB: protocol 7 from the start.
 const four = JSON.parse(await evaluate(`(async () => {
   ${SETUP}
