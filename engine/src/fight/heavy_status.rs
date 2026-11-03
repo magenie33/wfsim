@@ -64,14 +64,15 @@ pub(super) fn detonate_heavy_status(
     if raw <= 0.0 { return false; }
     let shares = TypeShares::of(&damage);
     let mut breakdown = Breakdown::default();
-    let settled = body.state.apply(raw, shares, false, t, foe, false, &mit,
-        params.arcane.overguard_multiplier, watching(rec, &mut breakdown));
+    let mut effective_types = DamageVector::new();
+    let settled = body.state.apply_with_types(raw, shares, false, t, foe, false, &mit,
+        params.arcane.overguard_multiplier, watching(rec, &mut breakdown), &mut effective_types);
     let killed = settled.killed;
     let broke = settled.broken;
     for ty in DamageType::ALL {
         if damage.get(ty) > 0.0 {
             let source = if ty == DamageType::Cinematic { DamageType::Slash } else { ty };
-            r.sources.add_status(source, settled.effective * shares.share(ty));
+            r.sources.add_status(source, effective_types.get(ty));
         }
     }
     ledger::settle(r, rec, t, owner, body_index, shares.dominant(), PopKind::Status,

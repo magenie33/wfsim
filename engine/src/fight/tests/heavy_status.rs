@@ -52,10 +52,35 @@ fn cinematic_fraction_of_one_cashout_bypasses_armour() {
     let mut target = TargetState::spawn(&p.foe, p.target_at);
     let mitigation = DebuffState::default().mitigation(0.0, 1.0, 0.0, 0.0);
     let damage = DamageVector::new().with(DamageType::Cinematic, 100.0).with(DamageType::Heat, 100.0);
-    let got = target.apply(200.0, TypeShares::of(&damage), false, 0.0, &p.foe,
-        false, &mitigation, 1.0, None);
+    let mut by_type = DamageVector::new();
+    let got = target.apply_with_types(200.0, TypeShares::of(&damage), false, 0.0, &p.foe,
+        false, &mitigation, 1.0, None, &mut by_type);
     let expected = 100.0 + 100.0 * (1.0 - crate::rules::scaling::armor_damage_reduction(p.foe.armor()));
     assert!((got.effective - expected).abs() < 1e-8, "{} != {expected}", got.effective);
+    assert!((by_type.get(DamageType::Cinematic) - 100.0).abs() < 1e-8);
+    assert!((by_type.get(DamageType::Heat) - (expected - 100.0)).abs() < 1e-8);
+    assert!((by_type.total() - got.effective).abs() < 1e-8);
+}
+
+#[test]
+fn typed_cashout_accounting_preserves_pool_and_attenuation_totals() {
+    for (overguard, shield, capped) in [(0.0, 0.0, false), (0.0, 100.0, false), (50.0, 100.0, false), (50.0, 100.0, true)] {
+        let mut p = FightParams::default();
+        p.foe.base_armor = 2700.0;
+        p.foe.base_health = 1000.0;
+        p.foe.base_overguard = overguard;
+        p.foe.base_shield = shield;
+        if capped { p.foe.attenuation = Some(crate::target::Attenuation { instance_fraction: 0.1, dps_fraction: 1.0 }); }
+        let mut plain = TargetState::spawn(&p.foe, p.target_at);
+        let mut typed = plain.clone();
+        let mitigation = DebuffState::default().mitigation(0.0, 1.0, 0.0, 0.0);
+        let damage = DamageVector::new().with(DamageType::Cinematic, 100.0).with(DamageType::Heat, 100.0).with(DamageType::Toxin, 100.0);
+        let expected = plain.apply(300.0, TypeShares::of(&damage), false, 0.0, &p.foe, false, &mitigation, 1.0, None);
+        let mut by_type = DamageVector::new();
+        let got = typed.apply_with_types(300.0, TypeShares::of(&damage), false, 0.0, &p.foe, false, &mitigation, 1.0, None, &mut by_type);
+        assert_eq!(got.effective, expected.effective);
+        assert!((by_type.total() - got.effective).abs() < 1e-8, "{overguard}/{shield}/{capped}: {} != {}", by_type.total(), got.effective);
+    }
 }
 
 #[test]

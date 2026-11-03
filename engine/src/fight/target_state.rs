@@ -160,6 +160,40 @@ impl TargetState {
         p: &Foe,
         ignores_armor: bool,
         mit: &Mitigation,
+        overguard_multiplier: f64,
+        led: Option<&mut Breakdown>,
+    ) -> Settled {
+        self.apply_inner(raw, shares, head_direct, now, p, ignores_armor, mit, overguard_multiplier, led, None)
+    }
+
+    /// The same settlement, retaining the effective contribution of each type.
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn apply_with_types(
+        &mut self,
+        raw: f64,
+        shares: TypeShares,
+        head_direct: bool,
+        now: f64,
+        p: &Foe,
+        ignores_armor: bool,
+        mit: &Mitigation,
+        overguard_multiplier: f64,
+        led: Option<&mut Breakdown>,
+        by_type: &mut DamageVector,
+    ) -> Settled {
+        self.apply_inner(raw, shares, head_direct, now, p, ignores_armor, mit, overguard_multiplier, led, Some(by_type))
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn apply_inner(
+        &mut self,
+        raw: f64,
+        shares: TypeShares,
+        head_direct: bool,
+        now: f64,
+        p: &Foe,
+        ignores_armor: bool,
+        mit: &Mitigation,
         // SECONDARY FORTIFIER'S MULTIPLIER, or 1.0 — never already inside
         // `raw`. Whether it applies is a fact about this body at the moment
         // the damage lands (its own Overguard), so it is decided here and
@@ -169,7 +203,9 @@ impl TargetState {
         // WHERE THE BREAKDOWN GOES, when anyone is watching. `None` is the
         // 999 runs of a thousand that are never replayed.
         led: Option<&mut Breakdown>,
+        mut by_type: Option<&mut DamageVector>,
     ) -> Settled {
+        if let Some(out) = by_type.as_deref_mut() { *out = DamageVector::new(); }
         // A BODY PAST ITS FIRST DEATH TAKES NOTHING FROM A WEAPON. The
         // reforming window is invulnerable, and the spectre after it is
         // Operator-only — *"Void damage deals 10x damage to the spectral
@@ -255,6 +291,7 @@ impl TargetState {
         let mut passed = gated;
         let mut led_og_remaining = 1.0f64;
         let mut led_fortifier = 1.0f64;
+        let mut typed_health = (0.0, 0.0, 0.0, 0.0, 0.0);
         if self.overguard > 0.0 {
             let whole = shares.whole(&p.type_mods.overguard);
             let plain = gated * whole * mit.disrupt_amp;
@@ -378,7 +415,15 @@ impl TargetState {
                         health_part * portion / shares.whole(col).max(1e-12)
                     }
                 };
-                let mitigated = boosted * (1.0 - dr) + cinematic * mit.virus_amp * dr;
+                let ordinary_health = boosted * (1.0 - dr);
+                let cinematic_health = cinematic * mit.virus_amp * dr;
+                let mitigated = ordinary_health + cinematic_health;
+                if by_type.is_some() {
+                    typed_health = (before - toxin, toxin,
+                        if before > 0.0 { ordinary_health / before } else { 0.0 },
+                        if cinematic > 0.0 { cinematic_health / cinematic } else { 0.0 },
+                        mitigated);
+                }
                 // THE 1-DAMAGE FLOOR, armoured or not — see below.
                 health_part = mitigated.max(1.0);
                 if led.is_some() {
@@ -476,6 +521,26 @@ impl TargetState {
                 atten = k;
             }
             self.atten_window_damage += effective;
+        }
+
+        if let Some(out) = by_type {
+            let og_total = shares.whole(&p.type_mods.overguard);
+            let non_toxin = shares.non_toxin_portion(&p.type_mods.faction);
+            let (health_rest, health_toxin, common, cinematic_extra, health_total) = typed_health;
+            for ty in DamageType::ALL {
+                let share = shares.share(ty);
+                if share <= 0.0 { continue; }
+                let og_weight = share * p.type_mods.overguard.get(ty) / og_total.max(1e-12);
+                let rest_weight = if ty == DamageType::Toxin { 0.0 } else {
+                    share * p.type_mods.faction.get(ty) / non_toxin.max(1e-12)
+                };
+                let health_seed = if ty == DamageType::Toxin { health_toxin } else { health_rest * rest_weight };
+                let health_weight = if health_total > 0.0 {
+                    health_seed * (common + if ty == DamageType::Cinematic { cinematic_extra } else { 0.0 }) / health_total
+                } else { 0.0 };
+                out.set(ty, og_part * og_weight + shield_part * rest_weight + health_part * health_weight);
+            }
+            if out.total() == 0.0 && effective > 0.0 { out.set(shares.dominant(), effective); }
         }
 
         // THE PORTIONS, once every factor is final. Pushed in the order the
