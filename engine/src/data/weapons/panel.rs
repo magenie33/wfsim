@@ -275,11 +275,13 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
     // of Crushing Ruin's four combos end on one, and it is the only thing a
     // light combo has that reaches past the weapon's own reach.
     let a_radial = |r: &RadialSpec| {
+        assert!(r.delay_seconds.is_finite() && r.delay_seconds >= 0.0, "radial delay must be finite and non-negative");
         let mut v = DamageVector::new();
         for (t, val) in &r.damage {
             v.add(damage_type(t), *val);
         }
         RadialBase {
+            delay_seconds: r.delay_seconds,
             base_vector: v,
             blast_kind: r.blast_kind,
             // Each stat falls back to the direct part's when unstated.
@@ -352,6 +354,7 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
     // is exclusive at the edge and a zero would reach nobody at all.
     let cluster = s.attack.cluster.as_ref().map(|c| {
         let contact = a_radial(&RadialSpec {
+            delay_seconds: 0.0,
             damage: c.damage.clone(),
             radius_m: crate::rules::space::BODY_RADIUS_M,
             blast_kind: BlastKind::default(),
@@ -390,6 +393,7 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
     // not affect the reload grenade", and the throw's count is the weapon's.
     let a_throw = |t: &crate::data::weapons::GrenadeThrowSpec| crate::model::GrenadeThrowBase {
         contact: a_radial(&RadialSpec {
+            delay_seconds: 0.0,
             damage: t.damage.clone(),
             radius_m: crate::rules::space::BODY_RADIUS_M,
             blast_kind: BlastKind::default(),
@@ -422,6 +426,7 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
     // a kill makes one dagger.
     let spectral_dagger = s.attack.spectral_dagger.as_ref().map(|g| crate::model::SpectralDaggerBase {
         strike: a_radial(&RadialSpec {
+            delay_seconds: 0.0,
             damage: g.damage.clone(),
             radius_m: crate::rules::space::BODY_RADIUS_M,
             blast_kind: BlastKind::default(),

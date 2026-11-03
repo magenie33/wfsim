@@ -1043,6 +1043,8 @@ pub fn run_once_traced(
 
         // WHAT THE PULL DECIDED, owned by the hit it becomes (`fight::flight`).
         let landing = Landing {
+            radial_only: false,
+            pellet_aims: Vec::new(),
             t,
             base_form: me.incarnon.in_base_form,
             special_heavy: heavy_pre.is_some() && me.melee.input.as_ref().is_some_and(|i| i.converted),

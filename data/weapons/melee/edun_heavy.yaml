@@ -6,8 +6,6 @@ form: heavy
 transform_group: edun
 co_behavior: additive_with_base_damage
 unmodeled:
-- The 400 Blast explosion one second after collision is not modelled; it has a 5 m radius and forces Impact. The projectile's
-  direct contact is modelled.
 - Heavy-attack mod bonuses apply only if the projectile lands during a heavy attack animation. The simulation applies them
   to every direct heavy projectile instead of checking the animation window.
 - Tennokai grants its combo-free input, but its bonus damage should not apply to the throw; that exclusion is not modelled.
@@ -47,6 +45,13 @@ attack:
           forced_procs:
           - impact
   projectile_speed_mps: 50
+  radial:
+    damage: { blast: 400 }
+    radius_m: 5
+    delay_seconds: 1
+    falloff_start_m: 0
+    falloff_reduction: 0.3
+    forced_procs: [impact]
 source:
   url: https://wiki.warframe.com/w/Edun
 co_base_fraction: 0.25

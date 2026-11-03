@@ -481,6 +481,7 @@ fn an_internal_bleeding_bleed_is_indistinguishable_from_any_other_slash() {
 #[test]
 fn the_vigilante_promotion_reaches_an_explosion_too() {
     let radial = crate::build::loadout::ResolvedRadial {
+        delay_seconds: 0.0,
         blast_kind: crate::model::BlastKind::Contact,
         damage: {
             let mut d = DamageVector::default();

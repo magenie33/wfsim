@@ -166,6 +166,7 @@ pub struct ResolvedSpectralDagger {
 /// The radial part after mod resolution.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ResolvedRadial {
+    pub delay_seconds: f64,
     /// Where this explosion goes off — see
     /// [`crate::model::BlastKind`]. `Contact` on every weapon but the
     /// handful whose round bores on through and detonates behind what it hit.

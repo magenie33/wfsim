@@ -20,6 +20,8 @@ use super::bumps::{bump_buffs, bump_status_buffs};
 /// of them a shot, and this is the one path all of them resolve through. A
 /// strike is what a combatant does.
 pub(super) struct Strike<'a> {
+    pub(super) radial_only: bool,
+    pub(super) skip_radial: bool,
     /// The multishot one round carries (`resolve::Rounds::per_round`).
     pub(super) round_multishot: f64,
     /// WHO THREW IT. Every instance this strike settles is credited here, so
@@ -216,6 +218,8 @@ pub(super) fn weakpoint_contact(
 #[wfsim_gas_macro::metered]
 pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live: &mut Live) {
     let Strike {
+        radial_only,
+        skip_radial,
         round_multishot,
         seat,
         active,
@@ -968,6 +972,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         _ => active.radial.map(|r| active.piled_radial(r, &windows.element_pile, t)),
     };
     let radial_stage = match attack_radial {
+        _ if skip_radial => None,
         Some(r) if !r.takes_multishot && pellet_idx > 0 => None,
         // A THROW NOBODY DETONATES explodes not at all.
         Some(r) if r.blast_kind == crate::model::BlastKind::InFlight && !detonates => None,
@@ -1076,6 +1081,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             None => det,
         };
         let direct = rad.is_none();
+        if radial_only && direct { continue; }
         // EVERY INSTANCE RE-READS THE TARGET — not every shot, and not
         // even every pellet.
         //

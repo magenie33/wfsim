@@ -718,6 +718,9 @@ pub struct ChainSpec {
 pub struct RadialSpec {
     pub damage: BTreeMap<String, f64>,
     pub radius_m: f64,
+    /// Seconds from projectile contact to its explosion, independent of fire rate.
+    #[serde(default)]
+    pub delay_seconds: f64,
     /// See [`BlastKind`] — `contact` unless the entry says otherwise.
     #[serde(default)]
     pub blast_kind: BlastKind,

@@ -14,7 +14,11 @@ use super::*;
 /// EVERYTHING THE HIT NEEDS that the pull decided, owned so it can outlive the
 /// turn that fired it. The rest — the build, the bodies, the live buffs — is
 /// read when it lands, which is when the game reads it.
+#[derive(Clone)]
 pub(super) struct Landing {
+    /// The collision already settled; only its delayed explosion remains.
+    pub(super) radial_only: bool,
+    pub(super) pellet_aims: Vec<RoundAim>,
     /// WHEN IT ARRIVES.
     pub(super) t: f64,
     /// THE FORM THAT FIRED IT. A transform while it flies does not turn a base
@@ -179,8 +183,12 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     let mut strike_spread: Option<SpreadStrike> = None;
     let (mut any_head, mut any_big) = (false, false);
     let mut beam_merge = l.beam_merge;
+    let radial_delay = active.radial.filter(|_| !l.radial_only).map_or(0.0, |r| r.delay_seconds);
+    let mut pellet_aims = Vec::new();
     {
         let shot = Strike {
+            radial_only: l.radial_only,
+            skip_radial: radial_delay > 0.0,
             round_multishot: l.rounds.per_round(l.n_pellets),
             seat: me.seat,
             active,
@@ -262,8 +270,20 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             round_aim: &mut round_aim,
         };
         for (pellet_idx, follows) in (0..l.n_pellets).zip(l.rounds.follows(l.n_pellets)) {
-            settle_pellet(pellet_idx, follows, &shot, &mut live);
+            if l.radial_only {
+                *live.round_aim = l.pellet_aims[pellet_idx as usize];
+            }
+            settle_pellet(pellet_idx, follows || l.radial_only, &shot, &mut live);
+            if radial_delay > 0.0 { pellet_aims.push(*live.round_aim); }
         }
+    }
+    if radial_delay > 0.0 {
+        me.in_flight.push(Landing {
+            t: t + radial_delay,
+            radial_only: true,
+            pellet_aims,
+            ..l.clone()
+        });
     }
 
     // THE BLOB EMBEDS in the body the shot struck, and a pile this shot takes
@@ -337,6 +357,8 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     // A KILL THIS SWING OR ANYTHING BEFORE IT MADE is a spectral dagger, if the
     // form that makes them was up when it swung.
     make_daggers(me.seat, me.params, active, t, g.r, &mut me.dagger_kill_mark, g.entities);
+
+    if l.radial_only { return t; }
 
     let mut t = t;
     after_the_landing(
