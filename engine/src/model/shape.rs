@@ -374,10 +374,38 @@ pub struct Falloff {
     pub end_m: f64,
     /// Fraction of damage KEPT at `end_m` and beyond.
     pub keep: f64,
+    pub points: [Option<super::FalloffPoint>; 4],
 }
 
 #[wfsim_gas_macro::metered]
 impl Falloff {
+    pub fn from_spec(spec: &super::FalloffSpec, projectile_speed_multiplier: f64) -> Self {
+        assert!(spec.points.len() <= 4, "falloff supports at most four intermediate points");
+        let mut points = [None; 4];
+        let mut distance = spec.start_m;
+        let mut multiplier = 1.0;
+        for (index, point) in spec.points.iter().enumerate() {
+            assert!(point.distance_m.is_finite()
+                && point.distance_m >= distance && point.distance_m <= spec.end_m
+                && point.damage_multiplier.is_finite()
+                && point.damage_multiplier <= multiplier
+                && point.damage_multiplier >= 1.0 - spec.reduction,
+                "falloff points must descend inside their endpoints");
+            points[index] = Some(super::FalloffPoint {
+                distance_m: point.distance_m * projectile_speed_multiplier,
+                damage_multiplier: point.damage_multiplier,
+            });
+            distance = point.distance_m;
+            multiplier = point.damage_multiplier;
+        }
+        Self {
+            start_m: spec.start_m * projectile_speed_multiplier,
+            end_m: spec.end_m * projectile_speed_multiplier,
+            keep: 1.0 - spec.reduction,
+            points,
+        }
+    }
+
     /// The multiplier on a direct hit that travelled `d` metres.
     pub fn factor(&self, d: f64) -> f64 {
         if d <= self.start_m {
@@ -386,8 +414,18 @@ impl Falloff {
         if d >= self.end_m || self.end_m <= self.start_m {
             return self.keep;
         }
-        let t = (d - self.start_m) / (self.end_m - self.start_m);
-        1.0 - (1.0 - self.keep) * t
+        let mut distance = self.start_m;
+        let mut multiplier = 1.0;
+        for point in self.points.iter().flatten() {
+            if d < point.distance_m {
+                let t = (d - distance) / (point.distance_m - distance);
+                return multiplier + (point.damage_multiplier - multiplier) * t;
+            }
+            distance = point.distance_m;
+            multiplier = point.damage_multiplier;
+        }
+        let t = (d - distance) / (self.end_m - distance);
+        multiplier + (self.keep - multiplier) * t
     }
 }
 

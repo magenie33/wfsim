@@ -1622,7 +1622,7 @@ pub fn resolve_for(
     let falloff = base.falloff.as_ref().map(|f| {
         // DE's `Reduction` is the share REMOVED at the far end, so the share
         // kept is its complement: Hek's 0.8 is the page's "100% to 20%".
-        Falloff { start_m: f.start_m * ps, end_m: f.end_m * ps, keep: 1.0 - f.reduction }
+        Falloff::from_spec(f, ps)
     });
     let projectile_speed_mps = base.projectile_speed_mps.map(|v| v * ps);
 

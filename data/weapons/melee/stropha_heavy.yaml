@@ -24,6 +24,9 @@ attack:
     start_m: 11
     end_m: 17
     reduction: 0.9857142857142858
+    points:
+    - { distance_m: 11, damage_multiplier: 0.5 }
+    - { distance_m: 15, damage_multiplier: 0.5 }
   spends_combo: true
   damage:
     impact: 700

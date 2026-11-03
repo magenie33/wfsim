@@ -23,6 +23,15 @@ pub struct FalloffSpec {
     pub end_m: f64,
     /// Fraction of damage REMOVED at `end_m` and beyond.
     pub reduction: f64,
+    /// Intermediate distance/remaining-damage points; equal distances encode a step.
+    #[serde(default)]
+    pub points: Vec<FalloffPoint>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct FalloffPoint {
+    pub distance_m: f64,
+    pub damage_multiplier: f64,
 }
 
 /// THE CONE AN ATTACK FIRES INTO — degrees from the reticle, per ATTACK.
