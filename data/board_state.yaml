@@ -11,194 +11,194 @@
 # question and the page answers it (docs/BOARD.md).
 boards:
   demolisher:
-    submissions: 538212
-    listed: 31854
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 32346
+    scored_at_epoch_seconds: 1793666892
   demolisher__aimed_body:
-    submissions: 538212
-    listed: 4083
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 4081
+    scored_at_epoch_seconds: 1793666892
   demolisher__aimed_half:
-    submissions: 538212
-    listed: 8652
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 8653
+    scored_at_epoch_seconds: 1793666892
   demolisher__archimedea500:
-    submissions: 538212
+    submissions: 539774
     listed: 53999
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   demolisher__archimedea500__aimed_body:
-    submissions: 538212
+    submissions: 539774
     listed: 4663
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   demolisher__archimedea500__aimed_half:
-    submissions: 538212
+    submissions: 539774
     listed: 16355
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   demolisher__icebind1000:
-    submissions: 538212
+    submissions: 539774
     listed: 33768
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   demolisher__icebind1000__aimed_body:
-    submissions: 538212
+    submissions: 539774
     listed: 4248
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   demolisher__icebind1000__aimed_half:
-    submissions: 538212
+    submissions: 539774
     listed: 9347
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   demolisher__sp200:
-    submissions: 538212
+    submissions: 539774
     listed: 66987
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   demolisher__sp200__aimed_body:
-    submissions: 538212
+    submissions: 539774
     listed: 4794
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   demolisher__sp200__aimed_half:
-    submissions: 538212
+    submissions: 539774
     listed: 17910
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner:
-    submissions: 538212
-    listed: 52607
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 53142
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner__aimed_body:
-    submissions: 538212
+    submissions: 539774
     listed: 5359
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner__aimed_half:
-    submissions: 538212
+    submissions: 539774
     listed: 18791
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner__archimedea500:
-    submissions: 538212
+    submissions: 539774
     listed: 63696
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner__archimedea500__aimed_body:
-    submissions: 538212
+    submissions: 539774
     listed: 5210
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner__archimedea500__aimed_half:
-    submissions: 538212
+    submissions: 539774
     listed: 24597
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner__icebind1000:
-    submissions: 538212
-    listed: 51398
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 51399
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner__icebind1000__aimed_body:
-    submissions: 538212
-    listed: 5636
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 5632
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner__icebind1000__aimed_half:
-    submissions: 538212
+    submissions: 539774
     listed: 19187
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner__sp200:
-    submissions: 538212
+    submissions: 539774
     listed: 71093
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner__sp200__aimed_body:
-    submissions: 538212
+    submissions: 539774
     listed: 5691
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   heavy_gunner__sp200__aimed_half:
-    submissions: 538212
+    submissions: 539774
     listed: 27413
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target:
-    submissions: 538212
-    listed: 28549
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 28936
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target__aimed_body:
-    submissions: 538212
-    listed: 3708
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 3720
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target__aimed_half:
-    submissions: 538212
-    listed: 5029
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 5031
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target__archimedea500:
-    submissions: 538212
+    submissions: 539774
     listed: 27867
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target__archimedea500__aimed_body:
-    submissions: 538212
-    listed: 4317
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 4310
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target__archimedea500__aimed_half:
-    submissions: 538212
+    submissions: 539774
     listed: 5629
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target__icebind1000:
-    submissions: 538212
+    submissions: 539774
     listed: 25511
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target__icebind1000__aimed_body:
-    submissions: 538212
-    listed: 3882
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 3879
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target__icebind1000__aimed_half:
-    submissions: 538212
-    listed: 5340
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 5342
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target__sp200:
-    submissions: 538212
+    submissions: 539774
     listed: 27154
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target__sp200__aimed_body:
-    submissions: 538212
-    listed: 3975
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 3976
+    scored_at_epoch_seconds: 1793666892
   standard_multi_target__sp200__aimed_half:
-    submissions: 538212
+    submissions: 539774
     listed: 5751
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   standard_single_target:
-    submissions: 538212
-    listed: 73939
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 74431
+    scored_at_epoch_seconds: 1793666892
   standard_single_target__aimed_body:
-    submissions: 538212
-    listed: 4828
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 4832
+    scored_at_epoch_seconds: 1793666892
   standard_single_target__aimed_half:
-    submissions: 538212
-    listed: 25638
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 25643
+    scored_at_epoch_seconds: 1793666892
   standard_single_target__archimedea500:
-    submissions: 538212
+    submissions: 539774
     listed: 70693
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   standard_single_target__archimedea500__aimed_body:
-    submissions: 538212
-    listed: 5966
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 5967
+    scored_at_epoch_seconds: 1793666892
   standard_single_target__archimedea500__aimed_half:
-    submissions: 538212
-    listed: 28207
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 28208
+    scored_at_epoch_seconds: 1793666892
   standard_single_target__icebind1000:
-    submissions: 538212
+    submissions: 539774
     listed: 61654
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   standard_single_target__icebind1000__aimed_body:
-    submissions: 538212
+    submissions: 539774
     listed: 5709
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   standard_single_target__icebind1000__aimed_half:
-    submissions: 538212
+    submissions: 539774
     listed: 24078
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   standard_single_target__sp200:
-    submissions: 538212
+    submissions: 539774
     listed: 75122
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
   standard_single_target__sp200__aimed_body:
-    submissions: 538212
-    listed: 6723
-    scored_at_epoch_seconds: 1793581495
+    submissions: 539774
+    listed: 6726
+    scored_at_epoch_seconds: 1793666892
   standard_single_target__sp200__aimed_half:
-    submissions: 538212
+    submissions: 539774
     listed: 29804
-    scored_at_epoch_seconds: 1793581495
+    scored_at_epoch_seconds: 1793666892
