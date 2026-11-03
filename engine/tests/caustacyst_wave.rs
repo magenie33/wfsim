@@ -35,7 +35,7 @@ fn line(loss: f64, distance_loss: bool) -> FightParams {
     let mut arena = Arena::training(0.1);
     for i in 1..=5 {
         arena.others.push(FoeSpec { id: format!("e{}", i + 1), params: arena.target.clone(),
-            body_parts: arena.body_parts.clone(), at: Vec2::new(arena.target_at.x, arena.target_at.y + 3.0 * f64::from(i)) });
+            body_parts: arena.body_parts.clone(), at: Vec2::new(arena.target_at.x + 3.0 * f64::from(i), arena.target_at.y) });
     }
     let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
     p.damage_loss_per_body = loss;

@@ -52,6 +52,7 @@ attack:
           forced_procs:
           - slash
           - knockdown
+          hand: 0
     - actions:
       - source: /Lotus/Weapons/Tenno/Melee/Attacks/ScytheMelee30ChargeB
         animation: /Lotus/Animations/Tenno/Melee/Scythe/ChargeAttack/Charge02Strike
@@ -71,6 +72,7 @@ attack:
           forced_procs:
           - slash
           - knockdown
+          hand: 0
   spends_combo: true
   heavy:
     multiplier: 6
