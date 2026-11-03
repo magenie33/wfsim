@@ -479,6 +479,7 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
     });
 
     WeaponBase {
+        damage_loss_per_body: s.attack.damage_loss_per_body,
         melee_damage_mods_apply: s.attack.melee_damage_mods_apply,
         universal_damage_mods_apply: s.attack.universal_damage_mods_apply,
         // FILLED IN BY THE EVOLUTIONS, and by nothing else: a melee Incarnon is

@@ -98,6 +98,7 @@ pub struct Toggle {
 /// Parameters of the dummy engagement.
 #[derive(Debug, Clone)]
 pub struct FightParams {
+    pub damage_loss_per_body: f64,
     pub melee_damage_mods_apply: bool,
     pub universal_damage_mods_apply: bool,
     /// EVERYTHING ELSE THAT ACTS IN THIS FIGHT, each one a whole build of its

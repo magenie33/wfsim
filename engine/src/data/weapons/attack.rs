@@ -98,6 +98,9 @@ where
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct AttackSpec {
+    /// Fraction of the original projectile damage lost per body already crossed.
+    #[serde(default)]
+    pub damage_loss_per_body: f64,
     #[serde(default)]
     pub profiles: std::collections::BTreeMap<String, AttackSpec>,
     #[serde(default)]

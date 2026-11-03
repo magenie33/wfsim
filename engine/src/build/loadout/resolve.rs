@@ -1663,6 +1663,7 @@ pub fn resolve_for(
         }
     }).or(base.heavy);
     ResolvedPanel {
+        damage_loss_per_body: base.damage_loss_per_body,
         melee_damage_mods_apply: base.melee_damage_mods_apply,
         universal_damage_mods_apply: base.universal_damage_mods_apply,
         form: base.form,

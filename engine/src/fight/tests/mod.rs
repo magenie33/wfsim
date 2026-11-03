@@ -75,6 +75,7 @@ impl Default for FightParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            damage_loss_per_body: 0.0,
             melee_damage_mods_apply: true,
             universal_damage_mods_apply: true,
             also_acting: Vec::new(),

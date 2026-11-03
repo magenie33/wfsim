@@ -728,7 +728,7 @@ pub(super) fn spread_from_punch_through(
     let mut punched = PunchedWeakPoints::default();
     // The FIRST is the body the rest of the engagement is already scored
     // against; everything behind it is what this function is for.
-    for &s in struck.iter().skip(1) {
+    for (crossed, &s) in struck.iter().enumerate().skip(1) {
         let Some(spec) = params.body(s) else { continue };
         // …AND IT HAS TO BE INSIDE THE WEAPON'S RANGE. A range is a WALL, not a
         // ramp — the aimed path has said so since ranges were modelled, and
@@ -745,20 +745,13 @@ pub(super) fn spread_from_punch_through(
         if gap_here > active.range_m {
             break;
         }
-        // ITS OWN DAMAGE FALLOFF, because it is FURTHER. The page names no
-        // attenuation per body crossed, but a shot that keeps going keeps
-        // flying — and the direct hit reads the GAP it flew (`falloff.factor`).
-        // The aimed body's factor is already inside `raw_per_bucket`, so it is
-        // divided back out and this body's own put in, which is the same
-        // arithmetic the blast does with its epicentre's.
-        //
-        // 1.0 for the whole roster minus nineteen entries, and 1.0 at contact
-        // for all of them — so this moves nothing on a weapon that lists no
-        // falloff, and nothing on the first body of any fight.
+        // Distance and crossed bodies spend shares of the original damage.
+        // The aimed body's distance factor is already in raw_per_bucket.
+        let lost = active.damage_loss_per_body * crossed as f64;
         let ratio = match active.falloff {
-            None => 1.0,
+            None => (1.0 - lost).max(0.0),
             Some(f) => {
-                let here = f.factor(gap_here);
+                let here = (f.factor(gap_here) - lost).max(0.0);
                 let there = f.factor(params.gap());
                 if there > 0.0 { here / there } else { 0.0 }
             }

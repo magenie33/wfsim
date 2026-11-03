@@ -820,6 +820,7 @@ pub struct ZoomLevel {
 /// weapon's BASE stats before mods).
 #[derive(Debug, Clone)]
 pub struct WeaponBase {
+    pub damage_loss_per_body: f64,
     pub melee_damage_mods_apply: bool,
     pub universal_damage_mods_apply: bool,
     /// WHICH FORM this panel is, from the yaml entry's own `form:`.

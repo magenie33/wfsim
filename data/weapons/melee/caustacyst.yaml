@@ -31,10 +31,8 @@ unmodeled:
 - 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
   reads low.'
 - reason: melee_attack_unmodelled
-  attacks: Corrosive Wave and Corrosive Pool
+  attacks: Corrosive Pool
 - reason: melee_slide_unpublished
-- reason: melee_heavy_is_special
-  what: a thrown Corrosive wave, 225 Corrosive losing 40% a second and 20% per enemy, that leaves pools of 98 Corrosive a second for 8 s
 attack:
   trigger: melee
   shot_type: hit_scan

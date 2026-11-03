@@ -1,0 +1,108 @@
+# see notes: melee_shared_package_actions
+id: coda_caustacyst_heavy
+name: Coda Caustacyst
+inherits: coda_caustacyst
+form: heavy
+transform_group: coda_caustacyst
+co_behavior: additive_with_base_damage
+unmodeled:
+- reason: melee_attack_unmodelled
+  attacks: Corrosive Pool
+- The page's Notes give the wave a 3 m width and 37.5 m maximum travel, while Characteristics gives 5 m and 30 m. This model
+  uses Notes; neither geometry is calibrated.
+- The wave's combo multiplier, doubled heavy critical-chance bonus and Condition Overload use the general heavy-attack rules;
+  these interactions are unmeasured.
+- The corrosive trail's independent damage buckets, rectangular coverage, persistent pool contacts and blindness are not modelled.
+- reason: melee_valence_unmodelled
+  family: Coda
+- The Coda page repeats the original wave's 225 damage and 9%/2x/37% crit and status. Those projectile stats have no in-game
+  calibration.
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.19
+  crit_multiplier: 2.3
+  status_chance: 0.41
+  punch_through_m: 0.0
+  range_m: 2.9
+  follow_through: 0.6
+  damage:
+    impact: 20
+    puncture: 75
+    slash: 70
+    corrosive: 120
+  combo_script:
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/ScytheMelee30ChargeA
+        animation: /Lotus/Animations/Tenno/Melee/Scythe/ChargeAttack/Charge01Strike
+        duration_seconds: 0.8
+        charge:
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.12076
+          kind: ranged
+          profile: wave
+          multiplier: 1
+          combo_points: 0
+        - at_seconds: 0.1620592
+          kind: sweep
+          multiplier: 6
+          combo_points: 0
+          forced_procs:
+          - slash
+          - knockdown
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/ScytheMelee30ChargeB
+        animation: /Lotus/Animations/Tenno/Melee/Scythe/ChargeAttack/Charge02Strike
+        duration_seconds: 0.833333
+        charge:
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.117310786409
+          kind: ranged
+          profile: wave
+          multiplier: 1
+          combo_points: 0
+        - at_seconds: 0.189664924134
+          kind: sweep
+          multiplier: 6
+          combo_points: 0
+          forced_procs:
+          - slash
+          - knockdown
+  spends_combo: true
+  heavy:
+    multiplier: 6
+    windup_seconds: 2
+  profiles:
+    wave:
+      trigger: melee
+      shot_type: projectile
+      projectile_speed_mps: 15
+      fire_rate: 1.0
+      multishot: 1
+      ammo_cost: 0
+      no_magazine: true
+      crit_chance: 0.09
+      crit_multiplier: 2
+      status_chance: 0.37
+      damage:
+        corrosive: 225
+      range_m: 37.5
+      projectile_width_m: 3
+      infinite_body_punch_through: true
+      falloff:
+        start_m: 0
+        end_m: 37.5
+        reduction: 1
+      damage_loss_per_body: 0.2
+      melee_damage_mods_apply: false
+      universal_damage_mods_apply: true
+      combo_script: []
+source:
+  url: https://wiki.warframe.com/w/Coda_Caustacyst
