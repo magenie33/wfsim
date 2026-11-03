@@ -106,6 +106,10 @@ pub struct AttackSpec {
     pub co_base_fraction: Option<f64>,
     #[serde(default)]
     pub headshot_multiplier: Option<f64>,
+    #[serde(default = "yes")]
+    pub melee_damage_mods_apply: bool,
+    #[serde(default = "yes")]
+    pub universal_damage_mods_apply: bool,
     pub trigger: String,
     /// Ammo spent per SHOT (per tick on a continuous weapon). Default 1.
     ///

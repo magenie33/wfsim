@@ -74,6 +74,8 @@ impl Default for FightParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            melee_damage_mods_apply: true,
+            universal_damage_mods_apply: true,
             also_acting: Vec::new(),
             sample_by: crate::rules::metrics::RunStat::KillProgress,
             // A FIXTURE ASSUMES ITS ABILITIES UP, which is the fight's default.

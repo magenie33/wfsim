@@ -334,6 +334,8 @@ impl ResolvedRadial {
 /// The resolved panel: everything the dummy sim needs from layers [1]+[2].
 #[derive(Debug, Clone)]
 pub struct ResolvedPanel {
+    pub melee_damage_mods_apply: bool,
+    pub universal_damage_mods_apply: bool,
     /// WHICH WEAPON THIS IS. The panel is everything the sim needs from the
     /// build, and until 2026-08-21 that did not include the weapon's own name —
     /// which is fine while every question is about resolved numbers and stops

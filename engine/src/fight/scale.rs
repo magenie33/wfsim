@@ -217,7 +217,7 @@ pub(super) fn live_base_damage_additions(
     at: f64,
     heavy: bool,
 ) -> f64 {
-    arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at)
+    (if active.melee_damage_mods_apply { arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at) } else { 0.0 })
         + timed
         + active.compression_base_damage
         + buff_total(active, crate::model::BuffGrant::BaseDamage, stacks, at)

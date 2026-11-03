@@ -88,7 +88,12 @@ pub(super) fn buff_total(from: &FightParams, grant: crate::model::BuffGrant, sta
     from.stacking_buffs
         .iter()
         .enumerate()
-        .filter(|(_, b)| b.grant == grant)
+        .filter(|(_, b)| match grant {
+            crate::model::BuffGrant::BaseDamage =>
+                (b.grant == grant && from.universal_damage_mods_apply)
+                || (b.grant == crate::model::BuffGrant::MeleeDamage && from.melee_damage_mods_apply),
+            _ => b.grant == grant,
+        })
         .map(|(i, b)| b.per_stack * stacks[i].current(t, b.duration) as f64)
         .sum::<f64>()
 }

@@ -820,6 +820,8 @@ pub struct ZoomLevel {
 /// weapon's BASE stats before mods).
 #[derive(Debug, Clone)]
 pub struct WeaponBase {
+    pub melee_damage_mods_apply: bool,
+    pub universal_damage_mods_apply: bool,
     /// WHICH FORM this panel is, from the yaml entry's own `form:`.
     ///
     /// A two-weapons pair is two entries and two panels, and until now neither

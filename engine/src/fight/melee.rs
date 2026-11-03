@@ -113,7 +113,7 @@ pub(super) fn floor_steps_down(active: &FightParams, buff_stacks: &mut [LiveStac
 /// so Condition Overload and Rage dilute it as they dilute Pressure Point.
 #[wfsim_gas_macro::metered]
 pub(super) fn heavy_attack_base_damage(active: &FightParams, tennokai_heavy: bool) -> f64 {
-    if active.spends_combo || tennokai_heavy { active.heavy_attack_damage } else { 0.0 }
+    if active.melee_damage_mods_apply && (active.spends_combo || tennokai_heavy) { active.heavy_attack_damage } else { 0.0 }
 }
 
 /// HOW OFTEN A HEAVY MODE SWINGS, in seconds — and it is not always as soon as

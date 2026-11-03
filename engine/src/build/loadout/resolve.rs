@@ -154,6 +154,7 @@ pub fn resolve_for(
     // and a fight bonus is in it — which is right: "set to its default ignoring
     // other bonuses" does not make an exception for where the bonus came from.
     let fb = &tenno.bonuses;
+    let universal_base_damage = if base.universal_damage_mods_apply { fb.base_damage } else { 0.0 };
     // …AND THE ARCHON SHARDS, which land in the SAME buckets a mod of that stat
     // feeds (chance, status chance, Melee Critical Damage); `unmodelled_reason`
     // names why any other pays nothing. Added into
@@ -173,7 +174,7 @@ pub fn resolve_for(
         // beside Pressure Point, so it is worth less the more Pressure Point is
         // already in the sum. That is the whole difference from a gun Genesis's
         // `+14 Base Damage`, which is added to the weapon's own number.
-        fb.base_damage
+        universal_base_damage
             + tenno.aura_damage_bonus(base.class, base.mod_pools)
             + base.evo_base_damage_bonus,
         fb.multishot,
@@ -885,6 +886,15 @@ pub fn resolve_for(
         if unmodded > 0.0 {
             base_damage += earned(BuffGrant::FlatBaseDamage) * (1.0 + base_damage) / unmodded;
         }
+    }
+
+    if !base.melee_damage_mods_apply && base.slot == "melee" {
+        base_damage = universal_base_damage;
+        heavy_damage = 0.0;
+        base_damage_on_reload = None;
+        base_damage_on_eximus_weakpoint = None;
+        base_damage_if_no_enemy_within.clear();
+        base_damage_beyond_target_range.clear();
     }
 
     // Apply `disables`: a locked stat cannot be modified — zero its mod bucket
@@ -1651,6 +1661,8 @@ pub fn resolve_for(
         }
     }).or(base.heavy);
     ResolvedPanel {
+        melee_damage_mods_apply: base.melee_damage_mods_apply,
+        universal_damage_mods_apply: base.universal_damage_mods_apply,
         form: base.form,
         alt_fire_toggles: base.alt_fire_toggles,
         class: base.class,
@@ -1991,6 +2003,8 @@ pub fn resolve_for(
             .iter()
             .chain(mod_buffs.iter())
             .filter(|b| !locked_stat(b.grant.locked_stat()) && !folded(b))
+            .filter(|b| base.melee_damage_mods_apply || base.slot != "melee"
+                || !matches!(b.grant, BuffGrant::BaseDamage | BuffGrant::FlatBaseDamage | BuffGrant::MeleeDamage))
             // A LOCKED STAT TAKES ITS BUFFS WITH IT, and they go rather than
             // going quiet: a card that opens, stacks and grants nothing is a
             // measurement a player cannot make (the rule `check_equip_rules`
@@ -1998,6 +2012,10 @@ pub fn resolve_for(
             // Every one of these grants exactly one stat, so the filter is the
             // whole rule.
             .map(|b| StackingBuff {
+                grant: if base.slot == "melee" && b.grant == BuffGrant::BaseDamage
+                    && (!base.melee_damage_mods_apply || !base.universal_damage_mods_apply) {
+                    BuffGrant::MeleeDamage
+                } else { b.grant },
                 per_stack: match b.grant {
                     // ONE conversion: a FireRate buff arrives as a fraction of
                     // the base rate and leaves as the absolute rate it is worth,

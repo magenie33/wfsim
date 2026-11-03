@@ -479,6 +479,8 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
     });
 
     WeaponBase {
+        melee_damage_mods_apply: s.attack.melee_damage_mods_apply,
+        universal_damage_mods_apply: s.attack.universal_damage_mods_apply,
         // FILLED IN BY THE EVOLUTIONS, and by nothing else: a melee Incarnon is
         // a Genesis tier rather than a weapon stat.
         melee_incarnon: None,

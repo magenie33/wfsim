@@ -1391,6 +1391,8 @@ impl FightParams {
             multishot: panel.multishot + lone_bonus,
             base_multishot: panel.base_multishot,
             base_damage_bonus: panel.base_damage_bonus,
+            melee_damage_mods_apply: panel.melee_damage_mods_apply,
+            universal_damage_mods_apply: panel.universal_damage_mods_apply,
             co_per_type: panel.co_per_type,
             co_behavior: panel.co_behavior,
             co_base: panel.co_base,

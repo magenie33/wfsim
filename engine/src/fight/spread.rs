@@ -321,7 +321,7 @@ pub(super) fn spread_hit(
     }
     let base_damage = active.base_damage_bonus;
     let arcane_base_damage =
-        arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t)
+        (if active.melee_damage_mods_apply { arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t) } else { 0.0 })
             + heavy_attack_base_damage(active, tennokai_heavy)
             + arc.rage_bonus(t);
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);

@@ -220,6 +220,7 @@ pub struct WeakpointBuff {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BuffGrant {
     BaseDamage,
+    MeleeDamage,
     ReloadSpeed,
     FireRate,
     /// Stormburst: "+0.4 Multishot", a FLAT add rather than a percentage of
@@ -320,6 +321,7 @@ impl BuffGrant {
     pub fn id(self) -> &'static str {
         match self {
             BuffGrant::BaseDamage => "base_damage",
+            BuffGrant::MeleeDamage => "melee_damage",
             BuffGrant::FlatBaseDamage => "flat_base_damage",
             BuffGrant::BaseMultishot => "base_multishot",
             BuffGrant::Multishot => "multishot",
@@ -344,7 +346,7 @@ impl BuffGrant {
     pub fn from_id(id: &str) -> Option<Self> {
         use BuffGrant as G;
         [
-            G::BaseDamage, G::FlatBaseDamage, G::BaseMultishot, G::Multishot, G::FlatMultishot, G::ReloadSpeed,
+            G::BaseDamage, G::MeleeDamage, G::FlatBaseDamage, G::BaseMultishot, G::Multishot, G::FlatMultishot, G::ReloadSpeed,
             G::FireRate, G::BaseCritDamage, G::CritDamage, G::CritChance, G::StatusChance, G::AmmoEfficiency, G::InfiniteAmmo, G::HeadshotDamage,
             G::InitialCombo, G::MeleeRange, G::StatusDamage, G::PunchThrough,
         ]
@@ -366,7 +368,7 @@ impl BuffGrant {
     /// had simply never been added beside it.
     pub fn locked_stat(self) -> &'static str {
         match self {
-            BuffGrant::BaseDamage | BuffGrant::FlatBaseDamage => "base_damage",
+            BuffGrant::BaseDamage | BuffGrant::MeleeDamage | BuffGrant::FlatBaseDamage => "base_damage",
             BuffGrant::BaseMultishot | BuffGrant::Multishot => "multishot",
             BuffGrant::ReloadSpeed => "reload_speed",
             BuffGrant::FireRate => "fire_rate",
@@ -390,6 +392,7 @@ impl BuffGrant {
     pub fn label(self) -> &'static str {
         match self {
             BuffGrant::BaseDamage => "Base Damage",
+            BuffGrant::MeleeDamage => "Melee Damage",
             BuffGrant::FlatBaseDamage => "flat Base Damage",
             BuffGrant::BaseMultishot => "Base Multishot",
             BuffGrant::Multishot => "Multishot",

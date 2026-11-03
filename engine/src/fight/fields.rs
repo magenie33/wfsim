@@ -334,7 +334,7 @@ pub(super) fn field_tick_seeded(
     let arcane_base_damage = if f.excludes_live_base_damage {
         0.0
     } else {
-        arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at)
+        (if active.melee_damage_mods_apply { arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at) } else { 0.0 })
             + ctx.base_damage_add_mods
             + heavy_attack_base_damage(active, false)
             + arc.rage_bonus(at)
