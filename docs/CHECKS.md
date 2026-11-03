@@ -775,7 +775,10 @@ Protocol 8 on the page (docs/CLIENTS.md §"The cycle, protocol 8"), the server a
 the work signal stubbed before the app boots. Built site only. Protocol 8 is
 spoken where IndexedDB opens; a measured row's result is kept there until a
 reply takes it, goes out by beacon when the page goes (holding nothing), and
-after a reload goes in on the next load. Pending points are the work of every
+after a reload goes in on the next load. Reopening with 100,000 expired local
+records stays responsive under CPU throttling, removes expired records and
+retains valid unsent and unconfirmed results in memory and IndexedDB.
+Pending points are the work of every
 result kept or taken and not yet confirmed, over 1e9. Idle with nothing open,
 the page reads the signal and calls no worker; with work open it syncs within
 the signal's jitter; `next_ms` holds. A signal is aged by the server's clock (a
