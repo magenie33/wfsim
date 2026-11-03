@@ -26,6 +26,7 @@ pub(super) struct Landing {
     pub(super) base_form: bool,
     pub(super) special_heavy: bool,
     pub(super) profile: Option<String>,
+    pub(super) combo_spent_at_release: bool,
     /// The record's id for the pull, so what it deals points back at it.
     pub(super) shot: Option<u32>,
     pub(super) flash: bool,
@@ -379,6 +380,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
         &l.swing,
         l.combo_now,
         l.combo_multiplier,
+        l.combo_spent_at_release,
         l.tennokai,
         l.tennokai_heavy,
         l.tennokai_kill_mark,

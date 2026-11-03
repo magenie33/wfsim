@@ -34,6 +34,7 @@ pub(super) fn after_the_landing(
     swing: &Option<crate::model::ComboHit>,
     combo_now: f64,
     combo_multiplier: f64,
+    combo_spent_at_release: bool,
     tennokai: bool,
     tennokai_heavy: bool,
     tennokai_kill_mark: u32,
@@ -231,7 +232,7 @@ pub(super) fn after_the_landing(
         // award points"*, so a miss neither adds nor refreshes.
         if let Some(h) = swing {
             after_swing(
-                h, active, params, rec, d, combo_now, combo_multiplier, tennokai, tennokai_kill_mark,
+                h, active, params, rec, d, combo_now, combo_multiplier, combo_spent_at_release, tennokai, tennokai_kill_mark,
                 tennokai_heavy, pellets_before, *t,
                 r, melee, incarnon, ammo, arc, bodies,
             );

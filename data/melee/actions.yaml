@@ -9089,21 +9089,30 @@
           "kind": "sweep",
           "hand": 1,
           "multiplier": 3.0,
-          "combo_points": 0
+          "combo_points": 0,
+          "forced_procs": [
+            "blast"
+          ]
         },
         {
           "at_seconds": 0.428999989,
           "kind": "sweep",
           "hand": 1,
           "multiplier": 3.0,
-          "combo_points": 0
+          "combo_points": 0,
+          "forced_procs": [
+            "blast"
+          ]
         },
         {
           "at_seconds": 0.571999978,
           "kind": "sweep",
           "hand": 1,
           "multiplier": 3.0,
-          "combo_points": 0
+          "combo_points": 0,
+          "forced_procs": [
+            "blast"
+          ]
         }
       ]
     },

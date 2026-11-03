@@ -378,6 +378,7 @@ pub(super) fn after_swing(
     d: &mut crate::rules::rng::Draws,
     combo_now: f64,
     combo_multiplier: f64,
+    combo_spent_at_release: bool,
     tennokai: bool,
     tennokai_kill_mark: u32,
     tennokai_heavy: bool,
@@ -530,7 +531,7 @@ pub(super) fn after_swing(
         // Counter"* — which on a HEAVY mode is the whole of what the window
         // buys, and on a light one is what makes a free 12x heavy free.
         let spends_here = h.event_timing.is_none_or(|e| e.starts_input);
-        if (active.spends_combo || melee.detonating) && !tennokai && spends_here {
+        if (active.spends_combo || melee.detonating) && !tennokai && spends_here && !combo_spent_at_release {
             // …AND IT SPENDS WHAT THE SWING READ, floor included. The
             // counter is ONE number: *"40% heavy attack efficiency will
             // change the amount spent to 60% combo points"*, and the points
@@ -817,7 +818,6 @@ pub(super) struct Swung {
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
 pub(super) fn swing_this_shot(
-    params: &FightParams,
     apl: &crate::data::apl::Apl,
     active: &FightParams,
     t: f64,
@@ -980,7 +980,7 @@ pub(super) fn swing_this_shot(
     // everything within the weapon's range; an ordinary one sweeps in
     // front. Empty for a gun, which never asks.
     let melee_struck = match &swing {
-        Some(h) if active.follow_through.is_some() => params
+        Some(h) if active.follow_through.is_some() => active
             .melee_struck(h.all_around, buff_total(active, crate::model::BuffGrant::MeleeRange, buff_stacks, t)),
         _ => Vec::new(),
     };

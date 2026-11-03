@@ -723,7 +723,7 @@ pub fn run_once_traced(
                 let (tennokai, converted, mark) = (i.tennokai, i.converted, i.kill_mark);
                 let initial = active.initial_combo;
                 let combo = melee_combo_points(me.melee.combo_points, initial, t - me.melee.combo_spent_t);
-                after_swing(&h, active, me.params, rec, d, combo, melee_combo_multiplier(combo),
+                after_swing(&h, active, me.params, rec, d, combo, melee_combo_multiplier(combo), false,
                     tennokai, mark, converted, r.pellets, t, &mut r, &mut me.melee,
                     &mut me.incarnon, &me.ammo, &mut me.arc, &mut bodies);
                 me.next_t = t + seconds_to_next_shot(active, t, event_rate, initial, Some(h),
@@ -808,7 +808,6 @@ pub fn run_once_traced(
             detonates,
             recalls,
         } = swing_this_shot(
-            me.params,
             &me.apl,
             active,
             t,
@@ -1047,6 +1046,12 @@ pub fn run_once_traced(
         }
 
         // WHAT THE PULL DECIDED, owned by the hit it becomes (`fight::flight`).
+        let combo_spent_at_release = active.spends_combo && !tennokai
+            && swing.as_ref().is_some_and(|h| h.event_timing.is_some_and(|e| e.starts_input));
+        if combo_spent_at_release {
+            me.melee.combo_points = combo_now * active.heavy_attack_efficiency;
+            me.melee.combo_spent_t = t;
+        }
         let landing = Landing {
             radial_only: false,
             pellet_aims: Vec::new(),
@@ -1054,6 +1059,7 @@ pub fn run_once_traced(
             base_form: me.incarnon.in_base_form,
             special_heavy: heavy_pre.is_some() && me.melee.input.as_ref().is_some_and(|i| i.converted),
             profile: event_profile,
+            combo_spent_at_release,
             shot: rec.shot(),
             flash,
             qvec,

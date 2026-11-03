@@ -58,3 +58,53 @@ fn every_special_heavy_fires_after_charge_and_can_reach_beyond_melee() {
         assert_eq!(run_once(&p, &mut Rng::new(7)).sources.direct, 0.0, "{id}: cannot fire before charging");
     }
 }
+
+#[test]
+fn a_projectile_spends_combo_at_release_before_its_delayed_hit() {
+    let mut p = fixture("sarpa_heavy", 10.0);
+    p.initial_combo = 100.0;
+    p.projectile_speed_mps = Some(1.0);
+    p.spread = None;
+    p.body_parts = vec![BodyPart { name: "body".into(), multiplier: 1.0, aim_weight: 1.0, crit_bonus: false, is_head: false, is_weak_point: false }];
+    p.target_at = crate::rules::space::Vec2::new(0.0, 5.0);
+    for h in &mut p.combo_script { h.windup_seconds = 0.0; }
+    let rec = record(&p, 7, 0.0, 10.0, 20_000, 0);
+    let mut contacts: Vec<(f64, f64)> = Vec::new();
+    for e in rec.events() {
+        if let crate::record::Kind::Damage(d) = &e.kind {
+            if d.origin == crate::record::Origin::Own && !d.radial {
+                if let Some((_, amount)) = contacts.last_mut().filter(|(t, _)| (e.t - *t).abs() < 1e-9) {
+                    *amount += d.effective;
+                } else { contacts.push((e.t, d.effective)); }
+            }
+        }
+    }
+    let amounts = contacts.iter().map(|(_, damage)| *damage).collect::<Vec<_>>();
+    assert!(amounts.len() > 5, "contacts: {amounts:?}");
+    for value in &amounts[..5] { assert!((value - amounts[0]).abs() < 1e-8, "contacts: {contacts:?}"); }
+    assert!(amounts[5] < amounts[0], "the second burst cannot reuse unspent initial combo: {amounts:?}");
+}
+
+#[test]
+fn a_converted_heavy_uses_its_own_contact_reach() {
+    let mut p = fixture("magistar", 10.0);
+    let mut heavy = fixture("magistar_heavy", 10.0);
+    heavy.range_m = 30.0;
+    heavy.follow_through = Some(1.0);
+    p.tennokai.enabled = true;
+    p.tennokai.every_n_hits = 1;
+    p.tennokai.window_seconds = 10.0;
+    heavy.tennokai = p.tennokai;
+    p.heavy_script = heavy.combo_script.clone();
+    p.melee_heavy = Some(Box::new(heavy));
+    p.others.push(crate::formation::FoeSpec {
+        id: "far".into(), params: Foe::training_dummy(), body_parts: BodyPart::humanoid(),
+        at: crate::rules::space::Vec2::new(0.0, 25.0),
+    });
+    p.melee_heavy.as_mut().unwrap().others = p.others.clone();
+    let reached = run_once(&p, &mut Rng::new(7)).taken.touched();
+    p.melee_heavy.as_mut().unwrap().range_m = p.range_m;
+    let control = run_once(&p, &mut Rng::new(7)).taken.touched();
+    assert_eq!(reached, 2);
+    assert_eq!(control, 1);
+}

@@ -1883,27 +1883,6 @@
       ]
     },
     {
-      "action": "/Lotus/Weapons/Tenno/Melee/Attacks/MortiforSwordShieldCustomHeavy",
-      "hit": 1,
-      "unmodelled_control": [
-        "PT_FLASHBANG"
-      ]
-    },
-    {
-      "action": "/Lotus/Weapons/Tenno/Melee/Attacks/MortiforSwordShieldCustomHeavy",
-      "hit": 2,
-      "unmodelled_control": [
-        "PT_FLASHBANG"
-      ]
-    },
-    {
-      "action": "/Lotus/Weapons/Tenno/Melee/Attacks/MortiforSwordShieldCustomHeavy",
-      "hit": 3,
-      "unmodelled_control": [
-        "PT_FLASHBANG"
-      ]
-    },
-    {
       "action": "/Lotus/Weapons/Tenno/Melee/Attacks/NunchakuBranchCD",
       "hit": 3,
       "unmodelled_control": [
@@ -2095,6 +2074,7 @@
     "argo_and_vel_block",
     "argo_and_vel_block_forward",
     "argo_and_vel_forward",
+    "argo_and_vel_heavy",
     "arum_spinosa",
     "arum_spinosa_block",
     "arum_spinosa_block_forward",
@@ -2142,6 +2122,7 @@
     "caustacyst_block",
     "caustacyst_block_forward",
     "caustacyst_forward",
+    "caustacyst_heavy",
     "ceramic_dagger",
     "ceramic_dagger_block",
     "ceramic_dagger_block_forward",
@@ -2173,6 +2154,7 @@
     "coda_caustacyst_block",
     "coda_caustacyst_block_forward",
     "coda_caustacyst_forward",
+    "coda_caustacyst_heavy",
     "coda_hirudo",
     "coda_hirudo_block",
     "coda_hirudo_block_forward",
@@ -3198,6 +3180,7 @@
     "tak_and_lug_block",
     "tak_and_lug_block_forward",
     "tak_and_lug_forward",
+    "tak_and_lug_heavy",
     "tatsu",
     "tatsu_block",
     "tatsu_block_forward",
@@ -3415,10 +3398,6 @@
       "package context or attack events incomplete"
     ],
     [
-      "corufell_heavy",
-      "package context or attack events incomplete"
-    ],
-    [
       "corufell_prime",
       "weapon absent from package export"
     ],
@@ -3568,10 +3547,6 @@
     ],
     [
       "sydon_heavy",
-      "package context or attack events incomplete"
-    ],
-    [
-      "tenet_agendus_heavy",
       "package context or attack events incomplete"
     ],
     [
