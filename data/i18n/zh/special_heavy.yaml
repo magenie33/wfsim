@@ -1,4 +1,4 @@
-# Special melee attack limitations.
+# Special melee attack limitations and existing DE weapon names.
 ui:
   ? The first heavy projectile has no exported animation duration or release event. It launches at the start of
     a nominal one-second motion after the package two-second charge; the page states a one-second wind-up. These
@@ -89,3 +89,17 @@ ui:
     modelled.
   : 灵化形态下，每次站立重击或 Tennokai 重击输入会在首个近战挥击标记处发射两枚幽灵匕首。准确发射时间、散布和最大飞行距离尚未实测。弹体的基础伤害加成排除规则取自 wiki 所列现存游戏缺陷，尚未在游戏内校准。重击捶地的幽灵弹体尚未建模。
   Heavy Kill Status Duration: 重击击杀：触发时间
+weapons:
+  argo_and_vel_heavy: 星舟 & 帆
+  arum_spinosa_heavy: 疆南星刺
+  edun_heavy: 雷石祭
+  quassus_heavy: 威震武扇
+  quassus_prime_heavy: 威震武扇 Prime
+  redeemer_heavy: 救赎者
+  redeemer_prime_heavy: 救赎者 Prime
+  sarpa_heavy: 蛇刃
+  stropha_heavy: 诡计之刃
+  syam_heavy: 业珀
+  tak_and_lug_heavy: 塔克 & 卢格
+  vastilok_heavy: 瓦斯提枪刃
+  wolf_sledge_throw: 恶狼战锤
