@@ -53,5 +53,27 @@ fn melee_sourced_live_damage_keeps_its_source_when_the_universal_bucket_is_disab
     let p = loadout::resolve(&base, &[], StackPolicy::Emergent);
     assert_eq!(p.stacking_buffs[0].grant, BuffGrant::MeleeDamage);
     base.melee_damage_mods_apply = false;
-    assert!(loadout::resolve(&base, &[], StackPolicy::Emergent).stacking_buffs.is_empty());
+    let masked = loadout::resolve(&base, &[], StackPolicy::Emergent);
+    assert_eq!(masked.stacking_buffs.len(), 1);
+    assert_eq!(masked.stacking_buffs[0].per_stack, 0.0);
+}
+
+#[test]
+fn masking_damage_preserves_later_runtime_buff_indices() {
+    let mut base = WeaponBase::from_data("syam_heavy", true, &[]);
+    let first = StackingBuff {
+        id: "damage", trigger: BuffTrigger::Crit, grant: BuffGrant::BaseDamage,
+        per_stack: 1.8, max_stacks: 1, duration: 18.0, chance: 1.0,
+        decay: BuffDecay::LoseOneAndReset, initial_stacks: 1, stacks_per_trigger: 1,
+        per_shell: false, cleared_by: ClearedBy::Nothing, precombat: false,
+    };
+    base.stacking_buffs.push(first);
+    base.stacking_buffs.push(StackingBuff { id: "speed", grant: BuffGrant::FireRate, per_stack: 0.3, ..first });
+    let plain = loadout::resolve(&base, &[], StackPolicy::Emergent);
+    base.melee_damage_mods_apply = false;
+    let masked = loadout::resolve(&base, &[], StackPolicy::Emergent);
+    assert_eq!(plain.stacking_buffs.iter().map(|b| b.id).collect::<Vec<_>>(),
+        masked.stacking_buffs.iter().map(|b| b.id).collect::<Vec<_>>());
+    assert_eq!(masked.stacking_buffs[0].per_stack, 0.0);
+    assert_eq!(masked.stacking_buffs[1].per_stack, plain.stacking_buffs[1].per_stack);
 }

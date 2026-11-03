@@ -121,6 +121,17 @@ check(`${tag} a bare package combo runs with no stance on the wire`,
 check(`${tag} the mode explanation includes this weapon's heavy charge`,
   Math.abs(bare.seconds - 2.73333398) < 0.002, JSON.stringify(bare));
 
+const mixed = await evaluate(`(() => {
+  const weapon = weaponInfo('tenet_agendus'), old = slots[STANCE].mod;
+  slots[STANCE].mod = 'gemini_cross';
+  const summary = comboOf(weapon, 'heavy');
+  const control = comboOf({ ...weapon, forms: weapon.forms.map(f => ({ ...f, mixed_attacks: false })) }, 'heavy');
+  slots[STANCE].mod = old;
+  return { declared: weapon.forms.find(f => f.id === 'heavy').mixed_attacks, summary, control };
+})()`);
+check(`${tag} a mixed heavy does not borrow the stance's single damage multiplier`,
+  mixed.declared === true && mixed.summary === null && mixed.control !== null, JSON.stringify(mixed));
+
 const admission = await evaluate(`(async () => {
   slots[STANCE].mod = null;
   const ctx = { ...boardBuildContext(), benchmark: 'standard_single_target' };

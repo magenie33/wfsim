@@ -602,6 +602,7 @@ pub fn meta_json() -> Value {
                         json!({
                         "id": id, "name": name, "is_default": def,
                         "combo": combo,
+                        "mixed_attacks": s.is_some_and(|s| !s.attack.profiles.is_empty()),
                         "heavy_charge_seconds": s.and_then(|s| s.attack.heavy).map(|h| h.windup_seconds),
                         "throw_charge_seconds": s.and_then(|s| s.attack.throw_charge_seconds),
                         // THE TWO FACTS THE SCRIPT CANNOT CARRY, both the

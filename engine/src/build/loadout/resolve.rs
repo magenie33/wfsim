@@ -2011,8 +2011,6 @@ pub fn resolve_for(
             .iter()
             .chain(mod_buffs.iter())
             .filter(|b| !locked_stat(b.grant.locked_stat()) && !folded(b))
-            .filter(|b| base.melee_damage_mods_apply || base.slot != "melee"
-                || !matches!(b.grant, BuffGrant::BaseDamage | BuffGrant::FlatBaseDamage | BuffGrant::MeleeDamage))
             // A LOCKED STAT TAKES ITS BUFFS WITH IT, and they go rather than
             // going quiet: a card that opens, stacks and grants nothing is a
             // measurement a player cannot make (the rule `check_equip_rules`
@@ -2024,7 +2022,11 @@ pub fn resolve_for(
                     && (!base.melee_damage_mods_apply || !base.universal_damage_mods_apply) {
                     BuffGrant::MeleeDamage
                 } else { b.grant },
-                per_stack: match b.grant {
+                // Profiles share runtime stack indices; mask a grant without removing its seat.
+                per_stack: if !base.melee_damage_mods_apply && base.slot == "melee"
+                    && matches!(b.grant, BuffGrant::BaseDamage | BuffGrant::FlatBaseDamage | BuffGrant::MeleeDamage) {
+                    0.0
+                } else { match b.grant {
                     // ONE conversion: a FireRate buff arrives as a fraction of
                     // the base rate and leaves as the absolute rate it is worth,
                     // because the sim adds it inside the bracket fire-rate mods
@@ -2055,7 +2057,7 @@ pub fn resolve_for(
                     // takes none from a card either (`takes_mods` above).
                     BuffGrant::PunchThrough if !takes_mods => 0.0,
                     _ => b.per_stack,
-                },
+                } },
                 // …and the same conversion for HOW MANY a trigger grants: 0
                 // means "one per shell loaded", which is the modded magazine.
                 // It cannot be resolved earlier — the magazine does not exist

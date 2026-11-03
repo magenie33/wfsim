@@ -68,7 +68,7 @@ const modeForm = (w, id) => headlessModeForm(w, id);
 /// The form's own is what an empty stance slot fires.
 const comboOf = (w, id) => {
   const f = ((w || {}).forms || []).find((x) => x.id === id);
-  if (!f) return null;
+  if (!f || f.mixed_attacks) return null;
   const sid = (slots[STANCE] || {}).mod;
   const m = sid ? modById(sid) : null;
   const fromStance = m && m.stance_combos ? m.stance_combos[id] : null;
