@@ -84,6 +84,45 @@ try {
   check("shared info cards retain mode and separate Exilus", initial.card);
   check("a compact generated summary links to its published build", initial.summary && initial.compact);
   check("normal browsing needs no load-more button", initial.noButton);
+  const deferredStates=await evaluate(`(() => {
+    const w=weaponInfo(presetWeapon()), original=boardRowState, memo=builtinRowsMemo, rows=BOARD[w.id], pool=currentPool;let calls=0;
+    boardRowState=(...args)=>{calls++;return original(...args);};
+    try {
+      builtinRowsMemo=null;
+      const entries=builtinBuildsUncached(w), before=calls;
+      const p=entries.find(p=>p.riven)||entries[0];
+      if(!p)return {available:false};
+      const metadata=entries.map(p=>[p.builtin,p.benchmark,p.mode,p.board.score]), listed=calls;
+      const state=p.state, opened=calls, again=p.state;
+      const roundtrip=JSON.parse(JSON.stringify(p)).state;
+      const expected=original(w,p.board);
+      BOARD[w.id]=rows.slice();currentPool=pool.slice();
+      const repeated=builtinBuildsUncached(w);
+      return {available:metadata.length===builtinBuilds().length&&entries.length>1,
+        deferred:before===0&&listed===0,once:opened===1&&calls===1&&state===again,
+        exact:JSON.stringify(state)===JSON.stringify(expected)&&JSON.stringify(roundtrip)===JSON.stringify(expected),
+        reused:entries.every((p,i)=>p===repeated[i]),calls,rows:entries.length};
+    } finally {boardRowState=original;builtinRowsMemo=memo;BOARD[w.id]=rows;currentPool=pool;}
+  })()`);
+  check("all published builds remain available without expanding editor state",deferredStates.available&&deferredStates.deferred,JSON.stringify(deferredStates));
+  check("opening a published build expands its state once",deferredStates.once,JSON.stringify(deferredStates));
+  check("deferred build states retain every axis and JSON serialization",deferredStates.exact,JSON.stringify(deferredStates));
+  check("scene arrivals reuse unchanged published entries",deferredStates.reused,JSON.stringify(deferredStates));
+  const idleCatalog=await evaluate(`(() => {
+    const active=activePreset, memo=builtinMemo, w=presetWeapon(), keys=[openedBoardKey(w),boardActiveKey(w)];
+    const saved=keys.map(key=>localStorage.getItem(key));
+    try {
+      keys.forEach(key=>localStorage.removeItem(key));activePreset="";builtinMemo=null;
+      const blank=buildNamed("");noteBoardActive("");const opened=openedPublished(buildBarCfg());
+      let reads=0;
+      const own=openedPublished({pins:{key:()=>keys[0]},active:()=>"own",load:()=>[{id:"own"}],
+        published:()=>{reads++;return [];}});
+      return blank===null&&opened.length===0&&own.length===0&&reads===0&&builtinMemo===null;
+    } finally {
+      activePreset=active;builtinMemo=memo;keys.forEach((key,i)=>saved[i]===null?localStorage.removeItem(key):localStorage.setItem(key,saved[i]));
+    }
+  })()`);
+  check("blank and owned builds leave an unopened published catalog unbuilt",idleCatalog);
   const work=await evaluate(`(() => {
     const weapon=presetWeapon(), rows=BOARD[weapon], originalTokens=finderTokens, originalTriggers=finderTriggers;
     const seen={tokens:[],triggers:[]}, first=()=>[...document.querySelectorAll('#build-finder tr.fr')].map(el=>el.dataset.frow).join();

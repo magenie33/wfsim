@@ -1403,6 +1403,11 @@ The entry check fails against the page without Build Library.
 Unchanged renders reuse row data; replacing the board derives it only for the
 selected ruler without changing the visible builds. Tie alternatives are lazy
 and memoized. These assertions fail against eager full-board rendering.
+Published entries keep every ranked row available without expanding editor
+states. Reading one entry expands it once, preserving all build axes and JSON
+serialization. These assertions fail against eager board-state conversion.
+Unchanged rows reuse their entries as scenes arrive. Blank and owned builds
+do not initialize an unopened published catalog.
 `check_library_attributes` exercises permanent-only bounds, combinations,
 query reloads, grouped conditions, text/graphical projections, sort priority,
 inline syntax errors and retry after an attribute request fails. Filter and
