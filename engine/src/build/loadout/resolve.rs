@@ -1322,7 +1322,7 @@ pub fn resolve_for(
         explosion.radius_m += bounce_blast_radius_m;
         crate::build::loadout::ThrownBounce {
             bounces: (f64::from(b.bounces) + bounce_delta).round().max(0.0) as u32,
-            explosion_chance: explode_on_bounce.clamp(0.0, 1.0),
+            explosion_chance: (b.explosion_chance + explode_on_bounce).clamp(0.0, 1.0),
             explosion,
         }
     });

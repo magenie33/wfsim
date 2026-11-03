@@ -785,6 +785,7 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
         }),
         thrown_bounce: s.attack.thrown_bounce.as_ref().map(|b| crate::model::ThrownBounceBase {
             bounces: b.bounces,
+            explosion_chance: b.explosion_chance,
             explosion: a_radial(&b.explosion),
         }),
         beam: s.attack.beam.as_ref().map(|b| crate::model::BeamGeometry {

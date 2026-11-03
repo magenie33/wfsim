@@ -436,6 +436,7 @@ impl Falloff {
 pub struct ThrownBounceBase {
     /// Bodies it may turn off, the one it was thrown into included.
     pub bounces: u32,
+    pub explosion_chance: f64,
     /// The Bounce Explosion, unmodded.
     pub explosion: RadialBase,
 }

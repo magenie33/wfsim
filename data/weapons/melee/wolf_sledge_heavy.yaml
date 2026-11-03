@@ -7,8 +7,7 @@ form: heavy
 transform_group: wolf_sledge
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: melee_attack_unmodelled
-  attacks: Throw, Throw Bounce Explosion and Throw Recall Explosion
+- reason: wolf_sledge_throw_limits
 attack:
   trigger: melee
   shot_type: hit_scan

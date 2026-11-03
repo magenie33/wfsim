@@ -996,6 +996,9 @@ pub struct RicochetSpec {
 pub struct ThrownBounceSpec {
     /// Bodies it may turn off, the one it was thrown into included.
     pub bounces: u32,
+    /// Innate chance to explode on an outbound collision, before mod bonuses.
+    #[serde(default)]
+    pub explosion_chance: f64,
     /// The Bounce Explosion row: what a bounce sets off when a card gives it a
     /// chance to (Volatile Rebound, Volatile Quick Return). Unmodded, nothing.
     pub explosion: RadialSpec,
