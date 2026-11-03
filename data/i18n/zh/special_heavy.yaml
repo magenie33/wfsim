@@ -1,5 +1,6 @@
 # Special melee attack limitations and existing DE weapon names.
 ui:
+  "The second target's seeking and all return-flight strikes are not modelled. Flight uses the package's 50 m/s. The 0.75 s charge and nominal 1 s animation use attack speed; exact hold, release, catch timing and the bare-stance wind-up exception are not calibrated. Nearby ragdoll effects are not modelled.": "对第二个目标的追踪及全部回程命中尚未建模。飞行使用游戏包给出的每秒 50 米速度。0.75 秒蓄力和作为动作时长的 1 秒均受攻速影响；按住、释放、接回的准确时序，以及无架势时受重击蓄力速度影响的例外尚未校准。近处的布娃娃控制效果尚未建模。"
   ? The first heavy projectile has no exported animation duration or release event. It launches at the start of
     a nominal one-second motion after the package two-second charge; the page states a one-second wind-up. These
     clocks are unmeasured.

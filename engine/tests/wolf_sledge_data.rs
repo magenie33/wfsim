@@ -8,11 +8,13 @@ fn wolf_sledge_separates_automatic_collision_and_manual_heavy_explosions() {
     assert_eq!(source.class, "hammer");
     assert!(!source.mod_pools.iter().any(|p| p == "glaive"));
     assert!(!source.attack.spends_combo, "collision hits earn combo");
+    assert_eq!(source.attack.projectile_speed_mps, Some(50.0));
     let recall = source.attack.radial.as_ref().unwrap();
     assert_eq!(recall.blast_kind, BlastKind::InFlight);
     assert_eq!(recall.damage["blast"], 1554.0);
     assert_eq!(recall.status_chance, Some(0.5));
     assert_eq!(recall.falloff_reduction, Some(0.0));
+    assert_eq!(recall.forced_procs, ["impact"]);
     let collision = source.attack.thrown_bounce.as_ref().unwrap();
     assert_eq!(collision.explosion_chance, 1.0);
     assert_eq!(collision.explosion.damage["blast"], 777.0);
