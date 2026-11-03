@@ -47,6 +47,7 @@ attack:
         events:
         - at_seconds: 0.1620592
           kind: sweep
+          hand: 0
           multiplier: 6.0
           combo_points: 0
           forced_procs:
@@ -62,6 +63,7 @@ attack:
         events:
         - at_seconds: 0.189664924134
           kind: sweep
+          hand: 0
           multiplier: 6.0
           combo_points: 0
           forced_procs:
