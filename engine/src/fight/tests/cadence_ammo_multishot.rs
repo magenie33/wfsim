@@ -1402,6 +1402,8 @@ fn a_field_takes_condition_overload_only_where_the_weapon_declares_it() {
         damage: DamageVector::default(),
         forced_procs: vec![DamageType::Impact],
         lingering: Some(crate::build::loadout::ResolvedLingering {
+            heavy_damage_mods_apply: true,
+            melee_scaling: None,
             takes_condition_overload: takes,
             co_behavior: None,
             forced_proc_count: 1,

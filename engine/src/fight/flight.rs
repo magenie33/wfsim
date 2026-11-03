@@ -286,6 +286,12 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             ..l.clone()
         });
     }
+    if active.wait_for_lingering {
+        me.melee.deployed_until = g.entities.iter().filter_map(|e| match e {
+            Entity::Cloud(f) if f.owner == me.seat => f.expires_at,
+            _ => None,
+        }).fold(t, f64::max);
+    }
 
     // THE BLOB EMBEDS in the body the shot struck, and a pile this shot takes
     // to its cap goes off now (`fight::blobs`).

@@ -684,6 +684,7 @@ pub(super) fn open<'a>(
     };
     // ---- THE MELEE COMBO COUNTER AND TENNOKAI -- see `MeleeState` ----------
     let melee = MeleeState {
+        deployed_until: 0.0,
         combo_points: 0.0f64,
         rage_kill_mark: r.kills,
         combo_expiry: f64::NEG_INFINITY,

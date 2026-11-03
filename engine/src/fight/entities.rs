@@ -295,9 +295,19 @@ fn cloud_tick(
         &mut turn.d.status, &params.foe, 0,
     );
     let Entity::Cloud(f) = &mut entities[i] else { unreachable!() };
-    let (part, damage_multiplier, owner) = (f.part, f.damage_multiplier, f.owner);
-    f.next_tick += 1.0 / part.tick_rate;
-    f.ticks_left -= 1;
+    let (mut part, damage_multiplier, owner) = (f.part, f.damage_multiplier, f.owner);
+    let speed = if part.melee_scaling.is_some_and(|s| s.tick_rate_from_attack_speed) {
+        cadence_rate(params, active, at, turn.bar, turn.buff_stacks, turn.w) / active.fire_rate.max(1e-9)
+    } else { 1.0 };
+    f.next_tick += 1.0 / (part.tick_rate * speed).max(1e-9);
+    if let Some(end) = f.expires_at {
+        if f.next_tick >= end - 1e-9 { f.ticks_left = 0; }
+    } else {
+        f.ticks_left -= 1;
+    }
+    if part.melee_scaling.is_some_and(|s| s.radius_from_melee_range) {
+        part.radius_m += buff_total(active, crate::model::BuffGrant::MeleeRange, turn.buff_stacks, at);
+    }
     let killed = field_tick(
         turn.w, owner, &part, damage_multiplier, at, turn.ctx, &mut bodies[0], 0, turn.gal, turn.arc,
         params, active, r, rec, turn.d, &params.foe, crate::record::Origin::Field, None, false,

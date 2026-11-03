@@ -79,6 +79,8 @@ pub struct ResolvedOrb {
 /// The lingering field after mod resolution.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ResolvedLingering {
+    pub heavy_damage_mods_apply: bool,
+    pub melee_scaling: Option<crate::model::MeleeFieldScaling>,
     pub damage: DamageVector,
     pub modified_base: f64,
     pub crit_chance: f64,
@@ -334,6 +336,9 @@ impl ResolvedRadial {
 /// The resolved panel: everything the dummy sim needs from layers [1]+[2].
 #[derive(Debug, Clone)]
 pub struct ResolvedPanel {
+    pub heavy_damage_mods_apply: bool,
+    pub combo_damage_applies: bool,
+    pub wait_for_lingering: bool,
     pub damage_loss_per_body: f64,
     pub melee_damage_mods_apply: bool,
     pub universal_damage_mods_apply: bool,

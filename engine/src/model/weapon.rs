@@ -820,6 +820,10 @@ pub struct ZoomLevel {
 /// weapon's BASE stats before mods).
 #[derive(Debug, Clone)]
 pub struct WeaponBase {
+    pub tennokai_can_convert: bool,
+    pub heavy_damage_mods_apply: bool,
+    pub combo_damage_applies: bool,
+    pub wait_for_lingering: bool,
     pub damage_loss_per_body: f64,
     pub melee_damage_mods_apply: bool,
     pub universal_damage_mods_apply: bool,

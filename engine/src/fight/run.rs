@@ -521,13 +521,15 @@ pub fn run_once_traced(
         let landing = next_landing(&seats, by, params.duration_seconds);
         let next_action = landing.map(|(s, k)| seats[s].in_flight[k].t)
             .or(by).unwrap_or(f64::INFINITY);
-        // A blob's clock can fill its owner's gauge between trigger pulls.
-        let blob_due = has_blobs.then(|| entities.iter().filter_map(|e| match e {
+        // Persistent melee fields act while their owner waits for deployment expiry.
+        let scheduled = has_blobs || seats.iter().any(|s| s.params.wait_for_lingering);
+        let entity_due = scheduled.then(|| entities.iter().filter_map(|e| match e {
             Entity::Pile(p) => e.due().map(|at| (p.owner.0, at)),
+            Entity::Cloud(f) if f.part.melee_scaling.is_some() => e.due().map(|at| (f.owner.0, at)),
             _ => None,
         }).filter(|(_, at)| *at <= next_action && *at < params.duration_seconds)
             .min_by(|a, b| a.1.total_cmp(&b.1))).flatten();
-        if let Some((si, at)) = blob_due {
+        if let Some((si, at)) = entity_due {
             if trace.is_some() {
                 sample_frames_up_to(at, params, &mut trace, &mut next_frame, frame_seconds,
                     &mut seats, &r, &bodies);

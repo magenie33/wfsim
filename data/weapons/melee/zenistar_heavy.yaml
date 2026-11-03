@@ -1,0 +1,100 @@
+# see notes: melee_shared_package_actions
+id: zenistar_heavy
+name: Zenistar
+inherits: zenistar
+form: heavy
+transform_group: zenistar
+co_behavior: additive_with_base_damage
+unmodeled:
+- The heavy mode deploys one disc, waits for its aura to expire, then deploys again. Early recall, moving beyond recall range
+  and light attacks while the disc is deployed are not modelled.
+- Disc flight speed and collision stopping are unmeasured. The model places the explosion and aura on the first struck body
+  within 9 m; aiming at the floor or a disc that passes through bodies is not modelled.
+- Tennokai conversion from light combos is disabled because the deploy/recall cycle is not modelled in those combos.
+- The aura's critical-chance snapshots, doubled heavy-attack critical-chance bonus, stealth multipliers and special Warframe
+  interactions are unmeasured. The aura uses its resolved crit stats and the simulator's ordinary live-buff rules.
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 0.8333333333333334
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.1
+  crit_multiplier: 2.0
+  status_chance: 0.15
+  punch_through_m: 0.0
+  range_m: 2.6
+  follow_through: 0.6
+  damage:
+    impact: 13
+    puncture: 13
+    slash: 104
+  combo_script:
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/AxeMelee30ChargeA
+        animation: /Lotus/Animations/Tenno/Melee/Axe/ChargeAttack/Charge01Strike
+        duration_seconds: 0.666667
+        charge:
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.103825385246
+          kind: ranged
+          profile: disc
+          multiplier: 1
+          combo_points: 0
+        - at_seconds: 0.134254733794
+          kind: sweep
+          hand: 0
+          multiplier: 6
+          combo_points: 0
+          forced_procs:
+          - knockdown
+  spends_combo: true
+  wait_for_lingering: true
+  tennokai_can_convert: false
+  heavy:
+    multiplier: 6
+    windup_seconds: 0.69999999
+  profiles:
+    disc:
+      trigger: melee
+      shot_type: projectile
+      fire_rate: 0.8333333333333334
+      multishot: 1
+      ammo_cost: 0
+      no_magazine: true
+      crit_chance: 0.1
+      crit_multiplier: 2
+      status_chance: 0.15
+      damage:
+        impact: 75
+      range_m: 9
+      heavy_damage_mods_apply: false
+      combo_damage_applies: false
+      co_behavior: inert
+      radial:
+        damage:
+          heat: 350
+        radius_m: 4
+        falloff_start_m: 0
+        falloff_reduction: 0
+      lingering:
+        damage:
+          heat: 50
+        tick_rate: 1.25
+        duration_seconds: 10
+        radius_m: 4
+        crit_chance: 0.1
+        crit_multiplier: 2
+        status_chance: 0.5
+        stacking: refresh
+        takes_condition_overload: false
+        melee_scaling:
+          duration_per_combo: true
+          tick_rate_from_attack_speed: true
+          radius_from_melee_range: true
+      combo_script: []
+source:
+  url: https://wiki.warframe.com/w/Zenistar

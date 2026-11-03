@@ -453,6 +453,7 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
             v.add(damage_type(t), *val);
         }
         LingeringBase {
+            melee_scaling: f.melee_scaling,
             base_vector: v,
             base_crit_chance: f.crit_chance.unwrap_or(s.attack.crit_chance),
             base_crit_damage: f.crit_multiplier.unwrap_or(s.attack.crit_multiplier),
@@ -479,6 +480,12 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
     });
 
     WeaponBase {
+        tennokai_can_convert: all().iter().find(|e| e.group() == s.group()
+            && e.form_kind() == crate::model::FormKind::Heavy)
+            .map_or(s.attack.tennokai_can_convert, |e| e.attack.tennokai_can_convert),
+        heavy_damage_mods_apply: s.attack.heavy_damage_mods_apply,
+        combo_damage_applies: s.attack.combo_damage_applies,
+        wait_for_lingering: s.attack.wait_for_lingering,
         damage_loss_per_body: s.attack.damage_loss_per_body,
         melee_damage_mods_apply: s.attack.melee_damage_mods_apply,
         universal_damage_mods_apply: s.attack.universal_damage_mods_apply,
@@ -737,6 +744,7 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
             child.attack.spends_combo = s.attack.spends_combo;
             child.attack.fire_rate = s.attack.fire_rate;
             child.attack.heavy = s.attack.heavy;
+            child.attack.wait_for_lingering = s.attack.wait_for_lingering;
             if let Some(co) = &attack.co_behavior { child.co_behavior = Some(co.clone()); }
             if let Some(fraction) = attack.co_base_fraction { child.co_base_fraction = Some(fraction); }
             if let Some(head) = attack.headshot_multiplier { child.headshot_multiplier = Some(head); }
@@ -744,12 +752,14 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
         }).collect(),
         melee_heavy: (s.form_kind() != crate::model::FormKind::Heavy).then(|| all().iter()
             .find(|e| e.group() == s.group() && e.form_kind() == crate::model::FormKind::Heavy
+                && e.attack.tennokai_can_convert
                 && e.attack.combo_script.iter().any(|h| h.event_timing.is_some_and(|t|
                     matches!(t.kind, crate::model::MeleeEventKind::Ranged))))
             .map(|e| Box::new(base_panel_assembled(&e.id, frenzy_active, assembly))))
             .flatten(),
         heavy_script: all().iter()
             .find(|e| e.group() == s.group() && e.form_kind() == crate::model::FormKind::Heavy)
+            .filter(|e| e.attack.tennokai_can_convert)
             .map(|e| &e.attack.combo_script)
             .filter(|h| !h.is_empty() && h.iter().all(|r| r.event_timing.is_some()))
             .map_or_else(Vec::new, |h| h.to_vec()),

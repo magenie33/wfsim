@@ -8,11 +8,10 @@ form: heavy_slam
 transform_group: zenistar
 co_behavior: additive_with_base_damage
 unmodeled:
-  - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
-  - reason: melee_attack_unmodelled
-    attacks: "Attacks While Disc Deployed"
-  - reason: melee_heavy_is_special
-    what: "a thrown disc: 75 Impact on contact, a 350 Heat burst, then a 4 m aura of 50 Heat every 0.8 s for 10 s, longer with the combo multiplier"
+- 'The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius,
+  down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart.'
+- reason: melee_attack_unmodelled
+  attacks: Attacks While Disc Deployed
 attack:
   trigger: melee
   shot_type: hit_scan

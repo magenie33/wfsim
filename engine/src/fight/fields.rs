@@ -5,6 +5,8 @@ use super::*;
 /// cloud. `FieldStacking::Reresh` keeps this list at length 1.
 #[derive(Debug, Clone, Copy)]
 pub(super) struct FieldState {
+    /// An absolute lifetime for fields whose pulse speed can change in flight.
+    pub(super) expires_at: Option<f64>,
     /// WHOSE CLOUD IT IS. A field outlives the pull that left it and burns
     /// whoever walks in, so it cannot ask who is firing now — it remembers.
     pub(super) owner: Seat,
@@ -336,7 +338,7 @@ pub(super) fn field_tick_seeded(
     } else {
         (if active.melee_damage_mods_apply { arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, at) } else { 0.0 })
             + ctx.base_damage_add_mods
-            + heavy_attack_base_damage(active, false)
+            + if f.heavy_damage_mods_apply { heavy_attack_base_damage(active, false) } else { 0.0 }
             + arc.rage_bonus(at)
     };
     let arc_ratio = (1.0 + base_damage + arcane_base_damage) / (1.0 + base_damage);

@@ -113,7 +113,7 @@ pub(super) fn floor_steps_down(active: &FightParams, buff_stacks: &mut [LiveStac
 /// so Condition Overload and Rage dilute it as they dilute Pressure Point.
 #[wfsim_gas_macro::metered]
 pub(super) fn heavy_attack_base_damage(active: &FightParams, tennokai_heavy: bool) -> f64 {
-    if active.melee_damage_mods_apply && (active.spends_combo || tennokai_heavy) { active.heavy_attack_damage } else { 0.0 }
+    if active.heavy_damage_mods_apply && active.melee_damage_mods_apply && (active.spends_combo || tennokai_heavy) { active.heavy_attack_damage } else { 0.0 }
 }
 
 /// HOW OFTEN A HEAVY MODE SWINGS, in seconds — and it is not always as soon as
@@ -242,6 +242,7 @@ pub(super) fn combo_points_for(multiplier: f64, instances: f64) -> f64 {
 /// THE MELEE COMBO COUNTER AND TENNOKAI — what one fight carries from swing to
 /// swing. A gun never reads it.
 pub(super) struct MeleeState {
+    pub(super) deployed_until: f64,
     /// POINTS, not tiers. *"Stance attacks add combo points, scaling with the
     /// attack's stance damage multiplier (100% stance damage multiplier = 1
     /// point)"*, and the tier is `1 + floor(points / 20)` capped at 12 — see
@@ -662,6 +663,9 @@ pub(super) fn seconds_to_next_shot(
             melee.swing_idx = h.next_swing_index.unwrap_or(melee.swing_idx + 1);
         }
         if h.ends_input() {
+            if active.wait_for_lingering && !converted {
+                recovery = recovery.max(melee.deployed_until - now);
+            }
             if active.spends_combo && !tennokai {
                 let next = current_melee_event(active, melee).unwrap();
                 let lead = next.windup_seconds + next.hit_delay_seconds.unwrap_or(0.0) / rate.max(1e-9);
@@ -962,7 +966,7 @@ pub(super) fn swing_this_shot(
         (if swing.as_ref().is_some_and(|h| h.event_timing.is_some()) {
             swing.as_ref().unwrap().multiplier
         } else { active.heavy.map_or(1.0, |h| h.multiplier) })
-            * combo_multiplier
+            * if active.combo_damage_applies { combo_multiplier } else { 1.0 }
             // …AND ONLY WHERE THE CARD PAYS IT. Truth's Flame's bonus is
             // the CHAINED window's; every other card's is unconditional.
             * (1.0
@@ -973,7 +977,7 @@ pub(super) fn swing_this_shot(
                 })
     } else {
         swing.as_ref().map_or(1.0, |h| h.multiplier)
-            * if active.spends_combo || active.combo_multiplies_damage { combo_multiplier } else { 1.0 }
+            * if active.combo_damage_applies && (active.spends_combo || active.combo_multiplies_damage) { combo_multiplier } else { 1.0 }
             * mode_damage
     };
     // WHO THIS SWING REACHES. A `360deg` swing is a spin and takes

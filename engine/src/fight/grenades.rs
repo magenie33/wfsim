@@ -181,6 +181,8 @@ pub(super) fn lingering_of(
     co: Option<crate::model::CoBehavior>,
 ) -> crate::build::loadout::ResolvedLingering {
     crate::build::loadout::ResolvedLingering {
+        heavy_damage_mods_apply: true,
+        melee_scaling: None,
         damage: r.damage,
         modified_base: r.modified_base,
         crit_chance: r.crit_chance,

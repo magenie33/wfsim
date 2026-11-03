@@ -11,8 +11,6 @@ unmodeled:
   reads low.'
 - reason: melee_attack_unmodelled
   attacks: Attacks While Disc Deployed
-- reason: melee_heavy_is_special
-  what: 'a thrown disc: 75 Impact on contact, a 350 Heat burst, then a 4 m aura of 50 Heat every 0.8 s for 10 s, longer with the combo multiplier'
 attack:
   trigger: melee
   shot_type: hit_scan

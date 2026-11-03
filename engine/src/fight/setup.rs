@@ -1192,6 +1192,8 @@ impl FightParams {
             // lands on, and that is the whole difference between an orb and a
             // field — decided where the orb strikes (`fight::entities`), not here.
             orb_strike: panel.orb.map(|_| crate::build::loadout::ResolvedLingering {
+                heavy_damage_mods_apply: true,
+                melee_scaling: None,
                 damage: panel.damage,
                 modified_base: panel.modified_base,
                 crit_chance: panel.crit_chance,
@@ -1224,6 +1226,8 @@ impl FightParams {
                 takes_compression: false,
             }),
             orb_blast: panel.orb.and(panel.radial).map(|r| crate::build::loadout::ResolvedLingering {
+                heavy_damage_mods_apply: true,
+                melee_scaling: None,
                 damage: r.damage,
                 modified_base: r.modified_base,
                 crit_chance: r.crit_chance,
@@ -1254,6 +1258,8 @@ impl FightParams {
             spectral_dagger: panel.spectral_dagger.map(|g| {
                 let part = |r: crate::build::loadout::ResolvedRadial,
                             strike: bool| crate::build::loadout::ResolvedLingering {
+                heavy_damage_mods_apply: true,
+                melee_scaling: None,
                     damage: r.damage,
                     modified_base: r.modified_base,
                     crit_chance: r.crit_chance,
@@ -1393,6 +1399,9 @@ impl FightParams {
             multishot: panel.multishot + lone_bonus,
             base_multishot: panel.base_multishot,
             base_damage_bonus: panel.base_damage_bonus,
+            heavy_damage_mods_apply: panel.heavy_damage_mods_apply,
+            combo_damage_applies: panel.combo_damage_applies,
+            wait_for_lingering: panel.wait_for_lingering,
             damage_loss_per_body: panel.damage_loss_per_body,
             melee_damage_mods_apply: panel.melee_damage_mods_apply,
             universal_damage_mods_apply: panel.universal_damage_mods_apply,

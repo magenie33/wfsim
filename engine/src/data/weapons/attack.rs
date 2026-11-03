@@ -98,6 +98,14 @@ where
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct AttackSpec {
+    #[serde(default = "yes")]
+    pub heavy_damage_mods_apply: bool,
+    #[serde(default = "yes")]
+    pub combo_damage_applies: bool,
+    #[serde(default = "yes")]
+    pub tennokai_can_convert: bool,
+    #[serde(default)]
+    pub wait_for_lingering: bool,
     /// Fraction of the original projectile damage lost per body already crossed.
     #[serde(default)]
     pub damage_loss_per_body: f64,
@@ -550,6 +558,8 @@ pub struct SpectralDaggerSpec {
 /// the radial this is not one instance at impact: it persists and TICKS.
 #[derive(Debug, Clone, Deserialize)]
 pub struct LingeringSpec {
+    #[serde(default)]
+    pub melee_scaling: Option<crate::model::MeleeFieldScaling>,
     pub damage: BTreeMap<String, f64>,
     /// Ticks per second (the data module's per-attack `FireRate`).
     pub tick_rate: f64,

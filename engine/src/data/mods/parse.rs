@@ -562,6 +562,7 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
                 vector.add(crate::data::weapons::damage_type(k.as_str()?), val.as_f64()?);
             }
             let field = Box::leak(Box::new(crate::model::LingeringBase {
+                melee_scaling: None,
                 base_vector: vector,
                 base_crit_chance: n(v, "crit_chance").unwrap_or(0.0),
                 base_crit_damage: n(v, "crit_multiplier").unwrap_or(1.0),

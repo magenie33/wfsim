@@ -75,6 +75,9 @@ impl Default for FightParams {
     /// the engine.
     fn default() -> Self {
         Self {
+            heavy_damage_mods_apply: true,
+            combo_damage_applies: true,
+            wait_for_lingering: false,
             damage_loss_per_body: 0.0,
             melee_damage_mods_apply: true,
             universal_damage_mods_apply: true,
@@ -486,6 +489,8 @@ fn cloud(stacking: crate::model::FieldStacking) -> crate::build::loadout::Resolv
     let mut damage = DamageVector::default();
     damage.set(DamageType::Toxin, 40.0);
     crate::build::loadout::ResolvedLingering {
+        heavy_damage_mods_apply: true,
+        melee_scaling: None,
         damage,
         modified_base: 40.0,
         crit_chance: 0.0,   // crit off: tick COUNTS are the assertion
@@ -550,6 +555,8 @@ fn orb_part(damage: f64) -> crate::build::loadout::ResolvedLingering {
     let mut v = DamageVector::default();
     v.set(DamageType::Electricity, damage);
     crate::build::loadout::ResolvedLingering {
+        heavy_damage_mods_apply: true,
+        melee_scaling: None,
         damage: v,
         modified_base: damage,
         crit_chance: 0.0,

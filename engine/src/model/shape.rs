@@ -31,8 +31,18 @@ pub enum FieldStacking {
 
 /// A weapon's LINGERING FIELD attack part — an area that persists and TICKS
 /// rather than landing once (Torid's Toxin cloud), unmodded. MECHANICS §7.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct MeleeFieldScaling {
+    pub duration_per_combo: bool,
+    pub tick_rate_from_attack_speed: bool,
+    pub radius_from_melee_range: bool,
+}
+
+/// A persistent field's base stats and damage rules.
 #[derive(Debug, Clone, PartialEq)]
 pub struct LingeringBase {
+    pub melee_scaling: Option<MeleeFieldScaling>,
     pub base_vector: DamageVector,
     pub base_crit_chance: f64,
     pub base_crit_damage: f64,

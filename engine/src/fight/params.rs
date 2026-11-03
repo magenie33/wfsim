@@ -98,6 +98,9 @@ pub struct Toggle {
 /// Parameters of the dummy engagement.
 #[derive(Debug, Clone)]
 pub struct FightParams {
+    pub heavy_damage_mods_apply: bool,
+    pub combo_damage_applies: bool,
+    pub wait_for_lingering: bool,
     pub damage_loss_per_body: f64,
     pub melee_damage_mods_apply: bool,
     pub universal_damage_mods_apply: bool,

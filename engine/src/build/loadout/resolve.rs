@@ -1450,6 +1450,8 @@ pub fn resolve_for(
             (scaled, total)
         };
         ResolvedLingering {
+            heavy_damage_mods_apply: base.heavy_damage_mods_apply,
+            melee_scaling: f.melee_scaling,
             damage: fd,
             modified_base: fmb,
             // A FIELD THAT CANNOT CRIT TAKES NEITHER BUCKET AND NO FLAT ADD.
@@ -1472,11 +1474,11 @@ pub fn resolve_for(
             base_crit_chance: f.base_crit_chance,
             base_crit_damage: quantize_base_crit_damage(f.base_crit_damage),
             base_status_chance: f.base_status_chance,
-            tick_rate: f.tick_rate,
+            tick_rate: f.tick_rate * if f.melee_scaling.is_some_and(|s| s.tick_rate_from_attack_speed) { (1.0 + fr).max(0.01) } else { 1.0 },
             duration_seconds: f.duration_seconds,
             first_tick_delay_seconds: f.first_tick_delay_seconds,
             forced_procs: f.forced_procs,
-            radius_m: f.radius_m * (1.0 + br),
+            radius_m: f.radius_m * (1.0 + br) + if f.melee_scaling.is_some_and(|s| s.radius_from_melee_range) { melee_range_add + base.evo_melee_range_m } else { 0.0 },
             falloff_start_m: f.falloff_start_m * (1.0 + br),
             falloff_reduction: f.falloff_reduction,
             stacking: f.stacking,
@@ -1649,7 +1651,7 @@ pub fn resolve_for(
         .filter(|_| !base.combo_script.iter().any(|h| h.event_timing.is_some_and(|e|
             matches!(e.kind, crate::model::MeleeEventKind::Ranged))))
         .or_else(|| (!base.heavy_script.is_empty()).then_some(base.heavy_script.as_slice()));
-    let heavy = stance_heavy.map(|script| {
+    let heavy = stance_heavy.filter(|_| base.tennokai_can_convert).map(|script| {
         let input = script[0].event_timing.unwrap().input;
         let first = script.iter().take_while(|h| h.event_timing.unwrap().input == input);
         crate::model::HeavyAttack {
@@ -1661,8 +1663,11 @@ pub fn resolve_for(
             }).sum(),
             swing_seconds: first.map(|h| h.delay_seconds).sum(),
         }
-    }).or(base.heavy);
+    }).or(base.heavy).filter(|_| base.tennokai_can_convert || base.form == crate::model::FormKind::Heavy);
     ResolvedPanel {
+        heavy_damage_mods_apply: base.heavy_damage_mods_apply,
+        combo_damage_applies: base.combo_damage_applies,
+        wait_for_lingering: base.wait_for_lingering,
         damage_loss_per_body: base.damage_loss_per_body,
         melee_damage_mods_apply: base.melee_damage_mods_apply,
         universal_damage_mods_apply: base.universal_damage_mods_apply,

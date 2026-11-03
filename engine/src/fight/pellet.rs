@@ -2036,7 +2036,11 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 };
                 let mut part = *fp;
                 part.duration_seconds *= boost;
+                if part.melee_scaling.is_some_and(|s| s.duration_per_combo) {
+                    part.duration_seconds *= shot.combo_multiplier;
+                }
                 let fresh = FieldState {
+                    expires_at: part.melee_scaling.map(|_| t + part.duration_seconds),
                     owner: seat,
                     // …AND THE GRIMOIRE'S ORB IS THE OTHER SHAPE. Its
                     // contact is the direct hit this pellet already
@@ -2044,7 +2048,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     // from there — so its field opens one interval late
                     // rather than doubling the collision.
                     next_tick: t + part.first_tick_delay_seconds,
-                    ticks_left: (part.duration_seconds * part.tick_rate).round() as u32,
+                    ticks_left: if part.melee_scaling.is_some() { u32::MAX } else { (part.duration_seconds * part.tick_rate).round() as u32 },
                     part,
                     // Plentiful Mayhem follows a GENERATED grenade into
                     // the cloud it leaves — which is

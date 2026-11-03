@@ -23,6 +23,10 @@ use wfsim_engine::rules::scaling;
 
 fn dual_toxocyst_baseline() -> FightParams {
     FightParams {
+        heavy_damage_mods_apply: true,
+        combo_damage_applies: true,
+        wait_for_lingering: false,
+        damage_loss_per_body: 0.0,
         also_acting: Vec::new(),
         frame: None,
         abilities_live: None,
