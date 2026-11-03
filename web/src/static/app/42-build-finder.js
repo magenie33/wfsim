@@ -22,7 +22,8 @@ const boardActiveKey = (w) => `wfsim-opened-board-active-${w}`;
 function noteBoardActive(id) {
   const w = presetWeapon();
   if (!BOARD_HAVE.has(w)) return;
-  const p = builtinBuilds().find((x) => presetId(x) === id);
+  const own = !id || loadPresetList(BUILDS).some((p) => presetId(p) === id);
+  const p = own ? null : builtinBuilds().find((x) => presetId(x) === id);
   try {
     if (p) localStorage.setItem(boardActiveKey(w), JSON.stringify(boardRef(p)));
     else localStorage.removeItem(boardActiveKey(w));

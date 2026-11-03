@@ -414,6 +414,9 @@ Board conditions, filters, sorting and results occupy four sibling cards in
 that order. Each has its own title, border and spacing. Equipment search,
 active conditions and Overview belong to filters; ordinary and advanced sort
 controls belong to sorting.
+Published rows keep their ranking metadata; editor states are derived only when
+read and reused. Scene arrivals retain unchanged entries. Blank and owned builds
+leave an unopened published catalog unbuilt.
 Ordinary sort, priority fields and directions use the site's shared dropdown.
 The shared board selector sets the comparison context independently of filter
 editor mode. The results toolbar pins its count, board summary and navigation

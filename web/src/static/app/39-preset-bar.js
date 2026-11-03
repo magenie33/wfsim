@@ -60,8 +60,10 @@ function rememberPublished(cfg, p) {
 }
 /// The published entries in the bar, in the order they were opened.
 function openedPublished(cfg) {
+  const refs = pinRefs(cfg), active = cfg.active();
+  if (!refs.length && (!active || cfg.load().some((p) => presetId(p) === active))) return [];
   const all = cfg.published();
-  const act = all.find((p) => presetId(p) === cfg.active());
+  const act = all.find((p) => presetId(p) === active);
   if (act) rememberPublished(cfg, act);
   const out = [];
   for (const ref of pinRefs(cfg)) {
