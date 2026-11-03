@@ -725,6 +725,31 @@ fn overlapping_fields_stack_or_refresh_per_the_weapon_data() {
     );
 }
 
+#[test]
+fn refreshing_a_cloud_replaces_only_its_owners_previous_cloud() {
+    let params = FightParams {
+        damage: DamageVector::default(),
+        lingering: Some(cloud(crate::model::FieldStacking::Refresh)),
+        crit_multiplier: 1.0,
+        base_crit_chance: 0.0,
+        arcane: ArcaneFx::none(),
+        fire_rate: 1.0,
+        magazine_size: 3.0,
+        reload_seconds: 999.0,
+        infinite_reserve: false,
+        reserve_ammo: 0.0,
+        duration_seconds: 20.0,
+        ..no_status()
+    };
+    let solo = run_once(&params, &mut Rng::new(3));
+    assert_eq!(solo.field_ticks, 12, "the owner's previous clouds must be replaced");
+    let pair = run_once(&params.clone().and_also(params), &mut Rng::new(3));
+    let by = pair.dealt.by_combatant().0;
+    assert_eq!(by[0], solo.effective_damage(), "the second owner's refresh removed the first owner's cloud");
+    assert_eq!(by[1], solo.effective_damage(), "the first owner's refresh removed the second owner's cloud");
+    assert_eq!(pair.field_ticks, 24);
+}
+
 /// Renewed Horror — ✅ measured (MEASUREMENTS M13): reloading from EMPTY
 /// makes the NEXT shot's pod live twice as long, "1 direct hit + 20 pod
 /// ticks" against the normal 10. A one-round magazine makes every shot after

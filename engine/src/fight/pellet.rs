@@ -2057,7 +2057,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     damage_multiplier: pm_mult,
                 };
                 if fp.stacking == crate::model::FieldStacking::Refresh {
-                    entities.retain(|e| !matches!(e, Entity::Cloud(_)));
+                    entities.retain(|e| !matches!(e, Entity::Cloud(field) if field.owner == seat));
                 }
                 entities.push(Entity::Cloud(fresh));
             }
