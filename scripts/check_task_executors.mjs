@@ -2,8 +2,10 @@ import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 13000, lang: "en" });
 try {
   await app.load("/weapons/Torid/optimizer", 7000);
+  await app.evaluate(`window.executorReportTab = window.open('about:blank', 'search-result-report')`, { userGesture: true });
+  await app.send("Page.bringToFront");
   const result = await app.evaluate(`(async () => {
-    const reportTab = window.open('about:blank', 'search-result-report');
+    const reportTab = window.executorReportTab;
     const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
     const until = async (condition, limit = 400) => { for (let i = 0; i < limit; i++) { if (await condition()) return; await pause(100); } throw new Error('executor check timed out'); };
     await initUserTasks(); gainPrefs.on = false; restartCalc();
@@ -54,7 +56,7 @@ try {
         && progressRow('#user-tasks-panel', probe.id)?.querySelector('.task-progress')?.getAttribute('aria-valuenow') === '0';
       const clock = document.querySelector('#opt-results [data-search-clock]'), initialClock = clock?.textContent;
       const cancelButton = document.getElementById('opt-cancel');
-      await pause(1250);
+      if (clock) await until(() => clock.textContent !== initialClock, 30);
       out.progressClock = !!clock && clock.textContent !== initialClock && document.getElementById('opt-cancel') === cancelButton;
       const repeated = heldSearch.emit(workStatus({ elapsed_s: 14 })); await pause(150);
       out.progressActivity = Number.isFinite(first.work_last_at) && repeated.work_last_at === first.work_last_at
@@ -174,7 +176,14 @@ try {
     const oldTerms = taskClone(benchmark.scenario), oldPreset = taskClone(preset);
     benchmark.scenario.duration = 2; benchmark.scenario.runs = 2; preset.candidate_runs = 1; preset.finalists = 1;
     let graded;
-    const originalFetch = window.fetch, calibrations = [];
+    const originalFetch = window.fetch, originalReplay = headlessAppraisalReplay, calibrations = [];
+    headlessAppraisalReplay = (...args) => {
+      const running = userTasks.view().find(task => task.kind === 'appraisal' && task.state === 'running');
+      const progress = running?.progress;
+      out.analysisReplayEntry = progress?.phase === 'Appraisal replay' && progress.done === 0 && progress.total === 0
+        && !progress.status && userTaskProgress(running).fraction == null;
+      return originalReplay(...args);
+    };
     window.fetch = (url, options) => {
       if (String(url).endsWith('/api/board/calibrate')) {
         calibrations.push(JSON.parse(options.body));
@@ -187,7 +196,7 @@ try {
       const finished = await userTasks.wait(batch[0].id);
       if (finished.state !== 'succeeded') throw new Error('Appraisal failed: ' + finished.error);
       graded = await userTasks.store.value('artifact:' + finished.result_ref);
-    } finally { window.fetch = originalFetch; benchmark.scenario = oldTerms; Object.assign(preset, oldPreset); }
+    } finally { window.fetch = originalFetch; headlessAppraisalReplay = originalReplay; benchmark.scenario = oldTerms; Object.assign(preset, oldPreset); }
     out.calibration = calibrations.length === 1 && calibrations[0].weapon === presetWeapon()
       && calibrations[0].ruler === ruler && calibrations[0].engine === ENGINE_ID;
     out.grade = graded.result.verdict.ok && Number.isFinite(graded.result.verdict.grade) && graded.result.search.results.length > 0;
@@ -236,6 +245,7 @@ try {
     analysisProgress: "riven analysis and task center show actual work at the same flat percentage",
     analysisProgressNodes: "riven progress updates preserve its current row",
     analysisReplayProgress: "appraisal replay replaces search counts with its own completed work",
+    analysisReplayEntry: "appraisal enters an indeterminate replay stage before waiting for its first fight",
   })) app.check(label, result[key] === true, JSON.stringify(result));
   app.check("one batch triggers calibration without waiting for its availability", result.calibration, JSON.stringify(result));
   for (const [key, label] of Object.entries({ analysisEntry: "saved-card analysis opens the dedicated page and shared card preview", analysisDefault: "analysis defaults to the official ruler and local execution", executorAvailability: "the open dialog follows community availability after loading", fxRequest: "the accepted analysis is exactly the fx request and context", analysisLink: "the task result opens its analysis report", reportGrade: "the report displays its artifact's grade and score", reportStandard: "the report exposes the fx standard and sharing", analysisHistory: "deleting the card and task leaves immutable analysis history", reportFrozen: "the shared build keeps the submitted rolls after the owned card is deleted", analysisShare: "sharing includes the dated grade, ruler and frozen build", optimizerRecord: "the same artifact appears in optimizer history", analysisBuild: "opening the winner creates a build with the original submitted riven", realSearch: "the original optimizer executes through the task queue", fixedSearch: "optimization keeps its captured scope and owner", editor: "search completion leaves another weapon's editor unchanged", reportLink: "the search report has a durable result link", openReport: "the saved search report opens without changing the original editor", frozenRiven: "captured riven rolls and rank survive later edits to the owned card", artifact: "every ranked result retains its original replay request", typed: "typed cards use the shared reader and become editable saved rivens", batchControls: "saved rivens expose selection and batch appraisal", appraisalCapture: "appraisal captures the card, ruler and batch before execution", grade: "a real search is replayed and graded through the shared appraisal pipeline", reference: "the appraisal report retains its reference board and measurement time", transient: "a replaced automatic scan cannot report into its successor", reset: "resetting the calculator clears its transient running item" }))
