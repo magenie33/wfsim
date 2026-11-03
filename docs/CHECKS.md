@@ -238,6 +238,9 @@ Canonical build aliases share one task, verified delivery retries add no compute
 and a board row with a pending spot check counts once. A read-only repeatable-read
 capture commits every input together; a cut preserves its prior manifest and
 leaves no partial files. Publication adds no later ledger reading.
+Canonical bindings retain existing records and source timestamps, are idempotent,
+and create no family work. The CLI binding roundtrip preserves its build id,
+including explicit riven rolls.
 
 ## `check_reminder_notices`
 

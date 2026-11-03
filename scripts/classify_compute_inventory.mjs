@@ -13,13 +13,17 @@ async function* rows(path) {
     if (line.trim()) { const row = JSON.parse(line); if (!row || typeof row !== 'object') throw new Error('invalid inventory row'); yield row; }
   }
 }
-export async function classifyInventory({ queue, missing, orphans, builds, tasks, meta, rulers }) {
+export async function classifyInventory({ queue, missing, orphans, builds, canonical, tasks, meta, rulers }) {
   if (!meta?.snapshot || !meta.engine || !meta.started_at || !Array.isArray(rulers) || !rulers.length
     || !Number.isSafeInteger(meta.counts?.queue) || meta.counts.queue < 0) throw new Error('incomplete inventory snapshot');
   const records = new Map(), states = new Map(), excluded = new Set(), roster = new Set(rulers);
   let n = 0;
   for await (const r of rows(builds)) { if (typeof r.id !== 'string' || !r.record) throw new Error('invalid inventory build'); records.set(r.id, canon(r.record)); n++; }
   if (n !== meta.counts.library) throw new Error('incomplete inventory builds');
+  if (canonical) for await (const r of rows(canonical)) {
+    if (typeof r.id !== 'string' || !r.record) throw new Error('invalid canonical inventory build');
+    if (!records.has(r.id)) records.set(r.id, canon(r.record));
+  }
   n = 0;
   for await (const q of rows(tasks)) {
     if (!/^[a-f0-9]{32}$/.test(q.id)) throw new Error('invalid inventory task');
@@ -34,11 +38,11 @@ export async function classifyInventory({ queue, missing, orphans, builds, tasks
   for await (const r of rows(orphans)) excluded.add(key(r));
   const dir = mkdtempSync(join(tmpdir(), 'compute-classified-')), db = new DatabaseSync(join(dir, 'tasks.db'));
   try {
-    db.exec('PRAGMA journal_mode=OFF;PRAGMA synchronous=OFF;PRAGMA cache_size=-1048576;CREATE TABLE tasks(id BLOB PRIMARY KEY,kind TEXT,verb TEXT,queued INTEGER) WITHOUT ROWID;BEGIN');
+    db.exec('PRAGMA journal_mode=MEMORY;PRAGMA synchronous=OFF;PRAGMA cache_size=-1048576;CREATE TABLE tasks(id BLOB PRIMARY KEY,kind TEXT,verb TEXT,queued INTEGER) WITHOUT ROWID;BEGIN');
     const insert = db.prepare(`INSERT INTO tasks VALUES (?,?,?,?) ON CONFLICT(id) DO UPDATE SET
       queued=max(tasks.queued,excluded.queued),kind=CASE WHEN excluded.kind='verification' THEN excluded.kind ELSE tasks.kind END`);
-    let pending = 0, sample = 0;
-    const add = (id, kind, verb, queued) => { insert.run(Buffer.from(id, 'hex'), kind, verb, queued); if (++pending === 10000) { db.exec('COMMIT;BEGIN'); pending = 0; } };
+    let sample = 0;
+    const add = (id, kind, verb, queued) => insert.run(Buffer.from(id, 'hex'), kind, verb, queued);
     for (const [path, queued] of [[queue, 1], [missing, 0]]) {
       let read = 0;
       for await (const r of rows(path)) {
