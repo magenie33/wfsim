@@ -232,6 +232,8 @@ Inventory unions missing and queued task identities, removes orphans and
 retired rulers, and counts undispatched work before admission pacing. A new
 task kind is included automatically. Partial, invalid, expired or older-input
 scans cannot supply a fresh complete total.
+Coverage follows live consumer identities across a producer change; cancelled
+consumers cease adding demand, while unresolved official decisions still count.
 
 ## `check_reminder_notices`
 

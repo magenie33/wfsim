@@ -87,8 +87,12 @@ through `POST /api/board/inventory`, authenticated with the factory token.
 The pipeline role needs no access to task or account tables. The board adapter
 owns its declared coverage; a submitted scan cannot replace other task kinds.
 The publication statement adds registered active questions outside the scan's
-declared producer coverage, including new registered task kinds and official
-spot checks. It records scan start, completion and source commit. An older
+declared producer coverage, using live demands rather than a question's stored
+dispatch producer. Shared live board demands remain covered by the board scan;
+an independent consumer of a re-opened fact counts under its own live producer.
+Open questions with no live consumer are excluded. Official spot checks and
+unresolved disputes retain their verification work after consumers leave.
+It records scan start, completion and source commit. An older
 scan cannot overwrite newer inputs, and a partial or invalid scan publishes
 nothing. Consumers read this as a derived snapshot, never as task input.
 
