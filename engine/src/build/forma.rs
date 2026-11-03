@@ -1013,6 +1013,13 @@ impl<'a> Space<'a> {
     fn realize(&self, c: &Cand, loads: &[&Loadout], budget: &mut Budget) -> Option<Realized> {
         let syms = self.syms(c.mi).to_vec();
         if self.start.pinned {
+            // A free swap across slot kinds changes a pinned layout too.
+            if c.cost.total() == 0
+                && (c.e as usize != sym(self.start.layout.exilus)
+                    || c.g as usize != sym(self.start.layout.grant))
+            {
+                return None;
+            }
             let at: Vec<u8> = self.start.layout.main.iter().map(|&p| sym(p) as u8).collect();
             let (mut a, mut b) = (at.clone(), syms.clone());
             a.sort_unstable();
@@ -1494,6 +1501,29 @@ mod tests {
         assert_eq!(pts.last().map(|p| p.0), Some(4), "{pts:?}");
         let top = cov.curve.last().unwrap();
         assert!(top.picks.iter().all(|p| p.as_ref().is_some_and(|p| p.build == 0 && p.placed.spare >= 0)));
+    }
+
+    #[test]
+    fn a_pinned_layout_cannot_swap_its_exilus_for_free() {
+        let b = gun([None; 8], None);
+        let start = Start {
+            layout: Layout {
+                main: vec![
+                    Some(Vazarin), Some(Madurai), Some(Madurai), Some(Madurai),
+                    Some(Madurai), Some(Naramon), Some(Naramon), Some(Naramon),
+                ],
+                exilus: None,
+                grant: None,
+            },
+            forma_spent: 7,
+            pinned: true,
+        };
+        let mut cards = vec![c(10, Madurai); 5];
+        cards.extend([c(10, Naramon); 3]);
+        let rules = Rules { forma_limit: Some(0), ..Rules::default() };
+        let p = plan(&b, &[load(&cards)], rules, Some(&start)).unwrap();
+        assert_eq!(p.layout, start.layout);
+        assert_eq!(p.cost.total(), 0);
     }
 
     /// A PARTIAL START: what the item already carries is free, and the Forma
