@@ -759,6 +759,8 @@ The overview's settings shortcut unfolds the shared
 controls; history paging preserves the overview and its day tiles. Community
 figures use the live signal and public tally, and signed-out points retain
 their browser scope.
+An initial demand response arriving after the page renders must insert the
+community goal immediately; progress ticks keep the live node mounted.
 
 ## `check_release_follow`
 

@@ -94,4 +94,28 @@ check("the default view leads with an expanded community goal, then personal con
 check("overview opens the folded shared settings and community shows the authoritative totals", ui.settings && ui.communityCount, JSON.stringify(ui));
 check("signed-out contribution retains browser points and a sign-in entry", ui.anonymous, JSON.stringify(ui));
 
+const initial = await evaluate(`(async () => {
+  const loaders = [loadComputeDemand, navComputing, loadTaskStates, loadLedgers, loadHomeTally];
+  const demand = computeDemand;
+  clearInterval(computeTimer); computeTimer = null;
+  computeDemand = null;
+  loadComputeDemand = async () => {
+    await new Promise(resolve => setTimeout(resolve, 100));
+    computeDemand = demand;
+  };
+  navComputing = loadTaskStates = loadLedgers = loadHomeTally = async () => {};
+  try {
+    renderAuthPage('compute');
+    const absent = !document.getElementById('compute-demand');
+    await new Promise(resolve => setTimeout(resolve, 400));
+    const goal = document.getElementById('compute-demand');
+    const live = document.getElementById('rt-live');
+    computeRedraw(true);
+    return { absent, shown: !!goal && goal.textContent.includes('leaderboard calculations 100'), liveKept: document.getElementById('rt-live') === live };
+  } finally {
+    [loadComputeDemand, navComputing, loadTaskStates, loadLedgers, loadHomeTally] = loaders;
+  }
+})()`);
+check("initial demand arriving after the page renders displays the goal without waiting for periodic refresh", initial.absent && initial.shown && initial.liveKept, JSON.stringify(initial));
+
 await app.finish("compute cards, pages and live counts agree");

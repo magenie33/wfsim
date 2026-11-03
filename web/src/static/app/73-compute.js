@@ -209,7 +209,7 @@ function computeRedraw(tick) {
   const mark = document.getElementById("compute-mark");
   if (mark && !mark.hidden) computeMarkPaint(mark);
   if (typeof authKindOf !== "function" || authKindOf(location.pathname) !== "compute") return;
-  if (tick) { if (Date.now() - computeDrawnAt >= 1000) { computeDrawnAt = Date.now(); computeLive(); } return; }
+  if (tick === true) { if (Date.now() - computeDrawnAt >= 1000) { computeDrawnAt = Date.now(); computeLive(); } return; }
   renderAuthPage("compute");
 }
 
