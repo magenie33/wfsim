@@ -7,10 +7,11 @@ function headlessBoardPayloadFromResult(res, ctx) {
   const mods = (res.mods || []).filter(id => !exilus || id !== exilus).map(id => isRiven(id) ? "riven" : id);
   if (ctx.stance && !mods.includes(ctx.stance)) mods.push(ctx.stance);
   const arcs = Array.isArray(res.arcane) ? res.arcane : res.arcane == null ? [] : [res.arcane];
+  const parts = res.assembly || (res.replay || {}).assembly || ctx;
   return { benchmark: ctx.benchmark || undefined, weapon: ctx.weapon, mode: res.mode || ctx.mode, mods,
     ...(ctx.rivens?.[riven] || { riven_pos: [], riven_neg: "" }),
     evolutions: (res.evolutions || []).slice(), arcanes: arcs.filter(id => id && id !== "none"),
-    valence: res.valence || ctx.valence, exilus, grip: ctx.grip, loader: ctx.loader, link: ctx.link, wielder: ctx.wielder || undefined };
+    valence: res.valence || ctx.valence, exilus, grip: parts.grip, loader: parts.loader, link: parts.link, wielder: ctx.wielder || undefined };
 }
 
 export { headlessBoardPayloadFromResult };
