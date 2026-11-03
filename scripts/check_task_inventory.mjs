@@ -7,6 +7,7 @@ import { completeInventory, publishInventory } from "./compute_inventory.mjs";
 import { inventoryWrite, readInventory, validInventory, INVENTORY_MAX_MS } from "../worker/task_inventory.js";
 import { testDb } from "./pg/test_db.mjs";
 import worker from "../worker/index.js";
+import { factory, canon, questionId } from "../worker/tasks.js";
 
 const dir = mkdtempSync(join(tmpdir(), "compute-inventory-test-")), now = Date.now(), started = new Date(now - 60000).toISOString();
 const row = (id, ruler = "r") => ({ build_id: id, ruler, mode: "base" });
@@ -38,6 +39,7 @@ try {
     ('shared','simulate','{}','open','x','x','future_owner'),
     ('done','future_verb','{}','fact','x','x','future_owner')`);
   await db.run("INSERT INTO demands(producer,ref,question,state,asked_at,due_at,payload) VALUES ('sweep','shared','shared','live','x','x','{}')");
+  await db.run("INSERT INTO demands(producer,ref,question,state,asked_at,due_at) VALUES ('future_owner','new-type','new-type','live','x','x'),('board_review','review','review','live','x','x')");
   const save = async (p, at = now) => { const w = inventoryWrite(p, at); await db.run(w.sql, ...w.params); };
   await save(plan);
   const goal = await readInventory(db, now);
@@ -65,4 +67,25 @@ try {
   assert.equal((await readInventory(db)).verbs.future_verb, 1);
   console.log("ok: the real Worker authenticates publication, rejects partial scans and owns producer coverage without pipeline task-table grants");
   await db.close();
+
+  const moved = await testDb("library"), at = new Date(now).toISOString(), request = { input: "shared-fact" };
+  const id = await questionId("simulate", request);
+  await moved.run("INSERT INTO questions(id,verb,request,state,due_at,opened_at,producer,canon,fact_engine,fact_at) VALUES (?,'simulate',?,'fact',?,?,'sweep','{}','old-engine',?)",
+    id, canon(request), at, at, at);
+  await moved.run("INSERT INTO demands(producer,ref,question,state,asked_at,due_at) VALUES ('sweep','old-board',?,'served',?,?)", id, at, at);
+  const f = factory({ verbs: { simulate: { cap: 2, lease_ms: 60000, canon } },
+    producers: { sweep: { on_fact: async () => {} }, future_owner: { on_fact: async () => {} } } });
+  await f.demand({ LIBRARY: moved }, { producer: "future_owner", ref: "new-consumer", verb: "simulate", request, due_in_ms: 1000 }, "new-engine", now + 1);
+  const inventory = async () => {
+    const write = inventoryWrite({ ...plan, rows: 0, queued: 0 }, now + 2);
+    await moved.run(write.sql, ...write.params); return readInventory(moved, now + 2);
+  };
+  assert.equal((await inventory()).total, 1, "a historical board producer hid a live independent consumer");
+  await f.withdraw({ LIBRARY: moved }, "future_owner", "new-consumer", now + 2);
+  assert.equal((await inventory()).total, 0, "a cancelled consumer stayed in complete demand");
+  await moved.run("UPDATE questions SET state='disputed' WHERE id=?", id);
+  assert.equal((await inventory()).total, 1, "a pending official decision disappeared with its consumer");
+  assert.equal((await inventory()).orders.find(o => o.kind === "verification").total, 1);
+  await moved.close();
+  console.log("ok: live consumers determine scan coverage; cancellation and independent verification keep their own lifecycles");
 } finally { rmSync(dir, { recursive: true, force: true }); }
