@@ -13,10 +13,11 @@ function headlessBoardPayloadFromResult(res, ctx) {
   const mods = (res.mods || []).filter(id => !exilus || id !== exilus).map(id => isRiven(id) ? "riven" : id);
   if (ctx.stance && !mods.includes(ctx.stance)) mods.push(ctx.stance);
   const arcs = Array.isArray(res.arcane) ? res.arcane : res.arcane == null ? [] : [res.arcane];
+  const parts = res.assembly || (res.replay || {}).assembly || ctx;
   return { benchmark: ctx.benchmark || undefined, weapon: ctx.weapon, mode: res.mode || ctx.mode, mods,
     ...(ctx.rivens?.[riven] || { riven_pos: [], riven_neg: "" }),
     evolutions: (res.evolutions || []).slice(), arcanes: arcs.filter(id => id && id !== "none"),
-    valence: res.valence || ctx.valence, exilus, grip: ctx.grip, loader: ctx.loader, link: ctx.link, wielder: ctx.wielder || undefined };
+    valence: res.valence || ctx.valence, exilus, grip: parts.grip, loader: parts.loader, link: parts.link, wielder: ctx.wielder || undefined };
 }
 
 // ---- words, for a surface with no page ---------------------------------------
@@ -326,7 +327,7 @@ function headlessBuildCardHtml(say, d) {
   const section = (head, chips, empty) => chips == null ? ""
     : `<div class="sb-h">${head}</div><div class="sb-chips">${chips.map(chip).join("") || `<span class="sb-empty">${empty}</span>`}</div>`;
   return [
-    d.mode != null ? section(say.t("Mode"), [{ label: d.mode }]) : "",
+    d.mode != null ? section(say.t("Mode"), [{ label: d.mode, cls: d.modeCls }]) : "",
     section(say.t("Aura"), d.aura, say.t("no aura")),
     section(say.t("Stance"), d.stance, say.t("empty slot")),
     section(`${say.t("Mods")} · ${d.mods.length}`, d.mods, say.t("no mods equipped")),
@@ -335,7 +336,7 @@ function headlessBuildCardHtml(say, d) {
     d.parts ? section(say.t("Parts"), d.parts) : "",
     section(say.t("Arcane"), d.arcanes, say.t("no arcane")),
     section(say.t("Evolutions"), d.evolutions, say.t("none selected")),
-    d.valence ? section(say.t("Valence"), [{ label: d.valence }]) : "",
+    d.valence ? section(say.t("Valence"), [{ label: d.valence, cls: d.valenceCls }]) : "",
   ].join("");
 }
 
@@ -367,6 +368,8 @@ function headlessCardOfState(say, st, w, riven, pinned = () => "") {
   const rivenId = ((st.slots || []).find((s) => s && String(s.mod || "").startsWith("riven:")) || {}).mod;
   return headlessBuildCardHtml(say, {
     mode: headlessModeLabel(say, w, st.mode),
+    modeCls: pinned("mode:0"),
+    valenceCls: pinned("valence:0"),
     ...headlessWeaponModSections(say.meta, w, st.slots || [], (s, i) => {
       if (s && String(s.mod || "").startsWith("riven:")) return { label: riven(s.mod).name || say.t("Riven"), cls: pinned("mods:" + i) };
       const m = s && s.mod && has.has(s.mod) && card(s.mod);
@@ -381,8 +384,8 @@ function headlessCardOfState(say, st, w, riven, pinned = () => "") {
           cls: pinned("arcane:" + i) } : null;
       }).filter(Boolean)
       : null,
-    parts: st.assembly ? headlessPartChips(w, st.assembly.grip, st.assembly.link || st.assembly.loader) : null,
-    evolutions: w.uses_evo2 ? headlessEvoChips(w, Object.values(st.evoSel || {}).filter(Boolean)) : null,
+    parts: st.assembly ? headlessPartChips(w, st.assembly.grip, st.assembly.link || st.assembly.loader).map((p, i) => ({ ...p, cls: pinned("assembly:" + i) })) : null,
+    evolutions: w.uses_evo2 ? headlessEvoChips(w, Object.values(st.evoSel || {}).filter(Boolean)).map((e) => ({ ...e, cls: pinned("evo:0") })) : null,
     valence: w.valence && st.valence
       ? `${say.dt(st.valence.element)} +${Math.round(st.valence.bonus * 1000) / 10}%` : null,
   });

@@ -1,0 +1,43 @@
+{
+  "weapon": "plague_kripath_two_handed",
+  "mods": {
+    "pressure_point": "search",
+    "true_steel": "search",
+    "fever_strike": "search"
+  },
+  "build_size": 2,
+  "build_min": 1,
+  "assemblies": [
+    {
+      "grip": "jayap",
+      "link": "ekwana_ii_jai"
+    },
+    {
+      "grip": "jayap",
+      "link": "ekwana_ii_ruhang"
+    },
+    {
+      "grip": "kroostra",
+      "link": "ekwana_ii_jai"
+    },
+    {
+      "grip": "kroostra",
+      "link": "ekwana_ii_ruhang"
+    }
+  ],
+  "strategy": "quick",
+  "enemy": "thrax_centurion",
+  "level": 100,
+  "steel_path": false,
+  "duration": 1,
+  "runs": 10,
+  "candidate_runs": 10,
+  "finalists": 2,
+  "limits": {
+    "require": {
+      "mods": [
+        "pressure_point"
+      ]
+    }
+  }
+}

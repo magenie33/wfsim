@@ -1493,6 +1493,16 @@ or a deleted card — is taken out of the stance, the `mods` scope and a start's
 slots and pins before a body is sent (`nameableOptimizeBody`), and the start
 says so under its card.
 
+## `check_optimizer_requirements`
+
+Kitgun and Zaw start editors expose separate pins on their two parts, retain
+them through redraw, carry the assembly in the request and mark the fixed
+parts on the start card, while restoring the player's build. Kuva valence
+uses the same pin and card treatment. A global required mod reaches every
+start's request and survives search state storage. A full unfixed start can
+make room for it; conflicting pins or exclusions disable running and name
+the contradiction. Removing the requirement clears the conflict.
+
 ## `check_result_to_start`
 
 "Send this build to the optimizer" adds the build the shown result MEASURED as

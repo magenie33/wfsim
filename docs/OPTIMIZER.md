@@ -138,7 +138,8 @@ fold:
 | how many cores to use | **neither** — the topbar's compute share | one setting for the whole page |
 
 There is no scope to mark: what may change is what the quick calc offers, and
-a pin on a start is the one way to keep something. The final round is the
+a start pin fixes a position while global requirements apply to every final
+build. The final round is the
 simulator's own run (§"The answer"), so a row's number is what simulating its
 build answers.
 
@@ -571,6 +572,11 @@ above runs only when a tool asks for it by name.
   Done and Discard put the player's build back. `check_start_edit`.
 - **Fixed** is the pin: a fixed position is never swept, so every answer from
   that start carries it. A start's cards join the scope when it is saved.
+  Zaw grips and links, and Kitgun grips and loaders, are independent positions
+  (`assembly:0` and `assembly:1`). Unpinned parts participate in the search;
+  the strike/chamber and weapon class remain the weapon identity. Each start
+  carries its own assembly. Kuva, Tenet and Coda elements use `valence:0`;
+  the valence percentage remains the request's stated roll.
 - THERE IS ALWAYS A START, the way the builder always holds a build: a new
   search holds ONE BLANK START, which the fill completes in the search's order,
   and removing the last start leaves a blank one. The page guides the player
@@ -584,7 +590,8 @@ cards are empty positions, compatible cards remain initial choices, and the
 riven alone is pinned. The same fill and descent adapt the configuration to
 the target (`docs/BOARD.md` §"Family candidates").
 
-- The positions are the quick calc's axes, in this order: mode, each
+- The positions are the quick calc's axes, in this order: both modular parts,
+  mode, each
   evolution tier, valence, each arcane seat, mod slots 1–8, the exilus slot.
   WHAT SHAPES THE WEAPON COMES FIRST: a card chosen before the mode or the
   evolutions is chosen for another weapon. With mode last, Burston Prime spent
@@ -762,7 +769,7 @@ the answer it is near and what differs, a tie with the leader marked, "+ add"
 and "use as a new start". A search preset saves the starts, the limits, how
 many results and the runs per candidate. There is no scope to
 mark: what may change is what the quick calc offers less the limits, and a pin
-on a start is the one way to keep something.
+on a start fixes a position while global requirements apply to every final build.
 
 ### Limits
 
@@ -776,10 +783,24 @@ last mode or element). The fill: at most `mods` cards (0–8), the exilus filled
 or left empty, each arcane seat filled or left empty.
 
 The request carries `limits: { exclude: { mods, arcanes, evolutions, modes,
-valence }, mods, exilus, arcane_seats }`; `whole_scope` leaves the excluded
+valence }, require: { mods }, mods, exilus, arcane_seats }`; `whole_scope`
+leaves the excluded
 options out, pins an empty exilus or seat (`none`, `none:<pool>`), and sets
 `build_size`, and the descent sweeps only that many mod slots. A search saved
 with only an excluded-mods list carries it in as `exclude.mods`.
+
+Required mods are exact card/rank ids that every final build must contain,
+from every start, in a main slot or an eligible exilus slot. They do not pin
+a slot. A full unfixed start makes room for them; required ranks join the
+scope even when the card is absent from the every-rank list. Required cards
+are preserved in candidates, exhaustive scopes, resumed rounds and replay.
+
+The page reports contradictions before running, and the API validates them
+before creating a search: required and excluded cards, incompatible families,
+unavailable cards, insufficient slots after pins (including pinned empty
+slots), and equip rules with no allowed evolution. Pinned parts and other
+axes must remain available in the scope. An unfixed start missing a required
+card is adjustable, not a contradiction.
 
 A START AND A LIMIT MAY DISAGREE. What a start PINS and a limit rules out —
 an excluded option, a card past the cap, a filled exilus or seat set to empty —
