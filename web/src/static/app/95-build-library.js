@@ -56,8 +56,14 @@ function renderLibrarySummary(w, all) {
   box.hidden = false;
 }
 function libraryLeaving(mod) {
-  if (libraryActive && mod !== "build-library") {
+  if (libraryActive && (mod !== "build-library" || finder.weapon !== routeWeaponId())) {
     librarySaveView(); libraryObserver?.disconnect(); libraryActive = false;
+    finderDataMemo = null; libraryStatRun = null; libraryStatCache.clear(); libraryDrains.clear();
+    const box = $("build-finder");
+    box.querySelectorAll("[data-dd]").forEach((node) => ddReg.delete(node.dataset.dd));
+    box.replaceChildren(); box.onclick = null; box.onchange = null; box.oninput = null;
+    const summary = $("doc");
+    if (summary?.libraryRows) { summary.replaceChildren(); summary.libraryRows = null; summary.libraryLocale = null; delete summary.dataset.libraryKey; }
   }
   libraryNavigating = false;
 }
@@ -185,6 +191,15 @@ function libraryAfterRender(w, all, list, groups, drawList) {
   const changed = libraryWriteQuery();
   renderLibrarySummary(w, all);
   const box = $("build-finder");
+  if (!boardHasCell(w.id, finder.b)) {
+    const state = boardFileState(w.id), failed = state.failed.has(boardCellDir(finder.b));
+    const count = box.querySelector(".library-result-count");
+    count.textContent = tr(failed ? "The board could not be reached." : "Loading…");
+    if (failed) {
+      const retry = document.createElement("button"); retry.className = "ghost-btn small"; retry.textContent = tr("Retry");
+      retry.onclick = () => { state.failed.delete(boardCellDir(finder.b)); loadWeaponBoard(w.id).then(renderBuildFinder); }; count.append(" ", retry);
+    }
+  }
   if (changed && finder.shown !== FINDER_FIRST) {
     finder.shown = FINDER_FIRST;
     box.querySelector(".fd-main").innerHTML = drawList();

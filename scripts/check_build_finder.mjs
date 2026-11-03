@@ -162,8 +162,11 @@ const r = await evaluate(`(async () => {
   out.renumbered = !!moved && presetId(moved) !== target;
   out.followed = openedPublished(buildBarCfg()).some((x) => presetId(x) === presetId(moved));
   // …AND THE PAGE REOPENS ON IT, not on whatever holds its old rank now.
-  await open('Braton');
-  await open('Ballistica_Prime');
+  const published=JSON.stringify(BOARD.ballistica_prime), originalFetch=window.fetch;
+  window.fetch=(url,options)=>new URL(typeof url==='string'?url:url.url,location.href).pathname==='/board/ballistica_prime.json'
+    ?Promise.resolve(new Response(published,{headers:{'Content-Type':'application/json'}})):originalFetch(url,options);
+  try {await open('Braton');await open('Ballistica_Prime');}
+  finally {window.fetch=originalFetch;}
   out.activeFollowed = activePreset === presetId(moved);
   out.chipsAfter = roChips();
   out.oneChip = out.chipsAfter.filter((id) => boardRowIdentity(byId(id).board) === ident).length === 1;

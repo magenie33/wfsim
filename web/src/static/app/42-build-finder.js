@@ -19,11 +19,16 @@ const sameBoardRef = (a, b) => a.b === b.b && a.m === b.m && a.k === b.k && a.id
 /// not in hand — a board that has not loaded would otherwise read as one the
 /// build has left.
 const boardActiveKey = (w) => `wfsim-opened-board-active-${w}`;
+function openedBoardActive(w) {
+  try { return JSON.parse(localStorage.getItem(boardActiveKey(w)) || "null"); } catch (_) { return null; }
+}
+const openedBoardBuild = (ref) => builtinBuilds(ref.b).find((p) => sameBoardRef(boardRef(p), ref)) || null;
 function noteBoardActive(id) {
   const w = presetWeapon();
   if (!BOARD_HAVE.has(w)) return;
   const own = !id || loadPresetList(BUILDS).some((p) => presetId(p) === id);
-  const p = own ? null : builtinBuilds().find((x) => presetId(x) === id);
+  const ref = own ? null : openedBoardActive(w), prior = ref && openedBoardBuild(ref);
+  const p = own ? null : prior && presetId(prior) === id ? prior : builtinBuilds().find((x) => presetId(x) === id);
   try {
     if (p) localStorage.setItem(boardActiveKey(w), JSON.stringify(boardRef(p)));
     else localStorage.removeItem(boardActiveKey(w));
@@ -32,10 +37,9 @@ function noteBoardActive(id) {
 function resolveBoardActive(last) {
   const w = presetWeapon();
   if (!BOARD_HAVE.has(w)) return last;
-  let ref = null;
-  try { ref = JSON.parse(localStorage.getItem(boardActiveKey(w)) || "null"); } catch (_) { ref = null; }
+  const ref = openedBoardActive(w);
   if (!ref || presetFind(loadPresetList(BUILDS), last)) return last;
-  const p = builtinBuilds().find((x) => sameBoardRef(boardRef(x), ref));
+  const p = openedBoardBuild(ref);
   return p ? presetId(p) : "";
 }
 // ---- THE BUILD FINDER -------------------------------------------------------
@@ -182,15 +186,16 @@ function finderDepthHtml(w) {
 
 function renderBuildFinder() {
   const box = $("build-finder");
-  if (!box) return;
+  if (!box || !libraryActive) return;
   if (modSuffix() !== "build-library") return;
   const w = weaponInfo(presetWeapon()) || {};
-  const all = builtinBuilds();
   if (finder.weapon !== w.id) libraryReset(w);
   librarySyncQuery();
   box.hidden = false;
   box.classList.remove("shut");
   if (!benchList().some((b) => b.id === finder.b)) finder.b = benchList()[0]?.id;
+  const ready = ensureBoardCell(w.id, finder.b, renderBuildFinder);
+  const all = ready ? builtinBuilds(finder.b) : [];
   const data = finderData(all), scope = data.boards.get(finder.b) || [];
   const benchOf = (id) => benchList().find((b) => b.id === id) || { name: id };
   const inMo = (p) => p.benchmark === finder.b && (finder.mo === FINDER_EVERY_MODE || p.mode === finder.mo);
@@ -394,7 +399,11 @@ function renderBuildFinder() {
   // ---- THE OVERVIEW, FOLDED ------------------------------------------------
   // Board counts fix the vocabulary and order; filters change matching counts
   // and ranks without moving the condition under the reader's pointer.
-  const overviewHtml = () => {
+  const overviewHtml = (expanded = !folded("finder-overview", true)) => {
+    const wrap = (body) => `<div class="fold sect shut fd-ov" data-fold="finder-overview"><h3 class="sim-h fold-h">${escHtml(tr("Overview"))}`
+      + ` <span class="sim-hint">${escHtml(trF("{n} matching builds · {total} on this board", { n: list.length, total: scope.length }))}</span></h3>`
+      + `<div class="fd-ov-body fold-b">${body}</div></div>`;
+    if (!expanded) return wrap("");
     if (!data.available.has(finder.b)) {
       const counts = new Map();
       for (const p of scope) for (const t of new Set(toks.get(p))) counts.set(t, (counts.get(t) || 0) + 1);
@@ -422,9 +431,7 @@ function renderBuildFinder() {
           `<span class="fd-ov-meta"><span class="fd-ov-count"><b>${c}</b> / ${total}</span><span>${best ? `#${best.rank}` : "—"}</span></span></button>`;
       }).join("")}</div></div>`;
     }).join("");
-    return `<div class="fold sect shut fd-ov" data-fold="finder-overview"><h3 class="sim-h fold-h">${escHtml(tr("Overview"))}` +
-      ` <span class="sim-hint">${escHtml(trF("{n} matching builds · {total} on this board", { n: list.length, total: scope.length }))}</span></h3>` +
-      `<div class="fd-ov-body fold-b">${body}<p class="fd-hint">${escHtml(tr("click: must have · again: I don't have · again: clear"))}</p></div></div>`;
+    return wrap(body + `<p class="fd-hint">${escHtml(tr("click: must have · again: I don't have · again: clear"))}</p>`);
   };
   // ---- REFUSE A TRIGGER --------------------------------------------------------
   // Every trigger a build here asks for, grouped as the fight's own switches are;
@@ -473,6 +480,13 @@ function renderBuildFinder() {
   // ---- wiring --------------------------------------------------------------
   renderLibraryBoard();
   wireFolds(box);
+  const overview = box.querySelector(".fd-ov");
+  overview.onFoldOpen = () => {
+    const body = overview.querySelector(".fold-b");
+    if (body.children.length) return;
+    const template = document.createElement("template"); template.innerHTML = overviewHtml(true);
+    body.replaceChildren(...template.content.querySelector(".fold-b").childNodes);
+  };
   const rerender = (focus) => {
     renderBuildFinder();
     if (focus) { const i = $("fd-input"); if (i) i.focus(); }

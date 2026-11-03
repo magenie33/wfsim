@@ -320,6 +320,7 @@ function setFold(box, shut) {
   box.classList.toggle("shut", shut);
   foldState[box.dataset.fold] = shut;
   saveFolds();
+  if (!shut && typeof box.onFoldOpen === "function") box.onFoldOpen();
 }
 
 const foldCaret = () => {

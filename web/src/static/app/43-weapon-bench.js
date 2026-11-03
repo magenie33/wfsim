@@ -82,6 +82,10 @@ function renderWeaponBench() {
   // weapon's file. Asked here rather than at boot — a reader who never opens
   // this tab should not pay for it — and the table redraws when it lands.
   if (!benchList().some((b) => b.id === wbenchRuler)) wbenchRuler = benchList()[0]?.id;
+  if (!ensureBoardCell(w.id, wbenchRuler, renderWeaponBench)) {
+    box.innerHTML = benchSelectorHtml(wbenchRuler) + `<p class="wb-empty">${escHtml(tr("Loading…"))}</p>`;
+    wireBenchSelector(box, (id) => { wbenchRuler = id; renderWeaponBench(); }); return;
+  }
   const cells = wbenchCells(w.id).filter((c) => c.benchmark === wbenchRuler);
   const selector = benchSelectorHtml(wbenchRuler);
   const wire = () => wireBenchSelector(box, (id) => { wbenchRuler = id; wbenchPick = null; renderWeaponBench(); });

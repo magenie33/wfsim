@@ -218,7 +218,7 @@ const inBenchView = (r) =>
 /// leader, so a weapon whose full rows are already in hand needs no second
 /// source. A weapon in neither is "never fetched", which `boardProjection`
 /// refuses to speak about — and is why the index does not join `BOARD_HAVE`.
-const benchRows = (id) => BOARD[id] || (BOARD_INDEX && BOARD_INDEX[id]) || [];
+const benchRows = (id) => ((!boardFiles.has(id) || boardFiles.get(id).loaded.has("")) && BOARD[id]) || (BOARD_INDEX && BOARD_INDEX[id]) || [];
 
 /// …UNDER ANOTHER SCENE, its own index alone: those rows are in no weapon file.
 const benchRowsUnder = (cur, id) => (cur.cell_dir ? (SCENE_INDEX[cur.cell_dir] || {})[id] || [] : benchRows(id));

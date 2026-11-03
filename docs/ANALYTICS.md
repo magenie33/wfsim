@@ -90,6 +90,10 @@ with this thing, not how many times: forty edits to one build are one build.
 | --- | --- | --- | --- |
 | `app.boot` | the page has its catalog (`/api/meta`, the build's file or else the engine) | how the page was reached: `reload`, `back_forward`, `from_site`, `direct` or `from_<referrer host>`; a reload a newer release caused is `release_idle` (the page reloaded itself) or `release_asked` (the reader clicked) | ms since navigation |
 | `app.view` | a page was drawn | page kind (`home`, `weapon_builder`, `weapon_simulator`, `warframe`, …); each account page is its own kind — `login`, `signup`, `reset`, `account`, `account_sync` (`AUTH_VIEWS`) — and a page an extension mounts names its own (`authView`) | — |
+| `app.usable` | the visible route finished drawing and crossed two animation frames | page kind | ms since navigation for the initial route, since route entry for an in-page navigation |
+| `app.longtask` | the route's performance window is flushed, where Long Tasks are supported | page kind | longest observed main-thread task, ms |
+| `app.blocking` | beside `app.longtask` | page kind | sum of each task's duration above 50 ms |
+| `app.interaction` | the window is flushed and Event Timing reported an interaction | page kind | maximum observed event duration, ms; not a field INP estimate |
 | `app.error` | this page's own code failed uncaught — another origin's script (an extension) is not counted | `boot` (the app did not start), `script`, `promise`, then where in our own file — `<kind>_<app\|nona\|page>_<line>_<column>`, read against that release's committed `site/asset/` bundle: a place, never the message; prefixed `foreign_` when the page's skeleton (`USAGE_SKELETON`) is missing a part this code never removes — a page an extension or a translator took apart | ms since navigation |
 | `app.device` | the page has its catalog | what the device can do, in coarse classes: `<input>_<width>_<browser>` — input `touch`, `mouse`, `touchmouse` (touch first, a mouse too), `mousetouch`, `nopointer`; width `narrow` (≤640 px), `medium` (≤1024), `wide`; browser `wechat`, `qq` (their in-app browsers) or `browser` | the logical cores, rounded down to 1, 2, 4, 6, 8, 12, 16, 24 or 32 |
 | `engine.ready` | the page's engine module compiled and its data packs arrived (docs/WASM.md §"Code and data") | — | ms since navigation |
@@ -120,6 +124,14 @@ with this thing, not how many times: forty edits to one build are one build.
 | `nona.ask` | a reader message was sent to her — never its text | — | which reader message of this conversation it is |
 | `nona.concise` | concise mode was switched in her settings | — | 1 on, 0 off |
 | `road.probe` | once a day per browser, 15 s past boot, `board.meta.json` was fetched by each road in turn — direct from `cdn.wfsim.app`, where the page reads it (docs/DISTRIBUTION.md §"The relay") | `direct_ok`, `direct_failed`, `relay_ok`, `relay_failed` | ms the fetch took, or until it failed |
+
+Route performance flushes 30 seconds after usable, when hidden, on leaving the
+route or on page exit, subject to the same once-per-event-and-subject rule as
+other usage points. Unsupported observations are omitted. The window includes
+startup work for the initial route and main-thread work since entry for later
+routes. These are browser observations, not engine-worker CPU measurements;
+usable marks the visible shell after route drawing, not completion of every
+background request. No input text, event target or raw interaction is sent.
 
 An `engine.fail` from a visitor with no `app.boot` is a reader the site lost
 before it could do anything — the one failure the edge cannot see.

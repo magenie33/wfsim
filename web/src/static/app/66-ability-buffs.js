@@ -282,6 +282,8 @@ function renderSimRuns() {
 
 function renderSim() {
   if (!META) return;
+  renderScenarioBar();
+  if (modSuffix() !== "simulator") return;
   renderSimBuild();
   const enemies = allEnemies();
   const en = enemies.find((e) => e.id === sim.enemy) || enemies[0];
@@ -292,7 +294,6 @@ function renderSim() {
   renderWfBuffs("sim-wfbuffs", false);
   // …AND THE OPTIMIZER'S FIGHT CARD, whenever the fight is redrawn.
   renderOptFight();
-  renderScenarioBar();
   $("sim-sub").textContent = "current build vs the enemy";
   renderSimBuffs();
   renderScenarioEditorView();

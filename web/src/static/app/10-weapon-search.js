@@ -316,6 +316,7 @@ async function bootMeta() {
   throw new Error("engine did not answer /api/meta");
 }
 
+let weaponEditorReady = false;
 async function init() {
   // BEFORE ANYTHING TOUCHES THE DOM: a page from another build has markup
   // this file does not know, and the failure that produces is unreadable.
@@ -372,7 +373,7 @@ async function init() {
   const saved = savedCounts();
   track("presets.saved", "presets", saved.presets);
   track("presets.saved", "customs", saved.customs);
-  const boardBoot = loadBoard(bootWeapon);
+  const boardBoot = loadBoard(routeWeaponId() ? bootWeapon : null);
   applyI18n();
   fillSelect("weapon", META.weapons);
   initWeaponSearch();
@@ -380,8 +381,10 @@ async function init() {
   $("weapon").value = bootWeapon;
   arcanes = arcanesFor(bootWeapon, d.arcane);
   sim = defaultScenario();
-  await boardBoot;            // before presets: the board's rows ARE build presets
-  applyWeapon(bootWeapon, d.mods);
+  if (routeWeaponId()) {
+    await boardBoot;
+    applyWeapon(bootWeapon, d.mods);
+  }
 
   // THROUGH THE DOOR, like every other consumer — see "The agent door". The
   // control and an agent must move the page the same way, and the only thing
@@ -404,7 +407,7 @@ async function init() {
   // lists already on this machine are filed per weapon. It needs `META`, which
   // is why it is called here rather than beside the migrations it belongs with.
   foldRivensIntoOneList();
-  initPresets();
+  if (weaponEditorReady) initPresets();
   reattachOptimize(); // project the durable queue and offer a legacy checkpoint
   $("auto-forma").addEventListener("click", () => autoForma().then(() => renderMods()));
   $("clear-mods").addEventListener("click", () => { clearMods(); });
@@ -445,7 +448,7 @@ async function init() {
   wireStaticFolds();
   wireJump();
   bootRouted = true;
-  route();
+  await route();
   // A language switch or a release reloads the page; what it stashed
   // (`stashForReload`) is restored here so nothing is lost.
   const stash = sessionStorage.getItem("wfsim-lang-stash");

@@ -41,6 +41,11 @@ function renderPublishedRivens() {
   const box = $("riven-published");
   const w = weaponInfo($("weapon").value);
   if (!box || !w || !META) return;
+  const wanted = raRuler || libraryDefaultBenchmark();
+  if (!ensureBoardCell(w.id, wanted, renderPublishedRivens)) {
+    box.innerHTML = benchSelectorHtml(wanted) + `<p class="wb-empty">${escHtml(tr("Loading…"))}</p>`;
+    wireBenchSelector(box, (id) => { raRuler = id; renderPublishedRivens(); }); return;
+  }
   // AS DEEP AS THE BUILD BAR READS, so every row drawn here is one it can open.
   const deep = boardGroupLeaders(BOARD[w.id]);
   const groups = rivenGroups(META, w, (BOARD[w.id] || []).filter((r) => deep(r, boardDepth)));

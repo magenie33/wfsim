@@ -147,21 +147,30 @@ async function loadHomeTally() {
 }
 function renderHomeTally() {
   const box = $("home-tally"), el = $("home-tally-n");
-  if (!box || !el || !tallyTo) return;
+  if (!box || !el || !tallyTo || document.hidden || $("home-page")?.hidden) return;
   const f = Math.min(1, (Date.now() - tallyAt) / TALLY_EVERY_MS);
   const at = (k) => Math.round(tallyFrom[k] + (tallyTo[k] - tallyFrom[k]) * f);
   tallyShown = { volunteers: at("volunteers"), official: at("official") };
-  const b = (n) => `<b>${escHtml(n.toLocaleString(accountLocale()))}</b>`;
-  const line = (s, n, dot) => `<span class="hf">${dot ? '<span class="online-dot"></span>' : ""}${
-    escHtml(tr(s)).replace("{n}", b(n))}</span>`;
-  el.innerHTML = line("{n} scores computed by players' devices, each agreed by two", tallyShown.volunteers)
-    + line("{n} by the official servers", tallyShown.official)
-    + (computingCount !== null ? line("{n} devices computing together now", computingCount, true) : "");
+  const shape = LANG + ":" + (computingCount !== null);
+  if (el.dataset.tallyShape !== shape) {
+    const line = (s, key, dot) => `<span class="hf">${dot ? '<span class="online-dot"></span>' : ""}${
+      escHtml(tr(s)).replace("{n}", `<b data-tally="${key}"></b>`)}</span>`;
+    el.innerHTML = line("{n} scores computed by players' devices, each agreed by two", "volunteers")
+      + line("{n} by the official servers", "official")
+      + (computingCount !== null ? line("{n} devices computing together now", "devices", true) : "");
+    el.dataset.tallyShape = shape;
+  }
+  for (const node of el.querySelectorAll("[data-tally]")) {
+    const n = node.dataset.tally === "devices" ? computingCount : tallyShown[node.dataset.tally];
+    const text = Number(n).toLocaleString(accountLocale());
+    if (node.firstChild) { if (node.firstChild.nodeValue !== text) node.firstChild.nodeValue = text; }
+    else node.append(document.createTextNode(text));
+  }
   box.hidden = false;
 }
 loadHomeTally();
 setInterval(loadHomeTally, TALLY_EVERY_MS);
-setInterval(() => { if (tallyTo && Date.now() - tallyAt < TALLY_EVERY_MS + 1000) renderHomeTally(); }, 250);
+setInterval(() => { if (!document.hidden && !$("home-page")?.hidden && tallyTo && Date.now() - tallyAt < TALLY_EVERY_MS + 1000) renderHomeTally(); }, 250);
 addEventListener("visibilitychange", loadHomeTally);
 
 /// WHAT THIS CLIENT IS RUNNING, in the three identifiers of

@@ -44,6 +44,13 @@ drift DPS shows over the same pair (18,653 vs 20,551).
 
 ## Core decisions
 
+Home and non-weapon routes initialize no hidden weapon editor. Simulator and
+optimizer controls render on their own routes; the shared scenario bar remains
+available to the weapon's modules. Frame catalog readers share one pending
+request, with a failed request retryable. Home's rolling totals retain their
+text nodes and repaint only while home is visible. Overflow measurements are
+limited to changed visible section bodies, with a full pass on resize.
+
 - **Two surfaces**:
   1. **Config UI** — build/weapon/enemy/scenario setup. Deliberately simple;
      can be much sparser than predecessor tools.
@@ -417,6 +424,11 @@ controls belong to sorting.
 Published rows keep their ranking metadata; editor states are derived only when
 read and reused. Scene arrivals retain unchanged entries. Blank and owned builds
 leave an unopened published catalog unbuilt.
+The page fetches the complete file for its selected scene and any explicitly
+opened board builds. Changing scenes requests their files on demand. Inactive
+scene rows are released; leaving a weapon releases its public board, derived
+entries and library DOM. Saved builds, opened references and query restoration
+remain in browser storage. Folded Overview creates its tiles when expanded.
 Ordinary sort, priority fields and directions use the site's shared dropdown.
 The shared board selector sets the comparison context independently of filter
 editor mode. The results toolbar pins its count, board summary and navigation
@@ -481,8 +493,8 @@ and restoring a saved view move the viewport.
 Refreshing conditions parses equipment and triggers only for the selected
 ruler. Cached equipment and trigger data expires with its builtin collection or
 trigger metadata;
-published row arrays are replaced when data arrives. Search vocabulary still
-covers the weapon's full board and is built when searched. Tie alternatives are
+published row arrays are replaced when data arrives. Search vocabulary covers
+the selected ruler and is built when searched. Tie alternatives are
 derived when displayed, in the preferred member order even under another sort.
 
 Summary is a compact, expandable overview of the selected ruler and mode,

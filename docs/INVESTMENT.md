@@ -212,11 +212,14 @@ is the best row in scope. The line (80% by default) marks the first point that
 reaches it. A pick can be saved as a build already placed on the point's
 layout, and the ticked builds can be placed onto the point for no further
 Forma (`start` = the point, limit 0). The scope is per weapon, in
-`wfsim-forma-reach-<weapon>`. A Warframe has no board, so no optimizer.
+`wfsim-forma-reach-<weapon>`. Applying a point keeps main, Exilus and grant
+polarities in their chosen positions while the mods move to fit. A Warframe
+has no board, so no optimizer.
 
-Every row of a weapon's board is read — two and a half thousand on the Torid,
-in well under a second — and a row with a card this page cannot read is left
-out rather than read light.
+Plan ahead requests every scene before constructing its groups. An incomplete
+download reports failure rather than planning over a partial board. Every row
+in scope is read; a row with a card this page cannot read is left out rather
+than read light.
 
 The capacity line follows the rules (`builderCap`, `wfCapacity`): no Catalyst
 halves it, and without the mastery Forma a rank-40 weapon's rank is what the

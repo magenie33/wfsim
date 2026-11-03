@@ -65,6 +65,8 @@ const ui = await evaluate(`(async () => {
   out.reset = order() === defaults && browser.style.width === '';
   await ensurePageBodies('support-page');
   const oldTally = tallyTo, oldFrom = tallyFrom, oldCount = computingCount;
+  const homeHidden = document.getElementById('home-page').hidden;
+  document.getElementById('home-page').hidden = false;
   tallyTo = { volunteers: 1, official: 2, computing: 999 }; tallyFrom = tallyTo;
   computingCount = 7;
   document.getElementById('compute-count').hidden = false;
@@ -75,6 +77,7 @@ const ui = await evaluate(`(async () => {
   out.communityCount = document.querySelector('[data-community="devices"]').textContent === '7' && document.querySelector('[data-community="scores"]').textContent === '1';
   computingCount = 0; renderHomeTally(); computeCommunityPaint();
   out.zero = document.querySelector('#home-tally-n .hf:last-child b').textContent === '0' && document.querySelector('[data-community="devices"]').textContent === '0';
+  document.getElementById('home-page').hidden = homeHidden;
   accountState.account = null; renderAuthPage('compute'); await wait();
   out.anonymous = !!document.querySelector('#compute-community a[href^="/login"]') && document.querySelector('#compute-community dt').textContent === 'This device' && document.querySelector('#compute-community dd b').textContent === '17';
   tallyTo = oldTally; tallyFrom = oldFrom; computingCount = oldCount;

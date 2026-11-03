@@ -46,6 +46,7 @@ function libraryEnsureAttributes(w, all, retry = false) {
         if (libraryStatRun !== run || !libraryActive || !libraryStatBounds().length || finder.weapon !== w.id) return;
         const rows = pending.slice(i, i + 64);
         const r = await api("/api/build/static", { builds: rows.map((p) => libraryStaticBuild(w, p)) });
+        if (libraryStatRun !== run || !libraryActive || finder.weapon !== w.id) return;
         if (!r?.ok || r.stats?.length !== rows.length) throw new Error(r?.error || "invalid static attributes response");
         rows.forEach((p, k) => libraryStatCache.set(libraryStatKey(w, p), r.stats[k]));
         if (libraryStatRun === run && libraryActive && finder.weapon === w.id) libraryStatStatus(w, scope);

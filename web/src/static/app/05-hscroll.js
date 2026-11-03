@@ -58,18 +58,20 @@ function hscrollPaint(bb) {
   const w = Math.max(28, tw * bb.clientWidth / bb.scrollWidth);
   const room = bb.scrollWidth - bb.clientWidth;
   const thumb = bar.querySelector(".hbar-thumb");
-  thumb.style.width = `${w}px`;
-  thumb.style.transform = `translateX(${room > 0 ? (tw - w) * bb.scrollLeft / room : 0}px)`;
+  const width = `${w}px`, transform = `translateX(${room > 0 ? (tw - w) * bb.scrollLeft / room : 0}px)`;
+  if (thumb.style.width !== width) thumb.style.width = width;
+  if (thumb.style.transform !== transform) thumb.style.transform = transform;
   bar.querySelector('[data-d="-1"]').disabled = bb.scrollLeft <= 0;
   bar.querySelector('[data-d="1"]').disabled = bb.scrollLeft >= room - 1;
 }
 
-function hscrollAll() {
-  for (const bb of document.querySelectorAll(".block > .bb")) {
-    const over = bb.scrollWidth > bb.clientWidth + 1 && bb.getClientRects().length > 0;
+function hscrollAll(bodies = document.querySelectorAll(".block > .bb")) {
+  for (const bb of bodies) {
+    if (!bb.isConnected || !bb.getClientRects().length) continue;
+    const over = bb.scrollWidth > bb.clientWidth + 1;
     if (!over && !bb.__hbar) continue;
     const bar = hscrollBar(bb);
-    bar.hidden = !over;
+    if (bar.hidden === over) bar.hidden = !over;
     hscrollPaint(bb);
   }
 }
@@ -77,11 +79,29 @@ function hscrollAll() {
 // ONE PASS A FRAME, however many nodes a redraw touched or however the window
 // moved — the same debounce the start pins use.
 let hscrollFrame = 0;
-const hscrollSoon = () => {
-  if (!hscrollFrame) hscrollFrame = requestAnimationFrame(() => { hscrollFrame = 0; hscrollAll(); });
+const hscrollDirty = new Set();
+const hscrollSoon = (records) => {
+  if (Array.isArray(records)) {
+    for (const record of records) {
+      const target = record.target.nodeType === 1 ? record.target : record.target.parentElement;
+      const body = target?.closest(".block > .bb");
+      if (body) hscrollDirty.add(body);
+      for (const node of record.addedNodes) {
+        if (node.nodeType !== 1) continue;
+        if (node.matches(".block > .bb")) hscrollDirty.add(node);
+        node.querySelectorAll(".block > .bb").forEach((bb) => hscrollDirty.add(bb));
+      }
+    }
+  } else document.querySelectorAll(".block > .bb").forEach((bb) => hscrollDirty.add(bb));
+  if (!hscrollDirty.size || hscrollFrame) return;
+  hscrollFrame = requestAnimationFrame(() => {
+    hscrollFrame = 0;
+    const bodies = [...hscrollDirty]; hscrollDirty.clear(); hscrollAll(bodies);
+  });
 };
 new MutationObserver(hscrollSoon).observe(document.documentElement, { childList: true, subtree: true });
 addEventListener("resize", hscrollSoon);
+hscrollSoon();
 
 // One measured offset keeps page tabs and local sticky controls below the shell.
 let stickyHeaderFrame = 0;
@@ -236,6 +256,9 @@ refreshStickyHeader();
   }
   function refresh() {
     if (EMBED || dragging) return;
+    for (const [name, group] of groups) {
+      if (!group.parent.isConnected || group.rows.every(({card}) => !card.isConnected)) groups.delete(name);
+    }
     for (const page of document.querySelectorAll('.config-page, [data-card-layout]')) {
       if (page.hidden) continue;
       let tools = page.querySelector(':scope > .layout-tools');

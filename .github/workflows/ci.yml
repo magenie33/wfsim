@@ -544,6 +544,9 @@ jobs:
       - name: The Build Library filters sorts and streams published builds
         if: matrix.group == 'views'
         run: node scripts/check_build_library.mjs
+      - name: Startup scene work and cache lifetimes stay bounded
+        if: matrix.group == 'views'
+        run: node scripts/check_frontend_performance.mjs
       - name: Simple and advanced filters compile to one query
         if: matrix.group == 'views'
         run: node scripts/check_library_attributes.mjs

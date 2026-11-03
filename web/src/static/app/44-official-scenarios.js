@@ -233,6 +233,7 @@ function clearMods() {
 // markPresetDirty() below, which no-ops when this runs inside a preset
 // load (restoreState already holds the applying guard).
 function applyWeapon(id, presetMods) {
+  weaponEditorReady = true;
   whileApplying(() => applyWeaponInner(id, presetMods));
   markPresetDirty();
 }

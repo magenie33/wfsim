@@ -21,6 +21,7 @@ const wfTagChips = (tags) => (tags || []).map((t) => {
 const SHARD_HUE = { crimson: "#d64545", azure: "#3d8bfd", amber: "#e8a33d",
   violet: "#9b59d0", emerald: "#2fb36d", topaz: "#e07b2a" };
 let WFCAT = null;
+let warframeCatalogPending = null;
 let wf = null;
 let wfActive = "";
 let wfWired = false;
@@ -34,8 +35,12 @@ const warframePath = (f) => "/warframes/" + String(f.name_en || f.name).replace(
 const frameName = (id) => (id === "helminth" ? "Helminth"
   : ((META.frames || []).find((f) => f.id === id) || {}).name || id);
 
-async function loadWarframeCatalog() {
-  if (WFCAT) return WFCAT;
+function loadWarframeCatalog() {
+  if (WFCAT) return Promise.resolve(WFCAT);
+  if (!warframeCatalogPending) warframeCatalogPending = readWarframeCatalog().finally(() => { warframeCatalogPending = null; });
+  return warframeCatalogPending;
+}
+async function readWarframeCatalog() {
   const c = await api("/api/warframe/catalog", {});
   if (!c || !Array.isArray(c.mods)) throw new Error((c && c.error) || "the Warframe catalog did not load");
   const over = (x, table) => { x.name_en = x.name; x.name = LN(table, x.id, x.name); };
