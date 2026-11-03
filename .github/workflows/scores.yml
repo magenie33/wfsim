@@ -324,6 +324,7 @@ jobs:
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
+          python3 -c "import yaml" 2>/dev/null || python3 -m pip install --quiet pyyaml==6.0.3
           bash scripts/reconcile_queue.sh library.json facts-known.ndjson queue.ndjson
           # …AND WHAT THIS RUN TAKES IS WHAT IT CLAIMED: a question past its
           # deadline that no client is fighting, moved out of the clients' reach
