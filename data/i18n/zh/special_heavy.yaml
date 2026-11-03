@@ -1,0 +1,91 @@
+# Special melee attack limitations.
+ui:
+  ? The first heavy projectile has no exported animation duration or release event. It launches at the start of
+    a nominal one-second motion after the package two-second charge; the page states a one-second wind-up. These
+    clocks are unmeasured.
+  : 首段重击能量弹没有导出的动画时长或发射事件。当前在游戏包给出的两秒蓄力后，以一秒作为动作时长，并在动作开始时发射；wiki 页面写的是一秒蓄力。这些时序尚未实测。
+  The disk forces Impact only within 20 m. This range gate is not modelled, so the disk applies no forced Impact.: 能量盘只对
+    20 米内的目标强制触发冲击。这项距离条件尚未建模，因此当前能量盘不强制触发冲击。
+  ? The package gives the two heavy animations but no projectile release event. Each volley is released halfway
+    through its animation; exact release timing is unmeasured.
+  : 游戏包提供了两段重击动画，但没有弹体发射事件。当前每轮齐射在对应动画中途发出；准确发射时刻尚未实测。
+  ? The horizontal projectile fan and per-dagger deviation are not published. Every projectile follows the aimed
+    ray, so a distant target can take more daggers than in game.
+  : 未公布弹体的水平扇形分布和各枚飞刀的偏移。当前所有弹体沿瞄准射线飞行，因此远处目标可能比游戏中承受更多飞刀。
+  A separate close-range fan strike is not modelled.: 独立的近距离战扇挥击尚未建模。
+  Xaku's accuracy bonus and occasional merging of dagger hits and their Slash procs are not modelled.: Xaku 的精准度加成，以及偶发的飞刀命中和切割触发合并，尚未建模。
+  ? Gunblade shooting within light stance combos is not modelled. Its separate heavy-shot mode uses the ranged attack's
+    own profile.
+  : 枪刃在轻击架势连招中的射击尚未建模。独立的重击射击模式使用远程攻击自己的参数。
+  ? This weapon has a separate heavy-attack profile. Its timing, geometry and unsupported components are disclosed
+    on that heavy mode.
+  : 这把武器具有独立的重击攻击参数。对应重击模式列出了时序、几何范围和未支持的部分。
+  ? Direct heavy-hit detonation includes the hit's own Slash, Heat, Toxin, Electricity and Gas procs. Its retained
+    damage types, mitigation and headshot cap are not calibrated in game. Radial and heavy-slam detonation, the
+    allied duration grant and Jade's Ensemble are not modelled. Heavy kills grant the wielder's ordinary weapon
+    status procs +30% duration for 30 s.
+  : 重击直击的状态引爆包含该次命中自己施加的切割、火焰、毒素、电击和毒气状态。结算保留的伤害类型、减伤和爆头上限尚未在游戏内校准。径向攻击与重击捶地引爆、队友持续时间增益以及 Jade 的 Ensemble 尚未建模。重击击杀会使持有者普通武器施加的异常状态获得
+    +30% 持续时间，增益持续 30 秒。
+  The sliding heavy attack that swings the scythe is not modelled. Tennokai uses the ranged heavy's own damage and delivery.: 滑行时挥动镰刀的重击尚未建模。Tennokai
+    使用远程重击自己的伤害和命中方式。
+  ? The glaive's wall bounce, return path and one-enemy ricochet are not modelled. Direct impact and its explosion
+    are modelled at the first enemy.
+  : 战刃的墙面弹跳、回程路径和弹向另一名敌人的行为尚未建模。直击及其爆炸在第一个敌人处结算。
+  The close-range mace sweep before the glaive release is not modelled.: 释放战刃之前的近距离锤击尚未建模。
+  The projectile's maximum range and width are unpublished; it is simulated as a ray with no hard range limit.: 弹体的最大射程和宽度未公布；当前按没有硬性射程上限的射线模拟。
+  ? Heavy charge and shot multipliers use the package, which disagrees with the wiki's wind-up and some damage totals.
+    Only the first GunbladeGunshot marker in each action emits a shot; the second marker's handler behavior is uncalibrated.
+  : 重击蓄力和射击倍率取自游戏包，与 wiki 的蓄力时长及部分伤害总值不一致。每段动作只使用第一个 GunbladeGunshot 标记发射；第二个标记的事件处理行为尚未校准。
+  ? Point-blank pellet loss and the distance-gated forced Impact proc are not modelled; this profile fires all ten
+    pellets and applies no forced Impact.
+  : 贴脸时的弹丸损失和按距离生效的强制冲击触发尚未建模；当前发射全部十枚弹丸，不强制触发冲击。
+  ? The second target's seeking and all return-flight strikes are not modelled. Flight speed is unpublished, so
+    throws arrive without travel time. The 0.75 s charge and nominal 1 s animation use attack speed; exact hold,
+    release, catch timing and the bare-stance wind-up exception are not calibrated. Nearby ragdoll effects are not
+    modelled.
+  : 对第二个目标的追踪及全部回程命中尚未建模。飞行速度未公布，因此投掷不计飞行时间。0.75 秒蓄力和作为动作时长的 1 秒均受攻速影响；按住、释放、接回的准确时序，以及无架势时受重击蓄力速度影响的例外尚未校准。近处的布娃娃控制效果尚未建模。
+  ? Sarpa's burst uses five rounds 0.05 s apart, with the package's 3x shot multiplier and 1.25x physical modifier.
+    The wiki's heavy totals disagree. Attack-speed scaling inside the burst is not calibrated.
+  : Sarpa 每轮连发五发，间隔 0.05 秒，使用游戏包给出的 3 倍射击倍率和 1.25 倍物理伤害系数。wiki 的重击总值与之不符。连发内部的攻速缩放尚未校准。
+  Sarpa shots have innate punch through, but its depth is unpublished; this profile gives them no body penetration.: Sarpa
+    的射击自带穿透，但穿透深度未公布；当前攻击参数不提供躯体穿透。
+  ? Heavy-attack mod bonuses apply only if the projectile lands during a heavy attack animation. The simulation
+    applies them to every direct heavy projectile instead of checking the animation window.
+  : 重击 MOD 加成只在弹体于重击动画期间命中时生效。当前模拟将加成应用于每次重击弹体直击，尚不检查动画窗口。
+  Tennokai grants its combo-free input, but its bonus damage should not apply to the throw; that exclusion is not modelled.: Tennokai
+    提供不消耗连击的输入，但其伤害加成不应作用于这次投掷；这项排除规则尚未建模。
+  Projectile arcing, corpse attachment, killing-hit deflection and sliding heavy attacks are not modelled.: 弹体抛物线、尸体附着、致死命中后的偏转以及滑行重击尚未建模。
+  ? Both heavy inputs use the package's GunbladeGunshot release event and animation. The package charge is 2 s,
+    conflicting with the wiki's 1.3 s; the Prime's innate factor divides it by 1.5. Charge and motion timing are
+    not calibrated in game.
+  : 两段重击均使用游戏包的 GunbladeGunshot 发射事件和动画。包内蓄力为 2 秒，与 wiki 的 1.3 秒不一致；Prime 的自带系数将其除以 1.5。蓄力与动作时序尚未在游戏内校准。
+  ? The shockwave's width is unpublished. The listed multi-stage distance falloff is applied; the effective hitbox
+    and its flight are not calibrated in game.
+  : 冲击波宽度未公布。已应用列出的多段距离衰减；有效命中体积及飞行尚未在游戏内校准。
+  ? The disk launches on the second standing heavy only. Heavy-slide activation, combo-scaled lifetime, surface
+    ricochets and repeat disk hits are not modelled. This profile follows the infobox one-metre-per-second flight
+    speed and fixed ten-metre range.
+  : 能量盘只在第二段站立重击发射。滑行重击触发、随连击变化的存续时间、表面弹跳和能量盘重复命中尚未建模。当前采用信息框的每秒一米飞行速度和固定十米射程。
+  ? The disk release uses the second heavy GunbladeGunshot marker. The handler mapping is unmeasured; the first
+    heavy LaunchProjectile marker does not emit a disk here.
+  : 能量盘发射使用第二段重击的 GunbladeGunshot 标记。事件处理的对应关系尚未实测；此处第一段重击的 LaunchProjectile 标记不会发射能量盘。
+  ? The wiki heavy total is 900; the package action gives 4 times the 300-damage ranged volley before physical bonuses.
+    This profile follows the package multiplier; the difference is unmeasured.
+  : wiki 的重击总值为 900；游戏包动作在物理加成之前给予 300 伤害的远程齐射 4 倍倍率。当前采用包内倍率；这一差异尚未实测。
+  Shockwave flight speed is unpublished; damage lands at the package release event without travel time.: 冲击波飞行速度未公布；伤害在游戏包的发射事件时刻结算，不计飞行时间。
+  ? The first wave is about 8 m wide and horizontal, while the second is narrow and vertical. Both are traced as
+    rays; terrain traversal and repeated contacts are not modelled.
+  : 第一道波约宽 8 米，呈水平分布，第二道波窄而垂直。当前两者均按射线判定；地形穿行与重复接触尚未建模。
+  ? Killing Blow applies only when a projectile lands during a wind-up animation. The simulation applies it to every
+    heavy projectile instead of checking that animation window.
+  : Killing Blow 只在弹体于蓄力动画期间命中时生效。当前模拟将其应用于每次重击弹体，尚不检查这一动画窗口。
+  ? The shield and three explosions use the package's four timed hits. Their 7 m forward reach is modelled as a
+    melee sweep; the separate 3 m circles around the shield and coverage between the shield and user are not modelled.
+  : 盾牌及三次爆炸使用游戏包的四次定时命中。向前 7 米的范围按近战挥击判定；盾牌周围独立的 3 米圆形范围，以及盾牌与持有者之间的覆盖尚未建模。
+  Turning or changing elevation during the shield throw and sliding heavy attacks are not modelled.: 投盾时转向或改变高度，以及滑行重击尚未建模。
+  ? In Incarnon Form, each standing or Tennokai heavy input emits two spectral daggers at its first physical sweep
+    marker. Their exact release times, spread and maximum flight range are unmeasured. Projectile base-damage exclusions
+    follow the wiki's live-bug rules and are not calibrated in game. Spectral projectiles on heavy slams are not
+    modelled.
+  : 灵化形态下，每次站立重击或 Tennokai 重击输入会在首个近战挥击标记处发射两枚幽灵匕首。准确发射时间、散布和最大飞行距离尚未实测。弹体的基础伤害加成排除规则取自 wiki 所列现存游戏缺陷，尚未在游戏内校准。重击捶地的幽灵弹体尚未建模。
+  Heavy Kill Status Duration: 重击击杀：触发时间
