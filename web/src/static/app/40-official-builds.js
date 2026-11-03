@@ -658,7 +658,7 @@ const depthCount = (w, depth) => {
 /// ARRAY (a fetch or a rescore replaces it, nothing edits one in place), the
 /// weapon, its pool and the language — so a stale answer needs one of them to
 /// change without being replaced.
-let builtinMemo = null;
+let builtinMemo = null, builtinRowsMemo = null;
 const builtinBuilds = () => {
   const w = weaponInfo($("weapon").value) || {};
   const m = builtinMemo;
@@ -672,6 +672,14 @@ const builtinBuilds = () => {
   return out;
 };
 const builtinBuildsUncached = (w) => {
+  // Scene arrivals replace the array while retaining its existing immutable rows.
+  if (!builtinRowsMemo || builtinRowsMemo.w !== w.id
+      || (builtinRowsMemo.pool !== currentPool && (builtinRowsMemo.pool.length !== currentPool.length
+        || builtinRowsMemo.pool.some((mod, i) => mod !== currentPool[i])))
+      || builtinRowsMemo.lang !== LANG || builtinRowsMemo.i18n !== I18N) {
+    builtinRowsMemo = { w: w.id, pool: currentPool, lang: LANG, i18n: I18N, rows: new WeakMap() };
+  }
+  const memo = builtinRowsMemo.rows;
   // THE READING ORDER IS `rankBoard`'s (`87-headless.js`), so the bar and a
   // headless caller rank one board one way.
   //
@@ -683,6 +691,8 @@ const builtinBuildsUncached = (w) => {
   const deep = boardGroupLeaders(BOARD[w.id]);
   const rows = (BOARD[w.id] || []).filter((r) => deep(r, boardDepth));
   return rankBoard(rows, benchList().map((b) => b.id), w.modes).map(({ row, mode, riven: rv, rank: n, key }) => {
+    const previous = memo.get(row);
+    if (previous && previous.builtin === key && previous.rank === n) return previous;
     const bench = (META.benchmarks || []).find((b) => b.id === row.benchmark);
     // WHAT THIS ROW IS BEST OF, said in its own name. A board that holds both
     // kinds has two leaders per weapon and mode, and "#1" alone would be the
@@ -697,7 +707,7 @@ const builtinBuildsUncached = (w) => {
     // is no list to infer the missing term from.
     const m = modeLabel(w, mode);
     const label = m && kind ? `${m}（${kind}）` : (m || kind);
-    return {
+    const entry = {
       name: label ? `#${n} · ${label}` : `#${n}`,
       // THE MODE IN WORDS, for the control that picks one — stated even where
       // the name above omits it, since the control is drawn from these entries.
@@ -720,8 +730,15 @@ const builtinBuildsUncached = (w) => {
       hint_flat: `${bench ? tr(bench.name) : row.benchmark} · ${
         row.shown != null ? row.shown : (row.score || 0).toFixed(4)}`,
       savedAt: 0,
-      state: boardRowState(w, row),
+      // Ranking reads row metadata; only opening a build needs its editor state.
+      get state() {
+        const state = withPoolOf(w, () => boardRowState(w, row));
+        Object.defineProperty(this, "state", { value: state, enumerable: true, configurable: true, writable: true });
+        return state;
+      },
     };
+    memo.set(row, entry);
+    return entry;
   });
 };
 /// A BOARD ROW AS A BUILD STATE — what the build bar opens, and what the
@@ -770,7 +787,11 @@ function applyBenchLink(w, benchId, wantMode, wantRiven) {
 }
 
 const buildList = () => builtinBuilds().concat(loadPresetList(BUILDS));
-const buildNamed = (n) => presetFind(buildList(), n);
+const buildNamed = (n) => {
+  if (!n) return null;
+  const own = loadPresetList(BUILDS).find((p) => presetId(p) === n);
+  return own || presetFind(buildList(), n);
+};
 /// Is the build on screen one of the official ones? Then nothing may write it.
 const officialBuildActive = () => !!(buildNamed(activePreset) || {}).builtin;
 
