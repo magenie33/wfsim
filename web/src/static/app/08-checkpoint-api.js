@@ -103,7 +103,7 @@ function woptMerge(parts) {
   };
 }
 
-// Loading timers prove contact; an engine callback proves observed work.
+// Loading timers prove contact; engine callbacks and returns prove calculation feedback.
 function optimizerWorkerSignals() {
   const workers = [];
   let engineAt = null, responseAt = null;
@@ -115,9 +115,10 @@ function optimizerWorkerSignals() {
       responseAt = Date.now();
       const worker = workers[i];
       if (!worker) return;
-      if (message.kind === "alive" && message.source === "engine") engineAt = responseAt;
-      if ((message.kind === "alive" && message.source === "engine")
-        || ["progress", "result", "board", "checkpoint", "rested"].includes(message.kind)) worker.loaded = true;
+      const engine = (message.kind === "alive" && message.source === "engine")
+        || ["progress", "result", "board", "checkpoint"].includes(message.kind);
+      if (engine) engineAt = responseAt;
+      if (engine || message.kind === "rested") worker.loaded = true;
     },
     finish(i) { if (workers[i]) workers[i].activity = null; },
     read(activity) {
