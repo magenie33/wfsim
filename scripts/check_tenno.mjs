@@ -9,7 +9,7 @@ const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
   history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(2500);
-  document.querySelectorAll('.tab').forEach(t => { if (/Sim/i.test(t.textContent)) t.click(); });
+  history.pushState({}, '', weaponTabPath($('weapon').value, 'simulator')); await route();
   await sleep(1200);
   // IN A FIGHT OF ITS OWN. A first-time visitor lands ON the official ruler,
   // whose fields are locked — so every field this check sets was being set on a
@@ -146,7 +146,7 @@ check("...and they stay editable — no frame reaches the 700-energy gate",
 // the two rosters DIFFERING rather than on five literals, because a test that
 // pinned numbers alone would pass on a file that had been copied.
 {
-  await evaluate(`(() => { history.pushState({}, '', '/weapons/Artax/builder'); route(); })()`);
+  await evaluate(`(() => { history.pushState({}, '', '/weapons/Artax/simulator'); route(); })()`);
   await sleep(3000);
   const sen = await evaluate(`(async () => {
     await new Promise(r => setTimeout(r, 1500));
@@ -194,7 +194,7 @@ const os = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
   history.pushState({}, '', '/weapons/Paris_Prime/builder'); route(); await sleep(3500);
-  document.querySelectorAll('.tab').forEach(t => { if (/Sim/i.test(t.textContent)) t.click(); });
+  history.pushState({}, '', weaponTabPath($('weapon').value, 'simulator')); await route();
   await sleep(1200);
   // THE BASE FORM, so the number under test is the one the card's X and Y are
   // printed against. The default mode is the Incarnon cycle, whose panel is a
@@ -255,7 +255,7 @@ const solo = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
   history.pushState({}, '', '/weapons/Vasto_Prime/builder'); route(); await sleep(3500);
-  document.querySelectorAll('.tab').forEach(t => { if (/Sim/i.test(t.textContent)) t.click(); });
+  history.pushState({}, '', weaponTabPath($('weapon').value, 'simulator')); await route();
   await sleep(1200);
   // THE BASE FORM: the card's numbers are printed against it, and the magazine
   // half is the one clause that says "does not affect Incarnon Form".
@@ -341,7 +341,7 @@ const extra = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear();
   history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3000);
-  document.querySelectorAll('.tab').forEach(t => { if (/Sim/i.test(t.textContent)) t.click(); });
+  history.pushState({}, '', weaponTabPath($('weapon').value, 'simulator')); await route();
   await sleep(1200);
   // A FIGHT OF ITS OWN, for the same reason as the first block: the ruler locks these.
   document.querySelector('#preset-bar-simulator-scenarios .pchip.add').click();
