@@ -89,6 +89,18 @@ ui:
     modelled.
   : 灵化形态下，每次站立重击或 Tennokai 重击输入会在首个近战挥击标记处发射两枚幽灵匕首。准确发射时间、散布和最大飞行距离尚未实测。弹体的基础伤害加成排除规则取自 wiki 所列现存游戏缺陷，尚未在游戏内校准。重击捶地的幽灵弹体尚未建模。
   Heavy Kill Status Duration: 重击击杀：触发时间
+  ? The page's Notes give the wave a 3 m width and 37.5 m maximum travel, while Characteristics gives 5 m and 30
+    m. This model uses Notes; neither geometry is calibrated.
+  : wiki 页面的备注将冲击波宽度和最大距离写为 3 米、37.5 米，特性部分则写为 5 米、30 米。当前采用备注的数据；两种几何范围均未校准。
+  ? The wave's combo multiplier, doubled heavy critical-chance bonus and Condition Overload use the general heavy-attack
+    rules; these interactions are unmeasured.
+  : 冲击波的连击倍率、重击双倍暴击几率加成和异况超量采用通用重击规则；这些相互作用尚未实测。
+  ? The corrosive trail's independent damage buckets, rectangular coverage, persistent pool contacts and blindness
+    are not modelled.
+  : 腐蚀痕迹的独立伤害加成类别、矩形覆盖、残留区域持续接触和致盲尚未建模。
+  ? The Coda page repeats the original wave's 225 damage and 9%/2x/37% crit and status. Those projectile stats have
+    no in-game calibration.
+  : Coda 页沿用了原版冲击波的 225 伤害、9% 暴击几率、2 倍暴击倍率和 37% 触发几率。这些弹体参数尚未在游戏内校准。
 weapons:
   argo_and_vel_heavy: 星舟 & 帆
   arum_spinosa_heavy: 疆南星刺
@@ -103,3 +115,5 @@ weapons:
   tak_and_lug_heavy: 塔克 & 卢格
   vastilok_heavy: 瓦斯提枪刃
   wolf_sledge_throw: 恶狼战锤
+  caustacyst_heavy: 灼蚀变体镰
+  coda_caustacyst_heavy: 终幕·灼蚀变体镰
