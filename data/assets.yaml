@@ -4,6 +4,9 @@
 # Files: python scripts/fetch_images.py (web/cache/img/, then site/img/).
 
 weapons:
+  caustacyst_heavy: Caustacyst.png
+  coda_caustacyst_heavy: CodaCaustacyst.png
+  zenistar_heavy: Zenistar.png
   argo_and_vel_heavy: DaxDuviriMaceShieldWeapon.png
   arum_spinosa_heavy: InfWarfanWeapon.png
   edun_heavy: DaxDuviriPolearm.png

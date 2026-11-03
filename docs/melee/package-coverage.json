@@ -3342,6 +3342,7 @@
     "zenistar_block",
     "zenistar_block_forward",
     "zenistar_forward",
+    "zenistar_heavy",
     "zenistar_slide"
   ],
   "retained_weapon_modes": [

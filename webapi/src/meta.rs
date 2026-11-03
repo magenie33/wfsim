@@ -595,7 +595,9 @@ pub fn meta_json() -> Value {
                         // THE ENTRY'S OWN, which is what an EMPTY stance slot
                         // fires — a stance in the slot replaces it, and sends
                         // the same three numbers of its own (`stance_combos`).
-                        let combo = s.map(|s| &s.attack.combo_script).filter(|c| !c.is_empty())
+                        // Independent profiles cannot share one base-damage multiplier.
+                        let combo = s.filter(|s| s.attack.profiles.is_empty())
+                            .map(|s| &s.attack.combo_script).filter(|c| !c.is_empty())
                             .map(|c| combo_summary(c));
                         json!({
                         "id": id, "name": name, "is_default": def,

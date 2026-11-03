@@ -916,6 +916,13 @@ events and geometry remain disclosed on those forms. A delayed radial retains
 its impact point and shot attribution without repeating contact or spending
 combo again. Heavy inputs cannot resolve contacts after the engagement ends.
 
+Per-profile modifier flags separate melee damage, universal damage, heavy
+damage and combo damage. Evolution base-damage exclusions are applied before
+mod resolution. Lingering melee fields can derive duration from the input's
+combo, pulse cadence from live attack speed and radius from melee range.
+Zenistar's declared heavy loop waits for the deployed aura's absolute expiry;
+other combatants and the field keep acting during that wait.
+
 **THE INFOBOX WINS THE HEAVY OVER THE CLASS TABLE, and says where it
 disagrees.** Every Dual Sword and Tonfa reads 4x against 5x, every Dagger and
 Dual Dagger 2x against 5x — the Tonfa and Okina reconciliation (`notes:

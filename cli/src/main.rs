@@ -43,7 +43,6 @@ fn dual_toxocyst_baseline() -> FightParams {
         heavy_status: None,
         melee_damage_mods_apply: true,
         universal_damage_mods_apply: true,
-        damage_loss_per_body: 0.0,
         follow_through: None,
         slam: None,
         shockwave: None,

@@ -829,6 +829,19 @@ exclusions and CO brackets; Grigori's lifetime, bounces and heavy-slide trigger
 are not modelled. Wolf Sledge's second-target seeking and return-flight hits
 are absent, and its throw cadence is a disclosed stand-in.
 
+Caustacyst's wave travels separately from its blade, with distance and body
+decay and its own melee/universal damage rules. Its persistent rectangular
+corrosive trail, pool contacts and blindness are not modelled. Coda's wave
+stats follow its published page without an in-game calibration.
+
+Zenistar's heavy mode deploys one disc, waits for its aura to expire and deploys
+again. Combo scales lifetime rather than disc damage; attack speed scales aura
+pulses, and melee range grows its radius. Early recall, floor placement,
+collision stopping and the deployed blade's light-combo cycle are absent.
+Tennokai conversion from light inputs is disabled for this deployment loop.
+The aura's crit snapshots, stealth and special Warframe interactions remain
+uncalibrated.
+
 Harmony detonates remaining damaging status ticks after a direct heavy hit
 applies its own procs, including on follow-through bodies. Its single mixed
 instance retains the stored damage families; Slash's Cinematic portion bypasses

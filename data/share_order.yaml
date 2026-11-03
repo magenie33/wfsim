@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: f79cf7797b7e14a0
-count: 3834
+digest: 39dd78fb3dc181de
+count: 3837
 ids:
   - acceltra
   - acceltra_prime
@@ -3844,3 +3844,6 @@ ids:
   - tak_and_lug_heavy
   - vastilok_heavy
   - wolf_sledge_throw
+  - caustacyst_heavy
+  - coda_caustacyst_heavy
+  - zenistar_heavy
