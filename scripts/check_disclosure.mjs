@@ -142,6 +142,8 @@ for (const lang of ["en", "zh"]) {
         renderEvo();
         await sleep(400);
         out.evoBugInjected = evoRows('.livebug').map(e => e.textContent.trim());
+        out.evoBugInstalled = document.querySelectorAll('.slot.axis.filled .livebug').length;
+        out.evoBugChoices = out.evoBugInjected.length - out.evoBugInstalled;
         out.evoBugTitle = (evoRows('.livebug')[0] || {}).title || '';
         delete opt.live_bugs;
         renderEvo();
@@ -384,8 +386,8 @@ for (const lang of ["en", "zh"]) {
   // says do not pick the perk for that half — nobody is going to implement what
   // DE has not shipped (MEASUREMENTS M49).
   check(`[${lang}] an evolution whose clause the GAME does not honour says so`,
-    (r.evoBugInjected || []).length === 1,
-    `${(r.evoBugInjected || []).length} chips for one injected live bug`);
+    r.evoBugInstalled === 1 && r.evoBugChoices === 1,
+    `${r.evoBugInstalled} installed chips and ${r.evoBugChoices} choice chips for one injected live bug`);
   check(`[${lang}] ...and the chip says the number matches the live game`,
     /unintended|bug|游戏|实际/i.test(r.evoBugTitle || '') || (r.evoBugTitle || '').length > 20,
     JSON.stringify(r.evoBugTitle || '').slice(0, 160));
