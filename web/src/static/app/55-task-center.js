@@ -67,6 +67,8 @@ function userTaskItems() {
   return [...transient, ...stored];
 }
 function userTaskProgress(task) {
+  const specific = USER_TASK_TYPES.get(task.kind)?.progress?.(task);
+  if (specific) return specific;
   const progress = task.progress;
   return { fraction: progress?.total > 0 ? Math.max(0, Math.min(1, progress.done / progress.total)) : null,
     phase: tr(progress?.phase || "calculating"),
@@ -75,9 +77,9 @@ function userTaskProgress(task) {
 }
 function userTaskRow(task, waiting) {
   const type = USER_TASK_TYPES.get(task.kind), say = type?.describe ? type.describe(task) : { title: task.kind };
-  const { fraction, phase, count } = userTaskProgress(task);
+  const { fraction, phase, count, detail_html } = userTaskProgress(task);
   const bar = task.state === "running" ? `<div class="task-progress${fraction == null ? " indeterminate" : ""}" role="progressbar" aria-label="${escHtml(say.title)}"${fraction == null ? "" : ` aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(fraction * 100)}"`}><i style="width:${fraction == null ? 30 : fraction * 100}%"></i></div>
-    <div class="task-progress-note"><span>${escHtml(phase)}</span><span>${escHtml(count)}</span></div>` : "";
+    <div class="task-progress-note"><span>${escHtml(phase)}</span><span>${escHtml(count)}</span></div><div class="task-progress-extra">${detail_html || ""}</div>` : "";
   const action = (name, label) => `<button type="button" class="ghost-btn" data-user-task="${escHtml(task.id)}" data-user-task-action="${name}">${escHtml(tr(label))}</button>`;
   let actions = "";
   if (task.transient) actions = type?.actions ? type.actions(task, action) : "";
@@ -100,6 +102,27 @@ function userTaskRow(task, waiting) {
   }
   const details = userTaskDetails === task.id;
   return `<article class="task-row" data-task-id="${escHtml(task.id)}" data-state="${task.state}"><div class="task-title-row"><span class="task-kind" aria-hidden="true">${escHtml(type?.icon || "≡")}</span><div class="task-title"><button type="button" class="task-name" data-user-task="${escHtml(task.id)}" data-user-task-action="details" aria-expanded="${details}">${escHtml(say.title)}</button><div class="task-origin">${escHtml(say.note || "")}</div></div><span class="task-state">${escHtml(userTaskLabel(task.state))}</span></div>${bar}<div class="task-actions">${actions}</div>${userTaskActive(task) && (task.destination === "community" || communityTaskCapable(task)) ? `<div class="task-origin">${escHtml(tr("Transfer restarts from the same inputs."))}</div>` : ""}${details ? `<div class="task-details">${type?.details ? type.details(task) : ""}${userTaskActive(task) && communityTaskCapable(task) ? `<p>${escHtml(tr(task.destination === "community" ? "Moving to this device restarts from the fixed inputs." : "Community compute receives these calculation inputs. Transfer restarts the calculation; the task and inputs stay the same."))}</p>` : ""}${task.error ? `<p class="error">${escHtml(tr(task.error))}</p>` : ""}</div>` : ""}</article>`;
+}
+function updateUserTaskProgress(row, task) {
+  const bar = row.querySelector(".task-progress");
+  if (!bar) return;
+  const { fraction, phase, count, detail_html } = userTaskProgress(task);
+  bar.classList.toggle("indeterminate", fraction == null);
+  bar.querySelector("i").style.width = `${fraction == null ? 30 : fraction * 100}%`;
+  for (const [name, value] of [["aria-valuemin", 0], ["aria-valuemax", 100], ["aria-valuenow", Math.round(fraction * 100)]]) {
+    if (fraction == null) bar.removeAttribute(name); else bar.setAttribute(name, value);
+  }
+  const notes = row.querySelector(".task-progress-note").children;
+  notes[0].textContent = phase; notes[1].textContent = count;
+  const extra = row.querySelector(".task-progress-extra"), next = document.createElement("template");
+  next.innerHTML = detail_html || "";
+  const clock = extra.querySelector("[data-search-clock]"), fresh = next.content.querySelector("[data-search-clock]");
+  if (clock && fresh) {
+    for (const attribute of fresh.attributes) clock.setAttribute(attribute.name, attribute.value);
+    clock.textContent = fresh.textContent;
+    fresh.replaceWith(clock);
+  }
+  extra.replaceChildren(next.content);
 }
 function renderUserTasks() {
   const toggle = $("user-tasks-toggle"), panel = $("user-tasks-panel");
@@ -131,17 +154,10 @@ function renderUserTasks() {
       const type = USER_TASK_TYPES.get(task.kind), say = type?.describe ? type.describe(task) : { title: task.kind };
       row.querySelector(".task-name").textContent = say.title;
       row.querySelector(".task-origin").textContent = say.note || "";
-      const bar = row.querySelector(".task-progress");
-      if (bar) {
-        const { fraction, phase, count } = userTaskProgress(task);
-        bar.classList.toggle("indeterminate", fraction == null);
-        bar.querySelector("i").style.width = `${fraction == null ? 30 : fraction * 100}%`;
-        if (fraction == null) bar.removeAttribute("aria-valuenow"); else bar.setAttribute("aria-valuenow", Math.round(fraction * 100));
-        const notes = row.querySelector(".task-progress-note").children;
-        notes[0].textContent = phase; notes[1].textContent = count;
-      }
+      updateUserTaskProgress(row, task);
       if (task.transient && userTaskDetails === task.id && type?.details) row.querySelector(".task-details").innerHTML = type.details(task);
     }
+    watchOptimizationClocks();
     return;
   }
   const groups = [["Automatic", visible.filter((task) => task.transient && task.kind !== "community-work")], ["For other players", visible.filter((task) => task.kind === "community-work")], ["Queue", visible.filter((task) => !task.transient && userTaskActive(task))], ["History", visible.filter((task) => !task.transient && !userTaskActive(task)).reverse()]];
@@ -158,6 +174,7 @@ function renderUserTasks() {
   panel.dataset.signature = signature;
   if (focusTask && focusAction) [...panel.querySelectorAll("[data-user-task]")].find((element) => element.dataset.userTask === focusTask && element.dataset.userTaskAction === focusAction)?.focus({ preventScroll: true });
   if (focusFilter) [...panel.querySelectorAll("[data-user-task-filter]")].find((element) => element.dataset.userTaskFilter === focusFilter)?.focus({ preventScroll: true });
+  watchOptimizationClocks();
 }
 async function userTaskAction(action, id) {
   userTaskError = "";

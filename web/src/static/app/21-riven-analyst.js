@@ -216,7 +216,18 @@ async function refreshRivenAnalysis(redraw = false) {
   const pending = tasks.filter(task => task.state !== "succeeded");
   const waiting = tasks.filter(task => task.state === "queued");
   const focused = document.activeElement?.dataset;
-  $("riven-analysis-queue").innerHTML = pending.map(task => userTaskRow(task, waiting)).join("");
+  const list = $("riven-analysis-queue");
+  const progressSignature = JSON.stringify([LANG, userTaskDetails, !!communityTaskCapabilities, pending.map(task => [task.id, task.state, task.error, task.result_ref, task.delivery_pending, task.destination])]);
+  if (list.dataset.signature === progressSignature) {
+    for (const row of list.querySelectorAll("[data-task-id]")) {
+      const task = pending.find(item => item.id === row.dataset.taskId);
+      if (task) updateUserTaskProgress(row, task);
+    }
+  } else {
+    list.innerHTML = pending.map(task => userTaskRow(task, waiting)).join("");
+    list.dataset.signature = progressSignature;
+  }
+  watchOptimizationClocks();
   $("riven-analysis-queue").onclick = event => {
     const action = event.target.closest("[data-user-task-action]");
     if (action) userTaskAction(action.dataset.userTaskAction, action.dataset.userTask).then(() => refreshRivenAnalysis(true)).catch(userTaskFailed);

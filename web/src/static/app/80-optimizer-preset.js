@@ -295,6 +295,8 @@ function optLaneText(s) {
 /// descent counts its starts' finished descents: how many rounds one takes is
 /// found by taking them, so the only totals are the starts and their descents.
 function optProgressOf(st) {
+  if (st.phase === "done") return 1;
+  if (optimizationFinalStage(st)) return st.sims_planned ? Math.min(1, st.sims_done / st.sims_planned) : null;
   const lanes = st.starts || [];
   if (!st.rounds && lanes.length) {
     const of = (s) => Math.max(1, s.passes || 1);
@@ -306,32 +308,29 @@ function optProgressOf(st) {
 
 function renderOptProgress(st) {
   const lanes = st.starts || [];
-  const pct = 100 * (optProgressOf(st) || 0);
-  // THE DESCENT HAS NO PLAN TO BE A PERCENTAGE OF — how many changes a start
-  // takes is found by taking them — so it reports what it has done.
-  const descending = !st.rounds;
-  const head = descending
-    ? escHtml(tr("improving the starts — {b} builds scored, {s} fights")
-      .replace("{b}", (st.enumerated || 0).toLocaleString()).replace("{s}", (st.sims_done || 0).toLocaleString()))
-    : st.phase === "enumerating"
-    ? `enumerating candidates…${st.enumerated ? ` ${st.enumerated.toLocaleString()} so far` : ""}${st.sims_done ? ` · ${st.sims_done.toLocaleString()} screened` : ""}`
-    : `round ${st.round}/${st.rounds} — ${(st.round_jobs || 0).toLocaleString()} jobs × ${st.round_runs} runs`;
+  const fraction = optProgressOf(st), pct = 100 * (fraction || 0);
+  const view = optimizationTaskProgress({ progress: { phase: "Optimization", status: st, done: fraction || 0, total: fraction == null ? 0 : 1 } });
+  const descending = !optimizationFinalStage(st);
   const notes = (st.notes || []).map((n) =>
     `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? sig2(kpm(n.best, sim.duration)) + " KPM" : n.best.toExponential(2) + " dmg"} · ${(n.ms / 1000).toFixed(1)}s</div>`
   ).join("");
   const lane = (s, i) => `<div class="opt-note">${escHtml(tr("start"))} ${i + 1}: ${escHtml(optLaneText(s))}</div>`;
   const sub = descending
-    ? `<div class="opt-prog-sub">${escHtml(tr("{d} of {n} starts settled").replace("{d}", lanes.filter((s) => s.settled).length).replace("{n}", lanes.length || "…"))} · ${escHtml(tr("every worker scores each batch; in the browser a search takes minutes"))}</div>${lanes.map(lane).join("")}`
-    : st.phase === "enumerating"
+    ? `<div class="opt-prog-sub">${escHtml(tr("{d} of {n} starts settled").replace("{d}", lanes.filter((s) => s.settled).length).replace("{n}", lanes.length || "…"))}</div>${lanes.map(lane).join("")}`
+    : st.phase === "enumerating" || !st.sims_planned
     ? ""
     : `<div class="opt-prog-sub">${pct.toFixed(1)}% · ${st.sims_done.toLocaleString()} / ${st.sims_planned.toLocaleString()} sims${st.jobs ? ` · ${st.jobs.toLocaleString()} candidate builds` : ""}</div>`;
+  const focused = document.activeElement?.id === "opt-cancel";
   $("opt-results").innerHTML = `<div class="opt-progress">
-    <div class="opt-prog-head"><span>${head}</span><span class="opt-elapsed">${st.elapsed_s.toFixed(0)}s</span></div>
-    <div class="opt-bar"><i style="width:${pct}%"></i></div>
-    ${sub}${notes}
+    <div class="opt-prog-head"><span>${escHtml(view.phase)}</span></div>
+    <div class="opt-prog-sub">${escHtml(view.count)}</div>
+    <div class="opt-bar${fraction == null ? " indeterminate" : ""}" role="progressbar" aria-label="${escHtml(view.phase)}"${fraction == null ? "" : ` aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(pct)}"`}><i style="width:${fraction == null ? 30 : pct}%"></i></div>
+    ${view.detail_html}${sub}${notes}
     <button class="ghost-btn small" id="opt-cancel">${escHtml(tr("Cancel"))}</button>
   </div>`;
   $("opt-cancel").addEventListener("click", cancelOptimize);
+  if (focused) $("opt-cancel").focus({ preventScroll: true });
+  watchOptimizationClocks();
 }
 
 /// STOPPING A SEARCH, from its button or the agent door. The poll reports the

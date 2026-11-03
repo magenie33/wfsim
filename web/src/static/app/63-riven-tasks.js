@@ -21,6 +21,7 @@ USER_TASK_TYPES.set("appraisal", {
   },
 });
 async function finishSavedAppraisal(task, execution, search) {
+  if (task.destination === "community") execution.report({ phase: "Waiting for appraisal replay", done: 0, total: 0 });
   const replay = async () => {
     if (execution.signal.aborted) throw new Error("Cancelled");
     const release = holdForeground();
@@ -29,6 +30,7 @@ async function finishSavedAppraisal(task, execution, search) {
   return task.destination === "community" ? userTaskLock("resource:local", replay) : replay();
 }
 async function replaySavedAppraisal(task, execution, search) {
+  execution.report({ phase: "Appraisal replay", done: 0, total: 0 });
   const best = (search.results || []).find((row) => row?.mods?.length);
   if (!best) throw new Error("the search ranked nothing");
   const job = { ruler: task.origin.ruler, riven: task.request.rivens[0].spec,

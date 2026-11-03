@@ -46,6 +46,16 @@ Acceptance freezes the request and its origin before awaiting storage. IndexedDB
 and pending commands/events. Acceptance is acknowledged after its transaction
 commits. Progress is an in-memory observation broadcast between tabs.
 
+Optimization and appraisal show their current phase, completed build evaluations
+and fights, batch counts and elapsed time on the task center and their pages.
+Completed descents count only known starts and passes; a final verification
+without a published total stays indeterminate. A completed search is 100%.
+Loading contact and observed engine activity are distinct. Calculation-response
+age is shown only for local workers that publish that signal. Repeated status
+polls do not reset the last-progress clock. Visible clocks tick without replacing
+controls; their timer stops when no active progress is visible. Appraisal replay
+uses its own completed-run count and does not retain search counters.
+
 A Web Lock selects one runner per executor across tabs. The local resource
 lock permits one explicit heavy calculation at a time, including an appraisal
 replay following a community search. Each operation retains its existing

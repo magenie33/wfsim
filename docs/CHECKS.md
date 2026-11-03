@@ -81,6 +81,12 @@ are in [TASKS.md](TASKS.md).
 accepted request with the fx builder, runs the shared search/replay/grade,
 then deletes the card and queue item. The artifact still supplies analysis
 history, the optimizer record and a shared build retaining its original rolls.
+Held optimization and appraisal executions check all three progress surfaces:
+actual counts change while the coarse descent bar stays fixed, clocks advance
+without a report, repeated polls preserve last-progress time and cancellation
+or leaving the page stops the clock. Final verification without a known total
+is indeterminate; replay displays its own counts. These assertions fail on the
+renderer that shows normalized `0 / 1` and no local clock.
 
 ## `check_page_bodies`
 

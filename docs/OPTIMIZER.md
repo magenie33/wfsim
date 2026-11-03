@@ -130,6 +130,13 @@ fold:
                   then the progress and the results
 ```
 
+Progress shows completed build evaluations and fights, the current batch and
+each start's descent position. Worker loading and observed calculation responses
+are reported separately. Elapsed time and time since the last progress continue
+updating during a long fight. A descent's future sweep count is unknown; its bar
+counts completed known passes. Final simulation publishes completed runs and
+stays indeterminate when its total is unknown.
+
 | what | where it lives | why |
 |---|---|---|
 | the starts, runs per candidate | the SEARCH preset | decisions about one search |
