@@ -31,12 +31,18 @@ export function inventoryWrite(plan, now = Date.now()) {
     || !Number.isFinite(Date.parse(plan.started_at)) || Date.parse(plan.started_at) > now || now - Date.parse(plan.started_at) > INVENTORY_MAX_MS)
     throw new Error("incomplete task inventory");
   const at = new Date(now).toISOString();
-  return { sql: `WITH other AS MATERIALIZED (
-      SELECT CASE WHEN state = 'spot' THEN 'verification' ELSE producer END kind, verb, count(*) n FROM questions q
-      WHERE state IN ('open','disputed','nondeterministic','spot')
-        AND (state = 'spot' OR CASE WHEN producer NOT IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb))
-          THEN NOT EXISTS (SELECT 1 FROM demands d WHERE d.question=q.id AND d.state='live'
-            AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb)) OFFSET 0) ELSE false END)
+  return { sql: `WITH live AS MATERIALIZED (
+      SELECT d.question,(array_agg(d.producer ORDER BY d.due_at,d.producer,d.ref))[1] producer FROM demands d
+      WHERE d.state='live' AND d.producer NOT IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb))
+      GROUP BY d.question), pending AS (
+      SELECT l.producer kind,q.verb FROM live l JOIN questions q ON q.id=l.question
+      WHERE q.state IN ('open','disputed','nondeterministic') AND NOT EXISTS (
+        SELECT 1 FROM demands d WHERE d.question=q.id AND d.state='live'
+          AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb)))
+      UNION ALL SELECT 'verification',q.verb FROM questions q WHERE q.state='spot'
+      UNION ALL SELECT 'verification',q.verb FROM questions q WHERE q.state IN ('disputed','nondeterministic')
+        AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.question=q.id AND d.state='live')),
+    other AS MATERIALIZED (SELECT kind,verb,count(*) n FROM pending
       GROUP BY 1,2), all_orders AS (
       SELECT ?3::text kind, ?4::text verb, ?5::bigint n UNION ALL SELECT kind,verb,n FROM other),
     orders AS (SELECT kind,sum(n)::bigint n FROM all_orders GROUP BY kind),
