@@ -1,91 +1,64 @@
-// Complete demand is independent of admission pacing and partial scans.
-import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { completeInventory, publishInventory } from "./compute_inventory.mjs";
-import { inventoryWrite, readInventory, validInventory, INVENTORY_MAX_MS } from "../worker/task_inventory.js";
-import { testDb } from "./pg/test_db.mjs";
-import worker from "../worker/index.js";
-import { factory, canon, questionId } from "../worker/tasks.js";
-
-const dir = mkdtempSync(join(tmpdir(), "compute-inventory-test-")), now = Date.now(), started = new Date(now - 60000).toISOString();
-const row = (id, ruler = "r") => ({ build_id: id, ruler, mode: "base" });
-const file = (name, rows) => { const p = join(dir, name); writeFileSync(p, rows.map(r => JSON.stringify(r)).join("\n") + "\n"); return p; };
+// Complete demand counts canonical questions from one snapshot.
+import assert from 'node:assert/strict';
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { classifyInventory } from './classify_compute_inventory.mjs';
+import { publishInventory } from './compute_inventory.mjs';
+import { inventoryWrite, readInventory, INVENTORY_MAX_MS } from '../worker/task_inventory.js';
+import { testDb } from './pg/test_db.mjs';
+import worker from '../worker/index.js';
+import { questionId } from '../worker/task_contract.js';
+const dir = mkdtempSync(join(tmpdir(), 'compute-inventory-test-')), now = Date.now(), engine = '4393e1730621';
+const file = (name, rows) => { const p = join(dir, name); writeFileSync(p, rows.map(r => JSON.stringify(r)).join('\n') + '\n'); return p; };
+const row = (id, ruler = 'r') => ({ build_id: id, ruler, mode: 'base' });
 try {
-  const queue = file("queue", [row("a"), row("a"), row("b"), row("retired", "old")]);
-  const missing = file("missing", [row("b"), row("d"), row("e"), row("d")]);
-  const orphan = file("orphans", [row("b")]);
-  const plan = await completeInventory(queue, missing, orphan, started, ["r"]);
-  assert.equal(plan.rows, 3); assert.equal(plan.queued, 1);
-  const admitted = await completeInventory(file("queue2", [row("a"), row("d")]), file("missing2", [row("e")]), file("empty", []), started, ["r"]);
-  assert.equal(admitted.rows, plan.rows, "admission changed complete demand");
-  assert.equal(admitted.queued, 2);
-  const completed = await completeInventory(file("queue3", [row("d")]), file("missing3", [row("e")]), file("empty", []), started, ["r"]);
-  assert.equal(completed.rows, 2, "confirmed work did not leave the next inventory");
-  const many = Array.from({ length: 10001 }, (_, i) => row(String(i)));
-  const chunked = await completeInventory(file("many", many), file("duplicates", many), file("remove-many", [many[0]]), started, ["r"]);
-  assert.equal(chunked.rows, 10000); assert.equal(chunked.queued, 10000);
-  await assert.rejects(completeInventory(queue, file("invalid", [null]), orphan, started, ["r"]), /invalid task row/);
-  await assert.rejects(completeInventory(queue, missing, orphan, started, []), /incomplete inventory roster/);
-  console.log("ok: the complete union includes unadmitted work, deduplicates batches, removes refused/retired work and falls after completion");
-
-  const db = await testDb("library");
-  await db.run(`INSERT INTO questions(id,verb,request,state,due_at,opened_at,producer) VALUES
-    ('covered','simulate','{}','open','x','x','sweep'),
-    ('new-type','future_verb','{}','open','x','x','future_owner'),
-    ('review','simulate','{}','disputed','x','x','board_review'),
-    ('spot','simulate','{}','spot','x','x','sweep'),
-    ('shared','simulate','{}','open','x','x','future_owner'),
-    ('done','future_verb','{}','fact','x','x','future_owner')`);
-  await db.run("INSERT INTO demands(producer,ref,question,state,asked_at,due_at,payload) VALUES ('sweep','shared','shared','live','x','x','{}')");
-  await db.run("INSERT INTO demands(producer,ref,question,state,asked_at,due_at) VALUES ('future_owner','new-type','new-type','live','x','x'),('board_review','review','review','live','x','x')");
+  const records = ['a', 'cached', 'spot', 'orphan', 'unadmitted'].map(id => ({ id, record: { input: id } }));
+  records.push({ id: 'alias', record: records[0].record });
+  const id = async build => questionId('simulate', { record: records.find(r => r.id === build).record, ruler: 'r', mode: 'base' });
+  const cached = await id('cached'), spot = await id('spot'), future = await questionId('future_verb', { input: 'new' });
+  const states = [
+    { id: cached, verb: 'simulate', state: 'fact', fact_engine: engine },
+    { id: spot, verb: 'simulate', state: 'spot', fact_engine: engine },
+    { id: future, verb: 'future_verb', state: 'open', kind: 'future_owner' },
+  ];
+  const meta = { started_at: new Date(now - 60000).toISOString(), snapshot: '100:100:', engine, counts: { library: records.length, tasks: states.length, queue: 7 } };
+  const input = { queue: file('queue', [row('a'), row('a'), row('alias'), row('cached'), row('spot'), row('orphan'), row('retired', 'old')]),
+    missing: file('missing', [row('unadmitted'), row('cached'), row('spot')]), orphans: file('orphans', [row('orphan')]),
+    builds: file('builds', records), tasks: file('tasks', states), meta, rulers: ['r'] };
+  const plan = await classifyInventory(input);
+  assert.equal(plan.rows, 4); assert.equal(plan.queued, 3);
+  assert.deepEqual(plan.verbs, { future_verb: 1, simulate: 3 });
+  assert.equal(plan.orders.find(o => o.kind === 'verification').total, 1);
+  const admitted = await classifyInventory({ ...input, queue: file('admitted', [row('a'), row('alias'), row('cached'), row('spot'), row('unadmitted')]), missing: file('empty', []), meta: { ...meta, counts: { ...meta.counts, queue: 5 } } });
+  assert.equal(admitted.rows, plan.rows);
+  const settled = await classifyInventory({ ...input, tasks: file('settled', [...states, { id: await id('a'), verb: 'simulate', state: 'fact', fact_engine: engine }]), meta: { ...meta, counts: { ...meta.counts, tasks: 4 } } });
+  assert.equal(settled.rows, 3);
+  await assert.rejects(classifyInventory({ ...input, meta: { ...meta, counts: { ...meta.counts, tasks: 100 } } }), /incomplete/);
+  await assert.rejects(classifyInventory({ ...input, missing: file('bad-build', [row('absent')]) }), /unavailable/);
+  await assert.rejects(classifyInventory({ ...input, missing: file('bad-ruler', [row('a', 'old')]) }), /unknown/);
+  console.log('ok: canonical aliases and batches share one task; cached delivery is zero work; spot checks count once; admission preserves demand; future task kinds count');
+  const db = await testDb('library');
   const save = async (p, at = now) => { const w = inventoryWrite(p, at); await db.run(w.sql, ...w.params); };
-  await save(plan);
-  const goal = await readInventory(db, now);
-  assert.equal(goal.total, 6); assert.equal(goal.registered, 4);
-  assert.equal(goal.orders.find(o => o.kind === "future_owner").total, 1);
-  assert.equal(goal.verbs.future_verb, 1); assert.equal(goal.verbs.simulate, 5);
-  assert(validInventory(goal, now));
-  await save({ ...plan, rows: 999, started_at: new Date(now - 120000).toISOString() }, now + 1);
-  assert.equal((await readInventory(db, now + 1)).total, 6, "an older scan overwrote newer inputs");
+  await save(plan); assert.equal((await readInventory(db, now)).total, 4);
+  await save({ ...plan, rows: 999, orders: [{ kind: 'board', total: 999 }], verbs: { simulate: 999 }, started_at: new Date(now - 120000).toISOString() }, now + 1);
+  assert.equal((await readInventory(db, now + 1)).total, 4);
   assert.equal(await readInventory(db, now + INVENTORY_MAX_MS + 2), null);
-  assert(!validInventory({ ...goal, total: 999 }, now));
+  assert.throws(() => inventoryWrite({ ...plan, v: 1 }, now), /incomplete/);
   assert.throws(() => inventoryWrite({ ...plan, queued: 999 }, now), /incomplete/);
-  assert.throws(() => inventoryWrite({ ...plan, started_at: new Date(now - INVENTORY_MAX_MS - 1).toISOString() }, now), /incomplete/);
-  console.log("ok: new task kinds count automatically, settled work is excluded, older/partial/stale inventories cannot masquerade as current demand");
-  const env = { LIBRARY: db, FACTORY_TOKEN: "inventory-test" };
-  const send = (url, init) => worker.fetch(new Request(url, init), env);
-  const publish = (p, token = "inventory-test") => publishInventory(p, { origin: "https://example.test", token, send });
-  await assert.rejects(publish(plan, ""), /needs FACTORY_TOKEN/);
-  await assert.rejects(publish(plan, "wrong"), /refused \(401\)/);
-  assert.equal((await send("https://example.test/api/board/inventory")).status, 405);
-  await assert.rejects(publish({ ...plan, rows: -1 }), /refused \(400\)/);
-  assert.equal((await readInventory(db, now)).total, 6);
-  await publish({ ...plan, covers: ["future_owner"], started_at: new Date(now - 1000).toISOString() });
-  assert.equal((await readInventory(db)).total, 6, "a board scan replaced another producer's coverage");
-  assert.equal((await readInventory(db)).verbs.future_verb, 1);
-  console.log("ok: the real Worker authenticates publication, rejects partial scans and owns producer coverage without pipeline task-table grants");
+  const send = (url, init) => worker.fetch(new Request(url, init), { LIBRARY: db, FACTORY_TOKEN: 'test' });
+  const publish = (p, token = 'test') => publishInventory(p, { origin: 'https://example.test', token, send });
+  await assert.rejects(publish(plan, 'wrong'), /401/); await publish(plan);
+  assert.equal((await readInventory(db, now)).total, 4, 'publication mixed a later ledger count into the snapshot');
+  const request = '{}';
+  await db.run("INSERT INTO questions(id,verb,request,state,due_at,opened_at,producer) VALUES (?,'future_verb',?,'open','x','x','sweep')", future, request);
+  await db.run("INSERT INTO demands(producer,ref,question,state,asked_at,due_at) VALUES ('future_owner','new',?,'live','x','x')", future);
+  const exported = await db.all('SELECT * FROM factory_inventory_rows(?,?::text[])', engine, ['sweep']);
+  assert.equal(exported.find(q => q.id === future).kind, 'future_owner');
+  await db.run("UPDATE demands SET state='withdrawn'");
+  assert.equal((await db.all('SELECT * FROM factory_inventory_rows(?,?::text[])', engine, ['sweep'])).length, 0);
+  await db.run("INSERT INTO factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x','ffffffffffff',0,0,0,0,0,0,'x','x')");
+  assert.equal(await readInventory(db, now), null, 'an engine change kept a stale inventory goal');
   await db.close();
-
-  const moved = await testDb("library"), at = new Date(now).toISOString(), request = { input: "shared-fact" };
-  const id = await questionId("simulate", request);
-  await moved.run("INSERT INTO questions(id,verb,request,state,due_at,opened_at,producer,canon,fact_engine,fact_at) VALUES (?,'simulate',?,'fact',?,?,'sweep','{}','old-engine',?)",
-    id, canon(request), at, at, at);
-  await moved.run("INSERT INTO demands(producer,ref,question,state,asked_at,due_at) VALUES ('sweep','old-board',?,'served',?,?)", id, at, at);
-  const f = factory({ verbs: { simulate: { cap: 2, lease_ms: 60000, canon } },
-    producers: { sweep: { on_fact: async () => {} }, future_owner: { on_fact: async () => {} } } });
-  await f.demand({ LIBRARY: moved }, { producer: "future_owner", ref: "new-consumer", verb: "simulate", request, due_in_ms: 1000 }, "new-engine", now + 1);
-  const inventory = async () => {
-    const write = inventoryWrite({ ...plan, rows: 0, queued: 0 }, now + 2);
-    await moved.run(write.sql, ...write.params); return readInventory(moved, now + 2);
-  };
-  assert.equal((await inventory()).total, 1, "a historical board producer hid a live independent consumer");
-  await f.withdraw({ LIBRARY: moved }, "future_owner", "new-consumer", now + 2);
-  assert.equal((await inventory()).total, 0, "a cancelled consumer stayed in complete demand");
-  await moved.run("UPDATE questions SET state='disputed' WHERE id=?", id);
-  assert.equal((await inventory()).total, 1, "a pending official decision disappeared with its consumer");
-  assert.equal((await inventory()).orders.find(o => o.kind === "verification").total, 1);
-  await moved.close();
-  console.log("ok: live consumers determine scan coverage; cancellation and independent verification keep their own lifecycles");
+  console.log('ok: authenticated publication preserves one snapshot, rejects partial/old scans and expires; lifecycle export follows live independent consumers');
 } finally { rmSync(dir, { recursive: true, force: true }); }

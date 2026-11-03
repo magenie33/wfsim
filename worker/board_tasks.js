@@ -4,7 +4,7 @@
 // question: verb `simulate`, request `{ record, ruler, mode }`, asked by
 // `new_build` (a new build's row, someone waiting to see it ranked),
 // `survey_build` (a survey's winner's row, WFSim's own), `refresh`
-// (a row measured three days ago or more, due when it is fifteen) or `sweep` (a
+// (an explicitly requested refresh, due when its fact is fifteen days old) or `sweep` (a
 // rescore's, or an older build's first pass on a ruler), whose deadlines are
 // worker/factory.js `DEADLINE_MS` and `REFRESH_WITHIN_MS`. What a row is FOR stays here: an agreed number written to
 // `scores` and the row no longer owed.

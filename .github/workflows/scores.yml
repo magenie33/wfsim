@@ -247,7 +247,6 @@ jobs:
           FLOOR: ${{ steps.floor.outputs.floor }}
         run: |
           set -euo pipefail
-          echo "WFSIM_SCAN_STARTED_AT=$(date -u +'%Y-%m-%dT%H:%M:%S.000Z')" >> "$GITHUB_ENV"
           bash scripts/fetch_library.sh library.json
 
       # THE LIST IS ALSO THE ONLY OFF-SITE COPY OF THE LIBRARY, which is the one
@@ -297,19 +296,6 @@ jobs:
       # ANYTHING IT CANNOT ANSWER MEANS WORK: a build that fails to validate, a
       # board that will not parse, a benchmark with no file. Being wrong that way
       # costs one run; being wrong the other way costs a board nobody updates.
-      # WHAT THIS GENERATION ALREADY HOLDS. One query, ordered and paged,
-      # in place of a directory of files merged by filename order — which is
-      # how a whole rescore came to be discarded and then swept away.
-      #
-      # UNCONFIGURED IS AN EMPTY GENERATION, not a failure: the run then
-      # computes everything, which is what it did before there was one.
-      - name: read what is already measured
-        env:
-          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
-        run: |
-          set -euo pipefail
-          bash scripts/fetch_facts.sh facts-known.ndjson
-
       - name: the databases
         if: steps.wired.outputs.yes == 'true'
         uses: ./.github/actions/databases

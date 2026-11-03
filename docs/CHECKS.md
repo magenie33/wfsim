@@ -219,7 +219,7 @@ listed, unknown kinds keep their ids, and update time and clearance estimate
 belong to that inventory. Missing or expired inventory has an unknown total
 and no estimate; a confirmed empty inventory is zero.
 
-## `check_task_modules` and `check_task_inventory`
+## `check_task_modules`, `check_task_inventory` and `check_inventory_capture`
 
 Task modules depend on common contracts and receive interfaces through their
 composition root. A new registered verb and producer work without dispatch
@@ -234,6 +234,10 @@ task kind is included automatically. Partial, invalid, expired or older-input
 scans cannot supply a fresh complete total.
 Coverage follows live consumer identities across a producer change; cancelled
 consumers cease adding demand, while unresolved official decisions still count.
+Canonical build aliases share one task, verified delivery retries add no compute,
+and a board row with a pending spot check counts once. A read-only repeatable-read
+capture commits every input together; a cut preserves its prior manifest and
+leaves no partial files. Publication adds no later ledger reading.
 
 ## `check_reminder_notices`
 
