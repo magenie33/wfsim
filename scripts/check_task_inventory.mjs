@@ -4,6 +4,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { classifyInventory } from './classify_compute_inventory.mjs';
+import { bindInventoryBuilds } from './bind_inventory_builds.mjs';
 import { publishInventory } from './compute_inventory.mjs';
 import { inventoryWrite, readInventory, INVENTORY_MAX_MS } from '../worker/task_inventory.js';
 import { testDb } from './pg/test_db.mjs';
@@ -36,9 +37,22 @@ try {
   assert.equal(settled.rows, 3);
   await assert.rejects(classifyInventory({ ...input, meta: { ...meta, counts: { ...meta.counts, tasks: 100 } } }), /incomplete/);
   await assert.rejects(classifyInventory({ ...input, missing: file('bad-build', [row('absent')]) }), /unavailable/);
+  const rebound = await classifyInventory({ ...input, missing: file('normalized', [row('normalized')]),
+    canonical: file('canonical', [{ id: 'normalized', source: 0, record: records[0].record }]) });
+  assert.equal(rebound.rows, 3, 'a normalized identity created a second task for the same input');
   await assert.rejects(classifyInventory({ ...input, missing: file('bad-ruler', [row('a', 'old')]) }), /unknown/);
   console.log('ok: canonical aliases and batches share one task; cached delivery is zero work; spot checks count once; admission preserves demand; future task kinds count');
   const db = await testDb('library');
+  await db.run("INSERT INTO builds(id,at,record) VALUES ('old','2026-01-01','{\"weapon\":\"torid\"}')");
+  const binding = { builds: file('binding-builds', [{ id: 'old', at: '2026-01-01', record: { weapon: 'torid' } }]),
+    canonical: file('binding-canonical', [{ id: 'new', source: 0, record: { weapon: 'torid', mods: [] } }]),
+    missing: file('binding-missing', [row('new')]), queue: file('binding-queue', [row('retired', 'old')]), orphans: file('binding-orphans', []), rulers: ['r'] };
+  const run = (sql, args) => db.all(sql, ...args);
+  await bindInventoryBuilds(binding, run); await bindInventoryBuilds(binding, run);
+  assert.equal((await db.get('SELECT count(*) n FROM builds')).n, 2);
+  assert.equal((await db.get("SELECT at FROM builds WHERE id='new'")).at, '2026-01-01');
+  assert.equal((await db.get('SELECT count(*) n FROM family_transfers')).n, 0);
+  await assert.rejects(bindInventoryBuilds({ ...binding, canonical: file('binding-missing-map', []) }, run), /unbound/);
   const save = async (p, at = now) => { const w = inventoryWrite(p, at); await db.run(w.sql, ...w.params); };
   await save(plan); assert.equal((await readInventory(db, now)).total, 4);
   await save({ ...plan, rows: 999, orders: [{ kind: 'board', total: 999 }], verbs: { simulate: 999 }, started_at: new Date(now - 120000).toISOString() }, now + 1);

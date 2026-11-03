@@ -34,6 +34,14 @@ pub fn run() {
     // EVERY RULER'S BOARD, ASSEMBLED FROM THE FACTS: once, or held and kept
     // current (`board::assemble`). A ruler's run below fights; it never publishes.
     match std::env::args().nth(1).as_deref() {
+        Some("--inventory-builds") => {
+            write_inventory_builds(
+                &library(),
+                &mut std::io::BufWriter::new(std::io::stdout().lock()),
+            )
+            .expect("inventory builds");
+            return;
+        }
         Some("--project") => return super::assemble::project(),
         Some("--serve") => return super::assemble::serve(),
         Some("--each-ruler") => return each_ruler(),
@@ -61,6 +69,26 @@ pub fn run() {
 /// once however many rulers then cross it.
 type Built = (Value, Result<wfsim_engine::board::builds::ValidBuild, String>);
 
+fn write_inventory_builds(lib: &[Built], out: &mut impl std::io::Write) -> std::io::Result<()> {
+    for (source, (_, built)) in lib.iter().enumerate() {
+        let Ok(v) = built else { continue };
+        let record = wfsim_webapi::board_rows::canonical_record(v);
+        let record = if v.riven_rolls.is_empty() {
+            record
+        } else {
+            wfsim_webapi::board_rows::with_rolls(record, &v.riven_rolls)
+        };
+        serde_json::to_writer(
+            &mut *out,
+            &serde_json::json!({
+                "id": wfsim_engine::board::builds::build_id(v), "record": record, "source": source,
+            }),
+        )?;
+        writeln!(out)?;
+    }
+    out.flush()
+}
+
 fn library() -> Vec<Built> {
     let mut raw = String::new();
     std::io::stdin().read_to_string(&mut raw).expect("stdin");
@@ -84,6 +112,10 @@ fn each_ruler() {
         wfsim_engine::board::benchmarks::all().iter().map(|b| b.id.to_string()).collect();
     let ids: Vec<&str> = roster.iter().map(String::as_str).collect();
     let lib = library();
+    if let Some(path) = flag("--inventory-builds") {
+        let file = std::fs::File::create(path).expect("inventory builds");
+        write_inventory_builds(&lib, &mut std::io::BufWriter::new(file)).expect("inventory builds");
+    }
     let gate = has_flag("--gate");
     let by = std::sync::Mutex::new(load_facts_of(flag("--facts-in"), &ids));
     let cross = if gate { load_cross_facts(flag("--facts-in")) } else { Vec::new() };
@@ -833,6 +865,36 @@ fn groups_report(list: bool) {
 #[cfg(test)]
 mod tests {
     use serde_json::{json, Value};
+
+    #[test]
+    fn inventory_bindings_preserve_the_validated_build() {
+        let mut rows: Vec<Value> =
+            serde_json::from_str(include_str!("../../../tests/gas/rows.json")).unwrap();
+        rows.push(json!({ "record": { "weapon": "braton_prime", "mods": ["serration", "split_chamber", "riven"],
+            "riven_pos": ["critical_damage", "damage"], "riven_neg": "zoom", "riven_rolls": [1.05,0.95,1.02] } }));
+        let lib: Vec<super::Built> = rows
+            .iter()
+            .map(|r| {
+                let rec = r["record"].clone();
+                let built = wfsim_webapi::board_rows::board_build(&rec);
+                (rec, built)
+            })
+            .collect();
+        let mut out = Vec::new();
+        super::write_inventory_builds(&lib, &mut out).unwrap();
+        let text = String::from_utf8(out).unwrap();
+        assert!(!text.is_empty());
+        for line in text.lines() {
+            let row: Value = serde_json::from_str(line).unwrap();
+            let original = lib[row["source"].as_u64().unwrap() as usize]
+                .1
+                .as_ref()
+                .unwrap();
+            let roundtrip = wfsim_webapi::board_rows::board_build(&row["record"]).unwrap();
+            assert_eq!(row["id"], wfsim_engine::board::builds::build_id(original));
+            assert_eq!(row["id"], wfsim_engine::board::builds::build_id(&roundtrip));
+        }
+    }
 
     /// **A RULER WALKED BESIDE OTHERS SAYS WHAT IT SAYS ALONE**: `--each-ruler`
     /// crosses one read of the library with every ruler on several threads, and

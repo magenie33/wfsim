@@ -46,6 +46,7 @@ parts=$(mktemp -d)
 # EVERY RULER IN ONE PROCESS (`--each-ruler`), the library and the facts read
 # once, each ruler into its own files, joined in roster order.
 "$BOARD" --each-ruler --dry-run --gate --facts-in "$FACTS" --queue-in "$OUT" \
+  --inventory-builds "$inventory.canonical" \
   --queue-missing "$parts/{id}.missing" --queue-orphans "$parts/{id}.orphans" < "$LIB" > /dev/null
 roster=$(mktemp)
 "$BOARD" --rulers | tr -d '\r' > "$roster"
@@ -57,8 +58,9 @@ done < "$roster"
 rm -rf "$parts"
 
 # Count the complete engine-admitted workload before any dispatch pacing.
+node scripts/bind_inventory_builds.mjs "$inventory.builds" "$inventory.canonical" "$missing" "$OUT" "$orphans" "$roster"
 node scripts/compute_inventory.mjs "$OUT" "$missing" "$orphans" "$FACTS" "$roster" "$inventory"
-rm -f "$inventory" "$inventory.builds" "$inventory.tasks" "$inventory.json"
+rm -f "$inventory" "$inventory.builds" "$inventory.canonical" "$inventory.tasks" "$inventory.json"
 rm -f "$roster"
 
 # A SCENE'S FIRST PASS IS PACED: a new rung owes every build a row at once, and

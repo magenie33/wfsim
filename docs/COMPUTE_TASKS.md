@@ -84,6 +84,14 @@ partial files never become a published inventory. The engine walks that
 snapshot with the existing admission gate before scene pacing. Retired rulers
 and refused orphan rows are excluded.
 
+The scan also emits current canonical build records through the engine's
+existing normalization, preserving mod ranks, assembly, wielder and explicit
+riven rolls. A stored record wins for an identity already in the snapshot.
+An absent current identity is bound to its existing source input before its
+rows are asked. These insert-only bindings preserve source timestamps and
+use no arrival or family-search path. Orphan rows and retired rulers require
+no binding. A binding with no canonical source rejects the inventory.
+
 The board adapter derives each candidate's canonical `simulate` question id
 from its stored record, ruler and mode. Equal questions count once across
 batches, build aliases and consumers. Current-engine verified facts awaiting
