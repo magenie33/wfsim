@@ -102,6 +102,18 @@ ui:
   ? The Coda page repeats the original wave's 225 damage and 9%/2x/37% crit and status. Those projectile stats have
     no in-game calibration.
   : Coda 页沿用了原版冲击波的 225 伤害、9% 暴击几率、2 倍暴击倍率和 37% 触发几率。这些弹体参数尚未在游戏内校准。
+  ? The heavy mode deploys one disc, waits for its aura to expire, then deploys again. Early recall, moving beyond
+    recall range and light attacks while the disc is deployed are not modelled.
+  : 重击模式部署一枚圆盘，等待其光环结束后再次部署。提前召回、移动至召回距离之外，以及部署圆盘期间的轻击尚未建模。
+  ? Disc flight speed and collision stopping are unmeasured. The model places the explosion and aura on the first
+    struck body within 9 m; aiming at the floor or a disc that passes through bodies is not modelled.
+  : 圆盘的飞行速度和碰撞停止尚未实测。当前将爆炸和光环放在 9 米内首个命中的敌人处；瞄准地面或圆盘穿过敌人的情况尚未建模。
+  Tennokai conversion from light combos is disabled because the deploy/recall cycle is not modelled in those combos.: 轻击连招尚未建模部署与召回循环，因此禁用了从轻击连招转换的
+    Tennokai 重击。
+  ? The aura's critical-chance snapshots, doubled heavy-attack critical-chance bonus, stealth multipliers and special
+    Warframe interactions are unmeasured. The aura uses its resolved crit stats and the simulator's ordinary live-buff
+    rules.
+  : 光环的暴击几率快照、重击双倍暴击几率加成、隐匿倍率和特殊 Warframe 互动尚未实测。光环使用已结算的暴击属性，以及模拟器通用的实时增益规则。
 weapons:
   argo_and_vel_heavy: 星舟 & 帆
   arum_spinosa_heavy: 疆南星刺
@@ -118,3 +130,4 @@ weapons:
   wolf_sledge_throw: 恶狼战锤
   caustacyst_heavy: 灼蚀变体镰
   coda_caustacyst_heavy: 终幕·灼蚀变体镰
+  zenistar_heavy: 天顶之星
