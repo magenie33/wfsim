@@ -1,19 +1,19 @@
 # see notes: melee_shared_package_actions
 id: tenet_grigori_heavy
 name: Tenet Grigori
-# see notes: melee_from_the_modules
 inherits: tenet_grigori
 form: heavy
 transform_group: tenet_grigori
 co_behavior: additive_with_base_damage
 unmodeled:
-- reason: melee_attack_unmodelled
-  attacks: Energy Disk
-- reason: melee_own_combo_unmodelled
-  combos: heavy attack
 - reason: melee_valence_unmodelled
   family: Tenet
 - reason: melee_slide_unpublished
+- The disk launches on the second standing heavy only. Heavy-slide activation, combo-scaled lifetime,
+  surface ricochets and repeat disk hits are not modelled. This profile follows the infobox one-metre-per-second
+  flight speed and fixed ten-metre range.
+- The disk release uses the second heavy GunbladeGunshot marker. The handler mapping is unmeasured; the
+  first heavy LaunchProjectile marker does not emit a disk here.
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -36,7 +36,64 @@ attack:
     puncture: 82.080002
     slash: 136.800005
   combo_script:
-    tree: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ScytheMeleeTree
-    context: CC_GROUND_HEAVY
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/ScytheMelee30ChargeA
+        animation: /Lotus/Animations/Tenno/Melee/Scythe/ChargeAttack/Charge01Strike
+        duration_seconds: 0.8
+        charge:
+          animation: /Lotus/Animations/Tenno/Melee/Scythe/ChargeAttack/Charge01Charge
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.1620592
+          kind: sweep
+          multiplier: 6.0
+          combo_points: 0
+          forced_procs:
+          - slash
+          - knockdown
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/ScytheMelee30ChargeB
+        animation: /Lotus/Animations/Tenno/Melee/Scythe/ChargeAttack/Charge02Strike
+        duration_seconds: 0.833333
+        charge:
+          animation: /Lotus/Animations/Tenno/Melee/Scythe/ChargeAttack/Charge02Charge
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.189664924134
+          kind: sweep
+          multiplier: 6.0
+          combo_points: 0
+          forced_procs:
+          - slash
+          - knockdown
+        - at_seconds: 0.251022399591
+          kind: ranged
+          profile: disk
+          multiplier: 1
+          combo_points: 0
+  profiles:
+    disk:
+      trigger: melee
+      shot_type: projectile
+      projectile_speed_mps: 1
+      fire_rate: 1.0833333333333333
+      multishot: 1
+      ammo_cost: 0
+      no_magazine: true
+      crit_chance: 0.24
+      crit_multiplier: 1.6
+      status_chance: 0.38
+      range_m: 10
+      infinite_body_punch_through: true
+      damage:
+        impact: 1360
+        puncture: 1360
+        slash: 1360
+      co_behavior: independent
+      co_base_fraction: 1.0
+      melee_damage_mods_apply: false
+      universal_damage_mods_apply: true
+      combo_script: []
 source:
   url: https://wiki.warframe.com/w/Tenet_Grigori

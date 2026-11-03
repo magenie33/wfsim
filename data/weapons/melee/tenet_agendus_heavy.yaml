@@ -1,27 +1,19 @@
-# see notes: combo_points_from_multiplier
 # see notes: melee_shared_package_actions
 id: tenet_agendus_heavy
 name: Tenet Agendus
-# see notes: melee_from_the_modules
 inherits: tenet_agendus
 form: heavy
 transform_group: tenet_agendus
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_attack_unmodelled
-    attacks: "Energy Disk"
-  - reason: melee_own_combo_unmodelled
-    combos: "heavy attack"
-  - reason: melee_valence_unmodelled
-    family: Tenet
-  - reason: melee_slide_unpublished
-  - reason: heavy_charge_share_assumed
-    published: 1.0
-    charge: 0.3333
-    swing: 0.6667
-  - reason: melee_heavy_total_disputed
-    infobox: 4
-    table: 5
+- reason: melee_valence_unmodelled
+  family: Tenet
+- reason: melee_slide_unpublished
+- The first heavy projectile has no exported animation duration or release event. It launches at the start
+  of a nominal one-second motion after the package two-second charge; the page states a one-second wind-up.
+  These clocks are unmeasured.
+- The disk forces Impact only within 20 m. This range gate is not modelled, so the disk applies no forced
+  Impact.
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -43,20 +35,60 @@ attack:
     impact: 120
     electricity: 140
   combo_script:
-  - multiplier: 4.0
-    windup_seconds: 0.3333
-    delay_seconds: 0.6667
-    all_around: true
-    forced_procs:
-    - knockdown
-    combo_points: 0
-    combo_points_base: 0
-  - multiplier: 4.0
-    windup_seconds: 0.3333
-    delay_seconds: 0.6667
-    forced_procs:
-    - knockdown
-    combo_points: 0
-    combo_points_base: 0
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/CrpHammerShieldParryHeavyAttack
+        animation: /Lotus/Animations/Tenno/Movement/MeleeWeapon/SwordandBoard/CrpHammerShield/CrpHammerShieldFire_anim.fbx
+        duration_seconds: 1.0
+        charge:
+          animation: /Lotus/Animations/Tenno/Movement/MeleeWeapon/SwordandBoard/CrpHammerShield/CrpHammerShieldWindUp_anim.fbx
+          weapon_heavy: true
+        events:
+        - at_seconds: 0
+          kind: ranged
+          profile: disk
+          multiplier: 1
+          combo_points: 0
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/SwordShieldMelee30ChargeB
+        animation: /Lotus/Animations/Tenno/Melee/SwordandBoard/ChargeAttack/Charge02Strike
+        duration_seconds: 0.7
+        charge:
+          animation: /Lotus/Animations/Tenno/Melee/SwordandBoard/ChargeAttack/Charge02Charge
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.137631193
+          kind: sweep
+          multiplier: 5.0
+          combo_points: 0
+          forced_procs:
+          - knockdown
+  profiles:
+    disk:
+      trigger: melee
+      shot_type: projectile
+      projectile_speed_mps: 80
+      fire_rate: 0.9166666666666666
+      multishot: 1
+      ammo_cost: 0
+      no_magazine: true
+      crit_chance: 0.24
+      crit_multiplier: 2.0
+      status_chance: 0.28
+      range_m: 40
+      projectile_width_m: 2.7
+      infinite_body_punch_through: true
+      damage:
+        electricity: 2880
+      falloff:
+        start_m: 10
+        end_m: 20
+        reduction: 0.95
+      co_behavior: independent
+      co_base_fraction: 0.25
+      headshot_multiplier: 1.0
+      melee_damage_mods_apply: false
+      universal_damage_mods_apply: true
+      combo_script: []
 source:
   url: https://wiki.warframe.com/w/Tenet_Agendus
