@@ -21,6 +21,7 @@ try {
       const [settings] = (await tx.query("SELECT current_setting('transaction_read_only') ro,current_setting('transaction_isolation') isolation")).rows;
       assert.equal(settings.ro, 'on'); assert.equal(settings.isolation, 'repeatable read');
       return fn({ unsafe: (query, params = []) => {
+        assert(params.every(value => !Array.isArray(value)), 'wire parameters must be scalar values');
         if (!query.startsWith('SELECT')) return tx.query(query, params).then(r => r.rows);
         const pending = { then: (ok, bad) => tx.query(query, params).then(r => r.rows).then(ok, bad),
           cursor: async (size, consume) => { assert.equal(size, 5000); if (fail && ++reads === 2) throw new Error('connection lost'); await consume((await tx.query(query, params)).rows); } };
