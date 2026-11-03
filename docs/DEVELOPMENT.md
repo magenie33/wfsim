@@ -432,8 +432,13 @@ every job flat, and reports where the production search landed in that
 reference ranking (rank / regret / recall / cost, and whether the reference
 reproduces itself under a second seed). It goes through `parse_optimize`, so
 it grades the app's own fight, and REFUSES a scope it cannot exhaust. Run it
-after ANY change to enumeration, scheduling or scoring. The cheap CI form is
+after ANY change to enumeration, scheduling or scoring. `request=<path.json>`
+reads a complete optimize request, including modular assembly scopes and
+global requirements, instead of constructing one from the scope arguments.
+The cheap CI form is
 `optimizer/tests/search_accuracy.rs`. See `docs/OPTIMIZER.md` §Accuracy.
+`tests/fixtures/optimizer/{kitgun,zaw}-requirements.json` grade two choices
+per modular part with a globally required mod.
 
 ## Reading a posted build: `decode_share`
 

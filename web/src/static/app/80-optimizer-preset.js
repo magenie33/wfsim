@@ -191,7 +191,7 @@ function updateOptEstimate() {
   // waits until one side changes, and says so here.
   const blocked = opt.limits && startsBlocked();
   if (blocked) {
-    $("opt-estimate").innerHTML += ` · <span class="warn">${escHtml(tr("a start pins what a limit rules out — change the start or the limit"))}</span>`;
+    $("opt-estimate").innerHTML += ` · <span class="warn">${escHtml([...requiredConflicts({}), ...opt.starts.flatMap((s, i) => startConflicts(s).blocked.map((e) => `${tr("start")} ${i + 1}: ${e}`))].join(" · "))}</span>`;
   }
   // Never re-enable while a background job is still running.
   $("run-opt").disabled = !!optimizationTaskForPage() || !!blocked;

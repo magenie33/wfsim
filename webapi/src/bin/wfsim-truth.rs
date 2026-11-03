@@ -13,6 +13,7 @@
 //!               [strategy=exhaust|descent] [starts=id+!locked+@!arcane;id] [search_evals=N]
 //!               [arcanes=id,…] [evo1=id,…] … [evo5=id,…] [modes=id,…] [valence=element,…]
 //!               [candidate_runs=N]
+//!               [request=path/to/optimize-request.json]
 //!
 //! `runs` is the search's own final-round precision (the scenario's);
 //! `truth_runs` is the reference's, and it should be several times larger —
@@ -45,7 +46,7 @@ fn main() {
 
     let pooled = ids("pool");
     let fixed = ids("fixed");
-    if pooled.is_empty() && fixed.is_empty() {
+    if pooled.is_empty() && fixed.is_empty() && !a.contains_key("request") {
         eprintln!("nothing to search: give pool=<ids> (and/or fixed=<ids>)");
         std::process::exit(2);
     }
@@ -111,6 +112,13 @@ fn main() {
             })
             .collect::<Vec<_>>(),
     });
+    let req = match a.get("request") {
+        Some(path) => {
+            let text = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("{path}: {e}"));
+            serde_json::from_str(&text).unwrap_or_else(|e| panic!("{path}: {e}"))
+        }
+        None => req,
+    };
 
     let truth_runs = num("truth_runs", 200) as u32;
     let max_jobs = num("max_jobs", 200_000) as usize;

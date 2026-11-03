@@ -725,6 +725,7 @@ function headlessStartPayload(meta, s) {
     arcane: (b.arcane || []).slice(),
     arcane_rank: (b.arcaneRank || []).slice(),
     mode: b.mode || null,
+    assembly: b.assembly ? { ...b.assembly } : null,
     valence_element: (b.valence || {}).element || null,
     fixed: (s.fixed || []).map((k) => { const [kind, idx] = k.split(":"); return { kind, idx: Number(idx) }; }),
   };
@@ -752,7 +753,7 @@ const HEADLESS_LIMIT_AXES = ["mods", "arcanes", "evolutions", "modes", "valence"
 /// A search's limits on `weapon` with nothing ruled out: every card, the
 /// exilus and every arcane seat.
 function headlessBlankLimits(meta, weapon) {
-  return { exclude: Object.fromEntries(HEADLESS_LIMIT_AXES.map((k) => [k, []])), mods: 8, exilus: true,
+  return { require: { mods: [] }, exclude: Object.fromEntries(HEADLESS_LIMIT_AXES.map((k) => [k, []])), mods: 8, exilus: true,
     arcane_seats: ((headlessWeaponOf(meta, weapon) || {}).arcane_pools || []).map(() => true) };
 }
 

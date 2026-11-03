@@ -19,6 +19,9 @@ use crate::rivens::{mod_pool_with_rivens, riven_stat_ids_ok};
 use crate::tenno::tenno_from;
 
 mod quick;
+mod requirements;
+#[cfg(test)]
+mod requirements_tests;
 #[cfg(test)]
 mod stance_tests;
 
@@ -191,12 +194,13 @@ fn variant_base(
     m: &ModeForms,
     refs: &[&str],
     val: &str,
-    deployed: &dyn Fn(&str, &[&str], &str) -> WeaponBase,
+    assembly: &Value,
+    deployed: &impl Fn(&str, &[&str], &str, &Value) -> WeaponBase,
 ) -> WeaponBase {
     if m.unlock_evo.as_deref().is_some_and(|u| !refs.contains(&u)) {
-        return deployed(&m.untransformed_id, refs, val);
+        return deployed(&m.untransformed_id, refs, val, assembly);
     }
-    deployed(&m.fire_id, refs, val)
+    deployed(&m.fire_id, refs, val, assembly)
 }
 
 /// THE REQUEST A CANDIDATE IS: the optimize request with the axes the search
@@ -209,8 +213,8 @@ pub(crate) struct Replay {
     exilus: Vec<Option<&'static str>>,
     /// Per arcane index: the cards and their ranks, one per seat.
     arcanes: Vec<(Vec<String>, Vec<u32>)>,
-    /// Per variant: the mode, the evolution set, and the progenitor element.
-    variants: Vec<(String, Vec<String>, Option<String>)>,
+    /// Per variant: mode, evolutions, progenitor element and modular parts.
+    variants: Vec<(String, Vec<String>, Option<String>, Value)>,
 }
 
 impl Replay {
@@ -247,9 +251,10 @@ impl Replay {
         let (ids, ranks) = self.arcane(ai);
         o.insert("arcane".into(), json!(ids));
         o.insert("arcane_rank".into(), json!(ranks));
-        if let Some((mode, evos, valence)) = self.variants.get(variant as usize) {
+        if let Some((mode, evos, valence, assembly)) = self.variants.get(variant as usize) {
             o.insert("evolutions".into(), json!(evos));
             o.insert("mode".into(), json!(mode));
+            o.insert("assembly".into(), assembly.clone());
             // The ELEMENT is the axis; the BONUS is the scope's and rode in
             // with the request.
             if let Some(el) = valence {
@@ -316,12 +321,10 @@ pub struct OptimizePlan {
     /// request's `mode`, and the optimizer tab did not send it — so picking
     /// charged there searched the base form and said nothing.
     modes: Vec<ModeForms>,
-    /// The VARIANT TABLE: one entry per (mode, evolution set) pair, which is
-    /// what `Candidate::variant` indexes. Evolutions were the only thing in it
-    /// when a variant was an evolution set, and every consumer already treats a
-    /// variant as "the pair of weapon entries this candidate fires" — so the
-    /// mode joins it rather than becoming a second index to thread through.
-    variants: Vec<(usize, usize, usize)>,
+    /// `Candidate::variant` indexes mode, evolution set, element and assembly.
+    variants: Vec<(usize, usize, usize, usize)>,
+    assemblies: Vec<Value>,
+    final_required: Vec<String>,
     /// Worker-thread budget; 0 = auto (all cores minus two).
     threads: usize,
     /// Screen evaluations the SEARCH may spend before it hands its elites to
@@ -924,18 +927,22 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             wfsim_engine::data::weapons::STANCELESS_COMBO
         }));
     }
-    // THE VARIANT TABLE: every (mode, evolution set) the scope holds. One mode
-    // is the ordinary case and reproduces exactly what a single `fire_id` did.
-    // A VARIANT IS A (MODE, EVOLUTION SET, VALENCE) TRIPLE. Each is a fact about
-    // WHICH WEAPON a candidate fires, which is why they belong together: the
-    // enumerator asks one question — "what am I building on" — and gets one
-    // index back.
+    let assemblies = quick::assemblies(v, &info.id)?;
+    let final_required = requirements::ids(v);
+    requirements::validate(v, requirements::Scope {
+        pool: &pool, exilus: &exilus_defs, required: &final_required, legacy: &constraints.require,
+        slots: build_size - usize::from(stance_def.is_some()), forbids: &variant_forbids,
+        evos: &evo_sets, assemblies: &assemblies, arcanes: &arcane_sets, cap,
+    })?;
     let n_val = valences.len().max(1);
-    let variants: Vec<(usize, usize, usize)> = (0..modes.len())
-        .flat_map(|mi| {
-            (0..evo_sets.len()).flat_map(move |ei| (0..n_val).map(move |vi| (mi, ei, vi)))
-        })
-        .collect();
+    let mut variants = Vec::new();
+    for mi in 0..modes.len() {
+        for ei in 0..evo_sets.len() {
+            for li in 0..n_val {
+                for ai in 0..assemblies.len() { variants.push((mi, ei, li, ai)); }
+            }
+        }
+    }
     // Read off the fight before the arena is moved into the scenario. These
     // are what the PLAN reports about itself, not decisions it makes.
     let (headshot_pct, duration, level, steel_path) =
@@ -965,6 +972,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             o.remove("__resume");
             // …and the fleet's traffic, which is the search's, never the build's.
             o.remove("quick_fleet");
+            o.remove("assemblies");
             // …and a whole scope this parse filled in, which is every card.
             if whole.is_some() {
                 for k in ["mods", "exilus", "arcanes", "evolutions", "modes", "valence"] {
@@ -995,7 +1003,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             .collect(),
         variants: variants
             .iter()
-            .map(|&(mi, ei, li)| (modes[mi].id.clone(), evo_sets[ei].clone(), valences.get(li).cloned()))
+            .map(|&(mi, ei, li, ai)| (modes[mi].id.clone(), evo_sets[ei].clone(), valences.get(li).cloned(), assemblies[ai].clone()))
             .collect(),
     });
     // THE OPTIMIZER BUILDS NO FIGHT: a candidate is scored in the fight the
@@ -1034,6 +1042,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         variant_forbids,
         modes,
         variants,
+        assemblies,
+        final_required,
         exilus_defs,
         arcanes,
         arcane_sets,
@@ -1266,6 +1276,8 @@ pub fn grade_optimize(
         valence_bonus,
         modes,
         variants,
+        assemblies,
+        final_required,
         weapon_id,
         threads,
         strategy,
@@ -1289,23 +1301,21 @@ pub fn grade_optimize(
     // first.
     // THE SIMULATOR'S BASE (`registry::base_for`) for this variant's element:
     // parts, deployment and valence exactly as a simulate of the build reads them.
-    let deployed = |id: &str, refs: &[&str], val: &str| {
-        if val.is_empty() {
-            return crate::registry::base_for(v, id, refs);
-        }
+    let deployed = |id: &str, refs: &[&str], val: &str, assembly: &Value| {
         let mut r = v.clone();
-        r["valence_element"] = json!(val);
+        r["assembly"] = assembly.clone();
+        if !val.is_empty() { r["valence_element"] = json!(val); }
         crate::registry::base_for(&r, id, refs)
     };
 
     // ---- exhaust the scope (the same walk the search starts from) ----
     let state = FunnelState::default();
     let mut cands: Vec<Candidate> = Vec::new();
-    for (vi, &(mi, ei, li)) in variants.iter().enumerate() {
+    for (vi, &(mi, ei, li, ai)) in variants.iter().enumerate() {
         let (m, set) = (&modes[mi], &evo_sets[ei]);
         let val: &str = valences.get(li).map_or("", String::as_str);
         let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-        let base = variant_base(m, &refs, val, &deployed);
+        let base = variant_base(m, &refs, val, &assemblies[ai], &deployed);
         // What THIS variant cannot equip is a forbid like any other: a mod that
         // needs the same trigger on every firing mode is out of the sets that
         // install a second one. The grader must walk exactly the space the
@@ -1347,6 +1357,7 @@ pub fn grade_optimize(
             &scenario.arena.tenno,
             scenario.policy,
         );
+        c.retain(|c| requirements::contains(&final_required, &pool, &exilus_defs, c));
         cands.append(&mut c);
         if !complete || cands.len() >= max_jobs {
             return err_json(format!(
@@ -1403,11 +1414,11 @@ pub fn grade_optimize(
         wfsim_optimizer::space::SubsetSpace::new(&families, &usable, &required, min_slots, build_size);
     let forms: Vec<WeaponBase> = variants
         .iter()
-        .map(|&(mi, ei, li)| {
+        .map(|&(mi, ei, li, ai)| {
             let (m, set) = (&modes[mi], &evo_sets[ei]);
             let val: &str = valences.get(li).map_or("", String::as_str);
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
-            variant_base(m, &refs, val, &deployed)
+            variant_base(m, &refs, val, &assemblies[ai], &deployed)
         })
         .collect();
     let expand = |subset: &[usize]| -> Vec<Candidate> {
@@ -1427,6 +1438,7 @@ pub fn grade_optimize(
                 subset, &scenario.arena.tenno, scenario.policy, &mut out,
             );
         }
+        out.retain(|c| requirements::contains(&final_required, &pool, &exilus_defs, c));
         out
     };
     let cfg = wfsim_optimizer::search::SearchConfig {
@@ -1443,6 +1455,8 @@ pub fn grade_optimize(
             required: required.clone(),
             forms: &forms,
             variants: &variants,
+            assemblies: &assemblies,
+            final_required: &final_required,
             variant_forbids: &variant_forbids,
             evo_sets: &evo_sets,
             mode_ids: modes.iter().map(|m| m.id.clone()).collect(),
@@ -1463,7 +1477,7 @@ pub fn grade_optimize(
             work: Default::default(),
             progress: None,
             lead: false,
-            mod_slots: build_size.min(8),
+            mod_slots: (build_size - usize::from(pool.iter().any(|m| m.stance.is_some()))).min(8),
             screen_ratio: replay_base.get("screen_ratio").and_then(Value::as_f64).unwrap_or(quick::SCREEN_RATIO),
             keep_ratio: replay_base.get("keep_ratio").and_then(Value::as_f64).unwrap_or(quick::KEEP_RATIO),
             orders_of: Default::default(),
@@ -1647,6 +1661,8 @@ pub fn run_optimize_resumable(
         weapon_id,
         modes,
         variants,
+        assemblies,
+        final_required,
         threads,
         max_evals,
         strategy,
@@ -1684,23 +1700,17 @@ pub fn run_optimize_resumable(
     // first.
     // THE SIMULATOR'S BASE (`registry::base_for`) for this variant's element:
     // parts, deployment and valence exactly as a simulate of the build reads them.
-    let deployed = |id: &str, refs: &[&str], val: &str| {
-        if val.is_empty() {
-            return crate::registry::base_for(&replay_base, id, refs);
-        }
+    let deployed = |id: &str, refs: &[&str], val: &str, assembly: &Value| {
         let mut r = replay_base.clone();
-        r["valence_element"] = json!(val);
+        r["assembly"] = assembly.clone();
+        if !val.is_empty() { r["valence_element"] = json!(val); }
         crate::registry::base_for(&r, id, refs)
     };
-    // A VARIANT IS A (MODE, EVOLUTION SET) PAIR, so the forms come from both:
-    // the mode says which entries this candidate fires, the set says whether it
-    // can reach the second one.
+    // The mode and evolutions select the fired entry; element and parts compose it.
     let forms_for = |vi: usize, _set: &[String], refs: &[&str]| {
         let m = &modes[variants[vi].0];
-        // …and WHICH WEAPON this variant is: the progenitor element is the
-        // third leg of the triple, so a scope searching several builds several.
         let val: &str = valences.get(variants[vi].2).map_or("", String::as_str);
-        variant_base(m, refs, val, &deployed)
+        variant_base(m, refs, val, &assemblies[variants[vi].3], &deployed)
     };
     let cancelled_json = |n_cands: usize| {
         // Cancelled before anything was ranked — a clean empty cancellation.
@@ -1752,6 +1762,7 @@ pub fn run_optimize_resumable(
                 .cloned()
                 .unwrap_or_default(),
             "exilus": exilus_defs[c.exilus as usize].as_ref().map(|m| m.id).unwrap_or("none"),
+            "assembly": assemblies[variants[c.variant as usize].3],
             "forma": { "used": c.plan.forma_used, "total_drain": c.plan.total_drain },
             "replay": replay,
         })
@@ -1801,7 +1812,7 @@ pub fn run_optimize_resumable(
     let forms: Vec<WeaponBase> = variants
         .iter()
         .enumerate()
-        .map(|(vi, &(_, ei, _))| {
+        .map(|(vi, &(_, ei, _, _))| {
             let set = &evo_sets[ei];
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
             forms_for(vi, set, &refs)
@@ -1837,6 +1848,7 @@ pub fn run_optimize_resumable(
                 &mut out,
             );
         }
+        out.retain(|c| requirements::contains(&final_required, &pool, &exilus_defs, c));
         out
     };
 
@@ -1870,7 +1882,7 @@ pub fn run_optimize_resumable(
             // — before mode joined it, say — names variants that no longer
             // exist. Dropping those is the same answer the walk would give now;
             // if that empties the list, the error below says so.
-            let Some(&(_, ei, _)) = variants.get(*variant as usize) else { continue };
+            let Some(&(_, ei, _, _)) = variants.get(*variant as usize) else { continue };
             let set = &evo_sets[ei];
             // A checkpoint predating an equip rule can name a build this variant
             // can no longer wear.
@@ -1884,7 +1896,7 @@ pub fn run_optimize_resumable(
                 &pool, &base, None, &innate, plan.cap, &scenario.arena.tenno, scenario.policy,
                 ordered, *variant, *exilus, &exilus_refs,
             ) else { continue };
-            if *ai >= arcanes.len() {
+            if *ai >= arcanes.len() || !requirements::contains(&final_required, &pool, &exilus_defs, &c) {
                 continue;
             }
             cands.push(c);
@@ -1964,6 +1976,8 @@ pub fn run_optimize_resumable(
             required: required.clone(),
             forms: &forms,
             variants: &variants,
+            assemblies: &assemblies,
+            final_required: &final_required,
             variant_forbids: &variant_forbids,
             evo_sets: &evo_sets,
             mode_ids: modes.iter().map(|m| m.id.clone()).collect(),
@@ -1984,7 +1998,7 @@ pub fn run_optimize_resumable(
             work: Default::default(),
             progress: Some(state),
             lead: fleet.get("lead").is_some(),
-            mod_slots: build_size.min(8),
+            mod_slots: (build_size - usize::from(pool.iter().any(|m| m.stance.is_some()))).min(8),
             screen_ratio: replay_base.get("screen_ratio").and_then(Value::as_f64).unwrap_or(quick::SCREEN_RATIO),
             keep_ratio: replay_base.get("keep_ratio").and_then(Value::as_f64).unwrap_or(quick::KEEP_RATIO),
             orders_of: Default::default(),

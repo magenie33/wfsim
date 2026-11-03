@@ -3581,6 +3581,15 @@ ui:
 
   "More actions": "更多操作"
 
+  "Required mods must appear in every final build, in any eligible slot, from every start.": 必选 Mod 对所有起点生效，最终配装必须包含它，不限可用槽位。
+  "require": 必选
+  "{x} is required but unavailable": "{x} 已设为必选，但当前武器不可用"
+  "{x} is both required and excluded": "{x} 同时被设为必选和排除"
+  "{a} and {b} are mutually exclusive": "{a} 和 {b} 不能同时装备"
+  "required and pinned mods exceed the available slots": 必选和固定的 Mod 超过可用槽位
+  "{x} conflicts with the allowed evolutions": "{x} 与允许的进化冲突"
+  "click an option to exclude it, or require a mod in every final build; conflicting conditions block the search": 点击选项可排除它，也可要求最终配装必须包含某张 Mod；条件冲突时无法开始搜索
+
 effect_phrases:
   - ['Ammo Pickup Conversion', '弹药拾取转换']
   - ['Self-Stagger Reduction', '自我击退减免']

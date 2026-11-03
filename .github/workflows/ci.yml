@@ -589,6 +589,9 @@ jobs:
       - name: A built-in search is read-only, a click copies it, and the run button sends the page's own search
         if: matrix.group == 'views'
         run: node scripts/check_search_presets.mjs
+      - name: Final requirements and modular part pins survive start editing
+        if: matrix.group == 'views'
+        run: node scripts/check_optimizer_requirements.mjs
       - name: All presets share numeric naming, management and inert info
         if: matrix.group == 'views'
         run: node scripts/check_preset_library.mjs

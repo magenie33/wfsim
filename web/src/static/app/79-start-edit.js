@@ -210,6 +210,7 @@ function decorateStartPins() {
   kids("exilus").slice(0, 1).forEach((el) => put(el, "mods:8"));
   kids("arcane-slots").forEach((el, i) => put(el, "arcane:" + i));
   const head = (id, key) => { const b = $(id); if (b && !b.hidden) put(b.querySelector(".bh"), key); };
+  kids("assembly-row").forEach((el, i) => put(el, "assembly:" + i));
   head("evo-block", "evo:0");
   head("mode-block", "mode:0");
   head("element-block", "valence:0");

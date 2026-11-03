@@ -1,0 +1,43 @@
+{
+  "weapon": "catchmoon_primary",
+  "mods": {
+    "point_blank": "search",
+    "hells_chamber": "search",
+    "contagious_spread": "search"
+  },
+  "build_size": 2,
+  "build_min": 1,
+  "assemblies": [
+    {
+      "grip": "brash",
+      "loader": "arcroid"
+    },
+    {
+      "grip": "brash",
+      "loader": "bashrack"
+    },
+    {
+      "grip": "palmaris",
+      "loader": "arcroid"
+    },
+    {
+      "grip": "palmaris",
+      "loader": "bashrack"
+    }
+  ],
+  "strategy": "quick",
+  "enemy": "thrax_centurion",
+  "level": 100,
+  "steel_path": false,
+  "duration": 1,
+  "runs": 10,
+  "candidate_runs": 10,
+  "finalists": 2,
+  "limits": {
+    "require": {
+      "mods": [
+        "point_blank"
+      ]
+    }
+  }
+}
