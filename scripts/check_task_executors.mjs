@@ -54,6 +54,8 @@ try {
         && hasCounts(progressRow('#user-tasks-panel', probe.id), 17, 170)
         && document.querySelector('#opt-results .opt-bar i')?.style.width === '0%'
         && progressRow('#user-tasks-panel', probe.id)?.querySelector('.task-progress')?.getAttribute('aria-valuenow') === '0';
+      await userTaskAction('details', probe.id);
+      const expandedDetails = progressRow('#user-tasks-panel', probe.id)?.querySelector('.task-details');
       const clock = document.querySelector('#opt-results [data-search-clock]'), initialClock = clock?.textContent;
       const cancelButton = document.getElementById('opt-cancel');
       if (clock) await until(() => clock.textContent !== initialClock, 30);
@@ -66,6 +68,11 @@ try {
       out.progressCounts = out.progressCounts && hasCounts(document.getElementById('opt-results'), 18, 180)
         && hasCounts(progressRow('#user-tasks-panel', probe.id), 18, 180)
         && document.querySelector('#opt-results .opt-bar i')?.style.width === '0%';
+      const updatedRow = progressRow('#user-tasks-panel', probe.id);
+      out.progressDetails = !!expandedDetails && expandedDetails === updatedRow?.querySelector('.task-details')
+        && hasCounts(updatedRow.querySelector('.task-progress-note'), 18, 180)
+        && expandedDetails.textContent.includes('2 finalists')
+        && !expandedDetails.textContent.includes('17 builds scored') && !expandedDetails.textContent.includes('170 fights');
       const batch = heldSearch.emit(workStatus({ enumerated: 18, sims_done: 180, batch_slices_done: 2 })); await pause(150);
       out.progressActivity = out.progressActivity && batch.work_last_at > advanced.work_last_at;
       const currentTask = userTasks.view().find(item => item.id === probe.id);
@@ -235,6 +242,7 @@ try {
   for (const [key, label] of Object.entries({
     progressUnknown: "a search with no known work total remains indeterminate",
     progressCounts: "optimizer and task center show completed work while the descent percentage stays zero",
+    progressDetails: "expanded task details retain their fixed inputs without a stale duplicate work count",
     progressClock: "elapsed and last-activity clocks advance without replacing the active controls",
     progressActivity: "repeated responses preserve the last work time and completed work advances it",
     progressStale: "an old calculation response is shown as waiting rather than fresh work",

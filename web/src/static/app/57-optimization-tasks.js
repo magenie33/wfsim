@@ -143,9 +143,7 @@ USER_TASK_TYPES.set("optimization", {
       note: [task.origin.preset_name, benchLabelOr(task.origin.scenario, task.origin.scenario_name), tr(USER_TASK_EXECUTORS.get(task.destination)?.label || "This device")].filter(Boolean).join(" · ") };
   },
   details(task) {
-    const status = task.progress?.status;
     return `<div>${escHtml(tr("{n} finalists").replace("{n}", task.request.finalists))}</div>`
-      + (status ? `<div>${escHtml(tr("{b} builds scored, {s} fights").replace("{b}", status.enumerated || 0).replace("{s}", status.sims_done || 0))}</div>` : "")
       + `<div>${escHtml(new Date(task.created_at).toLocaleString())}</div>`;
   },
   async save(task, result) {
