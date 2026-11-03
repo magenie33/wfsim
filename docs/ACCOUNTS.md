@@ -219,11 +219,28 @@ bell, the cards, `/notifications` — is docs/UI.md §"Notifications".
 
 `/clan` is the in-game clan's door: a clan joins by invitation only, so a
 signed-in reader leaves an in-game name there and is invited in game.
-`worker/clan.js` sends it with the username as one Discord message to the
-owner, through the paid half's bot (`cloudTell`, `/internal/tell`), and stores
-nothing — so there is nothing to export or delete. A name sent again from the
-page says it replaces the first; `CLAN_LIMIT` allows two per account a minute,
-so a typo is corrected at once.
+`worker/clan.js` and Discord's clan form share `worker/clan_request.js`: name
+validation and one notification to the owner through the private service's
+bot (`cloudTell`, `/internal/tell`). The website identifies its signed-in
+account; Discord identifies its signed guild member. Neither stores the name.
+A correction says it replaces the previous name. `CLAN_LIMIT` allows two
+requests per identity a minute, so a typo is corrected at once.
+
+The Discord button opens an English form with one in-game name field. Its
+receipt is visible only to the submitting member and includes Change name.
+`worker/discord.js` verifies Discord's Ed25519 signature, timestamp, application
+and guild before handling an interaction. It acknowledges submissions before
+sending the owner notification, then updates the private receipt with the
+result. A failed delivery never claims the request was sent.
+
+`wrangler.discord.jsonc` deploys this signed public ingress as `wfsim-discord`,
+separately from the site's release, with no database or bot token. Only its
+`/interactions` path accepts POST. Its CLOUD binding reaches the private
+notification service; `wfsim-cloud` remains unavailable to public requests.
+Deploy with `npx wrangler deploy --config wrangler.discord.jsonc`. Set the
+application's interactions endpoint to the deployed URL plus `/interactions`;
+the public verification key and application ID come from Discord's application
+settings. The private Discord setup scripts own channel copy and buttons.
 
 ## Feedback
 

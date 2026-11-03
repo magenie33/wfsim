@@ -164,6 +164,15 @@ The QQ door (`worker/qq.js`) with no network: the address check signs QQ's
 published example, a signed event is kept and a changed one refused, and the
 bot server's pull hands each message out once until it is answered.
 
+## `check_discord`
+
+Discord's clan form with generated Ed25519 keys, a stubbed private notification
+service and stubbed receipt updates. Changed bodies, invalid signatures, stale
+timestamps, another application or guild, bots and pending members are refused.
+Forms and receipts stay private; corrections retain the name and mark the
+owner notification; invalid names, limits and failed delivery cannot report
+success. The website's name and notification helper is exercised too.
+
 ## `check_world_fissures`
 
 The fissure log (`worker/world.js`) on PGlite, no network: a relayed fissure

@@ -310,6 +310,8 @@ jobs:
       # THE BOTS' DOORS hold only what the platform signed, and answer once.
       - name: The QQ door keeps signed messages and hands each out once
         run: node scripts/check_qq.mjs
+      - name: Discord clan forms accept signed members and answer privately
+        run: node scripts/check_discord.mjs
       - name: A fissure is logged once with its planet, and each combination says how often it came
         run: node scripts/check_world_fissures.mjs
       - name: What the site tells an account reaches it and nobody else, read once, kept as long as it says
