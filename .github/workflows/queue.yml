@@ -174,9 +174,6 @@ jobs:
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
           set -euo pipefail
-          export WFSIM_SCAN_STARTED_AT="$(date -u +'%Y-%m-%dT%H:%M:%S.000Z')"
-          bash scripts/fetch_library.sh library.json
-          bash scripts/fetch_facts.sh facts-known.ndjson
           bash scripts/reconcile_queue.sh library.json facts-known.ndjson queue.ndjson
           # WHAT IS OWED, SAID OUT LOUD, because this job publishes nothing and
           # a reader has to be able to see it did something.
