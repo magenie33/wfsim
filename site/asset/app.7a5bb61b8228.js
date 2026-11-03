@@ -68,18 +68,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "c1a94be7";
+const BUILD_ID = "1c9c74e5";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "3cc54165+";
+const BUILD_SHA = "3c9d6566+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "95d93e22b94f";
+const RELEASE_ID = "74135929cd24";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -27357,6 +27357,8 @@ const jittered = (ms) => ms * (0.75 + Math.random() * 0.5);
 /// reload, a closed tab or a crash costs no result — and mirrored here, so the
 /// way out can send them in a beacon without waiting on the database.
 const COMPUTE_DB = "wfsim-compute";
+const COMPUTE_DB_PAGE = 500;
+const computeDbYield = () => new Promise((ok) => setTimeout(ok, 0));
 let computeDb = null, resultsMem = [], pendingMem = [];
 function openResults() {
   if (!computeDb) computeDb = new Promise((ok) => {
@@ -27376,28 +27378,42 @@ function openResults() {
   return computeDb;
 }
 const idbDone = (tx) => new Promise((ok, no) => { tx.oncomplete = () => ok(); tx.onerror = tx.onabort = () => no(tx.error); });
-function idbAll(db, store) {
-  return new Promise((ok, no) => {
-    const rq = db.transaction(store).objectStore(store).getAll();
-    rq.onsuccess = () => ok(rq.result || []);
-    rq.onerror = () => no(rq.error);
-  });
+async function idbAll(db, store) {
+  const rows = [];
+  let after;
+  for (;;) {
+    const page = await new Promise((ok, no) => {
+      const range = after === undefined ? null : IDBKeyRange.lowerBound(after, true);
+      const rq = db.transaction(store).objectStore(store).getAll(range, COMPUTE_DB_PAGE);
+      rq.onsuccess = () => ok(rq.result || []);
+      rq.onerror = () => no(rq.error);
+    });
+    rows.push(...page);
+    if (page.length < COMPUTE_DB_PAGE) return rows;
+    after = page[page.length - 1].question;
+    await computeDbYield();
+  }
 }
 async function idbWrite(store, put = [], del = []) {
   const db = await openResults();
   if (!db || (!put.length && !del.length)) return;
-  const tx = db.transaction(store, "readwrite"), os = tx.objectStore(store);
-  for (const v of put) os.put(v);
-  for (const k of del) os.delete(k);
-  await idbDone(tx);
+  // Result batches stay atomic; large maintenance passes yield between transactions.
+  for (const [method, values] of [["put", put], ["delete", del]]) {
+    for (let from = 0; from < values.length; from += COMPUTE_DB_PAGE) {
+      const tx = db.transaction(store, "readwrite"), os = tx.objectStore(store), done = idbDone(tx);
+      for (const value of values.slice(from, from + COMPUTE_DB_PAGE)) os[method](value);
+      await done;
+      if (from + COMPUTE_DB_PAGE < values.length) await computeDbYield();
+    }
+  }
 }
 /// …THIS ID'S AND ENGINE'S, oldest first; the rest dropped where they are found.
 async function keptResults(id) {
   const now = Date.now(), mine = (r) => r.verifier === id && r.engine === ENGINE_ID;
-  const goneR = resultsMem.filter((r) => !mine(r) || now - r.at > RESULT_KEEP_MS).map((r) => r.question);
-  const goneP = pendingMem.filter((r) => r.verifier !== id || now - r.at > PENDING_KEEP_MS).map((r) => r.question);
-  if (goneR.length) { resultsMem = resultsMem.filter((r) => !goneR.includes(r.question)); await idbWrite("results", [], goneR).catch(() => {}); }
-  if (goneP.length) { pendingMem = pendingMem.filter((r) => !goneP.includes(r.question)); await idbWrite("pending", [], goneP).catch(() => {}); }
+  const goneR = new Set(resultsMem.filter((r) => !mine(r) || now - r.at > RESULT_KEEP_MS).map((r) => r.question));
+  const goneP = new Set(pendingMem.filter((r) => r.verifier !== id || now - r.at > PENDING_KEEP_MS).map((r) => r.question));
+  if (goneR.size) { resultsMem = resultsMem.filter((r) => !goneR.has(r.question)); await idbWrite("results", [], [...goneR]).catch(() => {}); }
+  if (goneP.size) { pendingMem = pendingMem.filter((r) => !goneP.has(r.question)); await idbWrite("pending", [], [...goneP]).catch(() => {}); }
   return resultsMem.slice().sort((a, b) => a.at - b.at);
 }
 /// POINTS NOT YET CONFIRMED: every kept or taken result's work, as points.
@@ -27485,10 +27501,10 @@ async function takeSynced(r, sent, sentAt, held) {
   // RENEWED: every pack this sync named runs `sync_lease_ms` from when it was sent.
   const named = new Set(held.map((h) => h.lease));
   for (const p of [heldPack, ...packQueue]) if (p && p.proto === 8 && named.has(p.lease)) p.until = sentAt + syncDials.sync_lease_ms;
-  const settled = (r.states || []).filter((s) => s.state === "confirmed" || s.state === "gone").map((s) => s.question);
-  if (settled.length) {
-    pendingMem = pendingMem.filter((x) => !settled.includes(x.question));
-    await idbWrite("pending", [], settled).catch(() => {});
+  const settled = new Set((r.states || []).filter((s) => s.state === "confirmed" || s.state === "gone").map((s) => s.question));
+  if (settled.size) {
+    pendingMem = pendingMem.filter((x) => !settled.has(x.question));
+    await idbWrite("pending", [], [...settled]).catch(() => {});
   }
   if (r.points) { devicePointsAt = Date.now(); await takeDevicePoints({ ok: true, ...r.points }); }
   else if (gone.size) renderBoardConsent();
@@ -27587,7 +27603,7 @@ async function workOnce8(id) {
 /// sent once the oldest has waited `flush_ms` — never more than one sync at a time.
 function refill8(id) {
   if (syncInFlight) return;
-  const now = Date.now(), oldest = resultsMem.length ? Math.min(...resultsMem.map((r) => r.at)) : now;
+  const now = Date.now(), oldest = resultsMem.length ? resultsMem.reduce((at, r) => Math.min(at, r.at), Infinity) : now;
   const low = !packQueue.length && workLeftMs() < syncDials.sync_low_ms && now >= syncNotBefore;
   if (low || now - oldest >= syncDials.flush_ms) boardSync(id, low ? {} : { want: 0 });
 }
@@ -30204,7 +30220,7 @@ function computeRedraw(tick) {
   const mark = document.getElementById("compute-mark");
   if (mark && !mark.hidden) computeMarkPaint(mark);
   if (typeof authKindOf !== "function" || authKindOf(location.pathname) !== "compute") return;
-  if (tick) { if (Date.now() - computeDrawnAt >= 1000) { computeDrawnAt = Date.now(); computeLive(); } return; }
+  if (tick === true) { if (Date.now() - computeDrawnAt >= 1000) { computeDrawnAt = Date.now(); computeLive(); } return; }
   renderAuthPage("compute");
 }
 
