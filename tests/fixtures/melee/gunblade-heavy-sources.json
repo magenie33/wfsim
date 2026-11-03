@@ -1,0 +1,95 @@
+{
+  "package": "package-2026-10-08.json",
+  "source_priority": "package actions; weapon page prose; weapon infobox module",
+  "weapons": [
+    {
+      "weapon": "redeemer",
+      "url": "https://wiki.warframe.com/w/Redeemer",
+      "attack": {
+        "damage": {
+          "blast": 30
+        },
+        "multishot": 10,
+        "crit_chance": 0.1,
+        "crit_multiplier": 1.8,
+        "status_chance": 0.066
+      },
+      "package_actions": [
+        "/Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMelee30ChargeB",
+        "/Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMelee30ChargeA"
+      ]
+    },
+    {
+      "weapon": "redeemer_prime",
+      "url": "https://wiki.warframe.com/w/Redeemer_Prime",
+      "attack": {
+        "damage": {
+          "blast": 80
+        },
+        "multishot": 10,
+        "crit_chance": 0.24,
+        "crit_multiplier": 2.2,
+        "status_chance": 0.09
+      },
+      "package_actions": [
+        "/Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMelee30ChargeB",
+        "/Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMelee30ChargeA"
+      ]
+    },
+    {
+      "weapon": "sarpa",
+      "url": "https://wiki.warframe.com/w/Sarpa",
+      "attack": {
+        "damage": {
+          "impact": 3.5,
+          "puncture": 10.5,
+          "slash": 21
+        },
+        "multishot": 1,
+        "crit_chance": 0.14,
+        "crit_multiplier": 2,
+        "status_chance": 0.28
+      },
+      "package_actions": [
+        "/Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMeleeAuto30ChargeA",
+        "/Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMeleeAuto30ChargeB"
+      ]
+    },
+    {
+      "weapon": "stropha",
+      "url": "https://wiki.warframe.com/w/Stropha",
+      "attack": {
+        "damage": {
+          "impact": 700
+        },
+        "multishot": 1,
+        "crit_chance": 0.3,
+        "crit_multiplier": 2.4,
+        "status_chance": 0.14
+      },
+      "package_actions": [
+        "/Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMelee30ChargeB",
+        "/Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMelee30ChargeA"
+      ]
+    },
+    {
+      "weapon": "vastilok",
+      "url": "https://wiki.warframe.com/w/Vastilok",
+      "attack": {
+        "damage": {
+          "impact": 8.97,
+          "puncture": 10.35,
+          "slash": 49.68
+        },
+        "multishot": 9,
+        "crit_chance": 0.19,
+        "crit_multiplier": 1.7,
+        "status_chance": 0.1033
+      },
+      "package_actions": [
+        "/Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMelee30ChargeB",
+        "/Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMelee30ChargeA"
+      ]
+    }
+  ]
+}

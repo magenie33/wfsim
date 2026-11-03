@@ -1,0 +1,129 @@
+# see notes: melee_shared_package_actions
+id: sarpa_heavy
+name: Sarpa
+inherits: sarpa
+form: heavy
+transform_group: sarpa
+co_behavior: additive_with_base_damage
+unmodeled:
+- reason: gunblade_heavy_package_limits
+- reason: gunblade_sarpa_burst_limits
+- Sarpa shots have innate punch through, but its depth is unpublished; this profile gives them no body
+  penetration.
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.14
+  crit_multiplier: 2
+  status_chance: 0.28
+  punch_through_m: 0
+  range_m: 300
+  falloff:
+    start_m: 20
+    end_m: 40
+    reduction: 0.8571
+  spends_combo: true
+  damage:
+    impact: 3.5
+    puncture: 10.5
+    slash: 21
+  heavy:
+    multiplier: 3
+    windup_seconds: 2
+  combo_script:
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMeleeAuto30ChargeA
+        animation: /Lotus/Animations/Tenno/Melee/GunBlade/ChargeAttack/Charge01StrikeB
+        duration_seconds: 0.666667
+        charge:
+          animation: /Lotus/Animations/Tenno/Melee/GunBlade/ChargeAttack/Charge01ChargeB
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.034542349271
+          kind: ranged
+          multiplier: 3.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+        - at_seconds: 0.084542349271
+          kind: ranged
+          multiplier: 3.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+        - at_seconds: 0.134542349271
+          kind: ranged
+          multiplier: 3.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+        - at_seconds: 0.184542349271
+          kind: ranged
+          multiplier: 3.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+        - at_seconds: 0.234542349271
+          kind: ranged
+          multiplier: 3.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMeleeAuto30ChargeB
+        animation: /Lotus/Animations/Tenno/Melee/GunBlade/ChargeAttack/Charge02Strike
+        duration_seconds: 1.133333
+        charge:
+          animation: /Lotus/Animations/Tenno/Melee/GunBlade/ChargeAttack/Charge02ChargeB
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.032297043834
+          kind: ranged
+          multiplier: 3.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+        - at_seconds: 0.082297043834
+          kind: ranged
+          multiplier: 3.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+        - at_seconds: 0.132297043834
+          kind: ranged
+          multiplier: 3.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+        - at_seconds: 0.182297043834
+          kind: ranged
+          multiplier: 3.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+        - at_seconds: 0.232297043834
+          kind: ranged
+          multiplier: 3.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+  spread:
+    min_deg: 10
+    max_deg: 20
+source:
+  url: https://wiki.warframe.com/w/Sarpa

@@ -1,0 +1,72 @@
+# see notes: melee_shared_package_actions
+id: redeemer_heavy
+name: Redeemer
+inherits: redeemer
+form: heavy
+transform_group: redeemer
+co_behavior: additive_with_base_damage
+unmodeled:
+- reason: gunblade_heavy_package_limits
+- The wiki heavy total is 900; the package action gives 4 times the 300-damage ranged volley before physical
+  bonuses. This profile follows the package multiplier; the difference is unmeasured.
+- Point-blank pellet loss and the distance-gated forced Impact proc are not modelled; this profile fires
+  all ten pellets and applies no forced Impact.
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 0.8333333333333334
+  multishot: 10
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.1
+  crit_multiplier: 1.8
+  status_chance: 0.066
+  punch_through_m: 1
+  range_m: 300
+  falloff:
+    start_m: 10
+    end_m: 20
+    reduction: 0.8333
+  spends_combo: true
+  damage:
+    blast: 30
+  heavy:
+    multiplier: 4
+    windup_seconds: 2
+  combo_script:
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMelee30ChargeB
+        animation: /Lotus/Animations/Tenno/Melee/GunBlade/ChargeAttack/Charge02Strike
+        duration_seconds: 1.133333
+        charge:
+          animation: /Lotus/Animations/Tenno/Melee/GunBlade/ChargeAttack/Charge02Charge
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.032297043834
+          kind: ranged
+          multiplier: 4.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/GunbladeMelee30ChargeA
+        animation: /Lotus/Animations/Tenno/Melee/GunBlade/ChargeAttack/Charge01Strike
+        duration_seconds: 0.666667
+        charge:
+          animation: /Lotus/Animations/Tenno/Melee/GunBlade/ChargeAttack/Charge01Charge
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.027777814556
+          kind: ranged
+          multiplier: 4.0
+          combo_points: 0
+          impact_multiplier: 1.25
+          puncture_multiplier: 1.25
+          slash_multiplier: 1.25
+  spread:
+    min_deg: 10
+    max_deg: 20
+source:
+  url: https://wiki.warframe.com/w/Redeemer

@@ -7,9 +7,7 @@ form: slide
 transform_group: redeemer_prime
 co_behavior: additive_with_base_damage
 unmodeled:
-  - reason: melee_attack_unmodelled
-    attacks: "Ranged Attack"
-  - reason: gunblade_heavy_is_a_shot
+  - reason: gunblade_light_shots_unmodelled
 attack:
   trigger: melee
   shot_type: hit_scan
