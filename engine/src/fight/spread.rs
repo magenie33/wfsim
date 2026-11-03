@@ -476,6 +476,7 @@ pub(super) fn spread_hit(
         foe.fallen = true;
         gal.bump_on_kill(params, t);
         arc.on_kill(params, t);
+        if by == SpreadBy::FollowThrough && (active.spends_combo || tennokai_heavy) { arc.heavy_kill(active, t); }
         // …AND THE BODY THAT STANDS BACK UP IS A NEW INDIVIDUAL, which the
         // aimed path has said since the engine had statuses and this one did
         // not say at all. `apply` respawns it with full pools; leaving the
@@ -508,7 +509,7 @@ pub(super) fn spread_hit(
     );
     // WHAT THIS INSTANCE LEFT, for Melee Influence — see [`Landed`]. Taken
     // before `settle_procs` consumes the list.
-    let landed = Landed { procs: procs.clone(), raw, killed };
+    let mut landed = Landed { procs: procs.clone(), raw, killed };
     settle_procs(
         procs,
         seat,
@@ -552,6 +553,10 @@ pub(super) fn spread_hit(
         spec.params,
         DEPTH_PROC,
     );
+    if by == SpreadBy::FollowThrough {
+        landed.killed |= detonate_heavy_status(seat, inst.target, foe, spec.params, params, active, w,
+            active.spends_combo || tennokai_heavy, t, gal, arc, r, rec);
+    }
     landed
 }
 

@@ -159,6 +159,9 @@ impl FightParams {
         if self.crit_damage_on_kill.is_some() {
             push!("on_kill_cd", 1);
         }
+        if self.heavy_status.is_some_and(|s| s.duration_bonus > 0.0) {
+            push!("heavy_status_duration", 1);
+        }
         if self.base_damage_on_reload.is_some() {
             push!("on_reload_bd", 1);
         }
@@ -331,6 +334,12 @@ impl FightParams {
         if let Some(b) = self.crit_damage_on_kill.as_mut() {
             set_timed(b, cfg, "on_kill_cd");
         }
+        if let Some(s) = self.heavy_status.as_mut() {
+            if let Some(&(stacks, locked)) = cfg.get("heavy_status_duration") {
+                s.initial_active = stacks > 0;
+                s.duration_seconds = clock(s.duration_seconds, locked);
+            }
+        }
         if let Some(b) = self.fire_rate_on_reload.as_mut() {
             set_timed(b, cfg, "on_reload_fr");
         }
@@ -408,6 +417,9 @@ impl FightParams {
         }
         if self.crit_damage_on_kill.is_some() && by_id("on_kill_cd") {
             self.crit_damage_on_kill = None;
+        }
+        if self.heavy_status.is_some() && by_id("heavy_status_duration") {
+            if let Some(s) = self.heavy_status.as_mut() { s.duration_bonus = 0.0; }
         }
         if self.fire_rate_on_reload.is_some() && by_id("on_reload_fr") {
             self.fire_rate_on_reload = None;
@@ -1452,6 +1464,7 @@ impl FightParams {
             headshot_streak: panel.headshot_streak,
             crit_damage_below_status_count: panel.crit_damage_below_status_count,
             super_crit_on_status: panel.super_crit_on_status,
+            heavy_status: panel.heavy_status,
             weakpoint_stacks: panel.weakpoint_stacks,
             spawn_on_kill: panel.spawn_on_kill,
             kill_streak_summon: panel.kill_streak_summon,

@@ -603,6 +603,7 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
         has_reserve: s.ammo_max.is_some_and(|a| a > 0.0),
         ammo_pickup: s.ammo_pickup.unwrap_or(0.0),
         super_crit_on_status: s.super_crit_on_status,
+        heavy_status: s.heavy_status,
         physical_mods: s.physical_mods.as_deref().copied().map(|rules| {
             assert!(rules.multiplier.is_finite() && rules.multiplier >= 0.0, "invalid physical mod potency");
             let mut owner = spec(id).expect("melee profile belongs to a weapon");

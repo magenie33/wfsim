@@ -207,6 +207,8 @@ pub struct WeaponSpec {
     /// Physical mod potency and stat grants; shared by the weapon's forms.
     #[serde(default)]
     pub physical_mods: Option<Box<crate::model::PhysicalModSpec>>,
+    #[serde(default)]
+    pub heavy_status: Option<crate::model::HeavyStatusSpec>,
     /// Does this weapon apply MICROWAVE — the Nukor family's own invisible
     /// status? See `fight::DebuffState::microwave`. Two weapons in the game
     /// have it and the wiki names both.

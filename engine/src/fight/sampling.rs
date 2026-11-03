@@ -106,6 +106,10 @@ pub(super) fn sample_stacks(
                 let e = arc.crit_damage_kill_expiry_seconds();
                 (live(now < e), until(now < e, e))
             }
+            "heavy_status_duration" => {
+                let e = arc.heavy_status_duration_until;
+                (live(now < e), until(now < e, e))
+            }
             "on_reload_bd" => (live(now < base_damage_reload_expiry_seconds), until(now < base_damage_reload_expiry_seconds, base_damage_reload_expiry_seconds)),
             "on_eximus_weakpoint_bd" => (live(now < base_damage_eximus_expiry_seconds), until(now < base_damage_eximus_expiry_seconds, base_damage_eximus_expiry_seconds)),
             // Off the loop's own counter, like the tendrils: only the fight

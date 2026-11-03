@@ -207,6 +207,17 @@ pub struct HeavyAttack {
     pub swing_seconds: f64,
 }
 
+/// Heavy-hit status detonation and its refreshable heavy-kill duration grant.
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct HeavyStatusSpec {
+    pub detonate: bool,
+    pub duration_bonus: f64,
+    pub duration_seconds: f64,
+    #[serde(skip)]
+    pub initial_active: bool,
+}
+
 /// THE SHOCKWAVE A SLAM SENDS ALONG THE GROUND (Tenet Exec): `explosions` blasts
 /// `spacing_m` apart down each of `lines` lines fanned `fan_deg` edge to edge
 /// about the facing. Each is the slam that sent it — its damage, crit, status
@@ -953,6 +964,7 @@ pub struct WeaponBase {
     /// `data::weapons::SuperCritSpec`.
     pub super_crit_on_status: Option<crate::model::SuperCritSpec>,
     pub physical_mods: Option<Box<crate::model::PhysicalModBase>>,
+    pub heavy_status: Option<HeavyStatusSpec>,
     /// [`crate::data::weapons::WeaponSpec::weakpoint_stacks`] — no mod moves it.
     pub weakpoint_stacks: Option<crate::model::WeakpointStacksSpec>,
     /// [`crate::data::weapons::WeaponSpec::spawn_on_kill`] — counted, no more.

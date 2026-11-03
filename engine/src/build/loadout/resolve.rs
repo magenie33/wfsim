@@ -2073,6 +2073,7 @@ pub fn resolve_for(
             .map_or(0.0, |(_, v)| *v),
         no_resupply: base.no_resupply,
         super_crit_on_status: base.super_crit_on_status,
+        heavy_status: base.heavy_status,
         physical_mod_bonus: base.physical_mods.as_ref().map(|_| Box::new(physical_bonus)),
         weakpoint_stacks: base.weakpoint_stacks,
         spawn_on_kill: base.spawn_on_kill,

@@ -713,6 +713,7 @@ pub struct FightParams {
     /// modded value and every crit bonus are ignored, because the card says
     /// "Set Critical Chance ignores all other modifiers".
     pub super_crit_on_status: Option<crate::model::SuperCritSpec>,
+    pub heavy_status: Option<crate::model::HeavyStatusSpec>,
     /// See `build::loadout::WeaponBase::weakpoint_stacks` — the Knell's Death Knell.
     pub weakpoint_stacks: Option<crate::model::WeakpointStacksSpec>,
     /// See `build::loadout::WeaponBase::spawn_on_kill` — the Ballistica's ghosts.

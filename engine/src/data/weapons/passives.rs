@@ -16,6 +16,14 @@ pub fn passive_lines(weapon: &str) -> Vec<String> {
     let Some(s) = spec(weapon) else { return Vec::new() };
     let mut out = Vec::new();
 
+    if let Some(h) = s.heavy_status {
+        if h.detonate {
+            out.push("Direct heavy hits immediately detonate remaining Slash, Heat, Toxin, Electricity and Gas status damage, including their own procs, and remove those statuses.".to_string());
+        }
+        out.push(format!("Heavy-attack kills grant the wielder +{:.0}% Status Duration for {:.0}s.",
+            h.duration_bonus * 100.0, h.duration_seconds));
+    }
+
     if let Some(p) = s.physical_mods.as_deref() {
         out.push(format!(
             "Physical damage mods have {:.0}x potency. The dominant modded physical type grants: Impact +{:.0}% Attack Speed; Puncture +{:.1}m Range; Slash +{:.0}% Status Chance. Progenitor Impact does not select the physical-type bonus.",

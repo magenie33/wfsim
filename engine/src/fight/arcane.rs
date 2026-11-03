@@ -51,6 +51,7 @@ impl ArcState {
 /// like [`GalStacks`]), plus the Sharpened Bullets on-kill CD buff clock.
 #[derive(Default)]
 pub(super) struct ArcRuntime {
+    pub(super) heavy_status_duration_until: f64,
     pub(super) states: Vec<ArcState>,
     /// Sharpened Bullets' single refreshable on-kill buff expiry.
     pub(super) crit_damage_kill_expiry_seconds: f64,
@@ -81,6 +82,7 @@ pub(super) struct ArcRuntime {
 impl ArcRuntime {
     pub(super) fn init(params: &FightParams) -> Self {
         Self {
+            heavy_status_duration_until: params.heavy_status.map_or(0.0, |s| if s.initial_active { s.duration_seconds } else { 0.0 }),
             states: params
                 .arcane
                 .buffs
@@ -106,6 +108,18 @@ impl ArcRuntime {
                 crate::data::rage::Rage::new(s, start, held)
             }),
         }
+    }
+
+    pub(super) fn heavy_kill(&mut self, active: &FightParams, now: f64) {
+        if let Some(s) = active.heavy_status {
+            self.heavy_status_duration_until = now + s.duration_seconds;
+        }
+    }
+
+    pub(super) fn status_duration(&self, params: &FightParams, now: f64) -> f64 {
+        let bonus = params.heavy_status.filter(|_| now < self.heavy_status_duration_until)
+            .map_or(0.0, |s| s.duration_bonus);
+        (params.status_duration_multiplier + bonus).max(0.0)
     }
 
     /// Rage's share of the base-damage bucket at `now`; 0 without one.

@@ -39,6 +39,7 @@ mod m118_vectis_prime_compression;
 mod m119_multishot_rides_the_round;
 mod m123_laetum_acuity;
 mod melee;
+mod heavy_status;
 mod okina;
 mod orbs_fields_beams;
 mod overguard_status;
@@ -143,6 +144,7 @@ impl Default for FightParams {
             lock_on: None,
             toggle: None,
             status_duration_multiplier: 1.0,
+            heavy_status: None,
             fire_rate: 1.0,
             charge_seconds: None,
             charge_cadence: crate::model::ChargeCadence::DrawThenRate,

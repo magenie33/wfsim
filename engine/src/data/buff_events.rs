@@ -59,6 +59,7 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
         "on_kill_multishot" | "on_kill_cd" | "on_kill_damage" | "on_kill_punch_through" | "on_kill_fire_rate" | "tendrils"
         | "kill_streak" | "kill_streak_summon" => "kill",
         "on_headshot_kill_cc" => "headshot_kill",
+        "heavy_status_duration" => "melee_kill",
         // An Eximus weak point is a weak point.
         "on_headshot_cc" | "on_eximus_weakpoint_bd" | "on_headshot_fire_rate"
         | "on_headshot_damage" | "on_headshot_reload_speed"

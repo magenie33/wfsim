@@ -2221,6 +2221,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             bodies[0].fallen = true;
             gal.bump_on_kill(params, t);
             arc.on_kill(params, t);
+            if direct && (active.spends_combo || tennokai_heavy) { arc.heavy_kill(active, t); }
             // THE WEAK POINT, not the head: Update 44.0 converted Deadhead and
             // Galvanized Scope / Crosshairs from "On Headshot" to "On Weakpoint".
             if direct && part.is_weak_point {
@@ -2493,6 +2494,10 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             &params.foe,
             DEPTH_PROC,
         );
+        if direct {
+            detonate_heavy_status(seat, 0, &mut bodies[0], &params.foe, params, active, windows,
+                active.spends_combo || tennokai_heavy, t, gal, arc, r, rec);
+        }
         // MELEE INFLUENCE — every eligible status this swing applied,
         // arriving on everything standing around the body that took it.
         //

@@ -603,7 +603,7 @@ pub(super) fn settle_procs(
 ) {
     let InstanceScale { mb_live, crit_multiplier, part_factor, landing, attrition, xh_bracket, status_damage_live } =
         scale;
-    let status_damage = params.status_duration_multiplier;
+    let status_damage = arc.status_duration(params, at);
     let sdm = params.status_damage_multiplier + status_damage_live;
     let caps = foe.stack_caps;
     let gcap = |base: usize| caps.map_or(base, |c| base.min(c.general));

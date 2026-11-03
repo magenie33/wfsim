@@ -368,7 +368,17 @@ impl TargetState {
                     scaling::armor_damage_reduction(p.armor() * mit.armor_multiplier)
                 };
                 let boosted = health_part * mit.virus_amp;
-                let mitigated = boosted * (1.0 - dr);
+                // Cinematic damage bypasses armour within a mixed instance too.
+                let cinematic = if ignores_armor { 0.0 } else {
+                    let col = &p.type_mods.faction;
+                    let portion = shares.share(DamageType::Cinematic) * col.get(DamageType::Cinematic);
+                    if self.shield > 0.0 || leak_part > 0.0 {
+                        leak_part * portion / shares.non_toxin_portion(col).max(1e-12)
+                    } else {
+                        health_part * portion / shares.whole(col).max(1e-12)
+                    }
+                };
+                let mitigated = boosted * (1.0 - dr) + cinematic * mit.virus_amp * dr;
                 // THE 1-DAMAGE FLOOR, armoured or not — see below.
                 health_part = mitigated.max(1.0);
                 if led.is_some() {
@@ -377,7 +387,7 @@ impl TargetState {
                     // it to the leak's share is exact rather than proportional.
                     led_health_scale = if before > 0.0 { health_part / before } else { 1.0 };
                     led_armor_effective = p.armor() * mit.armor_multiplier;
-                    led_hp_armor = 1.0 - dr;
+                    led_hp_armor = if cinematic > 0.0 && boosted > 0.0 { mitigated / boosted } else { 1.0 - dr };
                     led_hp_floor = if mitigated > 0.0 { health_part / mitigated } else { 1.0 };
                     led_hp_floored = mitigated < 1.0;
                 }
