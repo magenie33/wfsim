@@ -4,7 +4,7 @@ Chinese name: 和谐
 
 Scythe · Melee · Mastery Rank 10. 240 base damage (puncture 168, slash 72), 20% crit chance, 2.2x crit multiplier, 36% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-03
+## Best riven-free build on the WFSim board, as of 2026-11-04
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
@@ -21,7 +21,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
 - The wiki publishes no slide attack figure or duration for this weapon, so there is no slide mode.
-- Not modelled: a heavy attack deals at once every remaining tick of the Slash, Heat, Toxin, Electricity and Gas statuses on its target and removes them; a heavy attack kill grants +30% Status Duration for 30 s.
+- Direct heavy-hit detonation includes the hit's own Slash, Heat, Toxin, Electricity and Gas procs. Its retained damage types, mitigation and headshot cap are not calibrated in game. Radial and heavy-slam detonation, the allied duration grant and Jade's Ensemble are not modelled. Heavy kills grant the wielder's ordinary weapon status procs +30% duration for 30 s.
 
 ## In WFSim
 

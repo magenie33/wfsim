@@ -7,7 +7,7 @@ Dagger · Melee · Mastery Rank 3. 140 base damage (impact 14, puncture 126), 10
 ## Not modelled here
 
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
-- Not modelled: Spectral Dagger and Spectral Dagger Explosion. Of this weapon's attacks, only the swing, the slam and the heavy slam are.
+- In Incarnon Form, each standing or Tennokai heavy input emits two spectral daggers at its first physical sweep marker. Their exact release times, spread and maximum flight range are unmeasured. Projectile base-damage exclusions follow the wiki's live-bug rules and are not calibrated in game. Spectral projectiles on heavy slams are not modelled.
 
 ## In WFSim
 

@@ -4,7 +4,7 @@ Chinese name: 终幕·病囊飞刃
 
 Glaive · Melee · Mastery Rank 17. 270 base damage (impact 58, puncture 55, slash 65, viral 92), 20% crit chance, 2.3x crit multiplier, 35% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-03
+## Best riven-free build on the WFSim board, as of 2026-11-04
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
