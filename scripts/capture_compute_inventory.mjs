@@ -20,7 +20,7 @@ export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS)
         library: ['SELECT id,record FROM builds', []],
         facts: ['SELECT identity,ruler,mode,measured_by,score,cost_seconds,started_at,finished_at FROM scores', []],
         queue: ['SELECT q.batch,q.build_id,q.ruler,q.mode FROM queue q WHERE EXISTS(SELECT 1 FROM batches b WHERE b.id=q.batch)', []],
-        tasks: ['SELECT * FROM factory_inventory_rows($1::text,$2::text[])', [engine, covers]],
+        tasks: ['SELECT * FROM factory_inventory_rows($1::text,ARRAY(SELECT jsonb_array_elements_text(($2::text)::jsonb)))', [engine, JSON.stringify(covers)]],
       };
       for (const [name, [query, args]] of Object.entries(scans)) {
         const out = createWriteStream(outputs[name]); let failed = null, n = 0;
