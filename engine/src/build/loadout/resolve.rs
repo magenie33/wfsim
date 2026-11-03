@@ -1563,7 +1563,8 @@ pub fn resolve_for(
         // exactly as a beam's range is. Reach and Primed Reach add METRES —
         // DE's own cards say `+2.3 Range` and `+3 Range` — so they join `flat`
         // rather than `pct`, and on a hammer Primed Reach more than doubles it.
-        (base.range_m * (1.0 + pct) + flat + melee_range_add + base.evo_melee_range_m).max(0.0)
+        let melee_range = if base.follow_through.is_some() { melee_range_add + base.evo_melee_range_m } else { 0.0 };
+        (base.range_m * (1.0 + pct) + flat + melee_range).max(0.0)
     };
 
     // PUNCH THROUGH: the weapon's own plus every grant, in metres of material.
@@ -1736,11 +1737,15 @@ pub fn resolve_for(
         // the UNSTANCED fallback, which is what an empty stance slot gives you.
         heavy_script: stance_heavy.map_or_else(Vec::new, |h| h.to_vec()),
         melee_heavy,
+        melee_profiles: base.melee_profiles.iter().map(|(id, profile)|
+            (id.clone(), resolve_for(profile, mods, policy, tenno))).collect(),
         combo_script: {
             let script = mods
                 .iter()
                 .find_map(|m| m.stance)
                 .and_then(|c| c.iter().find(|(f, _)| *f == base.form.id()).map(|(_, h)| h))
+                .filter(|_| !(base.form == crate::model::FormKind::Heavy && base.combo_script.iter().any(|h|
+                    h.profile.is_some() || h.event_timing.is_some_and(|e| matches!(e.kind, crate::model::MeleeEventKind::Ranged)))))
                 .map_or_else(|| base.combo_script.clone(), |h| h.to_vec());
             for (i, h) in script.iter().enumerate() {
                 assert!(h.hit_delay_seconds.is_none_or(|t| t.is_finite() && t >= 0.0 && t <= h.delay_seconds),

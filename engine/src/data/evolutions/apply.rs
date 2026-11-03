@@ -9,6 +9,7 @@ use super::*;
 /// `currently_broken` evolutions apply nothing.
 pub fn apply(base: &mut WeaponBase, evos: &[&EvolutionDef]) {
     if let Some(heavy) = base.melee_heavy.as_mut() { apply(heavy, evos); }
+    for profile in base.melee_profiles.values_mut() { apply(profile, evos); }
     let original_total = base.base_vector.total();
     let mut flat = 0.0;
     // …AND HOW MUCH OF IT THE GunCO TERM'S BASE GROWS BY. Two sums rather than

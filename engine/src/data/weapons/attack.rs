@@ -98,6 +98,14 @@ where
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct AttackSpec {
+    #[serde(default)]
+    pub profiles: std::collections::BTreeMap<String, AttackSpec>,
+    #[serde(default)]
+    pub co_behavior: Option<String>,
+    #[serde(default)]
+    pub co_base_fraction: Option<f64>,
+    #[serde(default)]
+    pub headshot_multiplier: Option<f64>,
     pub trigger: String,
     /// Ammo spent per SHOT (per tick on a continuous weapon). Default 1.
     ///

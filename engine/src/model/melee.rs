@@ -60,6 +60,10 @@ pub enum MeleeEventKind { Sweep, Slam, Ranged, Throw, Idle }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MeleeEvent {
+    #[serde(default)]
+    pub profile: Option<String>,
+    #[serde(default)]
+    pub incarnon_only: bool,
     pub at_seconds: f64,
     pub kind: MeleeEventKind,
     #[serde(default)]
@@ -131,6 +135,8 @@ impl MeleeTimeline {
                 });
                 let mut previous = 0.0;
                 let idle = MeleeEvent {
+                    profile: None,
+                    incarnon_only: false,
                     at_seconds: a.duration_seconds, kind: MeleeEventKind::Idle,
                     hand: None, multiplier: 0.0, combo_points: 0.0, hits: 1, forced_procs: Vec::new(),
                     all_around: false, slash_multiplier: 1.0, impact_multiplier: 1.0,
@@ -148,6 +154,8 @@ impl MeleeTimeline {
                     let recovery = if event + 1 == events.len() { a.duration_seconds - at } else { 0.0 };
                     let slam = matches!(e.kind, MeleeEventKind::Slam);
                     script.push(ComboHit {
+                        profile: e.profile.clone(),
+                        incarnon_only: e.incarnon_only,
                         multiplier: if slam { 0.0 } else { e.multiplier },
                         delay_seconds: delta + recovery,
                         hit_delay_seconds: Some(delta),

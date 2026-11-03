@@ -210,6 +210,8 @@ impl FightParams {
     ///
     /// Weapon-scoped: recurses into the incarnon cycle's base form.
     pub fn apply_buff_config(&mut self, cfg: &BuffConfig) {
+        if let Some(heavy) = self.melee_heavy.as_mut() { heavy.apply_buff_config(cfg); }
+        for profile in self.melee_profiles.values_mut() { profile.apply_buff_config(cfg); }
         /// The buff's own duration, or none at all when the card is locked.
         fn clock(duration: f64, locked: bool) -> f64 {
             if locked {
@@ -930,6 +932,8 @@ impl FightParams {
         // ModifiedBase); `multiplies` is a final multiplier on the instance
         // that an adding CO's term does not see (`scale::beside_adding_co`).
         let melee_heavy = panel.melee_heavy.as_ref().map(|p| Box::new(Self::from_panel(p, arena, arcane)));
+        let melee_profiles = panel.melee_profiles.iter().map(|(id, p)|
+            (id.clone(), Self::from_panel(p, arena, arcane))).collect();
         let (compression_multiplier, mut compression_base_damage) = match panel.compression {
             Some(c) => {
                 let bonus = arcane.compression_damage_per_m * c.radius_lost_m;
@@ -1418,6 +1422,7 @@ impl FightParams {
             combo_script: panel.combo_script.clone(),
             heavy_script: panel.heavy_script.clone(),
             melee_heavy,
+            melee_profiles,
             follow_through: panel.follow_through,
             slam: panel.slam,
             shockwave: panel.shockwave,

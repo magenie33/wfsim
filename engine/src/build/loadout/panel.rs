@@ -465,6 +465,7 @@ pub struct ResolvedPanel {
     /// An equipped stance's event-timed heavy inputs, used by Tennokai.
     pub heavy_script: Vec<crate::model::ComboHit>,
     pub melee_heavy: Option<Box<ResolvedPanel>>,
+    pub melee_profiles: std::collections::BTreeMap<String, ResolvedPanel>,
     /// `FT^(n-1)` — what the n-th body a swing reaches takes.
     pub follow_through: Option<f64>,
     /// THE WEAPON'S OWN SLAM, resolved: what a combo swing that ends on one

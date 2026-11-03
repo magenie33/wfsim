@@ -166,7 +166,11 @@ pub fn base_panel_assembled(
     let composed = spec_assembled(raw, assembly).unwrap_or_else(|| {
         panic!("weapon {id}: the assembly {assembly:?} does not compose into it")
     });
-    let s = &*composed;
+    panel_for_spec(&composed, frenzy_active, assembly)
+}
+
+fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::assembly::Assembly>) -> WeaponBase {
+    let id = s.id.as_str();
 
     let mut vector = DamageVector::new();
     for (name, amount) in &s.attack.damage {
@@ -596,7 +600,7 @@ pub fn base_panel_assembled(
         super_crit_on_status: s.super_crit_on_status,
         physical_mods: s.physical_mods.as_deref().copied().map(|rules| {
             assert!(rules.multiplier.is_finite() && rules.multiplier >= 0.0, "invalid physical mod potency");
-            let mut owner = raw;
+            let mut owner = spec(id).expect("melee profile belongs to a weapon");
             while let Some(parent) = owner.inherits.as_deref() {
                 owner = spec(parent).expect("physical mod owner");
             }
@@ -716,6 +720,18 @@ pub fn base_panel_assembled(
         no_magazine: s.attack.no_magazine,
         combo_script: s.attack.combo_script.to_vec(),
         throw_charge_seconds: s.attack.throw_charge_seconds,
+        melee_profiles: s.attack.profiles.iter().map(|(name, attack)| {
+            let mut child = s.clone();
+            child.attack = attack.clone();
+            child.attack.combo_script = s.attack.combo_script.clone();
+            child.attack.spends_combo = s.attack.spends_combo;
+            child.attack.fire_rate = s.attack.fire_rate;
+            child.attack.heavy = s.attack.heavy;
+            if let Some(co) = &attack.co_behavior { child.co_behavior = Some(co.clone()); }
+            if let Some(fraction) = attack.co_base_fraction { child.co_base_fraction = Some(fraction); }
+            if let Some(head) = attack.headshot_multiplier { child.headshot_multiplier = Some(head); }
+            (name.clone(), panel_for_spec(&child, frenzy_active, assembly))
+        }).collect(),
         melee_heavy: (s.form_kind() != crate::model::FormKind::Heavy).then(|| all().iter()
             .find(|e| e.group() == s.group() && e.form_kind() == crate::model::FormKind::Heavy
                 && e.attack.combo_script.iter().any(|h| h.event_timing.is_some_and(|t|

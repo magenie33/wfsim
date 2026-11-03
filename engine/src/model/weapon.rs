@@ -922,6 +922,7 @@ pub struct WeaponBase {
     pub heavy_script: Vec<crate::model::ComboHit>,
     /// A heavy input with its own damage and delivery, resolved with the same build.
     pub melee_heavy: Option<Box<WeaponBase>>,
+    pub melee_profiles: std::collections::BTreeMap<String, WeaponBase>,
     pub throw_charge_seconds: Option<f64>,
     /// See [`crate::data::weapons::AttackSpec::spends_combo`].
     pub spends_combo: bool,

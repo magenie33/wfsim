@@ -481,11 +481,11 @@ pub fn run_once_traced(
     /// fight each run.
     ///
     /// A seat that is finished parks at infinity and is never picked again.
-    fn next_seat(seats: &[Combatant]) -> Option<usize> {
+    fn next_seat(seats: &[Combatant], end: f64) -> Option<usize> {
         seats
             .iter()
             .enumerate()
-            .filter(|(_, c)| c.next_t.is_finite())
+            .filter(|(_, c)| c.next_t.is_finite() && c.next_t < end)
             .min_by(|(ia, a), (ib, b)| {
                 a.next_t
                     .total_cmp(&b.next_t)
@@ -508,7 +508,7 @@ pub fn run_once_traced(
     // at; the body then reads `t` as "now" exactly as it did when there was
     // only ever one seat to be due. It ends when every seat has parked.
     loop {
-        let due = next_seat(&seats);
+        let due = next_seat(&seats, params.duration_seconds);
         // A SHOT ARRIVING NO LATER THAN THE NEXT TURN LANDS FIRST, at its own
         // time (`fight::flight`). One that would arrive after the engagement
         // never does. A weapon whose shot does not fly never has one.
@@ -711,7 +711,9 @@ pub fn run_once_traced(
                 me.params, active, &mut r, rec, &mut d.status, &me.params.foe, 0);
             process_entities(&mut entities, t, &mut turn!(me, active, &mut *d), &mut r, rec, &mut bodies);
             if let Some(h) = current_melee_event(active, &me.melee)
-                .filter(|h| h.event_timing.is_some_and(|e| matches!(e.kind, crate::model::MeleeEventKind::Idle))).cloned() {
+                .filter(|h| h.event_timing.is_some_and(|e| matches!(e.kind, crate::model::MeleeEventKind::Idle))
+                    || (h.incarnon_only && (me.incarnon.in_base_form
+                        || !me.params.cycle.as_ref().is_some_and(|c| matches!(c.ends, Ends::After(_)))))).cloned() {
                 let i = me.melee.input.as_ref().unwrap();
                 let (tennokai, converted, mark) = (i.tennokai, i.converted, i.kill_mark);
                 let initial = active.initial_combo;
@@ -726,6 +728,9 @@ pub fn run_once_traced(
             }
         }
         let active = melee_profile(active, &me.melee);
+        let event_profile = current_melee_event(active, &me.melee).and_then(|h| h.profile.clone());
+        let active = event_profile.as_ref().map_or(active, |name| active.melee_profiles.get(name)
+            .unwrap_or_else(|| panic!("missing melee attack profile: {name}")));
         if me.params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot) {
             t += charged_shot_span(me.params, active, &me.windows, &me.bar, &mut me.buff_stacks, t);
             if t >= me.params.duration_seconds { break; }
@@ -735,7 +740,12 @@ pub fn run_once_traced(
         // has its own vector — so only the vector and ModifiedBase survive at
         // pellet scope.
         let heavy_pre = if me.incarnon.in_base_form { &me.fixed.base_heavy_pre } else { &me.fixed.heavy_pre };
-        let (qvec, modded_base) = if let Some(p) = heavy_pre.as_ref().filter(|_| me.melee.input.as_ref().is_some_and(|i| i.converted)) {
+        let profile_pre = event_profile.as_ref().map(|_| {
+            let mb = active.dot_modified_base.unwrap_or_else(|| active.damage.total());
+            (active.damage.quantized_against(mb), mb)
+        });
+        let (qvec, modded_base) = if let Some((q, mb)) = profile_pre.as_ref() { (q, *mb) }
+        else if let Some(p) = heavy_pre.as_ref().filter(|_| me.melee.input.as_ref().is_some_and(|i| i.converted)) {
             (&p.0, p.2)
         } else if me.incarnon.in_base_form {
             let p = me.fixed.base_pre.as_ref().expect("cycle state needs base pre");
@@ -1036,6 +1046,7 @@ pub fn run_once_traced(
             t,
             base_form: me.incarnon.in_base_form,
             special_heavy: heavy_pre.is_some() && me.melee.input.as_ref().is_some_and(|i| i.converted),
+            profile: event_profile,
             shot: rec.shot(),
             flash,
             qvec,

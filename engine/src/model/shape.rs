@@ -594,6 +594,10 @@ pub enum BlastKind {
 /// swing's animation length directly.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ComboHit {
+    #[serde(default)]
+    pub profile: Option<String>,
+    #[serde(default)]
+    pub incarnon_only: bool,
     /// Present only on rows compiled from an input/action timeline.
     #[serde(skip)]
     pub event_timing: Option<crate::model::MeleeEventTiming>,

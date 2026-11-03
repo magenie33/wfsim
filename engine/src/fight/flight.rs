@@ -21,6 +21,7 @@ pub(super) struct Landing {
     /// form round into an Incarnon one.
     pub(super) base_form: bool,
     pub(super) special_heavy: bool,
+    pub(super) profile: Option<String>,
     /// The record's id for the pull, so what it deals points back at it.
     pub(super) shot: Option<u32>,
     pub(super) flash: bool,
@@ -89,8 +90,9 @@ impl Landing {
             Some(cy) if self.base_form => &cy.base_form,
             _ => params,
         };
-        if self.special_heavy { active.melee_heavy.as_deref().expect("ranged heavy needs its profile") }
-        else { active }
+        let active = if self.special_heavy { active.melee_heavy.as_deref().expect("ranged heavy needs its profile") }
+        else { active };
+        self.profile.as_ref().map_or(active, |id| active.melee_profiles.get(id).expect("melee event needs its attack profile"))
     }
 }
 
@@ -139,7 +141,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
     // for this shot; with none, the engagement's list stands.
     let struck_live: Vec<usize>;
     let struck: &[usize] = match &me.fixed.base_struck {
-        _ if l.pierce_live_m > 0.0 || l.special_heavy => {
+        _ if l.pierce_live_m > 0.0 || l.special_heavy || l.profile.is_some() => {
             struck_live = active.struck_bodies_with(l.pierce_live_m);
             &struck_live
         }

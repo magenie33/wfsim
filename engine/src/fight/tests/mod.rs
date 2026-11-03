@@ -23,6 +23,7 @@ mod fired_up;
 mod formation_and_spread;
 mod glaive;
 mod timed_melee;
+mod special_heavy;
 mod melee_timeline;
 mod fortifier_tick;
 mod m120_fortifier_capped;
@@ -216,6 +217,7 @@ impl Default for FightParams {
             combo_script: Vec::new(),
             heavy_script: Vec::new(),
             melee_heavy: None,
+            melee_profiles: Default::default(),
             follow_through: None,
             slam: None,
             shockwave: None,

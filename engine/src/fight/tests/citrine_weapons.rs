@@ -47,7 +47,7 @@ fn corufell_heavy_uses_projectile_stats_and_windup_mods() {
 
 #[test]
 fn corufell_energy_crosses_bodies_beyond_melee_reach_without_follow_through() {
-    let mut arena = crate::arena::Arena::training(1.0);
+    let mut arena = crate::arena::Arena::training(2.0);
     arena.target_at = crate::rules::space::Vec2::new(0.0, 5.0);
     arena.others = (6..=8).map(|y| crate::formation::FoeSpec {
         id: String::new(), params: Foe::training_dummy(), body_parts: BodyPart::humanoid(),
