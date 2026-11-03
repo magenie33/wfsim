@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.6367 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Primed Shred, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-24 03:43 UTC · db272037fe1d |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.0023 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Heavy Caliber, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-11-02 12:36 UTC · 4393e1730621 |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 3.0127 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Primed Shred, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-24 03:45 UTC · db272037fe1d |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.06732 | Primed Cryo Rounds, Malignant Force, Hellfire, Wildfire, Thermite Rounds, Split Chamber, Serration, Vile Acceleration | 2026-10-24 03:45 UTC · db272037fe1d |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.3383 | Malignant Force, Rime Rounds, Wildfire, Thermite Rounds, Primed Shred, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-10-24 03:45 UTC · db272037fe1d |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.07754 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Heavy Caliber, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-11-02 12:42 UTC · 4393e1730621 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.5956 | Malignant Force, Rime Rounds, Hellfire, Thermite Rounds, Heavy Caliber, Split Chamber, Rifle Elementalist, Magnetic Capacity | 2026-11-02 12:42 UTC · 4393e1730621 |
 
 ## Not modelled here
 

@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 21.4951 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-24 04:56 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 36.0789 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-24 04:39 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.1620 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-24 05:06 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 12.4062 | Primed Cryo Rounds, Infected Clip, Galvanized Chamber, Double Tap, Galvanized Aptitude, Galvanized Scope, Vital Sense, Magnetic Capacity, Primary Deadhead | 2026-10-24 04:50 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 41.4342 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-11-02 22:42 UTC · 4393e1730621 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 42.1798 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-11-02 22:38 UTC · 4393e1730621 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | cycle | 7.6854 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-11-02 22:38 UTC · 4393e1730621 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 26.8249 | Primed Cryo Rounds, Malignant Force, Galvanized Chamber, Galvanized Aptitude, Galvanized Scope, Semi-Rifle Cannonade, Vital Sense, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-11-02 22:38 UTC · 4393e1730621 |
 
 ## In WFSim
 
