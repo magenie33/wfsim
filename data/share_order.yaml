@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: a1828a0285178f38
-count: 3821
+digest: f79cf7797b7e14a0
+count: 3834
 ids:
   - acceltra
   - acceltra_prime
@@ -3831,3 +3831,16 @@ ids:
   - exodia_might
   - exodia_triumph
   - exodia_valor
+  - argo_and_vel_heavy
+  - arum_spinosa_heavy
+  - edun_heavy
+  - quassus_heavy
+  - quassus_prime_heavy
+  - redeemer_heavy
+  - redeemer_prime_heavy
+  - sarpa_heavy
+  - stropha_heavy
+  - syam_heavy
+  - tak_and_lug_heavy
+  - vastilok_heavy
+  - wolf_sledge_throw

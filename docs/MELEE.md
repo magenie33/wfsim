@@ -902,9 +902,19 @@ Missing projectile/sweep events retain the existing unmodelled declaration;
 the importer does not create a mid-animation melee hit for them. Existing
 measured combo rules, including M95/M97, remain in their fixed-stance data.
 
-**A HEAVY THAT IS NOT A SWING HAS NO HEAVY FORM** — a throw, a shot, a wave, a
-disc (`melee_heavy_is_special`), like the glaives and gunblades before them. Corufell and Corufell Prime instead have a projectile heavy mode; its timing and geometry limits are listed in `docs/UNMODELLED.md` §"Steflos and Corufell families".
-Playing the class's swing in its place would be a number the game never shows.
+Special heavies use their own ranged profiles rather than the class's sweep.
+An input can contain collision and projectile events with different damage,
+crit, status, delivery and modifier rules. Named `attack.profiles` are resolved
+against the same build and selected by each timeline event. Supplemental events
+share the input's combo snapshot and spend it once. `incarnon_only` events fire
+only while that form is armed. Tennokai uses the heavy profile, including its
+pellets and flight; a projectile retains that profile until it lands.
+
+Gunblade shots, Syam waves, warfan volleys, thrown polearms and shields,
+Corufell projectiles and Tenet disks state their own sequences. Missing release
+events and geometry remain disclosed on those forms. A delayed radial retains
+its impact point and shot attribution without repeating contact or spending
+combo again. Heavy inputs cannot resolve contacts after the engagement ends.
 
 **THE INFOBOX WINS THE HEAVY OVER THE CLASS TABLE, and says where it
 disagrees.** Every Dual Sword and Tonfa reads 4x against 5x, every Dagger and

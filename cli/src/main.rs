@@ -34,6 +34,11 @@ fn dual_toxocyst_baseline() -> FightParams {
         // NOT A MELEE WEAPON: no combo counter, no script, no follow through.
         combo_script: Vec::new(),
         heavy_script: Vec::new(),
+        melee_heavy: None,
+        melee_profiles: Default::default(),
+        heavy_status: None,
+        melee_damage_mods_apply: true,
+        universal_damage_mods_apply: true,
         follow_through: None,
         slam: None,
         shockwave: None,

@@ -53,6 +53,8 @@
 
 
 checked:
+  argo_and_vel_heavy: { range: null, type: projectile, note: 'the heavy glaive page states no maximum flight range; the explosion radius is not a flight range' }
+  edun_heavy: { range: null, type: projectile, note: 'the thrown polearm page states no maximum flight range; the 5 m explosion radius is not a flight range' }
   acceltra:                    { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 70 m/s. Its 4.0 m is the explosion RADIUS, not a reach' }
   acceltra_prime:              { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 70 m/s. Its 5.0 m is the explosion RADIUS, not a reach' }
   acrid:                       { range: null, type: projectile, note: 'the Normal Attack block states no Range; Projectile at 65 m/s' }

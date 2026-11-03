@@ -478,6 +478,9 @@ fn the_only_condition_overload_anomalies_are_the_ones_the_catalog_names() {
         // of those take no CO by default. So this line is what makes the
         // three halves of one attack agree.
         ("grimoire_active", "inert", 1.0),
+        // The weapon pages state these projectile-specific CO brackets.
+        ("edun_heavy", "additive_with_base_damage", 0.25),
+        ("syam_heavy", "independent", 1.0),
 
         // CARRIED FROM THE FAMILY (docs/CATALOGS.md §1) — entries the catalog
         // does not name, reading the class of a sibling of the same family
@@ -1698,7 +1701,7 @@ fn the_one_x_heads_are_the_ones_the_wiki_names() {
         "athodai_alt", "athodai_prime_alt", "catchmoon_primary", "catchmoon_secondary",
         "dread_incarnon", "fulmin_semi", "fulmin_prime_semi", "lex_incarnon",
         "lex_prime_incarnon", "nataruk_perfect", "paris_incarnon", "mk1_paris_incarnon",
-        "paris_prime_incarnon", "steflos", "steflos_prime", "nunchasa_alt",
+        "paris_prime_incarnon", "steflos", "steflos_prime", "stropha_heavy", "nunchasa_alt",
     ];
     want.sort_unstable();
     assert_eq!(have, want);

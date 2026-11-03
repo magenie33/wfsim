@@ -482,7 +482,9 @@ numbers, and the engine does not apply, is admitted on that weapon:
 | gap | reason | on |
 | --- | --- | --- |
 | an attack beyond swing, slam and heavy slam — a throw, a shot, a projectile, a pool | `melee_attack_unmodelled` (names them) | the weapon |
-| a heavy that is not a swing: no heavy mode | `glaive_heavy_is_a_throw`, `gunblade_heavy_is_a_shot`, `melee_heavy_is_special` (says what it is) | every glaive and gunblade; Zenistar, Syam, Quassus, Quassus Prime, Edun, Caustacyst, Coda Caustacyst, Arum Spinosa, Argo & Vel |
+| a glaive's heavy is an in-flight detonation, with no standing heavy | `glaive_heavy_is_a_throw` | glaives |
+| shooting within light gunblade stance combos | `gunblade_light_shots_unmodelled` | gunblades; their separate heavy shots are modelled |
+| special-heavy release, geometry and delivery limits | per-form admissions and `special_heavy_profile_limits` | ranged and mixed heavy profiles |
 | a glaive's throw beyond what the arena holds — walls to bounce off, how the bounce count and the bounce explosion are read, the throw's animation, Tennokai and Melee Animosity on a throw (docs/MELEE.md §10) | `glaive_bounce_*`, `glaive_detonation_ends_bounces`, `glaive_throw_*` | every glaive's throws; Orvius's quick throw (a hover, not a strike) has no form |
 | a missing package action, duration or attack event | `docs/melee/package-coverage.json` | unavailable weapon inputs and legacy stance modes; no projectile is replaced with an invented sweep |
 | a weapon's special attack beyond its exported collision events | `melee_own_combo_unmodelled` | the named weapon's admission |
@@ -813,7 +815,26 @@ alongside it.
 
 Steflos and Steflos Prime use the published approximate 2 m projectile width, damage, flight speed and distance falloff. Lifetime-dependent range, lifetime extensions and size growth are not applied; the Citrine signature speed bonus is not applied.
 
-Corufell and Corufell Prime have a Charged Projectile heavy mode, with their own damage, crit, status, flight speed, falloff, infinite body punch through and combo spending. Projectile width and maximum flight range are unpublished. The loop fires one projectile per heavy input and uses the listed rate as recovery plus wind-up; opening-hit timing and the consecutive two-shot sequence are not calibrated. Prime’s innate wind-up factor is multiplied by the mod factor, with no measured stacking rule. The Citrine signature bonus, sliding scythe heavy and converting light-combo Tennokai into a projectile are not modelled. Each limitation is disclosed on the relevant entry.
+Corufell and Corufell Prime have a Charged Projectile heavy mode with their own damage, crit, status, flight speed, falloff, infinite body punch through and combo spending. Both consecutive inputs use the package release event and animation; the package charge conflicts with the wiki and remains uncalibrated. Projectile width and maximum flight range are unpublished. Prime's innate wind-up factor is multiplied by the mod factor without a measured stacking rule. The Citrine signature bonus and sliding scythe heavy are not modelled. Tennokai converts light inputs into the projectile profile.
+
+## Special heavy attacks
+
+Gunblade B actions contain a second firing marker whose handler behavior is
+unknown; only the first emits a shot. Sarpa's internal burst spacing, package
+damage and charge conflicts, and Stropha's projectile width remain disclosed.
+Stropha's piecewise falloff is applied. Warfan release offsets and spread,
+Syam's two wave shapes and flight speed, and the thrown shield's exact radial
+geometry are not calibrated. Tenet disks retain their per-source damage-mod
+exclusions and CO brackets; Grigori's lifetime, bounces and heavy-slide trigger
+are not modelled. Wolf Sledge's second-target seeking and return-flight hits
+are absent, and its throw cadence is a disclosed stand-in.
+
+Harmony detonates remaining damaging status ticks after a direct heavy hit
+applies its own procs, including on follow-through bodies. Its single mixed
+instance retains the stored damage families; Slash's Cinematic portion bypasses
+armour. This routing and headshot-cap behavior require calibration. Radial and
+heavy-slam cashout, ally grants and Jade's Ensemble are not modelled. The
+wielder's heavy-kill duration buff is earned, configurable and recorded.
 
 ## Zaw Exodia
 

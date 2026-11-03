@@ -178,11 +178,15 @@ reasons:
   gunblade_stropha_geometry:
     text: "The shockwave's width is unpublished. The listed multi-stage distance falloff is applied; the effective hitbox and its flight are not calibrated in game."
   heavy_status_detonation_unmeasured:
-    text: "Heavy-hit detonation includes the hit's own Slash, Heat, Toxin, Electricity and Gas procs. Its retained damage types, tick-time mitigation and headshot-cap behavior are not calibrated in game. The allied duration grant and Jade's Ensemble are not modelled; the wielder's ordinary weapon status procs receive the 30% grant for 30 s."
+    text: "Direct heavy-hit detonation includes the hit's own Slash, Heat, Toxin, Electricity and Gas procs. Its retained damage types, mitigation and headshot cap are not calibrated in game. Radial and heavy-slam detonation, the allied duration grant and Jade's Ensemble are not modelled. Heavy kills grant the wielder's ordinary weapon status procs +30% duration for 30 s."
+  wolf_sledge_throw_limits:
+    text: "The second target's seeking and all return-flight strikes are not modelled. Flight speed is unpublished, so throws arrive without travel time. The 0.75 s charge and nominal 1 s animation use attack speed; exact hold, release, catch timing and the bare-stance wind-up exception are not calibrated. Nearby ragdoll effects are not modelled."
   melee_heavy_is_special:
     text: "This weapon's heavy attack is {what}, which is not modelled, so there is no heavy mode and a Tennokai window converts nothing."
   special_heavy_profile_limits:
     text: "This weapon has a separate heavy-attack profile. Its timing, geometry and unsupported components are disclosed on that heavy mode."
+  ceramic_dagger_projectile_timing:
+    text: "In Incarnon Form, each standing or Tennokai heavy input emits two spectral daggers at its first physical sweep marker. Their exact release times, spread and maximum flight range are unmeasured. Projectile base-damage exclusions follow the wiki's live-bug rules and are not calibrated in game. Spectral projectiles on heavy slams are not modelled."
   physical_mod_passive_unmeasured:
     text: "Attack-speed/range stacking, exact physical-damage ties, negative physical rivens and progenitor Impact's wheel selection await in-game calibration."
   melee_passive_unmodelled:

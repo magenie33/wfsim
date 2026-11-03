@@ -392,6 +392,8 @@ impl FightParams {
     /// is `None`, and nothing downstream learns the concept exists.
     /// Weapon-scoped: recurses into the cycle's base form.
     pub fn deny_buff_triggers(&mut self, denied: &[String]) {
+        if let Some(heavy) = self.melee_heavy.as_mut() { heavy.deny_buff_triggers(denied); }
+        for profile in self.melee_profiles.values_mut() { profile.deny_buff_triggers(denied); }
         use crate::data::buff_events::of_builtin;
         if denied.is_empty() {
             return;

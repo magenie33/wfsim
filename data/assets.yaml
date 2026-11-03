@@ -4,6 +4,19 @@
 # Files: python scripts/fetch_images.py (web/cache/img/, then site/img/).
 
 weapons:
+  argo_and_vel_heavy: DaxDuviriMaceShieldWeapon.png
+  arum_spinosa_heavy: InfWarfanWeapon.png
+  edun_heavy: DaxDuviriPolearm.png
+  quassus_heavy: BrokenFrameWarfan.png
+  quassus_prime_heavy: QuassusPrime.png
+  redeemer_heavy: Redeemer.png
+  redeemer_prime_heavy: RedeemerPrime.png
+  sarpa_heavy: Sarpa.png
+  stropha_heavy: CrpGunBladeWeapon.png
+  syam_heavy: DaxDuviriKatana.png
+  tak_and_lug_heavy: MortiforShieldAndSword.png
+  vastilok_heavy: GrnGunblade.png
+  wolf_sledge_throw: WolfHammerSkin.png
   balla_one_handed: TipOne.png
   balla_one_handed_block: TipOne.png
   balla_one_handed_block_forward: TipOne.png

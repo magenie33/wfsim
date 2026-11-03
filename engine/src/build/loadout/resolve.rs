@@ -1574,7 +1574,9 @@ pub fn resolve_for(
         // exactly as a beam's range is. Reach and Primed Reach add METRES —
         // DE's own cards say `+2.3 Range` and `+3 Range` — so they join `flat`
         // rather than `pct`, and on a hammer Primed Reach more than doubles it.
-        let melee_range = if base.follow_through.is_some() { melee_range_add + base.evo_melee_range_m } else { 0.0 };
+        let ranged = base.follow_through.is_none() && base.combo_script.iter().any(|h|
+            h.event_timing.is_some_and(|e| matches!(e.kind, crate::model::MeleeEventKind::Ranged)));
+        let melee_range = if ranged { 0.0 } else { melee_range_add + base.evo_melee_range_m };
         (base.range_m * (1.0 + pct) + flat + melee_range).max(0.0)
     };
 

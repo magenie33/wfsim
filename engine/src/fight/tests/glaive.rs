@@ -244,7 +244,7 @@ fn glaive_projectile_recall_and_bounce_numbers_match_the_pinned_package() {
     let raw: serde_norway::Value = serde_norway::from_str(include_str!(
         "../../../../tests/fixtures/melee/package-2026-10-08.json")).unwrap();
     let mut checked = 0;
-    for s in crate::data::weapons::all().iter().filter(|s| s.form_kind().is_throw()) {
+    for s in crate::data::weapons::all().iter().filter(|s| s.form_kind().is_throw() && s.class == "glaive") {
         let path = format!("weapons/melee/{}.yaml", s.group());
         let metadata: serde_norway::Value = serde_norway::from_str(crate::data::file(&path).unwrap()).unwrap();
         let name = metadata["internal_name"].as_str().unwrap();

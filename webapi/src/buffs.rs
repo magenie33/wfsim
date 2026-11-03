@@ -131,6 +131,16 @@ pub(crate) fn enumerate_buffs(
     // a headshot, so a fight that has not started has not got it. Cheap to
     // earn — the first headshot turns it on — which is exactly why seeding it
     // bought nothing and cost the truth.
+    if wfsim_engine::data::weapons::spec(&info.id).and_then(|w| w.heavy_status)
+        .is_some_and(|s| s.duration_bonus > 0.0) {
+        push(BuffMeta {
+            id: "heavy_status_duration".into(),
+            name: "Heavy Kill Status Duration".into(),
+            grants: String::new(),
+            max_stacks: 1, kind: "toggle", default_stacks: 0,
+            default_locked: false, permanent: false, uncapped: false, trigger: None,
+        });
+    }
     if has_frenzy(info) && !locked("fire_rate") {
         push(BuffMeta {
             id: "frenzy".into(),
