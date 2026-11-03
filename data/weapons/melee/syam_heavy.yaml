@@ -1,0 +1,60 @@
+# see notes: melee_shared_package_actions
+id: syam_heavy
+name: Syam
+inherits: syam
+form: heavy
+transform_group: syam
+co_behavior: independent
+unmodeled:
+- Shockwave flight speed is unpublished; damage lands at the package release event without travel time.
+- The first wave is about 8 m wide and horizontal, while the second is narrow and vertical. Both are traced as rays; terrain
+  traversal and repeated contacts are not modelled.
+- Killing Blow applies only when a projectile lands during a wind-up animation. The simulation applies it to every heavy projectile
+  instead of checking that animation window.
+attack:
+  trigger: melee
+  shot_type: projectile
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.22
+  crit_multiplier: 2
+  status_chance: 0.34
+  punch_through_m: 0.0
+  spends_combo: true
+  damage:
+    heat: 500
+  heavy:
+    multiplier: 1.0
+    windup_seconds: 2
+  combo_script:
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/DuviriKatanaWarframeHeavyAttackA
+        animation: /Lotus/Animations/Dax/Melee/VacuumSliceHorizontalToIdle_anim.fbx
+        duration_seconds: 0.833333
+        charge:
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.09999996
+          kind: ranged
+          multiplier: 1
+          combo_points: 0
+          forced_procs:
+          - impact
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/DuviriKatanaWarframeHeavyAttackB
+        animation: /Lotus/Animations/Dax/Melee/VacuumSliceVerticalToIdle_anim.fbx
+        duration_seconds: 1.0
+        charge:
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.12
+          kind: ranged
+          multiplier: 3
+          combo_points: 0
+  range_m: 230
+  infinite_body_punch_through: true
+source:
+  url: https://wiki.warframe.com/w/Syam

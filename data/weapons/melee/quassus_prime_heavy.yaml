@@ -1,0 +1,67 @@
+# see notes: melee_shared_package_actions
+id: quassus_prime_heavy
+name: Quassus Prime
+inherits: quassus_prime
+form: heavy
+transform_group: quassus_prime
+co_behavior: additive_with_base_damage
+unmodeled:
+- The package gives the two heavy animations but no projectile release event. Each volley is released halfway through its
+  animation; exact release timing is unmeasured.
+- The horizontal projectile fan and per-dagger deviation are not published. Every projectile follows the aimed ray, so a distant
+  target can take more daggers than in game.
+- A separate close-range fan strike is not modelled.
+- Xaku's accuracy bonus and occasional merging of dagger hits and their Slash procs are not modelled.
+attack:
+  trigger: melee
+  shot_type: projectile
+  fire_rate: 0.8333333333333334
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.35
+  crit_multiplier: 2.5
+  status_chance: 0.01
+  punch_through_m: 2
+  spends_combo: true
+  damage:
+    puncture: 30.4
+    slash: 45.6
+  heavy:
+    multiplier: 1.0
+    windup_seconds: 2
+  combo_script:
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/WarfanMelee30ChargeA
+        animation: /Lotus/Animations/Tenno/Melee/WarFan/ChargeAttack/Charge01SwingAnim
+        duration_seconds: 0.7
+        charge:
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.35
+          kind: ranged
+          multiplier: 2.5
+          combo_points: 0
+          hits: 18
+          forced_procs:
+          - slash
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/WarfanMelee30ChargeB
+        animation: /Lotus/Animations/Tenno/Melee/WarFan/ChargeAttack/Charge02SwingAnim
+        duration_seconds: 0.4
+        charge:
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.2
+          kind: ranged
+          multiplier: 5
+          combo_points: 0
+          hits: 9
+          forced_procs:
+          - slash
+          status_multiplier: 2
+  projectile_speed_mps: 46
+  range_m: 35
+source:
+  url: https://wiki.warframe.com/w/Quassus_Prime

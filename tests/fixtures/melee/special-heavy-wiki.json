@@ -1,0 +1,1943 @@
+{
+  "source": "https://wiki.warframe.com/w/Module:Weapons/data/melee?action=raw",
+  "weapons": {
+    "Syam": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.22,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Impact": 54,
+            "Puncture": 108,
+            "Slash": 108
+          },
+          "FireRate": 1,
+          "StatusChance": 0.34
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "First Shockwave",
+          "CritChance": 0.22,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Heat": 500
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "ShotType": "Projectile",
+          "StatusChance": 0.34
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Second Shockwave",
+          "CritChance": 0.22,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Heat": 1500
+          },
+          "FireRate": 1,
+          "IsSilent": true,
+          "ShotType": "Projectile",
+          "StatusChance": 0.34
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Slam Attack",
+          "AttackParentIndex": 3,
+          "CritChance": 0.22,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Impact": 540
+          },
+          "Falloff": {
+            "EndRange": 6,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 6,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 5,
+          "AttackName": "Heavy Slam Attack",
+          "AttackParentIndex": 3,
+          "CritChance": 0.2,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Blast": 810
+          },
+          "Falloff": {
+            "EndRange": 7,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 7,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        }
+      ],
+      "BlockAngle": 55,
+      "Class": "Nikana",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "NIKANAS_STANCE"
+      ],
+      "Conclave": false,
+      "Disposition": 1.2,
+      "_RetiredDisposition": 0.75,
+      "Family": "Syam",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.7,
+      "HeavyAttack": 1350,
+      "Image": "Syam.png",
+      "InternalName": "/Lotus/Weapons/Tenno/Melee/Swords/DaxDuviriKatana/DaxDuviriKatanaWeapon",
+      "Introduced": "33",
+      "Link": "Syam",
+      "Mastery": 0,
+      "MaxRank": 30,
+      "MeleeRange": 2.5,
+      "Name": "Syam",
+      "Polarities": [
+        "Madurai",
+        "Madurai"
+      ],
+      "SellPrice": 5000,
+      "SlideAttack": 540,
+      "Slot": "Melee",
+      "StancePolarity": "Madurai",
+      "SweepRadius": 0.25,
+      "Traits": [
+        "Duviri"
+      ],
+      "WindUp": 0.5,
+      "_TooltipAttackDisplay": 1
+    },
+    "Quassus": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.3,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Impact": 27.6,
+            "Puncture": 46,
+            "Slash": 156.4
+          },
+          "FireRate": 0.833,
+          "IsSilent": true,
+          "StatusChance": 0.12
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "First Heavy Attack - Ethereal Daggers",
+          "ChargeTime": 0.49,
+          "CritChance": 0.3,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Puncture": 76,
+            "Slash": 114
+          },
+          "FireRate": 2,
+          "ForcedProcs": [
+            "Slash"
+          ],
+          "IsSilent": true,
+          "Multishot": 12,
+          "PunchThrough": 2,
+          "Range": 35,
+          "ShotSpeed": 46,
+          "ShotType": "Projectile",
+          "StatusChance": 0.01,
+          "Trigger": "Charge"
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Second Heavy Attack - Ethereal Daggers",
+          "ChargeTime": 0.49,
+          "CritChance": 0.3,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Puncture": 152,
+            "Slash": 228
+          },
+          "FireRate": 2,
+          "ForcedProcs": [
+            "Slash"
+          ],
+          "IsSilent": true,
+          "Multishot": 6,
+          "PunchThrough": 2,
+          "Range": 35,
+          "ShotSpeed": 46,
+          "ShotType": "Projectile",
+          "StatusChance": 0.02,
+          "Trigger": "Charge"
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Slam Attack",
+          "AttackParentIndex": 3,
+          "CritChance": 0.3,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Impact": 460
+          },
+          "Falloff": {
+            "EndRange": 5,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 0.833,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 5,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 5,
+          "AttackName": "Heavy Slam Attack",
+          "AttackParentIndex": 3,
+          "CritChance": 0.3,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Blast": 690
+          },
+          "Falloff": {
+            "EndRange": 6,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 0.833,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 6,
+          "ShotType": "AoE",
+          "StatusChance": 0.28
+        }
+      ],
+      "BlockAngle": 55,
+      "Class": "Warfan",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "WARFAN_STANCE"
+      ],
+      "Conclave": false,
+      "DefaultUpgrades": [
+        "/Lotus/Weapons/Tenno/Melee/Warfan/TnBrokenFrameWarfan/TnBrokenFrameWarfanInnateMod"
+      ],
+      "Disposition": 1.2,
+      "_RetiredDisposition": 1.15,
+      "Family": "Quassus",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.7,
+      "HeavyAttack": 920,
+      "Image": "Quassus.png",
+      "InternalName": "/Lotus/Weapons/Tenno/Melee/Warfan/TnBrokenFrameWarfan/TnBrokenFrameWarfanWeapon",
+      "Introduced": "29",
+      "Link": "Quassus",
+      "Mastery": 8,
+      "MaxRank": 30,
+      "MeleeRange": 1.7,
+      "Name": "Quassus",
+      "Polarities": [],
+      "SellPrice": 5000,
+      "SlideAttack": 230,
+      "Slot": "Melee",
+      "StancePolarity": "Naramon",
+      "SweepRadius": 0.25,
+      "Traits": [
+        "Tenno"
+      ],
+      "WindUp": 0.5,
+      "_TooltipAttackDisplay": 1
+    },
+    "Quassus Prime": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.35,
+          "CritMultiplier": 2.5,
+          "Damage": {
+            "Impact": 26,
+            "Puncture": 52,
+            "Slash": 182
+          },
+          "FireRate": 0.833,
+          "IsSilent": true,
+          "StatusChance": 0.18
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "First Heavy Attack - Ethereal Daggers",
+          "ChargeTime": 0.49,
+          "CritChance": 0.35,
+          "CritMultiplier": 2.5,
+          "Damage": {
+            "Puncture": 76,
+            "Slash": 114
+          },
+          "FireRate": 2,
+          "ForcedProcs": [
+            "Slash"
+          ],
+          "IsSilent": true,
+          "Multishot": 18,
+          "PunchThrough": 2,
+          "Range": 35,
+          "ShotSpeed": 46,
+          "ShotType": "Projectile",
+          "StatusChance": 0.01,
+          "Trigger": "Charge"
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Second Heavy Attack - Ethereal Daggers",
+          "ChargeTime": 0.49,
+          "CritChance": 0.35,
+          "CritMultiplier": 2.5,
+          "Damage": {
+            "Puncture": 152,
+            "Slash": 228
+          },
+          "FireRate": 2,
+          "ForcedProcs": [
+            "Slash"
+          ],
+          "IsSilent": true,
+          "Multishot": 9,
+          "PunchThrough": 2,
+          "Range": 35,
+          "ShotSpeed": 46,
+          "ShotType": "Projectile",
+          "StatusChance": 0.02,
+          "Trigger": "Charge"
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Slam Attack",
+          "AttackParentIndex": 3,
+          "CritChance": 0.35,
+          "CritMultiplier": 2.5,
+          "Damage": {
+            "Impact": 520
+          },
+          "Falloff": {
+            "EndRange": 5,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 0.833,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 5,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 5,
+          "AttackName": "Heavy Slam Attack",
+          "AttackParentIndex": 3,
+          "CritChance": 0.35,
+          "CritMultiplier": 2.5,
+          "Damage": {
+            "Blast": 780
+          },
+          "Falloff": {
+            "EndRange": 6,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 0.833,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 6,
+          "ShotType": "AoE",
+          "StatusChance": 0.34
+        }
+      ],
+      "BlockAngle": 55,
+      "Class": "Warfan",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "WARFAN_STANCE"
+      ],
+      "Conclave": false,
+      "DefaultUpgrades": [
+        "/Lotus/Weapons/Tenno/Melee/Warfan/TnBrokenFrameWarfan/TnBrokenFrameWarfanInnateMod"
+      ],
+      "Disposition": 1.2,
+      "_RetiredDisposition": 0.9,
+      "Family": "Quassus",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.7,
+      "HeavyAttack": 1040,
+      "Image": "QuassusPrime.png",
+      "InternalName": "/Lotus/Weapons/Tenno/Melee/Warfan/TnBrokenFrameWarfan/TnBrokenFramePrimeWarfanWeapon",
+      "Introduced": "37.0.9",
+      "Link": "Quassus Prime",
+      "Mastery": 13,
+      "MaxRank": 30,
+      "MeleeRange": 1.7,
+      "Name": "Quassus Prime",
+      "Polarities": [
+        "Madurai",
+        "Madurai",
+        "Naramon"
+      ],
+      "SellPrice": 5000,
+      "SlideAttack": 260,
+      "Slot": "Melee",
+      "StancePolarity": "Naramon",
+      "SweepRadius": 0.25,
+      "Tradable": 2,
+      "Traits": [
+        "Prime"
+      ],
+      "WindUp": 0.5,
+      "_TooltipAttackDisplay": 1
+    },
+    "Arum Spinosa": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.09,
+          "CritMultiplier": 1.9,
+          "Damage": {
+            "Impact": 35.64,
+            "Puncture": 59.4,
+            "Slash": 201.96
+          },
+          "FireRate": 1.08,
+          "IsSilent": true,
+          "StatusChance": 0.37
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "First Heavy Attack - Toxic Spines",
+          "ChargeTime": 0.49,
+          "CritChance": 0.09,
+          "CritMultiplier": 1.7,
+          "Damage": {
+            "Impact": 17.5,
+            "Puncture": 27.5,
+            "Slash": 57.5,
+            "Toxin": 72.5
+          },
+          "FireRate": 2,
+          "IsSilent": true,
+          "Multishot": 18,
+          "PunchThrough": 1.3,
+          "Range": 35,
+          "ShotSpeed": 49,
+          "ShotType": "Projectile",
+          "StatusChance": 0.0616,
+          "Trigger": "Charge"
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Second Heavy Attack - Toxic Spines",
+          "ChargeTime": 0.49,
+          "CritChance": 0.09,
+          "CritMultiplier": 1.7,
+          "Damage": {
+            "Impact": 35,
+            "Puncture": 55,
+            "Slash": 115,
+            "Toxin": 145
+          },
+          "FireRate": 2,
+          "IsSilent": true,
+          "Multishot": 9,
+          "PunchThrough": 1.3,
+          "Range": 35,
+          "ShotSpeed": 49,
+          "ShotType": "Projectile",
+          "StatusChance": 0.123,
+          "Trigger": "Charge"
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Slam Attack",
+          "AttackParentIndex": 3,
+          "CritChance": 0.09,
+          "CritMultiplier": 1.9,
+          "Damage": {
+            "Impact": 594
+          },
+          "Falloff": {
+            "EndRange": 5,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 1.08,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 5,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 5,
+          "AttackName": "Heavy Slam Attack",
+          "AttackParentIndex": 3,
+          "CritChance": 0.09,
+          "CritMultiplier": 1.9,
+          "Damage": {
+            "Blast": 891
+          },
+          "Falloff": {
+            "EndRange": 6,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 1.08,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 6,
+          "ShotType": "AoE",
+          "StatusChance": 0.28
+        }
+      ],
+      "BlockAngle": 55,
+      "Class": "Warfan",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "WARFAN_STANCE"
+      ],
+      "Conclave": false,
+      "Disposition": 1.2,
+      "_RetiredDisposition": 1.25,
+      "Family": "Arum Spinosa",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.7,
+      "HeavyAttack": 1188,
+      "Image": "ArumSpinosa.png",
+      "InternalName": "/Lotus/Weapons/Infested/Melee/InfWarfan/InfWarfanWeapon",
+      "Introduced": "29.5",
+      "Link": "Arum Spinosa",
+      "Mastery": 11,
+      "MaxRank": 30,
+      "MeleeRange": 1.7,
+      "Name": "Arum Spinosa",
+      "Polarities": [
+        "Naramon",
+        "Madurai"
+      ],
+      "SellPrice": 5000,
+      "SlideAttack": 297,
+      "Slot": "Melee",
+      "StancePolarity": "Naramon",
+      "SweepRadius": 0.25,
+      "Tradable": 2,
+      "Traits": [
+        "Infested"
+      ],
+      "WindUp": 0.5,
+      "_TooltipAttackDisplay": 1
+    },
+    "Edun": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.34,
+          "CritMultiplier": 2.6,
+          "Damage": {
+            "Impact": 44,
+            "Puncture": 66,
+            "Slash": 110
+          },
+          "FireRate": 1,
+          "StatusChance": 0.2
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "Polearm Throw",
+          "CritChance": 0.3,
+          "CritMultiplier": 2.6,
+          "Damage": {
+            "Impact": 144,
+            "Puncture": 192,
+            "Slash": 144
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "ShotSpeed": 50,
+          "ShotType": "Projectile",
+          "StatusChance": 0.2
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Polearm Explosion",
+          "AttackParentIndex": 2,
+          "CritChance": 0.3,
+          "CritMultiplier": 2.6,
+          "Damage": {
+            "Blast": 400
+          },
+          "ExplosionDelay": 0.8,
+          "Falloff": {
+            "EndRange": 4,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 4,
+          "ShotType": "AoE",
+          "StatusChance": 0.2
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.34,
+          "CritMultiplier": 2.6,
+          "Damage": {
+            "Impact": 440
+          },
+          "Falloff": {
+            "EndRange": 7,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 7,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 5,
+          "AttackName": "Heavy Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.34,
+          "CritMultiplier": 2.6,
+          "Damage": {
+            "Blast": 660
+          },
+          "Falloff": {
+            "EndRange": 8,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 8,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        }
+      ],
+      "BlockAngle": 55,
+      "Class": "Polearm",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "POLEARMS_STANCE"
+      ],
+      "Conclave": false,
+      "Disposition": 1.2,
+      "_RetiredDisposition": 1.15,
+      "Family": "Edun",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.6,
+      "HeavyAttack": 880,
+      "HeavySlamAttack": 660,
+      "HeavySlamElement": "Blast",
+      "HeavySlamForcedProcs": [
+        "Lifted"
+      ],
+      "HeavySlamRadius": 9,
+      "Image": "Edun.png",
+      "InternalName": "/Lotus/Weapons/Tenno/Melee/Polearms/DaxDuviriPolearm/DaxDuviriPolearmWeapon",
+      "Introduced": "33",
+      "Link": "Edun",
+      "Mastery": 0,
+      "MaxRank": 30,
+      "MeleeRange": 3,
+      "Name": "Edun",
+      "Polarities": [
+        "Madurai",
+        "Madurai",
+        "Madurai"
+      ],
+      "SellPrice": 5000,
+      "SlamAttack": 440,
+      "SlamElement": "Impact",
+      "SlamForcedProcs": [
+        "Impact"
+      ],
+      "SlamRadius": 7,
+      "SlideAttack": 440,
+      "Slot": "Melee",
+      "StancePolarity": "Zenurik",
+      "SweepRadius": 0.25,
+      "Traits": [
+        "Duviri"
+      ],
+      "WindUp": 0.7,
+      "_TooltipAttackDisplay": 1
+    },
+    "Argo & Vel": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.32,
+          "CritMultiplier": 2.4,
+          "Damage": {
+            "Impact": 60,
+            "Slash": 240
+          },
+          "FireRate": 0.8,
+          "IsSilent": true,
+          "StatusChance": 0.24
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "Heavy Attack Glaive",
+          "CritChance": 0.32,
+          "CritMultiplier": 2.4,
+          "Damage": {
+            "Impact": 40,
+            "Slash": 160
+          },
+          "FireRate": 0.8,
+          "IsSilent": true,
+          "ShotSpeed": 75,
+          "ShotType": "Projectile",
+          "StatusChance": 0.24
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Heavy Attack Glaive AoE",
+          "AttackParentIndex": 2,
+          "CritChance": 0.32,
+          "CritMultiplier": 2.4,
+          "Damage": {
+            "Impact": 20,
+            "Slash": 80
+          },
+          "Falloff": {
+            "EndRange": 3,
+            "Reduction": 0.4,
+            "StartRange": 0
+          },
+          "FireRate": 0.8,
+          "IsSilent": true,
+          "Range": 3,
+          "ShotType": "AoE",
+          "StatusChance": 0.24
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.32,
+          "CritMultiplier": 2.4,
+          "Damage": {
+            "Slash": 600
+          },
+          "Falloff": {
+            "EndRange": 7,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 0.8,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 7,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 5,
+          "AttackName": "Heavy Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.32,
+          "CritMultiplier": 2.4,
+          "Damage": {
+            "Slash": 900
+          },
+          "Falloff": {
+            "EndRange": 7,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 0.8,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 7,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        }
+      ],
+      "BlockAngle": 70,
+      "Class": "Sword and Shield",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "SWORDS_AND_SHIELD_STANCE"
+      ],
+      "Conclave": false,
+      "Disposition": 1.2,
+      "_RetiredDisposition": 1.15,
+      "Family": "Argo & Vel",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.6,
+      "HeavyAttack": 900,
+      "Image": "Argo&Vel.png",
+      "InternalName": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/DaxDuviriMaceShieldWeapon",
+      "Introduced": "33.6",
+      "Link": "Argo & Vel",
+      "Mastery": 0,
+      "MaxRank": 30,
+      "MeleeRange": 2.5,
+      "Name": "Argo & Vel",
+      "Polarities": [
+        "Madurai",
+        "Madurai",
+        "Vazarin"
+      ],
+      "SellPrice": 5000,
+      "SlideAttack": 300,
+      "Slot": "Melee",
+      "StancePolarity": "Madurai",
+      "SweepRadius": 0.25,
+      "Traits": [
+        "Duviri"
+      ],
+      "WindUp": 0.7,
+      "_TooltipAttackDisplay": 1
+    },
+    "Tak & Lug": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.21,
+          "CritMultiplier": 1.9,
+          "Damage": {
+            "Impact": 39.4,
+            "Slash": 157.6
+          },
+          "FireRate": 1,
+          "IsSilent": true,
+          "StatusChance": 0.31
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "Slam Attack",
+          "CritChance": 0.21,
+          "CritMultiplier": 1.9,
+          "Damage": {
+            "Impact": 394
+          },
+          "Falloff": {
+            "EndRange": 7,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Ragdoll"
+          ],
+          "IsSilent": true,
+          "Range": 7,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Heavy Slam Attack",
+          "CritChance": 0.21,
+          "CritMultiplier": 1.9,
+          "Damage": {
+            "Blast": 522
+          },
+          "Falloff": {
+            "EndRange": 8,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 8,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        }
+      ],
+      "BlockAngle": 70,
+      "Class": "Sword and Shield",
+      "CodexSecret": true,
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "SWORDS_AND_SHIELD_STANCE"
+      ],
+      "Conclave": false,
+      "Disposition": 1.2,
+      "_RetiredDisposition": 1.05,
+      "Family": "Tak & Lug",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.6,
+      "HeavyAttack": 2364,
+      "Image": "Tak&Lug.png",
+      "InternalName": "/Lotus/Weapons/Tenno/Melee/SwordsAndBoards/MortiforShieldAndSword/MortiforShieldAndSword",
+      "Introduced": "38.5.11",
+      "Link": "Tak & Lug",
+      "Mastery": 9,
+      "MaxRank": 30,
+      "MeleeRange": 2.5,
+      "Name": "Tak & Lug",
+      "Polarities": [
+        "Vazarin"
+      ],
+      "SellPrice": 5000,
+      "SlideAttack": 197,
+      "Slot": "Melee",
+      "StancePolarity": "Madurai",
+      "SweepRadius": 0.25,
+      "Traits": [
+        "Grineer"
+      ],
+      "WindUp": 0.7,
+      "_TooltipAttackDisplay": 1
+    },
+    "Zenistar": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.1,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Heat": 150,
+            "Impact": 80,
+            "Slash": 68
+          },
+          "FireRate": 0.833,
+          "IsSilent": true,
+          "StatusChance": 0.3
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "Attacks While Disc Deployed",
+          "CritChance": 0.1,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Impact": 13,
+            "Puncture": 13,
+            "Slash": 104
+          },
+          "FireRate": 0.833,
+          "IsSilent": true,
+          "StatusChance": 0.15
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Disc Impact",
+          "ChargeTime": 1.09,
+          "CritChance": 0.1,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Impact": 75
+          },
+          "FireRate": 0.909,
+          "IsSilent": true,
+          "Range": 9,
+          "StatusChance": 0.15
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Disc Explosion",
+          "ChargeTime": 1.09,
+          "CritChance": 0.1,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Heat": 350
+          },
+          "Falloff": {
+            "EndRange": 4,
+            "Reduction": 0,
+            "StartRange": 0
+          },
+          "FireRate": 0.909,
+          "IsSilent": true,
+          "Range": 4,
+          "ShotType": "AoE",
+          "StatusChance": 0.15
+        },
+        {
+          "AttackIndex": 5,
+          "AttackName": "Disc Aura",
+          "CritChance": 0.1,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Heat": 50
+          },
+          "EffectDuration": 10,
+          "Falloff": {
+            "EndRange": 4,
+            "Reduction": 0,
+            "StartRange": 0
+          },
+          "FireRate": 1.2,
+          "IsSilent": true,
+          "Range": 4,
+          "StatusChance": 0.5
+        },
+        {
+          "AttackIndex": 6,
+          "AttackName": "Slam Attack",
+          "CritChance": 0.1,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Impact": 596
+          },
+          "Falloff": {
+            "EndRange": 8,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 0.833,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 8,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 7,
+          "AttackName": "Heavy Slam Attack",
+          "CritChance": 0.1,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Blast": 894
+          },
+          "Falloff": {
+            "EndRange": 9,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 0.833,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 9,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        }
+      ],
+      "BlockAngle": 55,
+      "Class": "Heavy Blade",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "HEAVY_BLADE_STANCE"
+      ],
+      "Conclave": true,
+      "Disposition": 1.2,
+      "_RetiredDisposition": 1.15,
+      "Family": "Zenistar",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.6,
+      "HeavyAttack": 1788,
+      "Image": "Zenistar.png",
+      "InternalName": "/Lotus/Weapons/Tenno/Melee/SunDialAxe/SundialAxeWeapon",
+      "Introduced": "Update: Specters of the Rail 1",
+      "Link": "Zenistar",
+      "Mastery": 6,
+      "MaxRank": 30,
+      "MeleeRange": 2.6,
+      "Name": "Zenistar",
+      "Polarities": [
+        "Madurai"
+      ],
+      "SlideAttack": 260,
+      "Slot": "Melee",
+      "StancePolarity": "Madurai",
+      "SweepRadius": 0.2,
+      "Traits": [
+        "Tenno"
+      ],
+      "WindUp": 1.1,
+      "_TooltipAttackDisplay": 1
+    },
+    "Caustacyst": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.09,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Corrosive": 103,
+            "Impact": 17,
+            "Puncture": 71,
+            "Slash": 69
+          },
+          "FireRate": 1,
+          "IsSilent": true,
+          "StatusChance": 0.37
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "Corrosive Wave",
+          "ChargeTime": 0.995,
+          "CritChance": 0.09,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Corrosive": 225
+          },
+          "Falloff": {
+            "EndRange": 35,
+            "Reduction": 1,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Blind"
+          ],
+          "IsSilent": true,
+          "Range": 35,
+          "ShotSpeed": 15,
+          "ShotType": "Projectile",
+          "StatusChance": 0.37,
+          "Trigger": "Charge"
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Corrosive Pool",
+          "AttackParentIndex": 2,
+          "ChargeTime": 0.995,
+          "CritChance": 0,
+          "CritMultiplier": 1,
+          "Damage": {
+            "Corrosive": 98
+          },
+          "EffectDuration": 4,
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Blind"
+          ],
+          "IsSilent": true,
+          "ShotType": "AoE",
+          "StatusChance": 0.5
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.09,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Impact": 520
+          },
+          "Falloff": {
+            "EndRange": 8,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 8,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 5,
+          "AttackName": "Heavy Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.09,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Blast": 780
+          },
+          "Falloff": {
+            "EndRange": 9,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 9,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        }
+      ],
+      "BlockAngle": 60,
+      "Class": "Scythe",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "SCYTHES_STANCE"
+      ],
+      "Conclave": true,
+      "Disposition": 1.2,
+      "_RetiredDisposition": 1.3,
+      "Family": "Caustacyst",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.6,
+      "HeavyAttack": 1560,
+      "Image": "Caustacyst.png",
+      "InternalName": "/Lotus/Weapons/Infested/Melee/InfEmbolistScythe/InfestedScythe",
+      "Introduced": "Update: The Index Preview",
+      "Link": "Caustacyst",
+      "Mastery": 7,
+      "MaxRank": 30,
+      "MeleeRange": 2.9,
+      "Name": "Caustacyst",
+      "Polarities": [
+        "Madurai"
+      ],
+      "SellPrice": 5000,
+      "SlideAttack": 520,
+      "Slot": "Melee",
+      "StancePolarity": "Zenurik",
+      "SweepRadius": 0.2,
+      "Traits": [
+        "Infested"
+      ],
+      "WindUp": 1,
+      "_TooltipAttackDisplay": 1
+    },
+    "Coda Caustacyst": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.19,
+          "CritMultiplier": 2.3,
+          "Damage": {
+            "Corrosive": 120,
+            "Impact": 20,
+            "Puncture": 75,
+            "Slash": 70
+          },
+          "FireRate": 1,
+          "IsSilent": true,
+          "StatusChance": 0.41
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "Corrosive Wave",
+          "ChargeTime": 0.995,
+          "CritChance": 0.09,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Corrosive": 225
+          },
+          "Falloff": {
+            "EndRange": 35,
+            "Reduction": 1,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Blind"
+          ],
+          "IsSilent": true,
+          "Range": 35,
+          "ShotSpeed": 15,
+          "ShotType": "Projectile",
+          "StatusChance": 0.41,
+          "Trigger": "Charge"
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Corrosive Pool",
+          "AttackParentIndex": 2,
+          "ChargeTime": 0.995,
+          "CritChance": 0,
+          "CritMultiplier": 1,
+          "Damage": {
+            "Corrosive": 145
+          },
+          "EffectDuration": 4,
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Blind"
+          ],
+          "IsSilent": true,
+          "ShotType": "AoE",
+          "StatusChance": 1
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.19,
+          "CritMultiplier": 2.3,
+          "Damage": {
+            "Impact": 570
+          },
+          "Falloff": {
+            "EndRange": 8,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 8,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 5,
+          "AttackName": "Heavy Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.19,
+          "CritMultiplier": 2.3,
+          "Damage": {
+            "Blast": 855
+          },
+          "Falloff": {
+            "EndRange": 9,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 9,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        }
+      ],
+      "BlockAngle": 60,
+      "Class": "Scythe",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "SCYTHES_STANCE"
+      ],
+      "Conclave": false,
+      "Disposition": 1.2,
+      "_RetiredDisposition": 0.85,
+      "Family": "Caustacyst",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.6,
+      "HeavyAttack": 1560,
+      "Image": "CodaCaustacyst.png",
+      "InternalName": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaCaustacyst/CodaCaustacyst",
+      "Introduced": "38.5",
+      "IsLichWeapon": true,
+      "Link": "Coda Caustacyst",
+      "Mastery": 17,
+      "MaxRank": 40,
+      "MeleeRange": 2.9,
+      "Name": "Coda Caustacyst",
+      "Polarities": [
+        "Madurai"
+      ],
+      "SellPrice": 5000,
+      "SlideAttack": 520,
+      "Slot": "Melee",
+      "StancePolarity": "Zenurik",
+      "SweepRadius": 0.2,
+      "Traits": [
+        "Infested",
+        "Technocyte Coda"
+      ],
+      "WindUp": 1,
+      "_TooltipAttackDisplay": 1
+    },
+    "Tenet Agendus": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.24,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Electricity": 140,
+            "Impact": 120
+          },
+          "FireRate": 0.917,
+          "IsSilent": true,
+          "StatusChance": 0.28
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "Energy Disk",
+          "ChargeTime": 0.995,
+          "CritChance": 0.24,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Electricity": 2880
+          },
+          "Falloff": {
+            "EndRange": 20,
+            "Reduction": 0.9305,
+            "StartRange": 10
+          },
+          "FireRate": 1,
+          "IsSilent": true,
+          "Range": 40,
+          "ShotSpeed": 80,
+          "ShotType": "Projectile",
+          "StatusChance": 0.28,
+          "Trigger": "Charge"
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.24,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Electricity": 520
+          },
+          "Falloff": {
+            "EndRange": 6,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 1.08,
+          "ForcedProcs": [
+            "Ragdoll"
+          ],
+          "IsSilent": true,
+          "Range": 6,
+          "ShotType": "AoE",
+          "StatusChance": 0.3
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Heavy Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.24,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Electricity": 780
+          },
+          "Falloff": {
+            "EndRange": 10,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 0.917,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 10,
+          "ShotType": "AoE",
+          "StatusChance": 0.3
+        }
+      ],
+      "BlockAngle": 90,
+      "Class": "Sword and Shield",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "SWORDS_AND_SHIELD_STANCE"
+      ],
+      "Conclave": false,
+      "DefaultUpgrades": [
+        "/Lotus/Weapons/Grineer/KuvaLich/Upgrades/InnateDamageRandomMod"
+      ],
+      "Disposition": 1.2,
+      "_RetiredDisposition": 0.9,
+      "Family": "Tenet Agendus",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.6,
+      "HeavyAttack": 1040,
+      "Image": "TenetAgendus.png",
+      "InternalName": "/Lotus/Weapons/Corpus/Melee/ShieldAndSword/CrpHammerShield/CrpHammerShield",
+      "Introduced": "30.5",
+      "IsLichWeapon": true,
+      "Link": "Tenet Agendus",
+      "Mastery": 14,
+      "MaxRank": 40,
+      "MeleeRange": 2.6,
+      "Name": "Tenet Agendus",
+      "Polarities": [],
+      "SellPrice": 5000,
+      "SlideAttack": 260,
+      "Slot": "Melee",
+      "StancePolarity": "Madurai",
+      "SweepRadius": 0.25,
+      "Traits": [
+        "Corpus",
+        "Tenet"
+      ],
+      "WindUp": 1,
+      "_TooltipAttackDisplay": 1
+    },
+    "Tenet Grigori": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.24,
+          "CritMultiplier": 1.6,
+          "Damage": {
+            "Impact": 9.1,
+            "Puncture": 82.1,
+            "Slash": 136.8
+          },
+          "FireRate": 1.08,
+          "IsSilent": true,
+          "StatusChance": 0.38
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "Energy Disk",
+          "ChargeTime": 1,
+          "CritChance": 0.24,
+          "CritMultiplier": 1.6,
+          "Damage": {
+            "Impact": 1360,
+            "Puncture": 1360,
+            "Slash": 1360
+          },
+          "FireRate": 1,
+          "IsSilent": true,
+          "Range": 10,
+          "ShotSpeed": 1,
+          "ShotType": "Projectile",
+          "StatusChance": 0.38,
+          "Trigger": "Charge"
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.24,
+          "CritMultiplier": 1.6,
+          "Damage": {
+            "Impact": 456
+          },
+          "Falloff": {
+            "EndRange": 8,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 1.08,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 8,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Heavy Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.24,
+          "CritMultiplier": 1.6,
+          "Damage": {
+            "Blast": 684
+          },
+          "Falloff": {
+            "EndRange": 9,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 1.08,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 9,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        }
+      ],
+      "BlockAngle": 90,
+      "Class": "Scythe",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "SCYTHES_STANCE"
+      ],
+      "Conclave": true,
+      "DefaultUpgrades": [
+        "/Lotus/Weapons/Grineer/KuvaLich/Upgrades/InnateDamageRandomMod"
+      ],
+      "Disposition": 1.2,
+      "_RetiredDisposition": 0.95,
+      "Family": "Tenet Grigori",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.6,
+      "HeavyAttack": 1368,
+      "Image": "TenetGrigori.png",
+      "InternalName": "/Lotus/Weapons/Corpus/Melee/CrpBriefcaseScythe/CrpBriefcaseScythe",
+      "Introduced": "30.5",
+      "IsLichWeapon": true,
+      "Link": "Tenet Grigori",
+      "Mastery": 14,
+      "MaxRank": 40,
+      "MeleeRange": 2.5,
+      "Name": "Tenet Grigori",
+      "Polarities": [
+        "Madurai"
+      ],
+      "SellPrice": 5000,
+      "SlideAttack": 456,
+      "Slot": "Melee",
+      "StancePolarity": "Zenurik",
+      "SweepRadius": 0.2,
+      "Traits": [
+        "Corpus",
+        "Tenet"
+      ],
+      "WindUp": 1,
+      "_TooltipAttackDisplay": 1
+    },
+    "Ceramic Dagger": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.1,
+          "CritMultiplier": 1.5,
+          "Damage": {
+            "Impact": 14,
+            "Puncture": 126
+          },
+          "FireRate": 1,
+          "IsSilent": true,
+          "StatusChance": 0.2
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "Spectral Dagger",
+          "CritChance": 0.1,
+          "CritMultiplier": 1.5,
+          "Damage": {
+            "Impact": 35,
+            "Puncture": 116.67,
+            "Slash": 198.33
+          },
+          "FireRate": 1,
+          "IsSilent": true,
+          "ShotSpeed": 60,
+          "ShotType": "Projectile",
+          "StatusChance": 0.2
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Spectral Dagger Explosion",
+          "AttackParentIndex": 2,
+          "CritChance": 0.1,
+          "CritMultiplier": 1.5,
+          "Damage": {
+            "Heat": 350
+          },
+          "Falloff": {
+            "EndRange": 4,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 4,
+          "ShotType": "AoE",
+          "StatusChance": 0.2
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.1,
+          "CritMultiplier": 1.5,
+          "Damage": {
+            "Impact": 280
+          },
+          "Falloff": {
+            "EndRange": 5,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 5,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 5,
+          "AttackName": "Heavy Slam Attack",
+          "AttackParentIndex": 2,
+          "CritChance": 0.1,
+          "CritMultiplier": 2,
+          "Damage": {
+            "Blast": 420
+          },
+          "Falloff": {
+            "EndRange": 6,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 6,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        }
+      ],
+      "BlockAngle": 45,
+      "Class": "Dagger",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "DAGGERS_STANCE"
+      ],
+      "Conclave": true,
+      "Disposition": 1.2,
+      "_RetiredDisposition": 1.43,
+      "Family": "Ceramic Dagger",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.9,
+      "HeavyAttack": 280,
+      "Image": "CeramicDagger.png",
+      "IncarnonDuration": 180,
+      "IncarnonImage": "CeramicDaggerIncarnon.png",
+      "InternalName": "/Lotus/Weapons/Tenno/Melee/Dagger/CeramicDagger",
+      "Introduced": "5.0",
+      "Link": "Ceramic Dagger",
+      "Mastery": 3,
+      "MaxRank": 30,
+      "MeleeRange": 1.8,
+      "Name": "Ceramic Dagger",
+      "Polarities": [
+        "Madurai"
+      ],
+      "SellPrice": 5000,
+      "SlideAttack": 280,
+      "Slot": "Melee",
+      "StancePolarity": "Madurai",
+      "SweepRadius": 0.25,
+      "Traits": [
+        "Tenno"
+      ],
+      "WindUp": 0.4,
+      "_TooltipAttackDisplay": 1
+    },
+    "Wolf Sledge": {
+      "Attacks": [
+        {
+          "AttackIndex": 1,
+          "AttackName": "Normal Attack",
+          "CritChance": 0.17,
+          "CritMultiplier": 1.9,
+          "Damage": {
+            "Impact": 132.09,
+            "Puncture": 7.77,
+            "Slash": 119.14
+          },
+          "FireRate": 1,
+          "IsSilent": true,
+          "StatusChance": 0.33
+        },
+        {
+          "AttackIndex": 2,
+          "AttackName": "Throw",
+          "ChargeTime": 0.75,
+          "CritChance": 0.19,
+          "CritMultiplier": 2.1,
+          "Damage": {
+            "Impact": 396.27,
+            "Puncture": 23.31,
+            "Slash": 357.42
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Impact"
+          ],
+          "IsSilent": true,
+          "Range": 40,
+          "ShotType": "Thrown",
+          "StatusChance": 0.35
+        },
+        {
+          "AttackIndex": 3,
+          "AttackName": "Throw Bounce Explosion",
+          "CritChance": 0.19,
+          "CritMultiplier": 2.1,
+          "Damage": {
+            "Blast": 777
+          },
+          "Falloff": {
+            "EndRange": 5,
+            "Reduction": 0.4,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "IsSilent": true,
+          "Range": 5,
+          "ShotType": "AoE",
+          "StatusChance": 0.5
+        },
+        {
+          "AttackIndex": 4,
+          "AttackName": "Throw Recall Explosion",
+          "CritChance": 0.19,
+          "CritMultiplier": 2.1,
+          "Damage": {
+            "Blast": 1554
+          },
+          "Falloff": {
+            "EndRange": 5,
+            "Reduction": 0,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Ragdoll"
+          ],
+          "IsSilent": true,
+          "Range": 5,
+          "ShotType": "AoE",
+          "StatusChance": 0.5
+        },
+        {
+          "AttackIndex": 5,
+          "AttackName": "Slam Attack",
+          "CritChance": 0.17,
+          "CritMultiplier": 1.9,
+          "Damage": {
+            "Impact": 518
+          },
+          "Falloff": {
+            "EndRange": 9,
+            "Reduction": 0.5,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Knockdown"
+          ],
+          "IsSilent": true,
+          "Range": 9,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        },
+        {
+          "AttackIndex": 6,
+          "AttackName": "Heavy Slam Attack",
+          "CritChance": 0.17,
+          "CritMultiplier": 1.9,
+          "Damage": {
+            "Blast": 777
+          },
+          "Falloff": {
+            "EndRange": 10,
+            "Reduction": 0.3,
+            "StartRange": 0
+          },
+          "FireRate": 1,
+          "ForcedProcs": [
+            "Lifted"
+          ],
+          "IsSilent": true,
+          "Range": 10,
+          "ShotType": "AoE",
+          "StatusChance": 0.1
+        }
+      ],
+      "BlockAngle": 50,
+      "Class": "Hammer",
+      "ComboDur": 5,
+      "CompatibilityTags": [
+        "HAMMERS_STANCE"
+      ],
+      "Conclave": false,
+      "Disposition": 1.2,
+      "_RetiredDisposition": 1.25,
+      "Family": "Wolf Sledge",
+      "GripType": "MELEE_ONE_HAND",
+      "FollowThrough": 0.4,
+      "HeavyAttack": 1036,
+      "Image": "WolfSledge.png",
+      "InternalName": "/Lotus/Weapons/Tenno/Melee/Hammer/ThrowingHammer",
+      "Introduced": "24.3",
+      "Link": "Wolf Sledge",
+      "Mastery": 7,
+      "MaxRank": 30,
+      "MeleeRange": 3.1,
+      "Name": "Wolf Sledge",
+      "SellPrice": 5000,
+      "SlideAttack": 518,
+      "Slot": "Melee",
+      "StancePolarity": "Madurai",
+      "SweepRadius": 0.2,
+      "Tradable": 2,
+      "Users": [
+        "Wolf of Saturn Six"
+      ],
+      "WindUp": 1.2,
+      "_TooltipAttackDisplay": 1
+    }
+  }
+}

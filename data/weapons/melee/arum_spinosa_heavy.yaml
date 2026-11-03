@@ -1,0 +1,64 @@
+# see notes: melee_shared_package_actions
+id: arum_spinosa_heavy
+name: Arum Spinosa
+inherits: arum_spinosa
+form: heavy
+transform_group: arum_spinosa
+co_behavior: additive_with_base_damage
+unmodeled:
+- The package gives the two heavy animations but no projectile release event. Each volley is released halfway through its
+  animation; exact release timing is unmeasured.
+- The horizontal projectile fan and per-dagger deviation are not published. Every projectile follows the aimed ray, so a distant
+  target can take more daggers than in game.
+- A separate close-range fan strike is not modelled.
+attack:
+  trigger: melee
+  shot_type: projectile
+  fire_rate: 1.0833333333333333
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.09
+  crit_multiplier: 1.7
+  status_chance: 0.0616
+  punch_through_m: 1.3
+  spends_combo: true
+  damage:
+    impact: 7
+    puncture: 11
+    slash: 23
+    toxin: 29
+  heavy:
+    multiplier: 1.0
+    windup_seconds: 2
+  combo_script:
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/WarfanMelee30ChargeA
+        animation: /Lotus/Animations/Tenno/Melee/WarFan/ChargeAttack/Charge01SwingAnim
+        duration_seconds: 0.7
+        charge:
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.35
+          kind: ranged
+          multiplier: 2.5
+          combo_points: 0
+          hits: 18
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/WarfanMelee30ChargeB
+        animation: /Lotus/Animations/Tenno/Melee/WarFan/ChargeAttack/Charge02SwingAnim
+        duration_seconds: 0.4
+        charge:
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.2
+          kind: ranged
+          multiplier: 5
+          combo_points: 0
+          hits: 9
+          status_multiplier: 1.9967532467532467
+  projectile_speed_mps: 49
+  range_m: 35
+source:
+  url: https://wiki.warframe.com/w/Arum_Spinosa

@@ -1,0 +1,53 @@
+# see notes: melee_shared_package_actions
+id: argo_and_vel_heavy
+name: Argo & Vel
+inherits: argo_and_vel
+form: heavy
+transform_group: argo_and_vel
+co_behavior: additive_with_base_damage
+unmodeled:
+- The glaive's wall bounce, return path and one-enemy ricochet are not modelled. Direct impact and its explosion are modelled
+  at the first enemy.
+- The close-range mace sweep before the glaive release is not modelled.
+- The projectile's maximum range and width are unpublished; it is simulated as a ray with no hard range limit.
+attack:
+  trigger: melee
+  shot_type: projectile
+  fire_rate: 0.8
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.32
+  crit_multiplier: 2.4
+  status_chance: 0.24
+  punch_through_m: 0.0
+  spends_combo: true
+  damage:
+    impact: 40
+    slash: 160
+  heavy:
+    multiplier: 1.0
+    windup_seconds: 2
+  combo_script:
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/DuviriSwordShieldWarframeHeavyAttack
+        animation: /Lotus/Animations/Tenno/Melee/SwordandBoard/ChargeAttack/Charge02Strike
+        duration_seconds: 0.7
+        charge:
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.223999993
+          kind: ranged
+          multiplier: 3
+          combo_points: 0
+  projectile_speed_mps: 75
+  radial:
+    damage:
+      impact: 20
+      slash: 80
+    radius_m: 3
+    falloff_start_m: 0
+    falloff_reduction: 0.4
+source:
+  url: https://wiki.warframe.com/w/Argo_&_Vel

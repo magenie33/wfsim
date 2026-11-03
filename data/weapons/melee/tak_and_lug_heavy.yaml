@@ -1,0 +1,64 @@
+# see notes: melee_shared_package_actions
+id: tak_and_lug_heavy
+name: Tak & Lug
+inherits: tak_and_lug
+form: heavy
+transform_group: tak_and_lug
+co_behavior: additive_with_base_damage
+unmodeled:
+- The shield and three explosions use the package's four timed hits. Their 7 m forward reach is modelled as a melee sweep;
+  the separate 3 m circles around the shield and coverage between the shield and user are not modelled.
+- Turning or changing elevation during the shield throw and sliding heavy attacks are not modelled.
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.21
+  crit_multiplier: 1.9
+  status_chance: 0.31
+  punch_through_m: 0.0
+  spends_combo: true
+  damage:
+    impact: 39.4
+    slash: 157.6
+  heavy:
+    multiplier: 12
+    windup_seconds: 0.69999999
+  combo_script:
+    inputs:
+    - actions:
+      - source: /Lotus/Weapons/Tenno/Melee/Attacks/MortiforSwordShieldCustomHeavy
+        animation: /Lotus/Animations/Tenno/Melee/SwordandBoard/TakAndLug/HeavyAttackShieldThrow01_anim.fbx
+        duration_seconds: 1.1
+        charge:
+          weapon_heavy: true
+        events:
+        - at_seconds: 0.165000011
+          kind: sweep
+          multiplier: 3
+          combo_points: 0
+        - at_seconds: 0.275
+          kind: sweep
+          multiplier: 3
+          combo_points: 0
+          forced_procs:
+          - blast
+        - at_seconds: 0.428999989
+          kind: sweep
+          multiplier: 3
+          combo_points: 0
+          forced_procs:
+          - blast
+        - at_seconds: 0.571999978
+          kind: sweep
+          multiplier: 3
+          combo_points: 0
+          forced_procs:
+          - blast
+  range_m: 7
+  follow_through: 1.0
+source:
+  url: https://wiki.warframe.com/w/Tak_&_Lug
