@@ -624,10 +624,10 @@ AGENT_ACTIONS.push(
   {
     id: "builder.recommendations.read",
     query: true,
-    what: "Read popularity, the signed-in account's pending recommendations and exact build ids in the open Build Library.",
+    what: "Read Library build ids, popularity and your pending recommendations.",
     anchor: "#build-finder",
     needs_weapon: true,
-    args: { limit: { kind: "number", min: 1, max: 200, what: "maximum rows, default 20" } },
+    args: { limit: { kind: "number", min: 1, max: 200, what: "rows; default 20" } },
     run({ limit = 20 }) {
       if (!libraryActive) return agentNo("no_library_open");
       recommendationOwner();
@@ -639,11 +639,11 @@ AGENT_ACTIONS.push(
   {
     id: "builder.recommendation.set",
     writes: "none",
-    what: "Recommend or withdraw one exact Library build for the signed-in account's current UTC day.",
+    what: "Recommend or withdraw today; sign in and open the Library first.",
     anchor: "#build-finder",
     needs_weapon: true,
-    args: { build: { kind: "string", required: true, what: "build or identity from builder.recommendations.read" },
-      recommended: { kind: "boolean", required: true, what: "true to recommend, false to withdraw today's pending recommendation" } },
+    args: { build: { kind: "string", required: true, what: "id from recommendations.read" },
+      recommended: { kind: "boolean", required: true, what: "true recommends; false withdraws" } },
     async run({ build, recommended }) {
       if (!libraryActive) return agentNo("no_library_open");
       recommendationOwner();

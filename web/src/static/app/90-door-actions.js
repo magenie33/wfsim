@@ -128,7 +128,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.reach.run",
     writes: "none",
-    what: "Compute this weapon's reach per Forma across board rulers, optionally setting scope. Return the curve and each ruler's best fitting build at the first point meeting the line.",
+    what: "Compute per-ruler Forma reach; return the curve and best fitting builds where the line is first met.",
     anchor: "#forma-plan",
     needs_weapon: true,
     args: {
@@ -697,7 +697,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.wielders.list",
     query: true,
-    what: "List who can hold this weapon: the Warframes allowed, each with the builds saved for it, and whether the unmodded Prototype (the board's floor) is allowed.",
+    what: "List allowed wielders, their saved builds, and whether the unmodded Prototype is allowed.",
     anchor: "#wielder-row",
     needs_weapon: true,
     args: {},
@@ -706,7 +706,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.wielder.set",
     writes: "build",
-    what: "Choose who holds the weapon: a Warframe unmodded, a Warframe with one of its saved builds, or frame=null for the Prototype. The wielder's abilities and stats change the weapon's numbers.",
+    what: "Set an unmodded or saved Warframe build as wielder; frame=null selects the Prototype. Wielder stats and abilities affect weapon results.",
     anchor: "#wielder-row",
     needs_weapon: true,
     args: {
@@ -732,7 +732,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.parts.list",
     query: true,
-    what: "List a modular weapon's compatible parts, with the pair installed now; read their numbers with builder.stats.read after installing.",
+    what: "List compatible modular parts and current assembly; builder.stats.read gives their stats.",
     anchor: "#assembly-row",
     needs_weapon: true,
     args: {},
@@ -746,7 +746,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.part.set",
     writes: "build",
-    what: "Swap a modular weapon part. The sibling slot or weapon class has its own weapon id (builder.weapon.set).",
+    what: "Swap a modular part; use builder.weapon.set for a sibling slot or class.",
     anchor: "#assembly-row",
     needs_weapon: true,
     args: {
@@ -977,7 +977,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.evolutions.list",
     query: true,
-    what: "List this weapon's Incarnon evolution tiers, their options, and which one each tier holds.",
+    what: "List Incarnon tiers, options and current selections.",
     anchor: "#evo-rows",
     needs_weapon: true,
     args: {},
@@ -1035,7 +1035,7 @@ const AGENT_ACTIONS = [
   {
     id: "builder.weapon.set",
     writes: "none",
-    what: "Switch the builder to another weapon. Its own presets and fight come with it.",
+    what: "Switch weapons, restoring its presets and fight.",
     anchor: "#weapon, #wsearch-input",
     args: { weapon: { kind: "string", required: true, what: "weapon id", enum: agentWeaponIds } },
     run({ weapon }) {
