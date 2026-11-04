@@ -253,9 +253,9 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       job.workers.push(held || spawnEngine());
     }
   };
-  grow(job.shards);
-  show();
   (async () => {
+    grow(job.shards);
+    show();
     let scores = [];
     for (let step = 0; ; step++) {
       activity = "resting";

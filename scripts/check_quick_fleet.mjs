@@ -150,8 +150,8 @@ async function checkFailures() {
   const rejected = error => unhandled.push(String(error.message || error));
   process.on("unhandledRejection", rejected);
   try {
-    for (const fault of ["leader post", "scorer post", "rest post", "pace", "null rejection", "rest callback", "rest silence", "worker error", "worker silence", "slow alive"]) {
-      let now = 1000, timerId = 0, lead = 0, paced = 0;
+    for (const fault of ["partial spawn", "leader post", "scorer post", "rest post", "pace", "null rejection", "rest callback", "rest silence", "worker error", "worker silence", "slow alive"]) {
+      let now = 1000, timerId = 0, lead = 0, paced = 0, spawns = 0;
       const timers = new Map(), workers = [], held = [];
       const fail = () => { throw new Error(fault); };
       const sandbox = createContext({
@@ -159,6 +159,7 @@ async function checkFailures() {
         setTimeout, clearTimeout, poolSize: () => 2,
         setInterval: f => { timers.set(++timerId, f); return timerId; }, clearInterval: id => timers.delete(id),
         spawnEngine: () => {
+          if (++spawns === 2 && fault === "partial spawn") fail();
           const worker = { terminated: false, terminate() { this.terminated = true; },
             emit(data) { this.onmessage?.({ data }); },
             postMessage(message) {
@@ -212,8 +213,9 @@ async function checkFailures() {
         assert.equal(runInContext("woptStatus().phase", sandbox), "error", `${fault} must settle after completed work`);
         assert.equal(job.result.ok, false);
         assert.match(job.result.error, new RegExp(fault.includes("silence") ? "worker stopped answering" : fault === "null rejection" ? "null" : fault));
-        assert.equal(job.status.enumerated, 2, `${fault} keeps completed build counts`);
-        assert.equal(job.status.sims_done, 20, `${fault} keeps completed fight counts`);
+        assert.equal(job.status.enumerated, fault === "partial spawn" ? 0 : 2, `${fault} keeps completed build counts`);
+        assert.equal(job.status.sims_done, fault === "partial spawn" ? 0 : 20, `${fault} keeps completed fight counts`);
+        if (fault === "partial spawn") { assert.equal(spawns, 2); assert.equal(workers.length, 1, "one worker was created before the spawn failure"); }
         assert.equal(job.workers.length, 0);
         assert(workers.every(w => w.terminated), `${fault} terminates every worker`);
         assert.equal(runInContext("fleetKept.length", sandbox), 0, "failed workers must not be reused");
