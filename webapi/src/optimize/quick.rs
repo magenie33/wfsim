@@ -83,7 +83,7 @@ pub(crate) struct Fleet {
     pending_rough: Vec<(QBuild, u32)>,
     /// The screen's runs per element order, by key, as a worker sent them —
     /// handed out again with the build's full measurement.
-    screened_runs: HashMap<String, Value>,
+    screened_runs: HashMap<String, Vec<Option<Shard>>>,
     /// Each fully scored build's shard at its best order, by key.
     best_runs: HashMap<String, Shard>,
     missed: bool,
@@ -1042,8 +1042,8 @@ impl QuickCtx<'_> {
                 let s = r.get("score").and_then(Value::as_array).and_then(|a| Some((a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
                 if r.get("rough").and_then(Value::as_bool) == Some(true) {
                     f.rough.insert(key.to_string(), s);
-                    if let Some(kept) = r.get("shards") {
-                        f.screened_runs.insert(key.to_string(), kept.clone());
+                    if let Some(Ok(kept)) = r.get("shards").map(|v| serde_json::from_value(v.clone())) {
+                        f.screened_runs.insert(key.to_string(), kept);
                     }
                     continue;
                 }
@@ -1432,4 +1432,83 @@ pub(super) fn arcane_matches(ids: &[Value], ranks: &[Value], i: usize, option: &
     let rank = ranks.get(i).and_then(Value::as_u64).or(r).unwrap_or_else(|| max(id));
     let (card, r) = split_rank(option);
     id == card && rank == r.unwrap_or_else(|| max(card))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn request() -> Value {
+        json!({
+            "weapon": "braton", "enemy": "thrax_centurion", "level": 100,
+            "duration": 1.0, "runs": 2, "candidate_runs": 10, "finalists": 1,
+            "strategy": "quick", "build_size": 3,
+            "mods": { "hellfire": "search", "infected_clip": "search", "stormbringer": "search" },
+            "starts": [{ "slots": ["hellfire", "infected_clip", "stormbringer"],
+                "fixed": [{"kind":"mods","idx":0}, {"kind":"mods","idx":1}, {"kind":"mods","idx":2}] }],
+        })
+    }
+
+    fn run(req: &Value, fleet: Option<Value>) -> Value {
+        let mut req = req.clone();
+        if let Some(f) = fleet { req["quick_fleet"] = f; }
+        let out = super::super::run_optimize(
+            super::super::parse_optimize(&req).expect("plan"),
+            &wfsim_optimizer::FunnelState::default(), |_, _| {}, None,
+        );
+        assert_eq!(out["ok"], json!(true), "{out}");
+        out
+    }
+
+    fn screened(req: &Value) -> (Value, Value) {
+        let lead = run(req, Some(json!({ "lead": true, "fresh": true, "scores": [] })));
+        let pending = lead["pending"].as_array().expect("a paused start");
+        assert_eq!(pending.len(), 1, "one fully pinned start: {lead}");
+        let build = pending[0].get("build").unwrap_or(&pending[0]).clone();
+        let out = run(req, Some(json!({ "score": [{ "build": build, "runs": 2 }] })));
+        assert_eq!(out["scores"][0]["rough"], json!(true), "{out}");
+        assert!(out["scores"][0]["shards"].as_array().unwrap().len() > 1, "several element orders");
+        (build, out)
+    }
+
+    #[test]
+    fn cached_screen_shards_preserve_order_nulls_and_seed_halves() {
+        let req = request();
+        let (_, mut short) = screened(&req);
+        let row = &mut short["scores"][0];
+        row["shards"][0]["index"][0]["hi"] = json!(u32::MAX);
+        row["shards"][0]["index"][0]["lo"] = json!(u32::MAX - 1);
+        row["shards"][1] = Value::Null;
+        let expected = row["shards"].clone();
+        let scores = short["scores"].clone();
+        let first = run(&req, Some(json!({ "lead": true, "scores": scores })));
+        assert_eq!(first["pending"][0]["shards"], expected);
+        let replay = run(&req, Some(json!({ "lead": true, "scores": [] })));
+        assert_eq!(replay["pending"][0]["shards"], expected, "another leader replay keeps every order intact");
+        assert!(replay["pending"][0]["shards"][1].is_null());
+    }
+
+    #[test]
+    fn cached_screen_promotion_preserves_scores_fights_and_work() {
+        let req = request();
+        let (build, short) = screened(&req);
+        let lead = run(&req, Some(json!({ "lead": true, "scores": short["scores"] })));
+        assert_eq!(lead["pending"][0]["shards"], short["scores"][0]["shards"]);
+        let replay = run(&req, Some(json!({ "lead": true, "scores": [] })));
+        assert_eq!(replay["pending"], lead["pending"]);
+        let full = run(&req, Some(json!({ "score": replay["pending"] })));
+        let fresh = run(&req, Some(json!({ "score": [build] })));
+        assert_eq!(full["scores"], fresh["scores"], "continuing the screen preserves every score and the best shard");
+        let orders = short["scores"][0]["shards"].as_array().unwrap().len() as u64;
+        assert_eq!(short["fights"], json!(2 * orders));
+        assert_eq!(full["fights"], json!(8 * orders), "the short runs are not fought again");
+        for field in ["fights", "work"] {
+            assert_eq!(short[field].as_u64().unwrap() + full[field].as_u64().unwrap(), fresh[field].as_u64().unwrap(), "{field}");
+        }
+        let answer = run(&req, Some(json!({ "lead": true, "scores": full["scores"] })));
+        let key = full["scores"][0]["key"].as_str().unwrap();
+        let best = FLEET.with(|f| serde_json::to_value(f.borrow().best_runs.get(key).unwrap()).unwrap());
+        assert_eq!(best, full["scores"][0]["shard"], "materialization retains the full best-order shard");
+        assert_eq!(answer["results"], run(&req, None)["results"], "the final simulator sees the same contenders");
+    }
 }
