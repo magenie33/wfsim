@@ -818,6 +818,12 @@ between calls: the same build, the same number and the same work each time,
 since two volunteers' answers are confirmed only to the bit. A search run to keep its workers hands them back,
 and the next one starts on them.
 
+Source-driven worker fixtures cover partial creation, dispatch, scheduling and
+rest failures after completed work: the search must fail and release every
+worker and watchdog. A slow call that keeps reporting remains live and returns
+its full answer and work counts. `--signals-only` runs these fixtures without a
+browser.
+
 ## `check_idle_devices`
 
 Plain node on PGlite: ids that asked in the last half hour are sorted into an

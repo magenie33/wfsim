@@ -307,6 +307,9 @@ input's size anyway.
   after the module loads without entering the engine; `/api/meta` is the
   costliest answer there is (~70 MB to build), so a warm-up that asked for it
   left that lane at 70 MB.
+- The quick fleet retains screened runs as typed accumulators, serializing them
+  only at the worker boundary. Every element order, run and RNG state survives
+  promotion to the full measurement.
 
 `check_lane_memory` holds the ceiling. To find where a peak comes from,
 profile the native endpoint under `dhat` — its "at t-gmax" view is the number
@@ -336,6 +339,10 @@ into steps the PAGE drives (`woptQuickFleet`):
 3. The scores go back to the leader. When no start pauses, the leader
    simulates the contenders — the final round is the simulator's — and
    answers with the ordinary result.
+
+Worker creation, dispatch and scheduling failures settle the search as an error
+and clear all pending calls and watchdogs. Rest calls use the same failure
+handling; a returned result cannot overwrite an already failed search.
 
 Every build is scored on the one paired stream wherever it runs, so the fleet
 lands exactly where one process does
