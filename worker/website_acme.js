@@ -6,6 +6,9 @@ export default {
       || !/^\/\.well-known\/acme-challenge\/[A-Za-z0-9_-]+$/.test(path)) {
       return new Response("not found", { status: 404 });
     }
-    return fetch(new URL(path, env.WEBSITE_ACME_ORIGIN), { method: request.method, redirect: "error" });
+    const response = await fetch(new URL(path, env.WEBSITE_ACME_ORIGIN).toString(),
+      { method: request.method, redirect: "manual" });
+    return response.status >= 300 && response.status < 400
+      ? new Response("validation unavailable", { status: 502 }) : response;
   },
 };

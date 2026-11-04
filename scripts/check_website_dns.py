@@ -56,7 +56,7 @@ def exercise(permit, fail_second=False):
                 "WEBSITE_TARGET": '{"host":"root@203.0.113.2"}'}), \
                 patch.object(sys, "argv", ["website_dns.py", "--apply"]), \
                 patch.object(dns.subprocess, "run", return_value=SimpleNamespace(stdout=json.dumps(release))), \
-                patch.object(dns.urllib.request, "urlopen", return_value=io.BytesIO(json.dumps(release).encode())), \
+                patch.object(dns, "backend_release", return_value=release), \
                 contextlib.redirect_stdout(io.StringIO()):
                 try: dns.main()
                 except (PermissionError, OSError): failed = True

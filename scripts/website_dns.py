@@ -6,20 +6,21 @@ import json
 import os
 from pathlib import Path
 import subprocess
-import urllib.request
 import uuid
+from ship_website import backend_release
 
 API = "https://api.cloudflare.com/client/v4"
 DOMAINS = ("wfsim.app", "www.wfsim.app")
 
 
 def call(path, method="GET", data=None):
-    req = urllib.request.Request(API + path, method=method,
-        data=json.dumps(data).encode() if data is not None else None,
-        headers={"Authorization": "Bearer " + os.environ["CLOUDFLARE_API_TOKEN"],
-                 "Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=40) as response:
-        body = json.load(response)
+    config = '\n'.join(['url = ' + json.dumps(API + path), 'request = ' + json.dumps(method),
+        'header = ' + json.dumps('Authorization: Bearer ' + os.environ['CLOUDFLARE_API_TOKEN']),
+        'header = "Content-Type: application/json"']) + '\n'
+    if data is not None: config += 'data = ' + json.dumps(json.dumps(data)) + '\n'
+    response = subprocess.run(["curl", "--fail-with-body", "--silent", "--show-error", "--max-time", "40",
+                               "--config", "-"], input=config, capture_output=True, text=True, check=True)
+    body = json.loads(response.stdout)
     if not body.get("success"):
         raise RuntimeError("Cloudflare operation failed: " + path)
     return body.get("result")
@@ -55,8 +56,7 @@ def main():
         "--resolve", f"wfsim.app:443:{address}", "https://wfsim.app/release.json"],
         capture_output=True, text=True, check=True)
     website = json.loads(result.stdout)
-    with urllib.request.urlopen("https://wfsim.mgnmz1999.workers.dev/release.json", timeout=30) as response:
-        backend = json.load(response)
+    backend = backend_release()
     if any(website.get(k) != backend.get(k) for k in ("release", "engine", "wasm")):
         raise RuntimeError("website and backend releases differ; DNS unchanged")
     if not workers:

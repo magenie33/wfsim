@@ -31,9 +31,14 @@ def inventory(site):
     return files
 
 
+def backend_release():
+    response = subprocess.run(["curl", "--fail", "--silent", "--show-error", "--max-time", "40",
+                               BACKEND + "/release.json"], capture_output=True, text=True, check=True)
+    return json.loads(response.stdout)
+
+
 def backend_matches(release):
-    with urllib.request.urlopen(BACKEND + "/release.json", timeout=40) as response:
-        live = json.load(response)
+    live = backend_release()
     if any(live.get(key) != release.get(key) for key in ("release", "engine", "wasm")):
         raise ValueError("backend and website artifact are different releases")
 
@@ -109,9 +114,10 @@ def deploy(site):
     digest = hashlib.sha256(manifest).hexdigest()
     destination = "/srv/wfsim/releases/" + release["release"] + "-" + digest[:16]
     command = ("set -eu; stage=$(mktemp -d /srv/wfsim/releases/.incoming.XXXXXX); "
-               "trap 'rm -rf \"$stage\"' EXIT; tar -xzf - -C \"$stage\"; "
+               "trap 'rm -rf \"$stage\"' EXIT; tar -xzf - -C \"$stage\"; chmod 755 \"$stage\"; "
                "python3 -c " + shlex.quote(REMOTE_VERIFY) + ' "$stage" ' + digest + "; "
                "if [ ! -d " + shlex.quote(destination) + " ]; then mv \"$stage\" " + shlex.quote(destination) + "; fi; "
+               "chmod 755 " + shlex.quote(destination) + "; "
                "python3 -c " + shlex.quote(REMOTE_VERIFY) + " " + shlex.quote(destination) + " " + digest + "; "
                "python3 -c " + shlex.quote(REMOTE_ACTIVATE) + " " + shlex.quote(destination))
     ssh = connection()
