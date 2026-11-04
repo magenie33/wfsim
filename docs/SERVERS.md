@@ -68,6 +68,10 @@ only with the valid secret, preserving same-origin checks, OAuth callbacks,
 cookies and network independence. Proxy geography is unknown rather than the
 website server's country.
 
+The private include's body allowance covers the backend's upload limits;
+`worker/live_board.js` owns the board upload limit. It clears upstream `Alt-Svc`
+and NEL policies because the website host negotiates its own transport.
+
 The certificate is renewed with certbot's webroot at `/srv/wfsim/acme`.
 `wrangler.acme.jsonc` routes only HTTP validation paths while DNS still points at
 the edge. Its `WEBSITE_ACME_ORIGIN` is the website host's reachable HTTP hostname.

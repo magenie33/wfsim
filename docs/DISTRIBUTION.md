@@ -273,7 +273,7 @@ which is the whole failure this plane exists to prevent.
 
 The site's api has one home, and a relay is a second road to it, not a second
 home. `cn.wfsim.app` is a server in Hong Kong that carries the board's work to
-`wfsim.app`, for readers whose road from mainland China to the edge is poor. It
+the placed backend directly, for readers whose road from mainland China to the edge is poor. It
 stores nothing and decides nothing.
 
 - **It carries a list, not a prefix**: the board's work (69-board-work.js
