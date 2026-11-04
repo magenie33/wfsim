@@ -6,7 +6,7 @@
 <title>Privacy | WFSim</title>
 <meta name="description" content="What WFSim keeps about a person, with and without an account, and how to remove it.">
 <link rel="canonical" href="https://wfsim.app/privacy">
-<link rel="stylesheet" href="/asset/style.9039f32cce94.css">
+<link rel="stylesheet" href="/asset/style.1089be03404b.css">
 <link rel="icon" type="image/svg+xml" href="/logo.svg">
 <style>.legal{max-width:720px;margin:0 auto;padding:32px 16px 64px;line-height:1.6}
 .legal h1{margin-top:0}.legal a{color:var(--accent)}</style>
@@ -15,8 +15,9 @@
 <main class="legal">
 <p><a href="/">WFSim</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="/refunds">Refunds</a></p>
 <h1>Privacy</h1>
-<p>WFSim is a free Warframe calculator. Everything it does works without an
-account. This page says what it keeps, and why.</p>
+<p>WFSim is a free Warframe calculator. Building, simulation, solving and reading
+the Build Library work without an account. Recommending builds requires one.
+This page says what it keeps, and why.</p>
 
 <h2>Without an account</h2>
 <ul>
@@ -56,6 +57,12 @@ traced back to you, nor withdrawn once sent.</li>
 </ul>
 
 <h2>With an account</h2>
+<p>Recommendations keep your account, the public build identity and its UTC
+vote date. Today's pending recommendation may be withdrawn before UTC midnight.
+Settled recommendations and permanent recommendation points remain until you
+delete your account, including after their popularity weight expires. Your
+history is private and included in your account export; public popularity
+contains totals without voter identities.</p>
 <p>An account is a random id with a name: a username, which starts as
 <code>user_</code> and six random characters until you choose one, and a display
 name if you set one. A name you give up is held for seven days so nobody else
@@ -187,8 +194,9 @@ copy of the database alone cannot test a guess.</li>
 <li data-ext="privacy-card"></li>
 <li>Account data lives in its own database, apart from the one the public
 leaderboard is backed up from, and only the operator of WFSim can reach it.</li>
-<li>Sign-in endpoints are rate-limited, and a state-changing request is accepted
-only from the site itself.</li>
+<li>Sign-in endpoints are rate-limited. Cookie-authenticated changes require
+same-origin JSON; claimed credentials may act for their account through the
+documented feature routes.</li>
 </ul>
 
 <h2>Your control</h2>
@@ -203,7 +211,8 @@ point-in-time history for up to 30 days, after which no copy remains.</li>
 </ul>
 
 <h2>隐私（中文）</h2>
-<p>WFSim 是免费的 Warframe 计算器，不注册也能使用全部功能。</p>
+<p>WFSim 是免费的 Warframe 计算器，配装、模拟、求解和浏览配装库不需要账号；推荐配装需要注册并登录。</p>
+<p>推荐会保存你的账号、配装的公开标识及推荐的 UTC 日期。当天待结算的推荐可在 UTC 0 点前撤销；已结算的推荐及永久推荐积分保留到你删除账号，包括热度归零后的记录。推荐历史只有你能查看，并包含在账号数据导出中；公开热度只有合计，不包含推荐者的身份。</p>
 <ul>
 <li><b>不登录时：</b>配装、场景、裂罅只保存在你自己的浏览器里。使用统计记在浏览器保存的一个随机编号下，不设置 cookie，只用于了解 WF模拟 自身的使用情况，从不共享、出售或与其他信息合并；不保存 IP 地址，只在统计到达时由连接判断所在国家或地区，与统计一起保存。每条统计以编号的哈希（而不是编号本身）保存 90 天，之后只留下不指向任何人的每日总数；Cloudflare 的统计服务另存一份三个月，其中单个浏览器的记录无法删除。编号满 13 个月会自动更换。浏览器开启「请勿追踪」或「全球隐私控制」时完全不统计；在
 <a href="/support#usage">支持页面</a>可以查看统计内容、关闭统计，或删除 WF模拟 数据库里这个编号下的统计记录。提交到排行榜的只有配装本身。</li>
@@ -221,7 +230,7 @@ point-in-time history for up to 30 days, after which no copy remains.</li>
 <li><b>通知：</b>WF模拟 发给你账号的通知（WF模拟 写给你的消息、会员即将到期等）保存 180 天，同时保存你最后一次打开通知的时间；只有你能看到，包含在你的数据下载里，删除账号时一起删除。发给所有人的公告保存到它过期为止。关于账号当前状态的提示（例如某台设备暂停领取计算任务）在你查看时实时得出，不保存。</li>
 <li data-ext="privacy-buying-zh"></li>
 <li><b>第三方：</b>Cloudflare 提供托管、数据库和验证邮件投递，其投递日志会保留收件地址最多 30 天；Google、Discord、GitHub 仅在你选择用它们登录时参与。不出售任何数据，不用于广告。</li>
-<li><b>安全措施：</b>全站 HTTPS；密码、登录令牌和邮件验证码只以哈希保存，密码哈希还用一个不在数据库里的密钥加固，单拿到数据库也无法验证任何猜测；<span data-ext="privacy-card-zh"></span>账号数据放在独立的数据库，与排行榜公开备份的那个分开，只有 WFSim 的运营方能访问；登录接口有频率限制，修改数据的请求只接受来自本站的。</li>
+<li><b>安全措施：</b>全站 HTTPS；密码、登录令牌和邮件验证码只以哈希保存，密码哈希还用一个不在数据库里的密钥加固，单拿到数据库也无法验证任何猜测；<span data-ext="privacy-card-zh"></span>账号数据放在独立的数据库，与排行榜公开备份的那个分开，只有 WFSim 的运营方能访问；登录接口有频率限制，使用登录 cookie 修改数据时只接受本站的 JSON 请求；已认领的第三方凭据可通过文档列出的接口代表你的账号操作。</li>
 <li><b>你的权利：</b>可在账号面板下载你的全部数据、移除任何登录方式（移除最后一种即删除账号）、删除账号。删除需要在 10 分钟内登录过，7 天后才执行，期间登录即可撤销；执行后账号和同步的数据全部删除，它的设备挣得的积分转入不记名字的官方公共池。数据库的时间点历史最多保留 30 天。</li>
 </ul>
 </main>
