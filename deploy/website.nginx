@@ -3,6 +3,36 @@ map $http_accept $wfsim_markdown {
     ~*text/markdown 1;
 }
 
+map $request_uri $wfsim_path {
+    default "";
+    "~^(?<wfsim_original_path>[^?]*)" $wfsim_original_path;
+}
+
+map $wfsim_path $wfsim_twin {
+    default "";
+    / /index.md;
+    /weapons /weapons.md;
+    "~^/method(/[a-z]{2,3})?$" $wfsim_path.md;
+    "~^/weapons/[^/.]+$" $wfsim_path.md;
+}
+
+map $wfsim_twin $wfsim_discovery_link {
+    "" "";
+    default "<$wfsim_twin>; rel=\"alternate\"; type=\"text/markdown\", </llms.txt>; rel=\"describedby\"; type=\"text/plain\", </.well-known/api-catalog>; rel=\"api-catalog\", </.well-known/agent-skills/index.json>; rel=\"describedby\"; type=\"application/json\", </.well-known/mcp/server-card.json>; rel=\"service-desc\"; type=\"application/json\"";
+}
+
+map $wfsim_path $wfsim_md_page {
+    default "";
+    /index.md /;
+    /weapons.md /weapons;
+    "~^(?<wfsim_md_canonical_path>/weapons/[^/.]+|/method(?:/[a-z]{2,3})?)\\.md$" $wfsim_md_canonical_path;
+}
+
+map $wfsim_md_page $wfsim_canonical_link {
+    "" "";
+    default "<https://wfsim.app$wfsim_md_page>; rel=\"canonical\"";
+}
+
 server {
     listen 80;
     listen [::]:80;
@@ -63,18 +93,27 @@ server {
         default_type "text/markdown; charset=utf-8";
         try_files $uri =404;
         add_header Cache-Control no-cache;
+        add_header Link $wfsim_canonical_link;
     }
     location ~ /\. { return 404; }
     location ~ ^/(_headers|_redirects|native/) { return 404; }
     location / {
+        if ($uri ~ "^(.+)/$") { return 308 $1$is_args$args; }
         if ($wfsim_markdown) { return 418; }
         try_files $uri/index.html $uri /index.html;
         add_header Cache-Control "no-cache";
+        add_header Vary Accept;
+        add_header Link $wfsim_discovery_link;
     }
     location @backend { include /etc/nginx/wfsim-backend.conf; }
     location @previous_asset {
         root /srv/wfsim/previous;
-        try_files $uri =404;
+        try_files $uri @missing_asset;
         add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+    location @missing_asset {
+        types { }
+        default_type text/plain;
+        return 404 "not found\n";
     }
 }
