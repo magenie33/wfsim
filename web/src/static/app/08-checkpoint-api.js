@@ -181,6 +181,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
   const live = [];
   const signals = optimizerWorkerSignals();
   const warm = [];
+  const pendingCalls = new Set();
   let activity = "planning", finalStatus = null;
   // Where each start stands, as the leader last reported it.
   let starts = [];
@@ -197,43 +198,45 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       ...signals.read(activity) };
   };
   const stop = (finished) => {
+    pendingCalls.forEach(finish => finish(null));
     const ws = job.workers;
     job.workers = [];
     if (finished && keep) fleetKeep(ws); else ws.forEach((w) => w && w.terminate());
   };
-  const fail = (why, engine = false) => { if (!job.result) job.result = { ok: false, error: why, worker_dead: !engine }; stop(false); };
+  const fail = (why, engine = false) => {
+    if (job.result) return;
+    job.result = { ok: false, error: why, worker_dead: !engine };
+    stop(false);
+    show();
+  };
   // One call to one worker; its progress, if any, to `onProgress`.
-  const call = (i, b, onProgress) => new Promise((resolve) => {
+  const call = (i, b, onProgress, resting = false) => new Promise((resolve) => {
     const w = job.workers[i];
     if (!w) { resolve(null); return; }
-    const wd = watchSilence(() => { fail("worker stopped answering"); resolve(null); });
+    const wd = watchSilence(() => fail("worker stopped answering"));
+    const finish = payload => { pendingCalls.delete(finish); wd.clear(); signals.finish(i); resolve(payload); };
+    pendingCalls.add(finish);
     w.onmessage = (e) => {
-      wd.heard();
-      signals.heard(i, e.data);
-      if (e.data.kind === "progress" && onProgress) onProgress(e.data.payload);
-      if (e.data.kind === "result") { wd.done(); signals.finish(i); resolve(e.data.payload); }
-      show();
+      try {
+        wd.heard();
+        signals.heard(i, e.data);
+        if (e.data.kind === "progress" && onProgress) onProgress(e.data.payload);
+        if (e.data.kind === (resting ? "rested" : "result")) finish(e.data.payload);
+        show();
+      } catch (error) { fail(String(error?.message || error)); }
     };
-    w.onerror = (e) => { wd.clear(); fail(String((e && e.message) || "worker error")); resolve(null); };
-    signals.start(i, activity, warm[i]);
+    w.onerror = (e) => { e?.preventDefault?.(); fail(String(e?.message || "worker error")); };
+    signals.start(i, resting ? "resting" : activity, resting || warm[i]);
     show();
-    w.postMessage({ kind: "optimize", body: b });
-    wd.start();
+    try {
+      wd.start();
+      w.postMessage(resting ? { kind: "rest", ms: b } : { kind: "optimize", body: b });
+    } catch (error) { fail(String(error?.message || error)); }
   });
   const pause = (i, ms) => {
     const r = rest(ms);
     if (!(r > 0) || !job.workers[i]) return Promise.resolve();
-    return new Promise((resolve) => {
-      const w = job.workers[i];
-      signals.start(i, "resting", true);
-      show();
-      w.onmessage = (e) => {
-        signals.heard(i, e.data);
-        if (e.data.kind === "rested") { signals.finish(i); resolve(); }
-        show();
-      };
-      w.postMessage({ kind: "rest", ms: r });
-    });
+    return call(i, r, null, true);
   };
   const timed = async (i, b, onProgress) => {
     const t = performance.now();
@@ -241,7 +244,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     const ms = performance.now() - t;
     done.cpu_ms += ms;
     if (o) await pause(i, ms);
-    return o;
+    return job.cancelled || job.result ? null : o;
   };
   const grow = (k) => {
     while (job.workers.length < k) {
@@ -308,7 +311,7 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
       live.fill(null);
       show();
     }
-  })();
+  })().catch(error => fail(String(error?.message || error)));
   return job;
 }
 

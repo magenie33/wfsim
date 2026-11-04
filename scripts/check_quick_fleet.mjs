@@ -142,7 +142,93 @@ async function checkSignals() {
   console.log("  ok  optimizer signals distinguish loading, scoring, final simulations and rest without recounting work");
 }
 
+async function checkFailures() {
+  const source = readFileSync(new URL("../web/src/static/app/08-checkpoint-api.js", import.meta.url), "utf8");
+  const transport = readFileSync(new URL("../web/src/static/app/06-transport.js", import.meta.url), "utf8");
+  const watch = transport.slice(transport.indexOf("function watchSilence("), transport.indexOf("/// WHERE A WORKER"));
+  const unhandled = [];
+  const rejected = error => unhandled.push(String(error.message || error));
+  process.on("unhandledRejection", rejected);
+  try {
+    for (const fault of ["leader post", "scorer post", "rest post", "pace", "null rejection", "rest callback", "rest silence", "worker error", "worker silence", "slow alive"]) {
+      let now = 1000, timerId = 0, lead = 0, paced = 0;
+      const timers = new Map(), workers = [], held = [];
+      const fail = () => { throw new Error(fault); };
+      const sandbox = createContext({
+        Date: class extends Date { static now() { return now; } }, performance: { now: () => now },
+        setTimeout, clearTimeout, poolSize: () => 2,
+        setInterval: f => { timers.set(++timerId, f); return timerId; }, clearInterval: id => timers.delete(id),
+        spawnEngine: () => {
+          const worker = { terminated: false, terminate() { this.terminated = true; },
+            emit(data) { this.onmessage?.({ data }); },
+            postMessage(message) {
+              if (message.kind === "rest") {
+                if (lead === 2 && fault === "rest post") fail();
+                if (lead === 2 && fault === "rest silence") return;
+                queueMicrotask(() => this.emit({ kind: "rested", payload: { ok: true } }));
+                return;
+              }
+              const q = message.body.quick_fleet;
+              if (q.lead) {
+                lead++;
+                if (lead === 2 && fault === "leader post") fail();
+                queueMicrotask(() => this.emit({ kind: "result", payload: lead > 2
+                  ? { ok: true, results: [], final_work: 0 } : { pending: ["a", "b"] } }));
+              } else {
+                if (lead === 2) {
+                  if (fault === "scorer post") fail();
+                  if (fault === "worker error") { queueMicrotask(() => this.onerror?.({ message: fault, preventDefault() {} })); return; }
+                  if (fault === "worker silence") return;
+                  if (fault === "slow alive") { held.push({ worker: this, score: q.score }); return; }
+                }
+                queueMicrotask(() => this.emit({ kind: "result", payload: { scores: q.score, fights: q.score.length * 10, work: 1 } }));
+              }
+            } };
+          workers.push(worker);
+          return worker;
+        },
+        pace: async () => { if (++paced === 2) { if (fault === "pace") fail(); if (fault === "null rejection") throw null; } },
+        rest: () => { if (lead === 2 && fault === "rest callback") fail(); return fault.startsWith("rest") ? 1 : 0; },
+      });
+      runInContext("let wopt = null, woptNextId = 1; const LANE_WATCHDOG = {loading:90000, stall:30000, tick:5000};", sandbox);
+      runInContext(watch, sandbox);
+      runInContext(source, sandbox);
+      const job = runInContext("wopt = quickFleet({strategy:'quick'}, 2, pace, {rest, keep:true})", sandbox);
+      await new Promise(setImmediate);
+      for (let tick = 0; tick < 40; tick++) {
+        now += 5000;
+        if (fault === "slow alive") workers.forEach(w => w.emit({ kind: "alive", source: "engine" }));
+        [...timers.values()].forEach(f => f());
+        await Promise.resolve();
+      }
+      if (fault === "slow alive") {
+        assert.equal(job.result, null, "a slow worker with heartbeats must keep computing");
+        for (const { worker, score } of held) worker.emit({ kind: "result", payload: { scores: score, fights: score.length * 10, work: 1 } });
+        await new Promise(setImmediate);
+        assert.equal(runInContext("woptStatus().phase", sandbox), "done");
+        assert.equal(job.result.fights, 40);
+        assert.equal(job.result.builds, 4);
+      } else {
+        assert.equal(runInContext("woptStatus().phase", sandbox), "error", `${fault} must settle after completed work`);
+        assert.equal(job.result.ok, false);
+        assert.match(job.result.error, new RegExp(fault.includes("silence") ? "worker stopped answering" : fault === "null rejection" ? "null" : fault));
+        assert.equal(job.status.enumerated, 2, `${fault} keeps completed build counts`);
+        assert.equal(job.status.sims_done, 20, `${fault} keeps completed fight counts`);
+        assert.equal(job.workers.length, 0);
+        assert(workers.every(w => w.terminated), `${fault} terminates every worker`);
+        assert.equal(runInContext("fleetKept.length", sandbox), 0, "failed workers must not be reused");
+      }
+      assert.equal(timers.size, 0, `${fault} clears every watchdog`);
+      assert.equal(unhandled.length, 0, `${fault} must not escape as an unhandled rejection`);
+    }
+  } finally {
+    process.removeListener("unhandledRejection", rejected);
+  }
+  console.log("  ok  quick fleet failures settle after completed work; live slow calls retain their answer and counts");
+}
+
 await checkSignals();
+await checkFailures();
 if (process.argv.includes("--signals-only")) process.exit(0);
 
 // A FROZEN SURVEY QUESTION, cut short: its fight shorter and fewer runs and starts.
