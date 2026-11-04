@@ -156,7 +156,7 @@ function loadAccount() {
     await extHook("accountLoaded", accountState.account);
     authArrival = { kind: at, ready: true };
     renderAccountEntry();
-    if (libraryActive) refreshLibraryRecommendations();
+    refreshLibraryRecommendations();
     if (location.pathname.replace(/\/$/, "") === "/support") renderSupport();
     const kind = authKindOf(location.pathname);
     if (kind) renderAuthPage(kind);

@@ -91,6 +91,14 @@ check("…and never the browser's id", !JSON.stringify(p).includes(cid));
 check("…answering any origin, so the desktop shell can post",
   r.headers.get("access-control-allow-origin") === "*");
 
+const weaponViewExpression = src.match(/const viewKind = ([\s\S]*?);\n/)[1];
+const weaponView = new Function("mod", "const w = {}; return (" + weaponViewExpression + ");");
+for (const mod of ["", "build-library", "simulator", "optimizer", "rivens", "riven-analyst"]) {
+  const subject = weaponView(mod);
+  const response = await post({ ...good, e: "app.view", subject });
+  check(`the weapon route's actual view subject is accepted: ${mod || "builder"}`, response.status === 204, subject);
+}
+
 const refused = [
   ["an event nobody declared", { ...good, e: "builder.click" }],
   ["a visitor id that is not one", { ...good, cid: "me@example.com" }],

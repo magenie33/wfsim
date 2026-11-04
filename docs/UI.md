@@ -410,13 +410,14 @@ assemblies; its configuration page offers only its own parts.
 
 ## Build Library
 
-Each exact build has a recommendation control only in the Library. Signed-in
-accounts may recommend once per UTC day and withdraw before its settlement.
+Each exact board build has a recommendation control in the Library, beside its
+active preset and in its preset information. Owned or edited copies have none.
+Signed-in accounts may recommend once per UTC day and withdraw before settlement.
 Popularity is displayed to one decimal place beside the build's measured
 score; it is also a sort and numeric query field (`heat`). Exact alternatives
 of tied builds retain their own controls. The same build across rulers and
-modes shares its daily allowance. Dates settle in UTC; the next boundary is
-also printed in the reader's time zone.
+modes and entry points shares its daily allowance and pending state. Dates
+settle in UTC; the next boundary is also printed in the reader's time zone.
 
 Mine (`/account/recommendations`) shows contribution points and permanent
 recommendation points, with recommendation history below. Its default view

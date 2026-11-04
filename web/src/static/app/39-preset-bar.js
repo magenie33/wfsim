@@ -227,6 +227,7 @@ function renderPresetBarIn(bar, cfg) {
     + switcher + (current ? presetInfoButton(cfg, current) : "")
     + (usedBy.length ? `<span class="pby" title="${escHtml(tr("linked by") + ': ' + usedBy.join(' · '))}">↩${usedBy.length}</span>` : "")
     + ((ownOps || roOps || published || cfg.extra) ? presetActionsHtml(ownOps + roOps + published + (cfg.extra || "")) : "") + `</span>`
+    + (cfg.currentActions && current ? cfg.currentActions(current) : "")
     + `<button type="button" class="pchip add" title="${escHtml(tr("new empty {thing}").replace('{thing}',tr(noun)))}">＋</button>`
     + `<button type="button" class="ghost-btn small" data-preset-manage>${escHtml(tr("Manage presets"))} <span class="preset-count">${ps.length}</span></button>`
     + undoButtons(cfg.domain) + `<div class="pshare" hidden></div>`;
@@ -541,7 +542,8 @@ function weaponPresetInfo(p, weapon = p.scope || p.state.weapon || presetWeapon(
   const owner = compHost(held.frame) || wfFrames().find(f => f.id === held.frame);
   return withPoolOf(w, () => cardOfState({...p.state, mode:p.state.mode || defaultMode(w.id, null)}, w))
     + presetInfoSection("Wielder", [owner?.name || held.frame, linked?.name || tr("Default")])
-    + (p.board ? presetInfoSection("Benchmark", [benchmarkName(p.benchmark)]) + measuredRecordHtml(p.board) : "");
+    + (p.board ? presetInfoSection("Benchmark", [benchmarkName(p.benchmark)]) + measuredRecordHtml(p.board) : "")
+    + recommendationControl(p, "preset_info");
 }
 function companionPresetInfo(state) {
   return buildCardHtml({mods:(state.slots || []).filter(s => s?.mod).map(s => {

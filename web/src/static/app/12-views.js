@@ -163,7 +163,7 @@ async function route() {
     if (location.pathname !== path) history.replaceState(history.state, "", path + location.search + location.hash);
   }
   // WHICH PAGE, as a kind and never an address: one point per kind per load.
-  const viewKind = w ? `weapon_${mod || "builder"}` : support ? "support" : bench ? "benchmark"
+  const viewKind = w ? `weapon_${(mod || "builder").replace(/-/g, "_")}` : support ? "support" : bench ? "benchmark"
     : dl ? "download" : util ? `utility_${util}` : wfHit ? "warframe" : opRoute ? "operator"
     : compHit ? "companion" : stub ? "placeholder" : authKind ? authView(authKind) : "home";
   pageTiming.kind = viewKind;

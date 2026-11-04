@@ -623,6 +623,7 @@ export const USAGE_EVENTS = [
   "builder.companion", "builder.enemy",
   "simulator.start", "simulator.run", "optimizer.start", "optimizer.run",
   "share.create", "share.entry", "share.open", "board.open", "board.submit", "desktop.download",
+  "recommendation.view", "recommendation.ready", "recommendation.click", "recommendation.signin", "recommendation.error",
   "presets.saved", "door.seen", "door.open", "account.state",
   "nona.open", "nona.ask", "nona.concise", "road.probe",
 ];

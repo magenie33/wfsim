@@ -85,12 +85,22 @@ log, which samples nothing.
 
 **Once per (event, subject) per page load.** A point says a reader got this far
 with this thing, not how many times: forty edits to one build are one build.
+Recommendation usage events count browser interactions, not votes. They contain
+no account or build identifiers. Retained votes and permanent points come from
+the accounts database; its current vote rows exclude withdrawn recommendations.
+Weapon page kinds replace route hyphens with underscores, including
+`weapon_build_library` and `weapon_riven_analyst`.
 
 | event | fires when | subject | `n` |
 | --- | --- | --- | --- |
 | `app.boot` | the page has its catalog (`/api/meta`, the build's file or else the engine) | how the page was reached: `reload`, `back_forward`, `from_site`, `direct` or `from_<referrer host>`; a reload a newer release caused is `release_idle` (the page reloaded itself) or `release_asked` (the reader clicked) | ms since navigation |
 | `app.view` | a page was drawn | page kind (`home`, `weapon_builder`, `weapon_simulator`, `warframe`, …); each account page is its own kind — `login`, `signup`, `reset`, `account`, `account_sync` (`AUTH_VIEWS`) — and a page an extension mounts names its own (`authView`) | — |
 | `app.usable` | the visible route finished drawing and crossed two animation frames | page kind | ms since navigation for the initial route, since route entry for an in-page navigation |
+| `recommendation.view` | a recommendation control becomes visible after account availability is known | entry: `library`, `preset`, `preset_info` | signed in: 0 or 1 |
+| `recommendation.ready` | a visible control has a canonical identity and is enabled | entry | signed in: 0 or 1 |
+| `recommendation.click` | a recommendation or withdrawal control is clicked | `<entry>_recommend` or `<entry>_withdraw` | signed in: 0 or 1 |
+| `recommendation.signin` | a guest leaves to sign in, or returns with a valid recommendation intent | `<entry>_start` or `<entry>_return` | 0 on departure, 1 on return |
+| `recommendation.error` | recommendation data or an action fails | `<entry>_<stage>_<reason>`; account points and history reads use `account` and `history`; reasons are fixed categories, never error text | — |
 | `app.longtask` | the route's performance window is flushed, where Long Tasks are supported | page kind | longest observed main-thread task, ms |
 | `app.blocking` | beside `app.longtask` | page kind | sum of each task's duration above 50 ms |
 | `app.interaction` | the window is flushed and Event Timing reported an interaction | page kind | maximum observed event duration, ms; not a field INP estimate |

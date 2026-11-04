@@ -7,9 +7,12 @@ expiry, permanent points, private history, limits, export and account deletion.
 Its first-settlement assertion rejects a new vote starting at 0.9.
 
 `check_recommendations_page.mjs` drives the page against the same account
-service with local fixture data: pending/withdrawn votes, Library-only controls,
+service with local fixture data: pending/withdrawn votes shared by Library and board
+preset controls, owned-copy exclusion, retryable failures, anonymous entry telemetry,
 exact history links, direct history loading, midnight timer resets, cross-day
-cache replacement, points, mobile layout and sign-in navigation.
+cache replacement, points, mobile layout and sign-in return/resumption.
+`check_usage_events.mjs` sends weapon route subjects through the real usage
+endpoint; the unnormalized Library and riven-analyst subjects fail this check.
 `check_board_review_page.mjs` also checks temporary board
 precision and preservation of both smaller and larger personal run counts.
 

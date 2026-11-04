@@ -903,6 +903,7 @@ function buildBarCfg() {
   const cfg = {
     domain: BUILDS,
     info: p => weaponPresetInfo(p),
+    currentActions: p => recommendationControl(p, "preset"),
     summary: weaponPresetSummary,
     context: p => tf(weaponInfo(p.scope || p.state.weapon || presetWeapon()).name),
     libraryPath: p => weaponPath(p.scope) + "/builder?build=" + encodeURIComponent(p.id),
