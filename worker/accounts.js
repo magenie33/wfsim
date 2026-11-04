@@ -20,6 +20,7 @@ import { cloudEnd, cloudExport } from "./cloud.js";
 import { agentsOf } from "./agents.js";
 import { noticesExport } from "./notices.js";
 import { feedbackExport, feedbackPurge } from "./feedback.js";
+import { recommendationExport } from "./recommendations.js";
 
 export const SLOTS = ["google", "discord", "github", "email"];
 
@@ -704,6 +705,7 @@ export async function accountRoute(request, env, path) {
     contribution_choice: choice || null, display_name_hold: await heldName(env.ACCOUNTS, account), merit: merit || null, merit_ledger: meritLedger,
     ...(await noticesExport(env, account)),
     ...(await feedbackExport(env, account)),
+    ...(await recommendationExport(env, account)),
     ...(await cloudExport(env, account)),
     exported_at: now() }, 200,
     { "content-disposition": 'attachment; filename="wfsim-account.json"' });

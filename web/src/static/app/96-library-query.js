@@ -4,10 +4,10 @@ const LIBRARY_ATTRIBUTES = [
   ["status_chance", "Status Chance", "%", 100], ["multishot", "Multishot", "", 1],
   ["fire_rate", "Fire Rate", "/s", 1], ["magazine_size", "Magazine", "", 1],
 ];
-const LIBRARY_NUMERIC_FIELDS = [...LIBRARY_ATTRIBUTES.map(([id, label]) => [id, label]), ["score", "Score"], ["drain", "Base MOD drain"]];
+const LIBRARY_NUMERIC_FIELDS = [...LIBRARY_ATTRIBUTES.map(([id, label]) => [id, label]), ["score", "Score"], ["drain", "Base MOD drain"], ["heat", "Popularity score"]];
 const LIBRARY_QUERY_FIELDS = [...LIBRARY_NUMERIC_FIELDS, ["equipment", "Equipment"], ["mode", "Mode"], ["riven", "Riven"], ["trigger", "Trigger"]];
 const LIBRARY_ORDER_FIELDS = [...LIBRARY_NUMERIC_FIELDS, ["measured_at", "Recently calculated"]];
-const LIBRARY_SIMPLE_ORDERS = { score: ["score", "desc"], "score-asc": ["score", "asc"], recent: ["measured_at", "desc"], drain: ["drain", "asc"] };
+const LIBRARY_SIMPLE_ORDERS = { score: ["score", "desc"], "score-asc": ["score", "asc"], recent: ["measured_at", "desc"], drain: ["drain", "asc"], heat: ["heat", "desc"] };
 const libraryStatCache = new Map();
 let libraryStatRun = null;
 const libraryStatKey = (w, p) => JSON.stringify([ENGINE_ID, w.id, p.mode, boardRowIdentity(p.board), p.board.riven]);
@@ -83,6 +83,7 @@ function libraryQueryValue(p, field) {
     return Number.isFinite(v) ? v * libraryStaticField(field)[3] : undefined;
   }
   if (field === "score") return libraryScore(p);
+  if (field === "heat") return recommendationHeat(p);
   if (field === "drain") return libraryBaseDrain(p);
   if (field === "measured_at") return Date.parse(p.board.measured_at) || 0;
   if (field === "mode") return p.mode;

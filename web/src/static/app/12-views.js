@@ -222,7 +222,7 @@ async function route() {
   $("utility-page").hidden = !util;
   // The nav says where you are. `data-nav` rather than a path compare: the
   // roster lives at "/" and a path compare there matches every page.
-  const here = bench ? "benchmark" : util ? "utility" : authKind === "compute" ? "compute" : (!w && !support && !dl && !wfHit && !opRoute && !compHit && !stub && !authKind) ? "home" : "";
+  const here = bench ? "benchmark" : util ? "utility" : authKind === "recommendations" ? "recommendations" : authKind === "compute" ? "compute" : (!w && !support && !dl && !wfHit && !opRoute && !compHit && !stub && !authKind) ? "home" : "";
   document.querySelectorAll(".tnav").forEach((a) => {
     a.classList.toggle("sel", a.dataset.nav === here);
   });
@@ -241,7 +241,7 @@ async function route() {
   const what = { w: tr("Warframe build & DPS"), wf: tr("Warframe build"), comp: tr("Companion") };
   const title = authKind ? `${tr({ login: "Sign in", signup: "Create an account", reset: "Reset your password",
     account: "Account settings", sync: "Cloud sync", compute: "Compute together",
-    contributors: "Contributors", clan: "Clan", notifications: "Notifications" }[authKind] || (EXT.pages[authKind] || {}).title || "")} | WFSim`
+    contributors: "Contributors", clan: "Clan", notifications: "Notifications", recommendations: "My recommendations" }[authKind] || (EXT.pages[authKind] || {}).title || "")} | WFSim`
     : support ? `${tr("Support WFSim")}`
     : dl ? `${tr("Download WFSim for Windows, Mac and Linux")}`
     : bench ? `${tr("Benchmark")} | WFSim`

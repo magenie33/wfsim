@@ -18,17 +18,17 @@ const ACCOUNT_SLOTS = [
 ];
 const AUTH_PATHS = { "/login": "login", "/signup": "signup", "/reset": "reset", "/account": "account",
   "/account/sync": "sync", "/contributors": "contributors", "/compute": "compute", "/clan": "clan",
-  "/notifications": "notifications" };
+  "/notifications": "notifications", "/account/recommendations": "recommendations" };
 /// …and the pages an extension mounts (`EXT.pages`), routed the same way.
 const authKindOf = (path) => AUTH_PATHS[path.replace(/\/$/, "")] || extKindOf(path.replace(/\/$/, ""));
 /// EACH PAGE ITS OWN `app.view` KIND, so the way in can be read step by step;
 /// the settings pages carry `account_`, since `sync` alone could be any sync.
 const AUTH_VIEWS = { login: "login", signup: "signup", reset: "reset",
   account: "account", sync: "account_sync", contributors: "contributors", compute: "compute", clan: "clan",
-  notifications: "notifications" };
+  notifications: "notifications", recommendations: "recommendations" };
 const authView = (kind) => AUTH_VIEWS[kind] || (EXT.pages[kind] || {}).view || "other";
 /// The pages of a signed-in account; every other kind is a way in.
-const isSettings = (kind) => kind === "account" || kind === "sync" || !!(EXT.pages[kind] || {}).settings;
+const isSettings = (kind) => kind === "account" || kind === "sync" || kind === "recommendations" || !!(EXT.pages[kind] || {}).settings;
 
 /// WHAT THE SERVER SAID, in the reader's words — an outcome or a refusal.
 const ACCOUNT_SAYS = {
@@ -151,11 +151,12 @@ function loadAccount() {
     const at = authKindOf(location.pathname);
     // EVERY SETTINGS PAGE ASKS EVERY EXTENSION PAGE: the navigation shows a
     // page only once it says it is available.
-    if (accountState.account && isSettings(at)) await Promise.all([loadAgents(), loadDevices(), ...extLoads()]);
+    if (accountState.account && isSettings(at)) await Promise.all([loadAgents(), loadDevices(), loadRecommendationPoints(), ...extLoads()]);
     else if ((EXT.pages[at] || {}).open) await Promise.all(extLoads(at));
     await extHook("accountLoaded", accountState.account);
     authArrival = { kind: at, ready: true };
     renderAccountEntry();
+    if (libraryActive) refreshLibraryRecommendations();
     if (location.pathname.replace(/\/$/, "") === "/support") renderSupport();
     const kind = authKindOf(location.pathname);
     if (kind) renderAuthPage(kind);
@@ -229,6 +230,7 @@ function renderAccountEntry() {
         <div class="who"><span class="avatar">${escHtml(accountInitial(account))}</span><div><b>${escHtml(accountName(account))}</b>
           <span>@${escHtml(account.username || "")}</span></div></div>
         <a href="/account" role="menuitem">${aT("Account settings")}</a>
+        <a href="/account/recommendations" role="menuitem">${aT("Mine")}</a>
         <a href="/account/sync" role="menuitem">${aT("Cloud sync")}</a>
         ${extMenuItems(account).map((p) => `<a href="${escHtml(p.path)}?from=menu" role="menuitem">${aT(p.label)}</a>`).join("")}
         <hr><a href="#" role="menuitem" data-acct="logout">${aT("Sign out")}</a>
@@ -454,6 +456,7 @@ function settingsNav(a, here) {
     <div class="me"><span class="avatar avatar-lg">${escHtml(accountInitial(a))}</span>
       <div><b>${escHtml(accountName(a))}</b><span>${escHtml(tr("Joined {date}").replace("{date}", since))}</span></div></div>
     ${link("/account", "account", "Account")}
+    ${link("/account/recommendations", "recommendations", "My recommendations")}
     ${link("/account/sync", "sync", "Cloud sync")}
     ${Object.entries(EXT.pages).filter(([, p]) => p.settings && (!p.available || p.available()))
       .map(([k, p]) => link(p.path, k, p.nav)).join("")}</nav>`;
@@ -916,7 +919,7 @@ function renderAuthPage(kind) {
   }
   if (authArrival.kind !== kind) {
     authArrival = { kind, ready: false };
-    const loads = account && isSettings(kind) ? [loadAgents(), loadDevices(), ...extLoads()]
+    const loads = account && isSettings(kind) ? [loadAgents(), loadDevices(), loadRecommendationPoints(), ...extLoads()]
       : ext && ext.open ? extLoads(kind) : [];
     if (!loads.length) authArrival.ready = true;
     else Promise.all(loads).finally(() => {
@@ -936,7 +939,8 @@ function renderAuthPage(kind) {
     return;
   }
   if (kind === "account") accountDeleteNote = extHookNow("deleteNote") || "";
-  main.innerHTML = kind === "account" ? accountPage(account) : ext ? ext.render(account)
+  main.innerHTML = kind === "recommendations" ? recommendationsPage(account)
+    : kind === "account" ? accountPage(account) : ext ? ext.render(account)
     : kind === "sync" ? cloudPage(account)
     : `<div class="auth-page"><div class="auth-card" data-auth-kind="${kind}">${
       kind === "signup" ? authSignupCard() : kind === "reset" ? authResetCard() : authLoginCard()}</div></div>`;

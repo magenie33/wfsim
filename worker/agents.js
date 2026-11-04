@@ -159,6 +159,15 @@ Content-Type: application/json
 
 ## Use the credential
 
+A claimed key can also read its account's recommendation history at
+\`GET ${origin}/api/account/recommendations\`. Read current state with
+\`POST ${origin}/api/recommendations/state\` and \`{"identities": [...]}\`;
+\`POST ${origin}/api/recommendations\` accepts \`{identity, day, action, ruler, mode}\`.
+Use the returned UTC \`day\`; \`action\` is \`recommend\` or \`withdraw\`.
+Each account has one recommendation per build per UTC day. Requests are
+limited to 120 a minute per account and address; excess returns 429 with
+\`Retry-After: 60\`. Pending recommendations may be withdrawn before settlement.
+
 Send \`Authorization: Bearer <api_key>\` to the MCP server. Without a key it
 allows ${MCP_LIMITS.per_address} tool calls a minute per address; with one,
 ${MCP_LIMITS.per_key} a minute per key. Over it, the answer is HTTP 429 with
@@ -216,7 +225,7 @@ export async function agentOf(env, request) {
   return row;
 }
 
-/// The account a claimed key acts for, or null — for the paid half's routes.
+/// The account a claimed key acts for on authenticated feature routes.
 export async function agentAccount(env, request) {
   const row = await agentOf(env, request);
   return row && row.account ? row.account : null;

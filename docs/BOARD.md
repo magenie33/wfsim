@@ -869,6 +869,14 @@ two paths to the same replies and tables. What stays in the worker, and why:
 
 #### Expedited board reviews
 
+Simulations of an opened board build use that build's benchmark run count,
+currently 1,000. This is an effective request parameter, not a write to the
+browser's precision preference. The control is read-only while that board
+build is active; an owned build restores the unchanged personal preference.
+Calibration continues to require the complete captured build, fight, seed,
+run count and served engine to match. Equal current-engine results do not
+request duplicate review rounds.
+
 `POST /api/board/review` accepts only an existing `(identity, ruler, mode)` and
 the served engine. It accepts no client score or build payload. The service
 freezes the library record and current score in `board_reviews`. Its

@@ -2,7 +2,7 @@
 let libraryActive = false, libraryKey = "", libraryScroll = 0, libraryRestoring = false;
 let libraryObserver = null, libraryNavigating = false;
 const libraryViews = new Map(), libraryLastUrls = new Map(), libraryDrains = new Map();
-const LIBRARY_SORTS = ["score", "score-asc", "recent", "drain"];
+const LIBRARY_SORTS = ["score", "score-asc", "recent", "drain", "heat"];
 const libraryDefaultBenchmark = () => (benchList().find((b) => b.primary) || benchList()[0] || {}).id;
 
 function normalizeLibraryAddress() {
@@ -59,6 +59,7 @@ function libraryLeaving(mod) {
   if (libraryActive && (mod !== "build-library" || finder.weapon !== routeWeaponId())) {
     librarySaveView(); libraryObserver?.disconnect(); libraryActive = false;
     finderDataMemo = null; libraryStatRun = null; libraryStatCache.clear(); libraryDrains.clear();
+    recommendationLibrary = null;
     const box = $("build-finder");
     box.querySelectorAll("[data-dd]").forEach((node) => ddReg.delete(node.dataset.dd));
     box.replaceChildren(); box.onclick = null; box.onchange = null; box.oninput = null;
@@ -90,6 +91,8 @@ function libraryReadQuery(w) {
 function libraryWriteQuery() {
   if (!libraryActive || libraryNavigating || libraryRestoring) return;
   const q = new URLSearchParams();
+  const recommended = new URLSearchParams(location.search).get("recommend_build");
+  if (/^[a-f0-9]{32}$/.test(recommended || "")) q.set("recommend_build", recommended);
   libraryWriteAttributes(q);
   if (finder.b !== libraryDefaultBenchmark()) q.set("bench", finder.b);
   if (q.size || boardDepth !== BOARD_DEPTH_DEFAULT) q.set("depth", boardDepth);
@@ -158,7 +161,7 @@ function libraryToolbar(count) {
     + `<button type="button" class="ghost-btn small" data-library-sort-jump>${escHtml(tr("Sort"))}</button>`
     + `<button type="button" class="ghost-btn small" data-library-top title="${escHtml(tr("Back to results"))}">↑</button></div>`
     + `<div class="library-result-count" aria-live="polite">${escHtml(trF("{n} matching builds", { n: count }))}`
-    + `</div><div id="library-stat-status" class="library-stat-status" hidden aria-live="polite"></div></div>`;
+    + `</div>${recommendationLibraryNote()}<div id="library-stat-status" class="library-stat-status" hidden aria-live="polite"></div></div>`;
 }
 function renderLibraryBoard() {
   const box = $("library-board");
@@ -188,6 +191,7 @@ function libraryFilterChips(all) {
 }
 function libraryAfterRender(w, all, list, groups, drawList) {
   if (!libraryActive || libraryNavigating) return;
+  loadLibraryRecommendations(w, all);
   const changed = libraryWriteQuery();
   renderLibrarySummary(w, all);
   const box = $("build-finder");
@@ -222,6 +226,7 @@ function libraryAfterRender(w, all, list, groups, drawList) {
   };
   const previous = box.onclick;
   box.onclick = (e) => {
+    if (recommendationLibraryActions(e, all)) return;
     if (libraryQueryAction(e.target)) return;
     if (e.target.closest("[data-library-sort-advanced]")) {
       finder.advancedSort = !finder.advancedSort; return renderBuildFinder();

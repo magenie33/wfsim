@@ -1,5 +1,18 @@
 # The browser and node checks
 
+`check_recommendations.mjs` runs the real account schema and recommendation
+routes against Postgres semantics. It covers registered and claimed-client
+authentication, idempotence, withdrawal, midnight retries, settlement weights,
+expiry, permanent points, private history, limits, export and account deletion.
+Its first-settlement assertion rejects a new vote starting at 0.9.
+
+`check_recommendations_page.mjs` drives the page against the same account
+service with local fixture data: pending/withdrawn votes, Library-only controls,
+exact history links, direct history loading, midnight timer resets, cross-day
+cache replacement, points, mobile layout and sign-in navigation.
+`check_board_review_page.mjs` also checks temporary board
+precision and preservation of both smaller and larger personal run counts.
+
 `scripts/check_*.mjs`. Each asserts a property of the shipping build; run the
 ones a change touches. AGENTS.md lists them by name and one line of what they
 assert — this file is the shape of each and why it is shaped that way.

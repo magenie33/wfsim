@@ -455,6 +455,8 @@ jobs:
         run: node scripts/check_task_executors.mjs
       - name: Exact official simulations request durable independent board reviews
         run: node scripts/check_board_review_page.mjs
+      - name: Recommendations stay in the Library and preserve private history
+        run: node scripts/check_recommendations_page.mjs
       - name: Community transfer completes through two real WASM witnesses
         run: node scripts/check_task_service_browser.mjs
       - name: Protocol 8 on the page keeps every result and holds to the signal and next_ms
@@ -647,6 +649,9 @@ jobs:
       - name: The account rules hold against the real schema
         if: matrix.group == 'library'
         run: node scripts/check_accounts.mjs
+      - name: Recommendations settle at UTC midnight and retain account points
+        if: matrix.group == 'library'
+        run: node scripts/check_recommendations.mjs
       - name: Short share links store a build and nothing else
         if: matrix.group == 'library'
         run: node scripts/check_share_short.mjs

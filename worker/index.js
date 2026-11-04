@@ -44,6 +44,7 @@ import { contributionRoute, publishContributors } from "./contribution.js";
 import { meritRoute, mintMerit, settleMerit } from "./merit.js";
 import { clanRoute } from "./clan.js";
 import { feedbackRoute } from "./feedback.js";
+import { recommendationsRoute } from "./recommendations.js";
 import { noticesRoute, purgeNotices } from "./notices.js";
 import { liveKey, serveLive, pushLive } from "./live_board.js";
 import { withDatabases } from "./db.js";
@@ -719,7 +720,7 @@ export default {
 function accountWrite(request, path) {
   if (path.startsWith("/api/auth/")) return true;
   if (request.method === "GET" || request.method === "HEAD") return false;
-  return path === "/api/account" || path.startsWith("/api/account/") || path === "/api/notices/read" || path === "/api/feedback"
+  return path === "/api/account" || path.startsWith("/api/account/") || path === "/api/notices/read" || path === "/api/feedback" || path === "/api/recommendations"
     || (cloudPath(path) && !READ_ONLY_CLOUD.has(path));
 }
 
@@ -768,6 +769,10 @@ async function serve(request, env, ctx) {
     }
     {
       const r = await feedbackRoute(request, env, path);
+      if (r) return r;
+    }
+    {
+      const r = await recommendationsRoute(request, env, path, ctx);
       if (r) return r;
     }
     if (path === "/api/merit" || path === "/api/account/merit") return meritRoute(request, env, path);

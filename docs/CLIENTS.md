@@ -1,5 +1,17 @@
 # Volunteer compute clients
 
+## Account recommendations
+
+Recommendation clients use the routes in `ACCOUNTS.md` with a claimed bearer
+key. They share their account's one-vote-per-build-per-UTC-day allowance.
+Use the returned `day` in mutations; a stale day returns `409 day_changed`,
+requiring a fresh state read. Duplicate mutations are idempotent. Batches of
+state identities are limited to 200, request bodies to 10,000 bytes, and each
+account and address to 120 requests a minute. Excess requests return `429`
+with `Retry-After: 60`. Public popularity contains no voter identities.
+
+## Compute protocol
+
 A client takes compute orders from wfsim.app, fights them on the engine the
 site serves and sends back what it measured. The page is the reference client
 (`web/src/static/app/69-board-work.js`); any other speaks the same protocol to

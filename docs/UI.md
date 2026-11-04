@@ -410,6 +410,22 @@ assemblies; its configuration page offers only its own parts.
 
 ## Build Library
 
+Each exact build has a recommendation control only in the Library. Signed-in
+accounts may recommend once per UTC day and withdraw before its settlement.
+Popularity is displayed to one decimal place beside the build's measured
+score; it is also a sort and numeric query field (`heat`). Exact alternatives
+of tied builds retain their own controls. The same build across rulers and
+modes shares its daily allowance. Dates settle in UTC; the next boundary is
+also printed in the reader's time zone.
+
+Mine (`/account/recommendations`) shows contribution points and permanent
+recommendation points, with recommendation history below. Its default view
+lists builds available today; pending and all-time views, weapon filtering
+and pagination retain expired records. Each entry links to that exact build
+in the Library and exposes its vote dates and current weights. It contains no
+voting controls. Switching to a new UTC day resets the history view to
+available today. Account data and service limits are in `ACCOUNTS.md`.
+
 The weapon root is its Build Library; `/builder` edits the active build.
 `/build-library` and the weapon's `/benchmark` are aliases of the library.
 Existing root links carrying a shared build or board build open Builder;

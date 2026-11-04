@@ -55,6 +55,15 @@ pub(crate) fn riven_shape_from(v: &Value) -> Option<wfsim_engine::build::rivens:
 /// — a stored row this engine can no longer read is not an error in the build
 /// on screen.
 pub fn build_keys_json(v: &Value) -> Value {
+    if get_str(v, "kind", "board") == "build" {
+        let keys: Vec<Value> = v.get("builds").and_then(Value::as_array).map(Vec::as_slice).unwrap_or(&[])
+            .iter().map(|record| {
+                crate::board_rows::board_build(record)
+                    .map(|b| json!(wfsim_engine::board::builds::build_id(&b)))
+                    .unwrap_or(Value::Null)
+            }).collect();
+        return json!({ "ok": true, "keys": keys });
+    }
     let keys: Vec<Value> = v
         .get("builds")
         .and_then(Value::as_array)

@@ -1,8 +1,8 @@
 # Accounts
 
-An account is optional. Everything WFSim does works without one, and a reader
-who never signs in has the site exactly as it was. What an account adds is a
-place for a person's own things to live beyond one browser.
+An account stores a person's own things beyond one browser and permits build
+recommendations. Building, simulation, solving and reading the library remain
+available without signing in.
 
 ## The model
 
@@ -36,9 +36,46 @@ metadata documents from the same constants as its endpoints.
 | an unclaimed key nobody used for 90 days is dropped | `register` |
 | a claim mails a code to the address — or, where no account holds it, a mail saying so — and answers the same either way | `claim` |
 | the right code within ten minutes and five tries binds the key to the account | `claimComplete` |
-| a claimed key acts for its account on `/api/cloud/*` and nowhere in billing | `cloudRoute` → `agentAccount` |
+| a claimed key acts for its account on `/api/cloud/*` and recommendation routes, and nowhere in billing | `agentAccount` |
 | the account page lists its agents and disconnects one in a click; an agent may revoke its own key | `/api/account/agents`, `AGENT_PATHS.revoke` |
 | deleting the account deletes its agents' keys; the export lists them | `ON DELETE CASCADE`, `agentsOf` |
+
+## Recommendations
+
+`worker/recommendations.js` keeps recommendations in the accounts database.
+Each `(account, library identity, UTC day)` has at most one vote. The engine's
+`/api/build/keys` with `kind: "build"` supplies library identities, including
+riven rolls and wielder configuration. Modes and rulers share the same vote
+when they use the same build. A new target must already have a stored score.
+
+The database's UTC date determines settlement. Today's votes are pending and
+may be withdrawn. Earlier votes are immutable through the API. On its first
+settled day a vote contributes 1.0 popularity; each following UTC day removes
+0.1, with zero on the eleventh settled day. Queries derive settlement from the
+vote date, so no scheduled write can skip or duplicate it. Each settled vote
+also counts as one permanent recommendation point, independently of popularity.
+Recommendation points do not enter compute points, contributor rank or Merit.
+
+| route | request and result |
+| --- | --- |
+| `GET /api/recommendations/heat/<weapon>` | public identity-to-popularity map, `day` and `next_settlement`; cached at most 30 seconds and never across a UTC boundary |
+| `POST /api/recommendations/state` | `{identities: [...]}` (at most 200); own pending identities and permanent points |
+| `POST /api/recommendations` | `{identity, day, action: "recommend"\|"withdraw", ruler?, mode?}`; `day` must match the service's current day; new targets also require their ruler and mode |
+| `GET /api/account/recommendations` | own history by `filter=available\|pending\|all`, optional `weapon` and `offset`; 50 builds per page, including expired recommendations |
+| `GET /api/account/recommendations/votes` | own vote dates and current weights for `identity`, optional exclusive `before` date; 100 dates per page |
+
+Cookie-authenticated writes require same-origin JSON. Claimed bearer keys act
+for the same account and share its daily allowance. Unclaimed keys cannot
+vote. Browser clients may use bearer-authenticated CORS requests; cross-origin
+cookie credentials are not enabled. Writes are idempotent; the explicit day prevents a retry after midnight
+from casting or withdrawing a different day's vote. Streaming request bodies
+are bounded at 10,000 bytes. `RECOMMENDATION_LIMIT` allows 120 requests per
+minute for each account and address, with `429` and `Retry-After: 60` on excess.
+
+The account export includes vote dates and target records. Deleting an account
+deletes its votes and their popularity contribution by cascade. Public heat
+contains no account or device identifiers. Apply `worker/pg/accounts.sql`
+before deploying these routes.
 
 ## Names
 

@@ -52,7 +52,7 @@ function libraryRetainedFilters() {
     + `<button type="button" class="ghost-btn small" data-library-filter-edit>${escHtml(tr("Edit advanced conditions"))}</button></div>`;
 }
 function librarySortPanel() {
-  const options = [["score", "Highest score"], ["score-asc", "Lowest score"], ["recent", "Recently calculated"], ["drain", "Lowest base MOD drain"]];
+  const options = [["score", "Highest score"], ["score-asc", "Lowest score"], ["recent", "Recently calculated"], ["drain", "Lowest base MOD drain"], ["heat", "Highest popularity"]];
   if (finder.sort === "custom") options.push(["custom", "Custom sort"]);
   const heading = `<div class="library-panel-heading"><h2 id="library-sort-title">${escHtml(tr("Sort"))}</h2><div class="library-panel-actions library-sort-control">`
     + (finder.advancedSort ? "" : `<div class="library-sort">${ddButton("library-sort-picker", { value: finder.sort, title: tr("Sort"), data: { "library-sort": "" },

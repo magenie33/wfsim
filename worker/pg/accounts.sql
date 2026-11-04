@@ -26,6 +26,27 @@ CREATE TABLE IF NOT EXISTS accounts (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS accounts_username ON accounts (username);
 
+-- Recommendation targets are library identities; personal votes stay in this database.
+CREATE TABLE IF NOT EXISTS recommendation_targets (
+  identity TEXT COLLATE "C" PRIMARY KEY,
+  weapon TEXT COLLATE "C" NOT NULL,
+  record TEXT COLLATE "C" NOT NULL,
+  ruler TEXT COLLATE "C" NOT NULL,
+  mode TEXT COLLATE "C" NOT NULL
+);
+CREATE INDEX IF NOT EXISTS recommendation_targets_weapon ON recommendation_targets (weapon);
+CREATE TABLE IF NOT EXISTS recommendations (
+  account TEXT COLLATE "C" NOT NULL REFERENCES accounts (id) ON DELETE CASCADE,
+  identity TEXT COLLATE "C" NOT NULL REFERENCES recommendation_targets (identity),
+  day DATE NOT NULL,
+  PRIMARY KEY (account, identity, day)
+);
+CREATE INDEX IF NOT EXISTS recommendations_target_day ON recommendations (identity, day);
+CREATE INDEX IF NOT EXISTS recommendations_account_day ON recommendations (account, day, identity);
+CREATE OR REPLACE FUNCTION recommendation_day() RETURNS date LANGUAGE sql STABLE AS $$
+  SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date
+$$;
+
 -- A DISPLAY NAME HELD BY HAND (worker/names.js `hiddenWhy`): hidden while the
 -- account still shows exactly `display_name`, and `reason` (`NAME_REASONS`) is
 -- what its owner is told. Written by the owner's tool in the paid half, and

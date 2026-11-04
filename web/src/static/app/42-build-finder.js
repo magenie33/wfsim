@@ -212,7 +212,7 @@ function renderBuildFinder() {
   // A TIE IS ONE PLACE OF ONE RANKING (`placed`): consecutive, so builds of two
   // modes on one score stay two answers.
   const tieKey = (p) => `${p.benchmark}#${p.mode}#${p.riven ? "r" : "p"}#${p.rank}`;
-  const list = scope.filter(passes)
+  const list = scope.filter(p => passes(p) && recommendationMatches(p))
     .sort((a, b) => score(b) - score(a) || (tieKey(a) < tieKey(b) ? -1 : tieKey(a) > tieKey(b) ? 1 : 0));
   const ties = tieGroups(list, tieKey, (p) => p.board || {}, META);
   if (finder.query.orderBy.some((o) => o.field !== "score")) ties.forEach((g) => g.members.sort(libraryCompare));
@@ -373,7 +373,7 @@ function renderBuildFinder() {
       `<div class="fd-sbar"><i style="width:${(score(p) / maxScore * 100).toFixed(1)}%"></i></div></td>` +
       `<td>${card(p, ref && ref !== p ? ref : lead && lead !== p ? lead : null)}${n > 1 ? freeHtml(g) +
         `<button type="button" class="fd-tiex" data-ftie="${escHtml(g.key)}">${escHtml(opened ? tr("Hide the exact builds") : trF("Show the {n} exact builds", { n }))}</button>` : ""}</td>` +
-      `<td>${openBtn(p)}</td></tr>` +
+      `<td>${recommendationControl(p)}${openBtn(p)}</td></tr>` +
       (finder.open === presetId(p) && !opened ? detail(p) : "") +
       (opened ? g.members.map((m) => rowHtml(m, maxScore, null, g.members[0])).join("") : "");
   };
@@ -626,14 +626,23 @@ function renderPresetBar() {
 /// want to measure right now" is a fact about the person and not about the
 /// engagement.
 const SIM_RUNS_KEY = "wfsim-sim-runs";
+const boardSimRuns = () => {
+  if (!META) return null;
+  const build = buildNamed(activePreset);
+  return build?.builtin ? (benchList().find(bench => bench.id === build.benchmark)?.scenario.runs || headlessDefaultRuns(META)) : null;
+};
 const simRuns = () => {
+  const board = boardSimRuns();
+  if (board != null) return board;
   const v = Math.round(Number(localStorage.getItem(SIM_RUNS_KEY)));
   return Number.isFinite(v) && v >= 1 && v <= 20000 ? v : headlessDefaultRuns(META);
 };
 const setSimRuns = (n) => {
+  if (boardSimRuns() != null) return simRuns();
   const v = Math.max(1, Math.min(20000, Math.round(Number(n)) || headlessDefaultRuns(META)));
   localStorage.setItem(SIM_RUNS_KEY, String(v));
   if (META) updateOptEstimate();
+  return v;
 };
 
 function snapshotScenario() {
