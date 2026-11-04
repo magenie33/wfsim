@@ -1,38 +1,6 @@
 /// THE ACTIONS, and the queries beside them in the same table — `docs/AGENT.md`.
 const AGENT_ACTIONS = [
   {
-    id: "builder.recommendations.read",
-    query: true,
-    what: "Read popularity, the signed-in account's pending recommendations and exact build ids in the open Build Library.",
-    anchor: "#build-finder",
-    needs_weapon: true,
-    args: { limit: { kind: "number", min: 1, max: 200, what: "maximum rows, default 20" } },
-    run({ limit = 20 }) {
-      if (!libraryActive) return agentNo("no_library_open");
-      recommendationOwner();
-      return { points: recommendationAccount.points, day: recommendationAccount.day,
-        builds: builtinBuilds(finder.b).filter(p => recommendationId(p)).slice(0, limit).map(p => ({ build: presetId(p), identity: recommendationId(p),
-          heat: recommendationHeat(p), pending: recommendationAccount.pending.has(recommendationId(p)) })) };
-    },
-  },
-  {
-    id: "builder.recommendation.set",
-    writes: "none",
-    what: "Recommend or withdraw one exact Library build for the signed-in account's current UTC day.",
-    anchor: "#build-finder",
-    needs_weapon: true,
-    args: { build: { kind: "string", required: true, what: "build or identity from builder.recommendations.read" },
-      recommended: { kind: "boolean", required: true, what: "true to recommend, false to withdraw today's pending recommendation" } },
-    async run({ build, recommended }) {
-      if (!libraryActive) return agentNo("no_library_open");
-      recommendationOwner();
-      const p = builtinBuilds(finder.b).find(p => presetId(p) === build || recommendationId(p) === build);
-      if (!p || !recommendationId(p)) return agentNo("unknown_build");
-      if (recommendationAccount.pending.has(recommendationId(p)) === recommended) return { identity: recommendationId(p), pending: recommended };
-      return sendRecommendation(p, !recommended);
-    },
-  },
-  {
     id: "enemies.targets.list",
     query: true,
     what: "List the custom targets the reader has made, with the id a fight names each one by (simulator.scenario.set with patch {enemy: id}).",
