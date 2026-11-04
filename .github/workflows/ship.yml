@@ -232,6 +232,9 @@ jobs:
           BOT_TARGET: ${{ secrets.BOT_TARGET }}
           BOT_SSH_KEY: ${{ secrets.BOT_SSH_KEY }}
           BOT_KNOWN_HOSTS: ${{ secrets.BOT_KNOWN_HOSTS }}
+          WEBSITE_TARGET: ${{ secrets.WEBSITE_TARGET }}
+          WEBSITE_SSH_KEY: ${{ secrets.WEBSITE_SSH_KEY }}
+          WEBSITE_KNOWN_HOSTS: ${{ secrets.WEBSITE_KNOWN_HOSTS }}
           GH_TOKEN: ${{ github.token }}
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
@@ -242,6 +245,11 @@ jobs:
            printf '%s' "$BOT_TARGET" > private/qq/bot.json
            printf '%s\n' "$BOT_SSH_KEY" > private/qq/wfsim-bot
            printf '%s\n' "$BOT_KNOWN_HOSTS" > private/qq/known_hosts)
+          if [ -n "$WEBSITE_TARGET" ]; then
+            (umask 077; mkdir -p private/bandwagon
+             printf '%s\n' "$WEBSITE_SSH_KEY" > private/bandwagon/website_key
+             printf '%s\n' "$WEBSITE_KNOWN_HOSTS" > private/bandwagon/known_hosts)
+          fi
           trap 'rm -rf private' EXIT
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

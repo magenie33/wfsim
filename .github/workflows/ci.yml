@@ -88,6 +88,9 @@ jobs:
       - run: node scripts/check_ci_partitions.mjs
       - run: node scripts/check_site_setup.mjs
       - run: node scripts/check_page_bodies.mjs
+      - run: node scripts/check_website_proxy.mjs
+      - run: python3 scripts/ship_website.py --self-test
+      - run: python3 scripts/check_website_dns.py
       - run: node scripts/check_comment_style.mjs
       - run: node scripts/check_time_storage.mjs
       - run: node scripts/check_user_task_queue.mjs

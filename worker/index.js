@@ -49,6 +49,7 @@ import { noticesRoute, purgeNotices } from "./notices.js";
 import { liveKey, serveLive, pushLive } from "./live_board.js";
 import { withDatabases } from "./db.js";
 import { edgeServe } from "./pages.js";
+import { websiteRequest } from "./website_proxy.js";
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
 // AN OUTER BOUND, NOT THE RULE — see below. It is `MAIN_SLOTS + 1`: eight main
@@ -706,6 +707,8 @@ export default {
   // THIS REQUEST'S DATABASES (worker/db.js), closed once it is answered. A
   // client connects on its first query, never before.
   async fetch(request, env, ctx) {
+    request = websiteRequest(request, env);
+    if (request instanceof Response) return request;
     const f = withDatabases(env);
     try {
       return await serve(request, f.env, ctx);

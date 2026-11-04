@@ -228,6 +228,8 @@ def main() -> None:
     # A failed backend deploy must stop before the edge advances.
     run(shutil.which("npx") or "npx", "--yes", WRANGLER, "deploy", "-c", str(ROOT / "wrangler.jsonc"))
     run(shutil.which("npx") or "npx", "--yes", WRANGLER, "deploy", "-c", str(ROOT / "wrangler.edge.jsonc"))
+    if os.environ.get("WEBSITE_TARGET"):
+        run(sys.executable, str(ROOT / "scripts" / "ship_website.py"))
     # THE MCP SERVER AFTER THE PUSH, from the same tree: its engine is the one
     # just published, and a server deployed ahead of the site answers with it.
     run(shutil.which("npx") or "npx", "--yes", WRANGLER, "deploy", "-c", str(ROOT / "mcp" / "wrangler.jsonc"))

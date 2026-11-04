@@ -4,6 +4,7 @@ import contextlib
 import hashlib
 import importlib.util
 import io
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -47,6 +48,7 @@ def exercise(script, failure=False):
                 patch.object(ship.subprocess, "run", fake_run), \
                 patch.object(ship.shutil, "which", return_value="npx"), \
                 patch.object(ship, "verify", verify), patch.dict(sys.modules, modules), \
+                patch.dict(os.environ, {"WEBSITE_TARGET": "{}"}), \
                 patch.object(sys, "argv", [str(script), "--built"]), \
                 contextlib.redirect_stdout(io.StringIO()):
             try:
@@ -71,6 +73,8 @@ def exercise(script, failure=False):
             assert len({c["artifact"] for c in deploys}) == 1, "the artifact changed between workers"
             push = next(c for c in calls if c.get("args") == ["git", "push"])
             assert calls.index(push) < calls.index(deploys[0]), "the source push must land first"
+            website = next(c for c in calls if any(a.endswith("ship_website.py") for a in c.get("args", [])))
+            assert calls.index(deploys[1]) < calls.index(website) < calls.index(deploys[2]), calls
             assert [c["kind"] for c in calls[-2:]] == ["bot", "verify"], calls[-2:]
             assert calls[-1]["bot"], "the full publication must verify the bot"
         builds = [c for c in calls if "build_site_app.py" in " ".join(c.get("args", []))]

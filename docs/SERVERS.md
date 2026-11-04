@@ -36,6 +36,7 @@ Asked in this order; the first answer that settles it wins.
 | role | where | runs | why there |
 | --- | --- | --- | --- |
 | edge | Cloudflare | the site, the worker (the door, the factory's API, accounts), the board in R2 behind `cdn.wfsim.app`, the MCP worker, the edge worker; `wfsim-cloud` for money | serves every request; no machine to keep |
+| website | configured website host | nginx, the checked static release, same-origin API forwarding and certificate renewal | a direct website entrance; the data core and placed API remain together |
 | data core | Hetzner, Falkenstein | Postgres, `wfsim-factoryd` over its unix socket, the tunnel the others reach it by | the library, and the settler that writes it every second |
 | board server | Tencent, mainland | `wfsim-live` (docs/BOARD.md §"The live board"), `wfsim-pg-tunnel` | background: it pulls the facts that moved and pushes the files that did, so a lost push is sent on the next cycle; the data core's disk has none to spare |
 | China door | Tencent, Hong Kong | the QQ bot (`wfsim-bot`, its Chrome kept current by `update-chrome.timer`), `cn.wfsim.app`, the relay that carries the board's work for readers in mainland China (docs/DISTRIBUTION.md §"The relay") | QQ's whitelist, Discord and the site are all near it; a card is a page load of the site, which from the mainland crosses a link that drops at peak hours |
@@ -46,6 +47,37 @@ Asked in this order; the first answer that settles it wins.
 server (`scripts/ship_bot.py`, `bot.json`'s `live`). The data core's daemon is
 deployed with `python scripts/ship_factoryd.py` from the same source commit
 after changes to its worker or scripts; `--verify` checks its commit and heartbeat.
+
+## Website host
+
+`WEBSITE_TARGET` enables `scripts/ship_website.py` in the release job. It is JSON
+with `host` (`user@address`), `port`, `key` and `known_hosts`. The release environment's
+`WEBSITE_SSH_KEY` and `WEBSITE_KNOWN_HOSTS` supply the two files. The host receives
+the existing CI artifact after the backend and edge workers deploy; it builds
+nothing. Every file is verified before an atomic directory switch. Failed health
+checks restore the previous directory. Live board files are excluded and remain
+served from their authoritative bucket through the backend.
+
+`deploy/website.nginx` serves the static release, retains the previous hashed
+assets and forwards dynamic routes through `/etc/nginx/wfsim-backend.conf`.
+That private include names the backend's HTTPS host, verifies its certificate,
+and replaces `X-WFSim-Website` and `X-WFSim-Website-IP` with the shared
+`WEBSITE_PROXY_SECRET` and the socket's client address. It never trusts a
+visitor's forwarded address. The worker restores the canonical URL and address
+only with the valid secret, preserving same-origin checks, OAuth callbacks,
+cookies and network independence. Proxy geography is unknown rather than the
+website server's country.
+
+The certificate is renewed with certbot's webroot at `/srv/wfsim/acme`.
+`wrangler.acme.jsonc` routes only HTTP validation paths while DNS still points at
+the edge. Its `WEBSITE_ACME_ORIGIN` is the website host's reachable HTTP hostname.
+After DNS changes, nginx serves the same validation files directly.
+
+The `website dns` workflow checks DNS read/write access by creating and removing
+a temporary TXT record. With `apply=true`, it verifies the host's TLS and release
+before changing the two website names. It saves the existing mappings and restores
+the Worker domains if a change fails. It uses `CF_DNS_TOKEN`, falling back to
+`CF_WORKERS_TOKEN`; publishing Workers alone does not grant DNS edit access.
 
 ## Factory capacity and deployment
 

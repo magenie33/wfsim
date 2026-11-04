@@ -1,0 +1,9 @@
+{
+  "name": "wfsim-website-acme",
+  "compatibility_date": "2026-07-28",
+  "main": "worker/website_acme.js",
+  "routes": [
+    { "pattern": "wfsim.app/.well-known/acme-challenge/*", "zone_name": "wfsim.app" },
+    { "pattern": "www.wfsim.app/.well-known/acme-challenge/*", "zone_name": "wfsim.app" }
+  ]
+}

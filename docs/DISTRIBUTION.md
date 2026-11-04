@@ -187,6 +187,12 @@ The signing key, the bot's SSH key and its address live in the `release`
 environment, which only `main` may use and only the `ship` job asks for.
 `stage.yml` and `promote.py` remain for staging or signing by hand.
 
+When `WEBSITE_TARGET` is configured, the fixed website host receives the same
+checked `site/` after both Workers deploy. `scripts/ship_website.py` checks their
+release identity, verifies every transferred file, and switches the host's
+directory atomically with health-check rollback. It excludes live board files;
+it neither builds a second release nor replaces the board publisher.
+
 ### Keys
 
 **The shell accepts a LIST of public keys, never one.** The accepted set is
