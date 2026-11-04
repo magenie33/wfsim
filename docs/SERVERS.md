@@ -76,8 +76,8 @@ After DNS changes, nginx serves the same validation files directly.
 The `website dns` workflow checks DNS read/write access by creating and removing
 a temporary TXT record. With `apply=true`, it verifies the host's TLS and release
 before changing the two website names. It saves the existing mappings and restores
-the Worker domains if a change fails. It uses `CF_DNS_TOKEN`, falling back to
-`CF_WORKERS_TOKEN`; publishing Workers alone does not grant DNS edit access.
+the Worker domains if a change fails. It checks `CF_DNS_TOKEN`, `CF_API_TOKEN`
+and `CF_WORKERS_TOKEN` in order; publishing Workers alone does not grant DNS edit access.
 
 ## Factory capacity and deployment
 

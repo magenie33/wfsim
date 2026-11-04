@@ -19,13 +19,21 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: check or switch
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_DNS_TOKEN || secrets.CF_WORKERS_TOKEN }}
+          CF_DNS_TOKEN: ${{ secrets.CF_DNS_TOKEN }}
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_WORKERS_TOKEN: ${{ secrets.CF_WORKERS_TOKEN }}
           WEBSITE_TARGET: ${{ secrets.WEBSITE_TARGET }}
           APPLY: ${{ inputs.apply }}
         run: |
           set -euo pipefail
-          if [ "$APPLY" = true ]; then python3 scripts/website_dns.py --apply;
-          else python3 scripts/website_dns.py; fi
+          selected=
+          for credential in CF_DNS_TOKEN CF_API_TOKEN CF_WORKERS_TOKEN; do
+            if [ -z "${!credential}" ]; then continue; fi
+            export CLOUDFLARE_API_TOKEN="${!credential}"
+            if python3 scripts/website_dns.py; then selected="$credential"; break; fi
+          done
+          if [ -z "$selected" ]; then echo "No configured credential can edit website DNS"; exit 1; fi
+          if [ "$APPLY" = true ]; then python3 scripts/website_dns.py --apply; fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
