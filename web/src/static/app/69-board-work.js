@@ -527,6 +527,42 @@ async function keptResults(id) {
 /// POINTS NOT YET CONFIRMED: every kept or taken result's work, as points.
 function pendingPoints() { return Math.floor([...resultsMem, ...pendingMem].reduce((t, r) => t + (Number(r.work) || 0), 0) / 1e9); }
 
+/// SESSION-LOCAL TIMINGS: an exponentially weighted mean and absolute deviation.
+/// The latest sample protects a sudden slowdown; deviations add jitter margin.
+const refillTiming = { sync: {}, prepare: {}, piece: {}, gap: {} }, rowPaces = new Map();
+function learnTiming(stat, ms) {
+  if (!Number.isFinite(ms) || ms < 0) return;
+  stat.deviation = stat.mean == null ? 0 : (stat.deviation || 0) * 0.8 + Math.abs(ms - stat.mean) * 0.2;
+  stat.mean = stat.mean == null ? ms : stat.mean * 0.8 + ms * 0.2;
+  stat.last = ms;
+}
+const timingUpper = (stat, fallback) => stat.mean == null ? fallback : Math.max(stat.last, stat.mean + 3 * stat.deviation);
+function refillLeadMs() {
+  return Math.min(syncDials.sync_low_ms, Math.max(PIECE_MS,
+    timingUpper(refillTiming.sync, syncDials.poll_ms) + timingUpper(refillTiming.prepare, PIECE_MS) +
+    timingUpper(refillTiming.piece, PIECE_MS) + timingUpper(refillTiming.gap, 0)));
+}
+const rowPaceKey = (t) => JSON.stringify([t.record?.weapon, t.ruler, t.mode, communityPower()]);
+function rowProgress(p, done, total) {
+  const now = performance.now(), progress = total > 0 ? Math.min(1, Math.max(0, done / total)) : 0;
+  const key = rowPaceKey(p.tasks[p.next - 1]);
+  if (key !== p.paceKey) { p.paceKey = key; p.rowMs = 0; }
+  else if (progress > p.sampleProgress && now > p.sampleAt) {
+    const ms = (now - p.sampleAt) / (progress - p.sampleProgress);
+    p.rowMs = p.rowMs ? p.rowMs * 0.7 + ms * 0.3 : ms;
+    learnTiming(refillTiming.piece, now - p.sampleAt);
+  }
+  p.progress = progress;
+  p.sampleProgress = progress;
+  p.sampleAt = now;
+}
+async function prepareBoardRow(t) {
+  const began = performance.now();
+  const order = await api("/api/board/order", { record: t.record, ruler: t.ruler, mode: t.mode }, null, { community: true });
+  if (order?.ok) learnTiming(refillTiming.prepare, performance.now() - began);
+  return order;
+}
+
 /// EVERY ROW THIS PAGE HOLDS and has not answered, by lease — named in full in
 /// every sync, since a live lease a sync leaves out is given back.
 function heldRows() {
@@ -540,9 +576,17 @@ function heldRows() {
 }
 /// …AND THE WORK LEFT IN THEM, at this computer's pace.
 function workLeftMs() {
-  const rows = heldRows().reduce((t, h) => t + h.rows.length, 0);
-  const progress = heldPack?.proto === 8 && !heldPack.done.has(heldPack.row) && !lostRows.has(heldPack.row) ? heldPack.progress || 0 : 0;
-  return Math.max(0, rows - progress) * (boardPaceMs || 60_000);
+  let ms = 0;
+  for (const p of [heldPack, ...packQueue]) {
+    if (p?.proto !== 8) continue;
+    for (const t of p.tasks) {
+      if (p.done.has(t.question) || lostRows.has(t.question)) continue;
+      const active = p === heldPack && p.row === t.question, key = rowPaceKey(t);
+      const pace = (active && key === p.paceKey ? p.rowMs : 0) || rowPaces.get(key) || boardPaceMs || 60_000;
+      ms += pace * (active ? 1 - (p.progress || 0) : 1);
+    }
+  }
+  return Math.max(0, ms);
 }
 function boardSyncBody(id, { want, keep = null, results }) {
   const c = computeConsent(), idle = idleLoad();
@@ -562,6 +606,7 @@ async function boardSync(id, { want = null } = {}) {
   if (syncInFlight) return syncInFlight;
   if (syncFailures && Date.now() < syncNotBefore) return null;
   syncInFlight = (async () => {
+    const began = performance.now();
     const results = (await keptResults(id)).slice(0, 400);
     const early = Date.now() < syncNotBefore;
     const ask = early ? 0 : want == null ? Math.max(0, syncDials.pack8_ms - workLeftMs()) : want;
@@ -588,6 +633,12 @@ async function boardSync(id, { want = null } = {}) {
     if (r.pack && r.pack.tasks && r.pack.tasks.length) {
       packQueue.push({ proto: 8, lease: r.pack.lease, verifier: id, tasks: r.pack.tasks, next: 0, done: new Set(),
         until: sentAt + r.pack.lease_ms });
+    }
+    if (r.work || r.pack?.tasks?.length) learnTiming(refillTiming.sync, performance.now() - began);
+    if (r.pack?.tasks?.length && heldPack && boardVerifyOn() && !computeHeld() && !computeFrozen) {
+      const p = packQueue[packQueue.length - 1];
+      p.prepared = { question: p.tasks[0].question, promise: prepareBoardRow(p.tasks[0]) };
+      await p.prepared.promise;
     }
     return r;
   })().finally(() => { syncInFlight = null; });
@@ -683,7 +734,11 @@ const idleWaitMs = () => (boardProtocol === 8
 /// when due, and work is asked for only when the signal says there is some (or,
 /// with no signal, every `SYNC_FALLBACK_MS`), and never before `next_ms`.
 async function workOnce8(id) {
-  if ((!heldPack || heldPack.next >= heldPack.tasks.length) && !packQueue.length && syncInFlight) await syncInFlight;
+  const exhausted = !heldPack || heldPack.next >= heldPack.tasks.length;
+  if (exhausted && !packQueue.length && syncInFlight) {
+    const began = performance.now(), r = await syncInFlight;
+    if (r?.pack?.tasks?.length || r?.work) learnTiming(refillTiming.gap, performance.now() - began);
+  } else if (exhausted && packQueue.length) learnTiming(refillTiming.gap, 0);
   const kept = await keptResults(id);
   if (!boardVerifyOn() || computeHeld() || computeFrozen) { giveBack(); return false; }
   const now = Date.now();
@@ -721,7 +776,7 @@ async function workOnce8(id) {
 function refill8(id) {
   if (syncInFlight) return;
   const now = Date.now(), oldest = resultsMem.length ? resultsMem.reduce((at, r) => Math.min(at, r.at), Infinity) : now;
-  const low = !packQueue.length && heldRows().length < syncDials.packs_held && workLeftMs() < syncDials.sync_low_ms && now >= syncNotBefore;
+  const low = !packQueue.length && heldRows().length < syncDials.packs_held && workLeftMs() <= refillLeadMs() && now >= syncNotBefore;
   if (low || now - oldest >= syncDials.flush_ms) boardSync(id, low ? {} : { want: 0 });
 }
 /// …AND A ROW STILL RUNNING AS ITS LEASE NEARS ITS END is renewed by a sync that
@@ -991,7 +1046,10 @@ async function packRowOnce(id, p) {
   if (p.lost === t.question || (p8 && lostRows.has(t.question))) { dropCut(); if (p8) p.done.add(t.question); return true; }
   const live = () => boardVerifyOn() && !computeHeld() && !computeFrozen && heldPack === p && p.lost !== t.question;
   const refill = p8 ? () => refill8(id) : () => { if ((p.tasks.length - p.next) * boardPaceMs <= REFILL_MS) askAhead(id); };
-  const order = await api("/api/board/order", { record: t.record, ruler: t.ruler, mode: t.mode }, null, { community: true });
+  const prepared = p8 && p.prepared?.question === t.question ? await p.prepared.promise : null;
+  const order = p8 ? prepared || await prepareBoardRow(t)
+    : await api("/api/board/order", { record: t.record, ruler: t.ruler, mode: t.mode }, null, { community: true });
+  p.prepared = null;
   // A ROW THIS ENGINE REFUSES is said so in the next sync (`refused`): given back,
   // never handed here again, and withdrawn once enough owners refused it.
   if (p8 && order && order.ok === false) {
@@ -1002,18 +1060,26 @@ async function packRowOnce(id, p) {
   if (!order || !order.ok) return true;
   computeStart({ kind: "board", weapon: t.record.weapon, ruler: t.ruler, mode: t.mode, identity: t.identity, record: t.record });
   const began = Date.now();
+  const measuring = performance.now();
+  p.progress = order.request.runs > 0 && from ? Math.min(1, from.folded / order.request.runs) : 0;
+  p.startProgress = p.progress;
+  p.sampleProgress = p.progress;
+  p.sampleAt = measuring;
+  p.paceKey = rowPaceKey(t);
+  p.startPaceKey = p.paceKey;
+  p.rowMs = 0;
   // A BEAT WITHOUT PIECES TOO: a share lowered to nothing folds nothing for a while.
   const beat = setInterval(() => { if (live()) keep(p, t); }, RENEW_RETRY_MS);
   const s = await measureRow(order.request, t.ruler, live, (done, total, cut) => {
     // A FOLD LANDING AFTER THE ROW STOPPED is not this page's to keep or ask on.
     if (!live()) return;
-    p.progress = total > 0 ? Math.min(1, Math.max(0, done / total)) : 0;
+    if (p8) rowProgress(p, cut?.folded ?? done, total);
     computeBeats += 1;
     keep(p, t);
     computeProgress(done, total);
     resumeCut = { engine: ENGINE_ID, verifier: id, lease: p.lease, task: t, cut };
     if (Date.now() - resumeSavedAt >= RESUME_SAVE_MS) saveCut();
-    if (total && done >= AHEAD_AT * total) refill();
+    if (p8 || total && done >= AHEAD_AT * total) refill();
   }, from).finally(() => clearInterval(beat));
   if (!s) {
     computeEnd(null);
@@ -1031,6 +1097,11 @@ async function packRowOnce(id, p) {
   }
   dropCut();
   const ms = Date.now() - began;
+  if (p8 && p.startPaceKey === p.paceKey && p.paceKey === rowPaceKey(t) && p.startProgress < 1) {
+    const key = p.paceKey, took = (performance.now() - measuring) / (1 - p.startProgress);
+    rowPaces.set(key, rowPaces.has(key) ? rowPaces.get(key) * 0.7 + took * 0.3 : took);
+    if (rowPaces.size > 32) rowPaces.delete(rowPaces.keys().next().value);
+  }
   boardPaceMs = boardPaceMs ? boardPaceMs * 0.7 + ms * 0.3 : ms;
   const answer = { question: t.question, score: s.score, metric: s.metric, work: s.work, compute_ms: s.compute_ms, counts: s.counts, lanes: s.lanes };
   if (p8) {
