@@ -674,6 +674,7 @@ ui:
   "Benchmark builds": 基准配装
   "Benchmarks · read-only": "基准场景 · 只读"
   "benchmark": 基准场景
+  "Official scenarios": 官方场景
   "Benchmark": 基准榜
   "Before the fight": 战前
   # UTILITY. Game terms are DE's own Chinese (dict.zh.json):
@@ -1594,6 +1595,7 @@ ui:
   # than growing a second spelling of the same word.
   "Arch-Gun": 曲翼枪械
   "Companion": 同伴
+  "Sentinel": 守护
   "Companion Weapon": 同伴武器
   "Exalted Weapon": 显赫武器
   # Categories the builder does not hold yet. DE's Public Export compatName

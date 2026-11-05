@@ -465,7 +465,7 @@ function renderHome() {
       <div class="wc-tags">${tag("Builder")}</div></div></a>`;
   const companionCard = (c) => `<a class="wcard" href="${companionPath(c)}">
       ${imgTag(null, "wc-img")}
-      <div class="wc-info"><div class="wc-name">${escHtml(c.name)}</div>
+      <div class="wc-info"><div class="wc-name">${escHtml(tr(c.name))}</div>
       <div class="wc-tags">${tag("Builder")}</div></div></a>`;
   // THE OPERATOR IS ITS OWN SLOT, never a Warframe: a player has exactly one,
   // where a Warframe is one of many they can own.
@@ -501,11 +501,11 @@ function renderHome() {
   const sections = ((META && META.equipment_slots) || []).map((slot) => {
     if (slot.holds === "warframe") {
       const all = wfFrames();
-      return { slot, total: all.length, cards: all.filter((f) => nameMatches(homeQuery, f.name)).map(frameCard) };
+      return { slot, total: all.length, cards: all.filter((f) => nameMatches(homeQuery, f.name, f.name_en, slot.name, tr(slot.name))).map(frameCard) };
     }
     if (slot.holds === "companion") {
       const all = compHosts();
-      return { slot, total: all.length, cards: all.filter((c) => nameMatches(homeQuery, c.name)).map(companionCard) };
+      return { slot, total: all.length, cards: all.filter((c) => nameMatches(homeQuery, c.name, tr(c.name), slot.name, tr(slot.name))).map(companionCard) };
     }
     if (slot.holds === "placeholder") {
       return { slot, total: 1, cards: nameMatches(homeQuery, tr(slot.name), slot.name) ? [placeholderCard(slot)] : [] };

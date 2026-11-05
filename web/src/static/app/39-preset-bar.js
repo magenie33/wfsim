@@ -222,13 +222,15 @@ function renderPresetBarIn(bar, cfg) {
     : ddButton(`dd-open-${cfg.domain}`, {value:"", search:true, placeholder:`+ ${cfg.openLabel}`,
       items:cfg.openable().map(p => ({value:presetId(p), label:p.group || p.name})), onPick:id => pickPreset(cfg, id)})}</span>` : "";
   const usedBy = current && cfg.usedBy ? cfg.usedBy(current) : [];
+  const actions = ownOps + roOps + (cfg.boardPicker ? "" : published) + (cfg.extra || "");
   bar.innerHTML = `<span class="plabel">${cfg.label}</span><span class="preset-current ${current ? `pchip sel${current.builtin ? ' ro' : ''}` : 'pnote'}"${current ? ` data-name="${escHtml(presetId(current))}"` : ''}>`
     + (current ? current.builtin ? LOCK_SVG : cloudMark(cfg.domain, current) : "")
     + switcher + (current ? presetInfoButton(cfg, current) : "")
     + (usedBy.length ? `<span class="pby" title="${escHtml(tr("linked by") + ': ' + usedBy.join(' · '))}">↩${usedBy.length}</span>` : "")
-    + ((ownOps || roOps || published || cfg.extra) ? presetActionsHtml(ownOps + roOps + published + (cfg.extra || "")) : "") + `</span>`
+    + presetActionsHtml(actions) + `</span>`
     + (cfg.currentActions && current ? cfg.currentActions(current) : "")
     + `<button type="button" class="pchip add" title="${escHtml(tr("new empty {thing}").replace('{thing}',tr(noun)))}">＋</button>`
+    + (cfg.boardPicker ? published : "")
     + `<button type="button" class="ghost-btn small" data-preset-manage>${escHtml(tr("Manage presets"))} <span class="preset-count">${ps.length}</span></button>`
     + undoButtons(cfg.domain) + `<div class="pshare" hidden></div>`;
   wireUndoButtons(bar, cfg.domain);

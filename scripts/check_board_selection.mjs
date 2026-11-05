@@ -72,13 +72,21 @@ try {
     openRivenAnalysisDialog([], custom.id);
     out.surfaces = ['riven-analyst', 'analysis-board', 'wbench'].every(id => document.querySelector('#' + id + ' [data-board-selected]')?.dataset.boardSelected === custom.id);
     closeRivenAnalysisDialog();
+    history.pushState(null, '', '/weapons/Torid/simulator'); await route();
     renderScenarioBar();
-    const anchor = document.querySelector('[data-board-open]'); anchor.click();
+    const anchor = document.querySelector('[data-board-open]');
+    const bar = anchor.closest('.preset-bar');
+    out.scenarioAdds = !anchor.closest('.preset-actions') && anchor.getBoundingClientRect().width > 0
+      && bar.querySelector('.pchip.add').getBoundingClientRect().width > 0;
+    anchor.click();
     const pop = document.getElementById('board-choice-popover');
     out.scenario = !!pop && !pop.hidden && pop.querySelectorAll('[data-board-axis]').length === 4;
     const target = pop.querySelector('[data-board-axis="shooting"] [data-board-choice]:last-child');
     const id = target.dataset.boardChoice; target.click(); pop.querySelector('[data-board-apply]').click();
     out.opened = scenarioNamed(activeScenario)?.builtin === id;
+    const owned = loadPresetList(SCENARIOS).length;
+    document.querySelector('[data-board-open]').closest('.preset-bar').querySelector('.pchip.add').click();
+    out.emptyScenario = loadPresetList(SCENARIOS).length === owned + 1 && !scenarioNamed(activeScenario)?.builtin;
     out.scenarioNames = builtinScenarios().every(p => p.name === benchmarkName(p.builtin));
     const note = USER_TASK_TYPES.get('optimization').describe({ request: { weapon: 'torid' }, origin: { scenario: custom.id, scenario_name: 'old label' } }).note;
     out.history = note.includes(benchmarkName(custom.id)) && !note.includes('old label');
@@ -101,6 +109,8 @@ try {
     app.check('an unmeasured selection stays available', result.empty);
     app.check('weapon boards, riven analysis and appraisal use the same hierarchy', result.surfaces);
     app.check('the simulator and optimizer share a hierarchical official-board picker', result.scenario && result.opened);
+    app.check('the scenario bar exposes separate empty and official add buttons', result.scenarioAdds);
+    app.check('the empty add button creates an owned editable scenario', result.emptyScenario);
     app.check('official scenario labels use the same complete path', result.scenarioNames);
     app.check('existing task records display the same official board label', result.history);
     await app.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });

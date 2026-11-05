@@ -79,19 +79,23 @@ function initWeaponSearch() {
   input.placeholder = tr("Search…");
   const countEl = $("wsearch-count"), closeEl = $("wsearch-close");
   if (closeEl) closeEl.textContent = tr("Close");
+  const entries = [
+    ...(META.weapons || []).map(w => ({item:w, kind:"weapon"})),
+    ...(META.warframes || []).map(f => ({item:{...f, subtype:"Warframe", effects:["Warframes", tr("Warframes")]}, kind:"warframe"})),
+    ...(META.companions || []).map(c => ({item:{...c, subtype:"Companion", effects:[tr(c.name), "Companions", tr("Companions")]}, kind:"companion"})),
+  ];
   // ONE BOX, NO FILTER ROW: a kind is a word in the box like a name is — the
   // search text carries every weapon's type — and on a phone a row of chips
   // above the list was the list's own room.
   const renderList = () => {
     const q = input.value.trim().toLowerCase();
-    const list = (META.weapons || [])
-      .filter((w) => searchHit(w, q))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const list = entries.filter(({item}) => searchHit(item, q))
+      .sort((a, b) => a.item.name.localeCompare(b.item.name));
     if (countEl) countEl.textContent = tr("{n} results").replace("{n}", list.length);
-    listEl.innerHTML = list.map((w) => `
-      <div class="opt" data-id="${w.id}">
+    listEl.innerHTML = list.map(({item:w, kind}) => `
+      <div class="opt" data-id="${w.id}" data-kind="${kind}">
         ${imgTag(IMG(w.image), "mod")}
-        <div class="info"><div class="mn">${escHtml(weaponEntryName(w))}</div><div class="me"><div>${escHtml(tr(w.subtype || ""))}</div></div></div>
+        <div class="info"><div class="mn">${escHtml(kind === "weapon" ? weaponEntryName(w) : kind === "companion" ? tr(w.name) : w.name)}</div><div class="me"><div>${escHtml(tr(w.subtype || ""))}</div></div></div>
       </div>`).join("") || `<div class="sim-empty">${tr("No matches")}</div>`;
   };
   // WHILE THE RESULTS ARE OPEN the page says so (`wsearch-open`), so what
@@ -118,6 +122,8 @@ function initWeaponSearch() {
     if (!row) return;
     shut();
     input.value = "";
+    if (row.dataset.kind === "warframe") return nav(warframePath(wfFrames().find(f => f.id === row.dataset.id)));
+    if (row.dataset.kind === "companion") return nav(companionPath(compHost(row.dataset.id)));
     switchWeapon(row.dataset.id);
     nav(weaponModPath(row.dataset.id));
   });

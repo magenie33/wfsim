@@ -159,11 +159,13 @@ current entry, info, an action menu, new and management. The switcher searches
 all owned and opened read-only entries by name and contents; its unfiltered
 list shows up to eight recent choices. Local usage times live in
 `wfsim-preset-recent-<domain>`, separate from modification times and saved state.
-Duplicate, rename, delete, share and published-entry controls live under `⋯`.
+Duplicate, rename, delete and share controls live under `⋯`.
 A published entry is read-only, copied into ownership through duplicate, and
 unpinned without touching its source. Pins use identity (`cfg.pins`), never rank;
 the current published entry is always retained. Board entries come from the
-build library; official scenarios also have the shared benchmark picker.
+build library. Scenario bars expose two add controls: a new owned scenario and
+official scenarios through the shared benchmark picker. Other published-entry
+controls live under `⋯`.
 **EDITING A READ-ONLY ENTRY FORKS IT** (`lockReadOnly`): every region of the
 editor that the entry owns shows a not-allowed cursor, and a click anywhere in
 it makes your own copy and opens it — the same copy as ⧉. A control that is only
@@ -368,6 +370,10 @@ No 最 / 第一 / 顶级 / 终极 in anything that reads as promotion — the
 Advertising Law forbids superlatives. ONE WORD FOR ONE THING: a setup is 场景
 and a run is 战斗, and a game term is DE's own (裂罅, 异况超量, 超宏防护);
 `our_chinese_uses_one_word_for_each_thing` holds the list.
+
+The topbar searches weapons, Warframes and companion hosts by name or kind.
+Results show their kind and open that equipment's page. The home search
+also matches Warframe and companion categories and localized host names.
 
 ## Every box takes a Chinese input method
 

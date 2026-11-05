@@ -51,7 +51,7 @@ function scenarioBarCfg() {
     openable: builtinScenarios,
     boardPicker: (anchor) => openBenchSelector(anchor, scenarioNamed(activeScenario)?.builtin,
       (id) => pickPreset(cfg, id)),
-    openLabel: tr("benchmark"),
+    openLabel: tr("Official scenarios"),
     openHint: tr("the official rulers — the same fight on every weapon"),
     readonly: (p) => !!p.builtin,
     roTitle: () => tr("the official rulers — the same fight on every weapon"),

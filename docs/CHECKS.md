@@ -88,8 +88,10 @@ The control assertion fails on a build without Motovore's valence declaration.
 
 All 48 cells keep their full labels and URL identity. The benchmark page,
 build finder, weapon board, riven analyst and appraisal select the same cell
-through the same four dimensions. Official scenario selection opens that cell;
-an unmeasured selection remains available, and the picker fits phone and short
+through the same four dimensions. Official scenario selection opens that cell.
+The scenario bar exposes separate add controls for an empty editable scenario
+and the official picker, without opening its action menu. An unmeasured
+selection remains available, and the picker fits phone and short
 viewports. The short-viewport check fails against an unbounded popover.
 The overview selects one best result per weapon under each build filter,
 hides mode badges while retaining the winner's link, and preserves the original
@@ -1885,6 +1887,9 @@ is shown translated wherever a translation exists, and a close button over them
 shuts the list, empties the box and puts the keyboard away. An empty box opens
 nothing, and a burst of typing draws the list once, when it pauses.
 Primary and secondary Kitguns are both searchable with distinct slot-qualified names.
+Warframes and companions are searchable by name and localized kind; the
+Sentinel also matches its Chinese name. Each kind opens its own page. The home
+search also finds Warframes and the Sentinel by their localized category/name.
 
 ## `check_cloud_page`
 

@@ -42,6 +42,31 @@ const r = await evaluate(`(async () => {
   out.kitgunLabels = [...document.querySelectorAll('#wsearch-list .opt')]
     .filter(el => kits.includes(el.dataset.id) && weaponInfo(el.dataset.id)?.assembly)
     .every(el => el.querySelector('.mn').textContent.includes(tr(ARC_POOL_LABEL[weaponInfo(el.dataset.id).slot])));
+  const frames = META.warframes || [], companions = META.companions || [];
+  const frameIds = await type(tr('Warframe'));
+  out.framesByKind = frames.length > 0 && frames.every(f => frameIds.includes(f.id));
+  const compIds = await type(tr('Companion'));
+  out.companionsByKind = companions.length > 0 && companions.every(c => compIds.includes(c.id));
+  out.guardianZh = (await type('守护')).includes('sentinel');
+  const visit = async (q, kind, id, path) => {
+    await type(q);
+    const row = document.querySelector('#wsearch-list .opt[data-kind="' + kind + '"][data-id="' + id + '"]');
+    if (!row) return false;
+    row.click(); await sleep(700);
+    return location.pathname === path && panel.hidden && input.value === '';
+  };
+  out.frameRoute = await visit(frames[0].name, 'warframe', frames[0].id, warframePath(frames[0]));
+  out.companionRoute = await visit('Sentinel', 'companion', 'sentinel', companionPath(compHost('sentinel')));
+  out.weaponRoute = await visit('Torid', 'weapon', 'torid', weaponModPath('torid'));
+  await nav('/');
+  const homeSearch = async q => {
+    const box = document.getElementById('home-q');
+    box.focus(); box.value = q; box.dispatchEvent(new Event('input', {bubbles:true})); await sleep(400);
+    return [...document.querySelectorAll('#home-sections .wcard')].map(card => card.getAttribute('href'));
+  };
+  const homeFrames = await homeSearch(tr('Warframes'));
+  out.homeFrames = frames.every(f => homeFrames.includes(warframePath(f)));
+  out.homeGuardian = (await homeSearch('守护')).includes(companionPath(compHost('sentinel')));
   return out;
 })()`);
 check("an empty box opens nothing", r.emptyShut === true, JSON.stringify(r));
@@ -51,6 +76,10 @@ check(`a weapon's kind is found by its word in the page's language (${r.shotgunW
 check("...and by its English one", r.byKindEn === true, JSON.stringify(r));
 check("...and a name as before", r.byName === true);
 check("Kitgun search offers both weapon slots with distinct names", r.kitgunEntries && r.kitgunLabels, JSON.stringify(r));
+check("Warframes and companions are searchable by their localized kind", r.framesByKind && r.companionsByKind, JSON.stringify(r));
+check("the Sentinel is searchable by its Chinese name", r.guardianZh, JSON.stringify(r));
+check("weapon, Warframe and companion results open their own pages", r.weaponRoute && r.frameRoute && r.companionRoute, JSON.stringify(r));
+check("the home search also finds Warframes and the Sentinel in Chinese", r.homeFrames && r.homeGuardian, JSON.stringify(r));
 
 // ON A PHONE the results take the screen's width under the bar, what floats over
 // the screen steps aside while they are open, and every row's kind is in the
