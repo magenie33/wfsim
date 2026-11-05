@@ -539,7 +539,7 @@ function renderBuildFinder() {
     slider.oninput = () => { const o = $("fd-depth-at"); if (o) o.innerHTML = finderDepthLabel(w, depthOfSlider(slider)); };
     slider.onchange = () => setFinderDepth(depthOfSlider(slider));
   }
-  box.onclick = (e) => {
+  box.onclick = async (e) => {
     const g = (sel) => e.target.closest(sel);
     let el;
     if ((el = g("[data-freq]"))) { finder.req.add(el.dataset.freq); finder.shown = FINDER_FIRST; return rerender(true); }
@@ -597,9 +597,7 @@ function renderBuildFinder() {
       e.stopPropagation();
       const p = byId(el.dataset.fshare);
       if (!p) return;
-      rememberPublished(buildBarCfg(), p);
-      if (presetId(p) === activePreset) renderPresetBar();
-      else pickPreset(buildBarCfg(), presetId(p));
+      await openLibraryBuild(p);
       return openBuildShare("finder");
     }
     if (g("tr.fdet")) return;

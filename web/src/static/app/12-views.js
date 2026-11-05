@@ -18,7 +18,7 @@ const weaponPath = (id) => headlessWeaponPath(META.weapons || [], id);
 function nav(path) {
   const moved = location.pathname !== path;
   if (moved) history.pushState(null, "", path);
-  route();
+  const routed = route();
   // A NEW PAGE STARTS AT THE TOP.
   //
   // `pushState` does not touch the scroll position, so a click from halfway
@@ -40,6 +40,7 @@ function nav(path) {
   // scroll from the bottom of a 500-weapon grid is an animation nobody asked
   // for on top of a navigation.
   if (moved) window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  return routed;
 }
 /// THE SERVED TITLE STAYS while the reader is still on the page it was served
 /// for. The SPA fallback's canonical is "/", so every other address it answers
