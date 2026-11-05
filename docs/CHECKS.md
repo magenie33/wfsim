@@ -1749,8 +1749,9 @@ Run after a site build.
 
 ## `check_mcp_auth`
 
-The MCP server's door, `mcp/index.js` with its engine stubbed: it describes
-itself as a protected resource, a tool call without a key spends the address's
+The MCP server's door runs `mcp/index.js` with its engine stubbed. The engine's
+data packs must be installed before a query can read its catalog. The server
+describes itself as a protected resource, a tool call without a key spends the address's
 allowance and with one the key's, the handshake and the list spend nothing, a
 key that is not one is a 401, and a key is looked up once. The two build
 tools save a build as its weapon's preset in the page's own shape and read it

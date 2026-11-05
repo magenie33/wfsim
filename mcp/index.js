@@ -6,7 +6,7 @@
 // It holds no state between requests (Streamable HTTP without sessions). It
 // offers the headless queries, and — to a key its person claimed — that
 // person's saved builds (docs/AGENT.md §"The MCP server").
-import { wasm_bindgen, module, ENGINE_DIGEST } from "./engine.js";
+import { wasm_bindgen, module, ENGINE_DIGEST, ENGINE_PACKS } from "./engine.js";
 import { HEADLESS_ABOUT, HEADLESS_QUERIES, HEADLESS_RETIRED, headlessCheckArgs, headlessNo, headlessSchema, headlessToolName,
   headlessUnknown } from "./headless.js";
 import { ACCOUNT_TOOLS, callAccount } from "./account.js";
@@ -61,6 +61,10 @@ let engine = null;
 function api(path, body) {
   if (!engine) {
     wasm_bindgen.initSync({ module });
+    for (const pack of ENGINE_PACKS) {
+      const error = wasm_bindgen.install_data(JSON.stringify(pack));
+      if (error) throw new Error(error);
+    }
     engine = wasm_bindgen;
   }
   return JSON.parse(engine.api(path, JSON.stringify(body ?? {})));

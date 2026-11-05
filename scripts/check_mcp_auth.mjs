@@ -1,6 +1,6 @@
 // THE MCP SERVER'S DOOR: who is calling, and how often (docs/AGENT.md §"The MCP
-// server"). `mcp/index.js` itself, with its engine stubbed — nothing here runs a
-// query — the site's worker stubbed at `SITE`, and each limiter a counter.
+// server"). `mcp/index.js` itself, with its engine stubbed — nothing here runs an
+// engine fight — the site's worker stubbed at `SITE`, and each limiter a counter.
 // What it holds: the server describes itself as a protected resource, a tool
 // call without a key spends the address's allowance and with one the key's, the
 // handshake and the list spend nothing, a key that is not one is refused rather
@@ -14,8 +14,10 @@ export async function resolve(spec, ctx, next) {
     return { url: "data:text/javascript," + encodeURIComponent(
       "const META = { weapons: [{ id: 'torid', name: 'Torid', evolutions: [], arcane_pools: ['primary'] }]," +
       " mod_pools: { rifle: [{ id: 'serration', max_rank: 10 }, { id: 'split_chamber', max_rank: 5 }] } };" +
-      "export const wasm_bindgen = { initSync() {}, install_data() { return ''; }, api(path) { return path === '/api/meta' ? JSON.stringify(META) : '{}'; } };" +
-      "export const module = null; export const ENGINE_DIGEST = 'test'; export const ENGINE_PACKS = [];"), shortCircuit: true };
+      "let installed = false;" +
+      "export const wasm_bindgen = { initSync() {}, install_data(pack) { installed = JSON.parse(pack).fixture === 'catalog'; return installed ? '' : 'invalid catalog pack'; }," +
+      " api(path) { if (!installed) throw new Error('engine data must be installed before queries'); return path === '/api/meta' ? JSON.stringify(META) : '{}'; } };" +
+      "export const module = null; export const ENGINE_DIGEST = 'test'; export const ENGINE_PACKS = [{ fixture: 'catalog' }];"), shortCircuit: true };
   }
   return next(spec, ctx);
 }`));
