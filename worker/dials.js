@@ -40,7 +40,7 @@ export const DIALS = {
   sync_low_ms: { default: 120_000, min: 10_000, max: 1_800_000, unit: "ms",
     says: "a protocol 8 client syncs for more once this little of its work is left" },
   sync_floor_ms: { default: 60_000, min: 5_000, max: 3_600_000, unit: "ms",
-    says: "the soonest a protocol 8 client is handed work again after a sync that handed it some" },
+    says: "the refill gate after a hand-out, shortened for a bootstrap or a pack reaching sync_low_ms sooner" },
   sync_idle_ms: { default: 20_000, min: 5_000, max: 3_600_000, unit: "ms",
     says: "the soonest a protocol 8 client is handed work again after a sync that found none" },
   flush_ms: { default: 600_000, min: 60_000, max: 3_600_000, unit: "ms",

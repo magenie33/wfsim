@@ -593,6 +593,14 @@ someone waits on goes alone, never to a computer holding a pack. `sync_off`
 answers `fallback: 7`. `WFSIM_SYNC_PROC=1` runs it with each sync one call
 (dial `sync_proc`), alone and beside `WFSIM_SETTLE_ASYNC=1`.
 
+Bootstrap and small packs permit refill before they run out; scaled paced gates
+match the persisted deadline, and renewal-only replies add no delay.
+The official page's shared desktop/browser functions run with a controlled
+refill promise: buffered work never waits on it, exhaustion consumes its reply
+without entering the idle poll, retries wake at the gate, and local pack limits
+bound refill calls. A standalone calculation returned by a background refill
+is retained and executed before another sync can give it back.
+
 ## `check_sync_proc`
 
 Plain node on PGlite: protocol 8's sync as one call (`board_sync`,

@@ -223,7 +223,7 @@ async function rest(x, { taken, dropped }) {
     return say({ ...base, early: true, pack: null, work: null, next_ms: Math.max(0, Date.parse(me.next_at) - now) });
   }
   const holds = await db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM questions WHERE leased_to = ? AND lease_until > ?").bind(id, at).first();
-  if (want <= 0 || holds.packs >= d.packs_held) return say({ ...base, pack: null, work: null, next_ms: ms(d.sync_floor_ms) });
+  if (want <= 0 || holds.packs >= d.packs_held) return say({ ...base, pack: null, work: null, next_ms: 0 });
 
   const engine = b.engine;
   const head = (await f.headOf(env, w, engine, now, d).all()).results[0];
@@ -263,14 +263,12 @@ async function alone(x, base, idle) {
 }
 
 /// THE PACK HANDED OUT, and when to come back.
-async function packed({ db, now, id, ms, say, d, grace, served }, base, idle, lease, lease_ms, questions, wrote = false) {
+async function packed({ db, now, id, ms, say, d, grace, served, pace }, base, idle, lease, lease_ms, questions, wrote = false) {
   const tasks = questions.map(packTaskOf).filter(Boolean);
   if (!tasks.length) return idle();
-  const next = now + ms(d.sync_floor_ms);
+  const next = now + ms(Math.min(d.sync_floor_ms, Math.max(0, tasks.length * (pace || 0) - d.sync_low_ms)));
   if (!wrote) await db.prepare("UPDATE verifiers SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
-  // COME BACK AT THE FLOOR, the gate the server holds it to: the client syncs
-  // only as its work runs low anyway. Advice from its pace told a page with no
-  // pace yet 480 s for three rows of a few seconds, and it sat idle the rest.
+  // The gate must not outlast the pack's estimated refill threshold.
   return say({ ...base, work: null, pack: { lease, lease_ms, tasks }, next_ms: next - now,
     ...(grace ? { engine: served.engine, accepted_until: grace.until, ...(grace.join ? { join: true } : {}) } : {}) });
 }
@@ -307,7 +305,8 @@ async function viaProcedure(x, given) {
     fair: { asking_since: iso(now - 2 * d.asked_every_ms), per: rows,
       short_rows: rows, cap: d.compute_cap, cap_since: iso(now - 600_000), throttle },
     pack: { by_pace: pace ? Math.round(Math.max(1, want) / pace) : d.pack_first, max: d.pack8_max, lease: newLease(),
-      short_until: iso(now + d.pack_lease_ms), long_until: iso(now + d.sync_lease_ms) },
+      short_until: iso(now + d.pack_lease_ms), long_until: iso(now + d.sync_lease_ms),
+      refill: { pace: pace || 0, low: d.sync_low_ms, floor: d.sync_floor_ms, scale: d.sync_scale_pct } },
   };
   const r = await callSync(db, call);
   // A CHECK'S DATABASE SETTLES WHAT WAS QUEUED AT ONCE (scripts/pg/test_db.mjs).
@@ -326,7 +325,7 @@ async function viaProcedure(x, given) {
     case "stale": return idle({ stale: true });
     case "banned": return say({ ...base, banned: true, until: r.until, pack: null, work: null, next_ms: ms(d.sync_idle_ms) });
     case "early": return say({ ...base, early: true, pack: null, work: null, next_ms: Math.max(0, Date.parse(r.next_at) - now) });
-    case "full": return say({ ...base, pack: null, work: null, next_ms: ms(d.sync_floor_ms) });
+    case "full": return say({ ...base, pack: null, work: null, next_ms: 0 });
     case "busy": return idle({ busy: true });
     case "alone": return alone(x, base, () => idle({}, false));
     case "pack": return packed(x, base, () => idle({}, false), r.lease, r.short ? d.pack_lease_ms : d.sync_lease_ms,

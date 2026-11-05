@@ -586,6 +586,7 @@ DECLARE
   v_fair record;
   v_short boolean;
   v_size bigint;
+  v_next text;
   v_got jsonb;
   v_ds jsonb;
   v_unwanted jsonb := '[]'::jsonb;
@@ -778,7 +779,11 @@ BEGIN
     r := r || jsonb_build_object('outcome', 'idle');
     RETURN;
   END IF;
-  UPDATE verifiers SET next_at = p ->> 'floor_at' WHERE id = v_dev;
+  v_next := to_char((v_at::timestamptz + make_interval(secs => round(
+    LEAST((p #>> '{pack,refill,floor}')::numeric, GREATEST(0,
+      jsonb_array_length(v_got) * (p #>> '{pack,refill,pace}')::numeric - (p #>> '{pack,refill,low}')::numeric))
+      * (p #>> '{pack,refill,scale}')::numeric / 100) / 1000)) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
+  UPDATE verifiers SET next_at = v_next WHERE id = v_dev;
   r := r || jsonb_build_object('outcome', 'pack', 'short', v_short, 'lease', v_lease, 'questions', v_got);
 END $$;
 
