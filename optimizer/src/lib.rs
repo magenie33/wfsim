@@ -36,6 +36,9 @@ mod evaluate;
 mod funnel;
 mod pool;
 mod threads;
+mod slots;
+
+pub use slots::expand_with_slots;
 
 pub use enumerate::{
     enumerate_candidates, enumerate_candidates_each, enumerate_candidates_observed, expand_one,

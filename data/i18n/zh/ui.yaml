@@ -3632,7 +3632,35 @@ ui:
   "{x} conflicts with the allowed evolutions": "{x} 与允许的进化冲突"
   "click an option to exclude it, or require a mod in every final build; conflicting conditions block the search": 点击选项可排除它，也可要求最终配装必须包含某张 Mod；条件冲突时无法开始搜索
 
+  "Final requirements": "最终要求"
+  "A start is a build the search begins from. Pin the choices it must keep. Each start keeps its own answer; final requirements apply to every result.": "搜索从起点配装出发，pin 指定必须保留的选择。每个起点都有自己的答案；最终要求对所有结果生效。"
+  "Every final build must satisfy these conditions before the top results are selected.": "先满足这些条件，再从符合条件的方案中选取前几名。"
+  "No final requirements": "未设置最终要求"
+  "use these pins as final requirements": "将这些 pin 用作最终要求"
+  "Pin a MOD to require it, then choose Contains or Fixed slot.": "为 MOD 设置 pin 后，可选择“必须包含”或“固定槽位”。"
+  "Contains": "必须包含"
+  "Fixed slot": "固定槽位"
+  "MOD pin type": "MOD 的 pin 类型"
+  "Checking compatibility…": "正在检查兼容性…"
+  "compatible with final requirements": "与最终要求兼容"
+  "The search conditions are incompatible.": "搜索条件不兼容。"
+  "Result set": "查看结果"
+  "Overall top results": "所有起点的前几名"
+  "answer with its pins": "保留该起点 pin 的答案"
+  "grip conflicts with the final requirements": "握柄的 pin 与最终要求冲突"
+  "link conflicts with the final requirements": "连接件的 pin 与最终要求冲突"
+  "loader conflicts with the final requirements": "装填器的 pin 与最终要求冲突"
+  "mode conflicts with the final requirements": "模式的 pin 与最终要求冲突"
+  "exilus slot conflicts with the final requirements": "Exilus 槽位的 pin 与最终要求冲突"
+  "progenitor element conflicts with the final requirements": "始源元素的 pin 与最终要求冲突"
+  "evolutions conflicts with the final requirements": "进化的 pin 与最终要求冲突"
+  "the same MOD is fixed to different slots in the start and final requirements": "同一张 MOD 在起点与最终要求中被固定到了不同槽位"
+  "MOD slot layout does not match the ordered mods": "MOD 槽位布局与配装中的卡牌顺序不一致"
+
 effect_phrases:
+  - ['^slot ([0-9]+) is fixed to different mods in the start and final requirements$', '起点与最终要求在第 $1 槽固定了不同的 MOD']
+  - ['^arcane seat ([0-9]+) conflicts with the final requirements$', '第 $1 个赋能槽位的 pin 与最终要求冲突']
+  - ['^no free slot for the mod required by the start at slot ([0-9]+)$', '没有空余槽位可容纳起点第 $1 槽要求保留的 MOD']
   - ['Ammo Pickup Conversion', '弹药拾取转换']
   - ['Self-Stagger Reduction', '自我击退减免']
   - ['Status Spread Chance', '异常扩散几率']

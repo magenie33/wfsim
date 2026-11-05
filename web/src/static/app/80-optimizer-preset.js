@@ -44,7 +44,7 @@ const builtinSearchActive = () => String(activeOptPreset || "").startsWith("sear
 function lockBuiltinSearch() {
   const on = builtinSearchActive();
   // The two run terms are bare controls, so their LABEL is the region.
-  ["opt-starts", "opt-limits", "opt-finalists", "opt-cand-runs"].map((id) => $(id)).filter(Boolean)
+  ["opt-starts", "opt-final", "opt-limits", "opt-finalists", "opt-cand-runs"].map((id) => $(id)).filter(Boolean)
     .map((el) => (el.matches("input,select") ? el.closest("label") || el : el))
     .forEach((b) => lockReadOnly(b, on, optBarCfg));
   const note = $("opt-builtin");
@@ -74,6 +74,7 @@ function bootstrapOptPresets() {
 function snapshotOpt() {
   return {
     starts: JSON.parse(JSON.stringify(opt.starts)),
+    final: opt.final ? JSON.parse(JSON.stringify(opt.final)) : null,
     limits: JSON.parse(JSON.stringify(opt.limits || normalizeLimits(null))),
     candidate_runs: optRun.candidate_runs,
     finalists: optRun.finalists,
@@ -81,7 +82,7 @@ function snapshotOpt() {
 }
 
 // A new search: one blank start, the run settings left alone.
-const blankOpt = () => ({ starts: [blankStart()], limits: normalizeLimits(null),
+const blankOpt = () => ({ starts: [blankStart()], final: null, limits: normalizeLimits(null),
   candidate_runs: optRun.candidate_runs, finalists: optRun.finalists });
 
 /// How many builds a search answers with: 1–100, the server's own clamp.
@@ -110,6 +111,8 @@ function applyOptState(st) {
     .map((s) => normalizeStart(s, w))
     .filter((s) => s.build && (!s.build.weapon || s.build.weapon === w));
   if (!opt.starts.length) opt.starts = [blankStart()];
+  opt.final = st.final ? normalizeStart(st.final, w) : null;
+  if (opt.final?.build.weapon && opt.final.build.weapon !== w) opt.final = null;
 }
 
 function applyOptPreset(st) {
@@ -191,11 +194,13 @@ function updateOptEstimate() {
   // waits until one side changes, and says so here.
   const blocked = opt.limits && startsBlocked();
   if (blocked) {
-    $("opt-estimate").innerHTML += ` · <span class="warn">${escHtml([...requiredConflicts({}), ...opt.starts.flatMap((s, i) => startConflicts(s).blocked.map((e) => `${tr("start")} ${i + 1}: ${e}`))].join(" · "))}</span>`;
+    const why = [...requiredConflicts({}), ...opt.starts.flatMap((s, i) => startConflicts(s).blocked.map((e) => `${tr("start")} ${i + 1}: ${e}`))];
+    $("opt-estimate").innerHTML += ` · <span class="warn">${escHtml(why.join(" · ") || tr("The search conditions are incompatible."))}</span>`;
   }
   // Never re-enable while a background job is still running.
   $("run-opt").disabled = !!optimizationTaskForPage() || !!blocked;
   lockBuiltinSearch();
+  scheduleOptCompatibility();
   // Every search mutation funnels through here — AUTO-SAVE into the active
   // preset (debounced), same contract as the build bar.
   optSaveTimer = deferSave("search", () => {
@@ -255,6 +260,7 @@ function optimizeBody() {
     finalists: optRun.finalists,
     strategy: "quick",
     starts, candidate_runs: optRun.candidate_runs,
+    ...(opt.final && opt.final.fixed.length ? { final: startPayload(opt.final) } : {}),
     // What the player ruled out; the rest of the builder's lists is the scope.
     limits: opt.limits,
   };
@@ -263,7 +269,7 @@ function optimizeBody() {
 /// The search this page's controls state. It takes no argument: it is a click
 /// listener, and the event it is handed is not a request.
 function runOptimize() {
-  return runSearch(optimizeBody);
+  return runSearch(optimizeBody).catch(e => { presetToast(e.message || String(e)); return {ok:false,error:e.message || String(e)}; });
 }
 
 /// `request()` builds the whole request: a riven gain's, the one search every
@@ -274,6 +280,12 @@ async function runSearch(request, options = {}) {
   const origin = captureOptimizationOrigin();
   origin.build = frozenTaskBuild(origin.build, body);
   origin.appraisal = options.appraisal ? taskClone(options.appraisal) : null;
+  const checked = await api("/api/optimize/check", body);
+  if (!checked || checked.ok === false || !checked.compatible) {
+    optCompatibility = { key: JSON.stringify(body), result: checked };
+    renderOptCompatibility();
+    throw new Error((checked?.starts || []).filter(s => !s.compatible).map(s => `${tr("Start")} ${s.start + 1}: ${tf(s.error)}`).join(" · ") || checked?.error || tr("The search conditions are incompatible."));
+  }
   const queue = await initUserTasks();
   const task = await queue.create("optimization", body, origin);
   renderOptimizationTask();
@@ -425,12 +437,16 @@ function forgetOptResults(weapon) {
 /// names its starts, what each scored before and how many changes it took; any
 /// other row names the answer it is nearest to and what differs from it. A
 /// start that reached no legal build is said so rather than left out.
+let optResultStart = "all";
 function renderOptResults(r) {
+  if (optLast !== r) optResultStart = "all";
   optLast = r;
   keepOptResults(r);
   const w = weaponInfo($("weapon").value) || {};
   const d = r.duration;
-  const rows = r.results || [];
+  const answers = r.start_results || [];
+  const selected = answers.find(a => String(a.start) === optResultStart);
+  const rows = selected ? [{...selected.result, rank:1}] : r.results || [];
   const lead = rows[0];
   // TIED WITH THE LEADER when the two differ by less than twice their
   // combined standard error.
@@ -479,7 +495,10 @@ function renderOptResults(r) {
     : "each start improved until no change helped — the best those starts reach, not a proven best; add a start to look further"))}</span>`
     + `${r.cancelled ? ` · <span class="warn">${escHtml(tr("cancelled — best so far"))}</span>` : ""}`
     + ` · vs ${escHtml(r.target.name)} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""}${r.target.empowered ? ` (${escHtml(empowermentLabel(false, r.target.empowered))})` : ""} · ${d ?? "?"} s · ${(r.final_runs || 0).toLocaleString()} ${escHtml(tr("runs each"))}`;
-  $("opt-results").innerHTML = `<h4 class="sim-h">③ ${escHtml(tr("Results"))}</h4><div class="opt-board" id="opt-board"></div><div class="opt-meta">${meta}</div>${html}${failed}`;
+  const filter = answers.length ? `<label class="opt-result-filter">${escHtml(tr("Result set"))} <select id="opt-result-start"><option value="all">${escHtml(tr("Overall top results"))}</option>${
+    answers.map(a => `<option value="${a.start}"${String(a.start) === optResultStart ? " selected" : ""}>${escHtml(tr("Start"))} ${a.start + 1} · ${escHtml(tr("answer with its pins"))}</option>`).join("")}</select></label>` : "";
+  $("opt-results").innerHTML = `<h4 class="sim-h">③ ${escHtml(tr("Results"))}</h4><div class="opt-board" id="opt-board"></div><div class="opt-meta">${meta}</div>${filter}${html}${failed}`;
+  if ($("opt-result-start")) $("opt-result-start").onchange = e => { optResultStart = e.target.value; renderOptResults(r); };
   const byRank = new Map(rows.map((res) => [res.rank, res]));
   $("opt-results").querySelectorAll(".opt-add").forEach((el) =>
     el.addEventListener("click", () => addResult(JSON.parse(el.dataset.r), el)));
@@ -527,7 +546,7 @@ async function resultToState(res) {
   const st = frozenTaskBuild(stateFromBuild(payload, $("weapon").value, res.exilus), { ...payload, weapon: $("weapon").value });
   // …and the POLARITIES, which are the page's alone: a payload states the
   // build, and the cheapest layout that fits it is a plan the builder makes.
-  st.slots = await planSlotsAlone(st.slots.map((s, i) => ({ mod: s.mod, pol: innate[i], rank: s.rank })));
+  st.slots = await planSlotsAlone(st.slots.map((s, i) => ({ mod: s.mod, pol: innate[i], rank: s.rank })), !!payload.mod_slots);
   // NO `sim`. Copying the optimizer's own buff config into the scenario so
   // that "add then Run Sim" matches its score makes a result rewrite the fight
   // you are working in; a result is a BUILD. The two configs can still

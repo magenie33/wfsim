@@ -62,6 +62,72 @@ const r = await app.evaluate(`(async () => {
   renderOptLimits();
   document.querySelector('#opt-limit-mods [data-require="semi_pistol_cannonade"]').click();
   out.evolutionConflict = !!startsBlocked();
+
+  await open('plague_kripath_two_handed');
+  editStart(0); await wait(400);
+  equipMod(0, 'reach'); renderMods(); await wait(200);
+  document.querySelector('.start-pin[data-k="mods:0"]').click();
+  out.containsPin = startEdit.fixed.has('mods:0');
+  const placement = document.querySelector('#mod-slots .start-placement');
+  if (placement) { placement.value = 'slot'; placement.dispatchEvent(new Event('change')); }
+  await wait(150);
+  const pinHost = document.querySelector('#mod-slots .slot.fixed-pin');
+  out.pinLayout = pinHost ? {info:pinHost.querySelector('.info')?.getBoundingClientRect().width,scroll:pinHost.scrollWidth,width:pinHost.clientWidth} : null;
+  out.pinReadable = !!out.pinLayout && out.pinLayout.info >= 100 && out.pinLayout.scroll <= out.pinLayout.width;
+  if (pinHost) {
+    pinHost.style.flexWrap = 'nowrap';
+    out.pinLayoutNegative = pinHost.querySelector('.info')?.getBoundingClientRect().width < 100;
+    pinHost.style.flexWrap = '';
+  }
+  finishStartEdit(true); await wait(700);
+  out.slotPin = startPayload(opt.starts[0]).fixed.some(p => p.kind === 'mods' && p.idx === 0 && p.placement === 'slot');
+  document.querySelector('[data-final="0"]')?.click(); await wait(500);
+  out.finalPayload = optimizeBody().final?.fixed.some(p => p.placement === 'slot');
+  const finalSaved = snapshotOpt(); opt.final = null; applyOptState(finalSaved);
+  out.finalSaved = startPayload(opt.final || {build:{}}).fixed.some(p => p.placement === 'slot');
+  const parts = { ...opt.starts[0].build.assembly };
+  opt.final = { build: {...opt.starts[0].build, assembly:parts}, fixed:['assembly:0'] };
+  const other = assemblySpec($('weapon').value).grips.find(g => g.id !== parts.grip).id;
+  opt.starts = [{build:{...opt.starts[0].build, assembly:{...parts,grip:other}},fixed:['assembly:0']}];
+  renderOptStarts(); renderOptFinal(); updateOptEstimate();
+  for(let i=0;i<120 && optCompatibility?.key !== optCompatibilityKey();i++) await wait(50);
+  out.partConflict = optCompatibility?.result.compatible === false && $('run-opt').disabled
+    && $('opt-compatibility').textContent.includes('grip');
+  opt.starts[0].fixed = []; updateOptEstimate();
+  for(let i=0;i<120 && optCompatibility?.key !== optCompatibilityKey();i++) await wait(50);
+  out.freePartCompatible = optCompatibility?.result.compatible === true && !$('run-opt').disabled;
+
+  await open('braton_prime');
+  const ask = {weapon:'braton_prime',strategy:'quick',duration:1,enemy:'thrax_centurion',level:100,
+    runs:2,candidate_runs:1,finalists:1,build_size:2,
+    mods:{serration:'search',hellfire:'search',cryo_rounds:'search'},
+    starts:[{slots:['hellfire','cryo_rounds'],fixed:[{kind:'mods',idx:0},{kind:'mods',idx:1}]},{slots:[]}]};
+  const job = await api('/api/optimize',ask);
+  let status;
+  for(let i=0;i<300;i++) { status = await api('/api/optimize/status',{id:job.job_id}); if(status.phase === 'done') break; await wait(100); }
+  const result = status?.result;
+  out.retainedPinnedAnswer = (result?.start_results || []).some(a => a.start === 0
+    && a.result.mods.includes('hellfire') && a.result.mods.includes('cryo_rounds'));
+  if(result?.ok) {
+    renderOptResults(result); await wait(300);
+    const filter = $('opt-result-start');
+    out.resultFilter = !!filter;
+    if(filter) {filter.value='0';filter.dispatchEvent(new Event('change'));await wait(500);}
+    out.filteredPinnedAnswer = $('opt-results').textContent.includes('Hellfire') && $('opt-results').textContent.includes('Cryo Rounds');
+  }
+  const sparseAsk = {...ask,starts:[{slots:[null,null,null,null,null,null,null,'hellfire'],fixed:[{kind:'mods',idx:7,placement:'slot'}]}]};
+  const sparseJob = await api('/api/optimize',sparseAsk);
+  for(let i=0;i<300;i++) { status = await api('/api/optimize/status',{id:sparseJob.job_id}); if(status.phase === 'done') break; await wait(100); }
+  if(status?.result?.results?.length) {
+    const back = await resultToState(status.result.results[0]);
+    out.sparseSlot = back.slots[7].mod === 'hellfire';
+    out.sparseWire = headlessSeat(META,back).mod_slots?.[7] === 'hellfire';
+  }
+  const wire = {mods:['hellfire','vigilante_supplies'],mod_slots:[null,null,null,null,null,null,null,'hellfire']};
+  const decoded = headlessStateAxes(META,wire,'braton_prime');
+  out.sparseExilus = decoded.slots[7].mod === 'hellfire' && decoded.slots[8].mod === 'vigilante_supplies';
+  try { headlessStateAxes(META,{...wire,mod_slots:['serration']},'braton_prime'); out.badLayoutRefused=false; }
+  catch(_) { out.badLayoutRefused=true; }
   return out;
 })()`);
 console.log(JSON.stringify(r, null, 1));
@@ -77,4 +143,13 @@ app.check("an unfixed full start can make room for a required mod", r.fullUnfixe
 app.check("pinned slots and exclusions report contradictions and block running", r.pinsConflict && r.exclusionConflict, r.message);
 app.check("removing the conflicting requirement enables running", r.clearWorks);
 app.check("requirements use the whole weapon pool and report evolution conflicts", r.evolutionConflict);
+app.check("MOD pins distinguish containment and a physical slot without squeezing the card", r.containsPin && r.slotPin && r.pinReadable, JSON.stringify(r.pinLayout));
+app.check("the layout check rejects a pin control that squeezes the card", r.pinLayoutNegative);
+app.check("final constraints reach the request and survive saved search state", r.finalPayload && r.finalSaved);
+app.check("an incompatible part pin blocks the entire search automatically", r.partConflict);
+app.check("an unfixed part can adapt to final requirements", r.freePartCompatible);
+app.check("a pinned start keeps its answer outside the overall top result", r.retainedPinnedAnswer);
+app.check("the results can show the pinned start's retained answer", r.resultFilter && r.filteredPinnedAnswer);
+app.check("fixed sparse slots survive result application and the build wire", r.sparseSlot && r.sparseWire);
+app.check("sparse layout metadata preserves the exilus and refuses conflicting card data", r.sparseExilus && r.badLayoutRefused);
 await app.finish("optimizer requirements and part pins hold");

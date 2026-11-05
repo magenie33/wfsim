@@ -511,7 +511,7 @@ const AGENT_ACTIONS = [
     run() {
       return {
         starts: opt.starts.map((s) => ({ ...startPayload(s), fixed: s.fixed.slice() })),
-        limits: JSON.parse(JSON.stringify(opt.limits)),
+        limits: JSON.parse(JSON.stringify(opt.limits)), final: opt.final ? startPayload(opt.final) : null, compatibility: optCompatibility?.key === optCompatibilityKey() ? optCompatibility.result : null,
         blocked: opt.starts.map((s, i) => ({ start: i + 1, ...startConflicts(s) })).filter((x) => x.blocked.length || x.replaced.length),
         candidate_runs: optRun.candidate_runs,
         finalists: optRun.finalists,
@@ -773,7 +773,7 @@ const AGENT_ACTIONS = [
     async run() {
       if (optJobId != null) return agentNo("search_running", { try: "optimizer.search.read" });
       if ($("run-opt").disabled) return agentNo("scope_not_runnable", { because: $("opt-estimate").textContent.trim() });
-      await runOptimize();
+      const task = await runOptimize(); if (task?.ok === false) return agentNo("scope_not_runnable", {because:task.error});
       return { text: "search started", candidates: $("opt-estimate").textContent.trim() };
     },
   },

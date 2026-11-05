@@ -515,6 +515,8 @@ function headlessDefaultScenario(meta, contact, metric) {
 /// with the frame's builds can resolve, is passed in, and absent means the
 /// weapon's own default holder.
 function headlessSeat(meta, st, wielder) {
+  const main = (st.slots || []).slice(0, 8);
+  const sparse = main.some((s, i) => !s.mod && main.slice(i + 1).some(x => x.mod));
   return {
     weapon: st.weapon,
     wielder,
@@ -522,6 +524,7 @@ function headlessSeat(meta, st, wielder) {
     arcane: st.arcane,
     arcane_rank: st.arcaneRank,
     mods: (st.slots || []).filter((x) => x.mod).map((s) => headlessRankedId(meta, s.mod, s.rank)),
+    ...(sparse ? { mod_slots: main.map(s => s.mod ? headlessRankedId(meta, s.mod, s.rank) : null) } : {}),
     mode: st.mode,
     valence_element: (st.valence || {}).element,
     valence_bonus: (st.valence || {}).bonus,
@@ -537,9 +540,18 @@ function headlessStateAxes(meta, p, weapon, exilusId) {
   const card = headlessModOf(meta);
   const ids = (p.mods || []).filter(Boolean);
   const stanceId = ids.find((id) => (card(headlessSplitRank(id)[0]) || {}).stance);
+  if (Array.isArray(p.mod_slots) && exilusId == null) {
+    const outside = ids.filter(id => id !== stanceId && !p.mod_slots.includes(id));
+    if (outside.length > 1 || outside.some(id => !card(headlessSplitRank(id)[0])?.exilus)) throw new Error("MOD slot layout does not match the ordered mods");
+    exilusId = outside[0] || "none";
+  }
   const main = ids.filter((id) => id !== exilusId && id !== stanceId);
   const sl = Array.from({ length: 10 }, () => ({ mod: null, pol: null, rank: null }));
   main.slice(0, 8).forEach((id, i) => { sl[i].mod = id; });
+  if (Array.isArray(p.mod_slots)) {
+    if (JSON.stringify(p.mod_slots.filter(Boolean)) !== JSON.stringify(main.slice(0, 8))) throw new Error("MOD slot layout does not match the ordered mods");
+    p.mod_slots.slice(0, 8).forEach((id, i) => { sl[i].mod = id || null; });
+  }
   if (exilusId && exilusId !== "none" && ids.includes(exilusId)) {
     sl[HEADLESS_EXILUS].mod = exilusId;
   } else if (main.length > 8) {
@@ -727,7 +739,8 @@ function headlessStartPayload(meta, s) {
     mode: b.mode || null,
     assembly: b.assembly ? { ...b.assembly } : null,
     valence_element: (b.valence || {}).element || null,
-    fixed: (s.fixed || []).map((k) => { const [kind, idx] = k.split(":"); return { kind, idx: Number(idx) }; }),
+    fixed: (s.fixed || []).map((k) => { const [kind, idx] = k.split(":");
+      return { kind: kind === "slots" ? "mods" : kind, idx: Number(idx), ...(kind === "slots" ? { placement: "slot" } : {}) }; }),
   };
 }
 

@@ -91,7 +91,7 @@ fn contradictions_fail_before_search() {
     cases.push((v, "mutually exclusive"));
     let mut v = request();
     v["build_size"] = json!(1);
-    v["starts"] = json!([{"slots":[null],"fixed":[{"kind":"mods","idx":0}]}]);
+    v["starts"] = json!([{"slots":[],"fixed":(0..8).map(|idx| json!({"kind":"mods","idx":idx})).collect::<Vec<_>>()}]);
     cases.push((v, "main slots"));
     for (v, expected) in cases {
         let e = match parse_optimize(&v) { Err(e) => e, Ok(_) => panic!("accepted contradiction: {v}") };
@@ -186,4 +186,121 @@ fn a_modular_quick_start_keeps_the_stance_out_of_its_eight_main_slots() {
     assert!(out["failed_starts"].as_array().unwrap().is_empty(), "{out}");
     let sim = crate::simulate::simulate_json(&row["replay"]);
     assert_eq!(sim["score"], row["kill_progress"]);
+}
+
+#[test]
+fn a_pinned_zaw_build_survives_final_simulation_and_fleet() {
+    let cards = ["pressure_point", "true_steel", "organ_shatter", "reach", "fury",
+        "fever_strike", "north_wind", "shocking_touch"];
+    let parts = json!({"grip":"jayap", "link":"jai"});
+    let mut fixed: Vec<Value> = (0..8).map(|idx| json!({"kind":"mods", "idx":idx})).collect();
+    fixed.extend([json!({"kind":"mode", "idx":0}),
+        json!({"kind":"arcane", "idx":0}), json!({"kind":"arcane", "idx":1}),
+        json!({"kind":"assembly", "idx":0}), json!({"kind":"assembly", "idx":1})]);
+    let v = json!({"weapon":"plague_kripath_two_handed", "stance":"shimmering_blight",
+        "strategy":"quick", "duration":1, "runs":2, "candidate_runs":1, "finalists":5,
+        "mods":cards.iter().map(|id| (id.to_string(),json!("search"))).collect::<serde_json::Map<_,_>>(),
+        "build_size":8, "modes":{"base":"search", "heavy":"search"},
+        "arcanes":{"exodia_triumph":"search", "exodia_valor":"search", "melee_doughty":"search", "melee_influence":"search"},
+        "assemblies":[parts, {"grip":"seekalla", "link":"jai"}, {"grip":"jayap", "link":"vargeet_ii_jai"}],
+        "starts":[{"slots":cards, "assembly":parts, "mode":"base",
+            "arcane":["exodia_triumph", "melee_doughty"], "fixed":fixed}]});
+    let alone = run(&v);
+    let rows = alone["results"].as_array().unwrap();
+    assert!(!rows.is_empty(), "{alone}");
+    for row in rows {
+        let chosen = row["mods"].as_array().unwrap();
+        assert!(cards.iter().all(|id| chosen.contains(&json!(id))), "{row}");
+        assert_eq!(row["assembly"], parts, "{row}");
+        assert_eq!(row["mode"], "base", "{row}");
+        assert_eq!(row["arcane"], json!(["exodia_triumph", "melee_doughty"]), "{row}");
+        let sim = crate::simulate::simulate_json(&row["replay"]);
+        assert_eq!(sim["score"], row["kill_progress"], "{row}");
+    }
+    assert_eq!(fleet(&v)["results"], alone["results"]);
+}
+
+#[test]
+fn a_pinned_start_answer_survives_outside_the_overall_top_one() {
+    let mut v = request();
+    v["limits"] = json!({});
+    v["finalists"] = json!(1);
+    v["starts"] = json!([
+        {"slots":["hellfire","cryo_rounds"],"fixed":[{"kind":"mods","idx":0},{"kind":"mods","idx":1}]},
+        {"slots":[]}
+    ]);
+    let out = run(&v);
+    assert_eq!(out["results"].as_array().unwrap().len(), 1);
+    let answers = out["start_results"].as_array().unwrap();
+    let pinned = &answers.iter().find(|r| r["start"] == 0).unwrap()["result"];
+    assert!(pinned["mods"].as_array().unwrap().contains(&json!("hellfire")), "{out}");
+    assert!(pinned["mods"].as_array().unwrap().contains(&json!("cryo_rounds")), "{out}");
+    assert_eq!(fleet(&v)["start_results"], out["start_results"]);
+}
+
+#[test]
+fn slot_pins_keep_sparse_positions_through_final_replay_and_fleet() {
+    let mut v = request();
+    v["limits"] = json!({});
+    v["starts"] = json!([{"slots":[null,null,null,null,null,null,null,"hellfire"],
+        "fixed":[{"kind":"mods","idx":7,"placement":"slot"}]}]);
+    let out = run(&v);
+    let rows = out["results"].as_array().unwrap();
+    assert!(!rows.is_empty(), "{out}");
+    for row in rows {
+        assert_eq!(row["replay"]["mod_slots"][7], "hellfire", "{row}");
+        assert_eq!(crate::simulate::simulate_json(&row["replay"])["score"], row["kill_progress"]);
+    }
+    assert_eq!(fleet(&v)["results"], out["results"]);
+}
+
+#[test]
+fn final_constraints_adapt_free_starts_and_refuse_incompatible_pins() {
+    let mut v = request();
+    v["limits"] = json!({});
+    v["final"] = json!({"slots":["serration"],"fixed":[{"kind":"mods","idx":0,"placement":"slot"}]});
+    v["starts"] = json!([{"slots":["hellfire"],"fixed":[{"kind":"mods","idx":0}]},{"slots":[]}]);
+    let out = run(&v);
+    for row in out["results"].as_array().unwrap() { assert_eq!(row["replay"]["mod_slots"][0], "serration", "{out}"); }
+    assert_eq!(optimize_check_json(&v)["compatible"], true);
+    v["starts"][0]["fixed"][0]["placement"] = json!("slot");
+    let err = parse_optimize(&v).err().expect("different slot pins must block the entire search");
+    assert!(err["error"].as_str().unwrap().contains("start 1"), "{err}");
+    let checked = optimize_check_json(&v);
+    assert_eq!(checked["compatible"], false);
+    assert_eq!(checked["starts"][0]["compatible"], false);
+    assert_eq!(checked["starts"][1]["compatible"], true);
+}
+
+#[test]
+fn identical_card_sets_keep_each_starts_distinct_slot_constraint() {
+    let mut v = request();
+    v["limits"] = json!({});
+    v["starts"] = json!([
+        {"slots":["hellfire","cryo_rounds"],"fixed":[{"kind":"mods","idx":0,"placement":"slot"},{"kind":"mods","idx":1,"placement":"slot"}]},
+        {"slots":["cryo_rounds","hellfire"],"fixed":[{"kind":"mods","idx":0,"placement":"slot"},{"kind":"mods","idx":1,"placement":"slot"}]}
+    ]);
+    let out = run(&v);
+    for answer in out["start_results"].as_array().unwrap() {
+        let i = answer["start"].as_u64().unwrap() as usize;
+        assert_eq!(answer["result"]["replay"]["mod_slots"][0], v["starts"][i]["slots"][0]);
+        assert_eq!(answer["result"]["replay"]["mod_slots"][1], v["starts"][i]["slots"][1]);
+    }
+    assert_eq!(out["start_results"].as_array().unwrap().len(), 2, "{out}");
+    assert_eq!(fleet(&v)["start_results"], out["start_results"]);
+}
+
+#[test]
+fn final_zaw_parts_conflict_only_with_pinned_parts() {
+    let mut v = json!({"weapon":"plague_kripath_two_handed", "strategy":"quick", "duration":1,"runs":2,"candidate_runs":1,
+        "mods":{}, "build_size":0, "assemblies":[{"grip":"jayap","link":"jai"},{"grip":"seekalla","link":"jai"}],
+        "starts":[{"slots":[],"assembly":{"grip":"jayap","link":"jai"},"fixed":[{"kind":"assembly","idx":0}]},{"slots":[]}],
+        "final":{"assembly":{"grip":"seekalla","link":"jai"},"fixed":[{"kind":"assembly","idx":0}]}});
+    assert!(parse_optimize(&v).is_err());
+    let checked = optimize_check_json(&v);
+    assert_eq!(checked["starts"][0]["compatible"], false);
+    assert_eq!(checked["starts"][1]["compatible"], true);
+    v["starts"][0]["fixed"] = json!([]);
+    let out = run(&v);
+    for row in out["results"].as_array().unwrap() { assert_eq!(row["assembly"]["grip"], "seekalla"); }
 }

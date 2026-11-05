@@ -296,7 +296,7 @@ function agentSearchResults(limit) {
         from: c.from == null || c.axis !== "mod" && c.axis !== "exilus" ? c.from : named(c.from),
         to: c.to == null || c.axis !== "mod" && c.axis !== "exilus" ? c.to : named(c.to) })) } };
   };
-  const rows = (r.results || []).slice(0, limit).map((res) => ({
+  const row = (res) => ({
     rank: res.rank,
     kpm: Number(sig2(kpm(res.kill_progress ?? res.kills, r.duration))),
     dps: Math.round(res.dps || res.effective_dps || 0),
@@ -307,8 +307,11 @@ function agentSearchResults(limit) {
     ...(res.evolutions ? { evolutions: res.evolutions } : {}),
     ...(res.mode ? { mode: res.mode } : {}),
     ...(res.valence ? { valence: res.valence } : {}),
+    ...(res.assembly ? { assembly: res.assembly } : {}),
+    ...(res.replay?.mod_slots ? {mod_slots:res.replay.mod_slots} : {}),
     ...origin(res),
-  }));
+  });
+  const rows = (r.results || []).slice(0, limit).map(row);
   return {
     phase: r.cancelled ? "cancelled" : "done",
     duration: r.duration, ranked_by: "kills per minute",
@@ -316,6 +319,7 @@ function agentSearchResults(limit) {
       ? { covered: `the best ${r.finalists || rows.length} of every build a descent from ${r.starts || 0} starts scored${r.cut ? ", cut by the time budget" : ", every start settled"} — not a proven best` }
       : r.exhaustive ? { covered: "every candidate" } : r.coverage != null ? { covered: `${Math.round(r.coverage * 1000) / 10}% of ${r.space} candidates, sampled uniformly` } : {}),
     results: rows,
+    start_results: (r.start_results || []).map(a => ({start:a.start + 1,result:row(a.result)})),
     note: r.cancelled ? "search numbers: the run stopped before the simulator measured them" : "the simulator's own numbers for these builds",
   };
 }

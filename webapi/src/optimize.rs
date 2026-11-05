@@ -20,6 +20,9 @@ use crate::tenno::tenno_from;
 
 mod quick;
 mod requirements;
+mod final_constraints;
+
+pub fn optimize_check_json(v: &Value) -> Value { final_constraints::check(v) }
 #[cfg(test)]
 mod requirements_tests;
 #[cfg(test)]
@@ -233,7 +236,11 @@ impl Replay {
     }
 
     pub(crate) fn request(&self, c: &Candidate, ai: usize) -> Value {
-        self.with(c.variant, ai, &self.mod_ids(c))
+        let mut r = self.with(c.variant, ai, &self.mod_ids(c));
+        if let Some(slots) = c.slots {
+            r["mod_slots"] = json!(slots.map(|i| i.map(|i| self.mods[i])));
+        }
+        r
     }
 
     /// THE SHAPE every candidate of one variant and arcane shares: the
@@ -247,6 +254,7 @@ impl Replay {
     fn with(&self, variant: u32, ai: usize, mods: &[&str]) -> Value {
         let mut r = self.base.clone();
         let Some(o) = r.as_object_mut() else { return r };
+        o.remove("mod_slots");
         o.insert("mods".into(), json!(mods));
         let (ids, ranks) = self.arcane(ai);
         o.insert("arcane".into(), json!(ids));
@@ -375,6 +383,8 @@ pub struct OptimizePlan {
 
 /// Validate an optimize request. `Err` is the ready-to-send error response.
 pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
+    let constrained = final_constraints::apply(v)?;
+    let v = &constrained;
     // A quick request that names no scope searches the quick calc's whole one.
     let whole = quick::whole_scope(v);
     let v = whole.as_ref().unwrap_or(v);
@@ -1187,7 +1197,7 @@ fn parse_starts(
 /// rows are ranked by what it answers, so a reader who simulates a row's build
 /// gets the row's number to the last digit. A row the simulator refuses keeps
 /// the reason and ranks last.
-fn measured_by_the_simulator(rows: Vec<Value>, finalists: usize, state: &FunnelState) -> (Vec<Value>, u64) {
+fn measured_by_the_simulator(rows: Vec<Value>, state: &FunnelState) -> (Vec<Value>, u64) {
     use std::sync::atomic::Ordering::Relaxed;
     let mut rows: Vec<Value> = rows
         .into_iter()
@@ -1219,7 +1229,6 @@ fn measured_by_the_simulator(rows: Vec<Value>, finalists: usize, state: &FunnelS
     let work = rows.iter().fold(0u64, |a, r| a.saturating_add(r.get("work").and_then(Value::as_u64).unwrap_or(0)));
     let at = |r: &Value, k: &str| r.get(k).and_then(Value::as_f64).unwrap_or(f64::NEG_INFINITY);
     rows.sort_by(|a, b| at(b, "kill_progress").total_cmp(&at(a, "kill_progress")).then(at(b, "dps").total_cmp(&at(a, "dps"))));
-    rows.truncate(finalists);
     for (i, r) in rows.iter_mut().enumerate() {
         r["rank"] = json!(i + 1);
     }
@@ -2137,7 +2146,7 @@ pub fn run_optimize_resumable(
             // many changes — or, for a runner-up no start settled on, the
             // answer it is nearest to and what differs.
             let c = &cands[*ci];
-            let job = (c.ordered.clone(), c.variant, c.exilus, *ai);
+            let job = ((c.ordered.clone(), c.variant, c.exilus, *ai), c.slots);
             if let Some(r) = quick_report.as_ref() {
                 if let Some(lanes) = r.from_starts.get(&job) {
                     row["from_starts"] = lanes.clone();
@@ -2149,7 +2158,15 @@ pub fn run_optimize_resumable(
             row
         })
         .collect();
-    let (results, final_work) = if measure { measured_by_the_simulator(results, finalists, state) } else { (results, 0) };
+    let (mut results, final_work) = if measure { measured_by_the_simulator(results, state) } else { (results, 0) };
+    let mut start_results = std::collections::BTreeMap::new();
+    for row in &results {
+        for lane in row["from_starts"].as_array().into_iter().flatten() {
+            if let Some(i) = lane["start"].as_u64() { start_results.entry(i).or_insert_with(|| row.clone()); }
+        }
+    }
+    let start_results: Vec<Value> = start_results.into_iter().map(|(start, result)| json!({"start":start,"result":result})).collect();
+    results.truncate(finalists);
 
     // WHAT THE SEARCH ACTUALLY COVERED. A run that did not reach the end of
     // its space has not searched the scope it was given, and it must not read
@@ -2206,6 +2223,7 @@ pub fn run_optimize_resumable(
         "headshot_pct": headshot_pct,
         "duration": duration,
         "results": results,
+        "start_results": start_results,
         "failed_starts": quick_report.map(|r| r.failures).unwrap_or_default(),
         "target": { "name": target_name, "level": level, "steel_path": steel_path },
     })

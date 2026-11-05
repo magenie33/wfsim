@@ -232,8 +232,8 @@ function formaRefused(r, ss, boxId) {
 }
 
 /// The same plan for a result that is not on screen: its own layout, alone.
-async function planSlotsAlone(ss) {
-  const r = await api("/api/forma/plan", { weapon: $("weapon").value, rules: formaRules(), loadouts: [weaponLoadout(ss)] });
+async function planSlotsAlone(ss, fixedOrder = false) {
+  const r = await api("/api/forma/plan", { weapon: $("weapon").value, rules: { ...formaRules(), ...(fixedOrder ? { fixed_order: true } : {}) }, loadouts: [weaponLoadout(ss)] });
   if (r && r.ok && r.fits) placeFormaPlan(ss, r, 0);
   return ss;
 }

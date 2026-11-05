@@ -1130,6 +1130,13 @@ label.check input{width:auto}
 .start-pin{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;
   border:1px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;flex-shrink:0}
 .start-pin.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent)}
+.start-placement{max-width:130px;font-size:11px;padding:3px 5px;flex-shrink:0;margin-left:auto}
+.slot:has(> .start-placement:not([hidden])){flex-wrap:wrap}
+.slot:has(> .start-placement:not([hidden])) > .info{flex-basis:120px}
+.opt-pin-summary{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0;font-size:12px}
+#opt-final{margin-top:8px}
+#opt-compatibility{font-size:12px;line-height:1.6;margin-top:8px}
+.opt-result-filter{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
 .slot.fixed-pin{box-shadow:inset 0 0 0 1.5px var(--accent)}
 .oseg{display:flex;gap:3px;flex:0 0 auto;margin-top:2px}
 .rv-ocr:empty{display:none}

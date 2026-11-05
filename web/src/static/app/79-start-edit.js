@@ -28,6 +28,7 @@ function normalizeStart(s, w) {
 
 /// The starts as `/api/optimize` reads them.
 const startsPayload = () => opt.starts.map(startPayload);
+const startPinned = (s, k) => (s.fixed || []).includes(k) || (k.startsWith("mods:") && (s.fixed || []).includes(k.replace("mods:", "slots:")));
 
 /// A start as `/api/optimize` reads it (`headlessStartPayload`).
 const startPayload = (s) => headlessStartPayload(META, s);
@@ -73,12 +74,13 @@ function renderOptStarts() {
   if (!opt.starts.length) opt.starts.push(blankStart());
   const mine = loadPresetList(BUILDS).filter((p) => p.state && p.state.weapon === w.id);
   box.innerHTML =
-    `<div class="opt-guide">${escHtml(tr("A start is the build the search begins from. A blank start is filled in order — mode, evolutions, element, arcane, mods, exilus — and then improved position by position with the quick calc until no change helps. To begin from a build of your own, add the current build or one of your builds; edit a start in the builder, where a pinned position stays in every answer. Several starts that differ (another element, another mode) find answers one start cannot."))}</div>`
+    `<div class="opt-guide">${escHtml(tr("A start is a build the search begins from. Pin the choices it must keep. Each start keeps its own answer; final requirements apply to every result."))}</div>`
     + opt.starts.map((s, i) => `<div class="opt-start" data-i="${i}">
         <div class="opt-start-h"><b>${escHtml(tr("Start"))} ${i + 1}</b><span style="flex-grow:1"></span>
         <button type="button" class="ghost-btn small" data-edit="${i}">${escHtml(tr("edit in the builder"))}</button>
         <button type="button" class="ghost-btn small" data-del="${i}" aria-label="${escHtml(tr("remove this start"))}">✕</button></div>
-        ${cardOfState(s.build, w, new Set(s.fixed))}${startConflictHtml(s)}</div>`).join("")
+        ${cardOfState(s.build, w, new Set(s.fixed))}${pinSummary(s)}${startConflictHtml(s)}
+        <button type="button" class="ghost-btn small" data-final="${i}">${escHtml(tr("use these pins as final requirements"))}</button></div>`).join("")
     + `<div class="opt-start-add">`
     + `<button type="button" class="ghost-btn small" id="opt-start-add">${escHtml(tr("+ add the current build as a start"))}</button>`
     + `<button type="button" class="ghost-btn small" id="opt-start-blank">${escHtml(tr("+ a blank start"))}</button>`
@@ -86,6 +88,10 @@ function renderOptStarts() {
       + mine.map((p, i) => `<option value="${i}">${escHtml(presetLabel(p))}</option>`).join("") + `</select>` : "")
     + `</div>`;
   box.querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => editStart(Number(b.dataset.edit))));
+  box.querySelectorAll("[data-final]").forEach((b) => b.addEventListener("click", () => {
+    opt.final = JSON.parse(JSON.stringify(opt.starts[Number(b.dataset.final)]));
+    renderOptFinal(); updateOptEstimate();
+  }));
   box.querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", () => {
     opt.starts.splice(Number(b.dataset.del), 1);
     if (!opt.starts.length) opt.starts.push(blankStart());
@@ -113,7 +119,7 @@ function startConflictHtml(s) {
 
 /// Open start `i` in the builder.
 function editStart(i) {
-  const s = opt.starts[i];
+  const s = i === -1 ? opt.final || blankStart() : opt.starts[i];
   if (!s) return;
   flushPresetSaves();
   const w = $("weapon").value;
@@ -146,7 +152,11 @@ function finishStartEdit(save, navigate = true) {
   // WRITTEN AFTER THE RESTORE: putting the player's build back re-applies the
   // weapon, which reads the search back from its preset — a start written
   // before that was read over.
-  if (build) opt.starts[se.idx] = { build, fixed: [...se.fixed] };
+  if (build) {
+    if (se.idx === -1) opt.final = { build, fixed: [...se.fixed] };
+    else opt.starts[se.idx] = { build, fixed: [...se.fixed] };
+  }
+  renderOptFinal();
   renderOptStarts(); updateOptEstimate();
 }
 
@@ -167,9 +177,9 @@ function renderStartEditBanner() {
   if (bar) bar.hidden = !!startEdit;
   if (!startEdit) { box.hidden = true; box.innerHTML = ""; return; }
   box.hidden = false;
-  box.innerHTML = `<div class="bh"><span class="n">★</span><h2>${escHtml(tr("Editing start"))} ${startEdit.idx + 1}</h2>`
+  box.innerHTML = `<div class="bh"><span class="n">★</span><h2>${startEdit.idx === -1 ? escHtml(tr("Final requirements")) : `${escHtml(tr("Editing start"))} ${startEdit.idx + 1}`}</h2>`
     + `<span class="sub">${escHtml(tr("for the optimizer — your own build comes back when you close this"))}</span></div>`
-    + `<div class="bb start-edit-row"><span class="sim-hint">${escHtml(tr("the pin beside a position FIXES it: this start's answer always keeps it, and the search never changes it"))}</span>`
+    + `<div class="bb start-edit-row"><span class="sim-hint">${escHtml(tr("Pin a MOD to require it, then choose Contains or Fixed slot."))}</span>`
     + `<span style="flex-grow:1"></span><button type="button" class="ghost-btn small" id="start-edit-discard">${escHtml(tr("discard"))}</button>`
     + `<button type="button" class="ghost-btn small start-edit-done" id="start-edit-done">${escHtml(tr("done — back to the optimizer"))}</button></div>`;
   $("start-edit-discard").addEventListener("click", () => finishStartEdit(false));
@@ -181,6 +191,7 @@ function renderStartEditBanner() {
 function decorateStartPins() {
   const on = !!startEdit;
   document.querySelectorAll(".start-pin").forEach((p) => { if (!on) p.remove(); });
+  document.querySelectorAll(".start-placement").forEach((p) => { if (!on) p.remove(); });
   document.querySelectorAll(".slot.fixed-pin").forEach((el) => { if (!on) el.classList.remove("fixed-pin"); });
   if (!on) return;
   const put = (host, key) => {
@@ -194,16 +205,36 @@ function decorateStartPins() {
       pin.innerHTML = START_PIN_SVG;
       pin.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (startEdit.fixed.has(key)) startEdit.fixed.delete(key); else startEdit.fixed.add(key);
+        const strict = key.replace("mods:", "slots:");
+        if (startEdit.fixed.has(key) || startEdit.fixed.has(strict)) { startEdit.fixed.delete(key); startEdit.fixed.delete(strict); }
+        else startEdit.fixed.add(key.startsWith("mods:") && Number(key.split(":")[1]) < 8 && !slots[Number(key.split(":")[1])]?.mod ? strict : key);
         decorateStartPins();
       });
       host.appendChild(pin);
     }
-    const fixed = startEdit.fixed.has(key);
+    const strict = key.startsWith("mods:") && startEdit.fixed.has(key.replace("mods:", "slots:"));
+    const fixed = startEdit.fixed.has(key) || strict;
     pin.classList.toggle("on", fixed);
     pin.title = tr(fixed ? "fixed — click to free it" : "fix this position in the start");
     pin.setAttribute("aria-label", pin.title);
     if (host.classList.contains("slot")) host.classList.toggle("fixed-pin", fixed);
+    if (key.startsWith("mods:") && Number(key.split(":")[1]) < 8) {
+      const idx = Number(key.split(":")[1]);
+      let select = host.querySelector(":scope > .start-placement");
+      if (!select) {
+        select = document.createElement("select"); select.className = "start-placement";
+        select.setAttribute("aria-label", tr("MOD pin type"));
+        select.innerHTML = `<option value="contains">${escHtml(tr("Contains"))}</option><option value="slot">${escHtml(tr("Fixed slot"))} ${idx + 1}</option>`;
+        select.addEventListener("click", e => e.stopPropagation());
+        select.addEventListener("change", () => {
+          startEdit.fixed.delete(key); startEdit.fixed.delete("slots:" + idx);
+          startEdit.fixed.add(select.value === "slot" ? "slots:" + idx : key);
+          decorateStartPins();
+        });
+        host.appendChild(select);
+      }
+      select.hidden = !fixed; select.value = strict ? "slot" : "contains";
+    }
   };
   const kids = (id) => [...(($(id) || {}).children || [])];
   kids("mod-slots").forEach((el, i) => { if (i < 8) put(el, "mods:" + i); });
@@ -223,3 +254,73 @@ new MutationObserver(() => {
   if (!startEdit || startPinFrame) return;
   startPinFrame = requestAnimationFrame(() => { startPinFrame = 0; decorateStartPins(); });
 }).observe(document.documentElement, { childList: true, subtree: true });
+
+function pinSummary(s) {
+  const b = s.build || {}, w = weaponInfo(b.weapon || $("weapon").value) || {};
+  const labels = (s.fixed || []).map(k => {
+    const [kind, n] = k.split(":"), i = Number(n);
+    if (kind === "mods" || kind === "slots") {
+      const slot = (b.slots || [])[i];
+      const name = slot?.mod ? requiredLabel(rankedId(slot.mod, slot.rank)) : tr("empty");
+      return (kind === "slots" || !slot?.mod || i === 8 ? `${tr(i === 8 ? "Exilus" : "Fixed slot")} ${i < 8 ? i + 1 : ""}: ` : `${tr("Contains")}: `) + name;
+    }
+    if (kind === "assembly") {
+      const spec = w.assembly || {}, part = i ? spec.component || "loader" : "grip";
+      return ((spec[part + "s"] || []).find(p => p.id === b.assembly?.[part]) || {}).name || b.assembly?.[part] || "";
+    }
+    if (kind === "arcane") return arcName((b.arcane || [])[i] || "none");
+    if (kind === "mode") return modeLabel(w, b.mode || defaultMode(w.id, null));
+    if (kind === "valence") return DT(b.valence?.element || "");
+    return tr("Evolutions") + ": " + Object.values(b.evoSel || {}).filter(Boolean).map(evoName).join(" · ");
+  });
+  return `<div class="opt-pin-summary">${labels.filter(Boolean).map(label => `<span class="pchip sel">${escHtml(label)}</span>`).join("")}</div>`;
+}
+
+function renderOptFinal() {
+  const box = $("opt-final");
+  if (!box) return;
+  const final = opt.final;
+  box.innerHTML = `<p class="sim-hint">${escHtml(tr("Every final build must satisfy these conditions before the top results are selected."))}</p>`
+    + (final?.fixed.length ? pinSummary(final) : `<p class="sim-hint">${escHtml(tr("No final requirements"))}</p>`)
+    + `<div class="opt-start-add"><button type="button" class="ghost-btn small" id="opt-final-edit">${escHtml(tr("edit in the builder"))}</button>`
+    + (final?.fixed.length ? `<button type="button" class="ghost-btn small" id="opt-final-clear">${escHtml(tr("Clear"))}</button>` : "") + `</div>`;
+  $("opt-final-edit").onclick = () => editStart(-1);
+  if ($("opt-final-clear")) $("opt-final-clear").onclick = () => { opt.final = null; renderOptFinal(); updateOptEstimate(); };
+  lockBuiltinSearch();
+}
+
+let optCompatibility = null, optCompatibilityTimer = null, optCompatibilityPending = "";
+const optCompatibilityKey = () => JSON.stringify(nameableOptimizeBody(optimizeBody()));
+const optCompatibilityBlocked = () => optCompatibility?.key === optCompatibilityKey() && !optCompatibility.result?.compatible;
+function renderOptCompatibility() {
+  const box = $("opt-compatibility");
+  if (!box || !META) return;
+  const current = optCompatibility?.key === optCompatibilityKey() ? optCompatibility.result : null;
+  box.innerHTML = current ? (current.starts || []).map(s => `<div class="${s.compatible ? "ok" : "opt-start-clash"}">${escHtml(tr("Start"))} ${s.start + 1} · ${
+    escHtml(s.compatible ? tr("compatible with final requirements") : tf(s.error || tr("The search conditions are incompatible.")))}</div>`).join("")
+    : `<span class="sim-hint">${escHtml(tr("Checking compatibility…"))}</span>`;
+  if (current?.error && !(current.starts || []).some(s => !s.compatible)) box.innerHTML += `<div class="opt-start-clash">${escHtml(tf(current.error))}</div>`;
+  if ($("run-opt") && current && !current.compatible) $("run-opt").disabled = true;
+}
+function scheduleOptCompatibility() {
+  if (!META || !opt.limits || startEdit) return;
+  const key = optCompatibilityKey();
+  if (optCompatibility?.key === key || optCompatibilityPending === key) { renderOptCompatibility(); return; }
+  clearTimeout(optCompatibilityTimer);
+  optCompatibilityPending = key;
+  renderOptCompatibility();
+  optCompatibilityTimer = setTimeout(async () => {
+    let result;
+    try {
+      result = await api("/api/optimize/check", JSON.parse(key));
+      if (!result || result.ok === false) result = {compatible:false,starts:[{start:0,compatible:false,error:result?.error || tr("The search conditions are incompatible.")}]};
+    }
+    catch (e) { result = { compatible: false, starts: [{start: 0, compatible: false, error: String(e.message || e)}] }; }
+    if (optCompatibilityPending !== key) return;
+    optCompatibilityPending = "";
+    optCompatibility = { key, result };
+    if (optCompatibilityKey() !== key) return;
+    renderOptCompatibility();
+    $("run-opt").disabled = !!optimizationTaskForPage() || !!startsBlocked();
+  }, 250);
+}

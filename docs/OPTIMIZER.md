@@ -507,9 +507,9 @@ On the page a start is taken from the builder ("add the current build as a
 start"): put in only what you mean — one card is a start — and click a card or
 the arcane in it to lock it there.
 
-Slot POSITION is not part of a start: element order inside a subset is still
-enumerated exhaustively, so "Cold in slot 1" and "Cold somewhere" are one
-start. Every build is scored on ONE random stream, so a comparison is paired
+A containment pin requires its card; a slot pin also fixes its physical main
+slot. Element order is exhaustive among the layouts those pins allow. Every
+build is scored on ONE random stream, so a comparison is paired
 and the score is a fixed function of the build — each accepted move strictly
 raises it over a finite set, which is why the loop ends.
 
@@ -577,8 +577,13 @@ above runs only when a tool asks for it by name.
   autosave is suspended while one is open, so the player's own build is never
   written with it; Done writes the build and the pins into the start, and both
   Done and Discard put the player's build back. `check_start_edit`.
-- **Fixed** is the pin: a fixed position is never swept, so every answer from
-  that start carries it. A start's cards join the scope when it is saved.
+- **Pins** require a choice in that start's answer. A MOD pin has two forms:
+  containment retains the card while allowing element reordering; a slot pin
+  also keeps its physical slot, including an empty slot. The request's
+  `fixed` entries use `kind: "mods"`, `idx`, and optional `placement: "slot"`;
+  an omitted placement retains the containment meaning. Stored starts use
+  `mods:i` for containment and `slots:i` for fixed placement. A start's cards
+  join the scope when it is saved.
   Zaw grips and links, and Kitgun grips and loaders, are independent positions
   (`assembly:0` and `assembly:1`). Unpinned parts participate in the search;
   the strike/chamber and weapon class remain the weapon identity. Each start
@@ -614,12 +619,17 @@ the target (`docs/BOARD.md` §"Family candidates").
   No candidate is EMPTY. It took the page's generator's place after reproducing it
   on 91 of 91 positions over six weapons; like it, it offers a stance card for
   a main slot, which the builder's picker does not.
-- **A build scores at its BEST ELEMENT ORDER.** Slot position decides only
+- **A build scores at its BEST ALLOWED ELEMENT ORDER.** Slot position decides only
   what combines, and a candidate seated in the slot being swept cannot move its
   element behind another: Magnetic + Toxin on Sancti Magistar needs a card swap
   AND a reorder at once, each worse alone — rank 4, 1.6% short, unmoved at 30
   runs and by a reorder move of its own. Each build is scored over its distinct
-  element orders (the enumerator's `expand_one`) and keeps the best.
+  element orders and keeps the best. With physical slot pins,
+  `expand_with_slots` finds a feasible placement for each first-occurrence
+  element order, deduplicates resolved damage vectors, and retains its eight
+  physical main slots. The score cache and fleet payload carry the fixed-slot
+  mask and its card assignments, so differently constrained starts cannot
+  borrow an incompatible order.
 
 ### One step
 
@@ -701,6 +711,13 @@ the work from 6,569 builds to 1,876 and reached the same build.
 
 ### The answer
 
+Every start's settled answer participates in final simulation even outside
+the global cutoff. `results` remains the overall top `finalists`;
+`start_results` retains the best final-measured answer for each start as
+`{start, result}`. The result selector switches between these views. A pin
+therefore keeps its answer available even when another start ranks higher.
+Slot-constrained layouts are distinct result identities.
+
 - **THE BEST N BUILDS THE SEARCH SCORED**, N the request's `finalists` (the
   page's "How many results", 10 by default; 1 is the best of the starts).
   Each descent settles on ONE build, its ANSWER. A start descends from either
@@ -777,6 +794,30 @@ and "use as a new start". A search preset saves the starts, the limits, how
 many results and the runs per candidate. There is no scope to
 mark: what may change is what the quick calc offers less the limits, and a pin
 on a start fixes a position while global requirements apply to every final build.
+
+### Final requirements
+
+The optional `final` request field has the same build-shaped payload and pin
+descriptors as a start. Only its pinned choices constrain results. The page
+edits it in the shared builder or copies a start's pins into it, and saves it
+in the search preset. Its MOD containment requirements join
+`limits.require.mods`; other fixed choices merge into every start. Unpinned
+choices adapt, a containment pin can move around a final slot pin, and
+conflicting fixed choices refuse the entire request. Every result must satisfy
+the merged constraints before the global top results are selected.
+
+`POST /api/optimize/check` uses `parse_optimize`, the search's validator, and
+returns `compatible` plus `{start, compatible, error?}` for every start.
+The page checks after edits, displays each incompatible start's reason and
+blocks the whole search; submission checks the captured request again.
+Incompatible starts are never silently skipped.
+
+The main MOD limit counts equipped cards rather than physical slot numbers.
+A card fixed in slot eight can be one of two equipped cards. Replay's optional
+`mod_slots` carries eight physical main slots, with null holes; `mods` remains
+the ordered card list used for simulation. The page requires both lists to
+have the same nonempty order, preserves holes when opening or sharing a build,
+and plans a fixed layout without moving its cards.
 
 ### Limits
 

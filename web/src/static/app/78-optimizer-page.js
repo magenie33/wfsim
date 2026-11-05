@@ -17,6 +17,7 @@ function renderOpt() {
   if (modSuffix() !== "optimizer") return;
   renderOptPresetBars();
   renderOptStarts();
+  renderOptFinal();
   renderOptLimits();
   renderOptFight();
   updateOptEstimate();
@@ -214,7 +215,7 @@ function limitsChanged() {
 /// out blocks the run (`blocked`); one it only holds is replaced (`replaced`).
 function startConflicts(s) {
   const L = opt.limits, b = s.build || {};
-  const pinned = (k) => (s.fixed || []).includes(k);
+  const pinned = (k) => startPinned(s, k);
   const out = { blocked: [], replaced: [] };
   const note = (k, text) => (pinned(k) ? out.blocked : out.replaced).push(text);
   (b.slots || []).forEach((x, i) => {
@@ -226,8 +227,7 @@ function startConflicts(s) {
       else if (isOut("mods", id)) note("mods:8", tr("{x} is excluded").replace("{x}", name));
       return;
     }
-    if (i >= L.mods) out.blocked.push(tr("{x}: more cards than the limit of {n}").replace("{x}", name).replace("{n}", L.mods));
-    else if (isOut("mods", id)) note("mods:" + i, tr("{x} is excluded").replace("{x}", name));
+    if (isOut("mods", id)) note("mods:" + i, tr("{x} is excluded").replace("{x}", name));
   });
   (b.arcane || []).forEach((a, i) => {
     if (!a || a === "none") return;
@@ -246,13 +246,13 @@ function startConflicts(s) {
 }
 
 /// Any start a limit blocks — the run waits until one side changes.
-const startsBlocked = () => requiredConflicts({}).length || opt.starts.some((s) => startConflicts(s).blocked.length);
+const startsBlocked = () => requiredConflicts({}).length || opt.starts.some((s) => startConflicts(s).blocked.length) || optCompatibilityBlocked();
 
 /// Requirements and pins share the weapon's equip families and available slots.
 function requiredConflicts(s) {
   const L = opt.limits, b = s.build || {}, errors = [];
   const required = L.require.mods;
-  const pinned = (i) => (s.fixed || []).includes("mods:" + i);
+  const pinned = (i) => startPinned(s, "mods:" + i);
   const offered = new Set(poolWithRivens().filter((m) => !m.stance).map((m) => m.id));
   const cards = new Map();
   for (const id of required) {
@@ -265,7 +265,7 @@ function requiredConflicts(s) {
   let ex = null, empty = 0;
   (b.slots || []).slice(0, 9).forEach((x, i) => {
     if (!pinned(i)) return;
-    if (!x || !x.mod) { if (i < L.mods) empty++; return; }
+    if (!x || !x.mod) { if (i < 8) empty++; return; }
     const id = rankedId(x.mod, x.rank);
     cards.set(id, excludedCard(id));
     if (i < 8) pinnedMain.add(id); else ex = id;
@@ -277,7 +277,7 @@ function requiredConflicts(s) {
   }));
   const ax = weaponAxes($("weapon").value);
   const canExilus = ax.hasExilus && L.exilus && all.some(([id, m]) => m.exilus && !pinnedMain.has(id) && (!pinned(8) || ex === id));
-  if (cards.size - (canExilus ? 1 : 0) > L.mods - empty) errors.push(tr("required and pinned mods exceed the available slots"));
+  if (cards.size - (canExilus ? 1 : 0) > Math.min(L.mods, 8 - empty)) errors.push(tr("required and pinned mods exceed the available slots"));
   const w = weaponInfo($("weapon").value) || {};
   for (const [id, m] of all) {
     for (const t of weaponEvos(w.id)) {

@@ -157,6 +157,11 @@ progress while it runs and the ranking once it is done — each row with the
 starts that settled on it or the answer it is near — and
 `optimizer.search.stop` keeps what was ranked. What a search may use and how
 many builds it answers with are set through `optimizer.plan.*`.
+`optimizer.plan.read` includes final requirements and their compatibility with
+every start. `optimizer.search.read` also returns `start_results`, so an
+answer required by a pinned start remains readable outside the global top N.
+The pure `POST /api/optimize/check` endpoint uses the search's own validator;
+its contract and the two MOD pin types are in [OPTIMIZER.md](OPTIMIZER.md#final-requirements).
 
 **Anything that leaves the browser.** Nothing here shares a build, submits to
 the board or opens a link. Those are outward actions and they want a reader's

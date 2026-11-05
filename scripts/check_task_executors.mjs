@@ -103,9 +103,23 @@ try {
       heldSearch.restore();
       if (probe) await userTasks.remove(probe.id);
     }
-    const task = await runOptimize();
-    history.pushState(null, '', '/weapons/Phenmor/rivens'); await route(); await pause(400);
-    const editor = JSON.stringify(snapshotState());
+    const beforeValidationApi = api;
+    let releaseValidation, validationHeld = false, task, editor;
+    const validationGate = new Promise(resolve => { releaseValidation = resolve; });
+    api = (path, body, ...rest) => {
+      if(path === '/api/optimize/check' && body?.weapon === 'torid' && !validationHeld) {
+        validationHeld = true;
+        return validationGate.then(() => beforeValidationApi(path, body, ...rest));
+      }
+      return beforeValidationApi(path, body, ...rest);
+    };
+    try {
+      const pending = runOptimize();
+      await until(() => validationHeld);
+      history.pushState(null, '', '/weapons/Phenmor/rivens'); await route(); await pause(400);
+      editor = JSON.stringify(snapshotState());
+      releaseValidation(); task = await pending;
+    } finally { releaseValidation(); api = beforeValidationApi; }
     const completed = await userTasks.wait(task.id);
     const record = await userTasks.store.value('artifact:' + completed.result_ref);
     out.realSearch = completed.state === 'succeeded' && record.result.results.length > 0;

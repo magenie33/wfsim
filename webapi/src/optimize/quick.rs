@@ -9,12 +9,12 @@
 //! `/api/candidates`'; a build fits when the enumerator can plan its Forma; it
 //! scores through the funnel's own `evaluate`, the fight the replay runs.
 //!
-//! A BUILD SCORES AT ITS BEST ELEMENT ORDER. Slot position decides only what
+//! A BUILD SCORES AT ITS BEST ALLOWED ELEMENT ORDER. Slot position decides what
 //! combines, and a candidate seated in the slot being swept cannot move its
 //! element behind another: Magnetic + Toxin on Sancti Magistar needs a card
 //! swap AND a reorder at once, each worse alone (rank 4, 1.6% short, unmoved
 //! at 30 runs and by a reorder move of its own). So each build is scored over
-//! its distinct element orders and keeps the best, the enumerator's own rule.
+//! its distinct allowed element orders and keeps the best.
 
 use std::collections::HashMap;
 
@@ -34,21 +34,24 @@ pub(crate) struct QBuild {
     pub(crate) mode: usize,
     pub(crate) val: usize,
     pub(crate) assembly: usize,
+    pub(crate) fixed_slots: u8,
 }
 
 impl QBuild {
     /// Indices as they travel between workers: the eight slots (-1 empty),
-    /// then exilus, arcane, evolution set, mode, valence, assembly. Only a worker that
+    /// then exilus, arcane, evolution set, mode, valence, assembly and the
+    /// fixed-slot mask. Only a worker that
     /// parsed the same request can read them.
     fn to_json(&self) -> Value {
         let mut v: Vec<i64> = self.mods.iter().map(|m| m.map_or(-1, |i| i as i64)).collect();
         v.extend([self.exilus, self.arcane, self.evo, self.mode, self.val, self.assembly].map(|x| x as i64));
+        v.push(i64::from(self.fixed_slots));
         json!(v)
     }
 
     fn from_json(v: &Value) -> Option<Self> {
         let a: Vec<i64> = v.as_array()?.iter().map(|x| x.as_i64()).collect::<Option<_>>()?;
-        if a.len() != 14 {
+        if a.len() != 15 {
             return None;
         }
         let mut mods = [None; 8];
@@ -56,7 +59,7 @@ impl QBuild {
             *m = usize::try_from(a[i]).ok();
         }
         let at = |i: usize| usize::try_from(a[i]).ok();
-        Some(QBuild { mods, exilus: at(8)?, arcane: at(9)?, evo: at(10)?, mode: at(11)?, val: at(12)?, assembly: at(13)? })
+        Some(QBuild { mods, exilus: at(8)?, arcane: at(9)?, evo: at(10)?, mode: at(11)?, val: at(12)?, assembly: at(13)?, fixed_slots: u8::try_from(a[14]).ok()? })
     }
 }
 
@@ -211,6 +214,13 @@ impl QuickCtx<'_> {
             None => return Vec::new(),
         };
         let mut out = Vec::new();
+        if b.fixed_slots != 0 {
+            let x = exilus.first().copied().flatten();
+            out = wfsim_optimizer::expand_with_slots(self.pool, base, vi as u32, self.cap,
+                self.innate, x, &subset, &b.mods, b.fixed_slots, &self.scenario.arena.tenno, self.scenario.policy);
+            for c in &mut out { c.exilus = b.exilus as u32; }
+            return out;
+        }
         wfsim_optimizer::expand_one(
             self.pool,
             base,
@@ -321,10 +331,8 @@ impl QuickCtx<'_> {
             let slots = s.get("slots").and_then(Value::as_array).cloned().unwrap_or_default();
             for (i, id) in slots.iter().take(9).enumerate() {
                 let Some(id) = id.as_str() else { continue };
-                if i < self.mod_slots {
+                if i < 8 {
                     b.mods[i] = self.pool.iter().position(|m| m.id == id).filter(|&p| self.usable[p]);
-                } else if i < 8 {
-                    // Past the limit's last slot: the page refuses such a start.
                 } else if let Some(x) = self.exilus_defs.iter().position(|x| x.as_ref().is_some_and(|m| m.id == id)) {
                     b.exilus = x;
                 }
@@ -348,6 +356,13 @@ impl QuickCtx<'_> {
                 .into_iter()
                 .filter(|id| self.evo_sets.iter().any(|set| set.contains(id)))
                 .collect();
+            for p in s.get("fixed").and_then(Value::as_array).into_iter().flatten() {
+                if p["kind"] == "mods" {
+                    if let Some(i) = p["idx"].as_u64().filter(|&i| i < 8) {
+                        if p["placement"] == "slot" || b.mods[i as usize].is_none() { b.fixed_slots |= 1 << i; }
+                    }
+                }
+            }
             // The set that holds every tier the start names; the tiers it does
             // not name are the fill's.
             if let Some(e) = self.evo_sets.iter().position(|x| evos.iter().all(|id| x.contains(id))) {
@@ -422,6 +437,10 @@ impl QuickCtx<'_> {
         let ids: Vec<&str> = self.required.iter().filter(|&&i| self.pool[i].stance.is_none()).map(|&i| self.pool[i].id)
             .chain(self.final_required.iter().map(String::as_str)).collect();
         let pinned = |i| fixed.contains(&Position { kind: "mods", idx: i });
+        while b.mods.iter().flatten().count() > self.mod_slots {
+            let Some(i) = (0..8).rev().find(|&i| !pinned(i) && b.mods[i].is_some_and(|m| !ids.contains(&self.pool[m].id))) else { break };
+            b.mods[i] = None;
+        }
         for id in &ids {
             if b.mods.iter().flatten().any(|&i| self.pool[i].id == *id)
                 || self.exilus_defs[b.exilus].as_ref().is_some_and(|m| m.id == *id) { continue; }
@@ -435,13 +454,14 @@ impl QuickCtx<'_> {
             let pi = self.pool.iter().position(|m| m.id == *id);
             // Displace an unfixed family conflict before trying a free main slot.
             if let Some(pi) = pi {
-                for i in 0..self.mod_slots {
+                for i in 0..8 {
                     if !pinned(i) && b.mods[i].is_some_and(|m| self.clashes_with(&self.pool[pi], &self.pool[m])) {
                         b.mods[i] = None;
                     }
                 }
             }
-            let slot = (0..self.mod_slots).filter(|&i| !pinned(i))
+            let slot = (0..8).filter(|&i| !pinned(i))
+                .filter(|&i| b.mods[i].is_some() || b.mods.iter().flatten().count() < self.mod_slots)
                 .filter(|&i| b.mods[i].is_none_or(|m| !ids.contains(&self.pool[m].id)))
                 .min_by_key(|&i| b.mods[i].is_some());
             match (pi, slot) {
@@ -482,6 +502,7 @@ impl QuickCtx<'_> {
             mode: 0,
             val: 0,
             assembly: 0,
+            fixed_slots: 0,
         }
     }
 
@@ -551,7 +572,7 @@ impl QuickSpace for QuickCtx<'_> {
         if self.arcane_sets.len() > 1 {
             out.extend((0..self.arcane_sets[0].len()).map(|idx| Position { kind: "arcane", idx }));
         }
-        out.extend((0..self.mod_slots).map(|idx| Position { kind: "mods", idx }));
+        out.extend((0..8).map(|idx| Position { kind: "mods", idx }));
         if self.exilus_defs.len() > 1 {
             out.push(Position { kind: "mods", idx: 8 });
         }
@@ -566,7 +587,7 @@ impl QuickSpace for QuickCtx<'_> {
     }
 
     fn empty(&self, b: &QBuild) -> Vec<Position> {
-        let mut out: Vec<Position> = (0..self.mod_slots)
+        let mut out: Vec<Position> = (0..8)
             .filter(|&i| b.mods[i].is_none())
             .map(|idx| Position { kind: "mods", idx })
             .collect();
@@ -734,11 +755,12 @@ impl QuickSpace for QuickCtx<'_> {
         None
     }
 
-    /// ORDER-BLIND: the cards as a set, since a build scores at its best order.
+    /// Cards as a set, with prescribed physical slots kept in the identity.
     fn key(&self, b: &QBuild) -> String {
         let mut mods: Vec<&str> = b.mods.iter().flatten().map(|&i| self.pool[i].id).collect();
         mods.sort_unstable();
-        format!("{mods:?} x{} a{} e{} m{} v{} p{}", b.exilus, b.arcane, b.evo, b.mode, b.val, b.assembly)
+        let slots: Vec<_> = (0..8).filter(|&i| b.fixed_slots & (1 << i) != 0).map(|i| (i, b.mods[i])).collect();
+        format!("{mods:?} x{} a{} e{} m{} v{} p{} s{slots:?}", b.exilus, b.arcane, b.evo, b.mode, b.val, b.assembly)
     }
 
     /// The canonical form: the same cards whatever their slots, the same
@@ -753,7 +775,7 @@ impl QuickSpace for QuickCtx<'_> {
             .iter_nonzero()
             .map(|(t, v)| format!("{t:?}:{v:.3}"))
             .collect();
-        format!("{cards:?}|{elements:?}|{}|{}|{:?}", b.exilus, b.arcane, self.variant(b))
+        format!("{cards:?}|{elements:?}|{}|{}|{:?}|{:?}", b.exilus, b.arcane, self.variant(b), c.slots)
     }
 }
 
@@ -811,6 +833,8 @@ impl QuickCtx<'_> {
     }
 
     fn candidates_now(&self, b: &QBuild, p: Position) -> Vec<QBuild> {
+        if p.kind == "mods" && p.idx < 8 && b.mods[p.idx].is_none()
+            && b.mods.iter().flatten().count() >= self.mod_slots { return Vec::new(); }
         let res = crate::candidates::candidates_json(&self.candidate_request(b, p));
         let list = res.get("candidates").and_then(Value::as_array).cloned().unwrap_or_default();
         let mut out = Vec::new();
@@ -893,7 +917,7 @@ impl QuickCtx<'_> {
     }
 
     fn legal_now(&self, b: &QBuild) -> bool {
-        self.has_required(b) && !self.orders(b).is_empty()
+        b.mods.iter().flatten().count() <= self.mod_slots && self.has_required(b) && !self.orders(b).is_empty()
     }
 
     /// Every build's score at its best element order, and WHICH order that is
@@ -1089,10 +1113,12 @@ impl QuickCtx<'_> {
 /// the funnel re-ranks contenders and rows are drawn from its list.
 #[derive(Default)]
 pub(crate) struct QuickReport {
-    pub(crate) from_starts: std::collections::HashMap<super::JobIdentity, serde_json::Value>,
-    pub(crate) near: std::collections::HashMap<super::JobIdentity, serde_json::Value>,
+    pub(crate) from_starts: std::collections::HashMap<QuickJobIdentity, serde_json::Value>,
+    pub(crate) near: std::collections::HashMap<QuickJobIdentity, serde_json::Value>,
     pub(crate) failures: Vec<serde_json::Value>,
 }
+
+type QuickJobIdentity = (super::JobIdentity, Option<[Option<usize>; 8]>);
 
 impl QuickCtx<'_> {
     /// What turns `from` into `to`, one entry per changed position: a card
@@ -1195,7 +1221,10 @@ pub(crate) fn run_quick(
     let field: Vec<(f64, f64)> =
         scored.iter().map(|(b, s)| (s.map_or(0.0, |(kp, _)| kp), ctx.spread_of(b))).collect();
     let keep = wfsim_optimizer::tied_at_the_line(&field, finalists, ctx.runs);
-    let contenders: Vec<&QBuild> = scored[..keep].iter().map(|(b, _)| b).collect();
+    let mut contenders: Vec<&QBuild> = scored[..keep].iter().map(|(b, _)| b).collect();
+    for a in answers.iter().filter(|a| a.score.is_some()) {
+        if !contenders.iter().any(|b| ctx.identity(b) == ctx.identity(&a.build)) { contenders.push(&a.build); }
+    }
     let answer_of = |b: &QBuild| {
         let id = ctx.identity(b);
         answers.iter().position(|a| ctx.identity(&a.build) == id)
@@ -1209,7 +1238,7 @@ pub(crate) fn run_quick(
     for &b in &contenders {
         let Some(c) = ctx.materialize(b) else { continue };
         built_keys.push(ctx.key(b));
-        let job = (c.ordered.clone(), c.variant, c.exilus, b.arcane);
+        let job = ((c.ordered.clone(), c.variant, c.exilus, b.arcane), c.slots);
         match answer_of(b) {
             Some(ai) => {
                 let a = &answers[ai];

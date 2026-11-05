@@ -21,8 +21,10 @@ pub struct Constraints {
 /// One canonical, legal, resolved build.
 #[derive(Debug, Clone)]
 pub struct Candidate {
-    /// Pool indices of the 8 mods, element mods first in hierarchy order.
+    /// Pool indices in resolved order; unconstrained layouts put elements first.
     pub ordered: Vec<usize>,
+    /// Physical main slots when a constraint fixes their layout.
+    pub slots: Option<[Option<usize>; 8]>,
     pub panel: ResolvedPanel,
     /// The transform group's OTHER form resolved against the same mods
     /// (Dual Toxocyst base form) — present when a second form was given.
@@ -503,6 +505,7 @@ fn expand_subset(
             seen_vectors.push(key);
             out.push(Candidate {
                 ordered: ordered.clone(),
+                slots: None,
                 panel,
                 base_panel: second_form
                     .map(|b| resolve_for(b, &refs, policy, tenno)),
@@ -562,6 +565,7 @@ pub fn rebuild_candidate(
     }
     Some(Candidate {
         ordered: ordered.to_vec(),
+        slots: None,
         panel: resolve_for(base, &refs, policy, tenno),
         base_panel: second_form.map(|b| resolve_for(b, &refs, policy, tenno)),
         plan,

@@ -50,7 +50,7 @@ pub use i18n::i18n_json;
 pub use log::log_json;
 pub use meta::meta_json;
 pub use optimize::{
-    funnel_status_json, grade_optimize, opt_buffs_json, parse_optimize, run_optimize,
+    funnel_status_json, grade_optimize, opt_buffs_json, optimize_check_json, parse_optimize, run_optimize,
     run_optimize_resumable, BoardSink, CheckpointSink, JobIdentity, OptimizePlan, ResumeFrom,
 };
 pub use panel::panel_json;
@@ -93,6 +93,7 @@ pub const ROUTES: &[(&str, Endpoint)] = &[
     ("/api/build/keys", build_keys_json),
     ("/api/build/static", static_stats::static_stats_json),
     ("/api/forma/plan", forma_plan_json),
+    ("/api/optimize/check", optimize_check_json),
     ("/api/forma/optimize", forma_optimize_json),
     ("/api/warframe/catalog", |_| warframe_catalog_json()),
     ("/api/warframe/panel", warframe_panel_json),

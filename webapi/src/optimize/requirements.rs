@@ -66,6 +66,20 @@ pub(super) fn validate(v: &Value, scope: Scope<'_>) -> Result<(), Value> {
     let list: Vec<&Value> = starts.filter(|a| !a.is_empty()).map_or_else(|| vec![&blank], |a| a.iter().collect());
     for (si, s) in list.into_iter().enumerate() {
         let error = |msg: String| fail(format!("start {}: {msg}", si + 1));
+        for p in s["fixed"].as_array().into_iter().flatten() {
+            let kind = p["kind"].as_str().unwrap_or("");
+            let i = p["idx"].as_u64();
+            let valid = i.is_some_and(|i| match kind {
+                "mods" => i < 9,
+                "assembly" => i < 2 && assemblies.iter().any(|a| !a.is_null()),
+                "arcane" => i < arcanes.first().map_or(0, Vec::len) as u64,
+                "evo" | "mode" | "valence" => i == 0,
+                _ => false,
+            });
+            if !valid || p.get("placement").is_some_and(|v| kind != "mods" || !matches!(v.as_str(), Some("slot" | "contains"))) {
+                return Err(error("unknown pin position or placement".into()));
+            }
+        }
         let fixed = |kind: &str, idx: usize| s.get("fixed").and_then(Value::as_array).is_some_and(|a| a.iter().any(|p| p["kind"] == kind && p["idx"] == idx));
         let mut cards = mandatory.clone();
         let mut pinned_main = Vec::new();
@@ -75,13 +89,13 @@ pub(super) fn validate(v: &Value, scope: Scope<'_>) -> Result<(), Value> {
             if !fixed("mods", i) { continue; }
             let id = s.get("slots").and_then(|a| a.get(i)).and_then(Value::as_str);
             let Some(id) = id else {
-                if i < slots { empty_main += 1; }
+                if i < 8 { empty_main += 1; }
                 if i == 8 && !exilus.iter().any(Option::is_none) {
                     return Err(error("the pinned empty exilus is outside this scope".into()));
                 }
                 continue;
             };
-            if i < 8 && i >= slots { return Err(error(format!("pinned slot {} exceeds the limit of {slots} mods", i + 1))); }
+            if i < 8 && slots == 0 { return Err(error("pinned mods exceed the limit of 0 mods".into())); }
             let m = lookup(id).ok_or_else(|| error(format!("pinned mod {id} is unavailable or excluded")))?;
             if pinned_main.iter().any(|p: &&ModDef| p.id == id) {
                 return Err(error(format!("{id} is pinned in more than one slot")));
@@ -96,7 +110,8 @@ pub(super) fn validate(v: &Value, scope: Scope<'_>) -> Result<(), Value> {
         let can_exilus = |m: &&ModDef| !legacy.iter().any(|id| id == m.id) && !pinned_main.iter().any(|p| p.id == m.id)
             && if fixed("mods", 8) { pinned_exilus.is_some_and(|p| p.id == m.id) } else { exilus.iter().flatten().any(|x| x.id == m.id) };
         let main_count = cards.iter().filter(|m| m.stance.is_none()).count() - usize::from(cards.iter().any(can_exilus));
-        if main_count + empty_main > slots { return Err(error(format!("required and pinned mods need {main_count} main slots, but only {} are free", slots - empty_main))); }
+        let available = slots.min(8 - empty_main);
+        if main_count > available { return Err(error(format!("required and pinned mods need {main_count} main slots, but only {available} are free"))); }
         let planned: Vec<_> = cards.iter().filter(|m| m.stance.is_none()).map(|m|
             wfsim_engine::rules::capacity::PlannedMod { base_drain: m.base_drain, polarity: m.polarity }).collect();
         if wfsim_engine::rules::capacity::plan_forma(cap, &vec![None; planned.len()], &planned).is_err() {

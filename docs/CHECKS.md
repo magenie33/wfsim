@@ -1578,6 +1578,11 @@ uses the same pin and card treatment. A global required mod reaches every
 start's request and survives search state storage. A full unfixed start can
 make room for it; conflicting pins or exclusions disable running and name
 the contradiction. Removing the requirement clears the conflict.
+MOD pin controls distinguish containment from a physical slot. Final
+requirements round-trip through search storage and the request; the shared
+validator blocks an incompatible part pin and accepts an adaptable free part.
+A real optimization with one overall result retains its pinned start's answer,
+and the result selector opens that answer.
 
 ## `check_result_to_start`
 

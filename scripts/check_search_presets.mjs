@@ -35,7 +35,7 @@ const sent = JSON.parse(await evaluate(`(async () => {
   };
   try {
     $("run-opt").click();
-    await new Promise((r) => setTimeout(r, 500));
+    for (let i = 0; i < 100 && !body; i++) await new Promise((r) => setTimeout(r, 50));
   } finally {
     api = real;
   }

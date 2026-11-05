@@ -122,7 +122,7 @@ const evoChipsOf = (ids, weaponId) => headlessEvoChips(weaponInfo(weaponId || $(
 /// the positions a start pins; a start that names no mode shows the one the
 /// builder opens this weapon in, the simulator's build the builder's.
 function cardOfState(st, w, fixed) {
-  const pinned = (k) => (fixed && fixed.has(k) ? "fixed" : "");
+  const pinned = (k) => (fixed && (fixed.has(k) || fixed.has(k.replace("mods:", "slots:"))) ? "fixed" : "");
   const riven = (id) => ({ name: (rivenSpecFor(id, w.id) || {}).name || "", section: rivenCardHtml(w, id) });
   return headlessCardOfState(pageSay(), { ...st, mode: st.mode || (fixed ? defaultMode(w.id, null) : mode) }, w, riven, pinned);
 }

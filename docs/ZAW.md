@@ -149,7 +149,11 @@ optimizer replays and canonical library records. Kitgun shares keep the existing
 two-id tuple; Zaw shares append `link` as the component tag. The compact v4
 assembly field adds an `l` suffix; older Kitgun fields are unchanged. Ordinary
 weapon identities are unchanged. Quick calculation enumerates the compatible
-parts; optimization keeps the chosen assembly fixed, as it does for Kitguns.
+parts. Optimization searches unpinned parts independently, retains pinned
+parts in that start's answer, and applies final part requirements to every
+start. Conflicting pins block the whole search; each start's answer remains
+available beside the overall top results. These are the shared modular rules
+for Zaws and Kitguns in [OPTIMIZER.md](OPTIMIZER.md#final-requirements).
 
 New special Exodia attacks require their own in-game calibration. Source-derived
 composition and integration tests do not replace golden game measurements.
