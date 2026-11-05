@@ -30,7 +30,8 @@ const srv = createServer(async (q, s) => {
   s.end(html());
 });
 await new Promise((r) => srv.listen(0, "127.0.0.1", r));
-const app = await openApp({ base: `http://127.0.0.1:${srv.address().port}` });
+// The synthetic page has no engine; visit() waits for its own release marker.
+const app = await openApp({ base: `http://127.0.0.1:${srv.address().port}`, boot: 0 });
 // THE BUILT SITE SERVES THIS FILE AT ITS ROOT, where a scope of `/` needs it.
 const built = new URL("../site/page_cache.js", import.meta.url);
 if (existsSync(new URL("../site/index.html", import.meta.url))) {
