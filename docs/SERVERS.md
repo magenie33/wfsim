@@ -35,7 +35,7 @@ Asked in this order; the first answer that settles it wins.
 
 | role | where | runs | why there |
 | --- | --- | --- | --- |
-| edge | Cloudflare | the site, the worker (the door, the factory's API, accounts), the board in R2 behind `cdn.wfsim.app`, the MCP worker, the edge worker; `wfsim-cloud` for money | serves every request; no machine to keep |
+| edge | Cloudflare | the website fallback, the worker (the door, the factory's API, accounts), the board in R2 behind `cdn.wfsim.app`, the MCP worker, the edge worker; `wfsim-cloud` for money | placed API, shared data and fallback delivery |
 | website | configured website host | nginx, the checked static release, same-origin API forwarding and certificate renewal | a direct website entrance; the data core and placed API remain together |
 | data core | Hetzner, Falkenstein | Postgres, `wfsim-factoryd` over its unix socket, the tunnel the others reach it by | the library, and the settler that writes it every second |
 | board server | Tencent, mainland | `wfsim-live` (docs/BOARD.md §"The live board"), `wfsim-pg-tunnel` | background: it pulls the facts that moved and pushes the files that did, so a lost push is sent on the next cycle; the data core's disk has none to spare |

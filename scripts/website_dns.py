@@ -19,8 +19,14 @@ def call(path, method="GET", data=None):
         'header = "Content-Type: application/json"']) + '\n'
     if data is not None: config += 'data = ' + json.dumps(json.dumps(data)) + '\n'
     response = subprocess.run(["curl", "--fail-with-body", "--silent", "--show-error", "--max-time", "40",
-                               "--config", "-"], input=config, capture_output=True, text=True, check=True)
-    body = json.loads(response.stdout)
+                               "--write-out", "\n%{http_code}", "--config", "-"],
+                              input=config, capture_output=True, text=True, check=True)
+    raw, status = response.stdout.rsplit("\n", 1)
+    if not 200 <= int(status) < 300:
+        raise RuntimeError("Cloudflare operation failed: " + path)
+    if method == "DELETE" and not raw.strip():
+        return None
+    body = json.loads(raw)
     if not body.get("success"):
         raise RuntimeError("Cloudflare operation failed: " + path)
     return body.get("result")
@@ -71,8 +77,8 @@ def main():
     removed = []
     try:
         for worker in workers:
-            call(worker_path + "/" + worker["id"], "DELETE")
             removed.append(worker)
+            call(worker_path + "/" + worker["id"], "DELETE")
         for domain in DOMAINS:
             existing = [r for r in call(records_path + "?name=" + domain) if r["name"] == domain]
             for record in existing:
@@ -87,7 +93,11 @@ def main():
             try: call(records_path + "/" + record["id"], "DELETE")
             except Exception: failures.append("remove new " + record["name"])
         for worker in removed:
-            try: call(worker_path, "PUT", {k: worker[k] for k in ("hostname", "service", "environment", "zone_id")})
+            try:
+                current = call(worker_path)
+                if not any(w["hostname"] == worker["hostname"] and w["service"] == worker["service"]
+                           for w in current):
+                    call(worker_path, "PUT", {k: worker[k] for k in ("hostname", "service", "environment", "zone_id")})
             except Exception: failures.append("restore " + worker["hostname"])
         if failures:
             raise RuntimeError("DNS rollback incomplete: " + ", ".join(failures)) from original

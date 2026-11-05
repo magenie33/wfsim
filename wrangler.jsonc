@@ -1,4 +1,4 @@
-// Cloudflare Workers (static assets) config — deploys site/ to wfsim.app.
+// Cloudflare backend config — the placed API and its copy of site/.
 //
 // It was assets-ONLY (no script) until the board needed a submission endpoint.
 // The three lines that changed are the three that matter:
@@ -22,9 +22,9 @@
   "main": "worker/index.js",
   // NEAR ITS DATABASE (Smart Placement): the factory and the library are in
   // Postgres in Germany, and every round trip an ocean away held locks longer.
-  // THE READER NEVER REACHES THIS WORKER FIRST: wfsim.app is `wfsim-edge`
-  // (wrangler.edge.jsonc), which serves the page and the engine where the reader
-  // is and passes the rest here — docs/WASM.md §"Two workers".
+  // THE WEBSITE FORWARDS DYNAMIC REQUESTS HERE: nginx or `wfsim-edge`
+  // (wrangler.edge.jsonc) serves static files near the reader and forwards
+  // dynamic routes here — docs/WASM.md §"Two workers".
   "placement": { "mode": "smart" },
   // WORKERS LOGS: without them a cron that throws leaves only its status, never
   // the exception, and its cause can only be guessed.

@@ -24,7 +24,10 @@ looks green in git can be a site that never moved.
 
 ## Two workers
 
-wfsim.app is two workers, and the custom domain points at the first.
+Cloudflare delivery uses two workers. The website host in `docs/SERVERS.md`
+serves the same static release directly and forwards dynamic requests to the
+placed backend. The edge worker retains the Cloudflare website entrance and
+cached-DNS fallback.
 
 - **`wfsim-edge`** (`wrangler.edge.jsonc`, `worker/edge.js`) runs where the
   reader is and answers the site's own files itself (`worker/pages.js`

@@ -11,13 +11,14 @@ import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
 
-spec = importlib.util.spec_from_file_location("website_dns", Path(__file__).with_name("website_dns.py"))
+spec = importlib.util.spec_from_file_location("website_dns", os.environ.get("WFSIM_WEBSITE_DNS_MODULE")
+    or Path(__file__).with_name("website_dns.py"))
 dns = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(dns)
 release = {"release": "012345abcdef", "engine": "engine", "wasm": "wasm"}
 
 
-def exercise(permit, fail_second=False):
+def exercise(permit, fail_second=False, fail_delete=False):
     workers = [{"hostname": h, "id": str(i), "zone_id": "zone", "service": "wfsim-edge",
                 "environment": "production"} for i, h in enumerate(dns.DOMAINS)]
     records = []
@@ -33,6 +34,7 @@ def exercise(permit, fail_second=False):
             record = next(w for w in workers if path.endswith("/" + w["id"]))
             workers.remove(record)
             removed.append(record["hostname"])
+            if fail_delete: raise ValueError("response lost after domain detached")
             return {}
         if "/dns_records" in path:
             if method == "GET": return list(records)
@@ -59,11 +61,11 @@ def exercise(permit, fail_second=False):
                 patch.object(dns, "backend_release", return_value=release), \
                 contextlib.redirect_stdout(io.StringIO()):
                 try: dns.main()
-                except (PermissionError, OSError): failed = True
+                except (PermissionError, OSError, ValueError): failed = True
                 else: failed = False
             if not permit:
                 assert failed and not removed and not records
-            elif fail_second:
+            elif fail_second or fail_delete:
                 assert failed and not records
                 assert {w["hostname"] for w in workers} == set(dns.DOMAINS)
             else:
@@ -74,7 +76,26 @@ def exercise(permit, fail_second=False):
             os.chdir(old)
 
 
+def transport(method, raw, status):
+    def run(args, **kwargs):
+        output = raw + "\n" + str(status) if "--write-out" in args else raw
+        return SimpleNamespace(stdout=output)
+
+    with patch.dict(os.environ, {"CLOUDFLARE_API_TOKEN": "test"}), patch.object(dns.subprocess, "run", run):
+        return dns.call("/accounts/account/workers/domains/domain", method)
+
+
+assert transport("DELETE", "", 204) is None
+assert transport("DELETE", "", 200) is None
+assert transport("GET", '{"success":true,"result":[1]}', 200) == [1]
+for method, raw, status in [("DELETE", "", 403), ("DELETE", "", 302),
+                            ("POST", "", 200), ("GET", '{"success":false}', 200)]:
+    try: transport(method, raw, status)
+    except (ValueError, RuntimeError): pass
+    else: raise AssertionError((method, raw, status))
+
 exercise(False)
 exercise(True, True)
+exercise(True, fail_delete=True)
 exercise(True)
-print("website DNS: denied edits preserve routing; partial failure restores both domains; validated switch succeeds")
+print("website DNS: empty successful deletes accepted; denied edits and lost responses restore routing; validated switch succeeds")

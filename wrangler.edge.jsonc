@@ -1,4 +1,4 @@
-// THE EDGE WORKER (worker/edge.js) — what wfsim.app's custom domain points at.
+// THE EDGE WORKER (worker/edge.js) — the Cloudflare website entrance and fallback.
 //
 // It serves site/ where the reader is and passes every request that needs a
 // database to `wfsim` (wrangler.jsonc), which Smart Placement runs near its
@@ -11,7 +11,7 @@
   "name": "wfsim-edge",
   "compatibility_date": "2026-07-28",
   "main": "worker/edge.js",
-  // ONE INVOCATION IN A HUNDRED LOGGED: every reader's request passes through
+  // ONE INVOCATION IN A HUNDRED LOGGED: Cloudflare website traffic passes through
   // here, and Workers Logs bills past 20 million a month. It answers no
   // database, so what it could get wrong is rare and shows in a sample.
   "observability": { "enabled": true, "head_sampling_rate": 0.01 },
