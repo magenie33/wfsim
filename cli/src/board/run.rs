@@ -43,6 +43,12 @@ pub fn run() {
             return;
         }
         Some("--project") => return super::assemble::project(),
+        Some("--revalidate") => {
+            let root = std::env::args().nth(2).expect("--revalidate <board directory>");
+            let state = flag("--state").unwrap_or_else(|| super::state::BOARD_STATE.to_string());
+            super::revalidate::repair(std::path::Path::new(&root), Some(std::path::Path::new(&state)));
+            return;
+        }
         Some("--serve") => return super::assemble::serve(),
         Some("--each-ruler") => return each_ruler(),
         _ => {}

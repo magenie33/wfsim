@@ -49,10 +49,20 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       plan: ${{ steps.scope.outputs.plan }}
+      test_matrix: ${{ steps.scope.outputs.test_matrix }}
+      mcp: ${{ steps.scope.outputs.mcp }}
+      bot: ${{ steps.scope.outputs.bot }}
+      checks: ${{ steps.scope.outputs.checks }}
+      services: ${{ steps.scope.outputs.services }}
+      pipeline: ${{ steps.scope.outputs.pipeline }}
+      page: ${{ steps.scope.outputs.page }}
+      parity: ${{ steps.scope.outputs.parity }}
+      page_rest: ${{ steps.scope.outputs.page_rest }}
       test: ${{ steps.scope.outputs.test }}
       gas: ${{ steps.scope.outputs.gas }}
       engine_apart: ${{ steps.scope.outputs.engine_apart }}
       published_board: ${{ steps.scope.outputs.published_board }}
+      native: ${{ steps.scope.outputs.native }}
       site: ${{ steps.scope.outputs.site }}
       hotfix: ${{ steps.scope.outputs.hotfix }}
       hotfix_matrix: ${{ steps.scope.outputs.hotfix_matrix }}
@@ -86,6 +96,9 @@ jobs:
       - run: node scripts/check_ci_policy.mjs
       - run: node scripts/check_ci_hotfix.mjs
       - run: node scripts/check_ci_partitions.mjs
+      - run: node scripts/check_cdp_boot.mjs
+      - run: python3 scripts/check_native_artifact.py
+      - run: (python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml==6.0.3) && python3 scripts/check_build_inputs.py
       - run: node scripts/check_site_setup.mjs
       - run: node scripts/check_page_bodies.mjs
       - run: node scripts/check_website_proxy.mjs
@@ -127,8 +140,7 @@ jobs:
     timeout-minutes: 150
     strategy:
       fail-fast: false
-      matrix:
-        suite: [workspace, webapi, whole-scope, descent, screened-descent, fleet-work, accuracy]
+      matrix: ${{ fromJSON(needs.plan.outputs.test_matrix) }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -149,7 +161,7 @@ jobs:
           case "$SUITE" in
             workspace) cargo test --workspace --exclude wfsim-webapi ;;
             webapi) cargo test -p wfsim-webapi -- --skip optimize::whole_scope_tests:: --skip optimize::quick_descent_tests:: ;;
-            whole-scope|descent|screened-descent|fleet-work) node scripts/ci_rust.mjs "$SUITE" ;;
+            whole-scope|descent|screened-descent|fleet-work|deep-descent|deep-screened|deep-fleet) node scripts/ci_rust.mjs "$SUITE" ;;
             accuracy) cargo test -p wfsim-webapi --lib optimize::quick_descent_tests:: -- --nocapture ;;
             *) echo "unknown Rust suite: $SUITE" >&2; exit 2 ;;
           esac
@@ -267,6 +279,131 @@ jobs:
           include-hidden-files: true
           retention-days: 7
 
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-built
+          path: site/release.json
+          retention-days: 7
+
+  # Native slices build beside validation; only ship has the signing key.
+  # Missing optional slices retain the clients' wasm fallback.
+  native-mac:
+    needs: [plan, site]
+    if: needs.site.result == 'success' && needs.plan.outputs.native == 'true' && github.event_name != 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: aarch64, runner: macos-latest }
+          - { arch: x86_64, runner: macos-15-intel }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-built
+          path: ${{ runner.temp }}/metadata
+      # An engine whose library already names this slice keeps it; one published
+      # without it gains it (`release_engine_lib.py` adds a missing target).
+      - id: due
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          built="$RUNNER_TEMP/metadata"
+          engine=$(jq -r '.engine' "$built/release.json")
+          if curl --connect-timeout 10 --max-time 30 -sf "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com/engine/$engine.json" -o "$RUNNER_TEMP/lib.json" \
+            && jq -e --arg t "$ARCH-macos" '.signed | fromjson | .files[$t]' "$RUNNER_TEMP/lib.json" > /dev/null; then
+            echo "::notice::engine library $engine names $ARCH-macos — no Mac build"; echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "go=true" >> "$GITHUB_OUTPUT"
+      - if: steps.due.outputs.go == 'true'
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: site-built
+          path: ${{ runner.temp }}/built
+      - if: steps.due.outputs.go == 'true'
+        run: |
+          set -euo pipefail
+          built="$RUNNER_TEMP/built/site"
+          # THE SHIPPED WASM AS THE REFERENCE, under the names check_gas.mjs reads.
+          wasm=$(jq -r '.wasm' "$built/release.json"); ref="$RUNNER_TEMP/ref"; mkdir -p "$ref"
+          cp "$built/pkg/wfsim_wasm.$wasm.js" "$ref/wfsim_wasm.js"
+          cp "$built/pkg/wfsim_wasm_bg.$wasm.wasm" "$ref/wfsim_wasm_bg.wasm"
+          for p in $(jq -r '.packs[]' "$built/release.json"); do cp "$built/pkg/$p" "$ref/"; done
+      - if: steps.due.outputs.go == 'true'
+        uses: dtolnay/rust-toolchain@683b588c487a69d01f6c6ddf40f036ff682cc2c8 # master
+        with:
+          # keep in sync with mise.toml and ci.yml
+          toolchain: "1.97.1"
+          targets: ${{ matrix.arch }}-apple-darwin
+      - if: steps.due.outputs.go == 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.23.4"
+      - if: steps.due.outputs.go == 'true'
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        continue-on-error: true
+        with:
+          shared-key: engine-macos-${{ matrix.arch }}
+          cache-workspace-crates: true
+      - if: steps.due.outputs.go == 'true'
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          t="$ARCH-apple-darwin"
+          [ "$(uname -m | sed 's/arm64/aarch64/')" = "$ARCH" ] || { echo "::error::$ARCH slice on a $(uname -m) runner"; exit 1; }
+          # The library as release_engine_lib.py builds the Linux one: data apart once apart.
+          env $(python3 -c "import sys; sys.path.insert(0, 'scripts'); import data_packs; print('WFSIM_DATA_APART=1' if data_packs.apart() else '')") \
+            cargo build --release --locked -p wfsim-native --target "$t"
+          cargo build --release --locked -p wfsim-cli --bin wfsim-gas --target "$t"
+          node scripts/check_gas.mjs native="$PWD/target/$t/release/wfsim-gas" pkg="$RUNNER_TEMP/ref"
+          mkdir -p "out/macos/$ARCH"; cp "target/$t/release/libwfsim_native.dylib" "out/macos/$ARCH/"
+          python3 scripts/native_artifact.py "out/macos/$ARCH/libwfsim_native.dylib" "$RUNNER_TEMP/built/site/release.json"
+      - if: steps.due.outputs.go == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: engine-native-${{ matrix.arch }}
+          path: out
+          if-no-files-found: error
+
+  native-linux:
+    needs: [plan, site]
+    if: needs.site.result == 'success' && needs.plan.outputs.native == 'true' && github.event_name != 'pull_request'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: release-built
+          path: ${{ runner.temp }}/metadata
+      - id: due
+        run: |
+          set -euo pipefail
+          engine=$(jq -r '.engine' "$RUNNER_TEMP/metadata/release.json")
+          if curl --connect-timeout 10 --max-time 30 -sf "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com/engine/$engine.json" -o "$RUNNER_TEMP/lib.json" \
+            && jq -e '.signed | fromjson | .files["x86_64-linux"]' "$RUNNER_TEMP/lib.json" > /dev/null; then
+            echo "go=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "go=true" >> "$GITHUB_OUTPUT"
+      - if: steps.due.outputs.go == 'true'
+        uses: ./.github/actions/built-site
+        with:
+          built: 'true'
+      - if: steps.due.outputs.go == 'true'
+        run: python3 scripts/ci_native_linux.py
+      - if: steps.due.outputs.go == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: engine-native-linux
+          path: out
+          if-no-files-found: error
+
   # The page is not something `cargo test` can see. These jobs check the site
   # this commit builds — the artefact Cloudflare will deploy — in PARALLEL, each
   # laying it the same way, so CI takes as long as the slowest of them: a check
@@ -274,7 +411,7 @@ jobs:
   # This one: the files, the door and the services' own checks, no page.
   checks:
     needs: [plan, site]
-    if: needs.site.result == 'success'
+    if: needs.site.result == 'success' && needs.plan.outputs.checks == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -301,71 +438,36 @@ jobs:
       # and the page and the engine never cross to the placed worker.
       - name: The edge worker serves the site
         run: node scripts/check_edge_worker.mjs
-      # A SIGNATURE THAT DOES NOT VERIFY is sent anyway and read as a stranger.
-      - name: What the tooling signs verifies, and the directory holds no private key
-        run: node scripts/check_bot_auth.mjs
       - name: The browser's agent gets the door's table
         run: node scripts/check_webmcp.mjs
-      # THE DATABASE THE CHECKS BELOW RUN THE WORKER ON: an in-memory Postgres
-      # (scripts/pg/test_db.mjs), and the client the pipeline's scripts use.
-      - name: The checks' Postgres
-        run: npm ci --silent --prefix scripts/pg
-      # THE BOTS' DOORS hold only what the platform signed, and answer once.
-      - name: The QQ door keeps signed messages and hands each out once
-        run: node scripts/check_qq.mjs
-      - name: A fissure is logged once with its planet, and each combination says how often it came
-        run: node scripts/check_world_fissures.mjs
-      - name: What the site tells an account reaches it and nobody else, read once, kept as long as it says
-        run: node scripts/check_notices.mjs
-      - name: What a reader tells the owner is kept for them and the account alone, and goes with it
-        run: node scripts/check_feedback.mjs
       - name: A riven typed for fx reads every way a line is written, its side as the card says it
         run: node scripts/check_fx_lines.mjs
-      - name: User calculations retain ownership, share verified reports and exclude incompatible clients
-        run: node scripts/check_user_task_service.mjs
-      - name: Expedited board reviews preserve old scores until fresh independent agreement
-        run: node scripts/check_board_reviews.mjs
-      - name: New family candidates share verified optimization and stop after one generation
-        run: node scripts/check_board_family.mjs
-      - name: A riven appraisal is asked once and answered once
-        run: node scripts/check_appraise.mjs
-      - name: A client's number reaches the board only when CLIENTS_PER_FACT clients agree
-        run: node scripts/check_board_verify.mjs
-      - name: Protocol 8 hands out by protocol 7's rules and holds a client to its time
-        run: node scripts/check_board_sync.mjs
       - name: Every item on a fight's path is metered
         run: node scripts/check_gas.mjs
       - name: Prose is never read where a number is computed
         run: node scripts/check_prose.mjs
       - name: The clients' contract states the values the code holds
         run: node scripts/check_clients_doc.mjs
-      - name: A dial is set within its bounds, logged, and told to the clients
-        run: node scripts/check_dials.mjs
-      - name: A machine's compute counts under the account that claimed it, its name on the ranking only by consent
-        run: node scripts/check_contribution.mjs
-      - name: A device's ledger says where every point went, and names nobody else
-        run: node scripts/check_ledger.mjs
-      - name: Every question becomes a fact, and nobody waits on one that cannot
-        run: node scripts/check_tasks.mjs
-      - name: Task modules isolate dispatch, committed results and retryable consumers
-        run: node scripts/check_task_modules.mjs
-      - name: Complete demand includes unadmitted work without counting it twice
-        run: |
-          node scripts/check_task_inventory.mjs
-          node scripts/check_inventory_capture.mjs
-      - name: A computer on but idle is found by what the server keeps, and said once
-        run: node scripts/check_idle_devices.mjs
+
+      # THE WORKERS RUN THE PAGE'S OWN PARTS, copied by a generator: a stale
+      # codec previews a link by a grammar the page left behind, and a stale
+      # headless table answers an agent with queries the page has moved past.
+      - name: The workers' copies are the page's parts
+        run: node scripts/gen_worker_parts.mjs --check
+
+      - name: What an agent reads to find WFSim is what the site serves
+        run: node scripts/check_agent_discovery.mjs
 
   # The board's pipeline and the factory against a real Postgres, no page.
   pipeline:
-    needs: [plan, site]
-    if: needs.site.result == 'success'
+    needs: [plan, quick]
+    if: needs.plan.outputs.pipeline == 'true' && needs.plan.outputs.reuse == ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/built-site
+      - uses: actions/setup-node@v4
         with:
-          built: ${{ needs.site.result == 'success' }}
+          node-version: '22.23.4'
       # THE DATABASE THE CHECKS BELOW RUN THE WORKER ON: an in-memory Postgres
       # (scripts/pg/test_db.mjs), and the client the pipeline's scripts use.
       - name: The checks' Postgres
@@ -421,8 +523,12 @@ jobs:
   # The page in headless Chrome: its controls, lanes and queue.
   page:
     needs: [plan, site]
-    if: needs.site.result == 'success'
+    if: needs.site.result == 'success' && needs.plan.outputs.page == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [controls, calculation, community]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/built-site
@@ -435,51 +541,67 @@ jobs:
       # A BOX THAT REDRAWS UNDER A COMPOSITION takes no Chinese at all, while
       # Latin typing looks fine.
       - name: Every search box takes a Chinese input method
+        if: matrix.group == 'controls'
         run: node scripts/check_ime_search.mjs
       # NONA RUNS ON THE DOOR, against a local stand-in provider: her tools are
       # the door's table at request time, and her first change branches the
       # reader's build. Neither is visible until a reader loses a build.
       - name: Nona works the page on a copy
+        if: matrix.group == 'controls'
         run: node scripts/check_nona.mjs
       # A CONTROL WITH NO DOOR ROW is a feature Nona silently cannot use. Every
       # control on the page is inside an action's anchor or in AGENT_EXEMPT
       # with its reason, and the not-yet list only shrinks.
       - name: Every control is on the door or says why not
+        if: matrix.group == 'controls'
         run: node scripts/check_agent_coverage.mjs
       - name: The compute page shows what each device does, by kind, and nothing private
+        if: matrix.group == 'community'
         run: node scripts/check_compute.mjs
       - name: Compute cards retain layout, paginate records and share one live count
+        if: matrix.group == 'community'
         run: node scripts/check_compute_ui.mjs
       - name: A lost lane is replaced and says where, and a slow call is not taken for a dead one
+        if: matrix.group == 'calculation'
         run: node scripts/check_calc_recovers.mjs
       - name: Calculation tasks retain their inputs, results and queue across pages
+        if: matrix.group == 'calculation'
         run: node scripts/check_user_task_center.mjs
       - name: Search tasks and saved-riven batches retain their captured inputs
+        if: matrix.group == 'calculation'
         run: node scripts/check_task_executors.mjs
       - name: Exact official simulations request durable independent board reviews
+        if: matrix.group == 'community'
         run: node scripts/check_board_review_page.mjs
       - name: Recommendations stay in the Library and preserve private history
+        if: matrix.group == 'community'
         run: node scripts/check_recommendations_page.mjs
       - name: Community transfer completes through two real WASM witnesses
+        if: matrix.group == 'community'
         run: node scripts/check_task_service_browser.mjs
       - name: Protocol 8 on the page keeps every result and holds to the signal and next_ms
+        if: matrix.group == 'community'
         run: node scripts/check_compute_queue.mjs
       - name: A new release is taken at once, and the reload loses the reader nothing
+        if: matrix.group == 'controls'
         run: node scripts/check_release_follow.mjs
       - name: The home tally and the ranking are CDN files first, the worker their fallback
+        if: matrix.group == 'controls'
         run: node scripts/check_stats_files.mjs
       # A WORKER THAT LIVES IN EVERY READER'S BROWSER is wrong for weeks: it falls
       # back on a slow road only, never on a sound one, and its way back works.
       - name: The page cache answers a slow road and never a sound one
+        if: matrix.group == 'controls'
         run: node scripts/check_page_cache.mjs
 
   # The builder against every weapon: the slowest sweep, so it is SHARDED, every
   # fourth weapon to a job (WFSIM_PARITY_SHARD).
   parity:
     needs: [plan, site]
-    if: needs.site.result == 'success'
+    if: needs.site.result == 'success' && needs.plan.outputs.parity == 'true'
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         shard: [0, 1, 2, 3]
     steps:
@@ -501,15 +623,15 @@ jobs:
           WFSIM_RIVEN_SHARD: ${{ matrix.shard }}/4
         run: node scripts/check_riven_request.mjs
 
-  # The rest of the page, the board's library and the MCP server.
+  # Remaining page checks and the board's library.
   page-rest:
     needs: [plan, site]
-    if: needs.site.result == 'success'
+    if: needs.site.result == 'success' && needs.plan.outputs.page_rest == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        group: [account, views, cards, heads, library]
+        group: [account, views, builder, heads, library]
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/built-site
@@ -556,7 +678,7 @@ jobs:
         if: matrix.group == 'views'
         run: node scripts/check_board_depth.mjs
       - name: Kitgun module navigation keeps the selected slot and build
-        if: matrix.group == 'views'
+        if: matrix.group == 'builder'
         run: node scripts/check_kitgun_slot.mjs
       - name: The Build Library filters sorts and streams published builds
         if: matrix.group == 'views'
@@ -568,10 +690,10 @@ jobs:
         if: matrix.group == 'views'
         run: node scripts/check_library_attributes.mjs
       - name: Global calculation conditions keep one editable state
-        if: matrix.group == 'views'
+        if: matrix.group == 'builder'
         run: node scripts/check_global_conditions.mjs
       - name: Working navigation and execution controls remain accessible
-        if: matrix.group == 'views'
+        if: matrix.group == 'builder'
         run: node scripts/check_working_navigation.mjs
       # THE DOWNLOAD OFFER, which has three answers and only one of them is
       # visible on the machine it was written on. Its failure modes are silent
@@ -601,25 +723,25 @@ jobs:
         if: matrix.group == 'views'
         run: node scripts/check_compute_orders.mjs
       - name: The board's scene and shooting choices are independent and survive a link
-        if: matrix.group == 'views'
+        if: matrix.group == 'builder'
         run: node scripts/check_board_ladder.mjs
       - name: All board selectors and labels share the same hierarchy
-        if: matrix.group == 'views'
+        if: matrix.group == 'builder'
         run: node scripts/check_board_selection.mjs
       - name: A built-in search is read-only, a click copies it, and the run button sends the page's own search
-        if: matrix.group == 'views'
+        if: matrix.group == 'builder'
         run: node scripts/check_search_presets.mjs
       - name: Final requirements and modular part pins survive start editing
-        if: matrix.group == 'views'
+        if: matrix.group == 'builder'
         run: node scripts/check_optimizer_requirements.mjs
       - name: All presets share numeric naming, management and inert info
-        if: matrix.group == 'views'
+        if: matrix.group == 'builder'
         run: node scripts/check_preset_library.mjs
       - name: One hundred presets keep a compact searchable switcher
-        if: matrix.group == 'views'
+        if: matrix.group == 'builder'
         run: node scripts/check_preset_compact.mjs
       - name: Motovore physical mods and progenitor bonus reach the shared simulator
-        if: matrix.group == 'views'
+        if: matrix.group == 'builder'
         run: node scripts/check_motovore.mjs
       # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
       # browser, no engine, no network — it imports `worker/index.js` and runs
@@ -630,31 +752,9 @@ jobs:
       - name: The board's submission endpoint keeps the whole build
         if: matrix.group == 'library'
         run: node scripts/check_board_submit.mjs
-      # A SHORT SHARE LINK stores a build under the worker's own hash of it, and
-      # nothing that is not a share code. Stub store, no network.
-      # THE WORKERS RUN THE PAGE'S OWN PARTS, copied by a generator: a stale
-      # codec previews a link by a grammar the page left behind, and a stale
-      # headless table answers an agent with queries the page has moved past.
-      - name: The workers' copies are the page's parts
-        if: matrix.group == 'library'
-        run: node scripts/gen_worker_parts.mjs --check
-      - name: The MCP server's queries run with no page
-        if: matrix.group == 'library'
-        run: node scripts/check_mcp_tools.mjs
-      # THE BOT DRAWS ITS CARD WITH NO PAGE and Chrome only rasterizes it: a
-      # card that drifted from the page's is still a picture, just a wrong one.
-      - name: The bot's card is the page's, pixel for pixel
-        if: matrix.group == 'cards'
-        run: node scripts/check_card_document.mjs
       - name: The heads answer as the whole board
         if: matrix.group == 'heads'
         run: node scripts/check_board_heads.mjs
-      - name: The MCP server knows who calls, and how often
-        if: matrix.group == 'library'
-        run: node scripts/check_mcp_auth.mjs
-      - name: What an agent reads to find WFSim is what the site serves
-        if: matrix.group == 'library'
-        run: node scripts/check_agent_discovery.mjs
       - name: The account rules hold against the real schema
         if: matrix.group == 'library'
         run: node scripts/check_accounts.mjs
@@ -732,9 +832,6 @@ jobs:
       - name: What intake made of an arrival reaches the library
         if: matrix.group == 'library'
         run: bash scripts/ship_builds.sh --self-test
-      - name: The bot server is sent every module the live board's scripts import
-        if: matrix.group == 'library'
-        run: python3 scripts/ship_bot.py --self-test
       # A REFRESH ASKS WHAT THE FACTORY HAS ROOM FOR, and a row near its fifteen
       # days whatever the room: the oldest first, never more than an hour's.
       - name: A refresh asks the oldest rows the room allows, and the forced ones
@@ -760,9 +857,93 @@ jobs:
         if: matrix.group == 'library'
         run: node scripts/check_submission_hop.mjs
 
+  services:
+    needs: [plan, quick]
+    if: needs.plan.outputs.services == 'true' && needs.plan.outputs.reuse == ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+      - run: npm ci --silent --prefix scripts/pg
+      - name: A fissure is logged once with its planet, and each combination says how often it came
+        run: node scripts/check_world_fissures.mjs
+      - name: What the site tells an account reaches it and nobody else, read once, kept as long as it says
+        run: node scripts/check_notices.mjs
+      - name: What a reader tells the owner is kept for them and the account alone, and goes with it
+        run: node scripts/check_feedback.mjs
+      - name: User calculations retain ownership, share verified reports and exclude incompatible clients
+        run: node scripts/check_user_task_service.mjs
+      - name: Expedited board reviews preserve old scores until fresh independent agreement
+        run: node scripts/check_board_reviews.mjs
+      - name: New family candidates share verified optimization and stop after one generation
+        run: node scripts/check_board_family.mjs
+      - name: A riven appraisal is asked once and answered once
+        run: node scripts/check_appraise.mjs
+      - name: A client's number reaches the board only when CLIENTS_PER_FACT clients agree
+        run: node scripts/check_board_verify.mjs
+      - name: Protocol 8 hands out by protocol 7's rules and holds a client to its time
+        run: node scripts/check_board_sync.mjs
+      - name: A dial is set within its bounds, logged, and told to the clients
+        run: node scripts/check_dials.mjs
+      - name: A machine's compute counts under the account that claimed it, its name on the ranking only by consent
+        run: node scripts/check_contribution.mjs
+      - name: A device's ledger says where every point went, and names nobody else
+        run: node scripts/check_ledger.mjs
+      - name: Every question becomes a fact, and nobody waits on one that cannot
+        run: node scripts/check_tasks.mjs
+      - name: Task modules isolate dispatch, committed results and retryable consumers
+        run: node scripts/check_task_modules.mjs
+      - name: A computer on but idle is found by what the server keeps, and said once
+        run: node scripts/check_idle_devices.mjs
+      - name: Complete demand includes unadmitted work without counting it twice
+        run: |
+          node scripts/check_task_inventory.mjs
+          node scripts/check_inventory_capture.mjs
+
+  mcp:
+    needs: [plan, site]
+    if: needs.site.result == 'success' && needs.plan.outputs.mcp == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/built-site
+        with:
+          built: 'true'
+      - name: The MCP server's queries run with no page
+        run: node scripts/check_mcp_tools.mjs
+      - name: The MCP server knows who calls, and how often
+        run: node scripts/check_mcp_auth.mjs
+      - name: The actual MCP entry installs all data before querying
+        run: node scripts/check_mcp_entry.mjs
+
+  bot:
+    needs: [plan, site]
+    if: needs.site.result == 'success' && needs.plan.outputs.bot == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/built-site
+        with:
+          built: 'true'
+      - run: npm ci --silent --prefix scripts/pg
+      # THE BOT DRAWS ITS CARD WITH NO PAGE and Chrome only rasterizes it: a
+      # card that drifted from the page's is still a picture, just a wrong one.
+      - name: The bot's card is the page's, pixel for pixel
+        run: node scripts/check_card_document.mjs
+      - name: The bot server is sent every module the live board's scripts import
+        run: python3 scripts/ship_bot.py --self-test
+      # A SIGNATURE THAT DOES NOT VERIFY is sent anyway and read as a stranger.
+      - name: What the tooling signs verifies, and the directory holds no private key
+        run: node scripts/check_bot_auth.mjs
+      # THE BOTS' DOORS hold only what the platform signed, and answer once.
+      - name: The QQ door keeps signed messages and hands each out once
+        run: node scripts/check_qq.mjs
+
   ci-required:
     if: ${{ always() }}
-    needs: [plan, quick, commits, coordination, hotfix, test, gas, engine-apart, published-board, site, checks, pipeline, page, parity, page-rest]
+    needs: [plan, quick, commits, coordination, hotfix, test, gas, engine-apart, published-board, site, native-mac, native-linux, checks, services, pipeline, page, parity, page-rest, mcp, bot]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

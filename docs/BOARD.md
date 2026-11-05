@@ -49,6 +49,14 @@ number**. Everything else follows from it:
   why serde_json runs with `float_roundtrip` and the scorer reads a score's
   literal (`exact_score`).
 
+For release admission repairs, `publish.yml` accepts `revalidate_only=true`.
+The assembler's `--revalidate <dir>` checks the existing snapshot against the
+same engine admission helper as the published-board test. It removes illegal
+rows and rebuilds indexes without fetching the library or score facts. Legal
+row bytes and measurement clocks remain intact; listed counts follow the rows,
+and submission counts retain the last full projection. No row or score is
+added. The daily full projection still reads the authoritative facts.
+
 ## Family candidates
 
 An arriving library build seeds one quick search for each other roster weapon

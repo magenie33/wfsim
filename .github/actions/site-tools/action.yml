@@ -84,6 +84,9 @@ runs:
     - if: inputs.build == 'true' && steps.kept.outputs.cache-hit != 'true'
       shell: bash
       run: python scripts/build_cache.py public-pull
+    - if: inputs.build == 'true'
+      shell: bash
+      run: python scripts/build_site_app.py --check-inputs
     # THE DERIVED ART (build_site_app.py `ART_KEPT`), named by what it came from,
     # so a build encodes only the art that changed. Saved anew whenever the
     # builder or the cache moves; the newest one is what the next run starts from.

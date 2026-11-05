@@ -18,12 +18,13 @@
 //   const v = await app.evaluate(`(async () => { ... })()`);
 //   app.check("it says so", v.ok === true, JSON.stringify(v));
 //   await app.finish("the thing holds");   // exits non-zero if anything failed
-import { spawn, spawnSync } from "node:child_process";
+import { launchChrome, stopChrome, waitForBoot } from './cdp_boot.mjs';
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { readFileSync, readdirSync, rmSync, existsSync, statSync } from "node:fs";
 import { extname, join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomUUID } from 'node:crypto';
 
 const MIME = {
   ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
@@ -80,39 +81,9 @@ export async function serveSite(root, delay = {}) {
   return srv;
 }
 
-/// Chrome picks the debugging port and writes it into its own profile.
-///
-/// A hardcoded port per check is a fixed list nobody can keep distinct, and two
-/// checks running at once race for the same number.
-/// `--remote-debugging-port=0` plus `DevToolsActivePort` is Chrome's own answer.
-async function debugPort(profile) {
-  const file = join(profile, "DevToolsActivePort");
-  for (let i = 0; i < 120; i++) {
-    try {
-      const line = readFileSync(file, "utf8").split("\n")[0].trim();
-      if (line) return Number(line);
-    } catch { /* not written yet */ }
-    await sleep(250);
-  }
-  throw new Error("Chrome never reported a debugging port");
-}
-
-/// EVERY OLD PROFILE, ON THE WAY IN — the one cleanup that cannot be skipped.
-///
-/// `finish()` removes its own directory, and that was the whole plan until a
-/// machine turned up with 644 of them and 17 GB of C: gone. Two ways they survive and neither is exotic:
-///
-/// - on Windows Chrome still holds handles for a moment after `kill()`, so the
-///   `rmSync` in `finish` throws and the comment there says "it can stay" —
-///   which on this platform is the NORMAL path, not the edge case;
-/// - a script that throws, is interrupted, or is an ad-hoc probe that never
-///   calls `finish()` never reaches the cleanup at all.
-///
-/// Sweeping on the way IN fixes both, because by then the run that made the
-/// directory is long gone and nothing holds it. An hour is the grace period: a
-/// check takes under a minute, so anything older than that belongs to a run
-/// that is over, and a concurrent check's own directory is never old enough to
-/// be caught.
+/// Interrupted checks can leave profiles behind, and Windows briefly holds
+/// handles after Chrome exits. Sweep only profiles older than an hour so a
+/// concurrent check retains its directory.
 function sweepStaleProfiles() {
   const tmp = process.env.TEMP || "/tmp";
   const cutoff = Date.now() - 60 * 60 * 1000;
@@ -154,7 +125,7 @@ export async function openApp(o = {}) {
   // rewrote it ("no CDP target"), and a Chrome still shutting down still held
   // the directory's lock when the next check claimed it. Neither can happen to
   // a directory nobody else has ever used.
-  const profile = join(process.env.TEMP || "/tmp", `${name}-${process.pid}`);
+  const profileBase = join(process.env.TEMP || "/tmp", `${name}-${process.pid}-${randomUUID()}`);
   sweepStaleProfiles();
   // An EXTERNAL base skips the server entirely, so a check can be pointed at
   // wfsim.app, a preview deploy, or the dev server (`WFSIM_BASE`, for every
@@ -163,28 +134,17 @@ export async function openApp(o = {}) {
   const srv = base ? null : await serveSite(root, o.delay);
   const BASE = base || `http://127.0.0.1:${srv.address().port}`;
 
-  const proc = spawn(CHROME, [
+  let started;
+  try { started = await launchChrome(CHROME, [
     "--remote-debugging-port=0", "--headless=new", "--disable-gpu",
     "--no-first-run", "--no-default-browser-check",
     // A CI runner has no usable user namespace for Chrome's sandbox. The page
     // is local content we generated, so this costs nothing there and is not
     // enabled anywhere else.
     ...(process.env.CI ? ["--no-sandbox", "--disable-dev-shm-usage"] : []),
-    `--user-data-dir=${profile}`, "about:blank",
-  ], { stdio: "ignore" });
-
-  const port = await debugPort(profile);
-  let page = null;
-  for (let i = 0; i < 60 && !page; i++) {
-    try {
-      const r = await fetch(`http://127.0.0.1:${port}/json/list`);
-      if (r.ok) page = (await r.json()).find((t) => t.type === "page");
-    } catch { /* still starting */ }
-    if (!page) await sleep(250);
-  }
-  if (!page) {
-    throw new Error(`chrome did not start (tried ${CHROME}) — set CHROME to its path`);
-  }
+  ], profileBase); }
+  catch (e) { srv?.close(); throw e; }
+  const { proc, profile, page } = started;
 
   const ws = new WebSocket(page.webSocketDebuggerUrl);
   let id = 0;
@@ -282,7 +242,9 @@ export async function openApp(o = {}) {
     /// (Re)load the app and wait for it to come up.
     async load(path = "/", wait) {
       await send("Page.navigate", { url: BASE + path });
-      await sleep(wait ?? o.boot ?? 13000);
+      if (wait !== undefined || o.boot !== undefined) await sleep(wait ?? o.boot);
+      else await waitForBoot(() => app.evaluate(`({ ready: !!window.__wfsimReady,
+        error: document.getElementById('boot-note')?.textContent || '' })`));
     },
 
     /// Switch language the way a returning visitor does — the setting is
@@ -310,41 +272,12 @@ export async function openApp(o = {}) {
     /// opens a second app of its own.
     async close() {
       try { ws.close(); } catch { /* already gone */ }
-      // THE WHOLE TREE, not the launcher. Chrome forks a renderer, a gpu
-      // process and more, and on Windows `kill()` reaches only the one node
-      // spawned here — the children go on holding the profile, which is why
-      // eight headless Chromes were still alive with a directory open after a
-      // check had exited cleanly. `taskkill /T` is the platform's
-      // own answer; everywhere else the signal already reaches the group.
-      try {
-        if (process.platform === "win32") {
-          spawnSync("taskkill", ["/pid", String(proc.pid), "/T", "/F"], { stdio: "ignore" });
-        } else {
-          proc.kill();
-        }
-      } catch { /* already gone */ }
       try { srv?.close(); } catch { /* already gone */ }
-      // WAIT FOR CHROME TO LET GO, then retry. `kill()` returns immediately and
-      // Windows releases the profile's handles a moment later, so removing it
-      // on the next line failed EVERY time — which is how 644 directories and
-      // 17 GB accumulated while a comment said the leftovers were harmless.
-      // A second is longer than Chrome needs and shorter than anyone notices;
-      // `sweepStaleProfiles` is the backstop when even that is not enough.
-      await Promise.race([
-        new Promise((r) => proc.once("exit", r)),
-        sleep(1000),
-      ]);
-      for (let i = 0; i < 5; i++) {
-        try {
-          rmSync(profile, { recursive: true, force: true });
-          break;
-        } catch {
-          await sleep(200);
-        }
-      }
+      await stopChrome(proc, profile);
     },
   };
 
-  await app.load("/");
+  try { await app.load("/"); }
+  catch (e) { await app.close(); throw e; }
   return app;
 }

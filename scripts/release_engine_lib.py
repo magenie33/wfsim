@@ -19,8 +19,10 @@ push, so it never names an engine the site does not serve yet.
 
 BUILT ONLY FOR AN ENGINE NOT YET PUBLISHED: the Windows library is the one
 `desktop/payload/native/` holds for this engine; the Linux one is built in
-Docker on Debian bullseye, so it loads on any glibc from 2.31; the two macOS
-ones come from ship.yml's `engine-mac` job, under `target/engine-lib/macos/`.
+Docker on Debian bullseye, so it loads on any glibc from 2.31. CI builds Linux
+and macOS slices beside validation; ship downloads them from that exact run
+under `target/engine-lib/`, and checks their release identities and digests.
+An absent Linux artifact falls back to Docker during publishing.
 A published library that lacks a macOS slice gains it on a later ship, its
 other targets untouched (`add_missing`).
 
@@ -38,6 +40,7 @@ import urllib.request
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import cos  # noqa: E402
 import data_packs  # noqa: E402
+import native_artifact  # noqa: E402
 from release_desktop import updatekit  # noqa: E402
 from ship_bot import toolchain  # noqa: E402
 
@@ -46,13 +49,23 @@ NATIVE = ROOT / "desktop" / "payload" / "native"
 OUT = ROOT / "target" / "engine-lib"
 
 
-def linux_library() -> bytes | None:
+def linux_library(*, prebuilt: bool = True) -> bytes | None:
     """`libwfsim_native.so` for x86_64 Linux, or None with the reason said."""
+    if prebuilt:
+        try:
+            release = json.loads((ROOT / "site/release.json").read_text(encoding="utf-8"))
+            body = native_artifact.load(OUT / "linux/libwfsim_native.so", release)
+            if body is not None:
+                print("engine library: checked Linux CI artifact")
+                return body
+        except (OSError, ValueError, KeyError) as error:
+            print(f"engine library: invalid Linux CI artifact — {error}; using wasm")
+            return None
     if subprocess.run(["docker", "version"], capture_output=True).returncode != 0:
         print("engine library: Docker is not running — no Linux library this time")
         return None
     OUT.mkdir(parents=True, exist_ok=True)
-    r = subprocess.run(["docker", "run", "--rm", "-v", f"{ROOT}:/src:ro", "-v", f"{OUT}:/out",
+    r = subprocess.run(["docker", "run", "--rm", "--platform=linux/amd64", "-v", f"{ROOT}:/src:ro", "-v", f"{OUT}:/out",
                         "-v", "wfsim-lib-target:/target", "-v", "wfsim-cargo-reg:/usr/local/cargo/registry",
                         "-e", "CARGO_TARGET_DIR=/target",
                         *(["-e", "WFSIM_DATA_APART=1"] if data_packs.apart() else []),
@@ -77,12 +90,18 @@ def signed(body: str) -> bytes:
 
 
 def macos_libraries() -> dict:
-    """The macOS slices ship.yml's `engine-mac` built, each held to the wasm there."""
+    """CI's macOS slices, each held to the checked wasm on its own architecture."""
     libs = {}
+    release = json.loads((ROOT / "site/release.json").read_text(encoding="utf-8"))
     for arch in ("aarch64", "x86_64"):
         mac = OUT / "macos" / arch / "libwfsim_native.dylib"
-        if mac.is_file():
-            libs[f"{arch}-macos"] = ("dylib", mac.read_bytes())
+        try:
+            body = native_artifact.load(mac, release)
+        except (OSError, ValueError, KeyError) as error:
+            print(f"engine library: invalid {arch}-macos CI artifact — {error}; using wasm")
+            continue
+        if body is not None:
+            libs[f"{arch}-macos"] = ("dylib", body)
         else:
             print(f"engine library: no {arch}-macos library this time")
     return libs
@@ -107,6 +126,11 @@ def add_missing(c, engine: str, stage: bool) -> bool:
     with urllib.request.urlopen(f"https://{cos.host(c)}/engine/{engine}.json", timeout=60) as r:
         body = json.loads(json.loads(r.read())["signed"])
     new = {t: lib for t, lib in macos_libraries().items() if t not in body["files"]}
+    if "x86_64-linux" not in body["files"]:
+        release = json.loads((ROOT / "site/release.json").read_text(encoding="utf-8"))
+        linux = native_artifact.load(OUT / "linux/libwfsim_native.so", release)
+        if linux is not None:
+            new["x86_64-linux"] = ("so", linux)
     if not new:
         return False
     body["files"] = {**upload(c, engine, new, False), **body["files"]}

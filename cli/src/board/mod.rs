@@ -73,6 +73,7 @@ mod entry;
 mod facts;
 mod measure;
 mod publish;
+mod revalidate;
 pub use publish::CLIENT_MEASURED;
 mod queue;
 mod run;

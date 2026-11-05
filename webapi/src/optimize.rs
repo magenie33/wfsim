@@ -2997,27 +2997,48 @@ mod whole_scope_tests {
     /// changes — every build is scored on the same paired stream wherever it runs.
     #[test]
     fn a_descent_split_across_workers_lands_where_one_worker_does() {
-        descent_split_across_workers(1);
+        descent_split_across_workers(1, false);
     }
 
     #[test]
     fn a_descent_split_across_workers_lands_where_one_worker_does_with_step_screen() {
-        descent_split_across_workers(10);
+        descent_split_across_workers(10, false);
     }
 
-    fn descent_split_across_workers(candidate_runs: u32) {
+    #[test]
+    #[ignore = "full catalog coverage: scheduled or explicit deep CI"]
+    fn full_catalog_descent_matches_workers() {
+        descent_split_across_workers(1, true);
+    }
+
+    #[test]
+    #[ignore = "full catalog coverage: scheduled or explicit deep CI"]
+    fn full_catalog_screened_descent_matches_workers() {
+        descent_split_across_workers(10, true);
+    }
+
+    fn bounded_fleet_scope(req: &mut Value) {
+        let ids = ["serration", "split_chamber", "point_strike", "vital_sense",
+            "hellfire", "infected_clip", "stormbringer", "cryo_rounds",
+            "speed_trigger", "fast_hands", "rifle_aptitude", "piercing_hit"];
+        req["mods"] = ids.into_iter().map(|id| (id.to_string(), json!("search"))).collect();
+        req["arcanes"] = json!({ "none": "fixed" });
+    }
+
+    fn descent_split_across_workers(candidate_runs: u32, full_catalog: bool) {
         let start = |slots: Value, fixed: Value| json!({ "slots": slots, "evolutions": [], "arcane": [], "fixed": fixed });
         // Three elements pinned: several element orders, so a worker's choice
         // of order is part of what has to reach the leader intact.
         let three = json!([{ "kind": "mods", "idx": 0 }, { "kind": "mods", "idx": 1 }, { "kind": "mods", "idx": 2 }]);
         // At ten runs a candidate the step screen is on, and its short
         // measurements travel the fleet as `{build, runs}` items too.
-        let req = json!({
+        let mut req = json!({
             "weapon": "braton_prime", "enemy": "thrax_centurion", "level": 100,
             "duration": 5.0, "runs": 4, "finalists": 2,
             "candidate_runs": candidate_runs, "strategy": "quick",
             "starts": [start(json!([]), json!([])), start(json!(["hellfire", "infected_clip", "stormbringer"]), three.clone())],
         });
+        if !full_catalog { bounded_fleet_scope(&mut req); }
         let alone = run_optimize(parse_optimize(&req).unwrap(), &FunnelState::default(), |_, _| {}, None);
         let with = |fleet: Value| {
             let mut r = req.clone();
@@ -3026,21 +3047,34 @@ mod whole_scope_tests {
         };
         let mut scores: Vec<Value> = Vec::new();
         let mut steps = 0;
+        let mut saw_short = false;
+        let mut saw_full = false;
+        let mut saw_orders = false;
         let led = loop {
             let out = with(json!({ "lead": true, "fresh": steps == 0, "scores": scores }));
             let Some(pending) = out.get("pending").and_then(Value::as_array).cloned() else { break out };
             steps += 1;
             assert!(steps < 500, "the leader never settles");
+            for item in &pending {
+                let runs = item["runs"].as_u64().unwrap_or(u64::from(candidate_runs));
+                saw_short |= runs < u64::from(candidate_runs);
+                saw_full |= runs == u64::from(candidate_runs);
+            }
             scores = pending
                 .chunks(pending.len().div_ceil(3))
                 .flat_map(|part| with(json!({ "score": part }))["scores"].as_array().cloned().unwrap_or_default())
                 .collect();
+            saw_orders |= scores.iter().any(|r| r["shards"].as_array().is_some_and(|a| a.len() > 1));
         };
         let rows = |v: &Value| -> Vec<Value> {
             v["results"].as_array().unwrap().iter().map(|r| json!([r["mods"], r["arcane"], r["evolutions"], r["from_starts"], r["near"]])).collect()
         };
         assert!(steps > 1, "the leader paused {steps} times");
+        assert!(saw_full, "workers must score full candidates");
+        assert_eq!(saw_short, candidate_runs >= 10, "the fixture must exercise the step screen");
+        if candidate_runs >= 10 { assert!(saw_orders, "screen promotion must retain multiple element orders"); }
         assert_eq!(rows(&led), rows(&alone), "candidate_runs {candidate_runs}, after {steps} steps");
+        assert_eq!(led["start_results"], alone["start_results"], "every retained start follows the same worker split");
     }
 
     /// THE WORK OF A SEARCH IS THE SEARCH'S, not the fleet's: however the
@@ -3049,15 +3083,26 @@ mod whole_scope_tests {
     /// (worker/appraise.js §"Volunteer work").
     #[test]
     fn a_search_costs_the_same_work_however_the_fleet_splits_it() {
+        split_work(false);
+    }
+
+    #[test]
+    #[ignore = "full catalog coverage: scheduled or explicit deep CI"]
+    fn full_catalog_work_is_conserved() {
+        split_work(true);
+    }
+
+    fn split_work(full_catalog: bool) {
         // Two starts, each seeded with an element, with the step screen on: the
         // descents meet the same cards in other slot orders, so one batch can
         // ask for one build twice, and only an item a key keeps slicing out of it.
         let start = |m: &str| json!({ "slots": [m], "evolutions": [], "arcane": [], "fixed": [{ "kind": "mods", "idx": 0 }] });
-        let req = json!({
+        let mut req = json!({
             "weapon": "braton_prime", "enemy": "thrax_centurion", "level": 100,
             "duration": 2.0, "runs": 10, "finalists": 2,
             "candidate_runs": 10, "strategy": "quick", "starts": [start("hellfire"), start("infected_clip")],
         });
+        if !full_catalog { bounded_fleet_scope(&mut req); }
         let with = |fleet: Value| {
             let mut r = req.clone();
             r["quick_fleet"] = fleet;

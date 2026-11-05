@@ -163,14 +163,18 @@ content-addressed and cacheable for ever.
 1. CI's `site` job builds `site/`, `desktop/payload/` and `mcp/engine.js` on
    Linux (`.github/actions/site-tools` names every tool, pinned; the gitignored
    `web/cache/` comes from the bucket, `scripts/build_cache.py`) and keeps
-   them as an artifact. The check jobs (`checks`, `pipeline`, `page`,
-   `parity`, `page-rest`) run in parallel on that build.
+   them as an artifact. Selected artifact, MCP, bot and browser jobs consume
+   that build; source-only service and SQL jobs start independently. Native
+   Linux and Mac producers run alongside validation, skipping published targets.
 2. Once CI passes on main, `.github/workflows/ship.yml` lays that artifact over
    main — all but `site/board/`, the bots' — and runs `ship.py --built`:
    commit, push, stage and sign the channel, publish the engine library,
    deploy the backend and edge from that same build, then deploy the MCP
    server and bot. A failed backend deployment stops the edge deployment.
    The channel, MCP server and bot are read back against the build.
+   Native artifacts come from that same CI run and must match its engine,
+   module, data, source and byte digest. Missing optional slices retain WASM;
+   an absent Linux artifact can be built in Docker during shipping.
 3. What is due is decided by commit: the newest touching anything but the
    build's products and the board bots', against the commit
    `site/release.json` names. Equal, nothing ships — so any trigger may fire

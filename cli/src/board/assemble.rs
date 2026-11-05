@@ -470,7 +470,7 @@ fn digest(s: &str) -> u64 {
 }
 
 /// Each group's best row of one weapon file — the index's entry for it.
-fn leaders(rows: &[&RawValue]) -> Vec<Box<RawValue>> {
+pub(super) fn leaders(rows: &[&RawValue]) -> Vec<Box<RawValue>> {
     let mut best: BTreeMap<(&str, &str, bool), (f64, &RawValue)> = BTreeMap::new();
     for r in rows {
         let Some(p) = published(r) else { continue };

@@ -18,9 +18,15 @@ runs cannot. API errors also fall back to full validation.
 | --- | --- |
 | Markdown under `docs/`, `README.md`, `LICENSE` | Quick checks and commit messages |
 | `docs/CLIENTS.md`, `docs/measurements/` | Full CI: the build reads the contract and counts measurements |
-| `web/src/static/`, `data/i18n/`, `worker/`, `bot/`, MCP source, check scripts invoked only by those jobs | Quick checks, build, services, pipeline, all browser checks and all parity shards |
+| MCP source and its exclusive checks | Quick checks, build, artifact contracts and MCP checks |
+| Bot source and its exclusive checks | Quick checks, build, artifact contracts, bot authentication, packaging and card rendering |
+| `web/src/static/`, `data/i18n/`, `worker/`, other checks invoked only by product jobs | Quick checks, build, services, pipeline, all browser checks and all parity shards |
 | Generated `site/`, `desktop/payload/`, `mcp/engine.js`, `data/board_state.yaml` only | Quick checks and published-board legality |
 | Engine, optimizer, webapi, game data, Rust dependencies, tooling, workflow or any other path | Full CI |
+
+MCP and bot requirements combine when both change. A shared input or unknown
+script selects full CI. Consumer selection never reuses a different commit's
+site artifact. Generated files mixed with consumers also select full CI.
 
 The product group skips Rust tests, gas equivalence, module reproducibility and
 published-board legality. Its Rust and game-data inputs have not changed; it
@@ -59,10 +65,15 @@ known defect. Work with unresolved relevant failures is blocked for integration.
 The merger takes only explicitly handed-off, ready features, leaving unfinished
 work on its task branch. A feature handoff does not require its own full CI run.
 When build admission changes, refresh the committed board snapshot with
-`gh workflow run publish.yml --ref <integration-branch>` before final validation.
-Manual projection writes to the requested branch; scheduled projection writes
-to main. It reads existing score facts without fighting or assigning missing
-build choices. Inspect the generated result, then validate the resulting candidate.
+`gh workflow run publish.yml --ref <integration-branch> -f revalidate_only=true`
+before final validation. This checks the committed snapshot through the same
+admission helper as CI, removes illegal rows and rebuilds indexes without
+fetching the whole library or score table. Legal row bytes, measurement clocks
+and the submission count remain intact; listed counts follow the survivors.
+It adds no rows or scores. A full projection without that flag still reads the
+existing facts, and the daily scheduled projection still runs in full. Both
+write to the requested branch for dispatches and main for schedules. Inspect
+the generated result, then validate the resulting candidate.
 Before moving the batch to main, run CI on the integration branch's final
 commit. The path selection above chooses the required jobs; a batch containing
 core or unknown changes runs full CI. Separate branches' green results never
@@ -77,9 +88,12 @@ gh workflow run ci.yml --ref <branch>
 gh workflow run ci.yml --ref <branch> -f full=true
 ```
 
-`full=true` runs every job and disables result reuse. A weekly scheduled run
-does the same on main. Scheduled coverage supplements the release checks; core
-changes still require full validation before release.
+`full=true` runs every job, including the full-catalog search fixtures, and
+disables result reuse. A weekly scheduled run does the same on main. Solver
+enumeration, scheduling and scoring changes also require those fixtures on
+ordinary dispatches. Unknown inputs and CI control changes fail closed to this
+coverage. Other core changes retain all correctness jobs with bounded fleet
+invariant fixtures.
 
 A rebase, squash, cherry-pick or added fix changes the SHA and requires
 validation of the resulting candidate. Freeze the candidate after it passes;
@@ -132,6 +146,9 @@ build and release proof.
 `ci-required` runs even when dependencies fail or skip. It requires the plan,
 quick checks and commit checks to succeed, plus every selected product job.
 Unexpected skips, cancellations, missing results and failures block the gate.
+The explicitly optional native-library producers are separate: missing slices
+retain the clients' WASM fallback. Their results must be present, and a failed
+producer supplies no artifact; it cannot waive a required correctness job.
 Use `ci-required` as the required status check in branch protection. Selection
 does not skip the workflow itself. The run summary records each path's class,
 the selected jobs and any reused run.
@@ -139,7 +156,7 @@ the selected jobs and any reused run.
 A reusable run must be completed and successful, belong to this repository's
 CI workflow, name the exact same commit and contain unexpired `site-built` and
 `ci-proof` artifacts. PR runs are never release evidence. The proof binds the
-commit, policy digest and successful jobs. A proof must cover every job selected
+commit, policy digest, successful jobs and full-catalog depth. A proof must cover every job selected
 by the later run: a product-only proof cannot replace Rust or gas checks.
 Reused proofs cannot be reused again; the original run
 remains the authority. Missing or inaccessible evidence causes checks to run.
@@ -155,13 +172,19 @@ serial release workflow.
 Quick source checks run before the expensive build and Rust jobs. The workspace,
 ordinary webapi and exhaustive accuracy tests have separate jobs. Whole-scope
 search tests split into ordinary cases, single-run descent, screened descent
-and fleet work conservation. The descent cases share the same assertions and
-budgets; each candidate-run setting executes once. `scripts/ci_rust.mjs` discovers
+and fleet work conservation. The three invariant fixtures use twelve legal
+mods and no arcane choices, retaining full builds, multiple starts, worker
+splits and the original fight budgets. They assert intermediate screening and
+full evaluation, multiple descent steps and matching final results. Their
+original full-catalog versions run in three independent deep jobs when required.
+`scripts/ci_rust.mjs` discovers
 the real test list and runs exact names, refusing a missing protected test or
 empty group. New ordinary whole-scope tests join the ordinary group.
 
-The additional page checks run in five independent groups: accounts and sharing,
-views, card rendering, board heads and library integration. Each command belongs
+The main page checks run in controls, calculation and community groups. The
+additional page checks run in five independent groups: accounts and sharing,
+views, builder and search, board heads and library integration. Bot card rendering
+runs with the bot checks. Each command belongs
 to one group. `check_ci_partitions` rejects missing, duplicate or empty groups;
 the required gate waits for every matrix member. A failed group can be retried
 without repeating the other groups. `fail-fast: false` preserves their results.
@@ -176,6 +199,22 @@ and prints the package-manager log on failure. A failed setup supplies no
 successful validation or release evidence. Mac library builds cache dependencies
 and workspace artifacts separately per architecture; a cache failure falls back
 to compiling, and every build still runs its native/WASM comparison.
+
+Build setup validates the complete declared art set and pinned OCR/library
+bytes before compiling the site. The preflight and the full build use the same
+helpers. It writes no generated files.
+
+Service and SQL protocol jobs start after quick checks without waiting for
+the site. Native Linux and Mac slices build beside site validation, without
+release credentials. Published engine targets skip compilation. A producer
+stamps each artifact with engine, module, data, source and exact bytes; shipping
+downloads from the checked CI run and verifies that stamp before signing.
+
+The shared browser harness polls readiness instead of always waiting thirteen
+seconds. Explicit test waits remain explicit. Chrome process/debugging-target
+startup gets one bounded retry with stderr and isolated profiles; assertions
+and page boot failures are never retried. Parity shards keep running when
+another shard fails.
 
 The test profile optimizes dependencies as well as workspace code, retaining
 debug assertions and overflow checks. Search tests repeatedly parse and exchange

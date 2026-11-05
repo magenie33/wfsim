@@ -8,16 +8,24 @@ export const WHOLE_SCOPE_GROUPS = {
   'screened-descent': PREFIX + 'a_descent_split_across_workers_lands_where_one_worker_does_with_step_screen',
   'fleet-work': PREFIX + 'a_search_costs_the_same_work_however_the_fleet_splits_it',
 };
-export const RUST_GROUPS = ['whole-scope', ...Object.keys(WHOLE_SCOPE_GROUPS)];
+export const DEEP_SCOPE_GROUPS = {
+  'deep-descent': PREFIX + 'full_catalog_descent_matches_workers',
+  'deep-screened': PREFIX + 'full_catalog_screened_descent_matches_workers',
+  'deep-fleet': PREFIX + 'full_catalog_work_is_conserved',
+};
+export const DEEP_SCOPE_TESTS = Object.values(DEEP_SCOPE_GROUPS);
+export const RUST_GROUPS = ['whole-scope', ...Object.keys(WHOLE_SCOPE_GROUPS), ...Object.keys(DEEP_SCOPE_GROUPS)];
+export const RUST_SUITES = ['workspace', 'webapi', 'whole-scope', ...Object.keys(WHOLE_SCOPE_GROUPS), 'accuracy'];
 
 export function wholeScopeGroups(names) {
   const tests = names.filter(n => n.startsWith(PREFIX));
   if (new Set(tests).size !== tests.length) throw new Error('duplicate whole-scope test');
-  for (const name of Object.values(WHOLE_SCOPE_GROUPS)) {
+  for (const name of [...Object.values(WHOLE_SCOPE_GROUPS), ...DEEP_SCOPE_TESTS]) {
     if (!tests.includes(name)) throw new Error(`required whole-scope test missing: ${name}`);
   }
-  const groups = { 'whole-scope': tests.filter(n => !Object.values(WHOLE_SCOPE_GROUPS).includes(n)),
-    ...Object.fromEntries(Object.entries(WHOLE_SCOPE_GROUPS).map(([group, name]) => [group, [name]])) };
+  const groups = { 'whole-scope': tests.filter(n => ![...Object.values(WHOLE_SCOPE_GROUPS), ...DEEP_SCOPE_TESTS].includes(n)),
+    ...Object.fromEntries(Object.entries(WHOLE_SCOPE_GROUPS).map(([group, name]) => [group, [name]])),
+    ...Object.fromEntries(Object.entries(DEEP_SCOPE_GROUPS).map(([group, name]) => [group, [name]])) };
   if (!groups['whole-scope'].length) throw new Error('whole-scope basics is empty');
   return groups;
 }
@@ -33,7 +41,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   for (const name of selected) {
     console.log(`::group::${name}`);
     const started = Date.now();
-    const result = spawnSync('cargo', [...cargo, name, '--', '--exact', '--nocapture'], { stdio: 'inherit' });
+    const result = spawnSync('cargo', [...cargo, name, '--', '--exact', '--nocapture',
+      ...(group in DEEP_SCOPE_GROUPS ? ['--include-ignored'] : [])], { stdio: 'inherit' });
     console.log(`::endgroup::\n${name}: ${((Date.now() - started) / 1000).toFixed(1)}s`);
     if (result.error) throw result.error;
     if (result.status !== 0) process.exit(result.status || 1);

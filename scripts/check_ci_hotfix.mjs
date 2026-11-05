@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
-import { ALL_CI_JOBS, assertGate, PRODUCT_JOBS } from './ci_policy.mjs';
+import { ALL_CI_JOBS, assertGate, OPTIONAL_NATIVE_JOBS, PRODUCT_JOBS } from './ci_policy.mjs';
 import { assertHotfixProof, HOTFIX_CHECKS, HOTFIX_PROFILES, hotfixPlan } from './ci_hotfix.mjs';
 import { trustedRun, validProof } from './ci_runs.mjs';
 
@@ -34,7 +34,8 @@ for (const checks of Object.values(HOTFIX_CHECKS)) {
 }
 
 const needs = Object.fromEntries(['plan', 'quick', 'commits', 'coordination', ...ALL_CI_JOBS]
-  .map(job => [job, { result: PRODUCT_JOBS.includes(job) ? 'skipped' : 'success' }]));
+  .map(job => [job, { result: PRODUCT_JOBS.includes(job) ? 'skipped' : 'success' }])
+  .concat(OPTIONAL_NATIVE_JOBS.map(job => [job, { result: 'skipped' }])));
 assertGate(plan, needs);
 for (const job of ['plan', 'quick', 'commits', 'coordination', 'hotfix']) {
   for (const result of ['failure', 'cancelled', 'skipped', undefined]) {

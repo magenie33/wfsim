@@ -1030,15 +1030,8 @@ def derive_art(src: Path, dst: Path) -> str:
     return key
 
 
-def ship_pinned(kind: str, part: str) -> None:
-    """Derive `site/<kind>/` from its pinned cache, SAME-ORIGIN like the art,
-    and nothing else: `ocr` the runtime and models a riven screenshot is read
-    with, `lib` the page's own third-party libraries.
-
-    Every name carries its version (`web/<kind>/pins.json`), so the edge may keep
-    it for ever. A file missing, or not the bytes it was pinned at, stops the
-    build; the directory is generated in full, so a retired pin leaves no ghost.
-    """
+def checked_pins(kind: str, part: str) -> list[dict]:
+    """Refuse missing, corrupt or unreferenced pinned build inputs."""
     cache = ROOT / "web" / "cache" / kind
     pins = json.loads((ROOT / "web" / kind / "pins.json").read_text(encoding="utf-8"))["files"]
     bad = [p["name"] for p in pins if not (cache / p["name"]).exists()
@@ -1052,6 +1045,13 @@ def ship_pinned(kind: str, part: str) -> None:
     unasked = [p["name"] for p in pins if p["name"] not in page]
     if unasked:
         sys.exit(f"{part} does not ask for {', '.join(unasked)} — web/{kind}/pins.json and the page disagree")
+    return pins
+
+
+def ship_pinned(kind: str, part: str) -> None:
+    """Derive same-origin pinned files; regenerate fully so retired pins leave."""
+    pins = checked_pins(kind, part)
+    cache = ROOT / "web" / "cache" / kind
     out = APP / kind
     shutil.rmtree(out, ignore_errors=True)
     out.mkdir(parents=True)
@@ -1060,7 +1060,7 @@ def ship_pinned(kind: str, part: str) -> None:
     shutil.copy2(ROOT / "web" / kind / "LICENSES.txt", out / "LICENSES.txt")
 
 
-def ship_art() -> None:
+def checked_art() -> set[str]:
     """Derive `site/img/` from the art cache, so the static deployment serves
     game art from ITS OWN ORIGIN.
 
@@ -1108,6 +1108,13 @@ def ship_art() -> None:
             f"{len(missing)} not cached, {len(corrupt)} cached but not an image; "
             "run `python scripts/fetch_images.py`"
         )
+    return want
+
+
+def ship_art() -> None:
+    """Derive same-origin art from the same inputs the preflight validates."""
+    want = checked_art()
+    cache = ROOT / "web" / "cache" / "img"
     out = APP / "img"
     out.mkdir(parents=True, exist_ok=True)
     # APPENDED, NOT SUBSTITUTED. Six stems in this cache carry both extensions
@@ -2961,6 +2968,12 @@ def board_files() -> None:
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["--check-inputs"]:
+        checked_art()
+        checked_pins("ocr", "25-riven-ocr.js")
+        checked_pins("lib", "73-compute.js")
+        print("build inputs: art and pinned dependencies are usable")
+        sys.exit(0)
     # A DEPLOY MUST NOT TAKE A HALF-WRITTEN site/ (scripts/checkout_lock.py).
     import checkout_lock
     with checkout_lock.hold("build_site_app.py"):

@@ -75,19 +75,23 @@ pub(crate) fn record_states(path: &std::path::Path, boards: &[(String, usize, us
                 BoardRow { submissions: *submissions, listed: *listed, scored_at: now },
             );
         }
-        let mut out = String::from(BOARD_STATE_HEADER);
-        out.push_str("boards:
+        write_state(path, &state);
+    }
+}
+
+pub(super) fn write_state(path: &std::path::Path, state: &std::collections::BTreeMap<String, BoardRow>) {
+    let mut out = String::from(BOARD_STATE_HEADER);
+    out.push_str("boards:
 ");
-        for (id, r) in &state {
-            out.push_str(&format!(
-                "  {id}:
+    for (id, r) in state {
+        out.push_str(&format!(
+            "  {id}:
     submissions: {}
     listed: {}
     scored_at_epoch_seconds: {}
 ",
-                r.submissions, r.listed, r.scored_at,
-            ));
-        }
-        std::fs::write(path, out).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+            r.submissions, r.listed, r.scored_at,
+        ));
     }
+    std::fs::write(path, out).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
 }

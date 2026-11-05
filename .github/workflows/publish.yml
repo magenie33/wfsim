@@ -19,6 +19,11 @@ on:
     # board did.
     - cron: "0 0 * * *"
   workflow_dispatch:
+    inputs:
+      revalidate_only:
+        description: Repair snapshot legality without fetching the library or score facts
+        type: boolean
+        default: false
 
 # ONE PUBLISH AT A TIME, ACROSS EVERY RUN. Two assemblies writing the board is
 # last-writer-wins over a whole run's KNOWLEDGE rather than over one file: the
@@ -58,12 +63,14 @@ jobs:
       - name: build the assembler
         run: cargo build --release --bin wfsim-board
       - name: the databases
+        if: inputs.revalidate_only != true
         uses: ./.github/actions/databases
         with:
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
       - name: read the library and the facts
+        if: inputs.revalidate_only != true
         run: |
           set -euo pipefail
           # THE FACTS AS THEY ARE AT THIS MOMENT, which is the whole promise
@@ -78,6 +85,7 @@ jobs:
           bash scripts/fetch_facts.sh facts-known.ndjson
 
       - name: assemble every benchmark
+        if: inputs.revalidate_only != true
         run: |
           set -euo pipefail
           # EVERY RULER IN ONE PASS THAT FIGHTS NOTHING (`wfsim-board
@@ -88,6 +96,10 @@ jobs:
           ./target/release/wfsim-board --project site/board \
             --facts-in facts-known.ndjson \
             < library.json > /dev/null
+
+      - name: repair the committed snapshot through the current admission rules
+        if: inputs.revalidate_only == true
+        run: ./target/release/wfsim-board --revalidate site/board
 
       # ONLY ON CHANGE. Most hours nobody submits anything new, and a commit per
       # hour that says nothing is history nobody can read.
@@ -130,7 +142,7 @@ jobs:
           got=""
           for id in $ids; do
             if ! j=$(gh api "repos/${{ github.repository }}/actions/runs/$id/jobs?per_page=100" \
-                     --jq '[.jobs[] | select(.name == "test") | .conclusion // "running"] | join(",")' 2>&1); then
+                     --jq '[.jobs[] | select(.name == "test" or (.name | startswith("test ("))) | .conclusion // "running"] | join(",")' 2>&1); then
               echo "::warning::could not read the jobs of CI run $id — publishing without that check"
               exit 0
             fi

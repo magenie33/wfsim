@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { RUST_GROUPS, WHOLE_SCOPE_GROUPS, wholeScopeGroups } from './ci_rust.mjs';
+import { DEEP_SCOPE_GROUPS, DEEP_SCOPE_TESTS, RUST_GROUPS, RUST_SUITES, WHOLE_SCOPE_GROUPS, wholeScopeGroups } from './ci_rust.mjs';
 import { rivenRequestCases } from './riven_request_cases.mjs';
 
 const list = text => text.split(',').map(s => s.trim());
-function pageGroups(workflow) {
-  const section = workflow.split('\n  page-rest:')[1]?.split('\n  ci-required:')[0];
-  assert(section, 'page-rest exists');
+function pageGroups(workflow, job = 'page-rest') {
+  const section = workflow.split('\n  ' + job + ':\n')[1]?.split(/\n  [\w-]+:\n/)[0];
+  assert(section, `${job} exists`);
   assert.match(section, /fail-fast: false/);
   const groups = list(section.match(/group: \[([^\]]+)\]/)?.[1] || '');
   assert(groups.length > 1 && new Set(groups).size === groups.length, 'distinct page groups');
@@ -26,13 +26,13 @@ function pageGroups(workflow) {
 }
 
 const prefix = 'optimize::whole_scope_tests::';
-const tests = [...Object.values(WHOLE_SCOPE_GROUPS), prefix + 'first', prefix + 'second'];
+const tests = [...Object.values(WHOLE_SCOPE_GROUPS), ...DEEP_SCOPE_TESTS, prefix + 'first', prefix + 'second'];
 const groups = wholeScopeGroups([...tests, 'other::test']);
 assert.deepEqual(new Set(Object.values(groups).flat()), new Set(tests));
 assert.equal(Object.values(groups).flat().length, tests.length, 'each Rust test exactly once');
 assert(groups['whole-scope'].includes(prefix + 'first'));
 assert.throws(() => wholeScopeGroups(tests.slice(1)), /required whole-scope test missing/);
-assert.throws(() => wholeScopeGroups(Object.values(WHOLE_SCOPE_GROUPS)), /basics is empty/);
+assert.throws(() => wholeScopeGroups([...Object.values(WHOLE_SCOPE_GROUPS), ...DEEP_SCOPE_TESTS]), /basics is empty/);
 assert.throws(() => wholeScopeGroups([...tests, tests[0]]), /duplicate/);
 
 const meta = { weapons: Array.from({ length: 11 }, (_, i) => ({ id: `weapon${i}` })),
@@ -58,16 +58,26 @@ assert.throws(() => rivenRequestCases(meta, everyRulerOn, 4, 4, 4));
 assert.throws(() => rivenRequestCases({ weapons: [], benchmarks: [] }, everyRulerOn, 0, 1, 4));
 
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
-const suites = list(workflow.match(/suite: \[([^\]]+)\]/)[1]);
-assert.deepEqual(new Set(suites), new Set(['workspace', 'webapi', 'accuracy', ...RUST_GROUPS]));
+assert.deepEqual(new Set([...RUST_SUITES, ...Object.keys(DEEP_SCOPE_GROUPS)]), new Set(['workspace', 'webapi', 'accuracy', ...RUST_GROUPS]));
+assert.match(workflow, /matrix:.*fromJSON\(needs\.plan\.outputs\.test_matrix\)/);
+assert.match(workflow, /fleet-work\|deep-descent\|deep-screened\|deep-fleet\) node/);
 assert.match(workflow, /node scripts\/ci_rust\.mjs "\$SUITE"/);
 assert.match(workflow, /webapi\).*--skip optimize::whole_scope_tests::.*--skip optimize::quick_descent_tests::/);
 assert.match(workflow, /\*\).*exit 2/);
 const pages = pageGroups(workflow);
-assert.throws(() => pageGroups(workflow.replace("if: matrix.group == 'cards'", "if: matrix.group == 'absent'")));
-assert.throws(() => pageGroups(workflow.replace("        if: matrix.group == 'cards'\n", '')));
-assert.throws(() => pageGroups(workflow.replace('group: [account, views, cards, heads, library]', 'group: [account]')));
+const mainPages = pageGroups(workflow, 'page');
+assert.throws(() => pageGroups(workflow.replace("if: matrix.group == 'builder'", "if: matrix.group == 'absent'")));
+assert.throws(() => pageGroups(workflow.replace("        if: matrix.group == 'builder'\n", '')));
+assert.throws(() => pageGroups(workflow.replace('group: [account, views, builder, heads, library]', 'group: [account]')));
+assert.throws(() => pageGroups(workflow.replace("if: matrix.group == 'controls'", "if: matrix.group == 'absent'"), 'page'));
+const allPages = [...Object.values(pages).flat(), ...Object.values(mainPages).flat()];
+assert.equal(new Set(allPages).size, allPages.length, 'browser commands have one owner');
+const parity = workflow.split('\n  parity:')[1].split('\n  page-rest:')[0];
+assert.match(parity, /fail-fast: false/);
 const ship = readFileSync('.github/workflows/ship.yml', 'utf8');
-assert.match(ship, /shared-key: engine-macos-\$\{\{ matrix\.arch \}\}/);
-assert.match(ship, /cache-workspace-crates: true/);
+assert.match(workflow, /shared-key: engine-macos-\$\{\{ matrix\.arch \}\}/);
+assert.match(workflow, /cache-workspace-crates: true/);
+assert(!ship.includes('\n  engine-mac:'), 'native builds precede the release workflow');
+assert.match(ship, /pattern: engine-native-\*/);
+assert.match(ship, /path: target\/engine-lib\s+run-id: \$\{\{ needs\.due\.outputs\.run \}\}/);
 console.log(`CI partitions cover every Rust case once and ${Object.values(pages).flat().length} page commands; missing, duplicate and empty groups fail.`);

@@ -231,13 +231,6 @@ mod page_row_tests {
         out
     }
 
-    fn strings(r: &Value, k: &str) -> Vec<String> {
-        r.get(k)
-            .and_then(Value::as_array)
-            .map(|a| a.iter().filter_map(|x| x.as_str().map(str::to_owned)).collect())
-            .unwrap_or_default()
-    }
-
     /// EVERY PUBLISHED ROW IS A BUILD SOMEONE COULD EQUIP. The board is public
     /// and copyable, so a row that cannot be built is worse than a missing row
     /// — it is an instruction that fails in the arsenal.
@@ -250,37 +243,8 @@ mod page_row_tests {
         for (weapon, rows) in published() {
             for r in &rows {
                 let bench = r.get("benchmark").and_then(Value::as_str).unwrap_or("");
-                assert!(
-                    wfsim_engine::board::benchmarks::get(bench).is_some(),
-                    "{weapon} names benchmark {bench:?}, which does not exist",
-                );
-                let riven = r.get("riven").map(|rv| wfsim_engine::build::rivens::RivenShape {
-                    bonuses: strings(rv, "bonuses"),
-                    malus: rv.get("malus").and_then(Value::as_str).map(str::to_owned),
-                });
-                let part = |key| r.get(key).and_then(Value::as_str).unwrap_or("");
-                let assembly = wfsim_engine::data::weapons::assembly::of(
-                    &weapon, part("grip"), part("loader"), part("link"));
-                let v = wfsim_engine::board::builds::validate_for_board_with(
-                    bench,
-                    &weapon,
-                    &strings(r, "mods"),
-                    &strings(r, "evolutions"),
-                    &strings(r, "arcanes"),
-                    r.get("valence").and_then(Value::as_str).unwrap_or(""),
-                    riven.as_ref(),
-                    r.get("exilus").and_then(Value::as_str),
-                    assembly.as_ref(),
-                    // The row's own Warframe, which only an Exalted row has.
-                    r.get("wielder")
-                        .and_then(|x| serde_json::from_value(x.clone()).ok())
-                        .as_ref(),
-                )
+                super::super::revalidate::legal(&weapon, r)
                 .unwrap_or_else(|e| panic!("{weapon} row on {bench}: {e}"));
-                // `validate` already refused anything over capacity, and the
-                // capacity is the weapon's own — so the assertion is that the
-                // row survived the door whole, not that it fits a number here.
-                assert_eq!(v.mods.len(), strings(r, "mods").len(), "{weapon} lost a mod");
                 let score = exact_score(&serde_json::to_string(r).expect("json"));
                 assert!(score.is_some_and(|x| x > 0.0), "{weapon} scored nothing");
                 n += 1;

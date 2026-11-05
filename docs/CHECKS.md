@@ -43,6 +43,32 @@ inputs too. Matrix results still aggregate into the required release gate.
 Riven-request partitions keep the full weapon, ruler, card-shape and link-code
 case set while sharing the extra rulers between jobs.
 
+## `check_cdp_boot`
+
+The actual Chrome startup helper runs with isolated child-process fixtures:
+immediate readiness, crash then recovery, repeated crashes, timeout and profile
+cleanup. Readiness polling ends early; a boot error or timeout still fails.
+Only startup is retried. Functional page assertions remain final.
+
+## `check_native_artifact`
+
+Native-library stamps bind the engine, module, data, source and exact bytes.
+Missing stamps, a changed input, corrupt bytes and a different file name are
+refused. No compiler, container or signing key is used.
+
+## `check_build_inputs`
+
+The builder's actual preflight helpers run on temporary fixtures. Missing art,
+HTML cached as an image, missing/corrupt pinned bytes and a pin no page asks
+for all fail before compilation. The check creates no generated site.
+
+## `check_mcp_entry`
+
+Import the actual MCP Worker entry with its generated glue, WASM and JSON
+packs through a Node loader matching Wrangler's imports. The first engine
+queries must load Bramma, Venato's exclusive mod and a Chinese weapon lookup.
+The check never installs packs itself, so missing entry initialization fails.
+
 ## `check_site_setup`
 
 The actual setup shell runs with fake package-manager and privilege commands.
