@@ -412,6 +412,7 @@ assemblies; its configuration page offers only its own parts.
 
 Each exact board build has a recommendation control in the Library, beside its
 active preset and in its preset information. Owned or edited copies have none.
+Stored rows the engine cannot identify have no control and do not block other rows.
 Signed-in accounts may recommend once per UTC day and withdraw before settlement.
 Popularity is displayed to one decimal place beside the build's measured
 score; it is also a sort and numeric query field (`heat`). Exact alternatives

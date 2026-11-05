@@ -11,6 +11,7 @@ service with local fixture data: pending/withdrawn votes shared by Library and b
 preset controls, owned-copy exclusion, retryable failures, anonymous entry telemetry,
 exact history links, direct history loading, midnight timer resets, cross-day
 cache replacement, points, mobile layout and sign-in return/resumption.
+An engine-rejected row leaves legal rows recommendable and has no control of its own.
 `check_usage_events.mjs` sends weapon route subjects through the real usage
 endpoint; the unnormalized Library and riven-analyst subjects fail this check.
 `check_board_review_page.mjs` also checks temporary board

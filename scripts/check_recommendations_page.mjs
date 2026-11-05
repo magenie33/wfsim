@@ -12,6 +12,15 @@ await app.send("Network.enable");
 await app.send("Network.setCacheDisabled", { cacheDisabled: true });
 await app.send("Page.addScriptToEvaluateOnNewDocument", { source: `
   addEventListener('wfsim:ready', () => {
+    const originalApi = api;
+    api = async (path, body, ...args) => {
+      const result = await originalApi(path, body, ...args);
+      if (path === '/api/build/keys' && body.kind === 'build' && result.keys?.length > 1 && !window.recommendationRejectedBuild) {
+        window.recommendationRejectedBuild = body.builds[0];
+        result.keys[0] = null;
+      }
+      return result;
+    };
     const originalTrack = track;
     track = (event, subject, n) => {
       if (event.startsWith('recommendation.')) {
@@ -34,6 +43,8 @@ try {
   await app.load("/weapons/Laetum", 6000);
   await app.evaluate("gainPrefs.on = false; restartCalc()");
   await until("!!document.querySelector('[data-recommendation-id]:not([disabled])')");
+  check("An obsolete row leaves legal builds recommendable", await app.evaluate("!!recommendationRejectedBuild && !recommendationLibrary.error && builtinBuilds(finder.b).some(p => recommendationLibrary.ids.get(p.board) === null)"));
+  check("An obsolete row has no recommendation control", await app.evaluate("[...document.querySelectorAll('[data-recommend-build]')].every(node => recommendationLibrary.ids.get(recommendationLibrary.presets.get(node.dataset.recommendBuild)?.board) !== null)"));
   const target = await app.evaluate(`(() => {
     const button = [...document.querySelectorAll('[data-recommendation-id]:not([disabled])')].at(-1);
     const p = builtinBuilds(finder.b).find(p => presetId(p) === button.dataset.recommend);

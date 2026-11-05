@@ -420,7 +420,7 @@ function recommendationControl(p, surface = "library") {
   if (!p?.builtin || !p.board || (p.scope || p.state?.weapon || presetWeapon()) !== presetWeapon()) return "";
   if (!recommendationSurfaces.includes(surface)) surface = "library";
   const data = recommendationContext();
-  if (!data) return "";
+  if (!data || data.ids.get(p.board) === null) return "";
   data.presets.set(presetId(p), p);
   queueRecommendationViews();
   recommendationOwner();
@@ -488,7 +488,8 @@ async function loadLibraryRecommendations(w, all) {
       const response = await api("/api/build/keys", { kind: "build", builds: part.map(recommendationSource) });
       if (recommendationLibrary !== data || presetWeapon() !== w.id) return;
       if (!response?.ok) throw new Error("Recommendations are unavailable. Try again.");
-      if (!Array.isArray(response.keys) || response.keys.length !== part.length || response.keys.some(id => !id)) {
+      if (!Array.isArray(response.keys) || response.keys.length !== part.length
+        || response.keys.some(id => id !== null && !/^[a-f0-9]{32}$/.test(id))) {
         throw Object.assign(new Error("Recommendations are unavailable. Try again."), { code: "invalid_response" });
       }
       part.forEach((p, i) => data.ids.set(p.board, response.keys[i]));
