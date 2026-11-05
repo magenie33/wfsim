@@ -18,7 +18,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use serde_json::{json, Value};
 use wfsim_optimizer::FunnelState;
-use wfsim_webapi::{err_json, funnel_status_json, parse_optimize, run_optimize};
+use wfsim_webapi::{err_json, funnel_status_json, parse_optimize, run_optimize, BuildStream};
 
 // ---- Embedded static assets (self-contained binary) --------------------
 
@@ -376,6 +376,7 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
 
 struct OptJob {
     id: u64,
+    token: String,
     started: std::time::Instant,
     state: Arc<FunnelState>,
     /// "enumerating" → "running" → "done" | "cancelled" | "error".
@@ -386,6 +387,7 @@ struct OptJob {
     /// A cancelled job still carries the last COMPLETED round's top-10 when
     /// at least one funnel round finished before the cancel.
     result: Mutex<Option<Value>>,
+    builds: BuildStream,
 }
 
 impl OptJob {
@@ -394,9 +396,35 @@ impl OptJob {
     }
 }
 
+fn opt_job_token(id: u64) -> String {
+    static GENERATION: OnceLock<String> = OnceLock::new();
+    let generation = GENERATION.get_or_init(|| {
+        let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).expect("system clock").as_nanos();
+        format!("{:x}-{now:x}", std::process::id())
+    });
+    format!("{generation}-{id:x}")
+}
+
+fn opt_token_matches(expected: &str, request: &Value, required: bool) -> bool {
+    match request.get("job_token") {
+        Some(Value::String(given)) => given == expected,
+        Some(_) => false,
+        None => !required,
+    }
+}
+
 fn opt_jobs() -> &'static Mutex<Vec<Arc<OptJob>>> {
     static J: OnceLock<Mutex<Vec<Arc<OptJob>>>> = OnceLock::new();
     J.get_or_init(|| Mutex::new(Vec::new()))
+}
+
+fn prune_opt_jobs(jobs: &mut Vec<Arc<OptJob>>) {
+    while jobs.len() > 6 {
+        match jobs.iter().position(|j| !j.active() && !j.builds.has_pending()) {
+            Some(pos) => drop(jobs.remove(pos)),
+            None => break,
+        }
+    }
 }
 
 /// Find a job by `id`, defaulting to the most recent one (lets the frontend
@@ -413,10 +441,17 @@ fn optimize_status(v: &Value) -> Value {
     let Some(j) = opt_job(v) else {
         return err_json("no such optimize job");
     };
+    if !opt_token_matches(&j.token, v, v.get("builds_after").is_some()) {
+        return err_json("optimization job no longer matches its captured token");
+    }
     let phase = *j.phase.lock().unwrap();
     let counts = *j.counts.lock().unwrap();
     let mut out = funnel_status_json(&j.state, phase, counts, j.started.elapsed().as_secs_f64());
     out["job_id"] = json!(j.id);
+    out["job_token"] = json!(j.token);
+    if let Some(after) = v.get("builds_after").and_then(Value::as_u64) {
+        out.as_object_mut().expect("status object").extend(j.builds.batch(after).as_object().expect("build batch").clone());
+    }
     if let Some(r) = j.result.lock().unwrap().clone() {
         out["result"] = r;
     }
@@ -427,10 +462,22 @@ fn optimize_cancel(v: &Value) -> Value {
     let Some(j) = opt_job(v) else {
         return err_json("no such optimize job");
     };
+    if !opt_token_matches(&j.token, v, false) {
+        return err_json("optimization job no longer matches its captured token");
+    }
     // The flag is checked between funnel jobs AND inside enumeration (a
     // huge scope must stay cancellable); the worker flips the phase.
     j.state.cancel.store(true, Ordering::Relaxed);
     json!({ "ok": true, "job_id": j.id })
+}
+
+fn native_optimize_plan(v: &Value) -> Result<(wfsim_webapi::OptimizePlan, BuildStream), Value> {
+    let mut request = v.clone();
+    let collect = request.as_object_mut().and_then(|o| o.remove("__collect_builds"))
+        .is_some_and(|value| value.as_bool() == Some(true));
+    let plan = parse_optimize(&request)?;
+    let builds = if collect { plan.build_stream() } else { BuildStream::default() };
+    Ok((plan, builds))
 }
 
 fn optimize_start(v: &Value) -> Value {
@@ -444,7 +491,7 @@ fn optimize_start(v: &Value) -> Value {
             });
         }
     }
-    let plan = match parse_optimize(v) {
+    let (plan, builds) = match native_optimize_plan(v) {
         Ok(p) => p,
         Err(e) => return e,
     };
@@ -454,22 +501,18 @@ fn optimize_start(v: &Value) -> Value {
     let id = NEXT_JOB_ID.fetch_add(1, Ordering::Relaxed);
     let job = Arc::new(OptJob {
         id,
+        token: opt_job_token(id),
         started: std::time::Instant::now(),
         state: Arc::new(FunnelState::default()),
         phase: Mutex::new("enumerating"),
         counts: Mutex::new(None),
         result: Mutex::new(None),
+        builds,
     });
     {
         let mut jobs = opt_jobs().lock().unwrap();
         jobs.push(job.clone());
-        // Prune old finished jobs; the running one is never removed.
-        while jobs.len() > 6 {
-            match jobs.iter().position(|j| !j.active()) {
-                Some(pos) => drop(jobs.remove(pos)),
-                None => break,
-            }
-        }
+        prune_opt_jobs(&mut jobs);
     }
 
     let worker = job.clone();
@@ -498,5 +541,84 @@ fn optimize_start(v: &Value) -> Value {
         };
     });
 
-    json!({ "ok": true, "job_id": id })
+    json!({ "ok": true, "job_id": id, "job_token": job.token })
+}
+
+#[cfg(test)]
+mod optimization_token_tests {
+    use super::*;
+
+    fn request() -> Value {
+        let mods = ["serration", "split_chamber", "point_strike", "vital_sense",
+            "infected_clip", "cryo_rounds", "fast_hands", "speed_trigger"];
+        let marks: serde_json::Map<String, Value> = mods.iter().map(|id| ((*id).to_string(), json!("fixed"))).collect();
+        json!({ "weapon": "acceltra_prime", "enemy": "thrax_centurion", "level": 100,
+            "duration": 0.1, "runs": 1, "candidate_runs": 1, "finalists": 1,
+            "strategy": "quick", "build_size": 8, "build_min": 8, "threads": 1,
+            "mods": marks, "arcanes": { "primary_deadhead": "fixed" }, "modes": { "base": "fixed" } })
+    }
+
+    #[test]
+    fn build_acknowledgements_require_the_captured_job_token() {
+        assert!(opt_token_matches("current", &json!({ "job_token": "current", "builds_after": 128 }), true));
+        assert!(!opt_token_matches("current", &json!({ "job_token": "previous", "builds_after": 128 }), true));
+        assert!(!opt_token_matches("current", &json!({ "builds_after": 128 }), true));
+        assert!(!opt_token_matches("current", &json!({ "job_token": null }), true));
+    }
+
+    #[test]
+    fn legacy_status_is_read_only_and_explicit_tokens_still_match() {
+        assert!(opt_token_matches("current", &json!({}), false));
+        assert!(!opt_token_matches("current", &json!({ "job_token": "previous" }), false));
+        assert_ne!(opt_job_token(1), opt_job_token(2));
+    }
+
+    #[test]
+    fn native_capture_requires_an_explicit_transport_subscription() {
+        let input = request();
+        let expected = run_optimize(parse_optimize(&input).unwrap(), &FunnelState::default(), |_, _| {}, None);
+        for flag in [None, Some(json!(false)), Some(json!("true")), Some(json!(true))] {
+            let mut request = input.clone();
+            let subscribed = flag.as_ref().is_some_and(|value| value.as_bool() == Some(true));
+            if let Some(flag) = flag { request["__collect_builds"] = flag; }
+            let (plan, builds) = native_optimize_plan(&request).unwrap();
+            let result = run_optimize(plan, &FunnelState::default(), |_, _| {}, None);
+            assert_eq!(result, expected, "subscription is not a fight input or a replay field");
+            assert_eq!(builds.has_pending(), subscribed, "read-only callers owe no stream acknowledgement");
+            assert!(result["results"].as_array().unwrap().iter().all(|row| row["replay"].get("__collect_builds").is_none()));
+        }
+    }
+
+    #[test]
+    fn finished_jobs_keep_pending_builds_until_they_are_acknowledged() {
+        let mut request = request();
+        request["__collect_builds"] = json!(true);
+        let mut jobs = Vec::new();
+        for id in 1..=7 {
+            let (plan, builds) = native_optimize_plan(&request).unwrap();
+            let state = Arc::new(FunnelState::default());
+            let result = run_optimize(plan, &state, |_, _| {}, None);
+            assert_eq!(result["ok"], true, "{result}");
+            assert!(builds.has_pending(), "each completed search has a build to deliver");
+            jobs.push(Arc::new(OptJob { id, token: opt_job_token(id), started: std::time::Instant::now(),
+                state, phase: Mutex::new("done"), counts: Mutex::new(None),
+                result: Mutex::new(Some(result)), builds }));
+        }
+        prune_opt_jobs(&mut jobs);
+        assert_eq!(jobs.len(), 7, "the display history limit cannot discard unacknowledged builds");
+        let first_id = jobs[0].id;
+        let delivered = jobs[0].builds.batch(0);
+        let cursor = delivered["builds_next"].as_u64().unwrap();
+        jobs[0].builds.batch(cursor);
+        assert!(!jobs[0].builds.has_pending());
+        prune_opt_jobs(&mut jobs);
+        assert_eq!(jobs.len(), 6);
+        assert!(jobs.iter().all(|job| job.id != first_id && job.builds.has_pending()));
+
+        jobs.push(Arc::new(OptJob { id: 99, token: opt_job_token(99), started: std::time::Instant::now(),
+            state: Arc::new(FunnelState::default()), phase: Mutex::new("running"), counts: Mutex::new(None),
+            result: Mutex::new(None), builds: BuildStream::default() }));
+        prune_opt_jobs(&mut jobs);
+        assert_eq!(jobs.len(), 7, "an active job remains even when its stream is empty");
+    }
 }

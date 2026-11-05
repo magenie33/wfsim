@@ -21,6 +21,7 @@ function renderOpt() {
   renderOptLimits();
   renderOptFight();
   updateOptEstimate();
+  renderOptimizationBuildConsent();
 }
 
 /// The fight read back, with an entry to the one global scenario editor.

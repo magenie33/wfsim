@@ -65,11 +65,12 @@ const runFor = (w) => evaluate(`(async () => {
     ...theFight(),
     duration: 30, runs: 12, finalists: 3, threads: 1, buffs: {},
   };
-  const r0 = await postJson('/api/optimize', body);
+  const r0 = await api('/api/optimize', body);
+  const job = { id: r0.job_id, ...(r0.job_token ? { job_token: r0.job_token } : {}) };
   let s = r0;
-  for (let i = 0; i < 800 && (!s || !s.done); i++) {
+  for (let i = 0; i < 800 && !s?.done && !['done', 'cancelled', 'error'].includes(s?.phase) && s?.ok !== false; i++) {
     await sleep(300);
-    s = await postJson('/api/optimize/status', {});
+    s = await api('/api/optimize/status', job);
   }
   const res = (s && s.result) || s;
   const row = ((res || {}).results || [])[0];
@@ -78,7 +79,7 @@ const runFor = (w) => evaluate(`(async () => {
 
   // ---- 1. THE ROW'S OWN REQUEST REPRODUCES THE ROW ----------------------
   // POST it and nothing else. If it needs assembly, it is not the contract.
-  const direct = await postJson('/api/simulate', row.replay);
+  const direct = await api('/api/simulate', row.replay);
 
   // ---- 2. …AND SO DOES THE BUILD THE BUTTON MAKES OF IT ------------------
   // Through the page's own path: "+ add", open the preset, then let the
@@ -132,7 +133,7 @@ const runFor = (w) => evaluate(`(async () => {
   for (const k of AXES) {
     const broken = { ...row.replay };
     delete broken[k];
-    const out = await postJson('/api/simulate', broken);
+    const out = await api('/api/simulate', broken);
     dropped.push({ axis: k, refused: !(out && out.ok),
                    score: out && out.ok ? out.score : null });
   }
@@ -197,63 +198,68 @@ const band = (a, b, sa, sb) => {
 };
 const n4 = (x) => (x == null ? "—" : Number(x).toFixed(4));
 
-let anyLive = false;
-let anySharp = false;
-for (const w of WEAPONS) {
-  const r = await runFor(w);
-  const tag = `[${w.id}]`;
-  check(`${tag} a ranked row carries a request that reproduces it`,
-    r.err === null, String(r.err));
-  if (r.err) continue;
+try {
+  let anyLive = false;
+  let anySharp = false;
+  for (const w of WEAPONS) {
+    const r = await runFor(w);
+    const tag = `[${w.id}]`;
+    check(`${tag} a ranked row carries a request that reproduces it`,
+      r.err === null, String(r.err));
+    if (r.err) continue;
 
-  const d = band(r.direct, r.rowKpm, r.directSe, r.rowSe);
-  check(`${tag} ...and POSTing it, alone, gives the row's own number`,
-    r.direct !== null && !d.off,
-    r.directErr || `row ${n4(r.rowKpm)} ± ${n4(r.rowSe)} vs replay ${n4(r.direct)} (4σ = ${n4(4 * d.se)})`);
+    const d = band(r.direct, r.rowKpm, r.directSe, r.rowSe);
+    check(`${tag} ...and POSTing it, alone, gives the row's own number`,
+      r.direct !== null && !d.off,
+      r.directErr || `row ${n4(r.rowKpm)} ± ${n4(r.rowSe)} vs replay ${n4(r.direct)} (4σ = ${n4(4 * d.se)})`);
 
-  // THE HOP THAT BROKE. Everything above can pass with the page still wrong.
-  const p = band(r.viaPage, r.rowKpm, r.directSe, r.rowSe);
-  check(`${tag} the build '+ add' makes of it re-runs at the row's number`,
-    r.viaPage !== null && !p.off,
-    r.viaErr || `row ${n4(r.rowKpm)} vs the page's own build ${n4(r.viaPage)} (4σ = ${n4(4 * p.se)})`);
+    // THE HOP THAT BROKE. Everything above can pass with the page still wrong.
+    const p = band(r.viaPage, r.rowKpm, r.directSe, r.rowSe);
+    check(`${tag} the build '+ add' makes of it re-runs at the row's number`,
+      r.viaPage !== null && !p.off,
+      r.viaErr || `row ${n4(r.rowKpm)} vs the page's own build ${n4(r.viaPage)} (4σ = ${n4(4 * p.se)})`);
 
-  check(`${tag} the payload/state pair round-trips on every axis it states`,
-    r.tripFails.length === 0, `dropped or changed: ${JSON.stringify(r.tripFails)}`);
+    check(`${tag} the payload/state pair round-trips on every axis it states`,
+      r.tripFails.length === 0, `dropped or changed: ${JSON.stringify(r.tripFails)}`);
 
-  // THE PIPE. Some axis must matter, or every agreement above is vacuous.
-  const moved = r.dropped.filter((x) => x.refused || x.score === null
-    || band(x.score, r.rowKpm, r.directSe, r.rowSe).off);
-  anyLive = anyLive || moved.length > 0;
-  // THE COVERAGE RIDES IN THE NAME, because `check` prints a detail only when
-  // it fails — and a check that quietly exercised one axis out of five reads
-  // exactly like one that exercised all of them. Which axes are live is a fact
-  // about this weapon in this fight (the Kuva Nukor's single firing mode is not
-  // a wiring fault), so it is REPORTED beside the assertion rather than being
-  // asserted.
-  const inert = r.dropped.filter((x) => !moved.includes(x)).map((x) => x.axis);
-  check(`${tag} the replay is READ — live: ${moved.map((x) => x.axis).join(",") || "none"}`
-        + (inert.length ? `, inert here: ${inert.join(",")}` : ""),
-    moved.length > 0,
-    r.dropped.map((x) => `${x.axis}:${x.refused ? "refused" : n4(x.score)}`).join(" "));
+    // THE PIPE. Some axis must matter, or every agreement above is vacuous.
+    const moved = r.dropped.filter((x) => x.refused || x.score === null
+      || band(x.score, r.rowKpm, r.directSe, r.rowSe).off);
+    anyLive = anyLive || moved.length > 0;
+    // THE COVERAGE RIDES IN THE NAME, because `check` prints a detail only when
+    // it fails — and a check that quietly exercised one axis out of five reads
+    // exactly like one that exercised all of them. Which axes are live is a fact
+    // about this weapon in this fight (the Kuva Nukor's single firing mode is not
+    // a wiring fault), so it is REPORTED beside the assertion rather than being
+    // asserted.
+    const inert = r.dropped.filter((x) => !moved.includes(x)).map((x) => x.axis);
+    check(`${tag} the replay is READ — live: ${moved.map((x) => x.axis).join(",") || "none"}`
+          + (inert.length ? `, inert here: ${inert.join(",")}` : ""),
+      moved.length > 0,
+      r.dropped.map((x) => `${x.axis}:${x.refused ? "refused" : n4(x.score)}`).join(" "));
 
-  // THE SHARP ONE: the assertion above must be capable of failing.
-  // A weapon with no band-sharp axis is REPORTED, not failed — the same call
-  // the coverage line above makes for a degenerate axis. What must not happen
-  // is that NO weapon proves it, and the last assertion is that one.
-  if (r.control === null) {
-    check(`${tag} ...no axis on this weapon is sharp enough to maim — reported`, true, "");
-  } else {
-    anySharp = true;
-    check(`${tag} ...and a build missing that axis FAILS the same assertion`,
-      r.control.score === null
-        || band(r.control.score, r.rowKpm, r.directSe, r.rowSe).off,
-      `dropped '${r.control.axis}': ${n4(r.rowKpm)} -> ${n4(r.control.score)}, which the band did not catch`);
+    // THE SHARP ONE: the assertion above must be capable of failing.
+    // A weapon with no band-sharp axis is REPORTED, not failed — the same call
+    // the coverage line above makes for a degenerate axis. What must not happen
+    // is that NO weapon proves it, and the last assertion is that one.
+    if (r.control === null) {
+      check(`${tag} ...no axis on this weapon is sharp enough to maim — reported`, true, "");
+    } else {
+      anySharp = true;
+      check(`${tag} ...and a build missing that axis FAILS the same assertion`,
+        r.control.score === null
+          || band(r.control.score, r.rowKpm, r.directSe, r.rowSe).off,
+        `dropped '${r.control.axis}': ${n4(r.rowKpm)} -> ${n4(r.control.score)}, which the band did not catch`);
+    }
   }
+
+  check("at least one weapon proved the pipe", anyLive, String(anyLive));
+  // …and at least one PROVED THE CONTROL, which is what stops every weapon
+  // quietly reporting "no sharp axis" and the assertion never running.
+  check("at least one weapon proved the control can fail", anySharp, String(anySharp));
+
+  await app.finish("a ranked row is a build you can re-run, and it comes back with its own number");
+} catch (error) {
+  await app.close();
+  throw error;
 }
-
-check("at least one weapon proved the pipe", anyLive, String(anyLive));
-// …and at least one PROVED THE CONTROL, which is what stops every weapon
-// quietly reporting "no sharp axis" and the assertion never running.
-check("at least one weapon proved the control can fail", anySharp, String(anySharp));
-
-await app.finish("a ranked row is a build you can re-run, and it comes back with its own number");

@@ -1,4 +1,5 @@
 use super::*;
+use std::sync::OnceLock;
 
 pub(super) fn rarity(name: &str) -> Rarity {
     match name {
@@ -72,12 +73,15 @@ pub fn load_pool(prefix: &str) -> Vec<ArcaneDef> {
 /// directory, sorted. Same discovery rule as the mod classes: dropping in
 /// `data/arcanes/primary/` publishes primary arcanes with no code change.
 pub fn slots() -> Vec<&'static str> {
-    let mut out: Vec<&'static str> = crate::data::files_under("arcanes/")
-        .filter_map(|(p, _)| p.strip_prefix("arcanes/")?.split('/').next())
-        .collect();
-    out.sort_unstable();
-    out.dedup();
-    out
+    static SLOTS: OnceLock<Vec<&'static str>> = OnceLock::new();
+    SLOTS.get_or_init(|| {
+        let mut out: Vec<&'static str> = crate::data::files_under("arcanes/")
+            .filter_map(|(p, _)| p.strip_prefix("arcanes/")?.split('/').next())
+            .collect();
+        out.sort_unstable();
+        out.dedup();
+        out
+    }).clone()
 }
 
 /// The arcane pool of one slot — `data/arcanes/<slot>/*.yaml`. Cached per

@@ -59,6 +59,11 @@ pub(crate) fn riven_stat_ids_ok(v: &Value, info: &WeaponInfo) -> Result<(), Stri
 /// so a typo left unrefused equips a riven that occupies a slot, drains
 /// capacity and grants nothing, with the card still naming the stats.
 pub(crate) fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
+    riven_specs_from(v, info).into_iter().map(|(id, spec)| spec.to_mod_def(id, info.disposition)).collect()
+}
+
+/// One set of specifications equips a request's rivens and exports their shapes.
+pub(crate) fn riven_specs_from(v: &Value, info: &WeaponInfo) -> Vec<(&'static str, wfsim_engine::build::rivens::RivenSpec)> {
     use wfsim_engine::build::rivens::{RivenSpec, RolledStat};
     let class = riven_class(info);
     let rolled = |x: &Value| -> Option<RolledStat> {
@@ -101,7 +106,7 @@ pub(crate) fn rivens_from(v: &Value, info: &WeaponInfo) -> Vec<ModDef> {
                             _ => wfsim_engine::rules::capacity::Polarity::Madurai,
                         },
                     };
-                    Some(spec.to_mod_def(intern(format!("riven:{name}")), info.disposition))
+                    Some((intern(format!("riven:{name}")), spec))
                 })
                 .collect()
         })

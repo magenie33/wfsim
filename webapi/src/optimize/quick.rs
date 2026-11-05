@@ -16,7 +16,7 @@
 //! at 30 runs and by a reorder move of its own). So each build is scored over
 //! its distinct allowed element orders and keeps the best.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use serde_json::{json, Value};
 use wfsim_engine::model::ModDef;
@@ -79,11 +79,13 @@ pub(crate) struct Fleet {
     legal: HashMap<QBuild, bool>,
     /// Builds waiting for a full score, with their keys.
     pending: Vec<(QBuild, String)>,
+    pending_keys: HashSet<String>,
     /// The step screen's short scores, by key, and the builds still waiting
     /// for one — each handed out with its own run count, so the page passes
     /// the batch through without knowing a screen exists.
     rough: HashMap<String, Score>,
     pending_rough: Vec<(QBuild, u32)>,
+    pending_rough_keys: HashSet<String>,
     /// The screen's runs per element order, by key, as a worker sent them —
     /// handed out again with the build's full measurement.
     screened_runs: HashMap<String, Vec<Option<Shard>>>,
@@ -633,14 +635,14 @@ impl QuickSpace for QuickCtx<'_> {
             f.missed = false;
             let mut out = Vec::with_capacity(bs.len());
             for b in bs {
-                match f.scores.get(&self.key(b)) {
+                let key = self.key(b);
+                match f.scores.get(&key) {
                     Some(&(s, _, _)) => out.push(s),
                     None => {
                         f.missed = true;
                         // ONE ITEM A KEY: the same cards in another slot order are
                         // the same build, and two items of it split work by slicing.
-                        let key = self.key(b);
-                        if !f.pending.iter().any(|(_, k)| *k == key) {
+                        if f.pending_keys.insert(key.clone()) {
                             f.pending.push((b.clone(), key));
                         }
                         out.push(None);
@@ -653,6 +655,13 @@ impl QuickSpace for QuickCtx<'_> {
 
     fn pending(&self) -> bool {
         self.lead && FLEET.with(|f| f.borrow().missed)
+    }
+
+    fn defer_results(&self) -> bool {
+        self.lead && FLEET.with(|f| {
+            let f = f.borrow();
+            !f.pending.is_empty() || !f.pending_rough.is_empty()
+        })
     }
 
     /// Below two fights there is no spread to rank by, and at `runs` or more
@@ -670,11 +679,12 @@ impl QuickSpace for QuickCtx<'_> {
             f.missed = false;
             let mut out = Vec::with_capacity(bs.len());
             for b in bs {
-                match f.rough.get(&self.key(b)) {
+                let key = self.key(b);
+                match f.rough.get(&key) {
                     Some(&s) => out.push(s),
                     None => {
                         f.missed = true;
-                        if !f.pending_rough.iter().any(|(x, _)| self.key(x) == self.key(b)) {
+                        if f.pending_rough_keys.insert(key) {
                             f.pending_rough.push((b.clone(), short));
                         }
                         out.push(None);
@@ -1009,7 +1019,8 @@ impl QuickCtx<'_> {
     /// screen's short measurement, answered with `rough: true` and its runs
     /// per element order (`shards`) — or `{build, shards}`, a full measurement
     /// that continues them, answered with its best order's runs (`shard`).
-    pub(crate) fn score_json(&self, builds: &[Value]) -> Value {
+    pub(crate) fn score_json(&self, builds: &[Value], stream: &super::BuildStream) -> Value {
+        stream.enable();
         let mut groups: Vec<(u32, Vec<QBuild>)> = Vec::new();
         for item in builds {
             let (b, runs) = match item.get("build") {
@@ -1048,7 +1059,8 @@ impl QuickCtx<'_> {
         }
         let fights = self.sims.load(std::sync::atomic::Ordering::Relaxed) - before;
         let work = self.work.load(std::sync::atomic::Ordering::Relaxed) - work_before;
-        json!({ "ok": true, "scores": rows, "fights": fights, "work": work })
+        json!({ "ok": true, "scores": rows, "fights": fights, "work": work,
+            "builds": stream.take_all() })
     }
 
     /// The leader takes the scores the fleet returned; `fresh` begins a new
@@ -1060,7 +1072,9 @@ impl QuickCtx<'_> {
                 *f = Fleet::default();
             }
             f.pending.clear();
+            f.pending_keys.clear();
             f.pending_rough.clear();
+            f.pending_rough_keys.clear();
             for r in scores {
                 let Some(key) = r.get("key").and_then(Value::as_str) else { continue };
                 let s = r.get("score").and_then(Value::as_array).and_then(|a| Some((a.first()?.as_f64()?, a.get(1)?.as_f64()?)));
@@ -1213,6 +1227,21 @@ pub(crate) fn run_quick(
             .collect();
         FLEET.with(|f| f.borrow_mut().progress = json!(rows));
     }
+    let stats = wfsim_optimizer::search::SearchStats {
+        space,
+        sampled: u128::from(qs.evals),
+        subsets: qs.evals,
+        candidates: qs.evals,
+        // SIMULATED ENGAGEMENTS, which is what the walk's count means: every
+        // order of every build scored, at `runs` each.
+        evals: ctx.sims.load(std::sync::atomic::Ordering::Relaxed),
+        exhaustive: false,
+        starts: qs.starts,
+        cut: qs.cut,
+    };
+    if ctx.defer_results() {
+        return (Vec::new(), stats, QuickReport::default());
+    }
     let mut report = QuickReport {
         failures: failures.iter().map(|f| json!({ "start": global(f.start), "why": f.why })).collect(),
         ..Default::default()
@@ -1287,18 +1316,6 @@ pub(crate) fn run_quick(
         .zip(sums)
         .map(|((c, ai), summary)| wfsim_optimizer::ScreenedJob { cand: std::sync::Arc::new(c), ai, summary })
         .collect();
-    let stats = wfsim_optimizer::search::SearchStats {
-        space,
-        sampled: u128::from(qs.evals),
-        subsets: qs.evals,
-        candidates: qs.evals,
-        // SIMULATED ENGAGEMENTS, which is what the walk's count means: every
-        // order of every build scored, at `runs` each.
-        evals: ctx.sims.load(std::sync::atomic::Ordering::Relaxed),
-        exhaustive: false,
-        starts: qs.starts,
-        cut: qs.cut,
-    };
     (screened, stats, report)
 }
 

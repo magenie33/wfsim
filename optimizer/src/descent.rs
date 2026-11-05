@@ -31,7 +31,7 @@ use std::collections::{BinaryHeap, HashMap};
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use wfsim_engine::fight::Summary;
+use wfsim_engine::fight::{RankingStats, Summary};
 use wfsim_engine::model::{ModDef, ModEffect};
 use wfsim_engine::rules::damage::DamageType;
 
@@ -482,7 +482,7 @@ pub fn evaluate_paired_onto(
     scenario: &Scenario,
     runs: u32,
     seed: u64,
-) -> Vec<(Summary, Option<wfsim_engine::fight::Shard>)> {
+) -> Vec<(RankingStats, Option<wfsim_engine::fight::Shard>)> {
     let seed = job_seed(seed, 0, 0);
     par_map(jobs, |(c, ai, prior)| crate::evaluate::evaluate_onto(c, *ai, scenario, runs, seed, *prior))
 }

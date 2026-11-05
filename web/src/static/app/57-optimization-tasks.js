@@ -14,6 +14,7 @@ function captureOptimizationOrigin() {
   const context = taskClone(boardBuildContext());
   context.rivens = Object.fromEntries(rivenPayload().map((r) => [RIVEN_PREFIX + r.id, headlessRivenShape(r.spec)]));
   return { weapon: presetWeapon(), preset: activeOptPreset, preset_name: (loadOptPresets().find((p) => p.id === activeOptPreset) || {}).name,
+    board_upload: boardConsent() === "yes",
     scenario: activeScenario, scenario_name: (scenarioNamed(activeScenario) || {}).name, board: context,
     build: taskClone(snapshotState()), fight: taskClone(sim), search: taskClone(snapshotOpt()),
     appraisal: null };
@@ -90,38 +91,99 @@ function optimizationTaskProgress(task, now = Date.now()) {
   const fraction = p.total > 0 ? Math.max(0, Math.min(1, p.done / p.total)) : null;
   return { fraction, phase, count, detail_html: (details.length ? `<div class="search-work">${escHtml(details.join(" · "))}</div>` : "") + optimizationClockHtml(clock, now) };
 }
+async function rememberNativeOptimizationBuilds(task, id, source, token) {
+  if (!token) throw new Error("The native search did not identify its build stream.");
+  const queue = await initUserTasks(), key = `optimization-build-source:${task.engine}:${token}:${task.attempt}`;
+  const held = await queue.store.value(key);
+  const link = held || { key, id, token, source, cursor: 0 };
+  await queue.store.value(key, link);
+  return link;
+}
+async function nativeOptimizationStatus(link, signal) {
+  return userTaskLock(link.key, async () => {
+    const queue = await initUserTasks(), held = await queue.store.value(link.key);
+    if (held) Object.assign(link, held);
+    if (!link.token) return { ok: false, error: "This native build stream has no search identity." };
+    if (!queue.store.persistent) return api("/api/optimize/status", { id: link.id, job_token: link.token }, null, { signal });
+    const status = await api("/api/optimize/status", { id: link.id, job_token: link.token, builds_after: link.cursor || 0 }, null, { signal });
+    if (status?.ok === false) return status;
+    if (status?.job_token !== link.token) return { ok: false, error: "The native search changed. Its build cursor was not acknowledged." };
+    await keepOptimizationBuilds(status.builds || [], link.source);
+    link.cursor = Math.max(link.cursor || 0, Number(status.builds_next) || 0);
+    if (["done", "cancelled", "error"].includes(status.phase) && !status.builds_more && !status.builds?.length) {
+      await queue.store.writeValues([{ key: link.key, remove: true }]); link.closed = true;
+    } else await queue.store.value(link.key, link);
+    return status;
+  });
+}
+let nativeOptimizationRecovery = false, nativeOptimizationRecoveryAgain = false, nativeOptimizationRecoveryTimer = null;
+async function recoverNativeOptimizationBuilds() {
+  if (WASM) return;
+  if (nativeOptimizationRecovery) { nativeOptimizationRecoveryAgain = true; return; }
+  nativeOptimizationRecovery = true;
+  let again = false;
+  try {
+    const queue = await initUserTasks();
+    for (const link of await queue.store.entries("optimization-build-source:")) {
+      while (!link.closed) {
+        const status = await nativeOptimizationStatus(link);
+        if (status?.ok === false) { userTaskFailed(new Error(status.error || "The search's build uploads are unavailable.")); break; }
+        if (link.closed) break;
+        again = true;
+        if (!status.builds_more && !["done", "cancelled", "error"].includes(status.phase)) break;
+      }
+    }
+  } catch (error) {
+    again = true; throw error;
+  } finally {
+    nativeOptimizationRecovery = false;
+    again ||= nativeOptimizationRecoveryAgain; nativeOptimizationRecoveryAgain = false;
+    if (again && nativeOptimizationRecoveryTimer == null) nativeOptimizationRecoveryTimer = setTimeout(() => {
+      nativeOptimizationRecoveryTimer = null; recoverNativeOptimizationBuilds().catch(userTaskFailed);
+    }, 10_000);
+  }
+}
 async function executeOptimization(task, { signal, report, checkpoint }) {
   const release = holdForeground();
-  let id = null, cancel;
+  let id = null, cancel, nativeBuilds = null, jobToken = null;
   try {
+    const source = await optimizationTaskBuildSource(task);
+    const collectBuilds = !WASM && source.kind !== "disabled" && (await initUserTasks()).store.persistent;
     const saved = await checkpoint();
     const compatible = saved?.engine === task.engine && saved.schema === task.request_schema ? saved.value : null;
-    if (!WASM && compatible?.job_id != null) {
-      const status = await api("/api/optimize/status", { id: compatible.job_id }, null, { signal });
-      if (status?.ok !== false && !["cancelled", "error"].includes(status.phase)) id = compatible.job_id;
+    if (!WASM && compatible?.job_id != null && compatible.job_token) {
+      const status = await api("/api/optimize/status", { id: compatible.job_id, job_token: compatible.job_token }, null, { signal });
+      if (status?.ok !== false && status.job_token === compatible.job_token && !["cancelled", "error"].includes(status.phase)) {
+        id = compatible.job_id; jobToken = compatible.job_token;
+      }
     }
     if (id == null) {
       if (signal.aborted) throw new Error("Cancelled");
-      const response = await api("/api/optimize", { ...task.request, ...(compatible?.cp ? { __resume: compatible.cp } : {}) }, null,
-        { checkpoint: (cp) => checkpoint({ cp }).catch(userTaskFailed) });
+      const response = await api("/api/optimize", { ...task.request, ...(!WASM ? { __collect_builds: !!collectBuilds } : {}),
+        ...(compatible?.cp ? { __resume: compatible.cp } : {}) }, null,
+        { checkpoint: (cp) => checkpoint({ cp }).catch(userTaskFailed), builds: (builds) => keepOptimizationBuilds(builds, source) });
       if (!response || response.ok === false) throw new Error(response?.error || "no data");
-      id = response.job_id;
-      if (!WASM) await checkpoint({ job_id: id });
+      id = response.job_id; jobToken = response.job_token;
+      if (!WASM) await checkpoint({ job_id: id, job_token: jobToken });
     }
-    cancel = () => api("/api/optimize/cancel", { id }).catch(() => {});
+    if (collectBuilds) nativeBuilds = await rememberNativeOptimizationBuilds(task, id, source, jobToken);
+    cancel = () => api("/api/optimize/cancel", { id, ...(jobToken ? { job_token: jobToken } : {}) }).catch(() => {});
     signal.addEventListener("abort", cancel, { once: true });
     if (signal.aborted) { await cancel(); throw new Error("Cancelled"); }
     track("optimizer.start", task.request.weapon);
     let previousStatus = null;
     for (;;) {
       if (signal.aborted) throw new Error("Cancelled");
-      const status = await api("/api/optimize/status", { id }, null, { signal });
+      const status = nativeBuilds ? await nativeOptimizationStatus(nativeBuilds, signal)
+        : await api("/api/optimize/status", { id, ...(jobToken ? { job_token: jobToken } : {}) }, null, { signal });
       if (!status || status.ok === false || status.phase === "error") throw new Error(status?.result?.error || status?.error || "no data");
-      const observed = observeOptimizationStatus(status, previousStatus);
+      const { builds, ...displayStatus } = status;
+      const observed = observeOptimizationStatus(displayStatus, previousStatus);
       previousStatus = observed;
       const fraction = optProgressOf(observed);
       report({ phase: "Optimization", done: fraction == null ? 0 : fraction, total: fraction == null ? 0 : 1,
         status: observed, builds: status.enumerated || 0, fights: status.sims_done || 0 });
+      if (nativeBuilds && (status.builds_more || builds?.length)) continue;
       if (status.phase === "cancelled") throw new Error("Cancelled");
       if (status.phase === "done") {
         if (!status.result) throw new Error("The search returned no result.");
@@ -131,6 +193,7 @@ async function executeOptimization(task, { signal, report, checkpoint }) {
     }
   } finally {
     if (cancel) signal.removeEventListener("abort", cancel);
+    if (nativeBuilds && !nativeBuilds.closed) recoverNativeOptimizationBuilds().catch(userTaskFailed);
     release();
   }
 }
@@ -155,7 +218,8 @@ USER_TASK_TYPES.set("optimization", {
   async completed(task) {
     const record = await userTasks.store.value(`artifact:${task.result_ref}`);
     if (!record) return;
-    await offerOptBoardSubmit(record.result.search || record.result, { task: task.id, context: task.origin.board, appraisal: !!task.origin.appraisal });
+    await offerOptBoardSubmit(record.result.search || record.result, { task: task.id, context: task.origin.board,
+      appraisal: !!task.origin.appraisal, source: await optimizationTaskBuildSource(task) });
     if (task.origin.appraisal) await sendCapturedAppraisal(task, record.result.search || record.result);
   },
   async recover(task) { return await userTasks.store.value(`artifact:${task.attempt}`) ? task.attempt : null; },

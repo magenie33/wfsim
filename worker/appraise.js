@@ -24,6 +24,7 @@ const KEEP_MS = 86_400_000;
 export const SURVEY_CHANNEL = "survey";
 export const SURVEY_KEEP_MS = 7 * 86_400_000;
 const keepFor = (a) => (a.channel === SURVEY_CHANNEL ? SURVEY_KEEP_MS : KEEP_MS);
+export const appraisalKept = (a, now = Date.now()) => !!a && Date.parse(a.at) >= now - keepFor(a);
 /// A build handed back and not judged within this is handed to the bot again.
 const RECLAIM_MS = 120_000;
 /// AN APPRAISAL STILL UNFROZEN this long after it opened is handed back to its
@@ -322,7 +323,7 @@ async function handBack(request, env, code) {
   if (!b.build || typeof b.build !== "object" || !Array.isArray(b.build.mods)) return json({ ok: false, error: "needs build" }, 400);
   const db = env.LIBRARY, now = Date.now();
   const a = await db.prepare("SELECT code, channel, done_at, at FROM appraisals WHERE code = ?").bind(code).first();
-  if (!a || Date.parse(a.at) < now - keepFor(a)) return json({ ok: false, error: "no such appraisal" }, 404);
+  if (!appraisalKept(a, now)) return json({ ok: false, error: "no such appraisal" }, 404);
   if (b.lease !== undefined) return volunteerAnswer(request, env, b);
   await db.prepare("INSERT INTO appraisal_results (code, build, thanks, at) VALUES (?, ?, ?, ?)")
     .bind(code, JSON.stringify(b.build), cleanThanks(b.thanks), iso(now)).run();

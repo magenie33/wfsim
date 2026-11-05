@@ -63,6 +63,11 @@ pub trait QuickSpace: Sync {
     fn pending(&self) -> bool {
         false
     }
+    /// External scores are outstanding, so the caller will discard this
+    /// pass's answers and pool. Search decisions and progress still run.
+    fn defer_results(&self) -> bool {
+        false
+    }
     /// A step's SHORT measurement, on the same stream as [`Self::score`];
     /// `None` = no screen, every candidate is measured in full.
     fn screen(&self, _bs: &[Self::Build]) -> Option<Vec<Score>> {
@@ -505,15 +510,17 @@ pub fn quick_descent<S: QuickSpace>(
                 }
                 Ok((build, score, from, moves, cut)) => {
                     run.stats.cut |= cut;
-                    let id = space.identity(&build);
-                    match answers.iter_mut().find(|a| space.identity(&a.build) == id) {
-                        Some(a) if a.starts.contains(&i) => {}
-                        Some(a) => {
-                            a.starts.push(i);
-                            a.from.push(from);
-                            a.moves.push(moves);
+                    if !space.defer_results() {
+                        let id = space.identity(&build);
+                        match answers.iter_mut().find(|a| space.identity(&a.build) == id) {
+                            Some(a) if a.starts.contains(&i) => {}
+                            Some(a) => {
+                                a.starts.push(i);
+                                a.from.push(from);
+                                a.moves.push(moves);
+                            }
+                            None => answers.push(QuickAnswer { build, score, starts: vec![i], from: vec![from], moves: vec![moves] }),
                         }
-                        None => answers.push(QuickAnswer { build, score, starts: vec![i], from: vec![from], moves: vec![moves] }),
                     }
                     if cut {
                         break;
@@ -522,6 +529,9 @@ pub fn quick_descent<S: QuickSpace>(
             }
         }
         progress.push(lane);
+    }
+    if space.defer_results() {
+        return QuickRun { answers: Vec::new(), failures, stats: run.stats, progress, pool: Vec::new() };
     }
     rank_ties(&mut answers, |a| a.score, |a, b| space.prefer(&a.build, &b.build));
     // THE SAME SCORE ON THE PAIRED STREAM IS THE SAME BUILD for the list
@@ -622,6 +632,85 @@ mod tests {
         fn key(&self, b: &Self::Build) -> String {
             format!("{b:?}")
         }
+    }
+
+    #[derive(Default)]
+    struct QueuedScores {
+        missed: AtomicBool,
+        waiting: AtomicBool,
+        asked: std::sync::Mutex<Vec<u8>>,
+    }
+
+    impl QuickSpace for QueuedScores {
+        type Build = u8;
+
+        fn positions(&self, _: &u8) -> Vec<Position> {
+            vec![Position { kind: "digit", idx: 0 }]
+        }
+        fn empty(&self, _: &u8) -> Vec<Position> {
+            Vec::new()
+        }
+        fn candidates(&self, b: &u8, _: Position) -> Vec<u8> {
+            vec![*b + 1]
+        }
+        fn legal(&self, _: &u8) -> bool {
+            true
+        }
+        fn score(&self, bs: &[u8]) -> Vec<Score> {
+            self.missed.store(false, Ordering::Relaxed);
+            bs.iter().map(|&b| {
+                if b.is_multiple_of(2) {
+                    Some((f64::from(b), 0.0))
+                } else {
+                    self.missed.store(true, Ordering::Relaxed);
+                    self.waiting.store(true, Ordering::Relaxed);
+                    self.asked.lock().unwrap().push(b);
+                    None
+                }
+            }).collect()
+        }
+        fn key(&self, b: &u8) -> String {
+            b.to_string()
+        }
+        fn identity(&self, b: &u8) -> String {
+            assert!(!self.defer_results(), "pending answers must not be materialized");
+            self.key(b)
+        }
+        fn pending(&self) -> bool {
+            self.missed.load(Ordering::Relaxed)
+        }
+        fn defer_results(&self) -> bool {
+            self.waiting.load(Ordering::Relaxed)
+        }
+    }
+
+    #[test]
+    fn pending_scores_defer_results_after_collecting_every_start() {
+        let space = QueuedScores::default();
+        let starts: Vec<_> = [0, 2].into_iter().map(|build| QuickStart { build, fixed: vec![], unnamed: vec![] }).collect();
+        let cfg = QuickConfig { max_evals: 0, stop: vec![] };
+        let run = quick_descent(&space, &starts, &cfg);
+        assert_eq!(*space.asked.lock().unwrap(), [1, 3], "each start must still reach its missing scores");
+        assert_eq!(run.stats.starts, 2);
+        assert_eq!(run.stats.evals, 2, "the known starting builds are scored");
+        assert!(run.stats.cut);
+        assert_eq!(run.progress.len(), 2);
+        assert!(run.progress.iter().all(|p| !p.settled && p.round == 1 && p.at == 0 && p.of == 1));
+        assert!(run.answers.is_empty() && run.pool.is_empty());
+    }
+
+    #[test]
+    fn a_budget_cut_keeps_results_without_pending_scores() {
+        let build = [Some(0); 3];
+        let start = QuickStart { build, fixed: vec![], unnamed: vec![] };
+        let cfg = QuickConfig { max_evals: 1, stop: vec![] };
+        let run = quick_descent(&Digits, &[start], &cfg);
+        assert!(run.stats.cut);
+        assert_eq!(run.stats.evals, 1);
+        assert_eq!(run.answers.len(), 1);
+        assert_eq!(run.answers[0].build, build);
+        assert_eq!(run.pool.len(), 1);
+        assert_eq!(run.pool[0].0, build);
     }
 
     /// A SHAPE AND A CARD, scored by a table: [shape 0–1, card 0–2]. On a build

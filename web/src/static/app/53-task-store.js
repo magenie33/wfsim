@@ -16,6 +16,21 @@ class UserTaskMemoryStore {
     return this.values.has(key) ? taskClone(this.values.get(key)) : null;
   }
   async entries(prefix) { return [...this.values].filter(([key]) => key.startsWith(prefix)).map(([, value]) => taskClone(value)); }
+  async takeValues(prefix, limit) {
+    return [...this.values].filter(([key]) => key.startsWith(prefix)).sort(([a], [b]) => a.localeCompare(b))
+      .slice(0, limit).map(([key, value]) => ({ key, value: taskClone(value) }));
+  }
+  async countValues(prefix) { return [...this.values.keys()].filter(key => key.startsWith(prefix)).length; }
+  async putOnce(entries) {
+    for (const { key, marker, value } of entries) if (!this.values.has(marker)) {
+      this.values.set(marker, true); this.values.set(key, taskClone(value));
+    }
+  }
+  async writeValues(entries) {
+    for (const { key, value, remove } of entries) {
+      if (remove) this.values.delete(key); else this.values.set(key, taskClone(value));
+    }
+  }
   async change(transform) {
     const state = taskClone(this.state);
     const result = transform(state);
@@ -61,6 +76,47 @@ class UserTaskBrowserStore {
       tx.onabort = () => reject(tx.error);
     });
   }
+  takeValues(prefix, limit) {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction("queue", "readonly"), rows = [];
+      const request = tx.objectStore("queue").openCursor(IDBKeyRange.bound(prefix, prefix + "\uffff"));
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (cursor && rows.length < limit) { rows.push({ key: cursor.key, value: cursor.value }); cursor.continue(); }
+      };
+      tx.oncomplete = () => resolve(rows);
+      tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+    });
+  }
+  countValues(prefix) {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction("queue", "readonly");
+      const request = tx.objectStore("queue").count(IDBKeyRange.bound(prefix, prefix + "\uffff"));
+      tx.oncomplete = () => resolve(request.result);
+      tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+    });
+  }
+  putOnce(entries) {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction("queue", "readwrite"), store = tx.objectStore("queue");
+      for (const { key, marker, value } of entries) {
+        const request = store.get(marker);
+        request.onsuccess = () => { if (request.result === undefined) { store.put(true, marker); store.put(value, key); } };
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+    });
+  }
+  writeValues(entries) {
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction("queue", "readwrite"), store = tx.objectStore("queue");
+      for (const { key, value, remove } of entries) {
+        if (remove) store.delete(key); else store.put(value, key);
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error); tx.onabort = () => reject(tx.error);
+    });
+  }
   change(transform, mode = "readwrite") {
     return new Promise((resolve, reject) => {
       const transaction = this.db.transaction("queue", mode);
@@ -79,6 +135,98 @@ class UserTaskBrowserStore {
       transaction.onerror = () => reject(failure || transaction.error);
       transaction.onabort = () => reject(failure || transaction.error);
     });
+  }
+}
+
+// Build delivery has its own durable outbox; search reports retain only their ranking.
+class OptimizationBuildOutbox {
+  constructor({ store, lock, engine, consent, send, failed = () => {}, schedule = (work, ms) => setTimeout(work, ms),
+    coalesce = () => new Promise(resolve => setTimeout(resolve, 250)) }) {
+    Object.assign(this, { store, lock, engine, consent, send, failed, schedule, coalesce });
+    this.prefix = "optimization-build-upload:";
+    this.running = null; this.timer = null; this.again = false; this.backoff = 10_000;
+  }
+  static canonical(value) {
+    return Array.isArray(value) ? value.map(OptimizationBuildOutbox.canonical) : value && typeof value === "object"
+      ? Object.fromEntries(Object.keys(value).sort().map(key => [key, OptimizationBuildOutbox.canonical(value[key])])) : value;
+  }
+  async add(builds, source = {}) {
+    if (!builds?.length) return;
+    source = taskClone(source);
+    const sourceKey = JSON.stringify(OptimizationBuildOutbox.canonical(source));
+    const unique = new Map(builds.map(build => {
+      const frozen = taskClone(build);
+      return [JSON.stringify(OptimizationBuildOutbox.canonical(frozen)), frozen];
+    }));
+    const entries = await Promise.all([...unique].map(async ([text, build]) => {
+      const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify([this.engine, sourceKey, text])));
+      const id = [...new Uint8Array(hash)].map(byte => byte.toString(16).padStart(2, "0")).join("");
+      const marker = "optimization-build-seen:" + id;
+      return { key: this.prefix + (source.explicit ? "explicit:" : "consent:") + id, marker,
+        value: { marker, build: taskClone(build), source: taskClone(source) } };
+    }));
+    await this.store.putOnce(entries);
+    this.wake();
+  }
+  wake() {
+    if (this.running) { this.again = true; return; }
+    if (this.timer != null) return;
+    this.again = false;
+    this.running = this.lock("optimization-build-uploads", () => this.drain()).catch(error => {
+      this.failed(error); this.again = false;
+      this.timer = this.schedule(() => { this.timer = null; this.wake(); }, this.backoff);
+      this.backoff = Math.min(300_000, this.backoff * 2);
+    }).finally(() => {
+      this.running = null;
+      if (this.again && this.timer == null) this.wake();
+    });
+  }
+  async drain() {
+    for (;;) {
+      let prefix = this.prefix + (this.consent() ? "" : "explicit:");
+      let rows = await this.store.takeValues(prefix, 128);
+      if (!rows.length) return;
+      if (rows.length < 128) {
+        await this.coalesce();
+        prefix = this.prefix + (this.consent() ? "" : "explicit:");
+        rows = await this.store.takeValues(prefix, 128);
+        if (!rows.length) return;
+      }
+      const source = rows[0].value.source, scope = JSON.stringify(source), batch = [];
+      let bytes = new TextEncoder().encode(JSON.stringify({ ...this.envelope(source), builds: [] })).length;
+      const rejected = [];
+      for (const row of rows) {
+        if (JSON.stringify(row.value.source) !== scope) continue;
+        const size = new TextEncoder().encode(JSON.stringify(row.value.build)).length;
+        if (size > 4096) { rejected.push(row); continue; }
+        if (batch.length && bytes + size + 1 > 131072) break;
+        batch.push(row); bytes += size + (batch.length > 1 ? 1 : 0);
+      }
+      if (rejected.length) await this.settle(rejected.map(row => ({ row, verdict: { ok: false, error: "The build is too large.", retryable: false } })));
+      if (!batch.length) continue;
+      if (!source.explicit && !this.consent()) return;
+      const results = await this.send(source, batch.map(row => row.value.build));
+      if (!Array.isArray(results) || results.length !== batch.length) throw new Error("The build upload returned an incomplete acknowledgment.");
+      await this.settle(batch.map((row, i) => ({ row, verdict: results[i] })));
+      if (results.some(result => !result?.ok && result?.retryable !== false)) throw new Error("Some builds could not be uploaded.");
+      this.backoff = 10_000;
+    }
+  }
+  envelope(source) {
+    const { kind, explicit, ...credentials } = source;
+    return kind && kind !== "public" ? credentials : {};
+  }
+  async settle(entries) {
+    const changes = []; let refusal = null;
+    for (const { row, verdict } of entries) if (verdict?.ok || verdict?.retryable === false) {
+      if (!verdict.ok) refusal ||= verdict.error || "The build upload was refused.";
+      changes.push({ key: row.key, remove: true }, { key: row.value.marker,
+        value: verdict.ok ? { state: "sent" } : { state: "refused", error: verdict.error || "refused" } });
+      if (!verdict.ok) changes.push({ key: row.key.replace(this.prefix, "optimization-build-refused:"),
+        value: { ...row.value, state: "refused", error: verdict.error || "refused" } });
+    }
+    if (changes.length) await this.store.writeValues(changes);
+    if (refusal) this.failed(new Error(refusal));
   }
 }
 

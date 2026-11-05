@@ -199,6 +199,8 @@ fn optimize_inner(
         Ok(p) => p,
         Err(e) => return e.to_string(),
     };
+    let builds = plan.build_stream();
+    let builds_after = std::rc::Rc::new(std::cell::Cell::new(0));
     let state = std::rc::Rc::new(FunnelState::default());
     let t0 = js_sys::Date::now();
     let post = |payload: String| {
@@ -210,8 +212,12 @@ fn optimize_inner(
         let state = state.clone();
         let counts = counts.clone();
         let f = on_progress.clone();
+        let builds = builds.clone();
+        let builds_after = builds_after.clone();
+        let build_sink = on_board.clone();
         let last = std::cell::Cell::new(0.0f64);
         wfsim_optimizer::set_tick_hook(Some(Box::new(move || {
+            post_builds(&builds, &builds_after, &build_sink);
             let now = js_sys::Date::now();
             if now - last.get() < 250.0 {
                 return;
@@ -281,6 +287,64 @@ fn optimize_inner(
             let _ = on_board.call1(&JsValue::NULL, &JsValue::from_str(&board.to_string()));
         }),
     );
+    post_builds(&builds, &builds_after, on_board);
     wfsim_optimizer::set_tick_hook(None);
     result.to_string()
+}
+
+fn post_builds(stream: &wfsim_webapi::BuildStream, after: &std::cell::Cell<u64>, sink: &js_sys::Function) {
+    post_build_batches(stream.has_pending(), after, |cursor| stream.batch(cursor), |payload| {
+        sink.call1(&JsValue::NULL, &JsValue::from_str(&payload)).is_ok()
+    });
+}
+
+fn post_build_batches(
+    has_pending: bool,
+    after: &std::cell::Cell<u64>,
+    mut batch: impl FnMut(u64) -> serde_json::Value,
+    mut send: impl FnMut(String) -> bool,
+) {
+    if !has_pending { return; }
+    loop {
+        let batch = batch(after.get());
+        let rows = batch["builds"].as_array().expect("build batch");
+        if rows.is_empty() { break; }
+        let payload = serde_json::json!({ "kind": "builds", "builds": rows }).to_string();
+        if !send(payload) { break; }
+        after.set(batch["builds_next"].as_u64().expect("build cursor"));
+    }
+}
+
+#[cfg(test)]
+mod build_delivery_tests {
+    use super::*;
+
+    #[test]
+    fn empty_build_heartbeats_construct_no_json_batch() {
+        let after = std::cell::Cell::new(7);
+        post_build_batches(false, &after,
+            |_| panic!("an empty stream must not allocate a JSON batch"),
+            |_| panic!("an empty stream must not call its transport"));
+        assert_eq!(after.get(), 7);
+    }
+
+    #[test]
+    fn failed_build_callbacks_keep_the_cursor_for_retry() {
+        let after = std::cell::Cell::new(0);
+        let record = serde_json::json!({ "weapon": "acceltra_prime" });
+        let batch = |cursor| {
+            if cursor == 0 {
+                serde_json::json!({ "builds": [record], "builds_next": 1, "builds_more": false })
+            } else {
+                serde_json::json!({ "builds": [], "builds_next": 1, "builds_more": false })
+            }
+        };
+        post_build_batches(true, &after, batch, |_| false);
+        assert_eq!(after.get(), 0, "a failed callback acknowledges no records");
+        let mut sent = Vec::new();
+        post_build_batches(true, &after, batch, |payload| { sent.push(payload); true });
+        assert_eq!(after.get(), 1);
+        assert_eq!(sent.len(), 1);
+        assert_eq!(serde_json::from_str::<serde_json::Value>(&sent[0]).unwrap()["builds"], serde_json::json!([record]));
+    }
 }

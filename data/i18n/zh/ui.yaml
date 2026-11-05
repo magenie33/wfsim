@@ -6,6 +6,9 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "Build uploads queued": "配装上传已排队"
+  "Legal builds found during optimization enter the Build Library using each task's saved upload setting.": "优化过程中找到的合法配装会按各任务保存的上传设置加入配装库。"
+  "New tasks keep build uploads off.": "新任务将关闭配装上传。"
   "while Aim Gliding": "飞身瞄准时"
   Mod catalogue: Mod 目录
   "Recommend": "推荐"

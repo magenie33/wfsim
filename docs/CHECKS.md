@@ -133,6 +133,26 @@ or leaving the page stops the clock. Final verification without a known total
 is indeterminate; replay displays its own counts. These assertions fail on the
 renderer that shows normalized `0 / 1` and no local clock.
 
+## `check_optimizer_build_uploads`
+
+Node fixtures cover the optimizer's durable build outbox, exact element-order
+retention, canonical-record deduplication, captured payloads and ownership,
+nonblocking HTTP, batch count and UTF-8 byte bounds, retry and permanent refusal.
+Sparse arrivals share one background batch window without delaying storage;
+full batches bypass it. `no-coalescing` restores one request per sparse arrival.
+Queued and refused records survive task removal and reload; native stream
+cursors bind to their job token and acknowledge only committed records. Worker cancellation keeps emitted
+builds without restoring cancelled results. Community delivery uses the
+original search's receipt and its frozen upload choice; declining upload still
+allows computation. `WFSIM_BUILD_UPLOAD_NEGATIVE=unbounded-batch`, `early-ack`
+and `late-consent` exercise unlimited requests, premature cursor ACKs and
+consent captured after asynchronous validation. Slow storage cannot delay a
+worker's error or cleanup; `delayed-error` restores that failure while queued
+build delivery remains pending. Completed shards ignore their stale errors.
+Native collection requires an explicit, authorized subscription backed by
+persistent storage; memory fallback never acknowledges its build stream.
+The check runs in the cheap CI job without a browser or engine build.
+
 ## `check_page_bodies`
 
 `node --check` over every check script, and over `app.js` joined from its

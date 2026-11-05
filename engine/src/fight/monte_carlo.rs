@@ -149,6 +149,16 @@ pub struct Summary {
     pub median_run: RunResult,
 }
 
+/// The statistics a search ranks by, read from its measured runs without
+/// replaying an engagement for the full report's median run.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct RankingStats {
+    pub mean_kill_progress: f64,
+    pub mean_effective_damage: f64,
+    pub std_kill_progress: f64,
+    pub work: u64,
+}
+
 /// THE PER-RUN SERIES of the two statistics builds are compared by, in RUN
 /// ORDER — which is what makes them PAIRED.
 ///
@@ -393,6 +403,18 @@ pub const WORK_COUNTERS: [&str; 9] = ["runs", "shots", "pellets", "procs", "dot_
 pub const WORK_WEIGHTS: [u64; 9] = [373_843, 226, 258, 41, 0, 85, 0, 216, 8];
 
 impl Shard {
+    /// The ranking's moments and cost, without consuming or replaying runs.
+    pub fn ranking(&self) -> RankingStats {
+        let n = self.runs.max(1) as f64;
+        let mean_kp = self.kill_progress / n;
+        RankingStats {
+            mean_kill_progress: mean_kp,
+            mean_effective_damage: self.effective / n,
+            std_kill_progress: (self.kill_progress_sq / n - mean_kp * mean_kp).max(0.0).sqrt(),
+            work: self.work(),
+        }
+    }
+
     /// The counts named by [`WORK_COUNTERS`].
     pub fn work_counts(&self) -> [u64; 9] {
         [
@@ -645,7 +667,8 @@ impl Shard {
     /// run count, which is why none of it can live in the shard.
     pub fn finish(self, params: &FightParams, _runs: u32) -> (Summary, RunSeries) {
         let runs = self.runs;
-        let work = self.work();
+        let ranking = self.ranking();
+        let work = ranking.work;
         let series = self.series.clone();
         let (sum, sum_sq, min, max) = (self.sum, self.sum_sq, self.min, self.max);
         let (effective, effective_sq, dot) = (self.effective, self.effective_sq, self.dot);
@@ -658,7 +681,6 @@ impl Shard {
         let (ghost_kills, ghosts_peak) = (self.ghost_kills, self.ghosts_peak);
         let dot_ticks = self.dot_ticks;
         let (kills, kills_sq) = (self.kills, self.kills_sq);
-        let (kill_progress, kill_progress_sq) = (self.kill_progress, self.kill_progress_sq);
         let (min_kills, max_kills) = (self.min_kills, self.max_kills);
         let (downtime, first_magazine, max_hit_sum, biggest) =
             (self.downtime, self.first_magazine, self.max_hit_sum, self.biggest);
@@ -707,7 +729,7 @@ impl Shard {
         std_damage: variance.sqrt(),
         min_damage: if min.is_finite() { min } else { 0.0 },
         max_damage: if max.is_finite() { max } else { 0.0 },
-        mean_effective_damage: effective / n,
+        mean_effective_damage: ranking.mean_effective_damage,
         std_effective_damage: {
             let mean_e = effective / n;
             (effective_sq / n - mean_e * mean_e).max(0.0).sqrt()
@@ -745,11 +767,8 @@ impl Shard {
         },
         min_kills: if min_kills == u32::MAX { 0 } else { min_kills },
         max_kills,
-        mean_kill_progress: kill_progress / n,
-        std_kill_progress: {
-            let mean_kp = kill_progress / n;
-            (kill_progress_sq / n - mean_kp * mean_kp).max(0.0).sqrt()
-        },
+        mean_kill_progress: ranking.mean_kill_progress,
+        std_kill_progress: ranking.std_kill_progress,
         mean_shots: shots as f64 / n,
         mean_pellets: pellets as f64 / n,
         mean_crit_rate: crits as f64 / total_pellets,
@@ -800,5 +819,82 @@ impl Shard {
         },
     };
         (summary, series)
+    }
+}
+
+#[cfg(test)]
+mod ranking_tests {
+    use super::*;
+
+    fn params() -> FightParams {
+        let base = crate::model::WeaponBase::from_data("torid", false, &[]);
+        let panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+        let enemies = crate::data::enemies::all();
+        let target = enemies.iter().find(|e| e.id == "corrupted_heavy_gunner").unwrap();
+        let mut arena = crate::arena::Arena::training(20.0);
+        arena.target = target.target_params(30, false, false, TargetMode::InstantRespawn).unwrap();
+        FightParams::from_panel(&panel, &arena, &crate::data::arcanes::ArcaneFx::none())
+    }
+
+    fn bits(r: RankingStats) -> ([u64; 3], u64) {
+        ([r.mean_kill_progress.to_bits(), r.mean_effective_damage.to_bits(), r.std_kill_progress.to_bits()], r.work)
+    }
+
+    #[test]
+    fn ranking_reads_the_accumulated_moments() {
+        let measured = Shard {
+            runs: 2, kill_progress: 3.0, kill_progress_sq: 5.0, effective: 14.0,
+            ..Default::default()
+        };
+        assert_eq!(measured.ranking(), RankingStats {
+            mean_kill_progress: 1.5,
+            mean_effective_damage: 7.0,
+            std_kill_progress: 0.5,
+            work: measured.work(),
+        });
+    }
+
+    #[test]
+    fn ranking_matches_the_complete_summary_to_the_bit() {
+        let p = params();
+        for seed in [0xBEEF_CAFE, u64::MAX] {
+            for runs in [0, 1, 2, 10] {
+                let measured = shard(&p, 0, runs, seed, false, &mut |_| {});
+                let encoded = serde_json::to_value(&measured).unwrap();
+                let rank = measured.ranking();
+                assert_eq!(serde_json::to_value(&measured).unwrap(), encoded, "reading a rank preserves its shard");
+                let (full, _) = measured.finish(&p, runs);
+                assert_eq!(bits(rank), bits(RankingStats {
+                    mean_kill_progress: full.mean_kill_progress,
+                    mean_effective_damage: full.mean_effective_damage,
+                    std_kill_progress: full.std_kill_progress,
+                    work: full.work,
+                }), "runs={runs}, seed={seed}");
+            }
+        }
+    }
+
+    #[test]
+    fn ranking_keeps_a_screened_prefix_to_the_bit() {
+        let p = params();
+        let seed = 0xBEEF_CAFE;
+        let whole = shard(&p, 0, 10, seed, false, &mut |_| {});
+        let short = shard(&p, 0, 2, seed, false, &mut |_| {});
+        let _ = short.ranking();
+        let continued = shard_onto(&p, short, 2, 8, seed, false, &mut |_| {});
+        assert_eq!(bits(continued.ranking()), bits(whole.ranking()));
+    }
+
+    #[test]
+    fn ranking_leaves_the_median_replay_to_the_report() {
+        let p = params();
+        let measured = shard(&p, 0, 2, 0xBEEF_CAFE, false, &mut |_| {});
+        let before = gas::gas_now();
+        let _ = measured.ranking();
+        assert_eq!(gas::gas_now(), before, "reading the ranking must fight no run");
+        let _ = measured.finish(&p, 2);
+        if option_env!("WFSIM_GAS_OFF").is_none() {
+            assert!(gas::gas_now() > before, "the full report must exercise its median replay");
+        }
     }
 }

@@ -1,5 +1,17 @@
 use super::*;
 
+#[test]
+fn id_lookup_shares_the_weapon_catalog_definition() {
+    assert!(!pool().is_empty());
+    for item in pool() {
+        let expected = for_weapon(&item.weapon).iter().find(|e| e.id == item.id).unwrap();
+        for _ in 0..2 {
+            assert!(std::ptr::eq(get(&item.id).unwrap(), expected), "{}", item.id);
+        }
+    }
+    assert!(get("not_an_evolution").is_none());
+}
+
 /// THE HAND LIST MAY BE LONG; IT MAY NOT BE SHORT.
 ///
 /// `build::rivens::SIGN_IS_NOT_THE_ANSWER` is read by weapon on purpose — a list

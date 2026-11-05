@@ -24,6 +24,7 @@ async function initUserTasks() {
     }
     userTasks = new UserTaskQueue({ store, types: USER_TASK_TYPES, engine: ENGINE_ID, lock: userTaskLock,
       changed: scheduleUserTasks, retryDelivery: retryUserTaskDelivery, publish: (message) => userTaskChannel?.postMessage(message) });
+    initOptimizationBuildUploads(userTasks);
     if (userTaskChannel) userTaskChannel.onmessage = (event) => {
       if (event.data.kind === "progress") userTasks.hearProgress(event.data);
       else userTasks.refresh().then(() => userTasks.wake()).catch(userTaskFailed);

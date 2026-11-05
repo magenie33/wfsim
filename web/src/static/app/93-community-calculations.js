@@ -23,10 +23,11 @@ async function communitySimulationReport(request, signal) {
     return await lanes[0].send({ kind: "merge", body: request, shards: pieces }, null, true);
   } finally { signal.removeEventListener("abort", stop); stop(); }
 }
-async function communityOptimizationReport(request, { signal }) {
+async function communityOptimizationReport(request, { signal, buildSource }) {
+  if (signal.aborted) throw new Error("Cancelled");
   const job = quickFleet(request, () => communityLanes(), async () => {
     while (ownTabBusy() && !signal.aborted) await new Promise((resolve) => setTimeout(resolve, 250));
-  }, { keep: true, rest: communityRest });
+  }, { keep: true, rest: communityRest, onBuilds: builds => keepOptimizationBuilds(builds, buildSource) });
   const stop = () => { job.cancelled = true; job.workers.forEach((worker) => worker.terminate()); };
   signal.addEventListener("abort", stop, { once: true });
   try {
@@ -78,7 +79,8 @@ async function userCalculationOnce(work, verifier) {
   try {
     const compute = COMMUNITY_CALCULATIONS.get(work.calculation);
     if (!compute) throw new Error("This task type cannot run here.");
-    const report = await compute(work.request, { signal: controller.signal });
+    const buildSource = work.calculation === "optimization" ? await communityOptimizationBuildSource(work, verifier) : null;
+    const report = await compute(work.request, { signal: controller.signal, buildSource });
     if (controller.signal.aborted || !report || report.ok === false) throw Object.assign(new Error(report?.error || "Cancelled"), { engineRefused: !controller.signal.aborted && report?.ok === false && !report.worker_dead });
     const row = { id: work.question, body: { lease: work.lease, question: work.question, verifier, engine: ENGINE_ID,
       report, work: report.work || 0, compute_ms: Math.round(performance.now() - began), lanes: communityLanes() } };

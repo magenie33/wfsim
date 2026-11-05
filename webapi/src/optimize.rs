@@ -21,6 +21,9 @@ use crate::tenno::tenno_from;
 mod quick;
 mod requirements;
 mod final_constraints;
+mod builds;
+
+pub use builds::BuildStream;
 
 pub fn optimize_check_json(v: &Value) -> Value { final_constraints::check(v) }
 #[cfg(test)]
@@ -218,9 +221,23 @@ pub(crate) struct Replay {
     arcanes: Vec<(Vec<String>, Vec<u32>)>,
     /// Per variant: mode, evolutions, progenitor element and modular parts.
     variants: Vec<(String, Vec<String>, Option<String>, Value)>,
+    builds: BuildStream,
+    riven_shapes: std::collections::HashMap<&'static str, wfsim_engine::build::rivens::RivenShape>,
 }
 
 impl Replay {
+    /// Only a candidate's build axes; the ranking and encounter export share it.
+    fn build_axes(&self, c: &Candidate, ai: usize) -> Value {
+        let (ids, ranks) = self.arcane(ai);
+        let (mode, evos, valence, assembly) = &self.variants[c.variant as usize];
+        json!({
+            "mods": c.ordered.iter().map(|&i| self.mods[i]).collect::<Vec<_>>(),
+            "arcane": ids, "arcane_rank": ranks, "evolutions": evos,
+            "mode": mode, "valence": valence.as_deref().unwrap_or(""),
+            "exilus": self.exilus[c.exilus as usize].unwrap_or("none"), "assembly": assembly,
+        })
+    }
+
     pub(crate) fn arcane(&self, ai: usize) -> (&[String], &[u32]) {
         self.arcanes.get(ai).map_or((&[], &[]), |(ids, ranks)| (ids.as_slice(), ranks.as_slice()))
     }
@@ -379,6 +396,15 @@ pub struct OptimizePlan {
     /// because that is the precision the row's number was measured at.
     replay_base: Value,
     replay: std::sync::Arc<Replay>,
+}
+
+impl OptimizePlan {
+    /// Subscribe to complete, admitted builds encountered by this search.
+    /// Read batches with a persisted cursor; acknowledging releases their records.
+    pub fn build_stream(&self) -> BuildStream {
+        self.replay.builds.enable();
+        self.replay.builds.clone()
+    }
 }
 
 /// Validate an optimize request. `Err` is the ready-to-send error response.
@@ -1015,6 +1041,15 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
             .iter()
             .map(|&(mi, ei, li, ai)| (modes[mi].id.clone(), evo_sets[ei].clone(), valences.get(li).cloned(), assemblies[ai].clone()))
             .collect(),
+        builds: BuildStream::default(),
+        riven_shapes: crate::rivens::riven_specs_from(&replay_base, info).into_iter().map(|(id, spec)| {
+            let mut bonuses: Vec<String> = spec.bonuses.into_iter().map(|s| s.id).collect();
+            bonuses.sort();
+            (id, wfsim_engine::build::rivens::RivenShape {
+                bonuses,
+                malus: spec.malus.map(|s| s.id),
+            })
+        }).collect(),
     });
     // THE OPTIMIZER BUILDS NO FIGHT: a candidate is scored in the fight the
     // simulator builds from its request (`simulate::Entrant`), prepared once per
@@ -1034,7 +1069,9 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
                 }
             };
             let refs = entrant.seat(&scoring.mod_ids(c)).ok()?;
-            entrant.params(&refs).ok().map(|(_, p)| p)
+            let (_, params) = entrant.params(&refs).ok()?;
+            if scoring.encounter(c, ai) { wfsim_optimizer::tick(); }
+            Some(params)
         }),
         arena: fight.arena,
         policy: fight.policy,
@@ -1684,6 +1721,7 @@ pub fn run_optimize_resumable(
         replay_base,
         replay,
     } = plan;
+    let _build_producer = replay.builds.producer();
     // Compute budget: 0 = auto (all cores minus two — the machine must stay
     // usable while the search runs). Applies to the screen and every round.
     wfsim_optimizer::set_worker_threads(threads);
@@ -1738,15 +1776,12 @@ pub fn run_optimize_resumable(
     // both go through this, so a cancelled run renders in exactly the same UI
     // as a completed one — same fields, same renderer.
     let entry = |rank: usize, c: &Candidate, ai: usize, s: &Summary| -> Value {
-        let mods: Vec<&str> = c.ordered.iter().map(|&i| pool[i].id).collect();
-        // One id per seat, with its rank — the same shape the builder takes,
-        // because "apply this result" should be a copy and not a translation.
-        let (ids, ranks) = replay.arcane(ai);
+        let mut row = replay.build_axes(c, ai);
         // THE ROW, AS A REQUEST THAT REPRODUCES IT — the one every candidate
         // was scored through (`Replay`). POST it to `/api/simulate` and the
         // answer is this row's number.
-        let replay = replay.request(c, ai);
-        json!({
+        let request = replay.request(c, ai);
+        row.as_object_mut().expect("build axes").extend(json!({
             "rank": rank + 1,
             "kills": s.mean_kills,
             "kill_progress": s.mean_kill_progress,
@@ -1756,26 +1791,10 @@ pub fn run_optimize_resumable(
             "dps": s.effective_dps,
             "kills_min": s.min_kills,
             "kills_max": s.max_kills,
-            "mods": mods,
-            "arcane": ids,
-            "arcane_rank": ranks,
-            "evolutions": evo_sets[variants[c.variant as usize].1],
-            // HOW THE WINNER IS PLAYED. A row without it cannot be added to a
-            // build: mode is part of a build, and a search that ranged over
-            // modes has no other way to say which one won.
-            "mode": modes[variants[c.variant as usize].0].id,
-            // WHICH WEAPON THIS ROW IS, when the scope searched more than one:
-            // the progenitor element it was scored with, so the build a row
-            // becomes fires the weapon the row was measured on.
-            "valence": valences
-                .get(variants[c.variant as usize].2)
-                .cloned()
-                .unwrap_or_default(),
-            "exilus": exilus_defs[c.exilus as usize].as_ref().map(|m| m.id).unwrap_or("none"),
-            "assembly": assemblies[variants[c.variant as usize].3],
             "forma": { "used": c.plan.forma_used, "total_drain": c.plan.total_drain },
-            "replay": replay,
-        })
+            "replay": request,
+        }).as_object().expect("ranking fields").clone());
+        row
     };
     // A whole result payload. Snapshots carry `cancelled: true` — a board only
     // ever gets shown because a run stopped early, and the flag is what makes
@@ -2017,7 +2036,7 @@ pub fn run_optimize_resumable(
         };
             // A FLEET WORKER'S SHARE: score these builds and nothing else.
             if let Some(builds) = fleet.get("score").and_then(Value::as_array) {
-                return ctx.score_json(builds);
+                return ctx.score_json(builds, &replay.builds);
             }
             if ctx.lead {
                 let scores = fleet.get("scores").and_then(Value::as_array).cloned().unwrap_or_default();

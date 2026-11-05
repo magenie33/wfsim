@@ -48,6 +48,7 @@ async function replaySavedAppraisal(task, execution, search) {
 }
 async function submitSavedAppraisals(ids, ruler, destination = "local", capture = null) {
   const weapon = capture?.weapon || presetWeapon();
+  const boardUpload = boardConsent() === "yes";
   const saved = taskClone((capture?.cards || loadPresetList(RIVENS, weapon)).filter((card) => ids.includes(card.id)));
   if (!saved.length) throw new Error("Select at least one saved riven.");
   const batch = crypto.randomUUID(), queue = await initUserTasks();
@@ -58,7 +59,7 @@ async function submitSavedAppraisals(ids, ruler, destination = "local", capture 
       throw new Error(`${card.name}: ${resolved.illegal?.join(", ") || tr("Finish this riven before appraising it.")}`);
     const asked = headlessRivenGainRequest(META, { weapon, ruler, card: card.state, rivenId: card.id });
     if (!asked) throw new Error("Choose a ruler.");
-    entries.push({ kind: "appraisal", request: asked.request, destination, origin: { weapon, ruler,
+    entries.push({ kind: "appraisal", request: asked.request, destination, origin: { weapon, ruler, board_upload: boardUpload,
       riven_id: card.id, riven_name: card.name, board: asked.context,
       preset_name: META.search_presets.presets.find(preset => preset.riven)?.name, scenario: ruler, batch, batch_name: "Riven analysis", appraisal: null } });
   }

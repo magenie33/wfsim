@@ -261,6 +261,34 @@ tenths.
 separate api domain would be a second DNS name and a second thing that can be
 blocked, which is the failure the same-origin art rule was written about.
 
+The submission endpoint accepts one build or `{builds: [...]}`. A batch holds
+at most 128 builds and 131072 UTF-8 bytes; each build retains the single-build
+4096-byte bound. Larger collections use subsequent batches. Every item passes
+the same record-shape check, and the valid items enter `inbox` in one atomic
+multi-row insert. `results` acknowledges or permanently refuses each item in
+input order. A failed database write returns 503 and acknowledges none. The
+request's signed-in session supplies one initiator for every accepted item;
+client-supplied scores, identities and derivation provenance are not stored.
+Intake still decides legality and canonical build identity, and the existing
+scorer supplies every published score.
+
+Community searches obtain a build-delivery receipt from the same endpoint
+before computing: `{builds: [], harvest: {lease, verifier, engine, question?}}`.
+The live lease and its producer determine the question, weapon, original
+initiator and family provenance. Personal community requests carry their
+captured `__board_upload` choice: only `true` grants build delivery; missing
+or false returns `disabled` without stopping the calculation. An opened appraisal uses its existing
+`{code, engine}` authority after the server checks its frozen, unexpired
+request. Later batches carry `harvest: {receipt, question, engine}`. The HMAC
+receipt is restricted to build delivery for that weapon and uses the user
+calculation's retention window (`USER_TASK_KEEP_MS`), allowing delivery after
+the lease finishes or the browser restarts. It grants no score or contribution
+credit. Invalid scope or signatures are permanent refusals; expiry returns
+410 with `retryable: false`. The browser keeps permanently refused outbox
+items visible instead of deleting or endlessly retrying them. Family-search
+receipts retain trusted `family_source`, so their candidates do not seed more
+family requests.
+
 ### Why the page FETCHES the board
 
 Everything else in `data/` is embedded into the wasm at compile time. The board
@@ -1683,17 +1711,25 @@ owed what they would have earned. Three tables make that a lookup, not a guess:
 
 ## Consent
 
-Asked ONCE, inline, the first time a run finishes — never on load, never as a
-native dialog (they are blocked in this project), and never blocking the
-result. Any fight sends its build, because what the board scores is the build
-under the ruler's fight and never the reader's own.
+Upload defaults on, stated inline beside the existing switch. The simulator,
+optimizer and personal riven-analysis start use that same setting, without a
+dialog or an additional step. Any fight can submit a build; the board measures
+it independently under its own rulers.
 
-What travels: the weapon, its mods, evolutions and arcanes, its riven's SHAPE
-and the fight it was run in. No account, no identifier, no score and none of
-the names you chose. `scripts/check_official.mjs` asserts on the WIRE that
-nothing leaves before consent and nothing leaves after declining.
+Simulation reads the current setting. Optimization and saved-card appraisal
+capture it when the task is accepted. Turning the global switch off pauses
+local build delivery immediately, retaining its outbox. Community execution
+keeps the task's saved choice through retries and transfers; changing the
+global switch does not rewrite an accepted remote task. Chat appraisals use
+their existing explicit purpose as authorization. The task delivery contract
+is in [TASKS.md](TASKS.md).
 
-The endpoint stores no IP, no token and no timestamp finer than the day.
+Build payloads carry the weapon, equipped axes, riven shape and optional source
+benchmark, without scores or player-chosen names. Public submissions derive
+their initiator from the session; community receipts retain the original
+asker (§"Who asked"). `check_official` checks the existing disclosure and
+switch; `check_optimizer_build_uploads` covers captured task settings, local
+delivery pauses and community authorization.
 
 ## One representative per build
 

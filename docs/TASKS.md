@@ -75,6 +75,10 @@ request schema requires a fresh request from the original page.
 
 Without IndexedDB or Web Locks, the queue explicitly promises only this
 session. It does not promise cross-tab ownership or reload recovery.
+Native intermediate-build collection requires persistent task storage and an
+explicit `__collect_builds` transport subscription. Session-only native runs
+retain finalist delivery without subscribing or acknowledging that stream.
+Wasm's memory fallback likewise retains no build-delivery guarantee on reload.
 
 ## Artifacts and delivery
 
@@ -99,6 +103,25 @@ completions. Board submission uses captured ownership and the existing consent;
 a chat appraisal reply uses its captured code. Delivery can be retried without
 re-running the calculation. Removing history preserves artifacts and pending
 delivery context. No browser notification permission is requested.
+
+Each optimization and saved-card appraisal captures `origin.board_upload` when
+accepted. Community requests carry that fixed choice as `__board_upload`;
+retry and transfer retain it. Declining upload leaves computation available.
+Local delivery also pauses while the current global upload switch is off.
+The existing explicit purpose of a chat appraisal authorizes its delivery.
+
+Engine-admitted builds encountered during search use a separate durable outbox,
+including short-only candidates and distinct element orders. Reports retain
+their ranking rather than the collection. Sparse arrivals share a 250 ms
+background batching window; full 128-record batches proceed immediately.
+Local persistence does not wait for that window or HTTP. Bounded batches retry
+transport failures; permanent refusals retain their payload, source and reason
+outside the pending queue. Task cancellation and removal preserve both.
+Native cursors bind to a process-unique job token and acknowledge records only
+after local storage commits. Native capture requires an explicit subscription;
+read-only callers retain no delivery queue. Community delivery retains a signed
+receipt for the original initiator; executor identity never replaces it
+([BOARD.md](BOARD.md)).
 
 ## Community execution
 

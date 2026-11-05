@@ -170,5 +170,45 @@ await check("a future arrival can seed the same family on a new engine without a
   assert.equal(await count("family_transfers"), 2);
   assert.equal((await db.get("SELECT count(*) AS n FROM family_transfers WHERE engine = 'next-engine'")).n, 1);
 });
+await check("leased search receipts deliver atomic build batches after the lease closes", async () => {
+  env.AUTH_SECRET = "family-harvest-check-only";
+  const question = "e".repeat(32), lease = "f".repeat(32), verifier = "e".repeat(24);
+  const at = new Date().toISOString(), until = new Date(Date.now() + 60_000).toISOString();
+  await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lease, lease_until, leased_to)
+    VALUES (?, 'optimize_report', ?, 'open', ?, ?, ?, ?, ?)`, question, JSON.stringify({ weapon: "torid", strategy: "quick", __board_upload: true }), at, at, lease, until, verifier);
+  await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, initiator)
+    VALUES ('user_calculation', 'harvest-service', ?, 'live', ?, ?, 'user:harvest-requester')`, question, at, at);
+  const submit = body => worker.fetch(new Request("https://wfsim.test/api/board/submit", { method: "POST",
+    headers: { "content-type": "application/json" }, body: JSON.stringify(body) }), env, { waitUntil() {} });
+  const grantedResponse = await submit({ builds: [], harvest: { lease, verifier, question, engine: "next-engine" } });
+  assert.equal(grantedResponse.status, 200, await grantedResponse.clone().text());
+  const grant = await grantedResponse.json();
+  assert.equal(grant.question, question);
+  await db.run("UPDATE questions SET lease = NULL, leased_to = NULL, lease_until = NULL WHERE id = ?", question);
+  await db.run("UPDATE demands SET state = 'served' WHERE question = ?", question);
+  const before = await count("inbox");
+  const builds = Array.from({ length: 128 }, () => ({ weapon: "torid", mods: ["serration"], score: 123, initiator: "system", family_source: "fake" }));
+  const calls = db.cost.calls;
+  const response = await submit({ builds, harvest: { receipt: grant.receipt, question, engine: "next-engine" } });
+  assert.equal(response.status, 200, await response.clone().text());
+  assert.equal(db.cost.calls - calls, 1, "one multi-row insert is one database round trip");
+  assert.equal((await response.json()).results.filter(item => item.ok).length, builds.length);
+  assert.equal(await count("inbox"), before + builds.length);
+  const rows = await db.all("SELECT record, initiator, family_source FROM inbox WHERE initiator = 'user:harvest-requester'");
+  assert.equal(rows.length, builds.length);
+  assert.ok(rows.every(row => row.family_source === null && JSON.parse(row.record).score === undefined));
+  assert.equal(await count("scores"), 0);
+  const wrong = await submit({ builds, harvest: { receipt: grant.receipt, question: "a".repeat(32) } });
+  assert.equal(wrong.status, 403);
+  assert.equal(await count("inbox"), before + builds.length);
+  await db.run("UPDATE questions SET lease = ?, leased_to = ?, lease_until = ? WHERE id = ?", lease, verifier, until, question);
+  await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, initiator)
+    VALUES ('family_build', 'harvest-family-source', ?, 'live', ?, ?, 'system')`, question, at, at);
+  const familyGrant = await (await submit({ builds: [], harvest: { lease, verifier, question, engine: "next-engine" } })).json();
+  const familyBatch = await submit({ builds: [{ weapon: "torid", mods: ["serration"] }], harvest: { receipt: familyGrant.receipt } });
+  assert.equal(familyBatch.status, 200, await familyBatch.clone().text());
+  const familyInbox = await db.get("SELECT initiator, family_source FROM inbox WHERE family_source = 'harvest-family-source'");
+  assert.deepEqual(familyInbox, { initiator: "system", family_source: "harvest-family-source" });
+});
 await db.close();
 console.log(`\n${passed} family spread checks passed`);

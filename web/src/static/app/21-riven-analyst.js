@@ -142,9 +142,11 @@ function openRivenAnalysisDialog(ids = [], ruler = appraisalRuler || benchList()
     + `<fieldset class="analysis-executors"><legend>${escHtml(tr("Compute with"))}</legend><label><input type="radio" name="analysis-executor" value="local" checked> ${escHtml(tr("This device"))}</label>`
     + `<label><input type="radio" name="analysis-executor" value="community"${communityTaskCapable({ kind: "appraisal" }) ? "" : " disabled"}> ${escHtml(tr("Community compute"))}</label></fieldset>`
     + `<p class="sim-hint" id="analysis-executor-note"></p><p class="sim-hint">${escHtml(tr("The card is fixed when you start. Grading reads the current board. Editing your riven later leaves this report unchanged."))}</p>`
+    + `<p class="sim-hint" data-optimization-build-consent></p>`
     + `<a class="ghost-btn" href="${weaponPath(weapon)}/rivens">${escHtml(tr("Import or edit in Rivens"))} →</a></div>`
     + `<div class="analysis-dialog-foot"><span id="analysis-submit-note" role="status"></span><button class="cu-btn" id="analysis-submit">${escHtml(tr("Start analysis"))}</button></div></div>`;
   document.body.append(overlay); document.body.classList.add("analysis-dialog-open");
+  renderOptimizationBuildConsent();
   const submit = $("analysis-submit");
   const drawCards = () => {
     $("analysis-cards").innerHTML = cards.length ? cards.map(card => `<label class="analysis-card-choice"><input type="checkbox" data-analysis-card="${escHtml(card.id)}"${selected.has(card.id) ? " checked" : ""}><span><b>${escHtml(card.name)}</b><span>${escHtml(raRolls({ bonuses: (card.state.bonuses || []).map(stat => stat.id), malus: card.state.malus?.id, rolls: (card.state.bonuses || []).map(stat => stat.roll).concat(card.state.malus ? [card.state.malus.roll] : []) }))}</span></span></label>`).join("") : `<p class="wb-empty">${escHtml(tr("no rivens for this weapon yet"))}</p>`;

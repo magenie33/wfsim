@@ -27,11 +27,11 @@ pub struct Preference<'a> {
 
 /// `Less` = `a` is the one kept.
 pub fn preferred(a: &Preference, b: &Preference) -> Ordering {
-    let sorted = |x: &[&str]| {
+    fn sorted<'a>(x: &[&'a str]) -> Vec<&'a str> {
         let mut v = x.to_vec();
         v.sort_unstable();
-        v.into_iter().map(str::to_string).collect::<Vec<_>>()
-    };
+        v
+    }
     b.drain
         .cmp(&a.drain)
         .then_with(|| sorted(&a.cards).cmp(&sorted(&b.cards)))

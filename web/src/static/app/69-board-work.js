@@ -950,8 +950,13 @@ async function rivenGainOnce(w, id) {
   heldLease = { code: w.code, lease: w.lease, verifier: id };
   computeStart({ kind: "riven_gain", code: w.code, weapon: w.weapon, ruler: w.ruler });
   const began = performance.now();
+  let buildSource;
+  try { buildSource = await communityOptimizationBuildSource(w, id); }
+  catch (_) { giveBack(); computeEnd(null); return true; }
+  if (!boardVerifyOn() || computeHeld() || computeFrozen) { giveBack(); computeEnd(null); return true; }
   // THE CORES IT MAY TAKE ARE ASKED EVERY ROUND, and its workers kept for the next one (`quickFleet`).
-  const job = quickFleet(w.request, () => communityLanes(), undefined, { keep: true, rest: communityRest });
+  const job = quickFleet(w.request, () => communityLanes(), undefined,
+    { keep: true, rest: communityRest, onBuilds: builds => keepOptimizationBuilds(builds, buildSource) });
   // STILL AT IT, said every `RIVEN_RENEW_MS` so the lease runs on while the
   // search does; told the task went elsewhere, it stops (worker/appraise.js `renew`).
   let lost = false, said = performance.now();

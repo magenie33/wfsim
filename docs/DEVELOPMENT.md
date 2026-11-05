@@ -426,6 +426,13 @@ cannot see hours.
 
 ## Optimizer verification: `wfsim-truth`
 
+`cargo run --release -p wfsim-webapi --example search_cost -- request.json
+output.json [parts]` measures a frozen optimize request. With `parts > 0` it
+executes the fleet protocol serially and records parsing, leader and scorer
+times separately; this is computational cost, not parallel browser latency.
+The output retains the complete result for before/after comparisons. Fleet
+fight and work counters are null for a direct native run.
+
 **Optimizer verification: `cargo run --release --bin wfsim-truth -- pool=<ids>
 …`**. A search cannot vouch for itself: the tool exhausts the scope, evaluates
 every job flat, and reports where the production search landed in that

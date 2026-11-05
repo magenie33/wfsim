@@ -51,8 +51,11 @@ import { liveKey, serveLive, pushLive } from "./live_board.js";
 import { withDatabases } from "./db.js";
 import { edgeServe } from "./pages.js";
 import { websiteRequest } from "./website_proxy.js";
+import { authorizeHarvest } from "./board_harvest.js";
 
 const MAX_BYTES = 4096;        // a build is a few hundred bytes; this is slack
+export const BOARD_SUBMIT_BATCH_MAX = 128;
+export const BOARD_SUBMIT_BATCH_BYTES = 131072;
 // AN OUTER BOUND, NOT THE RULE — see below. It is `MAIN_SLOTS + 1`: eight main
 // slots and the STANCE, which is the one extra card that rides `mods` (the
 // exilus has a key of its own). EXPORTED so `check_board_submit.mjs` can hold
@@ -159,12 +162,14 @@ const bad = (msg, status = 400) =>
 
 /// THE BODY, PARSED AND SIZED, or the refusal to send back. Shared because two
 /// endpoints take a build and must not disagree about what one is.
-async function body(request) {
+async function body(request, limit = MAX_BYTES, utf8 = false) {
   if (!request) return { err: "no request" };
   // Size first, before parsing: the cheapest rejection there is.
   const raw = await request.text();
-  if (raw.length > MAX_BYTES) return { err: "payload too large" };
-  try { return { b: JSON.parse(raw) }; } catch { return { err: "not json" }; }
+  if (raw.length > limit) return { err: "payload too large" };
+  const bytes = utf8 ? new TextEncoder().encode(raw).byteLength : raw.length;
+  if (bytes > limit) return { err: "payload too large" };
+  try { return { b: JSON.parse(raw), bytes }; } catch { return { err: "not json" }; }
 }
 
 /// A BUILD AS THIS SERVICE STORES ONE, or the name of the axis that failed.
@@ -174,6 +179,7 @@ async function body(request) {
 /// hands capacity back, which evolutions exist — is a question about game data
 /// this worker does not have, and `wfsim-intake` asks the engine it instead.
 function record(b) {
+  if (!b || typeof b !== "object" || Array.isArray(b)) return { err: "bad build" };
   const rec = { at: new Date().toISOString().slice(0, 10) };
   for (const a of AXES) {
     const v = b[a.key];
@@ -215,8 +221,28 @@ export async function submitRecord(env, build, initiator = null, origin = {}) {
 
 async function submit(request, env) {
   if (!env.LIBRARY) return bad("the library is not configured", 503);
-  const { b, err } = await body(request);
-  if (err) return bad(err);
+  const { b, err, bytes } = await body(request, BOARD_SUBMIT_BATCH_BYTES, true);
+  if (err) return bad(err, err === "payload too large" ? 413 : 400);
+  const many = !!b && typeof b === "object" && Object.hasOwn(b, "builds");
+  if (many && (!Array.isArray(b.builds) || (!b.builds.length && !b.harvest))) return bad("bad builds");
+  if (many && b.builds.length > BOARD_SUBMIT_BATCH_MAX) return bad("too many builds", 413);
+  if (!many && bytes > MAX_BYTES) return bad("payload too large");
+  let harvest;
+  if (many && b.harvest !== undefined) {
+    try { harvest = await authorizeHarvest(env, b.harvest, Date.now(), request); }
+    catch (_) { return Response.json({ ok: false, error: "harvest authorization is unavailable", retryable: true }, { status: 503 }); }
+    if (harvest.response) return harvest.response;
+    if (harvest.error) return Response.json({ ok: false, error: harvest.error, retryable: harvest.retryable }, { status: harvest.status });
+  }
+  const checked = (many ? b.builds : [b]).map(build =>
+    new TextEncoder().encode(JSON.stringify(build)).byteLength > MAX_BYTES ? { err: "payload too large" }
+      : harvest?.disabled ? { err: "build uploads are disabled for this search" }
+        : harvest && build?.weapon !== harvest.claims.weapon ? { err: "build does not match the harvest weapon" } : record(build));
+  if (!many && checked[0].err) return bad(checked[0].err);
+  const records = checked.filter(item => !item.err).map(item => item.rec);
+  const result = many ? { ok: true, ...harvest?.public, results: checked.map(item => item.err
+    ? { ok: false, error: item.err, retryable: false } : { ok: true }) } : { ok: true };
+  if (!records.length) return new Response(JSON.stringify(result), { headers: { "content-type": "application/json" } });
 
   // NOTHING ABOUT THE SUBMITTER IS STORED. Not the IP, not a token, not a
   // timestamp that could order one person's submissions against another's.
@@ -224,11 +250,8 @@ async function submit(request, env) {
   // coarse enough to say when and too coarse to identify anyone. The one thing
   // beside it is WHO ASKED: signed in, a code of the account its rows carry
   // until they are computed; signed out, `anonymous` (docs/BOARD.md §"Who asked").
-  const built = record(b);
-  if (built.err) return bad(built.err);
-  const rec = built.rec;
-  const account = await sessionAccount(env, request).catch(() => null);
-  const initiator = account ? await initiatorCode(env, "user", account) : "anonymous";
+  const account = harvest ? null : await sessionAccount(env, request).catch(() => null);
+  const initiator = harvest ? harvest.claims.initiator : account ? await initiatorCode(env, "user", account) : "anonymous";
 
   // INTO THE INBOX, VERBATIM, under an id that means nothing.
   //
@@ -251,14 +274,17 @@ async function submit(request, env) {
   // write, and telling somebody "sent" when it was not is the one answer a
   // submission endpoint may never give.
   try {
+    const family = harvest?.claims.family_source;
+    const columns = family ? "id, at, record, initiator, family_source" : "id, at, record, initiator";
+    const values = records.map(() => family ? "(?, ?, ?, ?, ?)" : "(?, ?, ?, ?)").join(", ");
     await env.LIBRARY.prepare(
-      "INSERT INTO inbox (id, at, record, initiator) VALUES (?, ?, ?, ?)",
-    ).bind(crypto.randomUUID(), rec.at, JSON.stringify(rec), initiator).run();
+      `INSERT INTO inbox (${columns}) VALUES ${values}`,
+    ).bind(...records.flatMap(rec => [crypto.randomUUID(), rec.at, JSON.stringify(rec), initiator, ...(family ? [family] : [])])).run();
   } catch (e) {
     console.log("inbox write failed:", (e && e.message) || String(e));
     return bad("the library could not be written", 503);
   }
-  return new Response(JSON.stringify({ ok: true }), {
+  return new Response(JSON.stringify(result), {
     headers: { "content-type": "application/json" },
   });
 }

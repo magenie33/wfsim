@@ -298,10 +298,17 @@ pub fn states_incarnon_window(id: &str) -> bool {
 }
 
 pub fn get(id: &str) -> Option<&'static EvolutionDef> {
+    static BY_ID: OnceLock<std::sync::RwLock<std::collections::HashMap<String, &'static EvolutionDef>>> = OnceLock::new();
+    let by_id = BY_ID.get_or_init(Default::default);
+    if let Some(e) = by_id.read().unwrap_or_else(|e| e.into_inner()).get(id) {
+        return Some(e);
+    }
     // THE FILE IS THE ID, and it names its weapon.
     let text = crate::data::file(&format!("evolutions/{id}.yaml"))?;
     let weapon = serde_norway::from_str::<EvoFile>(text).ok()?.weapon;
-    for_weapon(&weapon).iter().find(|e| e.id == id)
+    let evolution = for_weapon(&weapon).iter().find(|e| e.id == id)?;
+    let mut held = by_id.write().unwrap_or_else(|e| e.into_inner());
+    Some(held.entry(id.to_string()).or_insert(evolution))
 }
 
 /// A weapon's choosable options at a tier (the web picker's rows), in the

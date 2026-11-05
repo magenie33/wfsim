@@ -690,6 +690,25 @@ answer carries its runs per element order (`shards`) and the leader hands them
 to whichever worker measures that build in full. A contender's summary is its
 full measurement's own runs, never a second fight of them.
 
+Candidate ranking reads the shard's means, kill-progress spread and work
+directly (`Shard::ranking`). It does not generate a median engagement: that
+replay belongs to the complete simulation report. Both paths use the same
+accumulated moments, run indices and ranking statistics.
+
+The fleet queues each pending build key once per batch. Membership sets
+deduplicate full and short measurements separately; ordered queues retain
+the first build and its dispatch position.
+
+A leader waiting for scores returns its pending batch and start progress.
+Result identities, the merged pool and contender reports are constructed
+once no scores are pending; every start still advances to its next missing
+measurement before the batch is returned. A budget cut without pending scores
+retains its partial ranking.
+
+Catalog lookups reuse the sealed data set: evolution ids borrow their parsed
+weapon definitions, and arcane slots are discovered once per process. Tie
+comparisons read those same definitions and compare sorted name references.
+
 Measured over Rubico Prime, Torid, Kuva Nukor, Sancti Magistar and Acceltra
 Prime at 10 runs: every answer was the unscreened search's own, for 23–36% of
 its full evaluations (CPU, measured at a keep of 0.25: 26–39% less).

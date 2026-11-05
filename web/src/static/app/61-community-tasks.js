@@ -25,7 +25,10 @@ async function communityTaskCall(action, body) {
   return result;
 }
 async function communityTaskAccept(task, command) {
-  return communityTaskCall("accept", { id: command, task: task.id, kind: USER_TASK_TYPES.get(task.kind)?.community?.kind || task.kind, engine: task.engine, request: task.request });
+  const explicit = !!task.origin?.appraisal, captured = typeof task.origin?.board_upload === "boolean";
+  const request = (task.kind === "optimization" || task.kind === "appraisal") && (explicit || captured)
+    ? { ...task.request, __board_upload: explicit || task.origin.board_upload === true } : task.request;
+  return communityTaskCall("accept", { id: command, task: task.id, kind: USER_TASK_TYPES.get(task.kind)?.community?.kind || task.kind, engine: task.engine, request });
 }
 async function observeCommunityTasks(id, signal) {
   if (!communityTaskPoll && (Date.now() >= communityTaskPollAt || !communityTaskStates.has(id))) {

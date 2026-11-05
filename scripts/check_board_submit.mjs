@@ -19,7 +19,10 @@
 // this without anyone remembering to come back.
 //
 //   node scripts/check_board_submit.mjs
-import worker, { AXES, MAX_MODS } from "../worker/index.js";
+import worker, { AXES, MAX_MODS, BOARD_SUBMIT_BATCH_MAX, BOARD_SUBMIT_BATCH_BYTES } from "../worker/index.js";
+import { initiatorCode, hmac } from "../worker/accounts.js";
+import { USER_TASK_KEEP_MS } from "../worker/user_tasks.js";
+import { questionId } from "../worker/task_contract.js";
 import fs from "node:fs";
 import { appSource } from "./app_source.mjs";
 
@@ -60,7 +63,10 @@ const database = (fail = false) => {
           if (into) {
             if (!tables.has(into[1])) tables.set(into[1], new Map());
             const t = tables.get(into[1]);
-            t.set(args[0], into[1] === "inbox" ? JSON.parse(args[2]) : args);
+            if (into[1] === "inbox") {
+              const width = sql.includes("family_source") ? 5 : 4;
+              for (let at = 0; at < args.length; at += width) t.set(args[at], JSON.parse(args[at + 2]));
+            } else t.set(args[0], args);
           }
           return { success: true };
         },
@@ -80,14 +86,14 @@ const database = (fail = false) => {
   };
 };
 
-const post = async (body, db) =>
+const post = async (body, db, options = {}) =>
   worker.fetch(
     new Request("https://wfsim.app/api/board/submit", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...options.headers },
       body: JSON.stringify(body),
     }),
-    { LIBRARY: db, ASSETS: { fetch: async () => new Response("site") } },
+    { LIBRARY: db, ASSETS: { fetch: async () => new Response("site") }, ...options.env },
   );
 
 // THE PAYLOAD THE PAGE ACTUALLY SENDS, field for field — `boardPayload()` in
@@ -315,6 +321,191 @@ console.log("the board's submission endpoint\n");
     MAX_MODS === mainSlots + 1,
     `worker ${MAX_MODS}, engine ${mainSlots} + 1`,
   );
+}
+
+// Each batch uses the same record door and one atomic inbox write.
+{
+  const db = database();
+  const first = { ...PAYLOAD, score: 999999, initiator: "system", id: "chosen", family_source: "fake" };
+  const second = { ...PAYLOAD, weapon: "braton_prime", mods: ["serration", "split_chamber"], valence: "" };
+  const response = await post({ builds: [first, { ...PAYLOAD, valence: "not an id!" }, second], initiator: "system" }, db);
+  const result = await response.json();
+  check("a mixed batch acknowledges each item in input order", response.ok && JSON.stringify(result.results) === JSON.stringify([
+    { ok: true }, { ok: false, error: "bad valence", retryable: false }, { ok: true },
+  ]), JSON.stringify(result));
+  check("the batch writes all accepted records in one statement", db.rows.size === 2 && db.calls.length === 1,
+    `${db.rows.size} rows, ${db.calls.length} statements`);
+  const stored = [...db.rows.values()];
+  check("batch records retain their own build axes", stored[0]?.weapon === PAYLOAD.weapon && stored[1]?.weapon === second.weapon
+    && JSON.stringify(stored[0].mods) === JSON.stringify(PAYLOAD.mods) && JSON.stringify(stored[1].mods) === JSON.stringify(second.mods), JSON.stringify(stored));
+  check("batch submissions carry no score or caller-supplied provenance", stored.every(record =>
+    !["score", "initiator", "id", "family_source"].some(key => key in record))
+    && db.calls[0].args.filter((_, index) => index % 4 === 3).every(value => value === "anonymous"), JSON.stringify(db.calls));
+  check("the batch writes only the ordinary inbox", db.calls.every(call => /INSERT INTO inbox /.test(call.sql)
+    && !/INTO (builds|scores)/.test(call.sql)), JSON.stringify(db.calls));
+}
+{
+  let sessionReads = 0;
+  const env = { AUTH_SECRET: "submission-check-only", ACCOUNTS: { prepare: () => ({ bind: () => ({ first: async () => {
+    sessionReads++; return { account: "reader-account" };
+  } }) }) } };
+  const db = database();
+  const response = await post({ builds: [PAYLOAD, PAYLOAD], initiator: "bot:forged" }, db,
+    { headers: { cookie: "wfsim_session=reader-token" }, env });
+  const expected = await initiatorCode(env, "user", "reader-account");
+  check("one signed-in session determines the entire batch's initiator", response.ok && sessionReads === 1
+    && db.calls[0]?.args.filter((_, index) => index % 4 === 3).every(value => value === expected), JSON.stringify(db.calls));
+  check("duplicate builds remain separate inbox arrivals", db.rows.size === 2 && [...db.rows.keys()].every(key => /^[0-9a-f-]{36}$/i.test(key)), String(db.rows.size));
+}
+{
+  const db = database();
+  const full = Array.from({ length: BOARD_SUBMIT_BATCH_MAX }, () => PAYLOAD);
+  const first = await post({ builds: full }, db);
+  const second = await post({ builds: full }, db);
+  check("the batch bound is per request, not a total build cap", first.ok && second.ok
+    && db.rows.size === BOARD_SUBMIT_BATCH_MAX * 2 && db.calls.length === 2, `${db.rows.size} rows, ${db.calls.length} statements`);
+  const tooMany = await post({ builds: [...full, PAYLOAD] }, database());
+  check("a batch over its item bound is rejected", tooMany.status === 413, String(tooMany.status));
+  const tooLarge = await post({ builds: [PAYLOAD], padding: "界".repeat(Math.ceil(BOARD_SUBMIT_BATCH_BYTES / 2)) }, database());
+  check("the batch body bound counts UTF-8 bytes", tooLarge.status === 413, String(tooLarge.status));
+  for (const builds of [[], null, {}, "bad"]) {
+    const response = await post({ builds }, database());
+    check(`an invalid batch envelope is refused (${JSON.stringify(builds)})`, response.status === 400, String(response.status));
+  }
+  const malformed = await post({ builds: [null, 4, [], { ...PAYLOAD, padding: "x".repeat(4096) }] }, database());
+  const refused = await malformed.json();
+  check("invalid batch items are permanently refused without breaking their siblings", malformed.ok
+    && refused.results.length === 4 && refused.results.every(item => item.ok === false && item.retryable === false), JSON.stringify(refused));
+  const failed = await post({ builds: [PAYLOAD, PAYLOAD] }, database(true));
+  check("a failed batch write is retryable and acknowledges no item", failed.status === 503 && !(await failed.json()).results, String(failed.status));
+}
+
+// The receipt retains only the authority proved by a search lease or appraisal.
+const HARVEST_LEASE = "a".repeat(32), HARVEST_VERIFIER = "b".repeat(24), HARVEST_QUESTION = "c".repeat(32);
+function harvestFixture(producer = "user_calculation") {
+  const db = database(), original = db.prepare;
+  db.held = true;
+  db.leaseUntil = Date.now() + 60_000;
+  db.search = { id: HARVEST_QUESTION, verb: "optimize_report", request: JSON.stringify({ weapon: PAYLOAD.weapon, strategy: "quick", __board_upload: true }),
+    producer, ref: "trusted_transfer", initiator: "user:original_asker" };
+  db.appraisal = { code: "TEST7", channel: "qq", asker: "original-chat-asker", weapon: PAYLOAD.weapon,
+    engine: "check-engine", at: new Date().toISOString(),
+    request: JSON.stringify({ request: { weapon: PAYLOAD.weapon, strategy: "quick" }, context: { weapon: PAYLOAD.weapon } }) };
+  db.prepare = sql => {
+    if (sql.startsWith("SELECT q.id, q.verb")) return { bind: (...args) => ({ first: async () => {
+      db.calls.push({ sql, args });
+      return db.held && Date.parse(args[2]) <= db.leaseUntil && args[0] === HARVEST_LEASE && args[1] === HARVEST_VERIFIER
+        && (!args[3] || args[3] === db.search.id) ? db.search : null;
+    } }) };
+    if (sql.startsWith("SELECT code, channel, asker, weapon, engine")) return { bind: code => ({ first: async () => {
+      db.calls.push({ sql, args: [code] }); return code === db.appraisal.code ? db.appraisal : null;
+    } }) };
+    return original(sql);
+  };
+  const env = { AUTH_SECRET: "submission-harvest-check-only", ASSETS: { fetch: async () => Response.json({ engine: "check-engine" }) } };
+  const source = { lease: HARVEST_LEASE, verifier: HARVEST_VERIFIER, question: HARVEST_QUESTION, engine: "check-engine" };
+  return { db, env, source, post: body => post(body, db, { env }) };
+}
+{
+  const fixture = harvestFixture();
+  const issuedAt = Date.now();
+  const response = await fixture.post({ builds: [], harvest: { ...fixture.source, initiator: "system" } });
+  const granted = await response.json();
+  check("a live search lease grants delivery without writing a build", response.ok && typeof granted.receipt === "string"
+    && granted.question === HARVEST_QUESTION && granted.weapon === PAYLOAD.weapon && fixture.db.rows.size === 0, JSON.stringify(granted));
+  check("the receipt uses the existing user-task retention window", Math.abs(Date.parse(granted.expires_at) - issuedAt - USER_TASK_KEEP_MS) < 1000,
+    granted.expires_at);
+  fixture.db.held = false;
+  const harvest = { receipt: granted.receipt, question: granted.question, engine: granted.engine, initiator: "system" };
+  const first = await fixture.post({ builds: [{ ...PAYLOAD, score: 999999 }], harvest, initiator: "system" });
+  const second = await fixture.post({ builds: [PAYLOAD], harvest });
+  const writes = fixture.db.calls.filter(call => /INSERT INTO inbox/.test(call.sql));
+  check("a completed lease's outbox still delivers and retries", first.ok && second.ok && fixture.db.rows.size === 2, `${first.status}/${second.status}`);
+  check("the receipt retains the server's original asker without crediting the executor", writes.length === 2
+    && writes.every(call => call.args[3] === fixture.db.search.initiator && !/INTO (scores|answers|verifiers)/.test(call.sql))
+    && [...fixture.db.rows.values()].every(record => !("score" in record)), JSON.stringify(writes));
+  const crossWeapon = await fixture.post({ builds: [{ ...PAYLOAD, weapon: "torid" }], harvest });
+  const crossResult = await crossWeapon.json();
+  check("a receipt refuses another weapon without writing it", crossWeapon.ok && crossResult.results[0].ok === false
+    && crossResult.results[0].retryable === false && fixture.db.rows.size === 2, JSON.stringify(crossResult));
+  const [payload, signature] = harvest.receipt.split(".");
+  const forged = `${payload}.${signature[0] === "A" ? "B" : "A"}${signature.slice(1)}`;
+  for (const wrong of [{ ...harvest, question: "d".repeat(32) }, { ...harvest, engine: "another-engine" },
+    { ...harvest, receipt: forged }]) {
+    const refused = await fixture.post({ builds: [PAYLOAD], harvest: wrong });
+    const detail = await refused.json();
+    check("a changed receipt or search scope cannot authorize a build", [401, 403].includes(refused.status)
+      && detail.retryable === false && fixture.db.rows.size === 2, `${refused.status}: ${JSON.stringify(detail)}`);
+  }
+  const claims = JSON.parse(Buffer.from(granted.receipt.split(".")[0], "base64url").toString());
+  claims.expires_at = new Date(Date.now() - 1000).toISOString();
+  const carried = Buffer.from(JSON.stringify(claims)).toString("base64url");
+  const expired = await fixture.post({ builds: [PAYLOAD], harvest: { receipt: `${carried}.${await hmac(`${fixture.env.AUTH_SECRET}:board-harvest`, carried)}` } });
+  const expiredBody = await expired.json();
+  check("an expired receipt is a distinguishable permanent refusal", expired.status === 410 && expiredBody.retryable === false
+    && fixture.db.rows.size === 2, JSON.stringify(expiredBody));
+}
+{
+  for (const strategy of ["descent", "exhaust", undefined]) {
+    const fixture = harvestFixture();
+    fixture.db.search.request = JSON.stringify({ weapon: PAYLOAD.weapon, strategy, __board_upload: true });
+    const response = await fixture.post({ builds: [], harvest: fixture.source });
+    const grant = await response.json();
+    const uploaded = await fixture.post({ builds: [PAYLOAD], harvest: { receipt: grant.receipt } });
+    const write = fixture.db.calls.find(call => /INSERT INTO inbox/.test(call.sql));
+    check("trusted optimizer leases do not duplicate the engine's strategy rules", response.ok && grant.receipt && uploaded.ok
+      && write?.args[3] === fixture.db.search.initiator, `${strategy}: ${response.status}/${uploaded.status}`);
+  }
+  for (const flag of [false, undefined]) {
+    const fixture = harvestFixture();
+    fixture.db.search.request = JSON.stringify({ weapon: PAYLOAD.weapon, strategy: "quick", __board_upload: flag });
+    const response = await fixture.post({ builds: [], harvest: { ...fixture.source, __board_upload: true } });
+    const result = await response.json();
+    check("a personal search without captured consent can compute without a build receipt", response.ok && result.ok
+      && result.disabled === true && result.receipt === undefined && fixture.db.rows.size === 0, JSON.stringify(result));
+    const bypass = await fixture.post({ builds: [PAYLOAD], harvest: { ...fixture.source, __board_upload: true } });
+    const denied = await bypass.json();
+    check("client flags cannot bypass the personal search's captured opt-out", bypass.ok && denied.results[0].ok === false
+      && denied.results[0].retryable === false && fixture.db.rows.size === 0, JSON.stringify(denied));
+  }
+  for (const changed of [{ lease: "d".repeat(32) }, { verifier: "d".repeat(24) }, { question: "d".repeat(32) }]) {
+    const fixture = harvestFixture();
+    const response = await fixture.post({ builds: [], harvest: { ...fixture.source, ...changed } });
+    check("another lease, witness or question cannot issue a receipt", response.status === 403 && fixture.db.rows.size === 0, String(response.status));
+  }
+  const fixture = harvestFixture();
+  fixture.db.leaseUntil = Date.now() - 1000;
+  const expired = await fixture.post({ builds: [], harvest: fixture.source });
+  check("an expired lease cannot issue a new receipt", expired.status === 403, String(expired.status));
+  const family = harvestFixture("family_build");
+  const grant = await (await family.post({ builds: [], harvest: family.source })).json();
+  const response = await family.post({ builds: [PAYLOAD, PAYLOAD], harvest: { receipt: grant.receipt } });
+  const write = family.db.calls.find(call => /INSERT INTO inbox/.test(call.sql));
+  check("family-search candidates retain trusted derivation provenance", response.ok && family.db.rows.size === 2
+    && /family_source/.test(write?.sql || "") && write.args[3] === "system" && write.args[4] === family.db.search.ref
+    && write.args[8] === "system" && write.args[9] === family.db.search.ref, JSON.stringify(write));
+}
+{
+  const fixture = harvestFixture();
+  const response = await fixture.post({ builds: [], harvest: { code: "TEST7", engine: "check-engine", initiator: "forged" } });
+  const grant = await response.json();
+  const expectedQuestion = await questionId("optimize", JSON.parse(fixture.db.appraisal.request));
+  const uploaded = await fixture.post({ builds: [PAYLOAD], harvest: { receipt: grant.receipt, question: expectedQuestion } });
+  const expectedInitiator = await initiatorCode(fixture.env, "bot", "qq:original-chat-asker");
+  const write = fixture.db.calls.find(call => /INSERT INTO inbox/.test(call.sql));
+  check("an opened appraisal keeps its existing code-based build authority", response.ok && grant.question === expectedQuestion
+    && uploaded.ok && write?.args[3] === expectedInitiator, `${response.status}/${uploaded.status}: ${JSON.stringify(write)}`);
+  const alternate = harvestFixture();
+  alternate.db.appraisal.request = JSON.stringify({ request: { weapon: PAYLOAD.weapon, strategy: "exhaust" }, context: { weapon: PAYLOAD.weapon } });
+  const nonQuick = await alternate.post({ builds: [], harvest: { code: "TEST7", engine: "check-engine" } });
+  check("a frozen appraisal's strategy remains the engine's decision", nonQuick.ok && !!(await nonQuick.json()).receipt, String(nonQuick.status));
+  for (const change of [{ request: null }, { engine: "older-engine" }, { at: new Date(0).toISOString() }]) {
+    const denied = harvestFixture(); Object.assign(denied.db.appraisal, change);
+    const refused = await denied.post({ builds: [], harvest: { code: "TEST7", engine: "check-engine" } });
+    const detail = await refused.json();
+    check("an unfrozen, mismatched or expired appraisal cannot issue a receipt", [404, 409].includes(refused.status)
+      && detail.retryable === false && denied.db.rows.size === 0, `${refused.status}: ${JSON.stringify(detail)}`);
+  }
 }
 
 // ---- ...AND THE DEPLOYED ONE IS THIS ONE --------------------------------

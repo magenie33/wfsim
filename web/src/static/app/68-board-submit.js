@@ -45,8 +45,71 @@ let boardBoards = null;
 const setBoardConsent = (v) => {
   try { localStorage.setItem(BOARD_CONSENT, v); } catch (_) { /* private mode */ }
   renderBoardConsent();
+  renderOptimizationBuildConsent();
   refreshBoardDoor();
+  optimizationBuildUploads?.wake();
 };
+
+function renderOptimizationBuildConsent() {
+  for (const box of document.querySelectorAll("[data-optimization-build-consent]")) {
+    const on = boardConsent() === "yes";
+    box.innerHTML = `<span>${escHtml(tr(on
+      ? "Legal builds found during optimization enter the Build Library using each task's saved upload setting."
+      : "New tasks keep build uploads off."))}</span> <button type="button" class="ghost-btn small" data-opt-board-consent>${escHtml(tr(on ? "stop submitting" : "start submitting"))}</button>`;
+    box.querySelector("[data-opt-board-consent]").onclick = () => setBoardConsent(on ? "no" : "yes");
+  }
+}
+
+let optimizationBuildUploads = null;
+function initOptimizationBuildUploads(queue) {
+  if (optimizationBuildUploads) return optimizationBuildUploads;
+  optimizationBuildUploads = new OptimizationBuildOutbox({ store: queue.store, lock: userTaskLock, engine: ENGINE_ID,
+    consent: () => boardConsent() === "yes", send: sendOptimizationBuildBatch, failed: userTaskFailed });
+  optimizationBuildUploads.wake();
+  Promise.all([queue.store.countValues("optimization-build-refused:"), queue.store.takeValues("optimization-build-refused:", 1)])
+    .then(([count, rows]) => {
+      if (count) userTaskFailed(new Error(tr("{n} could not be sent").replace("{n}", count) + ": " + (rows[0]?.value.error || tr("refused"))));
+    }).catch(userTaskFailed);
+  if (!WASM) setTimeout(() => recoverNativeOptimizationBuilds().catch(userTaskFailed), 0);
+  return optimizationBuildUploads;
+}
+async function keepOptimizationBuilds(builds, source) {
+  if (!builds?.length || source?.kind === "disabled") return;
+  const queue = await initUserTasks();
+  await initOptimizationBuildUploads(queue).add(builds, source);
+}
+async function sendOptimizationBuildBatch(source, builds) {
+  const body = { ...optimizationBuildUploads.envelope(source), builds };
+  const response = await fetch("/api/board/submit", { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify(body), signal: timeoutSignal(30_000) });
+  let verdict;
+  try { verdict = await response.json(); } catch (_) { /* an incomplete response remains queued */ }
+  if (response.ok && verdict?.ok) return verdict.results;
+  if (response.status >= 400 && response.status < 500 && response.status !== 429)
+    return builds.map(() => ({ ok: false, error: verdict?.error || `Upload refused (${response.status}).`, retryable: false }));
+  throw new Error(verdict?.error || "The builds could not be uploaded.");
+}
+async function communityOptimizationBuildSource(work, verifier) {
+  if (work.request?.__board_upload === false) return { kind: "disabled" };
+  const queue = await initUserTasks();
+  const key = "optimization-build-receipt:" + ENGINE_ID + ":" + (work.question || work.code || work.lease);
+  const held = await queue.store.value(key);
+  if (held && Date.parse(held.expires_at) > Date.now()) return held.source;
+  const response = await fetch("/api/board/submit", { method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ builds: [], harvest: { engine: ENGINE_ID, ...(work.lease ? { lease: work.lease, verifier } : { code: work.code }),
+      ...(work.question ? { question: work.question } : {}) } }), signal: timeoutSignal(30_000) });
+  const result = await response.json();
+  if (response.ok && result.ok && result.disabled) return { kind: "disabled" };
+  if (!response.ok || !result.ok || !result.receipt) throw new Error(result.error || "Build delivery could not be authorized.");
+  const source = { kind: "community", explicit: true, harvest: { receipt: result.receipt, question: result.question, engine: result.engine } };
+  await queue.store.value(key, { source, expires_at: result.expires_at });
+  return source;
+}
+async function optimizationTaskBuildSource(task) {
+  if (task.origin?.appraisal?.code) return communityOptimizationBuildSource({ code: task.origin.appraisal.code });
+  const upload = typeof task.origin?.board_upload === "boolean" ? task.origin.board_upload : task.request?.__board_upload === true;
+  return { kind: upload ? "public" : "disabled" };
+}
 
 /// The submission itself: the BUILD, and nothing else about you.
 
@@ -230,50 +293,21 @@ async function offerOptBoardSubmit(r, captured = null) {
   if (!rows.length) return;
   // AN APPRAISAL'S SEARCH IS SUBMITTED WITHOUT ASKING: the reader opened a
   // link whose whole purpose is to put this riven's best build on the board.
-  if (boardConsent() !== "yes" && !(captured ? captured.appraisal : appraisalActive())) {
+  if (captured?.source?.kind === "disabled" || boardConsent() !== "yes" && !(captured ? captured.appraisal : appraisalActive())) {
     paint(`<span class="ob-off">${escHtml(
       tr("board upload is off, so these were not sent"))}</span>`);
     return;
   }
   paint(`<span class="ob-run">${escHtml(
     tr("sending {n} finalists to the board…").replace("{n}", rows.length))}</span>`);
-  let sent = 0;
-  const refused = new Map();
-  let failed = 0;
-  // ONE AT A TIME. The door is a real request and so is the store's; a search
-  // with fifty finalists firing fifty of each at once is a burst nobody asked
-  // for, and nothing here is waiting on the answer. A reload waits for the last.
-  const releasePage = holdPage();
-  try {
-    for (const res of rows) {
-      const body = boardPayloadFromResult(res, context);
-      try {
-        const verdict = await boardVerdict(body);
-        if (verdict && verdict.ok && verdict.accepted === false) {
-          const why = verdict.reason || tr("refused");
-          refused.set(why, (refused.get(why) || 0) + 1);
-          continue;
-        }
-        const ok = await fetch("/api/board/submit", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-        }).then((x) => x.ok).catch(() => false);
-        if (ok) { sent += 1; track("board.submit", body.weapon); } else failed += 1;
-      } catch (_) {
-        failed += 1;
-      }
-    }
-  } finally { releasePage(); }
-  // AGGREGATE, because the reader asked one question and got twenty answers.
-  // The REASONS are counted rather than listed: twenty rows off one search
-  // differ in mods and not in why the board would not take them.
-  const parts = [tr("{n} of {of} finalists uploaded")
-    .replace("{n}", sent).replace("{of}", rows.length)];
-  for (const [why, n] of refused) parts.push(`${n} × ${why}`);
-  if (failed) parts.push(tr("{n} could not be sent").replace("{n}", failed));
-  paint(`<span class="${sent ? "ob-sent" : "ob-off"}">${
-    escHtml(parts.join(" · "))}</span>`);
+  const builds = [];
+  for (const row of rows) {
+    const body = boardPayloadFromResult(row, context), verdict = await boardVerdict(body);
+    if (!verdict?.ok) throw new Error("The board could not check this build.");
+    if (verdict.accepted !== false) builds.push(body);
+  }
+  await keepOptimizationBuilds(builds, captured?.source || { kind: "public", ...(captured?.appraisal ? { explicit: true } : {}) });
+  paint(`<span class="ob-sent">${escHtml(tr("Build uploads queued"))} (${builds.length})</span>`);
 }
 
 let boardState = "";   // "" | "sent" | "failed" | "onboard"

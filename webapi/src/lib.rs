@@ -51,7 +51,7 @@ pub use log::log_json;
 pub use meta::meta_json;
 pub use optimize::{
     funnel_status_json, grade_optimize, opt_buffs_json, optimize_check_json, parse_optimize, run_optimize,
-    run_optimize_resumable, BoardSink, CheckpointSink, JobIdentity, OptimizePlan, ResumeFrom,
+    run_optimize_resumable, BoardSink, BuildStream, CheckpointSink, JobIdentity, OptimizePlan, ResumeFrom,
 };
 pub use panel::panel_json;
 pub use request::err_json;

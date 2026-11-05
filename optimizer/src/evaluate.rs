@@ -5,7 +5,7 @@
 use std::sync::atomic::Ordering;
 
 use wfsim_engine::arena::Arena;
-use wfsim_engine::fight::{monte_carlo, shard_onto, FightParams, Shard, Summary};
+use wfsim_engine::fight::{monte_carlo, shard_onto, FightParams, RankingStats, Shard, Summary};
 use wfsim_engine::model::StackPolicy;
 
 use crate::{Candidate, FunnelState, RoundBoardFn};
@@ -59,8 +59,9 @@ pub fn evaluate(c: &Candidate, ai: usize, s: &Scenario, runs: u32, seed: u64) ->
 
 /// [`evaluate`] to `runs`, keeping the runs `prior` already fought — the first
 /// `prior.runs` of the same stream — and handing back the shard, so a longer
-/// measurement can keep these in turn. The summary is [`evaluate`]'s to the bit
-/// (`shard_onto`). A refused build has no shard.
+/// measurement can keep these in turn. The ranking statistics are
+/// [`evaluate`]'s to the bit, without its report's median replay. A refused
+/// build has no shard.
 pub fn evaluate_onto(
     c: &Candidate,
     ai: usize,
@@ -68,12 +69,12 @@ pub fn evaluate_onto(
     runs: u32,
     seed: u64,
     prior: Option<&Shard>,
-) -> (Summary, Option<Shard>) {
-    let Some(p) = (s.params)(c, ai) else { return (Summary::refused(s.arena.duration_seconds), None) };
+) -> (RankingStats, Option<Shard>) {
+    let Some(p) = (s.params)(c, ai) else { return (RankingStats::default(), None) };
     let acc = prior.filter(|x| x.runs <= runs).cloned().unwrap_or_default();
     let from = acc.runs;
     let sh = shard_onto(&p, acc, from, runs - from, seed, false, &mut |_| {});
-    (sh.clone().finish(&p, runs).0, Some(sh))
+    (sh.ranking(), Some(sh))
 }
 
 /// One evaluation job: a candidate paired with an arcane INDEX into the
@@ -203,3 +204,51 @@ pub fn evaluate_batch(
 /// compiles the wasm target) caught it.
 #[cfg(target_arch = "wasm32")]
 const BOARD_EVERY: usize = 4096;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fixture() -> (Candidate, Scenario) {
+        let base = wfsim_engine::model::WeaponBase::from_data("braton_prime", false, &[]);
+        let mut builds = Vec::new();
+        crate::expand_one(&[], &base, None, 0, 60, &[], &[None], &[],
+            wfsim_engine::data::tenno::default_tenno(), StackPolicy::Emergent, &mut builds);
+        let candidate = builds.remove(0);
+        let arena = Arena::training(2.0);
+        let params = FightParams::from_panel(&candidate.panel, &arena, &wfsim_engine::data::arcanes::ArcaneFx::none());
+        let scenario = Scenario {
+            params: std::sync::Arc::new(move |_, _| Some(params.clone())),
+            arena,
+            policy: StackPolicy::Emergent,
+        };
+        (candidate, scenario)
+    }
+
+    #[test]
+    fn a_ranking_evaluation_fights_only_its_measured_runs() {
+        let (candidate, scenario) = fixture();
+        let mut prior: Option<Shard> = None;
+        for runs in [2, 10] {
+            let previous_gas = prior.as_ref().map_or(0, |s| s.gas);
+            let before = wfsim_engine::fight::gas::gas_now();
+            let (_, measured) = evaluate_onto(&candidate, 0, &scenario, runs, 0xBEEF_CAFE, prior.as_ref());
+            let spent = wfsim_engine::fight::gas::gas_now() - before;
+            let measured = measured.expect("the fixture is a legal fight");
+            assert_eq!(spent, measured.gas - previous_gas, "a ranking must not replay an unmeasured run");
+            if option_env!("WFSIM_GAS_OFF").is_none() {
+                assert!(spent > 0, "the fixture must exercise the gas meter");
+            }
+            prior = Some(measured);
+        }
+    }
+
+    #[test]
+    fn a_refused_ranking_has_no_score_or_shard() {
+        let (candidate, mut scenario) = fixture();
+        scenario.params = std::sync::Arc::new(|_, _| None);
+        let (ranking, measured) = evaluate_onto(&candidate, 0, &scenario, 2, 0xBEEF_CAFE, None);
+        assert_eq!(ranking, RankingStats::default());
+        assert!(measured.is_none());
+    }
+}

@@ -116,7 +116,7 @@ function optimizerWorkerSignals() {
       const worker = workers[i];
       if (!worker) return;
       const engine = (message.kind === "alive" && message.source === "engine")
-        || ["progress", "result", "board", "checkpoint"].includes(message.kind);
+        || ["progress", "result", "board", "builds", "checkpoint"].includes(message.kind);
       if (engine) engineAt = responseAt;
       if (engine || message.kind === "rested") worker.loaded = true;
     },
@@ -139,8 +139,8 @@ function optimizerWorkerSignals() {
 /// worker scores a slice of them, and the scores go back to the leader, until
 /// it answers with the result. Every worker is busy on every batch, whatever
 /// the number of starts.
-function woptQuickFleet(body, n) {
-  const job = quickFleet(body, n);
+function woptQuickFleet(body, n, onBuilds) {
+  const job = quickFleet(body, n, undefined, { onBuilds });
   wopt = job;
   return { ok: true, job_id: job.id };
 }
@@ -171,7 +171,7 @@ function fleetKeep(workers) {
 /// however many workers scored it. `keep` hands the workers back (`fleetKeep`);
 /// `rest(ms)` is how long a worker rests after a call that took `ms`, so a
 /// background search runs the share of the time its owner set.
-function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () => 0 } = {}) {
+function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () => 0, onBuilds = async () => {} } = {}) {
   const lanesNow = () => Math.max(1, Math.floor(typeof n === "function" ? n() : n) || 1);
   const job = { id: woptNextId++, workers: [], status: null, result: null, board: null,
     cancelled: false, shards: lanesNow(), t0: Date.now() };
@@ -214,14 +214,33 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     const w = job.workers[i];
     if (!w) { resolve(null); return; }
     const wd = watchSilence(() => fail("worker stopped answering"));
-    const finish = payload => { pendingCalls.delete(finish); wd.clear(); signals.finish(i); resolve(payload); };
+    let finished = false, deliveries = null;
+    const finish = payload => { if (finished) return; finished = true; pendingCalls.delete(finish); wd.clear(); signals.finish(i); resolve(payload); };
     pendingCalls.add(finish);
     w.onmessage = (e) => {
       try {
         wd.heard();
         signals.heard(i, e.data);
         if (e.data.kind === "progress" && onProgress) onProgress(e.data.payload);
-        if (e.data.kind === (resting ? "rested" : "result")) finish(e.data.payload);
+        if (e.data.kind === "builds") {
+          const builds = Array.isArray(e.data.payload) ? e.data.payload : e.data.payload?.builds;
+          if (builds?.length) {
+            deliveries = (deliveries || Promise.resolve()).then(() => onBuilds(builds));
+            deliveries.catch(error => fail(String(error?.message || error)));
+          }
+        }
+        if (e.data.kind === (resting ? "rested" : "result")) {
+          const payload = e.data.payload;
+          if (Array.isArray(payload?.builds)) {
+            const builds = payload.builds; delete payload.builds;
+            if (builds.length) deliveries = (deliveries || Promise.resolve()).then(() => onBuilds(builds));
+          }
+          if (payload?.ok === false) {
+            if (deliveries) deliveries.catch(error => fail(String(error?.message || error)));
+            fail(payload.error || "The worker could not finish.", true);
+          } else if (deliveries) deliveries.then(() => finish(payload), error => fail(String(error?.message || error)));
+          else finish(payload);
+        }
         show();
       } catch (error) { fail(String(error?.message || error)); }
     };
@@ -315,13 +334,13 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
   return job;
 }
 
-function woptStart(body, checkpoint, onCheckpoint) {
+function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOptimizationBuilds(builds, { kind: "public" })) {
   if (wopt && wopt.workers && wopt.workers.length) {
     return { ok: false, error: "an optimization is already running — cancel it or wait", job_id: wopt.id };
   }
   const { __resume, ...req } = body ?? {}; // the resume marker is transport, not scope
   body = req;
-  if (body.strategy === "quick" && !checkpoint) return woptQuickFleet(body, Math.max(1, woptWorkerCount()));
+  if (body.strategy === "quick" && !checkpoint) return woptQuickFleet(body, Math.max(1, woptWorkerCount()), onBuilds);
   // A CHECKPOINT is one worker's field, so it can only resume a run that had
   // one worker. Rather than resume a fraction of a fleet, a resume runs
   // unsharded — slower, but it is continuing a search that already exists.
@@ -350,8 +369,20 @@ function woptStart(body, checkpoint, onCheckpoint) {
       ...signals.read("scoring"),
     };
   };
-  for (let i = 0; i < shards; i++) {
-    const w = spawnEngine();
+  const watchdogs = [];
+  const failJob = (i, why) => {
+    if (job.parts[i] || job.result || job.cancelled) return;
+    job.parts[i] = { ok: false, error: why };
+    job.result = job.parts[i];
+    watchdogs.forEach(wd => wd.clear());
+    job.workers.forEach((worker, index) => { signals.finish(index); worker?.terminate(); });
+    job.workers = [];
+    job.status = rollup();
+  };
+  for (let i = 0; i < shards && !job.result; i++) {
+    const gone = why => failJob(i, why);
+    let w;
+    try { w = spawnEngine(); } catch (error) { gone(String(error?.message || error)); break; }
     job.workers.push(w);
     // THE SEARCH'S WORKERS ARE WATCHED TOO. They are not lanes — they are made
     // here and run one long call — but the failure is the same: a reclaimed
@@ -359,11 +390,20 @@ function woptStart(body, checkpoint, onCheckpoint) {
     // search that can never finish and can never fail leaves the reader with a
     // progress bar that has stopped and no way to tell it from a slow one.
     const wd = watchSilence(() => gone("worker stopped answering"));
+    watchdogs.push(wd);
+    let deliveries = null;
     w.onmessage = (e) => {
       wd.heard();
       signals.heard(i, e.data);
       if (e.data.kind === "progress") job.statuses[i] = e.data.payload;
       if (e.data.kind === "board") { job.boards[i] = e.data.payload; job.board = woptMerge(job.boards.filter(Boolean)); }
+      if (e.data.kind === "builds") {
+        const builds = Array.isArray(e.data.payload) ? e.data.payload : e.data.payload?.builds;
+        if (builds?.length) {
+          deliveries = (deliveries || Promise.resolve()).then(() => onBuilds(builds));
+          deliveries.catch(error => gone(String(error?.message || error)));
+        }
+      }
       if (e.data.kind === "checkpoint") {
         const { board, ...cp } = e.data.payload;
         if (board) { job.boards[i] = board; job.board = woptMerge(job.boards.filter(Boolean)); }
@@ -375,37 +415,37 @@ function woptStart(body, checkpoint, onCheckpoint) {
       if (e.data.kind === "result") {
         wd.done();
         signals.finish(i);
-        job.parts[i] = e.data.payload;
         w.terminate();
         job.workers[i] = null;
-        if (job.parts.every(Boolean)) {
-          job.result = woptMerge(job.parts);
-          if (!onCheckpoint) clearCheckpoint();
-          job.workers = [];
+        const payload = e.data.payload;
+        if (Array.isArray(payload?.builds)) {
+          const builds = payload.builds; delete payload.builds;
+          if (builds.length) deliveries = (deliveries || Promise.resolve()).then(() => onBuilds(builds));
         }
+        const complete = () => {
+          if (job.cancelled || job.result) return;
+          job.parts[i] = payload;
+          if (job.parts.every(Boolean)) {
+            job.result = woptMerge(job.parts);
+            if (!onCheckpoint) clearCheckpoint();
+            job.workers = [];
+          }
+        };
+        if (payload?.ok === false) {
+          if (deliveries) deliveries.catch(error => gone(String(error?.message || error)));
+          gone(payload.error || "The worker could not finish.");
+        } else if (deliveries) deliveries.then(complete).catch(error => gone(String(error?.message || error)));
+        else complete();
       }
       job.status = rollup();
     };
-    // ONE WAY A SHARD ENDS BADLY, however it went bad: it has an answer that
-    // says so, its worker is let go, and the run completes on what it has.
-    const gone = (why) => {
-      wd.clear();
-      if (job.parts[i]) return;
-      signals.finish(i);
-      job.parts[i] = { ok: false, error: why };
-      if (job.workers[i]) { job.workers[i].terminate(); job.workers[i] = null; }
-      if (job.parts.every(Boolean)) { job.result = woptMerge(job.parts); job.workers = []; }
-      job.status = rollup();
-    };
-    w.onerror = (e) => gone(String((e && e.message) || "worker error"));
+    w.onerror = (e) => { e?.preventDefault?.(); gone(String(e?.message || "worker error")); };
     signals.start(i, "scoring");
     job.status = rollup();
-    w.postMessage({
-      kind: "optimize",
-      body: { ...body, shard: i, shards },
-      checkpoint: checkpoint || null,
-    });
-    wd.start();
+    try {
+      wd.start();
+      w.postMessage({ kind: "optimize", body: { ...body, shard: i, shards }, checkpoint: checkpoint || null });
+    } catch (error) { gone(String(error?.message || error)); }
   }
   wopt = job;
   return { ok: true, job_id: job.id };
@@ -459,7 +499,7 @@ async function api(path, body, onProgress, opts) {
       if (r.ok) return await r.json();
     } catch (_) { /* the engine answers it */ }
   }
-  if (path === "/api/optimize") return woptStart(body, body && body.__resume, opts?.checkpoint);
+  if (path === "/api/optimize") return woptStart(body, body && body.__resume, opts?.checkpoint, opts?.builds);
   if (path === "/api/optimize/status" || path === "/api/optimize/cancel") {
     if (body?.id != null && wopt?.id !== body.id) return { ok: false, error: "no such optimize job" };
     return path.endsWith("/cancel") ? woptCancel() : woptStatus();
