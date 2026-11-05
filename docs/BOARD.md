@@ -910,6 +910,13 @@ discloses aggregate progress, never witness identities. Withdrawing a question
 fails its round, allowing another after cooldown. Browser observations can be
 hidden independently of the shared computation.
 
+Status includes the frozen public build and the current score's provenance.
+After verification the browser invalidates the weapon's loaded cells and
+ranking indexes, then observes the published files separately. An old or
+unreachable publication keeps a bounded refresh pending; reopening the board
+or repeating a coalesced review restarts it. Published rows alone populate the
+board, and historical simulations retain their original results.
+
 `POST /api/board/calibrate` accepts `{ weapon, ruler, engine }` on the served
 engine. It independently asks the same review producer for each category's
 highest-scoring old-engine rows across modes. Current-engine measurements,
