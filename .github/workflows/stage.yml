@@ -44,8 +44,7 @@ jobs:
         if: inputs.cache_art
         run: |
           python scripts/build_cache.py public-pull
-          python scripts/de_export.py fetch --lang en
-          python scripts/fetch_images.py
+          python scripts/art_cache_1105.py
       - name: Publish build inputs
         if: inputs.cache_art
         env:
