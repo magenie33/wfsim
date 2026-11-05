@@ -1824,6 +1824,8 @@ Opening a published riven build saves no owned custom. Its riven remains
 readable after an owned card with the same specification is deleted and the
 build is reopened. Copying the build makes a fresh owned card, seats it in the
 copy, and leaves the published specification unchanged when that card is edited.
+The no-riven control supplies a plain fixture rather than depending on a weapon's
+current board rows; it must open a build without creating or wearing a riven.
 
 ## `check_sync_customs`
 

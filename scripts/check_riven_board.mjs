@@ -249,6 +249,10 @@ const plain = await evaluate(`(async () => {
   history.pushState({}, '', '/weapons/Lex/builder'); route();
   await new Promise(r => setTimeout(r, 4000));
   const id = $('weapon').value;
+  BOARD[id] = [{
+    benchmark: 'standard_single_target', mode: 'base', score: 1,
+    mods: ['hornet_strike'], evolutions: [], arcanes: [], valence: '',
+  }];
   const before = loadPresetList(RIVENS).length;
   const entry = builtinBuilds().find(b => b.benchmark === 'standard_single_target');
   if (entry) { restoreState(entry.state, id); await new Promise(r => setTimeout(r, 800)); }
@@ -259,7 +263,7 @@ const plain = await evaluate(`(async () => {
     wearing: slots.filter(s => isRivenId(s.mod)).length,
   };
 })()`);
-check("a weapon with no riven row makes no riven", plain.after === plain.before,
+check("a weapon with no riven row makes no riven", plain.took && plain.after === plain.before,
   JSON.stringify(plain));
 check("...and shows no riven group and wears nothing",
   plain.rivenGroups === 0 && plain.wearing === 0, JSON.stringify(plain));
