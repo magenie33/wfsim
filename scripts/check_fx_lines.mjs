@@ -43,6 +43,9 @@ for (const s of ["多重射击50", "多重射击+50", "正多重射击50", "多�
 for (const s of ["变焦-50", "负变焦50", "负变焦-50", "-变焦50", "变焦 - 50", "-50% 变焦"]) want(s, "-zoom:50");
 for (const s of ["武器后坐力-50", "后坐力-50", "负后坐力50", "负武器后坐力50", "负50武器后坐力", "负后坐力-50", "-后坐力50", "Weapon Recoil-50", "-50% 武器后坐力", "-50% Weapon Recoil"]) want(s, "+weapon_recoil:50");
 for (const s of ["武器后坐力+50", "后坐力+50", "正后坐力50", "+后坐力50", "+50% Weapon Recoil"]) want(s, "-weapon_recoil:50");
+for (const s of ["85.5武器后坐力", "武器后坐力85.5", "85.5% Weapon Recoil", "Weapon Recoil85.5"]) want(s, "-weapon_recoil:85.5");
+want("107.4多重射击 103.4腐蚀伤害 104.6毒素伤害 85.5武器后坐力",
+  "+multishot:107.4 +corrosive:103.4 +toxin:104.6 -weapon_recoil:85.5");
 want("暴伤160.9 多重120.7 变焦-50", "+critical_damage:160.9 +multishot:120.7 -zoom:50");
 want("暴伤160.9%多重+120.7%负变焦50%", "+critical_damage:160.9 +multishot:120.7 -zoom:50");
 want("+160.9% Critical Damage\n+120.7% Multishot\n+50% Weapon Recoil", "+critical_damage:160.9 +multishot:120.7 -weapon_recoil:50");
@@ -182,6 +185,8 @@ const cases = [
   { text: "fx Torid +102.3% Multishot +151.5% Critical Damage x0.58 Damage to Corpus", malus: "damage_to_corpus", shown: 0.6,
     min: 0.56, max: 0.64, unit: "x", value: 0.58, roll: 1.051234 },
   { text: "fx Torid 多重102.3 暴伤151.5 武器后坐力+50", malus: "weapon_recoil", shown: 50,
+    min: 45, max: 55, unit: "%", value: 50, roll: 1.000123 },
+  { text: "fx Torid 多重102.3 暴伤151.5 武器后坐力50", malus: "weapon_recoil", shown: 50,
     min: 45, max: 55, unit: "%", value: 50, roll: 1.000123 },
 ];
 for (const c of cases) {

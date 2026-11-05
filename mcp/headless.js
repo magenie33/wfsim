@@ -751,7 +751,7 @@ const rivenValueMalus = (stat, value) =>
 
 /// A typed card in either order: stat + value, or the card's value + stat.
 /// 正/负 mean +/− wherever the sign precedes the name or number. Slot direction
-/// follows the stat's base; an unsigned multiplier states its own direction.
+/// follows the stat's base; an unsigned value has its literal positive sign.
 function readRivenLines(text, pool, locales) {
   const src = rivenInputFold(text), words = rivenStatWords(pool, locales), lines = [];
   const nameAt = (at) => words.find((w) => w.w && src.startsWith(w.w, at));
@@ -800,8 +800,7 @@ function readRivenLines(text, pool, locales) {
     if ((n.times && stat.unit !== "x") || (n.percent && stat.unit === "x")) return no("format", start);
     if (said !== null && n.sign && said !== n.sign) return no("contradicts", start);
     const sign = n.sign || said;
-    const malus = sign || stat.unit === "x"
-      ? rivenValueMalus(stat, sign === "-" ? -n.value : n.value) : stat.bonus === false;
+    const malus = rivenValueMalus(stat, sign === "-" ? -n.value : n.value);
     lines.push({ id: stat.id, value: n.value, malus, word: hit.w });
   }
   return lines.length ? { lines } : no("format", 0);
