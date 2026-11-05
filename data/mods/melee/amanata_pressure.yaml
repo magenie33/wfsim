@@ -12,9 +12,14 @@ exclusive_to:
 - amanata_forward
 - amanata_heavy_slam
 - amanata_slide
-lower_ranks_unmodelled: true
-description: "When Combo Multiplier reaches 8x, Heavy attacks apply a random Status Effect to enemies hit.\n+330% Melee Damage"
+description: "When Combo Multiplier reaches 8x, Heavy attacks apply a random Status Effect to enemies hit.\n+X% Melee Damage"
+# The combo-gated random proc needs a heavy-hit trigger; ordinary melee damage applies at every combo.
 effects:
 - kind: unmodelled
+  clause: random status application on heavy hits at an 8x combo multiplier
+- kind: base_damage_bonus
+  rank0: 0.55
+  rankMax: 3.3
 source:
   url: "https://wiki.warframe.com/w/Amanata_Pressure"
+family: pressure_point

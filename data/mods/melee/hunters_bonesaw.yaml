@@ -15,6 +15,7 @@ exclusive_to:
 - ripkas_slide
 lower_ranks_unmodelled: true
 description: Increase Finisher Damage by 120% against prone enemies.
+# Finisher damage and the package's prone-target status-chance line need ground-finisher and prone-state consumers.
 effects:
 - kind: unmodelled
 source:

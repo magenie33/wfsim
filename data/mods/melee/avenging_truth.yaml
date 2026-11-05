@@ -14,8 +14,17 @@ exclusive_to:
 - silva_and_aegis_heavy_slam
 - silva_and_aegis_prime
 lower_ranks_unmodelled: true
-description: "Blocking absorbs 50% of incoming damage, stored as Extra Damage for the next charge attack.\n+1 'Truth'"
+description: "Blocking absorbs X% of incoming damage, stored as Extra Damage for the next charge attack.\n+X 'Truth'"
+# Block absorption and stored heavy damage are not simulated; the affinity-triggered Truth radial is.
+# The syndicate affinity threshold is simulated only at max rank.
 effects:
 - kind: unmodelled
+  clause: blocked damage stored for the next heavy attack
+  rank0: 0.2
+  rankMax: 0.5
+- kind: syndicate_radial
+  syndicate: truth
+  rank0: 0.25
+  rankMax: 1.0
 source:
   url: "https://wiki.warframe.com/w/Avenging_Truth"

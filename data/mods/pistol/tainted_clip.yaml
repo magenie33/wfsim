@@ -5,9 +5,13 @@ polarity: naramon
 base_drain: 6
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/CorruptedMaxClipReloadSpeedPistol
-lower_ranks_unmodelled: true
-description: "+60% Magazine Capacity\n-30% Reload Speed"
+description: "+X% Magazine Capacity\n-X% Reload Speed"
 effects:
-- kind: unmodelled
+- kind: magazine_capacity_bonus
+  rank0: 0.1
+  rankMax: 0.6
+- kind: reload_speed_bonus
+  rank0: -0.05
+  rankMax: -0.3
 source:
   url: "https://wiki.warframe.com/w/Tainted_Clip"

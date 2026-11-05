@@ -9,9 +9,11 @@ exilus: true
 exclusive_to:
 - nezha
 - nezha_prime
-description: "Disable Nezha's passive ability. Increase Ability Strength by 15%."
+description: "Disable Nezha's passive ability.\n+15% Ability Strength"
 effects:
 - kind: unmodelled
-  text: "Disable Nezha's passive ability. Increase Ability Strength by 15%."
+  text: "Disable Nezha's passive ability."
+- kind: ability_strength_bonus
+  rankMax: 0.15
 source:
   url: "https://wiki.warframe.com/w/Controlled_Slide"

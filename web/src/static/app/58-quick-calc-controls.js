@@ -256,7 +256,7 @@ const everyRankCard = (k, id) => (k === "mods"
 /// Global candidates and saved selections do not narrow when a weapon changes.
 function everyRankOffers() {
   return [
-    ...[...everyRankMods().values()].filter((m) => !m.riven && !m.stance && m.max_rank > 0).map((m) => ["mods", m]),
+    ...[...everyRankMods().values()].filter((m) => !m.riven && !m.stance && !m.lower_ranks_unmodelled && m.max_rank > 0).map((m) => ["mods", m]),
     ...(META.arcanes || []).filter((a) => a.id !== "none" && (a.max_rank || 0) > 0).map((a) => ["arcanes", a]),
   ];
 }

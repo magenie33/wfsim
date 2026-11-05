@@ -10,6 +10,7 @@ excludes_weapon:
 - aoe
 lower_ranks_unmodelled: true
 description: Shoot Energy Orbs to obtain them with +110% extra effect.
+# Shooting an energy orb needs an orb entity and player pickup/energy accounting.
 effects:
 - kind: unmodelled
 source:

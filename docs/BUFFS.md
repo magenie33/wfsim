@@ -290,6 +290,7 @@ resolve to `ModEffect::WhileTenno(TennoCondition, …)`, which
 | `aiming` | `aiming` | aiming down sights — Galvanized Crosshairs / Scope, Argon Scope, … |
 | `invisible` | `invisible` | Spectral Serration's "+330% Damage while Invisible" |
 | `airborne` | `airborne` | the Aero set |
+| `aim_gliding` | `aim_gliding` | Aero Agility's reload bonus; jumping or sliding alone does not qualify |
 
 `aiming` is one of these rather than a case beside them: it was a bool
 threaded through the resolver while the other states lived on the Tenno, which

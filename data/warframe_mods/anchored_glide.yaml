@@ -9,9 +9,11 @@ exilus: true
 exclusive_to:
 - zephyr
 - zephyr_prime
-description: "Disable Zephyr's reduced airborne gravity. Increase Ability Strength by 15%."
+description: "Disable Zephyr's reduced airborne gravity.\n+15% Ability Strength"
 effects:
 - kind: unmodelled
-  text: "Disable Zephyr's reduced airborne gravity. Increase Ability Strength by 15%."
+  text: "Disable Zephyr's reduced airborne gravity."
+- kind: ability_strength_bonus
+  rankMax: 0.15
 source:
   url: "https://wiki.warframe.com/w/Anchored_Glide"

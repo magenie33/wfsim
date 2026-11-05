@@ -556,8 +556,9 @@ function buildSlot(i) {
     const base = modDrain(m, r);
     const eff = slotDrain(base, m.polarity, s.pol);
     const lowered = r < m.max_rank;
+    const maxOnly = !m.riven && m.lower_ranks_unmodelled;
     const rank = m.max_rank > 0
-      ? `<span class="rank ${lowered ? "lowered" : ""}"><button class="rk" data-d="-1">−</button><b>R${r}${lowered ? "/" + m.max_rank : ""}</b><button class="rk" data-d="1">+</button></span>`
+      ? `<span class="rank ${lowered ? "lowered" : ""}">${maxOnly ? "" : '<button class="rk" data-d="-1">−</button>'}<b>R${r}${lowered ? "/" + m.max_rank : ""}</b>${maxOnly ? "" : '<button class="rk" data-d="1">+</button>'}</span>`
       : "";
     // The configured mod shows its CURRENT description (values at the
     // slot's rank), exactly like the in-game card.

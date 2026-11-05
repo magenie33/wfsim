@@ -7,6 +7,7 @@ max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/Rifle/BowExplosionChanceMod
 lower_ranks_unmodelled: true
 description: +30% Chance to Explode (Use with Caution)
+# The independent fixed-damage projectile explosion, its own scaling and projectile cancellation are not simulated.
 effects:
 - kind: unmodelled
 source:

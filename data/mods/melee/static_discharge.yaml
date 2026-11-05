@@ -16,6 +16,7 @@ exclusive_to:
 - prova_vandal
 lower_ranks_unmodelled: true
 description: Heavy Attacks electrify nearby enemies for Electricity Damage equal to 80% of weapon damage.
+# Heavy-order-dependent area ticks require their own timed damage instances and player-centred geometry.
 effects:
 - kind: unmodelled
 source:

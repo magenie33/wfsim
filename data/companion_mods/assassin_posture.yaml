@@ -8,6 +8,8 @@ internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance
 compat: beast_claws
 precept: true
 description: The companion will prioritize Eximus and other high-ranking enemies. +300% Overguard Damage
+# Target priority needs companion AI; the Overguard bonus belongs to its claws.
+# Neither clause grants a bonus to the robotic weapon held by the host.
 effects:
 - kind: unmodelled
   text: The companion will prioritize Eximus and other high-ranking enemies. +300% Overguard Damage

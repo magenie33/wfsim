@@ -19,6 +19,7 @@ exclusive_to:
 - spira_prime
 lower_ranks_unmodelled: true
 description: +80% Chance to Explode (Use with Caution)
+# The independent fixed-damage projectile explosion has its own faction-only scaling and hit rules.
 effects:
 - kind: unmodelled
 source:

@@ -15,6 +15,7 @@ exclusive_to:
 - twin_basolk_slide
 lower_ranks_unmodelled: true
 description: Heavy attacks now step through the rift to attack enemies up to 25m away
+# The heavy-attack teleport needs player movement and target acquisition.
 effects:
 - kind: unmodelled
 source:

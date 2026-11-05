@@ -8,6 +8,8 @@ internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/GhostAugmentCard
 compat: shade
 precept: true
 description: "When Ghost invisibility is broken, Shade's owner is granted +240% Weapon Damage for 3s."
+# Ghost ending grants this buff to Shade's owner, not Shade's weapon.
+# The robotic host has no owner actor or Ghost timeline.
 effects:
 - kind: unmodelled
   text: "When Ghost invisibility is broken, Shade's owner is granted +240% Weapon Damage for 3s."

@@ -92,6 +92,7 @@ pub enum TennoCondition {
     Aiming,
     Invisible,
     Airborne,
+    AimGliding,
     SlidingOrAimGliding,
     /// `sprint_speed >= x`
     SprintAtLeast(f64),
@@ -142,6 +143,7 @@ impl TennoCondition {
             "aiming" => C::Aiming,
             "invisible" => C::Invisible,
             "airborne" => C::Airborne,
+            "aim_gliding" => C::AimGliding,
             "sliding_or_aim_gliding" => C::SlidingOrAimGliding,
             "overshields" => C::Overshields,
             "channeling" => C::Channeling,
@@ -158,6 +160,7 @@ impl TennoCondition {
             C::Aiming => "while aiming".to_string(),
             C::Invisible => "while Invisible".to_string(),
             C::Airborne => "while Airborne".to_string(),
+            C::AimGliding => "while Aim Gliding".to_string(),
             C::SlidingOrAimGliding => "while Sliding or Aim Gliding".to_string(),
             C::SprintAtLeast(x) => format!("at sprint speed {x} or higher"),
             C::ArmorOver(x) => format!("with armor over {x}"),
@@ -1151,8 +1154,8 @@ pub struct ModDef {
     /// `unmodeled` effect is DROPPED at load, so a mod carrying one loads as a
     /// mod that does nothing and says nothing, which is exactly how it looks
     /// to a player who equips it and sees no change. The reason lives in the
-    /// YAML comment beside the effect, where a maintainer reads it — not in a
-    /// field the app renders.
+    /// YAML's `clause` for a partially modelled card; the card renders the
+    /// unsupported clause alongside its working effects.
     pub unmodeled: bool,
     /// ...and does it act on something this simulator does not HAVE — Warframe
     /// energy, enemy behaviour, traversal, reviving? Never a todo: building it

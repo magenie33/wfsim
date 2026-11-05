@@ -10,6 +10,7 @@ excludes_weapon:
 - aoe
 lower_ranks_unmodelled: true
 description: Shoot Health Orbs to obtain them with +110% extra effect.
+# Shooting a health orb needs an orb entity and player pickup/healing accounting.
 effects:
 - kind: unmodelled
 source:

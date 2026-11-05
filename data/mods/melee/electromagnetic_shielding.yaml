@@ -15,6 +15,7 @@ exclusive_to:
 - ack_and_brunt_heavy_slam
 lower_ranks_unmodelled: true
 description: While blocking, redirect 50% of damage taken by allies within 12m to yourself.
+# Redirecting allies' incoming damage needs ally damage events and blocking.
 effects:
 - kind: unmodelled
 source:

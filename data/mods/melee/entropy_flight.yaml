@@ -16,8 +16,15 @@ exclusive_to:
 - kestrel_slide
 - kestrel_throw
 lower_ranks_unmodelled: true
-description: "+140% Projectile Speed\n+1 'Entropy'"
+description: "+X% Projectile Speed\n+X 'Entropy'"
+# The syndicate affinity threshold is simulated only at max rank.
 effects:
-- kind: unmodelled
+- kind: projectile_speed_bonus
+  rank0: 0.35
+  rankMax: 1.4
+- kind: syndicate_radial
+  syndicate: entropy
+  rank0: 0.25
+  rankMax: 1.0
 source:
   url: "https://wiki.warframe.com/w/Entropy_Flight"

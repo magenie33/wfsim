@@ -41,6 +41,7 @@ effects:
   # a proc this arena has machinery for and this card has no measured trigger
   # rate for — it is the one clause of the four still owed.
   - kind: unmodelled
+    clause: "affinity-triggered Truth radial from Tennokai kills"
 
 family: tennokai
 

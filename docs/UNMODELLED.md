@@ -861,11 +861,21 @@ rules and calibration requirements.
 ## Catalogued mods
 
 An entry whose effects are exclusively `kind: unmodelled` supplies its card,
-capacity and compatibility, and contributes no simulated effect. This includes
-Sentient Incision's adaptive damage, catalogued weapon augments, Warframe
-passive augments, companion behaviours and beast-claw cards. The Wiki coverage
-survey in `data/surveys/wiki_mods.yaml` tracks collection independently from
-mechanical support; `scripts/survey_mod_coverage.py` refreshes it. Flawed variants,
+capacity and compatibility, and contributes no simulated effect. A partially
+modelled card keeps its ordinary stat lines active and declares unsupported
+clauses separately. Anchored Glide, Controlled Slide and Warrior's Rest apply
+their Ability Strength bonus; their passive-disabling clauses are unmodelled.
+
+Sentient Incision's adaptive element selection, Burning Hate's persistent
+target vulnerability and Static Discharge's attack-dependent pulses remain
+unmodelled. Biting Frost needs frozen-target weapon bonuses; Abundant Mutation,
+Gastroparesis, Rhythm Guard and Rubble Heap need their frame-specific state.
+Valence Formation's configured fight buff is modelled, but its mod rank and
+imbued-cast activation are not connected to the Warframe build.
+
+The Wiki coverage survey in `data/surveys/wiki_mods.yaml` tracks collection
+independently from mechanical support; `scripts/survey_mod_coverage.py`
+refreshes it. Flawed variants,
 Conclave-only cards, unrolled Rivens and innate ability stances carry explicit
 exclusions in the survey.
 

@@ -13,10 +13,20 @@ exclusive_to:
 - ripkas_heavy
 - ripkas_heavy_slam
 - ripkas_slide
-lower_ranks_unmodelled: true
-description: "+187% Critical Chance (x2 for Heavy Attacks)\n+20% Reload Speed on Shotguns\n+100% Gore Chance"
+description: "+X% Critical Chance (x2 for Heavy Attacks)\n+X% Reload Speed on Shotguns\n+X% Gore Chance"
+# Shotgun reload affects the other equipped weapon; corpse dismemberment and loot are not simulated.
 effects:
+- kind: crit_chance_bonus_heavy_doubled
+  rank0: 0.3116
+  rankMax: 1.8696
 - kind: unmodelled
+  clause: reload speed granted to an equipped shotgun
+  rank0: 0.033
+  rankMax: 0.198
+- kind: unmodelled
+  clause: gore chance and corpse dismemberment
+  rank0: 0.167
+  rankMax: 1.002
 source:
   url: "https://wiki.warframe.com/w/Amalgam_Ripkas_True_Steel"
 excludes_weapon:

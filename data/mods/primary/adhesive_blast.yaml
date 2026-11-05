@@ -22,6 +22,7 @@ exclusive_to:
 - helstrum
 lower_ranks_unmodelled: true
 description: Grenades have 100% chance to stick to surfaces.
+# Sticky grenades alter projectile collisions and fuse timing, including manually detonated Penta grenades.
 effects:
 - kind: unmodelled
 source:
