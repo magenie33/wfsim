@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 8.1194 | Blood Rush, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Weeping Wounds, Magnetic Rush, Gnashing Payara, Dreamer's Wrath, Melee Influence | 2026-10-30 15:11 UTC · d1db2cced411 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 23.1479 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Galvanized Steel, Berserker Fury, Weeping Wounds, Magnetic Rush, Gnashing Payara, Dreamer's Wrath, Melee Exposure | 2026-11-04 04:17 UTC · 1f738fedc8a4 |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | slide | 322.8237 | Shocking Touch, Blood Rush, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Berserker Fury, Weeping Wounds, Gnashing Payara, Dreamer's Wrath, Melee Influence | 2026-10-22 20:35 UTC · 62a82930d1d3 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | forward | 0.8842 | Blood Rush, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Organ Shatter, Weeping Wounds, Gnashing Payara, Dreamer's Wrath, Melee Influence | 2026-10-30 14:52 UTC · d1db2cced411 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 4.5457 | Blood Rush, Primed Fury, Primed Pressure Point, Primed Reach, Galvanized Elementalist, Galvanized Steel, Organ Shatter, Weeping Wounds, Gnashing Payara, Dreamer's Wrath, Melee Influence | 2026-10-30 14:56 UTC · d1db2cced411 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | forward | 3.8871 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Galvanized Steel, Berserker Fury, Weeping Wounds, Magnetic Rush, Gnashing Payara, Dreamer's Wrath, Melee Exposure | 2026-11-04 04:18 UTC · 1f738fedc8a4 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 17.0085 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Galvanized Steel, Berserker Fury, Weeping Wounds, Magnetic Rush, Gnashing Payara, Dreamer's Wrath, Melee Exposure | 2026-11-04 04:18 UTC · 1f738fedc8a4 |
 
 ## Not modelled here
 

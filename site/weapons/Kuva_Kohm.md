@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 21.6595 | Primed Chilling Grasp, Contagious Spread, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Crux | 2026-10-24 05:08 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 77.9150 | Primed Chilling Grasp, Contagious Spread, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Crux | 2026-10-24 05:29 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 25.5951 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Repeater Clip, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-11-04 13:01 UTC · 9e4647c46c76 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 94.0808 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-11-04 13:11 UTC · 9e4647c46c76 |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.7161 | Primed Chilling Grasp, Toxic Barrage, Blaze, Galvanized Hell, Primed Point Blank, Hunter Munitions, Shotgun Barrage, Shotgun Elementalist, Primary Crux | 2026-10-26 07:17 UTC · 3194962a0af7 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 11.7938 | Primed Chilling Grasp, Contagious Spread, Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Primary Crux | 2026-10-24 05:11 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 14.0355 | Primed Chilling Grasp, Toxic Barrage, Galvanized Hell, Primed Ravage, Galvanized Savvy, Critical Deceleration, Shotgun Barrage, Magnetic Strafe, Vigilante Supplies, Primary Deadhead | 2026-11-04 13:23 UTC · 9e4647c46c76 |
 
 ## Not modelled here
 

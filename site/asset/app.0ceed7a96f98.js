@@ -72,7 +72,7 @@ const BUILD_ID = "28c2ab4f";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "41159a8f+";
+const BUILD_SHA = "54e643e3+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
@@ -1087,7 +1087,7 @@ const ENGINE_WASM_BYTES = 10482179;
 /// THE ANSWERS THE BUILD ALREADY KNOWS, path to file (scripts/engine_views.mjs):
 /// a page reads its catalog from these and draws before the engine has
 /// downloaded, which then only has to be there by the first computation.
-const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.f3b3216df6e2.json", "/api/i18n": "/pkg/i18n.5743a5b0558b.json", "/api/warframe/catalog": "/pkg/warframes.b86b28b09ed5.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
+const ENGINE_VIEWS = {"/api/meta": "/pkg/meta.65a40faf019f.json", "/api/i18n": "/pkg/i18n.5743a5b0558b.json", "/api/warframe/catalog": "/pkg/warframes.b86b28b09ed5.json", "/api/catalogue": "/pkg/catalogue.ff7684a050b5.json"};
 /// A DOWNLOAD THAT RECEIVES NOTHING FOR THIS LONG IS CUT, so a stalled line ends
 /// in a failure the lanes can report rather than in lanes that wait for ever.
 const ENGINE_STALL_MS = 60_000;

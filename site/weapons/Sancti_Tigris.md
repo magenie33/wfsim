@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.9075 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-22 13:54 UTC · 99dec9ad6d01 |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.9072 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-24 05:47 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.03311 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-22 18:53 UTC · 62a82930d1d3 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.2364 | Blaze, Toxic Barrage, Galvanized Hell, Primed Point Blank, Primed Ravage, Galvanized Savvy, Critical Deceleration, Magnetic Strafe, Primary Crux | 2026-10-24 05:47 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 11.1674 | Toxic Barrage, Chilling Reload, Blaze, Galvanized Hell, Galvanized Savvy, Repeater Clip, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-11-04 14:04 UTC · 9e4647c46c76 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 11.1674 | Toxic Barrage, Chilling Reload, Blaze, Galvanized Hell, Galvanized Savvy, Repeater Clip, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-11-04 14:04 UTC · 9e4647c46c76 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.3198 | Blaze, Galvanized Hell, Primed Ravage, Galvanized Savvy, Repeater Clip, Shotgun Elementalist, Atomic Fallout, Magnetic Strafe, Vigilante Supplies, Primary Crux | 2026-11-04 13:28 UTC · 9e4647c46c76 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 4.8146 | Toxic Barrage, Chilling Reload, Blaze, Galvanized Hell, Galvanized Savvy, Repeater Clip, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Shotgun Vendetta | 2026-11-04 14:04 UTC · 9e4647c46c76 |
 
 ## Not modelled here
 

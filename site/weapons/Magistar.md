@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 2.6431 | Primed Fever Strike, Voltaic Strike, Blood Rush, Primed Pressure Point, Galvanized Steel, Dreamer's Wrath, Gladiator Might, Organ Shatter, Shattering Storm, Melee Exposure | 2026-10-23 20:20 UTC · 5c64c380e5f2 |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 6.7191 | Molten Impact, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Shattering Storm, Discipline's Merit, Melee Exposure | 2026-11-03 19:14 UTC · 51a5068e9d8b |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | heavy slam | 11.5204 | Volcanic Edge, Sacrificial Pressure, Sacrificial Steel, Galvanized Reflex, Killing Blow, Organ Shatter, Seismic Wave, Corrupt Charge, Shattering Storm, Melee Exposure | 2026-10-23 20:15 UTC · 5c64c380e5f2 |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | forward | 0.2406 | Primed Fever Strike, Voltaic Strike, Blood Rush, Primed Pressure Point, Galvanized Steel, Dreamer's Wrath, Gladiator Might, Organ Shatter, Shattering Storm, Melee Exposure | 2026-10-23 20:13 UTC · 5c64c380e5f2 |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 0.8527 | Primed Fever Strike, Voltaic Strike, Blood Rush, Primed Pressure Point, Galvanized Steel, Dreamer's Wrath, Gladiator Might, Organ Shatter, Shattering Storm, Melee Exposure | 2026-10-23 20:29 UTC · 5c64c380e5f2 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | block forward | 0.6245 | Molten Impact, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Shattering Storm, Discipline's Merit, Melee Exposure | 2026-11-03 18:42 UTC · 51a5068e9d8b |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | block forward | 2.7136 | Molten Impact, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Gladiator Might, Weeping Wounds, Magnetic Rush, Shattering Storm, Discipline's Merit, Melee Exposure | 2026-11-03 18:42 UTC · 51a5068e9d8b |
 
 ## Not modelled here
 
