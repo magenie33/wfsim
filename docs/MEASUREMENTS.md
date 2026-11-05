@@ -119,7 +119,7 @@ path, so an entry may be renamed but never renumbered.
 | [M13](measurements/M13-torid-field-tick-clock.md) | The lingering field's tick clock, stacking, and Renewed Horror | ✅ 2026-07-30 (informal) |
 | [M14](measurements/M14-ammo-remainder-on-buff-expiry.md) | What happens to the ammo remainder when an efficiency buff expires? | ✅ 2026-07-30 |
 | [M15](measurements/M15-torid-incarnon-chain-nodes.md) | Does every chain NODE carry a damage sphere, or only the beam's contact point? (Torid Incarnon) | · |
-| [M16](measurements/M16-cernos-prime-tap-rate.md) | How fast can a bow be TAPPED? (Cernos Prime, uncharged form) | · |
+| [M16](measurements/M16-cernos-prime-tap-rate.md) | Tapped bow cadence: zero draw plus modded nock time | Derived from the bow formula |
 | [M17](measurements/M17-arch-gun-exilus-slot.md) | Do Arch-Guns have an exilus slot, and is Zodiac Shred eligible? | · |
 | [M18](measurements/M18-sentinel-aiming-and-beam-ammo.md) | Sentinel aiming, and the beam ammo cost (Verglas Prime 1 per tick, measured; Larkspur Prime per its page) | ✅ 2026-09-11 |
 | [M19](measurements/M19-deadhead-stacking.md) | Do two Deadheads stack? (Primary + Secondary on one weapon) | · |

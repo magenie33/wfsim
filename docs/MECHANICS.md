@@ -2866,8 +2866,8 @@ The fire-rate STAT is still the stat — it is what fire-rate gates read
 `base_fire_rate` and `charge_seconds` (`engine::build::loadout::WeaponBase`).
 
 A tapped bow shot pays no draw, so the nock alone paces it (`charge_seconds:
-0.0` → 1.54 shots/s on Cernos Prime). That is the bow formula taken at its
-word rather than a measurement — **MEASUREMENTS M16**. A non-bow charge weapon
+0.0` → 1.54 volleys/s on Cernos Prime). This is the same bow formula with its
+draw term set to zero (**MEASUREMENTS M16**). A non-bow charge weapon
 (Tombfinger's primary) takes the second formula, `1 / (Modded Charge Time + 1 /
 Modded Fire Rate)` — `data::weapons::ChargeCadence::DrawThenRate`.
 Epitaph is on the wiki's exception list for its RELOAD, not its draw: it takes
@@ -2879,8 +2879,7 @@ A bow opens with an arrow nocked and pays the selected attack's draw before
 its first release. Every release starts a nock; the next draw starts when
 that nock finishes. `model::BowCycle` carries the nock separately from
 `charge_seconds`. A tapped shot has a zero draw, while a full or perfect shot
-uses its own attack data. The first-draw and tapped timings require in-game
-calibration; M16 remains open.
+uses its own attack data. The tapped cycle is the modded nock time.
 
 Ordinary arrows draw directly from reserve. Magazine bonuses do not add
 arrows to the string. Ammo efficiency reduces the fractional reserve cost,
