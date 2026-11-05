@@ -262,7 +262,7 @@ impl IncarnonState {
     ) -> crate::data::apl::Now<'a> {
         let Some(cy) = params.cycle.as_ref() else {
             return crate::data::apl::Now {
-                can_fire: can_fire(ammo.loaded, next_cost),
+                can_fire: can_fire(ammo.available(params, self), next_cost),
                 gauge_pct: 0.0,
                 magazine_pct: ammo.loaded / ammo.cap.max(1e-9),
                 tennokai,
@@ -310,14 +310,7 @@ impl IncarnonState {
             // asking `ammo.loaded` is asking about a magazine nobody holds. A
             // clock-ended cycle keeps no second magazine — a melee weapon has
             // none at all — and fires the one magazine throughout.
-            can_fire: can_fire(
-                if self.in_base_form && matches!(cy.ends, Ends::ChargeMagazine | Ends::SingleShot) {
-                    self.base_magazine
-                } else {
-                    ammo.loaded
-                },
-                next_cost,
-            ),
+            can_fire: can_fire(ammo.available(params, self), next_cost),
             gauge_pct,
             // THE MAGAZINE A RELOAD WOULD FILL: the base form's held-aside one in
             // its own half of a charge-magazine cycle, none in the other (a

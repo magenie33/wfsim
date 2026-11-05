@@ -236,6 +236,11 @@ pub(super) fn before_the_shot(
         if params.no_magazine {
             ammo.loaded = ammo.cap;
         }
+        let active = params.cycle.as_ref().filter(|_| incarnon.in_base_form)
+            .map_or(params, |cy| &cy.base_form);
+        if active.uses_reserve_arrows() && !can_fire(ammo.available(params, incarnon), next_cost) {
+            return Flow::Break;
+        }
         // …AND A CLOCK ENDS THE OTHER KIND, before the magazine block below,
         // which is entirely about a magazine a melee weapon does not have.
         // *"activate Incarnon Form for 90 seconds"* — the window runs from the

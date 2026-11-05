@@ -4,6 +4,7 @@
 use super::*;
 
 mod battery_recharge;
+mod bow;
 mod blobs;
 mod m127_stug;
 mod combatant_attribution;
@@ -156,6 +157,7 @@ impl Default for FightParams {
             heavy_status: None,
             fire_rate: 1.0,
             charge_seconds: None,
+            bow_cycle: None,
             charge_cadence: crate::model::ChargeCadence::DrawThenRate,
             sustained_fire_rate: None,
             battery: None,

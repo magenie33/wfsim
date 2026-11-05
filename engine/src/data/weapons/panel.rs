@@ -529,6 +529,17 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
         // in the roster changes it (ammo EFFICIENCY is its own, separate term).
         ammo_cost: s.attack.ammo_cost,
         charge_ammo_per_second: s.attack.charge_ammo_per_second,
+        // Wiki Bow / Fire Rate: nocking belongs to every arrow, including
+        // Incarnon arrows. The charge pool's pseudo-reload is a transformation.
+        bow_cycle: (s.class == "bow").then(|| {
+            let source = if s.gauge_form.as_ref().is_some_and(|g| !g.single_shot) {
+                s.transforms_from.as_deref().and_then(spec).expect("an Incarnon bow's base form")
+            } else { s };
+            crate::model::BowCycle {
+                nock_seconds: source.reload_seconds.expect("a bow states its nocking time"),
+                uses_reserve: s.gauge_form.as_ref().is_none_or(|g| g.single_shot),
+            }
+        }),
         sustained_fire_rate: s.attack.sustained_fire_rate,
         // A BOW paces on draw + nock, every form of it (wiki Fire Rate's
         // bow-specific formula — see `AttackSpec::charge_seconds`), so a bow

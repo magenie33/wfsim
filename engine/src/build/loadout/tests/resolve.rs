@@ -1746,6 +1746,58 @@ fn a_magazine_rounds_to_the_nearest_round() {
     assert_eq!(mag(&plain), 1.0);
 }
 
+/// Bows keep one nocked arrow under magazine bonuses (DE Update 38.5).
+/// Their Incarnon charge pools retain their own fixed capacities.
+#[test]
+fn a_bows_magazine_is_fixed_under_magazine_bonuses() {
+    let bonuses = [
+        m("larger", vec![ModEffect::MagazineCapacity(0.55)]),
+        m("smaller", vec![ModEffect::MagazineCapacity(-0.60)]),
+        m("flat", vec![ModEffect::FlatBaseMagazine(5.0)]),
+    ];
+    for weapon in crate::data::weapons::all().iter().filter(|w| w.class == "bow") {
+        let base = WeaponBase::from_data(&weapon.id, true, &[]);
+        for bonus in &bonuses {
+            let panel = resolve(&base, &[bonus], StackPolicy::Emergent);
+            assert_eq!(panel.magazine_size, base.magazine_size, "{}: {}", weapon.id, bonus.id);
+        }
+    }
+}
+
+#[test]
+fn crossbow_magazines_still_grow_with_magazine_mods() {
+    for id in ["attica", "zhuge", "nagantaka", "tonkor"] {
+        let base = WeaponBase::from_data(id, true, &[]);
+        let pool = crate::data::mods::pool_for_weapon(id);
+        let primed = pool.iter().find(|m| m.id == "primed_magazine_warp").unwrap();
+        let panel = resolve(&base, &[primed], StackPolicy::Emergent);
+        assert_eq!(panel.magazine_size, (base.magazine_size * 1.55).round(), "{id}");
+        assert!(panel.magazine_size > base.magazine_size, "{id}");
+    }
+}
+
+#[test]
+fn bramma_gets_no_shots_or_damage_from_primed_magazine_warp() {
+    use crate::data::arcanes::ArcaneFx;
+    use crate::fight::{run_once, FightParams};
+    use crate::rules::rng::Rng;
+
+    let base = WeaponBase::from_data("kuva_bramma", true, &[]);
+    let pool = crate::data::mods::pool_for_weapon("kuva_bramma");
+    let primed = pool.iter().find(|m| m.id == "primed_magazine_warp").unwrap();
+    let arena = crate::arena::Arena::training(10.0);
+    let fight = |mods: &[&ModDef]| {
+        let panel = resolve(&base, mods, StackPolicy::Emergent);
+        let params = FightParams::from_panel(&panel, &arena, &ArcaneFx::default());
+        run_once(&params, &mut Rng::new(42))
+    };
+    let plain = fight(&[]);
+    let enlarged = fight(&[primed]);
+    assert!(plain.shots > 1);
+    assert_eq!(enlarged.shots, plain.shots);
+    assert_eq!(enlarged.total_damage(), plain.total_damage());
+}
+
 /// A negative magazine never empties the weapon: a one-round bow under a
 /// -magazine riven still holds its arrow in game.
 #[test]

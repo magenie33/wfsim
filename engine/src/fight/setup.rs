@@ -1348,6 +1348,7 @@ impl FightParams {
             base_status_chance: panel.base_status_chance,
             fire_rate: panel.fire_rate,
             charge_seconds: panel.charge_seconds,
+            bow_cycle: panel.bow_cycle,
             charge_cadence: panel.charge_cadence,
             sustained_fire_rate: panel.sustained_fire_rate,
             // PAX CHARGE turns the magazine into a battery, and this is the

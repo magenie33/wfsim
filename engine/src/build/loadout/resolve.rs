@@ -1029,9 +1029,12 @@ pub fn resolve_for(
     // mods like the rest of the base. (A physical-innate weapon leaves `input`
     // empty here, so this is a no-op for Dual Toxocyst.)
     // THE MODDED MAGAZINE, computed HERE because on one weapon it is a damage
-    // stat and the damage is built below. A charge-backed Incarnon magazine is
-    // a fixed resource outside the ammo system, so magazine mods never scale it.
-    let mag_size = if base.gauge_form.is_some_and(|f| !f.single_shot) {
+    // stat and the damage is built below. Incarnon charge pools and a bow's
+    // nocked arrow have fixed capacities. DE Update 38.5 states that bows
+    // cannot have their magazine increased: https://www.warframe.com/en/patch-notes/pc/38-5-0
+    let mag_size = if base.gauge_form.is_some_and(|f| !f.single_shot)
+        || base.bow_cycle.is_some()
+    {
         base.magazine_size
     } else {
         // ROUNDED TO THE NEAREST ROUND, not floored (wiki Magazine_Warp,
@@ -1985,6 +1988,10 @@ pub fn resolve_for(
         },
         headshot_bonus_multiplicative: base.headshot_bonus_multiplicative,
         charge_cadence: base.charge_cadence,
+        bow_cycle: base.bow_cycle.map(|b| crate::model::BowCycle {
+            nock_seconds: b.nock_seconds / (1.0 + rl),
+            ..b
+        }),
         // A fire-rate bonus shortens the gap WITHIN a burst as well as the gap
         // between bursts (wiki: it "affect[s] both the speed of the burst as
         // well as the time between bursts"), which is what makes a burst

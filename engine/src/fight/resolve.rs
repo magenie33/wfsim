@@ -203,8 +203,8 @@ pub(super) fn resolve_the_shot(
         // its own. A burst window written for the cycle silently becomes one
         // round outside it — 5 pellets a magazine instead of 15 on a Burston.
         let mag_left = if incarnon.in_base_form { incarnon.base_magazine } else { ammo.loaded };
-        let last_round =
-            round_cost > 0.0 && mag_left <= f64::from(rounds_left_in_burst) * round_cost + 1e-9;
+        let last_round = !active.uses_reserve_arrows()
+            && round_cost > 0.0 && mag_left <= f64::from(rounds_left_in_burst) * round_cost + 1e-9;
         // THE CHAMBER FAMILY'S GATE, and it is READ AFTER THE ROUND IS PAID
         // FOR. Both cards say "+X% Damage on first shot in Magazine" and both
         // pages say what that really means: the bonus lands *"as long as the
@@ -230,7 +230,7 @@ pub(super) fn resolve_the_shot(
         } else {
             ammo.cap
         };
-        let first_round = active.first_round_damage > 0.0
+        let first_round = !active.uses_reserve_arrows() && active.first_round_damage > 0.0
             && ((mag_left - round_cost - 1e-9).ceil() - (mag_max - 1.0)).abs() < 1e-9;
         // The round itself is spent BELOW, once the multishot roll is known:
         // Plentiful Mayhem makes the extra projectiles cost ammo too, so the
@@ -547,7 +547,9 @@ pub(super) fn resolve_the_shot(
         // spends 0.4, which is what "0.5 ammo per trace" plus an efficiency
         // mod has to mean.
         let spend = round_cost;
-        if incarnon.in_base_form {
+        if active.uses_reserve_arrows() {
+            if !params.infinite_reserve { ammo.reserve -= spend; }
+        } else if incarnon.in_base_form {
             incarnon.base_magazine -= spend;
         } else {
             ammo.loaded -= spend;

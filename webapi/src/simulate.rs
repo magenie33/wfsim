@@ -2020,7 +2020,7 @@ mod form_tests {
         let tapped = sim("cernos_prime", "base");
         assert!((base_of(&tapped) - 92.0).abs() < 1e-6, "{}", base_of(&tapped));
         let (drawn_shots, tapped_shots) = (bow["shots"].as_f64(), tapped["shots"].as_f64());
-        assert_eq!(drawn_shots, Some(27.0), "30 s / (0.5 + 0.65) + 1");
+        assert_eq!(drawn_shots, Some(26.0), "first draw at 0.5 s, then 1.15 s per arrow");
         assert_eq!(tapped_shots, Some(47.0), "30 s / 0.65 + 1");
     }
 

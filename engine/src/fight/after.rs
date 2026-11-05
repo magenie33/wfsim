@@ -253,7 +253,7 @@ pub(super) fn next_shot_due(
     initial_now: f64,
     tennokai: bool,
     tennokai_heavy: bool,
-    r: &RunResult,
+    r: &mut RunResult,
     bar: &mut BuffBar,
     buff_stacks: &mut [LiveStacks],
     ammo: &Ammo,
@@ -261,6 +261,8 @@ pub(super) fn next_shot_due(
     melee: &mut MeleeState,
     spool: &mut Spool,
     windows: &CardWindows,
+    arc: &mut ArcRuntime,
+    rs_armed: bool,
     last_shot_t: &mut f64,) {
         // Frame actions wait for a committed melee input to finish.
         let input_continues = swing.as_ref().is_some_and(|h| h.event_timing.is_some() && !h.ends_input());
@@ -293,10 +295,16 @@ pub(super) fn next_shot_due(
         // modded charge time by whatever the live buffs did to the rate
         // (`rate / active.fire_rate` is exactly that factor, and it is 1.0 when no
         // buff is up). Same bucket, reciprocal application — see `charge_seconds`.
-        *t += seconds_to_next_shot(
-            active, *t, rate, initial_now, swing, tennokai, tennokai_heavy, ammo, incarnon, melee,
-        );
-        if params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot) {
+        if active.bow_cycle.is_some() {
+            let nock = nock_span(params, active, arc, buff_stacks, rs_armed, *t);
+            r.downtime_seconds += nock.min((params.duration_seconds - *t).max(0.0));
+            *t += nock;
+        } else {
+            *t += seconds_to_next_shot(
+                active, *t, rate, initial_now, swing, tennokai, tennokai_heavy, ammo, incarnon, melee,
+            );
+        }
+        if active.bow_cycle.is_none() && params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot) {
             // This cycle pays the selected attack's draw before its trigger.
             *t -= active.charge_seconds.unwrap_or(0.0) * active.fire_rate / rate.max(1e-9);
         }

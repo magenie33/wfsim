@@ -258,9 +258,18 @@ impl Shockwave {
     }
 }
 
+/// A bow nocks after every release, independently of its draw or ammo cost.
+/// Reload-speed bonuses shorten the nock without producing a reload event.
+#[derive(Debug, Clone, Copy)]
+pub struct BowCycle {
+    pub nock_seconds: f64,
+    /// Ordinary arrows spend reserve ammo; Incarnon arrows spend charges.
+    pub uses_reserve: bool,
+}
+
 /// Which of the wiki's two charge-weapon cadence formulas applies.
 ///
-/// - `DrawOnly` — bows: "Effective Fire Rate = 1 / Modded Charge Time".
+/// - `DrawOnly` — the draw alone; bows schedule their nock separately.
 /// - `DrawThenRate` — everything else: "1 / (Modded Charge Time + 1 / Modded
 ///   Fire Rate)". The listed rate is the cadence AFTER the charge, not the
 ///   whole cycle, so the two add.
@@ -880,6 +889,8 @@ pub struct WeaponBase {
     /// the listed stat (Cernos Prime: 1.0), which is what reads it as a stat
     /// (Hemorrhage's below-2.5 gate) still sees.
     pub charge_seconds: Option<f64>,
+    /// Nocking and ammunition supply, independent of the attack's charge.
+    pub bow_cycle: Option<BowCycle>,
     /// See [`crate::data::weapons::AttackSpec::charge_ammo_per_second`]. Set,
     /// the charge spends the magazine and the damage rides on it.
     pub charge_ammo_per_second: Option<f64>,

@@ -76,6 +76,11 @@ pub(super) fn charge_magazine_cycle(
         // is what decides — a rule inserted above `reload` stops the reload.
         let remains = ability_remains(params, *t);
         let want = apl.pick(&incarnon.now(params, ammo, next_cost, *t, tennokai, &remains, switch_to.map(|s| s.form)));
+        let active = params.cycle.as_ref().filter(|_| incarnon.in_base_form)
+            .map_or(params, |cy| &cy.base_form);
+        if active.uses_reserve_arrows() && want == Action::Reload {
+            return if can_fire(ammo.available(params, incarnon), next_cost) { Flow::Go } else { Flow::Break };
+        }
         if let Some(cy) = params.cycle.as_ref().filter(|c| c.ends == Ends::ChargeMagazine || (c.ends == Ends::SingleShot && incarnon.in_base_form)) {
             if want == Action::TransformOut {
                 // Charge magazine spent: revert to the base form. The swap

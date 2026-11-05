@@ -191,10 +191,9 @@ pub struct FightParams {
     /// fires the moment the draw finishes — and live fire-rate buffs divide it
     /// by the same factor they would have multiplied the rate by. `fire_rate`
     /// stays the listed stat, which is what Hemorrhage's below-2.5 gate reads.
-    ///
-    /// A bow's magazine is 1, so the reload lands between two draws either way
-    /// and the cycle is `charge + reload` however the two are ordered.
     pub charge_seconds: Option<f64>,
+    /// See [`crate::model::BowCycle`]. A nock is not a magazine reload.
+    pub bow_cycle: Option<crate::model::BowCycle>,
     /// Which charge formula paces the shot — see `ChargeCadence`.
     pub charge_cadence: crate::model::ChargeCadence,
     /// A RATE THAT FALLS WHILE THE TRIGGER IS HELD — see

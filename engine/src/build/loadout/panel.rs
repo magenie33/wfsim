@@ -588,6 +588,8 @@ pub struct ResolvedPanel {
     /// what a fire-rate mod did. `Some` means the sim paces on this instead of
     /// `1 / fire_rate`.
     pub charge_seconds: Option<f64>,
+    /// See [`crate::model::BowCycle`]; nocking carries the reload-speed bucket.
+    pub bow_cycle: Option<crate::model::BowCycle>,
     /// See [`crate::data::weapons::AttackSpec::charge_ammo_per_second`]. Set,
     /// the charge spends the magazine and the damage rides on it.
     pub charge_ammo_per_second: Option<f64>,

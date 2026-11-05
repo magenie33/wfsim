@@ -198,9 +198,11 @@ ignores unknown `kind`s, so the mod still loads). Wiki-sourced calc:
   (§7). *Engine: not modeled yet.*
 - **Magazine capacity** (`magazine_capacity_bonus`): +% of the BASE magazine
   (additive bucket, rounded to the nearest whole round: a one-round Tonkor
-  under Primed Magazine Warp holds 2; never below 1: a bow under a
-  negative-magazine riven still fires its one arrow); feeds reload cadence / sustain
-  (§9), not per-hit damage. *Engine: not modeled yet.*
+  under Primed Magazine Warp holds 2; never below 1); feeds reload cadence /
+  sustain (§9), not per-hit damage. Bows keep one nocked arrow regardless of
+  magazine bonuses; crossbows use the ordinary magazine rule. Incarnon charge
+  pools retain their fixed capacities. [DE Update 38.5](https://www.warframe.com/en/patch-notes/pc/38-5-0)
+  states that bows cannot have their magazine increased.
 - **Zoom** (`zoom_bonus`): pistol zoom is pure FOV — **no damage** (unlike
   sniper zoom's additive headshot-damage bonus). Correctly a no-op.
 - **Ammo mutation / conversion**: converts the other class's packs at its
@@ -2870,6 +2872,40 @@ word rather than a measurement — **MEASUREMENTS M16**. A non-bow charge weapon
 Modded Fire Rate)` — `data::weapons::ChargeCadence::DrawThenRate`.
 Epitaph is on the wiki's exception list for its RELOAD, not its draw: it takes
 this second formula and never reloads (`no_magazine`, **MEASUREMENTS M114**).
+
+### Bow supply and the nock are independent of charge
+
+A bow opens with an arrow nocked and pays the selected attack's draw before
+its first release. Every release starts a nock; the next draw starts when
+that nock finishes. `model::BowCycle` carries the nock separately from
+`charge_seconds`. A tapped shot has a zero draw, while a full or perfect shot
+uses its own attack data. The first-draw and tapped timings require in-game
+calibration; M16 remains open.
+
+Ordinary arrows draw directly from reserve. Magazine bonuses do not add
+arrows to the string. Ammo efficiency reduces the fractional reserve cost,
+while every release still pays a nock. Nataruk's innate infinite ammo changes
+the supply, not its action cycle. Reload-speed bonuses shorten the nock;
+fire-rate bonuses shorten the draw. A nock emits no reload event and cannot
+arm reload-triggered buffs.
+
+An Incarnon bow spends its separate charge pool and nocks between arrows.
+Its nock reads the base weapon's published reload time; the pool's
+`pseudo_reload` describes the transformation downtime, not a nock. Returning
+to the base form resumes the same reserve supply. Earned single arrows, such
+as Nunchasa's alternate, retain the ordinary arrow cost.
+
+Charge alone does not imply this cycle. Ballistica and its variants retain
+their magazine, charge-plus-rate cadence and real reload. Crossbows use
+their declared trigger and magazine rules.
+
+Sources: [Bow](https://wiki.warframe.com/w/Bow),
+[Fire Rate](https://wiki.warframe.com/w/Fire_Rate),
+[Energized Munitions](https://wiki.warframe.com/w/Energized_Munitions),
+[Nataruk](https://wiki.warframe.com/w/Nataruk),
+[Primary Plated Round](https://wiki.warframe.com/w/Primary_Plated_Round),
+[Paris](https://wiki.warframe.com/w/Paris),
+[Ballistica](https://wiki.warframe.com/w/Ballistica).
 
 ### Fire rate that MOVES while the trigger is held — the spool
 

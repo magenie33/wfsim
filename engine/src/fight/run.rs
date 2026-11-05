@@ -705,6 +705,14 @@ pub fn run_once_traced(
             _ => me.params,
         };
         let active = melee_profile(active, &me.melee);
+        if active.bow_cycle.is_some() {
+            let draw = charged_shot_span(me.params, active, &me.windows, &me.bar, &mut me.buff_stacks, t);
+            if let Some(wait) = me.bow.before_release(active.form, draw) {
+                me.next_t = t + wait;
+                r.per_seat[seat_index].add(SeatCounters::of(&r).since(counters_before));
+                continue;
+            }
+        }
         if current_melee_event(active, &me.melee).is_some_and(|h| h.event_timing.is_some()) {
             let event_rate = cadence_rate(me.params, active, t, &mut me.bar, &mut me.buff_stacks, &me.windows);
             if let Some(wait) = prepare_melee_event(active, &me.apl, t, event_rate, r.kills, &mut me.melee) {
@@ -738,7 +746,7 @@ pub fn run_once_traced(
         let event_profile = current_melee_event(active, &me.melee).and_then(|h| h.profile.clone());
         let active = event_profile.as_ref().map_or(active, |name| active.melee_profiles.get(name)
             .unwrap_or_else(|| panic!("missing melee attack profile: {name}")));
-        if me.params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot) {
+        if active.bow_cycle.is_none() && me.params.cycle.as_ref().is_some_and(|c| c.ends == Ends::SingleShot) {
             t += charged_shot_span(me.params, active, &me.windows, &me.bar, &mut me.buff_stacks, t);
             if t >= me.params.duration_seconds { break; }
         }
@@ -1132,9 +1140,9 @@ pub fn run_once_traced(
                 me.incarnon.base_magazine = me.ammo.loaded;
             }
             next_shot_due(
-                me.params, active, &mut t, swing, initial_now, tennokai, tennokai_heavy, &r,
+                me.params, active, &mut t, swing, initial_now, tennokai, tennokai_heavy, &mut r,
                 &mut me.bar, &mut me.buff_stacks, &me.ammo, &me.incarnon, &mut me.melee,
-                &mut me.spool, &me.windows, &mut me.last_shot_t,
+                &mut me.spool, &me.windows, &mut me.arc, me.rs_armed, &mut me.last_shot_t,
             );
         } else {
             t = land_the_shot(
@@ -1156,9 +1164,9 @@ pub fn run_once_traced(
                 me.incarnon.base_magazine = me.ammo.loaded;
             }
             next_shot_due(
-                me.params, active, &mut t, landing.swing, initial_now, tennokai, tennokai_heavy, &r,
+                me.params, active, &mut t, landing.swing, initial_now, tennokai, tennokai_heavy, &mut r,
                 &mut me.bar, &mut me.buff_stacks, &me.ammo, &me.incarnon, &mut me.melee,
-                &mut me.spool, &me.windows, &mut me.last_shot_t,
+                &mut me.spool, &me.windows, &mut me.arc, me.rs_armed, &mut me.last_shot_t,
             );
         }
         // AN ABILITY CAST THE FRAME MADE ON THIS TURN earns what a cast earns,
