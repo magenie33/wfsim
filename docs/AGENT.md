@@ -427,6 +427,7 @@ comparison. Executor disclosure and queue ownership are in `docs/TASKS.md`.
    正 and 负 mean literal `+` and `-`, before either the name or number;
    conflicting signs are refused. The stat's direction determines its slot:
    负后坐力50, -后坐力50 and 后坐力-50 are bonuses; 正后坐力50 is a malus.
+   A numeric value without a sign is positive: 85.5武器后坐力 is a recoil malus.
    Named `zk` filters follow the same sign rule. The engine checks the shape
    and printed range and converts values to rolls. The bot opens an appraisal
    at `/api/appraise/new`
