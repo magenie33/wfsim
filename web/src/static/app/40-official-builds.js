@@ -513,13 +513,16 @@ async function fetchJsonPatient(url, tries = 3, signal) {
 /// empty table, which reads as a board nobody has submitted to.
 let boardIndexAsk = null;
 let boardIndexUnreachable = false;
+let boardIndexGeneration = 0;
 function loadFullBoard() {
   if (BOARD_INDEX) return Promise.resolve();
   if (!boardIndexAsk) {
+    const generation = boardIndexGeneration;
     boardIndexUnreachable = false;
     boardIndexAsk = fetchJsonPatient(`${boardOffOrigin ? BOARD_ORIGIN : ""}/board/index.json`)
-      .then((idx) => { BOARD_INDEX = idx; }, () => { boardIndexUnreachable = true; })
-      .finally(() => { boardIndexAsk = null; });
+      .then((idx) => { if (generation === boardIndexGeneration) BOARD_INDEX = idx; },
+        () => { if (generation === boardIndexGeneration) boardIndexUnreachable = true; })
+      .finally(() => { if (generation === boardIndexGeneration) boardIndexAsk = null; });
   }
   return boardIndexAsk;
 }
@@ -534,13 +537,16 @@ function loadFullBoard() {
 const SCENE_INDEX = {};
 const sceneIndexAsk = {};
 const sceneIndexUnreachable = {};
+const sceneIndexGeneration = {};
 function loadSceneIndex(dir) {
   if (SCENE_INDEX[dir]) return Promise.resolve();
   if (!sceneIndexAsk[dir]) {
+    const generation = sceneIndexGeneration[dir] || 0;
     sceneIndexUnreachable[dir] = false;
     sceneIndexAsk[dir] = fetchJsonPatient(`${boardOffOrigin || window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : ""}/board/${dir}/index.json`)
-      .then((idx) => { SCENE_INDEX[dir] = idx || {}; }, () => { sceneIndexUnreachable[dir] = true; })
-      .finally(() => { delete sceneIndexAsk[dir]; });
+      .then((idx) => { if (generation === (sceneIndexGeneration[dir] || 0)) SCENE_INDEX[dir] = idx || {}; },
+        () => { if (generation === (sceneIndexGeneration[dir] || 0)) sceneIndexUnreachable[dir] = true; })
+      .finally(() => { if (generation === (sceneIndexGeneration[dir] || 0)) delete sceneIndexAsk[dir]; });
   }
   return sceneIndexAsk[dir];
 }
@@ -575,6 +581,47 @@ async function loadBoard(weapon) {
     boardOffOrigin = true;
     if (weapon) boardFromSite(weapon);
   }
+}
+
+// Publication moves independently of a review. Reload complete files before
+// replacing the visible rows; an old loaded scene or index cannot satisfy it.
+async function reloadReviewedBoard(weapon, ruler) {
+  const bench = benchList().find(item => item.id === ruler);
+  if (!bench) throw new Error("The board is unavailable.");
+  const dir = boardCellDir(ruler), base = boardOffOrigin || window.__WFSIM_DESKTOP__ ? BOARD_ORIGIN : "";
+  const meta = await fetchJsonPatient(`${base}/board.meta.json`, 3, timeoutSignal(SCENE_ROWS_WITHIN_MS));
+  if (!meta || typeof meta !== "object") throw new Error("The board is unavailable.");
+  boardFiles.get(weapon)?.controller.abort();
+  boardFiles.delete(weapon); BOARD_HAVE.delete(weapon);
+  BOARD_INDEX = null; delete SCENE_INDEX[dir];
+  const indexGeneration = ++boardIndexGeneration;
+  const sceneGeneration = (sceneIndexGeneration[dir] || 0) + 1;
+  sceneIndexGeneration[dir] = sceneGeneration;
+  boardIndexAsk = null; delete sceneIndexAsk[dir];
+  const state = boardFileState(weapon);
+  const dirs = [...new Set([...boardRequestedDirs(weapon), dir])];
+  const work = (async () => {
+    const files = await Promise.all(dirs.map(async scene => {
+      const listed = meta.scene_weapons?.[scene];
+      if (scene && Array.isArray(listed) && !listed.includes(weapon)) return [];
+      const rows = await fetchJsonPatient(`${base}/board/${scene ? scene + "/" : ""}${weapon}.json`, 3, boardFileSignal(state));
+      if (!Array.isArray(rows)) throw new Error("The board is unavailable.");
+      return rows;
+    }));
+    const index = await fetchJsonPatient(`${base}/board/${dir ? dir + "/" : ""}index.json`, 3, boardFileSignal(state));
+    if (!index || typeof index !== "object" || Array.isArray(index)
+      || (index[weapon] != null && !Array.isArray(index[weapon])) || boardFiles.get(weapon) !== state)
+      throw new Error("The board is unavailable.");
+    BOARD_META = meta;
+    BOARD[weapon] = files.flat();
+    dirs.forEach(scene => state.loaded.add(scene));
+    BOARD_HAVE.add(weapon);
+    if (dir) { if (sceneGeneration === sceneIndexGeneration[dir]) SCENE_INDEX[dir] = index; }
+    else if (indexGeneration === boardIndexGeneration) BOARD_INDEX = index;
+    return { rows: BOARD[weapon], indexRows: index[weapon] || [] };
+  })();
+  state.pending.set("initial", work);
+  try { return await work; } finally { state.pending.delete("initial"); }
 }
 
 /// THIS ORIGIN HOLDS NO BOARD OF ITS OWN, and every later weapon asks

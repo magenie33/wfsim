@@ -151,6 +151,10 @@ const boardReviewTrackers = new Map();
 const boardReviewEnabled = () => localStorage.getItem("wfsim-board-review") !== "off";
 let boardReviewTimer = null, boardReviewPolling = false;
 const boardReviewEnded = state => ["succeeded", "superseded", "failed", "unavailable"].includes(state);
+const BOARD_PUBLICATION_MAX_ATTEMPTS = 30;
+const boardReviewNeedsPublication = task => ["succeeded", "superseded"].includes(task.state)
+  && task.publication !== "published" && (task.publication_attempts || 0) < BOARD_PUBLICATION_MAX_ATTEMPTS;
+const boardReviewActive = task => !boardReviewEnded(task.state) || boardReviewNeedsPublication(task);
 const boardReviewLink = task => `${weaponPath(task.weapon)}/benchmark?bench=${encodeURIComponent(task.ruler)}`;
 USER_TASK_TYPES.set("board-review", {
   icon: "↻",
@@ -165,7 +169,7 @@ USER_TASK_TYPES.set("board-review", {
   },
 });
 userTaskSources.set("board-review", () => [...boardReviewTrackers.values()].map(task => ({ ...task, kind: "board-review",
-  state: task.state === "submitting" ? "queued" : task.state === "waiting" ? task.phase === "Waiting for community compute" ? "queued" : "running"
+  state: task.state === "submitting" ? "queued" : boardReviewNeedsPublication(task) ? "running" : task.state === "waiting" ? task.phase === "Waiting for community compute" ? "queued" : "running"
     : ["succeeded", "superseded"].includes(task.state) ? "succeeded" : "failed",
   progress: { done: task.witnesses || 0, total: 2, phase: task.phase || "Waiting for community compute" } })));
 function boardReviewCanonical(value) {
@@ -196,10 +200,37 @@ function boardReviewRequest(value) {
   return JSON.stringify(boardReviewCanonical(body));
 }
 function boardReviewRecord(weapon, row) {
+  const riven = row.riven || (row.riven_pos?.length
+    ? { bonuses: row.riven_pos, malus: row.riven_neg, rolls: row.riven_rolls } : null);
   return { weapon, mods: row.mods || [], evolutions: row.evolutions || [], arcanes: row.arcanes || [],
     valence: row.valence || "", exilus: row.exilus || "", grip: row.grip || "", loader: row.loader || "", link: row.link || "",
     ...(row.wielder ? { wielder: taskClone(row.wielder) } : {}),
-    ...(row.riven ? { riven_pos: row.riven.bonuses, riven_neg: row.riven.malus || "", riven_rolls: row.riven.rolls } : {}) };
+    ...(riven ? { riven_pos: riven.bonuses, riven_neg: riven.malus || "", riven_rolls: riven.rolls } : {}) };
+}
+
+// Compare only fetched publication with the frozen record and current fact.
+// Missing rows count only when the existing inclusive entry-line rule excludes them.
+function boardReviewPublication(task, rows, indexRows) {
+  if (!task.record || task.record.weapon !== task.weapon || !Number.isFinite(task.current_score)
+    || !task.current_by || !Array.isArray(rows) || !Array.isArray(indexRows)) return false;
+  const key = value => JSON.stringify(boardReviewCanonical(boardReviewRecord(task.weapon, value)));
+  const wanted = key(task.record);
+  const cell = values => values.filter(row => row.benchmark === task.ruler && (row.mode || "base") === task.mode);
+  const agrees = row => {
+    const completed = Date.parse(task.completed_at), measured = Date.parse(row.measured_at);
+    return String(row.measured_by || "").replace(/^verified:/, "") === String(task.current_by).replace(/^verified:/, "")
+      && Math.abs(row.score - task.current_score) <= 1e-12 * Math.max(1, Math.abs(task.current_score))
+      && (task.state === "superseded" || (Number.isFinite(completed) && Number.isFinite(measured)
+        && measured >= Math.floor(completed / 60_000) * 60_000));
+  };
+  const published = cell(rows), index = cell(indexRows);
+  const matching = published.filter(row => key(row) === wanted), indexed = index.filter(row => key(row) === wanted);
+  if (indexed.some(row => !agrees(row))) return false;
+  if (matching.length) return matching.every(agrees);
+  if (task.record.wielder || (task.record.riven_pos?.length && !Array.isArray(task.record.riven_rolls))) return false;
+  if (!published.length || !index.length || !(META.board_entry_share > 0)) return false;
+  return !boardGroupLeaders(published)({ benchmark: task.ruler, mode: task.mode, score: task.current_score,
+    ...(task.record.riven_pos?.length ? { riven: {} } : {}) }, META.board_entry_share);
 }
 function boardReviewEffective(value, weapon, buffs) {
   const body = taskClone(value), cls = weaponInfo(weapon)?.weapon_class;
@@ -274,16 +305,16 @@ async function acceptBoardReview(task) {
   boardReviewTrackers.delete(task.id);
   boardReviewTrackers.set(id, { ...task, ...existing, id, review: accepted.id,
     sources: [...new Set([...(task.sources || [task.source]), ...(existing?.sources || [])])],
-    state: existing?.state || "waiting", phase: existing?.phase || "Waiting for community compute" });
+    state: "waiting", phase: "Waiting for community compute", publication: "waiting", publication_attempts: 0 });
 }
 
 async function saveBoardReviewTrackers() {
   const queue = await initUserTasks();
   while (boardReviewTrackers.size > 50) {
-    const discarded = [...boardReviewTrackers.values()].find(task => boardReviewEnded(task.state)) || boardReviewTrackers.values().next().value;
+    const discarded = [...boardReviewTrackers.values()].find(task => !boardReviewActive(task)) || boardReviewTrackers.values().next().value;
     boardReviewTrackers.delete(discarded.id);
   }
-  const list = [...boardReviewTrackers.values()].slice(-50).map(({ id, review, identity, weapon, ruler, mode, engine, source, sources, state }) => ({ id, review, identity, weapon, ruler, mode, engine, source, sources, state }));
+  const list = [...boardReviewTrackers.values()].slice(-50).map(({ id, review, identity, weapon, ruler, mode, engine, source, sources, state, publication, publication_attempts }) => ({ id, review, identity, weapon, ruler, mode, engine, source, sources, state, publication, publication_attempts }));
   await queue.store.value("board-review-trackers", list);
 }
 function scheduleBoardReviews(ms = 10_000) {
@@ -293,7 +324,7 @@ function scheduleBoardReviews(ms = 10_000) {
 async function pollBoardReviews() {
   if (boardReviewPolling) return;
   const pending = [...boardReviewTrackers.values()].filter(task => task.state === "submitting");
-  const tracks = [...boardReviewTrackers.values()].filter(task => !!task.review && !boardReviewEnded(task.state));
+  const tracks = [...boardReviewTrackers.values()].filter(task => !!task.review && boardReviewActive(task));
   if (!tracks.length && !pending.length) return;
   boardReviewPolling = true;
   try {
@@ -310,23 +341,30 @@ async function pollBoardReviews() {
       const current = boardReviewTrackers.get(task.id);
       if (!current) continue;
       const row = payload.reviews?.find(row => row.id === task.review);
-      boardReviewTrackers.set(task.id, row ? { ...current, ...row, id: task.id, review: task.review } : { ...current, state: "unavailable" });
-      if (row?.state === "succeeded") refreshReviewedBoard(current).catch(() => {});
+      const next = row ? { ...current, ...row, id: task.id, review: task.review } : { ...current, state: "unavailable" };
+      if (boardReviewNeedsPublication(next)) {
+        next.publication_attempts = (next.publication_attempts || 0) + 1;
+        let published = false;
+        try { published = await refreshReviewedBoard(next); } catch (_) { /* publication retries independently */ }
+        next.publication = published ? "published" : next.publication_attempts >= BOARD_PUBLICATION_MAX_ATTEMPTS ? "unavailable" : "waiting";
+        next.phase = published ? "Board calibration verified" : "Verified scores appear on the board after publication.";
+      }
+      if (boardReviewTrackers.get(task.id) === current) boardReviewTrackers.set(task.id, next);
     }
     await saveBoardReviewTrackers(); renderBoardReviewNote(); scheduleUserTasks();
   } finally {
     boardReviewPolling = false;
-    if ([...boardReviewTrackers.values()].some(task => !boardReviewEnded(task.state))) scheduleBoardReviews();
+    if ([...boardReviewTrackers.values()].some(boardReviewActive)) scheduleBoardReviews();
   }
 }
 async function refreshReviewedBoard(task) {
-  BOARD_HAVE.delete(task.weapon);
-  await loadBoard(task.weapon);
+  const { rows, indexRows } = await reloadReviewedBoard(task.weapon, task.ruler);
   if (presetWeapon() === task.weapon) {
     renderPresetBar();
     if (!$("bench-page").hidden) renderBenchBoard();
     renderBuildFinder();
   }
+  return boardReviewPublication(task, rows, indexRows);
 }
 function renderBoardReviewNote() {
   const box = $("sim-board-review");
@@ -338,7 +376,8 @@ function renderBoardReviewNote() {
   const text = task.state === "submitting" ? tr("Requesting board calibration") : task.state === "succeeded" ? tr("Board calibration verified") : task.state === "superseded" ? tr("The board was updated while this review ran.")
     : boardReviewEnded(task.state) ? tr("Board review is unavailable.") : tr("Board calibration queued");
   box.innerHTML = `<div class="board-outcome"><b>${escHtml(text)}</b>${task.score == null ? "" : ` · ${escHtml(tr("Verified score"))}: ${escHtml(fmtScore(task.score))}`}
-    <p>${escHtml(tr(["succeeded", "superseded"].includes(task.state) ? "Verified scores appear on the board after publication." : "The published score stays until independent verification finishes."))}</p>
+    <p>${escHtml(tr(task.publication === "unavailable" ? "Board publication is not confirmed. Open the board to retry."
+      : ["succeeded", "superseded"].includes(task.state) ? "Verified scores appear on the board after publication." : "The published score stays until independent verification finishes."))}</p>
     <a class="ghost-btn small" data-review-board="${escHtml(task.id)}" href="${boardReviewLink(task)}">${escHtml(tr("View board"))}</a></div>`;
 }
 document.addEventListener("click", event => {
@@ -346,7 +385,9 @@ document.addEventListener("click", event => {
   const link = event.target.closest("[data-review-board]"), task = link && boardReviewTrackers.get(link.dataset.reviewBoard);
   if (!task) return;
   event.preventDefault(); event.stopImmediatePropagation();
-  refreshReviewedBoard(task).catch(() => {}).finally(() => nav(boardReviewLink(task)));
+  boardReviewTrackers.set(task.id, { ...task, state: "waiting", publication: "waiting", publication_attempts: 0 });
+  saveBoardReviewTrackers().catch(() => {}); scheduleBoardReviews(0);
+  nav(boardReviewLink(task));
 }, true);
 window.addEventListener("wfsim:ready", async () => {
   const queue = await initUserTasks();

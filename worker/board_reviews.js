@@ -171,6 +171,7 @@ async function reviewStatus(env, ids) {
     LEFT JOIN scores s ON s.identity = r.identity AND s.ruler = r.ruler AND s.mode = r.mode
     WHERE r.id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))`).bind(JSON.stringify(ids)).all();
   return json({ ok: true, next_ms: 10_000, reviews: results.map(row => ({ id: row.id, identity: row.identity, ruler: row.ruler, mode: row.mode,
+    record: JSON.parse(row.record),
     state: row.state === "waiting" && row.engine !== engine ? "failed" : row.state === "waiting" && row.phase === "withdrawn" ? "failed" : row.state,
     phase: ["disputed", "nondeterministic", "spot"].includes(row.phase) ? "Checking" : row.lease_until > now ? "Computing and verifying" : "Waiting for community compute",
     witnesses: Math.min(2, row.witnesses), created_at: row.created_at, completed_at: row.completed_at,

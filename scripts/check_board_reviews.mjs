@@ -53,12 +53,13 @@ await check('repeated and concurrent requests share one review',async()=>{
  assert.ok(duplicates.every(row=>row.id===accepted.id));
  assert.equal((await db.get('SELECT count(*) AS n FROM board_reviews')).n,1);
 });
-await check('a lost acceptance retry keeps its frozen library record',async()=>{
+await check('acceptance retries and status keep the frozen record after library changes',async()=>{
  await db.run('UPDATE builds SET record=? WHERE id=?',JSON.stringify({...record,mods:['changed']}),identity);
  assert.equal((await call(target)).id,accepted.id);
  const review=await db.get('SELECT * FROM board_reviews WHERE id=?',accepted.id);
  const q=await db.get('SELECT request FROM questions WHERE id=?',review.question);
  assert.deepEqual(JSON.parse(q.request).record,record);
+ assert.deepEqual((await state(accepted.id)).record,record);
  await db.run('UPDATE builds SET record=? WHERE id=?',JSON.stringify(record),identity);
 });
 const witness=d=>({device:d.repeat(24),owner:'owner-'+d,siblings:[d.repeat(24)],net:'net-'+d,lanes:8});
@@ -68,11 +69,22 @@ await check('one witness cannot replace a published score',async()=>{
  await facts().answer(env,who,{lease:work.lease,engine,result:{score:15,metric:'kpm'},work:100});
  assert.equal((await score()).score,10);assert.equal((await state(accepted.id)).state,'waiting');
 });
+await check('review status exposes frozen public inputs and aggregate progress only',async()=>{
+ const status=await state(accepted.id);
+ assert.deepEqual(Object.keys(status).sort(),['id','identity','ruler','mode','record','state','phase','witnesses',
+  'created_at','completed_at','engine','score','baseline','current_score','metric','current_by'].sort());
+ assert.deepEqual(status.record,record);
+ assert.equal(status.witnesses,1);
+ assert.equal(status.current_score,10);assert.equal(status.current_by,'old-engine');
+});
 await check('an independent agreeing witness atomically replaces only the reviewed row',async()=>{
  const who=witness('2'),work=await facts().next(env,who,engine);
  await facts().answer(env,who,{lease:work.lease,engine,result:{score:15,metric:'kpm'},work:100});
  assert.equal((await score()).score,15);assert.equal((await score()).review_id,accepted.id);
  assert.equal((await state(accepted.id)).state,'succeeded');
+ const status=await state(accepted.id);
+ assert.deepEqual(status.record,record);
+ assert.equal(status.current_score,15);assert.equal(status.current_by,'verified:'+engine);
 });
 await check('a completed review is coalesced during its cooldown',async()=>{
  assert.equal((await call(target)).id,accepted.id);

@@ -3586,6 +3586,7 @@ ui:
   "Board calibration verified": "榜单校准已确认"
   "The board was updated while this review ran.": "复核期间榜单已更新，保留较新的成绩。"
   "Board review is unavailable.": "榜单校准暂不可用。"
+  "Board publication is not confirmed. Open the board to retry.": "尚未确认榜单已更新。打开榜单重试。"
   "Board calibration queued": "已进入榜单校准队列"
   "Verified scores appear on the board after publication.": "复核成绩将在榜单发布后显示。"
   "Automatically review matching board scores": "自动校准条件相同的榜单成绩"

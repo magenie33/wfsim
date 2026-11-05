@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { openApp } from "./cdp.mjs";
+import "./check_board_review_publication.mjs";
 
 const app = await openApp({ boot: 13000, lang: "en" });
 try {
@@ -94,9 +95,14 @@ try {
     const second = acceptBoardReview(track); await Promise.resolve(); release(); await second;
     checks.targetOnly = requests.every(body => Object.keys(body).sort().join(',') === 'engine,identity,mode,ruler');
     checks.remoteObserved = boardReviewTrackers.get('board-review:' + remote)?.state === 'waiting';
-    let refreshed = 0; refreshReviewedBoard = async () => { refreshed++; };
+    let refreshed = 0; refreshReviewedBoard = async () => { refreshed++; return refreshed >= 2; };
     await pollBoardReviews();
     checks.verified = boardReviewTrackers.get('board-review:' + remote)?.score === 12 && refreshed === 1;
+    checks.waitsForPublication = boardReviewTrackers.get('board-review:' + remote)?.publication === 'waiting'
+      && userTaskSources.get('board-review')()[0].state === 'running';
+    await pollBoardReviews();
+    checks.publicationConfirmed = boardReviewTrackers.get('board-review:' + remote)?.publication === 'published'
+      && refreshed === 2;
     checks.noLocalExecutor = userTaskSources.get('board-review')()[0].state === 'succeeded';
     window.fetch = nativeFetch; refreshReviewedBoard = refresh;
     boardReviewTrackers.clear(); await saveBoardReviewTrackers(); clearTimeout(boardReviewTimer);
