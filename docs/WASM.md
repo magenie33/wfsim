@@ -143,8 +143,9 @@ kilobytes, and the module a reader already holds stays cached.
   prose (the keys of `data/prose.yaml`, which the engine holds only as
   `prose::Prose` and `check_prose` lets be read only in a `describe` module or
   the web api); Rust as its tokens (`scripts/rust_tokens.py`), so comments,
-  layout and test-only items move nothing; the overlay's code and
-  `data/surveys/` not at all (`ENGINE_ID_NOT`). Rewording a card, a rule or a comment moves no engine.
+  layout and test-only items move nothing. The overlay's code (`ENGINE_ID_NOT`)
+  and `data/surveys/` (`ENGINE_SOURCES_NOT`) are excluded. Rewording a card, a
+  rule or a comment moves no engine.
 
 ## Answers the build already knows
 
