@@ -474,7 +474,7 @@ body.on-wbench [data-module="builder"],body.on-build-library [data-module="build
    the scenario bar's official entries carry; × takes it out of the bar. */
 .preset-bar .pgroup{font-size:10.5px;color:var(--muted)}
 .preset-bar .psep{width:1px;align-self:stretch;background:var(--line);margin:2px 3px}
-.pchip.ro .plock{width:11px;height:11px;color:var(--gold);flex:none}
+.plock{width:11px;height:11px;color:var(--gold);flex:none}
 .pchip.ro .pop.unpin:hover{color:var(--critical)}
 /* WHAT WENT TO THE BOARD, above the ranking rather than under it: it is a fact
    about the whole run, and a line under twenty rows is a line nobody scrolls
