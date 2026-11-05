@@ -358,6 +358,10 @@ unrecognised id `403`)
   has no gate. A renewal-only or full-buffer reply does not add a gate;
   empty picks still wait `sync_idle_ms`.
 
+The official page and desktop client estimate remaining work using the active
+row's completed fraction. Failed requests back off even when results or
+renewals are due; a successful reply's new-work gate still permits both.
+
 | reply | meaning | then |
 | --- | --- | --- |
 | `pack: {…}` | board rows, leased `lease_ms`; `pack_lease_ms` while work is short | compute them |

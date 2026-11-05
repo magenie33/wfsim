@@ -271,6 +271,25 @@ check(`through the procedure a sync with results, renewals, states and points is
   JSON.stringify({ ...viaProc.r, held: undefined, dials: undefined }).slice(0, 600));
 check(`…where the statements one by one are many (${viaStatements.calls}): the count counts`, viaStatements.calls > 2);
 
+const rolling = await world(1, 1);
+await books(rolling, rng(41), 12);
+const rollingPrepare = rolling.L.prepare;
+rolling.L.prepare = (sql) => /^CALL board_sync/.test(sql) ? {
+  bind(payload) {
+    const body = JSON.parse(payload);
+    delete body.pack.refill;
+    return rollingPrepare(sql).bind(JSON.stringify(body));
+  },
+} : rollingPrepare(sql);
+forgetDials();
+const rollingReply = await post(rolling.env, syncRoute, "/api/board/sync", {
+  verifier: DEVICES[3], engine: "e1", protocol: 8, lanes: 4, consent: { v: 1, at: iso(T) },
+  held: [], results: [],
+}, IPS[3]);
+const rollingGate = await rolling.L.prepare("SELECT next_at FROM verifiers WHERE id = ?").bind(DEVICES[3]).first();
+check("an older worker's pack parameters retain its floor gate during a SQL-first rollout",
+  !!rollingReply.pack?.tasks.length && rollingGate?.next_at === iso(T + 60_000), JSON.stringify(rollingGate));
+
 // PRODUCER_USE IS WRITTEN LAST (`board_sync`): nothing the steps reach, followed
 // through every function of sync.sql they name, locks or writes it.
 const SQL = readFileSync(new URL("../worker/pg/sync.sql", import.meta.url), "utf8");
