@@ -2859,6 +2859,42 @@ mods:
   vulpine_mask: RapierCmbOneMeleeTree.jpg
   whirlwind: GlaiveWhirlwindMod.jpg
   wise_razor: LongKatanaCmbOne.jpg
+  adhesive_blast: WeaponGrenadeStickyMod.jpg
+  aero_agility: HawksFinesse.jpg
+  amalgam_furax_body_count: AmalgamFurax.jpg
+  amalgam_ripkas_true_steel: AmalgamRipkas.jpg
+  amanata_pressure: ShrineMaidenNaginataAugment.jpg
+  arrow_mutation: BowAmmoMutatorMod.jpg
+  avenging_truth: SilvaAegis.jpg
+  blade_of_truth: JawSword.jpg
+  boreals_contempt: BorealMeleeMod.jpg
+  bright_purity: Skana.jpg
+  burning_hate: NightwaveStalkerScytheAugmentMod.jpg
+  concealed_explosives: ThrowingExplosionChanceMod.jpg
+  covert_lethality: WeaponMeleeStealthLethalMod.jpg
+  depleted_reload: CorruptedReloadSpeedMaxClipRifleMod.jpg
+  electromagnetic_shielding: AckBruntNightwatchMod.jpg
+  energizing_shot: ShootPickupPistolMod.jpg
+  entropy_detonation: Obex.jpg
+  entropy_flight: Kestrel.jpg
+  gleaming_blight: DarkDagger.jpg
+  harrowing_spire: BayonetCmbOneMelee.jpg
+  hunters_bonesaw: RipkasEventMod.jpg
+  justice_blades: DualCleavers.jpg
+  mending_shot: ShootPickupRifleMod.jpg
+  niras_contempt: NiraMeleeMod.jpg
+  no_return: PistolArmorPiercingDamageMod.jpg
+  primed_sniper_ammo_mutation: SniperAmmoMutatorMod.jpg
+  rift_strike: TwinBasolkNightwatchMod.jpg
+  sentient_incision: NightwaveVenatoAugmentMod.jpg
+  sharpshooter: EnergyOnHeadshotRifle.jpg
+  sniper_ammo_mutation: SniperAmmoMutatorMod.jpg
+  static_discharge: ProvaCorpusArenaMod.jpg
+  tainted_clip: CorruptedMaxClipForReloadMod.jpg
+  target_acquired: SniperHeadshotMultiplierMod.jpg
+  thunderbolt: RambowMod.jpg
+  toxic_blight: Mire.jpg
+  vulcan_blitz: JatKittagNightwatchMod.jpg
 
 arcanes:
   exodia_brave: MeleeArcaneA.png
@@ -3395,6 +3431,15 @@ warframe_mods:
   warm_coat: AvatarMissionSpecificResistanceIce.jpg
   wrath_of_ukko: KullervoFieldAugment.jpg
   wrecking_wall: QorvexConcreteWallAugment.jpg
+  abundant_mutation: NidusPassiveAugment.jpg
+  anchored_glide: ZephyrDisablePassiveMod.jpg
+  biting_frost: FrostPassiveAugment.jpg
+  controlled_slide: NezhaDisablePassiveMod.jpg
+  gastroparesis: GrendelPassiveAugment.jpg
+  rhythm_guard: TemplePassiveAugment1Card.jpg
+  rubble_heap: AtlasPassiveAugment.jpg
+  valence_formation: LavosPassiveAugment.jpg
+  warriors_rest: ExcaliburUmbraPassiveAugment.jpg
 
 warframe_arcanes:
   arcane_acceleration: ArcaneProjectionAM.png
