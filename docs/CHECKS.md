@@ -599,12 +599,18 @@ The official page's shared desktop/browser functions run with a controlled
 refill promise: buffered work never waits on it, exhaustion consumes its reply
 without entering the idle poll, retries wake at the gate, and local pack limits
 bound refill calls. A standalone calculation returned by a background refill
-is retained and executed before another sync can give it back.
+is retained and executed before another sync can give it back. A long row's
+actual progress triggers refill before completion, without counting completed
+rows twice. Pausing during a slow refill returns its work without starting it.
+Failed-sync backoff also gates result flushing and renewals; ordinary server
+gates still allow both, and failed requests retry once backoff expires.
 
 ## `check_sync_proc`
 
 Plain node on PGlite: protocol 8's sync as one call (`board_sync`,
 docs/BOARD.md §"The sync in the database").
+An older worker's pack parameters retain their floor gate during a SQL-first
+rollout.
 
 - Six random runs, three with answers settled in the request and three with
   them queued, hand the same syncs to two databases, one through the procedure

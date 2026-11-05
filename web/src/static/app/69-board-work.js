@@ -541,7 +541,8 @@ function heldRows() {
 /// …AND THE WORK LEFT IN THEM, at this computer's pace.
 function workLeftMs() {
   const rows = heldRows().reduce((t, h) => t + h.rows.length, 0);
-  return rows * (boardPaceMs || 60_000);
+  const progress = heldPack?.proto === 8 && !heldPack.done.has(heldPack.row) && !lostRows.has(heldPack.row) ? heldPack.progress || 0 : 0;
+  return Math.max(0, rows - progress) * (boardPaceMs || 60_000);
 }
 function boardSyncBody(id, { want, keep = null, results }) {
   const c = computeConsent(), idle = idleLoad();
@@ -559,6 +560,7 @@ function boardSyncBody(id, { want, keep = null, results }) {
 /// may next be handed work. `want` null: what the held work leaves of a pack.
 async function boardSync(id, { want = null } = {}) {
   if (syncInFlight) return syncInFlight;
+  if (syncFailures && Date.now() < syncNotBefore) return null;
   syncInFlight = (async () => {
     const results = (await keptResults(id)).slice(0, 400);
     const early = Date.now() < syncNotBefore;
@@ -683,6 +685,7 @@ const idleWaitMs = () => (boardProtocol === 8
 async function workOnce8(id) {
   if ((!heldPack || heldPack.next >= heldPack.tasks.length) && !packQueue.length && syncInFlight) await syncInFlight;
   const kept = await keptResults(id);
+  if (!boardVerifyOn() || computeHeld() || computeFrozen) { giveBack(); return false; }
   const now = Date.now();
   if (!bootSyncAt) bootSyncAt = now + (kept.length ? Math.random() * 5_000 : 0);
   const cut = !heldPack && loadCut(id);
@@ -704,6 +707,7 @@ async function workOnce8(id) {
     } else if (due || now - lastSyncAt >= jittered(SYNC_FALLBACK_MS)) r = await boardSync(id);
     else idleCount(now, true, false, communityLanes(), "");
   } else if (!r && due) r = await boardSync(id, { want: 0 });
+  if (!boardVerifyOn() || computeHeld() || computeFrozen) { giveBack(); return false; }
   maybeReloadForRelease();
   if (boardProtocol !== 8) return false;
   if (r?.work) syncWork = null;
@@ -977,6 +981,7 @@ async function packRowOnce(id, p) {
   // A ROW NOT STARTED is held by the pack's lease alone, which may have run out
   // while the row before ran long: renewed first, and passed by if it was taken.
   p.row = t.question;
+  p.progress = 0;
   p.rowUntil = p.until;
   const from = p.from;
   p.from = null;
@@ -1002,6 +1007,7 @@ async function packRowOnce(id, p) {
   const s = await measureRow(order.request, t.ruler, live, (done, total, cut) => {
     // A FOLD LANDING AFTER THE ROW STOPPED is not this page's to keep or ask on.
     if (!live()) return;
+    p.progress = total > 0 ? Math.min(1, Math.max(0, done / total)) : 0;
     computeBeats += 1;
     keep(p, t);
     computeProgress(done, total);

@@ -234,14 +234,16 @@ const page = {
   boardProtocol: 8, syncNotBefore: 0, syncInFlight: null, syncWork: null, bootSyncAt: 1, lastSyncAt: 100_000, resultsMem: [],
   jittered: (ms) => ms, keptResults: async () => [], loadCut: () => null, maybeReloadForRelease() {}, idleCount() {},
   communityLanes: () => 4,
+  boardVerifyOn: () => true, computeHeld: () => false, computeFrozen: false, returned: 0,
   reads: 0, measured: 0, asked: 0,
 };
+page.giveBack = () => { page.returned++; page.heldPack = null; page.packQueue = []; page.syncWork = null; };
 page.readSignal = async () => { page.reads++; return { open: 0, urgent: 0 }; };
 page.packRowOnce = async () => { page.measured++; return true; };
 page.boardSync = async () => { page.asked++; return null; };
 const client = runInNewContext(source.slice(source.indexOf("function heldRows()"), source.indexOf("function boardSyncBody(")) +
   source.slice(source.indexOf("const idleWaitMs ="), source.indexOf("function keepRow8(")) +
-  "\n({ workOnce8, refill8, idleWaitMs });", page);
+  "\n({ workOnce8, refill8, idleWaitMs, workLeftMs });", page);
 const pack = (lease) => ({ proto: 8, lease, next: 0, tasks: [{ question: lease }], done: new Set() });
 let finishSync;
 page.heldPack = { ...pack("old"), next: 1, done: new Set(["old"]) };
@@ -254,6 +256,14 @@ finishSync();
 const worked = await handoff;
 check("an exhausted pack waits for its refill rather than entering the idle poll",
   waitedForReply && worked && page.measured === 1 && page.reads === 0, JSON.stringify({ waitedForReply, worked, measured: page.measured, reads: page.reads }));
+page.heldPack = null; page.packQueue = [];
+page.syncInFlight = new Promise((ok) => { finishSync = ok; }).then(() => { page.packQueue.push(pack("stopped")); page.syncInFlight = null; });
+const stopped = client.workOnce8("device");
+page.computeHeld = () => true;
+finishSync();
+check("pausing during a slow refill returns the new work without starting it",
+  !(await stopped) && page.measured === 1 && page.returned === 1);
+page.computeHeld = () => false;
 page.heldPack = pack("ready"); page.packQueue = []; page.syncInFlight = new Promise(() => {});
 check("a refill in flight never blocks work already buffered", await client.workOnce8("device") && page.measured === 2);
 page.syncInFlight = null;
@@ -268,6 +278,16 @@ check("a one-pack server limit suppresses refill until the held pack is done", p
 page.syncDials.packs_held = 2;
 client.refill8("device");
 check("a low buffer refills when another slot is available", page.asked === 1);
+page.heldPack = { ...pack("long"), row: "long", progress: 0.9 }; page.boardPaceMs = 300_000; page.asked = 0;
+client.refill8("device");
+check("the running row's completed fraction does not delay a long-row refill", page.asked === 1, String(page.asked));
+page.heldPack.done.add("long");
+check("a completed row does not make remaining work negative", client.workLeftMs() === 0);
+page.heldPack.tasks.push({ question: "queued" });
+check("a completed row's progress is not subtracted from the next row", client.workLeftMs() === 300_000);
+page.heldPack.done.clear(); page.lostRows.add("long");
+check("a lost row's progress is not subtracted from the next row", client.workLeftMs() === 300_000);
+page.lostRows.clear();
 page.heldPack = null; page.packQueue = [];
 page.refusedPending = []; page.syncFailures = 0;
 page.boardSyncBody = () => ({ held: [], results: [] });
@@ -280,6 +300,34 @@ let calculations = 0;
 page.userCalculationOnce = async () => { calculations++; return true; };
 check("a standalone task handed to a completed refill is run, not given back by another sync",
   await client.workOnce8("device") && calculations === 1 && page.syncWork === null && page.reads === 0);
+let networkCalls = 0;
+page.syncWork = null; page.syncNotBefore = 101_000; page.syncFailures = 1;
+page.postBoardWork = async () => { networkCalls++; return { ok: true, next_ms: 0 }; };
+await send("device", { want: 0 });
+check("result flushing and renewal cannot bypass a failed-sync backoff", networkCalls === 0, String(networkCalls));
+page.syncFailures = 0;
+await send("device", { want: 0 });
+check("an ordinary server gate still allows results and renewals", networkCalls === 1, String(networkCalls));
+page.syncFailures = 1; page.syncNotBefore = 99_000;
+await send("device", { want: 0 });
+check("a failed request retries once its backoff expires", networkCalls === 2, String(networkCalls));
+
+Object.assign(page, {
+  setInterval, clearInterval, RENEW_RETRY_MS: 30_000, RESUME_SAVE_MS: 15_000, AHEAD_AT: 0.8,
+  computeBeats: 0, resumeCut: null, resumeSavedAt: 100_000, boardPaceMs: 300_000,
+  keepRow8: async () => {}, dropCut() {}, computeStart() {}, computeProgress() {}, computeEnd() {},
+  api: async () => ({ ok: true, request: {} }), saveCut() {}, syncInFlight: null, syncNotBefore: 0,
+});
+page.heldPack = pack("progress");
+page.heldPack.tasks[0].record = { weapon: "braton_prime" };
+page.ENGINE_ID = "engine";
+page.measureRow = async (_request, _ruler, _live, onPiece) => { onPiece(90, 100, {}); return null; };
+const measure = runInNewContext(source.slice(source.indexOf("async function packRowOnce("), source.indexOf("/// DOES THIS BROWSER KEEP COMPUTING")) + "\npackRowOnce;", page);
+page.refill8 = client.refill8; page.asked = 0;
+page.boardSync = async () => { page.asked++; return null; };
+await measure("device", page.heldPack);
+check("real row progress triggers refill before the long row finishes",
+  page.heldPack.progress === 0.9 && page.asked === 1, JSON.stringify({ progress: page.heldPack.progress, asked: page.asked }));
 
 console.log(failures ? `\n${failures} failed` : "\nprotocol 8 hands out by protocol 7's rules and holds a client to its time");
 process.exit(failures ? 1 : 0);
