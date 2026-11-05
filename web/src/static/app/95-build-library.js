@@ -128,7 +128,7 @@ function openLibraryBuild(p) {
   rememberPublished(buildBarCfg(), p);
   if (presetId(p) !== activePreset) pickPreset(buildBarCfg(), presetId(p));
   history.replaceState(history.state, "", back);
-  nav(weaponPath($("weapon").value) + "/builder");
+  return nav(weaponPath($("weapon").value) + "/builder");
 }
 function libraryBaseDrain(p) {
   const w = weaponInfo(finder.weapon), key = w.id + "\0" + boardRowIdentity(p.board);

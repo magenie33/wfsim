@@ -39,6 +39,8 @@ const r = await evaluate(`(async () => {
   panel().hidden = true;
 
   // AN OPENED FINDER ROW: the second row, so it is not already the open build.
+  history.pushState({}, '', '/weapons/Ballistica_Prime/build-library'); route();
+  for (let i = 0; i < 50 && document.querySelectorAll('#build-finder tr.fr[data-frow]').length < 2; i++) await sleep(200);
   const rows = Array.from(document.querySelectorAll('#build-finder tr.fr[data-frow]')).map((t) => t.dataset.frow);
   finder.open = rows[1]; renderBuildFinder(); await sleep(200);
   const fs = document.querySelector('#build-finder [data-fshare]');
