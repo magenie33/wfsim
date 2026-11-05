@@ -15,8 +15,15 @@ exclusive_to:
 - dark_dagger_slide
 - rakta_dark_dagger
 lower_ranks_unmodelled: true
-description: "+100% Status Chance\n+1 'Blight'"
+description: "+X% Status Chance\n+X 'Blight'"
+# The syndicate affinity threshold is simulated only at max rank.
 effects:
-- kind: unmodelled
+- kind: status_chance_bonus
+  rank0: 0.25
+  rankMax: 1
+- kind: syndicate_radial
+  syndicate: blight
+  rank0: 0.25
+  rankMax: 1.0
 source:
   url: "https://wiki.warframe.com/w/Gleaming_Blight"

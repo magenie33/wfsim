@@ -532,6 +532,12 @@ jobs:
       - name: A build bar redrawn before its page has a build throws nothing
         if: matrix.group == 'account'
         run: node scripts/check_bar_before_catalog.mjs
+      - name: Collected mods compute supported clauses and disclose the rest
+        if: matrix.group == 'account'
+        run: node scripts/check_collected_mods.mjs
+      - name: Supported lower mod ranks reach the fight
+        if: matrix.group == 'account'
+        run: node scripts/check_every_rank.mjs
       - name: Read-only build rivens stay separate from owned customs
         if: matrix.group == 'account'
         run: node scripts/check_riven_board.mjs

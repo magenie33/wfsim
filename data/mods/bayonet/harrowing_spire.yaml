@@ -7,6 +7,7 @@ max_rank: 3
 internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/BayonetCmbOneMeleeTree
 lower_ranks_unmodelled: true
 description: Relentless jabs and powerful sweeping lunges.
+# The bayonet stance has no imported per-input animation and damage-event script.
 effects:
 - kind: unmodelled
 source:

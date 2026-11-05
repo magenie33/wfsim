@@ -8,6 +8,8 @@ internal_name: /Lotus/Upgrades/Mods/Sets/Hunter/CompanionHunterSynergyMod
 compat: beast_claws
 precept: false
 description: +30% Primary Weapon Critical Chance added to Companion
+# The owner's primary supplies a flat critical-chance addition after claw mods.
+# The robotic host resolves neither that source weapon nor a claw weapon.
 effects:
 - kind: unmodelled
   text: +30% Primary Weapon Critical Chance added to Companion

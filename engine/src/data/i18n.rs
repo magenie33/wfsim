@@ -783,7 +783,13 @@ mod tests {
                 }
                 cur.clear();
             };
-            for ch in s.chars() {
+            let chars: Vec<char> = s.chars().collect();
+            for (i, &ch) in chars.iter().enumerate() {
+                if ch == ',' && !cur.is_empty() && !cur.contains('.')
+                    && chars.get(i + 1..i + 4).is_some_and(|group| group.iter().all(char::is_ascii_digit))
+                    && chars.get(i + 4).is_none_or(|next| !next.is_ascii_digit()) {
+                    continue;
+                }
                 if ch.is_ascii_digit() || (ch == '.' && !cur.is_empty()) {
                     cur.push(ch);
                 } else {
@@ -793,6 +799,9 @@ mod tests {
             flush(&mut cur);
             out
         }
+        assert_eq!(nums("+1,000 damage"), vec![(1000.0, 0)]);
+        assert_eq!(nums("1,234,567.5"), vec![(1234567.5, 1)]);
+        assert_eq!(nums("1, 2, 3"), vec![(1.0, 0), (2.0, 0), (3.0, 0)]);
         /// Cards where OUR English text deliberately omits a clause DE's card
         /// carries, so its numbers are absent rather than wrong.
         ///

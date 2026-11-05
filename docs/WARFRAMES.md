@@ -291,6 +291,25 @@ The companion page's searchable Mod catalogue lists every companion card,
 including model-specific precepts and beast-claw cards. The robotic host's
 picker offers only the cards it can seat; the catalogue does not equip them.
 
+Companion effects keep their actual recipient and trigger:
+
+- Body stats and utility need their own context. Hastened Deflection and Mecha
+  Recharge modify companion shield recovery, which the fight does not run.
+  Fetch, Retriever cards and Scan Aquatic Lifeforms need pickups, loot or fishing.
+- Precepts need the companion's actions and targets. Viral Quills, Hound
+  attacks and Sharpened Claws have no companion attack timeline here. Ambush
+  buffs Shade's owner after Ghost ends; Cat's Eye buffs nearby allies. Neither
+  is a damage modifier on Shade's robotic weapon.
+- Beast claws are separate weapons. Bite, Maul and elemental claw mods have
+  known stat rules, but this roster has no claw base stats or attacks to resolve
+  them against. Conditioning replaces base physical damage; elemental Claws
+  conversion excludes combined elements and Momentous Bond. Postures also
+  direct the beast's target selection. These clauses remain `unmodelled`.
+- Hunter Synergy and Mecha Overdrive read the owner's modded primary weapon,
+  not the companion's current weapon. Tandem Bond transfers combo from the
+  companion's hits and grants a separate buff after the owner's heavy hit.
+  They require linked actors and their actual events.
+
 ## Adding a frame
 
 `python scripts/wiki_warframes.py --write` writes every frame in

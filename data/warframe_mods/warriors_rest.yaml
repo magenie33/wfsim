@@ -8,9 +8,11 @@ internal_name: /Lotus/Powersuits/Excalibur/ExcaliburUmbraPassiveAugmentCard
 exilus: true
 exclusive_to:
 - excalibur_umbra
-description: "Passive Augment: Umbra's Ability Strength increases by +15% but he no longer fights independently alongside his Operator."
+description: "+15% Ability Strength\nPassive Augment: Umbra no longer fights independently alongside his Operator."
 effects:
+- kind: ability_strength_bonus
+  rankMax: 0.15
 - kind: unmodelled
-  text: "Passive Augment: Umbra's Ability Strength increases by +15% but he no longer fights independently alongside his Operator."
+  text: "Passive Augment: Umbra no longer fights independently alongside his Operator."
 source:
   url: "https://wiki.warframe.com/w/Warrior%27s_Rest"

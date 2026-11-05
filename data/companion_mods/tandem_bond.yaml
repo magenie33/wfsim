@@ -8,6 +8,8 @@ internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/VoidBond/TandemTactics
 compat: beast
 precept: false
 description: Companion melee hits increase your Combo by 6. Heavy Attacks increase Companion melee damage by 30% multiplied by your combo multiplier for 30s.
+# Combo points come from companion hits, and the damage buff needs the owner's
+# heavy hit. This requires two attack timelines; player hits cannot stand in.
 effects:
 - kind: unmodelled
   text: Companion melee hits increase your Combo by 6. Heavy Attacks increase Companion melee damage by 30% multiplied by your combo multiplier for 30s.

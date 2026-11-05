@@ -15,6 +15,7 @@ exclusive_to:
 - jat_kittag_slide
 lower_ranks_unmodelled: true
 description: Enemies explode on death, dealing 300 Blast Damage (+60% Enemy Max Health) in a 6m radius.
+# The corpse blast has linear falloff, faction and stealth scaling; it is not an Acid Shells payload.
 effects:
 - kind: unmodelled
 source:

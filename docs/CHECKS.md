@@ -1929,11 +1929,22 @@ It edits nothing.
 
 ## `check_every_rank`
 
+A card whose lower ranks are unmodelled has no rank stepper, lower-rank
+picker rows or every-rank Add offer. Existing saved ranks retain their value
+and wire spelling. Ordinary cards keep their supported lower ranks.
+
 A card on the every-rank list is offered once per rank in the builder's picker
 and in the quick calc's candidates; picking a lower rank seats the card at that
 rank, the build leaves as `<card>@<rank>` and comes back as the same slot; a card
 taken off the list is offered at max only. Verified to bite: a `lowerRanks` that
 returns nothing fails five of its eight.
+
+## `check_collected_mods`
+
+Known weapon and Warframe portions reach their real panels at the selected
+rank. Partially modelled weapon cards list their unsupported clauses, fully
+unsupported cards retain their admission, and metadata distinguishes cards
+whose simulation supports only maximum rank.
 
 ## `check_share`
 

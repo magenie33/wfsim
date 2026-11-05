@@ -103,6 +103,28 @@ pub fn unmodeled_effects(id: &str) -> &'static [String] {
     .map_or(&[], |v| v.as_slice())
 }
 
+/// Explicit unsupported clauses on a card whose other effects are simulated.
+pub fn unmodeled_clauses(id: &str) -> &'static [String] {
+    static MAP: OnceLock<BTreeMap<String, Vec<String>>> = OnceLock::new();
+    MAP.get_or_init(|| {
+        crate::data::files_under("mods/")
+            .filter_map(|(path, text)| {
+                let mf: ModFile = serde_norway::from_str(text).ok()?;
+                if !mf.effects.iter().any(|e| effect(&mf.id, e).is_some()) {
+                    return None;
+                }
+                let clauses = mf.effects.iter()
+                    .filter(|e| e.get("kind").and_then(Value::as_str) == Some("unmodelled"))
+                    .map(|e| crate::prose::Prose::read(e, "clause")
+                        .unwrap_or_else(|| panic!("{path}: a partly modelled card names its unsupported clause"))
+                        .shown().to_string())
+                    .collect::<Vec<_>>();
+                Some((mf.id, clauses))
+            })
+            .collect()
+    }).get(split_rank(id).0).map_or(&[], |clauses| clauses.as_slice())
+}
+
 pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
     static INFO: OnceLock<std::collections::HashMap<String, ModDescInfo>> = OnceLock::new();
     INFO.get_or_init(|| {
@@ -249,8 +271,10 @@ pub fn desc_info(id: &str) -> Option<&'static ModDescInfo> {
 
 /// Whether the card deliberately refuses every rank below its maximum.
 pub fn lower_ranks_unmodelled(id: &str) -> bool {
-    crate::data::files_under("mods/").any(|(_, text)| {
-        serde_norway::from_str::<ModFile>(text)
-            .is_ok_and(|mf| mf.id == id && mf.lower_ranks_unmodelled)
-    })
+    static CARDS: OnceLock<std::collections::BTreeSet<String>> = OnceLock::new();
+    CARDS.get_or_init(|| crate::data::files_under("mods/")
+        .filter_map(|(_, text)| serde_norway::from_str::<ModFile>(text).ok())
+        .filter(|mf| mf.lower_ranks_unmodelled)
+        .map(|mf| mf.id)
+        .collect()).contains(split_rank(id).0)
 }

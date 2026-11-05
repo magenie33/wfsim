@@ -5,10 +5,12 @@ polarity: naramon
 base_drain: 4
 max_rank: 3
 internal_name: /Lotus/Upgrades/Mods/Sets/Hawk/HawkModB
-lower_ranks_unmodelled: true
-description: 100% Reload Speed while Aim Gliding
+description: X% Reload Speed while Aim Gliding
 effects:
-- kind: unmodelled
+- kind: reload_speed_bonus
+  condition: aim_gliding
+  rank0: 0.25
+  rankMax: 1
 source:
   url: "https://wiki.warframe.com/w/Aero_Agility"
 set: aero

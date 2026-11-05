@@ -15,8 +15,23 @@ exclusive_to:
 - obex_slide
 - prisma_obex
 lower_ranks_unmodelled: true
-description: "Lethal ground attacks cause enemies to explode dealing +1,000\n(+20% Enemy Max Health) Blast Damage\nin a 10m radius.\n+1 'Entropy'"
+description: "Lethal ground attacks cause enemies to explode dealing +X\n(+X% Enemy Max Health) Blast Damage\nin a 10m radius.\n+X 'Entropy'"
+# The corpse blast requires a ground-finisher kill; ordinary melee kills must not trigger it.
+# The syndicate affinity threshold is simulated only at max rank.
 effects:
 - kind: unmodelled
+  clause: flat damage from the ground-finisher corpse explosion
+  rank0: 250
+  rankMax: 1000
+- kind: unmodelled
+  clause: maximum-health damage from the ground-finisher corpse explosion
+  rank0: 0.05
+  rankMax: 0.2
+- kind: unmodelled
+  clause: ground-finisher corpse explosion radius
+- kind: syndicate_radial
+  syndicate: entropy
+  rank0: 0.25
+  rankMax: 1.0
 source:
   url: "https://wiki.warframe.com/w/Entropy_Detonation"

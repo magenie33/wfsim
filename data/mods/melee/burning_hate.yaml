@@ -14,6 +14,7 @@ exclusive_to:
 - hate_heavy_slam
 lower_ranks_unmodelled: true
 description: When Hate damages enemies inflicted with Heat Status, they become vulnerable to 120% more Status Damage.
+# Persistent target vulnerability applies only to procs created after activation; this is not the ordinary status-damage bucket.
 effects:
 - kind: unmodelled
 source:

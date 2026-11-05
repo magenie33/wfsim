@@ -15,6 +15,7 @@ exclusive_to:
 - venato_prime
 lower_ranks_unmodelled: true
 description: "+120% additional damage matching the target's weakness. Does not combine with other damage types."
+# Adaptive damage switches with target health and Overguard, never combines, excludes slams and does not increase elemental DoT bases.
 effects:
 - kind: unmodelled
 source:

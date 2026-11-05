@@ -14,10 +14,18 @@ exclusive_to:
 - furax_heavy_slam
 - furax_wraith
 - mk1_furax
-lower_ranks_unmodelled: true
-description: "+15s Combo Duration\n+45% Fire Rate for Secondary Weapons\nMelee kills  Blast and stagger enemies in 15m"
+description: "+Xs Combo Duration\n+X% Fire Rate for Secondary Weapons\nMelee kills Blast and stagger enemies in 15m"
+# Secondary fire rate needs the other equipped weapon; kill-triggered Blast and Stagger applications are not simulated.
 effects:
+- kind: melee_combo_duration_bonus
+  rank0: 2.5
+  rankMax: 15
 - kind: unmodelled
+  clause: fire rate granted to the equipped secondary weapon
+  rank0: 0.075
+  rankMax: 0.45
+- kind: unmodelled
+  clause: Blast and Stagger applications on melee kills
 source:
   url: "https://wiki.warframe.com/w/Amalgam_Furax_Body_Count"
 excludes_weapon:

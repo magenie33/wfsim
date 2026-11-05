@@ -5,10 +5,14 @@ polarity: madurai
 base_drain: 4
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Sets/Boreal/BorealMeleeMod
-lower_ranks_unmodelled: true
-description: "+90% Melee Damage\n+60% Status Damage"
+description: "+X% Melee Damage\n+X% Status Damage"
 effects:
-- kind: unmodelled
+- kind: base_damage_bonus
+  rank0: 0.15000001
+  rankMax: 0.90000006
+- kind: status_damage_bonus
+  rank0: 0.1
+  rankMax: 0.6
 source:
   url: "https://wiki.warframe.com/w/Boreal%27s_Contempt"
 set: boreal

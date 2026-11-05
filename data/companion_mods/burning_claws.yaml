@@ -8,6 +8,8 @@ internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/KubrowHeatConver
 compat: beast_claws
 precept: false
 description: "+330% Heat\n+330% Status Chance\nConverts all elemental damage from these claws to Heat damage"
+# Conversion reaches primary elements, not combined elements or Momentous Bond.
+# The claw damage vector and its conversion order are not resolved here.
 effects:
 - kind: unmodelled
   text: "+330% Heat\n+330% Status Chance\nConverts all elemental damage from these claws to Heat damage"

@@ -15,8 +15,15 @@ exclusive_to:
 - dual_cleavers_slide
 - prisma_dual_cleavers
 lower_ranks_unmodelled: true
-description: "+100% Melee Damage\n+1 'Justice'"
+description: "+X% Melee Damage\n+X 'Justice'"
+# The syndicate affinity threshold is simulated only at max rank.
 effects:
-- kind: unmodelled
+- kind: base_damage_bonus
+  rank0: 0.25
+  rankMax: 1
+- kind: syndicate_radial
+  syndicate: justice
+  rank0: 0.25
+  rankMax: 1.0
 source:
   url: "https://wiki.warframe.com/w/Justice_Blades"

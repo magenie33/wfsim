@@ -8,6 +8,8 @@ internal_name: /Lotus/Upgrades/Mods/Sets/Mecha/KubrowMechaOverdriveMod
 compat: kubrow_claws
 precept: false
 description: "+60% Primary Weapon Status Chance added to Companion\n+90% Status Duration"
+# The link reads the owner's modded primary status chance before multishot,
+# including its current Incarnon form. Neither linked primary nor claws run here.
 effects:
 - kind: unmodelled
   text: "+60% Primary Weapon Status Chance added to Companion\n+90% Status Duration"

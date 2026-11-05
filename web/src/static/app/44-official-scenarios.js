@@ -190,7 +190,7 @@ const slotModId = (s) => (s && s.mod ? rankedId(s.mod, s.rank) : null);
 const everyRank = () => gainPrefs.everyRank || (META && META.every_rank) || { mods: [], arcanes: [] };
 /// `m` at each rank below its max, as list rows: `id` is the ranked id, `card`
 /// the card's, `rank` the rank it seats at and `drain` what it costs there.
-const lowerRanks = (m) => (!m.riven && everyRank().mods.includes(m.id)
+const lowerRanks = (m) => (!m.riven && !m.lower_ranks_unmodelled && everyRank().mods.includes(m.id)
   ? Array.from({ length: m.max_rank }, (_, r) =>
     ({ ...m, id: `${m.id}@${r}`, card: m.id, rank: r, drain: modDrain(m, r) }))
   : []);

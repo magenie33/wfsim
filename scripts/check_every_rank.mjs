@@ -118,4 +118,63 @@ check("...without equipping it", ed.slotUntouched);
 check("a second click takes it off again", ed.toggledOff);
 check("the row's x removes a card", ed.removedByX);
 
+const guarded = await evaluate(`(() => {
+  const savedPrefs = gainPrefs, savedSlot = slots[0];
+  try {
+    gainPrefs = { ...gainPrefs, on: false, everyRank: { mods: ['blade_of_truth', 'no_return'], arcanes: [] } };
+    const cards = everyRankMods();
+    const maxOnly = cards.get('blade_of_truth'), ranked = cards.get('no_return');
+    if (!maxOnly || !ranked) return { available: false };
+    const inspect = (weapon, id, rank) => withPoolOf(META.weapons.find((w) => w.id === weapon), () => {
+      slots[0] = { ...savedSlot, mod: id, rank };
+      const el = buildSlot(0);
+      return {
+        buttons: el.querySelectorAll('.rk').length,
+        label: (el.querySelector('.rank b') || {}).textContent,
+        rank: slots[0].rank,
+        wire: slotModId(slots[0]),
+      };
+    });
+    const offers = everyRankOffers().filter(([k]) => k === 'mods').map(([, m]) => m.id);
+    const panel = document.createElement('div');
+    panel.innerHTML = everyRankPanel();
+    return {
+      available: true,
+      maxOnlyFlag: maxOnly.lower_ranks_unmodelled === true,
+      rankedFlag: !!ranked.lower_ranks_unmodelled,
+      maxOnlyRanks: lowerRanks(maxOnly).map((m) => m.id),
+      rankedRanks: lowerRanks(ranked).map((m) => m.id),
+      maxOnlyOffered: offers.includes(maxOnly.id),
+      rankedOffered: offers.includes(ranked.id),
+      savedRemovable: !!panel.querySelector('.rk-x[data-id="blade_of_truth"]'),
+      savedSelection: everyRank().mods.includes('blade_of_truth'),
+      maxSlot: inspect('jaw_sword', maxOnly.id, maxOnly.max_rank),
+      savedSlot: inspect('jaw_sword', maxOnly.id, 1),
+      rankedSlot: inspect('lex', ranked.id, 0),
+    };
+  } finally {
+    slots[0] = savedSlot;
+    gainPrefs = savedPrefs;
+  }
+})()`);
+
+check("the rank guard covers a retained max-only augment and a supported ordinary card",
+  guarded.available && guarded.maxOnlyFlag && !guarded.rankedFlag, JSON.stringify(guarded));
+check("max-only cards have no lower-rank candidates or every-rank add choice",
+  guarded.maxOnlyRanks.length === 0 && !guarded.maxOnlyOffered, JSON.stringify(guarded));
+check("an existing max-only every-rank selection stays visible and removable",
+  guarded.savedSelection && guarded.savedRemovable, JSON.stringify(guarded));
+check("a max-only card has a rank label without stepper buttons",
+  guarded.maxSlot.buttons === 0 && guarded.maxSlot.label === "R3", JSON.stringify(guarded.maxSlot));
+check("a saved unsupported rank is retained in the slot and on the wire",
+  guarded.savedSlot.buttons === 0 && guarded.savedSlot.label === "R1/3"
+    && guarded.savedSlot.rank === 1 && guarded.savedSlot.wire === "blade_of_truth@1",
+  JSON.stringify(guarded.savedSlot));
+check("a supported ordinary card retains every lower rank and its add choice",
+  JSON.stringify(guarded.rankedRanks) === JSON.stringify(["no_return@0", "no_return@1", "no_return@2", "no_return@3", "no_return@4"])
+    && guarded.rankedOffered, JSON.stringify(guarded));
+check("a supported ordinary card retains its rank stepper and wire rank",
+  guarded.rankedSlot.buttons === 2 && guarded.rankedSlot.label === "R0/5"
+    && guarded.rankedSlot.wire === "no_return@0", JSON.stringify(guarded.rankedSlot));
+
 await app.finish("a card on the every-rank list is a row per rank, and its rank reaches the fight");

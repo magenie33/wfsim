@@ -7,6 +7,7 @@ max_rank: 10
 internal_name: /Lotus/Upgrades/Mods/Rifle/EnergyOnHeadshotRifle
 lower_ranks_unmodelled: true
 description: "On Weak Point Kill:\n+15 Energy"
+# Energy granted by weak-point kills needs the player energy consumer.
 effects:
 - kind: unmodelled
 source:

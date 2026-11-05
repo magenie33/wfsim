@@ -22,6 +22,7 @@ effects:
     window_seconds_rank0: 2.8
     window_seconds: 4.0
   - kind: unmodelled
+    clause: "additional melee range during Tennokai attacks"
 
 family: tennokai
 

@@ -5,9 +5,13 @@ polarity: naramon
 base_drain: 2
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/CorruptedReloadSpeedMaxClipRifle
-lower_ranks_unmodelled: true
-description: "-60% Magazine Capacity\n+48% Reload Speed"
+description: "-X% Magazine Capacity\n+X% Reload Speed"
 effects:
-- kind: unmodelled
+- kind: magazine_capacity_bonus
+  rank0: -0.1
+  rankMax: -0.6
+- kind: reload_speed_bonus
+  rank0: 0.08
+  rankMax: 0.48
 source:
   url: "https://wiki.warframe.com/w/Depleted_Reload"

@@ -8,6 +8,8 @@ internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastBruteCondit
 compat: beast_claws
 precept: false
 description: "+385% Melee Damage\nConvert all base Physical Damage to Impact Damage"
+# Conversion replaces the claw weapon's base physical vector and preserves its
+# innate elemental damage. A damage bonus alone does not represent this card.
 effects:
 - kind: unmodelled
   text: "+385% Melee Damage\nConvert all base Physical Damage to Impact Damage"

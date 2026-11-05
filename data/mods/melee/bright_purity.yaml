@@ -16,8 +16,15 @@ exclusive_to:
 - skana_prime
 - skana_slide
 lower_ranks_unmodelled: true
-description: "+100% Melee Damage\n+1 'Purity'"
+description: "+X% Melee Damage\n+X 'Purity'"
+# The syndicate affinity threshold is simulated only at max rank.
 effects:
-- kind: unmodelled
+- kind: base_damage_bonus
+  rank0: 0.25
+  rankMax: 1
+- kind: syndicate_radial
+  syndicate: purity
+  rank0: 0.25
+  rankMax: 1.0
 source:
   url: "https://wiki.warframe.com/w/Bright_Purity"

@@ -15,8 +15,16 @@ exclusive_to:
 - mire_heavy_slam
 - mire_slide
 lower_ranks_unmodelled: true
-description: "+100% Toxin\n+1 'Blight'"
+description: "+X% Toxin\n+X 'Blight'"
+# The syndicate affinity threshold is simulated only at max rank.
 effects:
-- kind: unmodelled
+- kind: elemental_damage_bonus
+  element: toxin
+  rank0: 0.25
+  rankMax: 1
+- kind: syndicate_radial
+  syndicate: blight
+  rank0: 0.25
+  rankMax: 1.0
 source:
   url: "https://wiki.warframe.com/w/Toxic_Blight"

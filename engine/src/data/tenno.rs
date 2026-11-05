@@ -655,6 +655,7 @@ impl TennoCondition {
             TennoCondition::Aiming => t.state.aiming,
             TennoCondition::Invisible => t.state.invisible,
             TennoCondition::Airborne => t.state.airborne || t.state.aim_gliding,
+            TennoCondition::AimGliding => t.state.aim_gliding,
             TennoCondition::SlidingOrAimGliding => t.state.sliding || t.state.aim_gliding,
             TennoCondition::SprintAtLeast(x) => t.sprint >= x,
             TennoCondition::ArmorOver(x) => t.armor > x,
@@ -684,6 +685,24 @@ impl TennoScaledTerm {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn aim_gliding_requires_its_own_state() {
+        let gate = TennoCondition::from_id("aim_gliding").unwrap();
+        for (airborne, gliding, sliding, expected) in [
+            (false, false, false, false),
+            (true, false, false, false),
+            (false, false, true, false),
+            (false, true, false, true),
+            (true, true, true, true),
+        ] {
+            let mut t = default_tenno().clone();
+            t.state.airborne = airborne;
+            t.state.aim_gliding = gliding;
+            t.state.sliding = sliding;
+            assert_eq!(gate.holds(&t), expected, "{airborne}/{gliding}/{sliding}");
+        }
+    }
 
     /// THE ROSTER LOADS, and the three numbers are the three a perk can ask
     /// about — with the one that decides a gate checked against the wiki.

@@ -5,9 +5,10 @@ polarity: madurai
 base_drain: 6
 max_rank: 5
 internal_name: /Lotus/Upgrades/Mods/Rifle/SniperHeadshotMultiplierMod
-lower_ranks_unmodelled: true
-description: +60% to Headshot Multiplier
+description: +X% to Headshot Multiplier
 effects:
-- kind: unmodelled
+- kind: headshot_damage_bonus
+  rank0: 0.1
+  rankMax: 0.6
 source:
   url: "https://wiki.warframe.com/w/Target_Acquired"
