@@ -6,3 +6,6 @@ pub mod benchmarks;
 mod describe;
 pub mod builds;
 pub mod groups;
+pub mod equipment;
+#[cfg(test)]
+mod equipment_tests;

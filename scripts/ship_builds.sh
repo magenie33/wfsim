@@ -40,12 +40,14 @@ configured() { db_configured; }
 # below are for.
 build_batches() {
   jq -s -c --argjson n "$BUILD_BATCH" '
-    . as $all
+    group_by(.record.kind // "weapon")[] as $group
+    | (if $group[0].record.kind == "warframe" or $group[0].record.kind == "companion" then "equipment_builds" else "builds" end) as $table
+    | $group as $all
     | range(0; ($all | length); $n)
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
-        sql: ("INSERT INTO builds (id, at, record) VALUES "
+        sql: ("INSERT INTO " + $table + " (id, at, record) VALUES "
               + ([$chunk[] | "(?,?,?)"] | join(","))
               + " ON CONFLICT (id) DO UPDATE SET at = excluded.at, record = excluded.record"),
         params: [$chunk[] | .id, .at, (.record | tojson)]
@@ -55,12 +57,14 @@ build_batches() {
 
 delete_batches() {
   jq -R -s -c --argjson n "$DELETE_BATCH" '
-    [splits("\n")] | map(select(length > 0)) as $all
+    [splits("\n")] | map(select(length > 0)) | group_by(startswith("equipment:"))[] as $group
+    | (if $group[0] | startswith("equipment:") then "equipment_inbox" else "inbox" end) as $table
+    | $group as $all
     | range(0; ($all | length); $n)
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
-        sql: ("DELETE FROM inbox WHERE id IN ("
+        sql: ("DELETE FROM " + $table + " WHERE id IN ("
               + ([$chunk[] | "?"] | join(",")) + ")"),
         params: $chunk
       }

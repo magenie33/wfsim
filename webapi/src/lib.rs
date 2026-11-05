@@ -97,6 +97,7 @@ pub const ROUTES: &[(&str, Endpoint)] = &[
     ("/api/forma/optimize", forma_optimize_json),
     ("/api/warframe/catalog", |_| warframe_catalog_json()),
     ("/api/warframe/panel", warframe_panel_json),
+    ("/api/equipment/build", warframe::equipment_build_json),
     ("/api/operator/panel", operator_panel_json),
     ("/api/catalogue", |_| catalogue_json()),
     ("/api/qr", qr::qr_json),

@@ -19,6 +19,7 @@
 // the same build produce ONE row, with no dedup pass and no counting.
 
 import { decodeShare, useShareHost } from "./share_codec.js";
+import { equipmentLibraryRoute } from "./equipment_library.js";
 import { accountRoute, purgeDeleted, sessionAccount, initiatorCode } from "./accounts.js";
 import { cloudPath, cloudRoute, READ_ONLY_CLOUD } from "./cloud.js";
 import { agentRoute } from "./agents.js";
@@ -843,6 +844,7 @@ async function serve(request, env, ctx) {
     if (path === "/api/board/pending") {
       return request.method === "GET" ? pending(env) : bad("GET only", 405);
     }
+    if (["/api/equipment/submit", "/api/equipment/library"].includes(path)) return equipmentLibraryRoute(request, env, path);
     if (path === "/api/board/submit") {
       // A GET here is somebody looking for the board itself, which is a STATIC
       // FILE committed to the repo (`data/benchmarks/boards/`) and served from

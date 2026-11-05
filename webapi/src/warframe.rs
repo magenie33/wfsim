@@ -206,6 +206,14 @@ pub fn operator_panel_json(v: &Value) -> Value {
     })
 }
 
+pub fn equipment_build_json(v: &Value) -> Value {
+    match wfsim_engine::board::equipment::canonical(v) {
+        Ok(record) => json!({"ok":true, "accepted":true,
+            "id":wfsim_engine::board::equipment::build_id(&record), "record":record}),
+        Err(reason) => json!({"ok":true, "accepted":false, "reason":reason}),
+    }
+}
+
 pub fn warframe_panel_json(v: &Value) -> Value {
     use wfsim_engine::data::warframes as wf;
     let build: wf::Build = match serde_json::from_value(v.clone()) {

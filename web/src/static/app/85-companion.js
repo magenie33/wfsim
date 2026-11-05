@@ -62,7 +62,8 @@ function compNormalize(st, id) {
 
 async function showCompanion(id) {
   await loadWarframeCatalog();
-  if (!comp || comp.companion !== id) {
+  const requested = new URLSearchParams(location.search).get("build");
+  if (!comp || comp.companion !== id || (requested && requested !== compActive)) {
     const list = compList(id);
     const last = localStorage.getItem(presetActiveKey(COMP_BUILDS, id));
     const p = presetToOpen(list, new URLSearchParams(location.search).get("build"), last);
@@ -70,6 +71,7 @@ async function showCompanion(id) {
     comp = compNormalize(p ? p.state : null, id);
   }
   renderCompanion();
+  scheduleEquipmentPublish("companion", companionLibraryPayload());
 }
 
 function renderCompanion() {
@@ -283,6 +285,7 @@ function compApply(st) {
   comp = compNormalize(st, comp.companion);
   dropSave("companions");
   renderCompanion();
+  scheduleEquipmentPublish("companion", companionLibraryPayload());
 }
 
 /// A BUILD IS BORN ON THE FIRST EDIT, as a Warframe build is (`wfMarkDirty`), and
@@ -313,6 +316,7 @@ function compMarkDirty() {
 function compChanged() {
   renderCompanion();
   compMarkDirty();
+  scheduleEquipmentPublish("companion", companionLibraryPayload());
   // A CARD SEATED is a build; polarities alone are Forma planning on an empty host.
   if (comp && comp.slots.some((s) => s.mod)) track("builder.companion", comp.companion);
 }

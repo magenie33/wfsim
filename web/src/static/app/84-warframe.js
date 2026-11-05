@@ -698,6 +698,7 @@ function wfApply(st) {
   wf = wfNormalize(st, wf.frame);
   dropSave("warframes");
   renderWarframe();
+  scheduleEquipmentPublish("warframe", wfPayload());
 }
 
 /// A BUILD IS BORN ON THE FIRST EDIT, as a weapon build is (`markPresetDirty`).
@@ -733,5 +734,6 @@ function wfChanged() {
   renderWfHelminth();
   refreshWfPanel();
   wfMarkDirty();
+  scheduleEquipmentPublish("warframe", wfPayload());
 }
 

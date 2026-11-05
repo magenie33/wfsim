@@ -134,7 +134,7 @@ async function route() {
   const opRoute = /^\/operator\/?$/.test(location.pathname);
   // `/companions/<Name>` — a companion host, the layer between a robotic weapon
   // and the Warframe that owns it.
-  const compRoute = location.pathname.match(/^\/companions\/([^/]+?)\/?$/);
+  const compRoute = location.pathname.match(/^\/companions\/([^/]+?)(?:\/builder)?\/?$/);
   const compSlug = compRoute && decodeURIComponent(compRoute[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
   const compHit = compSlug && compHosts().find((c) =>
     c.id === compSlug || c.name.toLowerCase().replace(/[\s-]+/g, "_") === compSlug) || null;
@@ -264,6 +264,7 @@ async function route() {
     if (gen !== routeGen) return;
   } else if (compHit) {
     await showCompanion(compHit.id);
+    renderCompanionLibrary();
     if (gen !== routeGen) return;
   } else if (opRoute) {
     await showOperator();

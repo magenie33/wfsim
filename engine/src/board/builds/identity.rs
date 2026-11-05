@@ -102,6 +102,11 @@ pub fn board_key(b: &ValidBuild, mode: &str) -> String {
 /// every score row, and a library four orders of magnitude under the birthday
 /// bound will not see a collision.
 pub fn build_id(b: &ValidBuild) -> String {
+    identity_id(&identity(b))
+}
+
+/// A canonical build identity, shared by weapon and equipment libraries.
+pub fn identity_id(text: &str) -> String {
     const OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
     const PRIME: u64 = 0x0000_0100_0000_01b3;
     let fold = |mut h: u64, bytes: &[u8]| {
@@ -111,7 +116,6 @@ pub fn build_id(b: &ValidBuild) -> String {
         }
         h
     };
-    let text = identity(b);
     let lo = fold(OFFSET, text.as_bytes());
     let hi = fold(OFFSET ^ 0xffff_ffff_ffff_ffff, text.as_bytes());
     format!("{hi:016x}{lo:016x}")

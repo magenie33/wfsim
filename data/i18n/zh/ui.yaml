@@ -675,6 +675,14 @@ ui:
   "Benchmarks · read-only": "基准场景 · 只读"
   "benchmark": 基准场景
   "Official scenarios": 官方场景
+  "Public builds": 公共配装
+  "Search builds": 搜索配装
+  "Copy to Builder": 复制到配装器
+  "Adding to the public library…": 正在提交到公共配装库…
+  "Submitted to the public library": 已提交到公共配装库
+  "Could not upload; retrying": 提交失败，正在重试
+  "The public library is unavailable": 公共配装库暂时不可用
+  "No public builds yet": 暂无公共配装
   "Benchmark": 基准榜
   "Before the fight": 战前
   # UTILITY. Game terms are DE's own Chinese (dict.zh.json):

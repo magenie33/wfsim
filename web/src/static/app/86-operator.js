@@ -383,6 +383,7 @@ async function showWarframe(id) {
     wf = wfNormalize(p ? p.state : null, id);
   }
   renderWarframe();
+  scheduleEquipmentPublish("warframe", wfPayload());
 }
 
 
@@ -422,17 +423,164 @@ function renderWarframeLibrary() {
   $('wf-module-tabs').hidden=!!EMBED;
   const box=$('wf-library');box.hidden=editor;
   if (editor) return;
-  const entries=presetListWithIds(WF_BUILDS,f.id);
-  box.innerHTML=`<div class="library-toolbar"><div class="library-toolbar-row"><b>${escHtml(tr('Build Library'))}</b>`
-    + `<a class="ghost-btn small" href="${base}/builder">${escHtml(tr('Builder'))} →</a></div>`
-    + `<div class="library-result-count">${escHtml(tr('Saved builds on this browser'))} · ${entries.length}</div></div>`
-    + (entries.length ? entries.map(p=>`<article class="wf-library-entry"><div class="wf-library-build-head"><b>${escHtml(p.name)}</b>`
-      + `<a class="ghost-btn small" data-wf-library-open="${escHtml(p.id)}" href="${base}/builder?build=${encodeURIComponent(p.id)}">${escHtml(tr('Open'))}</a></div>`
-      + `<div class="fd-card">${warframeLibraryCard(p.state)}</div></article>`).join('')
-      : `<div class="wf-library-empty"><h2>${escHtml(tr('No saved builds yet'))}</h2>`
-      + `<p>${escHtml(tr('Create a build in Builder, then find it here.'))}</p>`
-      + `<a class="ghost-btn" href="${base}/builder">${escHtml(tr('Open Builder'))} →</a></div>`);
-  box.querySelectorAll('[data-wf-library-open]').forEach(a=>a.addEventListener('click',()=>{
-    flushPresetSaves();const p=entries.find(p=>p.id===a.dataset.wfLibraryOpen);if(p){wfActive=p.id;wfBarCfg().setActive(p.id);wfApply(p.state);}
-  }));
+  renderEquipmentLibrary("warframe", f.id, box);
+}
+
+const equipmentLibraries = new Map(), equipmentUploads = new Map();
+const equipmentScope = (kind, id) => kind + ":" + id;
+const companionLibraryPayload = () => ({companion:comp.companion,
+  mods:comp.slots.filter(s => s.mod).map(s => ({id:s.mod, rank:s.rank}))});
+const equipmentBase = (kind, id) => kind === "warframe" ? warframePath(wfFrames().find(f => f.id === id)) : companionPath(compHost(id));
+const equipmentStatus = (kind, text) => {
+  const el = $(kind === "warframe" ? "wf-library-status" : "comp-library-status");
+  if (el) el.textContent = text;
+};
+
+function scheduleEquipmentPublish(kind, build) {
+  const snapshot = JSON.parse(JSON.stringify(build));
+  delete snapshot.operator;
+  const id = snapshot.frame || snapshot.companion, key = equipmentScope(kind, id);
+  clearTimeout(equipmentUploads.get(key)?.timer);
+  const job = {kind, build:snapshot};
+  equipmentUploads.set(key, job);
+  const status = text => {
+    if ((kind === "warframe" ? wf?.frame : comp?.companion) === id) equipmentStatus(kind, text);
+  };
+  const run = async () => {
+    if (equipmentUploads.get(key) !== job) return;
+    try {
+      const checked = await api("/api/equipment/build", {kind, build:snapshot});
+      if (equipmentUploads.get(key) !== job) return;
+      if (!checked?.ok) throw new Error("admission unavailable");
+      if (!checked.accepted) { status(""); return; }
+      const storage = "wfsim-equipment-uploaded-" + key;
+      let sent;
+      try { sent = JSON.parse(localStorage.getItem(storage) || "[]"); } catch { sent = []; }
+      if (!Array.isArray(sent)) sent = [];
+      if (sent.includes(checked.id)) { status(tr("Submitted to the public library")); return; }
+      status(tr("Adding to the public library…"));
+      const response = await fetch("/api/equipment/submit", {method:"POST", headers:{"content-type":"application/json"},
+        body:JSON.stringify(checked.record)});
+      const result = await response.json();
+      if (!response.ok || !result.ok || !result.queued) throw new Error("upload failed");
+      try { localStorage.setItem(storage, JSON.stringify(sent.concat(checked.id).slice(-128))); } catch (_) { /* storage is optional */ }
+      equipmentLibraries.delete(key);
+      if (equipmentUploads.get(key) === job) status(tr("Submitted to the public library"));
+    } catch (_) {
+      if (equipmentUploads.get(key) !== job) return;
+      status(tr("Could not upload; retrying"));
+      job.timer = setTimeout(run, 15000);
+    }
+  };
+  job.timer = setTimeout(run, 1500);
+}
+
+function equipmentState(record) {
+  const b = JSON.parse(JSON.stringify(record.build));
+  if (record.kind === "warframe") {
+    const state = wfBlank(b.frame);
+    state.slots = b.mods.concat([b.exilus, b.aura]).map(p => ({mod:p.id, rank:p.rank ?? null, pol:wfMod(p.id)?.polarity || null}));
+    state.arcanes = b.arcanes.map(p => ({id:p.id, rank:p.rank ?? null}));
+    state.shards = b.shards;
+    state.helminth = b.helminth || {slot:0, ability:null};
+    return state;
+  }
+  return {companion:b.companion, slots:b.mods.map(p => ({mod:p.id, rank:p.rank ?? null, pol:compMod(p.id)?.polarity || null}))};
+}
+
+async function readEquipmentLibrary(kind, id, more = false) {
+  const key = equipmentScope(kind, id);
+  let entry = equipmentLibraries.get(key);
+  if (entry?.pending || (more && !entry?.next)) return;
+  if (!entry || !more) entry = {rows:[], next:null};
+  entry.pending = true; entry.error = false; equipmentLibraries.set(key, entry);
+  try {
+    const response = await fetch("/api/equipment/library", {method:"POST", headers:{"content-type":"application/json"},
+      body:JSON.stringify({kind, equipment:id, after:more ? entry.next : undefined})});
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error("library unavailable");
+    entry.rows.push(...result.builds); entry.next = result.next;
+  } catch (_) {
+    entry.error = true;
+    setTimeout(() => {
+      if (equipmentLibraries.get(key) === entry) readEquipmentLibrary(kind, id);
+    }, 15000);
+  }
+  entry.pending = false;
+  if (kind === "warframe" && wf?.frame === id) renderWarframeLibrary();
+  if (kind === "companion" && comp?.companion === id) renderCompanionLibrary();
+}
+
+function openEquipmentBuild(kind, id, state, preset) {
+  flushPresetSaves();
+  const domain = kind === "warframe" ? WF_BUILDS : COMP_BUILDS;
+  let p = preset;
+  if (!p) {
+    const own = presetListWithIds(domain, id);
+    p = presetEntry(newPresetName(own, domain), state);
+    storePresetList(domain, own.concat(p), id);
+  }
+  if (kind === "warframe") { wfActive = p.id; wfBarCfg().setActive(p.id); wfApply(p.state); }
+  else { compActive = p.id; compBarCfg().setActive(p.id); comp = compNormalize(p.state, id); }
+  nav(equipmentBase(kind, id) + "/builder?build=" + encodeURIComponent(p.id));
+}
+
+function renderEquipmentLibrary(kind, id, box) {
+  const previousSearch = box.querySelector("[data-equipment-search]");
+  if (previousSearch?.dataset.composing === "true") {
+    previousSearch.addEventListener("compositionend", () => queueMicrotask(() => renderEquipmentLibrary(kind, id, box)), {once:true});
+    return;
+  }
+  const query = previousSearch?.value || "", focused = previousSearch === document.activeElement;
+  const key = equipmentScope(kind, id), base = equipmentBase(kind, id);
+  const own = presetListWithIds(kind === "warframe" ? WF_BUILDS : COMP_BUILDS, id);
+  const entry = equipmentLibraries.get(key);
+  const card = state => kind === "warframe" ? warframeLibraryCard(state, id) : companionPresetInfo(state);
+  box.innerHTML = `<div class="library-toolbar"><div class="library-toolbar-row"><b>${escHtml(tr("Build Library"))}</b>`
+    + `<a class="ghost-btn small" href="${base}/builder">${escHtml(tr("Builder"))} →</a></div>`
+    + `<input class="slotf-search" type="search" placeholder="${escHtml(tr("Search builds"))}" data-equipment-search></div>`
+    + `<h2 class="sb-h">${escHtml(tr("Saved builds on this browser"))} · ${own.length}</h2>`
+    + own.map(p => `<article class="wf-library-entry"><div class="wf-library-build-head"><b>${escHtml(p.name)}</b>`
+      + `<a class="ghost-btn small" data-wf-library-open="${escHtml(p.id)}" href="${base}/builder?build=${encodeURIComponent(p.id)}">${escHtml(tr("Open"))}</a></div>`
+      + `<div class="fd-card">${card(p.state)}</div></article>`).join("")
+    + (!own.length ? `<div class="sim-empty">${escHtml(tr("No saved builds yet"))}</div>` : "")
+    + `<h2 class="sb-h">${escHtml(tr("Public builds"))}</h2>`
+    + (entry?.rows || []).map(row => `<article class="wf-library-entry"><div class="wf-library-build-head"><b>${escHtml(row.id.slice(0,8))}</b>`
+      + `<button type="button" class="ghost-btn small" data-equipment-copy="${row.id}">${escHtml(tr("Copy to Builder"))}</button></div>`
+      + `<div class="fd-card">${card(equipmentState(row))}</div></article>`).join("")
+    + (entry?.pending || !entry ? `<div class="sim-empty">${escHtml(tr("Loading…"))}</div>` : entry.error
+      ? `<div class="sim-empty">${escHtml(tr("The public library is unavailable"))}</div>` : !entry.rows.length
+        ? `<div class="sim-empty">${escHtml(tr("No public builds yet"))}</div>` : "")
+    + (entry?.next ? `<button type="button" class="ghost-btn" data-equipment-more>${escHtml(tr("Load more"))}</button>` : "");
+  box.querySelectorAll("[data-wf-library-open]").forEach(a => a.onclick = event => {
+    event.preventDefault(); openEquipmentBuild(kind, id, null, own.find(p => p.id === a.dataset.wfLibraryOpen));
+  });
+  box.querySelectorAll("[data-equipment-copy]").forEach(button => button.onclick = () => {
+    const row = entry.rows.find(row => row.id === button.dataset.equipmentCopy);
+    openEquipmentBuild(kind, id, equipmentState(row));
+  });
+  const more = box.querySelector("[data-equipment-more]");
+  if (more) more.onclick = () => readEquipmentLibrary(kind, id, true);
+  const input = box.querySelector("[data-equipment-search]");
+  input.value = query;
+  input.addEventListener("compositionstart", () => { input.dataset.composing = "true"; });
+  input.addEventListener("compositionend", () => { delete input.dataset.composing; });
+  const filter = () => box.querySelectorAll(".wf-library-entry").forEach(row => {
+    row.hidden = !squash(row.textContent.toLowerCase()).includes(squash(input.value.toLowerCase()));
+  });
+  onTyped(input, filter); filter();
+  if (focused) input.focus();
+  if (!entry) readEquipmentLibrary(kind, id);
+}
+
+function renderCompanionLibrary() {
+  if (!comp || $("companion-page").hidden) return;
+  const base = companionPath(compHost(comp.companion));
+  const editor = /\/builder\/?$/.test(location.pathname) || !!EMBED || new URLSearchParams(location.search).has("build");
+  $("comp-module-tabs").innerHTML = [["", "Build Library"], ["/builder", "Builder"]]
+    .map(([suffix, label]) => `<a class="mtab${editor === (suffix === "/builder") ? " sel" : ""}" href="${base + suffix}">${escHtml(tr(label))}</a>`).join("");
+  $("comp-module-tabs").hidden = !!EMBED;
+  ["preset-bar-companions", "comp-mods-block", "comp-catalogue-block"].forEach(id => $(id).hidden = !editor);
+  $("comp-library").hidden = editor;
+  if (!editor) renderEquipmentLibrary("companion", comp.companion, $("comp-library"));
 }

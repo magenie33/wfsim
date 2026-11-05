@@ -212,6 +212,19 @@ fn intake(
         }
         seen += 1;
         done.push(id(&row, "id"));
+        if rec.get("kind").is_some() {
+            match wfsim_engine::board::equipment::canonical(&rec) {
+                Ok(record) => {
+                    let key = wfsim_engine::board::equipment::build_id(&record);
+                    let at = rec.get("at").and_then(Value::as_str).unwrap_or("");
+                    let entry = built.entry(key.clone()).or_insert_with(||
+                        json!({"id":key, "at":at, "record":record, "from":[]}));
+                    entry["from"].as_array_mut().unwrap().push(json!(id(&row, "id")));
+                }
+                Err(why) => { refused += 1; eprintln!("refused equipment: {why}"); }
+            }
+            continue;
+        }
         // WHO ASKED (docs/BOARD.md §"Who asked"), the inbox row's, carried to
         // the fight it named and nowhere else: never into the library.
         let initiator = row.get("initiator").and_then(Value::as_str).map(str::to_owned);
@@ -470,6 +483,21 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn equipment_arrivals_are_canonical_and_owe_no_weapon_fights() {
+        let mut record = json!({"kind":"companion", "at":"2026-11-06", "build":{"companion":"sentinel", "mods":
+            wfsim_engine::data::companions::seatable_by("sentinel").take(10).map(|m| json!({"id":m.id})).collect::<Vec<_>>()}});
+        let first = json!({"id":"equipment:a", "record":record}).to_string();
+        record["build"]["mods"].as_array_mut().unwrap().reverse();
+        let second = json!({"id":"equipment:b", "record":record}).to_string();
+        let mut orders = Vec::new();
+        let (builds, asked, done, seen, refused) = intake([first,second].into_iter(), None, Some(&mut orders));
+        assert_eq!((seen,refused,done.len(),builds.len()), (2,0,2,1));
+        assert_eq!(builds[0]["record"]["kind"], "companion");
+        assert_eq!(builds[0]["from"].as_array().unwrap().len(), 2);
+        assert!(asked.is_empty() && orders.is_empty());
+    }
 
     fn family_arrival(derived: bool, riven: bool) -> String {
         let mut record = json!({ "weapon": "burston_prime", "mods": ["serration", "split_chamber", "point_strike",

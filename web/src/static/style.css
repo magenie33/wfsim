@@ -3950,8 +3950,8 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 #warframe-page.wf-library>section:not(#wf-library),
 #warframe-page.wf-library>#wf-caps,#warframe-page.wf-library>#wf-gate,
 #warframe-page.wf-library>#preset-bar-warframes{display:none}
-#wf-library{border:1px solid var(--line);border-radius:12px;margin-top:14px}
-#wf-library[hidden]{display:none}
+#wf-library,#comp-library{border:1px solid var(--line);border-radius:12px;margin-top:14px}
+#wf-library[hidden],#comp-library[hidden]{display:none}
 #wf-module-tabs{margin-top:16px}
 #wf-library .library-toolbar-row>b{font-size:13px}
 #wf-library .library-toolbar-row>a{margin-left:auto;text-decoration:none}

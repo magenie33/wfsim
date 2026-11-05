@@ -70,6 +70,21 @@ CREATE TABLE IF NOT EXISTS builds (
 CREATE INDEX IF NOT EXISTS builds_weapon ON builds (weapon);
 CREATE INDEX IF NOT EXISTS builds_at ON builds (at);
 
+-- Warframe and companion builds share intake and canonical ids, without weapon scores.
+CREATE TABLE IF NOT EXISTS equipment_inbox (
+  id TEXT COLLATE "C" PRIMARY KEY,
+  at TEXT COLLATE "C" NOT NULL,
+  record TEXT COLLATE "C" NOT NULL
+);
+CREATE TABLE IF NOT EXISTS equipment_builds (
+  id TEXT COLLATE "C" PRIMARY KEY,
+  at TEXT COLLATE "C" NOT NULL,
+  record TEXT COLLATE "C" NOT NULL,
+  kind TEXT COLLATE "C" GENERATED ALWAYS AS ((record::jsonb ->> 'kind')) STORED,
+  equipment TEXT COLLATE "C" GENERATED ALWAYS AS ((record::jsonb ->> 'equipment')) STORED
+);
+CREATE INDEX IF NOT EXISTS equipment_builds_scope ON equipment_builds (kind, equipment, id);
+
 -- A SCORE IS A FACT, NOT A STEP IN A PIPELINE (docs/BOARD.md).
 --
 -- `(build, ruler, mode) -> score` is true for ever once computed, so it is

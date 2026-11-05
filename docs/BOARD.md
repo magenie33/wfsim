@@ -219,6 +219,17 @@ back fails CI rather than being discovered in a published number.
 
 ## The pieces
 
+Warframe and companion builds share canonical intake without weapon scores.
+`equipment_inbox` holds their arrivals; intake writes canonical records into
+`equipment_builds`. Both are defined in `worker/pg/library.sql`. Isolating their
+arrivals lets an older weapon-only intake leave them intact. The shared inbox
+reader includes both queues, and shipping writes builds before spending their
+arrivals. Only weapon builds reach the live ranker's mailbox.
+
+`worker/equipment_library.js` accepts automatic submissions and serves scoped,
+key-paginated public builds. It accepts no client-generated identity. The game
+rules and complete-loadout requirements are in `WARFRAMES.md`.
+
 | what | where | who runs it |
 | --- | --- | --- |
 | the ruler | `data/benchmarks/*.yaml` | — |
@@ -955,7 +966,7 @@ sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/
 sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f worker/pg/sync.sql
 sudo -u postgres psql -d wfsim_accounts -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim_accounts' -f worker/pg/accounts.sql
 sudo -u postgres psql -d wfsim -c "CREATE ROLE wfsim_pipeline LOGIN PASSWORD '…'" \
-  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON inbox, builds, scores, batches, queue TO wfsim_pipeline" \
+  -c "GRANT SELECT, INSERT, UPDATE, DELETE ON inbox, builds, equipment_inbox, equipment_builds, scores, batches, queue TO wfsim_pipeline" \
   -c "GRANT SELECT ON verifiers, verifier_hours, verifier_asks, adjustments, factory_events TO wfsim_pipeline" \
   -c "GRANT SELECT (code, channel, request) ON appraisals TO wfsim_pipeline"
 sudo -u postgres psql -d wfsim_accounts -c "CREATE ROLE wfsim_accounts_pipeline LOGIN PASSWORD '…'" \

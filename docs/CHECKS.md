@@ -1877,6 +1877,16 @@ added beside it, with a copied riven's builds repointed at the copy; a file
 that is not an export is refused out loud; both controls are in the topbar's
 overflow.
 
+## `check_equipment_library` and `check_equipment_library_api`
+
+Complete Warframes and companions upload automatically through engine admission;
+missing primary slots are refused, Tau normalization leaves the editor intact,
+canonical duplicates do not upload again, and public records copy into owned
+builders. Companion library and builder routes retain their own views.
+The API check uses Postgres to verify privacy filtering, ignored client ids,
+method/size/scope validation and stable pagination. `check_pg_scripts` exercises
+the shared reader, separate canonical table and deletion of equipment arrivals.
+
 ## `check_weapon_search`
 
 The topbar search is one box: no filter row or sort above the list, a weapon's

@@ -50,6 +50,17 @@ check("a build is shipped and its arrivals spent", await run("ship_builds.sh", "
 check("...and shipped again it is one row", await run("ship_builds.sh", "builds.ndjson", "done.txt") === 0
   && (await query("SELECT count(*) AS n FROM builds"))[0].n === 1);
 
+const equipment = {kind:"companion", equipment:"sentinel", build:{companion:"sentinel", mods:[]}};
+await query("INSERT INTO equipment_inbox (id, at, record) VALUES (?, ?, ?)", ["equipment:i3", "2026-10-01", JSON.stringify(equipment)]);
+check("equipment arrivals use the shared inbox reader", await run("fetch_inbox.sh", "equipment-inbox.ndjson") === 0
+  && read("equipment-inbox.ndjson").some(line => JSON.parse(line).id === "equipment:i3"));
+file("equipment-builds.ndjson", JSON.stringify({id:"e1", at:"2026-10-01", record:equipment}) + "\n");
+file("equipment-done.txt", "equipment:i3\n");
+check("equipment builds land outside weapon scores before their arrivals are spent",
+  await run("ship_builds.sh", "equipment-builds.ndjson", "equipment-done.txt") === 0
+  && (await query("SELECT equipment FROM equipment_builds WHERE id = 'e1'"))[0]?.equipment === "sentinel"
+  && (await query("SELECT count(*) AS n FROM equipment_inbox"))[0].n === 0
+  && (await query("SELECT count(*) AS n FROM builds"))[0].n === 1);
 const rows = ["standard_single_target", "heavy_gunner"].map((ruler) => JSON.stringify({ build_id: "b1", ruler, mode: "base" })).join("\n");
 file("missing.ndjson", `${rows}\n`);
 await run("ship_queue.sh", "arrivals-2026-10-01", "test", "missing.ndjson");

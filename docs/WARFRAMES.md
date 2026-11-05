@@ -8,6 +8,23 @@ wielder (§A weapon's wielder). `engine::data::warframes` is the whole engine si
 
 ## What a build is
 
+Complete loadouts enter the public Build Library automatically after editing
+settles. Warframes require eight main mods, an Exilus, an aura, two arcanes and
+five shards. Companions require ten mods. No manual submission control exists.
+Helminth is optional; derived equipment is not part of admission.
+
+`engine::board::equipment` is the canonicalization and admission rule used by
+the page and intake. Main mod order and arcane/shard order are canonical;
+mods and arcanes use max rank, as weapon builds do. Shards become Tauforged,
+retaining their colour and effect. Operator
+links and conditional starting arcane stacks are excluded. Capacity assumes
+full Forma, as the weapon library does. The editor retains its original state.
+
+The page's `/api/equipment/build` check returns the canonical record and id.
+Automatic submission sends that record to `/api/equipment/submit`; intake
+independently checks it and derives its id. The public library displays owned
+and public builds and copies a public record into an editable owned preset.
+
 | part | count | data |
 | --- | --- | --- |
 | mods | 8 | `data/warframe_mods/` |

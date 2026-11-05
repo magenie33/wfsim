@@ -34,7 +34,7 @@ configured() { db_configured; }
 page_body() {
   jq -n -c --argjson limit "$1" --argjson offset "$2" '
     {
-      sql: ("SELECT id, at, record, initiator, family_source FROM inbox ORDER BY id LIMIT ? OFFSET ?"),
+      sql: ("SELECT id, at, record, initiator, family_source FROM (SELECT id, at, record, initiator, family_source FROM inbox UNION ALL SELECT id, at, record, NULL, NULL FROM equipment_inbox) AS arrivals ORDER BY id LIMIT ? OFFSET ?"),
       params: [$limit, $offset]
     }'
 }

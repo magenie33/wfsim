@@ -474,6 +474,8 @@ jobs:
         run: npm ci --silent --prefix scripts/pg
       - name: The board's pipeline reads and writes Postgres
         run: node scripts/check_pg_scripts.mjs
+      - name: Equipment builds enter the canonical public library
+        run: node scripts/check_equipment_library_api.mjs
       - name: While work is short an account past its fair share waits, and only then
         run: node scripts/check_fair.mjs
       - name: The settler in shadow judges as the request path does, and says where it does not
@@ -737,6 +739,9 @@ jobs:
       - name: All presets share numeric naming, management and inert info
         if: matrix.group == 'builder'
         run: node scripts/check_preset_library.mjs
+      - name: Complete Warframe and companion builds upload automatically and open from their libraries
+        if: matrix.group == 'builder'
+        run: node scripts/check_equipment_library.mjs
       - name: One hundred presets keep a compact searchable switcher
         if: matrix.group == 'builder'
         run: node scripts/check_preset_compact.mjs

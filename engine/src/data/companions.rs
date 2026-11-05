@@ -219,7 +219,7 @@ pub fn companion_mod(id: &str) -> Option<&'static CompanionMod> {
 
 /// A COMPANION BUILD as a robotic weapon's `wielder` sends it: the host and
 /// the cards it seats, each at its rank (`None` = max).
-#[derive(Debug, Clone, Default, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Default, Deserialize, serde::Serialize, PartialEq)]
 pub struct CompanionBuild {
     pub companion: String,
     #[serde(default)]

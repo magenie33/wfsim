@@ -37,7 +37,7 @@ touch new-builds.ndjson
 # own key.
 intake_arrivals() {
   # WHO ASKED rides with the record to the rows it owes (docs/BOARD.md §"Who asked").
-  db_query '{"sql":"SELECT id, at, record, initiator, family_source FROM inbox ORDER BY id LIMIT 500"}' \
+  db_query '{"sql":"SELECT id, at, record, initiator, family_source FROM (SELECT id, at, record, initiator, family_source FROM inbox UNION ALL SELECT id, at, record, NULL, NULL FROM equipment_inbox) AS arrivals ORDER BY id LIMIT 500"}' \
     || { echo "live: inbox read refused [HTTP $DB_CODE]" >&2; return 1; }
   jq -c '.result[0].results[]' < "$DB_OUT" > inbox-new.ndjson
   [ -s inbox-new.ndjson ] || return 1
@@ -46,7 +46,7 @@ intake_arrivals() {
   bash "$HERE/ship_builds.sh" builds-new.ndjson done.txt >&2 || return 1
   # …INTO THE MAILBOX the main loop takes them from (`take_arrivals`).
   { flock 9
-    cat builds-new.ndjson >> arrived-builds.ndjson
+    jq -c 'select(.record.kind == null)' builds-new.ndjson >> arrived-builds.ndjson
   } 9> mailbox.lock
   # THE FIGHT EACH ARRIVAL NAMED GOES FIRST, asked as waited on (`named`): the
   # player just ran it and is looking for that row. The build's other rows
