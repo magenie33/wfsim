@@ -231,6 +231,7 @@ impl ModEffect {
             SlashOnCrit(v) => format!("{} chance to apply Slash on Critical", pct(v)),
             Element(t, v) => format!("{} {t:?}", pct(v)),
             CombinedElement(t, v) => format!("{} {t:?}", pct(v)),
+            AdaptiveElement(ref spec) => format!("{} adaptive elemental damage on non-slam hits", pct(spec.bonus)),
             Physical(t, v) => format!("{} {t:?}", pct(v)),
             CondBuff(b, v) => {
                 format!("{} {} (conditional, assumed active)", pct(v), b.label())

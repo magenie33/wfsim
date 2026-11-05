@@ -668,6 +668,25 @@ impl FightParams {
         if out == qvec { out } else { out.quantized_against(stage_mb) }
     }
 
+    /// Target-dependent damage joins the finished vector without combining.
+    /// Keep it outside `element_at`: this augment does not scale elemental DoTs.
+    pub(super) fn with_adaptive_element(
+        &self,
+        mut vector: DamageVector,
+        stage_mb: f64,
+        foe: &Foe,
+        state: &TargetState,
+        enabled: bool,
+    ) -> DamageVector {
+        if !enabled { return vector; }
+        let Some(spec) = &self.adaptive_element else { return vector; };
+        let Some(ty) = spec.element_for(&foe.damage_column, state.overguard > 0.0) else {
+            return vector;
+        };
+        vector.add(ty, stage_mb * spec.bonus);
+        vector.quantized_against(stage_mb)
+    }
+
     /// [`Self::with_live_elements`] before the snap, for Extra Hit brackets.
     pub(super) fn with_live_elements_unquantized(
         &self,
@@ -1140,6 +1159,7 @@ impl FightParams {
             damage: panel.damage,
             resting: panel.resting.clone(),
             per_hit_element: panel.per_hit_element.clone(),
+            adaptive_element: panel.adaptive_element.clone(),
             radial: compressed_radial,
             cluster: panel.cluster,
             reload_grenade: panel.reload_grenade,

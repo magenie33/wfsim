@@ -1265,6 +1265,18 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         };
         let pre_ability_total = qvec.total();
         let qvec = params.with_live_elements(qvec, stage_mb, t, windows);
+        let live_element_total = qvec.total();
+        let adaptive_enabled = !swing.as_ref().is_some_and(|h| h.slam_multiplier.is_some())
+            && !rad.is_some_and(|r| r.blast_kind == crate::model::BlastKind::Slam)
+            && !active.radial.is_some_and(|r| r.blast_kind == crate::model::BlastKind::Slam);
+        let mut spread_composition = TargetComposition {
+            vector: qvec,
+            stage_mb,
+            aimed_total: qvec.total(),
+            adaptive_enabled,
+        };
+        let qvec = spread_composition.for_target(active, &params.foe, &bodies[0].state);
+        spread_composition.aimed_total = qvec.total();
         let status_vector = qvec;
         // A merged beam tick carries the SUM of its beams. `qtotal`
         // is what the instance deals; the crit CHANCE that produced
@@ -1528,7 +1540,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 spread_from_blast(
                     seat, windows, det, bodies, params, active, &rr,
                     body_only(raw_at_epicentre / bucket),
-                    shares, crit_multiplier, tier, attrition, spread_mb, status_chance, forced, &status_vector,
+                    shares, crit_multiplier, tier, attrition, spread_mb, status_chance, forced, &spread_composition,
                     &mut *gal, &mut *arc, &mut *r, rec, d, t,
                 );
             }
@@ -1550,7 +1562,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             if !follows && params.beam.is_none() && struck.len() > 1 {
                 spread_from_punch_through(
                     seat, windows, bodies, params, active, struck, raw / bucket, shares, punch,
-                    spread_mb, status_chance, forced, &status_vector, part.is_head, part_factor,
+                    spread_mb, status_chance, forced, &spread_composition, part.is_head, part_factor,
                     landing, &mut *gal, &mut *arc, &mut *r, rec, d, t,
                 );
             }
@@ -1610,7 +1622,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 spread_mb,
                 status_chance,
                 forced,
-                &status_vector,
+                &spread_composition,
                 &mut *gal,
                 &mut *arc,
                 &mut *r,
@@ -1655,7 +1667,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     spread_mb,
                     status_chance,
                     forced,
-                    &status_vector,
+                    &spread_composition,
                     &mut *gal,
                     &mut *arc,
                     &mut *r,
@@ -1739,7 +1751,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     modded_base: spread_mb * unmerged,
                     status_chance: (status_chance - weakpoint_sc) * unmerged + weakpoint_sc,
                     forced: forced.to_vec(),
-                    status_vector,
+                    status_vector: spread_composition,
                 });
             }
             // …AND EVERY BOUNCE'S COLLISION. The projectile arriving
@@ -1764,7 +1776,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     spread_mb,
                     status_chance,
                     forced,
-                    &status_vector,
+                    &spread_composition,
                     &head_factor,
                     head_landing,
                     &mut *gal,
@@ -1792,7 +1804,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 spread_mb,
                 status_chance,
                 forced,
-                &status_vector,
+                &spread_composition,
                 &mut *gal,
                 &mut *arc,
                 &mut *r,
@@ -1829,7 +1841,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     spread_mb,
                     status_chance,
                     forced,
-                    &status_vector,
+                    &spread_composition,
                     &mut *gal,
                     &mut *arc,
                     &mut *r,
@@ -1855,7 +1867,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     spread_mb,
                     status_chance,
                     forced,
-                    &status_vector,
+                    &spread_composition,
                     head_direct,
                     part_factor,
                     landing,
@@ -1887,7 +1899,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     spread_mb,
                     status_chance,
                     forced,
-                    &status_vector,
+                    &spread_composition,
                     &mut *gal,
                     &mut *arc,
                     &mut *r,
@@ -2199,7 +2211,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                         base_damage,
                         arcane_base_damage,
                         &pre_quantization,
-                        if pre_ability_total > 0.0 { qvec.total() / pre_ability_total } else { 1.0 },
+                        if pre_ability_total > 0.0 { live_element_total / pre_ability_total } else { 1.0 },
+                        if live_element_total > 0.0 { qvec.total() / live_element_total } else { 1.0 },
                         *beam_merge,
                         &hit_steps,
                         part.multiplier,
@@ -2512,7 +2525,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         // one-hit-kill enemies cannot trigger nor benefit"*, which the
         // wiki files under Bugs and which is the behaviour all the same.
         if params.arcane.influence_chance > 0.0 {
-            influence_seeds.push((0, Landed { procs: aimed_procs, raw, killed: false }));
+            influence_seeds.push((0, Landed { procs: aimed_procs, raw, shares, killed: false }));
             // THE SPREAD READS THE WINDOW THIS SWING FOUND OPEN, and the
             // grant below is rolled after: the buff is what an
             // Electricity status GRANTS, so the swing that grants it has
@@ -2545,7 +2558,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                         .iter()
                         .copied()
                         .filter(|ty| influence_can_spread(*ty))
-                        .map(|ty| (ty, landed.raw * shares.share(ty)))
+                        .map(|ty| (ty, landed.raw * landed.shares.share(ty)))
                         .collect();
                     spread_from_influence(
                         seat,

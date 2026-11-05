@@ -63,6 +63,7 @@ pub(super) fn pellet_layers(
     // multiplier was the ratio of its two totals.
     pre_quantization: &DamageVector,
     ability_elements: f64,
+    adaptive_element: f64,
     beam_merge: f64,
     steps: &[crate::record::Step],
     part_multiplier: f64,
@@ -133,6 +134,7 @@ pub(super) fn pellet_layers(
     }
     for (factor, v) in [
         (crate::record::Factor::WarframeAbilityElement, ability_elements),
+        (crate::record::Factor::ElementBracket, adaptive_element),
         (crate::record::Factor::MergedBeams, beam_merge),
     ] {
         if (v - 1.0).abs() > 1e-12 {

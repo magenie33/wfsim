@@ -141,6 +141,9 @@ pub struct FightParams {
     /// See [`crate::build::loadout::ResolvedPanel::per_hit_element`]: every
     /// shot picks the vector its pile has reached ([`super::state::ElementPile`]).
     pub per_hit_element: Option<crate::build::loadout::ResolvedPerHitElement>,
+    /// An independent element selected from each receiving body's live state.
+    /// It changes the hit and status weights, leaving the DoT base unchanged.
+    pub adaptive_element: Option<crate::model::AdaptiveElement>,
     /// RESOLVED (modded) crit chance of the DIRECT part — the name is
     /// historical; `unmodded_crit_chance` below is the real base.
     pub base_crit_chance: f64,

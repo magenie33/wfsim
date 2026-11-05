@@ -387,6 +387,19 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
             }
             ModEffect::FactionDamage(fac, max("rankMax"))
         }
+        "adaptive_element_bonus" => {
+            let mapping = v.get("by_damage_column")?.as_mapping()?;
+            let by_damage_column = mapping.iter().map(|(key, value)| {
+                let key = key.as_str()?;
+                let ty = element(value.as_str()?)?;
+                Some((&*Box::leak(key.to_string().into_boxed_str()), ty))
+            }).collect::<Option<Vec<_>>>()?;
+            ModEffect::AdaptiveElement(crate::model::AdaptiveElement {
+                bonus: max("rankMax"),
+                by_damage_column,
+                overguard: element(v.get("overguard")?.as_str()?)?,
+            })
+        }
         "elemental_damage_bonus" | "combined_element_bonus" | "physical_damage_bonus" => {
             let e = element(v.get("element").and_then(Value::as_str)?)?;
             // Physical (IPS) types are a DIFFERENT mechanic from elements: they

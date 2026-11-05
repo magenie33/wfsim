@@ -394,6 +394,8 @@ pub struct ResolvedPanel {
     /// It carries the passive's injected elements (Frenzy's Toxin) — the hit
     /// with the buff UP.
     pub damage: DamageVector,
+    /// A target-dependent element resolved at each non-slam contact.
+    pub adaptive_element: Option<crate::model::AdaptiveElement>,
     /// The hit with that buff DOWN, when the panel injects anything. The fight
     /// picks one of the two per shot by the buff's own clock.
     pub resting: Option<ResolvedResting>,

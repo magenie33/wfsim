@@ -156,6 +156,7 @@ fn dual_toxocyst_baseline() -> FightParams {
             .with(DamageType::Slash, 7.5),
         resting: None,
         per_hit_element: None,
+        adaptive_element: None,
         base_crit_chance: 0.05,
         crit_tier_upgrade_chance: 0.0,
         slash_on_crit: 0.0,

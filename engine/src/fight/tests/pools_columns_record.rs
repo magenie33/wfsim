@@ -194,6 +194,7 @@ fn the_column_follows_each_component_into_the_pool_it_lands_in() {
             magazine_size: 100.0,
             foe: Foe {
                 type_mods: crate::data::factions::columns_for(key),
+                damage_column: key.into(),
                 base_shield: 10_000.0,
                 base_health: 160.0,
                 ..frail_target(TargetMode::InstantRespawn, 0.0, 0.0)

@@ -136,6 +136,8 @@ pub struct Foe {
     /// the two systems have different keys and stack multiplicatively
     /// (docs/MECHANICS.md §8).
     pub type_mods: crate::data::factions::Columns,
+    /// Canonical damage-column key, or `custom` for an inline replacement.
+    pub damage_column: String,
     /// A FLAT MULTIPLIER THIS UNIT APPLIES INSIDE THE FACTION BRACKET, 1.0 on
     /// everything that does not declare one. It is NOT attenuation and not a
     /// vulnerability column: it rides `faction_at_time`, so it is re-applied at
@@ -340,6 +342,7 @@ impl Foe {
             faction: crate::model::Faction::Unknown,
             // A training dummy has no faction and takes damage as written.
             type_mods: crate::data::factions::Columns::NEUTRAL,
+            damage_column: "unknown".into(),
             faction_bracket_multiplier: 1.0,
             mode: TargetMode::InfiniteHealth,
         }
@@ -661,6 +664,7 @@ impl crate::data::enemies::EnemySpec {
             guardian_aura: false,
             ancient_protector_aura: false,
             type_mods,
+            damage_column: if self.damage_modifiers.is_some() { "custom" } else { self.damage_column_key() }.to_string(),
             status_immunities: self
                 .status_immunities
                 .iter()

@@ -174,11 +174,30 @@ impl TennoCondition {
     }
 }
 
+/// A non-combining elemental bonus selected from a declared damage-column map.
+/// Overguard selects its own element while that pool remains above zero.
+#[derive(Debug, Clone, PartialEq)]
+pub struct AdaptiveElement {
+    pub bonus: f64,
+    pub by_damage_column: Vec<(&'static str, DamageType)>,
+    pub overguard: DamageType,
+}
+
+#[wfsim_gas_macro::metered]
+impl AdaptiveElement {
+    pub fn element_for(&self, column: &str, overguard: bool) -> Option<DamageType> {
+        if overguard {
+            Some(self.overguard)
+        } else {
+            self.by_damage_column.iter().find(|(key, _)| *key == column).map(|(_, ty)| *ty)
+        }
+    }
+}
+
 /// One resolved effect of a mod at its equipped rank.
 ///
 /// NOT `Copy`: [`ModEffect::WhileTenno`] nests an effect, which needs
-/// indirection. Every arm still binds only `Copy` payloads, so `match *e`
-/// works unchanged.
+/// indirection. Structured effects borrow their payload when matched.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ModEffect {
     /// DOUBLE TAP: `(per stack, max stacks, seconds)` — a damage bonus that
@@ -379,6 +398,8 @@ pub enum ModEffect {
     Element(DamageType, f64),
     /// Combined-element mod (Magnetic Might): added outside the hierarchy.
     CombinedElement(DamageType, f64),
+    /// Target-selected element added after combination, without increasing DoT bases.
+    AdaptiveElement(AdaptiveElement),
     /// PHYSICAL damage mod (Impact / Puncture / Slash). Scales the BASE of that
     /// physical type — `base_t × (1 + Σ)` — a SEPARATE multiplier that is
     /// MULTIPLICATIVE with base damage (Serration applies after), and does NOT

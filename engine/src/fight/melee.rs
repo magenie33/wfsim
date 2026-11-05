@@ -183,6 +183,8 @@ pub(super) struct Landed {
     /// The instance's own damage before mitigation — what a share of it is
     /// taken from.
     pub(super) raw: f64,
+    /// Each source body's own composition, retained when Influence copies it.
+    pub(super) shares: TypeShares,
     pub(super) killed: bool,
 }
 

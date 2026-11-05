@@ -1,6 +1,31 @@
 use crate::rules::math::Portable;
 use super::*;
 
+/// The vector before target-dependent elements, plus the aimed hit's total.
+/// A receiving body selects its own element before damage and status draws;
+/// the total ratio removes the aimed body's quantized elemental contribution.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct TargetComposition {
+    pub(super) vector: DamageVector,
+    pub(super) stage_mb: f64,
+    pub(super) aimed_total: f64,
+    pub(super) adaptive_enabled: bool,
+}
+
+#[wfsim_gas_macro::metered]
+impl TargetComposition {
+    pub(super) fn for_target(
+        &self,
+        active: &FightParams,
+        foe: &Foe,
+        state: &TargetState,
+    ) -> DamageVector {
+        active.with_adaptive_element(
+            self.vector, self.stage_mb, foe, state, self.adaptive_enabled,
+        )
+    }
+}
+
 /// WHICH MECHANISM PUT AN INSTANCE ON A BODY — one of the five in
 /// MECHANICS §12.
 ///
@@ -294,7 +319,7 @@ pub(super) fn spread_hit(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    status_vector: &DamageVector,
+    status_vector: &TargetComposition,
     params: &FightParams,
     active: &FightParams,
     gal: &mut GalStacks,
@@ -319,6 +344,17 @@ pub(super) fn spread_hit(
     if foe.fallen {
         return Landed::default();
     }
+    let vector = status_vector.for_target(active, spec.params, &foe.state);
+    let shares = if active.adaptive_element.is_some() && status_vector.adaptive_enabled {
+        TypeShares::of(&vector)
+    } else {
+        shares
+    };
+    let composition_ratio = if status_vector.aimed_total > 0.0 {
+        vector.total() / status_vector.aimed_total
+    } else {
+        1.0
+    };
     let base_damage = active.base_damage_bonus;
     let arcane_base_damage =
         (if active.melee_damage_mods_apply { arc.total(&params.arcane.buffs, ArcGrant::BaseDamage, t) } else { 0.0 })
@@ -356,7 +392,7 @@ pub(super) fn spread_hit(
     // are computed from, while a head multiplier scales the hit alone. 1.0 for
     // every mechanism but the ricochet, so this changes nothing anywhere else.
     let careen = careen_factor(params, &mut foe.debuffs, t);
-    let raw = raw_per_bucket * bucket.bucket * inst.share * inst.part_factor * careen;
+    let raw = raw_per_bucket * composition_ratio * bucket.bucket * inst.share * inst.part_factor * careen;
     if raw <= 0.0 {
         return Landed::default();
     }
@@ -427,6 +463,7 @@ pub(super) fn spread_hit(
             // from the body that was aimed at.
             base: raw_per_bucket,
             layers: mul_layers(raw_per_bucket, &[
+                (crate::record::Factor::ElementBracket, composition_ratio),
                 (crate::record::Factor::ConditionOverload, bucket.bucket),
                 (crate::record::Factor::HopFalloff, inst.share),
                 (crate::record::Factor::BodyPart, inst.part_factor),
@@ -492,7 +529,7 @@ pub(super) fn spread_hit(
         foe.debuffs.on_death(seat, None, spec.params);
         // A FRESH INDIVIDUAL TAKES NO STATUS FROM THE HIT THAT KILLED THE LAST
         // ONE — the aimed path returns here for the same reason.
-        return Landed { procs: Vec::new(), raw, killed };
+        return Landed { procs: Vec::new(), raw, shares, killed };
     }
 
     // …AND ITS OWN STATUS ROLL, at FULL chance. The share scales the damage and
@@ -503,13 +540,13 @@ pub(super) fn spread_hit(
     let procs = crate::rules::status::procs_for_hit(
         forced,
         status_chance * foe.debuffs.received_status_chance(t),
-        status_vector,
+        &vector,
         &spec.params.status_immunities,
         &mut d.status,
     );
     // WHAT THIS INSTANCE LEFT, for Melee Influence — see [`Landed`]. Taken
     // before `settle_procs` consumes the list.
-    let mut landed = Landed { procs: procs.clone(), raw, killed };
+    let mut landed = Landed { procs: procs.clone(), raw, shares, killed };
     settle_procs(
         procs,
         seat,
@@ -589,8 +626,8 @@ pub(super) struct SpreadStrike {
     pub(super) modded_base: f64,
     pub(super) status_chance: f64,
     pub(super) forced: Vec<DamageType>,
-    /// Quantized attack-part composition, also used by spread status draws.
-    pub(super) status_vector: DamageVector,
+    /// The attack-part composition before each body's adaptive element.
+    pub(super) status_vector: TargetComposition,
 }
 
 /// PUNCH THROUGH — the sixth way a shot reaches a body, and the only one that
@@ -635,7 +672,7 @@ pub(super) fn spread_from_follow_through(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    status_vector: &DamageVector,
+    status_vector: &TargetComposition,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -708,7 +745,7 @@ pub(super) fn spread_from_punch_through(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    status_vector: &DamageVector,
+    status_vector: &TargetComposition,
     // WHETHER THE AIMED PELLET FOUND A HEAD, and WHAT THE PART WAS WORTH.
     // Both carried rather than re-rolled: the same round flying in a straight
     // line enters the same part of whatever is behind. The multiplier is
@@ -894,7 +931,7 @@ pub(super) fn spread_from_ricochet(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    status_vector: &DamageVector,
+    status_vector: &TargetComposition,
     head_factor: &dyn Fn(&BodySpec<'_>) -> f64,
     // What an Electricity or Gas tick is worth on a head (`Dot::landing`).
     head_landing: f64,
@@ -996,7 +1033,7 @@ pub(super) fn spread_from_echo(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    status_vector: &DamageVector,
+    status_vector: &TargetComposition,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -1113,7 +1150,7 @@ pub(super) fn spread_from_tendrils(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    status_vector: &DamageVector,
+    status_vector: &TargetComposition,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -1227,7 +1264,7 @@ pub(super) fn spread_from_blast(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    status_vector: &DamageVector,
+    status_vector: &TargetComposition,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -1290,7 +1327,7 @@ pub(super) fn blast_at(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    status_vector: &DamageVector,
+    status_vector: &TargetComposition,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
@@ -1392,7 +1429,7 @@ pub(super) fn spread_from_seeds(
     modded_base: f64,
     status_chance: f64,
     forced: &[DamageType],
-    status_vector: &DamageVector,
+    status_vector: &TargetComposition,
     gal: &mut GalStacks,
     arc: &mut ArcRuntime,
     r: &mut RunResult,
