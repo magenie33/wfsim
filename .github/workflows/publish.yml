@@ -37,7 +37,7 @@ jobs:
     # does, which is read the table and write what it says.
     runs-on: ubuntu-latest
     # Capped for the reason `scores.yml` states — this one reads the database too.
-    timeout-minutes: 45
+    timeout-minutes: 75
     env:
       SNAPSHOT_REF: ${{ github.event_name == 'workflow_dispatch' && github.ref_name || 'main' }}
     permissions:
