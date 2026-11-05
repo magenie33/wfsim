@@ -661,10 +661,10 @@ def quote_attr(path: str) -> str:
 # work is priced by, so it is the engine too.
 ENGINE_SOURCES = ("engine/src", "webapi/src", "wasm/src", "native/src", "tools/gas-macro", "data")
 ENGINE_SOURCES_NOT = ("data/i18n/", "data/board_state.yaml", "data/market.yaml",
-                      "data/assets.yaml", "data/notes.yaml", "data/concepts.yaml")
+                      "data/assets.yaml", "data/notes.yaml", "data/concepts.yaml", "data/surveys/")
 # …and what the engine carries but no number is computed from: the overlay's
-# own code, and the surveys only a test reads.
-ENGINE_ID_NOT = ("engine/src/data/i18n.rs", "webapi/src/i18n.rs", "engine/src/data/concepts.rs", "data/surveys/")
+# own code.
+ENGINE_ID_NOT = ("engine/src/data/i18n.rs", "webapi/src/i18n.rs", "engine/src/data/concepts.rs")
 
 
 def is_test_source(rel: str) -> bool:

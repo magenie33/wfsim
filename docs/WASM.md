@@ -295,6 +295,8 @@ input's size anyway.
   a JS string into the module at three bytes a character from its first
   non-ASCII one, so the 4.6 MB pack, whose first em dash is 8 KB in, held a
   lane at 19 MB before its first fight; as bytes it holds 10.6.
+- Surveys stay in native test builds; compute lanes carry no survey files in
+  their module or data pack.
 - **An evolution ladder is read per weapon** (`evolutions::for_weapon`): a lane
   parses the files of the weapons it fights, and `pool()`, every one of them,
   is for the checks that walk the whole catalog.

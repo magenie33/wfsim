@@ -117,7 +117,7 @@ fn pack_of(rel: &str) -> Option<&'static str> {
         Some("site")
     } else if rel == "concepts.yaml" {
         Some("text")
-    } else if rel == "notes.yaml" {
+    } else if rel == "notes.yaml" || rel.starts_with("surveys/") {
         None
     } else {
         Some("data")
@@ -205,6 +205,10 @@ fn main() {
             .unwrap_or_else(|e| panic!("mkdir for {rel}: {e}"));
         fs::write(&dest, &lean).unwrap_or_else(|e| panic!("write {}: {e}", dest.display()));
 
+        // Surveys are native test inputs, never runtime data for a compute lane.
+        if apart && rel.starts_with("surveys/") {
+            continue;
+        }
         let pack = pack_of(rel);
         if let Some(p) = pack {
             packs.entry(p).or_default().push(format!("{}:{}", json_string(rel), json_string(&lean)));
