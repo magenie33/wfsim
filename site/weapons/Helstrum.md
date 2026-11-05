@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.006222 | Hellfire, Wildfire, Malignant Force, Thermite Rounds, Rime Rounds, Split Chamber, Serration, Magnetic Capacity | 2026-10-24 05:43 UTC · dac6ecbaf97e |
-| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.006768 | Hellfire, Wildfire, Malignant Force, Thermite Rounds, Rime Rounds, Split Chamber, Serration, Magnetic Capacity | 2026-10-24 05:55 UTC · dac6ecbaf97e |
-| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.00003633 | Hellfire, Wildfire, Malignant Force, Thermite Rounds, Rime Rounds, Split Chamber, Serration, Magnetic Capacity | 2026-10-24 05:55 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.003279 | Hellfire, Wildfire, Malignant Force, Thermite Rounds, Rime Rounds, Split Chamber, Serration, Magnetic Capacity | 2026-10-24 05:55 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.2851 | Thermite Rounds, Heavy Caliber, Split Chamber, Hammer Shot, Rifle Aptitude, Rifle Elementalist, Vile Acceleration, Magnetic Capacity | 2026-11-05 06:11 UTC · 9e4647c46c76 |
+| Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.2848 | Thermite Rounds, Heavy Caliber, Split Chamber, Hammer Shot, Rifle Aptitude, Rifle Elementalist, Vile Acceleration, Magnetic Capacity | 2026-11-05 06:11 UTC · 9e4647c46c76 |
+| Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.002558 | Thermite Rounds, Heavy Caliber, Split Chamber, Hammer Shot, Rifle Aptitude, Rifle Elementalist, Vile Acceleration, Magnetic Capacity | 2026-11-05 06:05 UTC · 9e4647c46c76 |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.1225 | Thermite Rounds, Heavy Caliber, Split Chamber, Hammer Shot, Rifle Aptitude, Rifle Elementalist, Vile Acceleration, Magnetic Capacity | 2026-11-05 06:11 UTC · 9e4647c46c76 |
 
 ## Not modelled here
 
