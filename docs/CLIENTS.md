@@ -358,9 +358,29 @@ unrecognised id `403`)
   has no gate. A renewal-only or full-buffer reply does not add a gate;
   empty picks still wait `sync_idle_ms`.
 
-The official page and desktop client estimate remaining work using the active
-row's completed fraction. Failed requests back off even when results or
-renewals are due; a successful reply's new-work gate still permits both.
+The official page and desktop client refill on estimated remaining time, not
+a completion percentage. The active row uses recent folded progress; queued
+rows use completed-row timings for the weapon, ruler, mode and effective
+compute share, falling back to the device's overall pace. Changing the share
+resets the active rate. Resumed rows measure only their remaining fraction.
+
+The lead adapts within `sync_low_ms`, which remains its ceiling. It sums
+measured useful-sync time (including local reply processing), order preparation,
+progress-update spacing and observed late-handoff gaps. Each uses an
+exponentially weighted mean and absolute deviation (weight 0.2); the estimate
+is the larger of the latest sample and mean plus three deviations. Network
+slowdowns enlarge the lead immediately; stable recovery and on-time handoffs
+shrink it. Empty or fair-limited replies do not teach dispatch latency.
+Cold sessions use `poll_ms` for dispatch and one compute piece for preparation
+and update spacing. Learning is local to the running session, uses a monotonic
+clock and sends no probes or additional telemetry.
+
+A background pack prepares its first row while the current row computes;
+execution reuses that order. There is still at most one buffered next pack,
+subject to `packs_held`, server gates and unchanged fairness and independence
+rules. Failed requests back off even when results or renewals are due; a
+successful reply's new-work gate still permits both. Task scarcity and fair
+share waits are not interpreted as a reason to prefetch further ahead.
 
 | reply | meaning | then |
 | --- | --- | --- |

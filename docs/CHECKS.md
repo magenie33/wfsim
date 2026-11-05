@@ -604,6 +604,14 @@ actual progress triggers refill before completion, without counting completed
 rows twice. Pausing during a slow refill returns its work without starting it.
 Failed-sync backoff also gates result flushing and renewals; ordinary server
 gates still allow both, and failed requests retry once backoff expires.
+Adaptive refill uses live folded progress even before 80%: a fast current row
+overrides a stale previous duration, a slow row waits, and share changes reset
+its rate. Fast measured dispatch shrinks the cold lead, a slowdown expands it
+immediately, recovery shrinks it again, and the server ceiling always bounds
+it. Actual sync processing and preparation feed timings; empty replies do not.
+Late and on-time handoffs feed positive and zero gaps respectively. Background
+preparation is reused, and completed-row pace is learned for its task and share
+only when that share stayed unchanged.
 
 ## `check_sync_proc`
 
