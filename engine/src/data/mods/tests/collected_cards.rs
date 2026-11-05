@@ -11,7 +11,7 @@ fn partially_modelled_cards_name_their_unsupported_clauses() {
     assert_eq!(unmodeled_clauses("amalgam_furax_body_count").len(), 2);
     assert!(unmodeled_clauses("amalgam_ripkas_true_steel")
         .iter().any(|s| s.contains("shotgun")));
-    assert!(unmodeled_clauses("sentient_incision").is_empty());
+    assert_eq!(unmodeled_clauses("sentient_incision").len(), 2);
     assert!(!lower_ranks_unmodelled("no_return"));
     assert!(lower_ranks_unmodelled("blade_of_truth"));
 }

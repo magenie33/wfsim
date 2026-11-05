@@ -345,6 +345,7 @@ pub fn resolve_for(
         ProcConv { from, to, chance, low_rate_threshold: 0.0, low_rate_multiplier: 1.0 }
     });
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
+    let mut adaptive_element = None;
     // SEEDED from the weapon, not empty: an evolution's indirect stat is a
     // property of the weapon by the time `resolve` runs (evolutions are folded
     // into `WeaponBase` first), and it shares its bucket with the mods'.
@@ -602,6 +603,7 @@ pub fn resolve_for(
                         phys_bonus.push((t, v));
                     }
                 }
+                ModEffect::AdaptiveElement(ref spec) => adaptive_element = Some(spec.clone()),
                 ModEffect::Element(t, v) | ModEffect::CombinedElement(t, v) => {
                     if let Some(x) = elem_bonus.iter_mut().find(|(a, _)| *a == t) {
                         x.1 += v;
@@ -1685,6 +1687,7 @@ pub fn resolve_for(
         // *"As a direct result, this mod also increases throwing distance."*
         range_m: if base.form.is_throw() { beam_range_m * ps } else { beam_range_m },
         damage,
+        adaptive_element,
         resting,
         per_hit_element,
         radial,

@@ -889,6 +889,9 @@ fn mod_sources(
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "it pays only on a form that SPENDS the counter — the two heavy modes"})),
                 // Event mechanic — no static stat; the sim rolls it per hit.
+                AdaptiveElement(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "the struck target selects the element; Slam damage is excluded"})),
                 ProcConversion { .. } => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "rolled per damage instance in the sim"})),

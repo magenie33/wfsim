@@ -61,6 +61,7 @@ mod sniper_combo_fight;
 mod spliced_riven;
 mod status_crit_parts;
 mod status_composition;
+mod sentient_incision;
 mod stormburst;
 mod stream_independence;
 mod m125_reflex_floor_hold;
@@ -108,6 +109,7 @@ impl Default for FightParams {
             damage: Self::dual_toxocyst_base_vector(),
             resting: None,
             per_hit_element: None,
+            adaptive_element: None,
             radial: None,
             cluster: None,
             reload_grenade: None,
@@ -664,6 +666,7 @@ fn frail_target(mode: TargetMode, armor: f64, overguard: f64) -> Foe {
         status_immunities: Vec::new(),
         faction: crate::model::Faction::Unknown,
         type_mods: crate::data::factions::Columns::NEUTRAL,
+        damage_column: "unknown".into(),
         faction_bracket_multiplier: 1.0,
         mode,
     }
@@ -816,6 +819,7 @@ fn bare(forced: DamageType) -> FightParams {
 fn column_dummy(key: &str, overguard: f64) -> Foe {
     Foe {
         type_mods: crate::data::factions::columns_for(key),
+        damage_column: key.into(),
         ..frail_target(TargetMode::InfiniteHealth, 0.0, overguard)
     }
 }

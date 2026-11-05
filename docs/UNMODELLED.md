@@ -866,9 +866,14 @@ modelled card keeps its ordinary stat lines active and declares unsupported
 clauses separately. Anchored Glide, Controlled Slide and Warrior's Rest apply
 their Ability Strength bonus; their passive-disabling clauses are unmodelled.
 
-Sentient Incision's adaptive element selection, Burning Hate's persistent
-target vulnerability and Static Discharge's attack-dependent pulses remain
-unmodelled. Biting Frost needs frozen-target weapon bonuses; Abundant Mutation,
+Sentient Incision applies its published faction/Overguard elemental mapping
+on non-slam hits. Its fallback for unmapped targets and its contribution to
+non-copying Extra Hit elemental brackets remain unmodelled; MECHANICS §3
+states the Wiki-sourced rules and their calibration limits.
+
+Burning Hate's persistent target vulnerability and Static Discharge's
+attack-dependent pulses remain unmodelled. Biting Frost needs frozen-target
+weapon bonuses; Abundant Mutation,
 Gastroparesis, Rhythm Guard and Rubble Heap need their frame-specific state.
 Valence Formation's configured fight buff is modelled, but its mod rank and
 imbued-cast activation are not connected to the Warframe build.

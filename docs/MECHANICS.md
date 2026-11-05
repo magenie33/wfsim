@@ -284,6 +284,30 @@ order dependence remains a top calibration target (CORE.md §3).
 
 ---
 
+### Target-selected elemental damage
+
+Sentient Incision adds `ModifiedBase × rank bonus` to the finished attack
+vector, outside the elemental hierarchy. Its explicit damage-column map lives
+in the mod's YAML; it is not an argmax over damage vulnerabilities. The enemy's
+`FactionDamageOverride ?? Faction` selects the map entry, independently of the
+combat faction used by Bane. While the struck body has Overguard, the bonus
+selects Corrosive. Each contact reads that body's current pools, including
+follow-through contacts and repeated hits. An element chosen for a contact
+stays on that instance when damage spills through a broken pool.
+
+The added component participates in direct damage and status weighting, and
+its status effects use the ordinary Melee Influence path. It does not increase
+ModifiedBase or the corresponding element's DoT bracket. Slam components do
+not receive it. Inline replacement vulnerability columns have no published
+adaptive mapping. Unmapped target columns and the bonus's contribution to
+non-copying Extra Hit brackets remain explicitly unmodelled.
+
+Source: [Sentient Incision](https://wiki.warframe.com/w/Sentient_Incision),
+Stats, Notes and Bugs. Status: unverified. ModifiedBase sizing, additive
+same-element stacking and the contact-time Overguard choice follow the
+ordinary elemental-bonus pipeline; the measurement queue records the cases
+that still need an in-game reading.
+
 ### Continuous ammo cost — the 0.5 rule does NOT reach a charge pool
 
 Continuous weapons "consume 0.5 ammo per tick of damage", and the patch note

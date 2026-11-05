@@ -13,10 +13,30 @@ exclusive_to:
 - venato_heavy
 - venato_heavy_slam
 - venato_prime
-lower_ranks_unmodelled: true
-description: "+120% additional damage matching the target's weakness. Does not combine with other damage types."
-# Adaptive damage switches with target health and Overguard, never combines, excludes slams and does not increase elemental DoT bases.
+description: "+X% additional damage matching the target's weakness. Does not combine with other damage types."
 effects:
+- kind: adaptive_element_bonus
+  rank0: 0.2
+  rankMax: 1.2
+  overguard: corrosive
+  by_damage_column:
+    infested: heat
+    anarchs: electricity
+    narmer: toxin
+    grineer: corrosive
+    kuva_grineer: corrosive
+    zariman: corrosive
+    scaldra: corrosive
+    corpus: magnetic
+    corpus_amalgam: magnetic
+    techrot: magnetic
+    orokin: viral
+    sentient: radiation
+    the_murmur: radiation
+    infested_deimos: gas
 - kind: unmodelled
+  clause: adaptive damage against targets without a published faction mapping
+- kind: unmodelled
+  clause: adaptive damage in non-copying Extra Hit elemental brackets
 source:
   url: "https://wiki.warframe.com/w/Sentient_Incision"
