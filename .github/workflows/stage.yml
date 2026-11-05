@@ -18,6 +18,11 @@ name: stage
 # source alone would stage a site/ no longer the one about to ship.
 on:
   workflow_dispatch:
+    inputs:
+      cache_art:
+        description: refresh declared game art in build inputs only
+        type: boolean
+        default: false
 
 # One at a time, and the newest wins: a run staging an older commit while a
 # newer one is already up adds blobs nothing will point at.
@@ -35,10 +40,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Fetch declared art
+        if: inputs.cache_art
+        run: |
+          python scripts/build_cache.py public-pull
+          python scripts/de_export.py fetch --lang en
+          python scripts/fetch_images.py
+      - name: Publish build inputs
+        if: inputs.cache_art
+        env:
+          COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
+          COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
+          COS_BUCKET: ${{ secrets.COS_BUCKET }}
+          COS_REGION: ${{ secrets.COS_REGION }}
+          COS_ACCELERATE: "1"
+        run: python scripts/build_cache.py push
       # THE BOARD MOVES ONCE AN HOUR AND THE RELEASE DOES NOT, so most
       # pushes stage a manifest the bucket already holds and stop after one
       # request. That gate is inside the script, where a re-run gets it too.
       - name: Stage
+        if: ${{ !inputs.cache_art }}
         env:
           COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
           COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
