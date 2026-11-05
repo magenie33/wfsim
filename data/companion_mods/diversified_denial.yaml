@@ -1,0 +1,15 @@
+id: diversified_denial
+name: Diversified Denial
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetPrecepts/ZanukaPetClonePrecept
+compat: hound
+precept: true
+description: "Fabricate 3 Specters that fight for 30s. Each deals 85% of the Hound's damage and cannot use Abilities."
+effects:
+- kind: unmodelled
+  text: "Fabricate 3 Specters that fight for 30s. Each deals 85% of the Hound's damage and cannot use Abilities."
+source:
+  url: "https://wiki.warframe.com/w/Diversified_Denial"

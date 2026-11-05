@@ -8,6 +8,7 @@ form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: efv_8_mars
 mod_pools: [pistol]   # CompatibilityTags PROJECTILE, AOE
+compatibility_tags: [aoe]
 mastery_rank: 14
 max_rank: 30
 

@@ -1,0 +1,15 @@
+id: sly_devolution
+name: Sly Devolution
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/VulpineInfestedCatbrowRespawn
+compat: sly_vulpaphyla
+precept: true
+description: Devolves into its larval form when downed and regains its true form after 30s. Your kills reduce enemy accuracy against Warframes by 20% for 8s.
+effects:
+- kind: unmodelled
+  text: Devolves into its larval form when downed and regains its true form after 30s. Your kills reduce enemy accuracy against Warframes by 20% for 8s.
+source:
+  url: "https://wiki.warframe.com/w/Sly_Devolution"

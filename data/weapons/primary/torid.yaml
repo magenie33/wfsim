@@ -17,6 +17,7 @@ default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 # A launcher takes no `assault_rifle` / `bow` / `sniper` mods, which is why
 # those are their own pools rather than more entries in `rifle`.
 mod_pools: [primary, rifle, assault_rifle]   # assault_rifle takes launchers (M106)
+compatibility_tags: [aoe]
 grip_type: ""                  # the data module records an empty GripType
 mastery_rank: 4
 max_rank: 30

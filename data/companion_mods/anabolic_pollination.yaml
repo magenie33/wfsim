@@ -1,0 +1,15 @@
+id: anabolic_pollination
+name: Anabolic Pollination
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/InfestedPredatorBuffSporesPrecept
+compat: pharaoh_predasite
+precept: true
+description: Release a cloud of spores that persists for 10s increasing Toxin Damage by +100% for 15s.
+effects:
+- kind: unmodelled
+  text: Release a cloud of spores that persists for 10s increasing Toxin Damage by +100% for 15s.
+source:
+  url: "https://wiki.warframe.com/w/Anabolic_Pollination"

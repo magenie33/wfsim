@@ -1,0 +1,8 @@
+id: boreal
+name: Boreal
+members: 3
+bonus:
+  kind: unmodelled
+  per_mod: 0.0
+source:
+  url: "https://wiki.warframe.com/w/Boreal_Set"

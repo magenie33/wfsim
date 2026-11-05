@@ -1,0 +1,15 @@
+id: iatric_mycelium
+name: Iatric Mycelium
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/InfestedPredatorHealingSporesPrecept
+compat: vizier_predasite
+precept: true
+description: Release a trail of spores every 8s that heal the companion and its allies for 300 health over 5s.
+effects:
+- kind: unmodelled
+  text: Release a trail of spores every 8s that heal the companion and its allies for 300 health over 5s.
+source:
+  url: "https://wiki.warframe.com/w/Iatric_Mycelium"

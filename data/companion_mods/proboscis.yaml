@@ -1,0 +1,15 @@
+id: proboscis
+name: Proboscis
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/KubrowPetPrecepts/KubrowGrabPrecept
+compat: helminth_charger
+precept: true
+description: Helminth Charger whips a proboscis out at an enemy within 30m, pulling them back and dealing 100 damage.
+effects:
+- kind: unmodelled
+  text: Helminth Charger whips a proboscis out at an enemy within 30m, pulling them back and dealing 100 damage.
+source:
+  url: "https://wiki.warframe.com/w/Proboscis"

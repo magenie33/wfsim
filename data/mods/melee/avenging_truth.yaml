@@ -1,0 +1,21 @@
+id: avenging_truth
+name: Avenging Truth
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/SilvaAegisMod
+exclusive_to:
+- silva_and_aegis
+- silva_and_aegis_block
+- silva_and_aegis_block_forward
+- silva_and_aegis_forward
+- silva_and_aegis_heavy
+- silva_and_aegis_heavy_slam
+- silva_and_aegis_prime
+lower_ranks_unmodelled: true
+description: "Blocking absorbs 50% of incoming damage, stored as Extra Damage for the next charge attack.\n+1 'Truth'"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Avenging_Truth"

@@ -1,0 +1,15 @@
+id: persistent_posture
+name: Persistent Posture
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPersistentStance
+compat: beast_claws
+precept: true
+description: The companion will pick a target and then attack it relentlessly. +40% Impact Damage
+effects:
+- kind: unmodelled
+  text: The companion will pick a target and then attack it relentlessly. +40% Impact Damage
+source:
+  url: "https://wiki.warframe.com/w/Persistent_Posture"

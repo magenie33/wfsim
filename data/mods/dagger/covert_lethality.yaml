@@ -1,0 +1,13 @@
+id: covert_lethality
+name: Covert Lethality
+rarity: rare
+polarity: madurai
+base_drain: 10
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeStealthLethalMod
+lower_ranks_unmodelled: true
+description: "+16 Initial Combo\n+100% Finisher Damage"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Covert_Lethality"

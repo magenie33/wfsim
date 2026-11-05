@@ -9,6 +9,7 @@ form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: basmu
 mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, PROJECTILE, AOE, BATTERY
+compatibility_tags: [aoe]
 mastery_rank: 11
 max_rank: 30
 

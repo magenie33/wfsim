@@ -1855,6 +1855,9 @@ untouched.
 
 ## `check_companion_mods`
 
+The searchable catalogue includes beast and claw cards outside the robotic
+host's equipment pool, and filtering it leaves that pool unchanged.
+
 The companion builder draws ten general slots with four innate Penjaga
 polarities, offers the universal pool and no model's own card, says plainly
 what of it pays, and seating one through the picker spends capacity and is born

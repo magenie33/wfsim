@@ -1,0 +1,16 @@
+id: warriors_rest
+name: "Warrior's Rest"
+rarity: rare
+polarity: zenurik
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Powersuits/Excalibur/ExcaliburUmbraPassiveAugmentCard
+exilus: true
+exclusive_to:
+- excalibur_umbra
+description: "Passive Augment: Umbra's Ability Strength increases by +15% but he no longer fights independently alongside his Operator."
+effects:
+- kind: unmodelled
+  text: "Passive Augment: Umbra's Ability Strength increases by +15% but he no longer fights independently alongside his Operator."
+source:
+  url: "https://wiki.warframe.com/w/Warrior%27s_Rest"

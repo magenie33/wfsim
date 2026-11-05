@@ -1,0 +1,16 @@
+id: mending_shot
+name: Mending Shot
+rarity: rare
+polarity: madurai
+base_drain: 0
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/ShootPickUpRifleMod
+exilus: true
+excludes_weapon:
+- aoe
+lower_ranks_unmodelled: true
+description: Shoot Health Orbs to obtain them with +110% extra effect.
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Mending_Shot"

@@ -1,0 +1,15 @@
+id: hunt
+name: Hunt
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/KubrowPetPrecepts/KubrowChargePrecept
+compat: huras_kubrow
+precept: true
+description: The kubrow charges at a target, dragging them and dealing 120% damage to all in its path.
+effects:
+- kind: unmodelled
+  text: The kubrow charges at a target, dragging them and dealing 120% damage to all in its path.
+source:
+  url: "https://wiki.warframe.com/w/Hunt"

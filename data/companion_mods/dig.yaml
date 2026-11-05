@@ -1,0 +1,15 @@
+id: dig
+name: Dig
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/KubrowPetPrecepts/KubrowDigPrecept
+compat: sahasa_kubrow
+precept: true
+description: "The kubrow sniffs out buried objects and digs them up.\n+270% Success Chance"
+effects:
+- kind: unmodelled
+  text: "The kubrow sniffs out buried objects and digs them up.\n+270% Success Chance"
+source:
+  url: "https://wiki.warframe.com/w/Dig"

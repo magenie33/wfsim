@@ -42,7 +42,14 @@ const r = await evaluate(`(async () => {
   const before = compUsed();
   document.querySelector('#comp-mod-slots .slot.filled .rk[data-d="-1"]').click(); await sleep(900);
   const ranked = { used: compUsed(), before };
-  return { slots, innate, penjaga, capBefore, says, offered, seated, ranked };
+  const catalog = document.getElementById('comp-catalogue');
+  const catalogue = { all: catalog.querySelectorAll('.opt').length,
+    hasBite: all.some((m) => m.id === 'bite' && m.compat === 'beast_claws'),
+    noBiteInHost: !pool.some((m) => m.id === 'bite') };
+  const search = document.getElementById('comp-catalogue-search');
+  search.value = 'bite'; search.dispatchEvent(new Event('input', { bubbles: true }));
+  catalogue.filtered = catalog.querySelectorAll('.opt').length;
+  return { slots, innate, penjaga, capBefore, says, offered, seated, ranked, catalogue };
 })()`);
 console.log(JSON.stringify(r, null, 1));
 check("ten general slots, with four innate Penjaga polarities",
@@ -56,4 +63,8 @@ check("seating one through the picker spends capacity and is born as a build",
   JSON.stringify(r.seated));
 check("...and a rank down costs a point less", r.ranked.used === r.ranked.before - 1,
   JSON.stringify(r.ranked));
+check("the searchable catalogue includes beast claws outside the robotic host's pool",
+  r.catalogue.all === r.offered.all && r.catalogue.hasBite && r.catalogue.noBiteInHost
+  && r.catalogue.filtered > 0 && r.catalogue.filtered < r.catalogue.all,
+  JSON.stringify(r.catalogue));
 await app.finish("a companion seats its pool");

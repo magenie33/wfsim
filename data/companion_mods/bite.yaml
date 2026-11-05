@@ -1,0 +1,15 @@
+id: bite
+name: Bite
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/KubrowCritMod
+compat: beast_claws
+precept: false
+description: "+330% Critical Chance\n+220% Critical Damage"
+effects:
+- kind: unmodelled
+  text: "+330% Critical Chance\n+220% Critical Damage"
+source:
+  url: "https://wiki.warframe.com/w/Bite"

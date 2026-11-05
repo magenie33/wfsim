@@ -1,0 +1,15 @@
+id: howl
+name: Howl
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/KubrowPetPrecepts/KubrowFearPrecept
+compat: raksa_kubrow
+precept: true
+description: The kubrow cries out with a blood-curdling howl that strikes fear into 15 enemies within 24m for 16s.
+effects:
+- kind: unmodelled
+  text: The kubrow cries out with a blood-curdling howl that strikes fear into 15 enemies within 24m for 16s.
+source:
+  url: "https://wiki.warframe.com/w/Howl"

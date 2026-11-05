@@ -1,0 +1,15 @@
+id: radon_claws
+name: Radon Claws
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/DualStat/KubrowRadiationEventMeleeMod
+compat: beast_claws
+precept: false
+description: "+60% Radiation\n+80% Critical Damage"
+effects:
+- kind: unmodelled
+  text: "+60% Radiation\n+80% Critical Damage"
+source:
+  url: "https://wiki.warframe.com/w/Radon_Claws"

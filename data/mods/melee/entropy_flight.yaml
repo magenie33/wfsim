@@ -1,0 +1,23 @@
+id: entropy_flight
+name: Entropy Flight
+rarity: rare
+polarity: naramon
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/KestrelMod
+exclusive_to:
+- kestrel
+- kestrel_block
+- kestrel_block_forward
+- kestrel_charged_throw
+- kestrel_forward
+- kestrel_heavy_slam
+- kestrel_prime
+- kestrel_slide
+- kestrel_throw
+lower_ranks_unmodelled: true
+description: "+140% Projectile Speed\n+1 'Entropy'"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Entropy_Flight"

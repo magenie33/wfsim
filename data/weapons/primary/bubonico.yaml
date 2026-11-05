@@ -14,6 +14,7 @@ class: shotgun
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [primary, shotgun]
+compatibility_tags: [aoe]
 transform_group: bubonico
 mastery_rank: 13
 max_rank: 30

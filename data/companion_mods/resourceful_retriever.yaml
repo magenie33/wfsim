@@ -1,0 +1,15 @@
+id: resourceful_retriever
+name: Resourceful Retriever
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/BeastResourceDoublingMod
+compat: beast
+precept: false
+description: 18% chance to double Resource pickups
+effects:
+- kind: unmodelled
+  text: 18% chance to double Resource pickups
+source:
+  url: "https://wiki.warframe.com/w/Resourceful_Retriever"

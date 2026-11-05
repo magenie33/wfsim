@@ -1,0 +1,22 @@
+id: static_discharge
+name: Static Discharge
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/Event/CorpusArena/ProvaCorpusArenaMod
+exclusive_to:
+- prova
+- prova_block
+- prova_block_forward
+- prova_forward
+- prova_heavy
+- prova_heavy_slam
+- prova_slide
+- prova_vandal
+lower_ranks_unmodelled: true
+description: Heavy Attacks electrify nearby enemies for Electricity Damage equal to 80% of weapon damage.
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Static_Discharge"

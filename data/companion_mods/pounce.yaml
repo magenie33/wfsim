@@ -1,0 +1,15 @@
+id: pounce
+name: Pounce
+rarity: uncommon
+polarity: madurai
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowPouncePrecept
+compat: kavat
+precept: false
+description: The Kavat pounces at an enemy, dealing 90% Damage and stunning them for a short duration.
+effects:
+- kind: unmodelled
+  text: The Kavat pounces at an enemy, dealing 90% Damage and stunning them for a short duration.
+source:
+  url: "https://wiki.warframe.com/w/Pounce"

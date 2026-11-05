@@ -9,6 +9,7 @@ form: charged
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: opticor
 mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, AOE, SINGLESHOT
+compatibility_tags: [aoe]
 mastery_rank: 14
 max_rank: 30
 

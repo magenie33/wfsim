@@ -1,0 +1,22 @@
+id: gleaming_blight
+name: Gleaming Blight
+rarity: rare
+polarity: naramon
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/DarkDaggerMod
+exclusive_to:
+- dark_dagger
+- dark_dagger_block
+- dark_dagger_block_forward
+- dark_dagger_forward
+- dark_dagger_heavy
+- dark_dagger_heavy_slam
+- dark_dagger_slide
+- rakta_dark_dagger
+lower_ranks_unmodelled: true
+description: "+100% Status Chance\n+1 'Blight'"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Gleaming_Blight"

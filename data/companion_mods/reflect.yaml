@@ -1,0 +1,15 @@
+id: reflect
+name: Reflect
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowReflectPrecept
+compat: adarza_kavat
+precept: true
+description: Adarza Kavat has a 40% chance to reflect damage back to an enemy, amplifying it by 60%.
+effects:
+- kind: unmodelled
+  text: Adarza Kavat has a 40% chance to reflect damage back to an enemy, amplifying it by 60%.
+source:
+  url: "https://wiki.warframe.com/w/Reflect"

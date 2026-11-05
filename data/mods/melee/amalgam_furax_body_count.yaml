@@ -1,0 +1,25 @@
+id: amalgam_furax_body_count
+name: Amalgam Furax Body Count
+rarity: rare
+polarity: naramon
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/DualSource/Melee/FuraxLauncherMod
+exclusive_to:
+- furax
+- furax_block
+- furax_block_forward
+- furax_forward
+- furax_heavy
+- furax_heavy_slam
+- furax_wraith
+- mk1_furax
+lower_ranks_unmodelled: true
+description: "+15s Combo Duration\n+45% Fire Rate for Secondary Weapons\nMelee kills  Blast and stagger enemies in 15m"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Amalgam_Furax_Body_Count"
+excludes_weapon:
+- sentinel_weapon
+family: combo_duration

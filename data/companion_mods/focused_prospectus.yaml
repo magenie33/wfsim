@@ -1,0 +1,15 @@
+id: focused_prospectus
+name: Focused Prospectus
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetPrecepts/ZanukaPetMegaLaserPrecept
+compat: hound
+precept: true
+description: Fires a beam of energy that deals 900 Heat Damage over 4.5s.
+effects:
+- kind: unmodelled
+  text: Fires a beam of energy that deals 900 Heat Damage over 4.5s.
+source:
+  url: "https://wiki.warframe.com/w/Focused_Prospectus"

@@ -1,0 +1,15 @@
+id: hunter_recovery
+name: Hunter Recovery
+rarity: common
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Hunter/CompanionHunterRecoveryMod
+compat: beast
+precept: false
+description: Warframe healed for +30% Companion Damage dealt
+effects:
+- kind: unmodelled
+  text: Warframe healed for +30% Companion Damage dealt
+source:
+  url: "https://wiki.warframe.com/w/Hunter_Recovery"

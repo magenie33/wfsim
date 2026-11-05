@@ -1,0 +1,15 @@
+id: rhythm_guard
+name: Rhythm Guard
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Powersuits/Temple/TemplePassiveAugment1Card
+exclusive_to:
+- temple
+description: "Passive Augment: Gain 100 Overguard when using an Ability on the Backbeat. Amount doubles up to 1600 per Beat, but resets if the Beat is missed."
+effects:
+- kind: unmodelled
+  text: "Passive Augment: Gain 100 Overguard when using an Ability on the Backbeat. Amount doubles up to 1600 per Beat, but resets if the Beat is missed."
+source:
+  url: "https://wiki.warframe.com/w/Rhythm_Guard"

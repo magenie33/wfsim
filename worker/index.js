@@ -334,7 +334,7 @@ async function pending(env) {
 /// What a share code may contain: the version character, then the alphabet
 /// every form travels in — the compact forms' own and base64url's. EXPORTED so
 /// `check_share_short.mjs` can hold it against the page's `SHARE_TEXT_OK`.
-export const SHARE_CODE = /^[0-4][A-Za-z0-9~.:;,!_%-]{1,1500}$/;
+export const SHARE_CODE = /^[0-5][A-Za-z0-9~.:;,!_%-]{1,1500}$/;
 /// A weapon's URL slug (`urlSlug` on the page): every one in the roster is
 /// letters, digits, `_` and `-`, so a slash has nowhere to hide.
 const SHARE_WEAPON = /^[A-Za-z0-9_-]{1,80}$/;

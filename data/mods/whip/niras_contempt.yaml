@@ -1,0 +1,14 @@
+id: niras_contempt
+name: "Nira's Contempt"
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Nira/NiraMeleeMod
+lower_ranks_unmodelled: true
+description: "+90% Melee Damage\n+60% Status Chance"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Nira%27s_Contempt"
+set: nira

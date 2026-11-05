@@ -1,0 +1,15 @@
+id: mischief
+name: Mischief
+rarity: rare
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowDistractPrecept
+compat: smeeta_kavat
+precept: true
+description: Smeeta Kavat becomes invisible for 9s every 7s while a decoy kavat draws fire. Decoy has a 15% chance to evade damage and blinds nearby enemies on death.
+effects:
+- kind: unmodelled
+  text: Smeeta Kavat becomes invisible for 9s every 7s while a decoy kavat draws fire. Decoy has a 15% chance to evade damage and blinds nearby enemies on death.
+source:
+  url: "https://wiki.warframe.com/w/Mischief"

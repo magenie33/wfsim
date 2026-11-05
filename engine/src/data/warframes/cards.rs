@@ -188,6 +188,8 @@ pub struct WarframeMod {
     pub set_bonus: Vec<(u32, f64)>,
     /// The ability this augments; it pays nothing without that ability.
     pub augments: Option<String>,
+    /// Passive augments name the frames that can seat them, including variants.
+    pub exclusive_to: Vec<String>,
     pub internal_name: Option<String>,
     pub description: crate::prose::Prose,
     pub effects: Vec<FrameEffect>,
@@ -215,6 +217,8 @@ pub(super) struct RawMod {
     pub(super) set_bonus: BTreeMap<u32, f64>,
     #[serde(default)]
     pub(super) augments: Option<String>,
+    #[serde(default)]
+    pub(super) exclusive_to: Vec<String>,
     #[serde(default)]
     pub(super) internal_name: Option<String>,
     #[serde(default)]
@@ -245,6 +249,7 @@ pub(super) fn aura_card(a: &crate::data::auras::AuraDef) -> WarframeMod {
         set: None,
         set_bonus: Vec::new(),
         augments: None,
+        exclusive_to: Vec::new(),
         internal_name: a.internal_name.clone(),
         description: a.description.clone(),
         effects,
@@ -279,6 +284,7 @@ pub fn mods() -> &'static [WarframeMod] {
                     set: r.set,
                     set_bonus: r.set_bonus.into_iter().collect(),
                     augments: r.augments,
+                    exclusive_to: r.exclusive_to,
                     internal_name: r.internal_name,
                     description: r.description,
                     url: r.source.url,

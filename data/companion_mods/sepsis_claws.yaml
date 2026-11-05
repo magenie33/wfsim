@@ -1,0 +1,15 @@
+id: sepsis_claws
+name: Sepsis Claws
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/KubrowToxicConversionMod
+compat: beast_claws
+precept: false
+description: "+330% Toxin\n+330% Status Chance\nConverts all elemental damage from these claws to Toxin damage"
+effects:
+- kind: unmodelled
+  text: "+330% Toxin\n+330% Status Chance\nConverts all elemental damage from these claws to Toxin damage"
+source:
+  url: "https://wiki.warframe.com/w/Sepsis_Claws"

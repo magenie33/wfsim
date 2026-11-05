@@ -1,0 +1,13 @@
+id: tainted_clip
+name: Tainted Clip
+rarity: rare
+polarity: naramon
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/CorruptedMaxClipReloadSpeedPistol
+lower_ranks_unmodelled: true
+description: "+60% Magazine Capacity\n-30% Reload Speed"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Tainted_Clip"

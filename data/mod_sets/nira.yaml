@@ -1,0 +1,8 @@
+id: nira
+name: Nira
+members: 3
+bonus:
+  kind: unmodelled
+  per_mod: 0.0
+source:
+  url: "https://wiki.warframe.com/w/Nira_Set"

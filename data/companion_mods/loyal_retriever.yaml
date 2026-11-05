@@ -1,0 +1,15 @@
+id: loyal_retriever
+name: Loyal Retriever
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/BeastLoyalRetriever
+compat: beast
+precept: false
+description: 13% chance to double Credit and Resource pickups
+effects:
+- kind: unmodelled
+  text: 13% chance to double Credit and Resource pickups
+source:
+  url: "https://wiki.warframe.com/w/Loyal_Retriever"

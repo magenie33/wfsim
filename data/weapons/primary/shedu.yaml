@@ -8,6 +8,7 @@ default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 # ARM-CANNON is a chassis, not a mod class. Same three pools a rifle gets.
 class: rifle
 mod_pools: [primary, rifle]
+compatibility_tags: [aoe]
 grip_type: RIFLE
 mastery_rank: 13
 max_rank: 30

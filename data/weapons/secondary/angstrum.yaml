@@ -6,6 +6,7 @@ class: pistol
 form: charged
 default_form: true
 mod_pools: [pistol]
+compatibility_tags: [aoe]
 mastery_rank: 4
 max_rank: 30
 

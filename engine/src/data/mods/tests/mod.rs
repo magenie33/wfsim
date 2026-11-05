@@ -14,3 +14,4 @@ mod stance;
 mod synth_charge;
 mod tome;
 mod weapon_exclusive_survey;
+mod wiki_survey;

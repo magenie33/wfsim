@@ -6,6 +6,7 @@ class: dual_pistols
 form: base
 default_form: true
 mod_pools: [pistol]
+compatibility_tags: [aoe]
 mastery_rank: 8
 max_rank: 30
 

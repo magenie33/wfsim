@@ -1,0 +1,15 @@
+id: protector_posture
+name: Protector Posture
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastProtectorStance
+compat: beast_claws
+precept: true
+description: The companion will prioritize attacking enemies within 15m of the Warframe. Attacks inflict +4  Puncture Status Effects
+effects:
+- kind: unmodelled
+  text: The companion will prioritize attacking enemies within 15m of the Warframe. Attacks inflict +4  Puncture Status Effects
+source:
+  url: "https://wiki.warframe.com/w/Protector_Posture"

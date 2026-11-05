@@ -1,0 +1,23 @@
+id: bright_purity
+name: Bright Purity
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/SkanaMod
+exclusive_to:
+- prisma_skana
+- skana
+- skana_block
+- skana_block_forward
+- skana_forward
+- skana_heavy
+- skana_heavy_slam
+- skana_prime
+- skana_slide
+lower_ranks_unmodelled: true
+description: "+100% Melee Damage\n+1 'Purity'"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Bright_Purity"

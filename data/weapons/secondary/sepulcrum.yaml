@@ -10,6 +10,7 @@ default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: sepulcrum
 transforms_to: sepulcrum_lockon
 mod_pools: [pistol]   # CompatibilityTags AOE
+compatibility_tags: [aoe]
 mastery_rank: 14
 max_rank: 30
 

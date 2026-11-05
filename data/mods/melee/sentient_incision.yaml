@@ -1,0 +1,21 @@
+id: sentient_incision
+name: Sentient Incision
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/Event/Nightwave/NightwaveVenatoAugmentMod
+exclusive_to:
+- venato
+- venato_block
+- venato_block_forward
+- venato_forward
+- venato_heavy
+- venato_heavy_slam
+- venato_prime
+lower_ranks_unmodelled: true
+description: "+120% additional damage matching the target's weakness. Does not combine with other damage types."
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Sentient_Incision"

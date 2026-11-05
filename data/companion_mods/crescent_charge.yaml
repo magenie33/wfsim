@@ -1,0 +1,15 @@
+id: crescent_charge
+name: Crescent Charge
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/InfestedCatbrowGoreTossPrecept
+compat: crescent_vulpaphyla
+precept: true
+description: "Charges an enemy within 25m dealing Puncture Damage and lifting them. While lifted, enemy is flung at nearby foes dealing an additional 20% of the thrown enemy's health and adding 5 Puncture Status to enemies within 5m."
+effects:
+- kind: unmodelled
+  text: "Charges an enemy within 25m dealing Puncture Damage and lifting them. While lifted, enemy is flung at nearby foes dealing an additional 20% of the thrown enemy's health and adding 5 Puncture Status to enemies within 5m."
+source:
+  url: "https://wiki.warframe.com/w/Crescent_Charge"

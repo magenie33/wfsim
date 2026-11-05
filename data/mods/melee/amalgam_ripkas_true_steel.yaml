@@ -1,0 +1,24 @@
+id: amalgam_ripkas_true_steel
+name: Amalgam Ripkas True Steel
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/DualSource/Melee/RipkasShotgunMod
+exclusive_to:
+- ripkas
+- ripkas_block
+- ripkas_block_forward
+- ripkas_forward
+- ripkas_heavy
+- ripkas_heavy_slam
+- ripkas_slide
+lower_ranks_unmodelled: true
+description: "+187% Critical Chance (x2 for Heavy Attacks)\n+20% Reload Speed on Shotguns\n+100% Gore Chance"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Amalgam_Ripkas_True_Steel"
+excludes_weapon:
+- sentinel_weapon
+family: true_steel

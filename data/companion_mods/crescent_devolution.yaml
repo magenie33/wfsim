@@ -1,0 +1,15 @@
+id: crescent_devolution
+name: Crescent Devolution
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/HornedInfestedCatbrowRespawn
+compat: crescent_vulpaphyla
+precept: true
+description: Devolves into its larval form when downed and charges at enemies, dealing 100 Puncture Damage. Regains true form after 30s.
+effects:
+- kind: unmodelled
+  text: Devolves into its larval form when downed and charges at enemies, dealing 100 Puncture Damage. Regains true form after 30s.
+source:
+  url: "https://wiki.warframe.com/w/Crescent_Devolution"

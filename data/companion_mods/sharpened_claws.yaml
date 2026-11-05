@@ -1,0 +1,15 @@
+id: sharpened_claws
+name: Sharpened Claws
+rarity: uncommon
+polarity: madurai
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowShredPrecept
+compat: kavat
+precept: false
+description: A vicious attack dealing 300% damage that sunders armor by 120% and rends flesh.
+effects:
+- kind: unmodelled
+  text: A vicious attack dealing 300% damage that sunders armor by 120% and rends flesh.
+source:
+  url: "https://wiki.warframe.com/w/Sharpened_Claws"

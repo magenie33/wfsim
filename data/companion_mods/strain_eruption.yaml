@@ -1,0 +1,15 @@
+id: strain_eruption
+name: Strain Eruption
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sets/Strain/HelminthStrainEruptionMod
+compat: helminth_charger
+precept: false
+description: "Maggots explode on death, dealing 4% of an enemy's current Health as Corrosive Damage to any enemy within 8m."
+effects:
+- kind: unmodelled
+  text: "Maggots explode on death, dealing 4% of an enemy's current Health as Corrosive Damage to any enemy within 8m."
+source:
+  url: "https://wiki.warframe.com/w/Strain_Eruption"

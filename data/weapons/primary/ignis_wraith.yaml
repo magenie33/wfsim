@@ -10,6 +10,7 @@ class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags BEAM, ASSAULT_AMMO, AOE
+compatibility_tags: [aoe]
 mastery_rank: 9
 max_rank: 30
 

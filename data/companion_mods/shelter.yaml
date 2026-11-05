@@ -1,0 +1,15 @@
+id: shelter
+name: Shelter
+rarity: uncommon
+polarity: vazarin
+base_drain: 6
+max_rank: 10
+internal_name: /Lotus/Types/Friendly/Pets/KubrowPetPrecepts/KubrowSanctuary
+compat: beast
+precept: false
+description: Creates a shield with 1800 Health around the player when they are reviving fallen allies.
+effects:
+- kind: unmodelled
+  text: Creates a shield with 1800 Health around the player when they are reviving fallen allies.
+source:
+  url: "https://wiki.warframe.com/w/Shelter"

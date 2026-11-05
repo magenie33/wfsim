@@ -1,0 +1,15 @@
+id: reflex_denial
+name: Reflex Denial
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetPrecepts/ZanukaPetMagneticRepulsePrecept
+compat: hound
+precept: true
+description: Generates a shield that reflects 90% Damage taken in pulses over 10s as Magnetic Damage in a 12m radius.
+effects:
+- kind: unmodelled
+  text: Generates a shield that reflects 90% Damage taken in pulses over 10s as Magnetic Damage in a 12m radius.
+source:
+  url: "https://wiki.warframe.com/w/Reflex_Denial"

@@ -1,0 +1,16 @@
+id: biting_frost
+name: Biting Frost
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Powersuits/Frost/FrostPassiveAugmentCard
+exclusive_to:
+- frost
+- frost_prime
+description: Frost gains +200% Critical Chance and +100% Critical Damage against frozen enemies.
+effects:
+- kind: unmodelled
+  text: Frost gains +200% Critical Chance and +100% Critical Damage against frozen enemies.
+source:
+  url: "https://wiki.warframe.com/w/Biting_Frost"

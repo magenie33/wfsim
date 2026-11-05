@@ -12,22 +12,22 @@
 # app refuses by RULE (flawed variants, riven placeholders, Conclave-only),
 # and the rule rides beside it.
 #
-# 453 of 719 carried, 245 excluded by rule, 21 still to transcribe.
+# 468 of 719 carried, 248 excluded by rule, 3 still to transcribe.
 #
 # Per pool (carried / in export, gap):
 #   archgun            37/ 39 gap 0   assault_rifle       8/ 15 gap 0   assault_saw         1/  1 gap 0
-#   blade_and_whip      1/  2 gap 0   bow                 1/ 10 gap 4   claws               3/ 10 gap 0
-#   dagger              3/  6 gap 1   dual_daggers        4/  5 gap 0   dual_nikanas        1/  1 gap 0
+#   blade_and_whip      1/  2 gap 0   bow                 3/ 10 gap 0   claws               3/ 10 gap 0
+#   dagger              4/  6 gap 0   dual_daggers        4/  5 gap 0   dual_nikanas        1/  1 gap 0
 #   dual_swords         3/  4 gap 0   fist                3/  4 gap 0   glaive             11/ 16 gap 0
 #   gunblade            2/  2 gap 0   hammer              2/  3 gap 0   heavy_blade         3/  4 gap 0
 #   heavy_scythe        1/  1 gap 0   machete             2/  3 gap 0   melee              91/143 gap 0
-#   nikana              3/  4 gap 0   nunchaku            1/  2 gap 0   pistol             81/140 gap 5
-#   polearm             3/  5 gap 1   primary            10/ 10 gap 0   rapier              1/  2 gap 0
-#   rifle              72/120 gap 1   scythe              2/  3 gap 0   shotgun            76/119 gap 1
-#   sniper              3/ 14 gap 7   sparring            2/  3 gap 0   staff               1/  2 gap 0
+#   nikana              3/  4 gap 0   nunchaku            1/  2 gap 0   pistol             84/140 gap 1
+#   polearm             4/  5 gap 0   primary            10/ 10 gap 0   rapier              1/  2 gap 0
+#   rifle              73/120 gap 0   scythe              2/  3 gap 0   shotgun            76/119 gap 1
+#   sniper              9/ 14 gap 1   sparring            2/  3 gap 0   staff               1/  2 gap 0
 #   sword               4/  5 gap 0   sword_and_shield    2/  3 gap 0   tome                8/  8 gap 0
 #   tonfa               2/  3 gap 0   two_handed_nikana   1/  1 gap 0   valkyr_talons       0/  0 gap 0
-#   warfan              2/  2 gap 0   whip                2/  4 gap 1
+#   warfan              2/  2 gap 0   whip                3/  4 gap 0
 mods:
   - name: Ammo Chain
     pool: archgun
@@ -270,16 +270,17 @@ mods:
   - name: Arrow Mutation
     pool: bow
     internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponBowConvertAmmoModExpert
-    carried: ~
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
   - name: Arrow Mutation
     pool: bow
     internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/WeaponBowConvertAmmoModIntermediate
     carried: excluded
-    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
   - name: Arrow Mutation
     pool: bow
     internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponBowConvertAmmoMod
-    carried: ~
+    carried: data/mods/bow/arrow_mutation.yaml
   - name: Feathered Arrows
     pool: bow
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/HigherVelocityLessDamageBowMod
@@ -302,16 +303,17 @@ mods:
   - name: Thunderbolt
     pool: bow
     internal_name: /Lotus/Upgrades/Mods/Rifle/BowExplosionChanceMod
-    carried: ~
+    carried: data/mods/bow/thunderbolt.yaml
   - name: Thunderbolt
     pool: bow
     internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/BowExplosionChanceModExpert
-    carried: ~
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
   - name: Thunderbolt
     pool: bow
     internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/BowExplosionChanceModIntermediate
     carried: excluded
-    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
   - name: Assassin Posture
     pool: claws
     internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance
@@ -362,7 +364,7 @@ mods:
   - name: Covert Lethality
     pool: dagger
     internal_name: /Lotus/Upgrades/Mods/Melee/WeaponMeleeStealthLethalMod
-    carried: ~
+    carried: data/mods/dagger/covert_lethality.yaml
   - name: Heartseeker
     pool: dagger
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Melee/DaggerMeleeAutoTargetBonus
@@ -1336,7 +1338,7 @@ mods:
   - name: Energizing Shot
     pool: pistol
     internal_name: /Lotus/Upgrades/Mods/Pistol/Event/ShootPickUpPistolMod
-    carried: ~
+    carried: data/mods/pistol/energizing_shot.yaml
   - name: Expel Corpus
     pool: pistol
     internal_name: /Lotus/Upgrades/Mods/Pistol/Beginner/WeaponPistolFactionDamageCorpusBeginner
@@ -1535,15 +1537,16 @@ mods:
     pool: pistol
     internal_name: /Lotus/Upgrades/Mods/Pistol/Beginner/WeaponArmorPiercingDamageModBeginner
     carried: excluded
-    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
   - name: No Return
     pool: pistol
     internal_name: /Lotus/Upgrades/Mods/Pistol/Expert/WeaponArmorPiercingDamageModExpert
-    carried: ~
+    carried: excluded
+    reason: "export duplicate: an /Expert/ entry under a name already carried, where the real Primed mod has its own uniqueName"
   - name: No Return
     pool: pistol
     internal_name: /Lotus/Upgrades/Mods/Pistol/WeaponArmorPiercingDamageMod
-    carried: ~
+    carried: data/mods/pistol/no_return.yaml
   - name: Pathogen Rounds
     pool: pistol
     internal_name: /Lotus/Upgrades/Mods/Pistol/Beginner/WeaponToxinDamageModBeginner
@@ -1799,7 +1802,7 @@ mods:
   - name: Tainted Clip
     pool: pistol
     internal_name: /Lotus/Upgrades/Mods/Pistol/DualStat/CorruptedMaxClipReloadSpeedPistol
-    carried: ~
+    carried: data/mods/pistol/tainted_clip.yaml
   - name: Target Cracker
     pool: pistol
     internal_name: /Lotus/Upgrades/Mods/Pistol/Beginner/WeaponCritDamageModBeginner
@@ -1844,7 +1847,7 @@ mods:
   - name: Boreal's Contempt
     pool: polearm
     internal_name: /Lotus/Upgrades/Mods/Sets/Boreal/BorealMeleeMod
-    carried: ~
+    carried: data/mods/polearm/boreals_contempt.yaml
   - name: Shimmering Blight
     pool: polearm
     internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PolearmCmbOneMeleeTree
@@ -2141,7 +2144,7 @@ mods:
   - name: Mending Shot
     pool: rifle
     internal_name: /Lotus/Upgrades/Mods/Rifle/Event/Arbitration/ShootPickUpRifleMod
-    carried: ~
+    carried: data/mods/rifle/mending_shot.yaml
   - name: Metal Auger
     pool: rifle
     internal_name: /Lotus/Upgrades/Mods/Rifle/Beginner/WeaponPunctureDepthModBeginner
@@ -2963,7 +2966,7 @@ mods:
   - name: Aero Agility
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Sets/Hawk/HawkModB
-    carried: ~
+    carried: data/mods/sniper/aero_agility.yaml
   - name: Charged Chamber
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/SniperReloadDamageModIntermediate
@@ -2976,7 +2979,7 @@ mods:
   - name: Depleted Reload
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Rifle/DualStat/CorruptedReloadSpeedMaxClipRifle
-    carried: ~
+    carried: data/mods/sniper/depleted_reload.yaml
   - name: Emergent Aftermath
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Rifle/FasterReloadOnKillSniperMod
@@ -3002,24 +3005,24 @@ mods:
   - name: Primed Sniper Ammo Mutation
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Rifle/Expert/WeaponSnipersConvertAmmoModExpert
-    carried: ~
+    carried: data/mods/sniper/primed_sniper_ammo_mutation.yaml
   - name: Sharpshooter
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Rifle/EnergyOnHeadshotRifle
-    carried: ~
+    carried: data/mods/sniper/sharpshooter.yaml
   - name: Sniper Ammo Mutation
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/WeaponSnipersConvertAmmoModIntermediate
     carried: excluded
-    reason: "DE's own internal tier of a card the player holds under the same name (the bare path is the released one, and the wiki's rank table matches it)"
+    reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
   - name: Sniper Ammo Mutation
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponSnipersConvertAmmoMod
-    carried: ~
+    carried: data/mods/sniper/sniper_ammo_mutation.yaml
   - name: Target Acquired
     pool: sniper
     internal_name: /Lotus/Upgrades/Mods/Rifle/SniperHeadshotMultiplierMod
-    carried: ~
+    carried: data/mods/sniper/target_acquired.yaml
   - name: Brutal Tide
     pool: sparring
     internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/PunchKickCmbTwoMeleeTree
@@ -3149,4 +3152,4 @@ mods:
   - name: Nira's Contempt
     pool: whip
     internal_name: /Lotus/Upgrades/Mods/Sets/Nira/NiraMeleeMod
-    carried: ~
+    carried: data/mods/whip/niras_contempt.yaml

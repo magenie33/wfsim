@@ -1,0 +1,15 @@
+id: survival_instinct
+name: Survival Instinct
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/InfestedCatbrowEvasionBuffPrecept
+compat: sly_vulpaphyla
+precept: true
+description: "On Bullet Jump:\nEnemies lose sight of you for 1.5s. 5s cooldown."
+effects:
+- kind: unmodelled
+  text: "On Bullet Jump:\nEnemies lose sight of you for 1.5s. 5s cooldown."
+source:
+  url: "https://wiki.warframe.com/w/Survival_Instinct"

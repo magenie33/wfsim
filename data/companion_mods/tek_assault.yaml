@@ -1,0 +1,15 @@
+id: tek_assault
+name: Tek Assault
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sets/Tek/KavatTekAssaultMod
+compat: kavat
+precept: false
+description: Kavat has 60% chance to ignore Lethal Damage and be immune for 4s.
+effects:
+- kind: unmodelled
+  text: Kavat has 60% chance to ignore Lethal Damage and be immune for 4s.
+source:
+  url: "https://wiki.warframe.com/w/Tek_Assault"

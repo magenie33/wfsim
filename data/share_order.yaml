@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 39dd78fb3dc181de
-count: 3837
+digest: 10c84c3c1229f863
+count: 3871
 ids:
   - acceltra
   - acceltra_prime
@@ -3847,3 +3847,37 @@ ids:
   - caustacyst_heavy
   - coda_caustacyst_heavy
   - zenistar_heavy
+  - adhesive_blast
+  - aero_agility
+  - amalgam_furax_body_count
+  - amalgam_ripkas_true_steel
+  - amanata_pressure
+  - arrow_mutation
+  - avenging_truth
+  - blade_of_truth
+  - bright_purity
+  - burning_hate
+  - concealed_explosives
+  - covert_lethality
+  - depleted_reload
+  - electromagnetic_shielding
+  - energizing_shot
+  - entropy_detonation
+  - entropy_flight
+  - gleaming_blight
+  - harrowing_spire
+  - hunters_bonesaw
+  - justice_blades
+  - mending_shot
+  - no_return
+  - primed_sniper_ammo_mutation
+  - rift_strike
+  - sentient_incision
+  - sharpshooter
+  - sniper_ammo_mutation
+  - static_discharge
+  - tainted_clip
+  - target_acquired
+  - thunderbolt
+  - toxic_blight
+  - vulcan_blitz

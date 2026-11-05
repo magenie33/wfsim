@@ -1,0 +1,15 @@
+id: transfusion
+name: Transfusion
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowTransfusionPrecept
+compat: vasca_kavat
+precept: true
+description: When its Master is bleeding out, the Vasca Kavat sacrifices 20% of its Health to raise them.
+effects:
+- kind: unmodelled
+  text: When its Master is bleeding out, the Vasca Kavat sacrifices 20% of its Health to raise them.
+source:
+  url: "https://wiki.warframe.com/w/Transfusion"

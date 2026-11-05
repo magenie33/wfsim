@@ -201,7 +201,7 @@ else {
 // Exercise both compact encoders with indexed parts as well as today's literal-id fallback.
 const codecSource = readFileSync(new URL('../worker/share_codec.js', import.meta.url), 'utf8');
 const codec = await import('data:text/javascript;base64,' + Buffer.from(codecSource
-  + '\nexport { packV3, packV4 };').toString('base64'));
+  + '\nexport { packV3, packV4, packV5, unpackV4 };').toString('base64'));
 const ids = ['sepfahn_one_handed', 'peye', 'vargeet_ii_jai', 'tombfinger_secondary', 'haymaker', 'killstream'];
 codec.useShareHost({ index: { to: new Map(ids.map((v, i) => [v, i])), from: new Map(ids.map((v, i) => [i, v])) },
   evoPrefixFor: () => '', rivenName: () => '' });
@@ -210,7 +210,7 @@ for (const [weapon, parts, expected] of [
   ['tombfinger_secondary', ['haymaker', 'killstream'], { grip: 'haymaker', loader: 'killstream' }],
 ]) {
   const payload = [2, weapon, 0, [], [], [], [], 0, 0, 0, 0, parts];
-  for (const [version, pack] of [['3', codec.packV3], ['4', codec.packV4]]) {
+  for (const [version, pack] of [['3', codec.packV3], ['4', codec.packV4], ['5', codec.packV5]]) {
     const packed = pack(payload);
     const back = await codec.decodeShare(version + packed);
     check(version + ' preserves ' + (parts[2] || 'loader') + ' as its component kind',
@@ -220,6 +220,22 @@ for (const [weapon, parts, expected] of [
     }
   }
 }
+
+const wideIds = ['braton', 'new_mod', 'primary_merciless', 'braton_evo', 'damage', 'recoil', 'grip', 'link'];
+const wideIndices = [0, 3844, 3845, 3846, 3847, 3848, 3849, 3850];
+codec.useShareHost({ index: { to: new Map(wideIds.map((v, i) => [v, wideIndices[i]])),
+  from: new Map(wideIds.map((v, i) => [wideIndices[i], v])) },
+  evoPrefixFor: () => 'braton_', rivenName: () => 'derived' });
+const widePayload = [2, 'braton', 'named', [['new_mod', 'M', 2], 0, ['~0', 'V', 4]],
+  [['primary_merciless', 3]], ['evo', ''], [['custom', '2+1', 8, 'V', [['damage', 1]], ['recoil', 0.9]]],
+  0, 0, 'aimed', ['heat', 0.6], ['grip', 'link', 'link']];
+const widePacked = codec.packV5(widePayload);
+check('v4 declines an index beyond its frozen width', codec.packV4(widePayload) === null);
+check('v5 round-trips wide ids, empty slots, ranked rivens, evolutions and assembly',
+  !!widePacked && JSON.stringify(codec.unpackV4(widePacked, 3)) === JSON.stringify(widePayload));
+const wideDecoded = await codec.decodeShare('5' + widePacked);
+check('the shared decoder accepts v5', wideDecoded?.w === 'braton' && wideDecoded.slots[0].mod === 'new_mod');
+check('the short-link endpoint accepts v5', (await store('Braton', '5' + widePacked)).j.ok);
 
 console.log(failures ? `\n${failures} failed` : "\nshort links store a build and nothing else");
 process.exit(failures ? 1 : 0);

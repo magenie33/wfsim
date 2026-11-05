@@ -16,6 +16,7 @@ class: shotgun
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [primary, shotgun]
+compatibility_tags: [aoe]
 transform_group: coda_bubonico
 # see notes: enforced_unlike_kuva_or
 mastery_rank: 17

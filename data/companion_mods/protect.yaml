@@ -1,0 +1,15 @@
+id: protect
+name: Protect
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/KubrowPetPrecepts/KubrowShieldPrecept
+compat: raksa_kubrow
+precept: true
+description: "The kubrow comes to the defense of its master, replenishing both of their shields by 30% of its maximum shields and adding its shield regeneration rate to its master's for 3s."
+effects:
+- kind: unmodelled
+  text: "The kubrow comes to the defense of its master, replenishing both of their shields by 30% of its maximum shields and adding its shield regeneration rate to its master's for 3s."
+source:
+  url: "https://wiki.warframe.com/w/Protect"

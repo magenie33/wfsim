@@ -1,0 +1,15 @@
+id: viral_quills
+name: Viral Quills
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/InfestedKavatViralQuillsPrecept
+compat: panzer_vulpaphyla
+precept: true
+description: Launches 6 quills at enemies within 20m, each dealing 60 Viral Damage with 40% Status Chance. If the target is affected by a Viral Status, a Spore is added. 4s cooldown.
+effects:
+- kind: unmodelled
+  text: Launches 6 quills at enemies within 20m, each dealing 60 Viral Damage with 40% Status Chance. If the target is affected by a Viral Status, a Spore is added. 4s cooldown.
+source:
+  url: "https://wiki.warframe.com/w/Viral_Quills"

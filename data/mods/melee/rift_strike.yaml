@@ -1,0 +1,21 @@
+id: rift_strike
+name: Rift Strike
+rarity: uncommon
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/Event/ProjectNightwatch/TwinBasolkNightwatchMod
+exclusive_to:
+- twin_basolk
+- twin_basolk_block
+- twin_basolk_block_forward
+- twin_basolk_forward
+- twin_basolk_heavy
+- twin_basolk_heavy_slam
+- twin_basolk_slide
+lower_ranks_unmodelled: true
+description: Heavy attacks now step through the rift to attack enemies up to 25m away
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Rift_Strike"

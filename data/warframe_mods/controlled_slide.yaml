@@ -1,0 +1,17 @@
+id: controlled_slide
+name: Controlled Slide
+rarity: rare
+polarity: zenurik
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Powersuits/Nezha/NezhaDisablePassiveMod
+exilus: true
+exclusive_to:
+- nezha
+- nezha_prime
+description: "Disable Nezha's passive ability. Increase Ability Strength by 15%."
+effects:
+- kind: unmodelled
+  text: "Disable Nezha's passive ability. Increase Ability Strength by 15%."
+source:
+  url: "https://wiki.warframe.com/w/Controlled_Slide"

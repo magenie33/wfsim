@@ -618,7 +618,10 @@ append, so a reorder is a red test rather than a link that quietly opens
 somebody else's build. It is worth 3.4x: the same Laetum is 279 characters as
 slugs and 79 as indices. The v2 array is still the one internal
 representation, so `importShare` and everything below it are untouched; v1 and
-v2 links still open.
+v2 links still open. v4 spells each index in two base62 characters; v5 uses
+three, covering indices beyond 3,843. Each version keeps its original width.
+The page measures every available form and sends the shortest; the page and
+worker read the same codec.
 AND v3 IS PLAIN TEXT IN THE URL. At 79 characters deflate makes the payload
 BIGGER, so the text goes in raw; the separators are RFC 3986 unreserved
 characters and sub-delims a query accepts unescaped. A payload it cannot

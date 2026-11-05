@@ -1,0 +1,15 @@
+id: charm
+name: Charm
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowLuckPrecept
+compat: smeeta_kavat
+precept: true
+description: Smeeta Kavat has a 40% chance every 27s to bestow its owner with good fortune.
+effects:
+- kind: unmodelled
+  text: Smeeta Kavat has a 40% chance every 27s to bestow its owner with good fortune.
+source:
+  url: "https://wiki.warframe.com/w/Charm"

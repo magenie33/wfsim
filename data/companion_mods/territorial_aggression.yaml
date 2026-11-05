@@ -1,0 +1,15 @@
+id: territorial_aggression
+name: Territorial Aggression
+rarity: uncommon
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowMarkTerritoryPrecept
+compat: kavat
+precept: true
+description: The Kavat stakes their territory in a radius of 6m for 15s. Each second, enemies within this area have a 30% chance of being attacked by a shadow Kavat.
+effects:
+- kind: unmodelled
+  text: The Kavat stakes their territory in a radius of 6m for 15s. Each second, enemies within this area have a 30% chance of being attacked by a shadow Kavat.
+source:
+  url: "https://wiki.warframe.com/w/Territorial_Aggression"

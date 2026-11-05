@@ -1,0 +1,16 @@
+id: rubble_heap
+name: Rubble Heap
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Powersuits/Brawler/BrawlerPassiveAugmentCard
+exclusive_to:
+- atlas
+- atlas_prime
+description: "Passive Augment: When above 1400 Rubble, Landslide costs no Energy, deals 2x Damage, and travels 2x faster."
+effects:
+- kind: unmodelled
+  text: "Passive Augment: When above 1400 Rubble, Landslide costs no Energy, deals 2x Damage, and travels 2x faster."
+source:
+  url: "https://wiki.warframe.com/w/Rubble_Heap"

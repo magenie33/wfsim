@@ -1,0 +1,15 @@
+id: sniper_ammo_mutation
+name: Sniper Ammo Mutation
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Rifle/WeaponSnipersConvertAmmoMod
+exilus: true
+lower_ranks_unmodelled: true
+description: Converts Secondary ammo pickups to 50% of Ammo Pick Up.
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Sniper_Ammo_Mutation"
+family: sniper_ammo_mutation

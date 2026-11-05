@@ -1,0 +1,13 @@
+id: thunderbolt
+name: Thunderbolt
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Rifle/BowExplosionChanceMod
+lower_ranks_unmodelled: true
+description: +30% Chance to Explode (Use with Caution)
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Thunderbolt"

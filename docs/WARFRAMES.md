@@ -23,6 +23,10 @@ this builder; a card the fight cannot use says `kind: out_of_scope`, and
 filed there because the fight reads it, and is seated in the EXILUS slot
 (`exilus: true`).
 
+Passive augments declare `exclusive_to` with the ids of every eligible frame
+variant. Ability augments use `augments` instead, so the equipped ability
+continues to decide eligibility after a Helminth infusion.
+
 **A FRAME'S ARMOR, ENERGY AND SPRINT ARE `data/frames.yaml`'s**, the same row
 the fight's Tenno reads. `data/warframes/<id>.yaml` carries only what a build
 needs beyond them, and loading one whose id is not in the roster panics.
@@ -258,7 +262,7 @@ the hosts and no frame.
   315-438 for Shields and 350-438 for Armor"), whose lows are the floor's
   candidates. Health is the MOA's 367 and shield and armor are the Sentinels'.
 - A COMPANION BUILD IS MODS, AND ONE OF THEM PAYS. `data/companion_mods/`
-  holds the 74-card robotic pool; **TEN GENERAL SLOTS** and no special one
+  holds robotic, beast and beast-claw cards; **TEN GENERAL SLOTS** and no special one
   (W`Mod`: *"Companions have 10 general slots"*), **FOUR INNATE PENJAGA
   POLARITIES** on every companion (W`Sentinel`; W`MOA_(Companion)`: *"Like
   Sentinels, MOAs start with four Penjaga polarities"*, a bracket adding at most
@@ -282,6 +286,10 @@ the hosts and no frame.
   (docs/UI.md §The default is the blank). The WARFRAME BEHIND A COMPANION — the
   aura and archon shards a robotic weapon takes from it — is not modelled: that
   is a link a companion does not carry yet.
+
+The companion page's searchable Mod catalogue lists every companion card,
+including model-specific precepts and beast-claw cards. The robotic host's
+picker offers only the cards it can seat; the catalogue does not equip them.
 
 ## Adding a frame
 

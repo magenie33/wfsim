@@ -1,0 +1,15 @@
+id: evasive_denial
+name: Evasive Denial
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetPrecepts/ZanukaPetEvasionPrecept
+compat: hound
+precept: true
+description: Teleports a safe distance away and engages a displacement field gaining 75% chance to dodge enemy fire for 8s.
+effects:
+- kind: unmodelled
+  text: Teleports a safe distance away and engages a displacement field gaining 75% chance to dodge enemy fire for 8s.
+source:
+  url: "https://wiki.warframe.com/w/Evasive_Denial"

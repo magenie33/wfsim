@@ -1,0 +1,15 @@
+id: chilling_claws
+name: Chilling Claws
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/KubrowColdConversionMod
+compat: beast_claws
+precept: false
+description: "+330% Cold\n+330% Status Chance\nConverts all elemental damage from these claws to Cold damage"
+effects:
+- kind: unmodelled
+  text: "+330% Cold\n+330% Status Chance\nConverts all elemental damage from these claws to Cold damage"
+source:
+  url: "https://wiki.warframe.com/w/Chilling_Claws"

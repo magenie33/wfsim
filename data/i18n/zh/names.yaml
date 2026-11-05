@@ -2634,6 +2634,42 @@ mods:
   volatile_quick_return: 易爆速返
   volatile_rebound: 易爆反弹
   whirlwind: 旋风
+  adhesive_blast: 凝胶爆破
+  aero_agility: 空飞 灵巧
+  amalgam_furax_body_count: 并合 弗拉克斯 杀伤计数
+  amalgam_ripkas_true_steel: 并合 锐卡斯 斩铁
+  amanata_pressure: 天薙刀 压迫点
+  arrow_mutation: 箭矢转换
+  avenging_truth: 复仇真相
+  blade_of_truth: 真相之刃
+  boreals_contempt: 诡文枭主之鄙
+  bright_purity: 光明纯净
+  burning_hate: 炽烈憎恨
+  concealed_explosives: 内置炸药
+  covert_lethality: 致命匿杀
+  depleted_reload: 耗竭装填
+  electromagnetic_shielding: 电磁屏障
+  energizing_shot: 充沛射击
+  entropy_detonation: 熵数起爆
+  entropy_flight: 飞逝熵数
+  gleaming_blight: 毁坏微光
+  harrowing_spire: 胆寒尖刺
+  hunters_bonesaw: 猎人骨锯
+  justice_blades: 正义刀锋
+  mending_shot: 补愈射击
+  niras_contempt: 混沌蛇主之鄙
+  no_return: 有去无回
+  primed_sniper_ammo_mutation: 狙击枪弹药转换 Prime
+  rift_strike: 裂缝打击
+  sentient_incision: Sentient 切口
+  sharpshooter: 神射手
+  sniper_ammo_mutation: 狙击枪弹药转换
+  static_discharge: 静电释放
+  tainted_clip: 感染弹匣
+  target_acquired: 锁定目标
+  thunderbolt: 雷火
+  toxic_blight: 毁坏毒素
+  vulcan_blitz: 火神闪击
 
 arcanes:
   akimbo_slip_shot: 双枪·滑射
@@ -3429,6 +3465,15 @@ warframe_mods:
   wrath_of_ukko: 乌戈之怒
   wrecking_wall: 粉碎壁垒
   primed_redirection: 蓄能重划 Prime
+  abundant_mutation: 增生突变
+  anchored_glide: 聚精滑翔
+  biting_frost: 刺骨寒霜
+  controlled_slide: 平稳滑步
+  gastroparesis: 胃无力
+  rhythm_guard: 律动护卫
+  rubble_heap: 碎石堆叠
+  valence_formation: 效价炼成
+  warriors_rest: 战士休憩
 
 warframe_arcanes:
   arcane_acceleration: 赋能·加速
@@ -3593,3 +3638,93 @@ companion_mods:
   vaporize: 汽化
   vicious_bond: 凶恶连结
   whiplash_mine: 牵绳机雷
+  acidic_spittle: 浓酸唾液
+  aerial_prospectus: 空中招股
+  ambush: 幽灵伏击
+  anabolic_pollination: 同化授粉
+  assassin_posture: 刺杀姿势
+  balanced_posture: 稳定姿势
+  bell_ringer: 击钟者
+  bite: 咬碎
+  bloodthirst: 嗜血
+  brute_conditioning: 蛮力调控
+  burning_claws: 灼热之爪
+  cats_eye: 猫眼
+  charm: 招福
+  chilling_claws: 寒冰之爪
+  crescent_charge: 月刃刺冲
+  crescent_devolution: 月刃回溯
+  cull_the_weak: 优胜劣汰
+  dig: 挖掘
+  disabling_conditioning: 伤残调控
+  diversified_denial: 多元否认
+  draining_bite: 吸血噬咬
+  elusive_posture: 诡秘姿势
+  endoparasitic_vector: 内寄生向量
+  equilibrium_audit: 均衡审计
+  evasive_denial: 推诿否认
+  fear_sense: 恐惧感知
+  ferocity: 凶恶终结
+  fetch: 取回
+  flame_gland: 火焰腺体
+  focused_prospectus: 重点招股
+  frenzied_posture: 狂暴姿势
+  frost_jaw: 冰冻双颚
+  hastened_deflection: 急速偏斜
+  howl: 嚎声
+  hunt: 狩猎
+  hunter_command: 猎人 命令
+  hunter_recovery: 猎人 复元
+  hunter_synergy: 猎人 协力
+  iatric_mycelium: 医疗菌丝
+  immunity_resistance: 免疫抵御
+  infectious_bite: 感染咬噬
+  loyal_retriever: 忠诚寻回者
+  magnetic_claws: 磁化利爪
+  magnetic_strike: 磁力打击
+  martyr_symbiosis: 忠勇共生
+  maul: 捶击
+  mecha_overdrive: 机甲 超载
+  mecha_recharge: 机甲 充能
+  mischief: 顽皮
+  neutralize: 啃咬压制
+  null_audit: 虚无审计
+  panzer_devolution: 铁甲回溯
+  paralytic_spores: 瘫痪孢子
+  persistent_posture: 坚韧姿势
+  pounce: 猛扑
+  precision_conditioning: 精准调控
+  proboscis: 长吻
+  prosperous_retriever: 丰裕寻回者
+  protect: 保护
+  protector_posture: 护卫姿势
+  radon_claws: 辐能利爪
+  reflect: 反射
+  reflex_denial: 反射否认
+  repo_audit: 回购审计
+  resourceful_retriever: 富足寻回者
+  retrieve: 嗅索取物
+  savagery: 野蛮压制
+  scavenge: 搜集
+  sepsis_claws: 脓毒之爪
+  sharpened_claws: 磨锋之爪
+  shelter: 庇护
+  shock_collar: 电击项圈
+  shocking_claws: 电击之爪
+  sly_devolution: 狡黠回溯
+  stalk: 隐密追踪
+  strain_eruption: 菌株 爆裂
+  strain_fever: 菌株 热毒
+  survival_instinct: 生存本能
+  swipe: 挥击
+  synergized_prospectus: 协同招股
+  tandem_bond: 串联连结
+  tek_assault: 技法 猛袭
+  tek_enhance: 技法 强化
+  territorial_aggression: 侵略领土
+  trample: 践踏
+  transfusion: 血注
+  unleashed: 释放
+  venom_teeth: 牙齿毒液
+  viral_quills: 疫病尖刺
+  volatile_parasite: 暴怒寄生

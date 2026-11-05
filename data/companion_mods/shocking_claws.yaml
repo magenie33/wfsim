@@ -1,0 +1,15 @@
+id: shocking_claws
+name: Shocking Claws
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/KubrowElectricConversionMod
+compat: beast_claws
+precept: false
+description: "+330% Electricity\n+330% Status Chance\nConverts all elemental damage from these claws to Electricity damage"
+effects:
+- kind: unmodelled
+  text: "+330% Electricity\n+330% Status Chance\nConverts all elemental damage from these claws to Electricity damage"
+source:
+  url: "https://wiki.warframe.com/w/Shocking_Claws"
