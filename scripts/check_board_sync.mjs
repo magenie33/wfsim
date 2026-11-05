@@ -12,6 +12,8 @@ import { setDial, forgetDials, DIALS, SYNC_CLIENT_DIALS } from "../worker/dials.
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { facts } from "../worker/factory.js";
 import { testDb } from "./pg/test_db.mjs";
+import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
 
 Math.random = () => 0.5;
 let failures = 0;
@@ -64,7 +66,7 @@ await comeBack(A);
 
 console.log("\na pack, and the time to come back");
 // A PACE IS KNOWN, so the pack is sized by time: many rows, enough to test with.
-const first = await as(A, { pace_ms: 1000 });
+const first = await as(A, { pace_ms: 30_000 });
 check("a sync is handed a pack of board rows, and when to come back", first.pack && first.pack.tasks.length >= 6 && first.pack.tasks[0].record.weapon === "braton_prime"
   && first.next_ms >= DIALS.sync_floor_ms.default && first.protocol === 8, JSON.stringify(first).slice(0, 400));
 check("…with every dial a protocol 8 client reads", SYNC_CLIENT_DIALS.every((k) => first.dials && first.dials[k] === DIALS[k].default), JSON.stringify(first.dials));
@@ -186,12 +188,29 @@ await snap(1_000_000, new Date().toISOString());
 const plenty = await as(E, { pace_ms: 1000 });
 check("a fresh snapshot of plenty open is not short: a fast computer's pack is leased long",
   plenty.pack && plenty.pack.lease_ms === DIALS.sync_lease_ms.default, JSON.stringify(plenty.pack && { n: plenty.pack.tasks.length, lease_ms: plenty.pack.lease_ms }));
-// A PAGE WITH NO PACE YET is handed a few rows and told the floor, never a
-// whole pack's time it would sit out idle once they are done.
+// A bootstrap pack cannot establish a safe delay before its first measurement.
 await free(); await comeBack(E);
 const cold = await as(E);
-check("a pack handed to a computer with no pace says come back at the floor",
-  cold.pack && cold.next_ms === DIALS.sync_floor_ms.default, JSON.stringify({ n: cold.pack && cold.pack.tasks.length, next_ms: cold.next_ms }));
+check("a bootstrap pack allows refill as soon as its pace is measured",
+  cold.pack && cold.next_ms === 0, JSON.stringify({ n: cold.pack && cold.pack.tasks.length, next_ms: cold.next_ms }));
+check("the persisted bootstrap gate agrees with the reply",
+  Date.parse((await L.get("SELECT next_at FROM verifiers WHERE id = ?", E)).next_at) <= Date.now());
+await free(); await comeBack(E);
+const small = await as(E, { pace_ms: 1000 });
+check("a small pack does not gate refill beyond its low-work threshold",
+  small.pack && small.next_ms === Math.min(DIALS.sync_floor_ms.default,
+    Math.max(0, small.pack.tasks.length * 1000 - DIALS.sync_low_ms.default)), JSON.stringify({ n: small.pack?.tasks.length, next_ms: small.next_ms }));
+const renewOnly = await as(E, { want_ms: 0, held: [{ lease: small.pack.lease, rows: small.pack.tasks.map((t) => t.question) }] });
+check("a renewal without new work does not impose a new refill delay", renewOnly.next_ms === 0, JSON.stringify(renewOnly).slice(0, 200));
+await free(); await comeBack(E);
+await setDial(env, "sync_scale_pct", 125, "check");
+const beforeScaled = Date.now(), scaled = await as(E, { pace_ms: 30_000, want_ms: 150_000 }), afterScaled = Date.now();
+const scaledGate = Date.parse((await L.get("SELECT next_at FROM verifiers WHERE id = ?", E)).next_at);
+check("a paced partial pack scales its gate and persists the same deadline",
+  scaled.pack?.tasks.length === 5 && scaled.next_ms === 37_500
+    && scaledGate >= beforeScaled + scaled.next_ms && scaledGate <= afterScaled + scaled.next_ms,
+  JSON.stringify({ n: scaled.pack?.tasks.length, next_ms: scaled.next_ms, scaledGate, beforeScaled, afterScaled }));
+await setDial(env, "sync_scale_pct", 100, "check");
 // …A SNAPSHOT OVER A MINUTE OLD IS NOT READ: open is counted here, and these few rows are short.
 await free(); await comeBack(E);
 await snap(1_000_000, new Date(Date.now() - 120_000).toISOString());
@@ -205,6 +224,62 @@ await setDial(env, "sync_off", 1, "check");
 check("sync_off answers every sync with fallback 7", (await as(E)).fallback === 7);
 await setDial(env, "sync_off", 0, "check");
 forgetDials(); forgetWitnesses();
+
+console.log("\nthe official page and desktop refill loop");
+const source = readFileSync(new URL("../web/src/static/app/69-board-work.js", import.meta.url), "utf8");
+const page = {
+  Date: class extends Date { static now() { return 100_000; } },
+  setTimeout, heldPack: null, packQueue: [], lostRows: new Set(), boardPaceMs: 1000,
+  syncDials: { packs_held: 2, poll_ms: 10_000, sync_low_ms: 120_000, flush_ms: 600_000, report_ms: 0 },
+  boardProtocol: 8, syncNotBefore: 0, syncInFlight: null, syncWork: null, bootSyncAt: 1, lastSyncAt: 100_000, resultsMem: [],
+  jittered: (ms) => ms, keptResults: async () => [], loadCut: () => null, maybeReloadForRelease() {}, idleCount() {},
+  communityLanes: () => 4,
+  reads: 0, measured: 0, asked: 0,
+};
+page.readSignal = async () => { page.reads++; return { open: 0, urgent: 0 }; };
+page.packRowOnce = async () => { page.measured++; return true; };
+page.boardSync = async () => { page.asked++; return null; };
+const client = runInNewContext(source.slice(source.indexOf("function heldRows()"), source.indexOf("function boardSyncBody(")) +
+  source.slice(source.indexOf("const idleWaitMs ="), source.indexOf("function keepRow8(")) +
+  "\n({ workOnce8, refill8, idleWaitMs });", page);
+const pack = (lease) => ({ proto: 8, lease, next: 0, tasks: [{ question: lease }], done: new Set() });
+let finishSync;
+page.heldPack = { ...pack("old"), next: 1, done: new Set(["old"]) };
+page.syncInFlight = new Promise((ok) => { finishSync = ok; }).then(() => { page.packQueue.push(pack("next")); page.syncInFlight = null; });
+let settled = false;
+const handoff = client.workOnce8("device").then((worked) => { settled = true; return worked; });
+for (let i = 0; i < 10; i++) await Promise.resolve();
+const waitedForReply = !settled;
+finishSync();
+const worked = await handoff;
+check("an exhausted pack waits for its refill rather than entering the idle poll",
+  waitedForReply && worked && page.measured === 1 && page.reads === 0, JSON.stringify({ waitedForReply, worked, measured: page.measured, reads: page.reads }));
+page.heldPack = pack("ready"); page.packQueue = []; page.syncInFlight = new Promise(() => {});
+check("a refill in flight never blocks work already buffered", await client.workOnce8("device") && page.measured === 2);
+page.syncInFlight = null;
+page.syncNotBefore = 101_000;
+check("an idle retry wakes at its gate, not a whole poll later", client.idleWaitMs() === 1000, String(client.idleWaitMs()));
+page.syncNotBefore = 0; page.heldPack = pack("one"); page.packQueue = [pack("two")]; page.asked = 0;
+client.refill8("device");
+check("a full local buffer does not ask for a third pack", page.asked === 0);
+page.packQueue = []; page.syncDials.packs_held = 1;
+client.refill8("device");
+check("a one-pack server limit suppresses refill until the held pack is done", page.asked === 0);
+page.syncDials.packs_held = 2;
+client.refill8("device");
+check("a low buffer refills when another slot is available", page.asked === 1);
+page.heldPack = null; page.packQueue = [];
+page.refusedPending = []; page.syncFailures = 0;
+page.boardSyncBody = () => ({ held: [], results: [] });
+page.takeSynced = async () => {};
+page.noteHandOut = () => {};
+page.postBoardWork = async () => ({ ok: true, next_ms: 60_000, work: { kind: "user_calculation" } });
+const send = runInNewContext(source.slice(source.indexOf("async function boardSync("), source.indexOf("async function takeSynced(")) + "\nboardSync;", page);
+await send("device");
+let calculations = 0;
+page.userCalculationOnce = async () => { calculations++; return true; };
+check("a standalone task handed to a completed refill is run, not given back by another sync",
+  await client.workOnce8("device") && calculations === 1 && page.syncWork === null && page.reads === 0);
 
 console.log(failures ? `\n${failures} failed` : "\nprotocol 8 hands out by protocol 7's rules and holds a client to its time");
 process.exit(failures ? 1 : 0);

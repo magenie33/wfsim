@@ -432,7 +432,7 @@ function giveBack(beacon = false) {
   if (h) releaseLease(h, beacon);
   if (p && p.proto === 8) { giveBack8(p, beacon); return; }
   // …AND TURNED OFF OR HELD, THE KEPT RESULTS STILL GO IN, at the reply's pace.
-  if (!p && boardProtocol === 8 && (packQueue.length || (resultsMem.length && (beacon || Date.now() >= syncNotBefore)))) {
+  if (!p && boardProtocol === 8 && (packQueue.length || syncWork || (resultsMem.length && (beacon || Date.now() >= syncNotBefore)))) {
     giveBack8(null, beacon);
     return;
   }
@@ -450,14 +450,14 @@ const SIGNAL_URL = "https://cdn.wfsim.app/work.json";
 /// THE DIALS IN FORCE are the server's (`dials` in every reply, `work.json`);
 /// these are its stated defaults, used only until the first reply says otherwise.
 const syncDials = { pack8_ms: 600_000, sync_low_ms: 120_000, sync_lease_ms: 1_500_000, flush_ms: 600_000,
-  poll_ms: 10_000, jitter_ms: 5_000, urgent_jitter_ms: 2_000, report_ms: 3_600_000 };
+  packs_held: 2, poll_ms: 10_000, jitter_ms: 5_000, urgent_jitter_ms: 2_000, report_ms: 3_600_000 };
 /// THE FALLBACK'S PACE and a signal's age past which it is not believed.
 const SYNC_FALLBACK_MS = 120_000, SIGNAL_STALE_MS = 90_000;
 const SYNC_BACKOFF_MS = 5_000, SYNC_BACKOFF_MAX_MS = 600_000;
 /// A result kept longer than this, or another id's or engine's, is dropped.
 const RESULT_KEEP_MS = 24 * 3_600_000, PENDING_KEEP_MS = 3 * 24 * 3_600_000, BEACON_BYTES = 60_000;
 let syncNotBefore = 0, syncFailures = 0, lastSyncAt = 0, syncInFlight = null, bootSyncAt = 0;
-let packQueue = [], refusedPending = [], lostRows = new Set();
+let packQueue = [], refusedPending = [], lostRows = new Set(), syncWork = null;
 const jittered = (ms) => ms * (0.75 + Math.random() * 0.5);
 
 /// THE RESULTS THIS BROWSER KEEPS (`results`: computed, not yet taken) and the ones
@@ -582,6 +582,7 @@ async function boardSync(id, { want = null } = {}) {
     await takeSynced(r, results, sentAt, body.held);
     if (Number.isFinite(r.next_ms)) syncNotBefore = Date.now() + r.next_ms;
     noteHandOut(r);
+    if (r.work) syncWork = r.work;
     if (r.pack && r.pack.tasks && r.pack.tasks.length) {
       packQueue.push({ proto: 8, lease: r.pack.lease, verifier: id, tasks: r.pack.tasks, next: 0, done: new Set(),
         until: sentAt + r.pack.lease_ms });
@@ -634,6 +635,7 @@ function giveBack8(p, beacon) {
   const keep = p && keptCut(p) ? { lease: p.lease, question: p.row } : null;
   heldPack = null;
   packQueue = [];
+  syncWork = null;
   if (!id) return;
   const results = [];
   let bytes = 0;
@@ -671,13 +673,15 @@ async function readSignal() {
   } catch (_) { return null; }
 }
 /// HOW LONG THE LOOP WAITS between looks while nothing is held.
-const idleWaitMs = () => (boardProtocol === 8 ? jittered(syncDials.poll_ms) : ASK_EVERY_MS);
+const idleWaitMs = () => (boardProtocol === 8
+  ? Math.min(jittered(syncDials.poll_ms), syncNotBefore > Date.now() ? syncNotBefore - Date.now() : Infinity) : ASK_EVERY_MS);
 
 /// ONE STEP OF PROTOCOL 8 — `true` when a row or a riven gain ran. A row comes
 /// from the pack held or the next one queued; with none, the kept results go in
 /// when due, and work is asked for only when the signal says there is some (or,
 /// with no signal, every `SYNC_FALLBACK_MS`), and never before `next_ms`.
 async function workOnce8(id) {
+  if ((!heldPack || heldPack.next >= heldPack.tasks.length) && !packQueue.length && syncInFlight) await syncInFlight;
   const kept = await keptResults(id);
   const now = Date.now();
   if (!bootSyncAt) bootSyncAt = now + (kept.length ? Math.random() * 5_000 : 0);
@@ -689,8 +693,8 @@ async function workOnce8(id) {
   if (heldPack && cut) { await boardSync(id, { want: 0 }); if (!heldPack || lostRows.has(cut.task.question)) { dropCut(); return true; } }
   if (heldPack) return packRowOnce(id, heldPack);
   const due = kept.length && (now >= bootSyncAt && lastSyncAt < bootSyncAt || now - kept[0].at >= syncDials.flush_ms);
-  let r = null;
-  if (now >= syncNotBefore) {
+  let r = syncWork ? { work: syncWork } : null;
+  if (!r && now >= syncNotBefore) {
     const s = await readSignal();
     if (s) {
       const wait = s.urgent > 0 ? syncDials.urgent_jitter_ms : s.open > 0 ? syncDials.jitter_ms : -1;
@@ -699,9 +703,10 @@ async function workOnce8(id) {
       else idleCount(now, true, false, communityLanes(), "");
     } else if (due || now - lastSyncAt >= jittered(SYNC_FALLBACK_MS)) r = await boardSync(id);
     else idleCount(now, true, false, communityLanes(), "");
-  } else if (due) r = await boardSync(id, { want: 0 });
+  } else if (!r && due) r = await boardSync(id, { want: 0 });
   maybeReloadForRelease();
   if (boardProtocol !== 8) return false;
+  if (r?.work) syncWork = null;
   if (r?.work?.kind === "user_calculation") return userCalculationOnce(r.work, id);
   if (r && r.work && r.work.kind === "riven_gain") return rivenGainOnce(r.work, id);
   if (!heldPack && packQueue.length) { heldPack = packQueue.shift(); return packRowOnce(id, heldPack); }
@@ -712,7 +717,7 @@ async function workOnce8(id) {
 function refill8(id) {
   if (syncInFlight) return;
   const now = Date.now(), oldest = resultsMem.length ? resultsMem.reduce((at, r) => Math.min(at, r.at), Infinity) : now;
-  const low = !packQueue.length && workLeftMs() < syncDials.sync_low_ms && now >= syncNotBefore;
+  const low = !packQueue.length && heldRows().length < syncDials.packs_held && workLeftMs() < syncDials.sync_low_ms && now >= syncNotBefore;
   if (low || now - oldest >= syncDials.flush_ms) boardSync(id, low ? {} : { want: 0 });
 }
 /// …AND A ROW STILL RUNNING AS ITS LEASE NEARS ITS END is renewed by a sync that

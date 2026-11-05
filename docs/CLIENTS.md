@@ -353,7 +353,10 @@ unrecognised id `403`)
 - `held`: whether each named row is still the client's; `false` stops that row.
 - `next_ms`: when the client may next be handed work. Sync then, or when its
   work runs low (`sync_low_ms` left), whichever is later; sync sooner only to
-  hand in results or to stop.
+  hand in results or to stop. A pack's gate is at most `sync_floor_ms`, shortened
+  to its estimated time to reach `sync_low_ms`; a bootstrap pack without a pace
+  has no gate. A renewal-only or full-buffer reply does not add a gate;
+  empty picks still wait `sync_idle_ms`.
 
 | reply | meaning | then |
 | --- | --- | --- |
@@ -413,6 +416,11 @@ correct answer is, the riven gain's own doors, independence, recheck and spot
 checks. Protocol 7 stays served while anyone uses it.
 
 ## Changelog
+
+- **2026-11-05 — refill gates follow the work handed out.** Protocol 8 keeps
+  `next_ms`: a bootstrap pack permits immediate refill, a paced pack shortens
+  its gate when it reaches `sync_low_ms` sooner, and renewal-only/full-buffer
+  replies add no delay. Protocols 7 and 6 are unchanged.
 
 - **2026-10-19 — macOS in the engine library.** `files` may name
   `aarch64-macos` and `x86_64-macos`; a target is published only once it
