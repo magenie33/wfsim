@@ -1,0 +1,15 @@
+id: panzer_devolution
+name: Panzer Devolution
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/ArmoredInfestedCatbrowRespawn
+compat: panzer_vulpaphyla
+precept: true
+description: Devolves into its larval form when downed and attacks enemies with quills, dealing 60 Viral Damage each. Regains true form after 30s.
+effects:
+- kind: unmodelled
+  text: Devolves into its larval form when downed and attacks enemies with quills, dealing 60 Viral Damage each. Regains true form after 30s.
+source:
+  url: "https://wiki.warframe.com/w/Panzer_Devolution"

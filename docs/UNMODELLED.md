@@ -858,6 +858,17 @@ finishers and wielder healing. Those six are explicitly marked as unmodelled
 on their cards and contribute no effects. [ZAW.md](ZAW.md) owns their source
 rules and calibration requirements.
 
+## Catalogued mods
+
+An entry whose effects are exclusively `kind: unmodelled` supplies its card,
+capacity and compatibility, and contributes no simulated effect. This includes
+Sentient Incision's adaptive damage, catalogued weapon augments, Warframe
+passive augments, companion behaviours and beast-claw cards. The Wiki coverage
+survey in `data/surveys/wiki_mods.yaml` tracks collection independently from
+mechanical support; `scripts/survey_mod_coverage.py` refreshes it. Flawed variants,
+Conclave-only cards, unrolled Rivens and innate ability stances carry explicit
+exclusions in the survey.
+
 ## Narin
 
 The builder resolves Narin’s base stats, ability costs and entered max-rank ability numbers with their stated strength, range and duration scaling. The Ice meter, Sangodae drops and pickups, its 50% Cold Extra Hit with a guaranteed Cold status, its fixed 15 s window, and the 25% ability damage multiplier are not run in combat. The passive is marked as weapon-affecting and unmodelled.

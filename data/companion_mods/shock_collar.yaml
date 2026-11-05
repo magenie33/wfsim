@@ -1,0 +1,15 @@
+id: shock_collar
+name: Shock Collar
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/DualStat/KubrowElectEventMeleeMod
+compat: beast_claws
+precept: false
+description: "+60% Electricity\n+60% Status Chance"
+effects:
+- kind: unmodelled
+  text: "+60% Electricity\n+60% Status Chance"
+source:
+  url: "https://wiki.warframe.com/w/Shock_Collar"

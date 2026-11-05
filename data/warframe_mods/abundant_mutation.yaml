@@ -1,0 +1,16 @@
+id: abundant_mutation
+name: Abundant Mutation
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Powersuits/Infestation/InfestPassiveAugmentCard
+exclusive_to:
+- nidus
+- nidus_prime
+description: "Passive Augment: Nidus gains an additional 300 max stacks of Mutation. Undying has a 30s cooldown."
+effects:
+- kind: unmodelled
+  text: "Passive Augment: Nidus gains an additional 300 max stacks of Mutation. Undying has a 30s cooldown."
+source:
+  url: "https://wiki.warframe.com/w/Abundant_Mutation"

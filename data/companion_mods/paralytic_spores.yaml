@@ -1,0 +1,15 @@
+id: paralytic_spores
+name: Paralytic Spores
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/InfestedPredatorFinisherSporesPrecept
+compat: medjay_predasite
+precept: true
+description: Charges at an enemy within 30m dealing 160 damage. This releases spores that affect enemies within 15m, opening them up to Melee Finishers, and slowing them by 50% for 10s.
+effects:
+- kind: unmodelled
+  text: Charges at an enemy within 30m dealing 160 damage. This releases spores that affect enemies within 15m, opening them up to Melee Finishers, and slowing them by 50% for 10s.
+source:
+  url: "https://wiki.warframe.com/w/Paralytic_Spores"

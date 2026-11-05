@@ -1,0 +1,15 @@
+id: mecha_overdrive
+name: Mecha Overdrive
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Mecha/KubrowMechaOverdriveMod
+compat: kubrow_claws
+precept: false
+description: "+60% Primary Weapon Status Chance added to Companion\n+90% Status Duration"
+effects:
+- kind: unmodelled
+  text: "+60% Primary Weapon Status Chance added to Companion\n+90% Status Duration"
+source:
+  url: "https://wiki.warframe.com/w/Mecha_Overdrive"

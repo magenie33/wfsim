@@ -9,6 +9,7 @@ form: charged
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: staticor
 mod_pools: [pistol]   # CompatibilityTags PROJECTILE, AOE
+compatibility_tags: [aoe]
 mastery_rank: 10
 max_rank: 30
 

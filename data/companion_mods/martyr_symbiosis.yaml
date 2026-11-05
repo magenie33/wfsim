@@ -1,0 +1,15 @@
+id: martyr_symbiosis
+name: Martyr Symbiosis
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/InfestedCatbrowVampireShieldPrecept
+compat: vulpaphyla
+precept: true
+description: Drains and stores 20 health from corpses within 25m up to 40% of your health. If your health falls below 10%, Companion downs itself to heal you.
+effects:
+- kind: unmodelled
+  text: Drains and stores 20 health from corpses within 25m up to 40% of your health. If your health falls below 10%, Companion downs itself to heal you.
+source:
+  url: "https://wiki.warframe.com/w/Martyr_Symbiosis"

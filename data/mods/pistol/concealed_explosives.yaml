@@ -1,0 +1,25 @@
+id: concealed_explosives
+name: Concealed Explosives
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Pistol/ThrowingExplosionChanceMod
+exclusive_to:
+- aegrit
+- cantare
+- despair
+- fusilai
+- fusilai_fan
+- hikou
+- hikou_prime
+- kunai
+- mk1_kunai
+- spira
+- spira_prime
+lower_ranks_unmodelled: true
+description: +80% Chance to Explode (Use with Caution)
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Concealed_Explosives"

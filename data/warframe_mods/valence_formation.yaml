@@ -1,0 +1,16 @@
+id: valence_formation
+name: Valence Formation
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Powersuits/Alchemist/AlchemistPassiveAugmentCard
+exclusive_to:
+- lavos
+- lavos_prime
+description: "Passive Augment: Casting an Ability imbued with extra Elemental Damage applies that Element as a 200% bonus to your weapons with guaranteed Status for 20s."
+effects:
+- kind: unmodelled
+  text: "Passive Augment: Casting an Ability imbued with extra Elemental Damage applies that Element as a 200% bonus to your weapons with guaranteed Status for 20s."
+source:
+  url: "https://wiki.warframe.com/w/Valence_Formation"

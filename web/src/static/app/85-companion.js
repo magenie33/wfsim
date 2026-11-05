@@ -80,6 +80,18 @@ function renderCompanion() {
     .map(([k, v]) => `<span class="tag">${escHtml(tr(k))} ${v}</span>`).join("");
   renderCompPresetBar();
   renderCompMods();
+  renderCompCatalogue();
+  $("comp-catalogue-search").oninput = renderCompCatalogue;
+}
+
+/// The full companion catalog includes models and claws the robotic host cannot seat.
+function renderCompCatalogue() {
+  const q = $("comp-catalogue-search").value;
+  const cards = (WFCAT.companion_mods || []).filter((m) => searchHit(m, q));
+  $("comp-catalogue-count").textContent = String(cards.length);
+  $("comp-catalogue").innerHTML = cards.map((m) => `<div class="opt rar-${escHtml(m.rarity)}"><div class="info">`
+    + `<div class="mn"><a href="${escHtml(m.url)}" target="_blank" rel="noopener">${escHtml(m.name)}</a>${compPaysChip(m)}</div>`
+    + effLines(compLines(m, m.max_rank).map(escHtml)) + "</div></div>").join("");
 }
 
 // ---- capacity and Forma ----

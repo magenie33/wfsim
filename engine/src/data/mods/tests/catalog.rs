@@ -823,7 +823,8 @@ fn a_status_damage_card_pays_status_damage_and_a_damage_card_pays_damage() {
             .as_sequence()
             .map(|s| s.iter().filter_map(|e| e["kind"].as_str()).collect())
             .unwrap_or_default();
-        if desc.contains("Status Damage") && !kinds.contains(&"status_damage_bonus") {
+        if desc.contains("Status Damage") && !kinds.contains(&"status_damage_bonus")
+            && kinds != ["unmodelled"] {
             wrong.push(format!("{p}: card says Status Damage, kinds {kinds:?}"));
         }
         if kinds.contains(&"base_damage_bonus") && !desc.replace("Status Damage", "").contains("Damage") {

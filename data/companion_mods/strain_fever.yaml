@@ -1,0 +1,15 @@
+id: strain_fever
+name: Strain Fever
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sets/Strain/HelminthStrainFeverMod
+compat: helminth_charger_claws
+precept: false
+description: Helminth Charger gains +40% Damage per Cyst.
+effects:
+- kind: unmodelled
+  text: Helminth Charger gains +40% Damage per Cyst.
+source:
+  url: "https://wiki.warframe.com/w/Strain_Fever"

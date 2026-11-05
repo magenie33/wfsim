@@ -9,6 +9,7 @@ class: launcher
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [primary, rifle, assault_rifle]   # assault_rifle takes launchers (M106)
+compatibility_tags: [aoe]
 mastery_rank: 15
 # RANK 40 after 5 polarizations — 80 capacity (docs/INVESTMENT.md).
 max_rank: 40

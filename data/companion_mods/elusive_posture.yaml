@@ -1,0 +1,15 @@
+id: elusive_posture
+name: Elusive Posture
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPacifistStance
+compat: beast_claws
+precept: true
+description: The companion will avoid attacking. +50% Evasion
+effects:
+- kind: unmodelled
+  text: The companion will avoid attacking. +50% Evasion
+source:
+  url: "https://wiki.warframe.com/w/Elusive_Posture"

@@ -288,6 +288,8 @@ Statues (`…/ShipDecos/Acolyte*BobbleHead`, "Noggle Statue - Angst" →
   export names the colours only; each socket's line is ours, in DE's stat
   words.
 - **凶魂百夫长** (Thrax Centurion): no exported string names it.
+- **Scan Aquatic Lifeforms** has no joined DE export entry; its companion
+  card stays English until an official client string is available.
 
 ### A card is TWO fields, and we were reading one
 
@@ -795,6 +797,14 @@ than silenced:
   tolerance that would hide the next real error.
 
 ## Auditing the mod set
+
+`python scripts/survey_mod_coverage.py --refresh` compares the Wiki's complete
+mod module with weapon, Warframe, aura and companion catalogs, including beast
+claws. `--intake` adds missing cards with explicitly unmodelled effects and
+retains existing entries. Per-page rank tables override module rank and drain;
+`python scripts/check_mod_coverage.py` checks multiline tables, flawed-table
+boundaries and localized-overlay ownership. The committed survey is checked
+by `every_scoped_wiki_mod_is_catalogued_or_has_an_exclusion` without networking.
 
 Three mechanical sweeps, run after M22 found Primary Acuity modelled as an
 unconditional +350%/+350%. Each compares `data/mods/` against a source that

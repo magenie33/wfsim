@@ -1,0 +1,15 @@
+id: acidic_spittle
+name: Acidic Spittle
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/InfestedPredatorSpitAcidPrecept
+compat: vizier_predasite
+precept: true
+description: Every 5s spit acidic tar at an enemy within 30m, blinding them for 12s and dealing 120 Corrosive Damage.
+effects:
+- kind: unmodelled
+  text: Every 5s spit acidic tar at an enemy within 30m, blinding them for 12s and dealing 120 Corrosive Damage.
+source:
+  url: "https://wiki.warframe.com/w/Acidic_Spittle"

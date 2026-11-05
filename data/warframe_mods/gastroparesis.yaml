@@ -1,0 +1,16 @@
+id: gastroparesis
+name: Gastroparesis
+rarity: rare
+polarity: zenurik
+base_drain: 6
+max_rank: 3
+internal_name: /Lotus/Powersuits/Devourer/DevourerPassiveAugmentCard
+exclusive_to:
+- grendel
+- grendel_prime
+description: "Passive Augment: Each enemy consumed adds 15%  Extra Gas Damage to Primary and Secondary Weapons."
+effects:
+- kind: unmodelled
+  text: "Passive Augment: Each enemy consumed adds 15%  Extra Gas Damage to Primary and Secondary Weapons."
+source:
+  url: "https://wiki.warframe.com/w/Gastroparesis"

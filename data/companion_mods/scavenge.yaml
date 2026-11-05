@@ -1,0 +1,15 @@
+id: scavenge
+name: Scavenge
+rarity: common
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/KubrowPetPrecepts/KubrowThiefPrecept
+compat: beast
+precept: true
+description: +90% chance for the pet to pry open a locked locker.
+effects:
+- kind: unmodelled
+  text: +90% chance for the pet to pry open a locked locker.
+source:
+  url: "https://wiki.warframe.com/w/Scavenge"

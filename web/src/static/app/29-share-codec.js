@@ -37,6 +37,8 @@ const SHARE_V_TEXT = "3";
 /// which is another version character; that is what the version character is
 /// for.
 const SHARE_V_B62 = "4";
+/// v5 uses three characters per id and retains the v4 field layout.
+const SHARE_V_B62_WIDE = "5";
 /// The alphabet, every character of it unreserved in RFC 3986. `-` and `.` are
 /// unreserved too and deliberately NOT in it, which is what lets them mark a
 /// slot that no id can be confused with.
@@ -51,12 +53,16 @@ const b62Back = (t) => {
 /// since the last `gen_share_order.py`, or a manifest past its headroom. The
 /// encoder measures every form and takes the shortest, so `null` here is a link
 /// that goes out as v3: longer, and correct.
-const si62 = (id) => {
+const si62 = (id, width = 2) => {
   const n = shareIndex().to.get(id);
-  return n == null || n >= B62_MAX ? null : b62(n);
+  if (n == null || n >= 62 ** width) return null;
+  return width === 3 ? B62[Math.floor(n / B62_MAX)] + b62(n % B62_MAX) : b62(n);
 };
-const si62Back = (t) => {
-  const n = b62Back(t);
+const si62Back = (t, width = 2) => {
+  if (String(t).length !== width) return "";
+  const high = width === 3 ? B62.indexOf(t[0]) : 0;
+  const low = b62Back(width === 3 ? t.slice(1) : t);
+  const n = high < 0 || low < 0 ? -1 : high * B62_MAX + low;
   return n < 0 ? "" : (shareIndex().from.get(n) || "");
 };
 /// A RIVEN ROLL IS 200 STEPS, NOT FIVE CHARACTERS. Every stat rolls in
@@ -140,21 +146,22 @@ const decName = (s) => {
 //      A polarity or a below-max rank is rare, and inline they would cost every
 //      OTHER slot the separator that says where its modifier stopped.
 //
-function packV4(a) {
+function packV4(a, width = 2) {
   const [, weapon, name, slots9, arcs, evos, rivens, sc, m, md, val, asm] = a;
   if (sc || m) return null;
   let bad = false;
-  const id = (x) => { const t = si62(x); if (t === null) bad = true; return t || "00"; };
+  const id = (x) => { const t = si62(x, width); if (t === null) bad = true; return t || "0".repeat(width); };
+  const empty = "-".repeat(width);
   const pre = evoPrefixFor(weapon);
   const extra = [];
 
   const slots = (slots9 || []).map((s, i) => {
-    if (!s) return "--";
+    if (!s) return empty;
     const [sid, pol, rank] = typeof s === "string" ? [s] : s;
     // THE MODIFIER IS RECORDED BEFORE THE SLOT IS SPELLED, because a RIVEN slot
     // is spelled differently and would otherwise leave its polarity behind.
     if (pol || rank != null) extra.push(`s${B62[i]}${pol || "-"}${rank == null ? "" : rank}`);
-    return String(sid)[0] === "~" ? "-" + String(sid).slice(1) : id(sid);
+    return String(sid)[0] === "~" ? "-" + String(sid).slice(1).padStart(width - 1, "0") : id(sid);
   });
   const arcanes = (arcs || []).map((x, i) => {
     if (!Array.isArray(x)) return id(x);
@@ -182,7 +189,7 @@ function packV4(a) {
     id(weapon),
     slots.join(""),
     arcanes.join(""),
-    (evos || []).map((e) => (e ? id(pre + e) : "--")).join(""),
+    (evos || []).map((e) => (e ? id(pre + e) : empty)).join(""),
     (rivens || []).map(riven).join("!"),
     encName(name),
     md || "",
@@ -196,9 +203,11 @@ function packV4(a) {
   return SHARE_TEXT_OK.test(text) ? text : null;
 }
 
-function unpackV4(text) {
+function unpackV4(text, width = 2) {
   const f = String(text).split("~");
-  const weapon = si62Back(f[0] || "");
+  const readId = (t) => si62Back(t, width);
+  const empty = "-".repeat(width);
+  const weapon = readId(f[0] || "");
   if (!weapon) return null;
   const pre = evoPrefixFor(weapon);
   // FIXED WIDTH IS THE GRAMMAR: a run of ids is read two characters at a time,
@@ -206,7 +215,7 @@ function unpackV4(text) {
   const pairs = (str) => {
     const out = [];
     const t = String(str || "");
-    for (let i = 0; i + 1 < t.length; i += 2) out.push(t.slice(i, i + 2));
+    for (let i = 0; i + width <= t.length; i += width) out.push(t.slice(i, i + width));
     return out;
   };
   const sExtra = new Map(), aExtra = new Map();
@@ -219,30 +228,31 @@ function unpackV4(text) {
     else if (t[0] === "a") aExtra.set(i, Number(t.slice(2)));
   });
   const slots9 = pairs(f[1]).map((t, i) => {
-    if (t === "--") return 0;
+    if (t === empty) return 0;
     // ONE TAIL FOR BOTH KINDS: a riven slot takes a polarity exactly as a mod
     // slot does, and reading it anywhere but here is how it goes missing.
-    const sid = t[0] === "-" ? "~" + t.slice(1) : si62Back(t);
+    const sid = t[0] === "-" ? "~" + Number(t.slice(1)) : readId(t);
     if (!sid) return 0;
     const x = sExtra.get(i);
     if (!x) return sid;
     return x.rank === "" ? [sid, x.pol] : [sid, x.pol, Number(x.rank)];
   });
   const arcs = pairs(f[2]).map((t, i) => {
-    const aid = si62Back(t);
+    const aid = readId(t);
     return aExtra.has(i) ? [aid, aExtra.get(i)] : aid;
   });
   const evos = pairs(f[3]).map((t) => {
-    if (t === "--") return "";
-    const eid = si62Back(t);
+    if (t === empty) return "";
+    const eid = readId(t);
     return eid && pre && eid.startsWith(pre) ? eid.slice(pre.length) : eid;
   });
   const rivens = String(f[4] || "").split("!").filter(Boolean).map((r) => {
     const [rn, shape, rank, pol, stats, mal] = r.split(";");
-    const quad = (t) => [si62Back(t.slice(0, 2)), roll62Back(t.slice(2, 4))];
+    const statWidth = width + 2;
+    const quad = (t) => [readId(t.slice(0, width)), roll62Back(t.slice(width, statWidth))];
     const bonuses = [];
     const st = String(stats || "");
-    for (let i = 0; i + 3 < st.length; i += 4) bonuses.push(quad(st.slice(i, i + 4)));
+    for (let i = 0; i + statWidth <= st.length; i += statWidth) bonuses.push(quad(st.slice(i, i + statWidth)));
     const malus = mal ? quad(mal) : 0;
     const name = decName(rn) || boardRivenName({
       bonuses: bonuses.map(([x]) => x),
@@ -253,8 +263,10 @@ function unpackV4(text) {
   const val = f[7] ? f[7].split(":") : null;
   return [2, weapon, decName(f[5]) || 0, slots9, arcs, evos, rivens, 0, 0,
     f[6] || 0, val ? [val[0], Number(val[1])] : 0,
-    f[8] ? [si62Back(f[8].slice(0, 2)), si62Back(f[8].slice(2, 4)), ...(f[8][4] === "l" ? ["link"] : [])] : 0];
+    f[8] ? [readId(f[8].slice(0, width)), readId(f[8].slice(width, width * 2)), ...(f[8][width * 2] === "l" ? ["link"] : [])] : 0];
 }
+
+const packV5 = (a) => packV4(a, 3);
 
 function packV3(a) {
   const [, weapon, name, slots9, arcs, evos, rivens, sc, m, md, val, asm] = a;
@@ -404,8 +416,8 @@ async function decodeShare(code) {
   // Dispatched on the version character the code has always carried, which is
   // why adding a form costs every older one nothing.
   let data;
-  if (code[0] === SHARE_V_B62) {
-    data = unpackV4(code.slice(1));
+  if (code[0] === SHARE_V_B62 || code[0] === SHARE_V_B62_WIDE) {
+    data = unpackV4(code.slice(1), code[0] === SHARE_V_B62_WIDE ? 3 : 2);
     if (!data) return null;
   } else if (code[0] === SHARE_V_TEXT) {
     data = unpackV3(code.slice(1));

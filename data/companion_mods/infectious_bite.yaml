@@ -1,0 +1,15 @@
+id: infectious_bite
+name: Infectious Bite
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/InfestedPredatorInfectiousBitePrecept
+compat: medjay_predasite
+precept: true
+description: An attack that deals +200% Finisher Damage and infects the target with a Virus that grows 4 volatile pustules that react to damage and explode.
+effects:
+- kind: unmodelled
+  text: An attack that deals +200% Finisher Damage and infects the target with a Virus that grows 4 volatile pustules that react to damage and explode.
+source:
+  url: "https://wiki.warframe.com/w/Infectious_Bite"

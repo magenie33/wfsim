@@ -1,0 +1,15 @@
+id: stalk
+name: Stalk
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/KubrowPetPrecepts/KubrowCloakPrecept
+compat: huras_kubrow
+precept: true
+description: The kubrow cloaks itself and its master to stalk down its prey when they are within 24m.
+effects:
+- kind: unmodelled
+  text: The kubrow cloaks itself and its master to stalk down its prey when they are within 24m.
+source:
+  url: "https://wiki.warframe.com/w/Stalk"

@@ -9,6 +9,7 @@ form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 # Pistol mods. No `secondary`-wide pool exists in the data.
 mod_pools: [pistol]
+compatibility_tags: [aoe]
 grip_type: PISTOL
 mastery_rank: 14
 max_rank: 30

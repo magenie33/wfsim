@@ -1,0 +1,22 @@
+id: justice_blades
+name: Justice Blades
+rarity: rare
+polarity: naramon
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/DualCleaversMod
+exclusive_to:
+- dual_cleavers
+- dual_cleavers_block
+- dual_cleavers_block_forward
+- dual_cleavers_forward
+- dual_cleavers_heavy
+- dual_cleavers_heavy_slam
+- dual_cleavers_slide
+- prisma_dual_cleavers
+lower_ranks_unmodelled: true
+description: "+100% Melee Damage\n+1 'Justice'"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Justice_Blades"

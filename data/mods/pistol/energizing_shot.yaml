@@ -1,0 +1,16 @@
+id: energizing_shot
+name: Energizing Shot
+rarity: rare
+polarity: madurai
+base_drain: 0
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Pistol/Event/ShootPickUpPistolMod
+exilus: true
+excludes_weapon:
+- aoe
+lower_ranks_unmodelled: true
+description: Shoot Energy Orbs to obtain them with +110% extra effect.
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Energizing_Shot"

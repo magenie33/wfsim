@@ -1,0 +1,15 @@
+id: repo_audit
+name: Repo Audit
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetPrecepts/ZanukaPetDisarmPulsePrecept
+compat: hound
+precept: true
+description: Emits a magnetic pulse that disarms enemies within 30m.
+effects:
+- kind: unmodelled
+  text: Emits a magnetic pulse that disarms enemies within 30m.
+source:
+  url: "https://wiki.warframe.com/w/Repo_Audit"

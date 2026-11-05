@@ -9,6 +9,7 @@ form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: javlok
 mod_pools: [primary, rifle]   # CompatibilityTags PROJECTILE, AOE, IMPACTEXPLODE
+compatibility_tags: [aoe]
 mastery_rank: 7
 max_rank: 30
 

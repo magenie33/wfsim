@@ -1,0 +1,15 @@
+id: cats_eye
+name: "Cat's Eye"
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowCatsEyePrecept
+compat: adarza_kavat
+precept: true
+description: Adarza Kavat grants 60% increased critical chance for 10s to allies within 25m every 20s.
+effects:
+- kind: unmodelled
+  text: Adarza Kavat grants 60% increased critical chance for 10s to allies within 25m every 20s.
+source:
+  url: "https://wiki.warframe.com/w/Cat%27s_Eye"

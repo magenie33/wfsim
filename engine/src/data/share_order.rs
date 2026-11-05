@@ -166,22 +166,17 @@ mod tests {
         );
     }
 
-    /// **THE COMPACT FORM SPELLS AN INDEX IN TWO CHARACTERS**, so the manifest
-    /// may hold 62x62 of them. Past that the encoder declines the ids it cannot
-    /// spell and every link carrying one falls back to the longer form — a
-    /// regression nobody would go looking for, because nothing breaks.
-    ///
-    /// Crossing it is a THIRD width, which is a new version character. This
-    /// test is what says the day has come.
+    /// v5 spells an index in three base62 characters; older links keep their
+    /// original width and the manifest's append-only order.
     #[test]
     fn the_manifest_fits_the_compact_form() {
         // ONE number, read by the assertion AND by what it says. Written twice,
         // a lowered ceiling reports the old one and the message lies.
-        const CEILING: usize = 62 * 62;
+        const CEILING: usize = 62 * 62 * 62;
         let n = manifest().ids.len();
         assert!(
             n <= CEILING,
-            "the share manifest holds {n} ids and the compact form spells only {CEILING} — give it a third character, and a new version character, in web/src/static/app/30-share.js"
+            "the share manifest holds {n} ids and v5 spells only {CEILING} — add a new version in web/src/static/app/29-share-codec.js"
         );
     }
 

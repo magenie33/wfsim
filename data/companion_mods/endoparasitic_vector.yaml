@@ -1,0 +1,15 @@
+id: endoparasitic_vector
+name: Endoparasitic Vector
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/InfestedPredatorSpitParasitePrecept
+compat: pharaoh_predasite
+precept: true
+description: Transmit an endoparasite to an enemy within 30m. Tentacles spawn from it, clinging to enemies within 10m slowing them as they move further from the parasite, and dealing 20 Viral Damage/sec over 5s.
+effects:
+- kind: unmodelled
+  text: Transmit an endoparasite to an enemy within 30m. Tentacles spawn from it, clinging to enemies within 10m slowing them as they move further from the parasite, and dealing 20 Viral Damage/sec over 5s.
+source:
+  url: "https://wiki.warframe.com/w/Endoparasitic_Vector"

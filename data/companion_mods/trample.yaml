@@ -1,0 +1,15 @@
+id: trample
+name: Trample
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/KubrowPetPrecepts/ChargerChargePrecept
+compat: helminth_charger
+precept: true
+description: The Helminth Charger rushes an enemy, dealing 160 Damage to all in its path. It gains +10% Melee Damage, Max Health and Armor for every enemy hit for 5s.
+effects:
+- kind: unmodelled
+  text: The Helminth Charger rushes an enemy, dealing 160 Damage to all in its path. It gains +10% Melee Damage, Max Health and Armor for every enemy hit for 5s.
+source:
+  url: "https://wiki.warframe.com/w/Trample"

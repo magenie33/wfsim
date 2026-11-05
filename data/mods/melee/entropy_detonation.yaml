@@ -1,0 +1,22 @@
+id: entropy_detonation
+name: Entropy Detonation
+rarity: rare
+polarity: naramon
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Syndicate/ObexMod
+exclusive_to:
+- obex
+- obex_block
+- obex_block_forward
+- obex_forward
+- obex_heavy
+- obex_heavy_slam
+- obex_slide
+- prisma_obex
+lower_ranks_unmodelled: true
+description: "Lethal ground attacks cause enemies to explode dealing +1,000\n(+20% Enemy Max Health) Blast Damage\nin a 10m radius.\n+1 'Entropy'"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Entropy_Detonation"

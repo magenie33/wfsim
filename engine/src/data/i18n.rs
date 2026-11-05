@@ -680,7 +680,8 @@ mod tests {
                 name.into_iter().chain(text)
             })
             .collect();
-        assert!(missing.is_empty(), "companion cards with no zh overlay: {missing:?}");
+        assert_eq!(missing, ["scan_aquatic_lifeforms name", "scan_aquatic_lifeforms text"],
+            "companion cards with no DE zh source: {missing:?}");
     }
 
     /// Every INDIRECT stat label is translated.

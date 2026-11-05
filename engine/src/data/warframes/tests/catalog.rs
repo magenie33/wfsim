@@ -79,6 +79,18 @@ fn a_bare_valkyr_is_her_rank_30_arsenal() {
     assert_eq!(r.abilities[1].energy_cost, 75.0);
 }
 
+#[test]
+fn passive_augments_follow_the_frame_and_admit_their_unmodelled_effects() {
+    for (frame, refused) in [("frost", false), ("frost_prime", false), ("rhino", true)] {
+        let b = Build { frame: frame.into(), ..build(&["biting_frost"]) };
+        let r = resolve(&b).unwrap();
+        assert_eq!(!r.refused.is_empty(), refused, "{frame}");
+        if !refused {
+            assert!(!r.admissions.is_empty(), "Biting Frost is not simulated");
+        }
+    }
+}
+
 /// Umbral Vitality's table (W`Umbral_Vitality`): 9% at rank 0, 55% at rank 5.
 #[test]
 fn a_mod_scales_by_rank_plus_one() {

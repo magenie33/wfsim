@@ -1,0 +1,15 @@
+id: tek_enhance
+name: Tek Enhance
+rarity: rare
+polarity: madurai
+base_drain: 6
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Sets/Tek/KavatTekEnhanceMod
+compat: kavat
+precept: false
+description: +30% Kavat Ability Duration
+effects:
+- kind: unmodelled
+  text: +30% Kavat Ability Duration
+source:
+  url: "https://wiki.warframe.com/w/Tek_Enhance"

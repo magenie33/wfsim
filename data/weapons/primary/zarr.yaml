@@ -10,6 +10,7 @@ form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 transform_group: zarr
 mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags ASSAULT_AMMO, PROJECTILE, AOE, SINGLESHOT; assault_rifle takes launchers (M106)
+compatibility_tags: [aoe]
 mastery_rank: 7
 max_rank: 30
 

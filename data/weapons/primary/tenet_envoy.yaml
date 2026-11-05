@@ -10,6 +10,7 @@ class: launcher
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
 mod_pools: [primary, rifle, assault_rifle]   # CompatibilityTags PROJECTILE, AOE — a launcher takes rifle mods; assault_rifle takes launchers (M106)
+compatibility_tags: [aoe]
 mastery_rank: 16
 # see notes: rank_40_30_polarizing
 max_rank: 40

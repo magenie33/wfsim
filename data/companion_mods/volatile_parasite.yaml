@@ -1,0 +1,15 @@
+id: volatile_parasite
+name: Volatile Parasite
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePrecepts/InfestedPredatorMaggotSummonerPrecept
+compat: predasite
+precept: true
+description: Every 15s spits out a maggot that latches onto the nearest enemy, drawing fire from those within 40m. On death, the maggot bursts, dealing 100% of accumulated damage Viral Damage (+40% damage if the enemy dies while latched) to those within 10m.
+effects:
+- kind: unmodelled
+  text: Every 15s spits out a maggot that latches onto the nearest enemy, drawing fire from those within 40m. On death, the maggot bursts, dealing 100% of accumulated damage Viral Damage (+40% damage if the enemy dies while latched) to those within 10m.
+source:
+  url: "https://wiki.warframe.com/w/Volatile_Parasite"

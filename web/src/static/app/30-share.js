@@ -328,7 +328,7 @@ async function shareCode(build) {
   // manifest has not been told about); the two base64 forms catch what neither
   // can express, and still read every link ever posted. A form that loses here
   // costs nothing — it is not reached.
-  const forms = [[SHARE_V_B62, packV4(payload)], [SHARE_V_TEXT, packV3(payload)]]
+  const forms = [[SHARE_V_B62, packV4(payload)], [SHARE_V_B62_WIDE, packV5(payload)], [SHARE_V_TEXT, packV3(payload)]]
     .filter(([, t]) => t != null)
     .map(([v, t]) => v + t);
   const json = new TextEncoder().encode(JSON.stringify(payload));

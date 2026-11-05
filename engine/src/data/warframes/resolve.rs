@@ -324,6 +324,10 @@ pub fn resolve(b: &Build) -> Result<Resolved, String> {
             refused.push(format!("{} {w}", m.name));
             return;
         }
+        if !m.exclusive_to.is_empty() && !m.exclusive_to.contains(&frame.id) {
+            refused.push(format!("{} cannot be seated on {}", m.name, frame.name));
+            return;
+        }
         // AN AUGMENT IS EXCLUSIVE to a loadout carrying its ability, the
         // frame's own or an infused one, as a weapon's exclusive mod is.
         if let Some(a) = m.augments.as_deref().filter(|a| !carries(a)) {

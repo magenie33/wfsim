@@ -44,6 +44,8 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 import de_export
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -237,6 +239,20 @@ def frame_passives(en: dict, export: dict, locale: str) -> tuple[dict, list]:
 
 
 def write_descriptions(path: Path, locale: str, tables: dict[str, dict]) -> None:
+    # A separate overlay owns its keys; available DE text replaces generated
+    # text, while unavailable sources retain the last transcription (reported
+    # by the caller). Never write a second copy of a manually maintained card.
+    previous = yaml.safe_load(path.read_text(encoding="utf-8")) if path.exists() else {}
+    elsewhere = {}
+    for other in path.parent.glob("*.yaml"):
+        if other == path:
+            continue
+        for table, rows in (yaml.safe_load(other.read_text(encoding="utf-8")) or {}).items():
+            if isinstance(rows, dict):
+                elsewhere.setdefault(table, set()).update(rows)
+    tables = {table: dict(sorted((i, ranks) for i, ranks in {**previous.get(table, {}), **rows}.items()
+                                if i not in elsewhere.get(table, set())))
+              for table, rows in tables.items()}
     out = [
         f"# {locale} — mod and arcane card text, in DE's OWN words.",
         "#",

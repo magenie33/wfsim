@@ -1,0 +1,15 @@
+id: equilibrium_audit
+name: Equilibrium Audit
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetPrecepts/ZanukaPetAntiMeleePrecept
+compat: hound
+precept: true
+description: Unleashes a series of shockwaves that knockdown enemies within 15m and deal 300 damage.
+effects:
+- kind: unmodelled
+  text: Unleashes a series of shockwaves that knockdown enemies within 15m and deal 300 damage.
+source:
+  url: "https://wiki.warframe.com/w/Equilibrium_Audit"

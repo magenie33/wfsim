@@ -1,0 +1,13 @@
+id: harrowing_spire
+name: Harrowing Spire
+rarity: rare
+polarity: madurai
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/BayonetCmbOneMeleeTree
+lower_ranks_unmodelled: true
+description: Relentless jabs and powerful sweeping lunges.
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Harrowing_Spire"

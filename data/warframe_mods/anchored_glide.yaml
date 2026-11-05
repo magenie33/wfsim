@@ -1,0 +1,17 @@
+id: anchored_glide
+name: Anchored Glide
+rarity: rare
+polarity: zenurik
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Powersuits/Tengu/TenguDisablePassiveMod
+exilus: true
+exclusive_to:
+- zephyr
+- zephyr_prime
+description: "Disable Zephyr's reduced airborne gravity. Increase Ability Strength by 15%."
+effects:
+- kind: unmodelled
+  text: "Disable Zephyr's reduced airborne gravity. Increase Ability Strength by 15%."
+source:
+  url: "https://wiki.warframe.com/w/Anchored_Glide"

@@ -1,0 +1,21 @@
+id: vulcan_blitz
+name: Vulcan Blitz
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 5
+internal_name: /Lotus/Upgrades/Mods/Melee/Event/ProjectNightwatch/JatKittagNightwatchMod
+exclusive_to:
+- jat_kittag
+- jat_kittag_block
+- jat_kittag_block_forward
+- jat_kittag_forward
+- jat_kittag_heavy
+- jat_kittag_heavy_slam
+- jat_kittag_slide
+lower_ranks_unmodelled: true
+description: Enemies explode on death, dealing 300 Blast Damage (+60% Enemy Max Health) in a 6m radius.
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Vulcan_Blitz"

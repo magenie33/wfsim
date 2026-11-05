@@ -1,0 +1,15 @@
+id: aerial_prospectus
+name: Aerial Prospectus
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetPrecepts/ZanukaPetPhotonStrikePrecept
+compat: hound
+precept: true
+description: Launches a beacon at an enemy within 27m that calls down an Orbital Strike dealing 1200 Blast Damage in a 7m radius.
+effects:
+- kind: unmodelled
+  text: Launches a beacon at an enemy within 27m that calls down an Orbital Strike dealing 1200 Blast Damage in a 7m radius.
+source:
+  url: "https://wiki.warframe.com/w/Aerial_Prospectus"

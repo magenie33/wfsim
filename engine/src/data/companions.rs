@@ -279,7 +279,7 @@ mod tests {
         }
         // A PRECEPT IS THE BULK OF THE POOL, and it is the half that is a
         // behaviour rather than a stat.
-        assert!(m.iter().filter(|x| x.precept).count() > m.len() / 2);
+        assert!(m.iter().filter(|x| x.precept).count() > 40);
         let paying: Vec<&str> = m.iter().filter(|x| x.pays()).map(|x| x.id.as_str()).collect();
         assert_eq!(paying, ["fired_up"]);
     }

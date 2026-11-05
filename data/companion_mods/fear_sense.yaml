@@ -1,0 +1,15 @@
+id: fear_sense
+name: Fear Sense
+rarity: uncommon
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowTremorSensePrecept
+compat: kavat
+precept: true
+description: The Kavat senses the weaknesses of enemies within 25m. For 25s, its attacks deal +200% damage and stagger with a 30% chance of knockdown.
+effects:
+- kind: unmodelled
+  text: The Kavat senses the weaknesses of enemies within 25m. For 25s, its attacks deal +200% damage and stagger with a 30% chance of knockdown.
+source:
+  url: "https://wiki.warframe.com/w/Fear_Sense"

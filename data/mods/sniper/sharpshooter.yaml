@@ -1,0 +1,13 @@
+id: sharpshooter
+name: Sharpshooter
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Rifle/EnergyOnHeadshotRifle
+lower_ranks_unmodelled: true
+description: "On Weak Point Kill:\n+15 Energy"
+effects:
+- kind: unmodelled
+source:
+  url: "https://wiki.warframe.com/w/Sharpshooter"

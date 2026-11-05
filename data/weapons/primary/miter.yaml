@@ -6,6 +6,7 @@ class: rifle
 form: charged
 default_form: true
 mod_pools: [primary, rifle]
+compatibility_tags: [aoe]
 mastery_rank: 6
 max_rank: 30
 

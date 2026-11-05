@@ -1,0 +1,15 @@
+id: null_audit
+name: Null Audit
+rarity: rare
+polarity: penjaga
+base_drain: 0
+max_rank: 5
+internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetPrecepts/ZanukaPetStealEximusPrecept
+compat: hound
+precept: true
+description: The Hound utilizes the same Aura and Abilities as an Eximus enemy for 60s, while stripping its Overguard by 50%.
+effects:
+- kind: unmodelled
+  text: The Hound utilizes the same Aura and Abilities as an Eximus enemy for 60s, while stripping its Overguard by 50%.
+source:
+  url: "https://wiki.warframe.com/w/Null_Audit"

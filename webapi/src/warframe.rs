@@ -52,6 +52,7 @@ pub fn warframe_catalog_json() -> Value {
             "family": m.family,
             "set": m.set,
             "augments": m.augments,
+            "exclusive_to": m.exclusive_to,
             "image": if m.aura || a.auras.contains_key(&m.id) {
                 a.auras.get(&m.id)
             } else {

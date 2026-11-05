@@ -1,0 +1,15 @@
+id: prosperous_retriever
+name: Prosperous Retriever
+rarity: rare
+polarity: naramon
+base_drain: 2
+max_rank: 5
+internal_name: /Lotus/Types/Sentinels/SentinelPrecepts/BeastCreditDoublingMod
+compat: beast
+precept: false
+description: 18% chance to double Credit pickups
+effects:
+- kind: unmodelled
+  text: 18% chance to double Credit pickups
+source:
+  url: "https://wiki.warframe.com/w/Prosperous_Retriever"

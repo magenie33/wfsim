@@ -107,6 +107,7 @@ function wfRepair(st, id) {
 const wfLoadoutOf = (s) => wfFrame(s.frame).abilities.map((id, i) =>
   wfAbility(s.helminth.slot === i + 1 && s.helminth.ability ? s.helminth.ability : id));
 const wfLoadout = () => wfLoadoutOf(wf);
+const wfModFitsFrame = (m, frame) => !m.exclusive_to?.length || m.exclusive_to.includes(frame);
 
 /// AN AUGMENT IS EXCLUSIVE to a loadout carrying its ability, so a slot whose
 /// ability left with an infusion is emptied: the engine refuses the card.
@@ -114,7 +115,7 @@ function wfShedAugments(s) {
   const carries = wfLoadoutOf(s).map((a) => a && a.id);
   s.slots.forEach((x) => {
     const m = wfMod(x.mod);
-    if (m && m.augments && !carries.includes(m.augments)) { x.mod = null; x.rank = null; }
+    if (m && (!wfModFitsFrame(m, s.frame) || (m.augments && !carries.includes(m.augments)))) { x.mod = null; x.rank = null; }
   });
   return s;
 }
@@ -379,7 +380,8 @@ function renderWfMenu(kind, idx, query) {
   const fits = (m, i) => (i === WF_AURA ? m.aura : i === WF_EXILUS ? m.exilus : !m.aura);
   const at = (id) => wf.slots.findIndex((s, i) => i !== idx && s.mod === id);
   const own = wfMod(wf.slots[idx].mod);
-  const hits = WFCAT.mods.filter((m) => fits(m, idx) && !(m.augments && !carries.includes(m.augments)) && searchHit(m, q))
+  const hits = WFCAT.mods.filter((m) => fits(m, idx) && wfModFitsFrame(m, wf.frame)
+    && !(m.augments && !carries.includes(m.augments)) && searchHit(m, q))
     .sort((a, b) => (b.id === (own && own.id)) - (a.id === (own && own.id)) || a.name.localeCompare(b.name));
   menu.innerHTML = hits.length ? hits.map((m) => {
     const placed = at(m.id);
