@@ -18,10 +18,12 @@
 // It is streamed a line at a time, and appended to rather than rewritten —
 // `wfsim-board` keeps the newest line of a key, and the hourly read writes the
 // file afresh.
-import { readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync, createReadStream } from "node:fs";
+import { readFileSync, writeFileSync, appendFileSync, existsSync, readdirSync, createReadStream,
+  openSync, closeSync, fsyncSync, renameSync } from "node:fs";
 import { createInterface } from "node:readline";
 import { createHash } from "node:crypto";
-import { join } from "node:path";
+import { join, dirname, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { query, close } from "./db.mjs";
 
 const OVERLAP_SECONDS = 2 * 3600;
@@ -85,37 +87,62 @@ async function cursor() {
   writeFileSync(join(work, "facts-recent.json"), "{}");
 }
 
-async function push() {
-  const ledgerPath = join(work, "pushed.json");
+export function savePushed(path, ledger, replace = renameSync) {
+  const partial = `${path}.partial-${process.pid}`, fd = openSync(partial, "w");
+  try { writeFileSync(fd, JSON.stringify(ledger)); fsyncSync(fd); } finally { closeSync(fd); }
+  replace(partial, path);
+  const directory = openSync(dirname(path), "r");
+  try { fsyncSync(directory); } finally { closeSync(directory); }
+}
+
+export async function pushBoard({ workDir = work, boardDir = dir, send = fetch, now = () => performance.now(),
+  budgetMs = Infinity, maxFiles = Infinity, requestMs = 15000 } = {}) {
+  if (typeof budgetMs !== "number" || typeof maxFiles !== "number" || !(budgetMs > 0) || !(maxFiles > 0)
+    || !Number.isFinite(requestMs) || requestMs < 1 || requestMs > 2147483647
+    || maxFiles !== Infinity && !Number.isSafeInteger(maxFiles)) throw new Error("invalid live push bounds");
+  const ledgerPath = join(workDir, "pushed.json"), deadline = now() + budgetMs;
   const ledger = existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, "utf8")) : {};
+  if (!ledger || Array.isArray(ledger) || typeof ledger !== "object") throw new Error("invalid pushed ledger");
   let sent = 0;
+  const finish = pending => { console.error(`live: pushed ${sent} file(s)${pending ? " (pending)" : ""}`); return { sent, pending }; };
   // THE STAMP GOES LAST, so a reader who sees a new `meta.json` finds every file
   // it names already there — and the worker opens the live board only once one
   // exists (`worker/live_board.js`).
   // A SCENE'S DIRECTORY IS PUSHED BENEATH ITS NAME (`Benchmark::cell_dir`).
-  const json = (sub) => readdirSync(join(dir, sub), { withFileTypes: true }).filter((e) => e.isFile() && e.name.endsWith(".json")).map((e) => sub ? `${sub}/${e.name}` : e.name);
-  const scenes = readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
+  const json = (sub) => readdirSync(join(boardDir, sub), { withFileTypes: true }).filter((e) => e.isFile() && e.name.endsWith(".json")).map((e) => sub ? `${sub}/${e.name}` : e.name);
+  const scenes = readdirSync(boardDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
   const names = [...json(""), ...scenes.flatMap(json)].filter((n) => n !== "meta.json").sort();
-  for (const name of [...names, "meta.json"].filter((n) => existsSync(join(dir, n)))) {
-    const bytes = readFileSync(join(dir, name));
+  for (const name of [...names, "meta.json"].filter((n) => existsSync(join(boardDir, n)))) {
+    if (sent >= maxFiles || now() >= deadline) return finish(true);
+    const bytes = readFileSync(join(boardDir, name));
     const sha = createHash("sha256").update(bytes).digest("hex");
     if (ledger[name] === sha) continue;
-    const r = await fetch(`${SITE}/api/board/live/${name}`, {
-      method: "PUT",
-      headers: { authorization: `Bearer ${process.env.BOARD_PUSH_TOKEN}`, "content-type": "application/json" },
-      body: bytes,
-    });
-    if (!r.ok) throw new Error(`push ${name}: ${r.status} ${await r.text()}`);
+    const left = deadline - now();
+    if (left <= 0) return finish(true);
+    const signal = AbortSignal.timeout(Math.max(1, Math.ceil(Math.min(requestMs, left))));
+    try {
+      const r = await send(`${SITE}/api/board/live/${name}`, {
+        method: "PUT", signal,
+        headers: { authorization: `Bearer ${process.env.BOARD_PUSH_TOKEN}`, "content-type": "application/json" }, body: bytes,
+      });
+      if (!r.ok) throw new Error(`push ${name}: ${r.status} ${await r.text()}`);
+    } catch (error) {
+      if (signal.aborted && left <= requestMs) return finish(true);
+      throw error;
+    }
     ledger[name] = sha;
     sent += 1;
     // THE LEDGER IS WRITTEN PER FILE, so a push cut off halfway resumes where
     // it stopped instead of sending the board again.
-    writeFileSync(ledgerPath, JSON.stringify(ledger));
+    savePushed(ledgerPath, ledger);
   }
-  console.error(`live: pushed ${sent} file(s)`);
+  return finish(false);
 }
 
+if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) {
 if (mode === "delta") await delta();
 else if (mode === "cursor") await cursor();
-else if (mode === "push") await push();
+else if (mode === "push") await pushBoard({ budgetMs: Number(process.env.WFSIM_BOARD_PUSH_BUDGET_MS || Infinity),
+  maxFiles: Number(process.env.WFSIM_BOARD_PUSH_MAX_FILES || Infinity), requestMs: Number(process.env.WFSIM_BOARD_PUSH_TIMEOUT_MS || 15000) });
 else { console.error("usage: live_publish.mjs delta|cursor|push <work-dir> ..."); process.exit(2); }
+}
