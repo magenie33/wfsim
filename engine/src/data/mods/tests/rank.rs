@@ -59,10 +59,10 @@ fn with_ranks_adds_the_variant_beside_its_card() {
     assert_eq!(base.family, Some("hunter_track"));
 }
 
-/// THE BUILT-IN SEARCHES' ELEMENT STARTS ARE ONE ELEMENT A ROW, 60/60: every card
+/// The strategy's elemental carriers are one element a row, 60/60: every card
 /// is real, carries one primary element and status chance, a row is one element,
 /// and the four rows are four elements. Every preset has an id, a name and run
-/// terms the run bar can hold, and the search bar lists at least one.
+/// terms the run bar can hold.
 #[test]
 fn the_built_in_searches_start_from_each_elements_dual_cards() {
     use crate::model::ModEffect;
@@ -83,7 +83,6 @@ fn the_built_in_searches_start_from_each_elements_dual_cards() {
         assert!(!seen.contains(&row_element), "two rows are one element");
         seen.push(row_element);
     }
-    assert!(p.presets.iter().any(|x| x.listed), "the search bar lists one");
     for x in &p.presets {
         assert!(!x.id.is_empty() && !x.name.is_empty(), "{x:?}");
         assert!((1..=100).contains(&x.finalists) && [1, 10].contains(&x.candidate_runs), "{x:?}");

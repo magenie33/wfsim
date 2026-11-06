@@ -38,6 +38,38 @@ fn final_requirements_replace_unfixed_cards_in_every_start_and_replay() {
 }
 
 #[test]
+fn four_element_branches_replay_identically_through_the_fleet_and_shards() {
+    let mut v = request();
+    v["search_strategy"] = json!("four_elements");
+    v["mods"] = json!({"serration": "search", "thermite_rounds": "search",
+        "rime_rounds": "search", "high_voltage": "search", "malignant_force": "search"});
+    v["starts"] = json!([{"slots": []}, {"slots": ["serration"]}]);
+    v["finalists"] = json!(10);
+    let alone = run(&v);
+    let led = fleet(&v);
+    assert_eq!(led["results"], alone["results"]);
+    assert_eq!(led["start_results"], alone["start_results"]);
+    assert_eq!(alone["starts"], 2);
+    assert_eq!(alone["branches"], 10);
+    for row in alone["results"].as_array().unwrap() {
+        assert_eq!(crate::simulate::simulate_json(&row["replay"])["score"], row["kill_progress"]);
+    }
+    for shard in 0..3 {
+        v["shard"] = json!(shard);
+        v["shards"] = json!(3);
+        v["quick_fleet"] = json!({"lead": true, "fresh": true, "scores": []});
+        let out = run(&v);
+        let progress = out["progress"].as_array().unwrap();
+        assert_eq!(progress.len() as u64, (12 - shard) / 3, "{out}");
+        for row in progress {
+            let branch = row["branch_index"].as_u64().unwrap();
+            assert_eq!(branch % 3, shard);
+            assert_eq!(row["start"].as_u64().unwrap(), branch / 5);
+        }
+    }
+}
+
+#[test]
 fn final_requirement_can_live_in_a_pinned_exilus_with_no_main_slots() {
     let mut v = request();
     v["mods"] = json!({});

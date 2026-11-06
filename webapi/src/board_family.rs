@@ -60,6 +60,7 @@ pub fn transfers(record: &Value, ruler: &str, mode: &str) -> Vec<Value> {
             // exclusive cards. Only the riven is pinned to preserve its shape.
             for key in ["mods", "evolutions", "arcane", "arcane_rank"] { obj.remove(key); }
             obj.insert("strategy".into(), json!("quick"));
+            obj.insert("search_strategy".into(), json!(preset.search_strategy));
             obj.insert("starts".into(), json!([start]));
             obj.insert("finalists".into(), json!(1));
             obj.insert("candidate_runs".into(), json!(preset.candidate_runs));
@@ -91,6 +92,7 @@ mod tests {
         let job = &jobs[0];
         assert_eq!(job["weapon"], "burston");
         assert!(job["request"].get("mods").is_none());
+        assert_eq!(job["request"]["search_strategy"], "four_elements");
         let slots = job["request"]["starts"][0]["slots"].as_array().unwrap();
         assert!(slots.contains(&Value::Null));
         assert!(!slots.contains(&json!("gilded_truth")));

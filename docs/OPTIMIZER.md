@@ -551,10 +551,11 @@ together missed none, for 2.3× the evaluations of neither.
 
 **THE BUILT-IN SEARCHES** are `data/search/presets.yaml`, read-only like the
 official rulers: never stored, never edited, ⧉ copies one into a search of your
-own (`80-optimizer-preset.js`). Owning no search, a reader has the first listed
-one — four starts, one per primary element, each its 60/60 card the weapon
-equips. The search is handed their starts like any other; nothing in it knows
-a preset exists.
+own (`80-optimizer-preset.js`). Appraisal opens its own built-in search.
+Ordinary optimization opens an editable draft with one blank build start and
+the Four elements strategy, without a default preset. Users may save searches.
+Presets choose user starts and run terms; strategies choose how starts are
+processed. Neither exposes an editable search program.
 ## The quick descent — the quick calc, repeated
 
 The page's search (`"strategy": "quick"`): from each start, run the QUICK CALC
@@ -568,6 +569,25 @@ an axis, a legality rule — the optimizer has by construction.
 above runs only when a tool asks for it by name.
 
 ### Starts
+
+The immutable strategies are declared in `data/search/presets.yaml` and exposed
+through `/api/meta.search_presets.strategies`. A quick request selects one with
+`search_strategy`; `strategy: "quick"` still names the descent algorithm.
+The selector displays the selected strategy's `description` beside it; starts
+remain a separate input and always contain at least one build, including blank.
+The only strategy is `four_elements`. Requests omitting `search_strategy` keep
+their existing start semantics.
+
+Four elements retains each user build and makes internal branches with the
+weapon's Heat, Cold, Electricity and Toxin 60/60 cards. Each branch preserves
+the other choices, exclusions and pins; the added card is not pinned. It uses
+an available seat, or explores unpinned replacements in a full build, without
+removing required cards. Equivalent branches within a start are deduplicated.
+Unavailable elements add no branch. The original build always remains.
+Branch results and progress name their original user `start` and a `branch`;
+`starts` counts user starts, not internal branches. Multiple user starts remain
+supported. A new search and a riven appraisal each begin with one user start;
+appraisal pins its riven.
 
 - A start is A BUILD, and it need not be a good one — a perfect start would
   leave nothing to optimize. The optimizer lists each as the simulator's own

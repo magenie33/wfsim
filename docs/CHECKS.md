@@ -1,5 +1,10 @@
 # The browser and node checks
 
+`check_search_strategy.mjs` exercises the shared headless preset and request
+builders: one user start, explicit immutable strategy selection, pinned-riven
+appraisal, and legacy saved-start compatibility. Rust quick-search tests cover
+internal branches, protected slots, exclusions and native/fleet provenance.
+
 `check_recommendations.mjs` runs the real account schema and recommendation
 routes against Postgres semantics. It covers registered and claimed-client
 authentication, idempotence, withdrawal, midnight retries, settlement weights,
@@ -361,16 +366,20 @@ again, and each channel's bot sees only its own.
 
 Riven appraisal's page (`81-appraisal.js`) against a stand-in for its door, in
 minutes because it runs a real search: the link lands on the weapon's
-optimizer under the appraisal's ruler with the preset's four starts — the
-asker's riven, pinned, beside each element's 60/60 card — answering one build
+optimizer under the appraisal's ruler with one pinned-riven start and the
+Four elements strategy, answering one build
 at ten fights a candidate; the search starts with no click; the reader's own
 presets, rivens and checkpoint are left exactly as they were; the winner goes
 back as a build carrying that riven's shape and the typed name and no score;
-and the finalists reach the board even with uploading switched off. The same
-link with `?freeze` writes the request the search sent and its engine, starting
+and the finalists reach the board even with uploading switched off.
+Delivery uses signed test receipts issued by the production authorizer;
+missing, forged and mismatched authorization is refused.
+The same link with `?freeze` writes the request the search sent and its engine, starting
 nothing; and that frozen request and context, run as volunteer work through the
 background's own search, answers the same build to the key, under its lease,
 with the search's work.
+That volunteer replay requires WASM; native previews exercise the page flow
+and explicitly skip the worker-only leg.
 
 ## `check_riven_request`
 
@@ -1680,14 +1689,12 @@ would.
 
 ## `check_search_presets`
 
-The built-in searches (`data/search/presets.yaml`): a reader who owns no
-search has the first one — four starts, each the open weapon's 60/60 card of
-one element, at its stated run terms — with its controls inert and its note
-shown but the run button live, and that button, clicked, sends the search the
-page states (its click event is not a request); a click in a locked region
-makes the reader's own copy and toggles nothing; an edit that reaches it
-anyway is not stored; ⧉ makes an editable copy, deleting that copy brings the
-built-in back, and a shotgun's starts are the shotgun's cards. Runs in CI's
+Ordinary optimization starts with an editable draft, one blank start and
+the Four elements strategy, without a default built-in preset. Its controls
+are live and Run sends that draft. Users can create saved searches; deleting
+the last returns to the editable draft, and removing the last start retains
+one blank start. The selected strategy explains its process beside the control.
+Another weapon has the same draft contract. Runs in CI's
 `page-rest` job.
 
 ## `check_ime_keys`

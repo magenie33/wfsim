@@ -10,18 +10,43 @@ function renderOpt() {
   // A weapon's first visit: one blank start, then the active preset.
   if (!optSeeded) {
     opt.starts = [blankStart()];
+    opt.search_strategy = "four_elements";
     opt.limits = normalizeLimits(null);
     optSeeded = true;
     bootstrapOptPresets();
   }
   if (modSuffix() !== "optimizer") return;
   renderOptPresetBars();
+  renderOptStrategy();
   renderOptStarts();
   renderOptFinal();
   renderOptLimits();
   renderOptFight();
   updateOptEstimate();
   renderOptimizationBuildConsent();
+}
+
+function renderOptStrategy() {
+  const select = $("opt-search-strategy");
+  if (!select) return;
+  const strategies = META.search_presets?.strategies || [{ id: "four_elements", name: "Four elements strategy" }];
+  const current = opt.search_strategy || "";
+  const missing = !strategies.some(s => s.id === current);
+  select.innerHTML = (missing ? `<option value="${escHtml(current)}" selected disabled>${escHtml(current || tr("Saved starts only"))}</option>` : "")
+    + strategies.map(s => `<option value="${escHtml(s.id)}"${s.id === current ? " selected" : ""}>${escHtml(tr(s.name))}</option>`).join("");
+  const description = $("opt-strategy-description");
+  if (description) description.textContent = tr(strategies.find(s => s.id === current)?.description || "");
+  select.onchange = () => {
+    setOptStrategy(select.value);
+  };
+}
+
+function setOptStrategy(id) {
+  const strategies = META.search_presets?.strategies || [{ id: "four_elements", name: "Four elements strategy" }];
+  if (!strategies.some(s => s.id === id)) return;
+  opt.search_strategy = id;
+  renderOptStrategy();
+  updateOptEstimate();
 }
 
 /// The fight read back, with an entry to the one global scenario editor.

@@ -510,6 +510,7 @@ const AGENT_ACTIONS = [
     args: {},
     run() {
       return {
+        search_strategy: opt.search_strategy || null,
         starts: opt.starts.map((s) => ({ ...startPayload(s), fixed: s.fixed.slice() })),
         limits: JSON.parse(JSON.stringify(opt.limits)), final: opt.final ? startPayload(opt.final) : null, compatibility: optCompatibility?.key === optCompatibilityKey() ? optCompatibility.result : null,
         blocked: opt.starts.map((s, i) => ({ start: i + 1, ...startConflicts(s) })).filter((x) => x.blocked.length || x.replaced.length),
@@ -570,16 +571,19 @@ const AGENT_ACTIONS = [
   {
     id: "optimizer.plan.set",
     writes: "search",
-    what: "Set how many builds the search answers with (the best N it scored, 1-100) and how many fights each candidate gets while the search compares them (1 or 10).",
+    what: "Select a built-in search strategy, how many builds the search answers with (the best N it scored, 1-100), and how many fights each candidate gets (1 or 10).",
     anchor: "#opt-runbar",
     needs_weapon: true,
     args: {
+      search_strategy: { kind: "string", what: "a built-in strategy, selected without editing it",
+        enum: () => (META?.search_presets?.strategies || []).map(s => s.id) },
       finalists: { kind: "number", min: 1, max: 100, what: "how many builds the search answers with" },
       candidate_runs: { kind: "number", min: 1, max: 10, what: "1 or 10 fights a candidate" },
     },
-    run({ finalists, candidate_runs }) {
+    run({ search_strategy, finalists, candidate_runs }) {
+      if (search_strategy != null) setOptStrategy(search_strategy);
       setOptSizes({ finalists, candidate_runs });
-      return { finalists: optRun.finalists, candidate_runs: optRun.candidate_runs, estimate: $("opt-estimate").textContent.trim() };
+      return { search_strategy: opt.search_strategy || null, finalists: optRun.finalists, candidate_runs: optRun.candidate_runs, estimate: $("opt-estimate").textContent.trim() };
     },
   },
   {

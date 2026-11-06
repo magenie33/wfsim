@@ -598,7 +598,7 @@ function computeLanes(box, starts) {
   if (box.children.length !== starts.length) box.innerHTML = starts.map(() => `<div class="rt-lane"><span></span><i><b></b></i></div>`).join("");
   starts.forEach((s, i) => {
     const el = box.children[i];
-    const text = `${tr("start")} ${i + 1} · ${optLaneText(s)}`;
+    const text = `${optStartLabel(s, i)} · ${optLaneText(s)}`;
     const label = el.querySelector("span");
     if (label.textContent !== text) label.textContent = text;
     el.classList.toggle("settled", !!s.settled);
@@ -813,7 +813,7 @@ function computeDemandHtml() {
       <div class="goal-h"><b>${escHtml(tr("Every riven of {w}").replace("{w}", w ? tr(w.name) : g.weapon))}</b>
         <span>${escHtml(tr("{a} of {n} confirmed").replace("{a}", n(g.agreed)).replace("{n}", n(g.shapes)))}</span></div>
       <div class="goal-bar"><i class="begun" style="width:${pct(g.started)}%"></i><i style="width:${pct(g.agreed)}%"></i></div>
-      <div class="set-note">${escHtml(tr("{n} begun · each shape is searched from four element starts, and counts once two owners on two networks agree").replace("{n}", n(g.started)))}${
+      <div class="set-note">${escHtml(tr("{n} begun · each shape uses the Four elements strategy, and counts once two owners on two networks agree").replace("{n}", n(g.started)))}${
         g.clear_hours == null ? "" : ` · ${escHtml(tr("done in {t}").replace("{t}", demandHours(g.clear_hours)))}`}</div></div></div>`;
   }).join("");
   const eta = goal?.clear_hours == null || !owed ? "" : demandHours(goal.clear_hours);

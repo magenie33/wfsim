@@ -1,12 +1,16 @@
 # THE BUILT-IN SEARCH PRESETS — read-only, like the official rulers in the
 # scenario bar: nothing stores them and nothing edits them; ⧉ copies one into
-# a search of your own. The search knows nothing of them; this is all it is given.
+# a search of your own.
 #
-# `element_starts`: one start per primary element, its 60/60 card (element plus
-# status chance) for every mod class — a start takes the card the weapon equips.
-# A preset with `riven` also puts the asker's riven, pinned, in every start; one
+# `element_starts` supplies the Four elements strategy's 60/60 carriers for
+# every mod class. Presets hold one user start and select an immutable strategy.
+# A preset with `riven` puts the asker's riven, pinned, in that start; one
 # not `listed` is applied by its own page (`riven_appraisal`, docs/AGENT.md
 # §"Riven appraisal") and never shown in the search bar.
+strategies:
+  - id: four_elements
+    name: Four elements strategy
+    description: "Keep each original start and explore branches with Heat, Cold, Electricity and Toxin 60/60 mods. Fill available slots or replace unpinned, non-required mods, then improve each branch until no change helps. Respect exclusions and pins; the added elemental mod is not pinned."
 element_starts:
   - [thermite_rounds, scattering_inferno, scorch, volcanic_edge, magma_chamber]
   - [rime_rounds, frigid_blast, frostbite, vicious_frost, hypothermic_shell]
@@ -14,13 +18,15 @@ element_starts:
   - [malignant_force, toxic_barrage, pistol_pestilence, virulent_scourge, contamination_casing]
 presets:
   - id: four_elements
-    name: Four elements (60/60)
-    listed: true
+    name: Four elements strategy
+    search_strategy: four_elements
+    listed: false
     riven: false
     finalists: 10
     candidate_runs: 10
   - id: riven_appraisal
     name: Riven appraisal
+    search_strategy: four_elements
     listed: false
     riven: true
     finalists: 1

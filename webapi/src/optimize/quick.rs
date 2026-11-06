@@ -37,6 +37,12 @@ pub(crate) struct QBuild {
     pub(crate) fixed_slots: u8,
 }
 
+pub(crate) struct SearchBranch {
+    start: QuickStart<QBuild>,
+    origin: usize,
+    element: Option<String>,
+}
+
 impl QBuild {
     /// Indices as they travel between workers: the eight slots (-1 empty),
     /// then exilus, arcane, evolution set, mode, valence, assembly and the
@@ -508,10 +514,8 @@ impl QuickCtx<'_> {
         }
     }
 
-    /// The starts the plan was given, or one per primary element — each a
-    /// real build holding that element's strongest card and nothing else,
-    /// which is what a player gets by making those builds by hand.
-    pub(crate) fn starts(
+    /// User builds, legacy subset starts, or the selected strategy's blank input.
+    fn initial_starts(
         &self,
         given: &[wfsim_optimizer::descent::Start],
         seeds: Vec<wfsim_optimizer::descent::Start>,
@@ -520,7 +524,10 @@ impl QuickCtx<'_> {
         if !builds.is_empty() {
             return builds;
         }
-        let list = if given.is_empty() { seeds } else { given.to_vec() };
+        let list = if !given.is_empty() { given.to_vec() }
+            else if self.request["search_strategy"] == "four_elements" {
+                vec![wfsim_optimizer::descent::Start::default()]
+            } else { seeds };
         let arcane_seats: Vec<Position> = (0..self.arcane_sets.first().map_or(0, Vec::len))
             .map(|idx| Position { kind: "arcane", idx })
             .collect();
@@ -546,6 +553,63 @@ impl QuickCtx<'_> {
                 QuickStart { build: b, fixed, unnamed: Vec::new() }
             })
             .collect()
+    }
+
+    pub(crate) fn starts(
+        &self,
+        given: &[wfsim_optimizer::descent::Start],
+        seeds: Vec<wfsim_optimizer::descent::Start>,
+    ) -> Vec<SearchBranch> {
+        let selected = self.request["search_strategy"] == "four_elements";
+        let mut branches = Vec::new();
+        for (origin, start) in self.initial_starts(given, seeds).into_iter().enumerate() {
+            let mut seen = HashSet::from([self.key(&start.build)]);
+            branches.push(SearchBranch {
+                start: QuickStart { build: start.build.clone(), fixed: start.fixed.clone(), unnamed: start.unnamed.clone() },
+                origin, element: selected.then(|| "original".into()),
+            });
+            if selected {
+                for row in &wfsim_engine::data::mods::search_presets().element_starts {
+                    let Some(card) = row.iter().find_map(|id| self.pool.iter().enumerate()
+                        .find(|(i, m)| m.id == id && self.usable[*i]).map(|(i, _)| i)) else { continue };
+                    let element = self.pool[card].effects.iter().find_map(|e| match e {
+                        wfsim_engine::model::ModEffect::Element(t, _) => Some(format!("{t:?}").to_lowercase()),
+                        _ => None,
+                    });
+                    if start.build.mods.contains(&Some(card)) { continue; }
+                    let protected = |slot: usize| start.fixed.contains(&Position { kind: "mods", idx: slot })
+                        || start.build.mods[slot].is_some_and(|m| self.required.contains(&m)
+                            || self.final_required.iter().any(|id| id == self.pool[m].id));
+                    let conflicts: Vec<usize> = (0..8).filter(|&i| start.build.mods[i]
+                        .is_some_and(|m| self.clashes_with(&self.pool[card], &self.pool[m]))).collect();
+                    if conflicts.iter().any(|&i| protected(i)) { continue; }
+                    let mut base = start.build.clone();
+                    for &i in &conflicts { base.mods[i] = None; }
+                    let open = (0..8).find(|&i| !protected(i) && base.mods[i].is_none());
+                    let slots: Vec<usize> = if base.mods.iter().flatten().count() < self.mod_slots {
+                        open.into_iter().collect()
+                    } else {
+                        (0..8).filter(|&i| !protected(i) && base.mods[i].is_some()).collect()
+                    };
+                    for slot in slots {
+                        let mut b = base.clone();
+                        b.mods[slot] = Some(card);
+                        if self.clashes(&b, slot, &self.pool[card]) { continue; }
+                        if b.mods.iter().flatten().any(|&i| self.variant_forbids[b.evo][i]) {
+                            if start.fixed.iter().any(|p| p.kind == "evo") { continue; }
+                            let Some(evo) = self.variant_forbids.iter().position(|f| b.mods.iter().flatten().all(|&i| !f[i]))
+                                else { continue };
+                            b.evo = evo;
+                        }
+                        if seen.insert(self.key(&b)) {
+                            branches.push(SearchBranch { origin, element: element.clone(),
+                                start: QuickStart { build: b, fixed: start.fixed.clone(), unnamed: start.unnamed.clone() } });
+                        }
+                    }
+                }
+            }
+        }
+        branches
     }
 }
 
@@ -1130,6 +1194,8 @@ pub(crate) struct QuickReport {
     pub(crate) from_starts: std::collections::HashMap<QuickJobIdentity, serde_json::Value>,
     pub(crate) near: std::collections::HashMap<QuickJobIdentity, serde_json::Value>,
     pub(crate) failures: Vec<serde_json::Value>,
+    pub(crate) branch_failures: Vec<serde_json::Value>,
+    pub(crate) branches: u32,
 }
 
 type QuickJobIdentity = (super::JobIdentity, Option<[Option<usize>; 8]>);
@@ -1199,7 +1265,7 @@ impl QuickCtx<'_> {
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn run_quick(
     ctx: &QuickCtx<'_>,
-    starts: Vec<QuickStart<QBuild>>,
+    starts: Vec<SearchBranch>,
     max_evals: u64,
     state: Option<&wfsim_optimizer::FunnelState>,
     shard: u32,
@@ -1209,11 +1275,12 @@ pub(crate) fn run_quick(
 ) -> (Vec<wfsim_optimizer::ScreenedJob>, wfsim_optimizer::search::SearchStats, QuickReport) {
     let shards = shards.max(1) as usize;
     let global = |j: usize| j * shards + shard as usize % shards;
+    let origins: Vec<(usize, Option<String>)> = starts.iter().map(|b| (b.origin, b.element.clone())).collect();
     let mine: Vec<QuickStart<QBuild>> = starts
         .into_iter()
         .enumerate()
         .filter(|(i, _)| i % shards == shard as usize % shards)
-        .map(|(_, s)| s)
+        .map(|(_, s)| s.start)
         .collect();
     let stop: Vec<&std::sync::atomic::AtomicBool> =
         state.map(|s| vec![&s.cancel, &s.stop_enumeration]).unwrap_or_default();
@@ -1223,7 +1290,16 @@ pub(crate) fn run_quick(
     if ctx.lead {
         let rows: Vec<Value> = progress
             .iter()
-            .map(|p| json!({ "settled": p.settled, "pass": p.pass, "passes": p.passes, "round": p.round, "at": p.at, "of": p.of }))
+            .enumerate()
+            .map(|(i, p)| {
+                let mut row = json!({ "settled": p.settled, "pass": p.pass, "passes": p.passes, "round": p.round, "at": p.at, "of": p.of });
+                if let Some((origin, Some(element))) = origins.get(global(i)) {
+                    row["start"] = json!(origin);
+                    row["branch"] = json!(element);
+                    row["branch_index"] = json!(global(i));
+                }
+                row
+            })
             .collect();
         FLEET.with(|f| f.borrow_mut().progress = json!(rows));
     }
@@ -1236,16 +1312,28 @@ pub(crate) fn run_quick(
         // order of every build scored, at `runs` each.
         evals: ctx.sims.load(std::sync::atomic::Ordering::Relaxed),
         exhaustive: false,
-        starts: qs.starts,
+        starts: (0..qs.starts as usize).map(|i| origins[global(i)].0).collect::<HashSet<_>>().len() as u32,
         cut: qs.cut,
     };
     if ctx.defer_results() {
         return (Vec::new(), stats, QuickReport::default());
     }
+    let failed: HashSet<usize> = failures.iter().map(|f| f.start).collect();
     let mut report = QuickReport {
-        failures: failures.iter().map(|f| json!({ "start": global(f.start), "why": f.why })).collect(),
+        branches: qs.starts,
+        failures: failures.iter().filter(|f| {
+            let (origin, element) = &origins[global(f.start)];
+            element.is_none() || (shards == 1
+                && !answers.iter().any(|a| a.starts.iter().any(|&s| origins[global(s)].0 == *origin))
+                && (0..mine.len()).filter(|&s| origins[global(s)].0 == *origin).all(|s| failed.contains(&s)))
+        }).map(|f| json!({ "start": origins[global(f.start)].0, "why": f.why })).collect(),
+        branch_failures: failures.iter().filter(|f| origins[global(f.start)].1.is_some())
+            .map(|f| json!({ "start": origins[global(f.start)].0,
+                "branch": origins[global(f.start)].1, "why": f.why })).collect(),
         ..Default::default()
     };
+    let mut reported = HashSet::new();
+    report.failures.retain(|f| reported.insert(f["start"].clone()));
     let scored: Vec<&(QBuild, Score)> = pool.iter().filter(|(_, s)| s.is_some()).collect();
     let field: Vec<(f64, f64)> =
         scored.iter().map(|(b, s)| (s.map_or(0.0, |(kp, _)| kp), ctx.spread_of(b))).collect();
@@ -1276,11 +1364,15 @@ pub(crate) fn run_quick(
                     .iter()
                     .enumerate()
                     .map(|(k, &s)| {
-                        json!({
-                            "start": global(s),
+                        let mut lane = json!({
+                            "start": origins[global(s)].0,
                             "from": a.from.get(k).copied().flatten().map(|(kp, _)| kp),
                             "moves": a.moves.get(k).copied().unwrap_or(0),
-                        })
+                        });
+                        if let Some(element) = &origins[global(s)].1 {
+                            lane["branch"] = json!(element);
+                        }
+                        lane
                     })
                     .collect();
                 report.from_starts.insert(job, json!(lanes));
@@ -1290,7 +1382,9 @@ pub(crate) fn run_quick(
                 if let Some((a, changes)) =
                     near.into_iter().map(|ai| (&answers[ai], ctx.changes(&answers[ai].build, b))).min_by_key(|(_, c)| c.len())
                 {
-                    let starts: Vec<usize> = a.starts.iter().map(|&s| global(s)).collect();
+                    let mut starts: Vec<usize> = a.starts.iter().map(|&s| origins[global(s)].0).collect();
+                    starts.sort_unstable();
+                    starts.dedup();
                     report.near.insert(job, json!({ "starts": starts, "changes": changes }));
                 }
             }
@@ -1504,6 +1598,108 @@ mod tests {
         );
         assert_eq!(out["ok"], json!(true), "{out}");
         out
+    }
+
+    fn strategy_request() -> Value {
+        json!({
+            "weapon": "braton", "enemy": "thrax_centurion", "level": 100,
+            "duration": 0.1, "runs": 1, "candidate_runs": 1, "finalists": 10,
+            "strategy": "quick", "search_strategy": "four_elements", "build_size": 2,
+            "mods": { "serration": "search", "split_chamber": "search",
+                "thermite_rounds": "search", "rime_rounds": "search",
+                "high_voltage": "search", "malignant_force": "search" },
+            "starts": [{"slots": ["serration", "split_chamber"],
+                "fixed": [{"kind": "mods", "idx": 0, "placement": "slot"}]}],
+        })
+    }
+
+    #[test]
+    fn four_elements_processes_full_builds_without_moving_pins() {
+        let req = strategy_request();
+        let plan = super::super::parse_optimize(&req).expect("plan");
+        let lead = run(&req, Some(json!({"lead": true, "fresh": true, "scores": []})));
+        let progress = lead["progress"].as_array().expect("branch progress");
+        assert_eq!(progress.len(), 5, "{lead}");
+        for row in progress {
+            assert_eq!(row["start"], 0);
+        }
+        let pending = lead["pending"].as_array().unwrap();
+        assert_eq!(pending.len(), 5, "{lead}");
+        let pinned = plan.pool.iter().position(|m| m.id == "serration").unwrap();
+        for row in pending {
+            let b = QBuild::from_json(row.get("build").unwrap_or(row)).unwrap();
+            assert_eq!(b.mods[0], Some(pinned), "{row}");
+            assert_eq!(b.fixed_slots, 1);
+            assert_eq!(b.mods.iter().flatten().count(), 2);
+        }
+        let out = run(&req, None);
+        assert_eq!(out["starts"], 1, "{out}");
+        assert_eq!(out["branches"], 5, "{out}");
+        assert_eq!(out["start_results"].as_array().unwrap().len(), 1, "{out}");
+        for lane in out["results"].as_array().unwrap().iter()
+            .flat_map(|r| r["from_starts"].as_array().into_iter().flatten()) {
+            assert_eq!(lane["start"], 0, "{lane}");
+            assert!(lane["branch"].is_string(), "{lane}");
+        }
+    }
+
+    #[test]
+    fn four_elements_keeps_user_starts_and_legacy_requests_distinct() {
+        let mut req = strategy_request();
+        req["starts"] = json!([{"slots": []}, {"slots": ["serration"]}]);
+        let out = run(&req, None);
+        assert_eq!(out["starts"], 2, "{out}");
+        assert_eq!(out["branches"], 10, "{out}");
+        assert_eq!(out["start_results"].as_array().unwrap().len(), 2, "{out}");
+        req.as_object_mut().unwrap().remove("search_strategy");
+        let legacy = run(&req, None);
+        assert_eq!(legacy["starts"], 2);
+        assert_eq!(legacy["branches"], 2);
+        for strategy in [json!("unknown"), json!(null), json!(4)] {
+            req["search_strategy"] = strategy;
+            assert!(super::super::parse_optimize(&req).is_err());
+        }
+        req["search_strategy"] = json!("four_elements");
+        req["starts"] = json!([]);
+        let out = run(&req, None);
+        assert_eq!(out["starts"], 1, "{out}");
+        assert_eq!(out["branches"], 5, "{out}");
+        req["strategy"] = json!("exhaust");
+        assert!(super::super::parse_optimize(&req).is_err());
+    }
+
+    #[test]
+    fn four_elements_respects_exclusions_required_cards_and_pinned_empty_seats() {
+        let mut req = strategy_request();
+        req["mods"]["serration"] = json!("fixed");
+        req["mods"]["rime_rounds"] = json!("exclude");
+        req["starts"] = json!([{"slots": ["serration", null, "split_chamber"],
+            "fixed": [{"kind": "mods", "idx": 1, "placement": "slot"}]}]);
+        let plan = super::super::parse_optimize(&req).expect("plan");
+        let lead = run(&req, Some(json!({"lead": true, "fresh": true, "scores": []})));
+        assert_eq!(lead["progress"].as_array().unwrap().len(), 4, "{lead}");
+        for row in lead["pending"].as_array().unwrap() {
+            let b = QBuild::from_json(row.get("build").unwrap_or(row)).unwrap();
+            assert!(b.mods[1].is_none(), "{row}");
+            assert!(b.mods.iter().flatten().any(|&i| plan.pool[i].id == "serration"));
+            assert!(!b.mods.iter().flatten().any(|&i| plan.pool[i].id == "rime_rounds"));
+        }
+        req["starts"][0]["fixed"] = json!([
+            {"kind": "mods", "idx": 0}, {"kind": "mods", "idx": 1, "placement": "slot"},
+            {"kind": "mods", "idx": 2}
+        ]);
+        let out = run(&req, None);
+        assert_eq!(out["branches"], 1, "no optional branch can displace protected cards: {out}");
+        let mut req = strategy_request();
+        req["mods"]["thermite_rounds@0"] = json!("search");
+        req["starts"][0]["slots"] = json!(["thermite_rounds@0", "split_chamber"]);
+        let out = run(&req, None);
+        assert_eq!(out["branches"], 4, "a pinned elemental family needs no second copy: {out}");
+        assert!(!out["results"].as_array().unwrap().is_empty(), "{out}");
+        for row in out["results"].as_array().unwrap() {
+            assert!(row["mods"].as_array().unwrap().contains(&json!("thermite_rounds@0")), "{row}");
+            assert!(!row["mods"].as_array().unwrap().contains(&json!("thermite_rounds")), "{row}");
+        }
     }
 
     fn screened(req: &Value) -> (Value, Value) {

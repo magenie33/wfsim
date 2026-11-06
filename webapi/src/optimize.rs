@@ -409,6 +409,11 @@ impl OptimizePlan {
 
 /// Validate an optimize request. `Err` is the ready-to-send error response.
 pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
+    if let Some(strategy) = v.get("search_strategy") {
+        if strategy != "four_elements" || v["strategy"] != "quick" {
+            return Err(err_json("unknown search strategy or incompatible search algorithm"));
+        }
+    }
     let constrained = final_constraints::apply(v)?;
     let v = &constrained;
     // A quick request that names no scope searches the quick calc's whole one.
@@ -2223,6 +2228,8 @@ pub fn run_optimize_resumable(
         "cancelled": cancelled,
         "strategy": strategy_ran,
         "starts": starts_run,
+        "search_strategy": replay_base.get("search_strategy"),
+        "branches": quick_report.as_ref().map(|r| r.branches),
         "cut": cut,
         "exhaustive": exhaustive,
         "coverage": coverage,
@@ -2243,6 +2250,7 @@ pub fn run_optimize_resumable(
         "duration": duration,
         "results": results,
         "start_results": start_results,
+        "failed_branches": quick_report.as_ref().map(|r| &r.branch_failures).cloned().unwrap_or_default(),
         "failed_starts": quick_report.map(|r| r.failures).unwrap_or_default(),
         "target": { "name": target_name, "level": level, "steel_path": steel_path },
     })
