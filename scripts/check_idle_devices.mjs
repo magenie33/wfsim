@@ -119,6 +119,17 @@ for (const [step, sql] of brokenChecks) {
   check(`${step} failure stores no raw exception or SQL`, !!failure && !JSON.stringify(rows).includes("private-value"));
 }
 await db.run("DELETE FROM watchdog_said");
+const noRelease = await watchdog({ ...env, PUBLIC: picture(true),
+  ASSETS: { fetch: async () => { throw new Error("private-release-failure"); } } }, failAt);
+const noReleaseRows = await db.all("SELECT cause, said FROM watchdog_said");
+check("an unread release is explicit while independent findings survive", noRelease.some(f => f.kind === "watchdog_failed:release")
+  && noReleaseRows.some(r => r.cause === "watchdog_failed:release" && r.said.includes("状态未知"))
+  && noReleaseRows.some(r => r.cause === "starved"));
+check("an unread release stores no raw exception", !JSON.stringify(noReleaseRows).includes("private-release-failure"));
+const unbound = await watchdog({ ...env, ASSETS: undefined, PUBLIC: picture(true) }, failAt);
+check("an intentionally absent release binding keeps the optional checks unchanged", !unbound.some(f => f.kind === "watchdog_failed:release")
+  && unbound.some(f => f.kind === "starved"));
+await db.run("DELETE FROM watchdog_said");
 await watchdog({ ...env, PUBLIC: picture(true) }, failAt);
 const early = failAt + 60_000, broken = { ...env, PUBLIC: picture(true), LIBRARY: fails(brokenChecks[0][1]) };
 await watchdog(broken, early);

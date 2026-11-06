@@ -228,7 +228,11 @@ export async function watchdog(env, now = Date.now()) {
     ["liftIdle", () => facts().liftIdle(env)]]) {
     await observe(name, step);
   }
-  const { engine } = await observe("release", () => servedRelease(env), {});
+  const { engine } = await observe("release", async () => {
+    const release = await servedRelease(env);
+    if (env.ASSETS && !release.engine) throw new Error("served engine unavailable");
+    return release;
+  }, {});
   found.push(...await observe("audit", () => facts().audit(env, now, engine), []));
   const starved = await observe("starved", () => starvedFinding(env));
   if (starved) found.push(starved);
