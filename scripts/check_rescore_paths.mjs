@@ -18,8 +18,12 @@
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runInNewContext } from "node:vm";
+import { INVENTORY_MAX_MS } from "../worker/task_inventory.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const WORKFLOWS = resolve(process.env.WFSIM_WORKFLOW_DIR || resolve(ROOT, ".github/workflows"));
+const workflowText = (name) => readFileSync(resolve(WORKFLOWS, name), "utf8");
 const NL = String.fromCharCode(10);
 let bad = 0;
 const check = (ok, name, detail) => {
@@ -27,7 +31,7 @@ const check = (ok, name, detail) => {
   if (!ok) bad += 1;
 };
 
-const wf = readFileSync(resolve(ROOT, ".github/workflows/scores.yml"), "utf8").split(NL);
+const wf = workflowText("scores.yml").split(NL);
 // The `on:` block, which is every line up to the next top-level key.
 const from = wf.findIndex((l) => l.trim() === "on:");
 const to = wf.findIndex((l, i) => i > from && /^[a-z]/.test(l));
@@ -65,7 +69,7 @@ check(!triggers.some((l) => l.trim() === "paths:" || l.trim() === "paths-ignore:
 // fetch sat above the check that gates it, never ran, and three jobs pointed
 // `--scores` at a directory nobody had filled. Every run stayed green.
 for (const wfName of ["scores.yml", "queue.yml"]) {
-  const lines = readFileSync(resolve(ROOT, ".github/workflows", wfName), "utf8").split(NL);
+  const lines = workflowText(wfName).split(NL);
   const definedAt = new Map();
   lines.forEach((l, i) => {
     const m = l.match(/^\s+id:\s*([A-Za-z0-9_-]+)\s*$/);
@@ -140,7 +144,7 @@ check(denom.length > 0 && denom.every((l) => l.includes("outputs.shard_count")),
 // skipped the assembly, a prior board republished beside rows half its size.
 //
 // Read over the whole step, because the flags sit on their own lines.
-const pubWf = readFileSync(resolve(ROOT, ".github/workflows/publish.yml"), "utf8").split(NL);
+const pubWf = workflowText("publish.yml").split(NL);
 const assembleStep = pubWf
   .slice(pubWf.findIndex((l) => l.includes("- name: assemble every benchmark")))
   .slice(0, 80)
@@ -247,7 +251,7 @@ check(!pub.some((l, i) => /name:\s*store/.test(l)
 // exact shape it exists to refuse.
 const passesGate = (text) => text !== null
   && text.split(NL).some((l) => !l.trim().startsWith("#") && /--gate(\s|\\|$)/.test(l));
-const queueWf = readFileSync(resolve(ROOT, ".github/workflows/queue.yml"), "utf8");
+const queueWf = workflowText("queue.yml");
 const step = (name) => {
   const lines = queueWf.split(NL);
   const at = lines.findIndex((l) => l.includes(`- name: ${name}`));
@@ -291,6 +295,104 @@ const asked = codeOf(intakeStep).indexOf("ship_queue.sh");
 const builds = codeOf(intakeStep).indexOf("ship_builds.sh");
 check(builds >= 0 && asked > builds, "…and the build lands before the row that asks for it",
   "a queue row naming a build the library does not hold is never taken");
+
+const jobLines = (text, name) => {
+  const lines = text.split(NL), at = lines.findIndex((line) => line === `  ${name}:`);
+  if (at < 0) return [];
+  const end = lines.findIndex((line, i) => i > at && /^ {2}[A-Za-z0-9_-]+:/.test(line));
+  return lines.slice(at, end < 0 ? lines.length : end);
+};
+const workflowSteps = (lines) => {
+  const starts = lines.flatMap((line, i) => /^ {6}- /.test(line) ? [i] : []);
+  return starts.map((at, i) => lines.slice(at, starts[i + 1] ?? lines.length).join(NL));
+};
+const fieldOf = (text, name) => text.split(NL).find((line) =>
+  new RegExp(`^ {6}- ${name}:|^ {8}${name}:`).test(line))?.replace(/^\s*(?:- )?[^:]+:\s*/, "") ?? "";
+
+// Actions adds success() to a condition with no status function. A recovered
+// step has its original outcome and a successful conclusion; later steps see
+// that conclusion until the final sentinel restores the failure.
+function conditionRuns(condition, steps, inputs, successful) {
+  if (!condition) return successful;
+  let expression = condition.replace(/^\$\{\{\s*|\s*\}\}$/g, "");
+  if (!/\b(always|success|failure|cancelled)\(\)/.test(expression) && !successful) return false;
+  expression = expression
+    .replace(/steps\.([A-Za-z0-9_-]+)\.outputs\.([A-Za-z0-9_-]+)/g,
+      (_, id, key) => JSON.stringify(steps[id]?.outputs?.[key] ?? ""))
+    .replace(/steps\.([A-Za-z0-9_-]+)\.outcome/g, (_, id) => JSON.stringify(steps[id]?.outcome ?? ""))
+    .replace(/inputs\.([A-Za-z0-9_-]+)/g, (_, key) => JSON.stringify(inputs[key] ?? ""))
+    .replace(/\b(always|success|failure|cancelled)\(\)/g,
+      (_, fn) => String(fn === "always" || (fn === "success" ? successful : fn === "failure" && !successful)));
+  const token = /\s*(?:==|!=|&&|\|\||!|\(|\)|'(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*"|true\b|false\b)/y;
+  for (let at = 0; at < expression.length;) {
+    token.lastIndex = at;
+    const matched = token.exec(expression);
+    if (!matched) {
+      if (!expression.slice(at).trim()) break;
+      throw new Error(`unsupported workflow condition: ${condition}`);
+    }
+    at = token.lastIndex;
+  }
+  return Boolean(runInNewContext(expression, {}, { timeout: 20 }));
+}
+
+function simulateIntake(steps, intakeResult, { wired = true, rescore = "", cancel = "" } = {}) {
+  const state = { wired: { outputs: { yes: String(wired) } } }, ran = [], conclusions = [];
+  let sentinelRan = false;
+  for (const text of steps) {
+    const name = fieldOf(text, "name"), id = fieldOf(text, "id");
+    const runs = conditionRuns(fieldOf(text, "if"), state, { rescore, cancel },
+      conclusions.every((value) => value === "success" || value === "skipped"));
+    const sentinel = fieldOf(text, "if").includes("always()") && fieldOf(text, "if").includes("steps.intake.outcome");
+    let outcome = "skipped";
+    if (runs) {
+      ran.push(text);
+      outcome = name === "take in what has arrived" ? (intakeResult === "timeout" ? "failure" : intakeResult) : "success";
+      if (sentinel) {
+        sentinelRan = true;
+        if (/^ {10}exit 1\s*$/m.test(codeOf(text))) outcome = "failure";
+      }
+    }
+    if (id) state[id] = { ...state[id], outcome, outputs: state[id]?.outputs ?? { yes: "true" } };
+    conclusions.push(outcome === "failure" && fieldOf(text, "continue-on-error") === "true" ? "success" : outcome);
+  }
+  return { ran, sentinelRan, failed: conclusions.some((value) => value === "failure" || value === "cancelled") };
+}
+
+for (const [name, job] of [["queue.yml", "take-in"], ["scores.yml", "submissions"]]) {
+  const lines = jobLines(workflowText(name), job), steps = workflowSteps(lines);
+  const intake = steps.find((text) => fieldOf(text, "name") === "take in what has arrived") ?? "";
+  const inventorySteps = steps.filter((text) => codeOf(text).includes("bash scripts/reconcile_queue.sh"));
+  const intakeMinutes = Number(fieldOf(intake, "timeout-minutes"));
+  check(fieldOf(intake, "id") === "intake" && fieldOf(intake, "continue-on-error") === "true",
+    `${name} retains the intake outcome while continuing reconciliation`);
+  check(Number.isInteger(intakeMinutes) && intakeMinutes > 0 && intakeMinutes <= 30,
+    `${name} bounds intake before it can consume the inventory refresh budget`);
+  check(inventorySteps.length === 1 && steps.indexOf(inventorySteps[0]) > steps.indexOf(intake),
+    `${name} reconciles exactly once after intake`);
+  for (const outcome of ["success", "failure", "timeout"]) {
+    const result = simulateIntake(steps, outcome);
+    check(result.ran.includes(inventorySteps[0]), `${name} refreshes complete demand after intake ${outcome}`);
+    check(result.failed === (outcome !== "success"), `${name} reports intake ${outcome} after reconciliation`);
+    if (outcome !== "success") check(result.sentinelRan, `${name} reaches its final failure sentinel after intake ${outcome}`);
+  }
+  const cancelled = simulateIntake(steps, "cancelled"), unconfigured = simulateIntake(steps, "success", { wired: false });
+  check(cancelled.sentinelRan && cancelled.failed, `${name} retains a cancelled intake as a failed run`);
+  check(!unconfigured.failed && !unconfigured.sentinelRan && !unconfigured.ran.includes(inventorySteps[0]),
+    `${name} leaves unconfigured intake and inventory skipped without failure`);
+  if (name === "queue.yml") for (const command of ["--queue-weapons", "bash scripts/cancel_queue.sh"]) {
+    const requested = { rescore: "standard_single_target", cancel: "batch-a" };
+    check(simulateIntake(steps, "success", requested).ran.some((text) => codeOf(text).includes(command))
+      && ["failure", "timeout", "cancelled"].every((outcome) =>
+        !simulateIntake(steps, outcome, requested).ran.some((text) => codeOf(text).includes(command))),
+    `explicit ${command} requires successful intake`);
+  }
+  if (name === "scores.yml") {
+    const minutes = Number(lines.find((line) => /^ {4}timeout-minutes:/.test(line))?.split(":")[1]);
+    check(minutes >= intakeMinutes + 60 && minutes * 60000 < INVENTORY_MAX_MS,
+      "scoring preparation leaves inventory time after intake within its freshness limit");
+  }
+}
 
 // THE ROSTER IS THE SCORER'S, NEVER THE DIRECTORY'S. A file in data/benchmarks/
 // is a ruler's base and its ladder makes more; a loop over the files skips

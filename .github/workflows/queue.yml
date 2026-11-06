@@ -133,7 +133,10 @@ jobs:
       # somebody pressing upload is a person asking, so a build the entry line
       # parked is re-measured on the fight they just ran it in.
       - name: take in what has arrived
+        id: intake
         if: steps.wired.outputs.yes == 'true'
+        timeout-minutes: 30
+        continue-on-error: true
         env:
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
@@ -210,7 +213,7 @@ jobs:
       # person asking is the one thing in this pipeline that overrides a fact.
       # Every other path into the queue is gated; this one is the override.
       - name: ask for every row of one ruler again
-        if: steps.wired.outputs.yes == 'true' && inputs.rescore != ''
+        if: steps.wired.outputs.yes == 'true' && steps.intake.outcome == 'success' && inputs.rescore != ''
         env:
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
           # THE INPUT NEVER REACHES THE SHELL AS TEXT. A `workflow_dispatch`
@@ -271,7 +274,7 @@ jobs:
           echo "::notice::rescore: $(grep -c . rescore.ndjson || echo 0) row(s) of $RULER from $(wc -l < weapons.txt) weapon(s)"
 
       - name: the databases
-        if: steps.wired.outputs.yes == 'true' && inputs.cancel != ''
+        if: steps.wired.outputs.yes == 'true' && steps.intake.outcome == 'success' && inputs.cancel != ''
         uses: ./.github/actions/databases
         with:
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
@@ -286,7 +289,7 @@ jobs:
       # reads it as a prefix, and a batch id ends in its day, so no whole id is
       # the prefix of another.
       - name: cancel one batch
-        if: steps.wired.outputs.yes == 'true' && inputs.cancel != ''
+        if: steps.wired.outputs.yes == 'true' && steps.intake.outcome == 'success' && inputs.cancel != ''
         env:
           BATCH: ${{ inputs.cancel }}
         run: |
@@ -295,3 +298,10 @@ jobs:
             *[!a-z0-9_-]*|"") echo "::error::not a batch id: $BATCH"; exit 1 ;;
           esac
           bash scripts/cancel_queue.sh --batch "$BATCH"
+
+      # Reconciliation runs after an intake failure; the run still reports it.
+      - name: keep intake failures visible
+        if: always() && (steps.intake.outcome == 'failure' || steps.intake.outcome == 'cancelled')
+        run: |
+          echo "::error::intake did not finish; see the intake step"
+          exit 1

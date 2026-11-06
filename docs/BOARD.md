@@ -79,6 +79,18 @@ rows. `family_transfers` retains one key per source build, target weapon, ruler
 and served engine. Repeated arrivals share it. Interrupted admission resumes
 from that table; completed transfers are not recreated by a library scan.
 
+Admission acknowledges durable requests without dispatching historical work in
+the HTTP request. The watchdog registers admitted transfers in bounded packs.
+The shipper deduplicates transfer identities, bounds each request by rows and
+bytes, and keeps one engine and request body across transient retries. An
+engine change can acknowledge already admitted requests; missing admissions
+for the prior engine remain unacknowledged and retain their source inbox rows.
+
+Build storage and inbox deletion use bounded JSON batches over the pipeline's
+existing database connection. Duplicate build ids keep their last input record.
+Only these idempotent writes retry transient connection failures; permanent
+build-write refusals stop the pass before family admission or inbox deletion.
+
 The `family_build` producer asks the existing `optimize_report` verb as system
 work, without a waiting player, under the normal fair scheduler. Clients with
 `calculation-reports-v1` reproduce complete reports; independent agreement

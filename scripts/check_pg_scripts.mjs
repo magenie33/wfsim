@@ -9,6 +9,7 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSync, chmodSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { buildBatches, BUILD_BATCH_ROWS, BUILD_BATCH_BYTES } from "./build_batches.mjs";
 
 const dir = mkdtempSync(join(tmpdir(), "wfsim-pg-scripts-"));
 process.env.PG_URL = `pglite:${join(dir, "db")}`;
@@ -21,11 +22,13 @@ const read = (name) => readFileSync(join(dir, name), "utf8").split("\n").filter(
 /// Where every script's `mktemp` lands, so what one leaves behind is seen.
 const scratch = join(dir, "tmp");
 mkdirSync(scratch);
+let scriptOutput = "";
 /// One script, its database closed here first: PGlite is one process's at a time.
 async function run(script, ...args) {
   await close();
   const r = spawnSync("bash", [new URL(`./${script}`, import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"), ...args],
     { cwd: dir, encoding: "utf8", env: { ...process.env, TMPDIR: scratch, FACTORY_ORIGIN: "http://127.0.0.1:9", FACTORY_TOKEN: "" } });
+  scriptOutput = `${r.stdout}${r.stderr}`;
   if (r.status !== 0) console.log(`${r.stdout}${r.stderr}`.split("\n").map((l) => `      ${l}`).join("\n"));
   return r.status;
 }
@@ -61,6 +64,58 @@ check("equipment builds land outside weapon scores before their arrivals are spe
   && (await query("SELECT equipment FROM equipment_builds WHERE id = 'e1'"))[0]?.equipment === "sentinel"
   && (await query("SELECT count(*) AS n FROM equipment_inbox"))[0].n === 0
   && (await query("SELECT count(*) AS n FROM builds"))[0].n === 1);
+
+{
+  const bulk = [{ id: "bulk-repeat", at: "first", record: { weapon: "braton", mods: [] } },
+    { id: "bulk-repeat", at: "last", record }];
+  for (let i = 0; i < 2505; i++) {
+    bulk.push({ id: `bulk-build-${i}`, at: "first", record });
+    if (i < 1205) bulk.push({ id: `bulk-equipment-${i}`, at: "first", record: equipment });
+  }
+  bulk.push({ id: "bulk-build-0", at: "last", record: { ...record, mods: ["split_chamber"] } });
+  const source = file("bulk-builds.ndjson", bulk.map(row => JSON.stringify(row)).join("\n") + "\n");
+  const ids = Array.from({ length: 2505 }, (_, i) => `bulk-arrival-${i}`)
+    .concat(Array.from({ length: 1205 }, (_, i) => `equipment:bulk-arrival-${i}`));
+  file("bulk-done.txt", ids.join("\n") + "\n");
+  await query(`INSERT INTO inbox(id,at,record) SELECT 'bulk-arrival-'||i,'x','{"weapon":"torid"}' FROM generate_series(0,2504) i`);
+  await query(`INSERT INTO equipment_inbox(id,at,record)
+    SELECT 'equipment:bulk-arrival-'||i,'x',? FROM generate_series(0,1204) i`, [JSON.stringify(equipment)]);
+  const status = await run("ship_builds.sh", "bulk-builds.ndjson", "bulk-done.txt");
+  check("thousands of mixed builds and spent arrivals use bounded JSON batches",
+    status === 0 && /builds: 3713 build\(s\) in 5 statement\(s\), 0 refused/.test(scriptOutput)
+    && /inbox: 3710 row\(s\) spent in 5 statement\(s\), 0 refused/.test(scriptOutput)
+    && (await query("SELECT count(*) AS n FROM builds WHERE id LIKE 'bulk-%'"))[0].n === 2506
+    && (await query("SELECT count(*) AS n FROM equipment_builds WHERE id LIKE 'bulk-%'"))[0].n === 1205
+    && (await query("SELECT count(*) AS n FROM inbox WHERE id LIKE 'bulk-%'"))[0].n === 0
+    && (await query("SELECT count(*) AS n FROM equipment_inbox WHERE id LIKE 'equipment:bulk-%'"))[0].n === 0, scriptOutput);
+  const duplicates = await query("SELECT id,at,record FROM builds WHERE id IN ('bulk-repeat','bulk-build-0') ORDER BY id");
+  check("duplicate ids keep the last input within one batch and across batches", duplicates.length === 2
+    && duplicates.every(row => row.at === "last") && JSON.parse(duplicates[0].record).mods[0] === "split_chamber", JSON.stringify(duplicates));
+  let batches = 0, bounded = true;
+  for await (const batch of buildBatches(source)) {
+    batches++;
+    bounded &&= batch.params.length === 1 && JSON.parse(batch.params[0]).length <= BUILD_BATCH_ROWS
+      && Buffer.byteLength(JSON.stringify(batch)) <= BUILD_BATCH_BYTES;
+  }
+  check("emitted build statements bind one scalar JSON value within both bounds", bounded && batches === 5);
+  const wide = file("wide-builds.ndjson", Array.from({ length: 24 }, (_, i) => JSON.stringify({
+    id: `wide-${i}`, at: "x", record: { ...record, text: '雪"\\'.repeat(5000) } })).join("\n"));
+  batches = 0; bounded = true;
+  for await (const batch of buildBatches(wide)) {
+    batches++;
+    bounded &&= Buffer.byteLength(JSON.stringify(batch)) <= BUILD_BATCH_BYTES;
+  }
+  check("escaped Unicode records split by actual UTF-8 statement bytes before the row ceiling", bounded && batches > 1);
+  file("oversize.ndjson", JSON.stringify({ id: "oversize", at: "x", record: { ...record, text: "雪".repeat(BUILD_BATCH_BYTES) } }) + "\n");
+  await query("INSERT INTO inbox(id,at,record) VALUES ('oversize-arrival','x',?)", [JSON.stringify(record)]);
+  file("oversize-done.txt", "oversize-arrival\n");
+  check("one oversized row fails closed before its arrival can be spent", await run("ship_builds.sh", "oversize.ndjson", "oversize-done.txt") !== 0
+    && (await query("SELECT count(*) AS n FROM builds WHERE id = 'oversize'"))[0].n === 0
+    && (await query("SELECT count(*) AS n FROM inbox WHERE id = 'oversize-arrival'"))[0].n === 1);
+  await query("DELETE FROM builds WHERE id LIKE 'bulk-%'");
+  await query("DELETE FROM equipment_builds WHERE id LIKE 'bulk-%'");
+  await query("DELETE FROM inbox WHERE id = 'oversize-arrival'");
+}
 const rows = ["standard_single_target", "heavy_gunner"].map((ruler) => JSON.stringify({ build_id: "b1", ruler, mode: "base" })).join("\n");
 file("missing.ndjson", `${rows}\n`);
 await run("ship_queue.sh", "arrivals-2026-10-01", "test", "missing.ndjson");

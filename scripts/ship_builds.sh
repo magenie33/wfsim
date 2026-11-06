@@ -15,13 +15,8 @@
 # order loses a submission the moment a write fails.
 set -euo pipefail
 
-# AS MANY ROWS A STATEMENT AS A HUNDRED BOUND PARAMETERS ALLOW, and both
-# counts are DERIVED so that a column added below shrinks the batch rather than
-# putting every write one parameter over the limit.
-BUILD_COLUMNS=3
-BUILD_BATCH=$((100 / BUILD_COLUMNS))
-DELETE_BATCH=100
-SHIP_FAMILY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/ship_family.mjs"
+SHIP_HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SHIP_FAMILY="$SHIP_HERE/ship_family.mjs"
 
 . "$(dirname "${BASH_SOURCE[0]}")/db.sh"
 configured() { db_configured; }
@@ -39,43 +34,36 @@ configured() { db_configured; }
 # pass, which is true of the pass and not of the build — it is what the deletes
 # below are for.
 build_batches() {
-  jq -s -c --argjson n "$BUILD_BATCH" '
-    group_by(.record.kind // "weapon")[] as $group
-    | (if $group[0].record.kind == "warframe" or $group[0].record.kind == "companion" then "equipment_builds" else "builds" end) as $table
-    | $group as $all
-    | range(0; ($all | length); $n)
-    | . as $i
-    | $all[$i : $i + $n] as $chunk
-    | {
-        sql: ("INSERT INTO " + $table + " (id, at, record) VALUES "
-              + ([$chunk[] | "(?,?,?)"] | join(","))
-              + " ON CONFLICT (id) DO UPDATE SET at = excluded.at, record = excluded.record"),
-        params: [$chunk[] | .id, .at, (.record | tojson)]
-      }
-  ' "$1"
+  command node "$SHIP_HERE/build_batches.mjs" builds "$1"
 }
 
 delete_batches() {
-  jq -R -s -c --argjson n "$DELETE_BATCH" '
-    [splits("\n")] | map(select(length > 0)) | group_by(startswith("equipment:"))[] as $group
-    | (if $group[0] | startswith("equipment:") then "equipment_inbox" else "inbox" end) as $table
-    | $group as $all
-    | range(0; ($all | length); $n)
-    | . as $i
-    | $all[$i : $i + $n] as $chunk
-    | {
-        sql: ("DELETE FROM " + $table + " WHERE id IN ("
-              + ([$chunk[] | "?"] | join(",")) + ")"),
-        params: $chunk
-      }
-  ' "$1"
+  command node "$SHIP_HERE/build_batches.mjs" deletes "$1"
+}
+
+# These upserts and inbox deletes are idempotent even if a cut lost the reply.
+# Other database writes retain db.mjs's rule against automatic replay.
+send_idempotent() {
+  local body="$1" attempt=1 code delay="${SHIP_RETRY_DELAY:-2}"
+  [[ "$delay" =~ ^[0-9]+$ ]] || { echo "builds: invalid retry delay" >&2; return 1; }
+  while ! db_query "$body"; do
+    code=$(jq -r '.errors[0].code // ""' "$DB_OUT" 2>/dev/null) || code=""
+    case "$code" in
+      CONNECTION_CLOSED|CONNECTION_ENDED|CONNECTION_DESTROYED|CONNECT_TIMEOUT|ECONNRESET|ECONNREFUSED|EPIPE) ;;
+      *) return 1 ;;
+    esac
+    [ "$attempt" -lt 3 ] || return 1
+    echo "builds: retrying an idempotent write after $code (attempt $((attempt + 1))/3)" >&2
+    sleep "$((delay * attempt))"
+    attempt=$((attempt + 1))
+  done
 }
 
 send() {
   local what="$1" sent=0 failed=0 body
   while IFS= read -r body; do
     [ -n "$body" ] || continue
-    if db_query "$body"; then
+    if send_idempotent "$body"; then
       sent=$((sent + 1))
     else
       failed=$((failed + 1))
@@ -90,6 +78,7 @@ send() {
           echo
         } >&2
       fi
+      break
     fi
   done
   echo "$sent $failed"
@@ -108,7 +97,7 @@ ship() {
 
   local r
   if [ "$n_builds" != "0" ]; then
-    r=$(build_batches "$builds" | send "build")
+    r=$(build_batches "$builds" | send "build") || return 1
     set -- $r
     echo "builds: $n_builds build(s) in $1 statement(s), $2 refused"
     # THE QUEUE IS NOT SPENT WHILE A BUILD IS MISSING. Deleting here would drop
@@ -117,7 +106,7 @@ ship() {
   fi
   node "$SHIP_FAMILY" "$builds" || return 1
   if [ "$n_done" != "0" ]; then
-    r=$(delete_batches "$done_ids" | send "delete")
+    r=$(delete_batches "$done_ids" | send "delete") || return 1
     set -- $r
     echo "inbox: $n_done row(s) spent in $1 statement(s), $2 refused"
     [ "$2" = "0" ] || return 1
@@ -142,17 +131,17 @@ self_test() {
   printf 'u1\nu2\nu3\nu4\nu5\n' > done.txt
 
   local first; first=$(build_batches builds.ndjson | head -1)
-  [ "$(printf '%s' "$first" | jq -r '.params | length')" = "$((4 * BUILD_COLUMNS))" ] \
-    && say ok "$BUILD_COLUMNS bound parameters a build" \
+  [ "$(printf '%s' "$first" | jq -r '.params | length')" = 1 ] \
+    && say ok "a build batch binds one JSON parameter" \
     || say FAIL "$(printf '%s' "$first" | jq -r '.params|length') parameters"
-  [ $((BUILD_BATCH * BUILD_COLUMNS)) -le 100 ] \
-    && say ok "...and a batch stays inside a hundred" \
-    || say FAIL "$((BUILD_BATCH * BUILD_COLUMNS)) is over"
+  [ "$(printf '%s' "$first" | jq -r '.params[0] | fromjson | length')" = 4 ] \
+    && say ok "...and the parameter carries every input row" \
+    || say FAIL "the batch lost an input row"
   # THE RECORD IS BOUND AS TEXT, which is what the column holds. Handed over as
   # an object it would arrive as the string `[object Object]` or be refused.
-  printf '%s' "$first" | jq -e '.params[2] | type == "string" and contains("torid")' >/dev/null \
+  printf '%s' "$first" | jq -e '.params[0] | fromjson | .[0].record | type == "string" and contains("torid")' >/dev/null \
     && say ok "...and the record is bound as the json text the column takes" \
-    || say FAIL "$(printf '%s' "$first" | jq -c '.params[2]')"
+    || say FAIL "the record was not JSON text"
   printf '%s' "$first" | jq -e '.sql | contains("torid") | not' >/dev/null \
     && say ok "...never interpolated into the statement" \
     || say FAIL "a record reached the sql"
@@ -162,7 +151,7 @@ self_test() {
     || say FAIL "`from` reached the statement"
 
   local del; del=$(delete_batches done.txt | head -1)
-  printf '%s' "$del" | jq -e '.params == ["u1","u2","u3","u4","u5"]' >/dev/null \
+  printf '%s' "$del" | jq -e '.params[0] | fromjson == ["u1","u2","u3","u4","u5"]' >/dev/null \
     && say ok "every spent queue row is named, refusals included" \
     || say FAIL "$(printf '%s' "$del" | jq -c .params)"
 
@@ -209,8 +198,48 @@ OK
   unset FAMILY_TEST_FAIL
   unset -f node
 
+  export SHIP_RETRY_DELAY=0
+  cat > "$DIR/bin/db" <<'CUT'
+#!/usr/bin/env bash
+body=$(cat)
+printf '%s\n' "$body" >> "$PWD/sent.log"
+if [ ! -f "$PWD/committed.txt" ]; then
+  printf '%s' "$body" > "$PWD/committed.txt"
+  printf '{"success":false,"errors":[{"code":"CONNECTION_CLOSED","message":"reply lost after commit"}]}'
+  exit 1
+fi
+printf '{"result":[{"results":[],"success":true}],"success":true}'
+CUT
+  chmod +x "$DIR/bin/db"
+  : > sent.log
+  if ship builds.ndjson done.txt > out.txt 2>&1; then
+    local sent_first sent_second
+    sent_first=$(sed -n '1p' sent.log); sent_second=$(sed -n '2p' sent.log)
+    [ "$sent_first" = "$sent_second" ] && [ "$(grep -c 'INSERT INTO builds' sent.log)" = 2 ] \
+      && say ok "a committed write whose reply was lost is retried with identical bytes" \
+      || say FAIL "an uncertain write changed during retry"
+  else say FAIL "$(cat out.txt)"; fi
+
+  cat > "$DIR/bin/db" <<'LOST'
+#!/usr/bin/env bash
+cat >> "$PWD/sent.log"
+printf '\n' >> "$PWD/sent.log"
+printf '{"success":false,"errors":[{"code":"CONNECTION_CLOSED","message":"connection lost"}]}'
+exit 1
+LOST
+  chmod +x "$DIR/bin/db"
+  : > sent.log
+  if ship builds.ndjson done.txt > out.txt 2>&1; then say FAIL "repeated cuts passed";
+  else
+    [ "$(grep -c 'INSERT INTO builds' sent.log)" = 3 ] && ! grep -q 'DELETE FROM' sent.log \
+      && say ok "transient cuts stop after three attempts without spending arrivals" \
+      || say FAIL "retry attempts were unbounded or arrivals were spent"
+  fi
+
   cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
+cat >> "$PWD/sent.log"
+printf '\n' >> "$PWD/sent.log"
 printf '{"success":false,"errors":[{"code":"42P01","message":"relation does not exist"}]}'
 exit 1
 DEAD
@@ -224,7 +253,11 @@ DEAD
     grep -q "DELETE FROM inbox" sent.log \
       && say FAIL "the queue was spent after a refused write" \
       || say ok "...and nothing in the queue is spent"
+    [ "$(grep -c 'INSERT INTO builds' sent.log)" = 1 ] \
+      && say ok "a permanent SQL refusal is never retried" \
+      || say FAIL "a permanent refusal was replayed"
   fi
+  unset SHIP_RETRY_DELAY
 
   unset PG_URL
   configured && say FAIL "unconfigured read as configured" \
