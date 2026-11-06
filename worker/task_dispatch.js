@@ -188,18 +188,28 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
     max = Math.trunc(Number(max));
     const wanted = ["open", ...OFFICIAL_STATES].filter((state) => states.includes(state));
     if (!Number.isSafeInteger(max) || max <= 0 || !wanted.length) return [];
-    // EACH WHITELISTED STATE HAS ITS OWN ORDERED INDEX READ. A bound state
+    const selected = producers === null ? null : Array.isArray(producers)
+      ? producers.filter(p => typeof p === "string" && !p.includes("\0")) : [];
+    if (selected && !selected.length) return [];
+    // EACH WHITELISTED STATE HAS ITS OWN LIMITED CANDIDATE READ. A bound state
     // array lets a generic prepared plan scan and sort the whole table. Limits
     // are safe integers in the SQL so that plan knows the candidate budget.
     // Spare candidates cover held rows; the lock rechecks eligibility.
     const stateOf = (state) => `q.state = '${state}'${state === "open" ? " AND q.due_at < ?3::text" : ""}`;
     const blocked = Object.keys(verbs).filter(verb => verbs[verb].official_producers
-      && !verbs[verb].official_producers.some(p => producers?.includes(p)));
-    const takeable = `q.verb NOT IN (SELECT value FROM jsonb_array_elements_text((?6::text)::jsonb))
+      && !verbs[verb].official_producers.some(p => selected?.includes(p)));
+    // Producer constants let generic plans seek a sparse producer's demands;
+    // a parameter's average selectivity can walk every overdue question.
+    const literal = (text) => `E'${text.replaceAll("\\", "\\\\").replaceAll("'", "''")}'::text`;
+    const producer = selected ? `EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
+              AND d.producer IN (${selected.map(literal).join(", ")}))` : "TRUE";
+    // Read each question's answers before filtering its engine: a new engine
+    // absent from statistics can otherwise read the closed field per candidate.
+    const takeable = `q.verb NOT IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb))
             AND (q.lease_until IS NULL OR q.lease_until < ?3::text)
-            AND (?4::text IS NULL OR EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
-                                       AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?4::text)::jsonb))))
-            AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.device = ?2::text AND a.engine = ?5::text)`;
+            AND ${producer}
+            AND NOT EXISTS (SELECT 1 FROM (SELECT a.device, a.engine FROM answers a
+              WHERE a.question = q.id OFFSET 0) a WHERE a.device = ?2::text AND a.engine = ?4::text)`;
     const take = (n) => {
       const candidates = wanted.map((state) => `(SELECT q.id FROM questions q WHERE ${stateOf(state)} AND ${takeable}
             ORDER BY q.waits DESC, q.due_at, q.id LIMIT ${n * CLAIM_SPARE})`).join(" UNION ALL ");
@@ -211,7 +221,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
             AND ${takeable}
           ORDER BY q.waits DESC, q.due_at, q.id LIMIT ${n} FOR UPDATE OF q SKIP LOCKED)
         RETURNING id, verb, request, state, lease, waits, due_at`)
-        .bind(iso(now + lease_ms), w.device, at, producers ? JSON.stringify(producers) : null, engine, JSON.stringify(blocked)).all();
+        .bind(iso(now + lease_ms), w.device, at, engine, JSON.stringify(blocked)).all();
     };
     // AN OPEN ROW NOBODY OWES ANY MORE is withdrawn where it is found and the
     // claim picks again (`PICK_ROUNDS`), as a pack does.

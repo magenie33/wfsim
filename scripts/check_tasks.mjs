@@ -717,6 +717,7 @@ console.log("\na fact whose asker was never told is told again");
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const old = new Date(NOW - 3_600_000).toISOString();
+  await db.run("INSERT INTO factory_cursors (name, through) VALUES ('redeliver', ?)", old);
   await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
     VALUES ('lost', 'simulate', '{}', 'fact', ?, ?, '{"score":1,"work":1}', 'e1', ?)`, old, old, old);
   await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('p', 'lost-ref', 'lost', 'live', ?, ?)`, old, old);
@@ -735,6 +736,7 @@ console.log("\nthe sweep reads only the facts formed since it last ran, and hold
     flaky: { on_fact: async () => { if (fail) throw new Error("busy"); } },
     p: PRODUCERS.p } });
   const at = (m) => new Date(NOW - m * 60_000).toISOString();
+  await db.run("INSERT INTO factory_cursors (name, through) VALUES ('redeliver', ?)", at(60));
   const fact = async (id, m, producer) => {
     await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
       VALUES (?, 'simulate', '{}', 'fact', ?, ?, '{"score":1,"work":1}', 'e1', ?)`, id, at(m), at(m), at(m));
@@ -1022,7 +1024,11 @@ console.log("\nofficial claims keep bounded index plans when prepared statements
       '2026-10-09', '2026-10-08' FROM generate_series(1, 20000) i;
     INSERT INTO demands (producer, ref, question, state, asked_at, due_at)
     SELECT 'p', id, id, 'live', opened_at, due_at FROM questions;
-    ANALYZE questions; ANALYZE demands; ANALYZE answers;`);
+    INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at, official)
+    SELECT id, 'old', 'other', 'other', '', 'c', '{}', 1, opened_at, 1 FROM questions;
+    ANALYZE questions; ANALYZE demands; ANALYZE answers;
+    INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at, official)
+    SELECT id, 'fresh', 'official', 'official', '', 'c', '{}', 1, opened_at, 1 FROM questions WHERE state = 'fact';`);
   let sql, args;
   const capture = { prepare: (text) => ({ bind: (...values) => {
     sql = placeholders(text); args = values;
@@ -1034,16 +1040,73 @@ console.log("\nofficial claims keep bounded index plans when prepared statements
     await db.exec(`PREPARE official_claim AS ${sql}`);
     for (const mode of ["force_generic_plan", "force_custom_plan"]) {
       await db.exec(`SET plan_cache_mode = ${mode}`);
-      const row = await db.get(`EXPLAIN (FORMAT JSON) EXECUTE official_claim(${args.map(literal).join(",")})`);
-      const scans = [], walk = (p) => {
+      await db.exec("BEGIN");
+      const row = await db.get(`EXPLAIN (ANALYZE, FORMAT JSON, TIMING OFF) EXECUTE official_claim(${args.map(literal).join(",")})`);
+      await db.exec("ROLLBACK");
+      const reads = { answers: 0, demands: 0 }, scans = [], walk = (p) => {
         if (p["Relation Name"] === "questions" && p["Node Type"] !== "ModifyTable"
             && (p["Node Type"] === "Seq Scan" || p["Plan Rows"] > 1003)) scans.push({ scan: p["Node Type"], rows: p["Plan Rows"] });
+        if (Object.hasOwn(reads, p["Relation Name"])) reads[p["Relation Name"]]
+          += Math.max(1, p["Actual Rows"] + (p["Rows Removed by Filter"] || 0)) * p["Actual Loops"];
         for (const child of p.Plans || []) walk(child);
       };
       walk(row["QUERY PLAN"][0].Plan);
       check(`${mode} (${states || "all"}): a small official claim never plans to read the closed field`, !scans.length, JSON.stringify(scans));
+      check(`${mode} (${states || "all"}): eligibility reads only its candidate questions' answers and demands`,
+        reads.answers <= 96 && reads.demands <= 96, JSON.stringify(reads));
     }
     await db.exec("DEALLOCATE official_claim; RESET plan_cache_mode");
+  }
+  await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at)
+    VALUES ('sparse', 'only-sparse', 'claim-1000', 'live', '2026-10-08', '2026-10-09')`);
+  await db.exec("ANALYZE demands");
+  for (const name of ["sparse", "absent"]) {
+    await f.claim({ LIBRARY: capture }, { device: "official" }, { states: ["open"], max: 1, producers: [name] }, "fresh", NOW);
+    await db.exec(`PREPARE official_claim AS ${sql}`);
+    for (const mode of ["force_generic_plan", "force_custom_plan"]) {
+      await db.exec(`SET plan_cache_mode = ${mode}; BEGIN`);
+      const row = await db.get(`EXPLAIN (ANALYZE, FORMAT JSON, TIMING OFF) EXECUTE official_claim(${args.map(literal).join(",")})`);
+      await db.exec("ROLLBACK");
+      const reads = { questions: 0, answers: 0, demands: 0 }, walk = (p) => {
+        if (p["Node Type"] !== "ModifyTable" && Object.hasOwn(reads, p["Relation Name"])) reads[p["Relation Name"]]
+          += Math.max(1, p["Actual Rows"] + (p["Rows Removed by Filter"] || 0)) * p["Actual Loops"];
+        for (const child of p.Plans || []) walk(child);
+      };
+      const plan = row["QUERY PLAN"][0].Plan;
+      walk(plan);
+      check(`${mode} (${name} producer): the exact eligible head is claimed`, plan["Actual Rows"] === (name === "sparse" ? 1 : 0));
+      check(`${mode} (${name} producer): proving a sparse or absent producer never walks other producers' questions`,
+        Object.values(reads).every(n => n <= 16), JSON.stringify(reads));
+    }
+    await db.exec("DEALLOCATE official_claim; RESET plan_cache_mode");
+  }
+  await db.close();
+}
+
+console.log("\nofficial producer constants are exact SQL text values");
+{
+  const db = await testDb("library"), env = { LIBRARY: db };
+  const names = ["apostrophe'producer", "back\\slash", "both'\\\n雪"];
+  const f = factory({ verbs: VERBS, producers: { ...PRODUCERS, ...Object.fromEntries(names.map(name => [name, PRODUCERS.p])) } });
+  for (const [i, name] of ["p", ...names].entries()) {
+    await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at)
+      VALUES (?, 'simulate', '{}', 'open', ?, ?)`, `literal-${i}`, iso(NOW - 1000), iso(NOW - 2000));
+    await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at)
+      VALUES (?, ?, ?, 'live', ?, ?)`, name, `literal-${i}`, `literal-${i}`, iso(NOW - 2000), iso(NOW - 1000));
+  }
+  for (const [i, name] of names.entries()) {
+    const rows = await f.claim(env, { device: "official" }, { states: ["open"], producers: [name], max: 1 }, "e1", NOW);
+    check(`an apostrophe, backslash or newline producer round-trips exactly (${i})`, rows.length === 1 && rows[0].question === `literal-${i + 1}`);
+  }
+  const attack = "missing') OR TRUE --";
+  check("SQL punctuation in an unknown producer cannot claim a healthy row",
+    !(await f.claim(env, { device: "official" }, { states: ["open"], producers: [attack], max: 1 }, "e1", NOW)).length
+    && !(await db.get("SELECT lease FROM questions WHERE id = 'literal-0'")).lease);
+  const mixed = await f.claim(env, { device: "official" }, { states: ["open"], producers: ["p", attack], max: 1 }, "e1", NOW);
+  check("a known producer mixed with SQL punctuation still claims that producer", mixed.length === 1 && mixed[0].question === "literal-0");
+  const noSql = { LIBRARY: { prepare: () => { throw new Error("invalid producer reached SQL"); } } };
+  for (const producers of [[], [null, 3, {}], ["nul\0producer"]]) {
+    check("an empty or malformed producer filter reaches no SQL", !(await f.claim(noSql, { device: "official" }, { producers, max: 1 }, "e1", NOW)).length);
   }
   await db.close();
 }

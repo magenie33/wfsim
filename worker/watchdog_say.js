@@ -19,6 +19,11 @@ export function watchdogText(f, now = Date.now()) {
 const cellName = (ruler) => ruler.replace("__", " · ");
 
 function describe(f, now) {
+  if (f.kind.startsWith("watchdog_failed:")) {
+    return ["act", "看门狗检查未完成",
+      `${f.kind.slice("watchdog_failed:".length)} 步骤失败（${f.code}），这一项的状态未知；其余检查结果见本轮记录。` +
+      "\n异常：没有告警不能据此视为正常。叫 agent 查该步骤和数据库耗时。"];
+  }
   if (f.kind.startsWith("stalled:")) {
     return ["act", `${f.producer} 类任务派不出去`,
       `${f.questions} 个已过期的 ${f.producer} 题半小时内一个回答都没有，同时有 ${f.witnesses_active} 台机器在干别的活（最早到期已 ${fmtHours(hoursAgo(f.oldest_due, now))}）。` +

@@ -46,7 +46,9 @@ delivery clears readiness and serves the demand. SQL consumers lock and check
 the fact's engine and canonical result plus the demand's identity, registration
 time and payload before applying writes. A superseded result or demand cannot
 acknowledge replacement work. Pre-upgrade demands retain the bounded fact-time
-cursor fallback.
+cursor fallback. Each pass scans one time window, advancing through empty
+windows and retaining failed facts for retry. Readiness delivery does not wait
+for this historical cursor.
 
 Consumers must make delivery idempotent by their stable demand identity.
 Neither a delivery retry nor a repayment creates a new computation. Normal

@@ -14,6 +14,7 @@ import { idleFindings } from "./idle_devices.js";
 import { iso } from "./instant.js";
 import { fairShadow, settleBatch } from "./settler.js";
 import { DEMAND_KEY } from "./contribution.js";
+import { watchdogFailure } from "./task_observation.js";
 
 /// How long each ask may wait, stated in worker/deadlines.js.
 export { DEADLINE_MS } from "./deadlines.js";
@@ -188,8 +189,8 @@ export async function notePause(env, now) {
 /// (`now`, worker/contribution.js `starvedOf`): the one reading the page and
 /// the scheduled check (scripts/check_dispatch.py) are given too.
 async function starvedFinding(env) {
-  const obj = env.PUBLIC && await env.PUBLIC.get(DEMAND_KEY).catch(() => null);
-  const d = obj && await new Response(obj.body).json().catch(() => null);
+  const obj = env.PUBLIC && await env.PUBLIC.get(DEMAND_KEY);
+  const d = obj && await new Response(obj.body).json();
   if (!d?.now?.starved) return null;
   const waiting = d.orders.filter((o) => o.kind !== "riven_gain").reduce((n, o) => n + o.total - o.dispatched, 0);
   return { kind: "starved", ...d.now, waiting, at: d.at };
@@ -210,34 +211,42 @@ export const SETTLER_SILENT_MS = 5 * 60_000;
 /// idle computers are read only for a round that is written.
 export async function watchdog(env, now = Date.now()) {
   if (!env.LIBRARY) return [];
-  const db = env.LIBRARY;
-  await purgeUserCalculations(env, now);
-  await askFamilyTransfers(env);
+  const db = env.LIBRARY, found = [];
+  const observe = async (step, read, fallback) => {
+    try { return await read(); } catch (error) { found.push(watchdogFailure(step, error)); return fallback; }
+  };
+  await observe("purge_user_calculations", () => purgeUserCalculations(env, now));
+  await observe("family_transfers", () => askFamilyTransfers(env));
   // THE SETTLER'S QUEUE, emptied here when the daemon beside the database has
   // not beaten in `SETTLER_SILENT_MS` (dial `settle_async`): its rows are handed
   // to anyone again after the grace, but nobody else settles them.
-  const beat = await db.prepare("SELECT daemon_at FROM factory_snapshot WHERE id = 1").first().catch(() => null);
-  if (!beat || Date.parse(beat.daemon_at) <= now - SETTLER_SILENT_MS) await settleBatch(env, now, Date.now() + 20_000).catch(() => 0);
+  const beat = await observe("heartbeat", () => db.prepare("SELECT daemon_at FROM factory_snapshot WHERE id = 1").first(), null);
+  if (!beat || Date.parse(beat.daemon_at) <= now - SETTLER_SILENT_MS) await observe("settle", () => settleBatch(env, now, Date.now() + 20_000));
   // EACH REPAIR APART: one that throws never keeps the round from being found
   // and written down.
   for (const [name, step] of [["redeliver", () => facts().redeliver(env, now)], ["repay", () => facts().repay(env, now)],
     ["liftIdle", () => facts().liftIdle(env)]]) {
-    await step().catch((e) => console.error("watchdog", name, e));
+    await observe(name, step);
   }
-  const { engine } = await servedRelease(env);
-  const found = await facts().audit(env, now, engine);
-  const starved = await starvedFinding(env);
+  const { engine } = await observe("release", () => servedRelease(env), {});
+  found.push(...await observe("audit", () => facts().audit(env, now, engine), []));
+  const starved = await observe("starved", () => starvedFinding(env));
   if (starved) found.push(starved);
   // THE SETTLER'S FAIR TABLE AGAINST THIS WORKER'S, while it runs in shadow
   // (docs/BOARD.md §"The settler"): a comparison that fails changes nothing.
-  if (engine) await fairShadow(env, engine, now).catch(() => null);
+  if (engine) await observe("fair_shadow", () => fairShadow(env, engine, now));
   // EVERY ROUND IT STANDS, not only when it is said: the event's span is the outage's.
   for (const f of found) await noteEvent(db, `alert:${f.kind}`, now, 3 * 10 * 60_000);
   const last = await db.prepare("SELECT max(at) AS at FROM watchdog_said").first();
-  if (last?.at && Date.parse(last.at) > now - SAY_EVERY_MS) return found;
-  const cells = await cellsFilling(env, now);
+  if (last?.at && Date.parse(last.at) > now - SAY_EVERY_MS) {
+    const failed = found.filter((f) => f.kind.startsWith("watchdog_failed:"));
+    if (!failed.length) return found;
+    const { results: said } = await db.prepare("SELECT cause FROM watchdog_said WHERE at = ?").bind(last.at).all();
+    if (failed.every((f) => said.some((s) => s.cause === f.kind))) return found;
+  }
+  const cells = await observe("cells_filling", () => cellsFilling(env, now), []);
   if (cells.length) found.push({ kind: "cells_filling", cells });
-  if (engine) found.push(...await idleFindings(env, engine, now).catch(() => []));
+  if (engine) found.push(...await observe("idle", () => idleFindings(env, engine, now), []));
   for (const f of found) {
     const said = watchdogText(f, now);
     await db.prepare("INSERT INTO watchdog_said (at, cause, said) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")

@@ -5,6 +5,7 @@ import { iso } from "./instant.js";
 export function createDelivery({ producerOf, liveDemands, commit } = {}) {
   const listOf = (db, p) => `(SELECT value FROM jsonb_array_elements_text((${p}::text)::jsonb))`;
   const REDELIVER_BACK_MS = 7 * 86_400_000;
+  const REDELIVER_WINDOW_MS = 3_600_000;
   /// EVERY LIVE DEMAND IS TOLD THE FACT, once.
   async function deliver(env, q, now, by = null) {
     const db = env.LIBRARY;
@@ -88,7 +89,7 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
 
 
   async function redeliver(env, now = Date.now(), max = 100) {
-    const db = env.LIBRARY, until = iso(now - 10 * 60_000), floor = iso(now - REDELIVER_BACK_MS);
+    const db = env.LIBRARY, latest = now - 10 * 60_000, floor = iso(now - REDELIVER_BACK_MS);
     const { results: ready } = await db.prepare(`WITH pending AS (
       SELECT d.question,min(d.delivery_at) retry_at FROM demands d WHERE d.state='live' AND d.delivery_at<=?1::text
         AND EXISTS (SELECT 1 FROM questions q WHERE q.id=d.question AND q.state IN ('fact','spot'))
@@ -99,9 +100,10 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
       try { await deliver(env, q, now); told++; } catch (_) { /* demands retain their retry time */ }
     }
     if (ready.length >= max) return told;
-    // Pre-migration pending facts retain the bounded cursor path.
+    // Legacy facts advance at most an hour per pass; current retries use delivery_at.
     const kept = await db.prepare("SELECT through FROM factory_cursors WHERE name = 'redeliver'").first();
     const from = kept && kept.through > floor ? kept.through : floor;
+    const until = iso(Math.min(latest, Date.parse(from) + REDELIVER_WINDOW_MS));
     const { results } = await db.prepare(`SELECT q.* FROM questions q WHERE q.fact_at >= ?1::text AND q.fact_at < ?2::text
         AND q.state IN ('fact', 'spot') AND EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id AND d.state = 'live')
         AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.question=q.id AND d.state='live' AND d.delivery_at IS NOT NULL)

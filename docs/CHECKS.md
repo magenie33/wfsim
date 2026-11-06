@@ -925,6 +925,13 @@ Chinese once, not again for the same devices, and again, listing all, when a
 device it has not said joins a kind. A starved fleet in the daemon's picture
 is written down with the rows waiting, and one it calls fed is not found; a
 repair that throws keeps no round from being written.
+Each failed repair or observation records its step and error category while
+independent observations continue. A newly failing step is written within the
+hourly window; repeated failures retain the round's normal cadence. Stored
+failure findings contain no raw exception message or query parameters.
+Legacy fact delivery scans bounded time windows, including empty windows and
+timestamp ties across row limits. A failed consumer holds its cursor; ready
+retries and a cold cursor eventually deliver each fact once.
 
 ## `check_tasks`
 
@@ -960,7 +967,11 @@ A new engine absent from the database's statistics still offers every eligible
 open question. Its plan reads answers for that field rather than the engine's
 answers on closed questions; the check loads the latter after `ANALYZE`.
 Official claims keep bounded index plans under both generic and custom prepared
-planning. Random books compare their mixed-state order, producer filter,
+planning with populated demands and new-engine answers arriving on closed
+questions after `ANALYZE`. Sparse and absent producers use their demand index; common producers
+use question order and prior answers stay question-local. Quoted producer names
+round-trip, SQL punctuation cannot broaden a claim, and malformed names reach
+no statement. Random books compare their mixed-state order, producer filter,
 deadlines, leases and prior answers with the eligible head.
 
 ## `check_settler`
@@ -989,6 +1000,9 @@ options; failed initialization closes its client. The deployment check is
 `python scripts/check_factory_deploy.py`:
 target configuration, schema-derived concurrent indexes, credential boundaries
 and the artifact's dependency closure.
+Populated generic and custom plans exclude answered producers before counting
+overdue questions, and read only official questions' answers when checking
+unsettled work. Neither observation may scan unrelated questions or answers.
 
 ## `check_settler_async`
 

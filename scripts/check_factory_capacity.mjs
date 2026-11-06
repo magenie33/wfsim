@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:net";
 import postgres from "./pg/node_modules/postgres/src/index.js";
-import { POSTGRES_OPTIONS } from "../worker/db.js";
+import { POSTGRES_OPTIONS, placeholders } from "../worker/db.js";
 import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capacity.mjs";
 import { openEnv } from "./factoryd.mjs";
 import { demandOf, scorePace, tallyBase, tallyOf } from "../worker/contribution.js";
@@ -172,4 +172,62 @@ assert.equal((await f.audit({ LIBRARY: L }, now)).find((x) => x.kind === "nondet
 console.log("ok: the watchdog counts overlapping disagreement states once and excludes old flags");
 
 await L.close();
+
+const A = await testDb("library"), past = new Date(now - 3_600_000).toISOString();
+await A.exec(`INSERT INTO questions (id,verb,request,state,opened_at,due_at)
+  SELECT 'audit-' || i, 'simulate', '{}', 'open', '${past}', '${past}' FROM generate_series(1,20000) i;
+  INSERT INTO demands (producer,ref,question,state,asked_at,due_at)
+  SELECT CASE WHEN id IN ('audit-19999','audit-20000') THEN 'silent' ELSE 'busy' END,
+    id,id,'live',opened_at,due_at FROM questions;
+  INSERT INTO answers (question,engine,device,owner,net,canon,result,work,at)
+  VALUES ('audit-1','current','witness','owner','','c','{}',1,'${at}');
+  INSERT INTO verifiers (id,seen,last_at) VALUES ('witness','${at}','${at}');
+  ANALYZE questions; ANALYZE demands; ANALYZE answers;`);
+let auditSql, auditArgs, unsettledSql, unsettledArgs;
+const observed = { ...A, prepare(sql) {
+  const statement = A.prepare(sql);
+  if (/count\(DISTINCT d\.question\)/i.test(sql)) return { bind(...args) { auditSql = sql; auditArgs = args; return statement.bind(...args); } };
+  if (/SELECT count\(\*\) AS n FROM questions q WHERE q\.state IN/.test(sql)) return { bind(...args) { unsettledSql = sql; unsettledArgs = args; return statement.bind(...args); } };
+  return statement;
+} };
+const findings = await f.audit({ LIBRARY: observed }, now);
+assert.equal(findings.find(x => x.kind === "stalled:silent")?.questions, 2);
+assert.ok(!findings.some(x => x.kind === "stalled:busy"));
+assert.ok(auditSql, "capture the stalled-producer observation");
+const literal = value => typeof value === "number" ? String(value) : value === null ? "NULL" : `'${String(value).replaceAll("'", "''")}'`;
+await A.exec(`PREPARE stalled_audit AS ${placeholders(auditSql)}`);
+for (const mode of ["force_generic_plan", "force_custom_plan"]) {
+  await A.exec(`SET plan_cache_mode=${mode}`);
+  const plan = await A.get(`EXPLAIN (ANALYZE,FORMAT JSON,TIMING OFF) EXECUTE stalled_audit(${auditArgs.map(literal).join(",")})`);
+  let readQuestions = 0;
+  const walk = node => {
+    if (node["Relation Name"] === "questions") readQuestions += (node["Actual Rows"] + (node["Rows Removed by Filter"] || 0)) * node["Actual Loops"];
+    for (const child of node.Plans || []) walk(child);
+  };
+  walk(plan["QUERY PLAN"][0].Plan);
+  assert.ok(readQuestions <= 100, `${mode}: healthy producers must be excluded before their overdue questions are read (${readQuestions})`);
+}
+await A.exec("DEALLOCATE stalled_audit; RESET plan_cache_mode");
+await A.run("UPDATE questions SET state='spot', opened_at=? WHERE id='audit-20000'", new Date(now - 3 * 3_600_000).toISOString());
+await A.exec(`INSERT INTO answers (question,engine,device,owner,net,canon,result,work,at)
+  SELECT question,'fresh','new-witness','new-owner','','c','{}',1,'${at}' FROM demands WHERE producer='busy'`);
+const unsettledFindings = await f.audit({ LIBRARY: observed }, now);
+assert.equal(unsettledFindings.find(x => x.kind === "unsettled")?.questions, 1);
+assert.ok(unsettledSql, "capture the official settlement observation");
+await A.exec(`PREPARE unsettled_audit AS ${placeholders(unsettledSql)}`);
+for (const mode of ["force_generic_plan", "force_custom_plan"]) {
+  await A.exec(`SET plan_cache_mode=${mode}`);
+  const plan = await A.get(`EXPLAIN (ANALYZE,FORMAT JSON,TIMING OFF) EXECUTE unsettled_audit(${unsettledArgs.map(literal).join(",")})`);
+  let readAnswers = 0;
+  const walk = node => {
+    if (node["Relation Name"] === "answers") readAnswers += Math.max(1, node["Actual Rows"] + (node["Rows Removed by Filter"] || 0)) * node["Actual Loops"];
+    for (const child of node.Plans || []) walk(child);
+  };
+  walk(plan["QUERY PLAN"][0].Plan);
+  assert.ok(readAnswers <= 100, `${mode}: official settlement must not scan other questions' recent answers (${readAnswers})`);
+}
+await A.exec("DEALLOCATE unsettled_audit; RESET plan_cache_mode");
+await A.close();
+console.log("ok: the watchdog counts silent producers without reading healthy producers' overdue questions");
+console.log("ok: official settlement observations read only their questions' answers");
 console.log("factory capacity checks passed");

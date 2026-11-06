@@ -10,6 +10,7 @@ import { watchdog } from "../worker/factory.js";
 import { watchdogText } from "../worker/watchdog_say.js";
 import { DIALS } from "../worker/dials.js";
 import { iso } from "../worker/instant.js";
+import { factory } from "../worker/tasks.js";
 
 let failures = 0;
 const check = (name, ok, detail) => {
@@ -82,6 +83,124 @@ const timingOut = { ...env, PUBLIC: picture(true), LIBRARY: new Proxy(db, { get:
   : typeof o[k] === "function" ? o[k].bind(o) : o[k] }) };
 await watchdog(timingOut, NOW + 4 * 3_600_000);
 check("a repair that throws keeps no round from being written", (await db.all("SELECT cause FROM watchdog_said")).some((r) => r.cause === "starved"));
+
+console.log("\nfailed checks remain unknown while other findings survive");
+const failAt = NOW + 5 * 3_600_000;
+await db.run("UPDATE verifiers SET last_at = ?", iso(failAt));
+await db.run("INSERT INTO questions (id, verb, request, state, opened_at, due_at) VALUES ('odd', 'simulate', '{}', 'nondeterministic', ?, ?)", iso(failAt), iso(failAt));
+const fails = (pattern) => new Proxy(db, { get: (o, k) => {
+  if (k !== "prepare") return typeof o[k] === "function" ? o[k].bind(o) : o[k];
+  return (sql) => {
+    if (!pattern.test(sql)) return real(sql);
+    const no = async () => { throw Object.assign(new Error("SQL private-value"), { code: "57014" }); };
+    const statement = { bind: () => statement, first: no, all: no, run: no };
+    return statement;
+  };
+} });
+const brokenChecks = [
+  ["stalled", /WITH RECURSIVE producers\(producer\) AS|SELECT d\.producer, count\(DISTINCT d\.question\)/],
+  ["nondeterministic", /SELECT SUM\(n\) AS n FROM/],
+  ["unsettled", /SELECT count\(\*\) AS n FROM questions q WHERE q\.state IN/],
+  ["overdue", /SELECT d\.producer, count\(\*\) AS questions/],
+  ["disagreeing", /SELECT a\.owner, count\(\*\) AS answers/],
+  ["refused_rows", /SELECT question, engine, owners, at FROM refusal_withdrawals/],
+  ["redeliver", /SELECT through FROM factory_cursors WHERE name = 'redeliver'/],
+  ["cells_filling", /SELECT ruler, count\(DISTINCT build_id/],
+  ["idle", /WITH online AS/],
+];
+for (const [step, sql] of brokenChecks) {
+  await db.run("DELETE FROM watchdog_said");
+  const round = await watchdog({ ...env, PUBLIC: picture(true), LIBRARY: fails(sql) }, failAt);
+  const rows = await db.all("SELECT cause, said FROM watchdog_said");
+  const failure = round.find(f => f.kind === `watchdog_failed:${step}`);
+  check(`${step} failure is explicit and preserves another finding`, failure?.code === "timeout"
+    && rows.some(r => r.cause === failure.kind && r.said.includes("状态未知") && r.said.includes("🔴"))
+    && rows.some(r => r.cause === "starved"), JSON.stringify(round));
+  check(`${step} failure stores no raw exception or SQL`, !!failure && !JSON.stringify(rows).includes("private-value"));
+}
+await db.run("DELETE FROM watchdog_said");
+await watchdog({ ...env, PUBLIC: picture(true) }, failAt);
+const early = failAt + 60_000, broken = { ...env, PUBLIC: picture(true), LIBRARY: fails(brokenChecks[0][1]) };
+await watchdog(broken, early);
+const earlyRows = await db.all("SELECT at, cause FROM watchdog_said WHERE at = ?", iso(early));
+check("a newly failed check writes a whole round before the hour", earlyRows.some(r => r.cause === "watchdog_failed:stalled")
+  && earlyRows.some(r => r.cause === "starved") && earlyRows.some(r => r.cause === "nondeterministic"), JSON.stringify(earlyRows));
+const beforeRepeat = (await db.get("SELECT count(*) AS n FROM watchdog_said")).n;
+await watchdog(broken, early + 60_000);
+check("the same failed check retains the hourly cadence", (await db.get("SELECT count(*) AS n FROM watchdog_said")).n === beforeRepeat);
+
+console.log("\nstalls respect each producer's complete demand history");
+{
+  const db = await testDb("library"), env = { LIBRARY: db }, old = iso(NOW - 3_600_000), at = iso(NOW);
+  const f = factory({ verbs: {}, producers: {} });
+  await db.run("INSERT INTO verifiers (id, seen, last_at) VALUES ('busy', 'today', ?)", at);
+  await db.exec(`INSERT INTO questions (id,verb,request,state,opened_at,due_at) VALUES
+    ('quiet','simulate','{}','open','${old}','${old}'),('speaking','simulate','{}','open','${old}','${old}'),
+    ('held','simulate','{}','open','${old}','${old}');
+    INSERT INTO demands (producer,ref,question,state,asked_at,due_at) VALUES
+    ('quiet','a','quiet','live','${old}','${old}'),('quiet','b','quiet','live','${old}','${old}'),
+    ('speaking','current','speaking','live','${old}','${old}'),('speaking','past','gone','withdrawn','${old}','${old}'),
+    ('held','held','held','live','${old}','${old}');`);
+  await db.run("UPDATE questions SET leased_at=?,lease_until=? WHERE id='held'", at, iso(NOW + 3_600_000));
+  await db.run("INSERT INTO answers (question,engine,device,owner,canon,result,work,at) VALUES ('gone','e1','busy','busy','{}','{}',1,?)", iso(NOW - 60_000));
+  const found = await f.audit(env, NOW);
+  check("recent answers through a withdrawn demand still suppress its producer's stall", found.length === 1
+    && found[0].kind === "stalled:quiet", JSON.stringify(found));
+  check("duplicate demands count their question once and a renewed row is held", found[0]?.questions === 1
+    && found[0]?.oldest_due === old && found[0]?.witnesses_active === 1, JSON.stringify(found));
+}
+
+console.log("\nlegacy redelivery advances without an unbounded history scan");
+{
+  const db = await testDb("library"), env = { LIBRARY: db }, delivered = [];
+  const start = NOW - 3 * 86_400_000;
+  const f = factory({ verbs: { simulate: { cap: 2, canon: (result) => JSON.stringify(result) } },
+    producers: { p: { on_fact: async (_, demand) => { delivered.push(demand.ref); } } } });
+  const fact = async (ref, at) => {
+    await f.demand(env, { producer: "p", ref, verb: "simulate", request: { ref }, due_in_ms: 1000 }, "e1", start);
+    await db.run("UPDATE questions SET state='fact',canon='{}',fact_engine='e1',fact_at=? WHERE id=(SELECT question FROM demands WHERE ref=?)", iso(at), ref);
+  };
+  await db.run("INSERT INTO factory_cursors(name,through) VALUES ('redeliver',?)", iso(start));
+  await fact("later", start + 2 * 3_600_000);
+  await f.redeliver(env, NOW, 2);
+  check("an empty legacy window advances without scanning through later facts", delivered.length === 0
+    && (await db.get("SELECT through FROM factory_cursors WHERE name='redeliver'")).through === iso(start + 3_600_000));
+  const tied = start + 3_600_000 + 60_000;
+  for (let i = 0; i < 5; i++) await fact(`tie${i}`, tied);
+  await f.redeliver(env, NOW, 2);
+  await f.redeliver(env, NOW, 2);
+  await f.redeliver(env, NOW, 2);
+  check("more than a batch of facts at the same timestamp are each delivered", delivered.filter(ref => ref.startsWith("tie")).length === 5
+    && new Set(delivered).size === delivered.length, JSON.stringify(delivered));
+  await f.redeliver(env, NOW, 2);
+  check("the next bounded window reaches its pending fact", delivered.includes("later"), JSON.stringify(delivered));
+  await fact("retry", start + 3 * 3_600_000 + 60_000);
+  const failed = factory({ verbs: { simulate: { cap: 2, canon: (result) => JSON.stringify(result) } },
+    producers: { p: { on_fact: async () => { throw new Error("consumer unavailable"); } } } });
+  await failed.redeliver(env, NOW, 2);
+  const held = await db.get("SELECT through FROM factory_cursors WHERE name='redeliver'");
+  check("a failed legacy consumer holds the cursor at its fact", held.through === iso(start + 3 * 3_600_000 + 60_000)
+    && (await db.get("SELECT state FROM demands WHERE ref='retry'")).state === "live", JSON.stringify(held));
+  await f.redeliver(env, NOW + 60_000, 2);
+  check("the ready retry path delivers a held legacy fact once", delivered.filter(ref => ref === "retry").length === 1);
+}
+{
+  const db = await testDb("library"), env = { LIBRARY: db }, delivered = [];
+  const f = factory({ verbs: { simulate: { cap: 2, canon: (result) => JSON.stringify(result) } },
+    producers: { p: { on_fact: async (_, demand) => { delivered.push(demand.ref); } } } });
+  await f.demand(env, { producer: "p", ref: "cold", verb: "simulate", request: { cold: true }, due_in_ms: 1000 }, "e1", NOW - 3_600_000);
+  await db.run("UPDATE questions SET state='fact',canon='{}',fact_engine='e1',fact_at=?", iso(NOW - 30 * 60_000));
+  let through = NOW - 7 * 86_400_000, bounded = true, skipped = false, passes = 0;
+  for (; passes < 168 && !delivered.length; passes++) {
+    await f.redeliver(env, NOW, 2);
+    const next = Date.parse((await db.get("SELECT through FROM factory_cursors WHERE name='redeliver'")).through);
+    bounded &&= next >= through && next <= through + 3_600_000;
+    skipped ||= next > NOW - 30 * 60_000 && !delivered.length;
+    through = next;
+  }
+  check("a missing cursor recovers a recent legacy fact through bounded windows", bounded && !skipped
+    && delivered.length === 1 && delivered[0] === "cold" && passes > 1, JSON.stringify({ delivered, passes, through: iso(through) }));
+}
 
 console.log(failures ? `\n${failures} failed` : "\nan idle computer is found by what the server keeps, and said once");
 process.exit(failures ? 1 : 0);

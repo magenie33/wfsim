@@ -781,6 +781,10 @@ orders") and riven gains, a chat's and a survey's (docs/AGENT.md §"Riven
 appraisal"); the official machines are witnesses of the same factory
 (`/api/tasks/official/*`, the factory's secret), taking what is past its
 deadline and what only they may settle.
+Official claims expose state and producer values to both prepared plans, so a
+sparse producer uses its demand index and common producers use question order.
+Prior-answer checks read each candidate's answers by question before filtering
+device or engine.
 
 - **ORDER** (§"Fair share between producers"). A question a person waits
   on now first; then the PRODUCER that has used the least compute, among those
@@ -830,6 +834,10 @@ deadline and what only they may settle.
   and within ten minutes of a trouble after a quiet spell; kept thirty days.
   Nothing is sent to anyone: whoever fixes it reads the latest round,
   `SELECT cause, said FROM watchdog_said WHERE at = (SELECT max(at) FROM watchdog_said)`.
+  Failed repairs and observations are findings too: each names its step and
+  error category, while independent checks continue. A newly failed step
+  writes a round even within the hourly window; repeated failures keep the
+  normal cadence. A failed observation never stands for a healthy result.
 - **WHO IS ON**: a page's ask for work is recorded once a minute
   (`verifiers.asked_at`, with its engine and free cores), so a machine asking
   and holding no lease is idle, to the minute, and one holding a lease computes.
