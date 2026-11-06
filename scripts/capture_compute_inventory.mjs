@@ -51,7 +51,7 @@ export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS)
           if (builds) { builds.end(); await once(builds, 'finish'); if (failed) throw failed; }
         } catch (error) { out.destroy(); builds?.destroy(); throw error; }
         counts[name] = n;
-        console.log(`inventory: captured ${name} ${n} rows`);
+        console.error(`inventory: captured ${name} ${n} rows`);
       }
       return { ...stamp, engine, covers, counts };
     });

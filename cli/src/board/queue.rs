@@ -3,6 +3,7 @@
 //! nothing has asked for yet.
 
 use serde_json::{json, Value};
+use std::io::BufRead;
 
 use super::entry::{park_under_entry_line, Who};
 use super::facts::CrossFact;
@@ -66,54 +67,89 @@ pub(crate) fn charge(load: &mut [f64], cost: f64) -> usize {
     mine
 }
 
-/// EVERY BUILD WITH A ROW OWED ON ANY RULER — the queue read whole, for the one
-/// question `load_queue`'s per-ruler view cannot answer.
-///
-/// A build nothing has measured is owed ONE fight, and the row intake asked for
-/// is it. Asked of this ruler alone, a build whose arrival named ANOTHER board
-/// would look like a build nobody has asked about, and the reconciliation would
-/// hand it every row it could have.
-pub(crate) fn builds_with_a_row_owed(spec: Option<String>) -> std::collections::BTreeSet<String> {
-    let mut out = std::collections::BTreeSet::new();
-    let Some(path) = spec else { return out };
-    let Ok(text) = std::fs::read_to_string(&path) else { return out };
-    for line in text.lines() {
-        let Ok(v) = serde_json::from_str::<Value>(line) else { continue };
-        if let Some(id) = v.get("build_id").and_then(Value::as_str) {
-            out.insert(id.to_string());
-        }
-    }
-    out
+type QueueRows = std::collections::HashMap<String, Vec<(String, String)>>;
+type QueueParts = (QueueRows, std::collections::BTreeSet<String>);
+
+/// One queue snapshot, preserving its order within each ruler. An unspecified
+/// input remains distinct from a supplied empty or unreadable file.
+#[derive(Default)]
+pub(crate) struct Queue {
+    by_ruler: Option<QueueRows>,
+    owed: std::collections::BTreeSet<String>,
+    failed: Option<String>,
+    pub(crate) rows: usize,
 }
 
-/// WHAT SOMEBODY ASKED THIS RULER TO MEASURE, in the order they will be done —
-/// as `scripts/fetch_queue.sh` wrote it, one json object a line.
-///
-/// A RUN DOES NOT DECIDE WHAT TO COMPUTE, IT READS IT. The order is the
-/// database's (a batch's `at`, then the key), taken once and never re-derived,
-/// so every shard is handed the same list and they agree on it without talking.
-///
-/// AN ABSENT FILE IS NOT AN EMPTY QUEUE — it is "no queue was given", which is
-/// what `--project` and a local run mean, and there the fact alone decides.
-pub(crate) fn load_queue(spec: Option<String>, bench_id: &str) -> Option<Vec<(String, String)>> {
-    let path = spec?;
-    let Ok(text) = std::fs::read_to_string(&path) else {
-        say!("queue: cannot read {path}");
-        return Some(Vec::new());
-    };
-    let owed: Vec<(String, String)> = text
-        .lines()
-        .filter_map(|l| serde_json::from_str::<Value>(l).ok())
-        .filter(|v| v.get("ruler").and_then(Value::as_str) == Some(bench_id))
-        .filter_map(|v| {
-            Some((
-                v.get("build_id").and_then(Value::as_str)?.to_string(),
-                v.get("mode").and_then(Value::as_str).unwrap_or("base").to_string(),
-            ))
-        })
-        .collect();
-    say!("queue: {} row(s) owed on {bench_id}", owed.len());
-    Some(owed)
+impl Queue {
+    pub(crate) fn load(spec: Option<String>, only_rulers: Option<&[&str]>, track_owed: bool) -> Self {
+        Self::read(spec, only_rulers, track_owed, false)
+    }
+
+    pub(crate) fn load_inventory(path: String, only_rulers: &[&str]) -> Self {
+        Self::read(Some(path), Some(only_rulers), true, true)
+    }
+
+    fn read(spec: Option<String>, only_rulers: Option<&[&str]>, track_owed: bool, strict: bool) -> Self {
+        let Some(path) = spec else { return Self::default() };
+        let mut out = Self { by_ruler: Some(Default::default()), ..Self::default() };
+        let Ok(file) = std::fs::File::open(&path) else {
+            out.failed = Some(path);
+            return out;
+        };
+        let included = only_rulers.map(|rs| rs.iter().copied().collect::<std::collections::HashSet<_>>());
+        for line in std::io::BufReader::new(file).lines() {
+            let Ok(line) = line else {
+                return Self { by_ruler: Some(Default::default()), failed: Some(path), ..Self::default() };
+            };
+            if line.trim().is_empty() { continue; }
+            let parsed = serde_json::from_str::<Value>(&line);
+            if strict && !parsed.as_ref().is_ok_and(|v| ["build_id", "ruler", "mode"].iter()
+                .all(|key| v.get(key).and_then(Value::as_str).is_some_and(|s| !s.is_empty())))
+            {
+                return Self { by_ruler: Some(Default::default()), failed: Some(path), ..Self::default() };
+            }
+            let Ok(v) = parsed else { continue };
+            out.rows += 1;
+            let Some(id) = v.get("build_id").and_then(Value::as_str) else { continue };
+            // Any queued ruler protects an arrival's first fight, including a
+            // row whose ruler is no longer published.
+            if track_owed {
+                out.owed.insert(id.to_string());
+            }
+            let Some(ruler) = v.get("ruler").and_then(Value::as_str) else { continue };
+            if included.as_ref().is_some_and(|rs| !rs.contains(ruler)) {
+                continue;
+            }
+            let mode = v.get("mode").and_then(Value::as_str).unwrap_or("base");
+            out.by_ruler
+                .as_mut()
+                .unwrap()
+                .entry(ruler.to_string())
+                .or_default()
+                .push((id.to_string(), mode.to_string()));
+        }
+        out
+    }
+
+    pub(crate) fn builds_owed(&self) -> &std::collections::BTreeSet<String> {
+        &self.owed
+    }
+
+    pub(crate) fn into_parts(self) -> Result<QueueParts, String> {
+        if let Some(path) = self.failed { return Err(format!("cannot read queue {path}")); }
+        self.by_ruler.map(|rows| (rows, self.owed)).ok_or_else(|| "queue input required".to_string())
+    }
+
+    pub(crate) fn for_ruler(&self, bench_id: &str) -> Option<&[(String, String)]> {
+        let by_ruler = self.by_ruler.as_ref()?;
+        if let Some(path) = &self.failed {
+            say!("queue: cannot read {path}");
+            return Some(&[]);
+        }
+        let owed = by_ruler.get(bench_id).map(Vec::as_slice).unwrap_or_default();
+        say!("queue: {} row(s) owed on {bench_id}", owed.len());
+        Some(owed)
+    }
 }
 
 /// THE ROWS OWED THAT NO BUILD CAN PAY: queued `(build_id, mode)` pairs the walk
@@ -218,6 +254,101 @@ pub(crate) fn write_missing(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_queue_snapshot_preserves_order_duplicates_and_global_owed_builds() {
+        let path = std::env::temp_dir().join(format!("wfsim-queue-index-{}", std::process::id()));
+        let text = concat!(
+            "{\"build_id\":\"second\",\"ruler\":\"a\",\"mode\":\"alt\"}\n",
+            "{\"build_id\":\"elsewhere\",\"ruler\":\"retired\"}\n",
+            "invalid json\n",
+            "{\"build_id\":\"first\",\"ruler\":\"a\"}\n",
+            "{\"build_id\":\"second\",\"ruler\":\"a\",\"mode\":\"alt\"}\n",
+            "{\"build_id\":\"no-ruler\"}\n",
+            "{\"ruler\":\"a\",\"mode\":\"base\"}\n",
+            "{\"build_id\":\"fallback\",\"ruler\":\"b\",\"mode\":null}\n",
+        );
+        std::fs::write(&path, text).unwrap();
+        let queue = Queue::load(Some(path.to_string_lossy().into_owned()), None, true);
+        std::fs::write(&path, "").unwrap();
+        std::fs::remove_file(&path).unwrap();
+        let legacy = |ruler: &str| {
+            text.lines()
+                .filter_map(|l| serde_json::from_str::<Value>(l).ok())
+                .filter(|v| v.get("ruler").and_then(Value::as_str) == Some(ruler))
+                .filter_map(|v| {
+                    Some((
+                        v.get("build_id")?.as_str()?.to_string(),
+                        v.get("mode")
+                            .and_then(Value::as_str)
+                            .unwrap_or("base")
+                            .to_string(),
+                    ))
+                })
+                .collect::<Vec<_>>()
+        };
+        for ruler in ["a", "b", "retired", "empty"] {
+            assert_eq!(queue.for_ruler(ruler), Some(legacy(ruler).as_slice()));
+        }
+        assert_eq!(queue.for_ruler("a").unwrap().len(), 3);
+        assert_eq!(
+            queue
+                .builds_owed()
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            ["elsewhere", "fallback", "first", "no-ruler", "second"]
+        );
+    }
+
+    #[test]
+    fn no_queue_supplied_is_distinct_from_an_empty_or_unreadable_input() {
+        let unspecified = Queue::load(None, None, true);
+        assert!(unspecified.for_ruler("a").is_none());
+        let path =
+            std::env::temp_dir().join(format!("wfsim-empty-queue-index-{}", std::process::id()));
+        std::fs::write(&path, "").unwrap();
+        let empty = Queue::load(Some(path.to_string_lossy().into_owned()), None, true);
+        std::fs::remove_file(&path).unwrap();
+        let unreadable = Queue::load(Some(path.to_string_lossy().into_owned()), None, true);
+        assert_eq!(empty.for_ruler("a"), Some([].as_slice()));
+        assert_eq!(unreadable.for_ruler("a"), Some([].as_slice()));
+        assert!(unreadable.builds_owed().is_empty());
+    }
+
+    #[test]
+    fn a_single_ruler_keeps_only_its_rows_and_the_gate_can_still_see_other_builds() {
+        let path =
+            std::env::temp_dir().join(format!("wfsim-one-queue-index-{}", std::process::id()));
+        std::fs::write(
+            &path,
+            "{\"build_id\":\"first\",\"ruler\":\"a\"}\n{\"build_id\":\"other\",\"ruler\":\"b\"}\n",
+        )
+        .unwrap();
+        let queue = Queue::load(Some(path.to_string_lossy().into_owned()), Some(&["a"]), true);
+        let no_gate = Queue::load(Some(path.to_string_lossy().into_owned()), Some(&["a"]), false);
+        std::fs::remove_file(&path).unwrap();
+        assert_eq!(
+            queue.for_ruler("a").unwrap(),
+            [("first".to_string(), "base".to_string())]
+        );
+        assert!(queue.for_ruler("b").unwrap().is_empty());
+        assert!(queue.builds_owed().contains("other"));
+        assert!(no_gate.builds_owed().is_empty());
+    }
+
+    #[test]
+    fn a_stream_read_error_discards_the_whole_queue_snapshot() {
+        let path = std::env::temp_dir().join(format!("wfsim-bad-queue-index-{}", std::process::id()));
+        let mut bytes = b"{\"build_id\":\"first\",\"ruler\":\"a\"}\n".to_vec();
+        bytes.push(255);
+        std::fs::write(&path, bytes).unwrap();
+        let queue = Queue::load(Some(path.to_string_lossy().into_owned()), None, true);
+        std::fs::remove_file(&path).unwrap();
+        assert!(queue.for_ruler("a").unwrap().is_empty());
+        assert!(queue.builds_owed().is_empty());
+        assert_eq!(queue.rows, 0);
+    }
 
     /// **A ROW IS OWED AGAIN BY ITS OWN AGE.** No fact is owed; a fact is owed
     /// only once a refresh names an instant after it finished.

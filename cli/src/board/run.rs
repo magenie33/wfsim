@@ -13,7 +13,7 @@ use super::facts::{identity_of, load_cross_facts, load_facts, load_facts_of, sta
 use super::measure::{card_of, pause_row, run_budgeted, Partial};
 use super::publish::{Row, RowRiven};
 use super::queue::{
-    builds_with_a_row_owed, charge, load_queue, owed_again, unmeasured_row_seconds, write_missing, write_orphans,
+    charge, owed_again, unmeasured_row_seconds, write_missing, write_orphans, Queue,
 };
 
 pub fn run() {
@@ -66,9 +66,8 @@ pub fn run() {
     let gate = has_flag("--gate");
     let facts = load_facts(flag("--facts-in"), &bench_id);
     let cross = if gate { load_cross_facts(flag("--facts-in")) } else { Vec::new() };
-    let already_owed =
-        if gate { builds_with_a_row_owed(flag("--queue-in")) } else { Default::default() };
-    ruler(&bench_id, &lib, facts, &cross, &already_owed, &flag, &has_flag);
+    let queue = Queue::load(flag("--queue-in"), Some(&[bench_id.as_str()]), gate);
+    ruler(&bench_id, &lib, facts, &cross, queue.builds_owed(), &queue, &flag, &has_flag);
 }
 
 /// A LIBRARY RECORD AND ITS RULER-FREE READ (`board_rows::board_build`), made
@@ -103,35 +102,117 @@ fn library() -> Vec<Built> {
     subs.into_iter().zip(built).collect()
 }
 
-/// `wfsim-board --each-ruler --dry-run …`: EVERY RULER'S COUNT FROM ONE READ of
-/// the library and the facts, the rulers on several cores, each log printed
-/// whole in roster order (to `--log`'s file when given). A flag's `{id}` is
-/// the ruler's id. Read once a ruler, the build half of the door was 49 s of
-/// each ruler's 78 and the facts 14, and 48 rulers on four cores outgrew the
-/// hour the reconciliation runs in.
+fn inventory_phase(phase: &str, started: std::time::Instant, rows: usize) {
+    inventory_progress(
+        serde_json::json!({ "phase": phase, "event": "complete", "elapsed_ms": started.elapsed().as_millis() as u64, "rows": rows }),
+    );
+}
+
+fn inventory_progress(event: Value) {
+    super::print_log(format!("inventory-phase {event}\n").as_bytes());
+}
+
+/// Each distinct queue path is read once. Input templates retain their
+/// per-ruler files; the literal path still supplies the gate's global view.
+fn queue_inputs(
+    spec: Option<String>,
+    roster: &[String],
+    gate: bool,
+) -> (Queue, std::collections::HashMap<String, Queue>) {
+    let template = spec.as_ref().filter(|p| p.contains("{id}"));
+    let by_ruler = if let Some(path) = template {
+        roster
+            .iter()
+            .map(|id| {
+                (
+                    id.clone(),
+                    Queue::load(Some(path.replace("{id}", id)), Some(&[id.as_str()]), false),
+                )
+            })
+            .collect()
+    } else {
+        Default::default()
+    };
+    let shared = if template.is_some() && !gate {
+        Queue::default()
+    } else {
+        let included: Vec<_> = if template.is_some() { Vec::new() } else { roster.iter().map(String::as_str).collect() };
+        Queue::load(spec, Some(&included), gate)
+    };
+    (shared, by_ruler)
+}
+
+/// Every ruler shares the normalized library, facts and queue indexes. Phase
+/// and ruler completion logs are immediate; detailed logs retain roster order.
 fn each_ruler() {
     if !has_flag("--dry-run") {
         eprintln!("wfsim-board --each-ruler counts and fights nothing: it takes --dry-run");
         std::process::exit(2);
     }
-    let roster: Vec<String> =
-        wfsim_engine::board::benchmarks::all().iter().map(|b| b.id.to_string()).collect();
+    let roster: Vec<String> = wfsim_engine::board::benchmarks::all()
+        .iter()
+        .map(|b| b.id.to_string())
+        .collect();
     let ids: Vec<&str> = roster.iter().map(String::as_str).collect();
+    let started = std::time::Instant::now();
+    inventory_progress(serde_json::json!({ "phase": "library", "event": "start" }));
     let lib = library();
+    inventory_phase("library", started, lib.len());
     if let Some(path) = flag("--inventory-builds") {
+        let started = std::time::Instant::now();
         let file = std::fs::File::create(path).expect("inventory builds");
         write_inventory_builds(&lib, &mut std::io::BufWriter::new(file)).expect("inventory builds");
+        inventory_phase(
+            "canonical",
+            started,
+            lib.iter().filter(|(_, b)| b.is_ok()).count(),
+        );
     }
     let gate = has_flag("--gate");
-    let by = std::sync::Mutex::new(load_facts_of(flag("--facts-in"), &ids));
-    let cross = if gate { load_cross_facts(flag("--facts-in")) } else { Vec::new() };
-    let already_owed =
-        if gate { builds_with_a_row_owed(flag("--queue-in")) } else { Default::default() };
+    let started = std::time::Instant::now();
+    let by = load_facts_of(flag("--facts-in"), &ids);
+    inventory_phase("facts", started, by.values().map(|f| f.len()).sum());
+    let by = std::sync::Mutex::new(by);
+    let started = std::time::Instant::now();
+    let cross = if gate {
+        load_cross_facts(flag("--facts-in"))
+    } else {
+        Vec::new()
+    };
+    inventory_phase("cross-facts", started, cross.len());
+    let started = std::time::Instant::now();
+    let (queue, queue_by) = queue_inputs(flag("--queue-in"), &roster, gate);
+    inventory_phase(
+        "queue",
+        started,
+        queue.rows + queue_by.values().map(|q| q.rows).sum::<usize>(),
+    );
+    let started = std::time::Instant::now();
+    let completed = std::sync::atomic::AtomicUsize::new(0);
     let logs = super::assemble::par_map(&roster, |id| {
+        let started = std::time::Instant::now();
         let facts = by.lock().expect("facts").remove(id).unwrap_or_default();
         let mine = |name: &str| flag(name).map(|v| v.replace("{id}", id));
-        super::captured(|| ruler(id, &lib, facts, &cross, &already_owed, &mine, &has_flag))
+        let input = queue_by.get(id).unwrap_or(&queue);
+        let log = super::captured(|| {
+            ruler(
+                id,
+                &lib,
+                facts,
+                &cross,
+                queue.builds_owed(),
+                input,
+                &mine,
+                &has_flag,
+            )
+        });
+        let n = completed.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1;
+        inventory_progress(
+            serde_json::json!({ "phase": "ruler", "event": "complete", "ruler": id, "completed": n, "total": roster.len(), "elapsed_ms": started.elapsed().as_millis() as u64 }),
+        );
+        log
     });
+    inventory_phase("rulers", started, roster.len());
     let log_to = flag("--log");
     for (id, log) in roster.iter().zip(logs) {
         match &log_to {
@@ -150,12 +231,13 @@ fn each_ruler() {
 /// ONE RULER'S PASS over the library: its flags read through `flag` and
 /// `has_flag`, its facts and the cross-ruler reads handed in.
 #[allow(clippy::too_many_arguments)]
-fn ruler(
+pub(super) fn ruler(
     bench_id: &str,
     lib: &[Built],
     facts: super::facts::Facts,
     cross: &[super::facts::CrossFact],
     already_owed: &std::collections::BTreeSet<String>,
+    queue: &Queue,
     flag: &dyn Fn(&str) -> Option<String>,
     has_flag: &dyn Fn(&str) -> bool,
 ) {
@@ -198,7 +280,7 @@ fn ruler(
     // which is where the ORDER lives: a batch jumps the line by its own `at`,
     // and truncating here is what makes that ordering mean something when the
     // run cannot do all of it.
-    let queued = load_queue(flag("--queue-in"), bench_id);
+    let queued = queue.for_ruler(bench_id);
     let owed: Option<std::collections::HashSet<(String, String)>> =
         queued.as_ref().map(|q| q.iter().cloned().collect());
     let taking: Option<std::collections::HashSet<(String, String)>> = queued.as_ref().map(|q| {
@@ -873,6 +955,36 @@ mod tests {
     use serde_json::{json, Value};
 
     #[test]
+    fn queue_input_templates_keep_each_rulers_file_and_the_literal_global_view() {
+        let dir = std::env::temp_dir().join(format!("wfsim-queue-template-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        for id in ["a", "b", "{id}"] {
+            std::fs::write(
+                dir.join(format!("{id}.ndjson")),
+                format!("{{\"build_id\":\"{id}\",\"ruler\":\"{id}\"}}\n"),
+            )
+            .unwrap();
+        }
+        let spec = dir.join("{id}.ndjson").to_string_lossy().into_owned();
+        let (shared, by) = super::queue_inputs(Some(spec), &["a".into(), "b".into()], true);
+        std::fs::remove_dir_all(&dir).unwrap();
+        for id in ["a", "b"] {
+            assert_eq!(
+                by[id].for_ruler(id).unwrap(),
+                [(id.to_string(), "base".to_string())]
+            );
+        }
+        assert_eq!(
+            shared
+                .builds_owed()
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            ["{id}"]
+        );
+    }
+
+    #[test]
     fn inventory_bindings_preserve_the_validated_build() {
         let mut rows: Vec<Value> =
             serde_json::from_str(include_str!("../../../tests/gas/rows.json")).unwrap();
@@ -935,8 +1047,9 @@ mod tests {
                 _ => None,
             };
             let has = |n: &str| n == "--dry-run";
+            let queued = super::Queue::load(Some(queue.clone()), Some(&[id.as_str()]), false);
             let log = crate::board::captured(|| {
-                super::ruler(id, &lib, Default::default(), &[], &Default::default(), &flag, &has)
+                super::ruler(id, &lib, Default::default(), &[], &Default::default(), &queued, &flag, &has)
             });
             (log, std::fs::read_to_string(&missing).unwrap_or_default())
         };

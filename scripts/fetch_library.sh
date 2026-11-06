@@ -21,7 +21,8 @@ set -euo pipefail
 # is large: 10,000 records is about ten megabytes of json.
 PAGE=10000
 
-. "$(dirname "${BASH_SOURCE[0]}")/db.sh"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$HERE/db.sh"
 configured() { db_configured; }
 
 # ORDERED BY THE KEY, so paging is stable: two pages of an unordered query may
@@ -63,7 +64,8 @@ fetch() {
     fi
     after="$last"
   done
-  jq -s '[.[].v]' "$out.ndjson" > "$out"
+  LIBRARY_COUNT=$(node --max-old-space-size=32 "$HERE/library_array.mjs" "$out.ndjson" "$out")
+  [ "$LIBRARY_COUNT" -eq "$total" ] || { echo "::error::library: incomplete streamed array"; return 1; }
   echo "library: $total builds"
 }
 
@@ -79,8 +81,7 @@ fetch() {
 # REFUSES. Ninety percent, because records do leave — and losing a tenth of
 # them between two runs minutes apart is not attrition.
 guard_shrink() {
-  local floor="${1:-0}" have
-  have=$(jq 'length' "$2")
+  local floor="${1:-0}" have="${3:?the streamed build count}"
   if [ "$floor" -gt 0 ] && [ "$have" -lt "$floor" ]; then
     echo "::error::the library came back with $have builds, under the floor of $floor."
     echo "::error::refusing to publish a board from a short list — see scripts/fetch_library.sh."
@@ -146,9 +147,9 @@ PAGES
     && say ok "...and the snapshot carries the key beside each record" \
     || say FAIL "$(head -c 120 library.json.ndjson)"
 
-  guard_shrink 3 library.json > /dev/null 2>&1 \
+  guard_shrink 3 library.json "$LIBRARY_COUNT" > /dev/null 2>&1 \
     && say ok "a library at its floor passes" || say FAIL "the tripwire fired on a full library"
-  if guard_shrink 100 library.json > /dev/null 2>&1; then
+  if guard_shrink 100 library.json "$LIBRARY_COUNT" > /dev/null 2>&1; then
     say FAIL "a truncated library was allowed to publish"
   else
     say ok "...and a short one refuses"
@@ -188,4 +189,4 @@ if ! configured; then
 fi
 
 fetch "$OUT"
-guard_shrink "${FLOOR:-0}" "$OUT"
+guard_shrink "${FLOOR:-0}" "$OUT" "$LIBRARY_COUNT"

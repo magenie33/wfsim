@@ -36,6 +36,8 @@ use super::measure::card_of;
 use super::publish::{page_row, published, Row, RowRiven, INDEX_STEM};
 use super::state::{record_states, BOARD_STATE};
 
+mod inventory;
+
 /// One ruler of the roster and the directory its rows are written under (`""`
 /// is the board's own; a scene is `Benchmark::cell_dir`).
 struct Ruler {
@@ -180,27 +182,45 @@ struct Library {
     records: Vec<Derived>,
     /// Record positions by the weapon its rows land in, in library order.
     by_weapon: BTreeMap<String, Vec<usize>>,
-    by_identity: HashMap<String, BTreeSet<String>>,
+    by_identity: HashMap<String, IdentitySources>,
     cache: HashMap<(u64, u64), Derived>,
 }
 
+struct IdentitySources {
+    weapons: BTreeSet<String>,
+    first: usize,
+}
+
 impl Library {
-    /// Append `recs`, deriving in parallel what the cache does not hold.
-    /// Returns the (identity, weapon) of each record it added.
-    fn extend(&mut self, recs: &[&RawValue], rulers: &[Ruler]) -> Vec<(String, String)> {
-        let keys: Vec<(u64, u64)> = recs.iter().map(|r| content_key(r)).collect();
-        let todo: Vec<usize> = (0..recs.len()).filter(|&i| !self.cache.contains_key(&keys[i])).collect();
+    fn index(&mut self, slot: usize, derived: &Derived) {
+        if let Some(b) = derived.as_ref() {
+            self.by_weapon.entry(b.weapon.clone()).or_default().push(slot);
+            let source = self.by_identity.entry(b.identity.clone())
+                .or_insert_with(|| IdentitySources { weapons:BTreeSet::new(), first:slot });
+            source.first = source.first.min(slot);
+            source.weapons.insert(b.weapon.clone());
+        }
+    }
+
+    fn derived(&mut self, recs: &[&RawValue], rulers: &[Ruler]) -> Vec<Derived> {
+        let keys: Vec<_> = recs.iter().map(|r| content_key(r)).collect();
+        let mut seen = HashSet::new();
+        let todo: Vec<_> = (0..recs.len()).filter(|&i| !self.cache.contains_key(&keys[i]) && seen.insert(keys[i])).collect();
         for (i, d) in par_map(&todo, |&i| (i, Arc::new(derive(recs[i], rulers)))) {
             self.cache.insert(keys[i], d);
         }
+        keys.into_iter().map(|k| self.cache[&k].clone()).collect()
+    }
+
+    /// Append `recs`, deriving in parallel what the cache does not hold.
+    /// Returns the (identity, weapon) of each record it added.
+    fn extend(&mut self, recs: &[&RawValue], rulers: &[Ruler]) -> Vec<(String, String)> {
         let mut added = Vec::new();
-        for k in keys {
-            let d = self.cache[&k].clone();
+        for d in self.derived(recs, rulers) {
             if let Some(b) = d.as_ref() {
-                self.by_weapon.entry(b.weapon.clone()).or_default().push(self.records.len());
-                self.by_identity.entry(b.identity.clone()).or_default().insert(b.weapon.clone());
                 added.push((b.identity.clone(), b.weapon.clone()));
             }
+            self.index(self.records.len(), &d);
             self.records.push(d);
         }
         added
@@ -327,6 +347,10 @@ impl Facts {
     /// One line of a facts file; the ruler and build it moved, if it counts.
     fn apply(&mut self, line: &str) -> Option<(usize, String)> {
         let f: FactLine = serde_json::from_str(line).ok()?;
+        self.apply_fact(f)
+    }
+
+    fn apply_fact(&mut self, f: FactLine<'_>) -> Option<(usize, String)> {
         let r = *self.rulers.get(text(f.ruler)?.as_ref())?;
         let identity = text(f.identity)?;
         let score: f64 = f.score?.get().trim_matches('"').parse().ok()?;
@@ -347,11 +371,13 @@ impl Facts {
                 ODD_AT | (self.odd.len() - 1) as u64
             }
         };
-        // THE NEWEST WINS THE ROW, by the clock and not by the file's order,
-        // and a tie goes to the later line — `load_facts`'s rule, the one the
-        // scorer reads the same file by.
+        // THE NEWEST WINS THE ROW, by the clock rather than the file's order.
+        // A retirement wins an equal clock; other ties go to the later line,
+        // as `load_facts` reads them.
         if let Some(held) = self.rows[r].get(&(id, mode)) {
-            if self.later(held.at, at) {
+            if self.later(held.at, at)
+                || held.by == u32::MAX && retired.is_none() && !self.later(at, held.at)
+            {
                 return None;
             }
         }
@@ -517,6 +543,7 @@ struct Board {
     written: HashMap<(String, String), u64>,
     leaders: BTreeMap<String, BTreeMap<String, Vec<Box<RawValue>>>>,
     index: HashMap<String, u64>,
+    inventory: inventory::State,
 }
 
 impl Board {
@@ -534,6 +561,7 @@ impl Board {
             written: HashMap::new(),
             leaders: BTreeMap::new(),
             index: HashMap::new(),
+            inventory: inventory::State::default(),
         }
     }
 
@@ -664,7 +692,7 @@ impl Board {
                 wrote += 1;
             }
         }
-        let seen = self.lib.records.len();
+        let seen = self.inventory.source_count().unwrap_or(self.lib.records.len());
         let states: Vec<(String, usize, usize)> = self
             .rulers
             .iter()
@@ -703,7 +731,7 @@ impl Board {
         let moved: Vec<(usize, String)> = lines.into_iter().filter_map(|l| self.facts.apply(l)).collect();
         let mut out = BTreeSet::new();
         for (r, id) in moved {
-            for w in self.lib.by_identity.get(&id).into_iter().flatten() {
+            for w in self.lib.by_identity.get(&id).map(|i| &i.weapons).into_iter().flatten() {
                 out.insert((r, w.clone()));
             }
         }
@@ -812,12 +840,15 @@ pub fn serve() {
         let words: Vec<&str> = line.split_whitespace().collect();
         let reply = match words.as_slice() {
             ["builds", path] => {
+                board.inventory.invalidate();
                 let recs = read_builds(path);
                 let refs: Vec<&RawValue> = recs.iter().map(AsRef::as_ref).collect();
                 pending.extend(board.add_builds(&refs));
                 format!("ok builds {}", recs.len())
             }
-            ["facts", path] => match std::fs::read_to_string(path) {
+            ["facts", path] => {
+                board.inventory.invalidate();
+                match std::fs::read_to_string(path) {
                 Ok(text) => {
                     let moved = board.add_facts(text.lines());
                     let n = moved.len();
@@ -825,12 +856,27 @@ pub fn serve() {
                     format!("ok facts {n}")
                 }
                 Err(e) => format!("error {path}: {e}"),
+                }
             },
+            ["inventory", request, output] => {
+                let mut state = std::mem::take(&mut board.inventory);
+                let result = state.execute(&mut board, request, output);
+                board.inventory = state;
+                match result {
+                    Ok((reply, moved)) => { pending.extend(moved); reply }
+                    Err(e) => format!("error inventory {}", e.replace(['\r', '\n'], " ")),
+                }
+            }
             ["publish"] => {
-                let (wrote, removed) = board.publish(std::mem::take(&mut pending));
-                format!("ok publish {wrote} {removed}")
+                if board.inventory.permits_publish() {
+                    let (wrote, removed) = board.publish(std::mem::take(&mut pending));
+                    format!("ok publish {wrote} {removed}")
+                } else {
+                    "error inventory inputs require bootstrap".to_string()
+                }
             }
             ["reload", library, builds, facts] => {
+                board.inventory.invalidate();
                 let before = board.all_pairs();
                 board.facts = Facts::new(&board.rulers);
                 load(&mut board, Some(library), Some(builds), Some(facts));

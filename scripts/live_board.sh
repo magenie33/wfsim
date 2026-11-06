@@ -23,6 +23,8 @@ BIN="${2:?usage: live_board.sh <work-dir> <bin-dir>}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 POLL_SECONDS="${POLL_SECONDS:-20}"
 REFRESH_SECONDS="${REFRESH_SECONDS:-3600}"
+INCREMENTAL_INVENTORY="${INCREMENTAL_INVENTORY:-0}"
+case "$INCREMENTAL_INVENTORY" in 0|1) ;; *) echo "live: INCREMENTAL_INVENTORY must be 0 or 1" >&2; exit 1 ;; esac
 mkdir -p "$WORK"
 cd "$WORK"
 WORK="$(pwd)"
@@ -83,7 +85,9 @@ take_arrivals() {
     mv arrived-builds.ndjson arrived-now.ndjson
     : > arrived-builds.ndjson
   } 9> mailbox.lock
-  cat arrived-now.ndjson >> new-builds.ndjson
+  if [ "$INCREMENTAL_INVENTORY" = 0 ]; then
+    cat arrived-now.ndjson >> new-builds.ndjson
+  fi
 }
 
 # THE STORE READ AFRESH, BESIDE THE BOARD: the read takes most of an hour and
@@ -128,6 +132,7 @@ start_ranker() {
   coproc RANKER { exec "$BIN/wfsim-board" --serve "$WORK/verified" --library "$WORK/library.json" \
       --builds "$WORK/new-builds.ndjson" --facts-in "$WORK/facts-known.ndjson" \
       --state "$WORK/pub/data/board_state.yaml" 2>> "$WORK/project.log"; }
+  RANKER_INSTANCE="$(date +%s)-$RANKER_PID"
   ask "" || { stop_ranker; return 1; }
 }
 
@@ -176,12 +181,17 @@ trap '[ -n "$INTAKE_PID" ] && kill "$INTAKE_PID" 2>/dev/null; [ -n "$FETCH_PID" 
 
 # A FIRST START HAS NO STORE TO RANK FROM, and waits for one.
 if [ ! -s library.json ]; then
-  start_fetch
-  wait "$FETCH_PID" || true
-  FETCH_PID=""
-  if [ -f fresh.ready ]; then
-    swap_store
-    date +%s > fetch-at.txt
+  if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
+    printf '[]' > library.json
+    : > facts-known.ndjson
+  else
+    start_fetch
+    wait "$FETCH_PID" || true
+    FETCH_PID=""
+    if [ -f fresh.ready ]; then
+      swap_store
+      date +%s > fetch-at.txt
+    fi
   fi
 fi
 
@@ -209,13 +219,13 @@ while true; do
       echo "live: the store could not be read; keeping the last copy" >&2
     fi
   fi
-  if [ -z "$FETCH_PID" ] && [ $(( $(date +%s) - last_fetch )) -ge "$REFRESH_SECONDS" ]; then
+  if [ "$INCREMENTAL_INVENTORY" = 0 ] && [ -z "$FETCH_PID" ] && [ $(( $(date +%s) - last_fetch )) -ge "$REFRESH_SECONDS" ]; then
     start_fetch
   fi
   take_arrivals
   # WHAT WAS VERIFIED SINCE THE LAST READ, without waiting for the hourly one.
   moved=0
-  if [ -s facts-known.ndjson ]; then
+  if [ "$INCREMENTAL_INVENTORY" = 0 ] && [ -s facts-known.ndjson ]; then
     code=0
     node "$HERE/live_publish.mjs" delta "$WORK" || code=$?
     [ "$code" = 0 ] && moved=1
@@ -227,20 +237,34 @@ while true; do
     else
       echo "live: the ranker did not start; the last board stands" >&2
     fi
-  elif [ "$reloaded" = 1 ]; then
+  elif [ "$INCREMENTAL_INVENTORY" = 0 ] && [ "$reloaded" = 1 ]; then
     # THE READ HOLDS EVERYTHING the cycle took in, so it is the whole message.
     if ask "reload $WORK/library.json $WORK/new-builds.ndjson $WORK/facts-known.ndjson"; then
       changed=1
     else
       stop_ranker
     fi
-  elif [ -s arrived-now.ndjson ] || [ "$moved" = 1 ]; then
+  elif [ "$INCREMENTAL_INVENTORY" = 0 ] && { [ -s arrived-now.ndjson ] || [ "$moved" = 1 ]; }; then
     if { [ ! -s arrived-now.ndjson ] || ask "builds $WORK/arrived-now.ndjson"; } \
       && { [ "$moved" = 0 ] || ask "facts $WORK/moved-facts.ndjson"; } \
       && ask "publish"; then
       changed=1
     else
       stop_ranker
+    fi
+  fi
+  inventory_pending=0
+  if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
+    changed=0
+    if ranker_alive; then
+      if flock -n "$WORK/inventory.lock" node --max-old-space-size=192 "$HERE/inventory_pipeline.mjs" "$WORK" "$BIN" "$RANKER_INSTANCE" \
+          <&"${RANKER[0]}" >&"${RANKER[1]}"; then
+        inventory_pending=$(jq -r 'if .pending then 1 else 0 end' inventory/status.json)
+        if ask "publish"; then changed=1; else stop_ranker; fi
+      else
+        echo "live: inventory stopped before publication; restarting the ranker from authoritative inputs" >&2
+        stop_ranker
+      fi
     fi
   fi
   # A STAMP THAT FAILED IS OWED until one lands.
@@ -255,12 +279,12 @@ while true; do
   # PUSHED EVERY CYCLE, and a file only when its bytes moved: a push the
   # worker refused is sent again on the next one rather than waiting for R2
   # to be asked by the next fact.
-  if [ -f verified/meta.json ]; then
+  if { [ "$INCREMENTAL_INVENTORY" = 0 ] || [ "$changed" = 1 ]; } && [ -f verified/meta.json ]; then
     node "$HERE/live_publish.mjs" push "$WORK" verified || echo "live: the push did not land; the next cycle sends it" >&2
   fi
   # ONE CYCLE AND OUT, for a check run by hand.
   if [ "${ONCE:-}" = 1 ]; then
     break
   fi
-  sleep "$POLL_SECONDS"
+  if [ "$inventory_pending" = 1 ]; then sleep 1; else sleep "$POLL_SECONDS"; fi
 done

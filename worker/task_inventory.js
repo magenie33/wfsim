@@ -31,8 +31,9 @@ export function inventoryWrite(plan, now = Date.now()) {
     total: plan?.rows, registered: plan?.queued, orders: plan?.orders, verbs: plan?.verbs };
   if (plan?.v !== 2 || !body.snapshot || typeof body.engine !== "string" || !validInventory(body, now))
     throw new Error("incomplete task inventory");
-  return { sql: `INSERT INTO factory_findings(kind,body,at) VALUES (?1::text,?2::text,?3::text)
+  return { sql: `INSERT INTO factory_findings(kind,body,at) SELECT ?1::text,?2::text,?3::text
+    WHERE NOT EXISTS(SELECT 1 FROM factory_snapshot WHERE id=1 AND engine IS NOT NULL AND engine<>?4::text)
     ON CONFLICT(kind) DO UPDATE SET body=excluded.body,at=excluded.at
     WHERE factory_findings.body::jsonb->>'started_at' <= excluded.body::jsonb->>'started_at'`,
-    params: [INVENTORY_KEY, JSON.stringify(body), at] };
+    params: [INVENTORY_KEY, JSON.stringify(body), at, body.engine] };
 }
