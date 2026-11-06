@@ -90,6 +90,8 @@ Build storage and inbox deletion use bounded JSON batches over the pipeline's
 existing database connection. Duplicate build ids keep their last input record.
 Only these idempotent writes retry transient connection failures; permanent
 build-write refusals stop the pass before family admission or inbox deletion.
+An inbox read supplies a bounded prefix for intake. Reaching its page budget
+leaves remaining arrivals for a later pass without refusing the prefix already read.
 
 The `family_build` producer asks the existing `optimize_report` verb as system
 work, without a waiting player, under the normal fair scheduler. Clients with

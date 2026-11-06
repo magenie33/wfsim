@@ -13,9 +13,8 @@
 # makes every hop here testable without one.
 set -euo pipefail
 
-# A PAGE, AND THE LOOP IS BOUNDED. The queue is small by construction — it is
-# emptied every run — so one page is almost always the whole of it, and a table
-# larger than this reads is a finding rather than a page to fetch quietly.
+# A PAGE, AND THE LOOP IS BOUNDED. Intake can spend this prefix while unread
+# arrivals remain in the inbox for the next pass.
 PAGE=5000
 MAX_PAGES=50
 
@@ -41,7 +40,7 @@ page_body() {
 
 fetch() {
   local out="$1" offset=0 got total=0 page
-  :
+  : > "$out"
   for page in $(seq 1 "$MAX_PAGES"); do
     if ! db_query "$(page_body "$PAGE" "$offset")"; then
       echo "::error::inbox: the database refused the read [HTTP $DB_CODE]"
@@ -54,8 +53,7 @@ fetch() {
     [ "$got" -lt "$PAGE" ] && break
     offset=$((offset + PAGE))
     if [ "$page" -eq "$MAX_PAGES" ]; then
-      echo "::error::inbox: stopped at $MAX_PAGES pages — the queue is larger than this reads"
-      return 1
+      echo "::notice::inbox: read limit reached at $MAX_PAGES pages; any unread arrivals remain for the next pass"
     fi
   done
   echo "inbox: read $total record(s)"
@@ -106,6 +104,19 @@ PAGES
   jq -e -s '.[0].record | type == "string"' < got.ndjson >/dev/null \
     && say ok "...with the record handed on exactly as it was stored" \
     || say FAIL "the record was reshaped on the way through"
+
+  MAX_PAGES=1
+  fetch capped.ndjson > out.txt 2>&1 && grep -q "read 3 record" out.txt \
+    && jq -e -s 'length == 3 and .[2].id == "u2"' capped.ndjson >/dev/null \
+    && say ok "a full last page is a successful bounded prefix" \
+    || say FAIL "the capped prefix failed: $(cat out.txt)"
+  grep -q "any unread arrivals remain for the next pass" out.txt \
+    && say ok "the page limit reports that unread arrivals remain" \
+    || say FAIL "the capped prefix claimed a complete inbox"
+  fetch capped.ndjson > out.txt 2>&1 && jq -e -s 'length == 3' capped.ndjson >/dev/null \
+    && say ok "a repeated read replaces its previous output" \
+    || say FAIL "a repeated read appended old arrivals"
+  MAX_PAGES=50
 
   cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash

@@ -624,6 +624,8 @@ Intake batches bound both rows and encoded bytes, preserve duplicate input
 order and equipment separation, and replay only idempotent writes after a
 transient connection cut. Permanent refusals and exhausted retries retain
 the arrivals; build and family acknowledgments precede inbox deletion.
+The inbox reader's self-test holds the full-page boundary and repeated reads:
+a bounded prefix remains processable and replaces the previous output.
 
 ## `check_dials`
 
