@@ -20,7 +20,7 @@ presets:
   - id: four_elements
     name: Four elements strategy
     search_strategy: four_elements
-    listed: true
+    listed: false
     riven: false
     finalists: 10
     candidate_runs: 10

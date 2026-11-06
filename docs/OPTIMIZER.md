@@ -551,8 +551,9 @@ together missed none, for 2.3× the evaluations of neither.
 
 **THE BUILT-IN SEARCHES** are `data/search/presets.yaml`, read-only like the
 official rulers: never stored, never edited, ⧉ copies one into a search of your
-own (`80-optimizer-preset.js`). Owning no search, a reader has the first listed
-one, with one blank build start and the Four elements strategy.
+own (`80-optimizer-preset.js`). Appraisal opens its own built-in search.
+Ordinary optimization opens an editable draft with one blank build start and
+the Four elements strategy, without a default preset. Users may save searches.
 Presets choose user starts and run terms; strategies choose how starts are
 processed. Neither exposes an editable search program.
 ## The quick descent — the quick calc, repeated

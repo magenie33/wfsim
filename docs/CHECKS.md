@@ -1682,14 +1682,12 @@ would.
 
 ## `check_search_presets`
 
-The built-in searches (`data/search/presets.yaml`): a reader who owns no
-search has the first one — one blank start and the Four elements strategy,
-at its stated run terms — with its controls inert and its note
-shown but the run button live, and that button, clicked, sends the search the
-page states (its click event is not a request); a click in a locked region
-makes the reader's own copy and toggles nothing; an edit that reaches it
-anyway is not stored; ⧉ makes an editable copy, deleting that copy brings the
-built-in back, and a shotgun has the same one-start strategy contract. Runs in CI's
+Ordinary optimization starts with an editable draft, one blank start and
+the Four elements strategy, without a default built-in preset. Its controls
+are live and Run sends that draft. Users can create saved searches; deleting
+the last returns to the editable draft, and removing the last start retains
+one blank start. The selected strategy explains its process beside the control.
+Another weapon has the same draft contract. Runs in CI's
 `page-rest` job.
 
 ## `check_ime_keys`

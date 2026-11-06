@@ -8,8 +8,7 @@
 // `threads` stays out too: it is a property of the MACHINE, not of a search,
 // and a preset carrying it would re-tune the CPU on every load.
 const OPT_DOMAIN = "optimizer";
-// Same DOCUMENT MODEL as every other bar: there is always >=1 preset, one is always active and being
-// edited, edits auto-save in place, and the active survives a reload.
+// Saved searches use the shared document model; without one the editor is a draft.
 let activeOptPreset = null;
 
 const loadOptPresets = () => loadPresetList(OPT_DOMAIN);
@@ -19,7 +18,8 @@ const storeOptPresets = (ps) => storePresetList(OPT_DOMAIN, ps);
 //
 // `data/search/presets.yaml`, served as `META.search_presets`: read-only like the
 // official rulers in the scenario bar — never stored, never edited; ⧉ copies one
-// into a search of your own. Owning none, the search is the first one listed.
+// into a search of your own. Appraisal opens its own built-in; ordinary searches
+// begin as editable drafts.
 
 /// A built-in search's starts on weapon `wId` (`headlessBuiltinStarts`), the
 /// cards it equips under the builder's evolutions.
@@ -59,7 +59,7 @@ function lockBuiltinSearch() {
 }
 
 // Called from renderOpt's seed block (page load AND weapon switch): the active
-// preset — your own, else the first built-in — replaces the blank start.
+// saved search replaces the blank draft when one is selected.
 function bootstrapOptPresets() {
   // NOTHING IS AUTO-CREATED here either — see `initPresets`. A search that has
   // never been run is not a search you own, and the scope controls are already
@@ -69,7 +69,7 @@ function bootstrapOptPresets() {
   const cur = presetFind(ps.concat(builtinSearches()), want) || ps[0] || builtinSearches()[0] || null;
   activeOptPreset = cur ? presetId(cur) : "";
   localStorage.setItem(presetActiveKey(OPT_DOMAIN), activeOptPreset);
-  if (cur) applyOptState(cur.state);
+  applyOptState(cur ? cur.state : blankOpt());
 }
 
 function snapshotOpt() {
@@ -157,13 +157,13 @@ function optBarCfg() {
     published: builtinSearches,
     pins: { key: () => "wfsim-opened-searches", ref: (p) => ({ id: p.builtin }), same: (a, b) => a.id === b.id },
     roGroup: tr("Built-in searches · read-only"),
-    openable: builtinSearches,
+    openable: builtinSearches().length ? builtinSearches : null,
     openLabel: tr("built-in search"),
     openHint: tr("searches every reader has, the same on every weapon"),
     readonly: (p) => !!p.builtin,
     roTitle: () => tr("a built-in search — copy it to edit"),
     unpin: (id) => unpinPublished(cfg, id),
-    // Owning nothing, the search is the first built-in: there is no blank to show.
+    // Appraisal keeps its built-in; ordinary searches return to a blank draft.
     fallback: () => builtinSearches()[0] || null,
     pinned: true,
     // …and a switch to or from one relocks the controls.
