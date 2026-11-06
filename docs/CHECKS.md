@@ -74,7 +74,10 @@ The check never installs packs itself, so missing entry initialization fails.
 The actual setup shell runs with fake package-manager and privilege commands.
 Already installed packages make no network calls; site-only builds omit the
 desktop GUI packages; publishing retains them. An installation timeout keeps
-its failure status and diagnostic output. No packages are installed locally.
+its failure status and diagnostic output. Download failures retry once against
+the official Ubuntu archive before installation; the copied sources retain
+signing keys and other repositories. Exhausted retries and signature failures
+block installation. No packages are installed locally.
 
 ## `check_motovore`
 

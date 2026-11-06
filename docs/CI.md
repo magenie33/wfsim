@@ -91,9 +91,13 @@ gh workflow run ci.yml --ref <branch> -f full=true
 `full=true` runs every job, including the full-catalog search fixtures, and
 disables result reuse. A weekly scheduled run does the same on main. Solver
 enumeration, scheduling and scoring changes also require those fixtures on
-ordinary dispatches. Unknown inputs and CI control changes fail closed to this
-coverage. Other core changes retain all correctness jobs with bounded fleet
-invariant fixtures.
+ordinary dispatches. Unknown inputs fail closed to this coverage. The exact CI
+wiring and non-search tooling paths declared in `ci_policy.mjs` retain full
+ordinary validation without adding full-catalog search fixtures. Those tools
+cover topbar lookup and library intake/publication. Search test execution
+(`ci_rust.mjs`) and Rust dependency changes
+still require the deep fixtures. Other core changes retain all correctness
+jobs with bounded fleet invariant fixtures.
 
 A rebase, squash, cherry-pick or added fix changes the SHA and requires
 validation of the resulting candidate. Freeze the candidate after it passes;
@@ -195,7 +199,11 @@ check compares the full case set with the unbalanced layout.
 System dependency installation skips packages already installed. Site builds
 install the CJK font and linker; publishing also installs the Linux shell's GUI
 dependencies. Setup is noninteractive, has bounded network and process waits,
-and prints the package-manager log on failure. A failed setup supplies no
+and prints the package-manager log on failure. Downloads run before package
+installation. A failed Ubuntu runner mirror gets one bounded retry using the
+official HTTPS archive, with copied source configuration and the same archive
+signature checks. Installation then uses only downloaded packages; installation
+errors are not retried. A failed setup supplies no
 successful validation or release evidence. Mac library builds cache dependencies
 and workspace artifacts separately per architecture; a cache failure falls back
 to compiling, and every build still runs its native/WASM comparison.

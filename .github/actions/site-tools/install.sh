@@ -33,11 +33,43 @@ apt_step() {
     local status=$?
     cat "$log_dir/$stage.log"
     echo "::endgroup::"
-    exit "$status"
+    return "$status"
   fi
   echo "::endgroup::"
 }
-apt_step update sudo timeout 180s apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 update -qq
+apt_options=(-o Acquire::Retries=0 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20
+  -o APT::Update::Error-Mode=any)
+download() {
+  local stage=$1 seconds=$2
+  apt_step "$stage-update" sudo timeout 90s apt-get "${apt_options[@]}" update -qq || return $?
+  apt_step "$stage-download" sudo env DEBIAN_FRONTEND=noninteractive timeout "${seconds}s" apt-get \
+    "${apt_options[@]}" install -y --no-install-recommends --download-only "${missing[@]}"
+}
+if ! download primary 120; then
+  echo '::warning::runner Ubuntu mirror failed; retrying downloads against the official archive'
+  python3 - "${WFSIM_APT_SOURCE_DIR:-/etc/apt}" "$log_dir/mirror" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+source, dest = map(Path, sys.argv[1:])
+(dest / 'sources.list.d').mkdir(parents=True)
+files = [source / 'sources.list', *(source / 'sources.list.d').glob('*.list'),
+         *(source / 'sources.list.d').glob('*.sources')]
+changed = 0
+for path in files:
+    if not path.is_file():
+        continue
+    text, count = re.subn(r'https?://azure\.archive\.ubuntu\.com/ubuntu\b',
+                         'https://archive.ubuntu.com/ubuntu', path.read_text())
+    changed += count
+    (dest / path.relative_to(source)).write_text(text)
+if not changed:
+    sys.exit('No supported Ubuntu runner mirror found; retaining the setup failure')
+PY
+  apt_options+=(-o "Dir::Etc::sourcelist=$log_dir/mirror/sources.list"
+    -o "Dir::Etc::sourceparts=$log_dir/mirror/sources.list.d")
+  download fallback 180
+fi
 apt_step install sudo env DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a timeout 300s apt-get \
-  -o Acquire::Retries=2 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 \
-  install -y --no-install-recommends "${missing[@]}"
+  "${apt_options[@]}" install -y --no-install-recommends --no-download "${missing[@]}"

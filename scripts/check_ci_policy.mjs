@@ -39,6 +39,26 @@ assert.deepEqual(new Set(classify(['mcp/index.js', 'bot/engine.mjs']).jobs), new
 assert.deepEqual(new Set(classify(['mcp/headless.js']).jobs), new Set(['site', 'checks', 'mcp', 'bot']));
 assert.deepEqual(classify(['mcp/new_shared_input.js']).jobs, PRODUCT_JOBS, 'unknown MCP dependencies fail closed');
 assert.equal(classify(['engine/src/lib.rs']).deep, false);
+const ciWiring = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
+  '.github/actions/site-tools/action.yml', '.github/actions/site-tools/install.sh',
+  '.github/actions/built-site/action.yml', 'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs',
+  'scripts/check_ci_policy.mjs', 'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs',
+  'scripts/check_ci_partitions.mjs', 'scripts/check_site_setup.mjs'];
+const nonSearchTools = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh',
+  'scripts/live_board.sh', 'scripts/ship_builds.sh'];
+for (const path of [...ciWiring, ...nonSearchTools]) {
+  assert.equal(classify([path]).scope, 'full', path);
+  assert.equal(classify([path]).deep, false, `${path} does not change search behavior`);
+  assert(classify([path, 'optimizer/src/search.rs']).deep, 'CI wiring cannot hide search changes');
+  assert(classify([path], true).deep, 'explicit full CI still runs every fixture');
+  assert(classify([path], false, false).deep, 'unverified baselines retain deep coverage');
+}
+assert.equal(classify(['engine/src/board/equipment.rs', 'webapi/src/lib.rs',
+  'scripts/check_equipment_library.mjs', '.github/workflows/ci.yml',
+  'scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh', 'scripts/live_board.sh', 'scripts/ship_builds.sh']).deep, false,
+  'equipment-library checks and workflow wiring do not force full-catalog search');
+for (const path of ['Cargo.toml', 'Cargo.lock', 'scripts/ci_rust.mjs',
+  'scripts/check_future.mjs', '.github/workflows/unknown.yml']) assert(classify([path]).deep, path);
 for (const paths of [[], ['optimizer/src/quick.rs'], ['webapi/src/optimize.rs'], ['unknown/file']]) assert(classify(paths).deep);
 assert(classify(['mcp/index.js'], true).deep);
 for (const path of ['scripts/check_kitgun_slot.mjs', 'scripts/check_riven_request.mjs']) {

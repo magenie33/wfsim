@@ -11,6 +11,13 @@ export const PRODUCT_JOBS = ['test', 'gas', 'engine-apart', 'published-board', .
 export const ALL_CI_JOBS = [...PRODUCT_JOBS, 'hotfix'];
 export const CONSUMER_JOBS = { mcp: ['site', 'checks', 'mcp'], bot: ['site', 'checks', 'bot'] };
 export const OPTIONAL_NATIVE_JOBS = ['native-mac', 'native-linux'];
+const CI_WIRING = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
+  '.github/actions/site-tools/action.yml', '.github/actions/built-site/action.yml',
+  '.github/actions/site-tools/install.sh', 'scripts/check_site_setup.mjs',
+  'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs', 'scripts/check_ci_policy.mjs',
+  'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs', 'scripts/check_ci_partitions.mjs'];
+const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh',
+  'scripts/live_board.sh', 'scripts/ship_builds.sh'];
 
 export function checkJobPaths(workflow) {
   const sections = workflow.split(/^  ([\w-]+):[ \t]*$/m);
@@ -84,16 +91,13 @@ export function classify(paths, force = false, verifiedBase = true) {
   return { scope, jobs, reasons, forced: force || !paths.length || !verifiedBase, verifiedBase,
     deep: force || !paths.length || !verifiedBase
       || paths.some(p => /^(optimizer\/|webapi\/src\/optimize(?:\.rs|\/))/.test(p))
-      || reasons.some(r => r.kind === 'full' && !/^(engine\/|data\/|webapi\/src\/|native\/|wasm\/|cli\/|web\/)/.test(r.path)) };
+      || reasons.some(r => r.kind === 'full' && !CI_WIRING.includes(r.path) && !NON_SEARCH_TOOLS.includes(r.path)
+        && !/^(engine\/|data\/|webapi\/src\/|native\/|wasm\/|cli\/|web\/)/.test(r.path)) };
 }
 
 export function policyDigest() {
   const h = createHash('sha256');
-  for (const path of ['.github/workflows/ci.yml', '.github/workflows/ship.yml', '.github/actions/site-tools/action.yml',
-    '.github/actions/built-site/action.yml', 'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs',
-    'scripts/check_ci_policy.mjs', 'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs',
-    'scripts/ci_rust.mjs', 'scripts/check_ci_partitions.mjs', 'scripts/riven_request_cases.mjs',
-    '.github/actions/site-tools/install.sh', 'scripts/check_site_setup.mjs', 'scripts/native_artifact.py',
+  for (const path of [...CI_WIRING, 'scripts/ci_rust.mjs', 'scripts/riven_request_cases.mjs', 'scripts/native_artifact.py',
     'scripts/check_native_artifact.py', 'scripts/ci_native_linux.py', 'scripts/release_engine_lib.py', 'Cargo.toml', 'Cargo.lock']) {
     h.update(path).update('\0').update(readFileSync(path)).update('\0');
   }
