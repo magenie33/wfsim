@@ -56,7 +56,8 @@ batches() {
               + " ON CONFLICT (identity, ruler, mode) DO UPDATE SET measured_by = excluded.measured_by,"
               + " score = excluded.score, metric = excluded.metric, cost_seconds = excluded.cost_seconds,"
               + " started_at = excluded.started_at, finished_at = excluded.finished_at, review_id = NULL"
-              + " WHERE scores.review_id IS NULL OR excluded.finished_at > scores.finished_at"),
+              + " WHERE NOT EXISTS (SELECT 1 FROM board_reviews r WHERE r.id=scores.review_id AND r.invalidated_at IS NOT NULL AND r.state <> '\''succeeded'\'')"
+              + " AND (scores.review_id IS NULL OR excluded.finished_at > scores.finished_at)"),
         params: [$chunk[]
                  | .identity, .ruler, .mode, (.measured_by // ""),
                    .score, .metric,
@@ -87,7 +88,7 @@ spends() {
     | $all[$i : $i + $n] as $chunk
     | {
         sql: ("DELETE FROM queue WHERE (build_id, ruler, mode) IN (VALUES "
-              + ([$chunk[] | "(?,?,?)"] | join(",")) + ")"),
+              + ([$chunk[] | "(?,?,?)"] | join(",")) + ") AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=queue.build_id AND f.ruler=queue.ruler AND f.mode=queue.mode AND f.retired_at IS NOT NULL)"),
         params: [$chunk[] | .identity, .ruler, .mode]
       }
   ' "$src"

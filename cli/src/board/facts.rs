@@ -213,6 +213,7 @@ pub(crate) fn load_facts_of(spec: Option<String>, rulers: &[&str]) -> std::colle
         say!("facts: cannot read {path}");
         return by;
     };
+    let mut retired = std::collections::HashMap::<(String, String), String>::new();
     for line in lines {
         let line = line.as_str();
         let Ok(v) = serde_json::from_str::<Value>(line) else { continue };
@@ -226,6 +227,17 @@ pub(crate) fn load_facts_of(spec: Option<String>, rulers: &[&str]) -> std::colle
         };
         let mode = v.get("mode").and_then(Value::as_str).unwrap_or("");
         let key = if mode.is_empty() { id.to_string() } else { format!("{id}#{mode}") };
+        let row_key = (v["ruler"].as_str().unwrap_or_default().to_string(), key.clone());
+        if let Some(at) = v.get("retired_at").and_then(Value::as_str) {
+            if facts.get(&key).is_none_or(|f| f.finished_at.as_str() <= at) {
+                facts.remove(&key);
+                let held = retired.entry(row_key).or_default();
+                if held.as_str() < at { *held = at.to_string(); }
+            }
+            continue;
+        }
+        let finished = v.get("finished_at").and_then(Value::as_str).unwrap_or_default();
+        if retired.get(&row_key).is_some_and(|at| at.as_str() >= finished) { continue; }
         let fact = Fact {
             score,
             cost_seconds: v.get("cost_seconds").and_then(Value::as_f64).unwrap_or_default(),
@@ -286,6 +298,17 @@ pub(crate) struct CrossFact {
 /// nothing, and a build whose only facts are its own is owed a first fight.
 pub(crate) fn load_cross_facts(spec: Option<String>) -> Vec<CrossFact> {
     let Some(path) = spec else { return Vec::new() };
+    // A retirement can follow its old snapshot; retain only the removal keys.
+    let mut retired = std::collections::HashMap::new();
+    for line in fact_lines(&path).into_iter().flatten() {
+        if !line.contains("retired_at") { continue; }
+        let Ok(v) = serde_json::from_str::<Value>(&line) else { continue };
+        let Some(at) = v.get("retired_at").and_then(Value::as_str) else { continue };
+        let key = (v["identity"].as_str().unwrap_or_default().to_string(), v["ruler"].as_str().unwrap_or_default().to_string(),
+            v["mode"].as_str().unwrap_or("base").to_string());
+        let held = retired.entry(key).or_insert_with(String::new);
+        if held.as_str() < at { *held = at.to_string(); }
+    }
     let live: std::collections::BTreeSet<String> = wfsim_engine::board::benchmarks::all()
         .iter()
         .map(|b| family(&b.id).to_string())
@@ -308,6 +331,12 @@ pub(crate) fn load_cross_facts(spec: Option<String>) -> Vec<CrossFact> {
         if !live.contains(family(ruler)) {
             continue;
         }
+        let mode = v.get("mode").and_then(Value::as_str).unwrap_or("base");
+        let key = (id.to_string(), ruler.to_string(), mode.to_string());
+        if v.get("retired_at").and_then(Value::as_str).is_some()
+            || retired.get(&key).is_some_and(|at| v.get("finished_at").and_then(Value::as_str).unwrap_or_default() <= at.as_str()) {
+            continue;
+        }
         out.push(CrossFact {
             identity: id.to_string(),
             ruler: family(ruler).to_string(),
@@ -321,6 +350,23 @@ pub(crate) fn load_cross_facts(spec: Option<String>) -> Vec<CrossFact> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn retired_facts_are_owed_again_and_do_not_set_the_entry_line() {
+        let path = std::env::temp_dir().join(format!("wfsim-retired-facts-{}.ndjson",std::process::id()));
+        let old=serde_json::json!({"identity":"build","ruler":"standard_single_target","mode":"base","score":33.0,
+            "finished_at":"2026-10-18T00:00:00.000Z"});
+        let mut retired=old.clone();retired["retired_at"]=serde_json::json!("2026-11-06T00:00:00.000Z");
+        std::fs::write(&path,format!("{old}\n{retired}\n{old}\n")).unwrap();
+        let spec=Some(path.to_string_lossy().into_owned());
+        assert!(load_facts(spec.clone(),"standard_single_target").is_empty());
+        assert!(load_cross_facts(spec.clone()).is_empty());
+        let mut fresh=old;fresh["score"]=serde_json::json!(29.0);fresh["finished_at"]=serde_json::json!("2026-11-06T00:01:00.000Z");
+        std::fs::write(&path,format!("{retired}\n{fresh}\n")).unwrap();
+        assert_eq!(load_facts(spec.clone(),"standard_single_target")["build#base"].score,29.0);
+        assert_eq!(load_cross_facts(spec)[0].score,29.0);
+        std::fs::remove_file(path).unwrap();
+    }
 
     /// A FACT CARRIES ITS MODE IN A COLUMN OF ITS OWN.
     ///

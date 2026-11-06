@@ -50,9 +50,9 @@ const boardProducer = {
     const { identity, ruler, mode } = d.payload, at = iso(Date.now()), db = env.LIBRARY;
     if (fact.official) {
       return [
-        db.prepare("UPDATE scores SET finished_at = ? WHERE identity = ? AND ruler = ? AND mode = ? AND score = ? AND finished_at < ?")
+        db.prepare("UPDATE scores SET finished_at = ? WHERE identity = ? AND ruler = ? AND mode = ? AND score = ? AND finished_at < ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=scores.identity AND f.ruler=scores.ruler AND f.mode=scores.mode AND f.retired_at IS NOT NULL)")
           .bind(at, identity, ruler, mode, fact.result.score, at),
-        db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ?").bind(identity, ruler, mode),
+        db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=queue.build_id AND f.ruler=queue.ruler AND f.mode=queue.mode AND f.retired_at IS NOT NULL)").bind(identity, ruler, mode),
       ];
     }
     return [
@@ -61,10 +61,11 @@ const boardProducer = {
          VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
          ON CONFLICT (identity, ruler, mode) DO UPDATE SET measured_by = excluded.measured_by, score = excluded.score,
            metric = excluded.metric, cost_seconds = 0, started_at = excluded.started_at, finished_at = excluded.finished_at, review_id = NULL
-         WHERE (scores.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM board_reviews r JOIN questions proof ON proof.id = r.question
+         WHERE NOT EXISTS (SELECT 1 FROM board_reviews retired WHERE retired.id=scores.review_id AND retired.invalidated_at IS NOT NULL AND retired.state <> 'succeeded')
+           AND (scores.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM board_reviews r JOIN questions proof ON proof.id = r.question
            WHERE r.id = scores.review_id AND r.engine = ?9::text AND proof.fact_at > ?10::text)) AND EXISTS (SELECT 1 FROM queue q WHERE q.build_id = scores.identity AND q.ruler = scores.ruler AND q.mode = scores.mode)`)
         .bind(identity, ruler, mode, `verified:${fact.engine}`, fact.result.score, fact.result.metric, at, at, fact.engine, fact.at || at),
-      db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ?").bind(identity, ruler, mode),
+      db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=queue.build_id AND f.ruler=queue.ruler AND f.mode=queue.mode AND f.retired_at IS NOT NULL)").bind(identity, ruler, mode),
     ];
   },
   // A FACT WITHDRAWN — a witness to it refused — is the clients' number taken

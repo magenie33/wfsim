@@ -17,7 +17,9 @@ const CI_WIRING = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
   'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs', 'scripts/check_ci_policy.mjs',
   'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs', 'scripts/check_ci_partitions.mjs'];
 const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh',
-  'scripts/live_board.sh', 'scripts/ship_builds.sh'];
+  'scripts/live_board.sh', 'scripts/ship_builds.sh', 'scripts/retire_scores.mjs', 'scripts/ship_queue.sh',
+  'scripts/fetch_facts.sh', 'scripts/ship_facts.sh', 'scripts/live_publish.mjs', '.github/workflows/queue.yml',
+  'deploy/factoryd_grants.sql'];
 
 export function checkJobPaths(workflow) {
   const sections = workflow.split(/^  ([\w-]+):[ \t]*$/m);

@@ -446,7 +446,11 @@ if ! configured; then
   echo "queue: no database configured, nothing asked for"
   exit 0
 fi
-if [ "${1:-}" = "--backfill" ]; then backfill; exit 0; fi
+if [ "${1:-}" = "--backfill" ]; then
+  backfill
+  node "$ROOT_DIR/scripts/retire_scores.mjs" --repair
+  exit 0
+fi
 ship "${1:?usage: ship_queue.sh <batch-id> <why> <missing.ndjson>}" \
      "${2:?usage: ship_queue.sh <batch-id> <why> <missing.ndjson>}" \
      "${3:?usage: ship_queue.sh <batch-id> <why> <missing.ndjson>}"

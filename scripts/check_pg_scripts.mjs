@@ -205,6 +205,28 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
   const again = await publish("delta", live);
   check("...and the next, with nothing new, moves nothing", again.status === 3 && readFileSync(facts, "utf8") === grown,
     `exit ${again.status} ${again.stderr.slice(0, 300)}`);
+  const retirementAt='2026-11-06T00:00:00.000Z';
+  writeFileSync(join(live,'facts-cursor.txt'),'2026-11-05T00:00:00.000Z\n');
+  await query(`INSERT INTO board_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
+    baseline_score,baseline_metric,baseline_cost_seconds,baseline_by,baseline_started_at,baseline_finished_at,created_at,invalidated_at,invalidation_reason)
+    SELECT identity||'|'||ruler||'|'||mode,'retired-check',?,identity,ruler,mode,'new-engine','retired-question','{}','waiting',
+      score,metric,cost_seconds,measured_by,started_at,finished_at,?,?,'corrected formula' FROM scores WHERE identity='b1'`,[retirementAt,retirementAt,retirementAt]);
+  await query("UPDATE scores SET review_id='retired-check' WHERE identity='b1'");
+  const removed=await publish('delta',live);
+  check('a retirement of an old measurement reaches the live delta without changing its measurement clock',removed.status===0
+    && readFileSync(join(live,'moved-facts.ndjson'),'utf8').includes('"retired_at":"'+retirementAt+'"'));
+  check('full fact exports retain explicit removal events',await run('fetch_facts.sh','retired-facts.ndjson')===0
+    && read('retired-facts.ndjson').some(line=>JSON.parse(line).retired_at===retirementAt));
+  await query("INSERT INTO queue(batch,build_id,ruler,mode) VALUES ('arrivals-2026-10-01','b1','heavy_gunner','base')");
+  file('obsolete-native.ndjson',JSON.stringify({...fact,score:999,finished_at:'2026-11-06T00:00:30.000Z'})+'\n');
+  check('even a later native receipt cannot revive a retired score or consume its outstanding row',await run('ship_facts.sh','obsolete-native.ndjson')===0
+    && (await query("SELECT score FROM scores WHERE identity='b1'"))[0].score===13
+    && (await query("SELECT count(*) AS n FROM queue WHERE build_id='b1'"))[0].n===1);
+  await query("UPDATE board_reviews SET state='succeeded' WHERE id='retired-check'");
+  await query("UPDATE scores SET score=12,finished_at='2026-11-06T00:01:00.000Z' WHERE identity='b1'");
+  const restored=await publish('delta',live);
+  check('a completed independent correction publishes a normal replacement event',restored.status===0
+    && readFileSync(join(live,'moved-facts.ndjson'),'utf8').includes('"retired_at":null'));
   // A FILE READ WHOLE MOVES THE CURSOR to its newest row: a delta after it asks
   // for hours, never every row since a cursor that had stopped.
   writeFileSync(join(live, "facts-cursor.txt"), "2020-01-01T00:00:00.000Z\n");

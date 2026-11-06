@@ -255,6 +255,7 @@ jobs:
             --queue-weapons weapons.txt \
             --queue-missing rescore.ndjson \
             < library.json > /dev/null
+          WHY="${WHY:-corrected simulation model}" node scripts/retire_scores.mjs rescore.ndjson
           curl -s --connect-timeout 15 --max-time 60 https://wfsim.app/api/popularity > popularity.json || : > popularity.json
           mkdir -p by-weapon
           python3 scripts/popular_order.py popularity.json facts-known.ndjson --split by-weapon < rescore.ndjson

@@ -305,6 +305,8 @@ struct FactLine<'a> {
     measured_by: Option<&'a RawValue>,
     #[serde(borrow, default)]
     finished_at: Option<&'a RawValue>,
+    #[serde(borrow, default)]
+    retired_at: Option<&'a RawValue>,
 }
 
 /// A field read as `Value::as_str` reads it: a string, or nothing.
@@ -334,7 +336,8 @@ impl Facts {
         if mode.is_empty() {
             return None;
         }
-        let finished = text(f.finished_at).unwrap_or_default();
+        let retired = text(f.retired_at);
+        let finished = retired.as_deref().map(Cow::Borrowed).unwrap_or_else(|| text(f.finished_at).unwrap_or_default());
         let id = self.ids.of(&identity);
         let mode = self.modes.of(&mode);
         let at = match clock_digits(&finished) {
@@ -356,7 +359,7 @@ impl Facts {
             Some(m) if finished.as_bytes()[10] == b'T' => self.minutes.of(m),
             _ => NO_MINUTE,
         };
-        let by = self.by.of(&text(f.measured_by).unwrap_or_default());
+        let by = if retired.is_some() { u32::MAX } else { self.by.of(&text(f.measured_by).unwrap_or_default()) };
         self.rows[r].insert((id, mode), Stored { score, at, minute, by });
         Some((r, identity.into_owned()))
     }
@@ -382,7 +385,7 @@ impl Facts {
     fn get(&self, r: usize, identity: &str, mode: &str) -> Option<&Stored> {
         let id = self.ids.at.get(identity)?;
         let m = self.modes.at.get(mode)?;
-        self.rows[r].get(&(*id, *m))
+        self.rows[r].get(&(*id, *m)).filter(|row| row.by != u32::MAX)
     }
 
     /// Every line of `path`, a line at a time: the file is every row of
@@ -868,6 +871,26 @@ fn swap(root: &Path, next: &Path) {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn retirement_removes_a_published_fact_until_a_new_measurement() {
+        let mut facts = Facts::new(&roster());
+        let ruler = facts.rulers["standard_single_target"];
+        let old = json!({"identity":"build","ruler":"standard_single_target","mode":"base","score":33.0,
+            "finished_at":"2026-10-18T00:00:00.000Z","measured_by":"broken"});
+        facts.apply(&old.to_string());
+        assert!(facts.get(ruler,"build","base").is_some());
+        let mut retired = old.clone(); retired["retired_at"] = json!("2026-11-06T00:00:00.000Z");
+        assert!(facts.apply(&retired.to_string()).is_some(),"a retirement dirties the published weapon");
+        assert!(facts.get(ruler,"build","base").is_none());
+        facts.apply(&old.to_string());
+        assert!(facts.get(ruler,"build","base").is_none(),"a late snapshot cannot resurrect a retired score");
+        let mut fresh = old; fresh["score"]=json!(29.0); fresh["finished_at"]=json!("2026-11-06T00:01:00.000Z");
+        facts.apply(&fresh.to_string());
+        assert_eq!(facts.get(ruler,"build","base").unwrap().score,29.0);
+        facts.apply(&retired.to_string());
+        assert_eq!(facts.get(ruler,"build","base").unwrap().score,29.0,"a late retirement cannot hide a newer measurement");
+    }
 
     #[test]
     fn a_bare_build_projects_only_supported_modes() {

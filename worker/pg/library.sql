@@ -417,6 +417,38 @@ CREATE UNIQUE INDEX IF NOT EXISTS board_reviews_pending ON board_reviews (ref, e
 CREATE INDEX IF NOT EXISTS board_reviews_waiting ON board_reviews (engine, state, created_at);
 CREATE INDEX IF NOT EXISTS board_reviews_question ON board_reviews (question);
 ALTER TABLE scores ADD COLUMN IF NOT EXISTS review_id TEXT COLLATE "C";
+ALTER TABLE board_reviews ADD COLUMN IF NOT EXISTS invalidated_at TEXT COLLATE "C";
+ALTER TABLE board_reviews ADD COLUMN IF NOT EXISTS invalidation_reason TEXT COLLATE "C";
+CREATE INDEX IF NOT EXISTS scores_review ON scores (review_id) WHERE review_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS board_reviews_invalidated ON board_reviews (invalidated_at) WHERE invalidated_at IS NOT NULL;
+
+-- A retired measurement remains auditable and travels as a removal event.
+CREATE OR REPLACE VIEW board_facts AS
+SELECT s.identity,s.ruler,s.mode,s.measured_by,s.score,s.metric,s.cost_seconds,s.started_at,s.finished_at,s.review_id,
+  CASE WHEN r.invalidated_at IS NOT NULL AND r.state <> 'succeeded' THEN r.invalidated_at END AS retired_at
+FROM scores s LEFT JOIN board_reviews r ON r.id = s.review_id;
+
+-- Older daemons and native receipts cannot revive an explicitly retired row.
+CREATE OR REPLACE FUNCTION protect_retired_board_score() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE held board_reviews%ROWTYPE; replacement board_reviews%ROWTYPE;
+BEGIN
+  IF OLD.review_id IS NULL THEN RETURN NEW; END IF;
+  SELECT * INTO held FROM board_reviews WHERE id=OLD.review_id;
+  IF held.invalidated_at IS NULL OR held.state='succeeded' THEN RETURN NEW; END IF;
+  IF NEW.review_id=held.id AND NEW.measured_by='verified:'||held.engine
+     AND NEW.started_at=NEW.finished_at AND NEW.finished_at>held.invalidated_at
+     AND OLD.score=held.baseline_score AND OLD.measured_by=held.baseline_by AND OLD.finished_at=held.baseline_finished_at
+  THEN RETURN NEW; END IF;
+  IF NEW.score=OLD.score AND NEW.measured_by=OLD.measured_by AND NEW.finished_at=OLD.finished_at
+     AND NEW.started_at=OLD.started_at AND NEW.review_id IS DISTINCT FROM OLD.review_id THEN
+    SELECT * INTO replacement FROM board_reviews WHERE id=NEW.review_id;
+    IF replacement.state='waiting' AND replacement.invalidated_at IS NOT NULL AND replacement.baseline_review_id=held.id
+    THEN RETURN NEW; END IF;
+  END IF;
+  RETURN OLD;
+END $$;
+DROP TRIGGER IF EXISTS protect_retired_score ON scores;
+CREATE TRIGGER protect_retired_score BEFORE UPDATE ON scores FOR EACH ROW EXECUTE FUNCTION protect_retired_board_score();
 
 -- HOT TABLES RECYCLE SMALLER BATCHES: a fixed floor bounds the work on small
 -- tables, while fractional thresholds keep dead versions and newly inserted

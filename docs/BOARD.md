@@ -6,9 +6,8 @@ One sentence carries the whole design — **a submission is a BUILD and never a
 number**. Everything else follows from it:
 
 - a forged score is impossible, because no score is ever accepted;
-- a change RE-SCORES stored builds instead of invalidating them, and nobody is
-  ever asked to resubmit. What retires a stored score is a person deleting its
-  row — §"A stored score is reused because it EXISTS";
+- a correction retains the build, retires its incorrect measurement and asks
+  for independent remeasurement. Nobody is asked to resubmit;
 - **THE STORE IS A LIBRARY OF BUILDS AND EVERY RULER CROSSES THE WHOLE OF IT**. A submission carries no score, so the ruler it happened to be
   measured under was never a property of the record. ANY fight can upload, and
   a new ruler is scored from the library the day it lands rather than waiting
@@ -327,9 +326,10 @@ standing is shown only after the exact cell has loaded.
 | `publish.yml` | the clock, once a day | `scores` is ranked into the `site/board` SNAPSHOT, which the site does not read | one runner, seconds |
 | `live_board.sh` | every 20 s, on the board server | `scores` is ranked into the LIVE board in R2, which the site reads | two cores: seconds for the weapons a cycle moved; minutes to start, deriving the library once |
 
-The hourly queue supplements missing measurements. Age alone does not request
-another measurement. Explicit rescore inputs request selected measured rows
-again; their existing deadlines govern dispatch.
+The hourly queue supplements missing measurements and repairs interrupted
+score retirements. Age alone does not request another measurement. Explicit
+model-correction rescores retire selected measured rows and request independent
+replacement measurements.
 
 **AN HOUR THAT DOES NOT FINISH LOSES NOTHING.** A queue row is deleted in
 exactly one place — beside the fact that settles it, after the score is banked —
@@ -420,18 +420,19 @@ the next run rather than cancelled — §"A row is paid for in sittings".
 
 ### A stored score is reused because it EXISTS
 
-That is the whole of the rule, and there is nothing else in the key: not a
-clock, not a fingerprint, not the binary that wrote it. `scores` is keyed by
-`(build, ruler, mode)` and holds one row per key, the last one taken.
+An unretired score is reused by existence, without a clock or engine fingerprint
+in its key. `scores` is keyed by `(build, ruler, mode)` and holds one row per key.
+An explicit model correction retires a measurement through a fresh independent
+review. Its stored value remains auditable but cannot rank or set an entry line
+until the replacement is verified.
 
 **A FACT IS NOT WRONG FOR BEING OLD.** A measurement a year old, taken by a
 binary a thousand commits behind, is still what that fight produced — and the
 board publishes from `scores` and from nothing else, so a rule that quietly
 withheld old rows would be a board with no source at all.
 
-**WHAT RETIRES A FACT IS A PERSON DELETING ITS ROW.** That is SQL, and precision
-comes with it: one row, one weapon, one ruler, whatever the case needs. The row
-comes back absent on the next run, and an absent row is computed.
+Retirement names exact build, ruler and mode keys and a reason. It preserves the
+measurement and library record. It is not inferred from age or an engine edit.
 
 **NO HASH OF THE INPUTS DECIDES REUSE.** A hash fires on every edit to a file
 no entity owns — comments, tests, validation rules, fields only the page reads —
@@ -966,6 +967,25 @@ the changed score; verification and CDN publication are separate events.
 discloses aggregate progress, never witness identities. Withdrawing a question
 fails its round, allowing another after cooldown. Browser observations can be
 hidden independently of the shared computation.
+
+`POST /api/board/retire` requires the factory token and accepts up to fifty
+existing row keys, the served engine and a correction reason. It attaches an
+independent review and marks the captured baseline invalid. The score's review
+pointer and `board_reviews.invalidated_at` define this retirement. `board_facts`
+exports it as a removal event; both full and incremental publishers consume
+that event. Native receipts and ordinary cached deliveries cannot restore the
+retired value. Database protection also covers older running writers.
+
+Only the independent replacement makes the row rank again. Failed rounds and
+engine changes keep the baseline retired; hourly queue repair opens a fresh
+round. Repeating a completed correction on the same engine keeps its verified
+result. System corrections use the ordinary sweep deadline and do not claim a
+waiting player. Public reviews retain their existing admission limits.
+
+`queue.yml` model-correction rescores retire their selected rows before queueing
+work. `scripts/retire_scores.mjs <rows.ndjson>` handles a selected row list;
+`--repair` resumes interrupted retired rows. Both use the existing factory token.
+The service and pipeline roles need `SELECT` on `board_facts` after schema setup.
 
 Status includes the frozen public build and the current score's provenance.
 After verification the browser invalidates the weapon's loaded cells and

@@ -43,19 +43,24 @@ async function delta() {
   let seen = existsSync(cursorPath) ? readFileSync(cursorPath, "utf8").trim() : "";
   if (!seen) for await (const l of eachLine(factsPath)) { const at = JSON.parse(l).finished_at; if (at > seen) seen = at; }
   const since = new Date(Date.parse(seen || "1970-01-01T00:00:00Z") - OVERLAP_SECONDS * 1000).toISOString();
-  const rows = await query(`SELECT identity, ruler, mode, measured_by, score, cost_seconds, started_at, finished_at
-                         FROM scores WHERE finished_at > ? ORDER BY finished_at`, [since]);
+  const columns = `s.identity,s.ruler,s.mode,s.measured_by,s.score,s.cost_seconds,s.started_at,s.finished_at`;
+  const measured = await query(`SELECT ${columns},CASE WHEN r.invalidated_at IS NOT NULL AND r.state <> 'succeeded' THEN r.invalidated_at END AS retired_at
+    FROM scores s LEFT JOIN board_reviews r ON r.id=s.review_id WHERE s.finished_at > ?`,[since]);
+  const retired = await query(`SELECT ${columns},r.invalidated_at AS retired_at FROM board_reviews r JOIN scores s ON s.review_id=r.id
+    WHERE r.invalidated_at > ? AND r.state <> 'succeeded' AND s.finished_at <= ?`,[since,since]);
+  const rows = [...measured,...retired];
   await close();
   // A ROW MOVED IS ONE THE LAST WINDOW DID NOT HOLD AS IT IS NOW — the window
   // overlaps the next, so a row unchanged since is not a move. Compared as
   // values: two spellings of one fact are not a change.
   const recent = existsSync(recentPath) ? JSON.parse(readFileSync(recentPath, "utf8")) : {};
-  const same = (a, r) => a && a[0] === r.score && a[1] === r.measured_by && a[2] === r.finished_at;
+  const same = (a, r) => a && a[0] === r.score && a[1] === r.measured_by && a[2] === r.finished_at && (a[3] || null) === r.retired_at;
   const window = {}, moved = [];
   for (const r of rows) {
     if (!same(recent[key(r)], r)) moved.push(JSON.stringify(r));
-    window[key(r)] = [r.score, r.measured_by, r.finished_at];
+    window[key(r)] = [r.score, r.measured_by, r.finished_at,r.retired_at];
     if (r.finished_at > seen) seen = r.finished_at;
+    if (r.retired_at > seen) seen = r.retired_at;
   }
   if (moved.length) appendFileSync(factsPath, moved.join("\n") + "\n");
   writeFileSync(recentPath, JSON.stringify(window));
@@ -72,7 +77,7 @@ async function delta() {
 async function cursor() {
   let seen = "";
   for await (const l of eachLine(join(work, "facts-known.ndjson"))) {
-    const at = /"finished_at":"([^"]*)"/.exec(l)?.[1] ?? "";
+    const row = JSON.parse(l), at = row.retired_at || row.finished_at || '';
     if (at > seen) seen = at;
   }
   if (!seen) return;

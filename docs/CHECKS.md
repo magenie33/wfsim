@@ -2343,6 +2343,12 @@ paths, official fallback, withdrawn retries and proof retraction. Removing the
 stale-fact guard must make its cached-fact case fail. It also runs with
 `WFSIM_SETTLE_ASYNC=1` and `WFSIM_SYNC_PROC=1`.
 
+Retirement checks reject public invalidations, retain the captured measurement,
+block old native and cached writers, coalesce repeated corrections, retry failed
+rounds across engine changes and restore ranking only through independent proof.
+Pipeline checks carry removal events through full exports and the live delta;
+CLI fixtures exclude them from ranking and entry gates in either input order.
+
 Calibration cases skip more than ten current-engine rows before filling both
 categories, grow the per-category dial, coalesce concurrent triggers, and check
 background acknowledgment and chat freeze integration. The shared appraisal

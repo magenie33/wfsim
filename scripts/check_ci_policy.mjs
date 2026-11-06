@@ -45,7 +45,9 @@ const ciWiring = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
   'scripts/check_ci_policy.mjs', 'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs',
   'scripts/check_ci_partitions.mjs', 'scripts/check_site_setup.mjs'];
 const nonSearchTools = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh',
-  'scripts/live_board.sh', 'scripts/ship_builds.sh'];
+  'scripts/live_board.sh', 'scripts/ship_builds.sh', 'scripts/retire_scores.mjs', 'scripts/ship_queue.sh',
+  'scripts/fetch_facts.sh', 'scripts/ship_facts.sh', 'scripts/live_publish.mjs', '.github/workflows/queue.yml',
+  'deploy/factoryd_grants.sql'];
 for (const path of [...ciWiring, ...nonSearchTools]) {
   assert.equal(classify([path]).scope, 'full', path);
   assert.equal(classify([path]).deep, false, `${path} does not change search behavior`);

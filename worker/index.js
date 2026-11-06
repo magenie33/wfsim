@@ -855,7 +855,7 @@ async function serve(request, env, ctx) {
     if (path.startsWith("/api/appraise/")) return appraiseRoute(request, env, path, ctx);
     if (["/api/board/work", "/api/board/answers", "/api/board/verify", "/api/board/release", "/api/board/renew", "/api/board/mine", "/api/board/ping"].includes(path)) return verifyRoute(request, env, path);
     if (path === "/api/board/family") return familyRoute(request, env);
-    if (["/api/board/review", "/api/board/review/status", "/api/board/calibrate"].includes(path)) return boardReviewsRoute(request, env, path, ctx);
+    if (["/api/board/review", "/api/board/review/status", "/api/board/calibrate", "/api/board/retire"].includes(path)) return boardReviewsRoute(request, env, path, ctx);
     if (path === "/api/board/sync") return noteFactoryCall(request, env, path, () => syncRoute(request, env));
     if (path === "/api/board/ask" || path === "/api/board/adopt") return boardTasksRoute(request, env, path);
     if (path === "/api/board/inventory") return boardInventoryRoute(request, env);

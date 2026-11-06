@@ -46,7 +46,7 @@ page_body() {
   jq -n -c --argjson limit "$1" --argjson after "${2:-null}" '
     {
       sql: ("SELECT identity, ruler, mode, measured_by, score,"
-            + " cost_seconds, started_at, finished_at FROM scores"
+            + " cost_seconds, started_at, finished_at, retired_at FROM board_facts"
             + (if $after then " WHERE (identity, ruler, mode) > (?, ?, ?)" else "" end)
             + " ORDER BY identity, ruler, mode LIMIT ?"),
       params: (($after // []) + [$limit])

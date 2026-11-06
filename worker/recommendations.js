@@ -102,7 +102,8 @@ async function recommendationRoute(request, env, path, ctx) {
     ]);
     const ids = page.results.map(row => row.identity);
     const measured = ids.length && env.LIBRARY ? (await env.LIBRARY.prepare(`SELECT s.identity, s.ruler, s.mode, s.score, s.metric, s.finished_at
-      FROM scores s JOIN jsonb_to_recordset((?::text)::jsonb) AS r(identity text, ruler text, mode text) USING (identity, ruler, mode)`)
+      FROM board_facts s JOIN jsonb_to_recordset((?::text)::jsonb) AS r(identity text, ruler text, mode text) USING (identity, ruler, mode)
+      WHERE s.retired_at IS NULL`)
       .bind(JSON.stringify(page.results.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })))).all()).results : [];
     const recent = ids.length ? (await db.prepare(`SELECT identity, day::text AS day, greatest(0, 11 - (?2::date - day)) AS tenths
       FROM recommendations WHERE account = ?1 AND identity = ANY((?3::text)::text[]) AND day >= ?2::date - 10 ORDER BY day DESC`)
@@ -145,7 +146,7 @@ async function recommendationRoute(request, env, path, ctx) {
     if (!target) {
       if (!env.LIBRARY || typeof body.ruler !== "string" || typeof body.mode !== "string" || !SLUG.test(body.ruler) || !SLUG.test(body.mode)) return no("bad_target");
       const build = await env.LIBRARY.prepare(`SELECT b.record, b.weapon FROM builds b WHERE b.id = ?
-        AND EXISTS (SELECT 1 FROM scores s WHERE s.identity = b.id AND s.ruler = ? AND s.mode = ?)`)
+        AND EXISTS (SELECT 1 FROM board_facts s WHERE s.identity = b.id AND s.ruler = ? AND s.mode = ? AND s.retired_at IS NULL)`)
         .bind(body.identity, body.ruler, body.mode).first();
       if (!build) return no("unknown_build", 404);
       await db.prepare(`INSERT INTO recommendation_targets (identity, weapon, record, ruler, mode) VALUES (?, ?, ?, ?, ?)
