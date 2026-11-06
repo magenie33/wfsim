@@ -126,13 +126,10 @@ jobs:
   # makes "shard by index" a split they agree on without talking.
   submissions:
     runs-on: ubuntu-latest
-    # A CAP, BECAUSE THE GROUP IS HELD WHILE THIS RUNS. One pending run is kept
-    # per concurrency group and a second is cancelled, so a step that hangs does
-    # not cost its own run — it costs every tick until GitHub's six-hour cap.
-    # This job reads every fact, reads the queue three times and walks every ruler
-    # (`reconcile_queue.sh`, every ruler in one process): a queue of 1.3 million rows took
-    # half an hour. A tick that finds it running waits, which costs no row.
-    timeout-minutes: 75
+    # Bound intake separately and leave room for the complete inventory capture,
+    # classification and scoring preparation. A failed intake still permits the
+    # inventory refresh, and its failure is restored before this job ends.
+    timeout-minutes: 105
     outputs:
       wired: ${{ steps.wired.outputs.yes }}
       shards: ${{ steps.shards.outputs.list }}
@@ -215,7 +212,10 @@ jobs:
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
       - name: take in what has arrived
+        id: intake
         if: steps.wired.outputs.yes == 'true'
+        timeout-minutes: 30
+        continue-on-error: true
         env:
           FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
         run: |
@@ -432,6 +432,13 @@ jobs:
           # scored. Nothing fails; the rows keep their old numbers.
           echo "count=$n" >> "$GITHUB_OUTPUT"
           N=$n python3 -c "import json,os;print('list='+json.dumps(list(range(int(os.environ['N'])))))" >> "$GITHUB_OUTPUT"
+
+      # Reconciliation runs after an intake failure; the run still reports it.
+      - name: keep intake failures visible
+        if: always() && (steps.intake.outcome == 'failure' || steps.intake.outcome == 'cancelled')
+        run: |
+          echo "::error::intake did not finish; see the intake step"
+          exit 1
 
   # ---- 2. score, N ways at once -----------------------------------------
   #

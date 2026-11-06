@@ -2,7 +2,7 @@
 // New arrivals seed sibling searches; derived inbox records never seed another round.
 import { facts, DEADLINE_MS, factoryAuthed } from "./factory.js";
 import { questionId } from "./tasks.js";
-import { json, servedRelease } from "./verify.js";
+import { json, servedRelease, ENGINE_ID } from "./verify.js";
 import { iso } from "./instant.js";
 import { submitRecord } from "./index.js";
 import { headlessBoardPayloadFromResult } from "./board_payload.js";
@@ -40,13 +40,20 @@ export async function askFamilyTransfers(env) {
     WHERE t.state = 'waiting' AND (t.asked_engine IS DISTINCT FROM ?1::text OR NOT EXISTS
       (SELECT 1 FROM demands d WHERE d.producer = 'family_build' AND d.ref = t.id)) ORDER BY t.created_at, t.id LIMIT 100`)
     .bind(engine).all();
-  for (const row of results) {
-    await env.LIBRARY.prepare("UPDATE family_transfers SET engine = ? WHERE id = ? AND state = 'waiting'").bind(engine, row.id).run();
-    await facts().demand(env, { producer: "family_build", ref: row.id, verb: "optimize_report", request: JSON.parse(row.request),
-      due_in_ms: DEADLINE_MS.family_build, payload: { weapon: row.weapon, ruler: row.ruler }, waits: false, initiator: "system" }, engine);
-    await env.LIBRARY.prepare("UPDATE family_transfers SET asked_engine = ? WHERE id = ? AND engine = ?")
-      .bind(engine, row.id, engine).run();
-  }
+  if (!results.length) return;
+  const keys = JSON.stringify(results.map(row => row.id).sort());
+  const { results: waiting } = await env.LIBRARY.prepare(`UPDATE family_transfers SET engine = ?1::text
+    WHERE id IN (SELECT id FROM family_transfers WHERE state = 'waiting'
+      AND id IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb)) ORDER BY id FOR UPDATE) RETURNING id`)
+    .bind(engine, keys).all();
+  const rows = results.filter(row => waiting.some(item => item.id === row.id));
+  if (!rows.length) return;
+  await facts().demandAll(env, rows.map(row => ({ producer: "family_build", ref: row.id, verb: "optimize_report", request: JSON.parse(row.request),
+    due_in_ms: DEADLINE_MS.family_build, payload: { weapon: row.weapon, ruler: row.ruler }, waits: false, initiator: "system" })), engine);
+  await env.LIBRARY.prepare(`UPDATE family_transfers SET asked_engine = ?1::text WHERE id IN
+    (SELECT id FROM family_transfers WHERE engine = ?1::text
+      AND id IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb)) ORDER BY id FOR UPDATE)`)
+    .bind(engine, JSON.stringify(rows.map(row => row.id))).run();
 }
 
 export async function familyRoute(request, env) {
@@ -56,22 +63,31 @@ export async function familyRoute(request, env) {
   if (raw.length > 1_048_576) return json({ ok: false, error: "payload too large" }, 413);
   let body;
   try { body = JSON.parse(raw); } catch (_) { return json({ ok: false, error: "not json" }, 400); }
-  if (!Array.isArray(body?.jobs) || body.jobs.length > 100 || body.jobs.some(job => !job || !ID.test(job.source || "")
+  if ((body?.engine !== undefined && (typeof body.engine !== "string" || !ENGINE_ID.test(body.engine)))
+      || !Array.isArray(body?.jobs) || body.jobs.length > 100 || body.jobs.some(job => !job || !ID.test(job.source || "")
       || !SLUG.test(job.weapon || "") || !SLUG.test(job.ruler || "") || job.request?.weapon !== job.weapon
       || job.request.strategy !== "quick" || !Array.isArray(job.request.starts) || job.request.finalists !== 1
       || job.context?.weapon !== job.weapon || job.context.benchmark !== job.ruler))
     return json({ ok: false, error: "invalid family requests" }, 400);
   const { engine } = await servedRelease(env);
   if (!engine) return json({ ok: false, error: "No engine is served." }, 503);
+  const wanted = body.engine || engine, rows = new Map();
   for (const job of body.jobs) {
-    const id = await questionId("family_build", { source: job.source, weapon: job.weapon, ruler: job.ruler, engine });
-    const stored = await env.LIBRARY.prepare(`INSERT INTO family_transfers (id, source, weapon, ruler, request, context, engine, state, created_at)
-      SELECT ?1::text, ?2::text, ?3::text, ?4::text, ?5::text, ?6::text, ?7::text, 'waiting', ?8::text
-      WHERE EXISTS (SELECT 1 FROM builds WHERE id = ?2::text) ON CONFLICT DO NOTHING RETURNING id`)
-      .bind(id, job.source, job.weapon, job.ruler, JSON.stringify(job.request), JSON.stringify(job.context), engine, iso(Date.now())).first();
-    if (!stored && !await env.LIBRARY.prepare("SELECT id FROM family_transfers WHERE id = ?").bind(id).first())
-      return json({ ok: false, error: "The source build has not landed." }, 409);
+    const id = await questionId("family_build", { source: job.source, weapon: job.weapon, ruler: job.ruler, engine: wanted });
+    if (!rows.has(id)) rows.set(id, { id, source: job.source, weapon: job.weapon, ruler: job.ruler,
+      request: JSON.stringify(job.request), context: JSON.stringify(job.context) });
   }
-  await askFamilyTransfers(env);
-  return json({ ok: true });
+  if (!rows.size) return json({ ok: true, engine: wanted, accepted: 0 });
+  const batch = JSON.stringify([...rows.values()].sort((a, b) => a.id.localeCompare(b.id)));
+  if (wanted === engine) await env.LIBRARY.prepare(`INSERT INTO family_transfers
+    (id, source, weapon, ruler, request, context, engine, state, created_at)
+    SELECT x.id, x.source, x.weapon, x.ruler, x.request, x.context, ?2::text, 'waiting', ?3::text
+    FROM jsonb_to_recordset((?1::text)::jsonb) AS x(id text, source text, weapon text, ruler text, request text, context text)
+    WHERE EXISTS (SELECT 1 FROM builds b WHERE b.id = x.source) ORDER BY x.id ON CONFLICT DO NOTHING`)
+    .bind(batch, wanted, iso(Date.now())).run();
+  const { results: stored } = await env.LIBRARY.prepare(`SELECT t.id FROM family_transfers t
+    JOIN jsonb_to_recordset((?::text)::jsonb) AS x(id text) ON t.id = x.id`).bind(batch).all();
+  if (stored.length !== rows.size) return json({ ok: false, error: wanted === engine
+    ? "The source build has not landed." : "The served engine changed before admission." }, 409);
+  return json({ ok: true, engine: wanted, accepted: rows.size });
 }

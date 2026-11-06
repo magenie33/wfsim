@@ -620,6 +620,11 @@ another batch still owes kept, a row never asked deleted, and a cancel naming
 nothing refused. Bites: an upsert's unqualified
 column, which Postgres calls ambiguous — it fails three of them.
 
+Intake batches bound both rows and encoded bytes, preserve duplicate input
+order and equipment separation, and replay only idempotent writes after a
+transient connection cut. Permanent refusals and exhausted retries retain
+the arrivals; build and family acknowledgments precede inbox deletion.
+
 ## `check_dials`
 
 Plain node on PGlite: a dial never set, or a table that cannot be read, is its
@@ -2225,6 +2230,11 @@ next push; a path list is a second answer to a question the database already
 answers; a bound naming a count without a clock is a bound that means nothing,
 because rows differ 79x in cost.
 
+Intake failure and timeout still reach one complete inventory scan, followed
+by an explicit workflow failure. Successful intake stays successful, absent
+storage stays skipped, and manual rescore or cancellation requires successful
+intake. The intake deadline leaves a separate budget for reconciliation.
+
 ## `check_submission_hop`
 
 A submission survives the whole hop, and every hop in it is the real one: the
@@ -2326,6 +2336,11 @@ concurrent deduplication, retention, both sync paths, independent agreement,
 deterministic delivery after an interrupted completion, unforgeable inbox
 provenance and the deployed daemon role. Empty admission must create no work
 from existing library rows. It also runs with queued settlement.
+
+Admission acknowledges durable transfers before dispatch and registers work
+through the bounded resumer. Transport checks hold deduplication, byte bounds,
+stable engine and request bytes across transient retries, and refusal without
+spending the source input.
 
 The webapi family tests use Burston Prime's exclusive Gilded Truth: its slot
 must become empty for Burston, compatible elemental order must survive, and

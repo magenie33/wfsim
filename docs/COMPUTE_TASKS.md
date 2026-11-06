@@ -120,6 +120,12 @@ a separate live reading. A missing or older-than-three-hours inventory shows an
 unknown total and no clearance estimate. Queue totals remain available for
 dispatch health and never substitute for complete demand.
 
+The queue and scoring pipelines bound their intake step independently of
+reconciliation. A failed or timed-out intake retains unacknowledged arrivals
+and still permits one complete scan of committed data. The workflow reports
+the intake failure after reconciliation; a published inventory does not turn
+a failed intake into a successful run.
+
 `check_task_modules` holds dependency boundaries, a new verb and producer,
 substituted dispatch, failed consumers, failed credit and idempotent recovery.
 `check_task_inventory` holds the full union, admission invariance, completion,
