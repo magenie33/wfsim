@@ -133,6 +133,7 @@ pub struct SearchPresets {
 pub struct SearchStrategy {
     pub id: String,
     pub name: String,
+    pub description: String,
 }
 
 /// One built-in search: listed in the bar or applied by its own page, with or

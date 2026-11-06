@@ -10,6 +10,7 @@
 strategies:
   - id: four_elements
     name: Four elements strategy
+    description: "Keep each original start and explore branches with Heat, Cold, Electricity and Toxin 60/60 mods. Fill available slots or replace unpinned, non-required mods, then improve each branch until no change helps. Respect exclusions and pins; the added elemental mod is not pinned."
 element_starts:
   - [thermite_rounds, scattering_inferno, scorch, volcanic_edge, magma_chamber]
   - [rime_rounds, frigid_blast, frostbite, vicious_frost, hypothermic_shell]

@@ -572,6 +572,8 @@ above runs only when a tool asks for it by name.
 The immutable strategies are declared in `data/search/presets.yaml` and exposed
 through `/api/meta.search_presets.strategies`. A quick request selects one with
 `search_strategy`; `strategy: "quick"` still names the descent algorithm.
+The selector displays the selected strategy's `description` beside it; starts
+remain a separate input and always contain at least one build, including blank.
 The only strategy is `four_elements`. Requests omitting `search_strategy` keep
 their existing start semantics.
 

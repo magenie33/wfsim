@@ -34,6 +34,8 @@ function renderOptStrategy() {
   const missing = !strategies.some(s => s.id === current);
   select.innerHTML = (missing ? `<option value="${escHtml(current)}" selected disabled>${escHtml(current || tr("Saved starts only"))}</option>` : "")
     + strategies.map(s => `<option value="${escHtml(s.id)}"${s.id === current ? " selected" : ""}>${escHtml(tr(s.name))}</option>`).join("");
+  const description = $("opt-strategy-description");
+  if (description) description.textContent = tr(strategies.find(s => s.id === current)?.description || "");
   select.onchange = () => {
     setOptStrategy(select.value);
   };

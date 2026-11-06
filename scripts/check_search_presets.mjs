@@ -22,6 +22,11 @@ check("…a selectable strategy separate from the read-only preset", await evalu
   && $("opt-search-strategy").value === "four_elements" && !$("opt-search-strategy").disabled
   && !$("preset-bar-optimizer").contains($("opt-search-strategy"))`));
 check("…answering the run terms it states", await evaluate("optRun.finalists === 10 && optRun.candidate_runs === 10"));
+check("…the selected strategy explains its process beside the selector", await evaluate(`(() => {
+  const strategy = META.search_presets.strategies.find(s => s.id === $("opt-search-strategy").value);
+  return !!strategy.description && $("opt-strategy-description").textContent === tr(strategy.description)
+    && $("opt-search-strategy").getAttribute("aria-describedby") === "opt-strategy-description";
+})()`));
 check("…read-only on screen: its note shows and its controls are inert", await evaluate(`!$("opt-builtin").hidden
   && $("opt-finalists").disabled && [...$("opt-starts").querySelectorAll("button")].every((b) => b.disabled)`));
 check("…and the run button is not among them", await evaluate(`!$("run-opt").disabled`));
@@ -78,6 +83,10 @@ check("⧉ makes a search of the reader's own, editable", await evaluate(`loadOp
   && $("opt-builtin").hidden && !$("opt-finalists").disabled`));
 check("…holding the same user start and strategy", JSON.stringify(await cards()) === JSON.stringify([[]])
   && await evaluate(`snapshotOpt().search_strategy === "four_elements"`));
+check("…deleting the last start keeps one blank start", await evaluate(`(() => {
+  $("opt-starts").querySelector("[data-del]").click();
+  return opt.starts.length === 1 && startPayload(opt.starts[0]).slots.every(s => !s);
+})()`));
 
 await deleteCopy();
 await sleep(800);

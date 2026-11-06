@@ -920,6 +920,8 @@ ui:
   "{d} of {n} branches settled": "{d}/{n} 个分支已收敛"
   "Search strategy": "搜索策略"
   "Four elements strategy": "四元素策略"
+  "Keep each original start and explore branches with Heat, Cold, Electricity and Toxin 60/60 mods. Fill available slots or replace unpinned, non-required mods, then improve each branch until no change helps. Respect exclusions and pins; the added elemental mod is not pinned.": "保留每个原始起点，并分别加入火焰、冰冻、电击和毒素的金元素 MOD，探索不同分支。有空位就填入，已满则尝试替换未锁定且非必选的 MOD，再逐步优化各分支，直到无法继续提升。遵守屏蔽和锁定条件；加入的元素 MOD 不会被自动锁定。"
+  "At least one start is required. A blank start is allowed; the strategy processes each start.": "至少需要一个起点，可以是空白起点；策略会分别处理每个起点。"
   "Saved starts only": "仅使用已保存的起点"
   "original": "原始起点"
   "each start improved until no change helped — the best those starts reach, not a proven best; add a start to look further": 每个起点都改到了再换什么都不涨 —— 这是这些起点能到的最好，不是证明过的最优；想找得更远就加起点
