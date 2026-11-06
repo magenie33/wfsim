@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import { classifyInventory } from './classify_compute_inventory.mjs';
 import { bindInventoryBuilds } from './bind_inventory_builds.mjs';
 import { publishInventory } from './compute_inventory.mjs';
-import { inventoryWrite, readInventory, INVENTORY_MAX_MS } from '../worker/task_inventory.js';
+import { inventoryWrite, readInventory, readInventoryState, INVENTORY_MAX_MS } from '../worker/task_inventory.js';
 import { testDb } from './pg/test_db.mjs';
 import worker from '../worker/index.js';
 import { questionId } from '../worker/task_contract.js';
@@ -69,6 +69,32 @@ try {
   await assert.rejects(bindInventoryBuilds({ ...binding, canonical: file('binding-missing-map', []) }, run), /unbound/);
   const save = async (p, at = now) => { const w = inventoryWrite(p, at); await db.run(w.sql, ...w.params); };
   await save(plan); assert.equal((await readInventory(db, now)).total, 4);
+  assert.equal((await readInventoryState(db, now)).lastComplete, null, 'an unknown factory engine qualified for display');
+  await db.run("INSERT INTO factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x',?,0,0,0,0,0,0,'x','x')", engine);
+  let reads = 0;
+  const state = await readInventoryState({ prepare(sql) { reads++; return db.prepare(sql); } }, now);
+  assert.equal(reads, 1, 'fresh and display inventory used separate database reads');
+  assert.deepEqual(state.lastComplete, state.fresh, 'fresh inventory was not retained across a cached CDN expiry');
+  const expired = await readInventoryState(db, now + INVENTORY_MAX_MS + 2);
+  assert.equal(expired.fresh, null);
+  assert.deepEqual(expired.lastComplete, state.fresh, 'display changed the original complete snapshot or its timestamps');
+  const original = JSON.stringify(state.fresh);
+  for (const body of [
+    '{', JSON.stringify({ ...state.fresh, orders: [null] }),
+    JSON.stringify({ ...state.fresh, total: 999 }), JSON.stringify({ ...state.fresh, verbs: { simulate: 999 } }),
+    JSON.stringify({ ...state.fresh, started_at: new Date(now + 1).toISOString() }),
+    JSON.stringify({ ...state.fresh, at: new Date(now + 60_000).toISOString() }),
+    JSON.stringify({ ...state.fresh, expires_at: new Date(Date.parse(state.fresh.expires_at) + 60_000).toISOString() }),
+    JSON.stringify({ ...state.fresh, at: state.fresh.expires_at }),
+  ]) {
+    await db.run("UPDATE factory_findings SET body=? WHERE kind='task_inventory'", body);
+    assert.equal((await readInventoryState(db, now)).lastComplete, null, 'malformed or invalid-at-publication inventory qualified for display');
+  }
+  await db.run("UPDATE factory_findings SET body=? WHERE kind='task_inventory'", original);
+  await db.run("UPDATE factory_snapshot SET engine='95d73da96acb' WHERE id=1");
+  assert.deepEqual(await readInventoryState(db, now), { fresh: null, lastComplete: null }, 'a different engine qualified for display');
+  await db.run("UPDATE factory_snapshot SET engine=? WHERE id=1", engine);
+  console.log('ok: one persisted snapshot supplies strict freshness and original-time same-engine display; unknown, future, malformed and invalid publications are refused');
   await save({ ...plan, rows: 999, orders: [{ kind: 'board', total: 999 }], verbs: { simulate: 999 }, started_at: new Date(now - 120000).toISOString() }, now + 1);
   assert.equal((await readInventory(db, now + 1)).total, 4);
   assert.equal(await readInventory(db, now + INVENTORY_MAX_MS + 2), null);
@@ -85,7 +111,7 @@ try {
   assert.equal(exported.find(q => q.id === future).kind, 'future_owner');
   await db.run("UPDATE demands SET state='withdrawn'");
   assert.equal((await db.all('SELECT * FROM factory_inventory_rows(?,?::text[])', engine, ['sweep'])).length, 0);
-  await db.run("INSERT INTO factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x','ffffffffffff',0,0,0,0,0,0,'x','x')");
+  await db.run("UPDATE factory_snapshot SET engine='ffffffffffff' WHERE id=1");
   assert.equal(await readInventory(db, now), null, 'an engine change kept a stale inventory goal');
   const current = { ...plan, engine: 'ffffffffffff' };
   await save(current);

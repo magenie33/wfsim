@@ -3104,6 +3104,7 @@ ui:
   "devices": "台设备"
   "Total orders": 总订单
   "Checking total demand": 正在核对总需求
+  "Last complete count · as of {time}": "上次完整统计 · 截至 {time}"
   "Updated {time}": "更新于 {time}"
   "leaderboard calculations {n}": "榜单计算 {n}"
   "leaderboard reviews {n}": "榜单复核 {n}"

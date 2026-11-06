@@ -45,7 +45,7 @@ import { noteFactoryCall } from "./factory_calls.js";
 import { meritTotals } from "./merit.js";
 import { dialsOf } from "./dials.js";
 import { BOARD_KINDS } from "./board_kinds.js";
-import { readInventory } from "./task_inventory.js";
+import { readInventoryState } from "./task_inventory.js";
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
@@ -786,7 +786,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   const userRequests = counted.openOf.filter((row) => ["simulate_report", "optimize_report"].includes(row.verb)).reduce((sum, row) => sum + row.n, 0);
   if (userRequests) orders.push({ kind: "user_calculation", total: userRequests, dispatched: null });
   const reading = await nowOf(db, now);
-  const inventory = await readInventory(db, now);
+  const { fresh: inventory, lastComplete } = await readInventoryState(db, now);
   let goal = null;
   if (inventory) {
     let work = 0;
@@ -802,6 +802,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
     riven_gains: Number((gains.results[0] || {}).n || 0),
     orders,
     goal,
+    last_complete: lastComplete,
     surveys: surveys.results.map(({ lately, ...g }) => {
       const s = { weapon: g.weapon, ruler: g.ruler, shapes: Number(g.shapes), agreed: Number(g.agreed), started: Number(g.started) };
       const pace = Number(lately || 0) / (PACE_HOURS);

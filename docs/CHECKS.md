@@ -332,8 +332,11 @@ The community goal (`73-compute.js` `computeDemandHtml`) reads complete
 inventory independently of the partial queue. Admission leaves the total
 unchanged; confirmed completion reduces the next inventory. Each task kind is
 listed, unknown kinds keep their ids, and update time and clearance estimate
-belong to that inventory. Missing or expired inventory has an unknown total
-and no estimate; a confirmed empty inventory is zero.
+belong to that inventory. A complete same-engine snapshot remains displayable
+after expiry with its original timestamp and no clearance estimate. Unknown,
+different-engine, future or malformed snapshots cannot supply a total; a
+confirmed empty inventory is zero. CDN objects crossing expiry retain the
+same snapshot, and the API returns the daemon's exact object.
 
 ## `check_task_modules`, `check_task_inventory` and `check_inventory_capture`
 
@@ -347,7 +350,9 @@ number of database calls independent of its task count.
 Inventory unions missing and queued task identities, removes orphans and
 retired rulers, and counts undispatched work before admission pacing. A new
 task kind is included automatically. Partial, invalid, expired or older-input
-scans cannot supply a fresh complete total.
+scans cannot supply a fresh complete total. Display reads the same persisted
+finding once, requires a known matching factory engine and valid original
+publication, and preserves every original timestamp after expiry.
 Coverage follows live consumer identities across a producer change; cancelled
 consumers cease adding demand, while unresolved official decisions still count.
 Canonical build aliases share one task, verified delivery retries add no compute,

@@ -791,16 +791,30 @@ const ORDER_KIND_NAMES = { rescore: "rescores after a model change {n}", sweep: 
   new_build: "new builds {n}", refresh: "requested score refreshes {n}", riven_gain: "riven gains {n}", user_calculation: "player calculations {n}",
   board: "leaderboard calculations {n}", board_review: "leaderboard reviews {n}", chat: "riven analyses {n}", survey: "survey searches {n}",
   family_build: "related weapon searches {n}", verification: "result checks {n}" };
+function completeDemandInventory(value, now) {
+  return value?.v === 1 && value.engine === ENGINE_ID && typeof value.snapshot === "string" && !!value.snapshot
+    && Number.isSafeInteger(value.total) && value.total >= 0
+    && Number.isSafeInteger(value.registered) && value.registered >= 0 && value.registered <= value.total
+    && Number.isFinite(Date.parse(value.at)) && Number.isFinite(Date.parse(value.started_at))
+    && Date.parse(value.started_at) <= Date.parse(value.at) && Date.parse(value.at) <= now
+    && Date.parse(value.at) < Date.parse(value.expires_at)
+    && Date.parse(value.expires_at) === Date.parse(value.started_at) + 3 * 60 * 60_000
+    && Array.isArray(value.orders) && value.orders.every(o => o && typeof o.kind === "string" && Number.isSafeInteger(o.total) && o.total >= 0)
+    && value.orders.reduce((n, o) => n + o.total, 0) === value.total
+    && value.verbs && Object.values(value.verbs).every(n => Number.isSafeInteger(n) && n >= 0)
+    && Object.values(value.verbs).reduce((n, x) => n + x, 0) === value.total;
+}
 function computeDemandHtml() {
   const d = computeDemand;
   if (!d) return "";
   const n = (x) => Number(x || 0).toLocaleString(accountLocale());
   const big = (x) => `<b style="font-size:16px">${escHtml(x)}</b>`;
   // The complete scan includes work not yet admitted to the dispatcher.
-  const goal = d.goal?.v === 1 && Number.isSafeInteger(d.goal.total) && d.goal.total >= 0
-    && Number.isFinite(Date.parse(d.goal.at)) && Date.parse(d.goal.expires_at) > Date.now() && Array.isArray(d.goal.orders) ? d.goal : null;
-  const orders = goal?.orders || [];
-  const owed = goal?.total;
+  const now = Date.now();
+  const goal = completeDemandInventory(d.goal, now) && Date.parse(d.goal.expires_at) > now ? d.goal : null;
+  const complete = goal || (completeDemandInventory(d.last_complete, now) ? d.last_complete : null);
+  const orders = complete?.orders || [];
+  const owed = complete?.total;
   const done = d.per_hour.volunteers + d.per_hour.official;
   const share = done ? Math.round((100 * d.per_hour.volunteers) / done) : 0;
   const list = orders.filter(o => o.total).map(o => `<li><span>${escHtml(tr(ORDER_KIND_NAMES[o.kind] || `${o.kind} {n}`).replace("{n}", n(o.total)))}</span></li>`).join("");
@@ -817,11 +831,11 @@ function computeDemandHtml() {
         g.clear_hours == null ? "" : ` · ${escHtml(tr("done in {t}").replace("{t}", demandHours(g.clear_hours)))}`}</div></div></div>`;
   }).join("");
   const eta = goal?.clear_hours == null || !owed ? "" : demandHours(goal.clear_hours);
-  const updated = goal ? tr("Updated {time}").replace("{time}", new Date(goal.started_at || goal.at).toLocaleString(accountLocale())) : tr("Checking total demand");
+  const updated = complete ? tr("Last complete count · as of {time}").replace("{time}", new Date(complete.started_at).toLocaleString(accountLocale())) : tr("Checking total demand");
   return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Community goal")}</h2><span class="set-note" style="margin-left:auto">${
     escHtml(updated)}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
-    <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(goal ? n(owed) : "—")} ${aT("tasks")}${
+    <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(complete ? n(owed) : "—")} ${aT("tasks")}${
       list ? `<ul class="order-list">${list}</ul>` : ""}</dd></div>
     ${goals ? `<div class="kv"><dt>${aT("Goals")}</dt><dd style="min-width:0">${goals}</dd></div>` : ""}
     <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(n(done))} ${aT("rows of scores")}

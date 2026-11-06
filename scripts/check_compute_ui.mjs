@@ -9,7 +9,10 @@ const ui = await evaluate(`(async () => {
   const wait = () => new Promise(resolve => setTimeout(resolve, 150));
   const demandLoader = loadComputeDemand;
   loadComputeDemand = async () => {};
-  computeDemand = { orders: [{ kind: 'new_build', total: 20, dispatched: 20 }], goal: { v: 1, at: new Date().toISOString(), expires_at: new Date(Date.now() + 3600000).toISOString(), total: 100, orders: [{ kind: 'board', total: 100 }], clear_hours: 1 }, owed: {}, per_hour: { volunteers: 5, official: 1 }, clear_hours: 1, surveys: [] };
+  const inventoryAt = Date.now() - 60_000;
+  computeDemand = { orders: [{ kind: 'new_build', total: 20, dispatched: 20 }], goal: { v: 1, engine: ENGINE_ID, snapshot: '100:100:',
+    started_at: new Date(inventoryAt).toISOString(), at: new Date(inventoryAt).toISOString(), expires_at: new Date(inventoryAt + 3 * 3600000).toISOString(),
+    total: 100, registered: 20, orders: [{ kind: 'board', total: 100 }], verbs: { simulate: 100 }, clear_hours: 1 }, owed: {}, per_hour: { volunteers: 5, official: 1 }, clear_hours: 1, surveys: [] };
   clearInterval(computeTimer); computeTimer = setInterval(() => {}, 60000);
   accountState.loaded = true; accountState.providers = ["email"]; accountState.account = { id: "paged-account" };
   computeAskedFor = "paged-account";

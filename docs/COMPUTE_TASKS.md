@@ -184,11 +184,16 @@ Apply the additive task schema before enabling this path. Rollback sets
 release, preserving engine consistency with the other channels. Source tables
 and the last published inventory are preserved.
 
-The community goal displays the last complete inventory and its update time.
+The community goal displays the last complete current-engine inventory and its
+original input time, labeled as the last complete count.
 It changes when a complete scan is published; the minute's work signal remains
-a separate live reading. A missing or older-than-three-hours inventory shows an
-unknown total and no clearance estimate. Queue totals remain available for
-dispatch health and never substitute for complete demand.
+a separate live reading. After three hours the strict goal expires and its
+clearance estimate disappears. Display may retain the same complete snapshot
+with its original timestamp only while its engine matches the current factory
+and page engine. A missing or different-engine inventory shows an unknown total.
+Both readings derive from the same retained finding; display does not extend
+freshness. Queue totals remain available for dispatch health and never substitute
+for complete demand.
 
 The queue and scoring pipelines bound their intake step independently of
 reconciliation. A failed or timed-out intake retains unacknowledged arrivals

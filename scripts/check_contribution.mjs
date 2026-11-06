@@ -12,6 +12,7 @@ import { contributionRoute, contributorRank, demandOf, DEMAND_KEY, publishContri
 import { sha256 } from "../worker/accounts.js";
 import { testDb } from "./pg/test_db.mjs";
 import { PACE_HOURS } from "../worker/instant.js";
+import { inventoryWrite, INVENTORY_MAX_MS } from "../worker/task_inventory.js";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -311,10 +312,27 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   check("...not at the floor", !starvedOf(asked(28, 420), waits(84_000)));
   check("...not with too few rows waiting for every device, riven gains not counted", !starvedOf(asked(28, 0), waits(279)));
   check("...not with too few devices asking to read", !starvedOf(asked(2, 0), waits(84_000)));
+  const engine = '4393e1730621', started = new Date(now - 60_000).toISOString();
+  const saved = inventoryWrite({ v: 2, started_at: started, snapshot: '100:100:', engine, rows: 1000, queued: 20,
+    orders: [{ kind: 'board', total: 1000 }], verbs: { simulate: 1000 } }, now);
+  await L.run(saved.sql, ...saved.params);
+  await L.run("INSERT INTO factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x',?,0,0,0,0,0,0,'x','x')", engine);
+  const fresh = await demandOf({ LIBRARY: L }, now), expired = await demandOf({ LIBRARY: L }, now + INVENTORY_MAX_MS);
+  check("fresh demand also carries the complete snapshot for cached clients crossing expiry", fresh.goal?.total === 1000
+    && fresh.last_complete?.total === 1000 && fresh.last_complete?.started_at === started);
+  check("expired demand retains the same original snapshot only for display", expired.goal === null
+    && JSON.stringify(expired.last_complete) === JSON.stringify(fresh.last_complete) && !('clear_hours' in expired.last_complete));
+  await L.run("UPDATE factory_snapshot SET engine='95d73da96acb' WHERE id=1");
+  const changed = await demandOf({ LIBRARY: L }, now + INVENTORY_MAX_MS);
+  check("a changed engine hides both the fresh goal and retained display count", changed.goal === null && changed.last_complete === null);
+  await L.run("DELETE FROM factory_findings WHERE kind='task_inventory'");
+  await L.run("DELETE FROM factory_snapshot WHERE id=1");
   check("the endpoint serves the settler's object, worked out nowhere else",
     (await call("/api/board/demand")).error === "no_demand");
   env.PUBLIC = { get: async (k) => (k === DEMAND_KEY ? { body: JSON.stringify(d) } : null) };
   check("...byte for byte", JSON.stringify(await call("/api/board/demand")) === JSON.stringify({ status: 200, ...d }));
+  env.PUBLIC = { get: async (k) => (k === DEMAND_KEY ? { body: JSON.stringify(expired) } : null) };
+  check("...including the unchanged original-time display snapshot", JSON.stringify(await call("/api/board/demand")) === JSON.stringify({ status: 200, ...expired }));
   delete env.PUBLIC;
 }
 check("the nav asks the same count alone", (await call("/api/board/computing")).computing === 1);

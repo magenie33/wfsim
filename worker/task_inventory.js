@@ -16,11 +16,21 @@ export function validInventory(value, now = Date.now()) {
     && Object.values(value.verbs).reduce((n, x) => n + x, 0) === value.total;
 }
 
-export async function readInventory(db, now = Date.now()) {
+export async function readInventoryState(db, now = Date.now()) {
+  const empty = { fresh: null, lastComplete: null };
   const row = await db.prepare("SELECT body,(SELECT engine FROM factory_snapshot WHERE id=1) engine FROM factory_findings WHERE kind = ?").bind(INVENTORY_KEY).first();
-  if (!row) return null;
-  try { const body = JSON.parse(row.body); return validInventory(body, now) && (!row.engine || row.engine === body.engine) ? body : null; }
-  catch (_) { return null; }
+  if (!row) return empty;
+  try {
+    const body = JSON.parse(row.body), at = Date.parse(body.at);
+    const fresh = validInventory(body, now) && (!row.engine || row.engine === body.engine) ? body : null;
+    const lastComplete = row.engine === body.engine && !!row.engine && at <= now && validInventory(body, at)
+      && Date.parse(body.expires_at) === Date.parse(body.started_at) + INVENTORY_MAX_MS ? body : null;
+    return { fresh, lastComplete };
+  } catch (_) { return empty; }
+}
+
+export async function readInventory(db, now = Date.now()) {
+  return (await readInventoryState(db, now)).fresh;
 }
 
 /// Publication stores one classified database snapshot without adding later rows.
