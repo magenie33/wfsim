@@ -36,7 +36,8 @@ const BATCH_ROWS = 500;
 
 const DAY_MS = 86400000;
 const dayOf = (ms) => new Date(ms).toISOString().slice(0, 10);
-const market = (country) => (country === "CN" ? "china" : "overseas");
+export const usageMarket = (country) => country === "CN" ? "china"
+  : /^[A-Z]{2}$/.test(country || "") && !["XX", "ZZ"].includes(country) ? "overseas" : "unknown";
 
 /// A DAY'S ROWS FROM THE LOG — every point, so `n` is a count.
 async function logRows(env, from, next) {
@@ -63,18 +64,22 @@ export function usageDayRows(day, rows) {
   };
   for (const r of rows) {
     if (r.day.slice(0, 10) !== day) { before.add(r.cid); continue; }
-    const mkt = market(r.country);
+    const mkt = usageMarket(r.country);
     add(r.e, r.subject || "", mkt, r.cid, Number(r.n));
     if (USAGE_TESTED.includes(r.e) && r.subject) add("tested", r.subject, mkt, r.cid, Number(r.n));
-    const v = today.get(r.cid) || { mkt, country: r.country || "", result: false };
+    const v = today.get(r.cid) || { markets: new Set(), countries: new Set(), result: false };
+    v.markets.add(mkt);
+    v.countries.add(r.country || "");
     if (USAGE_RESULTS.includes(r.e)) v.result = true;
     today.set(r.cid, v);
   }
   for (const [cid, v] of today) {
-    add("visitors", "all", v.mkt, cid, 0);
-    if (v.result) add("visitors", "result", v.mkt, cid, 0);
-    if (before.has(cid)) add("visitors", "returning", v.mkt, cid, 0);
-    add("visitors.country", v.country, v.mkt, cid, 0);
+    const mkt = v.markets.size === 1 ? [...v.markets][0] : "unknown";
+    const country = v.countries.size === 1 ? [...v.countries][0] : "";
+    add("visitors", "all", mkt, cid, 0);
+    if (v.result) add("visitors", "result", mkt, cid, 0);
+    if (before.has(cid)) add("visitors", "returning", mkt, cid, 0);
+    add("visitors.country", country, mkt, cid, 0);
   }
   const last = (o) => (o.event === "visitors" && o.subject === "all" ? 1 : 0);
   return [...out.values()].sort((a, b) => last(a) - last(b)).map((o) => ({ day, event: o.event, subject: o.subject, market: o.market,

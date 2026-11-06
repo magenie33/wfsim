@@ -234,7 +234,7 @@ CREATE TABLE IF NOT EXISTS shares (
 -- by the worker's daily cron (worker/usage_days.js, docs/ANALYTICS.md
 -- §Retention). Totals only, never a visitor id. `event` is a usage event, or
 -- `visitors` (subject `all`, `result`, `returning`) or `visitors.country`;
--- `market` is `china` or `overseas`; `sampled` is 1 when the dataset sampled
+-- `market` is `china`, `overseas` or `unknown`; `sampled` is 1 when the dataset sampled
 -- that day, so `visitors` is a floor.
 CREATE TABLE IF NOT EXISTS usage_days (
   day      TEXT COLLATE "C" NOT NULL,
