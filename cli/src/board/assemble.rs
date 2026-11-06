@@ -626,21 +626,35 @@ impl Board {
         File { dir: dir.to_string(), weapon: weapon.to_string(), leaders: leaders(&all), text, listed, absent }
     }
 
+    fn dirty_files(&self, touched: &BTreeSet<(usize, String)>) -> Vec<(String, String)> {
+        let mut files: Vec<_> = touched.iter().map(|(r, w)| (self.rulers[*r].dir.clone(), w.clone()))
+            .collect::<BTreeSet<_>>().into_iter().collect();
+        // The costliest files go first, so parallel batches finish together.
+        files.sort_by_key(|(_, w)| std::cmp::Reverse(self.lib.by_weapon.get(w).map_or(0, Vec::len)));
+        files
+    }
+
+    fn publish_step(&mut self, pending: &mut BTreeSet<(usize, String)>, limit: usize) -> Result<(usize, usize, bool), String> {
+        if !(1..=FILES_AT_ONCE).contains(&limit) {
+            return Err("publish_step file limit must be 1..64".into());
+        }
+        if !self.inventory.permits_publish() {
+            return Err("inventory inputs require bootstrap".into());
+        }
+        let selected: BTreeSet<_> = self.dirty_files(pending).into_iter().take(limit).collect();
+        let touched = pending.iter().filter(|(r, w)| selected.contains(&(self.rulers[*r].dir.clone(), w.clone())))
+            .cloned().collect();
+        let (wrote, removed) = self.publish(touched);
+        pending.retain(|(r, w)| !selected.contains(&(self.rulers[*r].dir.clone(), w.clone())));
+        Ok((wrote, removed, !pending.is_empty()))
+    }
+
     /// Re-rank every weapon `touched` names, in every directory one of its
     /// rulers writes; write the files that moved and the state. Returns (files
     /// written, files removed).
     fn publish(&mut self, touched: BTreeSet<(usize, String)>) -> (usize, usize) {
         let t = Instant::now();
-        let mut dirty: Vec<(String, String)> = touched
-            .iter()
-            .map(|(r, w)| (self.rulers[*r].dir.clone(), w.clone()))
-            .collect::<BTreeSet<_>>()
-            .into_iter()
-            .collect();
-        // THE COSTLIEST FIRST, so a batch is files of a size and no core waits
-        // on one weapon of fifty thousand builds.
-        let cost = |w: &str| self.lib.by_weapon.get(w).map_or(0, Vec::len);
-        dirty.sort_by_key(|(_, w)| std::cmp::Reverse(cost(w)));
+        let dirty = self.dirty_files(&touched);
         let (mut wrote, mut removed, mut absent) = (0, 0, 0);
         for batch in dirty.chunks(FILES_AT_ONCE) {
             for f in par_map(batch, |(dir, w)| self.file(dir, w)) {
@@ -867,6 +881,13 @@ pub fn serve() {
                     Err(e) => format!("error inventory {}", e.replace(['\r', '\n'], " ")),
                 }
             }
+            ["publish_step", limit] => {
+                match limit.parse::<usize>().map_err(|_| "invalid publish_step file limit".to_string())
+                    .and_then(|limit| board.publish_step(&mut pending, limit)) {
+                    Ok((wrote, removed, more)) => format!("ok publish_step {wrote} {removed} {}", usize::from(more)),
+                    Err(e) => format!("error {e}"),
+                }
+            }
             ["publish"] => {
                 if board.inventory.permits_publish() {
                     let (wrote, removed) = board.publish(std::mem::take(&mut pending));
@@ -1054,6 +1075,52 @@ mod tests {
         let pairs = b.all_pairs();
         b.publish(pairs);
         b
+    }
+
+    #[test]
+    fn publication_steps_yield_without_losing_files_or_later_facts() {
+        let recs = library();
+        let first = facts(&recs, 0.0);
+        let later = facts(&recs, 19.0);
+        let a = scratch("step-whole");
+        whole(&a, recs.clone(), &later);
+        let b = scratch("step-moved");
+        let mut board = Board::new(b.clone(), b.join("no-state.yaml"));
+        board.add_facts(first.iter().map(String::as_str));
+        add(&mut board, recs);
+        let mut pending = board.all_pairs();
+        let original = pending.clone();
+        let before = files(&b);
+        for limit in [0, FILES_AT_ONCE + 1] {
+            assert!(board.publish_step(&mut pending, limit).is_err());
+            assert_eq!(pending, original);
+            assert_eq!(files(&b), before);
+        }
+        let selected = board.dirty_files(&pending)[0].clone();
+        let remaining: BTreeSet<_> = pending.iter()
+            .filter(|(r, w)| (board.rulers[*r].dir.as_str(), w.as_str()) != (selected.0.as_str(), selected.1.as_str()))
+            .cloned().collect();
+        let (_, _, more) = board.publish_step(&mut pending, 1).unwrap();
+        assert!(more && !remaining.is_empty(), "a single file must leave other files pending");
+        assert_eq!(pending, remaining, "every ruler of exactly one file was drained");
+        let selected_path = if selected.0.is_empty() { format!("{}.json", selected.1) }
+            else { format!("{}/{}.json", selected.0, selected.1) };
+        assert!(files(&b).keys().filter(|path| path.ends_with(".json")
+            && Path::new(path).file_stem().and_then(|s| s.to_str()) != Some(INDEX_STEM))
+            .all(|path| *path == selected_path), "a step wrote an unselected weapon file");
+        pending.extend(board.add_facts(later.iter().map(String::as_str)));
+        assert!(pending.iter().any(|(r, w)| board.rulers[*r].dir == selected.0 && *w == selected.1),
+            "a later fact dirties a file that an earlier step already wrote");
+        let mut turns = 0;
+        while board.publish_step(&mut pending, 1).unwrap().2 {
+            turns += 1;
+            assert!(turns < original.len(), "pending files must drain");
+        }
+        assert!(pending.is_empty());
+        assert_eq!(files(&a), files(&b), "stepped publication equals a fresh full projection");
+        assert_eq!(board.publish_step(&mut pending, 1).unwrap(), (0, 0, false));
+        let _ = std::fs::remove_dir_all(a);
+        let _ = std::fs::remove_dir_all(b);
     }
 
     /// **A BOARD MOVED A FACT AT A TIME IS THE BOARD ASSEMBLED FROM SCRATCH.**
