@@ -114,6 +114,11 @@ and database snapshot. An older scan cannot overwrite newer inputs, and an
 engine change invalidates its cached goal. The snapshot is derived observation
 and never task input.
 
+The queue workflow's `inventory_only` input skips intake and publishes the same
+complete snapshot, including insert-only canonical build bindings. It stops
+before queue admission or cleanup and rejects rescore, weapons, why, day and
+cancel inputs. Normal scheduled reconciliation keeps its existing path.
+
 ### Incremental inventory
 
 `INCREMENTAL_INVENTORY=1` enables the inventory coordinator in `live_board.sh`.

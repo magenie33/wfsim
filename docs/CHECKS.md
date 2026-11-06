@@ -2256,6 +2256,11 @@ must fail without the slot-kind constraint.
 
 ## `check_rescore_paths`
 
+The inventory-only queue input skips intake and rejects mutation inputs. The
+actual reconciliation shell publishes once, cleans its snapshot files and
+stops before pacing, dispatch or purging; publication failure stays failed.
+The normal reconciliation still reaches its queue updates.
+
 Only the clock and a person may start a board run. Plain node, no browser: it
 reads `.github/workflows/scores.yml` and refuses a `push` trigger, requires
 either the `schedule` or a declared hold, refuses any path list, requires the
