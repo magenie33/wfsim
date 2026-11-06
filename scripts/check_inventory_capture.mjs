@@ -38,6 +38,20 @@ try {
   assert.equal(JSON.parse(readFileSync(paths.builds, 'utf8').split('\n')[0]).id, 'a');
   assert.equal(JSON.parse(readFileSync(paths.queue)).build_id, 'a');
   assert(JSON.parse(readFileSync(paths.meta)).snapshot);
+  await pg.query("INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES ('a','r','base','old',99,'kpm',0,'2026-10-18T00:00:00.000Z','2026-10-18T00:00:00.000Z')");
+  await pg.query(`INSERT INTO board_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
+    baseline_score,baseline_metric,baseline_cost_seconds,baseline_by,baseline_started_at,baseline_finished_at,created_at,invalidated_at)
+    VALUES ('a|r|base','capture-retired','2026-11-06T00:00:00.000Z','a','r','base','new','capture-question','{}','waiting',
+      99,'kpm',0,'old','2026-10-18T00:00:00.000Z','2026-10-18T00:00:00.000Z','2026-11-06T00:00:00.000Z','2026-11-06T00:00:00.000Z')`);
+  await pg.query("UPDATE scores SET review_id='capture-retired' WHERE identity='a'");
+  await captureInventory(sql,paths,'4393e1730621');
+  assert.equal(JSON.parse(readFileSync(paths.facts)).retired_at,'2026-11-06T00:00:00.000Z',
+    'a complete snapshot cannot turn a retired measurement back into an active entry-line fact');
+  await pg.query("UPDATE board_reviews SET state='succeeded' WHERE id='capture-retired'");
+  await pg.query("UPDATE scores SET score=25,finished_at='2026-11-06T00:01:00.000Z' WHERE identity='a'");
+  await captureInventory(sql,paths,'4393e1730621');
+  assert.equal(JSON.parse(readFileSync(paths.facts)).retired_at,null);
+  assert.equal(JSON.parse(readFileSync(paths.facts)).score,25);
   const prior = readFileSync(paths.meta, 'utf8'); fail = true;
   await assert.rejects(captureInventory(sql, paths, '4393e1730621'), /connection lost/);
   assert.equal(readFileSync(paths.meta, 'utf8'), prior);
