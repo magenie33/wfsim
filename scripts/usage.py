@@ -177,6 +177,10 @@ def seconds(ms):
     return f"{ms / 1000:5.1f}s" if ms is not None else "    -"
 
 
+def label(e):
+    return e.split(".")[-1] if e.startswith("builder.") else e.split(".")[0]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int, default=14, help="calendar days ending before --before")
@@ -210,8 +214,14 @@ def main():
         return
 
     by_event = defaultdict(set)
+    by_day = defaultdict(lambda: defaultdict(set))
     for r in rows:
         by_event[r["e"]].add(r["cid"])
+        by_day[r["day"][:10]][r["e"]].add(r["cid"])
+    print("\nmodule visitors per UTC day, within the selected shells:")
+    print(f"{'day':10}  " + "  ".join(f"{label(e):>9}" for e in RESULTS))
+    for day, events in sorted(by_day.items()):
+        print(f"{day:10}  " + "  ".join(f"{len(events.get(e, ())):9}" for e in RESULTS))
     # Mixed and unknown locations stay unknown; no point borrows another's country.
     boots = src.boots()
     locations = defaultdict(set)
