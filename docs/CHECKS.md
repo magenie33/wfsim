@@ -1740,7 +1740,8 @@ opening gauge, five primary kills, single alternate shot, preserved magazine
 and ammunition cost; Torid covers charge ammunition exhaustion and transition
 times; Nunchasa covers weighted hits and its draw; Grimoire covers a full opening
 meter and timed, hit and pickup recharge. `WFSIM_MODE_DETAILS_ONLY=1` runs this
-focused subset. The assertions fail on the page without these conditions.
+focused subset, which CI runs in the builder group. The assertions fail on the
+page without these conditions.
 
 ## `check_gain_freshness`
 

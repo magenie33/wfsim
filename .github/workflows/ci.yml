@@ -749,6 +749,11 @@ jobs:
       - name: Motovore physical mods and progenitor bonus reach the shared simulator
         if: matrix.group == 'builder'
         run: node scripts/check_motovore.mjs
+      - name: Mode APL code and prose share executable rules and persistent folds
+        if: matrix.group == 'builder'
+        env:
+          WFSIM_MODE_DETAILS_ONLY: "1"
+        run: node scripts/check_mode_def.mjs
       # THE SUBMISSION ENDPOINT, in the same job because it costs nothing: no
       # browser, no engine, no network — it imports `worker/index.js` and runs
       # it against a KV stub. It is here rather than on demand because the two
