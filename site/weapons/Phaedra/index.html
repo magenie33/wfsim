@@ -20,10 +20,10 @@
   
   <link rel="stylesheet" href="/asset/style.0c9c88d62d41.css" />
   
-  <link rel="preload" href="/pkg/wfsim_wasm_bg.4734894c63b1.wasm" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/meta.109d29259e68.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/i18n.b84ab96d3211.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/pack.data.6a1c60738a0d.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/wfsim_wasm_bg.fb2253634d34.wasm" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/meta.d2eabc263fa9.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/i18n.aeff2e578f94.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/pack.data.bb069d7aba3c.json" as="fetch" crossorigin />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
   
@@ -479,10 +479,15 @@
     <section class="block" data-module="optimizer" id="opt-block">
       <div class="bh"><span class="n">⚙</span><h2 data-i18n>The search</h2><span class="sub" data-i18n>the starts and the limits — what a search preset saves, with the runs per candidate</span></div>
       <div class="bb">
+        <div class="sect">
+          <label><span data-i18n>Search strategy</span> <select id="opt-search-strategy" aria-describedby="opt-strategy-description"></select></label>
+          <div class="opt-note" id="opt-strategy-description"></div>
+        </div>
         <div class="preset-bar" id="preset-bar-optimizer"></div>
         <div id="opt-builtin" class="official-note" hidden></div>
         <div class="fold sect" data-fold="opt-starts">
           <h3 class="sim-h fold-h" data-i18n>① Starts</h3>
+          <p class="opt-note" data-i18n>At least one start is required. A blank start is allowed; the strategy processes each start.</p>
           <div id="opt-starts"></div>
         </div>
         
@@ -716,13 +721,13 @@
     
     <a href="/method" data-native data-i18n>Method</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">f1936918</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">e06f66d6</span>
     </div>
   </footer>
 
   <script>window.WFSIM_WASM = true;</script>
 
-  <script src="/asset/app.7a3ef8b6ec63.js"></script>
+  <script src="/asset/app.3e740ed3efc8.js"></script>
   <script type="module" src="/asset/nona.49e7e5dce064/index.js"></script>
 
 <div class="jump" id="jump" hidden>
