@@ -72,9 +72,15 @@ class Log:
     WHERE = "FROM usage_points WHERE day >= ?1 AND release != ?2 AND day < ?3 AND (?4 = 'all' OR shell = ?4)"
 
     def rows(self):
-        return self.q(f"SELECT day, visitor AS cid, event AS e, shell, country, COUNT(*) AS n, "
-                      f"MIN(at) AS first_at, MAX(at) AS last_at {self.WHERE} "
-                      "GROUP BY day, visitor, event, shell, country")
+        # Aggregate one calendar day at a time; one SELECT keeps the same snapshot.
+        return self.q(f"""SELECT points.* FROM generate_series((?1::text)::date::timestamp,
+                          (?3::text)::date::timestamp - INTERVAL '1 day', INTERVAL '1 day') AS days(d)
+                        CROSS JOIN LATERAL (
+                          SELECT day, visitor AS cid, event AS e, shell, country, COUNT(*) AS n,
+                                 MIN(at) AS first_at, MAX(at) AS last_at {self.WHERE}
+                          AND day = to_char(days.d, 'YYYY-MM-DD')
+                          GROUP BY day, visitor, event, shell, country
+                        ) AS points""")
 
     def boots(self):
         return self.q(f"""SELECT visitor AS cid, subject AS arrival, route, lang, shell, country,

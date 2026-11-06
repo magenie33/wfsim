@@ -188,6 +188,8 @@ The two weekly windows are consecutive seven-day periods ending at `--before`,
 including dates without observations. The report reads seven extra days for
 returning counts and states its observed coverage; counts near the log's
 beginning may lack their full lookback.
+The grouped read aggregates one calendar day at a time within one SQL
+statement, preserving one snapshot without sorting the whole window at once.
 
 Countries `XX`, `ZZ`, empty or invalid are `unknown`, never `overseas`.
 A browser observed in multiple markets is also unknown for the window;
