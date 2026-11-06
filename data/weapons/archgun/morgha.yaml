@@ -47,7 +47,9 @@ modes:
     about: "Fire the primary until 5 kills fill the gauge, fire the alternate once, then repeat."
     cycle_with: morgha_alt
     rules:
-      - { action: { do: transform_in }, when: { if: gauge_at_least, pct: 1.0 } }
+      - { action: { do: reload }, when: { if: cannot_fire } }
+      - { action: { do: alt_fire }, when: { if: always } }
+      - { action: { do: shoot }, when: { if: always } }
 
 attack:
   extra_hit_reads: even   # see notes: extra_hit_reads

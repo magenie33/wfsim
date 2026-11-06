@@ -263,6 +263,7 @@ impl IncarnonState {
         let Some(cy) = params.cycle.as_ref() else {
             return crate::data::apl::Now {
                 can_fire: can_fire(ammo.available(params, self), next_cost),
+                can_alt_fire: true,
                 gauge_pct: 0.0,
                 magazine_pct: ammo.loaded / ammo.cap.max(1e-9),
                 tennokai,
@@ -305,6 +306,7 @@ impl IncarnonState {
             }
         };
         crate::data::apl::Now {
+            can_alt_fire: cy.ends != Ends::SingleShot || gauge_pct >= 1.0,
             // THE ACTIVE FORM'S MAGAZINE: a CHARGE-MAGAZINE cycle holds the
             // base form's rounds aside while it is transformed, so in that half
             // asking `ammo.loaded` is asking about a magazine nobody holds. A

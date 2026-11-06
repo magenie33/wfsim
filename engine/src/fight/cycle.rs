@@ -374,12 +374,11 @@ pub(super) fn charge_the_gauge(
             // fifth shot, never at 30, so the comparison is `>=` and the
             // shot that crosses it is fired in the BASE form.
             let remains = ability_remains(params, *t);
-            // NO `next_cost` TO ASK ABOUT HERE — the shot is over and the next
-            // one has not been priced. A full magazine is the honest stand-in:
-            // the only rule above `transform_in` a reader can write is a cast,
-            // and `reload` sits below it and is asked again at the top of the
-            // loop with the real cost.
-            if apl.pick(&incarnon.now(params, ammo, 0.0, *t, tennokai, &remains, None)) == Action::TransformIn {
+            // The completing shot has paid its ammunition. Select the next
+            // input here; the top of the loop prices the selected form and
+            // decides any reload before it fires.
+            let action = apl.pick(&incarnon.now(params, ammo, 0.0, *t, tennokai, &remains, None));
+            if action == Action::TransformIn || (cy.ends == Ends::SingleShot && action == Action::AltFire) {
                 if cy.ends == Ends::SingleShot {
                     incarnon.in_base_form = false;
                     incarnon.charges = 0;

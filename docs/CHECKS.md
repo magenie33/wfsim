@@ -1729,6 +1729,9 @@ languages.
 Cycle conditions start collapsed below Mode at the full row width, expand and
 remember their state across rendering and reload. The APL code matches the
 current build's `/api/panel` response and appears beside the retained prose.
+Trumna Prime's code is exactly reload, earned alternate, primary, without
+transformation rules or a written gauge condition. Engine APL tests distinguish
+an unavailable earned alternate from a free alternate that keeps priority.
 Trumna Prime covers the empty
 opening gauge, five primary kills, single alternate shot, preserved magazine
 and ammunition cost; Torid covers charge ammunition exhaustion and transition

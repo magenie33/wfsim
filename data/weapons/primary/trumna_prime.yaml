@@ -39,7 +39,9 @@ modes:
     about: "Fire the primary until 5 kills fill the gauge, fire the alternate once, then repeat."
     cycle_with: trumna_prime_grenade
     rules:
-      - { action: { do: transform_in }, when: { if: gauge_at_least, pct: 1.0 } }
+      - { action: { do: reload }, when: { if: cannot_fire } }
+      - { action: { do: alt_fire }, when: { if: always } }
+      - { action: { do: shoot }, when: { if: always } }
 
 attack:
   # see notes: cone_half_angle_from_2

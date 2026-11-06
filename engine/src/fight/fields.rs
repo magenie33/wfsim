@@ -103,17 +103,19 @@ impl FightParams {
     /// already carries — whether there is a cycle to decide — and a stored copy
     /// is the second source that would disagree with it.
     pub fn apl(&self) -> crate::data::apl::Apl {
+        let single = self.cycle.as_ref().filter(|c| c.ends == crate::fight::Ends::SingleShot);
+        let firing = single.map_or(self, |c| &c.base_form);
         crate::data::apl::for_fight(
             &self.apl_inserted,
             &crate::data::apl::Shape {
                 // A MODE THE TOGGLE PUT THE WEAPON IN IS FIRED ON THE TRIGGER;
                 // the toggle itself was pressed before the fight.
-                attack: if self.alt_fire_toggles {
+                attack: if firing.alt_fire_toggles {
                     crate::data::apl::Action::Shoot
                 } else {
-                    crate::data::apl::Action::firing(self.form)
+                    crate::data::apl::Action::firing(firing.form)
                 },
-                has_cycle: self.cycle.is_some(),
+                has_cycle: self.cycle.is_some() && single.is_none(),
                 // THE SAME TWO GUARDS THE SWING READS (`fight::melee`): a form
                 // that spends combo pays the flash the other way, and a weapon
                 // with no heavy attack has nothing to convert into.

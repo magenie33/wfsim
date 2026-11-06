@@ -28,6 +28,33 @@ fn earned_single_shot_weapons_offer_primary_and_full_charge_cycle() {
 }
 
 #[test]
+fn earned_alternate_apl_reloads_then_uses_full_charge_then_fires_primary() {
+    for id in ["nunchasa", "higasa", "mausolon", "cortege", "morgha", "battacor", "trumna", "trumna_prime", "sepulcrum"] {
+        let p = cycle(id, 10.0);
+        let primary = if id == "nunchasa" { "charged" } else { "shoot" };
+        assert_eq!(p.apl().to_simc(), format!("reload,if=!can_fire\nalt_fire\n{primary}"), "{id}");
+        let mut rng = Rng::new(3);
+        let (_, mut me) = open(&p, Seat::WIELDER, &mut rng, &crate::record::Record::off(), &None);
+        let remains = |_: &str| 0.0;
+        assert!(!me.incarnon.now(&p, &me.ammo, 1.0, 0.0, false, &remains, None).can_alt_fire);
+        let Arms::Gauge { charges_to_fill, .. } = p.cycle.as_ref().unwrap().arms else { panic!("gauge") };
+        me.incarnon.charges = charges_to_fill;
+        let mut now = me.incarnon.now(&p, &me.ammo, 1.0, 0.0, false, &remains, None);
+        assert!(now.can_alt_fire);
+        let apl = p.apl();
+        now.gauge_pct = 1.0;
+        now.can_fire = false;
+        now.magazine_pct = 0.0;
+        assert_eq!(apl.pick(&now), crate::data::apl::Action::Reload);
+        now.can_fire = true;
+        assert_eq!(apl.pick(&now), crate::data::apl::Action::AltFire);
+        now.gauge_pct = 0.0;
+        now.can_alt_fire = false;
+        assert_eq!(apl.pick(&now), crate::data::apl::Action::firing(p.cycle.as_ref().unwrap().base_form.form));
+    }
+}
+
+#[test]
 fn nunchasa_primary_and_full_charge_arrow_resolve_their_own_stats() {
     let primary = panel("nunchasa");
     let alt = panel("nunchasa_alt");

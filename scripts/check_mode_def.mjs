@@ -69,6 +69,8 @@ for (const lang of ["en", "zh"]) {
     check(`${weapon}/${lang}: actual APL code and prose are both present`,
       r.apl.length > 0 && r.apl === r.source && r.prose > 0, r.apl || "no APL code");
     if (weapon === "Trumna_Prime") {
+      check(`${weapon}/${lang}: input priorities are reload, earned alternate, primary`,
+        r.apl === 'reload,if=!can_fire\nalt_fire\nshoot', r.apl);
       check(`${weapon}/${lang}: empty opening, earned shot, return and ammo are explicit`,
         lang === "en"
           ? /empty gauge/i.test(r.text) && /5.*kills/.test(r.text)
@@ -121,7 +123,7 @@ for (const lang of ["en", "zh"]) {
     return { base, cycle: code(), refused };
   })()`);
   check(`${lang}: switching Mode replaces the executable APL`,
-    !switches.base.includes('transform_in') && switches.cycle.includes('transform_in'), JSON.stringify(switches));
+    !switches.base.includes('alt_fire') && switches.cycle === 'reload,if=!can_fire\nalt_fire\nshoot', JSON.stringify(switches));
   check(`${lang}: a stale build response cannot overwrite the APL`, switches.refused);
 }
 

@@ -43,7 +43,9 @@ modes:
     about: "Fire the primary until 5 charges are full (0.5 per body hit, 1 per weak-point hit), fire the alternate once, then repeat."
     cycle_with: nunchasa_alt
     rules:
-      - { action: { do: transform_in }, when: { if: gauge_at_least, pct: 1.0 } }
+      - { action: { do: reload }, when: { if: cannot_fire } }
+      - { action: { do: alt_fire }, when: { if: always } }
+      - { action: { do: charged }, when: { if: always } }
 
 attack:
   # see notes: cone_half_angle_from

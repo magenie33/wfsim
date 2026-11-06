@@ -665,6 +665,14 @@ its own damage, charge time, fire rate and ammunition cost. Changing attacks
 preserves the ordinary magazine and grants no reload or reload-triggered buff.
 The selected attack pays its draw before firing.
 
+These modes declare their complete APL: reload when unable to fire, attempt the
+alternate, then use the primary input. An earned alternate is executable only
+with a full gauge; an unavailable action is skipped before testing its written
+condition. A free alternate remains executable without a gauge, so an
+unconditional rule for it outranks the primary until the list says otherwise.
+Single-shot alternates do not add Incarnon transformation rules. A declared
+primary fallback completes the list without another generated fallback.
+
 Incarnon charge magazines instead last until their separate ammunition is
 spent and retain their own transform/refill rules.
 

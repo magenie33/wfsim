@@ -346,6 +346,7 @@ impl Apl {
     pub fn pick_rule(&self, now: &Now<'_>) -> Option<&Rule> {
         for r in &self.0 {
             let possible = match &r.action {
+                Action::AltFire => now.can_alt_fire,
                 Action::TransformIn => now.in_base_form,
                 Action::TransformOut => !now.in_base_form,
                 // A FULL MAGAZINE CANNOT BE RELOADED, so a rule that would is
@@ -396,6 +397,8 @@ impl Apl {
 /// having. The fight fills it; this module never learns how a gauge is kept.
 pub struct Now<'a> {
     pub can_fire: bool,
+    /// An earned alternate is unavailable until its gauge is full; a free one is ready.
+    pub can_alt_fire: bool,
     /// **HOW MUCH OF THE EARNED FORM YOU HAVE LEFT, OR HOW MUCH OF THE NEXT ONE
     /// YOU HAVE EARNED** — one number, because a cycle only ever asks one
     /// question. In the form you can HOLD it fills 0 → 1; in the earned form it
@@ -452,6 +455,10 @@ pub struct Shape {
 /// Which press, whether there is a transmute, whether a flash can convert a
 /// swing: a name could disagree with any of them, and these cannot.
 pub fn for_fight(inserted: &Apl, shape: &Shape) -> Apl {
+    // A declared list with its primary fallback already states the complete priority.
+    if inserted.0.iter().any(|r| r.action == shape.attack && r.when == When::Always) {
+        return inserted.clone();
+    }
     let rule = |action: Action, when: When| Rule { action, when };
     let mut out = inserted.0.clone();
     // FILL THE GAUGE IN THE FORM YOU CAN HOLD, SPEND IT IN THE OTHER, COME
@@ -550,7 +557,7 @@ mod tests {
     use super::*;
 
     fn now<'a>(remaining: &'a dyn Fn(&str) -> f64) -> Now<'a> {
-        Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining }
+        Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining }
     }
 
     /// An ordinary gun: the trigger, and no flash to convert a swing.
@@ -664,6 +671,22 @@ prio: 3
         assert_eq!(for_fight(&mine, &gun(true)).abilities(), vec!["warcry"]);
     }
 
+    #[test]
+    fn alternate_readiness_is_an_execution_constraint_and_free_alternates_keep_priority() {
+        let own = Apl(vec![
+            Rule { action: Action::Reload, when: When::CannotFire },
+            Rule { action: Action::AltFire, when: When::Always },
+            Rule { action: Action::Shoot, when: When::Always },
+        ]);
+        assert_eq!(for_fight(&own, &gun(false)), own, "a complete list gains no duplicate fallback");
+        let remains = |_: &str| 0.0;
+        let mut current = now(&remains);
+        assert_eq!(current.gauge_pct, 0.0);
+        assert_eq!(own.pick(&current), Action::AltFire, "a free alternate needs no gauge");
+        current.can_alt_fire = false;
+        assert_eq!(own.pick(&current), Action::Shoot, "an unavailable alternate falls through");
+    }
+
     /// **EVERY FORM KIND IS ONE INPUT, AND THE WORDS DO NOT COLLIDE.** The
     /// vocabulary and `model::FormKind` are the same set of presses said twice,
     /// so a kind that answered the wrong word would put a Magistar's slide
@@ -721,7 +744,7 @@ prio: 3
         // the only thing that distinguishes a converted swing from the press a
         // heavy build makes all engagement.
         let none = |_: &str| 0.0;
-        let flash = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true, battery_would_empty: false, switch_to: None, glaive_in_flight: false,
+        let flash = Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: true, battery_would_empty: false, switch_to: None, glaive_in_flight: false,
                           in_base_form: true, remaining: &none };
         let converted = |a: &Apl| a.pick_rule(&flash)
             .is_some_and(|r| r.action == Action::Heavy && r.when == When::Tennokai);
@@ -736,9 +759,9 @@ prio: 3
         let none = |_: &str| 0.0;
         // IN THE FORM THE GAUGE FILLS IN, which is where `transform_in` is the
         // question; the way back is asked from the other half, below.
-        let at = |pct: f64| Now { can_fire: true, gauge_pct: pct, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { can_alt_fire: true, can_fire: true, gauge_pct: pct, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&at(1.0)), Action::TransformIn, "full: go in");
-        let spent = Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: false, remaining: &none };
+        let spent = Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: false, remaining: &none };
         assert_eq!(apl.pick(&spent), Action::TransformOut, "spent: come back");
         // …AND THE WAY OUT IS NOT OFFERED IN THE FORM YOU WOULD BE LEAVING FROM
         // ANYWAY: a fight opens in the base form with an empty gauge, which is
@@ -759,7 +782,7 @@ prio: 3
         assert_eq!(past_full.pick(&at(35.0 / 30.0)), Action::TransformIn);
         assert_eq!(past_full.pick(&at(1.0)), Action::Shoot, "exactly full is not past full");
         // …AND AN EMPTY MAGAZINE IS A RELOAD WHATEVER THE GAUGE SAYS.
-        let dry = Now { can_fire: false, gauge_pct: 0.5, magazine_pct: 0.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let dry = Now { can_alt_fire: true, can_fire: false, gauge_pct: 0.5, magazine_pct: 0.0, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&dry), Action::Reload);
     }
 
@@ -772,7 +795,7 @@ prio: 3
             Rule { action: Action::Reload, when: When::Always },
         ]);
         let none = |_: &str| 0.0;
-        let at = |pct: f64| Now { can_fire: true, gauge_pct: 0.0, magazine_pct: pct, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
+        let at = |pct: f64| Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: pct, tennokai: false, battery_would_empty: false, switch_to: None, glaive_in_flight: false, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick_rule(&at(0.4)).map(|r| &r.when), Some(&When::MagazineAtMost { pct: 0.5 }));
         assert_eq!(apl.pick_rule(&at(0.8)).map(|r| &r.when), Some(&When::Always), "only the second holds");
         assert_eq!(apl.pick(&at(1.0)), Action::Shoot, "a full magazine reloads nothing");
@@ -790,7 +813,7 @@ prio: 3
         assert_eq!(apl.to_simc(), "detonate
 charged_throw");
         let none = |_: &str| 0.0;
-        let now = |flying: bool| Now { can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false,
+        let now = |flying: bool| Now { can_alt_fire: true, can_fire: true, gauge_pct: 0.0, magazine_pct: 1.0, tennokai: false,
                                        battery_would_empty: false, switch_to: None, glaive_in_flight: flying, in_base_form: true, remaining: &none };
         assert_eq!(apl.pick(&now(false)), Action::ChargedThrow);
         assert_eq!(apl.pick(&now(true)), Action::Detonate);

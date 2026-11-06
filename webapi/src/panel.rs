@@ -2131,7 +2131,7 @@ mod mode_apl_tests {
     #[test]
     fn panel_lists_the_simulators_executable_rules() {
         for (weapon, mode, mods, rule) in [
-            ("trumna_prime", "cycle", vec![], "transform_in,if=gauge.pct>=1"),
+            ("trumna_prime", "cycle", vec![], "alt_fire"),
             ("haalvu", "base_recharge", vec![], "recharge,if=battery.next_shot_empties"),
             ("glaive_prime", "throw_detonate", vec![], "detonate"),
             ("magistar", "base", vec!["crushing_ruin", "dreamers_wrath"], "heavy,if=tennokai"),
