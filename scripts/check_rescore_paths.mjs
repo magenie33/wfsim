@@ -406,5 +406,7 @@ for (const f of [".github/workflows/scores.yml", ".github/workflows/queue.yml",
   check(!globbed.length, `${f} reads its rulers from wfsim-board --rulers`, globbed[0]?.trim());
 }
 
+await import('./check_inventory_memory.mjs');
+
 console.log(NL + (bad ? `${bad} failed` : "only the clock and a person start a board run"));
 process.exit(bad ? 1 : 0);

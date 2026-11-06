@@ -2256,6 +2256,12 @@ must fail without the slot-kind constraint.
 
 ## `check_rescore_paths`
 
+Hosted inventory memory preparation runs through the actual shell with fake
+privileged tools. It checks runner identity, free scratch space, exclusive swap
+file creation, allocation size and activation while preserving existing swap.
+Invalid capacity and failed commands stop before inventory work.
+Ordered merges release copied ruler files; a failed copy retains its inputs.
+
 Only the clock and a person may start a board run. Plain node, no browser: it
 reads `.github/workflows/scores.yml` and refuses a `push` trigger, requires
 either the `schedule` or a declared hold, refuses any path list, requires the

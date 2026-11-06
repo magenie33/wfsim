@@ -86,6 +86,12 @@ partial files never become a published inventory. The engine walks that
 snapshot with the existing admission gate before scene pacing. Retired rulers
 and refused orphan rows are excluded.
 
+GitHub-hosted Linux queue and scoring preparation add an ephemeral 24 GiB swap
+file while preserving existing swap. Capture and classifier scratch retain at
+least 60 GiB free after allocation; insufficient capacity releases only unused
+Android, .NET and GHC SDKs, then stops preparation if the reserve is still short.
+Each ruler's temporary output is removed after its ordered merge succeeds.
+
 The scan also emits current canonical build records through the engine's
 existing normalization, preserving mod ranks, assembly, wielder and explicit
 riven rolls. A stored record wins for an identity already in the snapshot.
