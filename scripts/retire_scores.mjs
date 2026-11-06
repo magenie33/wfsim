@@ -25,7 +25,8 @@ if (repair) {
   const release = await (await fetch(origin + '/release.json', {signal:AbortSignal.timeout(30000)})).json();
   const rows = readFileSync(process.argv[2], 'utf8').split('\n').filter(Boolean).map(line => {
     const row = JSON.parse(line);
-    return {identity:row.identity || row.build_id,ruler:row.ruler,mode:row.mode};
+    return {identity:row.identity || row.build_id,ruler:row.ruler,mode:row.mode,
+      ...(row.measured_at ? {measured_at:row.measured_at} : {})};
   });
   for (let from = 0; from < rows.length; from += 50) {
     const result = await post({engine:release.engine,reason,rows:rows.slice(from,from+50)});

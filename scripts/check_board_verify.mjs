@@ -68,7 +68,7 @@ const ask = (batch, ...ids) => post(boardTasksRoute, "/api/board/ask",
   { batch, rows: ids.map((identity) => ({ identity, ruler: "standard_single_target", mode: "base" })) }, TOKEN);
 const demand = (id) => L.get("SELECT * FROM demands WHERE ref = ?", `${id}|standard_single_target|base`);
 const question = (id) => L.get("SELECT q.* FROM questions q JOIN demands d ON d.question = q.id WHERE d.ref = ?", `${id}|standard_single_target|base`);
-const fact = (id) => L.get("SELECT * FROM scores WHERE identity = ?", id);
+const fact = (id) => L.get("SELECT * FROM board_facts WHERE identity = ? AND retired_at IS NULL", id);
 const owed = async (id) => !!(await L.get("SELECT 1 FROM queue WHERE build_id = ?", id));
 const credited = async (v) => ((await L.get("SELECT work FROM verifiers WHERE id = ?", v)) || {}).work || 0;
 const free = () => L.run("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL");
@@ -238,6 +238,9 @@ check("a spot check that disproves them refuses both and takes back what they we
   && (await L.get("SELECT banned FROM verifiers WHERE id = ?", G)).banned === 1);
 check("...and the official fact stands", (await question("three")).state === "fact"
   && (await L.get("SELECT count(*) AS n FROM answers WHERE void = 1 AND question = ?", (await question("three")).id)).n === 2);
+await L.batch(BOARD_PRODUCERS.new_build.on_fact_writes(env,{payload:{identity:'three',ruler:'standard_single_target',mode:'base'}},
+  {official:true,engine:'e1',result:{score:SCORE,metric:'kpm'}}));
+check("an official delivery corrects an incorrect existing public score",(await fact('three'))?.score===SCORE);
 
 // THE SCORER: past their deadline, a row is its to claim; it reads exactly what
 // it claimed and what nobody asked the factory for, and its answer pays a client

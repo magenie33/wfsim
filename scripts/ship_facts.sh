@@ -57,7 +57,7 @@ batches() {
               + " score = excluded.score, metric = excluded.metric, cost_seconds = excluded.cost_seconds,"
               + " started_at = excluded.started_at, finished_at = excluded.finished_at, review_id = NULL"
               + " WHERE NOT EXISTS (SELECT 1 FROM board_reviews r WHERE r.id=scores.review_id AND r.invalidated_at IS NOT NULL AND r.state <> '\''succeeded'\'')"
-              + " AND (scores.review_id IS NULL OR excluded.finished_at > scores.finished_at)"),
+              + " AND excluded.finished_at >= scores.finished_at"),
         params: [$chunk[]
                  | .identity, .ruler, .mode, (.measured_by // ""),
                    .score, .metric,

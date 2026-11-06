@@ -90,8 +90,8 @@ CREATE INDEX IF NOT EXISTS equipment_builds_scope ON equipment_builds (kind, equ
 -- `(build, ruler, mode) -> score` is true for ever once computed, so it is
 -- written down the moment it is computed rather than when a batch finishes.
 -- Neither the clock nor a thousand commits of distance is evidence that a
--- measurement was wrong; the only thing that retires one is a person deleting
--- the row. `scripts/ship_facts.sh` writes it beside the running scorer;
+-- measurement was wrong. Explicit corrections and retracted proofs retire
+-- their captured baseline. `scripts/ship_facts.sh` writes measured rows;
 -- `scripts/fetch_facts.sh` reads them back out. This table is the only source
 -- the publisher has.
 CREATE TABLE IF NOT EXISTS scores (

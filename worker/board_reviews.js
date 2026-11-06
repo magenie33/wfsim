@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// A fresh verification round of one stored board row; the previous score stays public until agreement.
+// Ordinary reviews retain the baseline; explicit corrections retire it until independent agreement.
 import { facts, DEADLINE_MS, factoryAuthed } from "./factory.js";
 import { rowRef } from "./board_tasks.js";
 import { questionId } from "./tasks.js";
@@ -159,25 +159,34 @@ async function retireScores(request, env) {
       || !Array.isArray(body.rows) || !body.rows.length || body.rows.length > 50
       || typeof body.reason !== 'string' || !body.reason.trim() || body.reason.length > 512
       || !body.rows.every(r => r && ID.test(r.identity || '') && SLUG.test(r.ruler || '') && SLUG.test(r.mode || '')
-        && Object.keys(r).every(k => ['identity','ruler','mode'].includes(k)))) return json({ok:false,error:'invalid retirement'},400);
+        && (r.measured_at === undefined || (typeof r.measured_at === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(r.measured_at) && Number.isFinite(Date.parse(r.measured_at))))
+        && Object.keys(r).every(k => ['identity','ruler','mode','measured_at'].includes(k)))) return json({ok:false,error:'invalid retirement'},400);
     if (body.engine !== served.engine) return json({ok:false,error:'The engine changed.'},409);
     rows = body.rows.map(r => ({...r,reason:body.reason.trim()}));
   }
-  const reviews = [];
+  return retireBoardRows(env,rows,served.engine,after);
+}
+
+export async function retireBoardRows(env,rows,engine,after=null) {
+  const db=env.LIBRARY,reviews=[];
   for (const row of rows) {
+    const captured=await db.prepare(`SELECT s.*,b.record FROM scores s JOIN builds b ON b.id=s.identity
+      WHERE s.identity=?1::text AND s.ruler=?2::text AND s.mode=?3::text AND (?4::text IS NULL OR s.finished_at=?4::text)`)
+      .bind(row.identity,row.ruler,row.mode,row.measured_at || null).first();
+    if (!captured) continue;
     const completed = await db.prepare(`SELECT r.id FROM board_reviews r JOIN board_facts s
       ON s.identity=r.identity AND s.ruler=r.ruler AND s.mode=r.mode
       WHERE r.ref=?1::text||'|'||?2::text||'|'||?3::text AND r.state='succeeded' AND r.engine=?4::text AND r.invalidation_reason=?5::text
         AND s.retired_at IS NULL AND s.finished_at>=r.completed_at ORDER BY r.completed_at DESC LIMIT 1`)
-      .bind(row.identity,row.ruler,row.mode,served.engine,row.reason).first();
+      .bind(row.identity,row.ruler,row.mode,engine,row.reason).first();
     if (completed) {
       reviews.push({identity:row.identity,ruler:row.ruler,mode:row.mode,id:completed.id});
       continue;
     }
-    const response = await requestReview(env,{identity:row.identity,ruler:row.ruler,mode:row.mode,engine:served.engine},null,true);
+    const response = await requestReview(env,{identity:row.identity,ruler:row.ruler,mode:row.mode,engine},captured,true);
     const result = await response.json();
     if (response.status === 404) continue;
-    if (!response.ok) return json({...result,reviews,after:body.after || null},response.status);
+    if (!response.ok) return json({...result,reviews,after},response.status);
     const at = iso(Date.now());
     await db.batch([
       db.prepare(`UPDATE board_reviews SET invalidated_at=coalesce(invalidated_at,?1::text),invalidation_reason=coalesce(invalidation_reason,?2::text)

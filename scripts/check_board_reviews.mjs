@@ -304,6 +304,8 @@ await check('confirmed incorrect scores retire through a trusted independent rev
   assert.equal(response.status,200,await response.clone().text());return response.json();
  };
  assert.equal((await trusted(body)).reviews[0].id,review.id,'replaying a completed correction cannot retire its corrected score');
+ const changed=await trusted({...body,reason:'a stale selection',rows:[{identity:id,ruler,mode,measured_at:old}]});
+ assert.equal(changed.reviews.length,0,'a changed baseline cannot be retired by an old selection');
  await db.run('UPDATE scores SET review_id=NULL WHERE identity=?',id);
  assert.equal((await trusted(body)).reviews[0].id,review.id,'a later ordinary receipt does not reopen a completed correction');
  const next=await trusted({...body,reason:'a second confirmed correction'});
@@ -329,5 +331,16 @@ await check('confirmed incorrect scores retire through a trusted independent rev
   {engine,result:{score:25,metric:'kpm'}}));
  const final=await db.get('SELECT * FROM board_facts WHERE identity=?',id);
  assert.equal(final.retired_at,null);assert.equal(final.score,25);
+});
+await check('a retracted community baseline emits a removal event and opens independent replacement work',async()=>{
+ const identity='9'.repeat(32),ruler='standard_single_target',mode='base';
+ await db.run('INSERT INTO builds(id,at,record) VALUES (?,?,?)',identity,old,JSON.stringify(record));
+ await db.run('INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES (?,?,?,?,?,?,?,?,?)',identity,ruler,mode,'verified:old',10,'kpm',1,old,old);
+ await BOARD_PRODUCERS.new_build.on_retract(env,{payload:{identity,ruler,mode,batch:'retirement-test'}});
+ const row=await db.get('SELECT * FROM board_facts WHERE identity=?',identity);
+ assert.ok(row.retired_at);assert.equal(row.score,10);
+ const review=await db.get('SELECT * FROM board_reviews WHERE id=?',row.review_id);
+ assert.equal(review.state,'waiting');
+ assert.ok(await db.get('SELECT id FROM questions WHERE id=?',review.question));
 });
 console.log('\n'+passed+' board review checks passed');

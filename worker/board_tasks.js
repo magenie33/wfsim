@@ -18,6 +18,7 @@ import { witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, VERBS, factoryAuthed } from "./factory.js";
 import { holdPriority } from "./merit.js";
 import { servedRelease } from "./verify.js";
+import { retireBoardRows } from "./board_reviews.js";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
@@ -40,18 +41,25 @@ const boardProducer = {
   },
   // THE CLIENTS' FACT IS THE BOARD'S, as the scorer's is: a row still owed — a
   // rescore asked for it again — takes the new number over the old, and one no
-  // longer owed keeps the fact it has. The official machines' own number is
-  // written by the scorer (`ship_facts.sh`), which owns `scores` for its rows;
-  // one delivered again — a refresh on the engine that made it — only says the
-  // row was measured now, or it is asked again every hour.
+  // longer owed keeps the fact it has. Official receipts keep matching native
+  // provenance and correct an existing wrong value. Explicitly retired rows
+  // still require their independent replacement proof.
   // Stated as writes (worker/tasks.js `deliverPlan`), so a pack's facts land in one round trip.
   on_fact_writes: (env, d, fact) => {
     if (!fact.result) return [];
     const { identity, ruler, mode } = d.payload, at = iso(Date.now()), db = env.LIBRARY;
     if (fact.official) {
       return [
-        db.prepare("UPDATE scores SET finished_at = ? WHERE identity = ? AND ruler = ? AND mode = ? AND score = ? AND finished_at < ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=scores.identity AND f.ruler=scores.ruler AND f.mode=scores.mode AND f.retired_at IS NOT NULL)")
-          .bind(at, identity, ruler, mode, fact.result.score, at),
+        db.prepare(`UPDATE scores SET measured_by=CASE WHEN score=?4::double precision THEN measured_by ELSE ?6::text END,
+          cost_seconds=CASE WHEN score=?4::double precision THEN cost_seconds ELSE 0 END,
+          started_at=CASE WHEN score=?4::double precision THEN started_at ELSE ?1::text END,
+          review_id=CASE WHEN score=?4::double precision THEN review_id ELSE NULL END,
+          score=?4::double precision,metric=?7::text,finished_at=?1::text
+          WHERE identity=?2::text AND ruler=?3::text AND mode=?5::text AND finished_at<?1::text
+            AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=scores.identity AND f.ruler=scores.ruler AND f.mode=scores.mode AND f.retired_at IS NOT NULL)
+            AND (scores.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM board_reviews r JOIN questions proof ON proof.id=r.question
+              WHERE r.id=scores.review_id AND r.engine=?8::text AND proof.fact_at>?9::text))`)
+          .bind(at, identity, ruler, fact.result.score, mode,`verified:${fact.engine}`,fact.result.metric,fact.engine,fact.at || at),
         db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=queue.build_id AND f.ruler=queue.ruler AND f.mode=queue.mode AND f.retired_at IS NOT NULL)").bind(identity, ruler, mode),
       ];
     }
@@ -62,6 +70,7 @@ const boardProducer = {
          ON CONFLICT (identity, ruler, mode) DO UPDATE SET measured_by = excluded.measured_by, score = excluded.score,
            metric = excluded.metric, cost_seconds = 0, started_at = excluded.started_at, finished_at = excluded.finished_at, review_id = NULL
          WHERE NOT EXISTS (SELECT 1 FROM board_reviews retired WHERE retired.id=scores.review_id AND retired.invalidated_at IS NOT NULL AND retired.state <> 'succeeded')
+           AND scores.finished_at <= excluded.finished_at
            AND (scores.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM board_reviews r JOIN questions proof ON proof.id = r.question
            WHERE r.id = scores.review_id AND r.engine = ?9::text AND proof.fact_at > ?10::text)) AND EXISTS (SELECT 1 FROM queue q WHERE q.build_id = scores.identity AND q.ruler = scores.ruler AND q.mode = scores.mode)`)
         .bind(identity, ruler, mode, `verified:${fact.engine}`, fact.result.score, fact.result.metric, at, at, fact.engine, fact.at || at),
@@ -72,8 +81,13 @@ const boardProducer = {
   // off the board and the row owed again, in the batch that asked for it.
   on_retract: async (env, d) => {
     const { identity, ruler, mode, batch } = d.payload, db = env.LIBRARY;
+    const held = await db.prepare("SELECT identity,finished_at FROM scores WHERE identity=? AND ruler=? AND mode=? AND measured_by LIKE 'verified:%' AND review_id IS NULL")
+      .bind(identity,ruler,mode).first();
+    if (held) {
+      const result=await retireBoardRows(env,[{identity,ruler,mode,measured_at:held.finished_at,reason:'replace a retracted community measurement'}],(await servedRelease(env)).engine);
+      if (!result.ok) throw new Error('Cannot retire a retracted board measurement');
+    }
     await db.batch([
-      db.prepare("DELETE FROM scores WHERE identity = ? AND ruler = ? AND mode = ? AND measured_by LIKE 'verified:%' AND review_id IS NULL").bind(identity, ruler, mode),
       db.prepare(`INSERT INTO queue (batch, build_id, ruler, mode) SELECT ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM batches WHERE id = ?)
         ON CONFLICT DO NOTHING`)
         .bind(batch, identity, ruler, mode, batch),

@@ -13,8 +13,8 @@
 //
 // A CODE CHANGE DOES NOT REACH THE BOARD ON ITS OWN. A stored score is reused
 // because it EXISTS — no clock, no fingerprint, no binary in the key — so a run
-// that changed a formula reuses every row it already has. What retires a fact
-// is a person deleting its row.
+// that changed a formula needs an explicit correction request. That request
+// retires the captured measurement and asks for independent remeasurement.
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";

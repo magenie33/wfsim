@@ -512,10 +512,10 @@ measurement can disprove it. So nothing branches on `measured_by` and nothing
 branches on a clock. What they are for is finding a broken build's rows
 afterwards (`WHERE measured_by = ?`) and showing a reader how old a row is.
 
-**NOTHING DOWNSTREAM MAY DESTROY A FACT.** No sweep, no merge, no delta, no
-expiry, and no generation. One thing removes one: a person deleting its row.
-Overwriting a row with a newer measurement of the same row is not destroying a
-fact — it IS the fact.
+An explicit correction or a retracted community proof can retire a measurement.
+The stored value remains auditable; the publisher removes it from ranking and
+the factory opens an independent replacement round. Sweeps, publication and
+elapsed time do not independently decide that a score is incorrect.
 
 **KEEPING SEVERAL GENERATIONS OF ONE ROW WAS THE ALTERNATIVE, AND ITS BILL WAS
 UNBOUNDED.** It bought one thing — reverting a data file restored its answer
@@ -975,6 +975,8 @@ pointer and `board_reviews.invalidated_at` define this retirement. `board_facts`
 exports it as a removal event; both full and incremental publishers consume
 that event. Native receipts and ordinary cached deliveries cannot restore the
 retired value. Database protection also covers older running writers.
+An optional exact measurement clock rejects a selection whose baseline has
+already changed. Retracted community proofs use this same retirement path.
 
 Only the independent replacement makes the row rank again. Failed rounds and
 engine changes keep the baseline retired; hourly queue repair opens a fresh
@@ -2928,11 +2930,11 @@ scores  what has been measured — one row per (build, ruler, mode), the latest,
 queue   what somebody asked for. Empty at rest. Ordered by its batch.
 ```
 
-**A RESCORE IS "MEASURE THESE ROWS AGAIN", AND THERE IS NO SECOND KIND** — and
-it is an INSERT, never a DELETE, which is what stops a rescore from
-putting a hole in the board: the old number stays published until the new one
-replaces it. `--queue-in` is what makes a stored score stop being a reason to
-skip a row.
+An explicit model-correction rescore retires the selected measurements and
+opens fresh independent reviews. The build and original measurement remain
+stored; the incorrect number leaves ranking until its replacement is verified.
+`--queue-in` names the ordinary work still owed. An ordinary review or precision
+refresh can keep a baseline that has not been declared incorrect.
 
 **THE ORDER IS A COLUMN.** `batches.at` decides which group goes first, so
 jumping the line is one UPDATE — no flag, no deploy, and the run still takes no

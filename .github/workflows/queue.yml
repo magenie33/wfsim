@@ -196,8 +196,8 @@ jobs:
       # so half a board re-measured is a ranking of two generations against each
       # other.
       #
-      # IT ONLY ADDS. The old numbers stay published until a new one replaces
-      # each row, so asking costs the board nothing while it is being paid.
+      # A MODEL CORRECTION retires the selected measurements before asking
+      # for independent replacements; the builds remain in the library.
       #
       # ONE BATCH A WEAPON, the most popular asked first (`popular_order.py`):
       # the order center lists them in the order they are handed out, and each
