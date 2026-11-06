@@ -2792,6 +2792,7 @@ ui:
   "Viral": 病毒
   "What this mode is": 这个模式是什么
   "Cycle conditions": 循环条件
+  "APL unavailable": 无法生成 APL
   "Start in {base} with an empty gauge.": 开局使用{base}，充能条为空。
   "{n} charges fill the gauge: each primary body hit gives 0.5, each weak-point hit gives 1.": 主射击积满 {n} 层充能：普通命中每次 0.5 层，弱点命中每次 1 层。
   "{n} primary-fire {what} fill the gauge.": 主射击累计 {n} 次{what}即可充满。

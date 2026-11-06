@@ -457,6 +457,32 @@ function setMode(v) {
   markPresetDirty(); renderMode(); refreshPanel();
 }
 
+let modeApl = null;
+
+/// Only the simulator's setup may supply code; a changed build waits for its own answer.
+function modeAplHtml() {
+  if (!modeApl || modeApl.key !== JSON.stringify(buildPayload())) {
+    return `<div class="modedef-caption">${escHtml(tr("Loading…"))}</div>`;
+  }
+  const r = modeApl.response;
+  if (r.apl_error || r.error || !Array.isArray(r.apl)) {
+    return `<div class="warn">${escHtml(r.apl_error || r.error || tr("APL unavailable"))}</div>`;
+  }
+  const code = (kind, lines) => `<pre class="modedef-code" data-apl="${kind}"><code>${escHtml(lines.join("\n"))}</code></pre>`;
+  const pre = r.precombat || [];
+  return (pre.length ? `<div class="modedef-caption">${escHtml(tr("Before the fight"))}</div>${code("precombat", pre)}` : "")
+    + code("combat", r.apl);
+}
+
+function renderModeApl(response, key) {
+  if (response) {
+    if (key !== JSON.stringify(buildPayload())) return;
+    modeApl = { key, response };
+  }
+  const box = $("mode-apl");
+  if (box) box.innerHTML = modeAplHtml();
+}
+
 function renderMode() {
   const box = $("mode-row");
   if (!box || !META) return;
@@ -478,10 +504,11 @@ function renderMode() {
   const explain = (id) => {
     const lines = modeExplain(w, id);
     if (!lines.length) return "";
-    const cycle = (w.mode_kinds || {})[id] === "cycle" || isCycleMode(id);
-    return foldBlock("mode-def", tr(cycle ? "Cycle conditions" : "What this mode is"), "",
+    return foldBlock("mode-def", "APL", "",
       `<div class="modedef on">
         <div class="modedef-n">${escHtml(modeLabel(w, id))}</div>
+        <div id="mode-apl">${modeAplHtml()}</div>
+        <div class="modedef-caption">${escHtml(tr("What this mode is"))}</div>
         ${lines.map((s) => `<div class="modedef-l">${escHtml(s)}</div>`).join("")}
       </div>`, true);
   };

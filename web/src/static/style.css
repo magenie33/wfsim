@@ -2576,6 +2576,8 @@ body:has(.dtup:not([hidden])) .rtoasts{bottom:130px}
 .modedef-n{font-size:11px;font-weight:600;color:var(--text)}
 .modedef.on .modedef-n{color:var(--gold)}
 .modedef-on{font-size:10px;font-weight:400;color:var(--muted)}
+.modedef-caption{font-size:11px;color:var(--text-2);margin-top:8px}
+.modedef-code{max-width:100%;overflow-x:auto;margin:6px 0 10px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font:11px/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;tab-size:2}
 .modedef-l{font-size:11px;line-height:1.6;color:var(--text-2);max-width:75ch;margin-top:5px;overflow-wrap:anywhere}
 /* EVERY HIT, SORTED. Tabular figures, because the whole point is comparing a
    column down its length. */

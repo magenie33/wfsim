@@ -841,8 +841,11 @@ entry for that box; the stored answer outranks it forever after, "open"
 included. Build Library keeps its results open; its Summary and equipment
 overview ship shut, and detailed filters expand from the toolbar.
 
-Mode conditions span the row immediately below the Mode control and ship shut.
-They describe only the selected mode and remember the reader's fold preference.
+The APL fold spans the row immediately below Mode and ships shut. It shows the
+selected build's executable APL as code, followed by its prose explanation, and
+remembers the reader's fold preference. Code comes from the simulator's shared
+setup through `/api/panel`, including precombat actions when present. A changed
+build waits for its own response; a stale response cannot replace its code.
 Cycles state their opening charge, charging source and threshold, alternate use,
 return condition, ammunition and transition costs. Single-shot gauges, Incarnon
 charge magazines and timed recharge meters read their own authoritative fields;

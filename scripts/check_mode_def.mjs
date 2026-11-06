@@ -27,13 +27,21 @@ async function cycleDetails(weapon) {
     history.pushState({}, '', '/weapons/${weapon}/builder'); route();
     await new Promise(r => setTimeout(r, 800));
     setMode('cycle');
+    for (let i = 0; i < 60; i++) {
+      if (typeof modeApl !== 'undefined' && modeApl && modeApl.key === JSON.stringify(buildPayload())) break;
+      await new Promise(r => setTimeout(r, 50));
+    }
     const box = document.querySelector('[data-fold="mode-def"]');
     const row = document.getElementById('mode-row');
     const control = row.querySelector('label').getBoundingClientRect();
     const rect = box.getBoundingClientRect();
     const text = box.textContent.trim();
+    const source = await api('/api/panel', buildPayload());
     const result = {
       shut: box.classList.contains('shut'), text,
+      apl: (box.querySelector('[data-apl="combat"] code') || {}).textContent || '',
+      source: (source.apl || []).join('\\n'),
+      prose: box.querySelectorAll('.modedef-l').length,
       below: rect.top >= control.bottom - 1,
       full: Math.abs(rect.width - row.clientWidth) < 2,
       valid: !/undefined|NaN|\\{[a-z_]+\\}/i.test(text),
@@ -58,6 +66,8 @@ for (const lang of ["en", "zh"]) {
     check(`${weapon}/${lang}: conditions sit below Mode at full width`, r.below && r.full);
     check(`${weapon}/${lang}: expand and remember across rendering`, r.expanded && r.remembered);
     check(`${weapon}/${lang}: no missing condition values`, r.valid, r.text);
+    check(`${weapon}/${lang}: actual APL code and prose are both present`,
+      r.apl.length > 0 && r.apl === r.source && r.prose > 0, r.apl || "no APL code");
     if (weapon === "Trumna_Prime") {
       check(`${weapon}/${lang}: empty opening, earned shot, return and ammo are explicit`,
         lang === "en"
@@ -93,6 +103,26 @@ for (const lang of ["en", "zh"]) {
       && document.documentElement.scrollWidth <= innerWidth;
   })()`));
   await send("Emulation.clearDeviceMetricsOverride");
+  const switches = await evaluate(`(async () => {
+    const wait = async () => {
+      for (let i = 0; i < 80; i++) {
+        if (modeApl && modeApl.key === JSON.stringify(buildPayload())) return;
+        await new Promise(r => setTimeout(r, 50));
+      }
+    };
+    const code = () => document.querySelector('[data-apl="combat"] code').textContent;
+    setMode('base'); await wait();
+    const baseKey = JSON.stringify(buildPayload());
+    const base = code();
+    setMode('cycle');
+    renderModeApl({ apl: ['stale_response'] }, baseKey);
+    const refused = !document.getElementById('mode-apl').textContent.includes('stale_response');
+    await wait();
+    return { base, cycle: code(), refused };
+  })()`);
+  check(`${lang}: switching Mode replaces the executable APL`,
+    !switches.base.includes('transform_in') && switches.cycle.includes('transform_in'), JSON.stringify(switches));
+  check(`${lang}: a stale build response cannot overwrite the APL`, switches.refused);
 }
 
 if (process.env.WFSIM_MODE_DETAILS_ONLY) {

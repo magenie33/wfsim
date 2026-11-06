@@ -1727,7 +1727,9 @@ Incarnon anything; the Torid and Lex must still say so) and runs in both
 languages.
 
 Cycle conditions start collapsed below Mode at the full row width, expand and
-remember their state across rendering and reload. Trumna Prime covers the empty
+remember their state across rendering and reload. The APL code matches the
+current build's `/api/panel` response and appears beside the retained prose.
+Trumna Prime covers the empty
 opening gauge, five primary kills, single alternate shot, preserved magazine
 and ammunition cost; Torid covers charge ammunition exhaustion and transition
 times; Nunchasa covers weighted hits and its draw; Grimoire covers a full opening

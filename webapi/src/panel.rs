@@ -247,9 +247,23 @@ pub fn panel_json(v: &Value) -> Value {
         }
     }
 
+    // The simulator's setup supplies the executable APL without running a fight.
+    // A refused fight leaves the stat panel available and explains the missing APL.
+    let actions = match crate::simulate::ready(v, false) {
+        Ok(ready) => json!({
+            "apl": ready.params.apl().0.iter()
+                .map(wfsim_engine::data::apl::Rule::to_simc).collect::<Vec<_>>(),
+            "precombat": ready.params.precombat().iter()
+                .map(wfsim_engine::data::apl::Precombat::to_simc).collect::<Vec<_>>(),
+        }),
+        Err(error) => error,
+    };
     json!({
         "ok": true,
         "weapon": info.name,
+        "apl": actions["apl"],
+        "precombat": actions["precombat"],
+        "apl_error": actions["error"],
         "policy": if info.sentinel { "base only (sentinel)" } else { "conditionals at max stacks" },
         "forms": forms,
         "conditionals": conditionals,
@@ -2110,6 +2124,42 @@ parts.push(json!({
 /// is one mod under two treatments: the Burston Incarnon then reads 126% crit
 /// chance on every shot AND hands the same 126% to its explosion,
 /// which has no hit location at all.
+#[cfg(test)]
+mod mode_apl_tests {
+    use super::*;
+
+    #[test]
+    fn panel_lists_the_simulators_executable_rules() {
+        for (weapon, mode, mods, rule) in [
+            ("trumna_prime", "cycle", vec![], "transform_in,if=gauge.pct>=1"),
+            ("haalvu", "base_recharge", vec![], "recharge,if=battery.next_shot_empties"),
+            ("glaive_prime", "throw_detonate", vec![], "detonate"),
+            ("magistar", "base", vec!["crushing_ruin", "dreamers_wrath"], "heavy,if=tennokai"),
+        ] {
+            let request = json!({ "weapon": weapon, "mode": mode, "mods": mods });
+            let expected = crate::simulate::ready(&request, false).unwrap().params;
+            let actual = panel_json(&request);
+            assert_eq!(actual["ok"], true, "{actual}");
+            assert_eq!(actual["apl"], json!(expected.apl().0.iter()
+                .map(wfsim_engine::data::apl::Rule::to_simc).collect::<Vec<_>>()));
+            assert_eq!(actual["precombat"], json!(expected.precombat().iter()
+                .map(wfsim_engine::data::apl::Precombat::to_simc).collect::<Vec<_>>()));
+            assert!(actual["apl"].as_array().unwrap().iter().any(|line| line == rule), "{actual}");
+        }
+    }
+
+    #[test]
+    fn refused_actions_leave_the_stat_panel_available() {
+        let actual = panel_json(&json!({
+            "weapon": "braton", "apl": [{ "action": { "do": "not_an_action" }, "when": { "if": "always" } }],
+        }));
+        assert_eq!(actual["ok"], true);
+        assert!(!actual["forms"].as_array().unwrap().is_empty());
+        assert!(actual["apl"].is_null());
+        assert!(actual["apl_error"].as_str().unwrap().contains("bad action priority list"));
+    }
+}
+
 #[cfg(test)]
 mod weakpoint_panel_tests {
     use super::*;

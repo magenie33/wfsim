@@ -42,19 +42,23 @@ for (const ev of ["click", "change", "input", "keyup"]) {
 let panelTimer = null;
 function refreshPanel() {
   markPresetDirty(); // every build change funnels through here
+  renderModeApl();
   clearTimeout(panelTimer);
   panelTimer = setTimeout(async () => {
     const body = buildPayload();
+    const requestKey = JSON.stringify(body);
     // Recorded where the payload is actually BUILT, so the key always
     // describes what was sent — recording it at call time would go stale
     // inside the debounce window.
     panelKey = buildKey();
     try {
       const r = await api("/api/panel", body);
+      renderModeApl(r, requestKey);
       renderPanel(r);
       // A BUILD, not the default weapon opened: at least one card seated.
       if (r && r.ok !== false && body.mods && body.mods.length) track("builder.weapon", body.weapon);
     } catch (e) {
+      renderModeApl({ error: String(e) }, requestKey);
       $("stats-rows").innerHTML = `<div class="error">panel failed: ${e}</div>`;
     }
   }, 120);
