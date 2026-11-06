@@ -1003,6 +1003,8 @@ and the artifact's dependency closure.
 Populated generic and custom plans exclude answered producers before counting
 overdue questions, and read only official questions' answers when checking
 unsettled work. Neither observation may scan unrelated questions or answers.
+Scene counts deduplicate build and mode across batches before any full queue
+sort; repeated batches keep the same owed count.
 
 ## `check_settler_async`
 

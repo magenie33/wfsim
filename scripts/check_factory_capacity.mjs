@@ -10,6 +10,7 @@ import { openEnv } from "./factoryd.mjs";
 import { demandOf, scorePace, tallyBase, tallyOf } from "../worker/contribution.js";
 import { testDb } from "./pg/test_db.mjs";
 import { factory } from "../worker/tasks.js";
+import { cellsFilling } from "../worker/board_tasks.js";
 
 const host = { cpus: 4, load: 1, io_pct: 0, memory_pct: 0 };
 const fast = capacity({ env: {}, sample: () => host });
@@ -230,4 +231,24 @@ await A.exec("DEALLOCATE unsettled_audit; RESET plan_cache_mode");
 await A.close();
 console.log("ok: the watchdog counts silent producers without reading healthy producers' overdue questions");
 console.log("ok: official settlement observations read only their questions' answers");
+
+const C = await testDb("library");
+await C.exec(`INSERT INTO queue (batch,build_id,ruler,mode)
+  SELECT 'batch-' || ((i-1)/2000), 'queued-' || ((i-1)%1000), 'test__cell',
+    CASE WHEN (i-1)%2000 < 1000 THEN 'base' ELSE 'cycle' END FROM generate_series(1,20000) i;
+  ANALYZE queue;`);
+let cellsSql;
+const cellsDb = { ...C, prepare(sql) { if (/FROM queue WHERE ruler LIKE/.test(sql)) cellsSql=sql; return C.prepare(sql); } };
+const cells = await cellsFilling({ LIBRARY: cellsDb }, now);
+assert.equal(cells.find(x => x.ruler === "test__cell")?.owed, 2000);
+const cellPlan = await C.get(`EXPLAIN (ANALYZE,FORMAT JSON,TIMING OFF) ${cellsSql}`);
+let sortRows=0;
+const countSort = node => {
+  if (node["Node Type"] === "Sort") sortRows=Math.max(sortRows,node["Actual Rows"]*node["Actual Loops"]);
+  for (const child of node.Plans || []) countSort(child);
+};
+countSort(cellPlan["QUERY PLAN"][0].Plan);
+assert.ok(sortRows <= 4000, `cell counts must deduplicate batches before sorting the entire queue (${sortRows})`);
+await C.close();
+console.log("ok: cell counts preserve build and mode identity without sorting every queued copy");
 console.log("factory capacity checks passed");

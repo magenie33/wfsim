@@ -105,7 +105,7 @@ const brokenChecks = [
   ["disagreeing", /SELECT a\.owner, count\(\*\) AS answers/],
   ["refused_rows", /SELECT question, engine, owners, at FROM refusal_withdrawals/],
   ["redeliver", /SELECT through FROM factory_cursors WHERE name = 'redeliver'/],
-  ["cells_filling", /SELECT ruler, count\(DISTINCT build_id/],
+  ["cells_filling", /SELECT ruler, count\(\*\) AS owed/],
   ["idle", /WITH online AS/],
 ];
 for (const [step, sql] of brokenChecks) {
