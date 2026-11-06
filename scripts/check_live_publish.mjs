@@ -41,6 +41,22 @@ try {
     console.log('ok: file-bounded cycles checkpoint each confirmed file, resume and publish meta last');
   }
   {
+    const input = fixture('moving-stamp'), path = join(input.boardDir, 'meta.json'), original = readFileSync(path, 'utf8');
+    const next = JSON.stringify({ name: 'next-stamp' }), sent = [];
+    await pushBoard({ ...input, send: async (url, init) => {
+      const name = filename(url); sent.push({ name, body: init.body.toString() });
+      if (name === 'a.json') writeFileSync(path, next);
+      return ok();
+    } });
+    assert.deepEqual(sent.map(row => row.name), names);
+    assert.equal(sent.at(-1).body, original, 'an upload published a stamp created after its filename snapshot');
+    assert.equal(ledger(input.workDir)['meta.json'], sha(original));
+    const resumed = [];
+    await pushBoard({ ...input, send: async (url, init) => { resumed.push({ name: filename(url), body: init.body.toString() }); return ok(); } });
+    assert.deepEqual(resumed, [{ name: 'meta.json', body: next }]);
+    console.log('ok: a background upload freezes its original stamp and sends a newer stamp on the next pass');
+  }
+  {
     const input = fixture('clock-bound'), calls = []; let clock = 0;
     const stopped = await pushBoard({ ...input, budgetMs: 10, now: () => clock,
       send: async url => { calls.push(filename(url)); clock = 10; return ok(); } });
@@ -101,5 +117,5 @@ try {
     }
     console.log('ok: corrupt existing ledgers fail closed without an empty reset or network traffic');
   }
-  console.log('\n7 live publisher checks passed');
+  console.log('\n8 live publisher checks passed');
 } finally { rmSync(root, { recursive: true, force: true }); }

@@ -96,25 +96,29 @@ export function savePushed(path, ledger, replace = renameSync) {
 }
 
 export async function pushBoard({ workDir = work, boardDir = dir, send = fetch, now = () => performance.now(),
-  budgetMs = Infinity, maxFiles = Infinity, requestMs = 15000 } = {}) {
+  budgetMs = Infinity, maxFiles = Infinity, requestMs = 120000 } = {}) {
   if (typeof budgetMs !== "number" || typeof maxFiles !== "number" || !(budgetMs > 0) || !(maxFiles > 0)
     || !Number.isFinite(requestMs) || requestMs < 1 || requestMs > 2147483647
     || maxFiles !== Infinity && !Number.isSafeInteger(maxFiles)) throw new Error("invalid live push bounds");
   const ledgerPath = join(workDir, "pushed.json"), deadline = now() + budgetMs;
   const ledger = existsSync(ledgerPath) ? JSON.parse(readFileSync(ledgerPath, "utf8")) : {};
   if (!ledger || Array.isArray(ledger) || typeof ledger !== "object") throw new Error("invalid pushed ledger");
+  const stampPath = join(boardDir, "meta.json"), stamp = existsSync(stampPath) ? readFileSync(stampPath) : null;
   let sent = 0;
   const finish = pending => { console.error(`live: pushed ${sent} file(s)${pending ? " (pending)" : ""}`); return { sent, pending }; };
   // THE STAMP GOES LAST, so a reader who sees a new `meta.json` finds every file
   // it names already there — and the worker opens the live board only once one
   // exists (`worker/live_board.js`).
+  // Its bytes belong to this file list while the ranker writes the next one.
   // A SCENE'S DIRECTORY IS PUSHED BENEATH ITS NAME (`Benchmark::cell_dir`).
   const json = (sub) => readdirSync(join(boardDir, sub), { withFileTypes: true }).filter((e) => e.isFile() && e.name.endsWith(".json")).map((e) => sub ? `${sub}/${e.name}` : e.name);
   const scenes = readdirSync(boardDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);
   const names = [...json(""), ...scenes.flatMap(json)].filter((n) => n !== "meta.json").sort();
-  for (const name of [...names, "meta.json"].filter((n) => existsSync(join(boardDir, n)))) {
+  const uploads = names.filter((n) => existsSync(join(boardDir, n)));
+  if (stamp) uploads.push("meta.json");
+  for (const name of uploads) {
     if (sent >= maxFiles || now() >= deadline) return finish(true);
-    const bytes = readFileSync(join(boardDir, name));
+    const bytes = name === "meta.json" ? stamp : readFileSync(join(boardDir, name));
     const sha = createHash("sha256").update(bytes).digest("hex");
     if (ledger[name] === sha) continue;
     const left = deadline - now();
@@ -143,6 +147,6 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
 if (mode === "delta") await delta();
 else if (mode === "cursor") await cursor();
 else if (mode === "push") await pushBoard({ budgetMs: Number(process.env.WFSIM_BOARD_PUSH_BUDGET_MS || Infinity),
-  maxFiles: Number(process.env.WFSIM_BOARD_PUSH_MAX_FILES || Infinity), requestMs: Number(process.env.WFSIM_BOARD_PUSH_TIMEOUT_MS || 15000) });
+  maxFiles: Number(process.env.WFSIM_BOARD_PUSH_MAX_FILES || Infinity), requestMs: Number(process.env.WFSIM_BOARD_PUSH_TIMEOUT_MS || 120000) });
 else { console.error("usage: live_publish.mjs delta|cursor|push <work-dir> ..."); process.exit(2); }
 }
