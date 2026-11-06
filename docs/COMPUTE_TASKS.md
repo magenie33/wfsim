@@ -118,9 +118,15 @@ and never task input.
 
 `INCREMENTAL_INVENTORY=1` enables the inventory coordinator in `live_board.sh`.
 It uses the existing ranker command pipes, with one filesystem lock around a
-cycle. This path replaces the ranker's hourly library reload and rolling score
+cycle. The ranker starts empty and derives the coherent bootstrap once. This
+path replaces the ranker's hourly library reload and rolling score
 read with authoritative source updates. The normal queue and scoring workflows
 retain full reconciliation as a fallback.
+
+Live board uploads run in one background process with a per-request timeout.
+Confirmed file hashes are flushed through an atomic checkpoint replacement;
+the captured board stamp is sent after its files. Uploads do not hold the
+inventory loop, and a failed uploader resumes from its confirmed checkpoint.
 
 `worker/pg/inventory.sql` records coalesced build and question invalidations in
 the same transaction as source changes. Revisions are equality tokens, never a
@@ -163,8 +169,9 @@ imports and no memory mapping; the coordinator reserves 8GiB of filesystem
 space and caps initial capture at 45 minutes and delta capture at 15 minutes.
 
 Apply the additive task schema before enabling this path. Rollback sets
-`INCREMENTAL_INVENTORY=0` and restarts the live service on the validated prior
-release. Source tables and the last published inventory are preserved.
+`INCREMENTAL_INVENTORY=0` and restarts the live service on the current validated
+release, preserving engine consistency with the other channels. Source tables
+and the last published inventory are preserved.
 
 The community goal displays the last complete inventory and its update time.
 It changes when a complete scan is published; the minute's work signal remains

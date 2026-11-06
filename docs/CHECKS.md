@@ -39,6 +39,9 @@ retirement, multiple apply chunks, later writes, durable acknowledgment and
 input cleanup. Set `WFSIM_INVENTORY_BOARD_BIN` to select an existing binary;
 otherwise it uses `target/debug/wfsim-board`. A missing binary fails the check.
 
+`check_live_publish.mjs` verifies bounded upload progress, the final stamp,
+request timeouts, lost replies, atomic checkpoints and corrupt-ledger refusal.
+
 `check_incremental_inventory.mjs` tests the disk catalog, exact union and audit,
 owner replacement, bounded caches, shadow fencing and crash replay.
 `check_incremental_inventory_pg.mjs` tests the real schema, transactional dirty

@@ -220,7 +220,8 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
   const catalog = openCatalog(state.catalog, { engine, contract, generation: state.generation, create: true });
   const started = Date.now();
   try {
-    if (!state.pending && state.published_at && Date.now() - Date.parse(state.published_at) < 60000) return { pending: false };
+    if (!state.pending && state.published_at && Date.now() - Date.parse(state.published_at) < 60000)
+      return { pending: false, engine_epoch: state.engine_epoch };
     if (!state.pending) {
       const dir = join(root, `capture-${Date.now()}`);
       state.pending = await captureEpoch({ sql, catalog, generation: state.generation, dir, bootstrap: !catalog.meta.complete, call, baseEpoch: state.engine_epoch });
@@ -268,7 +269,7 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
       appendFileSync(join(dir, 'outputs.ndjson'), JSON.stringify({ path: output }) + '\n'); sync(join(dir, 'outputs.ndjson'));
       await catalog.replaceOwners(output, { job, snapshot: receipt.snapshot }); chunks++;
     }
-    if (catalog.jobs(1).length) { progress('processing', { epoch: receipt.epoch, chunks }); return { pending: true }; }
+    if (catalog.jobs(1).length) { progress('processing', { epoch: receipt.epoch, chunks }); return { pending: true, engine_epoch: state.engine_epoch }; }
     if (!catalog.meta.complete) {
       const rulers = execFileSync(join(bin, 'wfsim-board'), ['--rulers'], { encoding: 'utf8' }).trim().split(/\s+/);
       const audit = await auditInventoryInputs({ ...cut.raw, meta: cut.meta, rulers, engineOutputs: outputPaths(join(dir, 'outputs.ndjson')),
@@ -288,7 +289,7 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
     catalog.activate(published); save(join(root, 'last-publication.json'), { receipt: published, capture: load(cut.capture) });
     state.published_at = published.at; state.pending = null; save(statePath, state); collect(root, state);
     progress('published', { epoch: receipt.epoch, total: published.total, started_at: published.started_at });
-    return { pending: false, published };
+    return { pending: false, published, engine_epoch: state.engine_epoch };
   } finally { catalog.close(); }
 }
 

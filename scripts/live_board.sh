@@ -125,14 +125,25 @@ swap_store() {
 # sent, so a ranker that stops — a reply other than `ok`, a crash, a deploy —
 # is started again from them on the next cycle and loses nothing.
 start_ranker() {
+  local ranker_library="$WORK/library.json" ranker_builds="$WORK/new-builds.ndjson" ranker_facts="$WORK/facts-known.ndjson"
+  if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
+    mkdir -p "$WORK/inventory"
+    ranker_library="$WORK/inventory/empty-library.json"
+    ranker_builds="$WORK/inventory/empty-builds.ndjson"
+    ranker_facts="$WORK/inventory/empty-facts.ndjson"
+    printf '[]' > "$ranker_library"
+    : > "$ranker_builds"
+    : > "$ranker_facts"
+  fi
   mkdir -p pub/data
   [ -f pub/data/board_state.yaml ] || printf 'boards: {}\n' > pub/data/board_state.yaml
   # THE LOG IS WHAT THIS RANKER REFUSED, said once a record: it starts afresh.
   : > project.log
-  coproc RANKER { exec "$BIN/wfsim-board" --serve "$WORK/verified" --library "$WORK/library.json" \
-      --builds "$WORK/new-builds.ndjson" --facts-in "$WORK/facts-known.ndjson" \
+  coproc RANKER { exec "$BIN/wfsim-board" --serve "$WORK/verified" --library "$ranker_library" \
+      --builds "$ranker_builds" --facts-in "$ranker_facts" \
       --state "$WORK/pub/data/board_state.yaml" 2>> "$WORK/project.log"; }
   RANKER_INSTANCE="$(date +%s)-$RANKER_PID"
+  RANKER_PUBLISHED_EPOCH=""
   ask "" || { stop_ranker; return 1; }
 }
 
@@ -161,6 +172,24 @@ stop_ranker() {
   RANKER_PID=""
 }
 
+PUSH_PID=""
+start_push() {
+  if [ -n "$PUSH_PID" ]; then
+    if kill -0 "$PUSH_PID" 2>/dev/null; then return; fi
+    wait "$PUSH_PID" || echo "live: the upload stopped; confirmed files remain checkpointed" >&2
+  fi
+  ( WFSIM_BOARD_PUSH_TIMEOUT_MS="${WFSIM_BOARD_PUSH_TIMEOUT_MS:-120000}" \
+    exec node --max-old-space-size=64 "$HERE/live_publish.mjs" push "$WORK" verified < /dev/null ) &
+  PUSH_PID=$!
+}
+
+stop_push() {
+  if [ -n "$PUSH_PID" ]; then
+    kill "$PUSH_PID" 2>/dev/null || true
+    wait "$PUSH_PID" 2>/dev/null || true
+  fi
+}
+
 # WHAT THE SITE READS BESIDE THE ROWS: each weapon's heads, and the stamp.
 stamp() {
   node "$HERE/board_heads.mjs" verified >&2 \
@@ -177,7 +206,9 @@ start_intake() {
 if [ "${ONCE:-}" != 1 ]; then
   start_intake
 fi
-trap '[ -n "$INTAKE_PID" ] && kill "$INTAKE_PID" 2>/dev/null; [ -n "$FETCH_PID" ] && kill "$FETCH_PID" 2>/dev/null; stop_ranker; db_cleanup' EXIT
+trap '[ -n "$INTAKE_PID" ] && kill "$INTAKE_PID" 2>/dev/null; [ -n "$FETCH_PID" ] && kill "$FETCH_PID" 2>/dev/null; stop_push; stop_ranker; db_cleanup' EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
 
 # A FIRST START HAS NO STORE TO RANK FROM, and waits for one.
 if [ ! -s library.json ]; then
@@ -260,9 +291,17 @@ while true; do
       if flock -n "$WORK/inventory.lock" node --max-old-space-size=192 "$HERE/inventory_pipeline.mjs" "$WORK" "$BIN" "$RANKER_INSTANCE" \
           <&"${RANKER[0]}" >&"${RANKER[1]}"; then
         inventory_pending=$(jq -r 'if .pending then 1 else 0 end' inventory/status.json)
-        if ask "publish"; then changed=1; else stop_ranker; fi
+        inventory_engine_epoch=$(jq -r '.engine_epoch // empty' inventory/status.json)
+        if [ -n "$inventory_engine_epoch" ] && [ "$inventory_engine_epoch" != "$RANKER_PUBLISHED_EPOCH" ]; then
+          if ask "publish"; then
+            changed=1
+            RANKER_PUBLISHED_EPOCH="$inventory_engine_epoch"
+          else
+            stop_ranker
+          fi
+        fi
       else
-        echo "live: inventory stopped before publication; restarting the ranker from authoritative inputs" >&2
+        echo "live: inventory cycle failed; restarting the ranker from authoritative inputs" >&2
         stop_ranker
       fi
     fi
@@ -280,7 +319,15 @@ while true; do
   # worker refused is sent again on the next one rather than waiting for R2
   # to be asked by the next fact.
   if { [ "$INCREMENTAL_INVENTORY" = 0 ] || [ "$changed" = 1 ]; } && [ -f verified/meta.json ]; then
-    node "$HERE/live_publish.mjs" push "$WORK" verified || echo "live: the push did not land; the next cycle sends it" >&2
+    if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
+      start_push
+    else
+      node "$HERE/live_publish.mjs" push "$WORK" verified || echo "live: the push did not land; the next cycle sends it" >&2
+    fi
+  fi
+  if [ "$INCREMENTAL_INVENTORY" = 1 ] && [ -n "$PUSH_PID" ] && ! kill -0 "$PUSH_PID" 2>/dev/null \
+      && ranker_alive && [ -n "$RANKER_PUBLISHED_EPOCH" ]; then
+    start_push
   fi
   # ONE CYCLE AND OUT, for a check run by hand.
   if [ "${ONCE:-}" = 1 ]; then

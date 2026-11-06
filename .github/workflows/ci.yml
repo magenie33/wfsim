@@ -475,6 +475,8 @@ jobs:
         run: npm ci --silent --prefix scripts/pg
       - name: The board's pipeline reads and writes Postgres
         run: node scripts/check_pg_scripts.mjs
+      - name: Live board uploads preserve progress within bounded cycles
+        run: node scripts/check_live_publish.mjs
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: "1.97.1"
