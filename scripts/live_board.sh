@@ -108,6 +108,7 @@ start_fetch() {
 # ranker lists once. The facts' cursor moves to the read's newest row, and the
 # next delta asks again for the two hours before it.
 swap_store() {
+  stop_push
   local mark
   mark=$(cat fetch-mark.txt 2>/dev/null || echo 0)
   mv library.fresh library.json
@@ -125,6 +126,7 @@ swap_store() {
 # sent, so a ranker that stops — a reply other than `ok`, a crash, a deploy —
 # is started again from them on the next cycle and loses nothing.
 start_ranker() {
+  stop_push
   local ranker_library="$WORK/library.json" ranker_builds="$WORK/new-builds.ndjson" ranker_facts="$WORK/facts-known.ndjson"
   if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
     mkdir -p "$WORK/inventory"
@@ -144,6 +146,8 @@ start_ranker() {
       --state "$WORK/pub/data/board_state.yaml" 2>> "$WORK/project.log"; }
   RANKER_INSTANCE="$(date +%s)-$RANKER_PID"
   RANKER_PUBLISHED_EPOCH=""
+  render_pending=0
+  stamp_owed=0
   ask "" || { stop_ranker; return 1; }
 }
 
@@ -154,6 +158,7 @@ ask() {
     printf '%s\n' "$1" >&"${RANKER[1]}" || return 1
   fi
   IFS= read -r reply <&"${RANKER[0]}" || return 1
+  RANKER_REPLY="$reply"
   case "$reply" in
     ok*) echo "live: ranker $reply" >&2 ;;
     *) echo "live: the ranker answered: $reply" >&2; return 1 ;;
@@ -165,6 +170,7 @@ ranker_alive() {
 }
 
 stop_ranker() {
+  stop_push
   if [ -n "${RANKER_PID:-}" ]; then
     kill "$RANKER_PID" 2>/dev/null || true
     wait "$RANKER_PID" 2>/dev/null || true
@@ -173,6 +179,10 @@ stop_ranker() {
 }
 
 PUSH_PID=""
+push_alive() {
+  [ -n "$PUSH_PID" ] && kill -0 "$PUSH_PID" 2>/dev/null
+}
+
 start_push() {
   if [ -n "$PUSH_PID" ]; then
     if kill -0 "$PUSH_PID" 2>/dev/null; then return; fi
@@ -188,6 +198,7 @@ stop_push() {
     kill "$PUSH_PID" 2>/dev/null || true
     wait "$PUSH_PID" 2>/dev/null || true
   fi
+  PUSH_PID=""
 }
 
 # WHAT THE SITE READS BESIDE THE ROWS: each weapon's heads, and the stamp.
@@ -230,6 +241,7 @@ fi
 # — every deploy is one — starts no read the hour does not owe.
 last_fetch=$(cat fetch-at.txt 2>/dev/null || echo 0)
 stamp_owed=0
+render_pending=0
 while true; do
   if [ "${ONCE:-}" = 1 ]; then
     intake_arrivals || true
@@ -270,6 +282,7 @@ while true; do
     fi
   elif [ "$INCREMENTAL_INVENTORY" = 0 ] && [ "$reloaded" = 1 ]; then
     # THE READ HOLDS EVERYTHING the cycle took in, so it is the whole message.
+    stop_push
     if ask "reload $WORK/library.json $WORK/new-builds.ndjson $WORK/facts-known.ndjson"; then
       changed=1
     else
@@ -292,10 +305,21 @@ while true; do
           <&"${RANKER[0]}" >&"${RANKER[1]}"; then
         inventory_pending=$(jq -r 'if .pending then 1 else 0 end' inventory/status.json)
         inventory_engine_epoch=$(jq -r '.engine_epoch // empty' inventory/status.json)
-        if [ -n "$inventory_engine_epoch" ] && [ "$inventory_engine_epoch" != "$RANKER_PUBLISHED_EPOCH" ]; then
-          if ask "publish"; then
-            changed=1
-            RANKER_PUBLISHED_EPOCH="$inventory_engine_epoch"
+        if [ "$inventory_pending" = 0 ] && ! push_alive && [ -n "$inventory_engine_epoch" ] && [ "$inventory_engine_epoch" != "$RANKER_PUBLISHED_EPOCH" ]; then
+          if ask "publish_step 1"; then
+            read -r reply_ok reply_action reply_wrote reply_removed reply_pending reply_extra <<< "$RANKER_REPLY"
+            if [ "$reply_ok" = ok ] && [ "$reply_action" = publish_step ] \
+                && [[ "$reply_wrote" =~ ^[0-9]+$ ]] && [[ "$reply_removed" =~ ^[0-9]+$ ]] \
+                && [[ "$reply_pending" =~ ^[01]$ ]] && [ -z "$reply_extra" ]; then
+              render_pending="$reply_pending"
+              if [ "$render_pending" = 0 ]; then
+                changed=1
+                RANKER_PUBLISHED_EPOCH="$inventory_engine_epoch"
+              fi
+            else
+              echo "live: invalid bounded publication reply" >&2
+              stop_ranker
+            fi
           else
             stop_ranker
           fi
@@ -308,9 +332,12 @@ while true; do
   fi
   # A STAMP THAT FAILED IS OWED until one lands.
   [ "$changed" = 1 ] && stamp_owed=1
-  if [ "$stamp_owed" = 1 ]; then
+  upload_ready=0
+  if [ "$stamp_owed" = 1 ] && { [ "$INCREMENTAL_INVENTORY" = 0 ] \
+      || { [ "$inventory_pending" = 0 ] && [ "$render_pending" = 0 ] && ! push_alive && ranker_alive; }; }; then
     if stamp; then
       stamp_owed=0
+      upload_ready=1
     else
       echo "live: the board was not stamped; the next cycle stamps it" >&2
     fi
@@ -318,7 +345,7 @@ while true; do
   # PUSHED EVERY CYCLE, and a file only when its bytes moved: a push the
   # worker refused is sent again on the next one rather than waiting for R2
   # to be asked by the next fact.
-  if { [ "$INCREMENTAL_INVENTORY" = 0 ] || [ "$changed" = 1 ]; } && [ -f verified/meta.json ]; then
+  if { [ "$INCREMENTAL_INVENTORY" = 0 ] || [ "$upload_ready" = 1 ]; } && [ -f verified/meta.json ]; then
     if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
       start_push
     else
@@ -326,6 +353,7 @@ while true; do
     fi
   fi
   if [ "$INCREMENTAL_INVENTORY" = 1 ] && [ -n "$PUSH_PID" ] && ! kill -0 "$PUSH_PID" 2>/dev/null \
+      && [ "$inventory_pending" = 0 ] && [ "$render_pending" = 0 ] && [ "$stamp_owed" = 0 ] \
       && ranker_alive && [ -n "$RANKER_PUBLISHED_EPOCH" ]; then
     start_push
   fi
@@ -333,5 +361,5 @@ while true; do
   if [ "${ONCE:-}" = 1 ]; then
     break
   fi
-  if [ "$inventory_pending" = 1 ]; then sleep 1; else sleep "$POLL_SECONDS"; fi
+  if [ "$inventory_pending" = 1 ] || [ "$render_pending" = 1 ]; then sleep 1; else sleep "$POLL_SECONDS"; fi
 done

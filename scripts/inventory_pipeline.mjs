@@ -12,7 +12,7 @@ import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { BOARD_KINDS } from '../worker/board_kinds.js';
 import { canon } from '../worker/task_contract.js';
-import { inventoryWrite } from '../worker/task_inventory.js';
+import { INVENTORY_MAX_MS, inventoryWrite } from '../worker/task_inventory.js';
 import { captureInventory } from './capture_compute_inventory.mjs';
 import { openCatalog, readInventoryRows } from './incremental_inventory.mjs';
 import { shardInventory, auditInventoryInputs } from './inventory_inputs.mjs';
@@ -99,6 +99,36 @@ export function rankerChannel() {
 }
 const common = receipt => ({ v: 1, engine: receipt.engine, contract: receipt.contract,
   generation: receipt.generation, epoch: receipt.epoch, snapshot: receipt.snapshot });
+
+async function retainExpiredBaseline({ sql, catalog, state, cut, root, statePath, instance }) {
+  const receipt = cut.receipt;
+  if (!cut.bootstrap || state.published_at || state.instance !== instance || state.engine_epoch !== receipt.epoch
+      || state.generation !== receipt.generation || state.engine !== receipt.engine
+      || canon(state.contract) !== canon(receipt.contract)) return false;
+  if (cut.manifest_sha !== receipt.manifest_sha || await hashFile(cut.capture) !== receipt.manifest_sha) return false;
+  const capture = load(cut.capture);
+  if (canon(capture.meta) !== canon(cut.meta) || ['epoch', 'generation', 'engine', 'snapshot', 'started_at']
+    .some(key => capture.receipt[key] !== receipt[key]) || canon(capture.receipt.contract) !== canon(receipt.contract)) return false;
+  const audit = load(join(dirname(cut.capture), 'audit/manifest.json'));
+  if (audit.engine !== receipt.engine || audit.generation !== receipt.generation || audit.epoch !== receipt.epoch
+      || audit.snapshot !== receipt.snapshot || canon(audit.contract) !== canon(receipt.contract)
+      || canon(audit.input_counts) !== canon(cut.meta.counts)
+      || audit.plan.engine !== receipt.engine || audit.plan.started_at !== receipt.started_at || audit.plan.snapshot !== receipt.snapshot
+      || !catalog.auditedBaseline(receipt, audit)) return false;
+  const [{ status, held, observed_at }] = await sql.unsafe(`SELECT inventory_status() status,
+    inventory_epoch_status($1::text) held,
+    to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') observed_at`, [receipt.epoch]);
+  if (!status || status.generation !== receipt.generation || status.engine !== receipt.engine
+      || status.status !== 'initializing' || canon(status.contract) !== canon(receipt.contract)
+      || canon(held) !== canon(receipt) || !Number.isFinite(Date.parse(observed_at))
+      || Date.parse(observed_at) < Date.parse(receipt.started_at) + INVENTORY_MAX_MS) return false;
+  save(join(root, 'last-expired-cut.json'), { receipt, observed_at, audit_digest: catalog.meta.audit_digest,
+    capture, baseline_retained: true });
+  state.pending = null;
+  save(statePath, state);
+  progress('expired', { epoch: receipt.epoch, generation: receipt.generation, baseline_retained: true });
+  return true;
+}
 
 export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, call, baseEpoch }) {
   mkdirSync(dir, { recursive: true }); disk(dir);
@@ -283,9 +313,20 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
       await sql.unsafe('SELECT inventory_ack($1::text,$2::text)', [state.generation, JSON.stringify(changes)]);
       catalog.acknowledge(changes);
     }
-    const plan = { ...catalog.finishEpoch(), source }, body = JSON.parse(inventoryWrite(plan).params[1]);
-    const [{ published }] = await sql.unsafe('SELECT inventory_publish_cut($1::text,$2::text) published',
-      [receipt.epoch, JSON.stringify({ ...body, generation: state.generation, contract })]);
+    const plan = { ...catalog.finishEpoch(), source };
+    if (Date.now() >= Date.parse(receipt.started_at) + INVENTORY_MAX_MS
+        && await retainExpiredBaseline({ sql, catalog, state, cut, root, statePath, instance }))
+      return { pending: true, engine_epoch: state.engine_epoch };
+    const body = JSON.parse(inventoryWrite(plan).params[1]);
+    let published;
+    try {
+      [{ published }] = await sql.unsafe('SELECT inventory_publish_cut($1::text,$2::text) published',
+        [receipt.epoch, JSON.stringify({ ...body, generation: state.generation, contract })]);
+    } catch (error) {
+      if (error.code !== 'P0001' || error.message !== 'inventory cut expired'
+          || !await retainExpiredBaseline({ sql, catalog, state, cut, root, statePath, instance })) throw error;
+      return { pending: true, engine_epoch: state.engine_epoch };
+    }
     catalog.activate(published); save(join(root, 'last-publication.json'), { receipt: published, capture: load(cut.capture) });
     state.published_at = published.at; state.pending = null; save(statePath, state); collect(root, state);
     progress('published', { epoch: receipt.epoch, total: published.total, started_at: published.started_at });

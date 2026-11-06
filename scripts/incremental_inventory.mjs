@@ -180,6 +180,25 @@ export class InventoryCatalog {
     this.setMeta({ ...this.meta, snapshot: epoch.snapshot, started_at: epoch.started_at, epoch: { ...epoch, phase: 'complete' } });
     return this.plan();
   }
+  auditedBaseline(receipt, audit) {
+    const epoch = this.meta.epoch, digest = audit?.plan?.question_digest;
+    if (!this.meta.complete || this.meta.published || epoch?.phase !== 'complete' || receipt.status !== 'sealed'
+        || !Number.isSafeInteger(receipt.change_count) || receipt.change_count < 0
+        || !/^[a-f0-9]{64}$/.test(digest) || this.meta.audit_digest !== digest
+        || epoch.tokens_processed !== receipt.change_count || this.jobs(1).length || this.pendingAcks(1).length)
+      return false;
+    if (['epoch', 'generation', 'engine', 'snapshot', 'started_at', 'manifest_sha', 'change_count', 'status']
+      .some(key => epoch[key] !== receipt[key]) || canon(epoch.contract) !== canon(receipt.contract)
+        || this.meta.generation !== receipt.generation || this.meta.engine !== receipt.engine
+        || this.meta.snapshot !== receipt.snapshot || this.meta.started_at !== receipt.started_at
+        || canon(this.meta.contract) !== canon(receipt.contract)) return false;
+    const tokens = this.statement('SELECT count(*) n,coalesce(sum(processed),0) processed FROM epoch_tokens').get();
+    if (tokens.n !== receipt.change_count || tokens.processed !== receipt.change_count) return false;
+    const actual = this.summary(), expected = audit.plan;
+    return actual.rows === expected.rows && actual.queued === expected.queued
+      && canon(actual.orders) === canon(expected.orders) && canon(actual.verbs) === canon(expected.verbs)
+      && this.digest() === digest;
+  }
   owner(owner) {
     const row = this.statement(`SELECT o.owner,c.build_id,o.weapon,o.riven,o.source,o.scope,s.stored stored_record,
       coalesce(c.stored,c.fallback) canonical_record FROM owners o LEFT JOIN records c ON c.id=o.candidate

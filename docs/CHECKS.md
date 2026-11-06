@@ -38,9 +38,15 @@ frozen PGlite cuts and compares every classified question with an independent
 retirement, multiple apply chunks, later writes, durable acknowledgment and
 input cleanup. Set `WFSIM_INVENTORY_BOARD_BIN` to select an existing binary;
 otherwise it uses `target/debug/wfsim-board`. A missing binary fails the check.
+It also exercises an actual database publication-expiry race, retained audited
+baseline recovery and a fresh delta on the same native process and generation.
+Misleading errors and mismatched recovery fences preserve the pending cut.
 
 `check_live_publish.mjs` verifies bounded upload progress, the final stamp,
 request timeouts, lost replies, atomic checkpoints and corrupt-ledger refusal.
+Its `check_live_inventory.mjs` shell fixture withholds native rendering while
+inventory is pending, interleaves bounded rendering and inventory cycles, and
+keeps uploader input files stable through failures, retries and ranker restarts.
 
 `check_incremental_inventory.mjs` tests the disk catalog, exact union and audit,
 owner replacement, bounded caches, shadow fencing and crash replay.

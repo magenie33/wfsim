@@ -109,7 +109,7 @@ export async function pushBoard({ workDir = work, boardDir = dir, send = fetch, 
   // THE STAMP GOES LAST, so a reader who sees a new `meta.json` finds every file
   // it names already there — and the worker opens the live board only once one
   // exists (`worker/live_board.js`).
-  // Its bytes belong to this file list while the ranker writes the next one.
+  // The caller keeps the board files unchanged until this upload exits.
   // A SCENE'S DIRECTORY IS PUSHED BENEATH ITS NAME (`Benchmark::cell_dir`).
   const json = (sub) => readdirSync(join(boardDir, sub), { withFileTypes: true }).filter((e) => e.isFile() && e.name.endsWith(".json")).map((e) => sub ? `${sub}/${e.name}` : e.name);
   const scenes = readdirSync(boardDir, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name);

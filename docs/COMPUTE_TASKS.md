@@ -127,6 +127,10 @@ Live board uploads run in one background process with a per-request timeout.
 Confirmed file hashes are flushed through an atomic checkpoint replacement;
 the captured board stamp is sent after its files. Uploads do not hold the
 inventory loop, and a failed uploader resumes from its confirmed checkpoint.
+Native board rendering starts after the inventory cut completes, one weapon
+file group per cycle. Remaining groups stay pending while inventory continues.
+Metadata and uploads wait for the whole board pass. Rendering and stamping wait
+for an active uploader, whose input files remain unchanged until it exits.
 
 `worker/pg/inventory.sql` records coalesced build and question invalidations in
 the same transaction as source changes. Revisions are equality tokens, never a
@@ -163,10 +167,18 @@ Engine changes reuse legitimate score facts and never request a rescore.
 Publication uses the sealed cut's database time and snapshot, even if later
 changes are already pending. It never advances freshness to the publication
 time. Interrupted or expired cuts cannot publish. Completed input spools are
-removed after publication; current and previous catalog generations and the
-last publication manifest remain. SQLite uses a 16MiB page cache, bounded
+removed after publication or audited baseline retention. Current and previous
+catalog generations and the last publication and expired-cut manifests remain.
+SQLite uses a 16MiB page cache, bounded
 imports and no memory mapping; the coordinator reserves 8GiB of filesystem
 space and caps initial capture at 45 minutes and delta capture at 15 minutes.
+
+An expired initial cut may retain its independently audited baseline after all
+cohort jobs and exact revision acknowledgments complete. The coordinator checks
+the durable token ledger, question digest, native epoch and database fences;
+it keeps the same generation and starts a new real receipt transaction. The
+expired cut never activates or advances its input time. Partial work and other
+publication errors do not qualify for this recovery.
 
 Apply the additive task schema before enabling this path. Rollback sets
 `INCREMENTAL_INVENTORY=0` and restarts the live service on the current validated

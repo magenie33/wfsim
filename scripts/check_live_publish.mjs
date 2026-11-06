@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { pushBoard, savePushed } from './live_publish.mjs';
+import './check_live_inventory.mjs';
 
 const root = mkdtempSync(join(tmpdir(), 'live-publish-'));
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');

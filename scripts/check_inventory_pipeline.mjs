@@ -35,11 +35,25 @@ const [c, b, d] = canonical, alias = 'a'.repeat(32), future = await questionId('
 const pg = new PGlite();
 const q = (text, args = []) => pg.query(text, args).then(result => result.rows);
 const scalar = async (text, args = []) => Object.values((await q(text, args))[0])[0];
-let afterCapture = null, ackCalls = 0, failCohort = false, child, replies, reader, succeeded = false;
+let afterCapture = null, ackCalls = 0, failCohort = false, expirePublication = false, publicationError = null;
+let publicationFailure = null, ackFailure = false, proofMismatch = false;
+let expireClient = false;
+const realNow = Date.now;
+let child, replies, reader, succeeded = false;
 const commandLog = [], ackEvidence = [];
 const statePath = join(work, 'inventory/state.json');
 const unsafe = async (text, args = []) => {
+  if (publicationFailure && /\binventory_publish_cut\(/.test(text)) {
+    const error = publicationFailure; publicationFailure = null; throw error;
+  }
+  if (expirePublication && /\binventory_publish_cut\(/.test(text)) {
+    expirePublication = false;
+    await pg.exec("UPDATE inventory_test_clock SET skew=interval '4 hours'");
+    try { return await q(text, args); }
+    catch (error) { publicationError = { code: error.code, message: error.message }; throw error; }
+  }
   if (/\binventory_ack\(/.test(text)) {
+    if (ackFailure) { ackFailure = false; throw Object.assign(new Error('inventory cut expired'), { code: 'P0001' }); }
     const state = json(statePath), db = new DatabaseSync(state.catalog, { readOnly: true });
     try {
       const meta = JSON.parse(db.prepare('SELECT body FROM meta WHERE id=1').get().body);
@@ -51,7 +65,16 @@ const unsafe = async (text, args = []) => {
     } finally { db.close(); }
   }
   if (!args.length && text.includes(';')) { await pg.exec(text); return []; }
-  return q(text, args);
+  const result = await q(text, args);
+  if (expireClient && /\binventory_ack\(/.test(text)) {
+    expireClient = false;
+    await pg.exec("UPDATE inventory_test_clock SET skew=interval '4 hours'");
+    Date.now = () => realNow() + 4 * 60 * 60000;
+  }
+  if (proofMismatch && text.includes('inventory_epoch_status') && text.includes(' held')) {
+    proofMismatch = false; result[0].status.generation = 'other-generation';
+  }
+  return result;
 };
 const sql = { unsafe, begin: async (options, fn) => {
   await pg.exec(`BEGIN ${options}`);
@@ -106,6 +129,10 @@ async function cycle(instance = 'working', budgetMs = 15000) {
 
 try {
   await pg.exec(['schema', 'library', 'sync', 'inventory'].map(name => readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), 'utf8')).join('\n'));
+  await pg.exec(`CREATE TABLE inventory_test_clock(skew interval NOT NULL);
+    INSERT INTO inventory_test_clock VALUES(interval '0');
+    CREATE FUNCTION public.clock_timestamp() RETURNS timestamptz LANGUAGE sql VOLATILE AS
+    $$ SELECT pg_catalog.clock_timestamp()+skew FROM inventory_test_clock $$;`);
   for (const item of [c, b, d]) await q('INSERT INTO builds(id,at,record) VALUES ($1,\'day\',$2)', [item.id, JSON.stringify(item.record)]);
   await q('INSERT INTO builds(id,at,record) VALUES ($1,\'day\',$2)', [alias, JSON.stringify({ ...c.record, alias_note: 'raw source' })]);
   await q("INSERT INTO builds(id,at,record) VALUES ('invalid-source','day','{\"weapon\":\"not-a-weapon\"}')");
@@ -180,10 +207,94 @@ try {
   assert(!existsSync(activeDir), 'completed chunk payload was not reclaimed'); assert.equal(json(statePath).pending, null);
   assert.equal(json(join(work, 'inventory/last-publication.json')).receipt.epoch, active.receipt.epoch);
   console.log('ok: GC preserves pending input payloads and reclaims completed cuts after durable publication');
-  file('receipt.json', { v: 1, actual_binary: binary, cases: 6, ackEvidence, commandLog, final: catalogState().summary });
+  const beforeExpiryPublication = await scalar("SELECT body FROM factory_findings WHERE kind='task_inventory'");
+  const lastPublication = readFileSync(join(work, 'inventory/last-publication.json'), 'utf8');
+  const nativePid = child.pid, bootstrapCommands = commandLog.filter(row => row.op === 'bootstrap').length;
+  await q('UPDATE builds SET record=$1 WHERE id=$2', [JSON.stringify({ ...b.record, expiry_note: 'before' }), b.id]);
+  let expiredCut;
+  afterCapture = async cut => {
+    expiredCut = cut;
+    await q('UPDATE builds SET record=$1 WHERE id=$2', [JSON.stringify({ ...b.record, expiry_note: 'after' }), b.id]);
+    await q("UPDATE questions SET state='open' WHERE id=$1", [future]);
+  };
+  expirePublication = true;
+  const expiredResult = await cycle('expiry-recovery');
+  assert.deepEqual(publicationError, { code: 'P0001', message: 'inventory cut expired' });
+  assert.equal(expiredResult.pending, true, 'expired work must not permit native publication');
+  assert.equal(child.pid, nativePid); assert.equal(child.exitCode, null);
+  const retained = json(statePath), expiredCatalog = catalogState();
+  assert.equal(retained.pending, null); assert.equal(retained.published_at, undefined);
+  assert.equal(retained.generation, expiredCut.receipt.generation);
+  assert(expiredCut.receipt.change_count > 0, 'expired bootstrap did not exercise actual acknowledgments');
+  assert.equal(retained.engine_epoch, expiredCut.receipt.epoch);
+  assert.equal(expiredCatalog.meta.complete, true); assert.equal(expiredCatalog.meta.epoch.phase, 'complete');
+  assert.equal(expiredCatalog.meta.epoch.tokens_processed, expiredCut.receipt.change_count);
+  assert.equal(expiredCatalog.meta.published, undefined);
+  assert.equal(await scalar("SELECT body FROM factory_findings WHERE kind='task_inventory'"), beforeExpiryPublication);
+  assert.equal(readFileSync(join(work, 'inventory/last-publication.json'), 'utf8'), lastPublication);
+  assert.equal(json(join(work, 'inventory/last-expired-cut.json')).receipt.epoch, expiredCut.receipt.epoch);
+  assert.equal(Number(await scalar("SELECT count(*) FROM inventory_dirty WHERE scope='question' AND key=$1", [future])), 1);
+  await pg.exec("UPDATE inventory_test_clock SET skew=interval '0'");
+  const fresh = await cycle('expiry-recovery');
+  assert.equal(fresh.pending, false); assert.equal(child.pid, nativePid);
+  assert.equal(fresh.published.generation, retained.generation);
+  assert.notEqual(fresh.published.epoch, expiredCut.receipt.epoch);
+  assert(Date.parse(fresh.published.started_at) > Date.parse(expiredCut.receipt.started_at));
+  assert.equal(commandLog.filter(row => row.op === 'bootstrap').length, bootstrapCommands + 1, 'recovery performed a second bootstrap');
+  assert.equal(Number(await scalar('SELECT count(*) FROM inventory_dirty')), 0);
+  equalPlan(await currentOracle('expired-next-cut'), catalogState());
+  console.log('ok: actual PG publication expiry retains the audited baseline and publishes the next real cut without a native restart or second bootstrap');
+  await q('UPDATE builds SET record=$1 WHERE id=$2', [JSON.stringify({ ...d.record, expiry_note: 'client-before' }), d.id]);
+  let clientCut;
+  afterCapture = async cut => {
+    clientCut = cut;
+    await q('UPDATE builds SET record=$1 WHERE id=$2', [JSON.stringify({ ...d.record, expiry_note: 'client-after' }), d.id]);
+  };
+  expireClient = true;
+  const clientBootstrapCount = commandLog.filter(row => row.op === 'bootstrap').length;
+  const beforeClientPublication = await scalar("SELECT body FROM factory_findings WHERE kind='task_inventory'");
+  const clientExpired = await cycle('client-expiry');
+  assert.equal(clientExpired.pending, true); assert.equal(child.pid, nativePid);
+  assert.equal(json(statePath).pending, null); assert.equal(json(statePath).published_at, undefined);
+  assert.equal(await scalar("SELECT body FROM factory_findings WHERE kind='task_inventory'"), beforeClientPublication);
+  Date.now = realNow; await pg.exec("UPDATE inventory_test_clock SET skew=interval '0'");
+  const clientFresh = await cycle('client-expiry');
+  assert.equal(clientFresh.pending, false); assert.equal(clientFresh.published.generation, clientCut.receipt.generation);
+  assert.notEqual(clientFresh.published.epoch, clientCut.receipt.epoch); assert.equal(child.pid, nativePid);
+  assert.equal(commandLog.filter(row => row.op === 'bootstrap').length, clientBootstrapCount + 1);
+  equalPlan(await currentOracle('client-expired-next-cut'), catalogState());
+  console.log('ok: real client expiry before body validation keeps the audited baseline without constructing or publishing a restamped body');
+  for (const [code, message] of [['08006', 'inventory cut expired'], ['P0001', 'other publication failure']]) {
+    publicationFailure = Object.assign(new Error(message), { code });
+    const previous = readFileSync(join(work, 'inventory/last-expired-cut.json'), 'utf8');
+    await assert.rejects(cycle(`wrong-error-${code}`), error => error.code === code && error.message === message);
+    assert(json(statePath).pending); assert.equal(readFileSync(join(work, 'inventory/last-expired-cut.json'), 'utf8'), previous);
+  }
+  console.log('ok: other SQL errors and misleading expiry text never discard the pending cut');
+  await q("UPDATE questions SET state='disputed' WHERE id=$1", [future]);
+  ackFailure = true;
+  await assert.rejects(cycle('ack-error'), error => error.code === 'P0001' && error.message === 'inventory cut expired');
+  assert(json(statePath).pending);
+  console.log('ok: an expiry-shaped acknowledgment error is not publication recovery');
+  expirePublication = true; proofMismatch = true;
+  await assert.rejects(cycle('wrong-fence'), /inventory cut expired/);
+  assert(json(statePath).pending);
+  await pg.exec("UPDATE inventory_test_clock SET skew=interval '0'");
+  console.log('ok: an actual expiry with a mismatched authoritative generation cannot retain the baseline');
+  child.stdin.write('publish_step 1\n');
+  let publicationTimer;
+  try {
+    const reply = await Promise.race([replies.next(), new Promise((_, reject) => {
+      publicationTimer = setTimeout(() => reject(new Error('bounded native publication deadline')), 30000);
+    })]);
+    assert(!reply.done); assert.match(reply.value, /^ok publish_step \d+ \d+ [01]$/);
+  } finally { clearTimeout(publicationTimer); }
+  console.log('ok: the same native inventory process accepts bounded publication with the exact shell reply contract');
+  file('receipt.json', { v: 1, actual_binary: binary, cases: 12, ackEvidence, commandLog, final: catalogState().summary });
   succeeded = true;
 } catch (error) { console.error(`inventory pipeline fixture retained: ${dir}`); throw error; }
 finally {
+  Date.now = realNow;
   reader?.close();
   if (child) {
     child.stdin.end();

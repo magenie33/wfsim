@@ -269,5 +269,44 @@ try {
       [{ build_id: 'alias', ruler: 'r', mode: 'base' }, { build_id: 'orphan', ruler: 'r', mode: 'base' }]);
     assert.deepEqual(JSON.parse(JSON.stringify(audited)), replayedAudit);
   });
+  const expired = catalog('expired'); await seed(expired);
+  const expiredReceipt = { epoch: 'expired-first', generation: 'expired', engine, contract, status: 'sealed',
+    snapshot, started_at, change_count: 1, manifest_sha: '2'.repeat(64) };
+  expired.beginEpoch(expiredReceipt); expired.freezeEpoch();
+  expired.seal({ snapshot, started_at, expected });
+  check('an audited bootstrap without complete acknowledgments is not a reusable closed baseline', () => {
+    assert.equal(expired.auditedBaseline(expiredReceipt, audited), false);
+  });
+  expired.recordReceipts([input]); expired.acknowledge([input]); expired.finishEpoch();
+  check('independently audited closed bootstrap proves the exact retained baseline', () => {
+    assert.equal(expired.auditedBaseline(expiredReceipt, audited), true);
+  });
+  const originalMeta = structuredClone(expired.meta);
+  for (const [name, mutate] of [
+    ['partial epoch', meta => { meta.epoch.phase = 'processing'; }],
+    ['partial tokens', meta => { meta.epoch.tokens_processed = 0; }],
+    ['other generation', meta => { meta.generation = 'other'; }],
+    ['other engine', meta => { meta.engine = 'ffffffffffff'; }],
+    ['other contract', meta => { meta.contract = { ...contract, changed: true }; }],
+    ['other snapshot', meta => { meta.epoch.snapshot = 'other'; }],
+    ['other sealed manifest', meta => { meta.epoch.manifest_sha = '3'.repeat(64); }],
+    ['missing audit digest', meta => { delete meta.audit_digest; }],
+    ['already published', meta => { meta.published = published; }],
+  ]) check(`retained baseline rejects ${name}`, () => {
+    const next = structuredClone(originalMeta); mutate(next); expired.setMeta(next);
+    assert.equal(expired.auditedBaseline(expiredReceipt, audited), false); expired.setMeta(originalMeta);
+  });
+  expired.recordReceipts([{ ...input, key: 'unprocessed', revision: '103' }]);
+  check('unprocessed local receipts prevent baseline recovery', () => assert.equal(expired.auditedBaseline(expiredReceipt, audited), false));
+  expired.acknowledge([{ ...input, key: 'unprocessed', revision: '103' }]); expired.setMeta(originalMeta);
+  check('cached token totals cannot hide additional durable tokens', () => assert.equal(expired.auditedBaseline(expiredReceipt, audited), false));
+  expired.statement('DELETE FROM epoch_tokens WHERE key=?').run('unprocessed');
+  expired.statement('INSERT INTO jobs VALUES(?,?,?,?,NULL)').run('unfinished', JSON.stringify(scope), 'one', 'one');
+  check('unfinished cohort work prevents recovery', () => assert.equal(expired.auditedBaseline(expiredReceipt, audited), false));
+  expired.statement('DELETE FROM jobs WHERE key=?').run('unfinished');
+  expired.statement('UPDATE questions SET queued=0 WHERE kind IS NOT NULL').run();
+  check('matching cached counts cannot hide a changed question digest during recovery', () => {
+    assert.equal(expired.auditedBaseline(expiredReceipt, audited), false);
+  });
   console.log(`${checks} incremental inventory checks passed`);
 } finally { for (const db of opened) db.close(); rmSync(dir, { recursive: true, force: true }); }
