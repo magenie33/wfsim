@@ -27,6 +27,8 @@ LIB="${1:?usage: reconcile_queue.sh <library.json> <facts.ndjson> <queue.ndjson>
 FACTS="${2:?usage: reconcile_queue.sh <library.json> <facts.ndjson> <queue.ndjson>}"
 OUT="${3:?usage: reconcile_queue.sh <library.json> <facts.ndjson> <queue.ndjson>}"
 BOARD="${WFSIM_BOARD:-./target/release/wfsim-board}"
+INVENTORY_ONLY="${INVENTORY_ONLY:-0}"
+case "$INVENTORY_ONLY" in 0|1) ;; *) echo "inventory: INVENTORY_ONLY must be 0 or 1" >&2; exit 2 ;; esac
 # EVERY OWED ROW, whoever is measuring it: a hold here would claim and hide rows.
 unset CLAIMED
 
@@ -62,6 +64,11 @@ python3 scripts/inventory_phase.py bind -- node scripts/bind_inventory_builds.mj
 python3 scripts/inventory_phase.py classify -- node scripts/compute_inventory.mjs "$OUT" "$missing" "$orphans" "$FACTS" "$roster" "$inventory"
 rm -f "$inventory" "$inventory.builds" "$inventory.canonical" "$inventory.tasks" "$inventory.json"
 rm -f "$roster"
+
+if [ "$INVENTORY_ONLY" = 1 ]; then
+  rm -f "$missing" "$orphans"
+  exit 0
+fi
 
 # A SCENE'S FIRST PASS IS PACED: a new rung owes every build a row at once, and
 # one run asking a whole board floods the factory's open questions. At most
