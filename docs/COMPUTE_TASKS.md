@@ -80,6 +80,10 @@ retains the additive schema and inventory; no task or score backfill is needed.
 
 ## Complete demand
 
+The demand projection gives a full background-read statement budget when queue
+counts or compute-cost estimates need refreshing. The normal budget applies
+only while both caches remain valid; their refresh intervals are independent.
+
 Full reconciliation captures builds, scores, queue rows and task lifecycle in one
 read-only repeatable-read transaction. A lost connection aborts the capture;
 partial files never become a published inventory. The engine walks that

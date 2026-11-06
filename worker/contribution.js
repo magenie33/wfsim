@@ -702,7 +702,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   const costs = kept && now >= kept.costsAt && now - kept.costsAt < (options.costEveryMs || DEMAND_COST_EVERY_MS) ? kept : null;
   const began = performance.now();
   const reads = await db.batch([
-    db.prepare(`SET LOCAL statement_timeout = ${costs ? "DEFAULT" : DEMAND_COST_TIMEOUT_MS}`),
+    db.prepare(`SET LOCAL statement_timeout = ${counts && costs ? "DEFAULT" : DEMAND_COST_TIMEOUT_MS}`),
     ...(options.pace ? [] : [db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000))]),
     db.prepare(`SELECT COUNT(*) AS n, SUM(CASE WHEN started_at IS NULL THEN 0 ELSE 1 END) AS started
                 FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?`)

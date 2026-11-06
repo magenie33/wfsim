@@ -156,13 +156,30 @@ console.log("ok: demand and tally stay byte-equivalent with one rolling score re
 await L.run("INSERT INTO batches (id,at,why,total) VALUES ('rescore-capacity','x','x',2)");
 await L.run("INSERT INTO queue (batch,build_id,ruler,mode) VALUES ('rescore-capacity','one','r','m')");
 let samples = 0;
-const sampled = { LIBRARY: { ...L, prepare(sql) { if (/WITH s AS \(/.test(sql)) samples++; return L.prepare(sql); } } };
+const budgets = [];
+const sampled = { LIBRARY: { ...L,
+  prepare(sql) { if (/WITH s AS \(/.test(sql)) samples++; return L.prepare(sql); },
+  batch(statements) {
+    const budget = statements.find(s => /^SET LOCAL statement_timeout/.test(s.sql));
+    if (budget) budgets.push(budget.sql);
+    return L.batch(statements);
+  },
+} };
 const options = { costEveryMs: 3_600_000 };
 assert.equal((await demandOf(sampled, now, undefined, options)).owed.rescores, 1);
+assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = 120000", "cold demand reads need the full budget");
+await demandOf(sampled, now + 60_000, undefined, options);
+assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = DEFAULT", "both warm caches use the normal budget");
 await L.run("INSERT INTO queue (batch,build_id,ruler,mode) VALUES ('rescore-capacity','two','r','m')");
 assert.equal((await demandOf(sampled, now + 11 * 60_000, undefined, options)).owed.rescores, 2);
+assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = 120000", "expired queue counts need the full budget while cost estimates stay cached");
 assert.equal(samples, 1, "slowing price estimates must not slow queue counts");
-console.log("ok: queue totals refresh while an expensive compute-cost sample is kept");
+await demandOf(sampled, now + 12 * 60_000, undefined, options);
+assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = DEFAULT", "refreshed counts and cached costs return to the normal budget");
+await demandOf(sampled, now + 12 * 60_000, undefined, { costEveryMs: 600_000 });
+assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = 120000", "expired costs need the full budget while queue counts stay cached");
+assert.equal(samples, 2, "only an expired cost sample is read again");
+console.log("ok: either cache refresh keeps its full read budget; both warm caches use the normal budget");
 
 for (const [id, state, odd, age] of [["both", "nondeterministic", 1, 0], ["recent", "fact", 1, 0],
   ["old", "fact", 1, 2 * 86_400_000], ["unsettled", "nondeterministic", 0, 2 * 86_400_000]]) {
