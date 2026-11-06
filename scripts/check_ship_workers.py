@@ -1,4 +1,4 @@
-"""The real release path deploys one build to both workers and stops on failure."""
+"""The backend precedes the channel and edge, from one build, and failure stops release."""
 import argparse
 import contextlib
 import hashlib
@@ -59,9 +59,16 @@ def exercise(script, failure=False):
                 raise AssertionError("the publication path must return its verification status")
 
         deploys = [c for c in calls if "config" in c]
+        stage = next(c for c in calls if any(a.endswith("release_engine_lib.py") for a in c.get("args", []))
+                     and "--stage" in c["args"])
+        push = next(c for c in calls if c.get("args") == ["git", "push"])
+        channels = [c for c in calls if any(a.endswith("release_desktop.py") for a in c.get("args", []))]
+        assert calls.index(stage) < calls.index(push) < calls.index(deploys[0]), \
+            "stage the native library, then land the source push before the backend publishes"
         if failure:
             assert isinstance(exit_code, str) and "failed (23)" in exit_code, exit_code
             assert [c["config"] for c in deploys] == ["wrangler.jsonc"], deploys
+            assert not channels, "backend failure must leave the desktop channel unchanged"
             assert calls[-1] is deploys[0], "backend failure must stop every later release action"
         else:
             assert exit_code == 0, exit_code
@@ -71,8 +78,12 @@ def exercise(script, failure=False):
                 assert call["args"][:4] == ["npx", "--yes", ship.WRANGLER, "deploy"], call
                 assert call["cwd"] == root, "every worker must publish from the same build checkout"
             assert len({c["artifact"] for c in deploys}) == 1, "the artifact changed between workers"
-            push = next(c for c in calls if c.get("args") == ["git", "push"])
-            assert calls.index(push) < calls.index(deploys[0]), "the source push must land first"
+            assert len(channels) == 1, channels
+            assert calls.index(deploys[0]) < calls.index(channels[0]) < calls.index(deploys[1]), \
+                "the backend must accept the new client before the channel and edge advance"
+            library = next(c for c in calls if c.get("args", [""])[-1].endswith("release_engine_lib.py"))
+            assert calls.index(channels[0]) < calls.index(library) < calls.index(deploys[1]), \
+                "publish the staged native library after the channel and before the edge"
             website = next(c for c in calls if any(a.endswith("ship_website.py") for a in c.get("args", [])))
             assert calls.index(deploys[1]) < calls.index(website) < calls.index(deploys[2]), calls
             assert [c["kind"] for c in calls[-2:]] == ["bot", "verify"], calls[-2:]
@@ -87,7 +98,7 @@ def main():
     args = parser.parse_args()
     exercise(args.ship_script)
     exercise(args.ship_script, failure=True)
-    print("publication checks passed: one build, backend before edge, backend failure stops release")
+    print("publication checks passed: one build, backend before channel and edge, backend failure stops release")
 
 
 if __name__ == "__main__":

@@ -221,12 +221,12 @@ def main() -> None:
                 sys.exit(75)
             sys.exit("ship: `git push` failed — nothing after this ran")
 
+    # BOTH WORKERS USE THIS BUILD: routes passed to BACKEND also serve its HTML.
+    # A failed backend deploy must stop before the channel and edge advance.
+    run(shutil.which("npx") or "npx", "--yes", WRANGLER, "deploy", "-c", str(ROOT / "wrangler.jsonc"))
     run(*release)
     # …AND `latest.json` NAMES IT once the site serves it.
     subprocess.run([sys.executable, str(ROOT / "scripts" / "release_engine_lib.py")])
-    # BOTH WORKERS USE THIS BUILD: routes passed to BACKEND also serve its HTML.
-    # A failed backend deploy must stop before the edge advances.
-    run(shutil.which("npx") or "npx", "--yes", WRANGLER, "deploy", "-c", str(ROOT / "wrangler.jsonc"))
     run(shutil.which("npx") or "npx", "--yes", WRANGLER, "deploy", "-c", str(ROOT / "wrangler.edge.jsonc"))
     if os.environ.get("WEBSITE_TARGET"):
         run(sys.executable, str(ROOT / "scripts" / "ship_website.py"))

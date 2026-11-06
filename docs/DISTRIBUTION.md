@@ -168,9 +168,10 @@ content-addressed and cacheable for ever.
    Linux and Mac producers run alongside validation, skipping published targets.
 2. Once CI passes on main, `.github/workflows/ship.yml` lays that artifact over
    main — all but `site/board/`, the bots' — and runs `ship.py --built`:
-   commit, push, stage and sign the channel, publish the engine library,
-   deploy the backend and edge from that same build, then deploy the MCP
-   server and bot. A failed backend deployment stops the edge deployment.
+   stage the engine library, commit and push, deploy the backend, stage and sign
+   the channel, publish the engine library, deploy the edge from that same build,
+   then deploy the MCP server and bot. A failed backend deployment stops the
+   channel and edge deployment.
    The channel, MCP server and bot are read back against the build.
    Native artifacts come from that same CI run and must match its engine,
    module, data, source and byte digest. Missing optional slices retain WASM;
