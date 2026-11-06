@@ -279,7 +279,9 @@ initiator and family provenance. Personal community requests carry their
 captured `__board_upload` choice: only `true` grants build delivery; missing
 or false returns `disabled` without stopping the calculation. An opened appraisal uses its existing
 `{code, engine}` authority after the server checks its frozen, unexpired
-request. Later batches carry `harvest: {receipt, question, engine}`. The HMAC
+request. The receipt names the currently served execution engine, including
+when that request was frozen before a release; its question and asker stay
+unchanged. Later batches carry `harvest: {receipt, question, engine}`. The HMAC
 receipt is restricted to build delivery for that weapon and uses the user
 calculation's retention window (`USER_TASK_KEEP_MS`), allowing delivery after
 the lease finishes or the browser restarts. It grants no score or contribution

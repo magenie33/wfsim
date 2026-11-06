@@ -7,18 +7,20 @@ import { userTasksRoute } from "../worker/user_tasks.js";
 import { syncRoute } from "../worker/sync.js";
 import { verifyRoute } from "../worker/verify.js";
 import { facts, workOf } from "../worker/factory.js";
+import worker from "../worker/index.js";
 
 export async function taskServiceFixture() {
   const frontend = process.env.WFSIM_BASE ? null : await serveSite(resolve("site"));
   const upstream = process.env.WFSIM_BASE || `http://127.0.0.1:${frontend.address().port}`;
   const release = await fetch(upstream + "/release.json").then((response) => response.json());
   const db = await testDb("library");
-  const env = { LIBRARY: db, ASSETS: { fetch: async () => Response.json(release) } };
+  const env = { LIBRARY: db, AUTH_SECRET: "task-service-browser-fixture", ASSETS: { fetch: async () => Response.json(release) } };
+  const submissions = [];
   let base;
   const server = createServer(async (request, response) => {
     try {
       const path = new URL(request.url, "http://localhost").pathname;
-      if (path.startsWith("/api/user-tasks/") || ["/test/claim", "/api/board/sync", "/api/board/work", "/api/board/renew", "/api/board/release"].includes(path)) {
+      if (path.startsWith("/api/user-tasks/") || ["/test/claim", "/api/board/submit", "/api/board/sync", "/api/board/work", "/api/board/renew", "/api/board/release"].includes(path)) {
         const chunks = []; for await (const chunk of request) chunks.push(chunk);
         const raw = Buffer.concat(chunks).toString();
         let body = {}; try { body = JSON.parse(raw); } catch (_) { /* GET has no body */ }
@@ -32,7 +34,13 @@ export async function taskServiceFixture() {
         if (body.verifier) headers.set("cf-connecting-ip", "test-" + body.verifier);
         const incoming = new Request(base + request.url, { method: request.method, headers, ...(request.method === "POST" ? { body: raw } : {}) });
         const reply = path.startsWith("/api/user-tasks/") ? await userTasksRoute(incoming, env, path)
-          : path === "/api/board/sync" ? await syncRoute(incoming, env) : await verifyRoute(incoming, env, path);
+          : path === "/api/board/submit" ? await worker.fetch(incoming, env)
+            : path === "/api/board/sync" ? await syncRoute(incoming, env) : await verifyRoute(incoming, env, path);
+        if (path === "/api/board/submit") {
+          const result = await reply.clone().json().catch(() => null);
+          submissions.push({ status: reply.status, builds: body.builds?.length, receipt: !!result?.receipt, disabled: !!result?.disabled, error: result?.error });
+          if (submissions.length > 20) submissions.shift();
+        }
         response.writeHead(reply.status, Object.fromEntries(reply.headers)); response.end(Buffer.from(await reply.arrayBuffer())); return;
       }
       if (path.startsWith("/api/") && request.method !== "GET") { response.writeHead(404); response.end(); return; }
@@ -43,5 +51,6 @@ export async function taskServiceFixture() {
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   base = `http://127.0.0.1:${server.address().port}`;
-  return { base, async close() { server.closeAllConnections(); server.close(); frontend?.closeAllConnections(); frontend?.close(); await db.close(); } };
+  return { base, diagnostics: () => ({ engine: release.engine, submissions }),
+    async close() { server.closeAllConnections(); server.close(); frontend?.closeAllConnections(); frontend?.close(); await db.close(); } };
 }

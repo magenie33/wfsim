@@ -48,14 +48,14 @@ export async function authorizeHarvest(env, input, now = Date.now(), httpRequest
     const row = await env.LIBRARY.prepare("SELECT code, channel, asker, weapon, engine, request, at FROM appraisals WHERE code = ?")
       .bind(input.code.toUpperCase()).first();
     if (!appraisalKept(row, now)) return failure("no such appraisal", 404);
-    if (!row.request || row.engine !== input.engine) return failure("the appraisal is not frozen on this engine", 409);
+    if (!row.request) return failure("the appraisal is not frozen", 409);
     let frozen;
     try { frozen = JSON.parse(row.request); } catch (_) { return failure("bad harvest search", 403); }
     if (!frozen.request || typeof frozen.request !== "object" || Array.isArray(frozen.request) || frozen.request.weapon !== row.weapon
         || !/^[a-z0-9_]{1,64}$/.test(row.weapon || "")) return failure("bad harvest search", 403);
     const question = await questionId("optimize", frozen);
     if (input.question !== undefined && input.question !== question) return failure("the appraisal names another search", 403);
-    return issue(env, { question, weapon: row.weapon, engine: row.engine,
+    return issue(env, { question, weapon: row.weapon, engine: input.engine,
       initiator: row.channel === SURVEY_CHANNEL ? "system" : await initiatorCode(env, "bot", `${row.channel}:${row.asker}`), family_source: null }, now);
   }
   const refused = unrecognised(input.verifier);

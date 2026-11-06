@@ -2,11 +2,26 @@ import { openApp } from "./cdp.mjs";
 import { taskServiceFixture } from "./user_task_service_fixture.mjs";
 const fixture = await taskServiceFixture();
 const app = await openApp({ base: fixture.base, lang: 'en', boot: 13000 });
+let deadline;
 try {
+  await app.send('Network.enable');
+  await app.send('Network.setBlockedURLs',{urls:['https://*']});
   await app.load('/weapons/Torid/simulator', 7000);
-  const out = await app.evaluate(`(async () => {
+  const out = await Promise.race([app.evaluate(`(async () => {
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-    const until = async condition => { for (let i = 0; i < 600; i++) { if (await condition()) return; await sleep(100); } throw new Error('community check timeout'); };
+    const until = async (condition,label='community setup',ms=60000) => {
+      const end=Date.now()+ms;
+      while(Date.now()<end) { if(await condition()) return; await sleep(100); }
+      throw new Error(label+' timed out: '+JSON.stringify(userTasks.list().map(({id,kind,state,error,progress})=>({id,kind,state,error,progress}))));
+    };
+    const completed = async (id,label) => {
+      await until(()=>{
+        const task=userTasks.list().find(row=>row.id===id);
+        if(['failed','cancelled','interrupted'].includes(task?.state)) throw new Error(label+': '+JSON.stringify(task));
+        return task?.state==='succeeded';
+      },label,120000);
+      return userTasks.wait(id);
+    };
     await initUserTasks(); gainPrefs.on = false; restartCalc(); workOnce = async () => false;
     localStorage.setItem(CONSENT_KEY, JSON.stringify({ on: true, v: COMPUTE_CONSENT_V, at: new Date().toISOString() }));
     computeFrozen = false;
@@ -29,7 +44,7 @@ try {
       await userCalculationOnce(work, verifier);
     }
     communityLanes = originalLanes;
-    const done = await userTasks.wait(task.id);
+    const done = await completed(task.id,'simulation witnesses');
     await submitted;
     out.completed = done.state === 'succeeded';
     out.record = !!results.find(record => record.id === done.result_ref && record.r.runs === 129);
@@ -48,13 +63,14 @@ try {
       if (!work) throw new Error('No search work for verifier ' + digit);
       await userCalculationOnce(work, verifier);
     }
-    const searchDone = await userTasks.wait(searchTask.id);
+    const searchDone = await completed(searchTask.id,'optimization witnesses');
     const artifact = await userTasks.store.value('artifact:' + searchDone.result_ref);
     out.search = searchDone.state === 'succeeded' && artifact.result.results.length > 0;
     out.finalists = artifact.result.results.every(row => !!row.replay && !!row.forma) && artifact.result.target && artifact.request.finalists === 2;
     return out;
-  })()`);
+  })()`),new Promise((_,reject)=>{ deadline=setTimeout(()=>reject(new Error('community witness execution exceeded four minutes')),240000); })]);
   for (const [key,label] of Object.entries({ identity:'transfer keeps one task identity', input:'transfer retains the frozen calculation', completed:'two real WASM witnesses complete the remote task', record:'the verified report enters the existing simulation result store', single:'handoff produces a single user-visible completion', outbox:'durable volunteer reports are acknowledged', search:'two real WASM searches agree on a complete optimization report', finalists:'the remote artifact preserves every finalist and its build-opening fields' })) app.check(label,out[key],JSON.stringify(out));
-} finally { await fixture.close(); await app.close(); }
+} catch(error) { console.error('task service fixture:',JSON.stringify(fixture.diagnostics())); throw error; }
+finally { clearTimeout(deadline); await fixture.close(); await app.close(); }
 process.exitCode = app.failures ? 1 : 0;
 console.log(app.failures ? `${app.failures} failed` : "community task execution works end to end");

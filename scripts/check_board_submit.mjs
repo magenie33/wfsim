@@ -499,11 +499,32 @@ function harvestFixture(producer = "user_calculation") {
   alternate.db.appraisal.request = JSON.stringify({ request: { weapon: PAYLOAD.weapon, strategy: "exhaust" }, context: { weapon: PAYLOAD.weapon } });
   const nonQuick = await alternate.post({ builds: [], harvest: { code: "TEST7", engine: "check-engine" } });
   check("a frozen appraisal's strategy remains the engine's decision", nonQuick.ok && !!(await nonQuick.json()).receipt, String(nonQuick.status));
-  for (const change of [{ request: null }, { engine: "older-engine" }, { at: new Date(0).toISOString() }]) {
+  const older = harvestFixture();
+  older.db.appraisal.engine = "older-engine";
+  const frozenBefore = JSON.stringify(older.db.appraisal);
+  const olderQuestion = await questionId("optimize", JSON.parse(older.db.appraisal.request));
+  const continued = await older.post({ builds: [], harvest: { code: "TEST7", engine: "check-engine" } });
+  const continuedGrant = await continued.json();
+  check("the current execution engine can continue an appraisal frozen before a release", continued.ok
+    && typeof continuedGrant.receipt === "string" && continuedGrant.engine === "check-engine"
+    && continuedGrant.question === olderQuestion, `${continued.status}: ${JSON.stringify(continuedGrant)}`);
+  if (continuedGrant.receipt) {
+    const claims = JSON.parse(Buffer.from(continuedGrant.receipt.split(".")[0], "base64url").toString());
+    const delivered = await older.post({ builds: [PAYLOAD], harvest: { receipt: continuedGrant.receipt,
+      question: olderQuestion, engine: "check-engine" } });
+    const stored = older.db.calls.find(call => /INSERT INTO inbox/.test(call.sql));
+    check("a continued appraisal retains its frozen question and original asker without rewriting it", delivered.ok
+      && claims.engine === "check-engine" && claims.question === olderQuestion && stored?.args[3] === expectedInitiator
+      && JSON.stringify(older.db.appraisal) === frozenBefore && !older.db.calls.some(call => /UPDATE appraisals/.test(call.sql)), JSON.stringify(claims));
+  }
+  const staleEngine = await older.post({ builds: [], harvest: { code: "TEST7", engine: "older-engine" } });
+  check("an appraisal still requires the currently served execution engine", staleEngine.status === 409
+    && (await staleEngine.json()).retryable === false, String(staleEngine.status));
+  for (const change of [{ request: null }, { at: new Date(0).toISOString() }]) {
     const denied = harvestFixture(); Object.assign(denied.db.appraisal, change);
     const refused = await denied.post({ builds: [], harvest: { code: "TEST7", engine: "check-engine" } });
     const detail = await refused.json();
-    check("an unfrozen, mismatched or expired appraisal cannot issue a receipt", [404, 409].includes(refused.status)
+    check("an unfrozen or expired appraisal cannot issue a receipt", [404, 409].includes(refused.status)
       && detail.retryable === false && denied.db.rows.size === 0, `${refused.status}: ${JSON.stringify(detail)}`);
   }
 }

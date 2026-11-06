@@ -345,7 +345,7 @@ const AGENT_EXEMPT = [
   { sel: "#nona-fab", kind: "view", why: "opens Nona herself" },
   { sel: "#theme-toggle", kind: "pref", why: "light or dark, for this browser" },
   { sel: "#quick-calc", kind: "pref", why: "the quick calc's own settings, for this browser" },
-  { sel: "#board-no", kind: "pref", why: "whether this browser sends results to the board" },
+  { sel: "#board-no,[data-opt-board-consent]", kind: "pref", why: "whether this browser sends builds to the library" },
   { sel: "#board-verify-flip", kind: "pref", why: "whether this browser computes the board's orders" },
   { sel: "#compute-ask", kind: "reader", why: "computing together is the reader's own yes, never an agent's" },
   { sel: "#w-name a", kind: "outward", why: "links to the wiki and the market" },

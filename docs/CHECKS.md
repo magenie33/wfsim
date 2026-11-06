@@ -556,6 +556,8 @@ Plain node against a KV stub, no browser. Every key
 `boardPayload()` emits, read out of `app.js`, is a key the worker's `AXES`
 table knows how to keep; every key survives into storage; two builds differing
 in any one axis are two records.
+An appraisal frozen before a release keeps its question and original asker
+when the current execution engine requests a build-delivery receipt.
 
 ## `check_engine_grace.py`
 
