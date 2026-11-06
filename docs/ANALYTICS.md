@@ -165,13 +165,36 @@ subject and `n`; the first path segment the page was on (`home`, `weapons`,
 ## Reading it
 
 ```
-python scripts/usage.py                    # last 14 days
-python scripts/usage.py --days 28
+python scripts/usage.py                    # last 14 complete UTC days
+python scripts/usage.py --days 28 --shell web --summary
+python scripts/usage.py --before 2026-11-06 --json
 ```
 
 It needs `PG_URL` naming a role that owns `usage_points`. It prints, per day,
 visitors and visitors with a result; each module's visitors; the top subjects
 per event; and visitors by landing route, language, shell and country.
+
+`--before` is an exclusive UTC date, today by default. Explicitly selecting
+tomorrow includes today and marks it partial. `--shell web` or `desktop`
+filters every read; the default reports both separately and their deduplicated
+union. `--summary` reads only visitor aggregates; `--json` emits the same
+report without visitor identifiers. Counts are browsers with observed points,
+not exact people; a missing point is not evidence of no traffic.
+
+Daily, whole-period and weekly visitors are sets of browser ids over their
+calendar windows, never sums of daily counts. A result uses `RESULTS`;
+returning visitors were seen in the seven calendar days before the window.
+The two weekly windows are consecutive seven-day periods ending at `--before`,
+including dates without observations. The report reads seven extra days for
+returning counts and states its observed coverage; counts near the log's
+beginning may lack their full lookback.
+
+Countries `XX`, `ZZ`, empty or invalid are `unknown`, never `overseas`.
+A browser observed in multiple markets is also unknown for the window;
+its total visitor count remains one. The direct website proxy supplies `XX`,
+so country-based comparisons do not establish a change in audience geography.
+The log report classifies its source points; already kept daily totals retain
+the classification used when they were written.
 
 It also ranks the **most active visitors** — by days seen, then results — under
 the first eight characters of their hash. A visitor is a browser and nothing
@@ -194,7 +217,11 @@ Nothing from the edge is stored or fed into a count, and Cloudflare keeps it
 only for its own retention. With `PG_URL` set the script prints the log's
 visitors beside the edge's unique IPs. Compare the two and never sum them: they
 differ by design (§"Why the edge cannot answer it"), so a gap that suddenly
-widens is the signal, meaning crawlers rose or the page stopped posting.
+widens can mean crawlers rose, the page stopped posting or routing changed.
+Direct website delivery bypasses Cloudflare's proxy and its HTTP visitor
+counts. Domain totals can still include proxied subdomains; that traffic does
+not replace the missing website coverage. Mark a routing change as a boundary
+in edge trends and use the usage log to compare audience across it.
 
 ## Community compute
 
@@ -274,7 +301,7 @@ that stops part way is redone, and a missed run is made up by the next.
 `/api/popularity` (`worker/popularity.js`): per weapon, its `tested` rows —
 the visitors who finished a simulation OR a search on it that day, each once
 whichever they ran — summed over the last 30 days `usage_days` has finished,
-both markets together. A hundred runs in an afternoon add one; a count of runs
+all markets together. A hundred runs in an afternoon add one; a count of runs
 would rank the most persistent reader, not the most tested
 weapon. The page shows each weapon's PLACE, not the count. Totals the cron already keeps, cached an hour at each edge; `/support`
 says it is shown. Nothing new is collected for it.

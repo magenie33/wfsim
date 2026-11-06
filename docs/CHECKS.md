@@ -19,6 +19,11 @@ cache replacement, points, mobile layout and sign-in return/resumption.
 An engine-rejected row leaves legal rows recommendable and has no control of its own.
 `check_usage_events.mjs` sends weapon route subjects through the real usage
 endpoint; the unnormalized Library and riven-analyst subjects fail this check.
+It also writes a trusted website proxy's point with unknown reader geography
+and checks unknown/mixed-market daily totals independent of source row order.
+It runs `python scripts/check_usage_report.py`, which covers complete UTC
+windows, explicit partial dates, shell filters, cross-day deduplication,
+calendar-week retention and aggregate JSON without browser identifiers.
 `check_board_review_page.mjs` also checks temporary board
 precision and preservation of both smaller and larger personal run counts.
 
