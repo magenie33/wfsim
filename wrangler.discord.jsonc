@@ -1,0 +1,18 @@
+// Signed Discord interactions have a separate public ingress and no database.
+{
+  "name": "wfsim-discord",
+  "main": "worker/discord.js",
+  "compatibility_date": "2026-07-28",
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  "services": [{ "binding": "CLOUD", "service": "wfsim-cloud" }],
+  "ratelimits": [
+    { "name": "CLAN_LIMIT", "namespace_id": "1005", "simple": { "limit": 2, "period": 60 } }
+  ],
+  "vars": {
+    "DISCORD_APPLICATION": "1554007319967436875",
+    "DISCORD_GUILD": "1532898211663057138",
+    "DISCORD_PUBLIC_KEY": "d1c75ae8445e2153a471fd90f14044e550beb64e0f3b7c751ab66f94801bb012"
+  }
+}

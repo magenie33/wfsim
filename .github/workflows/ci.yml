@@ -951,6 +951,8 @@ jobs:
       # THE BOTS' DOORS hold only what the platform signed, and answer once.
       - name: The QQ door keeps signed messages and hands each out once
         run: node scripts/check_qq.mjs
+      - name: Discord clan forms accept signed members and answer privately
+        run: node scripts/check_discord.mjs
 
   ci-required:
     if: ${{ always() }}
