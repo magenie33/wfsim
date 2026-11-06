@@ -568,24 +568,7 @@ const AGENT_ACTIONS = [
       return { limits: JSON.parse(JSON.stringify(opt.limits)) };
     },
   },
-  {
-    id: "optimizer.plan.set",
-    writes: "search",
-    what: "Select a built-in search strategy, how many builds the search answers with (the best N it scored, 1-100), and how many fights each candidate gets (1 or 10).",
-    anchor: "#opt-runbar",
-    needs_weapon: true,
-    args: {
-      search_strategy: { kind: "string", what: "a built-in strategy, selected without editing it",
-        enum: () => (META?.search_presets?.strategies || []).map(s => s.id) },
-      finalists: { kind: "number", min: 1, max: 100, what: "how many builds the search answers with" },
-      candidate_runs: { kind: "number", min: 1, max: 10, what: "1 or 10 fights a candidate" },
-    },
-    run({ search_strategy, finalists, candidate_runs }) {
-      if (search_strategy != null) setOptStrategy(search_strategy);
-      setOptSizes({ finalists, candidate_runs });
-      return { search_strategy: opt.search_strategy || null, finalists: optRun.finalists, candidate_runs: optRun.candidate_runs, estimate: $("opt-estimate").textContent.trim() };
-    },
-  },
+  OPTIMIZER_PLAN_ACTION,
   {
     id: "rivens.cards.list",
     query: true,
