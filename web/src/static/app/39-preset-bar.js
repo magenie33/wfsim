@@ -36,9 +36,10 @@ function cloudMark(domain, p) {
     : "on this browser only - click to sync it to your account"))}">${CLOUD_SVG}</button>`;
 }
 
-/// EVERY ENTRY A BAR CAN OPEN: the reader's own, and what its collection
-/// publishes (an official ruler, a board build), which are read-only.
-const barEntries = (cfg) => cfg.load().concat(cfg.published ? cfg.published() : []);
+/// Every entry a bar can open: its default, owned entries, and published
+/// entries (an official ruler, a board build), which are read-only.
+const presetDefaults = (cfg) => cfg.defaultEntry ? [cfg.defaultEntry()] : [];
+const barEntries = (cfg) => presetDefaults(cfg).concat(cfg.load(), cfg.published ? cfg.published() : []);
 
 // ---- published entries opened into a bar ----------------------------------------------
 //
@@ -193,11 +194,11 @@ function lockReadOnly(el, on, cfg) {
 function renderPresetBarIn(bar, cfg) {
   const noun = cfg.noun || "preset";
   const ps = cfg.load(), ro = cfg.pins ? openedPublished(cfg) : [];
-  const entries = ps.concat(ro), active = cfg.active();
+  const entries = presetDefaults(cfg).concat(ps, ro), active = cfg.active();
   const current = presetFind(entries, active);
   const items = () => {
     const names = presetSearchNames(), recent = presetRecentUses(cfg.domain), selected = cfg.active();
-    const choices = cfg.load().concat(cfg.pins ? openedPublished(cfg) : []).sort((a,b) =>
+    const choices = presetDefaults(cfg).concat(cfg.load(), cfg.pins ? openedPublished(cfg) : []).sort((a,b) =>
       Number(presetId(b) === selected) - Number(presetId(a) === selected)
       || (recent[presetId(b)] || b.savedAt || 0) - (recent[presetId(a)] || a.savedAt || 0));
     return choices.map(p => {
@@ -216,7 +217,8 @@ function renderPresetBarIn(bar, cfg) {
   const ownOps = current && !current.builtin
     ? `<button type="button" class="pop dup">⧉ ${escHtml(tr("duplicate"))}</button><button type="button" class="pop ren">✎ ${escHtml(tr("rename"))}</button><button type="button" class="pop del">× ${escHtml(tr("delete"))}</button>` : "";
   const roOps = current?.builtin
-    ? `<button type="button" class="pop dup">⧉ ${escHtml(tr("duplicate"))}</button><button type="button" class="pop unpin" data-unpin="${escHtml(presetId(current))}">× ${escHtml(tr("take it out of the bar — the board keeps it"))}</button>` : "";
+    ? `<button type="button" class="pop dup">⧉ ${escHtml(tr("duplicate"))}</button>` + (cfg.unpin
+      ? `<button type="button" class="pop unpin" data-unpin="${escHtml(presetId(current))}">× ${escHtml(tr("take it out of the bar — the board keeps it"))}</button>` : "") : "";
   const published = cfg.openable ? `<span class="popen">${cfg.boardPicker
     ? `<button type="button" class="ghost-btn small" data-board-open>+ ${escHtml(cfg.openLabel)}</button>`
     : ddButton(`dd-open-${cfg.domain}`, {value:"", search:true, placeholder:`+ ${cfg.openLabel}`,
@@ -441,7 +443,7 @@ function openPresetLibrary(cfg, anchor) {
   };
   function renderRows() {
     const own = state.scope === "all" ? loadPresetWhole(cfg.domain) : cfg.load();
-    const published = cfg.pins ? openedPublished(cfg) : [];
+    const published = presetDefaults(cfg).concat(cfg.pins ? openedPublished(cfg) : []);
     const source = state.source === "published" ? published : state.source === "all" ? own.concat(published) : own;
     const terms = state.query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
     const names = presetSearchNames();
@@ -506,7 +508,7 @@ function openPresetLibrary(cfg, anchor) {
     tools.innerHTML = `<div class="addbar preset-library-search"><input type="search" aria-label="${escHtml(tr("Search presets"))}" placeholder="${escHtml(tr("Search names, equipment and settings…"))}" value="${escHtml(state.query)}"></div>`
       + ddButton("preset-library-sort", { value:state.sort, items:[{value:"recent",label:tr("Recently modified")},{value:"name",label:tr("Name")},{value:"oldest",label:tr("Oldest first")}], onPick:value => {state.sort=value; render();} })
       + (scope !== null && cfg.libraryPath ? ddButton("preset-library-scope", {value:state.scope, items:[{value:"current",label:tr("Current item")},{value:"all",label:tr("All items")}],onPick:value=>{state.scope=value;state.visible=30;render();}}) : "")
-      + (cfg.pins ? ddButton("preset-library-source",{value:state.source,items:[{value:"mine",label:tr("Mine")},{value:"published",label:cfg.roGroup},{value:"all",label:tr("All")}],onPick:value=>{state.source=value;state.visible=30;render();}}) : "")
+      + (cfg.pins || cfg.defaultEntry ? ddButton("preset-library-source",{value:state.source,items:[{value:"mine",label:tr("Mine")},{value:"published",label:cfg.roGroup || tr("read-only")},{value:"all",label:tr("All")}],onPick:value=>{state.source=value;state.visible=30;render();}}) : "")
       + `<button class="ghost-btn" data-library-new>+ ${escHtml(tr("new"))}</button>`;
     const search = tools.querySelector("input");
     onTyped(search, () => {state.query=search.value;state.visible=30;renderRows();});

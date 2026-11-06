@@ -359,6 +359,7 @@ function renderWarframe() {
   renderWfShards();
   renderWfOperator();
   renderWfHelminth();
+  wfLockDefault();
   refreshWfPanel();
 }
 
@@ -378,8 +379,8 @@ async function showWarframe(id) {
     const list = presetListWithIds(WF_BUILDS, id);
     const last = localStorage.getItem(presetActiveKey(WF_BUILDS, id));
     // `?build=` NAMES THE BUILD TO OPEN — a weapon's wielder link.
-    const p = presetToOpen(list, new URLSearchParams(location.search).get("build"), last);
-    wfActive = p ? presetId(p) : "";
+    const p = presetToOpen(list, requested || (last === DEFAULT_PRESET_ID ? DEFAULT_PRESET_ID : null), last);
+    wfActive = p ? presetId(p) : DEFAULT_PRESET_ID;
     wf = wfNormalize(p ? p.state : null, id);
   }
   renderWarframe();
