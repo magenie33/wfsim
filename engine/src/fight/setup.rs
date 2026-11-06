@@ -523,6 +523,8 @@ impl FightParams {
     /// is not cycled here: this profile measures the form in isolation.
     #[cfg(test)]
     pub fn dual_toxocyst_incarnon() -> Self {
+        let timing = crate::model::WeaponBase::from_data("dual_toxocyst_incarnon", true, &[])
+            .gauge_form.expect("Incarnon timing");
         Self {
             // 15/37.5/22.5 x 5/3 (Fevered Frenzy +50 base, pro-rata).
             damage: DamageVector::new()
@@ -534,11 +536,9 @@ impl FightParams {
             status_chance: 0.43,
             fire_rate: 4.5,
             frenzy: true,
-            // Pseudo-reload model (gauge locked full): 270 charge-backed
-            // rounds, downtime = revert (1.0 s, M9-measured) + re-transmute
-            // (2.35 s = base reload).
+            // Locked-gauge downtime comes from both package state timers.
             magazine_size: 270.0,
-            reload_seconds: 3.35,
+            reload_seconds: timing.transmute_in + timing.transmute_out,
             ammo_efficiency_applies: false,
             // Fevered Frenzy pre-stacked to 20 (+100% multishot) - the
             // evolution buff applies to both guns of the group.
@@ -1691,7 +1691,7 @@ impl FightParams {
     /// OPENS IN THE BASE FORM WITH AN EMPTY GAUGE (`starts_primed: false`, and
     /// the rule is on that field), rebuilds the gauge on weakpoint hits (Frenzy
     /// per `frenzy_lock`), transmutes, dumps the charge magazine and reverts.
-    /// Both transitions scale by the reload formula (M9).
+    /// Both package state timers scale by the reload-speed bucket.
     ///
     /// `frenzy` is the WEAPON's passive, not a constant: it belongs to
     /// whichever weapon lists the perk (Dual Toxocyst does, the Laetum does
@@ -1710,7 +1710,7 @@ impl FightParams {
         arcane: &ArcaneFx,
     ) -> Self {
         let rl = 1.0 + incarnon.reload_bonus;
-        let inc_form = incarnon.gauge_form;
+        let inc_form = incarnon.gauge_form.expect("a gauge cycle requires its transition data");
         let base_form = FightParams {
             frenzy,
             // No ammo-efficiency override here any more: `from_panel` derives
@@ -1732,21 +1732,15 @@ impl FightParams {
                 // other consumable in this sim.
                 starts_primed: false,
                 base_form: Box::new(base_form),
-                // The gauge economy is DATA (the engine knows no weapon
-                // names): Dual Toxocyst 9 charges / 1.0 s revert / 2.35 s
-                // transmute, Laetum 12 / 2.0 / 2.0. Both transition times
-                // scale by the reload formula. An evolution that speeds up
-                // charge building (Incarnon Efficiency: +50%) divides the
-                // hits needed — 12 becomes 8.
+                // Charge-rate evolutions reduce the required hit count;
+                // transitions use their own per-profile package times.
                 arms: Arms::Gauge {
-                    charge_on: inc_form.map(|f| f.charge_on).unwrap_or_default(),
-                    charges_to_fill: inc_form
-                        .map(|f| (f.charges_to_fill / (1.0 + f.charge_rate)).ceil() as u32)
-                        .unwrap_or(9),
+                    charge_on: inc_form.charge_on,
+                    charges_to_fill: (inc_form.charges_to_fill / (1.0 + inc_form.charge_rate)).ceil() as u32,
                 },
-                ends: if inc_form.is_some_and(|f| f.single_shot) { Ends::SingleShot } else { Ends::ChargeMagazine },
-                transmute_out_seconds: inc_form.map_or(1.0, |f| f.transmute_out) / rl,
-                transmute_seconds: inc_form.map_or(2.35, |f| f.transmute_in) / rl,
+                ends: if inc_form.single_shot { Ends::SingleShot } else { Ends::ChargeMagazine },
+                transmute_out_seconds: inc_form.transmute_out / rl,
+                transmute_seconds: inc_form.transmute_in / rl,
                 reload_bucket: rl - 1.0,
             }),
             ..Self::from_panel(incarnon, arena, arcane)

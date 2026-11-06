@@ -859,6 +859,13 @@ notes:
   incarnon_transformation_economy_wiki: |
     The Incarnon transformation economy (wiki Braton Incarnon Genesis), and it is
     the FAMILY's: all four Bratons share this gauge.
+  incarnon_package_transition_time: |
+    Entry and exit use the weapon profiles' ModeSwitchTime values from the
+    pinned client export in tests/fixtures/incarnon/switching-2026-10-28.json.
+    The exit profile is identified by its Incarnon behavior tag. Reload-speed
+    bonuses scale both state timers; their bases are independent of reloadTime.
+    The locked-gauge cycle duration is derived from their sum. INCARNON.md
+    documents source coverage and the remaining runtime-boundary limits.
   inherited_co_catalog_gives: |
     NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
     has no row for either of its two. Absence means ORDINARY.

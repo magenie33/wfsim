@@ -212,7 +212,10 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
     // An Incarnon form's rounds are charge-backed; the locked-gauge
     // pseudo-reload supplies the sim's magazine/reload reduction.
     let (magazine_size, base_reload) = match &s.pseudo_reload {
-        Some(pr) => (pr.magazine, pr.reload_seconds),
+        Some(pr) => {
+            let gauge = s.gauge_form.as_ref().expect("pseudo_reload requires gauge_form");
+            (pr.magazine, gauge.transmute_in_seconds + gauge.transmute_out_seconds)
+        }
         // A WEAPON WITH NO MAGAZINE IS NOT ASKED FOR ONE.
         //
         // `no_magazine` is a flag an entry can carry while stating a magazine

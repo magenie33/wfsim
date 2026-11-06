@@ -1209,11 +1209,10 @@ pub struct WeaponBase {
     /// Incarnon-form transformation economy. `Some` marks this form's
     /// magazine as CHARGE-BACKED (a fixed "Max Charges" resource fed by the
     /// weakpoint gauge, entirely outside the ammo system): magazine mods and
-    /// ammo efficiency are INERT on it. There is no reload; instead two
-    /// transition times (transmute in = the base form's reload; transmute
-    /// out = the officially-unnamed revert), each scaled by the reload
-    /// formula `base / (1 + reload bonus)`. `magazine_size` / `base_reload`
-    /// still carry the pseudo-reload (270 / 3.35) the plain sim consumes.
+    /// ammo efficiency are INERT on it. Entry and exit use their profiles'
+    /// independent ModeSwitchTime values, scaled by reload-speed bonuses.
+    /// `magazine_size` carries the charge capacity; `base_reload` is the
+    /// sum of both transition times for the locked-gauge simulation.
     pub gauge_form: Option<GaugeForm>,
     /// Evolution-granted additive fire rate (Rapid Wrath) — joins the
     /// fire-rate-mod bucket.

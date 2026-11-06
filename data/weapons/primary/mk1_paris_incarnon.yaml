@@ -24,11 +24,12 @@ gauge_form:
     resource: incarnon_charges
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
-  transmute_in_seconds: 0.55      # = base reload time, unmodded
+  # see notes: incarnon_package_transition_time
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 0.6
 
 pseudo_reload:
   magazine: 20
-  reload_seconds: 1.55
 
 # NOT NAMED, AND CARRIED FROM THE FAMILY. Verbatim:
 #

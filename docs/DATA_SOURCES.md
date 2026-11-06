@@ -34,6 +34,12 @@ copies the card; a measurement outranks it because the package is the input
 and not the arithmetic on it. A line run by a script stores parameters, not
 the value, and is not read from it.
 
+**Incarnon transition times** come from each profile's `ModeSwitchTime`, not
+its magazine `reloadTime`. The pinned fixture and importer are documented in
+`INCARNON.md`; M9 records the source hashes and owner-directed calibration.
+The fixture's original tokens retain the float32 evidence, while YAML uses
+the shortest decimal that represents the same float32.
+
 **The export fills what the wiki does not state.** `scripts/de_export.py`
 downloads it (English and Chinese) into `vendor/public-export/`: `uniqueName`
 (every data file's `internal_name`), `baseDrain` / `fusionLimit`, polarity,

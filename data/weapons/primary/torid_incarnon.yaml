@@ -44,7 +44,9 @@ gauge_form:
     # its status-chance grant still works.
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
-  transmute_in_seconds: 1.7      # = the base form's reload time, unmodded
+  # see notes: incarnon_package_transition_time
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 0.6
 
 # SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
 # magazine/reload model. 170 rounds at 1 per tick — ✅ measured: the beam "0.5 ammo per trace" rule does NOT reach a charge
@@ -53,7 +55,6 @@ gauge_form:
 # Plus 1.0 + 1.7 s of transitions (both scale with reload speed).
 pseudo_reload:
   magazine: 170
-  reload_seconds: 2.7
 
 # CO behavior: ADDITIVE — ✅ measured. The catalog has no row
 # for this form, and `independent` is NOT to be inferred from the weapon's

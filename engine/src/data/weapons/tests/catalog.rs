@@ -1078,10 +1078,11 @@ fn torid_loads_both_forms_with_its_field_and_direct_hit_gauge() {
     assert_eq!(g.charge_on, ChargeOn::DirectHits);
     assert!((g.charges_to_fill - 5.0).abs() < 1e-9);
     assert!((g.max_charges - 170.0).abs() < 1e-9);
-    assert!((g.transmute_in - 1.7).abs() < 1e-9, "= the base reload");
+    assert!((g.transmute_in - 1.4).abs() < 1e-9);
+    assert!((g.transmute_out - 0.6).abs() < 1e-9);
     // Charge-backed magazine, so the pseudo-reload supplies the sim's.
     assert!((i.magazine_size - 170.0).abs() < 1e-9);
-    assert!((i.base_reload - 2.7).abs() < 1e-9);
+    assert!((i.base_reload - 2.0).abs() < 1e-9);
     // CO class is per FORM, not per weapon — ✅ measured. The base form's two catalog rows are "Multiplying"
     // (asserted above); the Incarnon form is ordinary ADDITIVE. This used
     // to be inferred from those rows and the inference was wrong.
@@ -1588,11 +1589,11 @@ fn base_panels_match_the_wiki_values() {
     let i = base_panel("dual_toxocyst_incarnon", false);
     assert!((i.base_crit_damage - 3.0).abs() < 1e-9);
     assert!((i.magazine_size - 270.0).abs() < 1e-9);
-    assert!((i.base_reload - 3.35).abs() < 1e-9);
+    assert!((i.base_reload - 2.0).abs() < 1e-9);
     let inc = i.gauge_form.expect("incarnon block");
     assert!((inc.max_charges - 270.0).abs() < 1e-9);
-    assert!((inc.transmute_in - 2.35).abs() < 1e-9);
-    assert!((inc.transmute_out - 1.0).abs() < 1e-9);
+    assert!((inc.transmute_in - 1.4).abs() < 1e-9);
+    assert!((inc.transmute_out - 0.6).abs() < 1e-9);
     assert!(i.injected_elements.is_empty());
     // The TRIGGER comes from the transform group's BASE entry; the CLASS
     // is the form's own, and both halves of a pair share it anyway.
