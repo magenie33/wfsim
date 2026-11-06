@@ -16,7 +16,7 @@
 // optimizer's fleets settle on `onerror` alone and know no such message.
 const loadFailed = (cause) => postMessage({ kind: "load_failed", cause });
 try {
-  importScripts("/pkg/wfsim_wasm.3e768ca2beec.js");
+  importScripts("/pkg/wfsim_wasm.4734894c63b1.js");
 } catch (err) {
   loadFailed("glue");
   throw err;
@@ -104,7 +104,10 @@ onmessage = async (e) => {
     // Best-so-far during the screen — the long phase with no rounds in it.
     // Cancel terminates this worker, so whatever has not been posted out by
     // then is gone; this is what makes a cancel show numbers.
-    const onBoard = (b) => postMessage({ kind: "board", payload: JSON.parse(b) });
+    const onBoard = (b) => {
+      const payload = JSON.parse(b);
+      postMessage(payload.kind === "builds" ? { kind: "builds", payload: payload.builds } : { kind: "board", payload });
+    };
     const body = JSON.stringify(msg.body ?? {});
     const cp = msg.checkpoint;
     const out = cp
