@@ -407,6 +407,7 @@ for (const f of [".github/workflows/scores.yml", ".github/workflows/queue.yml",
 }
 
 await import("./check_inventory_only.mjs");
+await import("./check_inventory_memory.mjs");
 
 console.log(NL + (bad ? `${bad} failed` : "only the clock and a person start a board run"));
 process.exit(bad ? 1 : 0);

@@ -56,6 +56,7 @@ test -s "$roster"
 while IFS= read -r id; do
   cat "$parts/$id.missing" >> "$missing"
   cat "$parts/$id.orphans" >> "$orphans"
+  rm -f -- "$parts/$id.missing" "$parts/$id.orphans"
 done < "$roster"
 rm -rf "$parts"
 

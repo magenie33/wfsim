@@ -115,6 +115,13 @@ jobs:
           if [ -n "$PG_PIPELINE_URL" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
 
+      - name: prepare complete inventory memory
+        if: steps.wired.outputs.yes == 'true'
+        env:
+          INVENTORY_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          INVENTORY_RUNNER_OS: ${{ runner.os }}
+        run: bash scripts/prepare_inventory_memory.sh
+
       - uses: actions/cache@v4
         if: steps.wired.outputs.yes == 'true'
         with:
