@@ -25,6 +25,27 @@ A check that runs the worker's SQL runs it on an in-memory PGlite laid with
 `worker/pg/*.sql` (`scripts/pg/test_db.mjs`), behind the statement API the
 worker gets from Hyperdrive; it needs `npm install --prefix scripts/pg`.
 
+## Inventory checks
+
+`check_inventory_pipeline.mjs` runs the actual `wfsim-board --serve` against
+frozen PGlite cuts and compares every classified question with an independent
+`--each-ruler --gate` walk. It covers source deletion, canonical aliases,
+retirement, multiple apply chunks, later writes, durable acknowledgment and
+input cleanup. Set `WFSIM_INVENTORY_BOARD_BIN` to select an existing binary;
+otherwise it uses `target/debug/wfsim-board`. A missing binary fails the check.
+
+`check_incremental_inventory.mjs` tests the disk catalog, exact union and audit,
+owner replacement, bounded caches, shadow fencing and crash replay.
+`check_incremental_inventory_pg.mjs` tests the real schema, transactional dirty
+keys, permission boundaries and publication at the original sealed cut time.
+
+`check_library_array.mjs` verifies complete records and number precision,
+atomic failure, empty input and an 80MiB export under a 24MiB Node heap.
+`check_inventory_parity.py` freezes legal inputs and compares old and new CLI
+canonical, missing and orphan outputs in order. Its isolated source copies
+count actual queue reads and gate visits; measurements report wall time,
+child CPU and peak RSS without a timing threshold.
+
 ## `check_ci_policy`
 
 CI selection and its final gate: unknown and core paths require full validation,

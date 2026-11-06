@@ -1,6 +1,7 @@
 // Complete demand counts canonical questions from one snapshot.
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { classifyInventory } from './classify_compute_inventory.mjs';
@@ -31,6 +32,19 @@ try {
   assert.equal(plan.rows, 4); assert.equal(plan.queued, 3);
   assert.deepEqual(plan.verbs, { future_verb: 1, simulate: 3 });
   assert.equal(plan.orders.find(o => o.kind === 'verification').total, 1);
+  const questions = join(dir, 'questions.ndjson');
+  const audited = await classifyInventory({ ...input, questions });
+  const tuples = readFileSync(questions, 'utf8'), classified = tuples.trim().split('\n').map(JSON.parse);
+  assert.equal(audited.question_digest, createHash('sha256').update(tuples).digest('hex'));
+  assert.deepEqual(classified.map(q => q.id), [await id('a'), await id('unadmitted'), spot, future].sort());
+  assert.deepEqual(classified.find(q => q.id === spot), { id: spot, kind: 'verification', verb: 'simulate', queued: 1 });
+  await assert.rejects(classifyInventory({ ...input, questions, missing: file('audit-bad-build', [row('absent')]) }), /unavailable/);
+  assert.equal(readFileSync(questions, 'utf8'), tuples, 'a failed audit replaced the completed task set');
+  await assert.rejects(classifyInventory({ ...input, tasks: file('duplicate-states', [...states, states[0]]),
+    meta: { ...meta, counts: { ...meta.counts, tasks: states.length + 1 } } }), /duplicate inventory task state/);
+  const stored = await classifyInventory({ ...input,
+    canonical: file('conflicting-canonical', [{ id: 'a', record: { input: 'different' } }]) });
+  assert.deepEqual(stored, plan, 'an engine fallback replaced an existing stored record');
   const admitted = await classifyInventory({ ...input, queue: file('admitted', [row('a'), row('alias'), row('cached'), row('spot'), row('unadmitted')]), missing: file('empty', []), meta: { ...meta, counts: { ...meta.counts, queue: 5 } } });
   assert.equal(admitted.rows, plan.rows);
   const settled = await classifyInventory({ ...input, tasks: file('settled', [...states, { id: await id('a'), verb: 'simulate', state: 'fact', fact_engine: engine }]), meta: { ...meta, counts: { ...meta.counts, tasks: 4 } } });
@@ -73,6 +87,10 @@ try {
   assert.equal((await db.all('SELECT * FROM factory_inventory_rows(?,?::text[])', engine, ['sweep'])).length, 0);
   await db.run("INSERT INTO factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x','ffffffffffff',0,0,0,0,0,0,'x','x')");
   assert.equal(await readInventory(db, now), null, 'an engine change kept a stale inventory goal');
+  const current = { ...plan, engine: 'ffffffffffff' };
+  await save(current);
+  await save({ ...plan, started_at: new Date(now - 1000).toISOString() });
+  assert.equal((await readInventory(db, now)).engine, current.engine, 'an obsolete full scanner overwrote the current-engine inventory');
   await db.close();
   console.log('ok: authenticated publication preserves one snapshot, rejects partial/old scans and expires; lifecycle export follows live independent consumers');
 } finally { rmSync(dir, { recursive: true, force: true }); }

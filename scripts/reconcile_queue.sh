@@ -6,8 +6,8 @@
 # `builds x rulers x modes` is the DEFINITION of what should exist. The queue is
 # written by hand — intake for an arrival, a person for a rescore — and a
 # hand-written list's one failure is a row nobody wrote, which would never be
-# computed and never be noticed. This closes the gap to the definition, in
-# seconds, and it is the only thing standing between that failure and silence.
+# computed and never be noticed. This closes the gap to the definition and
+# reports the complete inventory before admission pacing.
 #
 # IT IS NOT A SECOND SOURCE. It only ever ADDS, and only rows that have no
 # score, so the worst it can do is ask for something already owed — which the
@@ -31,7 +31,7 @@ BOARD="${WFSIM_BOARD:-./target/release/wfsim-board}"
 unset CLAIMED
 
 inventory=$(mktemp)
-node scripts/capture_compute_inventory.mjs "$LIB" "$FACTS" "$OUT" "$inventory"
+python3 scripts/inventory_phase.py capture -- node scripts/capture_compute_inventory.mjs "$LIB" "$FACTS" "$OUT" "$inventory"
 
 missing=$(mktemp)
 : > "$missing"
@@ -45,7 +45,7 @@ parts=$(mktemp -d)
 # correction is the case where a parked build may deserve another look.
 # EVERY RULER IN ONE PROCESS (`--each-ruler`), the library and the facts read
 # once, each ruler into its own files, joined in roster order.
-"$BOARD" --each-ruler --dry-run --gate --facts-in "$FACTS" --queue-in "$OUT" \
+python3 scripts/inventory_phase.py enumerate -- "$BOARD" --each-ruler --dry-run --gate --facts-in "$FACTS" --queue-in "$OUT" \
   --inventory-builds "$inventory.canonical" \
   --queue-missing "$parts/{id}.missing" --queue-orphans "$parts/{id}.orphans" < "$LIB" > /dev/null
 roster=$(mktemp)
@@ -58,8 +58,8 @@ done < "$roster"
 rm -rf "$parts"
 
 # Count the complete engine-admitted workload before any dispatch pacing.
-node scripts/bind_inventory_builds.mjs "$inventory.builds" "$inventory.canonical" "$missing" "$OUT" "$orphans" "$roster"
-node scripts/compute_inventory.mjs "$OUT" "$missing" "$orphans" "$FACTS" "$roster" "$inventory"
+python3 scripts/inventory_phase.py bind -- node scripts/bind_inventory_builds.mjs "$inventory.builds" "$inventory.canonical" "$missing" "$OUT" "$orphans" "$roster"
+python3 scripts/inventory_phase.py classify -- node scripts/compute_inventory.mjs "$OUT" "$missing" "$orphans" "$FACTS" "$roster" "$inventory"
 rm -f "$inventory" "$inventory.builds" "$inventory.canonical" "$inventory.tasks" "$inventory.json"
 rm -f "$roster"
 

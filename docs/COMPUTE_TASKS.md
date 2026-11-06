@@ -80,7 +80,7 @@ retains the additive schema and inventory; no task or score backfill is needed.
 
 ## Complete demand
 
-The pipeline captures builds, scores, queue rows and task lifecycle in one
+Full reconciliation captures builds, scores, queue rows and task lifecycle in one
 read-only repeatable-read transaction. A lost connection aborts the capture;
 partial files never become a published inventory. The engine walks that
 snapshot with the existing admission gate before scene pacing. Retired rulers
@@ -114,6 +114,58 @@ and database snapshot. An older scan cannot overwrite newer inputs, and an
 engine change invalidates its cached goal. The snapshot is derived observation
 and never task input.
 
+### Incremental inventory
+
+`INCREMENTAL_INVENTORY=1` enables the inventory coordinator in `live_board.sh`.
+It uses the existing ranker command pipes, with one filesystem lock around a
+cycle. This path replaces the ranker's hourly library reload and rolling score
+read with authoritative source updates. The normal queue and scoring workflows
+retain full reconciliation as a fallback.
+
+`worker/pg/inventory.sql` records coalesced build and question invalidations in
+the same transaction as source changes. Revisions are equality tokens, never a
+commit-order cursor. Lease, heartbeat, delivery and credit updates do not
+materialize task records for inventory. Restricted functions expose source
+inputs; the pipeline receives no direct access to the inventory tables.
+
+Each update opens one repeatable-read receipt transaction. It captures every
+pending key, changed records and lifecycle states, and complete affected weapon
+cohorts. Canonical aliases join their source identities when reading facts and
+queue membership. The source files are flushed and hashed before the database
+seals the cut. Source writes are forbidden in this receipt transaction.
+
+The ranker normalizes changed sources through its existing library cache. Its
+cohort command uses the same admission and entry-line helpers as a full walk,
+including each target ruler's admitted identities, default corners and retired
+facts. It emits complete owner replacements in bounded chunks. New source
+changes remain pending for the next cut while the captured cut finishes.
+
+The disposable SQLite catalog stores canonical 128-bit question ids and owner
+references. Stored records take precedence over normalized fallbacks. Aliases,
+batches and independent consumers join the same question; verification retains
+the full classifier's precedence. Replacement commits before acknowledgment,
+and acknowledgments compare the captured revision. A persisted token ledger
+makes replay after local acknowledgment idempotent.
+
+A generation is fenced by engine, adapter and classifier contract. Bootstrap
+compares every effective question id, category and registration flag with the
+full classifier before activation. A ranker restart starts a shadow rebuild
+from source tables. The previous catalog remains available while a replacement
+is built; the published goal retains its normal engine and freshness checks.
+Engine changes reuse legitimate score facts and never request a rescore.
+
+Publication uses the sealed cut's database time and snapshot, even if later
+changes are already pending. It never advances freshness to the publication
+time. Interrupted or expired cuts cannot publish. Completed input spools are
+removed after publication; current and previous catalog generations and the
+last publication manifest remain. SQLite uses a 16MiB page cache, bounded
+imports and no memory mapping; the coordinator reserves 8GiB of filesystem
+space and caps initial capture at 45 minutes and delta capture at 15 minutes.
+
+Apply the additive task schema before enabling this path. Rollback sets
+`INCREMENTAL_INVENTORY=0` and restarts the live service on the validated prior
+release. Source tables and the last published inventory are preserved.
+
 The community goal displays the last complete inventory and its update time.
 It changes when a complete scan is published; the minute's work signal remains
 a separate live reading. A missing or older-than-three-hours inventory shows an
@@ -130,3 +182,8 @@ a failed intake into a successful run.
 substituted dispatch, failed consumers, failed credit and idempotent recovery.
 `check_task_inventory` holds the full union, admission invariance, completion,
 orphan/retired exclusion, extensibility, freshness and older-scan rejection.
+`check_incremental_inventory` covers the catalog, frozen cuts, replay and exact
+full-classifier audit. `check_incremental_inventory_pg` covers transactional
+invalidation, restricted source reads, receipt-only writes and cut publication.
+`check_inventory_pipeline` uses the actual ranker and an independent full engine
+walk across source changes, retirement, alias deletion and durable processing.

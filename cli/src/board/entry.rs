@@ -69,6 +69,9 @@ pub(crate) fn park_under_entry_line(
     // `board::builds::default_corner`. Empty for every build that is one.
     corner_of: &std::collections::HashMap<String, String>,
 ) -> std::collections::BTreeSet<String> {
+    if pending.is_empty() {
+        return Default::default();
+    }
     let mut leader: std::collections::HashMap<(&str, &str, &str, bool), f64> = Default::default();
     for f in cross {
         let Some(w) = who.get(&f.identity) else { continue };
