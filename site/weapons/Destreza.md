@@ -4,7 +4,7 @@ Chinese name: 技巧之剑
 
 Rapier · Melee · Mastery Rank 7. 158 base damage (impact 3.95, puncture 134.3, slash 19.75), 28% crit chance, 2x crit multiplier, 14% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-06
+## Best riven-free build on the WFSim board, as of 2026-11-07
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
