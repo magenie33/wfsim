@@ -52,6 +52,16 @@ try {
   }
   assert.equal(readFileSync(join(sources, 'sources.list.d/ubuntu.sources'), 'utf8'), ubuntu,
     'fallback does not rewrite system source files');
+  const mirrorList = ubuntu.replace('http://azure.archive.ubuntu.com/ubuntu/', 'mirror+file:/etc/apt/apt-mirrors.txt')
+    + '\nTypes: deb\nURIs: mirror+file:/etc/apt/apt-mirrors-security.txt\nSuites: noble-security\nComponents: main\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n';
+  writeFileSync(join(sources, 'sources.list.d/ubuntu.sources'), mirrorList);
+  const runnerMirror = run('true', 'no', 'first-download');
+  assert.equal(runnerMirror.status, 0, runnerMirror.stdout + runnerMirror.stderr);
+  assert.doesNotMatch(runnerMirror.calls, /mirror\+file:/, 'Ubuntu runner mirror lists must also switch to the official HTTPS archives');
+  assert.match(runnerMirror.calls, /https:\/\/security.ubuntu.com\/ubuntu/);
+  assert.match(runnerMirror.calls, /Suites: noble-security/);
+  assert.equal(readFileSync(join(sources, 'sources.list.d/ubuntu.sources'), 'utf8'), mirrorList);
+  writeFileSync(join(sources, 'sources.list.d/ubuntu.sources'), ubuntu);
   const build = run('true');
   assert.equal(build.status, 0, build.stderr);
   assert.match(build.calls, /fonts-noto-cjk lld-22/);

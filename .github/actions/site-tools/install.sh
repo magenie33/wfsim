@@ -60,9 +60,11 @@ changed = 0
 for path in files:
     if not path.is_file():
         continue
-    text, count = re.subn(r'https?://azure\.archive\.ubuntu\.com/ubuntu\b',
-                         'https://archive.ubuntu.com/ubuntu', path.read_text())
-    changed += count
+    text, mirrors = re.subn(r'mirror\+file:/+etc/apt/apt-mirrors(-security)?\.txt\b',
+        lambda m: 'https://' + ('security' if m[1] else 'archive') + '.ubuntu.com/ubuntu', path.read_text())
+    text, count = re.subn(r'(?:https?://azure\.archive|http://archive)\.ubuntu\.com/ubuntu\b',
+                         'https://archive.ubuntu.com/ubuntu', text)
+    changed += count + mirrors
     (dest / path.relative_to(source)).write_text(text)
 if not changed:
     sys.exit('No supported Ubuntu runner mirror found; retaining the setup failure')
