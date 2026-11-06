@@ -121,12 +121,18 @@ pub fn every_rank() -> &'static EveryRank {
     })
 }
 
-/// THE BUILT-IN SEARCH PRESETS — `data/search/presets.yaml`: the element starts
-/// every one is built from, and each preset's terms.
+/// Built-in immutable strategies, elemental carriers and search preset terms.
 #[derive(Debug, Clone, Default, Deserialize, serde::Serialize)]
 pub struct SearchPresets {
+    pub strategies: Vec<SearchStrategy>,
     pub element_starts: Vec<Vec<String>>,
     pub presets: Vec<SearchPreset>,
+}
+
+#[derive(Debug, Clone, Default, Deserialize, serde::Serialize)]
+pub struct SearchStrategy {
+    pub id: String,
+    pub name: String,
 }
 
 /// One built-in search: listed in the bar or applied by its own page, with or
@@ -135,6 +141,7 @@ pub struct SearchPresets {
 pub struct SearchPreset {
     pub id: String,
     pub name: String,
+    pub search_strategy: String,
     pub listed: bool,
     pub riven: bool,
     pub finalists: u32,

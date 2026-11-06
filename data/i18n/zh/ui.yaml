@@ -917,6 +917,11 @@ ui:
   "round {r}, position {k} of {n}": 第 {r} 轮扫描，位置 {k}/{n}
   "descent {p} of {n}": 第 {p}/{n} 遍下降
   "{d} of {n} starts settled": "{d}/{n} 个起点已收敛"
+  "{d} of {n} branches settled": "{d}/{n} 个分支已收敛"
+  "Search strategy": "搜索策略"
+  "Four elements strategy": "四元素策略"
+  "Saved starts only": "仅使用已保存的起点"
+  "original": "原始起点"
   "each start improved until no change helped — the best those starts reach, not a proven best; add a start to look further": 每个起点都改到了再换什么都不涨 —— 这是这些起点能到的最好，不是证明过的最优；想找得更远就加起点
   "how many fights each candidate gets while the search compares them. 1 is ten times faster and noisier; the answers are re-measured in the simulator either way": 搜索比较候选时每个候选打几场。1 场快十倍但更吵；无论选哪个，答案最后都在模拟器里重新测量
   "+ a blank start": "+ 空白起点"
@@ -3187,7 +3192,7 @@ ui:
   "The answer: the best build the search found for this riven": 结论：为这张裂罅搜到的最优配装
   "Every riven of {w}": "{w} · 全裂罅遍历"
   "{a} of {n} confirmed": "已确认 {a} / {n}"
-  "{n} begun · each shape is searched from four element starts, and counts once two owners on two networks agree": "已开始 {n} · 每种词条组合都从四个元素起点搜索，两位不同玩家在不同网络上算得一致才算确认"
+  "{n} begun · each shape uses the Four elements strategy, and counts once two owners on two networks agree": "已开始 {n} · 每种词条组合都使用四元素策略，两位不同玩家在不同网络上算得一致才算确认"
   "{n} in the last 30 days": "近 30 天 {n}"
   "This browser": 这个浏览器
   "State": 状态

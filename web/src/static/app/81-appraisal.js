@@ -77,9 +77,8 @@ async function openAppraisal(code, freeze = false) {
 }
 
 /// THE SEARCH, as its preset states it: the official ruler, the riven as the
-/// asker's card reads, and one start per preset row — the riven, pinned, beside
-/// the row's 60/60 card this weapon can equip — answering with the preset's
-/// count at its runs a candidate.
+/// asker's card reads, and one riven-pinned start under the preset's strategy,
+/// answering with the preset's count at its runs a candidate.
 async function setUpAppraisal(w, job) {
   await agentDo("shell.preset.open", { bar: "scenario", preset: job.ruler });
   const rv = job.riven || {};

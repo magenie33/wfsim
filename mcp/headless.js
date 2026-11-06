@@ -1651,21 +1651,11 @@ function headlessStartPayload(meta, s) {
   };
 }
 
-/// A BUILT-IN SEARCH'S STARTS on `weapon`: one per element row, holding the
-/// row's 60/60 card the weapon equips under evolutions `evoSel` (its first
-/// ones when absent) — and `rivenMod` beside it, pinned. A row it takes none
-/// of adds nothing new.
+/// A built-in search has one user start; the engine owns strategy branching.
 function headlessBuiltinStarts(meta, weapon, rivenMod, evoSel) {
-  const w = headlessWeaponOf(meta, weapon) || {};
-  const card = headlessModOf(meta);
-  const at = (mods) => ({ weapon, ...headlessStateAxes(meta, { mods }, weapon) });
-  const no = new Set(Object.values(evoSel || at([]).evoSel).flatMap((id) => (w.evo_forbids || {})[id] || []));
-  const fits = new Set((w.mods || []).filter((id) => card(id) && !no.has(id)));
-  const rows = ((meta.search_presets || {}).element_starts || [])
-    .map((row) => [rivenMod, row.find((c) => fits.has(c))].filter(Boolean)).filter((mods) => mods.length);
-  const unique = [...new Set(rows.map((r) => JSON.stringify(r)))].map((r) => JSON.parse(r));
-  const starts = unique.map((mods) => ({ build: at(mods), fixed: rivenMod ? ["mods:0"] : [] }));
-  return starts.length ? starts : [{ build: at([]), fixed: [] }];
+  const build = { weapon, ...headlessStateAxes(meta, { mods: rivenMod ? [rivenMod] : [] }, weapon) };
+  if (evoSel) build.evoSel = { ...evoSel };
+  return [{ build, fixed: rivenMod ? ["mods:0"] : [] }];
 }
 
 /// What a search's limits may rule out, axis by axis.
@@ -1718,6 +1708,7 @@ function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = headles
     ...sim, runs, custom_enemies: [], buffs: sim.buffs || {}, also_acting: [],
     finalists: preset.finalists,
     strategy: "quick",
+    search_strategy: preset.search_strategy || "four_elements",
     starts: headlessBuiltinStarts(meta, weapon, mod).map((s) => headlessStartPayload(meta, s)),
     candidate_runs: preset.candidate_runs,
     limits: headlessBlankLimits(meta, weapon),

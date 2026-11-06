@@ -1,11 +1,12 @@
 // THE BUILT-IN SEARCHES (80-optimizer-preset.js, data/search/presets.yaml): a
-// reader who owns no search has the first built-in — four starts, each the open
-// weapon's 60/60 card of one element — read-only like an official ruler: its
+// reader who owns no search has the first built-in — one blank start and the
+// Four elements strategy — read-only like an official ruler: its
 // controls are inert, a click in them or ⧉ makes the reader's own copy, nothing
 // it shows is stored, deleting the copy brings the built-in back, and the run
 // button sends the search the page states.
 //   node scripts/check_search_presets.mjs
 import { openApp, sleep } from "./cdp.mjs";
+import "./check_search_strategy.mjs";
 
 const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
 const { evaluate, check, finish } = app;
@@ -14,9 +15,12 @@ const cards = () => evaluate(`JSON.stringify(opt.starts.map((s) => startPayload(
 await app.load("/weapons/Torid/optimizer", 7000);
 check("owning no search, a reader has the four-element built-in", await evaluate(`activeOptPreset === "search:four_elements"`),
   await evaluate("activeOptPreset"));
-check("…four starts, each this weapon's 60/60 card of one element",
-  JSON.stringify(await cards()) === JSON.stringify([["thermite_rounds"], ["rime_rounds"], ["high_voltage"], ["malignant_force"]]),
+check("…one blank user start, with element branching left to the strategy",
+  JSON.stringify(await cards()) === JSON.stringify([[]]),
   JSON.stringify(await cards()));
+check("…a selectable strategy separate from the read-only preset", await evaluate(`opt.search_strategy === "four_elements"
+  && $("opt-search-strategy").value === "four_elements" && !$("opt-search-strategy").disabled
+  && !$("preset-bar-optimizer").contains($("opt-search-strategy"))`));
 check("…answering the run terms it states", await evaluate("optRun.finalists === 10 && optRun.candidate_runs === 10"));
 check("…read-only on screen: its note shows and its controls are inert", await evaluate(`!$("opt-builtin").hidden
   && $("opt-finalists").disabled && [...$("opt-starts").querySelectorAll("button")].every((b) => b.disabled)`));
@@ -39,10 +43,10 @@ const sent = JSON.parse(await evaluate(`(async () => {
   } finally {
     api = real;
   }
-  return JSON.stringify(body && { weapon: body.weapon, strategy: body.strategy, starts: (body.starts || []).length });
+  return JSON.stringify(body && { weapon: body.weapon, strategy: body.strategy, search_strategy: body.search_strategy, starts: (body.starts || []).length });
 })()`));
 check("…and clicked, it sends the search the page states",
-  !!sent && sent.weapon === await evaluate(`$("weapon").value`) && sent.strategy === "quick" && sent.starts === 4,
+  !!sent && sent.weapon === await evaluate(`$("weapon").value`) && sent.strategy === "quick" && sent.search_strategy === "four_elements" && sent.starts === 1,
   JSON.stringify(sent));
 check("…nor the limits' mod filter, which edits nothing", await evaluate(`!$("opt-limit-filter").disabled`));
 // A CLICK IN A READ-ONLY REGION MAKES THE READER'S OWN COPY (`lockReadOnly`),
@@ -72,7 +76,8 @@ await evaluate(`$("opt-builtin-copy").click()`);
 await sleep(800);
 check("⧉ makes a search of the reader's own, editable", await evaluate(`loadOptPresets().length === 1 && !builtinSearchActive()
   && $("opt-builtin").hidden && !$("opt-finalists").disabled`));
-check("…holding the same four starts", JSON.stringify(await cards()) === JSON.stringify([["thermite_rounds"], ["rime_rounds"], ["high_voltage"], ["malignant_force"]]));
+check("…holding the same user start and strategy", JSON.stringify(await cards()) === JSON.stringify([[]])
+  && await evaluate(`snapshotOpt().search_strategy === "four_elements"`));
 
 await deleteCopy();
 await sleep(800);
@@ -80,7 +85,7 @@ check("deleting it brings the built-in back", await evaluate(`loadOptPresets().l
   await evaluate("activeOptPreset + ' / ' + loadOptPresets().length"));
 
 await app.load("/weapons/Hek/optimizer", 7000);
-check("a shotgun's built-in starts are the shotgun's 60/60 cards",
-  JSON.stringify(await cards()) === JSON.stringify([["scattering_inferno"], ["frigid_blast"], ["shell_shock"], ["toxic_barrage"]]),
+check("a shotgun also supplies one blank start to the strategy",
+  JSON.stringify(await cards()) === JSON.stringify([[]]),
   JSON.stringify(await cards()));
 await finish("the built-in searches are read-only and come back");

@@ -26,6 +26,7 @@ const storeOptPresets = (ps) => storePresetList(OPT_DOMAIN, ps);
 const builtinSearchStarts = (wId, rivenMod) => headlessBuiltinStarts(META, wId, rivenMod, evoSel);
 /// A built-in search as a whole search state, on the open weapon.
 const builtinSearchState = (p, rivenMod) => ({ starts: builtinSearchStarts($("weapon").value, rivenMod),
+  search_strategy: p.search_strategy || "four_elements",
   limits: normalizeLimits(null), candidate_runs: p.candidate_runs, finalists: p.finalists });
 /// The search bar's built-in entries: the listed ones, and the riven appraisal's
 /// own while an appraisal is open on this page (81-appraisal.js).
@@ -74,6 +75,7 @@ function bootstrapOptPresets() {
 function snapshotOpt() {
   return {
     starts: JSON.parse(JSON.stringify(opt.starts)),
+    ...(opt.search_strategy ? { search_strategy: opt.search_strategy } : {}),
     final: opt.final ? JSON.parse(JSON.stringify(opt.final)) : null,
     limits: JSON.parse(JSON.stringify(opt.limits || normalizeLimits(null))),
     candidate_runs: optRun.candidate_runs,
@@ -83,6 +85,7 @@ function snapshotOpt() {
 
 // A new search: one blank start, the run settings left alone.
 const blankOpt = () => ({ starts: [blankStart()], final: null, limits: normalizeLimits(null),
+  search_strategy: "four_elements",
   candidate_runs: optRun.candidate_runs, finalists: optRun.finalists });
 
 /// How many builds a search answers with: 1–100, the server's own clamp.
@@ -96,6 +99,8 @@ function applyOptState(st) {
   // A preset from before the quick descent also carries a scope (`mods`,
   // `arcanes`, …); nothing reads it now, and the next save drops it.
   const w = $("weapon").value;
+  // Absence is a legacy search, not permission to branch its saved starts.
+  opt.search_strategy = st.search_strategy || "";
   optRun.candidate_runs = st.candidate_runs === 1 ? 1 : 10;
   optRun.finalists = finalistsOf(st.finalists);
   const cr = $("opt-cand-runs");
@@ -259,6 +264,7 @@ function optimizeBody() {
     // re-measured at the final runs.
     finalists: optRun.finalists,
     strategy: "quick",
+    ...(opt.search_strategy ? { search_strategy: opt.search_strategy } : {}),
     starts, candidate_runs: optRun.candidate_runs,
     ...(opt.final && opt.final.fixed.length ? { final: startPayload(opt.final) } : {}),
     // What the player ruled out; the rest of the builder's lists is the scope.
@@ -303,6 +309,13 @@ function optLaneText(s) {
   return !s.settled && s.passes > 1 ? `${tr("descent {p} of {n}").replace("{p}", s.pass).replace("{n}", s.passes)} · ${at}` : at;
 }
 
+function optStartLabel(s, fallback = 0) {
+  const start = `${tr("start")} ${(s.start ?? fallback) + 1}`;
+  if (!s.branch) return start;
+  const branch = s.branch === "original" ? tr("original") : DT(s.branch);
+  return `${start} · ${branch}`;
+}
+
 /// HOW FAR A SEARCH IS, 0–1, or null before there is anything to count. A
 /// descent counts its starts' finished descents: how many rounds one takes is
 /// found by taking them, so the only totals are the starts and their descents.
@@ -326,9 +339,10 @@ function renderOptProgress(st) {
   const notes = (st.notes || []).map((n) =>
     `<div class="opt-note">round ${n.round}: ${n.jobs.toLocaleString()} × ${n.runs} (${n.by_kills ? "kills" : "dmg"}) → keep ${n.kept.toLocaleString()} · best ${n.by_kills ? sig2(kpm(n.best, sim.duration)) + " KPM" : n.best.toExponential(2) + " dmg"} · ${(n.ms / 1000).toFixed(1)}s</div>`
   ).join("");
-  const lane = (s, i) => `<div class="opt-note">${escHtml(tr("start"))} ${i + 1}: ${escHtml(optLaneText(s))}</div>`;
+  const lane = (s, i) => `<div class="opt-note">${escHtml(optStartLabel(s, i))}: ${escHtml(optLaneText(s))}</div>`;
+  const branched = lanes.some(s => s.branch != null);
   const sub = descending
-    ? `<div class="opt-prog-sub">${escHtml(tr("{d} of {n} starts settled").replace("{d}", lanes.filter((s) => s.settled).length).replace("{n}", lanes.length || "…"))}</div>${lanes.map(lane).join("")}`
+    ? `<div class="opt-prog-sub">${escHtml(tr(branched ? "{d} of {n} branches settled" : "{d} of {n} starts settled").replace("{d}", lanes.filter((s) => s.settled).length).replace("{n}", lanes.length || "…"))}</div>${lanes.map(lane).join("")}`
     : st.phase === "enumerating" || !st.sims_planned
     ? ""
     : `<div class="opt-prog-sub">${pct.toFixed(1)}% · ${st.sims_done.toLocaleString()} / ${st.sims_planned.toLocaleString()} sims${st.jobs ? ` · ${st.jobs.toLocaleString()} candidate builds` : ""}</div>`;
@@ -452,7 +466,7 @@ function renderOptResults(r) {
   // combined standard error.
   const tied = (res) => lead && res !== lead && Math.abs((lead.kill_progress ?? 0) - (res.kill_progress ?? 0))
     < 2 * Math.hypot(lead.kill_progress_se || 0, res.kill_progress_se || 0);
-  const lanes = (res) => (res.from_starts || []).map((l) => `<span class="opt-lane">${escHtml(tr("start"))} ${l.start + 1}: ${
+  const lanes = (res) => (res.from_starts || []).map((l) => `<span class="opt-lane">${escHtml(optStartLabel(l))}: ${
     l.from == null ? "—" : sig2(kpm(l.from, d))} → ${sig2(kpm(res.kill_progress ?? res.kills, d))} KPM · ${
     escHtml(tr("{n} changes").replace("{n}", l.moves))}</span>`).join("");
   const said = (axis, id) => {
@@ -488,7 +502,7 @@ function renderOptResults(r) {
       <div class="opt-lanes">${res.near ? near(res) : `${escHtml(tr("from"))} ${lanes(res)}`}</div>
       <div class="opt-card" data-rank="${res.rank}"></div>
     </div>`).join("");
-  const failed = (r.failed_starts || []).map((f) => `<div class="opt-row opt-failed"><b>${escHtml(tr("start"))} ${f.start + 1}</b> — ${
+  const failed = (r.failed_starts || []).map((f) => `<div class="opt-row opt-failed"><b>${escHtml(optStartLabel(f))}</b> — ${
     escHtml(tr("no legal build from this start"))} <span class="sim-hint">${escHtml(f.why)}</span></div>`).join("");
   const meta = `<span class="${r.cut ? "warn" : "ok"}">${escHtml(tr(r.cut
     ? "the time budget ran out before every start settled — strong builds, short of what those starts reach"

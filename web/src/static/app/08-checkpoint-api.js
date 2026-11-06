@@ -58,7 +58,7 @@ const woptWorkerCount = () => poolSize();
 //
 // Deduplicate first: two descents can reach the same build from different
 // starts. Counting it twice would push a real alternative off the board.
-function woptMerge(parts) {
+function woptMerge(parts, request) {
   const bad = parts.find((p) => p && p.ok === false);
   if (bad) return bad;
   // A shard that owned no ground returns an empty but complete envelope, so
@@ -81,14 +81,31 @@ function woptMerge(parts) {
   const finalists = head.finalists || rows.length;
   const space = head.space || 0;
   const sampled = parts.reduce((n, p) => n + (p.sampled || 0), 0);
+  const searchStrategy = request?.search_strategy || parts.find(p => p.search_strategy)?.search_strategy;
+  const answers = new Map(), origins = new Set(), succeeded = new Set();
+  for (const p of parts) {
+    for (const answer of p.start_results || []) {
+      const had = answers.get(answer.start);
+      if (!had || (answer.result.kill_progress ?? answer.result.kills ?? 0) > (had.result.kill_progress ?? had.result.kills ?? 0)) answers.set(answer.start, answer);
+      origins.add(answer.start);
+      succeeded.add(answer.start);
+    }
+    for (const failed of p.failed_starts || []) origins.add(failed.start);
+    for (const result of p.results || []) {
+      for (const lane of result.from_starts || []) { origins.add(lane.start); succeeded.add(lane.start); }
+      for (const start of result.near?.starts || []) { origins.add(start); succeeded.add(start); }
+    }
+  }
   return {
     ...head,
     // EVERY shard must have finished its stride for the union to be the space.
     exhaustive: parts.length > 0 && parts.every((p) => p.exhaustive),
-    // A descent's starts are split across the fleet, so they add up, and one
-    // shard the clock stopped makes the whole run a cut one.
+    // Branches of one user start can belong to several shards.
     strategy: (parts.find((p) => p.strategy) || head).strategy,
-    starts: parts.reduce((n, p) => n + (p.starts || 0), 0),
+    starts: searchStrategy ? request?.starts?.length || Math.max(origins.size, ...parts.map(p => p.starts || 0))
+      : parts.reduce((n, p) => n + (p.starts || 0), 0),
+    ...(searchStrategy ? { search_strategy: searchStrategy, branches: parts.reduce((n, p) => n + (p.branches || 0), 0) } : {}),
+    start_results: [...answers.values()].sort((a, b) => a.start - b.start),
     cut: parts.some((p) => p.cut),
     // Coverage of the FLEET, not of one worker: the strides are disjoint, so
     // the positions add up.
@@ -98,7 +115,8 @@ function woptMerge(parts) {
     candidates: parts.reduce((n, p) => n + (p.candidates || 0), 0),
     jobs: parts.reduce((n, p) => n + (p.jobs || 0), 0),
     cancelled: parts.some((p) => p.cancelled),
-    failed_starts: parts.flatMap((p) => p.failed_starts || []),
+    failed_starts: parts.flatMap((p) => p.failed_starts || []).filter(f => !searchStrategy || !succeeded.has(f.start)),
+    failed_branches: parts.flatMap((p) => p.failed_branches || []),
     results: rows.slice(0, finalists).map((r, i) => ({ ...r, rank: i + 1 })),
   };
 }
@@ -361,6 +379,8 @@ function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOpti
     return {
       round: 0, rounds: 0, round_jobs: 0, round_runs: 0, notes: [],
       ...live[0],
+      ...(body.search_strategy ? { starts: [...new Map(live.flatMap((s, shard) => (s.starts || []).map((lane, i) =>
+        [lane.branch_index ?? `${shard}:${i}`, lane]))).values()] } : {}),
       phase: searching ? "searching" : "running",
       sims_done: sum("sims_done"), sims_planned: sum("sims_planned"),
       enumerated: sum("enumerated"),
@@ -396,7 +416,7 @@ function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOpti
       wd.heard();
       signals.heard(i, e.data);
       if (e.data.kind === "progress") job.statuses[i] = e.data.payload;
-      if (e.data.kind === "board") { job.boards[i] = e.data.payload; job.board = woptMerge(job.boards.filter(Boolean)); }
+      if (e.data.kind === "board") { job.boards[i] = e.data.payload; job.board = woptMerge(job.boards.filter(Boolean), body); }
       if (e.data.kind === "builds") {
         const builds = Array.isArray(e.data.payload) ? e.data.payload : e.data.payload?.builds;
         if (builds?.length) {
@@ -406,7 +426,7 @@ function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOpti
       }
       if (e.data.kind === "checkpoint") {
         const { board, ...cp } = e.data.payload;
-        if (board) { job.boards[i] = board; job.board = woptMerge(job.boards.filter(Boolean)); }
+        if (board) { job.boards[i] = board; job.board = woptMerge(job.boards.filter(Boolean), body); }
         // Only an UNSHARDED run can be resumed from a checkpoint — see above.
         if (shards === 1) {
           if (onCheckpoint) onCheckpoint(cp); else saveCheckpoint(body, cp, board || job.board);
@@ -426,7 +446,7 @@ function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOpti
           if (job.cancelled || job.result) return;
           job.parts[i] = payload;
           if (job.parts.every(Boolean)) {
-            job.result = woptMerge(job.parts);
+            job.result = woptMerge(job.parts, body);
             if (!onCheckpoint) clearCheckpoint();
             job.workers = [];
           }
@@ -526,4 +546,3 @@ async function api(path, body, onProgress, opts) {
   }
   return r;
 }
-

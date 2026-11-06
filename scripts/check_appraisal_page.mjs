@@ -5,6 +5,8 @@
 // while the finalists go to the board without asking.
 //   node scripts/check_appraisal_page.mjs      (minutes: it runs a real search)
 import { openApp, sleep } from "./cdp.mjs";
+import { appraisalDeliveryFixture } from "./appraisal_delivery_fixture.mjs";
+import "./check_appraisal_delivery_fixture.mjs";
 
 const JOB = { ok: true, code: "TEST7", weapon: "torid", ruler: "standard_single_target", at: 0, done: false,
   riven: { bonuses: [{ id: "critical_damage", roll: 1.1 }, { id: "multishot", roll: 1.05 }], malus: { id: "zoom", roll: 0.9 }, rank: 8 } };
@@ -20,7 +22,7 @@ const STUB = `(() => {
     if (/\\/api\\/appraise\\/TEST7\\/result$/i.test(u)) { window.__sent.results.push(JSON.parse(init.body)); return ok({ ok: true, first: true }); }
     if (/\\/api\\/appraise\\/TEST7\\?result=1$/i.test(u)) return ok({ ...job, result: { id: 1, build: JSON.parse(localStorage.getItem("__build") || "{}"), thanks: "Kai" } });
     if (/\\/api\\/appraise\\/TEST7$/i.test(u)) return ok(job);
-    if (/\\/api\\/board\\/submit$/.test(u)) { window.__sent.board.push(JSON.parse(init.body)); return ok({ ok: true }); }
+    if (/\\/api\\/board\\/submit$/.test(u)) window.__sent.board.push(JSON.parse(init.body));
     return real(url, init);
   };
   try { localStorage.setItem("wfsim-board-consent", "no"); } catch (_) {}
@@ -29,13 +31,35 @@ const STUB = `(() => {
 const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
 const { evaluate, check, finish } = app;
 await app.send("Page.addScriptToEvaluateOnNewDocument", { source: STUB });
+await app.send("Network.enable");
+await app.send("Network.setBypassServiceWorker", { bypass: true });
+await app.send("Fetch.enable", { patterns: [{ urlPattern: "*/api/board/submit" }] });
+let deliveryFixture;
+app.on("Fetch.requestPaused", async event => {
+  let response;
+  try {
+    const body = JSON.parse(event.request.postData || "{}");
+    if (!deliveryFixture) deliveryFixture = appraisalDeliveryFixture({
+      engine: await evaluate("ENGINE_ID"), code: JOB.code, weapon: JOB.weapon,
+      request: JSON.parse(await evaluate("JSON.stringify(optimizeBody())"))
+    });
+    response = await deliveryFixture.submit(body);
+  } catch (error) {
+    check("the delivery stand-in handles the authorized request", false, String(error));
+    response = { status: 500, body: { ok: false, error: "Delivery fixture failed" } };
+  }
+  await app.send("Fetch.fulfillRequest", { requestId: event.requestId, responseCode: response.status,
+    responseHeaders: [{ name: "content-type", value: "application/json" }],
+    body: Buffer.from(JSON.stringify(response.body)).toString("base64") });
+});
 
 // THE PICTURE THE BOT SENDS FIRST: the asker's card, its code, and the way in.
 await app.load("/weapons/Torid/card?kind=appraise&code=TEST7", 6000);
 for (let i = 0; i < 40 && !(await evaluate(`document.body.dataset.cardReady === "1"`)); i++) await sleep(500);
 const chips = await evaluate(`[...document.querySelectorAll("#card-page [data-riven-card] .sb-chip")].map((c) => c.textContent)`);
 check("the appraisal's picture draws the asker's card with its numbers and rolls", chips.length === 3
-  && chips.every((t) => /\d/.test(t) && /×\d\.\d\d/.test(t)) && chips.some((t) => /×1\.05/.test(t)), JSON.stringify(chips));
+  && chips.every(t => /[+-]\d+(?:\.\d+)?%/.test(t))
+  && JSON.stringify(chips.map(t => Number(t.match(/×(\d+(?:\.\d+)?)$/)?.[1]))) === JSON.stringify([1.1, 1.05, 0.9]), JSON.stringify(chips));
 check("…its code, and a QR code to the appraisal", (await evaluate(`document.querySelector("#card-page").textContent`)).includes("TEST7")
   && await evaluate(`!!document.querySelector("#card-page .lc-qr svg")`));
 // WHAT THE READER ALREADY HAS: their presets, rivens and search checkpoint,
@@ -49,11 +73,9 @@ check("the link lands on its weapon's optimizer", (await evaluate("location.path
   await evaluate("location.pathname"));
 check("…under the appraisal's ruler", await evaluate(`(scenarioNamed(activeScenario) || {}).builtin === "standard_single_target"`));
 const starts = JSON.parse(await evaluate(`JSON.stringify(opt.starts.map((s) => ({ slots: startPayload(s).slots.filter(Boolean), fixed: s.fixed })))`));
-const preset = { starts: JSON.parse(await evaluate("JSON.stringify(META.search_presets.element_starts)")) };
-check("…with the preset's four starts: the riven, pinned, beside each element's 60/60 card", starts.length === 4
-  && starts.every((s, i) => s.slots.length === 2 && String(s.slots[0]).startsWith("riven:") && s.fixed.includes("mods:0")
-    && preset.starts[i].includes(s.slots[1]))
-  && JSON.stringify(starts.map((s) => s.slots[1])) === JSON.stringify(["thermite_rounds", "rime_rounds", "high_voltage", "malignant_force"]), JSON.stringify(starts));
+check("…with one riven-pinned start and the Four elements strategy", starts.length === 1
+  && starts[0].slots.length === 1 && String(starts[0].slots[0]).startsWith("riven:") && starts[0].fixed.includes("mods:0")
+  && await evaluate(`optimizeBody().search_strategy === "four_elements"`), JSON.stringify(starts));
 check("…answering with one build, ten fights a candidate", await evaluate("optRun.finalists === 1 && optRun.candidate_runs === 10"));
 check("…opened as a read-only built-in, its starts locked", await evaluate(`activeOptPreset === "search:riven_appraisal" && !$("opt-builtin").hidden`));
 const start = { slots: starts[0].slots };
@@ -81,7 +103,8 @@ if (sent) {
   check("…and the name that was typed", r.thanks === "Kai", r.thanks);
   await sleep(4000);
   const board = JSON.parse(await evaluate("JSON.stringify(window.__sent.board)"));
-  check("the finalists go to the board even with the board switched off here", board.length > 0, String(board.length));
+  check("the finalists go to the board even with the board switched off here", deliveryFixture?.delivered.length > 0
+    && board.some(body => body.harvest?.receipt && body.builds?.length), String(deliveryFixture?.delivered.length || 0));
   check("the banner thanks the reader", /thank|谢谢/i.test(await evaluate(`($("appraisal-banner") || {}).textContent || ""`)));
   await app.load("/weapons/Torid/optimizer", 6000);
   check("the reader's own presets, rivens and checkpoint are as they were", (await evaluate(OWN)) === before);
@@ -115,7 +138,7 @@ if (sent) {
       // A YES TO COMPUTING, which a volunteer search checks at every step.
       localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: COMPUTE_CONSENT_V, on: true, at: new Date().toISOString() }));
       await rivenGainOnce({ kind: "riven_gain", lease: "0".repeat(32), code: "TEST7", weapon: "torid",
-        ruler: "standard_single_target", request: f.request, context: f.context }, "v".repeat(24));
+        ruler: "standard_single_target", request: f.request, context: f.context }, "a".repeat(24));
       return JSON.stringify(window.__sent.results);
     })()`, 30 * 60000));
     const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
@@ -124,7 +147,7 @@ if (sent) {
     const v = vol[0] || {};
     check("run as volunteer work, the frozen search answers the build the page found", canon(v.build) === canon(sent.results[0].build),
       `${JSON.stringify(v.build)} vs ${JSON.stringify(sent.results[0].build)}`);
-    check("…under its lease, with the search's work", v.lease === "0".repeat(32) && v.verifier === "v".repeat(24)
+    check("…under its lease, with the search's work", v.lease === "0".repeat(32) && v.verifier === "a".repeat(24)
       && Number.isSafeInteger(v.work) && v.work > 0 && Number.isFinite(v.score), JSON.stringify(v).slice(0, 200));
   }
 

@@ -437,9 +437,9 @@ comparison. Executor disclosure and queue ownership are in `docs/TASKS.md`.
    weapon names also accept a trailing `P` or `p`, with or without a space.
 2. `/appraise/<code>` opens that weapon's optimizer under the official ruler
    with the appraisal's own BUILT-IN search and searches at once
-   (`81-appraisal.js`): `riven_appraisal` in `data/search/presets.yaml` — four
-   starts, the riven pinned beside each primary element's 60/60 card the weapon
-   takes, one build answered, ten fights a candidate, read-only like every
+   (`81-appraisal.js`): `riven_appraisal` in `data/search/presets.yaml` — one
+   start holding the pinned riven, the Four elements strategy,
+   one build answered, ten fights a candidate, read-only like every
    built-in. The search is told nothing else, and the
    tab's storage lives in memory, so the reader's own builds, rivens and
    optimizer are untouched. Every finalist goes to the board unasked; the winner

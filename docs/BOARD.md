@@ -69,8 +69,9 @@ the source configuration. Compatible main cards keep their relative element
 order, unavailable cards become empty positions, and unavailable evolutions
 are left for the target to choose. Modular parts and stances use the target's
 legal choices. A riven keeps its shape, is pinned in the start, and resolves
-its rolls through the target weapon. The existing quick search fills missing
-positions and descends over the target's full candidate scope, including its
+its rolls through the target weapon. The preset's Four elements strategy processes
+that single start; the quick search fills missing positions and descends over
+the target's full candidate scope, including its
 exclusive cards. Its result is a candidate, with no claim of global optimality.
 
 `ship_builds.sh` lands the source builds, then sends the emitted requests to
