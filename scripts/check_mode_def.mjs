@@ -22,6 +22,83 @@ import { openApp } from "./cdp.mjs";
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, send, sleep, BASE } = app;
 
+async function cycleDetails(weapon) {
+  return evaluate(`(async () => {
+    history.pushState({}, '', '/weapons/${weapon}/builder'); route();
+    await new Promise(r => setTimeout(r, 800));
+    setMode('cycle');
+    const box = document.querySelector('[data-fold="mode-def"]');
+    const row = document.getElementById('mode-row');
+    const control = row.querySelector('label').getBoundingClientRect();
+    const rect = box.getBoundingClientRect();
+    const text = box.textContent.trim();
+    const result = {
+      shut: box.classList.contains('shut'), text,
+      below: rect.top >= control.bottom - 1,
+      full: Math.abs(rect.width - row.clientWidth) < 2,
+      valid: !/undefined|NaN|\\{[a-z_]+\\}/i.test(text),
+    };
+    box.querySelector('.fold-h').click();
+    result.expanded = !box.classList.contains('shut')
+      && getComputedStyle(box.querySelector('.fold-b')).display !== 'none';
+    renderMode();
+    result.remembered = !document.querySelector('[data-fold="mode-def"]').classList.contains('shut');
+    document.querySelector('[data-fold="mode-def"] .fold-h').click();
+    return result;
+  })()`);
+}
+
+for (const lang of ["en", "zh"]) {
+  await evaluate(`localStorage.clear(); localStorage.setItem('wfsim-lang', ${JSON.stringify(lang)})`);
+  await send("Page.navigate", { url: BASE });
+  await sleep(4000);
+  for (const weapon of ["Trumna_Prime", "Torid", "Nunchasa", "Grimoire"]) {
+    const r = await cycleDetails(weapon);
+    check(`${weapon}/${lang}: conditions start collapsed`, r.shut, r.text);
+    check(`${weapon}/${lang}: conditions sit below Mode at full width`, r.below && r.full);
+    check(`${weapon}/${lang}: expand and remember across rendering`, r.expanded && r.remembered);
+    check(`${weapon}/${lang}: no missing condition values`, r.valid, r.text);
+    if (weapon === "Trumna_Prime") {
+      check(`${weapon}/${lang}: empty opening, earned shot, return and ammo are explicit`,
+        lang === "en"
+          ? /empty gauge/i.test(r.text) && /5.*kills/.test(r.text)
+            && /once.*return/i.test(r.text) && /0 ammo/.test(r.text) && /no reload/i.test(r.text)
+          : /空.*充能|充能.*空/.test(r.text) && /5.*击杀/.test(r.text)
+            && /一次.*返回/.test(r.text) && /0.*弹药/.test(r.text) && /不.*换弹/.test(r.text), r.text);
+    }
+    if (weapon === "Torid") check(`${weapon}/${lang}: magazine exhaustion and transition times`,
+      /170/.test(r.text) && /1\.00/.test(r.text)
+        && (lang === "en" ? /ammunition.*spent/i.test(r.text) : /弹药.*耗尽/.test(r.text)), r.text);
+    if (weapon === "Nunchasa") check(`${weapon}/${lang}: weighted contacts and alternate draw`,
+      /0\.5/.test(r.text) && /1\.5/.test(r.text), r.text);
+    if (weapon === "Grimoire") check(`${weapon}/${lang}: opening full and recharge sources`,
+      /45/.test(r.text) && /10/.test(r.text)
+        && (lang === "en" ? /full meter/i.test(r.text) && /pickup/i.test(r.text) : /充能.*满/.test(r.text) && /拾取/.test(r.text)), r.text);
+  }
+  await send("Page.navigate", { url: BASE + "/weapons/Trumna_Prime/builder" });
+  await sleep(4000);
+  check(`${lang}: collapsed preference survives reload`, await evaluate(
+    `document.querySelector('[data-fold="mode-def"]').classList.contains('shut')`));
+  await evaluate(`document.querySelector('[data-fold="mode-def"] .fold-h').click()`);
+  await send("Page.navigate", { url: BASE + "/weapons/Trumna_Prime/builder" });
+  await sleep(4000);
+  check(`${lang}: explicit open preference survives the closed default`, await evaluate(
+    `!document.querySelector('[data-fold="mode-def"]').classList.contains('shut')`));
+  await send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  check(`${lang}: expanded mobile conditions stay below Mode without overflow`, await evaluate(`(() => {
+    const row = document.getElementById('mode-row');
+    const box = row.querySelector('[data-fold="mode-def"]').getBoundingClientRect();
+    return box.top >= row.querySelector('label').getBoundingClientRect().bottom - 1
+      && Math.abs(box.width - row.clientWidth) < 2
+      && document.documentElement.scrollWidth <= innerWidth;
+  })()`));
+  await send("Emulation.clearDeviceMetricsOverride");
+}
+
+if (process.env.WFSIM_MODE_DETAILS_ONLY) {
+  await app.finish("mode cycle conditions and folds in both languages");
+}
+
 const grab = (weapon) => `(async () => {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   history.pushState({}, '', '/weapons/${weapon}'); route(); await sleep(4000);

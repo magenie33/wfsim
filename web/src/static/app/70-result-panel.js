@@ -303,8 +303,8 @@ function zone(n, title, question, body) {
 }
 
 /// One collapsible block: a heading, an optional hint, and a body.
-function foldBlock(id, title, hint, body) {
-  const shut = folded(id);
+function foldBlock(id, title, hint, body, shutByDefault = false) {
+  const shut = folded(id, shutByDefault);
   return `<div class="fold${shut ? " shut" : ""}" data-fold="${escHtml(id)}">
     <h3 class="fold-h"><span class="fold-c">▾</span>${escHtml(title)}${
       hint ? ` <span class="sim-hint">${escHtml(hint)}</span>` : ""}</h3>

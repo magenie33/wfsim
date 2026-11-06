@@ -670,6 +670,16 @@ pub fn meta_json() -> Value {
                         // weapon.
                         "trigger": s.map(|x| x.attack.trigger.clone()),
                         "charge_seconds": s.and_then(|x| x.attack.charge_seconds),
+                        "ammo_cost": s.map(|x| x.attack.ammo_cost),
+                        "meter": s.and_then(|x| x.attack.meter.as_ref()).map(|m| json!({
+                            "seconds_to_fill": m.seconds_to_fill,
+                            "seconds_per_hit": m.seconds_per_hit,
+                            "seconds_per_ammo_pickup": m.seconds_per_ammo_pickup,
+                        })),
+                        "orb_timing": s.and_then(|x| x.attack.orb.as_ref()).map(|o| json!({
+                            "throw_seconds": o.throw_seconds,
+                            "recovery_seconds": o.recovery_seconds,
+                        })),
                         "gauge": s.and_then(|x| x.gauge_form.as_ref()).map(|g| json!({
                             "single_shot": g.single_shot,
                             "charge_on": g.gauge.charge_on,

@@ -2568,18 +2568,15 @@ body:has(.dtup:not([hidden])) .rtoasts{bottom:130px}
 .finder.shut>.fd-head{border-bottom:0}
 .finder.shut> :not(.fd-head),
 .finder.shut>.fd-head> :not(.fold-c):not(.fd-title):not(.fd-count){display:none}
-/* WHAT EACH MODE IS. A definition list under the Mode control: one entry per
-   mode this weapon has, the picked one marked. It sits inside the builder's
-   own block, so it takes the block's width and wraps rather than pushing the
-   mod grid sideways — a phone reads this too (check_mobile). */
-.fold[data-fold="mode-def"]{margin-top:6px}
+/* The selected mode's conditions span the row below its control. */
+.fold[data-fold="mode-def"]{grid-column:1/-1;min-width:0;margin-top:6px}
 .fold[data-fold="mode-def"]>.fold-h{font-size:11px;font-weight:600;color:var(--text-2);margin:0}
 .modedef{padding:4px 0;border-top:1px solid var(--line)}
 .modedef:first-child{border-top:0}
 .modedef-n{font-size:11px;font-weight:600;color:var(--text)}
 .modedef.on .modedef-n{color:var(--gold)}
 .modedef-on{font-size:10px;font-weight:400;color:var(--muted)}
-.modedef-l{font-size:11px;line-height:1.45;color:var(--text-2);max-width:60ch}
+.modedef-l{font-size:11px;line-height:1.6;color:var(--text-2);max-width:75ch;margin-top:5px;overflow-wrap:anywhere}
 /* EVERY HIT, SORTED. Tabular figures, because the whole point is comparing a
    column down its length. */
 .kpi .ksub{font-size:10px;color:var(--muted)}

@@ -2791,6 +2791,22 @@ ui:
   "Radiation": 辐射
   "Viral": 病毒
   "What this mode is": 这个模式是什么
+  "Cycle conditions": 循环条件
+  "Start in {base} with an empty gauge.": 开局使用{base}，充能条为空。
+  "{n} charges fill the gauge: each primary body hit gives 0.5, each weak-point hit gives 1.": 主射击积满 {n} 层充能：普通命中每次 0.5 层，弱点命中每次 1 层。
+  "{n} primary-fire {what} fill the gauge.": 主射击累计 {n} 次{what}即可充满。
+  "Multishot and punch-through contacts count separately.": 多重射击与穿透的每次命中分别计入充能。
+  "At full charge, fire {other} once, then return to {base} and charge the next shot.": 满充能后用{other}射击一次，然后返回{base}，重新积累下一次充能。
+  "{other} uses {ammo} ammo from the shared magazine per shot; switching preserves the magazine and triggers no reload.": "{other}每次从共用弹匣消耗 {ammo} 发弹药；切换保留弹匣余量，不触发换弹。"
+  "At full charge, switch to {other} with {rounds} base rounds. Return to {base} when that ammunition is spent, then refill the gauge.": 满充能后切到{other}，基础弹药为 {rounds} 发；该弹药耗尽后返回{base}，重新积累充能。
+  "Switching either way refills the primary magazine from its reserve.": 两个方向的切换都会从备弹补满主射击弹匣。
+  "Base alternate charge time: {seconds}s.": 副射击基础蓄力时间：{seconds} 秒。
+  "Base transition times: {in}s in, {out}s out; reload speed scales both.": 基础切换时间：进入 {in} 秒、退出 {out} 秒；两者均受装填速度影响。
+  "Only primary-fire kills charge the gauge; without kills, keep firing the primary.": 仅主射击的击杀积累充能；没有击杀时，继续使用主射击。
+  "Start with a full meter; fire {other} once, then return to {base}.": 开局充能条已满，使用一次{other}，然后返回{base}。
+  "The meter refills in {seconds}s; each primary hit adds {hit}s and each secondary ammo pickup adds {pickup}s of charge.": 充能条自然回满需要 {seconds} 秒；主射击每次命中增加 {hit} 秒充能，每次拾取次要武器弹药增加 {pickup} 秒充能。
+  "Each full meter buys one alternate shot; primary fire continues while it recharges.": 每次满充能可使用一次副射击；重新充能期间继续主射击。
+  "Base throw animation: {windup}s wind-up and {recovery}s recovery, both scaled by fire rate.": 基础投掷动作：前摇 {windup} 秒、后摇 {recovery} 秒，两者均受射速影响。
 
   "Every hit counts.": "每一击都算数。"
   "Builder, simulator, optimizer.": 配装器、模拟器、优化器。

@@ -134,7 +134,8 @@ function modeExplain(w, id) {
   };
   const out = [];
   const declared = ((w || {}).declared_modes || {})[id];
-  if (declared) {
+  const cycle = ((w || {}).mode_kinds || {})[id] === "cycle" || isCycleMode(id);
+  if (declared && !cycle) {
     out.push(tr(declared.about));
   } else if (id === "base") {
     // …AND A MELEE WEAPON'S `base` IS A COMBO, whose FORM id is `neutral` and
@@ -174,29 +175,50 @@ function modeExplain(w, id) {
     // there is to say — this arm may not REQUIRE a combo.
     out.push(...(lines.length ? lines
       : [trF("Fired in its {form} for the whole fight.", { form: firedForm(f) })]));
-  } else if (isCycleMode(id) && earned) {
-    const g = earned.gauge || {};
-    // WHICH FORM FILLS THE GAUGE is all one cycle has that the other does not.
-    out.push(trF(
-      "Fire {base} until the gauge fills, spend it in {other}, come back — and again.",
-      { base: firedForm(modeForm(w, id)), other: firedForm(earned) }));
-    out.push(trF("{n} {what} fill it, and the earned form fires {rounds} before it ends.", {
-      n: g.charges_to_fill, rounds: g.max_rounds,
-      what: tr(CHARGE_WORD[g.charge_on] || g.charge_on || ""),
-    }));
-    // THE TRANSITIONS, and the ZERO CASE IS A FACT. An Incarnon plays an
-    // animation in each direction; a form you simply hold the other button for
-    // does not, and saying nothing there would read as "unknown" rather than
-    // as "none".
+  }
+  if (cycle && earned) out.push(...modeCycleExplain(w, id, earned));
+  return out;
+}
+
+/// Cycle conditions read the same gauge, meter and attack fields as the fight.
+function modeCycleExplain(w, id, earned) {
+  const base = firedForm(modeForm(w, id));
+  const other = firedForm(earned);
+  const g = earned.gauge;
+  const m = earned.meter;
+  const out = [];
+  if (g) {
+    out.push(trF("Start in {base} with an empty gauge.", { base }));
+    out.push(g.charge_on === "hits_and_weakpoints"
+      ? trF("{n} charges fill the gauge: each primary body hit gives 0.5, each weak-point hit gives 1.",
+        { n: g.charges_to_fill / 2 })
+      : trF("{n} primary-fire {what} fill the gauge.", {
+        n: g.charges_to_fill, what: tr(CHARGE_WORD[g.charge_on] || g.charge_on),
+      }));
+    if (g.charge_on !== "kills") out.push(tr("Multishot and punch-through contacts count separately."));
+    if (g.single_shot) {
+      out.push(trF("At full charge, fire {other} once, then return to {base} and charge the next shot.", { base, other }));
+      out.push(trF("{other} uses {ammo} ammo from the shared magazine per shot; switching preserves the magazine and triggers no reload.",
+        { other, ammo: earned.ammo_cost }));
+    } else {
+      out.push(trF("At full charge, switch to {other} with {rounds} base rounds. Return to {base} when that ammunition is spent, then refill the gauge.",
+        { base, other, rounds: g.max_rounds }));
+      out.push(tr("Switching either way refills the primary magazine from its reserve."));
+    }
+    if (earned.charge_seconds > 0) out.push(trF("Base alternate charge time: {seconds}s.", { seconds: earned.charge_seconds }));
     out.push(g.transmute_in > 0 || g.transmute_out > 0
-      ? trF("Each way costs an animation — {in}s in, {out}s out, both scaled by reload speed.",
+      ? trF("Base transition times: {in}s in, {out}s out; reload speed scales both.",
         { in: (+g.transmute_in).toFixed(2), out: (+g.transmute_out).toFixed(2) })
       : tr("There is no transition animation either way."));
-    // WHY A KILL-FED GAUGE IS DIFFERENT, said once and only where it applies:
-    // it is the only source that the TARGET can refuse.
-    if (g.charge_on === "kills") {
-      out.push(tr("A gauge bought with kills is worth what the fight lets you earn: against something that will not die, this mode is the base one."));
-    }
+    if (g.charge_on === "kills") out.push(tr("Only primary-fire kills charge the gauge; without kills, keep firing the primary."));
+  } else if (m) {
+    out.push(trF("Start with a full meter; fire {other} once, then return to {base}.", { base, other }));
+    out.push(trF("The meter refills in {seconds}s; each primary hit adds {hit}s and each secondary ammo pickup adds {pickup}s of charge.",
+      { seconds: m.seconds_to_fill, hit: m.seconds_per_hit, pickup: m.seconds_per_ammo_pickup }));
+    out.push(tr("Each full meter buys one alternate shot; primary fire continues while it recharges."));
+    const timing = earned.orb_timing;
+    if (timing) out.push(trF("Base throw animation: {windup}s wind-up and {recovery}s recovery, both scaled by fire rate.",
+      { windup: timing.throw_seconds, recovery: timing.recovery_seconds }));
   }
   return out;
 }
@@ -456,11 +478,12 @@ function renderMode() {
   const explain = (id) => {
     const lines = modeExplain(w, id);
     if (!lines.length) return "";
-    return foldBlock("mode-def", tr("What this mode is"), "",
+    const cycle = (w.mode_kinds || {})[id] === "cycle" || isCycleMode(id);
+    return foldBlock("mode-def", tr(cycle ? "Cycle conditions" : "What this mode is"), "",
       `<div class="modedef on">
         <div class="modedef-n">${escHtml(modeLabel(w, id))}</div>
         ${lines.map((s) => `<div class="modedef-l">${escHtml(s)}</div>`).join("")}
-      </div>`);
+      </div>`, true);
   };
 
   if (!opts.length) {

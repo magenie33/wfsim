@@ -1726,6 +1726,14 @@ Carries a MATCHED PAIR (the Mausolon and Cortege must not be told they have an
 Incarnon anything; the Torid and Lex must still say so) and runs in both
 languages.
 
+Cycle conditions start collapsed below Mode at the full row width, expand and
+remember their state across rendering and reload. Trumna Prime covers the empty
+opening gauge, five primary kills, single alternate shot, preserved magazine
+and ammunition cost; Torid covers charge ammunition exhaustion and transition
+times; Nunchasa covers weighted hits and its draw; Grimoire covers a full opening
+meter and timed, hit and pickup recharge. `WFSIM_MODE_DETAILS_ONLY=1` runs this
+focused subset. The assertions fail on the page without these conditions.
+
 ## `check_gain_freshness`
 
 A scenario edit reaches the quick calc immediately, including a field nobody
