@@ -61,7 +61,7 @@ try {
   const localized = await app.evaluate(`(async () => {
     const language = LANG, overlay = I18N;
     try {
-      const all = await (await fetch('/api/i18n')).json(); LANG = 'zh'; I18N = all.zh;
+      const all = await api('/api/i18n'); LANG = 'zh'; I18N = all.zh;
       computeDemand = ${JSON.stringify({ ...demand, goal: null, last_complete: stale })};
       const box = document.createElement('div'); box.innerHTML = computeDemandHtml();
       return { note: box.querySelector('.bh .set-note')?.textContent,
