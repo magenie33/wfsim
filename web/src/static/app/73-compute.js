@@ -811,7 +811,7 @@ function computeDemandHtml() {
   const big = (x) => `<b style="font-size:16px">${escHtml(x)}</b>`;
   // The complete scan includes work not yet admitted to the dispatcher.
   const now = Date.now();
-  const goal = completeDemandInventory(d.goal, now) && Date.parse(d.goal.expires_at) > now ? d.goal : null;
+  const goal = completeDemandInventory(d.goal, now + 60_000) && Date.parse(d.goal.expires_at) > now ? d.goal : null;
   const complete = goal || (completeDemandInventory(d.last_complete, now) ? d.last_complete : null);
   const orders = complete?.orders || [];
   const owed = complete?.total;

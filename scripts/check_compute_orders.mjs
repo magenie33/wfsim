@@ -40,8 +40,13 @@ try {
     state.total === '1,000' && state.note === originalNote && !state.eta && state.rows.length === 2, JSON.stringify(state));
   state = await draw({ ...demand, goal: null, last_complete: goal }, now + 3 * 3600000);
   app.check("a later demand response with no fresh goal retains that same complete count", state.total === '1,000' && state.note === originalNote && !state.eta, JSON.stringify(state));
+  const clockSkew = { ...goal, at: new Date(now + 1000).toISOString() };
+  state = await draw({ ...demand, goal: clockSkew });
+  app.check("a valid fresh goal preserves the server's clock tolerance", state.total === '1,000' && state.eta, JSON.stringify(state));
+  state = await draw({ ...demand, goal: null, last_complete: clockSkew });
+  app.check("the display-only fallback still refuses a future publication", state.total === '—' && !state.eta, JSON.stringify(state));
   const obsolete = { ...goal, engine: '95d73da96acb', total: 17976524, orders: [{ kind: 'board', total: 17976524 }], verbs: { simulate: 17976524 } };
-  for (const incomplete of [obsolete, { ...goal, engine: null }, { ...goal, at: new Date(now + 60_000).toISOString() },
+  for (const incomplete of [obsolete, { ...goal, engine: null }, { ...goal, at: new Date(now + 60_001).toISOString() },
     { ...goal, orders: [null] }, { ...goal, verbs: { simulate: 999 } }, { ...goal, registered: 1001 },
     { ...goal, expires_at: new Date(Date.parse(goal.expires_at) + 60_000).toISOString() }]) {
     state = await draw({ ...demand, goal: incomplete, last_complete: incomplete });
