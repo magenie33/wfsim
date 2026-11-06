@@ -18,12 +18,12 @@
 //! and the facts and nothing the size of the board.
 
 use std::borrow::Cow;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::hash::{Hash, Hasher};
 use std::io::{BufRead, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use serde_json::value::RawValue;
 use serde_json::Value;
@@ -544,6 +544,8 @@ struct Board {
     leaders: BTreeMap<String, BTreeMap<String, Vec<Box<RawValue>>>>,
     index: HashMap<String, u64>,
     inventory: inventory::State,
+    /// A round's whole files are fixed; later moves wait in the caller's set.
+    publication_round: VecDeque<(String, String)>,
 }
 
 impl Board {
@@ -562,6 +564,7 @@ impl Board {
             leaders: BTreeMap::new(),
             index: HashMap::new(),
             inventory: inventory::State::default(),
+            publication_round: VecDeque::new(),
         }
     }
 
@@ -634,66 +637,98 @@ impl Board {
         files
     }
 
-    fn publish_step(&mut self, pending: &mut BTreeSet<(usize, String)>, limit: usize) -> Result<(usize, usize, bool), String> {
+    fn publish_step(&mut self, pending: &mut BTreeSet<(usize, String)>, limit: usize) -> Result<(usize, usize, bool, bool), String> {
+        let started = Instant::now();
+        self.publish_step_elapsed(pending, limit, || started.elapsed())
+    }
+
+    fn publish_step_elapsed(&mut self, pending: &mut BTreeSet<(usize, String)>, limit: usize,
+        mut elapsed: impl FnMut() -> Duration) -> Result<(usize, usize, bool, bool), String> {
         if !(1..=FILES_AT_ONCE).contains(&limit) {
             return Err("publish_step file limit must be 1..64".into());
         }
         if !self.inventory.permits_publish() {
             return Err("inventory inputs require bootstrap".into());
         }
-        let selected: BTreeSet<_> = self.dirty_files(pending).into_iter().take(limit).collect();
-        let touched = pending.iter().filter(|(r, w)| selected.contains(&(self.rulers[*r].dir.clone(), w.clone())))
-            .cloned().collect();
-        let (wrote, removed) = self.publish(touched);
-        pending.retain(|(r, w)| !selected.contains(&(self.rulers[*r].dir.clone(), w.clone())));
-        Ok((wrote, removed, !pending.is_empty()))
+        if self.publication_round.is_empty() {
+            self.publication_round = self.dirty_files(&std::mem::take(pending)).into();
+        }
+        let (mut wrote, mut removed) = (0, 0);
+        for done in 0..limit {
+            if done > 0 && elapsed() >= Duration::from_secs(1) { break; }
+            let Some((dir, weapon)) = self.publication_round.pop_front() else { break };
+            let (w, r, _) = self.write_file(self.file(&dir, &weapon));
+            wrote += w;
+            removed += r;
+        }
+        wrote += self.write_state();
+        Ok((wrote, removed, !self.publication_round.is_empty(), !pending.is_empty()))
+    }
+
+    fn take_publication_round(&mut self) -> BTreeSet<(usize, String)> {
+        let files = std::mem::take(&mut self.publication_round);
+        files.into_iter().flat_map(|(dir, weapon)| self.rulers.iter().enumerate()
+            .filter(move |(_, ruler)| ruler.dir == dir).map(move |(r, _)| (r, weapon.clone()))).collect()
     }
 
     /// Re-rank every weapon `touched` names, in every directory one of its
     /// rulers writes; write the files that moved and the state. Returns (files
     /// written, files removed).
-    fn publish(&mut self, touched: BTreeSet<(usize, String)>) -> (usize, usize) {
+    fn publish(&mut self, mut touched: BTreeSet<(usize, String)>) -> (usize, usize) {
+        touched.extend(self.take_publication_round());
         let t = Instant::now();
         let dirty = self.dirty_files(&touched);
         let (mut wrote, mut removed, mut absent) = (0, 0, 0);
         for batch in dirty.chunks(FILES_AT_ONCE) {
             for f in par_map(batch, |(dir, w)| self.file(dir, w)) {
-                absent += f.absent;
-                for (r, n) in f.listed {
-                    if n == 0 {
-                        self.listed[r].remove(&f.weapon);
-                    } else {
-                        self.listed[r].insert(f.weapon.clone(), n);
-                    }
+                let (w, r, a) = self.write_file(f);
+                wrote += w;
+                removed += r;
+                absent += a;
+            }
+        }
+        wrote += self.write_state();
+        eprintln!(
+            "assemble: {} weapon file(s) re-ranked, {wrote} written, {removed} removed, {absent} row(s) with no fact yet, {:.1}s",
+            dirty.len(), t.elapsed().as_secs_f64(),
+        );
+        (wrote, removed)
+    }
+
+    fn write_file(&mut self, f: File) -> (usize, usize, usize) {
+        let (mut wrote, mut removed) = (0, 0);
+        for (r, n) in f.listed {
+            if n == 0 { self.listed[r].remove(&f.weapon); }
+            else { self.listed[r].insert(f.weapon.clone(), n); }
+        }
+        let entry = self.leaders.entry(f.dir.clone()).or_default();
+        if f.leaders.is_empty() { entry.remove(&f.weapon); }
+        else { entry.insert(f.weapon.clone(), f.leaders); }
+        let path = self.root.join(&f.dir).join(format!("{}.json", f.weapon));
+        let key = (f.dir, f.weapon);
+        match f.text {
+            None => {
+                if self.written.remove(&key).is_some() {
+                    let _ = std::fs::remove_file(&path);
+                    removed += 1;
                 }
-                let entry = self.leaders.entry(f.dir.clone()).or_default();
-                if f.leaders.is_empty() {
-                    entry.remove(&f.weapon);
-                } else {
-                    entry.insert(f.weapon.clone(), f.leaders);
-                }
-                let path = self.root.join(&f.dir).join(format!("{}.json", f.weapon));
-                let key = (f.dir, f.weapon);
-                match f.text {
-                    None => {
-                        if self.written.remove(&key).is_some() {
-                            let _ = std::fs::remove_file(&path);
-                            removed += 1;
-                        }
-                    }
-                    Some(text) => {
-                        let h = digest(&text);
-                        if self.written.get(&key) != Some(&h) {
-                            std::fs::create_dir_all(path.parent().expect("a file's directory"))
-                                .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-                            std::fs::write(&path, &text).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-                            self.written.insert(key, h);
-                            wrote += 1;
-                        }
-                    }
+            }
+            Some(text) => {
+                let h = digest(&text);
+                if self.written.get(&key) != Some(&h) {
+                    std::fs::create_dir_all(path.parent().expect("a file's directory"))
+                        .unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+                    std::fs::write(&path, &text).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
+                    self.written.insert(key, h);
+                    wrote += 1;
                 }
             }
         }
+        (wrote, removed, f.absent)
+    }
+
+    fn write_state(&mut self) -> usize {
+        let mut wrote = 0;
         for dir in self.dirs() {
             let empty = BTreeMap::new();
             let text = serde_json::to_string(self.leaders.get(&dir).unwrap_or(&empty)).expect("json");
@@ -714,12 +749,7 @@ impl Board {
             .map(|(r, ruler)| (ruler.id.clone(), seen, self.listed[r].values().sum()))
             .collect();
         record_states(&self.state, &states);
-        eprintln!(
-            "assemble: {} weapon file(s) re-ranked, {wrote} written, {removed} removed, {absent} row(s) with no fact yet, {:.1}s",
-            dirty.len(),
-            t.elapsed().as_secs_f64(),
-        );
-        (wrote, removed)
+        wrote
     }
 
     /// Records the library gained, and the (ruler, weapon) pairs they move.
@@ -877,14 +907,20 @@ pub fn serve() {
                 let result = state.execute(&mut board, request, output);
                 board.inventory = state;
                 match result {
-                    Ok((reply, moved)) => { pending.extend(moved); reply }
-                    Err(e) => format!("error inventory {}", e.replace(['\r', '\n'], " ")),
+                    Ok((reply, moved)) => {
+                        if reply.starts_with("ok inventory bootstrap ") { pending.extend(board.take_publication_round()); }
+                        pending.extend(moved); reply
+                    }
+                    Err(e) => {
+                        if !board.inventory.permits_publish() { pending.extend(board.take_publication_round()); }
+                        format!("error inventory {}", e.replace(['\r', '\n'], " "))
+                    }
                 }
             }
             ["publish_step", limit] => {
                 match limit.parse::<usize>().map_err(|_| "invalid publish_step file limit".to_string())
                     .and_then(|limit| board.publish_step(&mut pending, limit)) {
-                    Ok((wrote, removed, more)) => format!("ok publish_step {wrote} {removed} {}", usize::from(more)),
+                    Ok((wrote, removed, round, dirty)) => format!("ok publish_step {wrote} {removed} {} {}", usize::from(round), usize::from(dirty)),
                     Err(e) => format!("error {e}"),
                 }
             }
@@ -903,7 +939,7 @@ pub fn serve() {
                 load(&mut board, Some(library), Some(builds), Some(facts));
                 let mut pairs = board.all_pairs();
                 pairs.extend(before);
-                pending.clear();
+                pairs.extend(std::mem::take(&mut pending));
                 let (wrote, removed) = board.publish(pairs);
                 format!("ok reload {wrote} {removed}")
             }
@@ -1100,9 +1136,10 @@ mod tests {
         let remaining: BTreeSet<_> = pending.iter()
             .filter(|(r, w)| (board.rulers[*r].dir.as_str(), w.as_str()) != (selected.0.as_str(), selected.1.as_str()))
             .cloned().collect();
-        let (_, _, more) = board.publish_step(&mut pending, 1).unwrap();
+        let (_, _, more, dirty) = board.publish_step(&mut pending, 1).unwrap();
         assert!(more && !remaining.is_empty(), "a single file must leave other files pending");
-        assert_eq!(pending, remaining, "every ruler of exactly one file was drained");
+        assert!(!dirty && pending.is_empty(), "later changes have a separate deferred set");
+        assert_eq!(board.publication_round.len(), board.dirty_files(&remaining).len());
         let selected_path = if selected.0.is_empty() { format!("{}.json", selected.1) }
             else { format!("{}/{}.json", selected.0, selected.1) };
         assert!(files(&b).keys().filter(|path| path.ends_with(".json")
@@ -1112,15 +1149,90 @@ mod tests {
         assert!(pending.iter().any(|(r, w)| board.rulers[*r].dir == selected.0 && *w == selected.1),
             "a later fact dirties a file that an earlier step already wrote");
         let mut turns = 0;
-        while board.publish_step(&mut pending, 1).unwrap().2 {
+        loop {
+            let (_, _, round, dirty) = board.publish_step(&mut pending, 1).unwrap();
+            if !round && !dirty { break; }
             turns += 1;
-            assert!(turns < original.len(), "pending files must drain");
+            assert!(turns < original.len() * 2, "pending files must drain");
         }
         assert!(pending.is_empty());
         assert_eq!(files(&a), files(&b), "stepped publication equals a fresh full projection");
-        assert_eq!(board.publish_step(&mut pending, 1).unwrap(), (0, 0, false));
+        assert_eq!(board.publish_step(&mut pending, 1).unwrap(), (0, 0, false, false));
         let _ = std::fs::remove_dir_all(a);
         let _ = std::fs::remove_dir_all(b);
+    }
+
+    #[test]
+    fn continuous_hot_updates_cannot_starve_a_publication_round() {
+        let recs = library();
+        let first = facts(&recs, 0.0);
+        let dir = scratch("fair-round");
+        let mut board = Board::new(dir.clone(), dir.join("no-state.yaml"));
+        board.add_facts(first.iter().map(String::as_str));
+        add(&mut board, recs.clone());
+        let mut pending = board.all_pairs();
+        let groups = board.dirty_files(&pending);
+        assert!(groups.len() > 2);
+        let hot = &groups[0].1;
+        let hot_records: Vec<_> = recs.iter().filter(|row| row["weapon"].as_str() == Some(hot)).cloned().collect();
+        let mut latest = Vec::new();
+        let mut finished = false;
+        for step in 0..groups.len() {
+            let (_, _, round, _) = board.publish_step(&mut pending, 1).unwrap();
+            latest = facts(&hot_records, (step + 1) as f64);
+            let moved = board.add_facts(latest.iter().map(String::as_str));
+            assert!(!moved.is_empty(), "the hot weapon must actually move after every step");
+            pending.extend(moved);
+            if !round { finished = true; break; }
+        }
+        assert!(finished, "continuous updates starved a frozen publication round");
+        assert!(!pending.is_empty(), "the completed round lost deferred hot updates");
+        assert!(board.publication_round.is_empty());
+        for _ in 0..=groups.len() {
+            let (_, _, round, dirty) = board.publish_step(&mut pending, FILES_AT_ONCE).unwrap();
+            if !round && !dirty { break; }
+        }
+        assert!(pending.is_empty() && board.publication_round.is_empty());
+        let expected = scratch("fair-round-whole");
+        let mut all = first; all.extend(latest);
+        whole(&expected, recs, &all);
+        assert_eq!(files(&dir), files(&expected), "the next quiescent round must equal a full projection");
+        let _ = std::fs::remove_dir_all(dir);
+        let _ = std::fs::remove_dir_all(expected);
+    }
+
+    #[test]
+    fn publication_budget_yields_only_between_whole_files_and_limits_do_not_mutate() {
+        let recs = library(); let lines = facts(&recs, 0.0);
+        let dir = scratch("round-budget");
+        let mut board = Board::new(dir.clone(), dir.join("no-state.yaml"));
+        board.add_facts(lines.iter().map(String::as_str)); add(&mut board, recs);
+        let mut pending = board.all_pairs(); let groups = board.dirty_files(&pending).len();
+        let (_, _, round, dirty) = board.publish_step_elapsed(&mut pending, 8, || Duration::from_secs(1)).unwrap();
+        assert!(round && !dirty); assert_eq!(board.publication_round.len(), groups - 1);
+        pending.extend(board.all_pairs());
+        let held = (pending.clone(), board.publication_round.clone(), files(&dir));
+        for limit in [0, FILES_AT_ONCE + 1] {
+            assert!(board.publish_step_elapsed(&mut pending, limit, || panic!("invalid limits read the clock")).is_err());
+            assert_eq!((pending.clone(), board.publication_round.clone(), files(&dir)), held);
+        }
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn legacy_publish_drains_active_and_deferred_round_work() {
+        let recs = library(); let first = facts(&recs, 0.0); let later = facts(&recs, 7.0);
+        let dir = scratch("round-legacy");
+        let mut board = Board::new(dir.clone(), dir.join("no-state.yaml"));
+        board.add_facts(first.iter().map(String::as_str)); add(&mut board, recs.clone());
+        let mut pending = board.all_pairs(); board.publish_step(&mut pending, 1).unwrap();
+        pending.extend(board.add_facts(later.iter().map(String::as_str)));
+        board.publish(std::mem::take(&mut pending));
+        assert!(board.publication_round.is_empty() && pending.is_empty());
+        assert_eq!(board.publish_step(&mut pending, 8).unwrap(), (0, 0, false, false));
+        let expected = scratch("round-legacy-whole"); whole(&expected, recs, &later);
+        assert_eq!(files(&dir), files(&expected));
+        let _ = std::fs::remove_dir_all(dir); let _ = std::fs::remove_dir_all(expected);
     }
 
     /// **A BOARD MOVED A FACT AT A TIME IS THE BOARD ASSEMBLED FROM SCRATCH.**
