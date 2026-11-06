@@ -251,15 +251,15 @@ impl State {
                 }
                 let refs: Vec<_> = batch.iter().map(|o| o.record.as_deref().unwrap()).collect();
                 let derived = board.lib.derived(&refs, &board.rulers);
-                for (owner, derived) in batch.drain(..).zip(derived) {
-                    if self.owners.contains_key(owner.id.as_str()) {
+                for (source_owner, derived) in batch.drain(..).zip(derived) {
+                    if self.owners.contains_key(source_owner.id.as_str()) {
                         return Err("duplicate inventory source".into());
                     }
-                    let key = content_key(owner.record.as_deref().unwrap());
+                    let key = content_key(source_owner.record.as_deref().unwrap());
                     let slot = board.lib.records.len();
                     board.lib.index(slot, &derived);
                     board.lib.records.push(derived);
-                    let id: Arc<str> = Arc::from(owner.id);
+                    let id: Arc<str> = Arc::from(source_owner.id);
                     self.slots.push(Some(id.clone()));
                     self.owners.insert(id.clone(), Source { slot, key });
                     write_json(out, &self.header(board, &id))?;
@@ -477,9 +477,9 @@ impl State {
             .partition_point(|(id, _)| req.after_owner.as_ref().is_some_and(|after| id.as_ref() <= after.as_str()));
         let end = (start + limit).min(cache.owners.len());
         let mut rows = 0;
-        for (owner, slot) in &cache.owners[start..end] {
+        for (source_owner, slot) in &cache.owners[start..end] {
             let b = board.lib.records[*slot].as_ref().as_ref().unwrap();
-            write_json(out, &self.header(board, owner))?;
+            write_json(out, &self.header(board, source_owner))?;
             for (r, ruler) in board.rulers.iter().enumerate() {
                 let bit = 1u64 << r;
                 if b.admit & bit == 0 {
@@ -495,7 +495,7 @@ impl State {
                     }
                     write_json(
                         out,
-                        &json!({"type":"row","owner":owner.as_ref(),"build_id":b.identity,"ruler":ruler.id,"mode":mode,"queued":queued}),
+                        &json!({"type":"row","owner":source_owner.as_ref(),"build_id":b.identity,"ruler":ruler.id,"mode":mode,"queued":queued}),
                     )?;
                     rows += 1;
                 }
