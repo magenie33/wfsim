@@ -26,6 +26,10 @@ const r = await evaluate(`(async () => {
   const born = { link: JSON.stringify(buildWielder), resolved: wielderIdOf(buildWielder), stored: loadPresetList(WF_BUILDS, 'prototype').map(p => p.name), ids: presetListWithIds(WF_BUILDS, 'prototype').map(p => p.id),
     shards: ((wielderPayload() || {}).shards || []).length, sub: document.getElementById('wielder-sub').textContent,
     reloaded: fr.contentWindow.performance.timeOrigin !== t0, height: fr.style.height };
+  w.eval('pickPreset(wfBarCfg(), DEFAULT_PRESET_ID)'); await sleep(600);
+  const defaultPicked = wielderIdOf(buildWielder) === 'default' && wielderPayload() === undefined
+    && loadPresetList(WF_BUILDS, 'prototype').length === 1 && fr.contentWindow.performance.timeOrigin === t0;
+  w.eval('pickPreset(wfBarCfg(), wfBarCfg().load()[0].id)'); await sleep(300);
   // EDITED BACK TO THE BLANK INSIDE THE PANE: the preset is deleted, and the link
   // lands on the default (sent as no wielder for the Prototype).
   w.eval('wf.shards[0] = null'); w.eval('wfChanged()'); await sleep(3000);
@@ -39,7 +43,7 @@ const r = await evaluate(`(async () => {
   const reborn = { stored: loadPresetList(WF_BUILDS, 'prototype').length, resolved: wielderIdOf(buildWielder) };
   history.pushState({}, '', '/weapons/Braton/builder'); route(); await sleep(3500);
   const follows = { link: JSON.stringify(buildWielder), shards: ((wielderPayload() || {}).shards || []).length };
-  return { start, framed, born, emptied, reborn, follows };
+  return { start, framed, born, defaultPicked, emptied, reborn, follows };
 })()`);
 console.log(JSON.stringify(r, null, 1));
 check("nothing stored and the unbuilt Prototype linked to begin with", r.start.stored === 0 && r.start.link === '{"frame":"prototype","preset":null}');
@@ -47,6 +51,7 @@ check("the pane is the Warframe page, framed, with the shell's chrome off and th
   r.framed.embed && r.framed.chrome === "none" && r.framed.opFrame && r.framed.wf === "prototype", JSON.stringify(r.framed));
 check("an edit inside the pane is born as 01 and becomes the wielder", r.born.stored.length === 1 && r.born.stored[0] === "01"
   && r.born.resolved === r.born.ids[0] && r.born.shards === 1, JSON.stringify(r.born));
+check("choosing the framed Default updates the weapon link and preserves its owned preset without reloading",r.defaultPicked);
 check("edited back to the blank in the pane, the preset is deleted and the link is the default",
   r.emptied.stored === 0 && r.emptied.resolved === "default" && r.emptied.wire === true, JSON.stringify(r.emptied));
 check("...and the next effective edit writes one again", r.reborn.stored === 1 && r.reborn.resolved !== "default",

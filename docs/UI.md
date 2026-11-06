@@ -209,7 +209,10 @@ it.
 
 **THE DEFAULT IS THE BLANK, AND NOTHING IS OWNED UNTIL IT IS MADE.** Every
 collection has a DEFAULT: the blank (`cfg.blank()`), always there, read-only,
-never stored and never listed in its own bar. Owning none, the bar is empty and
+never stored. The Warframe bar lists its Default as a permanent read-only entry;
+its first copy or new owned build takes `01`. Clicking its editor makes an owned
+copy, and selecting Default again preserves that choice across reloads. Other
+collections do not list the blank in their own bar. Owning none, their bar is empty and
 the editor stands on the default; the first EFFECTIVE edit writes the next numeric label, and
 a preset edited back to the blank is DELETED — by CONTENT it is the default
 again, so what is left is the default. Only an edit deletes it: a blank one made

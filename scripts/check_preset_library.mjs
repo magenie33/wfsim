@@ -106,4 +106,33 @@ check("scenario info is inert and scenario copies use numeric labels",r.sceneIne
 check("scenario settings can be searched by their saved values",r.settingsSearch);
 check("all six preset domains render content info",r.allInfo);
 check("file additions use the free number and reimport preserves identity",r.importedName==='01' && r.idempotent);
+const frameDefault = await evaluate(`(async () => {
+  localStorage.removeItem(presetListKey(WF_BUILDS));
+  history.pushState({}, '', '/warframes/Volt/builder'); await route();
+  await new Promise(resolve => setTimeout(resolve,600));
+  const cfg=wfBarCfg(); cfg.store([]); cfg.setActive(DEFAULT_PRESET_ID); wfApply(wfBlank('volt'));
+  const bar=()=>document.getElementById('preset-bar-warframes');
+  const offered=()=>ddReg.get('dd-preset-warframes').items.some(p=>p.value===DEFAULT_PRESET_ID);
+  const fresh={noneOwned:cfg.load().length===0,visible:offered() && !!bar().querySelector('.pchip.ro'),
+    protected:!bar().querySelector('.ren,.del,.unpin'),locked:document.getElementById('wf-mod-block').classList.contains('locked-hard')};
+  document.querySelector('#wf-mod-slots .slot').click();
+  const first=cfg.load()[0];
+  const copied=first?.name==='01' && cfg.active()===first.id && !document.getElementById('wf-mod-block').classList.contains('locked-hard');
+  wf.slots[0].mod='intensify'; wfChanged(); flushPresetSaves();
+  pickPreset(cfg,DEFAULT_PRESET_ID);
+  const restored=cfg.active()===DEFAULT_PRESET_ID && wf.slots.every(s=>!s.mod) && cfg.load()[0].state.slots[0].mod==='intensify';
+  const next=newPreset(cfg);
+  const numbered=cfg.load().find(p=>p.id===next)?.name==='02';
+  deleteOwnedPreset(cfg,next); pickPreset(cfg,DEFAULT_PRESET_ID);
+  return {fresh,copied,restored,numbered};
+})()`);
+check("the Warframe Default is visible without creating an owned preset",frameDefault.fresh.noneOwned && frameDefault.fresh.visible);
+check("the Default cannot be renamed, removed or unpinned, and its editor is locked",frameDefault.fresh.protected && frameDefault.fresh.locked);
+check("editing the Default forks an editable 01",frameDefault.copied);
+check("returning to Default preserves the owned build",frameDefault.restored);
+check("new Warframe builds continue with the next numeric label",frameDefault.numbered);
+await app.load('/warframes/Volt/builder',2000);
+const frameReload=await evaluate(`({active:wfActive,owned:wfBarCfg().load().map(p=>({name:p.name,mod:p.state.slots[0].mod})),locked:document.getElementById('wf-mod-block').classList.contains('locked-hard')})`);
+check("a reload retains the chosen Default and the customized 01",frameReload.active==='default' && frameReload.locked
+  && frameReload.owned.length===1 && frameReload.owned[0].name==='01' && frameReload.owned[0].mod==='intensify',JSON.stringify(frameReload));
 await app.finish("preset naming and info stay consistent across collections");

@@ -540,7 +540,7 @@ const newPresetName = (ps, domain) => {
 /// deleted — the blank. Owning nothing, the editor IS it, and the first
 /// effective edit there allocates its numeric label; a preset edited back to the
 /// blank is deleted, so what is left is it again. It is where a link lands when
-/// its preset is gone, and no collection's own bar lists it.
+/// its preset is gone; a collection may expose it through `cfg.defaultEntry`.
 const DEFAULT_PRESET_ID = "default";
 /// WHICH PRESET A PAGE OPENS ON: the one `?build=` names — the default, or one
 /// that is gone, opening the blank — and with none named, the last one open.

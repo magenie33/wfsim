@@ -658,8 +658,10 @@ function renderWfGate(g) {
 function wfAnnounceBuild() {
   if (!EMBED || window.parent === window) return;
   const p = presetListWithIds(WF_BUILDS, wf.frame).find((x) => presetId(x) === wfActive);
-  if (p) window.parent.postMessage({ wfsim: "wielder-build", frame: wf.frame, id: p.id }, location.origin);
+  window.parent.postMessage({ wfsim: "wielder-build", frame: wf.frame, id: p ? p.id : DEFAULT_PRESET_ID }, location.origin);
 }
+
+const wfDefaultPreset = () => ({ builtin: DEFAULT_PRESET_ID, name: tr("Default"), scope: wf.frame, state: wfBlank(wf.frame) });
 
 function wfBarCfg() {
   return {
@@ -672,16 +674,19 @@ function wfBarCfg() {
     noun: BUILD_NOUN,
     // AN `id` ON EVERY BUILD, because a weapon's wielder links to one by it.
     load: () => presetListWithIds(WF_BUILDS, wf.frame),
+    defaultEntry: wfDefaultPreset,
+    fallback: wfDefaultPreset,
+    readonly: p => !!p.builtin,
     usedBy: (p) => linkersOfWarframePreset(p.scope || wf.frame, p.id),
     store: (ps) => storePresetList(WF_BUILDS, ps, wf.frame),
-    active: () => wfActive,
+    active: () => wfActive || DEFAULT_PRESET_ID,
     setActive: (n) => {
-      wfActive = n;
+      wfActive = n || DEFAULT_PRESET_ID;
       // FRAMED, THE OPEN BUILD IS A WEAPON'S LINK, not this frame's own last
       // choice: the pointer is the standalone page's and the wielder picker's
       // default, and another weapon's pane must not move it.
       if (EMBED) wfAnnounceBuild();
-      else localStorage.setItem(presetActiveKey(WF_BUILDS, wf.frame), n);
+      else localStorage.setItem(presetActiveKey(WF_BUILDS, wf.frame), wfActive);
     },
     snapshot: () => JSON.parse(JSON.stringify(wf)),
     apply: (st) => wfApply(st),
@@ -693,7 +698,14 @@ function wfBarCfg() {
 /// NO FRAME YET, NO BAR: the page shows before its catalogue arrives, and a bar
 /// redrawn meanwhile (the account answering, a sync) has no frame to list;
 /// `showWarframe` draws it once one is open.
-const renderWfPresetBar = () => { if (wf) { renderPresetBarIn($("preset-bar-warframes"), wfBarCfg()); if (document.body.classList.contains("on-warframe")) renderWarframeLibrary(); } };
+const renderWfPresetBar = () => { if (wf) { renderPresetBarIn($("preset-bar-warframes"), wfBarCfg()); wfLockDefault(); if (document.body.classList.contains("on-warframe")) renderWarframeLibrary(); } };
+function wfLockDefault() {
+  const cfg = wfBarCfg();
+  const locked = cfg.active() === DEFAULT_PRESET_ID;
+  for (const id of ["wf-mod-block", "wf-arcane-block", "wf-shard-block", "wf-operator-block", "wf-helminth", "wf-forma-plan"]) {
+    lockReadOnly($(id), locked, wfBarCfg);
+  }
+}
 function wfApply(st) {
   wf = wfNormalize(st, wf.frame);
   dropSave("warframes");
@@ -732,6 +744,7 @@ function wfChanged() {
   renderWfShards();
   renderWfOperator();
   renderWfHelminth();
+  wfLockDefault();
   refreshWfPanel();
   wfMarkDirty();
   scheduleEquipmentPublish("warframe", wfPayload());
