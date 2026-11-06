@@ -378,6 +378,8 @@ The same link with `?freeze` writes the request the search sent and its engine, 
 nothing; and that frozen request and context, run as volunteer work through the
 background's own search, answers the same build to the key, under its lease,
 with the search's work.
+That volunteer replay requires WASM; native previews exercise the page flow
+and explicitly skip the worker-only leg.
 
 ## `check_riven_request`
 

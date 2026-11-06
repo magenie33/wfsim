@@ -20,6 +20,10 @@ const STUB = `(() => {
     const u = String(url);
     const ok = (b) => new Response(JSON.stringify(b), { status: 200, headers: { "content-type": "application/json" } });
     if (/\\/api\\/appraise\\/TEST7\\/result$/i.test(u)) { window.__sent.results.push(JSON.parse(init.body)); return ok({ ok: true, first: true }); }
+    if (/\\/api\\/appraise\\/TEST7\\/renew$/i.test(u)) {
+      const body = JSON.parse(init.body);
+      return ok({ ok: true, held: body.lease === "0".repeat(32) && body.verifier === "a".repeat(24) });
+    }
     if (/\\/api\\/appraise\\/TEST7\\?result=1$/i.test(u)) return ok({ ...job, result: { id: 1, build: JSON.parse(localStorage.getItem("__build") || "{}"), thanks: "Kai" } });
     if (/\\/api\\/appraise\\/TEST7$/i.test(u)) return ok(job);
     if (/\\/api\\/board\\/submit$/.test(u)) window.__sent.board.push(JSON.parse(init.body));
@@ -131,7 +135,7 @@ if (sent) {
   // RUN AS VOLUNTEER WORK: the frozen request and context, on a computer that
   // holds nothing of the asker's, through the background's own search — the
   // same build the page sent above, to the key, and the search's work beside it.
-  {
+  if (await evaluate("WASM")) {
     const vol = JSON.parse(await evaluate(`(async () => {
       const f = JSON.parse(document.body.dataset.request);
       window.__sent.results = [];
@@ -139,17 +143,17 @@ if (sent) {
       localStorage.setItem("wfsim-compute-consent", JSON.stringify({ v: COMPUTE_CONSENT_V, on: true, at: new Date().toISOString() }));
       await rivenGainOnce({ kind: "riven_gain", lease: "0".repeat(32), code: "TEST7", weapon: "torid",
         ruler: "standard_single_target", request: f.request, context: f.context }, "a".repeat(24));
-      return JSON.stringify(window.__sent.results);
+      return JSON.stringify({ results: window.__sent.results, held: computeHeld(), frozen: computeFrozen, consent: boardVerifyOn() });
     })()`, 30 * 60000));
     const canon = (v) => (Array.isArray(v) ? `[${v.map(canon).join(",")}]`
       : v && typeof v === "object" ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${canon(v[k])}`).join(",")}}`
       : JSON.stringify(v));
-    const v = vol[0] || {};
+    const v = vol.results[0] || {};
     check("run as volunteer work, the frozen search answers the build the page found", canon(v.build) === canon(sent.results[0].build),
-      `${JSON.stringify(v.build)} vs ${JSON.stringify(sent.results[0].build)}`);
+      `${JSON.stringify(vol)} vs ${JSON.stringify(sent.results[0].build)}`);
     check("…under its lease, with the search's work", v.lease === "0".repeat(32) && v.verifier === "a".repeat(24)
       && Number.isSafeInteger(v.work) && v.work > 0 && Number.isFinite(v.score), JSON.stringify(v).slice(0, 200));
-  }
+  } else console.log("  SKIP  volunteer replay requires the WASM site workers; native previews do not serve /worker.js or the WASM engine");
 
   // THE ANSWER'S PICTURE: that build replayed with the asker's rolls, judged,
   // scored and set against the board — what the bot reads and sends.
@@ -167,7 +171,7 @@ if (sent) {
   check("…replayed at the ruler's own runs, not the reader's setting", v && v.runs === await evaluate(`(scenarioNamed("standard_single_target").state || {}).runs`), JSON.stringify(v));
   check("…graded 0 to 100", v && Number.isInteger(v.grade) && v.grade >= 0 && v.grade <= 100, JSON.stringify(v));
   // (score, riven-free leader, best riven) -> grade: linear between the two, 100 at or past #1 and where no riven beats the leader.
-  const grades = JSON.parse(await evaluate(`JSON.stringify([[10, 5, 15], [15, 5, 15], [20, 5, 15], [4, 5, 15], [5, 5, 15], [7, 5, 5], [7, 5, 0], [1, 0, 0], [9.99, 5, 10]].map((a) => rivenGrade(...a).grade))`));
+  const grades = JSON.parse(await evaluate(`JSON.stringify([[10, 5, 15], [15, 5, 15], [20, 5, 15], [4, 5, 15], [5, 5, 15], [7, 5, 5], [7, 5, 0], [1, 0, 0], [9.99, 5, 10]].map((a) => headlessRivenGrade(...a).grade))`));
   check("…linear in the gain, rounded down, 100 at or past the board's #1 and for the first riven", JSON.stringify(grades) === "[50,100,100,0,0,100,100,100,99]", JSON.stringify(grades));
   const said = await evaluate(`document.querySelector("#card-page").textContent`);
   check("…stating the rivens it was read against, when, and the replay's runs", said.includes(`/ 100`) && said.includes(String(v.of)) && said.includes(String(v.runs)), said.slice(0, 400));
