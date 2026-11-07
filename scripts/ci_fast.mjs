@@ -3,11 +3,15 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 
 export const FAST_JOBS = ['site', 'checks', 'services', 'pipeline', 'page', 'published-board'];
+export const fastJobs = paths => Array.isArray(paths) && paths.includes('engine/src/board/builds/identity.rs')
+  ? [...FAST_JOBS, 'gas'] : [...FAST_JOBS];
 
 const PATHS = new Set([
   '.github/workflows/ci.yml', 'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs',
   'scripts/ci_fast.mjs', 'scripts/check_ci_fast.mjs', 'scripts/check_ci_policy.mjs', 'scripts/check_ci_partitions.mjs',
   'cli/src/board/run.rs', 'cli/src/board/assemble/inventory.rs',
+  'engine/src/board/builds/identity.rs', 'engine/src/board/builds/tests/catalog.rs',
+  'scripts/check_default_parent.mjs',
   'web/src/static/app/73-compute.js', 'data/i18n/zh/ui.yaml',
   'worker/clearance.js', 'worker/contribution.js', 'worker/usage_days.js',
   'worker/deadlines.js', 'worker/factory.js', 'worker/board_tasks.js', 'worker/task_observation.js',
@@ -36,6 +40,21 @@ export function fastScope(paths, { base, verifiedBase, force = false, hotfix = f
 export function checkFastChanges(scope, head = 'HEAD', run = git) {
   const before = path => run(['show', `${scope.base}:${path}`]);
   const after = path => run(['show', `${head}:${path}`]);
+  const parent = 'engine/src/board/builds/identity.rs';
+  if (scope.paths.includes(parent)) {
+    const fixed = 'd.mods = canonical_mods_with(&d.weapon, &mods, d.riven.as_ref());';
+    if (!after(parent).includes(fixed) || after(parent).replace(fixed, 'd.mods = mods;') !== before(parent))
+      throw new Error('Fast CI permits only canonical normalization of the restored parent mods');
+    if (!scope.paths.includes('engine/src/board/builds/tests/catalog.rs')
+        || !scope.paths.includes('scripts/check_default_parent.mjs'))
+      throw new Error('Fast parent repair requires engine and native admission regressions');
+  }
+  const parentTests = 'engine/src/board/builds/tests/catalog.rs';
+  if (scope.paths.includes(parentTests)) {
+    const withoutParentTests = text => text.replace(/\n#\[test\]\nfn (?:a_lowered_card_names_its_canonical_full_rank_parent|a_rank_parent_preserves_element_pairing_without_a_riven)\(\) \{[\s\S]*?\n}\n/g, '');
+    if (withoutParentTests(before(parentTests)) !== withoutParentTests(after(parentTests)))
+      throw new Error('Fast CI permits only the named parent normalization regressions');
+  }
   if (scope.paths.includes('worker/pg/sync.sql')) {
     const withoutMaintenance = text => text.replace(/CREATE OR REPLACE FUNCTION factory_forget_(?:codes|past)\([\s\S]*?\$\$;/g, '');
     if (withoutMaintenance(before('worker/pg/sync.sql')) !== withoutMaintenance(after('worker/pg/sync.sql')))
@@ -80,7 +99,7 @@ export function checkFastChanges(scope, head = 'HEAD', run = git) {
 
 export function checkFastProof(proof, paths) {
   if (proof.scope !== 'fast' || !proof.fast) throw new Error('Missing fast CI scope');
-  if (JSON.stringify(proof.jobs) !== JSON.stringify(FAST_JOBS)) throw new Error('Missing fast CI coverage');
+  if (JSON.stringify(proof.jobs) !== JSON.stringify(fastJobs(paths))) throw new Error('Missing fast CI coverage');
   const scope = fastScope(paths, { ...proof.fast, verifiedBase: true });
   if (JSON.stringify(scope.paths) !== JSON.stringify(proof.fast.paths)) throw new Error('Fast CI paths changed');
   return scope;

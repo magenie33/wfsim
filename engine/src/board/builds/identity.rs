@@ -68,7 +68,7 @@ pub fn default_corner(b: &ValidBuild) -> Option<String> {
         return None;
     }
     let mut d = b.clone().with_riven_rolls(rolls);
-    d.mods = mods;
+    d.mods = canonical_mods_with(&d.weapon, &mods, d.riven.as_ref());
     Some(build_id(&d))
 }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import assert from 'node:assert/strict';
 import './check_ci_fast.mjs';
-import { FAST_JOBS } from './ci_fast.mjs';
+import { FAST_JOBS, fastJobs } from './ci_fast.mjs';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -119,6 +119,11 @@ assert(!validProof({ ...fastProof, fast: null }, 'abc', 'p'));
 assert(!validProof({ ...proof, fast: fastProof.fast }, 'abc', 'p'));
 assert(validProof(fastProof, 'abc', 'p', false, PRODUCT_JOBS, true));
 assert(!validProof({ ...fastProof, jobs: FAST_JOBS.slice(1) }, 'abc', 'p'));
+const parentFast = { ...fastProof, fast: { ...fastProof.fast, paths: ['engine/src/board/builds/identity.rs'] } };
+assert(!validProof(parentFast, 'abc', 'p'), 'parent repair proof cannot omit gas/native prerequisites');
+assert(validProof({ ...parentFast, jobs: fastJobs(parentFast.fast.paths) }, 'abc', 'p'));
+assert(!validProof({ ...parentFast, jobs: fastJobs(parentFast.fast.paths),
+  results: { ...proof.results, gas: 'failure' } }, 'abc', 'p'));
 for (const bad of [{ ...proof, sha: 'other' }, { ...proof, policy: 'old' }, { ...proof, reused: true },
   { ...proof, jobs: ['site'] }, { ...proof, results: {} }, { ...proof, version: 0 }]) {
   assert(!validProof(bad, 'abc', 'p', true));

@@ -37,6 +37,13 @@ worker gets from Hyperdrive; it needs `npm install --prefix scripts/pg`.
 
 ## Inventory checks
 
+`check_default_parent.mjs` runs the native dry inventory across every ruler
+and mode. A real lower-rank record keeps its frozen identity and waits for
+its canonical full-rank parent. Qualifying parents release variants; parents
+below the entry line do not. Legacy variants without a stored parent and
+roll-only alternatives retain their rules. `WFSIM_INVENTORY_BOARD_BIN` selects
+the built native binary.
+
 `check_inventory_pipeline.mjs` runs the actual `wfsim-board --serve` against
 frozen PGlite cuts and compares every classified question with an independent
 `--each-ruler --gate` walk. It covers source deletion, canonical aliases,

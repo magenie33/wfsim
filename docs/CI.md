@@ -111,8 +111,13 @@ branch; main runs and shipping are not cancelled in progress.
 `fast=true` with a reason selects registered maintenance changes. It runs native
 board tests and clippy, service and pipeline checks, focused compute-page checks,
 published-board legality and a fresh site artifact. Changed paths and function
-boundaries must fit `scripts/ci_fast.mjs`: engine/data, task protocol, table
+boundaries must fit `scripts/ci_fast.mjs`: general engine/data, task protocol, table
 schemas, incremental inventory runtime and daemon scheduling do not qualify.
+The parent identity repair permits only re-canonicalizing restored mod ranks
+with the existing engine helper. Named engine regressions, native admission
+checks and engine board tests are mandatory; all other engine changes remain
+outside fast coverage. This profile also selects native/WASM gas equality and
+the native library builds for its changed engine.
 The registered queue uniqueness fence may add only its trigger and unique index;
 its fourteen-day refresh and pipeline checks remain mandatory.
 The comparison base must be verified. The proof records its base and exact

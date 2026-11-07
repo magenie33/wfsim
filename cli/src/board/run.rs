@@ -74,6 +74,7 @@ pub(super) struct Built {
     record: Box<serde_json::value::RawValue>,
     weapon: String,
     build: Result<wfsim_engine::board::builds::ValidBuild, String>,
+    default_corner: std::sync::OnceLock<Option<String>>,
 }
 
 fn write_inventory_builds(lib: &[Built], out: &mut impl std::io::Write) -> std::io::Result<()> {
@@ -109,7 +110,9 @@ pub(super) fn read_library(input: impl std::io::Read) -> Vec<Built> {
         (record.get("weapon").and_then(Value::as_str).unwrap_or_default().to_string(),
          wfsim_webapi::board_rows::board_build(&record))
     });
-    subs.into_iter().zip(built).map(|(record, (weapon, build))| Built { record, weapon, build }).collect()
+    subs.into_iter().zip(built).map(|(record, (weapon, build))| Built {
+        record, weapon, build, default_corner: std::sync::OnceLock::new(),
+    }).collect()
 }
 
 fn inventory_phase(phase: &str, started: std::time::Instant, rows: usize) {
@@ -518,7 +521,11 @@ pub(super) fn ruler(
         //
         // THE REQUESTS ARE `board_rows::row_requests`, the page's producer's
         // too — riven card included, and an unsustainable mode refused there.
-        let fights = wfsim_webapi::board_rows::row_requests(&v, &scenario);
+        let fights = if dry {
+            v.board_modes().into_iter().map(|played| (played, Value::Null)).collect()
+        } else {
+            wfsim_webapi::board_rows::row_requests(&v, &scenario)
+        };
         if fights.is_empty() {
             say!("refused {weapon}: it has no mode that can be sustained for an engagement");
             refused += 1;
@@ -578,8 +585,8 @@ pub(super) fn ruler(
                 // one. A riven's shape is several builds and only the DEFAULT
                 // is asked for on arrival; the line decides whether the rest
                 // are ever worth a fight (`board::entry`).
-                if let Some(def) = wfsim_engine::board::builds::default_corner(&v) {
-                    corner_of.insert(asked.0.clone(), def);
+                if let Some(def) = built.default_corner.get_or_init(|| wfsim_engine::board::builds::default_corner(&v)) {
+                    corner_of.insert(asked.0.clone(), def.clone());
                 }
                 pending_missing.push(asked.clone());
             }

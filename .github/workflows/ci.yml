@@ -491,10 +491,12 @@ jobs:
       - name: Incremental inventory matches a full engine walk across frozen database cuts
         run: |
           cargo build -p wfsim-cli --bin wfsim-board
+          node scripts/check_default_parent.mjs
           node scripts/check_inventory_pipeline.mjs
       - name: Maintenance preserves native board behavior and source checks
         if: fromJSON(needs.plan.outputs.plan).fast
         run: |
+          cargo test -p wfsim-engine --lib board::
           cargo test -p wfsim-cli --lib board::
           cargo clippy -p wfsim-cli --all-targets -- -D warnings
       - name: Equipment builds enter the canonical public library

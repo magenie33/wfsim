@@ -1117,6 +1117,57 @@ fn a_corner_names_the_default_it_waits_on() {
     assert_eq!(default_corner(&corner).as_deref(), Some(build_id(&default).as_str()));
 }
 
+#[test]
+fn a_lowered_card_names_its_canonical_full_rank_parent() {
+    use crate::build::rivens::RivenShape;
+    let shape = RivenShape {
+        bonuses: vec!["critical_chance".into(), "critical_damage".into(), "damage".into()],
+        malus: Some("status_duration".into()),
+    };
+    let mods: Vec<String> = [
+        "primed_cryo_rounds", "malignant_force", "hellfire", "primary_acuity",
+        "galvanized_scope", "vital_sense", "hunter_track@0", RIVEN_SLOT,
+    ].into_iter().map(String::from).collect();
+    let evolutions: Vec<String> = [
+        "torid_evo1_incarnon_form", "torid_final_fusillade",
+        "torid_swift_deliverance", "torid_survivors_edge",
+    ].into_iter().map(String::from).collect();
+    let arcanes = vec!["primary_deadhead".to_string()];
+    let read = |mods: &[String]| validate_with(
+        "torid", mods, &evolutions, &arcanes, "", Some(&shape),
+        Some("vigilante_supplies"), None,
+    ).unwrap().with_riven_rolls(crate::build::rivens::default_rolls(&shape));
+    let corner = read(&mods);
+    let full: Vec<String> = mods.iter().map(|m| crate::data::mods::split_rank(m).0.to_string()).collect();
+    let parent = read(&full);
+    assert_eq!(build_id(&corner), "6b96ab9988535a7badff7904ccba032c");
+    assert_eq!(build_id(&parent), "73e98d44d3ef0b61a2b5e33bb10ea262");
+    assert_ne!(full, parent.mods, "restoring rank changes the canonical order");
+    assert_eq!(default_corner(&corner), Some(build_id(&parent)));
+    assert_eq!(default_corner(&parent), None);
+    for rank in 0..crate::data::mods::pool_naming("torid", &full).get("hunter_track").unwrap().max_rank {
+        let mut ranked = full.clone();
+        *ranked.iter_mut().find(|m| *m == "hunter_track").unwrap() = format!("hunter_track@{rank}");
+        assert_eq!(default_corner(&read(&ranked)), Some(build_id(&parent)), "rank {rank}");
+    }
+}
+
+#[test]
+fn a_rank_parent_preserves_element_pairing_without_a_riven() {
+    let mods: Vec<String> = [
+        "high_voltage@0", "rime_rounds", "thermite_rounds", "serration", "split_chamber",
+    ].into_iter().map(String::from).collect();
+    let read = |mods: &[String]| validate_with(
+        "braton_prime", mods, &[], &[], "", None, None, None,
+    ).unwrap();
+    let corner = read(&mods);
+    let full: Vec<String> = mods.iter().map(|m| crate::data::mods::split_rank(m).0.to_string()).collect();
+    let parent = read(&full);
+    assert_ne!(build_id(&corner), build_id(&parent));
+    assert_eq!(default_corner(&corner), Some(build_id(&parent)));
+    assert_eq!(default_corner(&parent), None);
+}
+
 /// A WEAPON WITH NO EXILUS SLOT IS REFUSED ONE: a companion weapon has eight
 /// mod slots and nothing else, and a ninth card scored on it is a build the
 /// game cannot hold.

@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { assertGate, output, policyDigest, PRODUCT_JOBS, releaseCoverage } from './ci_policy.mjs';
 import { assertHotfixProof } from './ci_hotfix.mjs';
-import { checkFastChanges, checkFastProof, FAST_JOBS } from './ci_fast.mjs';
+import { checkFastChanges, checkFastProof, fastJobs } from './ci_fast.mjs';
 
 export function validProof(proof, sha, policy, full = false, required = [], deep = false) {
   const fast = proof?.scope === 'fast';
@@ -17,7 +17,7 @@ export function validProof(proof, sha, policy, full = false, required = [], deep
     && proof.reused === false && Array.isArray(proof.jobs)
     && proof.jobs.includes('site') && proof.jobs.every(j => PRODUCT_JOBS.includes(j))
     && new Set(proof.jobs).size === proof.jobs.length
-    && (fast ? complete(FAST_JOBS) : complete(PRODUCT_JOBS) || (!full && releaseCoverage(proof.jobs)))
+    && (fast ? complete(fastJobs(proof.fast?.paths)) : complete(PRODUCT_JOBS) || (!full && releaseCoverage(proof.jobs)))
     && (fast || required.every(j => proof.jobs.includes(j)))
     && (fast || !(full || deep) || proof.deep === true)
     && proof.jobs.every(j => proof.results?.[j] === 'success')

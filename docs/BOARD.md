@@ -1977,6 +1977,12 @@ deep Status Duration malus back up the band. A card joins the list by name,
 never by resembling one on it, and its rank is part of the id —
 `<card>@<rank>` in `mods` (`data::mods::RANK_MARK`).
 
+A variant names its full-rank parent through the same canonical mod ordering
+as intake. Restoring ranks can change drain order, so stripping rank suffixes
+alone does not produce the parent's identity. An existing unmeasured parent
+keeps its variants waiting; a qualifying measurement releases them. A legacy
+variant whose parent is absent retains its existing eligibility.
+
 Measured over the library: 1,948 of 2,418 riven builds have no ambiguous stat
 at all and are the god roll and nothing else; 470 name one worth more corners,
 and all but five of those name exactly one — two builds for a sign stat, five
