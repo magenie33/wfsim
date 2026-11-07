@@ -208,7 +208,7 @@ check("...never an anonymous one, by name or by handle", (await who("cy")).perso
 await library.run("UPDATE verifiers SET last_at = ? WHERE id = ?", new Date().toISOString(), X);
 await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHERE id = ?", Y);
 // THE DEMAND: owed rows by why — a new build's, a sweep's, a rescore's, a refresh's, one row
-// owed by two batches counted once — riven gains waiting, the pace window's
+// requested by two batches retained under its first owner — riven gains waiting, the pace window's
 // scores by who measured them, and the hours to clear.
 {
   const L = library, now = Date.now(), ago = (ms) => new Date(now - ms).toISOString();
@@ -271,7 +271,7 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   check("...and its hours to reach over the pace window: one agreed in it, two to go", Math.abs(d.surveys[0].clear_hours - 2 * PACE_HOURS) < 1e-9, JSON.stringify(d.surveys));
   const paced = (n) => Math.round(n / PACE_HOURS);
   check("the demand counts owed rows by why, one row once, the pace window's scores per hour by who, and riven gains of the last day",
-    JSON.stringify([d.owed, d.per_hour, d.riven_gains]) === JSON.stringify([{ new_builds: 1, rescores: 2, sweeps: 1, refreshes: 1 }, { volunteers: paced(12), official: paced(6) }, 1]),
+    JSON.stringify([d.owed, d.per_hour, d.riven_gains]) === JSON.stringify([{ new_builds: 1, rescores: 1, sweeps: 2, refreshes: 1 }, { volunteers: paced(12), official: paced(6) }, 1]),
     JSON.stringify(d));
   check("hours to clear are the open work's compute over the compute answered per hour, the refresh's row too",
     Math.abs(d.clear_hours - 130 / (372 / PACE_HOURS)) < 1e-9, String(d.clear_hours));
@@ -285,7 +285,7 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
     ('sweep', 'r1|heavy_gunner|base', 'qr1', 'live', 'x', 'x', '{"batch":"rescore-x"}'), ('sweep', 's1|heavy_gunner|base', 'qs1', 'live', 'x', 'x', '{"batch":"arrivals-2026-03-01"}')`);
   const listed = (await demandOf({ LIBRARY: L }, now)).orders;
   check("the orders are a list a kind a row, each with what a device has taken of it",
-    JSON.stringify(listed) === JSON.stringify([{ kind: "rescore", total: 2, dispatched: 1 }, { kind: "sweep", total: 1, dispatched: 0 },
+    JSON.stringify(listed) === JSON.stringify([{ kind: "rescore", total: 1, dispatched: 1 }, { kind: "sweep", total: 2, dispatched: 0 },
       { kind: "new_build", total: 1, dispatched: 0 }, { kind: "refresh", total: 1, dispatched: 0 }, { kind: "riven_gain", total: 1, dispatched: 0 }]),
     JSON.stringify(listed));
   await L.run("DELETE FROM demands WHERE question IN ('qr1', 'qs1')");

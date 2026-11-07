@@ -516,6 +516,7 @@ jobs:
         run: |
           if [ "$FAST_CI" != "true" ]; then node scripts/check_tasks.mjs; fi
           node scripts/check_board_verify.mjs
+          node scripts/check_queue_once.mjs
           node scripts/check_board_sync.mjs
           node scripts/check_board_reviews.mjs
           node scripts/check_fair.mjs

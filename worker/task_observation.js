@@ -74,7 +74,7 @@ export function createObservation() {
     });
     // PAST DUE AND STILL OPEN, by kind: the official machines take what is past
     // due within the hour, so a pile of it, or one left hours late, is a fleet
-    // and a backstop both behind. A refresh past due is a row past fifteen days.
+    // and a backstop both behind. A refresh past due is a row past fourteen days.
     await observe("overdue", async () => {
       const { results: late } = await db.prepare(
       `SELECT d.producer, count(*) AS questions, min(q.due_at) AS oldest_due

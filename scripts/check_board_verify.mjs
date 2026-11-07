@@ -284,8 +284,8 @@ await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metr
 await queue(`refresh-${today}`, "late");
 await ask(`refresh-${today}`, "late");
 const refreshed = await L.get("SELECT * FROM demands WHERE producer = 'refresh' AND ref = ?", "late|standard_single_target|base");
-check("a `refresh-` batch's row is asked by `refresh`, due fifteen days after its fact finished",
-  refreshed && refreshed.due_at === "2026-01-16T00:00:00.000Z", JSON.stringify(refreshed));
+check("a `refresh-` batch's row is asked by `refresh`, due fourteen days after its fact finished",
+  refreshed && refreshed.due_at === "2026-01-15T00:00:00.000Z", JSON.stringify(refreshed));
 check("...and one whose official fact is on the served engine costs nothing: the row is measured now, its number kept",
   !await owed("late") && (await fact("late")).finished_at > "2026-01-01T00:00:00.000Z" && (await fact("late")).measured_by === "abc123" && (await fact("late")).score === 3,
   JSON.stringify(await fact("late")));
@@ -427,7 +427,7 @@ console.log("\norders open before the factory");
 }
 
 {
-  // A REFRESH IS DUE BY ITS ROW'S AGE: fifteen days after its fact finished,
+  // A REFRESH IS DUE BY ITS ROW'S AGE: fourteen days after its fact finished,
   // however late it was asked — by the batch's ask and by the backfill alike.
   const DAY = 86_400_000, now = Date.now();
   const measured = async (id, daysAgo) => {
@@ -440,13 +440,13 @@ console.log("\norders open before the factory");
   await measured("aged5", 5); await measured("aged14", 14);
   await queue(refresh, "aged5", "aged14");
   await ask(refresh, "aged5", "aged14");
-  check("a refresh asked at five days old is due at fifteen, ten days on",
-    (await demand("aged5")).producer === "refresh" && Math.abs(await dueIn("aged5") - 10) < 0.01, await dueIn("aged5"));
-  check("...and one asked at fourteen, the next day", Math.abs(await dueIn("aged14") - 1) < 0.01, await dueIn("aged14"));
-  await measured("aged8", 8);
+  check("a periodic refresh younger than fourteen days is not registered",
+    !await demand("aged5"));
+  check("...and one asked at fourteen is due now", Math.abs(await dueIn("aged14")) < 0.01, await dueIn("aged14"));
+  await measured("aged8", 20);
   await queue(refresh, "aged8");
   await post(boardTasksRoute, "/api/board/ask", { backfill: true }, TOKEN);
-  check("...and one the backfill asks, by its own age too", await demand("aged8") && Math.abs(await dueIn("aged8") - 7) < 0.01, await demand("aged8") && await dueIn("aged8"));
+  check("...and one the backfill asks, by its own age too", await demand("aged8") && Math.abs(await dueIn("aged8") + 6) < 0.01, await demand("aged8") && await dueIn("aged8"));
 }
 
 console.log("\nthe database's safety valve");

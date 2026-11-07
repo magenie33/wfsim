@@ -665,12 +665,11 @@ own route. Bites: an OAuth return let through — it fails two.
 
 The board's pipeline scripts themselves, not their stubs, on an on-disk PGlite
 through `PG_URL` (`scripts/db.sh`, `scripts/db.mjs`): the inbox read, a build
-shipped twice as one row, a batch asked for twice counting both, the queue read
+shipped twice as one row, a batch retried without counting repeated calculations, the queue read
 in order, a fact shipped and overwritten with its row spent, the facts and the
 library read, an orphan and a dead ruler purged, and a cancel
 (`cancel_queue.sh`) by batch and of everything: its queue rows deleted, the
-board demands and questions no row is owed for any more withdrawn, a row
-another batch still owes kept, a row never asked deleted, and a cancel naming
+board demands and questions no row is owed for any more withdrawn, one pending calculation retained across batch requests, a row never asked deleted, and a cancel naming
 nothing refused. Bites: an upsert's unqualified
 column, which Postgres calls ambiguous — it fails three of them.
 
@@ -821,9 +820,10 @@ Plain node on PGlite (`worker/pg/*.sql`): a board row as a
 question of the fact factory. Only the factory's secret asks; an owed row is
 asked by `new_build` (an arrival's own build) or `sweep`, an arrival's scored
 row not again, a rescore's on purpose, and the backfill asks what nobody did.
-A `refresh-` row is due fifteen days after its fact finished, asked at five
-days or fourteen, by the batch or the backfill (`oldest_rows.py --self-test`
-holds which rows an hour asks: the oldest, within the room, and the forced).
+A periodic `refresh-` request is admitted only once its fact is fourteen days
+old, by the batch or the backfill. Its deadline follows the original fact time.
+`check_queue_once` verifies cross-batch and cross-period merging, initiator
+preservation, distinct scenes and modes, completion and the database uniqueness fence.
 A row is handed out as its build and never a number; a page of an older
 protocol, of another engine, or without the reader's yes is handed nothing; a
 further result never comes from the same client, another device of its owner

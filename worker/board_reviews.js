@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Ordinary reviews retain the baseline; explicit corrections retire it until independent agreement.
 import { facts, DEADLINE_MS, factoryAuthed } from "./factory.js";
-import { rowRef } from "./board_tasks.js";
+import { calculationId } from "./board_tasks.js";
 import { questionId } from "./tasks.js";
 import { sameSite, limited } from "./accounts.js";
 import { json, servedRelease, ENGINE_ID } from "./verify.js";
@@ -105,7 +105,7 @@ async function requestReview(env, body, captured = null, repair = false) {
   const baseline = captured || await db.prepare(`SELECT s.*, b.record FROM scores s JOIN builds b ON b.id = s.identity
     WHERE s.identity = ? AND s.ruler = ? AND s.mode = ?`).bind(body.identity, body.ruler, body.mode).first();
   if (!baseline) return json({ ok: false, error: "This row is no longer on the board." }, 404);
-  const ref = rowRef(body.identity, body.ruler, body.mode), now = Date.now();
+  const ref = calculationId(body.identity, body.ruler, body.mode), now = Date.now();
   await closeWithdrawn(env, ref);
   const round = repair ? iso(now) : iso(Math.floor(now / BOARD_REVIEW_COOLDOWN_MS) * BOARD_REVIEW_COOLDOWN_MS);
   const old = await db.prepare("SELECT * FROM board_reviews WHERE ref = ? AND engine = ? ORDER BY created_at DESC LIMIT 1").bind(ref, body.engine).first();

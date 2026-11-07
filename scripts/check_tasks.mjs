@@ -252,7 +252,7 @@ console.log("\nthe cases that failed in production");
   // board rows no longer owed, and orphans with every demand withdrawn, ahead
   // of the live rows. One ask withdraws what its picks find and is handed a
   // full pack of live rows; so is the official machines' claim.
-  const { BOARD_PRODUCERS, rowRef } = await import("../worker/board_tasks.js");
+  const { BOARD_PRODUCERS, calculationId } = await import("../worker/board_tasks.js");
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: { ...PRODUCERS, ...BOARD_PRODUCERS } });
   const board = Object.keys(BOARD_PRODUCERS)[0], N = 5;
@@ -262,7 +262,7 @@ console.log("\nthe cases that failed in production");
   for (let i = 0; i < 4 * N + 2 * N; i++) {
     const r = row(i);
     await db.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('b', ?, ?, ?)", r.identity, r.ruler, r.mode);
-    asks.push({ producer: board, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate", request: r, due_in_ms: 1000 + i, payload: r });
+    asks.push({ producer: board, ref: calculationId(r.identity, r.ruler, r.mode), verb: "simulate", request: r, due_in_ms: 1000 + i, payload: r });
   }
   await f.demandAll(env, asks, "e1", NOW);
   await db.run("DELETE FROM queue WHERE build_id < ?", row(3 * N).identity);

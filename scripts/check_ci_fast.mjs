@@ -22,7 +22,12 @@ const sql = 'outside;\nCREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS
 const fixture = (before, after) => args => args[1].startsWith(base + ':') ? before : after;
 checkFastChanges(scope, 'head', fixture(sql, sql.replace('SELECT 1', 'SELECT 2')));
 assert.throws(() => checkFastChanges(scope, 'head', fixture(sql, sql.replace('outside;', 'changed;'))));
-assert.throws(() => checkFastChanges({ ...scope, paths: ['worker/pg/library.sql'] }, 'head', () => '+CREATE TABLE unsafe();'));
+assert.throws(() => checkFastChanges({ ...scope, paths: ['worker/pg/library.sql'] }, 'head', fixture('', 'CREATE TABLE unsafe();')));
+checkFastChanges({ ...scope, paths: ['worker/pg/library.sql'] }, 'head', fixture('', 'CREATE UNIQUE INDEX IF NOT EXISTS queue_calculation ON queue (build_id, ruler, mode);'));
+assert.throws(() => checkFastChanges({ ...scope, paths: ['worker/pg/library.sql'] }, 'head', fixture('', 'CREATE UNIQUE INDEX unsafe ON scores (identity);')));
+assert.throws(() => checkFastChanges({ ...scope, paths: ['worker/deadlines.js'] }, 'head', fixture('board_review: 15', 'board_review: 20')));
+checkFastChanges({ ...scope, paths: ['worker/deadlines.js'] }, 'head', fixture('export const REFRESH_WITHIN_MS = 15;\n  refresh: 12,\n', 'export const REFRESH_WITHIN_MS = 14;\n  refresh: REFRESH_WITHIN_MS,\n'));
+assert.throws(() => checkFastChanges({ ...scope, paths: ['scripts/ship_factoryd.py'] }, 'head', fixture('verify();', 'skip();')));
 assert.throws(() => checkFastChanges({ ...scope, paths: ['scripts/factoryd.mjs'] }, 'head', fixture('settle();', 'other();')));
 checkFastChanges({ ...scope, paths: ['scripts/factoryd.mjs'] }, 'head', fixture('export const PAST_MS = 60000, PAST_BATCH = 2_000;', 'export const PAST_MS = 60000, PAST_BATCH = 100;'));
 assert.throws(() => checkFastChanges({ ...scope, paths: ['cli/src/board/assemble/inventory.rs'] }, 'head', fixture('runtime;#[cfg(test)]tests', 'changed;#[cfg(test)]tests')));

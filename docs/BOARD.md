@@ -806,7 +806,7 @@ device or engine.
   on now first; then the PRODUCER that has used the least compute, among those
   with a question this witness may answer; inside it, earliest deadline first:
   a chat's in two minutes, a new build's row in six hours, a survey shape in a
-  day, a refresh in four, a rescore's or a sweep's in a week (`DEADLINE_MS` —
+  day, a refresh in fourteen, a rescore's or a sweep's in a week (`DEADLINE_MS` —
   the dispatch policy, stated once). A pack takes first, in that order, the
   questions another volunteer has answered, on whatever engine
   (`led_questions`): one more agreeing answer makes each a fact and pays its
@@ -833,7 +833,7 @@ device or engine.
   questions got no answer in half an hour while witnesses worked, a
   non-deterministic question, a dispute or spot nobody settled in two hours
   since its last answer, a backlog past due (a thousand questions, or one three
-  hours late — a refresh past due is a row past fifteen days), and clients disagreeing with the hour's facts on
+  hours late — a refresh past due is a row past fourteen days), and clients disagreeing with the hour's facts on
   the served engine (thirty answers and 3% of them, by owner) are found every
   round. So is a scene still
   filling, its cell rulers' rows measured, measured in six hours, and owed —
@@ -1305,7 +1305,7 @@ questions, never a heavier client.
   re-ask of it is an ordinary row. The worker decides who asks: `new_build` for an
   `arrivals-` batch's row whose build was submitted that day or the one before
   (due in six hours) — `survey_build` when WFSim submitted it, a survey's winner
-  (due in three days: a batch of them owes millions of rows) — `refresh` for a `refresh-` batch's (due when its fact is fifteen days old),
+  (due in three days: a batch of them owes millions of rows) — `refresh` for a `refresh-` batch's (due when its fact is fourteen days old),
   `sweep` for a rescore's, an older build's first pass, or a `backfill-`
   batch's (due in a week).
 - **The most popular weapon first.** A rescore and the reconciliation ask
@@ -1666,8 +1666,8 @@ does not change membership. A partial, invalid or expired scan supplies no
 goal; partial queue counts never replace it. `COMPUTE_TASKS.md` defines its
 freshness and publication rules.
 
-- `owed`: the queue's rows by why, a row in two batches counted once as the
-  first of a new build's, a rescore's, a sweep's, a refresh's.
+- `owed`: pending calculation keys by why. A repeated request retains the
+  existing owning batch; a new build's live demand still identifies its work.
 - `orders`: the same counts as one list, a kind a row (`ORDER_KINDS`:
   `rescore`, `sweep`, `new_build`, `refresh`, then `riven_gain`), a kind
   with nothing owed left out. `dispatched` is how many of its rows a device

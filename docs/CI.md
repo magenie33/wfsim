@@ -113,6 +113,8 @@ board tests and clippy, service and pipeline checks, focused compute-page checks
 published-board legality and a fresh site artifact. Changed paths and function
 boundaries must fit `scripts/ci_fast.mjs`: engine/data, task protocol, table
 schemas, incremental inventory runtime and daemon scheduling do not qualify.
+The registered queue uniqueness fence may add only its trigger and unique index;
+its fourteen-day refresh and pipeline checks remain mandatory.
 The comparison base must be verified. The proof records its base and exact
 paths; reuse and shipping recheck them. `full=true` does not reuse a fast proof.
 

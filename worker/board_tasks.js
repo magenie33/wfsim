@@ -4,7 +4,7 @@
 // question: verb `simulate`, request `{ record, ruler, mode }`, asked by
 // `new_build` (a new build's row, someone waiting to see it ranked),
 // `survey_build` (a survey's winner's row, WFSim's own), `refresh`
-// (an explicitly requested refresh, due when its fact is fifteen days old) or `sweep` (a
+// (a periodic refresh once its fact is fourteen days old) or `sweep` (a
 // rescore's, or an older build's first pass on a ruler), whose deadlines are
 // worker/factory.js `DEADLINE_MS` and `REFRESH_WITHIN_MS`. What a row is FOR stays here: an agreed number written to
 // `scores` and the row no longer owed.
@@ -24,7 +24,7 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
 
 /// A ROW'S KEY, the demand's `ref`: one per (build, ruler, mode), whichever batch asked.
-export const rowRef = (identity, ruler, mode) => `${identity}|${ruler}|${mode}`;
+export const calculationId = (identity, ruler, mode) => `${identity}|${ruler}|${mode}`;
 const boardProducer = {
   // A ROW NOBODY OWES ANY MORE — the scorer measured it — is withdrawn where it
   // is found: worker/pg/sync.sql `board_owed`, which the sync's procedure asks
@@ -182,7 +182,7 @@ export function rowAsk(batch, r, record, builtAt, measuredAt, now = Date.now()) 
   const due_in_ms = Number.isFinite(measured) ? measured + REFRESH_WITHIN_MS - now
     : Number.isFinite(placed) ? placed
     : isLadderCell(r.ruler) && !measuredAt ? SCENE_FIRST_MS : DEADLINE_MS[producer];
-  return { producer, ref: rowRef(r.identity, r.ruler, r.mode), verb: "simulate",
+  return { producer, ref: calculationId(r.identity, r.ruler, r.mode), verb: "simulate",
     request: { record: JSON.parse(record), ruler: r.ruler, mode: r.mode }, due_in_ms,
     payload: { identity: r.identity, ruler: r.ruler, mode: r.mode, batch }, initiator: initiatorOf(batch, r.initiator),
     waits: batch.startsWith("arrivals-") && r.named === true && isPlayer(r.initiator) };
@@ -229,8 +229,10 @@ async function ask(request, env) {
         GROUP BY q.build_id, q.ruler, q.mode, bu.record, bu.at`).bind(...after, BACKFILL_CHUNK),
     ]);
     const r0 = read.results[0] || {};
-    await facts().demandAll(env, results.map((r) => rowAsk(r.batch, r, r.record, r.at, r.measured, now)), engine, now);
-    return json({ ok: true, asked: results.length, after: r0.last ? JSON.parse(r0.last) : after,
+    const asks = results.filter(r => !r.batch.startsWith("refresh-") || !r.measured || Date.parse(r.measured) <= now - REFRESH_WITHIN_MS)
+      .map((r) => rowAsk(r.batch, r, r.record, r.at, r.measured, now));
+    await facts().demandAll(env, asks, engine, now);
+    return json({ ok: true, asked: asks.length, after: r0.last ? JSON.parse(r0.last) : after,
       left: Number(r0.n || 0) === BACKFILL_CHUNK ? null : 0 });
   }
   const rows = Array.isArray(b.rows) ? b.rows.filter((r) => r && typeof r.identity === "string" && typeof r.ruler === "string" && typeof r.mode === "string") : [];
@@ -242,7 +244,7 @@ async function ask(request, env) {
   const { results: named } = await db.prepare(`SELECT q.build_id, q.ruler, q.mode, q.initiator FROM queue q JOIN jsonb_array_elements((?2::text)::jsonb) j
         ON q.build_id = j ->> 'identity' AND q.ruler = j ->> 'ruler' AND q.mode = j ->> 'mode' WHERE q.batch = ?1::text AND q.initiator IS NOT NULL`)
     .bind(b.batch, JSON.stringify(rows.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })))).all();
-  const whoOf = new Map(named.map((x) => [rowRef(x.build_id, x.ruler, x.mode), x.initiator]));
+  const whoOf = new Map(named.map((x) => [calculationId(x.build_id, x.ruler, x.mode), x.initiator]));
   // AN ARRIVAL'S ROW THE BOARD ALREADY SCORED is not asked: a resubmission the
   // page did not recognise is the same build, and asking again fought it again.
   // A REFRESH'S ROW is due by when its fact finished.
@@ -252,10 +254,14 @@ async function ask(request, env) {
     const { results: had } = await db.prepare(`SELECT s.identity, s.ruler, s.mode, s.finished_at FROM scores s JOIN jsonb_array_elements((?::text)::jsonb) j
           ON s.identity = j ->> 'identity' AND s.ruler = j ->> 'ruler' AND s.mode = j ->> 'mode'`)
       .bind(JSON.stringify(rows.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })))).all();
-    for (const x of had) scored.set(rowRef(x.identity, x.ruler, x.mode), x.finished_at);
+    for (const x of had) scored.set(calculationId(x.identity, x.ruler, x.mode), x.finished_at);
   }
-  const asks = rows.filter((r) => buildOf.has(r.identity) && !(arrivals && scored.has(rowRef(r.identity, r.ruler, r.mode))))
-    .map((r) => rowAsk(b.batch, { ...r, initiator: whoOf.get(rowRef(r.identity, r.ruler, r.mode)) }, buildOf.get(r.identity).record, buildOf.get(r.identity).at, scored.get(rowRef(r.identity, r.ruler, r.mode)), now));
+  const asks = rows.filter((r) => {
+    const measured = scored.get(calculationId(r.identity, r.ruler, r.mode));
+    return buildOf.has(r.identity) && !(arrivals && measured)
+      && !(b.batch.startsWith("refresh-") && measured && Date.parse(measured) > now - REFRESH_WITHIN_MS);
+  })
+    .map((r) => rowAsk(b.batch, { ...r, initiator: whoOf.get(calculationId(r.identity, r.ruler, r.mode)) }, buildOf.get(r.identity).record, buildOf.get(r.identity).at, scored.get(calculationId(r.identity, r.ruler, r.mode)), now));
   // A SIGNED-IN PLAYER'S MERIT may move their rows sooner (docs/BOARD.md §"Merit priority").
   await facts().demandAll(env, await holdPriority(env, b.batch, asks, BOARD_KINDS_SQL, now), engine, now);
   return json({ ok: true, asked: asks.length, skipped: rows.length - asks.length });
@@ -276,7 +282,7 @@ async function adopt(request, env) {
        FROM orders o WHERE o.state IN ${LIVE} AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.ref = o.identity || '|' || o.ruler || '|' || o.mode
          AND d.producer IN ${BOARD_KINDS_SQL}) LIMIT ?`).bind(ADOPT_BATCH).all();
   for (const o of results) {
-    const ref = rowRef(o.identity, o.ruler, o.mode);
+    const ref = calculationId(o.identity, o.ruler, o.mode);
     // A ROW NOBODY OWES is settled where it is found, as a lease once settled it.
     if (!o.batch) {
       await db.prepare("UPDATE orders SET state = 'settled' WHERE identity = ? AND ruler = ? AND mode = ?").bind(o.identity, o.ruler, o.mode).run();

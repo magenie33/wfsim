@@ -80,6 +80,15 @@ retains the additive schema and inventory; no task or score backfill is needed.
 
 ## Complete demand
 
+The stable `calculation_id` is `build_id|ruler|mode` (`calculationId` in code).
+Dates and batches are not part of it. Each pending calculation has one
+`(build_id, ruler, mode)` queue row; the wire continues carrying this ID as `ref`.
+Repeated batches and refresh rounds merge into its original batch and may fill
+an absent initiator. Only newly inserted calculations increase a pipeline batch's total.
+A unique index enforces the calculation key; a completed row may enter a later
+round. Periodic refreshes wait fourteen days after the last measurement.
+Explicit board corrections retain their immediate independent-review path.
+
 The demand projection gives a full background-read statement budget when queue
 counts or compute-cost estimates need refreshing. The normal budget applies
 only while both caches remain valid; their refresh intervals are independent.

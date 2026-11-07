@@ -120,8 +120,8 @@ const rows = ["standard_single_target", "heavy_gunner"].map((ruler) => JSON.stri
 file("missing.ndjson", `${rows}\n`);
 await run("ship_queue.sh", "arrivals-2026-10-01", "test", "missing.ndjson");
 await run("ship_queue.sh", "arrivals-2026-10-01", "test", "missing.ndjson");
-check("a batch is asked for once a row, its total counting every ask",
-  (await query("SELECT count(*) AS n FROM queue"))[0].n === 2 && (await query("SELECT total FROM batches"))[0]?.total === 4);
+check("a batch counts each inserted calculation once across retries",
+  (await query("SELECT count(*) AS n FROM queue"))[0].n === 2 && (await query("SELECT total FROM batches"))[0]?.total === 2);
 check("the queue is read in order", await run("fetch_queue.sh", "queue.ndjson") === 0
   && read("queue.ndjson").map((l) => JSON.parse(l).ruler).join() === "heavy_gunner,standard_single_target");
 // …OVER ONE CONNECTION (scripts/db.sh `db_send`): a read is two statements at
@@ -198,8 +198,8 @@ process.env.WFSIM_BOARD = file("rulers.sh","#!/bin/sh\necho standard_single_targ
 chmodSync(process.env.WFSIM_BOARD, 0o755);
 check("a ruler the repo no longer has is purged", await run("purge_queue.sh") === 0
   && (await query("SELECT count(*) AS n FROM queue"))[0].n === 0);
-// A CANCEL WITHDRAWS WHAT WAS ASKED, not only the queue rows: b1 is cancelled
-// whole, b2 stays owed by its refresh row, b3 is not named, b4 was never asked.
+// Cancelling the owning batch withdraws its merged calculation. Other keys
+// remain pending, and a calculation never asked still leaves the queue.
 {
   const at = "2026-10-02T00:00:00.000Z";
   for (const [batch, b] of [["arrivals-2026-10-02", "b1"], ["arrivals-2026-10-02", "b2"], ["refresh-2026-10-02", "b2"], ["refresh-2026-10-02", "b3"],
@@ -223,10 +223,10 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
   const named = await run("cancel_queue.sh", "--batch", "arrivals-", "--dry-run") === 0;
   const cut = await run("cancel_queue.sh", "--batch", "arrivals-") === 0;
   const after = await state();
-  check("a cancel by batch deletes its rows, withdraws the demands and questions no row is owed for, and nothing else",
+  check("cancelling the owning batch withdraws its merged calculation and leaves other calculation keys intact",
     named && cut
-      && after.queue === "refresh-2026-10-02:b2,refresh-2026-10-02:b3"
-      && after.live === "new_build:q2,refresh:q2,refresh:q3" && after.open === "q2,q3", JSON.stringify(after));
+      && after.queue === "refresh-2026-10-02:b3"
+      && after.live === "refresh:q3" && after.open === "q3", JSON.stringify(after));
   const all = await run("cancel_queue.sh", "--all") === 0;
   check("...and a cancel of everything leaves nothing owed, asked or open", all && JSON.stringify(await state()) === JSON.stringify({ queue: "", live: "", open: "" }),
     JSON.stringify(await state()));
@@ -293,6 +293,26 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
     moved.status === 0 && readFileSync(join(live, "facts-cursor.txt"), "utf8").trim() === newest,
     `${readFileSync(join(live, "facts-cursor.txt"), "utf8").trim()} for ${newest} ${moved.stderr.slice(0, 300)}`);
 }
+{
+  const day = 86_400_000, now = Date.now();
+  for (const [id, age] of [['periodic-fresh', 13], ['periodic-due', 14], ['periodic-old', 15]]) {
+    await query(`INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at)
+      VALUES (?,'r','base','v',1,'kpm',0,'x',?)`, [id, new Date(now - age * day).toISOString()]);
+  }
+  const periodic = file('periodic.ndjson', ['periodic-fresh','periodic-due','periodic-old']
+    .map(build_id => JSON.stringify({ build_id, ruler: 'r', mode: 'base' })).join('\n') + '\n');
+  const first = await run('ship_queue.sh', 'refresh-first', 'periodic', periodic);
+  const next = await run('ship_queue.sh', 'refresh-next', 'periodic', periodic);
+  check('periodic admission waits fourteen days and later rounds share the existing calculations', first === 0 && next === 0
+    && (await query("SELECT count(*) n FROM queue WHERE build_id LIKE 'periodic-%'"))[0].n === 2
+    && (await query("SELECT total FROM batches WHERE id='refresh-first'"))[0].total === 2
+    && (await query("SELECT total FROM batches WHERE id='refresh-next'"))[0].total === 0);
+  await query("DELETE FROM queue WHERE build_id LIKE 'periodic-%'");
+  await query("UPDATE scores SET finished_at=? WHERE identity LIKE 'periodic-%'", [new Date().toISOString()]);
+  check('a completed measurement starts its own next fourteen-day interval', await run('ship_queue.sh', 'refresh-later', 'periodic', periodic) === 0
+    && (await query("SELECT count(*) n FROM queue WHERE build_id LIKE 'periodic-%'"))[0].n === 0);
+}
+
 // NOTHING A SCRIPT MADE OUTLIVES IT (scripts/db.sh `DB_TMP`): the live board
 // runs them all day on a server whose /tmp is memory.
 const left = readdirSync(scratch);

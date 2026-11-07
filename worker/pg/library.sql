@@ -156,15 +156,13 @@ CREATE TABLE IF NOT EXISTS batches (
   -- WHAT THIS GROUP IS FOR, for the person who finds it a week later. A batch
   -- with no reason is a batch nobody can decide to cancel.
   why   TEXT COLLATE "C",
-  -- HOW MANY ROWS IT WAS EVER ASKED FOR WITH — a statement about the PAST, so
-  -- it cannot drift: progress is this minus what is still in `queue`. A second
-  -- pass into one batch ADDS to it.
+  -- Historical admitted work. Pipeline retries add only newly queued
+  -- calculations; progress is this minus the batch's remaining queue rows.
   total BIGINT NOT NULL
 );
 
--- ONE ROW PER (batch, build, ruler, mode). The same row may sit in two batches
--- at once — two people asking for one thing — and computing it deletes it from
--- both, which is why the delete does not name a batch.
+-- One pending calculation per (build, ruler, mode), owned by its first batch.
+-- Later batches share it; completion removes it before another round can enter.
 CREATE TABLE IF NOT EXISTS queue (
   batch    TEXT COLLATE "C" NOT NULL,
   build_id TEXT COLLATE "C" NOT NULL,
@@ -179,6 +177,25 @@ ALTER TABLE queue ADD COLUMN IF NOT EXISTS initiator TEXT COLLATE "C";
 CREATE INDEX IF NOT EXISTS queue_batch ON queue (batch);
 -- "IS THIS ROW STILL OWED" (worker/board_tasks.js `owedSql`).
 CREATE INDEX IF NOT EXISTS queue_row ON queue (build_id, ruler, mode);
+
+-- Repeated requests share the pending row and preserve its original batch.
+CREATE OR REPLACE FUNCTION queue_once() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE held queue%ROWTYPE;
+BEGIN
+  PERFORM pg_advisory_xact_lock(hashtextextended(NEW.build_id || '|' || NEW.ruler || '|' || NEW.mode, 1));
+  SELECT * INTO held FROM queue WHERE build_id=NEW.build_id AND ruler=NEW.ruler AND mode=NEW.mode ORDER BY batch LIMIT 1;
+  IF FOUND THEN
+    IF held.initiator IS NULL AND NEW.initiator IS NOT NULL THEN
+      UPDATE queue SET initiator=NEW.initiator WHERE batch=held.batch AND build_id=held.build_id AND ruler=held.ruler AND mode=held.mode;
+    END IF;
+    RETURN NULL;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS queue_once ON queue;
+CREATE TRIGGER queue_once BEFORE INSERT ON queue FOR EACH ROW EXECUTE FUNCTION queue_once();
+CREATE UNIQUE INDEX IF NOT EXISTS queue_calculation ON queue (build_id, ruler, mode);
 
 -- THE BOARD'S ORDERS BEFORE THE FACTORY, read by `/api/board/adopt` alone
 -- (worker/board_tasks.js `adopt`): one owed row each. `state` is where its

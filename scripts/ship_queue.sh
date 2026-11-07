@@ -35,38 +35,38 @@ configured() { db_configured; }
 # a filename, but a queue row is assembled from ids that arrived at a public
 # endpoint and this is where that text meets a language.
 #
-# THE BATCH ROW GOES FIRST AND CARRIES THE COUNT. `total` is a statement about
-# the past — how many rows this group was created with — so progress is that
-# minus what is still owed, and nothing has to be kept up to date.
+# A batch counts only newly queued calculations; retries add no work.
 batch_body() {
   jq -n -c --arg id "$1" --arg why "$2" --argjson total "$3" '
     {
-      sql: ("INSERT INTO batches (id, at, why, total) VALUES (?,?,?,?)"
-            + " ON CONFLICT(id) DO UPDATE SET total = batches.total + excluded.total"),
-      params: [$id, $id, $why, $total]
+      sql: ("INSERT INTO batches (id, at, why, total) VALUES (?,?,?,0)"
+            + " ON CONFLICT(id) DO NOTHING"),
+      params: [$id, $id, $why]
     }'
 }
 
-# ASKING TWICE FOR ONE ROW IS ONE ROW: the primary key is (batch, build, ruler,
-# mode) and that is the whole of the idempotence. An arrival's row carries who
-# asked (docs/BOARD.md §"Who asked"), else NULL, and whichever pass lands second
-# still fills an initiator the first left NULL. ONE ROW A KEY A STATEMENT, the one
-# naming who asked: `DO UPDATE` refuses a statement touching one row twice, and
-# that refusal queued nothing.
+# The calculation key is (build, ruler, mode), across every batch. The database
+# merges initiators before suppressing repeats; only inserted rows add to total.
 queue_batches() {
-  jq -R -s -c --arg batch "$1" --argjson n "$QUEUE_BATCH" --arg owed "$(owed_only "$1" v.column2 v.column3 v.column4)" '
+  local cutoff=""
+  case "$1" in refresh-*) cutoff=$(node --input-type=module -e '
+    import {pathToFileURL} from "node:url";
+    const {REFRESH_WITHIN_MS}=await import(pathToFileURL(process.argv[1]+"/worker/deadlines.js"));
+    process.stdout.write(new Date(Date.now()-REFRESH_WITHIN_MS).toISOString());' "$ROOT_DIR") ;; esac
+  jq -R -s -c --arg batch "$1" --arg cutoff "$cutoff" --argjson n "$QUEUE_BATCH" --arg owed "$(owed_only "$1" v.column2 v.column3 v.column4)" '
     [splits("\n")] | map(select(length > 0)) | map(fromjson)
     | group_by([.build_id, .ruler, .mode]) | map((map(select(.initiator != null)) + .)[0]) as $all
     | range(0; ($all | length); $n)
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
-        sql: ("INSERT INTO queue (batch, build_id, ruler, mode, initiator)"
+        sql: ("WITH queued AS (INSERT INTO queue (batch, build_id, ruler, mode, initiator)"
               + " SELECT v.column1, v.column2, v.column3, v.column4, v.column5::text FROM (VALUES "
               + ([$chunk[] | "(?,?,?,?,?)"] | join(",")) + ") AS v WHERE " + $owed
-              + " ON CONFLICT (batch, build_id, ruler, mode) DO UPDATE SET initiator = excluded.initiator"
-              + " WHERE queue.initiator IS NULL AND excluded.initiator IS NOT NULL"),
-        params: [$chunk[] | $batch, .build_id, .ruler, .mode, (.initiator // null)]
+              + " ON CONFLICT DO NOTHING RETURNING batch)"
+              + " UPDATE batches SET total=total+(SELECT count(*) FROM queued) WHERE id=?"),
+        params: ([$chunk[] | $batch, .build_id, .ruler, .mode, (.initiator // null)]
+          + (if $cutoff == "" then [] else [$cutoff] end) + [$batch])
       }
   ' "$2"
 }
@@ -144,6 +144,7 @@ backfill() {
 owed_only() {
   case "$1" in
     arrivals-*|backfill-*) echo "NOT EXISTS (SELECT 1 FROM scores s WHERE s.identity = $2 AND s.ruler = $3 AND s.mode = $4)" ;;
+    refresh-*) echo "NOT EXISTS (SELECT 1 FROM scores s WHERE s.identity = $2 AND s.ruler = $3 AND s.mode = $4 AND s.finished_at > ?::text)" ;;
     *) echo "true" ;;
   esac
 }
@@ -199,11 +200,9 @@ ship() {
   # THE BATCH BEFORE ITS ROWS. `fetch_queue.sh` joins the two, so a row whose
   # batch is not there yet is a row no run can see — the other order hides work
   # for as long as the write takes.
-  if ! db_query "$(batch_body "$batch" "$why" "$n")"; then
-    echo "::error::queue: the database refused the batch [HTTP $DB_CODE]"
-    head -c 500 "$DB_OUT" || true
-    return 1
-  fi
+  r=$(batch_body "$batch" "$why" "$n" | send "batch")
+  set -- $r
+  [ "$2" = "0" ] || return 1
   # A CHUNK WRITTEN, THEN ASKED, THEN THE NEXT: a row written and not asked is
   # one the scorer reads as nobody's, so a run its clock stops leaves at most
   # one chunk of those rather than everything after the write.
@@ -243,12 +242,12 @@ self_test() {
   done
 
   local first; first=$(queue_batches "arrivals" missing.ndjson | head -1)
-  [ "$(printf '%s' "$first" | jq -r '.params | length')" = "$((4 * QUEUE_COLUMNS))" ] \
+  [ "$(printf '%s' "$first" | jq -r '.params | length')" = "$((4 * QUEUE_COLUMNS + 1))" ] \
     && say ok "$QUEUE_COLUMNS bound parameters a row" \
     || say FAIL "$(printf '%s' "$first" | jq -r '.params|length') parameters"
-  [ $((QUEUE_BATCH * QUEUE_COLUMNS)) -le "$PG_MAX_PARAMS" ] \
+  [ $((QUEUE_BATCH * QUEUE_COLUMNS + 2)) -le "$PG_MAX_PARAMS" ] \
     && say ok "...and a statement stays inside what Postgres binds" \
-    || say FAIL "$((QUEUE_BATCH * QUEUE_COLUMNS)) is over"
+    || say FAIL "$((QUEUE_BATCH * QUEUE_COLUMNS + 2)) is over"
   # WHO ASKED rides with the row as a bound parameter, NULL where the arrival named nobody.
   printf '%s\n' '{"build_id":"w1","ruler":"r","mode":"m","initiator":"user:abc"}' '{"build_id":"w2","ruler":"r","mode":"m"}' > who.ndjson
   [ "$(queue_batches "arrivals" who.ndjson | head -1 | jq -c '[.params[4], .params[9]]')" = '["user:abc",null]' ] \
@@ -260,13 +259,13 @@ self_test() {
   [ -n "$ask_max" ] && [ "$ASK_ROWS" -le "$ask_max" ] \
     && say ok "...and an ask carries no more rows than the worker takes ($ASK_ROWS <= $ask_max)" \
     || say FAIL "ASK_ROWS $ASK_ROWS against the worker's ASK_MAX '${ask_max}'"
-  printf '%s' "$first" | jq -e '.sql | endswith("DO UPDATE SET initiator = excluded.initiator WHERE queue.initiator IS NULL AND excluded.initiator IS NOT NULL")' >/dev/null \
-    && say ok "...and asking twice for one row is one row, the second filling only a missing initiator" \
+  printf '%s' "$first" | jq -e '.sql | contains("ON CONFLICT DO NOTHING RETURNING batch)")' >/dev/null \
+    && say ok "...and asking twice for one row is one row across batches, with the trigger merging its initiator" \
     || say FAIL "$(printf '%s' "$first" | jq -r .sql)"
   # ONE KEY TWICE IN A FILE is one row, the one naming who asked: a statement
   # touching a row twice is refused whole.
   printf '%s\n' '{"build_id":"d","ruler":"r","mode":"m"}' '{"build_id":"d","ruler":"r","mode":"m","initiator":"user:a"}' '{"build_id":"e","ruler":"r","mode":"m"}' > dup.ndjson
-  [ "$(queue_batches "arrivals" dup.ndjson | jq -c '.params')" = '["arrivals","d","r","m","user:a","arrivals","e","r","m",null]' ] \
+  [ "$(queue_batches "arrivals" dup.ndjson | jq -c '.params')" = '["arrivals","d","r","m","user:a","arrivals","e","r","m",null,"arrivals"]' ] \
     && say ok "...and one key twice is one row, the one naming who asked" \
     || say FAIL "dup params: $(queue_batches "arrivals" dup.ndjson | jq -c '.params')"
   # THE FIGHT AN ARRIVAL NAMED is asked `named`, and no other row is.
@@ -277,15 +276,12 @@ self_test() {
   printf '%s' "$first" | jq -e '.sql | contains("h1") | not' >/dev/null \
     && say ok "...never interpolated into the statement" \
     || say FAIL "an id reached the sql"
-  printf '%s' "$(batch_body b why 4)" | jq -e '.params == ["b","b","why",4]' >/dev/null \
-    && say ok "a batch carries the count it was asked for with" \
+  printf '%s' "$(batch_body b why 4)" | jq -e '.params == ["b","b","why"]' >/dev/null \
+    && say ok "a batch starts without counting repeated input" \
     || say FAIL "$(printf '%s' "$(batch_body b why 4)" | jq -c .params)"
-  # …AND A SECOND PASS INTO ONE BATCH ADDS TO IT rather than replacing it. Two
-  # runs in one day both find arrivals; `total` is a statement about the past —
-  # how many rows this group was ever asked for — so progress is that minus what
-  # is still owed, and a replace would report the group shrinking as it worked.
-  printf '%s' "$(batch_body b why 4)" | jq -e '.sql | contains("total = batches.total + excluded.total")' >/dev/null \
-    && say ok "...and a second pass into it adds rather than replaces" \
+  # Inserted calculations alone increase a batch count.
+  printf '%s' "$(batch_body b why 4)" | jq -e '.sql | contains("ON CONFLICT(id) DO NOTHING")' >/dev/null \
+    && say ok "...and a repeated batch declaration adds no work" \
     || say FAIL "$(printf '%s' "$(batch_body b why 4)" | jq -r .sql)"
 
   export PATH="$DIR/bin:$PATH"

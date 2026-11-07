@@ -17,10 +17,7 @@ import { DEMAND_KEY } from "./contribution.js";
 import { watchdogFailure } from "./task_observation.js";
 
 /// How long each ask may wait, stated in worker/deadlines.js.
-export { DEADLINE_MS } from "./deadlines.js";
-/// An explicitly requested refresh is due at this fact age. The hourly queue
-/// reconciles missing measurements only; `DEADLINE_MS.refresh` covers no fact time.
-export const REFRESH_WITHIN_MS = 15 * 86_400_000;
+export { DEADLINE_MS, REFRESH_WITHIN_MS } from "./deadlines.js";
 /// A SCENE'S FIRST PASS: a cell row with no fact yet, whichever batch asked it,
 /// is due this long after its ask — ahead of every refresh still days from its
 /// own bound, so a new scene fills before the base is measured again.

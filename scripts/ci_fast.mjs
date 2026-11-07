@@ -10,6 +10,10 @@ const PATHS = new Set([
   'cli/src/board/run.rs', 'cli/src/board/assemble/inventory.rs',
   'web/src/static/app/73-compute.js', 'data/i18n/zh/ui.yaml',
   'worker/clearance.js', 'worker/contribution.js', 'worker/usage_days.js',
+  'worker/deadlines.js', 'worker/factory.js', 'worker/board_tasks.js', 'worker/task_observation.js',
+  'worker/board_reviews.js', 'scripts/check_tasks.mjs',
+  'scripts/ship_queue.sh', 'scripts/check_queue_once.mjs', 'scripts/check_pg_scripts.mjs', 'scripts/check_board_verify.mjs',
+  'scripts/ship_factoryd.py', 'scripts/check_factory_deploy.py',
   'worker/pg/sync.sql', 'worker/pg/library.sql', 'scripts/factoryd.mjs',
   'scripts/inventory_phase.py', 'scripts/usage.py', 'scripts/check_clearance.mjs',
   'scripts/check_compute_orders.mjs', 'scripts/check_contribution.mjs',
@@ -38,9 +42,31 @@ export function checkFastChanges(scope, head = 'HEAD', run = git) {
       throw new Error('Fast CI cannot change other factory SQL');
   }
   if (scope.paths.includes('worker/pg/library.sql')) {
-    const diff = run(['diff', '--unified=0', scope.base, head, '--', 'worker/pg/library.sql']);
-    if (diff.split('\n').filter(line => /^[+-]/.test(line) && !/^(---|\+\+\+)/.test(line))
-      .some(line => !/^[+-]\s*(?:--|$)/.test(line))) throw new Error('Fast CI cannot change table schemas');
+    const withoutQueueFence = text => text
+      .replace(/CREATE OR REPLACE FUNCTION queue_once\(\) RETURNS trigger LANGUAGE plpgsql AS \$\$[\s\S]*?\$\$;/g, '')
+      .replace(/DROP TRIGGER IF EXISTS queue_once ON queue;\s*CREATE TRIGGER queue_once BEFORE INSERT ON queue FOR EACH ROW EXECUTE FUNCTION queue_once\(\);/g, '')
+      .replace(/CREATE UNIQUE INDEX IF NOT EXISTS queue_calculation ON queue \(build_id, ruler, mode\);/g, '')
+      .split('\n').filter(line => line.trim() && !line.trimStart().startsWith('--')).join('\n');
+    if (withoutQueueFence(before('worker/pg/library.sql')) !== withoutQueueFence(after('worker/pg/library.sql')))
+      throw new Error('Fast CI cannot change table schemas outside the queue uniqueness fence');
+  }
+  for (const path of ['worker/board_reviews.js', 'scripts/check_tasks.mjs']) {
+    if (scope.paths.includes(path) && before(path).replace(/\browRef\b/g, 'calculationId') !== after(path))
+      throw new Error('Fast CI permits only the calculation ID name in reviews and generic task checks');
+  }
+  if (scope.paths.includes('worker/deadlines.js')) {
+    const withoutRefresh = text => text.replace(/^export const REFRESH_WITHIN_MS = .*;\n/m, '')
+      .replace(/^  refresh:.*,\n/m, '');
+    if (withoutRefresh(before('worker/deadlines.js')) !== withoutRefresh(after('worker/deadlines.js')))
+      throw new Error('Fast CI cannot change other task deadlines');
+  }
+  if (scope.paths.includes('scripts/ship_factoryd.py')) {
+    const withoutQueueIndex = text => text.replaceAll(', "queue_calculation"', '').replaceAll(", 'queue_calculation'", '')
+      .replace('SELECT count(*) = 4 AND', 'SELECT count(*) = 3 AND')
+      .replace('CREATE (?:UNIQUE )?INDEX IF', 'CREATE INDEX IF')
+      .replace('.replace("INDEX ", "INDEX CONCURRENTLY ", 1)', '.replace("CREATE INDEX ", "CREATE INDEX CONCURRENTLY ", 1)');
+    if (withoutQueueIndex(before('scripts/ship_factoryd.py')) !== withoutQueueIndex(after('scripts/ship_factoryd.py')))
+      throw new Error('Fast CI cannot change deployment beyond the queue index');
   }
   const native = 'cli/src/board/assemble/inventory.rs';
   if (scope.paths.includes(native) && before(native).split('#[cfg(test)]')[0] !== after(native).split('#[cfg(test)]')[0])
