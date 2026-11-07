@@ -389,6 +389,7 @@ dependencies = [
 name = "wfsim-webapi"
 version = "0.0.0"
 dependencies = [
+ "mimalloc",
  "qrcode",
  "serde",
  "serde_json",

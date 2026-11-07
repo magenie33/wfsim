@@ -1,0 +1,20 @@
+[package]
+name = "wfsim-prepared-cost"
+version = "0.0.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+publish = false
+
+[workspace]
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wfsim-engine = { path = "../../engine" }
+wfsim-webapi = { path = "../../webapi" }
+serde_json = { version = "1", features = ["raw_value", "float_roundtrip"] }
+wasm-bindgen = "=0.2.126"
+
+[profile.release]
+codegen-units = 1
