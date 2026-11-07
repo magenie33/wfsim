@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { checkFastChanges, checkFastProof, fastScope } from './ci_fast.mjs';
+import { checkFastChanges, checkFastProof, FAST_JOBS, fastScope } from './ci_fast.mjs';
 
 const base = 'a'.repeat(40), options = { base, verifiedBase: true, reason: 'bounded maintenance release' };
 const paths = ['worker/pg/sync.sql', 'web/src/static/app/73-compute.js', 'cli/src/board/run.rs'];
@@ -13,10 +13,11 @@ for (const path of ['engine/src/fight.rs', 'optimizer/src/lib.rs', 'data/weapons
 for (const changed of [{ verifiedBase: false }, { force: true }, { hotfix: true }, { base: '' }, { reason: '' }])
   assert.throws(() => fastScope(paths, { ...options, ...changed }));
 assert.throws(() => fastScope([], options));
-const proof = { scope: 'fast', fast: scope };
+const proof = { scope: 'fast', fast: scope, jobs: FAST_JOBS };
 assert.deepEqual(checkFastProof(proof, paths), scope);
 assert.throws(() => checkFastProof(proof, [...paths, 'worker/tasks.js']));
 assert.throws(() => checkFastProof({ ...proof, fast: { ...scope, paths: [] } }, paths));
+assert.throws(() => checkFastProof({ ...proof, jobs: FAST_JOBS.slice(1) }, paths));
 const sql = 'outside;\nCREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS bigint LANGUAGE sql AS $$ SELECT 1 $$;\n';
 const fixture = (before, after) => args => args[1].startsWith(base + ':') ? before : after;
 checkFastChanges(scope, 'head', fixture(sql, sql.replace('SELECT 1', 'SELECT 2')));
@@ -28,4 +29,7 @@ assert.throws(() => checkFastChanges({ ...scope, paths: ['cli/src/board/assemble
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
 assert(workflow.includes("if: ${{ !fromJSON(needs.plan.outputs.plan).fast }}"));
 assert(workflow.includes('if [ "$FAST_CI" != "true" ]; then node scripts/check_tasks.mjs; fi'));
+assert(workflow.includes("if: matrix.group == 'fast'"));
+assert(workflow.includes('run: node scripts/ci_fast.mjs page'));
+assert(workflow.includes('cargo test -p wfsim-cli --lib board::'));
 console.log('Fast CI rejects unrelated code, unverified bases, changed schemas/protocol and incomplete proof scope.');

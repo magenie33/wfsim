@@ -6,9 +6,10 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { assertGate, output, policyDigest, PRODUCT_JOBS, releaseCoverage } from './ci_policy.mjs';
 import { assertHotfixProof } from './ci_hotfix.mjs';
-import { checkFastChanges, checkFastProof } from './ci_fast.mjs';
+import { checkFastChanges, checkFastProof, FAST_JOBS } from './ci_fast.mjs';
 
 export function validProof(proof, sha, policy, full = false, required = [], deep = false) {
+  const fast = proof?.scope === 'fast';
   const complete = jobs => Array.isArray(proof?.jobs) && proof.jobs.length === jobs.length
     && jobs.every(j => proof.jobs.includes(j));
   return proof?.version === 1 && proof.scope !== 'hotfix' && (!full || proof.scope !== 'fast')
@@ -16,9 +17,9 @@ export function validProof(proof, sha, policy, full = false, required = [], deep
     && proof.reused === false && Array.isArray(proof.jobs)
     && proof.jobs.includes('site') && proof.jobs.every(j => PRODUCT_JOBS.includes(j))
     && new Set(proof.jobs).size === proof.jobs.length
-    && (complete(PRODUCT_JOBS) || (!full && releaseCoverage(proof.jobs)))
-    && required.every(j => proof.jobs.includes(j))
-    && (!(full || deep) || proof.deep === true)
+    && (fast ? complete(FAST_JOBS) : complete(PRODUCT_JOBS) || (!full && releaseCoverage(proof.jobs)))
+    && (fast || required.every(j => proof.jobs.includes(j)))
+    && (fast || !(full || deep) || proof.deep === true)
     && proof.jobs.every(j => proof.results?.[j] === 'success')
     && ['quick', 'commits', 'plan'].every(j => proof.results?.[j] === 'success');
 }

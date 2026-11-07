@@ -108,9 +108,9 @@ branch; main runs and shipping are not cancelled in progress.
 
 ## Urgent scoped validation
 
-`fast=true` with a reason selects registered maintenance changes. It retains
-the selected Rust, service, pipeline, browser and fresh site-artifact checks,
-while skipping the two full-factory stress fixtures. Changed paths and function
+`fast=true` with a reason selects registered maintenance changes. It runs native
+board tests and clippy, service and pipeline checks, focused compute-page checks,
+published-board legality and a fresh site artifact. Changed paths and function
 boundaries must fit `scripts/ci_fast.mjs`: engine/data, task protocol, table
 schemas, incremental inventory runtime and daemon scheduling do not qualify.
 The comparison base must be verified. The proof records its base and exact

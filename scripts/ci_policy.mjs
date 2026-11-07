@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { hotfixPlan } from './ci_hotfix.mjs';
-import { checkFastChanges, fastScope } from './ci_fast.mjs';
+import { checkFastChanges, FAST_JOBS, fastScope } from './ci_fast.mjs';
 import { DEEP_SCOPE_GROUPS, RUST_SUITES } from './ci_rust.mjs';
 
 export const BROWSER_JOBS = ['site', 'checks', 'services', 'pipeline', 'page', 'parity', 'page-rest', 'mcp', 'bot'];
@@ -178,6 +178,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       force, hotfix, reason: event.inputs?.reason || '' });
     checkFastChanges(plan.fast);
     plan.scope = 'fast';
+    plan.jobs = [...FAST_JOBS];
+    plan.deep = false;
   }
   output({ plan, policy: policyDigest(), native: plan.jobs.includes('gas'), hotfix_matrix: plan.matrix || { group: [] },
     test_matrix: { suite: [...RUST_SUITES, ...(plan.deep ? Object.keys(DEEP_SCOPE_GROUPS) : [])] },

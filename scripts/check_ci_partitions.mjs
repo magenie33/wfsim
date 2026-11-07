@@ -9,7 +9,9 @@ function pageGroups(workflow, job = 'page-rest') {
   const section = workflow.split('\n  ' + job + ':\n')[1]?.split(/\n  [\w-]+:\n/)[0];
   assert(section, `${job} exists`);
   assert.match(section, /fail-fast: false/);
-  const groups = list(section.match(/group: \[([^\]]+)\]/)?.[1] || '');
+  const literal = section.match(/group: \[([^\]]+)\]/);
+  const choices = [...section.matchAll(/fromJSON\('(\[[^']+\])'\)/g)].map(m => JSON.parse(m[1]));
+  const groups = literal ? list(literal[1]) : choices.flat();
   assert(groups.length > 1 && new Set(groups).size === groups.length, 'distinct page groups');
   const commands = Object.fromEntries(groups.map(g => [g, []]));
   for (const step of section.split(/^      - /m).slice(1)) {
@@ -70,6 +72,8 @@ assert.throws(() => pageGroups(workflow.replace("if: matrix.group == 'builder'",
 assert.throws(() => pageGroups(workflow.replace("        if: matrix.group == 'builder'\n", '')));
 assert.throws(() => pageGroups(workflow.replace('group: [account, views, builder, heads, library]', 'group: [account]')));
 assert.throws(() => pageGroups(workflow.replace("if: matrix.group == 'controls'", "if: matrix.group == 'absent'"), 'page'));
+assert.throws(() => pageGroups(workflow.replace('fromJSON(\'["fast"]\')', 'fromJSON(\'["controls"]\')'), 'page'));
+assert.throws(() => pageGroups(workflow.replace('fromJSON(\'["fast"]\')', 'fromJSON(\'[]\')'), 'page'));
 const allPages = [...Object.values(pages).flat(), ...Object.values(mainPages).flat()];
 assert.equal(new Set(allPages).size, allPages.length, 'browser commands have one owner');
 const parity = workflow.split('\n  parity:')[1].split('\n  page-rest:')[0];

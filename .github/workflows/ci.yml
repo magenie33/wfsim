@@ -491,6 +491,11 @@ jobs:
         run: |
           cargo build -p wfsim-cli --bin wfsim-board
           node scripts/check_inventory_pipeline.mjs
+      - name: Maintenance preserves native board behavior and source checks
+        if: fromJSON(needs.plan.outputs.plan).fast
+        run: |
+          cargo test -p wfsim-cli --lib board::
+          cargo clippy -p wfsim-cli --all-targets -- -D warnings
       - name: Equipment builds enter the canonical public library
         run: node scripts/check_equipment_library_api.mjs
       - name: While work is short an account past its fair share waits, and only then
@@ -548,7 +553,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        group: [controls, calculation, community]
+        group: ${{ fromJSON(needs.plan.outputs.plan).fast && fromJSON('["fast"]') || fromJSON('["controls","calculation","community"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/built-site
@@ -613,6 +618,9 @@ jobs:
       - name: The page cache answers a slow road and never a sound one
         if: matrix.group == 'controls'
         run: node scripts/check_page_cache.mjs
+      - name: Complete totals and clearance render on the checked release
+        if: matrix.group == 'fast'
+        run: node scripts/ci_fast.mjs page
 
   # The builder against every weapon: the slowest sweep, so it is SHARDED, every
   # fourth weapon to a job (WFSIM_PARITY_SHARD).

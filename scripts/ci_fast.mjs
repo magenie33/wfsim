@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { pathToFileURL } from 'node:url';
+
+export const FAST_JOBS = ['site', 'checks', 'services', 'pipeline', 'page', 'published-board'];
 
 const PATHS = new Set([
   '.github/workflows/ci.yml', 'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs',
-  'scripts/ci_fast.mjs', 'scripts/check_ci_fast.mjs', 'scripts/check_ci_policy.mjs',
+  'scripts/ci_fast.mjs', 'scripts/check_ci_fast.mjs', 'scripts/check_ci_policy.mjs', 'scripts/check_ci_partitions.mjs',
   'cli/src/board/run.rs', 'cli/src/board/assemble/inventory.rs',
   'web/src/static/app/73-compute.js', 'data/i18n/zh/ui.yaml',
   'worker/clearance.js', 'worker/contribution.js', 'worker/usage_days.js',
@@ -51,7 +54,17 @@ export function checkFastChanges(scope, head = 'HEAD', run = git) {
 
 export function checkFastProof(proof, paths) {
   if (proof.scope !== 'fast' || !proof.fast) throw new Error('Missing fast CI scope');
+  if (JSON.stringify(proof.jobs) !== JSON.stringify(FAST_JOBS)) throw new Error('Missing fast CI coverage');
   const scope = fastScope(paths, { ...proof.fast, verifiedBase: true });
   if (JSON.stringify(scope.paths) !== JSON.stringify(proof.fast.paths)) throw new Error('Fast CI paths changed');
   return scope;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  if (process.argv[2] !== 'page') throw new Error('Use page for focused compute checks');
+  for (const name of ['check_compute_orders', 'check_compute_ui']) {
+    const result = spawnSync(process.execPath, [`scripts/${name}.mjs`], { stdio: 'inherit' });
+    if (result.error) throw result.error;
+    if (result.status !== 0) process.exit(result.status || 1);
+  }
 }
