@@ -7,10 +7,10 @@
 use std::cell::Cell;
 
 /// The price of a million gas and of one run, in billionths of a point.
-/// `.github/workflows/work.yml` fits hosted WASM timings and scales the prices
-/// against volunteers' paid work (`scripts/work_calibrate.mjs`).
-pub const GAS_PRICE_PER_MILLION: u64 = 53_248;
-pub const RUN_PRICE: u64 = 52_527;
+/// Price changes are a separate scoring-policy decision; work.yml measures
+/// candidate prices against hosted WASM timings and volunteers' paid work.
+pub const GAS_PRICE_PER_MILLION: u64 = 50_000;
+pub const RUN_PRICE: u64 = 400_000;
 
 thread_local! {
     // Per thread: a native scorer fights on many at once.

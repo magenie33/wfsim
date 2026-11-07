@@ -249,8 +249,9 @@ split of the runs gives the same count. Work is `gas · GAS_PRICE_PER_MILLION /
 - **A NEW VERB** whose work runs in other modules adds them to `METERED`
   (annotating every item), and reads `gas_now()` around its unit of work the way
   `shard_onto` does around its runs.
-- **ANY CHANGE TO METERED SOURCE CHANGES COUNTS**, like any engine change: a new
-  engine id, and work.yml refit before it ships.
+- **METERED SOURCE IS PART OF THE ENGINE ID.** Changes may move counts. Run
+  work.yml before adopting new point prices; performance releases can retain
+  the current prices without adopting a new fit.
 - **NATIVE AND WASM COUNT THE SAME**, held by `check_gas` on every commit; an
   answer from the native client and one from a browser agree to the bit.
 - **Cost:** about 5% of a fight's wall time, native and wasm.

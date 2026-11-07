@@ -1632,7 +1632,11 @@ yes, since each ask again is a reader interrupted. Eight rules:
    is the points alone, and nothing paid adds a point or puts an order in a
    device's hands sooner.
 
-**THE TWO PRICES ARE FIT, NOT CHOSEN, AND NOT ON ANYONE'S MACHINE.**
+**POINT PRICES ARE A SCORING POLICY, SEPARATE FROM ENGINE PERFORMANCE.**
+Performance releases retain the current prices. Calibration proposes and
+evaluates price changes; adopting a fit is a separate policy decision.
+
+**A NEW PRICE RATIO IS FIT ON HOSTED MACHINES.**
 `.github/workflows/work.yml` builds the engine contributors run from the ref it
 runs on, times it over a fixed sample of the published board on four hosted
 runners, and fits the price BETWEEN a million gas and a run to each row's
@@ -1646,7 +1650,7 @@ answer, never priced). Its report gives that total, each account's ratio (by
 digest, under 0.95 flagged) and the twenty rows that move most. The prices
 shipped may be round ones near the fit, judged by the same report
 (`prices=<gas>,<run>`): their time error no worse than the fit's and their
-total within the same 1.00–1.20, so points never shrink with a new engine.
+total within the same 1.00–1.20, so aggregate repriced points do not shrink.
 
 The calibration population uses the factory's scoped read-only function over
 the internal database tunnel. Cursor pages retain account counter sums and a
