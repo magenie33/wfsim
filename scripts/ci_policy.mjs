@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { hotfixPlan } from './ci_hotfix.mjs';
+import { checkFastChanges, fastScope } from './ci_fast.mjs';
 import { DEEP_SCOPE_GROUPS, RUST_SUITES } from './ci_rust.mjs';
 
 export const BROWSER_JOBS = ['site', 'checks', 'services', 'pipeline', 'page', 'parity', 'page-rest', 'mcp', 'bot'];
@@ -15,7 +16,8 @@ const CI_WIRING = ['.github/workflows/ci.yml', '.github/workflows/ship.yml',
   '.github/actions/site-tools/action.yml', '.github/actions/built-site/action.yml',
   '.github/actions/site-tools/install.sh', 'scripts/check_site_setup.mjs',
   'scripts/ci_policy.mjs', 'scripts/ci_runs.mjs', 'scripts/check_ci_policy.mjs',
-  'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs', 'scripts/check_ci_partitions.mjs'];
+  'scripts/ci_hotfix.mjs', 'scripts/check_ci_hotfix.mjs', 'scripts/check_ci_partitions.mjs',
+  'scripts/ci_fast.mjs', 'scripts/check_ci_fast.mjs'];
 const NON_SEARCH_TOOLS = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.sh',
   'scripts/live_board.sh', 'scripts/ship_builds.sh', 'scripts/retire_scores.mjs', 'scripts/ship_queue.sh',
   'scripts/fetch_facts.sh', 'scripts/ship_facts.sh', 'scripts/live_publish.mjs', '.github/workflows/queue.yml',
@@ -161,6 +163,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   catch (e) { console.log(`Cannot establish changed paths; running full CI: ${e.message}`); }
   const force = process.env.GITHUB_EVENT_NAME === 'schedule' || event.inputs?.full === true || event.inputs?.full === 'true';
   const hotfix = event.inputs?.hotfix === true || event.inputs?.hotfix === 'true';
+  const fast = event.inputs?.fast === true || event.inputs?.fast === 'true';
   let verified = false;
   if (!force && paths.length) {
     try {
@@ -170,6 +173,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   }
   const plan = hotfix ? { ...hotfixPlan(paths, { verifiedBase: verified, reason: event.inputs?.reason || '',
     event: process.env.GITHUB_EVENT_NAME, force }), base: changedBase(event, process.env) } : classify(paths, force, verified);
+  if (fast) {
+    plan.fast = fastScope(paths, { base: changedBase(event, process.env), verifiedBase: verified,
+      force, hotfix, reason: event.inputs?.reason || '' });
+    checkFastChanges(plan.fast);
+    plan.scope = 'fast';
+  }
   output({ plan, policy: policyDigest(), native: plan.jobs.includes('gas'), hotfix_matrix: plan.matrix || { group: [] },
     test_matrix: { suite: [...RUST_SUITES, ...(plan.deep ? Object.keys(DEEP_SCOPE_GROUPS) : [])] },
     ...Object.fromEntries(ALL_CI_JOBS.map(j => [j.replaceAll('-', '_'), plan.jobs.includes(j)])) });

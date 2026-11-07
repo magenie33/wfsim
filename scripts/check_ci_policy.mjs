@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import assert from 'node:assert/strict';
+import './check_ci_fast.mjs';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -108,6 +109,11 @@ for (const name of OPTIONAL_NATIVE_JOBS) {
 const proof = { version: 1, sha: 'abc', policy: 'p', reused: false, deep: true, jobs: PRODUCT_JOBS,
   results: Object.fromEntries(['quick', 'commits', 'plan', ...PRODUCT_JOBS].map(j => [j, 'success'])) };
 assert(validProof(proof, 'abc', 'p', true));
+const fastProof = { ...proof, scope: 'fast', fast: { base: 'a'.repeat(40), paths: [], reason: 'maintenance' } };
+assert(validProof(fastProof, 'abc', 'p'));
+assert(!validProof(fastProof, 'abc', 'p', true));
+assert(!validProof({ ...fastProof, fast: null }, 'abc', 'p'));
+assert(!validProof({ ...proof, fast: fastProof.fast }, 'abc', 'p'));
 for (const bad of [{ ...proof, sha: 'other' }, { ...proof, policy: 'old' }, { ...proof, reused: true },
   { ...proof, jobs: ['site'] }, { ...proof, results: {} }, { ...proof, version: 0 }]) {
   assert(!validProof(bad, 'abc', 'p', true));

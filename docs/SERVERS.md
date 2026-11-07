@@ -101,9 +101,8 @@ and one hour. The tally refreshes
 up to ten minutes, preserving a longer configured interval. The daemon records the
 resources and measured durations in `factory_findings.capacity`.
 
-Initiator cleanup locks at most 1,000 completed rows per table and clears their
-codes in one short transaction. Retention takes at most 100 questions per call,
-using separate indexed state ranges to skip active rows.
+Initiator cleanup locks at most 1,000 completed rows per table and uses indexed
+state ranges to skip active rows. Retention takes at most 100 questions per call,
 including callers with an older larger budget; the daemon runs up to five calls
 per minute. Both skip locked rows. Delivery, recent activity, credit and current
 calibration proof keep their existing retention guards.

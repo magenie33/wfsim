@@ -15,6 +15,10 @@ on:
         description: Validate only registered hotfix scopes; never supplies a site release
         type: boolean
         default: false
+      fast:
+        description: Registered maintenance changes without unrelated full-factory stress fixtures
+        type: boolean
+        default: false
       reason:
         description: Incident requiring scoped validation (required with hotfix)
         type: string
@@ -502,8 +506,9 @@ jobs:
       - name: The factory holds with every answer queued and settled by the settler's pass
         env:
           WFSIM_SETTLE_ASYNC: "1"
+          FAST_CI: ${{ fromJSON(needs.plan.outputs.plan).fast && 'true' || 'false' }}
         run: |
-          node scripts/check_tasks.mjs
+          if [ "$FAST_CI" != "true" ]; then node scripts/check_tasks.mjs; fi
           node scripts/check_board_verify.mjs
           node scripts/check_board_sync.mjs
           node scripts/check_board_reviews.mjs
@@ -915,6 +920,7 @@ jobs:
       - name: A device's ledger says where every point went, and names nobody else
         run: node scripts/check_ledger.mjs
       - name: Every question becomes a fact, and nobody waits on one that cannot
+        if: ${{ !fromJSON(needs.plan.outputs.plan).fast }}
         run: node scripts/check_tasks.mjs
       - name: Task modules isolate dispatch, committed results and retryable consumers
         run: node scripts/check_task_modules.mjs

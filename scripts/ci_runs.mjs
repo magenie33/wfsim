@@ -6,11 +6,13 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { assertGate, output, policyDigest, PRODUCT_JOBS, releaseCoverage } from './ci_policy.mjs';
 import { assertHotfixProof } from './ci_hotfix.mjs';
+import { checkFastChanges, checkFastProof } from './ci_fast.mjs';
 
 export function validProof(proof, sha, policy, full = false, required = [], deep = false) {
   const complete = jobs => Array.isArray(proof?.jobs) && proof.jobs.length === jobs.length
     && jobs.every(j => proof.jobs.includes(j));
-  return proof?.version === 1 && proof.scope !== 'hotfix' && proof.sha === sha && proof.policy === policy
+  return proof?.version === 1 && proof.scope !== 'hotfix' && (!full || proof.scope !== 'fast')
+    && (proof.scope === 'fast' ? !!proof.fast : !proof.fast) && proof.sha === sha && proof.policy === policy
     && proof.reused === false && Array.isArray(proof.jobs)
     && proof.jobs.includes('site') && proof.jobs.every(j => PRODUCT_JOBS.includes(j))
     && new Set(proof.jobs).size === proof.jobs.length
@@ -56,6 +58,11 @@ export function findRun({ sha, repository, policy, full, required = [], deep = f
     try {
       gh(['run', 'download', String(run.id), '--repo', repository, '--name', 'ci-proof', '--dir', dir]);
       const proof = JSON.parse(readFileSync(join(dir, 'ci-proof.json'), 'utf8'));
+      if (proof.scope === 'fast') {
+        if (!verifiedBase(proof.fast?.base, repository)) throw new Error('Unverified fast CI base');
+        const paths = execFileSync('git', ['diff', '--name-only', '--no-renames', '-z', proof.fast.base, sha], { encoding: 'utf8' }).split('\0').filter(Boolean);
+        checkFastChanges(checkFastProof(proof, paths), sha);
+      }
       if (validProof(proof, sha, policy, full, required, deep)) return String(run.id);
     } catch (e) { console.error(`Ignoring unusable CI proof from ${run.id}: ${e.message}`); }
     finally { rmSync(dir, { recursive: true, force: true }); }
@@ -86,6 +93,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     assertGate(plan, needs, reused);
     writeFileSync('ci-proof.json', JSON.stringify({ version: 1, sha: process.env.GITHUB_SHA,
       policy: policyDigest(), jobs: plan.jobs, deep: Boolean(plan.deep), reused, source: process.env.REUSE_RUN || null,
+      ...(plan.fast ? { scope: 'fast', fast: plan.fast } : {}),
       ...(plan.scope === 'hotfix' ? { scope: 'hotfix', hotfix: { base: plan.base, reason: plan.reason,
         paths: plan.paths, profiles: plan.profiles, matrix: plan.matrix } } : {}),
       results: Object.fromEntries(Object.entries(needs).map(([j, n]) => [j, n.result])) }, null, 2));
