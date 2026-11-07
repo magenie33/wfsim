@@ -235,6 +235,9 @@ per-instance path for ALLOCATIONS rather than guessing at arithmetic, and read
 once per instant what is the same for every stack at that instant. Beyond that
 the room is in **how many runs get spent** — see docs/OPTIMIZER.md.
 
+For profiling order, candidate directions, result preservation and comparison
+requirements, use [Computation performance](PERFORMANCE.md).
+
 ### Prepared simulations
 
 `webapi::PreparedSimulation` resolves one immutable request once and returns
