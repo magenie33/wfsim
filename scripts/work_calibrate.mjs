@@ -131,6 +131,7 @@ async function sample() {
       if (page.length < size) break;
       if (all.questions % 10000 === 0) console.log(`calibration: ${all.questions} paid questions read`);
     }
+    console.log(`calibration: ${all.questions} paid questions; loading ${all.sample.length} sample bodies`);
     for (const q of all.sample) {
       const [row] = await reader.page(since, until, q.id, 1, true, true);
       q.request = row?.id === q.id ? JSON.parse(row.request) : null;
@@ -144,6 +145,7 @@ async function sample() {
   const jobs = Number(arg("jobs", String(os.cpus().length)));
   const run = promisify(execFile);
   const parts = Array.from({ length: jobs }, (_, j) => picked.filter((_, i) => i % jobs === j));
+  console.log(`calibration: fighting ${picked.length} native samples across ${jobs} jobs`);
   const results = await Promise.all(parts.map(async (part, j) => {
     const file = path.join(os.tmpdir(), `work-sample-${process.pid}-${j}.json`);
     fs.writeFileSync(file, JSON.stringify(part.map((q) => ({ record: q.request.record, ruler: q.request.ruler, mode: q.request.mode }))));
