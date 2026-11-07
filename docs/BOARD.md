@@ -736,6 +736,14 @@ only the (ruler, weapon) pairs those moved and writes only the files whose
 bytes changed, so a cycle's cost follows the facts that arrived and never the
 size of the library. A new build moves a row only once it has a fact.
 
+Incremental inventory calls `publish_step 8`, yielding between whole weapon
+files after eight files or a soft second. A round freezes its file list;
+later changes wait for another round. The reply carries files written,
+files removed, whether the round remains and whether later changes wait.
+The client stamps a finished round even when later changes remain, and
+continues those changes without waiting for a new inventory epoch. Legacy
+`publish` drains both the current round and later changes in one call.
+
 **EVERYTHING IT WAS SENT IS ON DISK** (`library.json`, `new-builds.ndjson`,
 `facts-known.ndjson`), so a ranker that stops — a reply other than `ok`, a
 crash, a deploy — is started again from them on the next cycle and loses

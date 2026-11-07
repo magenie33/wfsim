@@ -51,6 +51,10 @@ retirement, multiple apply chunks, later writes, durable acknowledgment and
 input cleanup. Set `WFSIM_INVENTORY_BOARD_BIN` to select an existing binary;
 otherwise it uses `target/debug/wfsim-board`. A missing binary fails the check.
 
+`check_live_ranker.mjs` connects the production Bash publication consumer to
+the native ranker. It covers bounded rounds, deferred hot updates, stamping
+when a round finishes, a quiescent epoch and malformed protocol replies.
+
 `check_live_publish.mjs` verifies bounded upload progress, the final stamp,
 request timeouts, lost replies, atomic checkpoints and corrupt-ledger refusal.
 

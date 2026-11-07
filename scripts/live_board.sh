@@ -144,6 +144,7 @@ start_ranker() {
       --state "$WORK/pub/data/board_state.yaml" 2>> "$WORK/project.log"; }
   RANKER_INSTANCE="$(date +%s)-$RANKER_PID"
   RANKER_PUBLISHED_EPOCH=""
+  RANKER_PUBLISH_PENDING=0
   ask "" || { stop_ranker; return 1; }
 }
 
@@ -154,10 +155,30 @@ ask() {
     printf '%s\n' "$1" >&"${RANKER[1]}" || return 1
   fi
   IFS= read -r reply <&"${RANKER[0]}" || return 1
+  RANKER_REPLY="$reply"
   case "$reply" in
     ok*) echo "live: ranker $reply" >&2 ;;
     *) echo "live: the ranker answered: $reply" >&2; return 1 ;;
   esac
+}
+
+publish_incremental() {
+  local epoch="$1"
+  if [ -z "$epoch" ] || { [ "$epoch" = "$RANKER_PUBLISHED_EPOCH" ] && [ "$RANKER_PUBLISH_PENDING" = 0 ]; }; then
+    return 0
+  fi
+  ask "publish_step 8" || return 1
+  if [[ "$RANKER_REPLY" =~ ^ok\ publish_step\ ([0-9]+)\ ([0-9]+)\ ([01])\ ([01])$ ]]; then
+    local round="${BASH_REMATCH[3]}" dirty="${BASH_REMATCH[4]}"
+    RANKER_PUBLISH_PENDING=$((round || dirty))
+    if [ "$round" = 0 ]; then
+      changed=1
+      RANKER_PUBLISHED_EPOCH="$epoch"
+    fi
+  else
+    echo "live: invalid publication reply: $RANKER_REPLY" >&2
+    return 1
+  fi
 }
 
 ranker_alive() {
@@ -292,14 +313,7 @@ while true; do
           <&"${RANKER[0]}" >&"${RANKER[1]}"; then
         inventory_pending=$(jq -r 'if .pending then 1 else 0 end' inventory/status.json)
         inventory_engine_epoch=$(jq -r '.engine_epoch // empty' inventory/status.json)
-        if [ -n "$inventory_engine_epoch" ] && [ "$inventory_engine_epoch" != "$RANKER_PUBLISHED_EPOCH" ]; then
-          if ask "publish"; then
-            changed=1
-            RANKER_PUBLISHED_EPOCH="$inventory_engine_epoch"
-          else
-            stop_ranker
-          fi
-        fi
+        publish_incremental "$inventory_engine_epoch" || stop_ranker
       else
         echo "live: inventory cycle failed; restarting the ranker from authoritative inputs" >&2
         stop_ranker
@@ -333,5 +347,5 @@ while true; do
   if [ "${ONCE:-}" = 1 ]; then
     break
   fi
-  if [ "$inventory_pending" = 1 ]; then sleep 1; else sleep "$POLL_SECONDS"; fi
+  if [ "$inventory_pending" = 1 ] || [ "${RANKER_PUBLISH_PENDING:-0}" = 1 ]; then sleep 1; else sleep "$POLL_SECONDS"; fi
 done
