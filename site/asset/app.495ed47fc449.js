@@ -68,18 +68,18 @@ addEventListener("message", (e) => {
 // and anything volatile in it rewrites every one of them on every build: a
 // clock did it once per run, a commit sha does it once per commit, and both
 // bury the diffs that matter under 386 identical one-line changes.
-const BUILD_ID = "4dc4c3ba";
+const BUILD_ID = "34255dc5";
 // …AND WHICH COMMIT, for a human reading the footer. It is NOT part of the
 // guard and never goes into the HTML: it changes on every commit, including the
 // ones that touch nothing this page serves. Drawn at boot instead.
-const BUILD_SHA = "f03dadf3+";
+const BUILD_SHA = "51ff3375+";
 /// …AND WHICH RELEASE — the one identifier that is comparable ACROSS SHELLS.
 ///
 /// `BUILD_ID` covers this file and the markup; a release covers the engine
 /// module too, which is where two clients disagreeing about a NUMBER actually
 /// differ. When a reader says "the desktop gives me something else", this is
 /// the string that answers it, so every shell prints it — docs/DISTRIBUTION.md.
-const RELEASE_ID = "4603aa5cc9b9";
+const RELEASE_ID = "a5722de05c30";
 /// …AND WHICH ENGINE: a digest of the code and data a number is computed from
 /// (`engine_id` in the site build), which two results must share to be compared
 /// run by run. Translations are not in it. The dev server's is `dev`.
@@ -5998,9 +5998,9 @@ function rivenEntryFor(id, weapon = rivenContextWeapon || presetWeapon()) {
   return loadPresetList(RIVENS, weapon).find((p) => RIVEN_PREFIX + p.id === id) || null;
 }
 /// Read-only definitions travel only when a live state actually references them.
-function referencedReadOnlyRivens(extra) {
+function referencedReadOnlyRivens(extra, weapon = presetWeapon()) {
   const states = [slots, typeof opt === "undefined" ? null : opt.starts, extra];
-  return customRefs(states, true).map((r) => readOnlyRiven(r.ref)).filter(Boolean);
+  return customRefs(states, true).map((r) => readOnlyRiven(r.ref, weapon)).filter(Boolean);
 }
 
 // The generated name and printed lines per saved riven, filled in by asking
@@ -6347,9 +6347,9 @@ function defaultMode(weaponId, want) { return headlessDefaultMode(META, weaponId
 /// `id` is what the item id is built from; `name` rides along because it is
 /// what a share link written before ids carried, and the server still reads it
 /// when there is no id.
-const rivenPayload = (extra) => {
-  const entries = new Map(loadPresetList(RIVENS).map((p) => [p.id, p]));
-  for (const p of referencedReadOnlyRivens(extra)) entries.set(p.id, p);
+const rivenPayload = (extra, weapon = presetWeapon()) => {
+  const entries = new Map(loadPresetList(RIVENS, weapon).map((p) => [p.id, p]));
+  for (const p of referencedReadOnlyRivens(extra, weapon)) entries.set(p.id, p);
   return [...entries.values()].map((p) => ({ id: p.id, name: p.name, spec: p.state || {} }));
 };
 
@@ -10994,9 +10994,12 @@ const SHARE_EXCLUDED_AXES = ["wielder"];
 /// `build`, when given, is `{ state }` — a build that is not the open one (a
 /// search's finalist), shared without opening it: opening resets the search.
 function sharePayload(build) {
+  return withPoolOf(weaponInfo(build ? build.state.weapon : presetWeapon()), () => sharePayloadInPool(build));
+}
+function sharePayloadInPool(build) {
   const st = build ? build.state : snapshotState();
   const p = loadPresetList(BUILDS).find((x) => presetId(x) === activePreset);
-  const pre = evoPrefix();
+  const pre = evoPrefixFor(st.weapon);
 
   // The RIVENS the build equips travel whole (field 6), so a slot names one
   // by its index there — "~0" instead of "riven:some long name" repeated.
@@ -11022,7 +11025,7 @@ function sharePayload(build) {
     return (def && rank != null && rank !== def.max_rank) ? [a, rank] : a;
   });
 
-  const tiers = weaponEvos();
+  const tiers = weaponEvos(st.weapon);
   const evos = tiers.map((x) => {
     const id = (build ? st.evoSel || {} : evoSel)[x.tier];
     return id ? (pre && id.startsWith(pre) ? id.slice(pre.length) : id) : "";
@@ -11150,7 +11153,7 @@ const SHARE_SHORT_HOSTS = LIVE_HOSTS;
 /// opens exactly as it always has, so a failure here costs length and nothing
 /// else.
 async function shareUrl(claim, signer = null, build = null) {
-  const w = weaponInfo($("weapon").value);
+  const w = weaponInfo(build ? build.state.weapon : $("weapon").value);
   const code = await shareCode(build);
   if (SHARE_SHORT_HOSTS.includes(location.hostname)) try {
     const ask = new AbortController();
@@ -11338,6 +11341,9 @@ async function importShare(code) {
 /// the link does not — named in the sharer's language, for the sharer's chat.
 async function shareText(build) {
   const d = await decodeShare(await shareCode(build));
+  return withPoolOf(weaponInfo(d.w), () => shareTextInPool(d));
+}
+function shareTextInPool(d) {
   const w = weaponInfo(d.w);
   const name = (x) => (x && x.name) || "";
   const mods = d.slots.map((s) => s.mod).filter((m) => m && !String(m).startsWith("~"))
@@ -11347,9 +11353,9 @@ async function shareText(build) {
     ...(r.s.malus ? ["−" + (rivenStat(r.s.malus.id) ? rivenStatName(rivenStat(r.s.malus.id)) : r.s.malus.id)] : []),
   ].join(" "));
   const arcanes = d.arcane.filter((a) => a && a !== "none").map((a) => name(arcaneById(a)) || a);
-  const pre = evoPrefix();
+  const pre = evoPrefixFor(d.w);
   const evos = d.evos.filter(Boolean).map((e) => {
-    const o = weaponEvos().flatMap((t) => t.options || []).find((x) => x.id === pre + e || x.id === e);
+    const o = weaponEvos(d.w).flatMap((t) => t.options || []).find((x) => x.id === pre + e || x.id === e);
     return name(o) || e;
   });
   return [
@@ -15035,12 +15041,13 @@ function renderPresetBarIn(bar, cfg) {
     : ddButton(`dd-open-${cfg.domain}`, {value:"", search:true, placeholder:`+ ${cfg.openLabel}`,
       items:cfg.openable().map(p => ({value:presetId(p), label:p.group || p.name})), onPick:id => pickPreset(cfg, id)})}</span>` : "";
   const usedBy = current && cfg.usedBy ? cfg.usedBy(current) : [];
-  const actions = ownOps + roOps + (cfg.boardPicker ? "" : published) + (cfg.extra || "");
+  const actions = ownOps + roOps + (cfg.boardPicker ? "" : published);
   bar.innerHTML = `<span class="plabel">${cfg.label}</span><span class="preset-current ${current ? `pchip sel${current.builtin ? ' ro' : ''}` : 'pnote'}"${current ? ` data-name="${escHtml(presetId(current))}"` : ''}>`
     + (current ? current.builtin ? LOCK_SVG : cloudMark(cfg.domain, current) : "")
     + switcher + (current ? presetInfoButton(cfg, current) : "")
     + (usedBy.length ? `<span class="pby" title="${escHtml(tr("linked by") + ': ' + usedBy.join(' · '))}">↩${usedBy.length}</span>` : "")
     + presetActionsHtml(actions) + `</span>`
+    + (cfg.extra || "")
     + (cfg.currentActions && current ? cfg.currentActions(current) : "")
     + `<button type="button" class="pchip add" title="${escHtml(tr("new empty {thing}").replace('{thing}',tr(noun)))}">＋</button>`
     + (cfg.boardPicker ? published : "")
@@ -15273,6 +15280,12 @@ function openPresetLibrary(cfg, anchor) {
     results.querySelectorAll("[data-entry]").forEach(row => {
       const p = currentRows.find(p => presetId(p) === row.dataset.entry);
       row.querySelector("[data-library-open]").onclick = () => open(p);
+      if (cfg.share) {
+        const button = document.createElement("button"); button.className = "ghost-btn small";
+        button.dataset.libraryShare = ""; button.textContent = tr("share");
+        button.onclick = () => cfg.share(p, row);
+        row.querySelector("[data-library-open]").after(button);
+      }
       const details = row.querySelector(".preset-library-info");
       const fillInfo = () => { if (details.open && !details.dataset.loaded) { renderPresetInfo(details.querySelector(".preset-info-body"), cfg, p); details.dataset.loaded = "1"; } };
       details.ontoggle = () => { if (details.open) expanded.add(presetId(p)); else expanded.delete(presetId(p)); fillInfo(); };
@@ -16382,6 +16395,8 @@ function buildBarCfg() {
     // Sharing belongs to the BUILD bar: what travels is the open build, plus
     // everything needed to reproduce its number.
     extra: SHARE_ENABLED ? `<button class="pchip share">${escHtml(tr("share"))}</button>` : "",
+    share: SHARE_ENABLED ? (p, host) => openBuildShare("preset", host,
+      {state:{...p.state, weapon:p.scope || p.state.weapon || presetWeapon()}}) : null,
     onExtra: (bar) => {
       const b = bar.querySelector(".share");
       if (b) b.onclick = (e) => { e.stopPropagation(); openSharePanel(bar); };
@@ -18944,18 +18959,16 @@ function tennoPayload() {
 /// answers to "what is this build", and it is `buildState`'s axes that say
 /// which fields there are — so a new axis reaches both seats or neither.
 function seatPayload(st) {
-  // The wire itself is `headlessSeat`'s, which a surface with no page shares;
-  // WHO HOLDS IT is the one field only a page can resolve — the linked
-  // Warframe build, and absent is the Prototype or a locked weapon's own frame.
-  return headlessSeat(META, st, wielderPayloadOf(st.wielder || { frame: PROTOTYPE_ID, preset: "" }));
+  // The page resolves the linked holder and custom equipment around the
+  // shared seat axes. An absent holder uses the Prototype or the weapon's frame.
+  return { ...headlessSeat(META, st, wielderPayloadOf(st.wielder || { frame: PROTOTYPE_ID, preset: "" })),
+    rivens: rivenPayload(st, st.weapon) };
 }
 
 /// THE OPEN BUILD, as a whole request — this seat plus what the READER brings.
 ///
-/// The Tenno fields and the riven definitions are the reader's, not a seat's:
-/// every seat in one fight is the same player at the same rank carrying the
-/// same items, so they are stated once for the request and `seat_from` on the
-/// server reads them from it.
+/// The Tenno fields belong to the reader. Each seat carries the riven
+/// definitions its own weapon can resolve.
 function buildPayload() {
   return {
     ...tennoPayload(),
