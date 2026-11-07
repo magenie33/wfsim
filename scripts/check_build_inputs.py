@@ -46,4 +46,15 @@ with tempfile.TemporaryDirectory(prefix="wfsim-build-inputs-") as tmp:
     part.write_text("", encoding="utf-8")
     refuses(check, "does not ask")
     assert not (build.ROOT / "site").exists(), "preflight must write no generated site"
+    for name in build.ENGINE_BUILD_INPUTS:
+        item = build.ROOT / name
+        item.parent.mkdir(parents=True, exist_ok=True)
+        item.write_bytes(b"build input fixture")
+    engine = build.engine_id()
+    for name in build.ENGINE_BUILD_INPUTS:
+        item = build.ROOT / name
+        item.write_bytes(b"changed build input")
+        assert build.engine_id() != engine, f"{name} must move native engine identity"
+        item.write_bytes(b"build input fixture")
 print("Build preflight rejects missing/corrupt art and pins before compilation, without writing site/.")
+print("Native build flags/tooling and training inputs participate in engine identity.")

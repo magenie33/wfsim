@@ -247,6 +247,32 @@ tests/fixtures/simulation-cost.json target/simulation-cost.json 3` times frozen
 API calls and retains their complete responses. Compare those responses
 exactly and alternate baseline and candidate binaries when measuring cost.
 
+### Native PGO builds
+
+`python3 scripts/native_pgo.py build --output target/native-pgo/libwfsim_native.dylib`
+builds a library on its target host. Install the pinned Rust toolchain's
+`llvm-tools-preview` component first. `--target` must equal the Rust host;
+cross-compilation cannot collect a target's execution profile. Windows builds
+retain the static C runtime. The C ABI and gas metering stay unchanged.
+
+Each invocation uses fresh profile and target directories, trains the 29 frozen
+simulation-cost API calls and verifies complete outputs against a baseline.
+The nine gas fixtures are held out: their full engagement durations, 40 runs,
+multiple partitions and reversed delivery must preserve scores, counts, gas and
+work. Two ABBA cycles measure those rows. PGO is selected when median cost falls
+by more than 2% and no row regresses by more than 5%; otherwise the checked
+baseline is emitted. A result difference fails the build.
+
+The library's `.pgo.json` records selection, flags, hashes and timings;
+`.verify.json` retains complete responses. `check_native_pgo.mjs pkg=<dir>
+library=<file>` holds them to the emitted library and the checked wasm and data
+pack. Build artifacts remain under `target/native-pgo`, or `--work-dir`.
+
+Mac CI builds use this path on their own architectures. Windows and Linux
+release builds retain their ordinary compilation until validated on those
+targets. The PGO builder, build profile and both fixtures participate in engine identity;
+profiles are generated for each build and are never reused from a release.
+
 ### The quick calc pays a different fixed cost
 
 `gainScan` measures every candidate for one slot, and unlike the optimizer —

@@ -105,7 +105,8 @@ export function classify(paths, force = false, verifiedBase = true) {
 export function policyDigest() {
   const h = createHash('sha256');
   for (const path of [...CI_WIRING, 'scripts/ci_rust.mjs', 'scripts/riven_request_cases.mjs', 'scripts/native_artifact.py',
-    'scripts/check_native_artifact.py', 'scripts/ci_native_linux.py', 'scripts/release_engine_lib.py', 'Cargo.toml', 'Cargo.lock']) {
+    'scripts/check_native_artifact.py', 'scripts/native_pgo.py', 'scripts/check_native_pgo.py', 'scripts/check_native_pgo.mjs',
+    'scripts/ci_native_linux.py', 'scripts/release_engine_lib.py', 'Cargo.toml', 'Cargo.lock']) {
     h.update(path).update('\0').update(readFileSync(path)).update('\0');
   }
   return h.digest('hex');
