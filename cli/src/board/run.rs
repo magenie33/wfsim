@@ -567,7 +567,10 @@ pub(super) fn ruler(
                 wfsim_engine::board::builds::build_id(&v),
                 if played.id.is_empty() { "base".to_string() } else { played.id.to_string() },
             );
-            payable.insert(asked.clone());
+            let already_queued = owed.as_ref().is_some_and(|o| o.contains(&asked));
+            if already_queued {
+                payable.insert(asked.clone());
+            }
             let take = taking.as_ref().is_some_and(|t| t.contains(&asked));
             // …AND A ROW NOBODY ASKED FOR IS NOT WORK. Where there is no queue
             // at all — a local run — the fact alone decides.
@@ -575,7 +578,7 @@ pub(super) fn ruler(
             if missing_out.is_some()
                 && (sweep.contains(&v.weapon)
                     || owed_again(facts.get(&key).map(|f| f.finished_at.as_str()), older.as_deref()))
-                && !owed.as_ref().is_some_and(|o| o.contains(&asked))
+                && !already_queued
             {
                 // HELD, NOT WRITTEN. The entry line needs every group's leader
                 // and the last of those is known only when the library has
