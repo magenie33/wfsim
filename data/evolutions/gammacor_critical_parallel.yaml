@@ -14,7 +14,8 @@ effects:
     value: 0.2
   # from: "Increase Base Critical Damage Multiplier by +0.2x"
   - kind: flat_base_crit_multiplier
-    value: 0.2
+    value: 0.16  # see notes: client_scalar_input
+    misprint: "Base critical damage bonus is +0.16x."
 
 source:
   url: https://wiki.warframe.com/w/Gammacor_Incarnon_Genesis

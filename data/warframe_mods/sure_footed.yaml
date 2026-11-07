@@ -3,7 +3,7 @@ name: "Sure Footed"
 rarity: rare
 polarity: vazarin
 base_drain: 6
-max_rank: 5
+max_rank: 3  # see notes: client_scalar_input
 exilus: true
 family: sure_footed
 internal_name: /Lotus/Upgrades/Mods/Warframe/AvatarKnockdownResistanceMod

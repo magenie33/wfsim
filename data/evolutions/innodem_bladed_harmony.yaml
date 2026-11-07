@@ -9,7 +9,8 @@ selection: choose_one
 
 effects:
   - kind: fire_rate_bonus
-    value: 0.2
+    value: 0.25  # see notes: client_scalar_input
+    misprint: "Attack speed bonus is +25%."
 
 source:
   url: https://wiki.warframe.com/w/Innodem

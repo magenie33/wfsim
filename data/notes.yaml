@@ -64,6 +64,13 @@ notes:
     This class-wide availability supersedes absence counts collected before
     the hotfix. Companion weapons still exclude Zoom. The stat's base and
     naming fragments come from the generated shotgun class table.
+  client_scalar_input: |
+    Scalar inputs and rank limits follow the matching client records in
+    tests/fixtures/client/precision-inputs-2026-10-28.json. Join Mod records by
+    internal path and evolution inputs by weapon path, tier and option position.
+    Keep the same-bit float32 decimal and the quantity's operation and units.
+    Card text retains its source wording; the effect note states a differing
+    coefficient. docs/DATA_SOURCES.md records the source and calculation scope.
   package_rank_value: |
     THE RANK VALUE IS THE GAME'S OWN, NOT THE CARD'S. The game's package stores
     one value a rank for each line of a mod, and rank r is (r + 1) x it; the

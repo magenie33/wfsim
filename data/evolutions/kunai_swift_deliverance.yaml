@@ -11,7 +11,8 @@ selection: choose_one
 effects:
   # from: "+60% Projectile Speed"
   - kind: projectile_speed_bonus
-    value: 0.6
+    value: 0.5  # see notes: client_scalar_input
+    misprint: "Projectile speed bonus is +50%."
 
 source:
   url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis

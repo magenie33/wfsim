@@ -1,0 +1,89 @@
+{
+  "client_build": "2026.10.28.09.54",
+  "batch_id": "20261107T040140Z-unified-precision",
+  "manifest_sha256": "b35a34aef95fea35f65d356a45790213706654a18df26ab8534b18c0dc394ffa",
+  "findings_sha256": "c4708b6c4763e583de17fa679fe4e1e93c2f243fbb413c02397f0109bf6eb411",
+  "quality_max_ranks": {
+    "QA_NONE": 0,
+    "QA_LOW": 0,
+    "QA_MEDIUM": 3,
+    "QA_HIGH": 5,
+    "QA_VERY_HIGH": 10
+  },
+  "mod_limits": [
+    {
+      "id": "rage",
+      "internal_name": "/Lotus/Upgrades/Mods/Warframe/AvatarDamageToEnergyMod",
+      "fusion_limit": "QA_MEDIUM",
+      "max_drain": 9
+    },
+    {
+      "id": "sure_footed",
+      "internal_name": "/Lotus/Upgrades/Mods/Warframe/AvatarKnockdownResistanceMod",
+      "fusion_limit": "QA_MEDIUM",
+      "max_drain": 9
+    }
+  ],
+  "evolution_inputs": [
+    {
+      "id": "gammacor_critical_parallel",
+      "weapon": "gammacor",
+      "weapon_source_file": "weapons/secondary/gammacor.yaml",
+      "weapon_internal_name": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray",
+      "tier": 4,
+      "position_in_tier": 1,
+      "tree_definition": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray",
+      "native_path": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/GammacorIncarnonEvolutions/GammacorEvoTier3A",
+      "attribute": "WEAPON_CRIT_DAMAGE",
+      "operation": "ADD_BASE",
+      "raw_token": "0.16",
+      "float32_bits_le": "0ad7233e",
+      "effect_index": 1
+    },
+    {
+      "id": "innodem_bladed_harmony",
+      "weapon": "innodem",
+      "weapon_source_file": "weapons/melee/innodem.yaml",
+      "weapon_internal_name": "/Lotus/Weapons/Tenno/Zariman/Melee/Dagger/ZarimanDaggerWeapon",
+      "tier": 2,
+      "position_in_tier": 2,
+      "tree_definition": "/Lotus/Weapons/Tenno/Zariman/Melee/Dagger/ZarimanDaggerWeapon",
+      "native_path": "/Lotus/Upgrades/Evolutions/Melee/Dagger/EvoDaggerAttackSpeed",
+      "attribute": "WEAPON_FIRE_RATE",
+      "operation": "STACKING_MULTIPLY",
+      "raw_token": "0.25",
+      "float32_bits_le": "0000803e",
+      "effect_index": 0
+    },
+    {
+      "id": "kunai_swift_deliverance",
+      "weapon": "kunai",
+      "weapon_source_file": "weapons/secondary/kunai.yaml",
+      "weapon_internal_name": "/Lotus/Weapons/Tenno/ThrowingWeapons/Kunai",
+      "tier": 3,
+      "position_in_tier": 1,
+      "tree_definition": "/Lotus/Weapons/Tenno/ThrowingWeapons/Kunai",
+      "native_path": "/Lotus/Weapons/Tenno/ThrowingWeapons/KunaiIncarnonEvolutions/KunaiEvoTier2A",
+      "attribute": "WEAPON_PROJECTILE_SPEED",
+      "operation": "STACKING_MULTIPLY",
+      "raw_token": "0.5",
+      "float32_bits_le": "0000003f",
+      "effect_index": 0
+    },
+    {
+      "id": "mk1_kunai_swift_deliverance",
+      "weapon": "mk1_kunai",
+      "weapon_source_file": "weapons/secondary/mk1_kunai.yaml",
+      "weapon_internal_name": "/Lotus/Weapons/MK1Series/MK1Kunai",
+      "tier": 3,
+      "position_in_tier": 1,
+      "tree_definition": "/Lotus/Weapons/MK1Series/MK1Kunai",
+      "native_path": "/Lotus/Weapons/Tenno/ThrowingWeapons/KunaiIncarnonEvolutions/KunaiEvoTier2A",
+      "attribute": "WEAPON_PROJECTILE_SPEED",
+      "operation": "STACKING_MULTIPLY",
+      "raw_token": "0.5",
+      "float32_bits_le": "0000003f",
+      "effect_index": 0
+    }
+  ]
+}

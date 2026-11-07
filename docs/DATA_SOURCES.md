@@ -25,6 +25,11 @@ measurement** (`docs/MEASUREMENTS.md`), then **the game's package**, then **the
 wiki** — its pages over its data modules (§"INSIDE THE WIKI") — then **DE's
 Public Export**.
 
+Use parsed client inputs and audited calculation steps when no reliable
+measurement materially contradicts them. An absent measurement does not block
+adoption. A conflicting measurement calls for checking source identity, units,
+branches and arithmetic before changing that measurement or its golden test.
+
 **The package is the input the game loads**: the client's own records, read
 from its cache (MEASUREMENTS M124 names the dump and its hash). A mod's value a
 rank is the package's, the shortest decimal that is its float32, and the card,
@@ -73,6 +78,26 @@ the wiki is talking about.
 carries duplicates that share a display name (the /Beginner/ and /Intermediate/
 tiers of a card). WFCD's `warframe-items` is not a source: it is a second-hand
 copy of this export.
+
+## Reviewed client scalar inputs
+
+`tests/fixtures/client/precision-inputs-2026-10-28.json` pins the matching
+client build, source batch, manifest hash, raw scalar tokens and native rank
+quality table. It covers Rage and Sure Footed's QA_MEDIUM maximum rank of 3,
+Kunai and MK1-Kunai's 0.5 projectile-speed bonus, Innodem's 0.25 attack-speed
+bonus, and Gammacor's 0.16 base critical-damage addition. Evolution bindings
+use weapon internal path, tier and option position; variant coefficients
+retain their own definitions.
+
+The source audit separates scalar rank transforms, conditional state inputs,
+extra-unlock gates and generic attribute operations. A verified input or fold
+does not identify every downstream stat reader, form gate or script result.
+Keep those boundaries when adopting a calculation rule; source float32
+boundaries are not a directive to convert every engine calculation.
+
+Backend coefficients use same-bit decimals. Card descriptions retain source
+wording and carry an effect note when the applied coefficient differs; card
+rounding is never the source of that coefficient.
 
 ## INSIDE THE WIKI: THE PAGE'S PROSE FIRST, THE MODULE SECOND
 
