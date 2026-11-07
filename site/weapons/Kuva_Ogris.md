@@ -12,10 +12,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 | Ruler | Fight | Mode | Score | Build | Measured |
 | --- | --- | --- | ---: | --- | --- |
-| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 3.6534 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Primed Firestorm, Serration, Nightwatch Napalm, Semi-Rifle Cannonade, Primary Compression | 2026-10-24 04:48 UTC · dac6ecbaf97e |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 6.2720 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Galvanized Chamber, Primed Firestorm, Rifle Elementalist, Semi-Rifle Cannonade, Magnetic Capacity, Vigilante Supplies, Primary Compression | 2026-11-06 05:16 UTC · 0ae1bf8edb0f |
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 42.6716 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Primed Firestorm, Serration, Nightwatch Napalm, Semi-Rifle Cannonade, Primary Crux | 2026-10-24 04:48 UTC · dac6ecbaf97e |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.4040 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Primed Firestorm, Serration, Nightwatch Napalm, Semi-Rifle Cannonade, Primary Compression | 2026-10-24 05:01 UTC · dac6ecbaf97e |
-| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.4880 | Hellfire, Thermite Rounds, Galvanized Chamber, Primed Firestorm, Primed Bane of Orokin, Nightwatch Napalm, Rifle Elementalist, Semi-Rifle Cannonade, Vigilante Supplies, Primary Crux | 2026-10-24 05:01 UTC · dac6ecbaf97e |
+| Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 1.8735 | Primed Cryo Rounds, Malignant Force, Thermite Rounds, Galvanized Chamber, Heavy Caliber, Primed Firestorm, Semi-Rifle Cannonade, Magnetic Capacity, Primed Stabilizer, Primary Compression | 2026-11-06 09:53 UTC · 0ae1bf8edb0f |
 
 ## Not modelled here
 

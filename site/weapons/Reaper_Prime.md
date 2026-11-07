@@ -4,6 +4,16 @@ Chinese name: 收割者 Prime
 
 Scythe · Melee · Mastery Rank 10. 200 base damage (impact 30, puncture 30, slash 140), 35% crit chance, 2.5x crit multiplier, 25% status chance.
 
+## Best riven-free build on the WFSim board, as of 2026-11-07
+
+A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
+
+Each row is measured on its own, and says when and by which WFSim commit; the game and WFSim both change, so an older row may be behind.
+
+| Ruler | Fight | Mode | Score | Build | Measured |
+| --- | --- | --- | ---: | --- | --- |
+| Standard Single Target | Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | forward | 9.1294 | Primed Fever Strike, Vicious Frost, Condition Overload, Blood Rush, Primed Fury, Galvanized Steel, Weeping Wounds, Magnetic Rush, Reaping Spiral, Dreamer's Wrath, Melee Exposure | 2026-11-06 12:25 UTC · d8787cb351c5 |
+
 ## Not modelled here
 
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
