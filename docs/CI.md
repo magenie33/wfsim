@@ -108,6 +108,18 @@ branch; main runs and shipping are not cancelled in progress.
 
 ## Urgent scoped validation
 
+`fast=true` with a reason selects registered maintenance changes. It retains
+the selected Rust, service, pipeline, browser and fresh site-artifact checks,
+while skipping the two full-factory stress fixtures. Changed paths and function
+boundaries must fit `scripts/ci_fast.mjs`: engine/data, task protocol, table
+schemas, incremental inventory runtime and daemon scheduling do not qualify.
+The comparison base must be verified. The proof records its base and exact
+paths; reuse and shipping recheck them. `full=true` does not reuse a fast proof.
+
+```sh
+gh workflow run ci.yml --ref <branch> -f fast=true -f reason="<maintenance release>"
+```
+
 For an incident, manually dispatch CI with `hotfix=true` and a reason. The
 diff must fit the profiles in `scripts/ci_hotfix.mjs`; each profile declares
 its exact paths and required checks. Profiles combine when a diff spans them.
