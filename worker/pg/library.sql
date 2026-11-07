@@ -176,7 +176,7 @@ ALTER TABLE queue ADD COLUMN IF NOT EXISTS initiator TEXT COLLATE "C";
 -- "WHAT IS LEFT, IN ORDER" is one indexed read.
 CREATE INDEX IF NOT EXISTS queue_batch ON queue (batch);
 -- "IS THIS ROW STILL OWED" (worker/board_tasks.js `owedSql`).
-CREATE INDEX IF NOT EXISTS queue_row ON queue (build_id, ruler, mode);
+CREATE UNIQUE INDEX IF NOT EXISTS queue_calculation ON queue (build_id, ruler, mode);
 
 -- Repeated requests share the pending row and preserve its original batch.
 CREATE OR REPLACE FUNCTION queue_once() RETURNS trigger LANGUAGE plpgsql AS $$
@@ -195,7 +195,6 @@ END;
 $$;
 DROP TRIGGER IF EXISTS queue_once ON queue;
 CREATE TRIGGER queue_once BEFORE INSERT ON queue FOR EACH ROW EXECUTE FUNCTION queue_once();
-CREATE UNIQUE INDEX IF NOT EXISTS queue_calculation ON queue (build_id, ruler, mode);
 
 -- THE BOARD'S ORDERS BEFORE THE FACTORY, read by `/api/board/adopt` alone
 -- (worker/board_tasks.js `adopt`): one owed row each. `state` is where its

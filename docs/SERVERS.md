@@ -145,6 +145,14 @@ in PostgreSQL. The archive contains complete questions, answers, closed demands,
 engine refusals and dispatch hints; builds, scores and contribution aggregates
 remain independent live records.
 
+Each object captures 500 tasks by default, bounded at 5,000. After both
+objects pass full readback, pruning still locks and rechecks at most 100 tasks
+per transaction. `WFSIM_TASK_ARCHIVE_BATCH` in
+`/etc/wfsim-task-archive.env` sets the capture target; a statement timeout
+reduces that attempt's target. The journal reports capture, publication and
+pruning time separately. Capture size changes object overhead, not retention
+eligibility or the deletion lock budget.
+
 Archives use `r2:wfsim-pg-backup/task-details-v1/<UTC day>/<batch>/`, outside
 the nightly backup's thirty-day expiry. Each gzip object has a final manifest
 with question ids, cutoff, byte counts and SHA-256 hashes. This captures history;

@@ -329,23 +329,29 @@ END $$;
 
 -- Delivery and credit must finish before task detail can expire. Recent asks
 -- and answers restart its window; refusal markers still prevent unsafe re-asks.
-CREATE OR REPLACE FUNCTION factory_past_safe(text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT NOT EXISTS (SELECT 1 FROM demands d WHERE d.question = $1
+-- Scope pending-credit checks by question before filtering: the global partial
+-- credit index can look empty to the planner while retaining many old entries.
+CREATE OR REPLACE FUNCTION factory_past_safe(text, text) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  RETURN NOT EXISTS (SELECT 1 FROM demands d WHERE d.question = $1
                         AND (d.state = 'live' OR d.asked_at >= $2 OR d.served_at >= $2))
-     AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = $1 AND a.at >= $2)
-     AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = $1
-          AND a.credit_work IS NOT NULL AND a.credited = 0 AND a.void = 0 AND a.official = 0)
+     AND NOT EXISTS (SELECT 1 FROM (SELECT at FROM answers WHERE question=$1 OFFSET 0) a WHERE a.at >= $2)
+     AND NOT EXISTS (SELECT 1 FROM
+          (SELECT credit_work,credited,void,official FROM answers WHERE question=$1 OFFSET 0) a
+          WHERE a.credit_work IS NOT NULL AND a.credited = 0 AND a.void = 0 AND a.official = 0)
      AND NOT EXISTS (SELECT 1 FROM refusal_withdrawals r WHERE r.question = $1)
      AND NOT EXISTS (SELECT 1 FROM settle_queue s WHERE s.question = $1)
      AND NOT EXISTS (SELECT 1 FROM board_reviews r WHERE r.question = $1 AND EXISTS
           (SELECT 1 FROM scores s WHERE s.identity = r.identity AND s.ruler = r.ruler AND s.mode = r.mode AND s.review_id = r.id))
      AND NOT EXISTS (SELECT 1 FROM questions q WHERE q.id = $1 AND (q.lease_until >= $2 OR q.lease_prev_until >= $2))
-     AND NOT EXISTS (SELECT 1 FROM answers a JOIN questions q ON q.id = a.question
-          WHERE a.question = $1 AND q.state = 'fact' AND a.credited = 0 AND a.void = 0 AND a.official = 0
+     AND NOT EXISTS (SELECT 1 FROM (SELECT * FROM answers WHERE question=$1 OFFSET 0) a
+          CROSS JOIN (SELECT state,canon,fact_at FROM questions WHERE id=$1 OFFSET 0) q
+          WHERE q.state = 'fact' AND a.credited = 0 AND a.void = 0 AND a.official = 0
             AND a.canon = q.canon AND a.at <= q.fact_at
-            AND NOT EXISTS (SELECT 1 FROM answers c WHERE c.question = a.question AND c.credited = 1 AND c.void = 0 AND c.official = 0
-                              AND (c.owner = a.owner OR (coalesce(a.net, '') <> '' AND c.net = a.net))))
-$$;
+            AND NOT EXISTS (SELECT 1 FROM (SELECT * FROM answers WHERE question=a.question OFFSET 0) c
+                              WHERE c.credited = 1 AND c.void = 0 AND c.official = 0
+                              AND (c.owner = a.owner OR (coalesce(a.net, '') <> '' AND c.net = a.net))));
+END $$;
 
 -- Unarchived callers cannot remove history. The private archive service calls
 -- factory_forget_archived only after the object and manifest pass readback.
@@ -356,14 +362,15 @@ BEGIN
 END $$;
 
 -- Each archive contains every column of the rows its cleanup can remove.
-CREATE OR REPLACE FUNCTION factory_task_detail(text) RETURNS jsonb LANGUAGE sql STABLE AS $$
-  SELECT jsonb_build_object('question',to_jsonb(q),
+CREATE OR REPLACE FUNCTION factory_task_detail(text) RETURNS jsonb LANGUAGE plpgsql STABLE AS $$
+BEGIN
+  RETURN (SELECT jsonb_build_object('question',to_jsonb(q),
     'answers',coalesce((SELECT jsonb_agg(to_jsonb(a) ORDER BY a.id) FROM answers a WHERE a.question=q.id),'[]'::jsonb),
     'demands',coalesce((SELECT jsonb_agg(to_jsonb(d) ORDER BY d.producer,d.ref) FROM demands d WHERE d.question=q.id),'[]'::jsonb),
     'engine_refusals',coalesce((SELECT jsonb_agg(to_jsonb(e) ORDER BY e.device,e.engine) FROM engine_refusals e WHERE e.question=q.id),'[]'::jsonb),
     'led_questions',coalesce((SELECT jsonb_agg(to_jsonb(l) ORDER BY l.engine) FROM led_questions l WHERE l.question=q.id),'[]'::jsonb))
-  FROM questions q WHERE q.id=$1
-$$;
+  FROM questions q WHERE q.id=$1);
+END $$;
 
 CREATE OR REPLACE FUNCTION factory_archive_candidates(text,bigint) RETURNS jsonb LANGUAGE sql STABLE AS $$
   SELECT coalesce(jsonb_agg(factory_task_detail(t.id)),'[]'::jsonb) FROM (
@@ -371,7 +378,7 @@ CREATE OR REPLACE FUNCTION factory_archive_candidates(text,bigint) RETURNS jsonb
      WHERE ((q.state='fact' AND q.fact_at<$1) OR
        (q.state='withdrawn' AND q.opened_at<$1 AND coalesce(q.withdrawn_at,q.opened_at)<$1))
        AND factory_past_safe(q.id,$1)
-     LIMIT LEAST(GREATEST($2,0),100)) t
+     LIMIT LEAST(GREATEST($2,0),5000)) t
 $$;
 
 -- Lock and recheck the exact archived rows with a fresh statement snapshot.

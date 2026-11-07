@@ -41,6 +41,10 @@ const schema = ["schema.sql", "library.sql", "sync.sql"].map((f) => readFileSync
   await pg.close();
 }
 const record = { weapon: "torid", mods: ["serration"] };
+const queueIndexes = await query(`SELECT indexname,indexdef FROM pg_indexes
+  WHERE schemaname='public' AND tablename='queue' AND indexname IN ('queue_row','queue_calculation')`);
+check("pending calculations use one covering unique index", queueIndexes.length === 1
+  && queueIndexes[0].indexname === 'queue_calculation' && queueIndexes[0].indexdef.startsWith('CREATE UNIQUE INDEX'));
 await query("INSERT INTO inbox (id, at, record) VALUES (?, ?, ?), (?, ?, ?)",
   ["i1", "2026-10-01", JSON.stringify(record), "i2", "2026-10-01", JSON.stringify({ weapon: "braton", mods: [] })]);
 

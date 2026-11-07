@@ -19,6 +19,9 @@ from pg_backup import Rclone, put_verified
 ROOT = Path(__file__).resolve().parent.parent
 ARCHIVES = 'r2:wfsim-pg-backup/task-details-v1'
 MAX_BYTES = 32 * 1024 * 1024
+CAPTURE_TASKS = 500
+MAX_CAPTURE_TASKS = 5000
+PRUNE_TASKS = 100
 
 
 class ArchiveStore(Rclone):
@@ -73,6 +76,7 @@ class Postgres:
         body = f"BEGIN {mode};\nSET LOCAL statement_timeout='8s';\n"
         body += "SET LOCAL lock_timeout='1s';\nSET LOCAL temp_file_limit='32MB';\n"
         body += "SET LOCAL standard_conforming_strings=on;\nSET LOCAL ROLE wfsim;\n"
+        body += "SET LOCAL plan_cache_mode='force_generic_plan';\n"
         body += sql + ';\nCOMMIT;\n'
         result = subprocess.run(['sudo', '-u', 'postgres', 'psql', '-X', '-q', '-At',
             '-v', 'ON_ERROR_STOP=1', '-d', 'wfsim'], input=body, text=True,
@@ -88,8 +92,16 @@ class Postgres:
                           f'{literal(receipt["object"])},{literal(receipt["sha256"])})')
 
 
-def archive_once(store, database, before, size=100, now=None):
-    rows = database.candidates(before, size)
+def archive_once(store, database, before, size=CAPTURE_TASKS, now=None):
+    size = min(max(1, size), MAX_CAPTURE_TASKS)
+    started = time.monotonic()
+    try:
+        rows = database.candidates(before, size)
+    except subprocess.CalledProcessError as error:
+        if size > PRUNE_TASKS and 'statement timeout' in (error.stderr or ''):
+            return archive_once(store, database, before, max(PRUNE_TASKS, size // 2), now)
+        raise
+    captured_at = time.monotonic()
     if not rows:
         return {'captured': 0, 'deleted': 0}
     data = json.dumps({'v': 1, 'before': before, 'tasks': rows}, separators=(',', ':'), ensure_ascii=False).encode()
@@ -106,8 +118,15 @@ def archive_once(store, database, before, size=100, now=None):
         'questions': [r['question']['id'] for r in rows],
         'meaning': 'Captured task detail. Pruning rechecks current rows; capture does not assert deletion.'}
     receipt = put_verified(store, prefix + '/manifest.json', (json.dumps(manifest, indent=2) + '\n').encode())
-    deleted = database.prune(before, rows, receipt)
+    verified_at = time.monotonic()
+    deleted = []
+    for offset in range(0, len(rows), PRUNE_TASKS):
+        deleted.extend(database.prune(before, rows[offset:offset + PRUNE_TASKS], receipt))
     return {'captured': len(rows), 'deleted': len(deleted), 'manifest': receipt,
+            'capture_limit': size, 'prune_statements': (len(rows) + PRUNE_TASKS - 1) // PRUNE_TASKS,
+            'seconds': {'capture': round(captured_at - started, 3),
+                        'publish': round(verified_at - captured_at, 3),
+                        'prune': round(time.monotonic() - verified_at, 3)},
             'compressed_bytes': len(packed), 'uncompressed_bytes': len(data)}
 
 
@@ -116,6 +135,9 @@ def main():
     parser.add_argument('--once', action='store_true', help='one bounded archive batch')
     parser.add_argument('--verify', metavar='MANIFEST', help='read back and verify an archived task batch')
     args = parser.parse_args()
+    capture_tasks = int(os.environ.get('WFSIM_TASK_ARCHIVE_BATCH', str(CAPTURE_TASKS)))
+    if not 1 <= capture_tasks <= MAX_CAPTURE_TASKS:
+        parser.error(f'WFSIM_TASK_ARCHIVE_BATCH must be between 1 and {MAX_CAPTURE_TASKS}')
     os.umask(0o077)
     if args.verify:
         rows = read_archive(ArchiveStore(), args.verify)
@@ -132,7 +154,8 @@ def main():
         started = time.monotonic()
         captured = deleted = 0
         for _ in range(50):
-            result = archive_once(store, database, before)
+            result = archive_once(store, database, before, size=capture_tasks)
+            capture_tasks = min(capture_tasks, result.get('capture_limit', capture_tasks))
             captured += result['captured']
             deleted += result['deleted']
             print(json.dumps({'stage': 'task_archive', **result}), flush=True)

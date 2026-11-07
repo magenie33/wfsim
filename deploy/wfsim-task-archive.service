@@ -6,6 +6,7 @@ Wants=network-online.target
 [Service]
 Type=oneshot
 WorkingDirectory=/opt/wfsim-task-archive
+EnvironmentFile=-/etc/wfsim-task-archive.env
 ExecStart=/usr/bin/python3 scripts/pg_task_archive.py
 Nice=15
 CPUWeight=10

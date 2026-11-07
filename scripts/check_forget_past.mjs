@@ -20,8 +20,13 @@ const f = facts();
 const MANIFEST = 'r2:wfsim-pg-backup/task-details-v1/20261101/' + 'a'.repeat(32) + '/manifest.json';
 const HASH = 'b'.repeat(64);
 const capture = async (db = L, limit = 100) => (await db.get("SELECT factory_archive_candidates(?::text,?::bigint) AS rows", BEFORE, limit)).rows;
-const prune = async (rows, db = L) => (await db.get("SELECT factory_forget_archived(?::text,(?::text)::jsonb,?::text,?::text) AS ids",
-  BEFORE, JSON.stringify(rows), MANIFEST, HASH)).ids.length;
+const prune = async (rows, db = L) => {
+  let deleted = 0;
+  for (let offset = 0; offset < rows.length; offset += 100) deleted += (await db.get(
+    "SELECT factory_forget_archived(?::text,(?::text)::jsonb,?::text,?::text) AS ids",
+    BEFORE, JSON.stringify(rows.slice(offset, offset + 100)), MANIFEST, HASH)).ids.length;
+  return deleted;
+};
 
 const question = (id, state, { fact_engine = null, at = OLD } = {}) => L.run(
   `INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at, withdrawn_at)
@@ -151,11 +156,11 @@ check("…and takes back only the work of the window", out.taken_back === 100 &&
 
 const backlog = await testDb("library");
 await backlog.run(`INSERT INTO questions (id,verb,request,state,due_at,opened_at,canon,fact_engine,fact_at)
-  SELECT 'expired-'||i,'simulate','{}','fact',?1::text,?1::text,'c','e0',?1::text FROM generate_series(1,107) i`, OLD);
-const capped = async () => prune(await capture(backlog, 2000), backlog);
+  SELECT 'expired-'||i,'simulate','{}','fact',?1::text,?1::text,'c','e0',?1::text FROM generate_series(1,5107) i`, OLD);
+const capped = async () => prune(await capture(backlog, 20000), backlog);
 const batches = [await capped(), await capped(), await capped()];
-check("retention bounds legacy large requests and commits the remaining work next pass",
-  JSON.stringify(batches) === '[100,7,0]', JSON.stringify(batches));
+check("capture bounds large requests while verified deletion stays in small transactions",
+  JSON.stringify(batches) === '[5000,107,0]', JSON.stringify(batches));
 await backlog.close();
 
 await question("eight-days", "fact", { fact_engine: "e1", at: iso(NOW - 8 * DAY) });
@@ -175,6 +180,31 @@ let refused = false;
 try { await L.get("SELECT factory_forget_archived(?::text,(?::text)::jsonb,NULL,NULL)", BEFORE, JSON.stringify(await capture())); }
 catch { refused = true; }
 check("missing private manifest receipt is rejected", refused);
+
+const plans = await testDb('library');
+await plans.run(`INSERT INTO answers(question,engine,device,owner,canon,result,work,at,credited,credit_work)
+  SELECT 'plan-'||i,'e','d'||i,'o'||i,'c','{}',1,?1::text,0,1 FROM generate_series(1,20000)i`, OLD);
+await plans.run('UPDATE answers SET credited=1,credit_work=NULL');
+await plans.exec('ANALYZE answers; SET enable_seqscan=off; SET enable_bitmapscan=off;');
+const body = (await plans.get(`SELECT prosrc FROM pg_proc WHERE oid='factory_past_safe(text,text)'::regprocedure`)).prosrc;
+const guardSql = body.replace(/^\s*BEGIN\s+RETURN\b/, 'SELECT').replace(/;\s*END\s*$/, '')
+  .replaceAll('$1', '?1::text').replaceAll('$2', '?2::text');
+const answerReads = value => Array.isArray(value) ? value.flatMap(answerReads)
+  : value && typeof value === 'object' ? [...(value['Relation Name'] === 'answers' ? [value] : []), ...Object.values(value).flatMap(answerReads)] : [];
+const boundedAnswers = plan => {
+  const reads = answerReads(plan);
+  return reads.length > 0 && reads.every(node => /question/.test(node['Index Cond'] || node['Recheck Cond'] || ''));
+};
+for (const mode of ['force_generic_plan','force_custom_plan']) {
+  await plans.exec(`SET plan_cache_mode=${mode}`);
+  const plan = await plans.all('EXPLAIN (FORMAT JSON,COSTS OFF) '+guardSql, 'plan-1', BEFORE);
+  check(`${mode}: retention credit checks read only the candidate question`,
+    boundedAnswers(plan), JSON.stringify(plan));
+  const broken = await plans.all('EXPLAIN (FORMAT JSON,COSTS OFF) '+guardSql.replaceAll(' OFFSET 0',''), 'plan-1', BEFORE);
+  check(`${mode}: the fixture exposes an unfenced global answer-index scan`, !boundedAnswers(broken), JSON.stringify(broken));
+}
+await plans.exec('RESET enable_seqscan; RESET enable_bitmapscan; RESET plan_cache_mode;');
+await plans.close();
 
 console.log(failures ? `\n${failures} failed` : "\nthe library keeps a window, and only what the window and the board still need");
 process.exit(failures ? 1 : 0);

@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import json
+import subprocess
 from unittest import TestCase, main
 
 import pg_task_archive as archive
@@ -101,6 +102,53 @@ class TaskArchiveCheck(TestCase):
         self.assertNotIn('DROP TABLE', sql)
         self.assertNotIn('DELETE FROM scores', sql)
         self.assertNotIn('DELETE FROM verifiers', sql)
+
+    def test_one_verified_object_precedes_every_small_prune(self):
+        store, database = Store(), Database()
+        original = database.rows[0]
+        database.rows = [copy.deepcopy(original) for _ in range(archive.CAPTURE_TASKS)]
+        for number, row in enumerate(database.rows):
+            row['question']['id'] = 'q' + str(number)
+        chunks = []
+
+        def prune(before, rows, receipt):
+            stored = archive.read_archive(store, receipt['object'])['tasks']
+            self.assertEqual(stored, database.rows)
+            self.assertLessEqual(len(rows), archive.PRUNE_TASKS)
+            chunks.extend(row['question']['id'] for row in rows)
+            return [row['question']['id'] for row in rows]
+
+        database.prune = prune
+        result = archive.archive_once(store, database, 'before')
+        self.assertEqual(result['captured'], archive.CAPTURE_TASKS)
+        self.assertEqual(result['deleted'], archive.CAPTURE_TASKS)
+        self.assertEqual(len(store.objects), 2)
+        self.assertEqual(chunks, [r['question']['id'] for r in database.rows])
+        self.assertGreater(result['prune_statements'], 1)
+
+    def test_candidate_timeout_reduces_capture_without_pruning_unverified_data(self):
+        store, database = Store(), Database()
+        original = database.candidates
+        sizes = []
+
+        def candidates(before, size):
+            sizes.append(size)
+            if size > archive.PRUNE_TASKS:
+                raise subprocess.CalledProcessError(1, 'psql', stderr='canceling statement due to statement timeout')
+            return original(before, size)
+
+        database.candidates = candidates
+        result = archive.archive_once(store, database, 'before')
+        self.assertGreater(sizes[0], archive.PRUNE_TASKS)
+        self.assertEqual(sizes[-1], archive.PRUNE_TASKS)
+        self.assertEqual(result['deleted'], 1)
+
+    def test_failed_large_manifest_readback_prevents_all_prune_chunks(self):
+        store, database = Store('manifest-readback'), Database()
+        database.rows *= archive.CAPTURE_TASKS
+        with self.assertRaises(RuntimeError):
+            archive.archive_once(store, database, 'before')
+        self.assertFalse(database.pruned)
 
 
 if __name__ == '__main__':
