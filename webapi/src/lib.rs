@@ -59,7 +59,7 @@ pub use rivens::riven_json;
 pub use shapley::{shapley_json, MAX_PARTICIPANTS as SHAPLEY_MAX_PARTICIPANTS};
 pub use simulate::{
     riven_request, simulate_json, simulate_json_reporting, simulate_merged_json,
-    simulate_request, simulate_shard_json, RIVEN_ITEM,
+    simulate_request, simulate_shard_json, PreparedSimulation, RIVEN_ITEM,
 };
 pub use catalogue::catalogue_json;
 pub use warframe::{operator_panel_json, warframe_catalog_json, warframe_panel_json};

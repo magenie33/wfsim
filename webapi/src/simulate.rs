@@ -13,6 +13,9 @@ use crate::registry::{WeaponInfo, base_for, incarnon_id, innate_slots_for, mod_n
 use crate::request::{err_json, get_bool, r1, r3};
 use crate::rivens::{mod_pool_with_rivens, riven_stat_ids_ok};
 
+#[cfg(test)]
+mod prepared_tests;
+
 /// A rostered buff whose ceiling is a NUMBER, as the chart reads it: what one
 /// stack is worth, where it stops, and the unit both are in. `null` for the
 /// ordinary kind, where the stack count is the published fact and the chart is
@@ -476,6 +479,45 @@ pub(crate) struct Ready {
     pub(crate) seat_weapons: Vec<String>,
     /// What the build costs — the report's, so only asked for with `report`.
     pub(crate) forma: Value,
+}
+
+/// One immutable request, prepared for independent indexed runs. Each run owns
+/// its RNG and mutable combat state; retaining this object retains no results.
+pub struct PreparedSimulation {
+    params: FightParams,
+    seed: u64,
+    keeps_series: bool,
+}
+
+impl PreparedSimulation {
+    pub fn new(request: &Value) -> Result<Self, Value> {
+        let Ready { fight, params, .. } = ready(request, false)?;
+        Ok(Self { params, seed: fight.seed, keeps_series: get_bool(request, "run_series", false) })
+    }
+
+    /// The same shard as the simulator's, with progress local to this range.
+    /// Ranges must fit in `u32`; separate callers may run them in any order.
+    pub fn shard(
+        &self,
+        from: u32,
+        count: u32,
+        on_run: &mut impl FnMut(u32, u32),
+    ) -> Result<wfsim_engine::fight::Shard, Value> {
+        if from.checked_add(count).is_none() {
+            return Err(err_json("run range overflows u32"));
+        }
+        Ok(wfsim_engine::fight::shard(
+            &self.params, from, count, self.seed, self.keeps_series,
+            &mut |done| on_run(done, count),
+        ))
+    }
+
+    pub(crate) fn shard_json(&self, from: u32, count: u32) -> Value {
+        match self.shard(from, count, &mut |_, _| {}) {
+            Ok(s) => serde_json::to_value(&s).unwrap_or_else(|e| err_json(format!("shard: {e}"))),
+            Err(e) => e,
+        }
+    }
 }
 
 /// THE ONE CONSTRUCTION OF A FIGHT FROM A REQUEST. `simulate` runs what it

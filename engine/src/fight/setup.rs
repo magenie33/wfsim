@@ -568,6 +568,7 @@ impl FightParams {
     /// …AND THE SHOOTER'S HALF OF IT ALONE, which is what a Bane's card says.
     /// The product above is what the damage takes; this is what a reader can
     /// CHECK against a mod, and the two are told apart nowhere else.
+    #[inline(always)]
     pub fn faction_bracket_at(&self, t: f64) -> f64 {
         self.faction_multiplier + crate::data::abilities::faction_bonus_at(&self.abilities_now(), t)
     }
@@ -576,6 +577,7 @@ impl FightParams {
     /// applied — the wiki draws the contrast itself: "Unlike faction damage,
     /// which double dips for status effects, the one from Eclipse is applied
     /// once."
+    #[inline(always)]
     pub fn ability_final_at(&self, t: f64) -> f64 {
         crate::data::abilities::final_mult_at(&self.abilities_now(), t)
     }

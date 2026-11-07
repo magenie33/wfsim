@@ -166,10 +166,13 @@ pub fn base_panel_assembled(
     let composed = spec_assembled(raw, assembly).unwrap_or_else(|| {
         panic!("weapon {id}: the assembly {assembly:?} does not compose into it")
     });
-    panel_for_spec(&composed, frenzy_active, assembly)
+    panel_for_spec(&composed, raw, frenzy_active, assembly)
 }
 
-fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::assembly::Assembly>) -> WeaponBase {
+fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: bool, assembly: Option<&super::assembly::Assembly>) -> WeaponBase {
+    // Assemblies and attack profiles change attacks; catalog metadata stays
+    // borrowed. Pool views are keyed only by this finite catalog's ids.
+    static MOD_POOLS: crate::data::Memo<[&'static str]> = crate::data::Memo::new();
     let id = s.id.as_str();
 
     let mut vector = DamageVector::new();
@@ -493,27 +496,21 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
         // FILLED IN BY THE EVOLUTIONS, and by nothing else: a melee Incarnon is
         // a Genesis tier rather than a weapon stat.
         melee_incarnon: None,
-        // LEAKED ONCE so the panel can answer "what is this" and "what does it
-        // draw" without a lookup — the two questions the Amp auras ask.
-        class: Box::leak(s.class.clone().into_boxed_str()),
-        slot: Box::leak(s.rules_slot().to_string().into_boxed_str()),
+        class: metadata.class.as_str(),
+        slot: metadata.rules_slot(),
         // Filled in by `apply_valence`; zero until then, and zero forever on a
         // weapon that never came out of a Lich.
         valence_bonus: 0.0,
         exalted: s.exalted,
-        summoned_by: s.summoned_by.as_ref().map(|a| &*Box::leak(a.clone().into_boxed_str())),
+        summoned_by: metadata.summoned_by.as_deref(),
         // Zero until an evolution's flat add writes into it
         // (`add_flat_base_damage`), which is the only thing that does.
         unswung_base: 0.0,
         recharge_per_second: s.recharge_per_second,
         echo_multiplier: s.echo_multiplier,
-        mod_pools: Box::leak(
-            s.mod_pools
-                .iter()
-                .map(|p| &*Box::leak(p.clone().into_boxed_str()))
-                .collect::<Vec<&'static str>>()
-                .into_boxed_slice(),
-        ),
+        mod_pools: MOD_POOLS.get_or(&metadata.id, || Box::leak(
+            metadata.mod_pools.iter().map(String::as_str).collect::<Vec<_>>().into_boxed_slice(),
+        )),
         form: FormKind::parse(&s.form),
         alt_fire_toggles: s.alt_fire_toggles,
         // Empty until an evolution writes into it (data::evolutions::apply).
@@ -759,7 +756,7 @@ fn panel_for_spec(s: &WeaponSpec, frenzy_active: bool, assembly: Option<&super::
             if let Some(co) = &attack.co_behavior { child.co_behavior = Some(co.clone()); }
             if let Some(fraction) = attack.co_base_fraction { child.co_base_fraction = Some(fraction); }
             if let Some(head) = attack.headshot_multiplier { child.headshot_multiplier = Some(head); }
-            (name.clone(), panel_for_spec(&child, frenzy_active, assembly))
+            (name.clone(), panel_for_spec(&child, metadata, frenzy_active, assembly))
         }).collect(),
         melee_heavy: (s.form_kind() != crate::model::FormKind::Heavy).then(|| all().iter()
             .find(|e| e.group() == s.group() && e.form_kind() == crate::model::FormKind::Heavy
