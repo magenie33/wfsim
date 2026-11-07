@@ -15,15 +15,48 @@
 import worker, { USAGE_EVENTS, USAGE_SCHEMA, usagePoint } from "../worker/index.js";
 import { usageVisitor, USAGE_LOG_DAYS } from "../worker/usage_log.js";
 import { appSource } from "./app_source.mjs";
-import { USAGE_RESULTS, USAGE_LOG_FROM, usageDayRows, rollupUsage } from "../worker/usage_days.js";
+import { USAGE_RESULTS, USAGE_LOG_FROM, usageDayRows, rollupUsage, usageMarket } from "../worker/usage_days.js";
 import { testDb } from "./pg/test_db.mjs";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, mkdtempSync, rmSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { PGlite } from "./pg/node_modules/@electric-sql/pglite/dist/index.js";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
   console.log(`  ${ok ? "ok " : "FAIL"}  ${what}${ok || !detail ? "" : `   ${detail}`}`);
   if (!ok) failures++;
 };
+
+const reportCheck = spawnSync(process.platform === "win32" ? "python" : "python3", ["scripts/check_usage_report.py"], { encoding: "utf8" });
+check("visitor reports keep calendar windows, browser sets and shells distinct", reportCheck.status === 0,
+  reportCheck.error?.message || reportCheck.stderr || reportCheck.stdout);
+{
+  const dir = mkdtempSync(join(tmpdir(), "wfsim-usage-report-"));
+  try {
+    const pg = new PGlite(dir);
+    await pg.exec(readFileSync("worker/pg/library.sql", "utf8").match(/CREATE TABLE IF NOT EXISTS usage_points \([\s\S]*?\n\);/)[0]);
+    for (const [day, shell, event] of [["2026-11-04", "web", "app.boot"], ["2026-11-05", "web", "simulator.run"],
+      ["2026-11-05", "desktop", "app.boot"], ["2026-11-06", "web", "app.boot"]]) {
+      await pg.query(`INSERT INTO usage_points (at, day, visitor, event, subject, route, lang, shell, release, country, n)
+        VALUES ($1, $2, $3, $4, 'direct', 'home', 'en', $5, 'r1', 'XX', 100)`,
+      [day + "T12:00:00Z", day, shell === "web" ? "a".repeat(32) : "b".repeat(32), event, shell]);
+    }
+    await pg.close();
+    const python = process.platform === "win32" ? "python" : "python3";
+    const args = ["scripts/usage.py", "--before", "2026-11-06", "--days", "14", "--shell", "web"];
+    const env = { ...process.env, PG_URL: "pglite:" + dir };
+    const result = spawnSync(python, [...args, "--json"], { env, encoding: "utf8" });
+    const report = result.status === 0 ? JSON.parse(result.stdout) : {};
+    check("the actual report SQL filters shells and the exclusive end date",
+      result.status === 0 && report.period?.web.visitors === 1 && report.period.web.result === 1
+      && report.latest_point === "2026-11-05T12:00:00Z", result.stderr || result.stdout);
+    const full = spawnSync(python, args, { env, encoding: "utf8" });
+    check("every detailed report query runs with the same bounds", full.status === 0
+      && full.stdout.includes("unknown") && !full.stdout.includes("desktop"), full.stderr || full.stdout);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+}
 
 const src = appSource();
 const calls = [...src.matchAll(/(?<!function )\btrack\(([^,)]*)/g)].map((m) => m[1].trim());
@@ -137,6 +170,18 @@ check("no database bound is a 503, not a silent 204", r.status === 503, `status 
 r = await post(null, env, "OPTIONS");
 check("a preflight is answered", r.status === 204 && r.headers.get("access-control-allow-methods"));
 
+{
+  const before = (await points()).length;
+  const proxied = Object.assign(new Request("https://backend.invalid/api/e", {
+    method: "POST", body: JSON.stringify(good),
+    headers: { "x-wfsim-website": "usage-check", "x-wfsim-website-ip": "192.0.2.1" },
+  }), { cf: { country: "US" } });
+  r = await worker.fetch(proxied, { ...env, WEBSITE_PROXY_SECRET: "usage-check" }, CTX);
+  const rows = await points();
+  check("a trusted website proxy writes its usage point with unknown reader country",
+    r.status === 204 && rows.length === before + 1 && rows.some((p) => p.country === "XX"));
+}
+
 // THE KEPT DAYS (worker/usage_days.js): one definition of a result, totals
 // right, no visitor id written, and a day half written is written again.
 const py = readFileSync(new URL("./usage.py", import.meta.url), "utf8").match(/^RESULTS = \(([^)]*)\)/m);
@@ -157,6 +202,18 @@ const fixture = [
   pt(D2, C, "app.view", "home"),
 ];
 const keptDay = usageDayRows(D2, fixture);
+check("unknown and invalid countries never become overseas",
+  ["", "XX", "ZZ", "T1", "us", null].every((country) => usageMarket(country) === "unknown")
+  && usageMarket("CN") === "china" && usageMarket("US") === "overseas");
+{
+  const mixed = [pt(D2, A, "app.boot", "", "CN"), pt(D2, A, "simulator.run", "torid", "XX"),
+    pt(D2, B, "app.boot", "", "XX"), pt(D2, C, "app.boot", "", "US")];
+  const classified = (rows) => usageDayRows(D2, rows).filter((r) => r.event === "visitors" && r.subject === "all")
+    .map((r) => [r.market, r.visitors]).sort();
+  check("unknown and mixed-location browsers keep one stable daily visitor count",
+    JSON.stringify(classified(mixed)) === JSON.stringify([["overseas", 1], ["unknown", 2]])
+    && JSON.stringify(classified(mixed)) === JSON.stringify(classified([...mixed].reverse())));
+}
 const cell = (event, subject, market) => (keptDay.find((o) => o.event === event && o.subject === subject
   && (!market || o.market === market)) || {}).visitors || 0;
 check("a day counts its visitors, those with a result and those returning",

@@ -1,7 +1,8 @@
 """What readers did: the usage points `POST /api/e` writes, read back.
 
-    python scripts/usage.py              # the last 14 days, from the log
-    python scripts/usage.py --days 28
+    python scripts/usage.py              # the last 14 complete UTC days
+    python scripts/usage.py --days 28 --shell web --summary
+    python scripts/usage.py --before 2026-11-06 --json
 
 THE LOG IS THE ONLY SOURCE (`usage_points`, docs/ANALYTICS.md §"The log"):
 every point, unsampled, read through `scripts/pgq.mjs` from whatever `PG_URL`
@@ -17,10 +18,11 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,8 +34,14 @@ RESULTS = ("builder.weapon", "builder.warframe", "builder.operator", "builder.ri
            "simulator.run", "optimizer.run")
 # A boot that is not a landing: the reader was already on the site.
 INSIDE = ("from_site", "reload", "back_forward")
-# Mainland China, and everyone else — the two audiences whose habits can differ.
-MARKET = lambda country: "china" if country == "CN" else "overseas"
+MARKETS = ("china", "overseas", "unknown")
+SHELLS = ("web", "desktop")
+
+
+def MARKET(country):
+    if country == "CN":
+        return "china"
+    return "overseas" if re.fullmatch(r"[A-Z]{2}", country or "") and country not in ("XX", "ZZ") else "unknown"
 
 
 def visitor_of(cid):
@@ -45,29 +53,38 @@ def visitor_of(cid):
 class Log:
     """`usage_points` in the library's Postgres: every point, so `n` is a count."""
 
-    def __init__(self, start):
+    def __init__(self, start, before=None, shell="all"):
         if not os.environ.get("PG_URL"):
             sys.exit('usage.py: PG_URL is not set — the library\'s Postgres, docs/BOARD.md §"Postgres"')
         self.start = start
+        self.before = before or (datetime.now(timezone.utc).date() + timedelta(days=1)).isoformat()
+        self.shell = shell
 
     def q(self, query, *params):
         r = subprocess.run(["node", str(ROOT / "scripts" / "pgq.mjs")],
-                           input=json.dumps({"sql": query, "params": [self.start, CHECK_RELEASE, *params]}),
+                           input=json.dumps({"sql": query, "params": [self.start, CHECK_RELEASE, self.before, self.shell, *params]}),
                            capture_output=True, text=True, encoding="utf-8")
         try:
             return json.loads(r.stdout)["result"][0]["results"]
         except (ValueError, IndexError, KeyError):
             sys.exit(f"usage.py: postgres failed\n{r.stdout[-400:]}{r.stderr[-400:]}")
 
-    WHERE = "FROM usage_points WHERE day >= ?1 AND release != ?2"
+    WHERE = "FROM usage_points WHERE day >= ?1 AND release != ?2 AND day < ?3 AND (?4 = 'all' OR shell = ?4)"
 
     def rows(self):
-        return self.q(f"SELECT day, visitor AS cid, event AS e, 1 AS si, COUNT(*) AS n {self.WHERE} "
-                      "GROUP BY day, visitor, event")
+        # Aggregate one calendar day at a time; one SELECT keeps the same snapshot.
+        return self.q(f"""SELECT points.* FROM generate_series((?1::text)::date::timestamp,
+                          (?3::text)::date::timestamp - INTERVAL '1 day', INTERVAL '1 day') AS days(d)
+                        CROSS JOIN LATERAL (
+                          SELECT day, visitor AS cid, event AS e, shell, country, COUNT(*) AS n,
+                                 MIN(at) AS first_at, MAX(at) AS last_at {self.WHERE}
+                          AND day = to_char(days.d, 'YYYY-MM-DD')
+                          GROUP BY day, visitor, event, shell, country
+                        ) AS points""")
 
     def boots(self):
         return self.q(f"""SELECT visitor AS cid, subject AS arrival, route, lang, shell, country,
-                          MIN(n) AS ms, COUNT(*) AS n {self.WHERE} AND event = ?3
+                          MIN(n) AS ms, COUNT(*) AS n {self.WHERE} AND event = ?5
                           GROUP BY visitor, subject, route, lang, shell, country""", BOOT)
 
     def placed(self):
@@ -77,7 +94,7 @@ class Log:
         return self.q(f"SELECT country, subject, n AS ms {self.WHERE} AND event = 'road.probe'")
 
     def subjects(self):
-        return self.q(f"""SELECT event AS e, subject, COUNT(*) AS n {self.WHERE} AND event != ?3 AND subject != ''
+        return self.q(f"""SELECT event AS e, subject, COUNT(*) AS n {self.WHERE} AND event != ?5 AND subject != ''
                           GROUP BY event, subject ORDER BY n DESC LIMIT 5000""", BOOT)
 
     def held(self):
@@ -86,7 +103,71 @@ class Log:
 
     def visitor(self, cid):
         return self.q(f"""SELECT at AS timestamp, event AS e, subject, route, country, n {self.WHERE}
-                          AND visitor = ?3 ORDER BY at LIMIT 5000""", visitor_of(cid))
+                          AND visitor = ?5 ORDER BY at LIMIT 5000""", visitor_of(cid))
+
+
+def visitor_report(rows, start, before, today, shell_filter="all"):
+    """Browser sets over calendar windows; no visitor identifiers in the report."""
+    start, before = date.fromisoformat(start), date.fromisoformat(before)
+    rows = [r for r in rows if shell_filter == "all" or r["shell"] == shell_filter]
+    daily = defaultdict(lambda: defaultdict(lambda: defaultdict(set)))
+    for r in rows:
+        day = str(r["day"])[:10]
+        for shell in ("all", r["shell"]):
+            daily[day][shell]["visitors"].add(r["cid"])
+            if r["e"] in RESULTS:
+                daily[day][shell]["result"].add(r["cid"])
+
+    def seen(first, end, shell, metric="visitors"):
+        return set().union(*(daily[d.isoformat()][shell][metric]
+                             for d in (first + timedelta(days=i) for i in range((end - first).days))))
+
+    def counts(first, end, shell):
+        visitors = seen(first, end, shell)
+        return {"visitors": len(visitors), "result": len(seen(first, end, shell, "result")),
+                "returning": len(visitors & seen(first - timedelta(days=7), first, shell))}
+
+    shells = ("all", *SHELLS) if shell_filter == "all" else (shell_filter,)
+    days = [{"day": d.isoformat(), "partial": d >= today,
+             "shells": {s: counts(d, d + timedelta(days=1), s) for s in shells}}
+            for d in (start + timedelta(days=i) for i in range((before - start).days))]
+    current = [r for r in rows if start.isoformat() <= str(r["day"])[:10] < before.isoformat()]
+    report = {"source": "usage_points", "unit": "browsers", "timezone": "UTC",
+              "from": start.isoformat(), "before": before.isoformat(), "partial": before > today,
+              "shell_filter": shell_filter,
+              "observed_from": min((str(r["day"])[:10] for r in current), default=None),
+              "observed_to": max((str(r["day"])[:10] for r in current), default=None),
+              "latest_point": max((r.get("last_at", "") for r in current), default=None),
+              "returning_lookback_days": 7,
+              "history_observed_from": min((str(r["day"])[:10] for r in rows), default=None),
+              "returning_history_complete": any(str(r["day"])[:10] <= (start - timedelta(days=7)).isoformat() for r in rows),
+              "period": {s: counts(start, before, s) for s in shells}, "daily": days}
+    if (before - start).days >= 14:
+        a, b = before - timedelta(days=14), before - timedelta(days=7)
+        report["weekly"] = {s: {"previous": len(seen(a, b, s)), "current": len(seen(b, before, s)),
+                                 "returned": len(seen(a, b, s) & seen(b, before, s))} for s in shells}
+    return report
+
+
+def print_report(report):
+    print(f"UTC {report['from']} .. {report['before']} exclusive; browsers, not people"
+          + ("; today is partial" if report["partial"] else "; complete dates only"))
+    print(f"observed {report['observed_from']} .. {report['observed_to']}; latest point {report['latest_point']}")
+    print("returning: seen in the preceding 7 calendar days; absent points are not proof of zero traffic\n")
+    if not report["returning_history_complete"]:
+        print("the beginning of the returning lookback has no observations; early returning counts may be incomplete\n")
+    print(f"{'day':10}  {'shell':7}  {'visitors':>8}  {'result':>7}  {'returning':>9}")
+    for day in report["daily"]:
+        for shell, v in day["shells"].items():
+            if shell == "all":
+                continue
+            print(f"{day['day']:10}  {shell:7}  {v['visitors']:8}  {v['result']:7}  {v['returning']:9}"
+                  + ("  partial" if day["partial"] else ""))
+    print("\nwhole-period unique browsers (daily counts are not added):")
+    for shell, v in report["period"].items():
+        print(f"  {shell:7} visitors {v['visitors']}; result {v['result']}; returning {v['returning']}")
+    for shell, v in report.get("weekly", {}).items():
+        print(f"  {shell:7} weekly visitors {v['previous']} -> {v['current']}; returned {v['returned']}")
 
 
 def pct(a, b):
@@ -108,47 +189,51 @@ def label(e):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--days", type=int, default=14)
+    ap.add_argument("--days", type=int, default=14, help="calendar days ending before --before")
+    ap.add_argument("--before", type=date.fromisoformat, help="exclusive UTC end date; default today")
+    ap.add_argument("--shell", choices=("all", *SHELLS), default="all")
+    ap.add_argument("--json", action="store_true", help="aggregate visitor report only, without browser identifiers")
+    ap.add_argument("--summary", action="store_true", help="visitor report only")
     ap.add_argument("--top", type=int, default=15)
     ap.add_argument("--visitor", help="one visitor's history, by the id /support shows")
     args = ap.parse_args()
-    start = (date.today() - timedelta(days=args.days)).isoformat()
-    src = Log(start)
+    today = datetime.now(timezone.utc).date()
+    before = args.before or today
+    if args.days < 1 or before > today + timedelta(days=1):
+        ap.error("--days must be positive; --before cannot be later than tomorrow UTC")
+    start = (before - timedelta(days=args.days)).isoformat()
+    src = Log(start, before.isoformat(), args.shell)
 
     if args.visitor:
         return visitor(src, args.visitor)
-    rows = src.rows()
+    history = Log((date.fromisoformat(start) - timedelta(days=7)).isoformat(), before.isoformat(), args.shell).rows()
+    report = visitor_report(history, start, before.isoformat(), today, args.shell)
+    if args.json:
+        print(json.dumps(report, indent=2))
+        return
+    print_report(report)
+    if args.summary:
+        return
+    rows = [r for r in history if r["day"][:10] >= start]
     if not rows:
         print(f"no usage points in the last {args.days} days")
         return
 
-    by_day = defaultdict(lambda: defaultdict(set))
     by_event = defaultdict(set)
+    by_day = defaultdict(lambda: defaultdict(set))
     for r in rows:
-        by_day[r["day"][:10]][r["e"]].add(r["cid"])
         by_event[r["e"]].add(r["cid"])
-    days = sorted(by_day)
-    print(f"covered {days[0]} .. {days[-1]} ({len(days)} days)\n")
-
-    print(f"{'day':10}  {'visitors':>8}  {'result':>7}  {'activ.':>6}  " + "  ".join(f"{label(e):>9}" for e in RESULTS))
-    for d in days:
-        ev = by_day[d]
-        seen = set().union(*ev.values())
-        got = set().union(*(ev.get(e, set()) for e in RESULTS))
-        print(f"{d:10}  {len(seen):8}  {len(got):7}  {pct(len(got), len(seen)):>6}  "
-              + "  ".join(f"{len(ev.get(e, ())):9}" for e in RESULTS))
-
-    # RETURN: of the visitors in the week before last, how many came back last week.
-    if len(days) >= 14:
-        week = lambda ds: set().union(*(set().union(*by_day[d].values()) for d in ds))
-        a, b = week(days[-14:-7]), week(days[-7:])
-        print(f"\nweekly visitors {len(a)} -> {len(b)}; returned {len(a & b)} of {len(a)} ({pct(len(a & b), len(a)).strip()})")
-
-    # THE TWO MARKETS, side by side. A visitor's market is the country of their
-    # boot; one who never booted is placed by any point they sent.
+        by_day[r["day"][:10]][r["e"]].add(r["cid"])
+    print("\nmodule visitors per UTC day, within the selected shells:")
+    print(f"{'day':10}  " + "  ".join(f"{label(e):>9}" for e in RESULTS))
+    for day, events in sorted(by_day.items()):
+        print(f"{day:10}  " + "  ".join(f"{len(events.get(e, ())):9}" for e in RESULTS))
+    # Mixed and unknown locations stay unknown; no point borrows another's country.
     boots = src.boots()
-    market = {r["cid"]: MARKET(r["country"]) for r in src.placed()}
-    market.update({r["cid"]: MARKET(r["country"]) for r in boots})
+    locations = defaultdict(set)
+    for r in rows:
+        locations[r["cid"]].add(MARKET(r["country"]))
+    market = {cid: next(iter(ms)) if len(ms) == 1 else "unknown" for cid, ms in locations.items()}
     boot_ms = defaultdict(list)
     for r in boots:
         if float(r["ms"]) > 0:
@@ -157,7 +242,7 @@ def main():
     got = set().union(*(by_event.get(e, set()) for e in RESULTS))
     failed = by_event.get("engine.fail", set())
     print(f"\n{'market':9}  {'visitors':>8}  {'activ.':>6}  {'boot p50':>8}  {'boot p90':>8}  {'engine fail':>11}  {'shares':>6}  {'opened':>6}")
-    for m in ("china", "overseas"):
+    for m in MARKETS:
         who = {c for c in everyone if market.get(c) == m}
         n = lambda e: len(by_event.get(e, set()) & who)
         print(f"{m:9}  {len(who):8}  {pct(len(got & who), len(who)):>6}  {seconds(quantile(boot_ms[m], 0.5)):>8}  "
@@ -171,7 +256,7 @@ def main():
     probes = src.probes()
     if probes:
         print(f"\n{'road':16}  {'probes':>6}  {'failed':>6}  {'p50':>6}  {'p90':>6}")
-        for m in ("china", "overseas"):
+        for m in MARKETS:
             for road in ("direct", "relay"):
                 mine = [r for r in probes if MARKET(r["country"]) == m and r["subject"].startswith(road + "_")]
                 ok = [float(r["ms"]) for r in mine if r["subject"].endswith("_ok")]
