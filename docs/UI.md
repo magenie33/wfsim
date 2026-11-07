@@ -1066,6 +1066,8 @@ copy stored in the scenario would be a second answer to "what is that build"
 with no rule for which wins. It resolves at send time through `seatPayload`,
 the same function the open build goes through, so an axis added to
 `BUILD_AXES` reaches every seat or none.
+Each seat carries its own weapon's owned and referenced read-only riven
+definitions, including their actual rolls and ranks.
 
 **SEAT 1 IS THE OPEN BUILD**, is not in the list, and cannot be removed or
 pointed anywhere: it is the one the page is about, the one the panel resolves

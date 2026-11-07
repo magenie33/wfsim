@@ -268,4 +268,39 @@ check("a weapon with no riven row makes no riven", plain.took && plain.after ===
 check("...and shows no riven group and wears nothing",
   plain.rivenGroups === 0 && plain.wearing === 0, JSON.stringify(plain));
 
+const rivens = await evaluate(`(async () => {
+  history.pushState({}, '', '/weapons/Torid/simulator'); route();
+  await new Promise(resolve=>setTimeout(resolve,2200));
+  const weapon='torid', spec={bonuses:[{id:'critical_damage',roll:1.05},{id:'status_damage',roll:0.95}],
+    malus:{id:'status_duration',roll:1},rank:7,polarity:'madurai'};
+  const card=presetEntry('roster status damage',spec);
+  storePresetList(RIVENS,[card],weapon);
+  const ownRef=RIVEN_PREFIX+card.id;
+  const readRef=boardRivenRef(weaponInfo(weapon),{bonuses:['status_damage','heat'],malus:'status_duration',rolls:[1.1,0.9,1]});
+  const state=ref=>({...snapshotState(),slots:slots.map((s,i)=>({...s,mod:i===0?ref:null,rank:null}))});
+  const owned=presetEntry('owned riven seat',state(ownRef)), published=presetEntry('read-only riven seat',state(readRef));
+  storePresetList(BUILDS,[owned,published],weapon);
+  history.pushState({}, '', '/weapons/Braton_Prime/simulator'); route();
+  await new Promise(resolve=>setTimeout(resolve,2200));
+  copyActivePreset(scenarioBarCfg());
+  const before=JSON.stringify(loadPresetWhole(RIVENS)), out=[];
+  for(const [entry,ref] of [[owned,ownRef],[published,readRef]]) {
+    sim.also_acting=[{weapon,preset:entry.id}];
+    const body={...buildPayload(),...theFight({runs:1,duration:1,replay:true})};
+    const seat=body.also_acting[0], definition=seat.rivens?.find(r=>RIVEN_PREFIX+r.id===ref);
+    const result=await simulateFleet(body), log=await api('/api/log',{...body,runs:1,from:0,to:1});
+    out.push({defined:!!definition,spec:definition?.spec,ref,seated:seat.mods.includes(ref),
+      rootIsolated:!body.rivens.some(r=>RIVEN_PREFIX+r.id===ref),
+      simulated:result.ok!==false && result.combatants?.length===2,
+      logged:log.ok!==false && log.combatants?.length===2,error:result.error});
+  }
+  return {out,unchanged:before===JSON.stringify(loadPresetWhole(RIVENS)),rank:out[0].spec?.rank,
+    roll:out[0].spec?.bonuses.find(b=>b.id==='status_damage')?.roll};
+})()`);
+check('another weapon carries its owned riven definition, rank and actual status-damage roll',
+  rivens.out[0].defined && rivens.out[0].seated && rivens.rank===7 && rivens.roll===0.95,JSON.stringify(rivens));
+check('a read-only riven seat carries its own complete definition',rivens.out[1].defined && rivens.out[1].seated,JSON.stringify(rivens));
+check('both riven seats simulate and replay without leaking definitions into the open weapon',
+  rivens.unchanged && rivens.out.every(x=>x.rootIsolated&&x.simulated&&x.logged),JSON.stringify(rivens));
+
 await finish("published rivens stay read-only until their build is copied");

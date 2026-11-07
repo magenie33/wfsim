@@ -167,18 +167,16 @@ function tennoPayload() {
 /// answers to "what is this build", and it is `buildState`'s axes that say
 /// which fields there are — so a new axis reaches both seats or neither.
 function seatPayload(st) {
-  // The wire itself is `headlessSeat`'s, which a surface with no page shares;
-  // WHO HOLDS IT is the one field only a page can resolve — the linked
-  // Warframe build, and absent is the Prototype or a locked weapon's own frame.
-  return headlessSeat(META, st, wielderPayloadOf(st.wielder || { frame: PROTOTYPE_ID, preset: "" }));
+  // The page resolves the linked holder and custom equipment around the
+  // shared seat axes. An absent holder uses the Prototype or the weapon's frame.
+  return { ...headlessSeat(META, st, wielderPayloadOf(st.wielder || { frame: PROTOTYPE_ID, preset: "" })),
+    rivens: rivenPayload(st, st.weapon) };
 }
 
 /// THE OPEN BUILD, as a whole request — this seat plus what the READER brings.
 ///
-/// The Tenno fields and the riven definitions are the reader's, not a seat's:
-/// every seat in one fight is the same player at the same rank carrying the
-/// same items, so they are stated once for the request and `seat_from` on the
-/// server reads them from it.
+/// The Tenno fields belong to the reader. Each seat carries the riven
+/// definitions its own weapon can resolve.
 function buildPayload() {
   return {
     ...tennoPayload(),

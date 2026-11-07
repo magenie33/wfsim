@@ -1984,6 +1984,9 @@ build is reopened. Copying the build makes a fresh owned card, seats it in the
 copy, and leaves the published specification unchanged when that card is edited.
 The no-riven control supplies a plain fixture rather than depending on a weapon's
 current board rows; it must open a build without creating or wearing a riven.
+Owned and read-only Torid rivens in another seat carry their own definitions,
+actual status-damage rolls and rank through simulation and combat replay,
+without changing owned equipment or the open weapon's riven pool.
 
 ## `check_sync_customs`
 

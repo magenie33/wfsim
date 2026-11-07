@@ -98,9 +98,9 @@ function rivenEntryFor(id, weapon = rivenContextWeapon || presetWeapon()) {
   return loadPresetList(RIVENS, weapon).find((p) => RIVEN_PREFIX + p.id === id) || null;
 }
 /// Read-only definitions travel only when a live state actually references them.
-function referencedReadOnlyRivens(extra) {
+function referencedReadOnlyRivens(extra, weapon = presetWeapon()) {
   const states = [slots, typeof opt === "undefined" ? null : opt.starts, extra];
-  return customRefs(states, true).map((r) => readOnlyRiven(r.ref)).filter(Boolean);
+  return customRefs(states, true).map((r) => readOnlyRiven(r.ref, weapon)).filter(Boolean);
 }
 
 // The generated name and printed lines per saved riven, filled in by asking
@@ -447,9 +447,9 @@ function defaultMode(weaponId, want) { return headlessDefaultMode(META, weaponId
 /// `id` is what the item id is built from; `name` rides along because it is
 /// what a share link written before ids carried, and the server still reads it
 /// when there is no id.
-const rivenPayload = (extra) => {
-  const entries = new Map(loadPresetList(RIVENS).map((p) => [p.id, p]));
-  for (const p of referencedReadOnlyRivens(extra)) entries.set(p.id, p);
+const rivenPayload = (extra, weapon = presetWeapon()) => {
+  const entries = new Map(loadPresetList(RIVENS, weapon).map((p) => [p.id, p]));
+  for (const p of referencedReadOnlyRivens(extra, weapon)) entries.set(p.id, p);
   return [...entries.values()].map((p) => ({ id: p.id, name: p.name, spec: p.state || {} }));
 };
 
