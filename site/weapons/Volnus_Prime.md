@@ -4,7 +4,7 @@ Chinese name: 创伤 Prime
 
 Hammer · Melee · Mastery Rank 14. 250 base damage (impact 55, puncture 80, slash 115), 20% crit chance, 1.8x crit multiplier, 34% status chance.
 
-## Best riven-free build on the WFSim board, as of 2026-11-07
+## Best riven-free build on the WFSim board, as of 2026-11-08
 
 A score belongs to its ruler: compare it only with scores under the same ruler (https://wfsim.app/method#ruler).
 
