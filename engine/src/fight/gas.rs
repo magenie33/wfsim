@@ -6,12 +6,11 @@
 
 use std::cell::Cell;
 
-/// WHAT A MILLION OF GAS COSTS, and what ONE RUN does, in billionths of a
-/// point. Fit by `.github/workflows/work.yml` (`scripts/work_calibrate.mjs`),
-/// then rounded to prices judged by the same report (`prices=`): the fit was
-/// 44_250 and 374_385, and these time a row as well and pay 1.143 of the old total.
-pub const GAS_PRICE_PER_MILLION: u64 = 50_000;
-pub const RUN_PRICE: u64 = 400_000;
+/// The price of a million gas and of one run, in billionths of a point.
+/// `.github/workflows/work.yml` fits hosted WASM timings and scales the prices
+/// against volunteers' paid work (`scripts/work_calibrate.mjs`).
+pub const GAS_PRICE_PER_MILLION: u64 = 53_248;
+pub const RUN_PRICE: u64 = 52_527;
 
 thread_local! {
     // Per thread: a native scorer fights on many at once.
