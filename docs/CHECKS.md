@@ -1,5 +1,12 @@
 # The browser and node checks
 
+`check_native_pgo.py` refuses changed numerical responses, missing timing cases,
+individual regressions and cross-target training. `check_native_pgo.mjs` checks
+the emitted library and verification hashes, the actual data pack, all frozen
+API responses and held-out row scores/counts/gas/work against the checked wasm.
+The builder additionally compares baseline and PGO partitions before selecting
+an artifact. A deliberately changed gas count must fail the wasm comparison.
+
 `check_search_strategy.mjs` exercises the shared headless preset and request
 builders: one user start, explicit immutable strategy selection, pinned-riven
 appraisal, and legacy saved-start compatibility. Rust quick-search tests cover

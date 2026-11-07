@@ -660,6 +660,8 @@ def quote_attr(path: str) -> str:
 # which `ship_data_packs` holds this list to. The gas macro sets the weights
 # work is priced by, so it is the engine too.
 ENGINE_SOURCES = ("engine/src", "webapi/src", "wasm/src", "native/src", "tools/gas-macro", "data")
+ENGINE_BUILD_INPUTS = ("Cargo.toml", "Cargo.lock", "scripts/native_pgo.py",
+                       "tests/fixtures/simulation-cost.json", "tests/gas/rows.json")
 ENGINE_SOURCES_NOT = ("data/i18n/", "data/board_state.yaml", "data/market.yaml",
                       "data/assets.yaml", "data/notes.yaml", "data/concepts.yaml", "data/surveys/")
 # …and what the engine carries but no number is computed from: the overlay's
@@ -751,7 +753,7 @@ def engine_files() -> dict:
         if rel.endswith(".rs"):
             code[rel], mods = rust_tokens.digest_text(p.read_text(encoding="utf-8"))
             tests += rust_tokens.test_module_paths(rel, mods)
-    for p in files + [ROOT / "Cargo.lock"]:
+    for p in files + [ROOT / name for name in ENGINE_BUILD_INPUTS]:
         rel = p.relative_to(ROOT).as_posix()
         if (is_test_source(rel) or rel.startswith(ENGINE_ID_NOT) or rel in tests or rel.startswith(tuple(tests))
                 or (rel.startswith("data/") and not is_engine_data(rel))):
