@@ -37,7 +37,7 @@ Asked in this order; the first answer that settles it wins.
 | --- | --- | --- | --- |
 | edge | Cloudflare | the website fallback, the worker (the door, the factory's API, accounts), the board in R2 behind `cdn.wfsim.app`, the MCP worker, the edge worker; `wfsim-cloud` for money | placed API, shared data and fallback delivery |
 | website | configured website host | nginx, the checked static release, same-origin API forwarding and certificate renewal | a direct website entrance; the data core and placed API remain together |
-| data core | Hetzner, Falkenstein | Postgres, `wfsim-factoryd` over its unix socket, the tunnel the others reach it by | the library, and the settler that writes it every second |
+| data core | netcup, Manassas | Postgres, `wfsim-factoryd` over its unix socket, the database tunnel, verified task archives and database backups | the library, and the settler that writes it every second |
 | board server | Tencent, mainland | `wfsim-live` (docs/BOARD.md §"The live board"), `wfsim-pg-tunnel` | background: it pulls the facts that moved and pushes the files that did, so a lost push is sent on the next cycle; the data core's disk has none to spare |
 | China door | Tencent, Hong Kong | the QQ bot (`wfsim-bot`, its Chrome kept current by `update-chrome.timer`), `cn.wfsim.app`, the relay that carries the board's work for readers in mainland China (docs/DISTRIBUTION.md §"The relay") | QQ's whitelist, Discord and the site are all near it; a card is a page load of the site, which from the mainland crosses a link that drops at peak hours |
 | official batch | GitHub Actions | CI, `ship.yml`, and the clock: `queue`, `scores`, `settle`, `survey`, `publish`, `backup`, `mirrors` | long work with no standing machine |
