@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS verifiers (
 );
 CREATE INDEX IF NOT EXISTS verifiers_last ON verifiers (last_at);
 CREATE INDEX IF NOT EXISTS verifiers_asked ON verifiers (asked_at);
+ALTER TABLE verifiers ADD COLUMN IF NOT EXISTS signatures BIGINT NOT NULL DEFAULT 0;
 
 -- THE OFFICIAL POOL: work that was credited and then left its holder — a
 -- deleted account's (`deleted_account`), or taken back from a refused client
@@ -69,6 +70,7 @@ CREATE TABLE IF NOT EXISTS verifier_hours (
   PRIMARY KEY (verifier, hour)
 );
 CREATE INDEX IF NOT EXISTS verifier_hours_by_hour ON verifier_hours (hour);
+ALTER TABLE verifier_hours ADD COLUMN IF NOT EXISTS signatures BIGINT NOT NULL DEFAULT 0;
 
 -- WHAT A DEVICE ASKED FOR, by the UTC hour (docs/BOARD.md §"Outages"): `asks`
 -- the server saw; `idle` the asks that brought nothing and `idle_lanes` the
@@ -152,6 +154,7 @@ CREATE TABLE IF NOT EXISTS questions (
 -- A cancellation starts its retention window when it closes, not when the
 -- question opened. Legacy rows fall back to their known activity timestamps.
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS withdrawn_at TEXT COLLATE "C";
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS witnesses TEXT COLLATE "C" NOT NULL DEFAULT '[]';
 CREATE OR REPLACE FUNCTION factory_withdrawn_at() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.state = 'withdrawn' THEN
@@ -443,6 +446,10 @@ CREATE TABLE IF NOT EXISTS user_calculations (
 );
 CREATE INDEX IF NOT EXISTS user_calculations_owner ON user_calculations (owner, state);
 CREATE INDEX IF NOT EXISTS user_calculations_expiry ON user_calculations (expires_at);
+UPDATE user_calculations SET expires_at=to_char(((CASE WHEN state='succeeded' THEN COALESCE(completed_at,created_at)
+  ELSE created_at END)::timestamptz + interval '14 days') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+  WHERE kind IN ('optimization','appraisal') AND expires_at>to_char(((CASE WHEN state='succeeded' THEN COALESCE(completed_at,created_at)
+    ELSE created_at END)::timestamptz + interval '14 days') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
 CREATE TABLE IF NOT EXISTS calculation_reports (
   question TEXT COLLATE "C" NOT NULL,
   engine TEXT COLLATE "C" NOT NULL,
@@ -457,3 +464,26 @@ CREATE TABLE IF NOT EXISTS user_calculation_cancellations (
   expires_at TEXT COLLATE "C" NOT NULL,
   PRIMARY KEY (id, owner)
 );
+
+-- Public provenance contains equipment ids and witnesses, never a private request or report.
+CREATE TABLE IF NOT EXISTS computation_records (
+  question TEXT COLLATE "C" PRIMARY KEY,
+  kind TEXT COLLATE "C" NOT NULL,
+  engine TEXT COLLATE "C" NOT NULL,
+  weapon TEXT COLLATE "C",
+  completed_at TEXT COLLATE "C" NOT NULL,
+  expires_at TEXT COLLATE "C" NOT NULL
+);
+CREATE INDEX IF NOT EXISTS computation_records_expiry ON computation_records (expires_at);
+CREATE TABLE IF NOT EXISTS computation_witnesses (
+  question TEXT COLLATE "C" NOT NULL REFERENCES computation_records(question) ON DELETE CASCADE,
+  owner TEXT COLLATE "C" NOT NULL,
+  device TEXT COLLATE "C" NOT NULL,
+  official BIGINT NOT NULL,
+  completed_at TEXT COLLATE "C" NOT NULL,
+  credited_at TEXT COLLATE "C" NOT NULL,
+  position BIGINT NOT NULL,
+  PRIMARY KEY (question, device)
+);
+CREATE INDEX IF NOT EXISTS computation_witnesses_owner ON computation_witnesses (owner, question);
+CREATE INDEX IF NOT EXISTS computation_witnesses_device ON computation_witnesses (device, question);

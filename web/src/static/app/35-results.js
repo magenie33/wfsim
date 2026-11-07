@@ -73,7 +73,8 @@ function resultContext() {
 function resultRecord(r, build, context = resultContext(), id = presetNewId()) {
   return {
     id, schema: RESULT_SCHEMA, at: Date.now(),
-    engine: ENGINE_ID, release: RELEASE_ID,
+    engine: r.computation?.engine || ENGINE_ID, release: RELEASE_ID,
+    computation: r.computation || { local: true },
     ...context, build,
     kept: false, r: { ...r, replay: null },
   };

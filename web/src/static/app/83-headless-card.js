@@ -464,7 +464,7 @@ function headlessMeasuredRecord(say, row, words = true) {
   return [
     at ? headlessEsc(words ? headlessTrF(say, "measured {t}", { t: at }) : at) : "",
     r.measured_by ? `${words ? headlessEsc(say.t("engine")) + " " : ""}${headlessEsc(r.measured_by)}` : "",
-  ].filter(Boolean).join(" · ");
+  ].filter(Boolean).join(" · ") + (say.computationRecord ? say.computationRecord(r) : "");
 }
 
 /// WHAT A CARD ADDRESS ASKS FOR, clamped to what a card shows.

@@ -47,6 +47,7 @@ import { meritTotals } from "./merit.js";
 import { dialsOf } from "./dials.js";
 import { BOARD_KINDS } from "./board_kinds.js";
 import { readInventoryState } from "./task_inventory.js";
+import { contributorAccounts } from "./contributor_identity.js";
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
@@ -121,16 +122,23 @@ async function workOf(env, ids) {
   const { month: from, week, last_week } = periodStarts();
   // ONE STATEMENT for every id: the ranking asks for all of them, and ninety
   // at a time was a round trip each while a page waited.
-  const { results } = await db.prepare(`SELECT v.id, v.work, v.consent_at,
+  const { results } = await db.prepare(`SELECT v.id, v.work, v.consent_at, v.signatures,
       (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?1::text) AS recent,
       (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?2::text) AS week,
       (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?4::text AND d.hour < ?2::text) AS last_week
     FROM verifiers v WHERE v.banned = 0 AND v.id IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))`)
     .bind(from, week, JSON.stringify(ids), last_week).all();
-  for (const r of results) out.set(r.id, { work: r.work || 0, recent: r.recent || 0, week: r.week || 0, last_week: r.last_week || 0, consent_at: r.consent_at || null });
+  for (const r of results) out.set(r.id, { work: r.work || 0, signatures: r.signatures || 0, recent: r.recent || 0, week: r.week || 0, last_week: r.last_week || 0, consent_at: r.consent_at || null });
   return out;
 }
-const NONE = { work: 0, recent: 0, week: 0, last_week: 0, consent_at: null };
+const NONE = { work: 0, signatures: 0, recent: 0, week: 0, last_week: 0, consent_at: null };
+
+export async function contributionOf(env, account) {
+  const { results } = await env.ACCOUNTS.prepare("SELECT verifier,from_hour,until_hour FROM device_spans WHERE account=?").bind(account).all();
+  const shares = await spanWork(env, results);
+  const total = key => shares.reduce((sum, item) => sum + (item[key] || 0), 0);
+  return { points: points(total("work")), signatures: total("signatures"), contributor_rank: contributorRank(points(total("work"))) };
+}
 
 // ---- Spans ---------------------------------------------------------------------
 //
@@ -156,7 +164,7 @@ async function spanWork(env, spans) {
   if (!db || !cut.length) return out;
   const { month: from, week, last_week } = periodStarts();
   const list = cut.map(([sp], k) => ({ k, v: sp.verifier, f: sp.from_hour, u: sp.until_hour }));
-  const { results } = await db.prepare(`SELECT s.k, SUM(h.work) AS work, SUM(CASE WHEN h.hour >= ?1::text THEN h.work ELSE 0 END) AS recent,
+  const { results } = await db.prepare(`SELECT s.k, SUM(h.work) AS work, SUM(h.signatures) AS signatures, SUM(CASE WHEN h.hour >= ?1::text THEN h.work ELSE 0 END) AS recent,
       SUM(CASE WHEN h.hour >= ?2::text THEN h.work ELSE 0 END) AS week,
       SUM(CASE WHEN h.hour >= ?4::text AND h.hour < ?2::text THEN h.work ELSE 0 END) AS last_week
     FROM jsonb_to_recordset((?3::text)::jsonb) AS s(k bigint, v text, f text, u text)
@@ -165,7 +173,7 @@ async function spanWork(env, spans) {
   for (const r of results) {
     const [sp, k] = cut[r.k];
     // A REFUSED CLIENT counts for nothing, as `workOf` says by leaving it out.
-    out[k] = whole.has(sp.verifier) ? { ...out[k], work: r.work || 0, recent: r.recent || 0, week: r.week || 0, last_week: r.last_week || 0 } : { ...NONE };
+    out[k] = whole.has(sp.verifier) ? { ...out[k], work: r.work || 0, signatures: r.signatures || 0, recent: r.recent || 0, week: r.week || 0, last_week: r.last_week || 0 } : { ...NONE };
   }
   return out;
 }
@@ -231,7 +239,7 @@ async function ownDevice(env, account, id) {
   return results.length === 1 ? results[0].verifier : null;
 }
 
-async function devices(request, env, account) {
+export async function devices(request, env, account) {
   // ITS PLACES ARE READ OFF THE RANKING'S OWN MINUTE (`kept`), found by its row
   // key: worked out here, every open account page re-read every claimed device.
   const [{ results }, { results: spans }, choice, { everyone, day }] = await Promise.all([
@@ -246,7 +254,7 @@ async function devices(request, env, account) {
   const work = new Map();
   spans.forEach((s, i) => {
     const e = work.get(s.verifier) || NONE, w = held[i];
-    work.set(s.verifier, { work: e.work + w.work, recent: e.recent + w.recent, week: e.week + w.week, consent_at: w.consent_at });
+    work.set(s.verifier, { work: e.work + w.work, signatures: e.signatures + w.signatures, recent: e.recent + w.recent, week: e.week + w.week, consent_at: w.consent_at });
   });
   const current = new Set(ids);
   const gone = [...work].filter(([v]) => !current.has(v)).map(([, w]) => w);
@@ -261,7 +269,7 @@ async function devices(request, env, account) {
   const sum = (k) => all.reduce((t, w) => t + w[k], 0);
   // `shown` is `named` for a page from before the ranking was anonymous.
   return json({ ok: true, named, decided: !!choice, shown: named, volunteer: volunteerSince(all),
-    points: points(sum("work")), recent: points(sum("recent")), week: points(sum("week")), ranks,
+    points: points(sum("work")), signatures: sum("signatures"), recent: points(sum("recent")), week: points(sum("week")), ranks,
     contributor_rank: contributorRank(points(sum("work"))),
     removed: { count: gone.length, points: points(gone.reduce((t, w) => t + w.work, 0)) },
     devices: list.map(({ work: w, recent: r, week: k, last_week: _l, consent_at: _c, ...d }) => ({ ...d, points: points(w), recent: points(r), week: points(k) })) });
@@ -581,10 +589,12 @@ async function keptWorkedOut(request, env) {
 /// and the paid half did not answer for the marks.
 async function everyoneOf(env, wait = false) {
   const day = keyDay(), rows = await standings(env, day);
+  const profiles = await contributorAccounts(env, rows.filter(row => row.named).map(row => row.id));
   // THE PAID HALF answers a hundred accounts an ask, so the named rows go in parts.
   const marks = await marksOfNamed(env, rows.filter((e) => e.named).map((e) => e.id), wait);
   if (!marks) return null;
   const everyone = rows.map((e) => ({ key: e.key, name: e.named ? e.name : null,
+    ...(e.named ? { profile: profiles.get(e.id)?.profile_id } : {}),
     points: e.points, recent: e.recent, week: e.week, last_week: e.last_week, contributor_rank: contributorRank(e.points),
     // THE HONOUR travels with a name only: an anonymous row says nothing more.
     ...(e.named && e.volunteer ? { volunteer: true } : {}), ...(e.named && marks[e.id] ? { mark: marks[e.id] } : {}) }));

@@ -76,14 +76,14 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
   async function flush(env, pending, now) {
     if (!pending.length) return;
     const keys = pending.map(({ q }) => ({ id: q.id, canon: q.canon, engine: q.fact_engine }));
-    const { results: live } = await env.LIBRARY.prepare(`SELECT d.*, q.fact_at FROM demands d JOIN questions q ON q.id = d.question
+    const { results: live } = await env.LIBRARY.prepare(`SELECT d.*, q.fact_at, q.witnesses FROM demands d JOIN questions q ON q.id = d.question
       JOIN jsonb_to_recordset((?::text)::jsonb) AS x(id text, canon text, engine text)
         ON x.id = q.id AND x.canon = q.canon AND x.engine = q.fact_engine
       WHERE d.state = 'live' AND q.state IN ('fact', 'spot')`)
       .bind(JSON.stringify(keys)).all();
     await deliverGroups(env, pending.map(({ q, answerOf }) => {
       const demands = live.filter(d => d.question === q.id);
-      return { q: { ...q, fact_at: demands[0]?.fact_at || q.fact_at }, answerOf, demands };
+      return { q: { ...q, fact_at: demands[0]?.fact_at || q.fact_at, witnesses: demands[0]?.witnesses || q.witnesses }, answerOf, demands };
     }), now);
   }
 
@@ -125,7 +125,8 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
     const db = env.LIBRARY;
     const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon, at: q.fact_at || iso(now),
       result: answerOf ? JSON.parse(answerOf.result) : null, work: answerOf ? answerOf.work : 0,
-      engine: answerOf ? answerOf.engine : null, official: !!(answerOf && answerOf.official) };
+      engine: answerOf ? answerOf.engine : null, official: !!(answerOf && answerOf.official),
+      witnesses: Array.isArray(q.witnesses) ? q.witnesses : JSON.parse(q.witnesses || "[]") };
     for (const d of demands) {
       const p = producerOf(d.producer), told = { ...d, payload: JSON.parse(d.payload) };
       const guard = db.prepare("SELECT factory_delivery_guard(?::text,?::text,?::text,?::text,?::text,?::text,?::text)")

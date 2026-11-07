@@ -615,6 +615,9 @@ jobs:
       - name: Recommendations stay in the Library and preserve private history
         if: matrix.group == 'community'
         run: node scripts/check_recommendations_page.mjs
+      - name: Contributor profiles follow actual publication and current names
+        if: matrix.group == 'community'
+        run: node scripts/check_computation_profiles_page.mjs
       - name: Community transfer completes through two real WASM witnesses
         if: matrix.group == 'community'
         run: node scripts/check_task_service_browser.mjs
@@ -939,6 +942,8 @@ jobs:
         run: node scripts/check_dials.mjs
       - name: A machine's compute counts under the account that claimed it, its name on the ranking only by consent
         run: node scripts/check_contribution.mjs
+      - name: Computation witnesses retain credit independently of fourteen day details
+        run: node scripts/check_compute_attribution.mjs
       - name: A device's ledger says where every point went, and names nobody else
         run: node scripts/check_ledger.mjs
       - name: Every question becomes a fact, and nobody waits on one that cannot

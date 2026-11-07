@@ -93,6 +93,8 @@ function libraryWriteQuery() {
   const q = new URLSearchParams();
   const recommended = new URLSearchParams(location.search).get("recommend_build");
   if (/^[a-f0-9]{32}$/.test(recommended || "")) q.set("recommend_build", recommended);
+  const selected = new URLSearchParams(location.search).get("computed_build");
+  if (/^[a-f0-9]{32}$/.test(selected || "")) q.set("computed_build", selected);
   libraryWriteAttributes(q);
   if (finder.b !== libraryDefaultBenchmark()) q.set("bench", finder.b);
   if (q.size || boardDepth !== BOARD_DEPTH_DEFAULT) q.set("depth", boardDepth);
@@ -349,7 +351,7 @@ function recommendationFailure(error, surface, stage) {
   track("recommendation.error", `${surface}_${stage}_${reason}`);
 }
 const recommendationRequested = () => {
-  const value = new URLSearchParams(location.search).get("recommend_build");
+  const query = new URLSearchParams(location.search), value = query.get("computed_build") || query.get("recommend_build");
   return /^[a-f0-9]{32}$/.test(value || "") ? value : null;
 };
 const recommendationMatches = p => !recommendationRequested() || recommendationId(p) === recommendationRequested();
@@ -563,7 +565,7 @@ function recommendationLibraryActions(event) {
   if (!element) return false;
   event.preventDefault(); event.stopPropagation();
   if (element.hasAttribute("data-recommend-clear")) {
-    const query = new URLSearchParams(location.search); query.delete("recommend_build");
+    const query = new URLSearchParams(location.search); query.delete("recommend_build"); query.delete("computed_build");
     history.replaceState(history.state, "", location.pathname + (query.size ? "?" + query : ""));
     renderBuildFinder(); return true;
   }
@@ -585,7 +587,7 @@ function recommendationLibraryNote() {
   const data = recommendationLibrary;
   return `<div class="recommendation-library-note">${recommendationSettlement(data?.period)}<a href="/account/recommendations">${escHtml(tr("My recommendations"))}</a>`
     + (data?.loading ? `<span data-recommend-loading role="status">${escHtml(tr("Loading recommendations…"))}</span>` : "")
-    + (recommendationRequested() ? `<span>${escHtml(tr("Your recommended build"))} <button type="button" class="ghost-btn small" data-recommend-clear>${escHtml(tr("Show all builds"))}</button></span>` : "")
+    + (recommendationRequested() ? `<span>${escHtml(tr(new URLSearchParams(location.search).has("computed_build") ? "Selected build" : "Your recommended build"))} <button type="button" class="ghost-btn small" data-recommend-clear>${escHtml(tr("Show all builds"))}</button></span>` : "")
     + (data?.error ? `<span role="status">${escHtml(tr(data.error))} <button class="ghost-btn small" type="button" data-recommend-retry>${escHtml(tr("Retry"))}</button></span>` : "") + `</div>`;
 }
 function recommendationRow(entry) {

@@ -2,10 +2,15 @@
 // Answer recording and independent-witness verification.
 import { iso } from "./instant.js";
 import { dialsOf } from "./dials.js";
-import { GRACE_SHARE, sansWork, sameAs, newLease, independent, CLAIM_STALE_MS, inIdOrder, coolDownMs, KEPT_MS } from "./task_contract.js";
+import { GRACE_SHARE, sansWork, sameAs, newLease, independent, acceptedWitnesses, CLAIM_STALE_MS, inIdOrder, coolDownMs, KEPT_MS } from "./task_contract.js";
 
-export function createVerification({ verbs, producers, producerOf, threshold, spot, recheck, random, on_disproved, refusing, learnCost, prepareCredit, credit, deliver, deliverPlan, flush, commit, readyFact, release } = {}) {
+export function createVerification({ verbs, producers, producerOf, threshold, spot, recheck, random, on_disproved, on_fact_writes, refusing, learnCost, prepareCredit, credit, deliver, deliverPlan, flush, commit, readyFact, release } = {}) {
   const listOf = (db, p) => `(SELECT value FROM jsonb_array_elements_text((${p}::text)::jsonb))`;
+  const factWrites = (env, q, witnesses, engine, at) => [
+    env.LIBRARY.prepare(`UPDATE questions SET witnesses=?5::text WHERE id=?1::text AND canon=?2::text AND fact_engine=?3::text
+      AND fact_at=?4::text AND state IN ('fact','spot')`).bind(q.id, q.canon, engine, at, JSON.stringify(witnesses)),
+    ...(on_fact_writes ? on_fact_writes(env, q, { witnesses, engine, at }) : []),
+  ];
   /// A WITNESS ANSWERS, under its lease. `w`: { device, owner, net, official }.
   /// `counts`, `lanes` and `compute_ms` are what the answer cost and on how many
   /// cores — kept beside it to fit what a point is worth, never credited.
@@ -230,8 +235,11 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
       writes.push(db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ? WHERE id = ? AND state = 'open'")
         .bind(state, lead.canon, engine, formed, q.id));
       writes.push(readyFact(db, q.id, lead.canon, engine, formed));
-      credits.push(...group, ...joinersParted(all, served, group, same, engine));
-      deliverPlan(env, { ...q, canon: lead.canon, fact_at: formed, fact_engine: engine }, now, lead, demands, writes, later);
+      const accepted = [...group, ...joinersParted(all, served, group, same, engine)];
+      const witnesses = acceptedWitnesses(accepted, iso(now), JSON.parse(q.witnesses || "[]"));
+      writes.push(...factWrites(env, { ...q, canon: lead.canon }, witnesses, engine, formed));
+      credits.push(...accepted);
+      deliverPlan(env, { ...q, canon: lead.canon, fact_at: formed, fact_engine: engine, witnesses }, now, lead, demands, writes, later);
       return;
     }
     // ONLY WITNESSES FILL THE CAP: a browser claimed by an owner after it took
@@ -269,12 +277,14 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     // wasm, scripts/live_orders.mjs), so the question is spot-checked.
     if (JSON.parse(officialSays.canon).work === null) {
       const owed = all.some((a) => !a.official && sansWork(a.canon) === sansWork(officialSays.canon));
+      const witnesses = acceptedWitnesses([officialSays], iso(now), JSON.parse(q.witnesses || "[]"));
       await db.batch([
         db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ?, odd = 0 WHERE id = ?")
           .bind(owed ? "spot" : "fact", officialSays.canon, engine, iso(now), id),
         readyFact(db, id, officialSays.canon, engine, iso(now)),
+        ...factWrites(env, { ...q, canon: officialSays.canon }, witnesses, engine, iso(now)),
       ]);
-      if (q.state !== "spot") await deliver(env, { ...q, canon: officialSays.canon, fact_at: iso(now), fact_engine: engine }, now, officialSays);
+      if (q.state !== "spot") await deliver(env, { ...q, canon: officialSays.canon, fact_at: iso(now), fact_engine: engine, witnesses }, now, officialSays);
       return;
     }
     // THE OFFICIAL MACHINES' ANSWER IS THE FACT, whatever state it was in. The
@@ -298,11 +308,13 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     // every answer differs from every other, theirs too, and that is an engine
     // whose answer is not deterministic. Nobody is refused; the watchdog says so.
     const odd = q.state === "nondeterministic" || (q.state === "disputed" && !agree.length);
+    const witnesses = acceptedWitnesses([...agree, officialSays], iso(now), JSON.parse(q.witnesses || "[]"));
     await db.batch([
       db.prepare("UPDATE questions SET state = 'fact', canon = ?, fact_engine = ?, fact_at = ?, odd = ? WHERE id = ?")
         .bind(officialSays.canon, engine, iso(now), odd ? 1 : 0, id),
       readyFact(db, id, officialSays.canon, engine, iso(now)),
       prepareCredit(db, agree, now),
+      ...factWrites(env, { ...q, canon: officialSays.canon }, witnesses, engine, iso(now)),
     ]);
     const errors = [];
     try { await credit(db, agree, now); } catch (error) { errors.push(error); }
@@ -316,7 +328,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
       }
     }
     if (q.state !== "spot" || moved) {
-      try { await deliver(env, { ...q, canon: officialSays.canon, fact_at: iso(now), fact_engine: engine }, now, officialSays); }
+      try { await deliver(env, { ...q, canon: officialSays.canon, fact_at: iso(now), fact_engine: engine, witnesses }, now, officialSays); }
       catch (error) { errors.push(error); }
     }
     if (errors.length) throw errors[0];

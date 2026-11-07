@@ -126,6 +126,40 @@ next hour, so what they earn after is their own again.
 Every way in ends in one function, `arrive` in `worker/accounts.js`, so no way
 in can have its own idea of what linking means.
 
+## Calculation attribution
+
+`accounts.profile_id` is a random public address, independent of the account
+and device ids. `/people/<profile_id>` shows a named contributor's current
+board builds and optimization records from the last 14 days. `/people/me`
+also works for an anonymous owner. The ranking and result names link there.
+The existing `contribution_choice.named` governs all public attribution.
+Changing it never removes work or cumulative signatures; every read resolves
+the current name and visibility. Anonymous public records contain no profile id.
+
+Accepted independent witnesses are ordered by completion time. Current board
+attribution requires the exact latest score clock and actual published board
+membership. The page verifies canonical build ids through `/api/build/keys`;
+stored scores alone do not prove publication. Pagination counts the displayed
+rows, with a weapon filter and further candidate pages. Native replacement
+measurements clear the old witnesses; legacy community measurements without a
+witness record show no invented names. Bare native engines show official compute.
+
+`verifiers.signatures` and `verifier_hours.signatures` increment with the
+existing idempotent answer-credit transaction. Account ownership follows the
+same device spans as points, including first claims and transfers. These
+counters survive board replacement, anonymity and detail cleanup. They count
+recorded accepted answers; no historical witness list is reconstructed.
+
+`GET /api/account/contribution-profile` returns the owner's profile;
+`GET /api/contributors/profile/<id>` requires public visibility or the owner.
+Both accept `kind=board|optimization`, optional `weapon` and an exclusive
+`before` cursor. `POST /api/computations/names` resolves up to 200 current score
+tuples; `GET /api/computations/<question>` returns safe, unexpired computation
+metadata. Public responses omit account ids, device ids, networks, request
+inputs and private reports. Apply all three PostgreSQL schemas and daemon
+grants before enabling this feature. The schema clamps existing optimization
+and appraisal requests to their 14-day expiry; simulations keep their duration.
+
 ## Where it lives
 
 `worker/accounts.js` behind the site's worker, `worker/pg/accounts.sql` in its
@@ -339,6 +373,7 @@ The task center's remote requests are browser-owned, independently of accounts
 door; only its hash is stored. No account id is associated with the request.
 Signing in neither publishes it nor syncs its queue to another browser.
 Accepted inputs are available to participating volunteers; results require the
-browser secret. Request ownership expires after 30 days, and shared input/report
-payloads are deleted after their last consumer expires. Aggregate contribution
+browser secret. Optimization and appraisal requests expire after 14 days;
+simulation requests retain 30 days. Shared input/report payloads are deleted
+after their last consumer expires. Aggregate contribution
 counters remain. Local queue and artifact storage is cleared with browser data.

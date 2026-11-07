@@ -210,8 +210,9 @@ USER_TASK_TYPES.set("optimization", {
       + `<div>${escHtml(new Date(task.created_at).toLocaleString())}</div>`;
   },
   async save(task, result) {
+    result.computation ||= result.search?.computation || { local: true, engine: task.engine, completed_at: taskInstant() };
     await userTasks.store.value(`artifact:${task.attempt}`, { id: task.attempt, task: task.id, kind: task.kind,
-      engine: task.engine, request: task.request, origin: task.origin, result, at: taskInstant() });
+      engine: task.engine, computation: result.computation || { local: true }, request: task.request, origin: task.origin, result, at: taskInstant() });
     track("optimizer.run", task.request.weapon);
     return task.attempt;
   },

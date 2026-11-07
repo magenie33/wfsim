@@ -89,8 +89,9 @@ USER_TASK_EXECUTORS.set("community", {
           execution.report({ phase: "Reconnecting to community compute", done: 0, total: 0 });
           await new Promise((resolve) => setTimeout(resolve, 10_000)); continue;
         }
-        const result = response.tasks[0]?.result;
+        const observedResult = response.tasks[0], result = observedResult?.result;
         if (!result) throw new Error("This result is no longer available.");
+        if (observedResult.computation) result.computation = observedResult.computation;
         communityTaskStates.delete(id);
         return type.community.finish ? type.community.finish(task, execution, result) : result;
       }

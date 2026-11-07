@@ -19,6 +19,7 @@ import { facts, DEADLINE_MS, REFRESH_WITHIN_MS, SCENE_FIRST_MS, VERBS, factoryAu
 import { holdPriority } from "./merit.js";
 import { servedRelease } from "./verify.js";
 import { retireBoardRows } from "./board_reviews.js";
+import { scoreWitnessWrites } from "./computation_records.js";
 
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
@@ -60,6 +61,7 @@ const boardProducer = {
             AND (scores.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM board_reviews r JOIN questions proof ON proof.id=r.question
               WHERE r.id=scores.review_id AND r.engine=?8::text AND proof.fact_at>?9::text))`)
           .bind(at, identity, ruler, fact.result.score, mode,`verified:${fact.engine}`,fact.result.metric,fact.engine,fact.at || at),
+        ...scoreWitnessWrites(db, identity, ruler, mode, at, fact),
         db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=queue.build_id AND f.ruler=queue.ruler AND f.mode=queue.mode AND f.retired_at IS NOT NULL)").bind(identity, ruler, mode),
       ];
     }
@@ -74,6 +76,7 @@ const boardProducer = {
            AND (scores.review_id IS NULL OR NOT EXISTS (SELECT 1 FROM board_reviews r JOIN questions proof ON proof.id = r.question
            WHERE r.id = scores.review_id AND r.engine = ?9::text AND proof.fact_at > ?10::text)) AND EXISTS (SELECT 1 FROM queue q WHERE q.build_id = scores.identity AND q.ruler = scores.ruler AND q.mode = scores.mode)`)
         .bind(identity, ruler, mode, `verified:${fact.engine}`, fact.result.score, fact.result.metric, at, at, fact.engine, fact.at || at),
+      ...scoreWitnessWrites(db, identity, ruler, mode, at, fact),
       db.prepare("DELETE FROM queue WHERE build_id = ? AND ruler = ? AND mode = ? AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=queue.build_id AND f.ruler=queue.ruler AND f.mode=queue.mode AND f.retired_at IS NOT NULL)").bind(identity, ruler, mode),
     ];
   },

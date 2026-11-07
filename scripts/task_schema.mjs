@@ -3,6 +3,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { computationSchemaSql } from "./computation_schema.mjs";
 
 export function taskSchemaSql() {
   const schema = readFileSync(new URL("../worker/pg/schema.sql", import.meta.url), "utf8");
@@ -28,7 +29,7 @@ export function taskSchemaSql() {
         inventory_epoch_begin(text),inventory_epoch_changes(text),inventory_epoch_seal(text,bigint,text),inventory_epoch_status(text),
         inventory_publish_cut(text,text) TO wfsim_pipeline;
     END IF;
-  END $grant$;\n`;
+  END $grant$;\n${computationSchemaSql()}`;
 }
 
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url)

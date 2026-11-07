@@ -1,5 +1,17 @@
 # The browser and node checks
 
+`check_compute_attribution.mjs` verifies actual witness settlement, completion
+order, current name resolution, stable profiles, anonymous credit, native
+measurement replacement, private-input exclusion, exact 14-day expiry and
+permanent aggregate counts after cleanup, device transfers and cursor boundaries.
+Its negative control reverses
+witness positions and must fail the order assertion.
+`check_computation_profiles_page.mjs` drives the real account/profile routes
+and published Laetum data. It checks exact build links, publication removal
+with the score retained, renamed and anonymous signatures, the optimization
+record link, actual Library names and mobile layout. Its negative control
+removes the publication before the restoration assertion.
+
 `check_native_pgo.py` refuses changed numerical responses, missing timing cases,
 individual regressions and cross-target training. `check_native_pgo.mjs` checks
 the emitted library and verification hashes, the actual data pack, all frozen

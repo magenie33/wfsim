@@ -4,6 +4,7 @@
 // producer here and in its own file; worker/tasks.js does not change.
 import { USER_TASK_PRODUCERS, userCalculationWork, reportCanon, purgeUserCalculations } from "./user_tasks.js";
 import { factory, canon, nearAnswer, inIdOrder } from "./tasks.js";
+import { computationWrites } from "./computation_records.js";
 import { RIVEN_PRODUCERS, rivenWork } from "./appraise.js";
 import { BOARD_REVIEW_PRODUCER } from "./board_reviews.js";
 import { FAMILY_PRODUCERS, askFamilyTransfers } from "./board_family.js";
@@ -46,6 +47,7 @@ let made = null, refusing = null;
 /// THE FACTORY, made on first use: its producers' modules import this one.
 export function facts() {
   made ||= factory({ verbs: VERBS, producers: { ...BOARD_PRODUCERS, ...RIVEN_PRODUCERS, ...USER_TASK_PRODUCERS, ...FAMILY_PRODUCERS, board_review: BOARD_REVIEW_PRODUCER }, threshold: CLIENTS_PER_FACT, spot: SPOT_SHARE,
+    on_fact_writes: (env, q, fact) => computationWrites(env.LIBRARY, q, fact.witnesses, fact.engine, fact.at),
     recheck: RECHECK_SHARE, refusing: refusing ?? REFUSING });
   return made;
 }

@@ -141,6 +141,33 @@ CREATE INDEX IF NOT EXISTS scores_ruler ON scores (ruler);
 CREATE INDEX IF NOT EXISTS scores_pace ON scores (finished_at) INCLUDE (measured_by);
 DROP INDEX IF EXISTS scores_oldest;
 
+-- One current measurement's witnesses; a newer score clock makes older attribution unavailable.
+CREATE TABLE IF NOT EXISTS score_witnesses (
+  identity TEXT COLLATE "C" NOT NULL,
+  ruler TEXT COLLATE "C" NOT NULL,
+  mode TEXT COLLATE "C" NOT NULL,
+  measured_at TEXT COLLATE "C" NOT NULL,
+  engine TEXT COLLATE "C" NOT NULL,
+  owner TEXT COLLATE "C" NOT NULL,
+  device TEXT COLLATE "C" NOT NULL,
+  official BIGINT NOT NULL,
+  completed_at TEXT COLLATE "C" NOT NULL,
+  credited_at TEXT COLLATE "C" NOT NULL,
+  position BIGINT NOT NULL,
+  PRIMARY KEY (identity, ruler, mode, device),
+  FOREIGN KEY (identity, ruler, mode) REFERENCES scores(identity, ruler, mode) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS score_witnesses_owner ON score_witnesses (owner, measured_at DESC, identity, ruler, mode);
+CREATE INDEX IF NOT EXISTS score_witnesses_device ON score_witnesses (device, measured_at DESC, identity, ruler, mode);
+CREATE OR REPLACE FUNCTION score_witnesses_replaced() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+  DELETE FROM score_witnesses WHERE identity=OLD.identity AND ruler=OLD.ruler AND mode=OLD.mode;
+  RETURN NEW;
+END $$;
+DROP TRIGGER IF EXISTS scores_replace_witnesses ON scores;
+CREATE TRIGGER scores_replace_witnesses AFTER UPDATE OF finished_at ON scores
+  FOR EACH ROW WHEN (OLD.finished_at IS DISTINCT FROM NEW.finished_at) EXECUTE FUNCTION score_witnesses_replaced();
+
 -- WHAT SOMEBODY ASKED TO BE COMPUTED, AND HOW FAR IT GOT. The queue may only
 -- ever CAUSE work: it may not prevent work and it may not decide a number, so
 -- losing it costs an ordering and never a fact, and the publisher never reads

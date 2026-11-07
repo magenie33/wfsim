@@ -22,6 +22,7 @@
 // Anything else fails, naming the control. An exemption that matches nothing on
 // any page scanned is stale and fails too.
 import { openApp } from "./cdp.mjs";
+import { computationFixture } from "./computation_fixture.mjs";
 
 // THE TODO RATCHET: lower it when a feature reaches the door, never raise it to
 // make a red run green.
@@ -66,7 +67,8 @@ const SCAN = `(() => {
   for (const el of document.querySelectorAll("body *")) {
     // A DROPDOWN IS DELEGATED: one document listener serves every [data-dd], so
     // the attribute is the only mark it leaves on the control itself.
-    if (!(seen.has(el) || el.onclick || el.onchange || el.oninput || el.matches("[data-dd]"))) continue;
+    if (!(seen.has(el) || el.onclick || el.onchange || el.oninput
+      || el.matches("[data-dd],[data-computation-weapon],[data-computation-retry],[data-computation-more]"))) continue;
     if (!visible(el)) continue;
     const door = Math.min(...anchors.map(a => depth(el, a)).filter(d => d >= 0), Infinity);
     const ex = AGENT_EXEMPT.map(e => ({ e, d: depth(el, e.sel) })).filter(x => x.d >= 0).sort((a, b) => a.d - b.d)[0];
@@ -128,6 +130,19 @@ for (const w of WEAPONS) {
     }
   }
 }
+
+const profileFixture = await computationFixture(app.BASE);
+try {
+  await send("Page.navigate", { url: profileFixture.base + "/people/me" });
+  for (let n = 0; n < 100; n++) {
+    if (await evaluate("typeof computationProfile !== 'undefined' && computationProfile?.value && !computationProfile.loading")) break;
+    await app.sleep(250);
+  }
+  const profile = await evaluate(SCAN);
+  profile.hit.forEach(s => hit.add(s));
+  profile.uncovered.forEach(u => { if (!uncovered.has(u)) uncovered.set(u, "contributor-profile"); });
+  check("the contribution profile renders its record controls", await evaluate("!!document.querySelector('[data-computation-weapon]')"));
+} finally { await profileFixture.close(); }
 
 const KINDS = ["outward", "view", "pref", "reader", "todo"];
 const exempt = await evaluate(`AGENT_EXEMPT.map(e => ({ sel: e.sel, kind: e.kind, why: e.why }))`);

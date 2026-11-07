@@ -6,8 +6,10 @@ import { sameSite, sha256 } from "./accounts.js";
 import { json, servedRelease, netOf, unrecognised, ENGINE_ID, LEASE_ID, QUESTION_ID, countsOf } from "./verify.js";
 import { dialsOf } from "./dials.js";
 import { iso } from "./instant.js";
+import { COMPUTATION_KEEP_MS, purgeComputationRecords } from "./computation_records.js";
 
 export const USER_TASK_KEEP_MS = 30 * 86_400_000;
+const taskKeepMs = kind => kind === "simulation" ? USER_TASK_KEEP_MS : COMPUTATION_KEEP_MS;
 const UUID = /^[a-f0-9-]{36}$/;
 const OWNER = /^[a-f0-9]{64}$/;
 const VERBS = { simulation: "simulate_report", optimization: "optimize_report", appraisal: "optimize_report" };
@@ -29,11 +31,15 @@ export const USER_TASK_PRODUCERS = { user_calculation: {
   on_fact: async (env, demand, fact) => {
     const report = calculationReport(fact.result?.report);
     if (!report) return;
+    const completedAt = fact.at || iso(Date.now());
     await env.LIBRARY.batch([
       env.LIBRARY.prepare("INSERT INTO calculation_reports (question, engine, result, at) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING")
         .bind(demand.question, fact.engine, JSON.stringify(report), fact.at || iso(Date.now())),
-      env.LIBRARY.prepare("UPDATE user_calculations SET state = 'succeeded', completed_at = ? WHERE id = ? AND state = 'waiting' AND engine = ?")
-        .bind(iso(Date.now()), demand.ref, fact.engine),
+      env.LIBRARY.prepare(`UPDATE user_calculations t SET state='succeeded',completed_at=r.at,
+          expires_at=to_char((r.at::timestamptz + (CASE WHEN t.kind='simulation' THEN ?1::bigint ELSE ?4::bigint END)
+            * interval '1 millisecond') AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')
+        FROM calculation_reports r WHERE t.id=?2::text AND t.state='waiting' AND t.engine=?3::text AND r.question=t.question AND r.engine=t.engine`)
+        .bind(USER_TASK_KEEP_MS, demand.ref, fact.engine, COMPUTATION_KEEP_MS),
     ]);
   },
 } };
@@ -44,6 +50,7 @@ export function userCalculationWork(leased) {
 export async function purgeUserCalculations(env, now = Date.now()) {
   const db = env.LIBRARY;
   if (!db) return;
+  await purgeComputationRecords(env, now);
   const { results } = await db.prepare("SELECT id FROM user_calculations WHERE expires_at < ? AND state = 'waiting' LIMIT 100").bind(iso(now)).all();
   for (const row of results) await facts().withdraw(env, "user_calculation", row.id, now);
   await db.prepare("DELETE FROM user_calculations WHERE expires_at < ? AND state <> 'waiting'").bind(iso(now)).run();
@@ -67,7 +74,8 @@ export async function purgeUserCalculations(env, now = Date.now()) {
 export async function userTasksRoute(request, env, path) {
   const now = Date.now(), db = env.LIBRARY;
   if (path === "/api/user-tasks/capabilities" && request.method === "GET")
-    return json({ ok: true, available: !!db && env.FACTORY_PAUSED !== "1", kinds: Object.keys(VERBS), keep_days: 30 });
+    return json({ ok: true, available: !!db && env.FACTORY_PAUSED !== "1", kinds: Object.keys(VERBS), keep_days: USER_TASK_KEEP_MS / 86_400_000,
+      optimization_keep_days: COMPUTATION_KEEP_MS / 86_400_000 });
   if (!db) return json({ ok: false, error: "Community execution is unavailable." }, 503);
   if (!sameSite(request) || request.method !== "POST") return json({ ok: false, error: "bad request" }, 403);
   const raw = await request.text();
@@ -91,7 +99,11 @@ export async function userTasksRoute(request, env, path) {
     const cancelled = await db.prepare("SELECT id FROM user_calculation_cancellations WHERE id = ? AND owner = ?").bind(body.id, owner).first();
     if (cancelled) return json({ ok: false, error: "This community request has ended." }, 410);
     const old = await db.prepare("SELECT * FROM user_calculations WHERE id = ?").bind(body.id).first();
-    const question = await questionId(VERBS[body.kind], body.request);
+    // A completed cache entry cannot outlive its window through a new consumer.
+    const original = await questionId(VERBS[body.kind], body.request);
+    const keepMs = taskKeepMs(body.kind), execution = old?.question === original ? body.request : { ...body.request,
+      __retention_window: Math.floor((old ? Date.parse(old.created_at) : now) / keepMs) };
+    const question = await questionId(VERBS[body.kind], execution);
     if (old && (old.owner !== owner || old.question !== question || old.engine !== body.engine || old.task !== body.task))
       return json({ ok: false, error: "This command already describes another request." }, 409);
     if (!old) {
@@ -99,7 +111,7 @@ export async function userTasksRoute(request, env, path) {
       if (count.n >= 100) return json({ ok: false, error: "This browser already has 100 pending calculations." }, 429);
       await db.batch([db.prepare("SELECT id FROM questions WHERE id = ? FOR UPDATE").bind(question),
         db.prepare("INSERT INTO user_calculations (id, task, owner, kind, engine, question, state, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, 'waiting', ?, ?) ON CONFLICT DO NOTHING")
-        .bind(body.id, body.task, owner, body.kind, body.engine, question, iso(now), iso(now + USER_TASK_KEEP_MS)),
+        .bind(body.id, body.task, owner, body.kind, body.engine, question, iso(now), iso(now + keepMs)),
       ]);
     }
     const stored = await db.prepare("SELECT owner, question, task, engine FROM user_calculations WHERE id = ?").bind(body.id).first();
@@ -107,9 +119,10 @@ export async function userTasksRoute(request, env, path) {
       return json({ ok: false, error: "This command already describes another request." }, 409);
     // Repeating a lost acceptance finishes its demand, without reopening a cancelled one.
     if (!old || old.state === "waiting") await facts().demand(env, { producer: "user_calculation", ref: body.id,
-      verb: VERBS[body.kind], request: body.request, due_in_ms: DEADLINE_MS.user_calculation,
+      verb: VERBS[body.kind], request: execution, due_in_ms: DEADLINE_MS.user_calculation,
       waits: false, initiator: `user:${owner.slice(0, 16)}` }, body.engine, old ? Date.parse(old.created_at) : now);
-    return json({ ok: true, id: body.id, question, keep_until: old?.expires_at || iso(now + USER_TASK_KEEP_MS) });
+    const kept = await db.prepare("SELECT expires_at FROM user_calculations WHERE id=?").bind(body.id).first();
+    return json({ ok: true, id: body.id, question, keep_until: kept.expires_at });
   }
   const ids = Array.isArray(body.ids) ? body.ids : [body.id];
   if (!ids.length || ids.length > 100 || !ids.every((id) => UUID.test(id || ""))) return json({ ok: false, error: "invalid task ids" }, 400);
@@ -123,7 +136,7 @@ export async function userTasksRoute(request, env, path) {
     }
   } else if (path !== "/api/user-tasks/status") return json({ ok: false, error: "not found" }, 404);
   const currentEngine = (await servedRelease(env)).engine;
-  const { results } = await db.prepare(`SELECT t.id, t.task, t.state, t.engine, t.expires_at, t.completed_at, q.state AS question_state,
+  const { results } = await db.prepare(`SELECT t.id, t.task, t.question, t.state, t.engine, t.expires_at, t.completed_at, q.state AS question_state,
       q.leased_to IS NOT NULL AND q.lease_until > ?3::text AS computing, r.result
       FROM user_calculations t LEFT JOIN questions q ON q.id = t.question
       LEFT JOIN calculation_reports r ON r.question = t.question AND r.engine = t.engine
@@ -135,7 +148,8 @@ export async function userTasksRoute(request, env, path) {
     ...(row.state === "waiting" && row.question_state === "withdrawn" ? { error: "The engine refused this calculation." } : {}),
     execution_state: row.computing ? "running" : "queued",
     phase: row.computing ? "Computing and verifying" : "Waiting for community compute", engine: row.engine, keep_until: row.expires_at,
-    ...(body.include_results === true && row.state === "succeeded" && row.result ? { result: JSON.parse(row.result) } : {}) })) });
+    ...(body.include_results === true && row.state === "succeeded" && row.result && Date.parse(row.expires_at) > now
+      ? { result: JSON.parse(row.result), computation: { question: row.question, engine: row.engine, completed_at: row.completed_at } } : {}) })) });
 }
 async function answer(request, env, body) {
   const refused = unrecognised(body.verifier);

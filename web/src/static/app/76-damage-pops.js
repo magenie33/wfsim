@@ -633,6 +633,7 @@ function renderResults(r, testedAt, build) {
   // that one was an average of a hundred fights and the other was one fight.
   $("sim-results").innerHTML = `
     <div class="results">
+      ${calculationRecordHtml(results.find(record => record.at === testedAt && record.weapon === presetWeapon()) || { at: testedAt, engine: r.computation?.engine, computation: r.computation })}
       ${zone(1, tr("The result"), tr("this build's output in this fight"), `
         <div class="hero"><div><div class="hero-label">${escHtml(trF("Average of {runs} runs", { runs: n0(r.runs) }))}</div><div class="hero-num">${heroNum}<span class="hero-unit">${heroUnit}</span></div><div class="hero-sub">${heroSub}</div>${testedAt ? `<div class="hero-tested">${tr("last tested")} ${new Date(testedAt).toLocaleString()}</div>` : ""}</div></div>
         <div class="row-label">${escHtml(trF("averaged over {runs} fights", { runs: n0(r.runs) }))} <span class="who-tag">${escHtml(tr("whole fight"))}</span></div>

@@ -9,7 +9,7 @@ import { createDelivery } from "./task_delivery.js";
 import { createCredit } from "./task_credit.js";
 import { createObservation } from "./task_observation.js";
 
-export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck = 0, random = () => Math.random(), on_disproved = null, refusing = true,
+export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck = 0, random = () => Math.random(), on_disproved = null, on_fact_writes = null, refusing = true,
   dispatcher = createDispatch }) {
   const producerOf = (name) => {
     const p = producers[name];
@@ -36,7 +36,7 @@ export function factory({ verbs, producers, threshold = 2, spot = 0.05, recheck 
       official_producers: v.official_producers && Object.freeze([...v.official_producers]) })])));
   const dispatch = dispatcher({ verbs: dispatchVerbs, onLease, liveDemands: ledger.liveDemands, sift: ledger.sift,
     restate: ledger.restate, restateAll: ledger.restateAll, charge: usage.charge });
-  const verification = createVerification({ verbs, producers, producerOf, threshold, spot, recheck, random, on_disproved, refusing, ...usage, ...credit, ...delivery, ...ledger,
+  const verification = createVerification({ verbs, producers, producerOf, threshold, spot, recheck, random, on_disproved, on_fact_writes, refusing, ...usage, ...credit, ...delivery, ...ledger,
     deliverPlan: delivery.schedule, release: dispatch.release });
   const observation = createObservation();
   return {

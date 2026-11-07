@@ -64,7 +64,15 @@ upgrade to the library database as its owner. Print it from the schema source:
 ```sh
 node scripts/task_schema.mjs > task-delivery.sql
 psql -d wfsim -X -v ON_ERROR_STOP=1 -f task-delivery.sql
+node scripts/computation_schema.mjs accounts > computation-accounts.sql
+psql -d wfsim_accounts -X -v ON_ERROR_STOP=1 -f computation-accounts.sql
 ```
+
+The library upgrade also installs computation records, witness snapshots,
+signature counters, score replacement cleanup and optimization retention. Apply
+the account upgrade as its database owner and then the daemon grants. Existing
+details are shortened only for optimization and appraisal. Public names must
+not be enabled before both database upgrades have succeeded.
 
 The output adds nullable delivery and payment readiness, creates their partial
 indexes concurrently and installs delivery and retention guards. Run outside a transaction
