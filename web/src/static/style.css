@@ -1998,6 +1998,32 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .rank-who>*{white-space:nowrap}
 .rank-name{overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .rank-name.muted{color:var(--muted)}
+.computation-names a,.computation-credits a,.calculation-record a{color:var(--accent);text-decoration:none}
+.computation-names a:hover,.computation-credits a:hover{text-decoration:underline}
+.computation-credits{font-size:12px;line-height:1.8;overflow-wrap:anywhere}
+.contributor-profile{max-width:1100px;margin:28px auto;padding:0 20px 40px}
+.profile-heading{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.profile-heading>.avatar{width:56px;height:56px;font-size:24px;flex-shrink:0}
+.profile-heading h2{margin:0 0 5px;display:flex;align-items:center;gap:8px}
+.profile-heading>div:nth-child(2){flex:1;min-width:160px}
+.profile-totals{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--text-2)}
+.profile-totals b{font-size:24px;color:var(--text);font-variant-numeric:tabular-nums}
+.profile-tabs{display:flex;gap:20px;border-bottom:1px solid var(--line);margin:24px 0 16px;overflow-x:auto}
+.profile-tabs a{padding:10px 0;color:var(--text-2);text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent}
+.profile-tabs a[aria-current]{color:var(--accent);border-color:var(--accent)}
+.profile-tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:12px}
+.profile-tools select{max-width:240px}
+.profile-builds{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px;margin:16px 0}
+.profile-build{padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}
+.profile-build h3{display:flex;justify-content:space-between;gap:12px;font-size:15px;margin:0 0 8px}
+.profile-build h3 a{color:var(--text);text-decoration:none}
+.profile-build .fd-card{margin:14px 0}
+.profile-build .fine{overflow-wrap:anywhere}
+.contributor-profile>.fine,.profile-build>.fine,.calculation-record{text-align:left}
+.calculation-record{margin:10px 0}
+.brow-credits{text-align:right;padding:0 10px 3px;font-size:10.5px;color:var(--text-2)}
+.brow-credits:empty{display:none}
+@media(max-width:540px){.contributor-profile{padding:0 12px 28px}.profile-heading{gap:12px}.profile-totals{flex:1;min-width:40%}.profile-build{padding:12px}.profile-tabs{gap:14px;font-size:13px}}
 .rank-pts{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 .rank-head .rank-pts{font-weight:400}
 .rank-row.you{background:color-mix(in srgb,var(--accent) 7%,transparent)}

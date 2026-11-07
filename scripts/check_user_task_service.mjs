@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { testDb } from "./pg/test_db.mjs";
-import { userTasksRoute, reportCanon, purgeUserCalculations, USER_TASK_PRODUCERS } from "../worker/user_tasks.js";
+import { userTasksRoute, reportCanon, purgeUserCalculations, USER_TASK_PRODUCERS, USER_TASK_KEEP_MS } from "../worker/user_tasks.js";
+import { COMPUTATION_KEEP_MS } from "../worker/computation_records.js";
 import { syncRoute } from "../worker/sync.js";
 import { setDial } from "../worker/dials.js";
 import { facts } from "../worker/factory.js";
@@ -74,6 +75,30 @@ await check("a later equal request adopts the existing complete report", async (
   const next = accepted(); await call("accept", next);
   const state = (await call("status", { owner, ids: [next.id], include_results: true })).tasks[0];
   assert.equal(state.state, "succeeded"); assert.equal(state.result.representative.rng, "123");
+  assert.equal(state.computation.question, (await call('accept', next)).question);
+  assert.equal(state.keep_until, (await call('status', { owner: another, ids: [shared.id] })).tasks[0].keep_until);
+});
+await check('optimization requests expire after fourteen days and new windows cannot revive a report', async () => {
+  const OriginalDate = Date;
+  let clock = Math.ceil(OriginalDate.now() / COMPUTATION_KEEP_MS) * COMPUTATION_KEEP_MS + 1000;
+  globalThis.Date = class extends OriginalDate { constructor(...args) { super(...(args.length ? args : [clock])); } static now() { return clock; } };
+  try {
+    const pending = accepted('optimization', { weapon: 'torid', runs: 2, strategy: 'quick', starts: [], unique: 'retention' }), got = await call('accept', pending);
+    assert.equal(got.ok, true, JSON.stringify(got));
+    assert.equal(Date.parse(got.keep_until) - clock, COMPUTATION_KEEP_MS);
+    await facts().answerOfficial(env, { device: 'official:retention', owner: 'official:retention', official: true },
+      { question: got.question, engine, work: 100, result: { report } });
+    clock += 5000;
+    await db.run('UPDATE questions SET fact_at=? WHERE id=?', new Date(clock).toISOString(), got.question);
+    const next = accepted('optimization', pending.request), cached = await call('accept', next);
+    assert.equal(cached.question, got.question);
+    assert.equal(cached.keep_until, got.keep_until);
+    clock += COMPUTATION_KEEP_MS;
+    assert.equal((await call('status', { owner, ids: [pending.id], include_results: true })).tasks[0].result, undefined);
+    assert.notEqual((await call('accept', accepted('optimization', pending.request))).question, got.question);
+    const sim = await call('accept', accepted('simulation', { weapon: 'torid', runs: 2, unique: 'sim-retention' }));
+    assert.equal(Date.parse(sim.keep_until) - clock, USER_TASK_KEEP_MS);
+  } finally { globalThis.Date = OriginalDate; }
 });
 await check("a cancellation arriving before acceptance cannot be lost", async () => {
   const pending = accepted();

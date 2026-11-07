@@ -144,9 +144,20 @@ is actively waiting.
 A random browser secret owns remote commands and results. The server stores
 its hash, no account association. Losing that secret loses access; signing in
 does not sync this queue to another browser. Calculation inputs are disclosed
-to volunteers when the reader transfers them. A request expires after 30 days.
+to volunteers when the reader transfers them. Waiting optimization and appraisal
+requests expire after 14 days; simulation requests retain 30 days. Completed
+reports use the same duration from their verified completion;
+reading it, retrying delivery and adding another consumer do not renew it.
 Shared input/report payloads are removed once their last consumer expires;
 aggregate contributions remain. Cancellation withdraws only that consumer.
+
+Equal user requests share within a server-assigned retention window. A new
+window creates a fresh question; consumers adopting a cached report keep its
+original completion and expiry. Legacy command retries keep their question id.
+Public computation records contain only weapon, kind, engine, completion time
+and accepted witnesses. They expire after 14 days and disclose no private inputs
+or report. Optimization attribution counts the task once for each accepted
+witness; its finalists do not each create another optimization signature.
 
 Acceptance commands are stable and idempotent, including after a lost response.
 Cancellation tombstones prevent an earlier cancel from being lost to a later

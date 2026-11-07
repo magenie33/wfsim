@@ -497,7 +497,7 @@ let benchScroll = null;
 
 /// One overview entry per weapon; its link retains the winning build's full identity.
 const benchRowHtml = (cur, { w, mode, row }, i) => `
-      <a class="brow${row ? "" : " none"}" href="/weapons/${urlSlug(w)}${
+      <div class="brow-group"><a class="brow${row ? "" : " none"}" href="/weapons/${urlSlug(w)}${
         // The winner's ruler, mode and riven group reproduce the displayed score.
         `?bench=${encodeURIComponent(cur.id)}&mode=${encodeURIComponent(mode)}${
           row ? `&riven=${rowHasRiven(row) ? 1 : 0}` : ""}`}">
@@ -516,6 +516,6 @@ const benchRowHtml = (cur, { w, mode, row }, i) => `
             : ""}</span>
         <span class="bscore">${row
           ? escHtml(row.shown != null ? String(row.shown) : row.score.toFixed(4))
-            + (measuredRecordHtml(row, false) ? `<small class="bwhen" title="${escHtml(measuredNote())}">${measuredRecordHtml(row, false)}</small>` : "")
+            + (headlessMeasuredRecord(pageSay(), row, false) ? `<small class="bwhen" title="${escHtml(measuredNote())}">${headlessMeasuredRecord(pageSay(), row, false)}</small>` : "")
           : `<span class="bnone">${escHtml(tr("not measured"))}</span>`}</span>
-      </a>`;
+      </a><div class="brow-credits">${computationBadge(w.id, row)}</div></div>`;

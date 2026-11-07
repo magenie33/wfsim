@@ -7,6 +7,7 @@ import { sameSite, limited } from "./accounts.js";
 import { json, servedRelease, ENGINE_ID } from "./verify.js";
 import { iso } from "./instant.js";
 import { dialsOf } from "./dials.js";
+import { scoreWitnessWrites } from "./computation_records.js";
 
 export const BOARD_REVIEW_COOLDOWN_MS = 3_600_000;
 const ID = /^[a-f0-9]{32}$/, SLUG = /^[a-z0-9_]{1,128}$/, UUID = /^[a-f0-9-]{36}$/;
@@ -32,6 +33,7 @@ export const BOARD_REVIEW_PRODUCER = {
       UPDATE board_reviews SET state = CASE WHEN EXISTS (SELECT 1 FROM applied) THEN 'succeeded' ELSE 'superseded' END,
         completed_at = ?4::text WHERE ref = ?5::text AND id = ?6::text AND question = ?7::text AND state = 'waiting'`)
       .bind(fact.result.score, fact.result.metric, `verified:${fact.engine}`, at, demand.ref, demand.payload.review, demand.question, fact.engine),
+      ...scoreWitnessWrites(db, demand.payload.identity, demand.payload.ruler, demand.payload.mode, at, fact),
       db.prepare(`DELETE FROM queue q USING board_reviews r WHERE r.id = ? AND r.state = 'succeeded'
         AND q.build_id = r.identity AND q.ruler = r.ruler AND q.mode = r.mode`).bind(demand.payload.review)];
   },

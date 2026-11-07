@@ -530,7 +530,7 @@ function renderOptResults(r) {
     + ` · vs ${escHtml(r.target.name)} Lv ${r.target.level}${r.target.steel_path ? " (SP)" : ""}${r.target.empowered ? ` (${escHtml(empowermentLabel(false, r.target.empowered))})` : ""} · ${d ?? "?"} s · ${(r.final_runs || 0).toLocaleString()} ${escHtml(tr("runs each"))}`;
   const filter = answers.length ? `<label class="opt-result-filter">${escHtml(tr("Result set"))} <select id="opt-result-start"><option value="all">${escHtml(tr("Overall top results"))}</option>${
     answers.map(a => `<option value="${a.start}"${String(a.start) === optResultStart ? " selected" : ""}>${escHtml(tr("Start"))} ${a.start + 1} · ${escHtml(tr("answer with its pins"))}</option>`).join("")}</select></label>` : "";
-  $("opt-results").innerHTML = `<h4 class="sim-h">③ ${escHtml(tr("Results"))}</h4><div class="opt-board" id="opt-board"></div><div class="opt-meta">${meta}</div>${filter}${html}${failed}`;
+  $("opt-results").innerHTML = `<h4 class="sim-h">③ ${escHtml(tr("Results"))}</h4>${calculationRecordHtml(optimizationReport || { at: r.computation?.completed_at, engine: r.computation?.engine || ENGINE_ID, computation: r.computation })}<div class="opt-board" id="opt-board"></div><div class="opt-meta">${meta}</div>${filter}${html}${failed}`;
   if ($("opt-result-start")) $("opt-result-start").onchange = e => { optResultStart = e.target.value; renderOptResults(r); };
   const byRank = new Map(rows.map((res) => [res.rank, res]));
   $("opt-results").querySelectorAll(".opt-add").forEach((el) =>

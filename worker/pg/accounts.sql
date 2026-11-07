@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS accounts (
   delete_after        TEXT COLLATE "C"
 );
 CREATE UNIQUE INDEX IF NOT EXISTS accounts_username ON accounts (username);
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS profile_id TEXT COLLATE "C";
+CREATE UNIQUE INDEX IF NOT EXISTS accounts_profile_id ON accounts (profile_id);
 
 -- Recommendation targets are library identities; personal votes stay in this database.
 CREATE TABLE IF NOT EXISTS recommendation_targets (

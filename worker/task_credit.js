@@ -34,13 +34,13 @@ export function createCredit() {
           paid AS (UPDATE answers a SET credited = 1,credit_work=NULL,credit_at=NULL FROM owed
             WHERE a.id = owed.id AND a.credited = 0 AND a.void=0 RETURNING owed.device, owed.work, owed.at),
           sums AS (SELECT device, sum(work)::bigint AS work, count(*)::bigint AS n FROM paid GROUP BY device),
-          v AS (UPDATE verifiers SET work = verifiers.work + sums.work, agreed = agreed + sums.n,
+          v AS (UPDATE verifiers SET work = verifiers.work + sums.work, agreed = agreed + sums.n, signatures = signatures + sums.n,
               refusals = CASE WHEN refusals > 0 AND clean + sums.n >= refusals * ?2::bigint THEN refusals - 1 ELSE refusals END,
               clean = CASE WHEN refusals = 0 OR clean + sums.n >= refusals * ?2::bigint THEN 0 ELSE clean + sums.n END
             FROM sums WHERE verifiers.id = sums.device RETURNING 1)
-        INSERT INTO verifier_hours AS h (verifier, hour, work)
-          SELECT device,left(at,13),sum(work)::bigint FROM paid GROUP BY device,left(at,13)
-          ON CONFLICT (verifier, hour) DO UPDATE SET work = h.work + excluded.work`)
+        INSERT INTO verifier_hours AS h (verifier, hour, work, signatures)
+          SELECT device,left(at,13),sum(work)::bigint,count(*)::bigint FROM paid GROUP BY device,left(at,13)
+          ON CONFLICT (verifier, hour) DO UPDATE SET work = h.work + excluded.work, signatures = h.signatures + excluded.signatures`)
         .bind(JSON.stringify(owed), FACTS_PER_REFUSAL_FORGIVEN, iso(now)),
       // …AND WHAT NO WITNESS RULE CAN EVER PAY, marked covered (worker/pg/sync.sql `factory_cover`).
       db.prepare("SELECT factory_cover(?::text) AS n").bind(questions),

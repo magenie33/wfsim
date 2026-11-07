@@ -81,6 +81,13 @@ export async function questionId(verb, request) {
 }
 export const newLease = () => hex(crypto.getRandomValues(new Uint8Array(16)));
 
+export function acceptedWitnesses(answers, creditedAt, previous = []) {
+  return [...answers].sort((a, b) => a.at.localeCompare(b.at) || Number(a.id) - Number(b.id))
+    .map((a, position) => ({ owner: a.owner || a.device, device: a.device, official: a.official ? 1 : 0,
+      completed_at: a.at, credited_at: a.credit_at || (a.credited === 1
+        ? previous.find(w => w.device === a.device && w.completed_at === a.at)?.credited_at : null) || creditedAt, position }));
+}
+
 /// WHO A DEVICE IS, as eligibility needs it: its owner — the account that claimed
 /// it, or the device itself — and every device of that owner, so a further answer
 /// never comes from the same person's other computer.

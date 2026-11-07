@@ -2057,9 +2057,16 @@ This page says what it keeps, and why.</p>
 requests and reports in the task center are saved there too. If you choose
 community execution, its volunteers receive the calculation inputs. A random
 browser secret retrieves the report; WFSim stores its hash, without an account
-association. Clearing that secret loses access. Your request expires after
-30 days; shared calculation inputs and reports are deleted after their last
+association. Clearing that secret loses access. Optimization and appraisal
+requests expire after 14 days; simulation requests after 30 days. Shared
+calculation inputs and reports are deleted after their last
 request expires. Aggregate contributions remain.</li>
+<li>Accepted calculation witnesses are credited even while anonymous. If you
+show your name on the contribution ranking, calculation records also link to
+your public profile and resolve your current name. Current board attribution
+follows the latest published measurement. Optimization records show the last
+14 days; cumulative signature counts remain. Public calculation records reveal
+no private report or input.</li>
 <li>Usage is counted under a random id your browser keeps, with no cookie, only
 to measure how WFSim itself is used; it is never shared, sold or combined with
 anything else. Your IP address is not kept: the country your connection comes

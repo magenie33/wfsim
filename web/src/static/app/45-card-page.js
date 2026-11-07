@@ -8,7 +8,8 @@
 // once every number in it has arrived.
 
 /// A BUILD'S OWN RECORD (`headlessMeasuredRecord`).
-const measuredRecordHtml = (row, words = true) => headlessMeasuredRecord(pageSay(), row, words);
+const measuredRecordHtml = (row, words = true, weapon = presetWeapon()) => headlessMeasuredRecord(pageSay(), row, words)
+  + computationBadge(weapon, row);
 
 /// …SAID ONCE BESIDE A LIST OF THEM, so nobody reads an old record as today's.
 function measuredNote() { return tr("Every build shows when it was measured and by which WFSim engine. The game and WFSim both change, so an older record may be behind."); }
@@ -37,13 +38,14 @@ async function renderCardPage(w, ask) {
   // number a chat is told is this page's, never the searcher's.
   const verdict = kind === "appraise" && job && job.result ? await appraisalReplay(w, job) : null;
   if (verdict) document.body.dataset.verdict = JSON.stringify(headlessVerdictRecord(verdict));
-  const card = headlessLongCard(pageSay(), w, ask, { rows: BOARD[w.id] || [], job, verdict, origin: LIVE_ORIGIN,
+  const card = headlessLongCard({ ...pageSay(), computationRecord: row => computationBadge(w.id, row) }, w, ask, { rows: BOARD[w.id] || [], job, verdict, origin: LIVE_ORIGIN,
     riven: rivenCardGot });
   const qr = await api("/api/qr", { text: card.link });
   // THE CARDS ARE DRAWN ONLY WHEN THEY GO STRAIGHT ONTO THE PAGE: a riven's
   // values arrive into the elements already there, so nothing may sit between.
   box.classList.toggle("lc-way-in", card.wayIn);
   box.innerHTML = card.draw(qr && qr.svg);
+  await refreshComputationNames();
   // READY WHEN NOTHING IS STILL ARRIVING: every riven's values, every picture —
   // fetched NOW, since a lazy picture below the fold of a screenshot never is.
   while (rivenCardPending.size) await Promise.allSettled([...rivenCardPending]);
