@@ -28,6 +28,8 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { loadEngine } from "./wasm_engine.mjs";
 import { query, close } from "./db.mjs";
+import { countsOf, population, addQuestion, pricedPopulation, populationDocument } from './work_population.mjs';
+import { calibrationReader } from './work_reader.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname.replace(/^\/(\w:)/, "$1")), "..");
 const arg = (name, dflt) => {
@@ -94,17 +96,6 @@ function measure() {
   console.log(`${rows.length} rows, ${rows.reduce((a, r) => a + r.seconds, 0).toFixed(1)} s, ${out.machine.cpu}`);
 }
 
-/// ONE OF THE FACTORY'S NAMED READS (worker/factory.js `report`), by its secret.
-async function factoryReport(body) {
-  const origin = process.env.FACTORY_ORIGIN || "https://wfsim.app";
-  const r = await fetch(`${origin}/api/tasks/official/report`, { method: "POST", signal: AbortSignal.timeout(180_000),
-    headers: { authorization: `Bearer ${process.env.FACTORY_TOKEN}`, "content-type": "application/json", "user-agent": "wfsim-scorer" },
-    body: JSON.stringify({ witness: "official:calibrate", ...body }) });
-  const j = await r.json().catch(() => null);
-  if (!r.ok || !j || !j.ok) throw new Error(`factory report ${r.status}: ${JSON.stringify(j)}`);
-  return j;
-}
-
 /// An account inside one run: a digest under a key this run alone holds, so two
 /// runs' samples cannot be joined on it.
 const RUN_KEY = randomBytes(32);
@@ -112,48 +103,61 @@ const hidden = (id) => createHmac("sha256", RUN_KEY).update(String(id)).digest("
 
 async function sample() {
   const days = Number(arg("days", "7"));
-  const since = new Date(Date.now() - days * 86_400_000).toISOString();
-  // EVERY QUESTION A VOLUNTEER WAS PAID FOR, with what each answer was paid
-  // and the counts it was weighed by, a page at a time.
-  const questions = [];
-  for (let offset = 0; ; offset += 2000) {
-    // FROM THE FACTORY, wherever its tables live (worker/factory.js `report`).
-    const page = (await factoryReport({ report: "calibration", since, offset })).rows;
-    questions.push(...page.map((q) => ({ id: q.id, request: JSON.parse(q.request), work: q.work, counts: q.counts ? JSON.parse(q.counts) : null, devices: JSON.parse(q.devices) })));
-    if (page.length < 2000) break;
-  }
-  const devices = [...new Set(questions.flatMap((q) => q.devices))];
+  const until = new Date().toISOString(), since = new Date(Date.parse(until) - days * 86_400_000).toISOString();
+  const want = Number(arg("rows", "400")), all = population(), reader = await calibrationReader();
   const owner = new Map();
-  for (let i = 0; i < devices.length; i += 500) {
-    const got = await query("SELECT verifier, account FROM devices WHERE verifier IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb))",
-    [JSON.stringify(devices.slice(i, i + 500))], "accounts");
-    for (const d of got) owner.set(d.verifier, hidden(d.account));
+  let after = '', size = 2000;
+  try {
+    for (;;) {
+      let page;
+      try { page = await reader.page(since, until, after, size); }
+      catch (error) {
+        if (error.code === '57014' && /statement timeout/.test(error.message) && size > 1) { size = Math.max(1, Math.floor(size / 2)); continue; }
+        throw error;
+      }
+      const devices = [...new Set(page.flatMap(q => JSON.parse(q.devices)))].filter(d => !owner.has(d));
+      for (let i = 0; i < devices.length; i += 500) {
+        const chunk = devices.slice(i, i + 500);
+        const got = await query("SELECT verifier, account FROM devices WHERE verifier IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb))", [JSON.stringify(chunk)], 'accounts');
+        chunk.forEach(device => owner.set(device, 'unclaimed'));
+        got.forEach(device => owner.set(device.verifier, hidden(device.account)));
+      }
+      for (const row of page) {
+        if (row.id <= after) throw new Error('calibration cursor did not advance');
+        after = row.id;
+        addQuestion(all, { id: row.id, work: row.work, counts: row.counts ? JSON.parse(row.counts) : null,
+          accounts: JSON.parse(row.devices).map(device => owner.get(device) || 'unclaimed') }, want);
+      }
+      if (page.length < size) break;
+      if (all.questions % 10000 === 0) console.log(`calibration: ${all.questions} paid questions read`);
+    }
+    for (const q of all.sample) {
+      const [row] = await reader.page(since, until, q.id, 1, true, true);
+      q.request = row?.id === q.id ? JSON.parse(row.request) : null;
+    }
+  } finally {
+    await reader.close(); await close();
   }
-  await close();
-  // A BROWSER'S ID IS ITS SECRET (docs/BOARD.md §"Contribution"): what this
-  // writes is how many were paid and their accounts' run-keyed digests.
-  for (const q of questions) {
-    q.accounts = q.devices.map((d) => owner.get(d) || "unclaimed");
-    delete q.devices;
-  }
-  // THE EXACT COUNT of an even sample of them, fought natively: the native
-  // engine counts what the wasm does (check_gas), and a full row's runs.
-  const want = Number(arg("rows", "400"));
-  const stride = Math.max(1, Math.floor(questions.length / want));
-  const picked = questions.filter((_, i) => i % stride === 0).slice(0, want);
+  // Counter sums price the whole population; only a bounded uniform sample
+  // retains requests. Exact sample counts replace their predicted contribution.
+  const picked = all.sample.filter(q => q.request);
   const jobs = Number(arg("jobs", String(os.cpus().length)));
   const run = promisify(execFile);
   const parts = Array.from({ length: jobs }, (_, j) => picked.filter((_, i) => i % jobs === j));
   const results = await Promise.all(parts.map(async (part, j) => {
     const file = path.join(os.tmpdir(), `work-sample-${process.pid}-${j}.json`);
     fs.writeFileSync(file, JSON.stringify(part.map((q) => ({ record: q.request.record, ruler: q.request.ruler, mode: q.request.mode }))));
-    const { stdout } = await run(arg("native", "wfsim-gas"), [file, "1", "1"], { maxBuffer: 1 << 28 });
-    return stdout.split("\n").filter(Boolean).map((l, i) => ({ id: part[i].id, ...JSON.parse(l) }));
+    try {
+      const { stdout } = await run(arg("native", "wfsim-gas"), [file, "1", "1"], { maxBuffer: 1 << 28 });
+      const lines = stdout.split("\n").filter(Boolean);
+      if (lines.length !== part.length) throw new Error('native calibration sample count changed');
+      return lines.map((line, i) => ({ id: part[i].id, ...JSON.parse(line) }));
+    } finally { fs.rmSync(file, { force: true }); }
   }));
   const exact = new Map(results.flat().filter((r) => r.gas > 0).map((r) => [r.id, { gas: r.gas, runs: r.runs, key: r.key }]));
-  for (const q of questions) q.exact = exact.get(q.id) || null;
-  fs.writeFileSync(arg("out", "work-sample.json"), JSON.stringify({ since, days, questions }));
-  console.log(`${questions.length} questions paid since ${since}, ${devices.length} devices, ${exact.size} fought`);
+  for (const q of all.sample) q.exact = exact.get(q.id) || null;
+  fs.writeFileSync(arg("out", "work-sample.json"), JSON.stringify(populationDocument(all, { since, until, days })));
+  console.log(`${all.questions} questions paid since ${since}, ${owner.size} devices, ${exact.size} fought`);
 }
 
 /// Lawson–Hanson non-negative least squares, `min |A w - b|` with `w >= 0`.
@@ -203,7 +207,6 @@ const relErrors = (rows, w) => rows.map((r) => Math.abs(predict(r.terms, w) - r.
 /// Each row divided by its own time, so the fit minimises RELATIVE error and a
 /// long row does not set every price.
 const fitRows = (rows) => nnls(rows.map((r) => r.terms.map((c) => c / r.seconds)), rows.map(() => 1));
-const COUNTS = ["runs", "shots", "pellets", "procs", "dot_ticks", "field_ticks", "kills", "hits", "body_shots"];
 
 function fit() {
   const files = process.argv.slice(3).filter((a) => !a.includes("="));
@@ -231,34 +234,29 @@ function fit() {
   // THE SCALE: what the last days' paid answers would be paid now, over what
   // they were. A question fought here counts exactly; the rest are predicted
   // from the counts their answers carried, by a fit on the fought ones.
-  const { questions, since } = JSON.parse(fs.readFileSync(arg("sample", "work-sample.json"), "utf8"));
-  const fought = questions.filter((q) => q.exact && q.counts);
-  const countsOf = (q) => COUNTS.map((c) => (q.counts && q.counts[c]) || 0);
+  const population = JSON.parse(fs.readFileSync(arg("sample", "work-sample.json"), "utf8"));
+  if (population.v !== 2) throw new Error('calibration sample must contain bounded population totals');
+  const { since } = population, fought = population.sample.filter(q => q.exact && q.counts);
+  if (fought.length < 2) throw new Error('not enough exact native counts to fit calibration');
   const gasFit = (qs) => nnls(qs.map((q) => countsOf(q).map((c) => c / q.exact.gas)), qs.map(() => 1));
   const gw = gasFit(fought);
   const heldGas = fought.filter((_, i) => i % 2).map((q) => Math.abs(predict(countsOf(q), gasFit(fought.filter((_, i) => i % 2 === 0))) / q.exact.gas - 1));
-  const gasOf = (q) => (q.exact ? q.exact.gas : q.counts ? predict(countsOf(q), gw) : null);
-  const runsOf = (q) => (q.exact ? q.exact.runs : (q.counts && q.counts.runs) || 0);
-  const priced = questions.filter((q) => gasOf(q) !== null && q.work > 0);
-  const raw = (q) => (gasOf(q) / 1e6) * w[0] + runsOf(q) * w[1];
-  const paid = (q) => q.work * q.accounts.length;
+  const priced = pricedPopulation(population, gw), accounts = [...priced.accounts.values()];
+  const oldTotal = accounts.reduce((sum, q) => sum + q.old, 0);
+  const rawTotal = accounts.reduce((sum, q) => sum + q.gas / 1e6 * w[0] + q.runs * w[1], 0);
   const target = Number(arg("total", "1.015"));
   if (!(target >= 1 && target <= 1.2)) throw new Error("total must be within 1.00–1.20");
-  const k = (target * priced.reduce((s, q) => s + paid(q), 0)) / priced.reduce((s, q) => s + raw(q) * q.accounts.length, 0);
+  if (!(oldTotal > 0 && rawTotal > 0)) throw new Error('calibration population has no priced work');
+  const k = target * oldTotal / rawTotal;
   // `prices=<gas>,<run>` judges chosen prices, e.g. the fit's rounded, by the same report.
   const prices = arg("prices", "") ? arg("prices", "").split(",").map(Number) : w.map((x) => Math.round(x * k));
-  const now = (q) => (gasOf(q) * prices[0]) / 1e6 + runsOf(q) * prices[1];
-  const total = priced.reduce((s, q) => s + now(q) * q.accounts.length, 0) / priced.reduce((s, q) => s + paid(q), 0);
+  const now = q => q.gas * prices[0] / 1e6 + q.runs * prices[1];
+  const total = accounts.reduce((sum, q) => sum + now(q), 0) / oldTotal;
   console.log("");
-  console.log(`answers paid since ${since}: ${questions.length} questions, ${priced.length} priced, ${fought.length} fought exactly`);
+  console.log(`answers paid since ${since}: ${population.questions} questions, ${priced.priced} priced, ${fought.length} fought exactly`);
   console.log(`  a question's gas from its counts: held-out median ${(quantile(heldGas, 0.5) * 100).toFixed(1)}%  p90 ${(quantile(heldGas, 0.9) * 100).toFixed(1)}%`);
   console.log(`  NEW TOTAL / OLD TOTAL: ${total.toFixed(4)}`);
-  const byAccount = new Map();
-  for (const q of priced) q.accounts.forEach((a) => {
-    const x = byAccount.get(a) || { old: 0, now: 0, answers: 0 };
-    x.old += q.work; x.now += now(q); x.answers++;
-    byAccount.set(a, x);
-  });
+  const byAccount = new Map(accounts.map(q => [q.account, { ...q, now: now(q) }]));
   const ratios = [...byAccount].filter(([a]) => a !== "unclaimed").map(([a, x]) => ({ a, r: x.now / x.old, n: x.answers }));
   console.log(`  per account (${ratios.length}): p05 ${quantile(ratios.map((x) => x.r), 0.05).toFixed(3)}  median ${quantile(ratios.map((x) => x.r), 0.5).toFixed(3)}  p95 ${quantile(ratios.map((x) => x.r), 0.95).toFixed(3)}`);
   const u = byAccount.get("unclaimed");
@@ -266,8 +264,9 @@ function fit() {
   const below = ratios.filter((x) => x.r < 0.95).sort((p, q) => p.r - q.r);
   if (below.length) console.log(`  BELOW 0.95: ${below.length} account(s), the lowest ${below[0].r.toFixed(3)} over ${below[0].n} answers`);
   console.log("  the rows that move most (fought exactly):");
-  for (const q of [...fought].sort((p, q2) => Math.abs(Math.log(now(q2) / q2.work)) - Math.abs(Math.log(now(p) / p.work))).slice(0, 20)) {
-    console.log(`    ${(now(q) / q.work).toFixed(3)}  ${q.exact.key}  (was ${q.work}, now ${Math.round(now(q))})`);
+  const exactNow = q => now({ gas: q.exact.gas, runs: q.exact.runs });
+  for (const q of [...fought].sort((p, q2) => Math.abs(Math.log(exactNow(q2) / q2.work)) - Math.abs(Math.log(exactNow(p) / p.work))).slice(0, 20)) {
+    console.log(`    ${(exactNow(q) / q.work).toFixed(3)}  ${q.exact.key}  (was ${q.work}, now ${Math.round(exactNow(q))})`);
   }
   console.log("");
   console.log(`pub const GAS_PRICE_PER_MILLION: u64 = ${prices[0].toLocaleString("en").replace(/,/g, "_")};`);

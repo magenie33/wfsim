@@ -62,6 +62,11 @@ otherwise it uses `target/debug/wfsim-board`. A missing binary fails the check.
 the native ranker. It covers bounded rounds, deferred hot updates, stamping
 when a round finishes, a quiescent epoch and malformed protocol replies.
 
+`check_work_calibration.mjs` compares cursor pages with the grouped payment
+oracle, checks the read-only role and temporary-table isolation, and proves
+population counter sums equal individual pricing after exact-sample corrections.
+It also checks timing reuse provenance, the payout target and private output.
+
 `check_live_publish.mjs` verifies bounded upload progress, the final stamp,
 request timeouts, lost replies, atomic checkpoints and corrupt-ledger refusal.
 

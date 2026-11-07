@@ -150,12 +150,10 @@ async function report(db, b) {
     return json({ ok: true, n: (await db.prepare("SELECT count(*) AS n FROM demands WHERE producer = 'refresh' AND state = 'live'").first()).n });
   }
   if (b.report === "calibration") {
-    const { results } = await db.prepare(`SELECT q.id AS id, q.request AS request, max(a.work) AS work, max(a.counts) AS counts, '[' || string_agg(to_json(a.device)::text, ',' ORDER BY a.id) || ']' AS devices
-         FROM answers a JOIN questions q ON q.id = a.question
-        WHERE a.credited = 1 AND a.official = 0 AND a.void = 0 AND q.verb = 'simulate' AND a.at > ?1::text
-        GROUP BY q.id ORDER BY q.id LIMIT 2000 OFFSET ?2::bigint`)
-      .bind(String(b.since || ""), Number(b.offset) || 0).all();
-    return json({ ok: true, rows: results });
+    const row = await db.prepare("SELECT factory_calibration_page(?1::text,?2::text,?3::text,?4::bigint,2000,true,false) AS rows")
+      .bind(String(b.since || ""), String(b.until || "9999-12-31T23:59:59.999Z"),
+        String(b.after || ""), Number(b.offset) || 0).first();
+    return json({ ok: true, rows: row.rows });
   }
   return json({ ok: false, error: "no such report" }, 400);
 }

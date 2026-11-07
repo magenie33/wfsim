@@ -499,6 +499,7 @@ jobs:
           node scripts/check_default_parent.mjs
           node scripts/check_inventory_pipeline.mjs
           node scripts/check_live_ranker.mjs
+          node scripts/check_work_calibration.mjs
       - name: Maintenance preserves native board behavior and source checks
         if: fromJSON(needs.plan.outputs.plan).fast
         run: |

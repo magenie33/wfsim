@@ -134,6 +134,12 @@ Move the active daemon by stopping the old service before starting the new one.
 
 ## Database storage
 
+`python scripts/ship_work_calibration.py` installs the named calibration read
+before the work-price job uses it. The pipeline role can execute this bounded
+function without selecting factory tables. Its query is also the official
+calibration API's source. Reads use short read-only transactions, and native
+sample bodies remain inside the fitting job.
+
 `python scripts/ship_task_archive.py` installs the versioned archive tool and
 `wfsim-task-archive.timer` beside the database. It requires the database host's
 existing private R2 rclone configuration. `TASK_DETAIL_KEEP_DAYS` in

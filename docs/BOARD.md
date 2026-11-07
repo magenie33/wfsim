@@ -1648,6 +1648,13 @@ shipped may be round ones near the fit, judged by the same report
 (`prices=<gas>,<run>`): their time error no worse than the fit's and their
 total within the same 1.00–1.20, so points never shrink with a new engine.
 
+The calibration population uses the factory's scoped read-only function over
+the internal database tunnel. Cursor pages retain account counter sums and a
+bounded uniform native sample; exact sample counts correct their predicted
+share. Request bodies are read only for that sample. A fit can reuse four
+successful timing jobs when their compiled fight/data inputs, timing code
+and compiler recipe match; raw paid work stays inside the fitting job.
+
 ### Demand
 
 **THE COMPUTE PAGE'S PICTURE IS ONE OBJECT EVERY READER GETS.** Each minute

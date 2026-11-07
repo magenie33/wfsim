@@ -25,9 +25,17 @@ on:
       sample:
         description: paid questions fought natively for their exact count
         default: "400"
+      measurement_run:
+        description: Reuse four successful timing jobs with matching fight inputs
+        default: ""
+
+permissions:
+  contents: read
+  actions: read
 
 jobs:
   build:
+    if: inputs.measurement_run == ''
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -57,6 +65,7 @@ jobs:
           path: pkg
 
   measure:
+    if: inputs.measurement_run == ''
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 150
@@ -84,6 +93,7 @@ jobs:
   # THE SAME JOB: the sample joins accounts to questions and is never uploaded.
   fit:
     needs: [build, measure]
+    if: ${{ !cancelled() && ((inputs.measurement_run != '' && needs.build.result == 'skipped' && needs.measure.result == 'skipped') || (needs.build.result == 'success' && needs.measure.result == 'success')) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:
@@ -91,25 +101,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22.23.4"
+      - name: Verify reusable timing inputs
+        if: inputs.measurement_run != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MEASUREMENT_RUN: ${{ inputs.measurement_run }}
+        run: node scripts/work_reuse.mjs "$MEASUREMENT_RUN"
       - uses: actions/download-artifact@v4
         with:
           name: pkg
           path: pkg
+          run-id: ${{ inputs.measurement_run || github.run_id }}
+          github-token: ${{ github.token }}
       - uses: actions/download-artifact@v4
         with:
           pattern: measure-*
           merge-multiple: true
+          run-id: ${{ inputs.measurement_run || github.run_id }}
+          github-token: ${{ github.token }}
       - name: the databases
         uses: ./.github/actions/databases
         with:
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          pg_url: ${{ secrets.PG_PIPELINE_URL }}
           pg_accounts_url: ${{ secrets.PG_ACCOUNTS_PIPELINE_URL }}
       - name: Read and fight the paid answers
-        env:
-          # THE PAID QUESTIONS ARE THE FACTORY'S to say (worker/factory.js `report`).
-          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
-          FACTORY_ORIGIN: https://wfsim.mgnmz1999.workers.dev
         run: |
           set -euo pipefail
           chmod +x pkg/wfsim-gas
