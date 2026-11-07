@@ -224,12 +224,13 @@ function renderPresetBarIn(bar, cfg) {
     : ddButton(`dd-open-${cfg.domain}`, {value:"", search:true, placeholder:`+ ${cfg.openLabel}`,
       items:cfg.openable().map(p => ({value:presetId(p), label:p.group || p.name})), onPick:id => pickPreset(cfg, id)})}</span>` : "";
   const usedBy = current && cfg.usedBy ? cfg.usedBy(current) : [];
-  const actions = ownOps + roOps + (cfg.boardPicker ? "" : published) + (cfg.extra || "");
+  const actions = ownOps + roOps + (cfg.boardPicker ? "" : published);
   bar.innerHTML = `<span class="plabel">${cfg.label}</span><span class="preset-current ${current ? `pchip sel${current.builtin ? ' ro' : ''}` : 'pnote'}"${current ? ` data-name="${escHtml(presetId(current))}"` : ''}>`
     + (current ? current.builtin ? LOCK_SVG : cloudMark(cfg.domain, current) : "")
     + switcher + (current ? presetInfoButton(cfg, current) : "")
     + (usedBy.length ? `<span class="pby" title="${escHtml(tr("linked by") + ': ' + usedBy.join(' · '))}">↩${usedBy.length}</span>` : "")
     + presetActionsHtml(actions) + `</span>`
+    + (cfg.extra || "")
     + (cfg.currentActions && current ? cfg.currentActions(current) : "")
     + `<button type="button" class="pchip add" title="${escHtml(tr("new empty {thing}").replace('{thing}',tr(noun)))}">＋</button>`
     + (cfg.boardPicker ? published : "")
@@ -462,6 +463,12 @@ function openPresetLibrary(cfg, anchor) {
     results.querySelectorAll("[data-entry]").forEach(row => {
       const p = currentRows.find(p => presetId(p) === row.dataset.entry);
       row.querySelector("[data-library-open]").onclick = () => open(p);
+      if (cfg.share) {
+        const button = document.createElement("button"); button.className = "ghost-btn small";
+        button.dataset.libraryShare = ""; button.textContent = tr("share");
+        button.onclick = () => cfg.share(p, row);
+        row.querySelector("[data-library-open]").after(button);
+      }
       const details = row.querySelector(".preset-library-info");
       const fillInfo = () => { if (details.open && !details.dataset.loaded) { renderPresetInfo(details.querySelector(".preset-info-body"), cfg, p); details.dataset.loaded = "1"; } };
       details.ontoggle = () => { if (details.open) expanded.add(presetId(p)); else expanded.delete(presetId(p)); fillInfo(); };

@@ -2494,6 +2494,8 @@ Stores 100 builds and checks that their bar has one current entry and the same
 height as one build. The recent list is bounded, equipment search reaches a
 non-recent build, usage times survive independently of modification times, and
 info leaves the selection alone. Management rows keep info and actions folded
-and load more on scroll. All six preset domains retain access to 100 entries.
+and load more on scroll. Current and saved build share buttons stay visible;
+sharing another weapon preserves its mod rank and evolutions without changing
+the current build, fight or presets. All six preset domains retain access to 100 entries.
 The unchanged expanded bar fails the same 100-build fixture. Runs in the
 page-rest views group; accepts `WFSIM_BASE`.

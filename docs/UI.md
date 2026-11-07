@@ -159,7 +159,8 @@ current entry, info, an action menu, new and management. The switcher searches
 all owned and opened read-only entries by name and contents; its unfiltered
 list shows up to eight recent choices. Local usage times live in
 `wfsim-preset-recent-<domain>`, separate from modification times and saved state.
-Duplicate, rename, delete and share controls live under `⋯`.
+Duplicate, rename and delete controls live under `⋯`. The build bar's share
+button is directly visible, including on the default build.
 A published entry is read-only, copied into ownership through duplicate, and
 unpinned without touching its source. Pins use identity (`cfg.pins`), never rank;
 the current published entry is always retained. Board entries come from the
@@ -178,7 +179,8 @@ Every preset bar opens the same management browser: search names and saved
 contents, sort by modification time or name, and filter to the current item or
 all scopes, or to owned and opened read-only entries. Rows show a compact
 configuration summary and hide their actions under `⋯`; full info is expanded
-on demand. Scrolling loads more rows. Renaming and deleting
+on demand. Build rows have a visible share button that shares their saved state
+without selecting it, including across weapons. Scrolling loads more rows. Renaming and deleting
 work by identity. Info reads saved state without applying it: builds reuse the
 build card; scenarios reuse the fight card; searches show starts, exclusions
 and run terms. Warframe, companion and Operator presets show their own

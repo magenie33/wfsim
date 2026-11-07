@@ -107,9 +107,12 @@ const SHARE_EXCLUDED_AXES = ["wielder"];
 /// `build`, when given, is `{ state }` — a build that is not the open one (a
 /// search's finalist), shared without opening it: opening resets the search.
 function sharePayload(build) {
+  return withPoolOf(weaponInfo(build ? build.state.weapon : presetWeapon()), () => sharePayloadInPool(build));
+}
+function sharePayloadInPool(build) {
   const st = build ? build.state : snapshotState();
   const p = loadPresetList(BUILDS).find((x) => presetId(x) === activePreset);
-  const pre = evoPrefix();
+  const pre = evoPrefixFor(st.weapon);
 
   // The RIVENS the build equips travel whole (field 6), so a slot names one
   // by its index there — "~0" instead of "riven:some long name" repeated.
@@ -135,7 +138,7 @@ function sharePayload(build) {
     return (def && rank != null && rank !== def.max_rank) ? [a, rank] : a;
   });
 
-  const tiers = weaponEvos();
+  const tiers = weaponEvos(st.weapon);
   const evos = tiers.map((x) => {
     const id = (build ? st.evoSel || {} : evoSel)[x.tier];
     return id ? (pre && id.startsWith(pre) ? id.slice(pre.length) : id) : "";
@@ -263,7 +266,7 @@ const SHARE_SHORT_HOSTS = LIVE_HOSTS;
 /// opens exactly as it always has, so a failure here costs length and nothing
 /// else.
 async function shareUrl(claim, signer = null, build = null) {
-  const w = weaponInfo($("weapon").value);
+  const w = weaponInfo(build ? build.state.weapon : $("weapon").value);
   const code = await shareCode(build);
   if (SHARE_SHORT_HOSTS.includes(location.hostname)) try {
     const ask = new AbortController();
@@ -451,6 +454,9 @@ async function importShare(code) {
 /// the link does not — named in the sharer's language, for the sharer's chat.
 async function shareText(build) {
   const d = await decodeShare(await shareCode(build));
+  return withPoolOf(weaponInfo(d.w), () => shareTextInPool(d));
+}
+function shareTextInPool(d) {
   const w = weaponInfo(d.w);
   const name = (x) => (x && x.name) || "";
   const mods = d.slots.map((s) => s.mod).filter((m) => m && !String(m).startsWith("~"))
@@ -460,9 +466,9 @@ async function shareText(build) {
     ...(r.s.malus ? ["−" + (rivenStat(r.s.malus.id) ? rivenStatName(rivenStat(r.s.malus.id)) : r.s.malus.id)] : []),
   ].join(" "));
   const arcanes = d.arcane.filter((a) => a && a !== "none").map((a) => name(arcaneById(a)) || a);
-  const pre = evoPrefix();
+  const pre = evoPrefixFor(d.w);
   const evos = d.evos.filter(Boolean).map((e) => {
-    const o = weaponEvos().flatMap((t) => t.options || []).find((x) => x.id === pre + e || x.id === e);
+    const o = weaponEvos(d.w).flatMap((t) => t.options || []).find((x) => x.id === pre + e || x.id === e);
     return name(o) || e;
   });
   return [

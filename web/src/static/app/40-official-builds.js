@@ -959,6 +959,8 @@ function buildBarCfg() {
     // Sharing belongs to the BUILD bar: what travels is the open build, plus
     // everything needed to reproduce its number.
     extra: SHARE_ENABLED ? `<button class="pchip share">${escHtml(tr("share"))}</button>` : "",
+    share: SHARE_ENABLED ? (p, host) => openBuildShare("preset", host,
+      {state:{...p.state, weapon:p.scope || p.state.weapon || presetWeapon()}}) : null,
     onExtra: (bar) => {
       const b = bar.querySelector(".share");
       if (b) b.onclick = (e) => { e.stopPropagation(); openSharePanel(bar); };

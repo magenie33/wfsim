@@ -78,4 +78,53 @@ check('the action menu opens and closes on an outside click',r.ops&&r.dismissed)
 check('management rows show summaries, with info and secondary actions folded',r.collapsed&&r.summary&&r.quiet);
 check('scrolling loads the remaining rows',r.loads);
 check('all six domains keep one current entry, search 100 presets and retain info',r.all.every(x=>x.one&&x.items&&x.info),JSON.stringify(r.all));
+const shares = await evaluate(`(async () => {
+  const sleep = ms => new Promise(resolve => setTimeout(resolve,ms));
+  const {list,cfg} = compactFixture;
+  cfg.store([list[0],list[99]]); pickPreset(cfg,list[0].id);
+  const bar=document.getElementById('preset-bar-builder-builds');
+  const visible=el=>!!el && el.getBoundingClientRect().height>0 && el.checkVisibility();
+  const direct=visible(bar.querySelector(':scope > .share'));
+  if (!direct) return {direct};
+  const waitLink=async host=>{
+    for(let i=0;i<50&&!host.querySelector('.sh-url');i++) await sleep(100);
+    const url=host.querySelector('.sh-url')?.value;
+    return url ? {url,build:await decodeShare(new URL(url).searchParams.get(SHARE_PARAM))} : null;
+  };
+  bar.querySelector('.share').click();
+  const current=await waitLink(bar);
+  bar.querySelector('.pshare').hidden=true;
+  const weapon='braton_prime', tiers=weaponEvos(weapon);
+  const evoSel=Object.fromEntries(tiers.map(t=>[t.tier,t.options.at(-1).id]));
+  const other=presetEntry('other weapon',{...list[0].state,weapon,evoSel,
+    slots:list[0].state.slots.map((s,i)=>i===0?{...s,mod:'serration',rank:3}:{...s})});
+  storePresetList(BUILDS,[other],weapon);
+  const before=JSON.stringify([snapshotState(),snapshotScenario(),loadPresetWhole(BUILDS),cfg.active()]);
+  openPresetLibrary(cfg,bar);
+  const overlay=document.querySelector('.preset-library-window');
+  const row=overlay.querySelector('[data-entry="'+list[99].id+'"]');
+  const rowVisible=visible(row.querySelector('[data-library-share]'));
+  if (!rowVisible) {presetLibraryWindow.close();return {direct,current:!!current,rowVisible};}
+  row.querySelector('[data-library-share]').click();
+  const saved=await waitLink(row);
+  document.getElementById('preset-library-scope').click();
+  document.querySelector('#dd-menu [data-v="all"]').click();
+  const otherRow=overlay.querySelector('[data-entry="'+other.id+'"]');
+  otherRow.querySelector('[data-library-share]').click();
+  const cross=await waitLink(otherRow);
+  const expected=tiers.map(t=>evoSel[t.tier]);
+  const crossEvos=cross?.build.evos.map(id=>id.startsWith(weapon+'_')?id:weapon+'_'+id);
+  const intact=before===JSON.stringify([snapshotState(),snapshotScenario(),loadPresetWhole(BUILDS),cfg.active()]);
+  const out={direct,current:current?.build.w==='laetum' && !current.build.slots.some(s=>s.mod),rowVisible,
+    saved:saved?.build.w==='laetum' && saved.build.slots[0].mod==='lethal_torrent',
+    cross:cross?.build.w===weapon && new URL(cross.url).pathname===weaponPath(weapon)
+      && cross.build.slots[0].mod==='serration' && cross.build.slots[0].rank===3
+      && JSON.stringify(crossEvos)===JSON.stringify(expected),intact,
+    noResult:!otherRow.querySelector('.sh-result,.sh-full'),shown:visible(otherRow.querySelector('.pshare'))};
+  presetLibraryWindow.close();return out;
+})()`);
+check('current build sharing is directly visible and encodes the current build',shares.direct&&shares.current,JSON.stringify(shares));
+check('management has a visible share button for each saved build',shares.rowVisible&&shares.saved,JSON.stringify(shares));
+check('all-item sharing carries that weapon, ranked mod and evolutions',shares.cross,JSON.stringify(shares));
+check('sharing saved builds preserves the active build, fight and presets',shares.intact&&shares.noResult&&shares.shown,JSON.stringify(shares));
 await app.finish('100 presets fit the same switcher as one');
