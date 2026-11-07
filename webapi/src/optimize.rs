@@ -22,6 +22,7 @@ mod quick;
 mod requirements;
 mod final_constraints;
 mod builds;
+mod prepared;
 
 pub use builds::BuildStream;
 
@@ -213,6 +214,7 @@ fn variant_base(
 /// ranges over overwritten. A row carries it as `replay`, and EVERY candidate
 /// is scored through it — `simulate::ready` on this request is the search's
 /// fight — so what a row says and what the simulator runs cannot differ.
+#[derive(Clone)]
 pub(crate) struct Replay {
     base: Value,
     mods: Vec<&'static str>,
@@ -396,6 +398,7 @@ pub struct OptimizePlan {
     /// because that is the precision the row's number was measured at.
     replay_base: Value,
     replay: std::sync::Arc<Replay>,
+    forms: std::sync::Arc<std::sync::OnceLock<Vec<WeaponBase>>>,
 }
 
 impl OptimizePlan {
@@ -409,6 +412,10 @@ impl OptimizePlan {
 
 /// Validate an optimize request. `Err` is the ready-to-send error response.
 pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
+    prepared::parse(v)
+}
+
+fn parse_uncached(v: &Value) -> Result<OptimizePlan, Value> {
     if let Some(strategy) = v.get("search_strategy") {
         if strategy != "four_elements" || v["strategy"] != "quick" {
             return Err(err_json("unknown search strategy or incompatible search algorithm"));
@@ -1059,25 +1066,8 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
     // THE OPTIMIZER BUILDS NO FIGHT: a candidate is scored in the fight the
     // simulator builds from its request (`simulate::Entrant`), prepared once per
     // variant and arcane, and a build it refuses scores nothing.
-    let scoring = replay.clone();
-    let prepared: Prepared = Default::default();
     let scenario = Scenario {
-        params: std::sync::Arc::new(move |c: &Candidate, ai: usize| {
-            let key = (c.variant, ai);
-            let held = prepared.lock().ok()?.get(&key).cloned();
-            let entrant = match held {
-                Some(e) => e?,
-                None => {
-                    let e = crate::simulate::Entrant::new(&scoring.shape(c.variant, ai), false).ok().map(std::sync::Arc::new);
-                    prepared.lock().ok()?.insert(key, e.clone());
-                    e?
-                }
-            };
-            let refs = entrant.seat(&scoring.mod_ids(c)).ok()?;
-            let (_, params) = entrant.params(&refs).ok()?;
-            if scoring.encounter(c, ai) { wfsim_optimizer::tick(); }
-            Some(params)
-        }),
+        params: prepared::params(replay.clone()),
         arena: fight.arena,
         policy: fight.policy,
     };
@@ -1123,6 +1113,7 @@ pub fn parse_optimize(v: &Value) -> Result<OptimizePlan, Value> {
         shard: v.get("shard").and_then(|x| x.as_u64()).unwrap_or(0).min(63) as u32,
         replay_base,
         replay,
+        forms: Default::default(),
     })
 }
 
@@ -1725,6 +1716,7 @@ pub fn run_optimize_resumable(
         shards,
         replay_base,
         replay,
+        forms,
     } = plan;
     let _build_producer = replay.builds.producer();
     // Compute budget: 0 = auto (all cores minus two — the machine must stay
@@ -1843,7 +1835,7 @@ pub fn run_optimize_resumable(
     // The bases each VARIANT resolves to, built ONCE. `forms_for` reads data
     // and applies the deployment, which is far too expensive to repeat per
     // proposal.
-    let forms: Vec<WeaponBase> = variants
+    let forms = forms.get_or_init(|| variants
         .iter()
         .enumerate()
         .map(|(vi, &(_, ei, _, _))| {
@@ -1851,7 +1843,7 @@ pub fn run_optimize_resumable(
             let refs: Vec<&str> = set.iter().map(String::as_str).collect();
             forms_for(vi, set, &refs)
         })
-        .collect();
+        .collect());
     // One subset -> every candidate it can produce. The axes INSIDE a subset
     // (element order, exilus option, evolution set) stay exhaustive: a couple
     // of dozen cheap combinations, and handing an exact subproblem to a
@@ -2008,7 +2000,7 @@ pub fn run_optimize_resumable(
             pool: &pool,
             usable: (0..pool.len()).map(|i| usable.contains(&i)).collect(),
             required: required.clone(),
-            forms: &forms,
+            forms,
             variants: &variants,
             assemblies: &assemblies,
             final_required: &final_required,

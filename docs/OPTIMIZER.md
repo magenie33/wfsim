@@ -729,6 +729,13 @@ Catalog lookups reuse the sealed data set: evolution ids borrow their parsed
 weapon definitions, and arcane slots are discovered once per process. Tie
 comparisons read those same definitions and compare sorted name references.
 
+Each worker retains at most one parsed quick-fleet request and its immutable
+weapon bases. Its key is the entire input except the fleet's traffic payload;
+a different input replaces it. Large scopes and failed parses are not retained.
+Every invocation owns its entrant preparation and encountered-build stream.
+The retained plan supplies no scores, random state or simulation runs, and a
+fresh search still performs its ordinary measured work.
+
 Measured over Rubico Prime, Torid, Kuva Nukor, Sancti Magistar and Acceltra
 Prime at 10 runs: every answer was the unscreened search's own, for 23–36% of
 its full evaluations (CPU, measured at a keep of 0.25: 26–39% less).
