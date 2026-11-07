@@ -20,8 +20,8 @@
   // events and streams.
   "compatibility_flags": ["nodejs_compat"],
   "main": "worker/index.js",
-  // NEAR ITS DATABASE (Smart Placement): the factory and the library are in
-  // Postgres in Germany, and every round trip an ocean away held locks longer.
+  // NEAR ITS DATABASE (Smart Placement): the factory and the library share
+  // Postgres, so placement keeps their round trips near the data core.
   // THE WEBSITE FORWARDS DYNAMIC REQUESTS HERE: nginx or `wfsim-edge`
   // (wrangler.edge.jsonc) serves static files near the reader and forwards
   // dynamic routes here — docs/WASM.md §"Two workers".
