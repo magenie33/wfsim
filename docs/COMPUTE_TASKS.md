@@ -129,6 +129,13 @@ complete snapshot, including insert-only canonical build bindings. It stops
 before queue admission or cleanup and rejects rescore, weapons, why, day and
 cancel inputs. Normal scheduled reconciliation keeps its existing path.
 
+Each full-inventory phase reports progress every thirty seconds. Its process
+RSS, peak RSS, swap, available host memory, scratch space, Linux memory/I/O
+pressure and cgroup memory events are recorded when available. The final exit
+report retains CPU time and peak RSS; periodic readings survive a lost runner.
+Native enumeration retains source records as JSON text for refusal diagnostics;
+parsed records are temporary, and validated builds are shared across rulers.
+
 ### Incremental inventory
 
 `INCREMENTAL_INVENTORY=1` enables the inventory coordinator in `live_board.sh`.

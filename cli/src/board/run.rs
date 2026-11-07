@@ -2,8 +2,6 @@
 //! One pass of the scorer: its flags, the walk over the library, and the
 //! phases that publish what the walk measured.
 
-use std::io::Read;
-
 use serde_json::Value;
 
 use crate::args::{flag, has_flag};
@@ -72,11 +70,15 @@ pub fn run() {
 
 /// A LIBRARY RECORD AND ITS RULER-FREE READ (`board_rows::board_build`), made
 /// once however many rulers then cross it.
-type Built = (Value, Result<wfsim_engine::board::builds::ValidBuild, String>);
+pub(super) struct Built {
+    record: Box<serde_json::value::RawValue>,
+    weapon: String,
+    build: Result<wfsim_engine::board::builds::ValidBuild, String>,
+}
 
 fn write_inventory_builds(lib: &[Built], out: &mut impl std::io::Write) -> std::io::Result<()> {
-    for (source, (_, built)) in lib.iter().enumerate() {
-        let Ok(v) = built else { continue };
+    for (source, built) in lib.iter().enumerate() {
+        let Ok(v) = &built.build else { continue };
         let record = wfsim_webapi::board_rows::canonical_record(v);
         let record = if v.riven_rolls.is_empty() {
             record
@@ -95,11 +97,19 @@ fn write_inventory_builds(lib: &[Built], out: &mut impl std::io::Write) -> std::
 }
 
 fn library() -> Vec<Built> {
-    let mut raw = String::new();
-    std::io::stdin().read_to_string(&mut raw).expect("stdin");
-    let subs: Vec<Value> = serde_json::from_str(&raw).unwrap_or_default();
-    let built = super::assemble::par_map(&subs, wfsim_webapi::board_rows::board_build);
-    subs.into_iter().zip(built).collect()
+    read_library(std::io::stdin().lock())
+}
+
+pub(super) fn read_library(input: impl std::io::Read) -> Vec<Built> {
+    // Original records are retained only for refusal diagnostics. Parsed
+    // records are temporary; every ruler shares the validated build.
+    let subs: Vec<Box<serde_json::value::RawValue>> = serde_json::from_reader(input).unwrap_or_default();
+    let built = super::assemble::par_map(&subs, |raw| {
+        let record: Value = serde_json::from_str(raw.get()).expect("library record");
+        (record.get("weapon").and_then(Value::as_str).unwrap_or_default().to_string(),
+         wfsim_webapi::board_rows::board_build(&record))
+    });
+    subs.into_iter().zip(built).map(|(record, (weapon, build))| Built { record, weapon, build }).collect()
 }
 
 fn inventory_phase(phase: &str, started: std::time::Instant, rows: usize) {
@@ -165,7 +175,7 @@ fn each_ruler() {
         inventory_phase(
             "canonical",
             started,
-            lib.iter().filter(|(_, b)| b.is_ok()).count(),
+            lib.iter().filter(|b| b.build.is_ok()).count(),
         );
     }
     let gate = has_flag("--gate");
@@ -422,7 +432,7 @@ pub(super) fn ruler(
     // partitions this set; anything left over is a build the library holds and
     // this board silently did not rank.
     let mut scored_ids: std::collections::BTreeSet<String> = Default::default();
-    for (s, built) in lib {
+    for built in lib {
         // EVERY SUBMISSION IS A CANDIDATE FOR EVERY RULER.
         //
         // A submission has never carried a score — it carries a BUILD, and the
@@ -442,11 +452,7 @@ pub(super) fn ruler(
         // scored from the library the day it lands, rather than waiting for
         // players to resubmit everything under it.
         seen += 1;
-        let weapon = s
-            .get("weapon")
-            .and_then(Value::as_str)
-            .unwrap_or("")
-            .to_string();
+        let weapon = &built.weapon;
         // THE SAME CHECK A BOARD ROW FACES ANYWHERE, and the same READ of the
         // record: `board_rows::scored_build` is what the page's producer reads
         // a build with too, so the two cannot fight two different builds. It is
@@ -457,9 +463,10 @@ pub(super) fn ruler(
         // THE REASON IS PRINTED, with the whole build, not counted: "2 refused"
         // is a number that tells nobody anything, including the person whose
         // build it refused.
-        let v = match built.clone().and_then(|v| wfsim_webapi::board_rows::admitted(s, bench_id, &v).map(|()| v)) {
+        let v = match built.build.clone().and_then(|v| wfsim_webapi::board_rows::admitted(&serde_json::json!({ "weapon": weapon }), bench_id, &v).map(|()| v)) {
             Ok(v) => v,
             Err(e) => {
+                let s: Value = serde_json::from_str(built.record.get()).expect("library record");
                 let list = |k: &str| -> String {
                     s.get(k)
                         .and_then(Value::as_array)
@@ -990,14 +997,18 @@ mod tests {
             serde_json::from_str(include_str!("../../../tests/gas/rows.json")).unwrap();
         rows.push(json!({ "record": { "weapon": "braton_prime", "mods": ["serration", "split_chamber", "riven"],
             "riven_pos": ["critical_damage", "damage"], "riven_neg": "zoom", "riven_rolls": [1.05,0.95,1.02] } }));
-        let lib: Vec<super::Built> = rows
-            .iter()
-            .map(|r| {
-                let rec = r["record"].clone();
-                let built = wfsim_webapi::board_rows::board_build(&rec);
-                (rec, built)
-            })
-            .collect();
+        let records: Vec<_> = rows.iter().map(|r| &r["record"]).collect();
+        let lib = super::read_library(serde_json::to_vec(&records).unwrap().as_slice());
+        for (record, stored) in records.iter().zip(&lib) {
+            let Ok(build) = &stored.build else { continue };
+            for ruler in wfsim_engine::board::benchmarks::all() {
+                assert_eq!(
+                    wfsim_webapi::board_rows::admitted(record, &ruler.id, build),
+                    wfsim_webapi::board_rows::admitted(&json!({ "weapon": stored.weapon }), &ruler.id, build),
+                    "compact admission differs from the original record",
+                );
+            }
+        }
         let mut out = Vec::new();
         super::write_inventory_builds(&lib, &mut out).unwrap();
         let text = String::from_utf8(out).unwrap();
@@ -1005,7 +1016,7 @@ mod tests {
         for line in text.lines() {
             let row: Value = serde_json::from_str(line).unwrap();
             let original = lib[row["source"].as_u64().unwrap() as usize]
-                .1
+                .build
                 .as_ref()
                 .unwrap();
             let roundtrip = wfsim_webapi::board_rows::board_build(&row["record"]).unwrap();
@@ -1023,14 +1034,8 @@ mod tests {
     fn a_ruler_walked_beside_others_says_what_it_says_alone() {
         let rows: Vec<Value> =
             serde_json::from_str(include_str!("../../../tests/gas/rows.json")).expect("rows");
-        let lib: Vec<super::Built> = rows
-            .iter()
-            .map(|r| {
-                let rec = r["record"].clone();
-                let built = wfsim_webapi::board_rows::board_build(&rec);
-                (rec, built)
-            })
-            .collect();
+        let records: Vec<_> = rows.iter().map(|r| &r["record"]).collect();
+        let lib = super::read_library(serde_json::to_vec(&records).unwrap().as_slice());
         let roster: Vec<String> =
             wfsim_engine::board::benchmarks::all().iter().take(6).map(|b| b.id.to_string()).collect();
         let dir = std::env::temp_dir().join(format!("wfsim-each-ruler-{}", std::process::id()));
