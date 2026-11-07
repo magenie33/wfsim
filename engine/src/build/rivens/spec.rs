@@ -373,5 +373,5 @@ pub fn class_for_weapon(weapon: &str) -> Option<&'static str> {
         .iter()
         .rev()
         .find(|c| !pool(c).is_empty())
-        .map(|c| &*Box::leak(c.clone().into_boxed_str()))
+        .map(String::as_str)
 }

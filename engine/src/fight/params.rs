@@ -897,6 +897,7 @@ impl std::ops::Deref for AbilitiesNow<'_> {
 impl FightParams {
     /// **EVERY ABILITY WINDOW, AS THIS RUN HAS IT** — the live set a frame casts
     /// into, or the fixed one when nothing in the fight casts.
+    #[inline(always)]
     pub fn abilities_now(&self) -> AbilitiesNow<'_> {
         match &self.abilities_live {
             Some(l) => AbilitiesNow::Live(l.lock().expect("one run, one thread")),

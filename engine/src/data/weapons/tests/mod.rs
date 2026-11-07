@@ -9,6 +9,7 @@ mod echo;
 mod incarnon_gauge;
 mod inheritance;
 mod laetum;
+mod metadata;
 mod modular;
 mod passive;
 mod pellet_element;
