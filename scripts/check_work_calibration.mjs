@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { testDb } from './pg/test_db.mjs';
 import { COUNTS, countsOf, population, addQuestion, pricedPopulation, populationDocument } from './work_population.mjs';
 import { measurementProof } from './work_reuse.mjs';
+import { officialRoute } from '../worker/factory.js';
 
 const since = '2026-10-31T00:00:00.000Z', until = '2026-11-07T00:00:00.000Z', at = '2026-11-01T00:00:00.000Z';
 const signature = 'factory_calibration_page(text,text,text,bigint,bigint,boolean,boolean)';
@@ -28,6 +29,16 @@ try {
     FROM answers a JOIN questions q ON q.id=a.question
     WHERE a.credited=1 AND a.official=0 AND a.void=0 AND q.verb='simulate' AND a.at>?1 AND a.at<=?2
     GROUP BY q.id ORDER BY q.id`, since, until);
+  const report = body => new Request('https://wfsim.test/api/tasks/official/report', { method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer calibration-check' },
+    body: JSON.stringify({ witness: 'official:calibration', report: 'calibration', since, until, ...body }) });
+  const env = { LIBRARY: db, FACTORY_TOKEN: 'calibration-check' }, route = '/api/tasks/official/report';
+  assert.equal((await officialRoute(report({}), { ...env, FACTORY_TOKEN: '' }, route)).status, 401);
+  for (const [body, expected] of [[{ offset: 1 }, oracle.slice(1)], [{ after: 'q1' }, oracle.filter(q => q.id > 'q1')]]) {
+    const response = await officialRoute(report(body), env, route);
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { ok: true, rows: expected });
+  }
   await db.exec('CREATE ROLE wfsim_pipeline NOLOGIN; CREATE ROLE calibration_stranger NOLOGIN;');
   const schema = (await db.get('SELECT current_schema() name')).name;
   await db.exec(`GRANT USAGE ON SCHEMA "${schema}" TO wfsim_pipeline,calibration_stranger`);
@@ -63,7 +74,7 @@ try {
   const security = await db.get(`SELECT prosecdef,proconfig FROM pg_proc WHERE oid=?1::regprocedure`, signature);
   assert(security.prosecdef && security.proconfig.some(setting => setting.startsWith('search_path=')));
   assert(security.proconfig.includes('plan_cache_mode=force_custom_plan'), 'cursor reads need a plan for their current bounds');
-  console.log('ok: calibration pages match the grouped oracle, preserve legacy offsets, cap rows and restrict table access');
+  console.log('ok: calibration API and pages match the grouped oracle, preserve offsets, cap rows and restrict table access');
 } finally { await db.close(); }
 
 const all = population(), questions = [], weights = COUNTS.map((_, i) => i+1);

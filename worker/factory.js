@@ -132,7 +132,7 @@ export async function officialRoute(request, env, path) {
 ///   claimed     { rows: [{ batch, build_id, ruler, mode }] } → the rows no board
 ///               demand asks for, or one live and leased to `witness` (scripts/fetch_queue.sh)
 ///   refresh_live                                            → { n } (queue.yml)
-///   calibration { since, offset }                           → paid questions, 2000 a page (scripts/work_calibrate.mjs)
+///   calibration { since, until?, after?, offset? }           → paid questions, 2000 a page
 
 async function report(db, b) {
   const kinds = Object.keys(BOARD_PRODUCERS).map((k) => `'${k}'`).join(", ");
