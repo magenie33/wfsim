@@ -25,7 +25,7 @@ export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, STATS_T
 /// WHAT IS PAST THE WINDOW GOES this many questions a call, a few calls a
 /// minute (worker/pg/sync.sql `factory_forget_past`): a day's facts in hours,
 /// and no call near the statement timeout.
-export const PAST_MS = 60_000, PAST_BATCH = 2_000, PAST_CALLS = 5;
+export const PAST_MS = 60_000, PAST_BATCH = 100, PAST_CALLS = 5;
 const RELEASE_URL = process.env.RELEASE_URL || "https://wfsim.app/release.json";
 /// THE WORK SIGNAL: the object written to the public bucket, and where readers get it.
 export const SIGNAL_KEY = "work.json", SIGNAL_CACHE = "public, max-age=5";

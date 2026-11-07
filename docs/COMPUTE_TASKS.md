@@ -191,13 +191,22 @@ and the last published inventory are preserved.
 The community goal displays the last complete current-engine inventory and its
 original input time, labeled as the last complete count.
 It changes when a complete scan is published; the minute's work signal remains
-a separate live reading. After three hours the strict goal expires and its
-clearance estimate disappears. Display may retain the same complete snapshot
+a separate live reading. After three hours the strict goal expires. Display may retain the same complete snapshot
 with its original timestamp only while its engine matches the current factory
 and page engine. A missing or different-engine inventory shows an unknown total.
 Both readings derive from the same retained finding; display does not extend
 freshness. Queue totals remain available for dispatch health and never substitute
 for complete demand.
+
+Clearance is a separate estimate bound to that inventory's engine, snapshot and
+original input time. Current-engine answer costs price each verb's verified
+facts from at most 20,000 recent answer samples, read through the engine/time
+index; capacity uses whole-day compute windows. The latest and preceding day
+give a capacity scenario range, assuming no additional work. Missing verb
+samples leave the total estimate unknown while showing the priced portion and
+unpriced task count. No capacity, no samples and an updating estimate have
+explicit display states. Cached estimates older than ten minutes supply no
+duration. Retaining an inventory never extends its strict goal freshness.
 
 The queue and scoring pipelines bound their intake step independently of
 reconciliation. A failed or timed-out intake retains unacknowledged arrivals

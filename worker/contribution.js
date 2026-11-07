@@ -38,6 +38,7 @@
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
 import { cloudMarks } from "./cloud.js";
 import { iso, PACE_HOURS } from "./instant.js";
+import { clearanceOf } from "./clearance.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
 import { kindOf } from "./factory.js";
 import { shownName } from "./names.js";
@@ -636,13 +637,11 @@ async function publishedContributors(env, now = Date.now()) {
 /// object and `/api/board/demand` serves the same bytes. Worked out per request,
 /// each isolate and each edge would keep its own minute, and readers disagree.
 export const DEMAND_KEY = "demand.json", DEMAND_CACHE = "public, max-age=30";
-/// …AND WHAT A FACT COSTS, over a day: every witness's fight, the ones that
-/// agreed and the ones that did not, over the facts formed. Shorter, a few
-/// hours of one bad release price every row at what that release wasted.
+/// Answer costs and completed facts share the same bounded current-engine
+/// sample and its first timestamp; unrelated official facts cannot dilute it.
 export const DEMAND_COST_MS = 86_400_000;
-/// THE DAY'S ANSWERS ARE FOUND by reading back at most this many by id, the
-/// one index the table keeps in time order.
-export const DEMAND_COST_SCAN = 1_500_000;
+/// The engine/time index supplies at most this many recent answer samples.
+export const DEMAND_COST_SCAN = 20_000;
 /// …AND PRICED AGAIN THIS OFTEN, kept per `env` between: a day's price moves
 /// slowly, and reading the day back is seconds of the database every time. The
 /// owed rows and the open questions are counted on the same clock: each reads
@@ -697,7 +696,9 @@ async function nowOf(db, now) {
 /// and how much of it a device has taken — the rest waits on the server.
 export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, options = {}) {
   const db = env.LIBRARY, at = iso(now);
-  const kept = demandCosts.get(env);
+  const { fresh: inventory, lastComplete } = await readInventoryState(db, now);
+  const engine = (inventory || lastComplete)?.engine || null;
+  const cached = demandCosts.get(env), kept = cached?.engine === engine ? cached : null;
   const counts = kept && now >= kept.countsAt && now - kept.countsAt < DEMAND_COST_EVERY_MS ? kept : null;
   const costs = kept && now >= kept.costsAt && now - kept.costsAt < (options.costEveryMs || DEMAND_COST_EVERY_MS) ? kept : null;
   const began = performance.now();
@@ -716,8 +717,10 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
                 HAVING SUM(CASE WHEN agreed_at IS NULL THEN 0 ELSE 1 END) < COUNT(*) ORDER BY MIN(at), weapon`)
       .bind(SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - PACE_HOURS * 3_600_000)),
     // THE LAST WHOLE HOURS, the one under way left out.
-    db.prepare("SELECT COALESCE(SUM(ms), 0) AS ms FROM verifier_hours WHERE hour >= ?1::text AND hour < ?2::text")
-      .bind(iso(now - PACE_HOURS * 3_600_000).slice(0, 13), iso(now).slice(0, 13)),
+    db.prepare(`SELECT COALESCE(SUM(CASE WHEN hour >= ?1::text THEN ms ELSE 0 END), 0) AS ms,
+                  COALESCE(SUM(CASE WHEN hour < ?1::text THEN ms ELSE 0 END), 0) AS previous_ms
+                FROM verifier_hours WHERE hour >= ?3::text AND hour < ?2::text`)
+      .bind(iso(now - PACE_HOURS * 3_600_000).slice(0, 13), iso(now).slice(0, 13), iso(now - 2 * PACE_HOURS * 3_600_000).slice(0, 13)),
     ...(counts ? [] : [
       // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
       // demands are read once and joined whole: looked up a queue row at a time,
@@ -730,16 +733,18 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
       db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE state = 'open' GROUP BY verb"),
     ]),
     ...(costs ? [] : [
-      db.prepare(`WITH s AS (SELECT question, compute_ms FROM answers
-                    WHERE id > (SELECT COALESCE(MAX(id), 0) FROM answers) - ?2::bigint AND at >= ?1::text AND official = 0)
-                  SELECT q.verb, SUM(COALESCE(s.compute_ms, 0)) AS ms FROM s JOIN questions q ON q.id = s.question GROUP BY q.verb`)
-        .bind(iso(now - DEMAND_COST_MS), scan),
-      // …OVER THE FACTS FORMED SINCE THE FIRST ANSWER THAT READ: a busy day has
-      // more answers than the read reaches, and its facts over the whole day
-      // priced every row at the fraction of the day the answers covered.
-      db.prepare(`SELECT verb, COUNT(*) AS n FROM questions WHERE fact_at >= GREATEST(?1::text,
-                    (SELECT at FROM answers WHERE id > (SELECT COALESCE(MAX(id), 0) FROM answers) - ?2::bigint ORDER BY id LIMIT 1))
-                  GROUP BY verb`).bind(iso(now - DEMAND_COST_MS), scan),
+      // Bounded samples and indexed lateral lookups avoid a full question-table
+      // join chosen from an underestimated engine population.
+      db.prepare(`WITH s AS MATERIALIZED (SELECT question,compute_ms,at FROM answers
+                    WHERE at >= ?1::text AND official = 0 AND (?3::text IS NULL OR engine = ?3::text)
+                    ORDER BY at DESC,id DESC LIMIT ?2::bigint),
+                  sample AS (SELECT MIN(at) AS at FROM s)
+                  SELECT q.verb,SUM(COALESCE(s.compute_ms,0)) AS ms,
+                    COUNT(DISTINCT CASE WHEN q.fact_at >= sample.at AND (?3::text IS NULL OR q.fact_engine = ?3::text)
+                      THEN s.question END) AS facts
+                  FROM s CROSS JOIN sample CROSS JOIN LATERAL
+                    (SELECT verb,fact_at,fact_engine FROM questions WHERE id=s.question OFFSET 0) q GROUP BY q.verb`)
+        .bind(iso(now - DEMAND_COST_MS), scan, engine),
     ]),
     ...(counts ? [] : [
       // A ROW A DEVICE HAS TAKEN — leased, by a volunteer or an official
@@ -755,7 +760,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
     ? [reads[0], { results: [options.pace] }, ...reads.slice(1)] : reads;
   let cursor = 0;
   const owed = counts ? null : rest[cursor++], open = counts ? null : rest[cursor++];
-  const spent = costs ? null : rest[cursor++], facts = costs ? null : rest[cursor++], taken = counts ? null : rest[cursor++];
+  const spent = costs ? null : rest[cursor++], taken = counts ? null : rest[cursor++];
   const counted = counts || { by: Object.fromEntries(owed.results.map((r) => [r.k, Number(r.n)])),
     takenBy: Object.fromEntries(taken.results.map((r) => [r.k, Number(r.n)])),
     openOf: open.results.map((r) => ({ verb: r.verb, n: Number(r.n) })) };
@@ -763,9 +768,9 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   const h = done.results[0] || {};
   const perHour = (x) => Math.round(Number(x || 0) / PACE_HOURS);
   const { msOf, factsOf } = costs || { msOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.ms)])),
-    factsOf: Object.fromEntries(facts.results.map((r) => [r.verb, Number(r.n)])) };
+    factsOf: Object.fromEntries(spent.results.map((r) => [r.verb, Number(r.facts)])) };
   if (!costs || !counts) {
-    demandCosts.set(env, { countsAt: counts ? counts.countsAt : now, costsAt: costs ? costs.costsAt : now,
+    demandCosts.set(env, { engine, countsAt: counts ? counts.countsAt : now, costsAt: costs ? costs.costsAt : now,
       msOf, factsOf, by, takenBy: counted.takenBy, openOf: counted.openOf });
     if (!costs) options.onCosts?.(performance.now() - began);
   }
@@ -776,7 +781,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   let ms = 0;
   for (const [verb, n] of Object.entries(left)) {
     if (!n) continue;
-    if (!factsOf[verb]) { ms = null; break; }
+    if (!(factsOf[verb] > 0 && msOf[verb] > 0)) { ms = null; break; }
     ms += n * (msOf[verb] || 0) / factsOf[verb];
   }
   const clearHours = ms !== null && msPerHour > 0 ? ms / msPerHour : null;
@@ -786,13 +791,12 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   const userRequests = counted.openOf.filter((row) => ["simulate_report", "optimize_report"].includes(row.verb)).reduce((sum, row) => sum + row.n, 0);
   if (userRequests) orders.push({ kind: "user_calculation", total: userRequests, dispatched: null });
   const reading = await nowOf(db, now);
-  const { fresh: inventory, lastComplete } = await readInventoryState(db, now);
   let goal = null;
   if (inventory) {
     let work = 0;
     for (const [verb, count] of Object.entries(inventory.verbs)) {
       if (!count) continue;
-      if (!factsOf[verb]) { work = null; break; }
+      if (!(factsOf[verb] > 0 && msOf[verb] > 0)) { work = null; break; }
       work += count * (msOf[verb] || 0) / factsOf[verb];
     }
     goal = { ...inventory, clear_hours: work !== null && msPerHour > 0 ? work / msPerHour : null };
@@ -803,6 +807,8 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
     orders,
     goal,
     last_complete: lastComplete,
+    clearance: clearanceOf(inventory || lastComplete, { msOf, factsOf, perHour: msPerHour,
+      previousPerHour: Number((answered.results[0] || {}).previous_ms || 0) / PACE_HOURS, at, sampleHours: PACE_HOURS }),
     surveys: surveys.results.map(({ lately, ...g }) => {
       const s = { weapon: g.weapon, ruler: g.ruler, shapes: Number(g.shapes), agreed: Number(g.agreed), started: Number(g.started) };
       const pace = Number(lately || 0) / (PACE_HOURS);

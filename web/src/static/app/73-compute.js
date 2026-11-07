@@ -804,6 +804,34 @@ function completeDemandInventory(value, now) {
     && value.verbs && Object.values(value.verbs).every(n => Number.isSafeInteger(n) && n >= 0)
     && Object.values(value.verbs).reduce((n, x) => n + x, 0) === value.total;
 }
+function computeClearanceHtml(complete, goal, now) {
+  if (!complete) return "";
+  const c = computeDemand.clearance;
+  const row = (value, note) => `<div class="kv"><dt>${aT("Cleared in")}</dt><dd><b style="font-size:16px">${escHtml(value)}</b>${
+    note ? `<div class="set-note" style="margin-top:4px">${escHtml(note)}</div>` : ""}</dd></div>`;
+  if (!c) return goal?.clear_hours == null || !goal.total ? ""
+    : row(demandHours(goal.clear_hours), tr("at the last 24 hours' average compute"));
+  const integer = n => Number.isSafeInteger(n) && n >= 0;
+  const current = c.engine === ENGINE_ID && c.engine === complete.engine && c.snapshot === complete.snapshot
+    && c.started_at === complete.started_at && c.total === complete.total
+    && integer(c.priced) && integer(c.unpriced) && c.priced + c.unpriced === c.total
+    && Number.isFinite(Date.parse(c.at)) && Date.parse(c.at) <= now + 60_000 && now - Date.parse(c.at) < 10 * 60_000;
+  if (!current) return row(tr("Estimate updating"), "");
+  if (c.state === "empty" && !c.total) return row(tr("No pending tasks"), "");
+  if (c.state === "no_capacity") return row(tr("Waiting for compute capacity"), "");
+  if (c.state === "no_samples") return row(tr("Awaiting task cost samples"), "");
+  const range = c.range_hours;
+  if (!["ready", "partial"].includes(c.state) || !Array.isArray(range) || range.length !== 2
+    || !range.every(n => Number.isFinite(n) && n >= 0) || range[0] > range[1]
+    || !Number.isFinite(c.known_hours) || c.known_hours < range[0] || c.known_hours > range[1]
+    || (c.state === "ready" ? c.unpriced !== 0 || c.hours !== c.known_hours : !c.unpriced || !c.priced || c.hours !== null))
+    return row(tr("Estimate updating"), "");
+  const low = demandHours(range[0]), high = demandHours(range[1]);
+  const time = low === high ? low : tr("{low}–{high}").replace("{low}", low).replace("{high}", high);
+  return c.state === "partial"
+    ? row(tr("{time} for known work").replace("{time}", time), tr("{n} tasks still need cost samples · excluding new tasks").replace("{n}", computeCount(c.unpriced)))
+    : row(time, tr("Based on the last complete count and recent daily compute · excluding new tasks"));
+}
 function computeDemandHtml() {
   const d = computeDemand;
   if (!d) return "";
@@ -830,7 +858,7 @@ function computeDemandHtml() {
       <div class="set-note">${escHtml(tr("{n} begun · each shape uses the Four elements strategy, and counts once two owners on two networks agree").replace("{n}", n(g.started)))}${
         g.clear_hours == null ? "" : ` · ${escHtml(tr("done in {t}").replace("{t}", demandHours(g.clear_hours)))}`}</div></div></div>`;
   }).join("");
-  const eta = goal?.clear_hours == null || !owed ? "" : demandHours(goal.clear_hours);
+  const clearance = computeClearanceHtml(complete, goal, now);
   const updated = complete ? tr("Last complete count · as of {time}").replace("{time}", new Date(complete.started_at).toLocaleString(accountLocale())) : tr("Checking total demand");
   return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Community goal")}</h2><span class="set-note" style="margin-left:auto">${
     escHtml(updated)}</span></div><div class="bb"><dl class="kvs">
@@ -843,7 +871,7 @@ function computeDemandHtml() {
       <div class="set-note"><span class="demand-key on">■</span> ${escHtml(tr("volunteers {n} ({p}%)").replace("{n}", n(d.per_hour.volunteers)).replace("{p}", share))}
         &nbsp; <span class="demand-key">■</span> ${escHtml(tr("official machines {n} ({p}%)").replace("{n}", n(d.per_hour.official)).replace("{p}", 100 - share))}
         · ${aT("the last 24 hours' average")}</div></dd></div>
-    ${eta ? `<div class="kv"><dt>${aT("Cleared in")}</dt><dd>${big(eta)}<div class="set-note" style="margin-top:4px">${aT("at the last 24 hours' average compute")}</div></dd></div>` : ""}
+    ${clearance}
   </dl></div></div>`;
 }
 

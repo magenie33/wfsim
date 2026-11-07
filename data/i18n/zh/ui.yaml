@@ -3125,6 +3125,14 @@ ui:
   "volunteers {n} ({p}%)": "志愿者 {n}（{p}%）"
   "official machines {n} ({p}%)": "官方服务器 {n}（{p}%）"
   "Cleared in": 预计清空
+  "Estimate updating": 预估更新中
+  "No pending tasks": 暂无待处理任务
+  "Waiting for compute capacity": 等待算力
+  "Awaiting task cost samples": 等待任务耗时样本
+  "{low}–{high}": "{low}–{high}"
+  "{time} for known work": "已知部分约 {time}"
+  "{n} tasks still need cost samples · excluding new tasks": "另有 {n} 项任务待补耗时样本 · 未计新增任务"
+  "Based on the last complete count and recent daily compute · excluding new tasks": 基于上次完整统计和近日日均算力 · 未计新增任务
   "under a minute": 不到 1 分钟
   "{d} d {h} h {m} min": "{d} 天 {h} 小时 {m} 分"
   "{h} h {m} min": "{h} 小时 {m} 分"

@@ -13,6 +13,7 @@ import { sha256 } from "../worker/accounts.js";
 import { testDb } from "./pg/test_db.mjs";
 import { PACE_HOURS } from "../worker/instant.js";
 import { inventoryWrite, INVENTORY_MAX_MS } from "../worker/task_inventory.js";
+import "./check_clearance.mjs";
 
 let failures = 0;
 const check = (what, ok, detail = "") => {
@@ -317,14 +318,26 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
     orders: [{ kind: 'board', total: 1000 }], verbs: { simulate: 1000 } }, now);
   await L.run(saved.sql, ...saved.params);
   await L.run("INSERT INTO factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x',?,0,0,0,0,0,0,'x','x')", engine);
+  await L.run("UPDATE questions SET fact_engine=? WHERE id='fs'", engine);
+  await L.run(`INSERT INTO answers (question,engine,device,owner,canon,result,work,compute_ms,at) VALUES
+    ('fs',?1::text,'current-s1','current-owner1','c','{}',1,1000,?2::text),
+    ('fs',?1::text,'current-s2','current-owner2','c','{}',1,1000,?3::text)`, engine, ago(3_600_000), ago(0));
+  await L.run("INSERT INTO verifier_hours(verifier,hour,ms) VALUES ('x',?,744000)", ago(30*3_600_000).slice(0,13));
   const fresh = await demandOf({ LIBRARY: L }, now), expired = await demandOf({ LIBRARY: L }, now + INVENTORY_MAX_MS);
   check("fresh demand also carries the complete snapshot for cached clients crossing expiry", fresh.goal?.total === 1000
     && fresh.last_complete?.total === 1000 && fresh.last_complete?.started_at === started);
   check("expired demand retains the same original snapshot only for display", expired.goal === null
     && JSON.stringify(expired.last_complete) === JSON.stringify(fresh.last_complete) && !('clear_hours' in expired.last_complete));
+  check("clearance prices the complete snapshot using current-engine samples and two whole-day capacities",
+    fresh.clearance.state === 'ready' && Math.abs(fresh.clearance.hours - 2_000_000 / (372000 / PACE_HOURS)) < 1e-8
+    && fresh.clearance.range_hours[0] < fresh.clearance.range_hours[1], JSON.stringify(fresh.clearance));
+  check("an expired inventory keeps an explicitly based estimate without changing goal freshness or its cut",
+    expired.clearance.state === 'ready' && expired.clearance.started_at === started
+    && expired.clearance.snapshot === fresh.last_complete.snapshot, JSON.stringify(expired.clearance));
   await L.run("UPDATE factory_snapshot SET engine='95d73da96acb' WHERE id=1");
   const changed = await demandOf({ LIBRARY: L }, now + INVENTORY_MAX_MS);
   check("a changed engine hides both the fresh goal and retained display count", changed.goal === null && changed.last_complete === null);
+  check("a changed engine cannot use old cached prices as a forecast", changed.clearance.state === 'unavailable');
   await L.run("DELETE FROM factory_findings WHERE kind='task_inventory'");
   await L.run("DELETE FROM factory_snapshot WHERE id=1");
   check("the endpoint serves the settler's object, worked out nowhere else",
@@ -336,6 +349,24 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   delete env.PUBLIC;
 }
 check("the nav asks the same count alone", (await call("/api/board/computing")).computing === 1);
+{
+  const P = await testDb("library"), at = Date.now(), before = n => new Date(at-n).toISOString(), engine='d8787cb351c5';
+  await P.run("INSERT INTO factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x',?,0,0,0,0,0,0,'x','x')", engine);
+  const snapshot = inventoryWrite({v:2,started_at:before(3600000),snapshot:'price:price:',engine,rows:1000,queued:0,
+    orders:[{kind:'board',total:1000}],verbs:{simulate:1000}},at);
+  await P.run(snapshot.sql,...snapshot.params);
+  for (const id of ['sampled','outside-sample','official-only']) await P.run(`INSERT INTO questions(id,verb,request,state,due_at,opened_at,fact_at,fact_engine)
+    VALUES (?,'simulate','{}','fact','x','x',?,?)`,id,before(60000),engine);
+  for (const [id,device,ms,age,official] of [['sampled','one',1000,120000,0],['sampled','two',1000,120000,0],
+    ['official-only','official',9000,60000,1],['outside-sample','later-id-older-time',500,180000,0]])
+    await P.run(`INSERT INTO answers(question,engine,device,owner,canon,result,work,compute_ms,at,official)
+      VALUES (?,?,?,'owner','c','{}',1,?,?,?)`,id,engine,device,ms,before(age),official);
+  await P.run("INSERT INTO verifier_hours(verifier,hour,ms) VALUES ('worker',?,48000)",before(7200000).slice(0,13));
+  const result=await demandOf({LIBRARY:P},at,2);
+  check("cost samples follow time and a hard row bound; unrelated and official-only facts cannot dilute their price",
+    result.clearance.state==='ready' && result.clearance.hours===1000,JSON.stringify(result.clearance));
+  await P.close();
+}
 check("both say how many browsers are computing now, an old answer not counted",
   found.computing === 0 && (await who("bob")).computing === 1 && (await call("/api/contributors")).computing === 1);
 

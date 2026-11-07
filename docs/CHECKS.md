@@ -333,7 +333,9 @@ inventory independently of the partial queue. Admission leaves the total
 unchanged; confirmed completion reduces the next inventory. Each task kind is
 listed, unknown kinds keep their ids, and update time and clearance estimate
 belong to that inventory. A complete same-engine snapshot remains displayable
-after expiry with its original timestamp and no clearance estimate. Unknown,
+after expiry with its original timestamp. A separately sampled clearance estimate
+binds to that same cut, names its assumptions and states partial pricing or missing
+capacity. Mismatched, malformed or old estimates supply no duration. Unknown,
 different-engine, future or malformed snapshots cannot supply a total; a
 confirmed empty inventory is zero. CDN objects crossing expiry retain the
 same snapshot, and the API returns the daemon's exact object.
@@ -778,8 +780,8 @@ open, spot and disputed questions. Batches skip ineligible rows. Scores and
 credit aggregates and a current calibration proof survive; an expired lease
 cannot earn credit, and a fresh ask
 can open the forgotten question again. Refusals reach back only the window.
-Fails on either legacy blanket exemption and on deletion before delivery or
-credit completes.
+Fails on either legacy blanket exemption, deletion before delivery or credit
+completes, and a legacy large request bypassing the per-call bound.
 
 ## `check_initiator`
 
@@ -789,7 +791,7 @@ after a withdrawal; with `initiator_share_pct` set, an initiator past its share
 of the live leases is passed over and the system is not, nobody is at or under
 `initiator_floor_rows`, and a lease run out does not count; the SQL's unset
 floor is worker/dials.js's default; `factory_forget_codes` erases the user and
-bot codes of an ask that is over and keeps the rest; a board batch's initiator
+bot codes of an ask that is over in bounded committed passes and keeps the rest; a board batch's initiator
 and a code's shape; a submission signed in or out, and an arrival asked as its
 queue row names, never as the runner says.
 
@@ -1138,7 +1140,7 @@ ledger holds its own spans' hours device by device, a device taken since
 counted as removed; no answer carries a full device id or an account's id or
 name.
 
-## `check_contribution`
+## `check_contribution` and `check_clearance`
 
 Plain node on PGlite (`worker/pg/*.sql`), the paid half
 stubbed. A signed-in browser claims its device and the last claim owns it, its
@@ -1164,6 +1166,9 @@ failed with the dispatched count never matching and with the facts counted
 over the whole day. Its `now` counts the ids that asked in the window, the
 leases running and the window's answers, and `starved` holds just under each
 floor and not at it; it failed with a lapsed lease counted and at the floor.
+Clearance checks cover weighted verb costs, current-engine sample isolation,
+whole-day capacity scenarios, retained snapshot identity, partial pricing and
+missing capacity. The pure calculation fixtures run through this check too.
 
 ## `check_folds`
 
