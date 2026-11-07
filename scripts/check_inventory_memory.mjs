@@ -7,6 +7,11 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE = resolve(process.env.WFSIM_INVENTORY_MEMORY_SOURCE || ROOT);
+const phase = spawnSync('python3', [join(ROOT, 'scripts/check_inventory_phase.py')], {
+  encoding: 'utf8', timeout: 10000,
+  env: { ...process.env, WFSIM_INVENTORY_PHASE_SOURCE: join(SOURCE, 'scripts/inventory_phase.py') },
+});
+if (phase.status !== 0) throw new Error(phase.stdout + phase.stderr);
 const WORKFLOWS = resolve(process.env.WFSIM_WORKFLOW_DIR || join(SOURCE, '.github/workflows'));
 const dir = mkdtempSync(join(tmpdir(), 'wfsim-inventory-memory-'));
 const bin = join(dir, 'bin');

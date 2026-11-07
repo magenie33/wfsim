@@ -762,14 +762,8 @@ mod tests {
         facts_path: String,
         queue_path: String,
     ) -> BTreeMap<(String, String, String), bool> {
-        let lib: Vec<_> = owners
-            .iter()
-            .map(|o| {
-                let rec = o["record"].clone();
-                let built = wfsim_webapi::board_rows::board_build(&rec);
-                (rec, built)
-            })
-            .collect();
+        let records: Vec<_> = owners.iter().map(|o| &o["record"]).collect();
+        let lib = crate::board::run::read_library(serde_json::to_vec(&records).unwrap().as_slice());
         let ids: Vec<_> = f.board.rulers.iter().map(|r| r.id.as_str()).collect();
         let mut by = crate::board::facts::load_facts_of(Some(facts_path.clone()), &ids);
         let cross = load_cross_facts(Some(facts_path));

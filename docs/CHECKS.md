@@ -2276,6 +2276,8 @@ privileged tools. It checks runner identity, free scratch space, exclusive swap
 file creation, allocation size and activation while preserving existing swap.
 Invalid capacity and failed commands stop before inventory work.
 Ordered merges release copied ruler files; a failed copy retains its inputs.
+Phase measurement fixtures check Linux pressure, swap and cgroup OOM counters,
+missing processes and a real child's failed exit with an early resource report.
 
 Only the clock and a person may start a board run. Plain node, no browser: it
 reads `.github/workflows/scores.yml` and refuses a `push` trigger, requires
