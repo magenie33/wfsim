@@ -8,6 +8,8 @@ import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { BOARD_KINDS } from '../worker/board_kinds.js';
 
+const FETCH_ROWS = 20000;
+
 export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS) {
   const outputs = Object.fromEntries(Object.entries(paths).map(([k, p]) => [k, `${p}.partial-${process.pid}`]));
   const counts = {};
@@ -33,7 +35,7 @@ export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS)
           // Separate FETCH statements bound server work without timing the whole transfer.
           await tx.unsafe(`DECLARE inventory_scan NO SCROLL CURSOR FOR ${query}`, args);
           for (;;) {
-            const rows = await tx.unsafe('FETCH FORWARD 5000 FROM inventory_scan');
+            const rows = await tx.unsafe(`FETCH FORWARD ${FETCH_ROWS} FROM inventory_scan`);
             for (const row of rows) {
               if (name === 'library') {
                 const record = typeof row.record === 'string' ? JSON.parse(row.record) : row.record;
@@ -43,7 +45,7 @@ export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS)
               } else await write(JSON.stringify(row) + '\n');
               n++;
             }
-            if (rows.length < 5000) break;
+            if (rows.length < FETCH_ROWS) break;
           }
           await tx.unsafe('CLOSE inventory_scan');
           if (name === 'library') await write(']');

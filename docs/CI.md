@@ -120,6 +120,8 @@ outside fast coverage. This profile also selects native/WASM gas equality and
 the native library builds for its changed engine.
 The registered queue uniqueness fence may add only its trigger and unique index;
 its fourteen-day refresh and pipeline checks remain mandatory.
+The capture window exception changes only its bounded fetch size. Its service
+regression must retain one snapshot across pages and preserve prior files on failure.
 The comparison base must be verified. The proof records its base and exact
 paths; reuse and shipping recheck them. `full=true` does not reuse a fast proof.
 

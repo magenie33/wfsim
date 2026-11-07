@@ -10,11 +10,11 @@ const pg = new PGlite();
 try {
   await pg.exec(['schema.sql', 'library.sql', 'sync.sql'].map(name => readFileSync(new URL(`../worker/pg/${name}`, import.meta.url), 'utf8')).join('\n'));
   await pg.query("INSERT INTO builds(id,at,record) VALUES ('a','x','{\"weapon\":\"torid\"}')");
-  await pg.query("INSERT INTO builds(id,at,record) SELECT 'b'||i,'x','{\"weapon\":\"torid\"}' FROM generate_series(1,5000) i");
+  await pg.query("INSERT INTO builds(id,at,record) SELECT 'b'||i,'x','{\"weapon\":\"torid\"}' FROM generate_series(1,25000) i");
   await pg.query("INSERT INTO batches(id,at,why,total) VALUES ('b','x','test',1)");
   await pg.query("INSERT INTO queue(batch,build_id,ruler,mode) VALUES ('b','a','r','base')");
   const paths = Object.fromEntries(['library', 'builds', 'facts', 'queue', 'tasks', 'meta'].map(k => [k, join(dir, k)]));
-  let reads = 0, fail = false;
+  let reads = 0, fail = false, libraryFetches = 0, libraryScan = false;
   const sql = { begin: async (options, fn) => {
     assert.equal(options, 'isolation level repeatable read read only');
     return pg.transaction(async tx => {
@@ -23,8 +23,11 @@ try {
       assert.equal(settings.ro, 'on'); assert.equal(settings.isolation, 'repeatable read');
       return fn({ unsafe: (query, params = []) => {
         assert(params.every(value => !Array.isArray(value)), 'wire parameters must be scalar values');
+        if (query.startsWith('DECLARE')) libraryScan = query.includes('SELECT id,at,record FROM builds');
         if (query.startsWith('FETCH')) {
-          assert.equal(query, 'FETCH FORWARD 5000 FROM inventory_scan');
+          const page = /^FETCH FORWARD ([0-9]+) FROM inventory_scan$/.exec(query);
+          assert(page && Number(page[1]) > 0 && Number(page[1]) <= 20000, 'one result page stays bounded');
+          if (libraryScan) libraryFetches++;
           if (fail && ++reads === 2) return Promise.reject(new Error('connection lost'));
         }
         return tx.query(query, params).then(r => r.rows);
@@ -32,8 +35,9 @@ try {
     });
   } };
   const meta = await captureInventory(sql, paths, '4393e1730621');
-  assert.deepEqual(meta.counts, { library: 5001, facts: 0, queue: 1, tasks: 0 });
-  assert.equal(JSON.parse(readFileSync(paths.library)).length, 5001);
+  assert.equal(libraryFetches, 2, 'a complete 25001-row library needs only two bounded network round trips');
+  assert.deepEqual(meta.counts, { library: 25001, facts: 0, queue: 1, tasks: 0 });
+  assert.equal(JSON.parse(readFileSync(paths.library)).length, 25001);
   assert.equal(JSON.parse(readFileSync(paths.library))[0].weapon, 'torid');
   assert.equal(JSON.parse(readFileSync(paths.builds, 'utf8').split('\n')[0]).id, 'a');
   assert.equal(JSON.parse(readFileSync(paths.queue)).build_id, 'a');

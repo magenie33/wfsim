@@ -20,6 +20,16 @@ assert.throws(() => checkFastProof({ ...proof, fast: { ...scope, paths: [] } }, 
 assert.throws(() => checkFastProof({ ...proof, jobs: FAST_JOBS.slice(1) }, paths));
 const sql = 'outside;\nCREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS bigint LANGUAGE sql AS $$ SELECT 1 $$;\n';
 const fixture = (before, after) => args => args[1].startsWith(base + ':') ? before : after;
+const capture = 'scripts/capture_compute_inventory.mjs';
+const captureScope = fastScope([capture, 'scripts/check_inventory_capture.mjs'], options);
+const oldCapture = "snapshot();\n'FETCH FORWARD 5000 FROM inventory_scan';\nrows.length < 5000;\n";
+const newCapture = 'const FETCH_ROWS = 20000;\n\nsnapshot();\n`FETCH FORWARD ${FETCH_ROWS} FROM inventory_scan`;\nrows.length < FETCH_ROWS;\n';
+checkFastChanges(captureScope, 'head', fixture(oldCapture, newCapture));
+assert.throws(() => checkFastChanges(captureScope, 'head', fixture(oldCapture, newCapture.replace('20000', '100000'))));
+assert.throws(() => checkFastChanges(captureScope, 'head', fixture(oldCapture, newCapture.replace('snapshot()', 'differentSnapshot()'))));
+assert.throws(() => checkFastChanges({ ...captureScope, paths: [capture] }, 'head', fixture(oldCapture, newCapture)));
+const servicesBody = readFileSync('.github/workflows/ci.yml', 'utf8').split('\n  services:\n')[1].split('\n  mcp:\n')[0];
+assert(servicesBody.includes('node scripts/check_inventory_capture.mjs'));
 checkFastChanges(scope, 'head', fixture(sql, sql.replace('SELECT 1', 'SELECT 2')));
 assert.throws(() => checkFastChanges(scope, 'head', fixture(sql, sql.replace('outside;', 'changed;'))));
 assert.throws(() => checkFastChanges({ ...scope, paths: ['worker/pg/library.sql'] }, 'head', fixture('', 'CREATE TABLE unsafe();')));

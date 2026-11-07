@@ -12,6 +12,7 @@ const PATHS = new Set([
   'cli/src/board/run.rs', 'cli/src/board/assemble/inventory.rs',
   'engine/src/board/builds/identity.rs', 'engine/src/board/builds/tests/catalog.rs',
   'scripts/check_default_parent.mjs',
+  'scripts/capture_compute_inventory.mjs', 'scripts/check_inventory_capture.mjs',
   'web/src/static/app/73-compute.js', 'data/i18n/zh/ui.yaml',
   'worker/clearance.js', 'worker/contribution.js', 'worker/usage_days.js',
   'worker/deadlines.js', 'worker/factory.js', 'worker/board_tasks.js', 'worker/task_observation.js',
@@ -40,6 +41,14 @@ export function fastScope(paths, { base, verifiedBase, force = false, hotfix = f
 export function checkFastChanges(scope, head = 'HEAD', run = git) {
   const before = path => run(['show', `${scope.base}:${path}`]);
   const after = path => run(['show', `${head}:${path}`]);
+  const capture = 'scripts/capture_compute_inventory.mjs';
+  if (scope.paths.includes(capture)) {
+    const original = after(capture).replace('const FETCH_ROWS = 20000;\n\n', '')
+      .replace('`FETCH FORWARD ${FETCH_ROWS} FROM inventory_scan`', "'FETCH FORWARD 5000 FROM inventory_scan'")
+      .replace('rows.length < FETCH_ROWS', 'rows.length < 5000');
+    if (original !== before(capture) || !scope.paths.includes('scripts/check_inventory_capture.mjs'))
+      throw new Error('Fast CI permits only the bounded capture window with its snapshot regression');
+  }
   const parent = 'engine/src/board/builds/identity.rs';
   if (scope.paths.includes(parent)) {
     const fixed = 'd.mods = canonical_mods_with(&d.weapon, &mods, d.riven.as_ref());';
