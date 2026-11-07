@@ -32,4 +32,6 @@ assert(workflow.includes('if [ "$FAST_CI" != "true" ]; then node scripts/check_t
 assert(workflow.includes("if: matrix.group == 'fast'"));
 assert(workflow.includes('run: node scripts/ci_fast.mjs page'));
 assert(workflow.includes('cargo test -p wfsim-cli --lib board::'));
+assert(workflow.split('\n  pipeline:\n')[1].split('\n  page:\n')[0].includes('components: clippy'));
+
 console.log('Fast CI rejects unrelated code, unverified bases, changed schemas/protocol and incomplete proof scope.');
