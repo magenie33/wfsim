@@ -235,6 +235,18 @@ per-instance path for ALLOCATIONS rather than guessing at arithmetic, and read
 once per instant what is the same for every stack at that instant. Beyond that
 the room is in **how many runs get spent** — see docs/OPTIMIZER.md.
 
+### Prepared simulations
+
+`webapi::PreparedSimulation` resolves one immutable request once and returns
+indexed shards through the simulator. Each run owns its mutable combat state;
+the caller owns the prepared object's lifetime. Board batches reuse it while
+retaining one shard per run, JSON validation and ordered merges.
+
+`cargo run --release -p wfsim-webapi --example simulation_cost --
+tests/fixtures/simulation-cost.json target/simulation-cost.json 3` times frozen
+API calls and retains their complete responses. Compare those responses
+exactly and alternate baseline and candidate binaries when measuring cost.
+
 ### The quick calc pays a different fixed cost
 
 `gainScan` measures every candidate for one slot, and unlike the optimizer —

@@ -12,7 +12,7 @@ use wfsim_engine::board::builds::ValidBuild;
 
 use crate::weapon_options::board_assembly_of;
 use crate::request::get_str;
-use crate::simulate::{riven_request, simulate_merged_json, simulate_request, simulate_shard_json};
+use crate::simulate::{riven_request, simulate_merged_json, simulate_request, PreparedSimulation};
 
 fn ids(rec: &Value, key: &str) -> Vec<String> {
     rec.get(key)
@@ -229,8 +229,13 @@ pub fn fold_runs(
     from: u32,
     count: u32,
 ) -> Result<(), Value> {
-    for k in from..from.saturating_add(count) {
-        let piece = simulate_shard_json(req, k, 1, &mut |_, _| {});
+    let range = from..from.saturating_add(count);
+    if range.is_empty() {
+        return Ok(());
+    }
+    let prepared = PreparedSimulation::new(req)?;
+    for k in range {
+        let piece = prepared.shard_json(k, 1);
         match serde_json::from_value::<wfsim_engine::fight::Shard>(piece.clone()) {
             Ok(s) => acc.merge(&s),
             Err(_) => return Err(piece),
@@ -293,12 +298,19 @@ pub fn board_runs_json(v: &Value) -> Value {
     let from = v.get("from").and_then(Value::as_u64).unwrap_or(0) as u32;
     let count = v.get("count").and_then(Value::as_u64).unwrap_or(0) as u32;
     let mut shards = Vec::with_capacity(count as usize);
-    for k in from..from.saturating_add(count) {
-        let piece = simulate_shard_json(&req, k, 1, &mut |_, _| {});
-        if serde_json::from_value::<wfsim_engine::fight::Shard>(piece.clone()).is_err() {
-            return piece;
+    let range = from..from.saturating_add(count);
+    if !range.is_empty() {
+        let prepared = match PreparedSimulation::new(&req) {
+            Ok(p) => p,
+            Err(e) => return e,
+        };
+        for k in range {
+            let piece = prepared.shard_json(k, 1);
+            if serde_json::from_value::<wfsim_engine::fight::Shard>(piece.clone()).is_err() {
+                return piece;
+            }
+            shards.push(piece);
         }
-        shards.push(piece);
     }
     json!({ "ok": true, "shards": shards })
 }

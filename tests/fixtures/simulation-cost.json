@@ -1,0 +1,1360 @@
+[
+  {
+    "id": "torid-fold",
+    "path": "/api/board/fold",
+    "body": {
+      "request": {
+        "weapon": "torid",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "torid-runs",
+    "path": "/api/board/runs",
+    "body": {
+      "request": {
+        "weapon": "torid",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "torid-simulate",
+    "path": "/api/simulate",
+    "body": {
+      "weapon": "torid",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ],
+      "enemy": "thrax_centurion",
+      "level": 9999,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 100,
+      "seed": 24301
+    }
+  },
+  {
+    "id": "gotva-fold",
+    "path": "/api/board/fold",
+    "body": {
+      "request": {
+        "weapon": "gotva_prime",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "gotva-runs",
+    "path": "/api/board/runs",
+    "body": {
+      "request": {
+        "weapon": "gotva_prime",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "gotva-simulate",
+    "path": "/api/simulate",
+    "body": {
+      "weapon": "gotva_prime",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ],
+      "enemy": "thrax_centurion",
+      "level": 9999,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 100,
+      "seed": 24301
+    }
+  },
+  {
+    "id": "scourge-fold",
+    "path": "/api/board/fold",
+    "body": {
+      "request": {
+        "weapon": "scourge",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "scourge-runs",
+    "path": "/api/board/runs",
+    "body": {
+      "request": {
+        "weapon": "scourge",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "braton-fold",
+    "path": "/api/board/fold",
+    "body": {
+      "request": {
+        "weapon": "braton_prime",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "braton-runs",
+    "path": "/api/board/runs",
+    "body": {
+      "request": {
+        "weapon": "braton_prime",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "braton-simulate",
+    "path": "/api/simulate",
+    "body": {
+      "weapon": "braton_prime",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ],
+      "enemy": "thrax_centurion",
+      "level": 9999,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 100,
+      "seed": 24301
+    }
+  },
+  {
+    "id": "torid-25-fold",
+    "path": "/api/board/fold",
+    "body": {
+      "request": {
+        "weapon": "torid",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "formation": [
+          {
+            "at": [
+              -6,
+              4
+            ]
+          },
+          {
+            "at": [
+              -3,
+              4
+            ]
+          },
+          {
+            "at": [
+              0,
+              4
+            ]
+          },
+          {
+            "at": [
+              3,
+              4
+            ]
+          },
+          {
+            "at": [
+              6,
+              4
+            ]
+          },
+          {
+            "at": [
+              -6,
+              7
+            ]
+          },
+          {
+            "at": [
+              -3,
+              7
+            ]
+          },
+          {
+            "at": [
+              0,
+              7
+            ]
+          },
+          {
+            "at": [
+              3,
+              7
+            ]
+          },
+          {
+            "at": [
+              6,
+              7
+            ]
+          },
+          {
+            "at": [
+              -6,
+              10
+            ]
+          },
+          {
+            "at": [
+              -3,
+              10
+            ]
+          },
+          {
+            "at": [
+              3,
+              10
+            ]
+          },
+          {
+            "at": [
+              6,
+              10
+            ]
+          },
+          {
+            "at": [
+              -6,
+              13
+            ]
+          },
+          {
+            "at": [
+              -3,
+              13
+            ]
+          },
+          {
+            "at": [
+              0,
+              13
+            ]
+          },
+          {
+            "at": [
+              3,
+              13
+            ]
+          },
+          {
+            "at": [
+              6,
+              13
+            ]
+          },
+          {
+            "at": [
+              -6,
+              16
+            ]
+          },
+          {
+            "at": [
+              -3,
+              16
+            ]
+          },
+          {
+            "at": [
+              0,
+              16
+            ]
+          },
+          {
+            "at": [
+              3,
+              16
+            ]
+          },
+          {
+            "at": [
+              6,
+              16
+            ]
+          }
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "torid-25-runs",
+    "path": "/api/board/runs",
+    "body": {
+      "request": {
+        "weapon": "torid",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "formation": [
+          {
+            "at": [
+              -6,
+              4
+            ]
+          },
+          {
+            "at": [
+              -3,
+              4
+            ]
+          },
+          {
+            "at": [
+              0,
+              4
+            ]
+          },
+          {
+            "at": [
+              3,
+              4
+            ]
+          },
+          {
+            "at": [
+              6,
+              4
+            ]
+          },
+          {
+            "at": [
+              -6,
+              7
+            ]
+          },
+          {
+            "at": [
+              -3,
+              7
+            ]
+          },
+          {
+            "at": [
+              0,
+              7
+            ]
+          },
+          {
+            "at": [
+              3,
+              7
+            ]
+          },
+          {
+            "at": [
+              6,
+              7
+            ]
+          },
+          {
+            "at": [
+              -6,
+              10
+            ]
+          },
+          {
+            "at": [
+              -3,
+              10
+            ]
+          },
+          {
+            "at": [
+              3,
+              10
+            ]
+          },
+          {
+            "at": [
+              6,
+              10
+            ]
+          },
+          {
+            "at": [
+              -6,
+              13
+            ]
+          },
+          {
+            "at": [
+              -3,
+              13
+            ]
+          },
+          {
+            "at": [
+              0,
+              13
+            ]
+          },
+          {
+            "at": [
+              3,
+              13
+            ]
+          },
+          {
+            "at": [
+              6,
+              13
+            ]
+          },
+          {
+            "at": [
+              -6,
+              16
+            ]
+          },
+          {
+            "at": [
+              -3,
+              16
+            ]
+          },
+          {
+            "at": [
+              0,
+              16
+            ]
+          },
+          {
+            "at": [
+              3,
+              16
+            ]
+          },
+          {
+            "at": [
+              6,
+              16
+            ]
+          }
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "torid-25-simulate",
+    "path": "/api/simulate",
+    "body": {
+      "weapon": "torid",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ],
+      "enemy": "thrax_centurion",
+      "level": 9999,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 100,
+      "seed": 24301,
+      "formation": [
+        {
+          "at": [
+            -6,
+            4
+          ]
+        },
+        {
+          "at": [
+            -3,
+            4
+          ]
+        },
+        {
+          "at": [
+            0,
+            4
+          ]
+        },
+        {
+          "at": [
+            3,
+            4
+          ]
+        },
+        {
+          "at": [
+            6,
+            4
+          ]
+        },
+        {
+          "at": [
+            -6,
+            7
+          ]
+        },
+        {
+          "at": [
+            -3,
+            7
+          ]
+        },
+        {
+          "at": [
+            0,
+            7
+          ]
+        },
+        {
+          "at": [
+            3,
+            7
+          ]
+        },
+        {
+          "at": [
+            6,
+            7
+          ]
+        },
+        {
+          "at": [
+            -6,
+            10
+          ]
+        },
+        {
+          "at": [
+            -3,
+            10
+          ]
+        },
+        {
+          "at": [
+            3,
+            10
+          ]
+        },
+        {
+          "at": [
+            6,
+            10
+          ]
+        },
+        {
+          "at": [
+            -6,
+            13
+          ]
+        },
+        {
+          "at": [
+            -3,
+            13
+          ]
+        },
+        {
+          "at": [
+            0,
+            13
+          ]
+        },
+        {
+          "at": [
+            3,
+            13
+          ]
+        },
+        {
+          "at": [
+            6,
+            13
+          ]
+        },
+        {
+          "at": [
+            -6,
+            16
+          ]
+        },
+        {
+          "at": [
+            -3,
+            16
+          ]
+        },
+        {
+          "at": [
+            0,
+            16
+          ]
+        },
+        {
+          "at": [
+            3,
+            16
+          ]
+        },
+        {
+          "at": [
+            6,
+            16
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "phenmor-cycle-fold",
+    "path": "/api/board/fold",
+    "body": {
+      "request": {
+        "weapon": "phenmor",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "mode": "cycle",
+        "evolutions": [
+          "phenmor_evo1_incarnon_form",
+          "phenmor_rapid_wrath",
+          "phenmor_retributions_vessel",
+          "phenmor_elemental_excess",
+          "phenmor_devouring_attrition"
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "phenmor-cycle-runs",
+    "path": "/api/board/runs",
+    "body": {
+      "request": {
+        "weapon": "phenmor",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "mode": "cycle",
+        "evolutions": [
+          "phenmor_evo1_incarnon_form",
+          "phenmor_rapid_wrath",
+          "phenmor_retributions_vessel",
+          "phenmor_elemental_excess",
+          "phenmor_devouring_attrition"
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "phenmor-cycle-simulate",
+    "path": "/api/simulate",
+    "body": {
+      "weapon": "phenmor",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ],
+      "enemy": "thrax_centurion",
+      "level": 9999,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 100,
+      "seed": 24301,
+      "mode": "cycle",
+      "evolutions": [
+        "phenmor_evo1_incarnon_form",
+        "phenmor_rapid_wrath",
+        "phenmor_retributions_vessel",
+        "phenmor_elemental_excess",
+        "phenmor_devouring_attrition"
+      ]
+    }
+  },
+  {
+    "id": "magistar-heavy-fold",
+    "path": "/api/board/fold",
+    "body": {
+      "request": {
+        "weapon": "magistar",
+        "mods": [
+          "pressure_point",
+          "true_steel",
+          "organ_shatter"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "mode": "heavy"
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "magistar-heavy-runs",
+    "path": "/api/board/runs",
+    "body": {
+      "request": {
+        "weapon": "magistar",
+        "mods": [
+          "pressure_point",
+          "true_steel",
+          "organ_shatter"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "mode": "heavy"
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "magistar-heavy-simulate",
+    "path": "/api/simulate",
+    "body": {
+      "weapon": "magistar",
+      "mods": [
+        "pressure_point",
+        "true_steel",
+        "organ_shatter"
+      ],
+      "enemy": "thrax_centurion",
+      "level": 9999,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 100,
+      "seed": 24301,
+      "mode": "heavy"
+    }
+  },
+  {
+    "id": "rhino-roar-fold",
+    "path": "/api/board/fold",
+    "body": {
+      "request": {
+        "weapon": "braton_prime",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "wielder": {
+          "frame": "rhino"
+        },
+        "abilities": [
+          {
+            "id": "roar"
+          }
+        ],
+        "apl": [
+          {
+            "action": {
+              "do": "cast",
+              "ability": "roar"
+            },
+            "when": {
+              "if": "always"
+            }
+          }
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "rhino-roar-runs",
+    "path": "/api/board/runs",
+    "body": {
+      "request": {
+        "weapon": "braton_prime",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "wielder": {
+          "frame": "rhino"
+        },
+        "abilities": [
+          {
+            "id": "roar"
+          }
+        ],
+        "apl": [
+          {
+            "action": {
+              "do": "cast",
+              "ability": "roar"
+            },
+            "when": {
+              "if": "always"
+            }
+          }
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "rhino-roar-simulate",
+    "path": "/api/simulate",
+    "body": {
+      "weapon": "braton_prime",
+      "mods": [
+        "serration",
+        "split_chamber",
+        "point_strike",
+        "vital_sense",
+        "hellfire",
+        "cryo_rounds",
+        "infected_clip",
+        "stormbringer"
+      ],
+      "enemy": "thrax_centurion",
+      "level": 9999,
+      "steel_path": true,
+      "duration": 60,
+      "runs": 100,
+      "seed": 24301,
+      "wielder": {
+        "frame": "rhino"
+      },
+      "abilities": [
+        {
+          "id": "roar"
+        }
+      ],
+      "apl": [
+        {
+          "action": {
+            "do": "cast",
+            "ability": "roar"
+          },
+          "when": {
+            "if": "always"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "id": "riven-low-fold",
+    "path": "/api/board/fold",
+    "body": {
+      "request": {
+        "weapon": "torid",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "riven:prepared"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "mode": "base",
+        "rivens": [
+          {
+            "name": "prepared",
+            "spec": {
+              "bonuses": [
+                {
+                  "id": "damage",
+                  "roll": 0.9
+                },
+                {
+                  "id": "status_damage",
+                  "roll": 1.1
+                }
+              ],
+              "rank": 8,
+              "polarity": "madurai"
+            }
+          }
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "riven-low-runs",
+    "path": "/api/board/runs",
+    "body": {
+      "request": {
+        "weapon": "torid",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "riven:prepared"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "mode": "base",
+        "rivens": [
+          {
+            "name": "prepared",
+            "spec": {
+              "bonuses": [
+                {
+                  "id": "damage",
+                  "roll": 0.9
+                },
+                {
+                  "id": "status_damage",
+                  "roll": 1.1
+                }
+              ],
+              "rank": 8,
+              "polarity": "madurai"
+            }
+          }
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "riven-high-fold",
+    "path": "/api/board/fold",
+    "body": {
+      "request": {
+        "weapon": "torid",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "riven:prepared"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "mode": "base",
+        "rivens": [
+          {
+            "name": "prepared",
+            "spec": {
+              "bonuses": [
+                {
+                  "id": "damage",
+                  "roll": 1.1
+                },
+                {
+                  "id": "status_damage",
+                  "roll": 1.1
+                }
+              ],
+              "rank": 8,
+              "polarity": "madurai"
+            }
+          }
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "riven-high-runs",
+    "path": "/api/board/runs",
+    "body": {
+      "request": {
+        "weapon": "torid",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "riven:prepared"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "mode": "base",
+        "rivens": [
+          {
+            "name": "prepared",
+            "spec": {
+              "bonuses": [
+                {
+                  "id": "damage",
+                  "roll": 1.1
+                },
+                {
+                  "id": "status_damage",
+                  "roll": 1.1
+                }
+              ],
+              "rank": 8,
+              "polarity": "madurai"
+            }
+          }
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "two-combatants-fold",
+    "path": "/api/board/fold",
+    "body": {
+      "request": {
+        "weapon": "braton_prime",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "also_acting": [
+          {
+            "weapon": "gotva_prime",
+            "mods": [
+              "serration"
+            ]
+          }
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  },
+  {
+    "id": "two-combatants-runs",
+    "path": "/api/board/runs",
+    "body": {
+      "request": {
+        "weapon": "braton_prime",
+        "mods": [
+          "serration",
+          "split_chamber",
+          "point_strike",
+          "vital_sense",
+          "hellfire",
+          "cryo_rounds",
+          "infected_clip",
+          "stormbringer"
+        ],
+        "enemy": "thrax_centurion",
+        "level": 9999,
+        "steel_path": true,
+        "duration": 60,
+        "runs": 100,
+        "seed": 24301,
+        "also_acting": [
+          {
+            "weapon": "gotva_prime",
+            "mods": [
+              "serration"
+            ]
+          }
+        ]
+      },
+      "from": 7,
+      "count": 40
+    }
+  }
+]
