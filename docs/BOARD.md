@@ -1089,8 +1089,10 @@ the copy in). It writes:
 - `fair_shares`, every minute: the fair-share table for the served engine;
 - an official check of another engine undone, every minute
   (`factory_moot_checks`, §"A release carries a result");
-- settled task detail expires after fourteen days (`KEPT_MS`), every minute
-  (`factory_forget_past`), across engines and producers. Completed facts and
+- settled task detail expires after seven days (`KEPT_MS`), across engines and
+  producers. `scripts/pg_task_archive.py` compresses bounded batches into private
+  R2 and verifies every object and manifest by full readback before calling
+  `factory_forget_archived`. The unarchived cleanup returns zero. Completed facts and
   withdrawn questions go with their answers, closed demands and engine-refusal
   detail. Live demands, recent asks/deliveries/answers, queued settlement,
   outstanding witness credit, leases and refusal-withdrawal markers protect a
@@ -1102,7 +1104,8 @@ the copy in). It writes:
   a ledger's per-answer counts and a refusal reach back the window. A fresh ask
   after expiry opens new work; a delayed packet carrying an expired lease cannot
   record an answer or earn credit. Cleanup locks a bounded batch and rechecks
-  eligibility before deleting. PostgreSQL reuses freed pages; deleting rows does
+  eligibility and exact archived content before deleting. Changed records stay
+  for another pass. PostgreSQL reuses freed pages; deleting rows does
   not promise an immediate reduction of the filesystem's allocated bytes;
 - `factory_findings`: what its comparisons found, one row a kind.
 

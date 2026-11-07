@@ -17,6 +17,11 @@ const env = { LIBRARY: L, ASSETS: { fetch: async () => new Response(JSON.stringi
 const NOW = Date.parse("2026-11-01T12:00:00.000Z"), iso = (ms) => new Date(ms).toISOString(), DAY = 86_400_000;
 const OLD = iso(NOW - 20 * DAY), RECENT = iso(NOW - 3 * DAY), BEFORE = iso(NOW - KEPT_MS);
 const f = facts();
+const MANIFEST = 'r2:wfsim-pg-backup/task-details-v1/20261101/' + 'a'.repeat(32) + '/manifest.json';
+const HASH = 'b'.repeat(64);
+const capture = async (db = L, limit = 100) => (await db.get("SELECT factory_archive_candidates(?::text,?::bigint) AS rows", BEFORE, limit)).rows;
+const prune = async (rows, db = L) => (await db.get("SELECT factory_forget_archived(?::text,(?::text)::jsonb,?::text,?::text) AS ids",
+  BEFORE, JSON.stringify(rows), MANIFEST, HASH)).ids.length;
 
 const question = (id, state, { fact_engine = null, at = OLD } = {}) => L.run(
   `INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at, withdrawn_at)
@@ -27,8 +32,7 @@ const demand = (question, state, producer = "sweep", at = OLD) => L.run(
 const answer = (question, device, at = OLD, engine = "e0") => L.run(
   `INSERT INTO answers (question, engine, device, owner, canon, result, work, at, credited) VALUES (?, ?, ?, ?, 'c', '{}', 100, ?, 1)`,
   question, engine, device, `o-${device}`, at);
-const forget = async (limit = 1000) => Number((await L.get("SELECT factory_forget_past(?::text, ?::text, ?::text, ?::bigint) AS n",
-  BEFORE, "e1", JSON.stringify(BOARD_KINDS), limit)).n);
+const forget = async (limit = 1000) => prune(await capture(L, limit));
 const has = async (id) => !!(await L.get("SELECT 1 AS x FROM questions WHERE id = ?", id));
 const count = async (table, id) => Number((await L.get(`SELECT count(*) AS n FROM ${table} WHERE question = ?`, id)).n);
 
@@ -43,6 +47,13 @@ await question("refused", "withdrawn");
 await L.run("INSERT INTO refusal_withdrawals (question, engine, owners, at) VALUES ('refused', 'e0', 2, ?)", OLD);
 await question("open", "open"); await demand("open", "live");
 await question("disputed", "disputed");
+check("settled detail has a seven-day window", KEPT_MS === 7 * DAY);
+check("unarchived cleanup cannot delete even an expired fact", Number((await L.get(
+  "SELECT factory_forget_past(?::text,'e1',?::text,100) AS n", BEFORE, JSON.stringify(BOARD_KINDS))).n) === 0 && await has("stale"));
+const snapshot = (await capture()).find(x => x.question.id === "stale");
+check("an archive carries full input, canonical result and independent witness records",
+  snapshot.question.request === '{}' && snapshot.question.canon === 'c' && snapshot.answers.length === 2
+  && snapshot.answers.every(a => a.owner && a.work === 100 && a.credited === 1) && snapshot.demands.length === 1);
 
 await L.run("INSERT INTO builds (id, at, record) VALUES ('published', '2026-10-01', '{}')");
 await L.run("INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES ('published', 'r', 'm', 'verified:e1', 42, 'dps', 1, ?, ?)", OLD, OLD);
@@ -141,11 +152,29 @@ check("…and takes back only the work of the window", out.taken_back === 100 &&
 const backlog = await testDb("library");
 await backlog.run(`INSERT INTO questions (id,verb,request,state,due_at,opened_at,canon,fact_engine,fact_at)
   SELECT 'expired-'||i,'simulate','{}','fact',?1::text,?1::text,'c','e0',?1::text FROM generate_series(1,107) i`, OLD);
-const capped = async () => Number((await backlog.get("SELECT factory_forget_past(?::text,'e1','[]',2000) AS n", BEFORE)).n);
+const capped = async () => prune(await capture(backlog, 2000), backlog);
 const batches = [await capped(), await capped(), await capped()];
 check("retention bounds legacy large requests and commits the remaining work next pass",
   JSON.stringify(batches) === '[100,7,0]', JSON.stringify(batches));
 await backlog.close();
+
+await question("eight-days", "fact", { fact_engine: "e1", at: iso(NOW - 8 * DAY) });
+await question("seven-days", "fact", { fact_engine: "e1", at: BEFORE });
+await forget();
+check("eight-day detail expires while the exact seven-day boundary stays", !(await has("eight-days")) && await has("seven-days"));
+for (const change of ['request', 'answer', 'demand']) {
+  const id = `changed-${change}`;
+  await question(id, "fact", { fact_engine: "e1" });
+  const captured = (await capture()).filter(x => x.question.id === id);
+  if (change === 'request') await L.run("UPDATE questions SET request='changed' WHERE id=?", id);
+  if (change === 'answer') await answer(id, 'new-witness', OLD);
+  if (change === 'demand') await demand(id, 'live', 'chat', RECENT);
+  check(`a ${change} changed after capture cannot be pruned`, await prune(captured) === 0 && await has(id));
+}
+let refused = false;
+try { await L.get("SELECT factory_forget_archived(?::text,(?::text)::jsonb,NULL,NULL)", BEFORE, JSON.stringify(await capture())); }
+catch { refused = true; }
+check("missing private manifest receipt is rejected", refused);
 
 console.log(failures ? `\n${failures} failed` : "\nthe library keeps a window, and only what the window and the board still need");
 process.exit(failures ? 1 : 0);

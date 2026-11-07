@@ -22,9 +22,8 @@ import { capacity, backgroundLane, paceCache, claimDaemon } from "./factory_capa
 
 /// HOW OFTEN EACH TICK RUNS, and where the served release is read.
 export const SNAPSHOT_MS = 10_000, FAIR_MS = 60_000, DEMAND_MS = 60_000, STATS_TICK_MS = 10_000, SETTLE_MS = 2_000, RELEASE_MS = 60_000, WAVE_MS = 2_000, SIGNAL_CHECK_MS = 60_000;
-/// WHAT IS PAST THE WINDOW GOES this many questions a call, a few calls a
-/// minute (worker/pg/sync.sql `factory_forget_past`): a day's facts in hours,
-/// and no call near the statement timeout.
+/// Bounded maintenance passes; archived task pruning runs separately through
+/// scripts/pg_task_archive.py and the unarchived retention call returns zero.
 export const PAST_MS = 60_000, PAST_BATCH = 100, PAST_CALLS = 5;
 const RELEASE_URL = process.env.RELEASE_URL || "https://wfsim.app/release.json";
 /// THE WORK SIGNAL: the object written to the public bucket, and where readers get it.
@@ -197,7 +196,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
         if (Number(n) < PAST_BATCH) break;
       }
     },
-    // Settled detail expires after KEPT_MS; delivery and credit finish first.
+    // Unarchived cleanup returns zero; private R2 archival owns pruning.
     past: async () => {
       if (!release.engine) return;
       const before = iso(Date.now() - KEPT_MS);

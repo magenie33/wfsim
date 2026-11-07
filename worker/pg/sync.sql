@@ -347,31 +347,62 @@ CREATE OR REPLACE FUNCTION factory_past_safe(text, text) RETURNS boolean LANGUAG
                               AND (c.owner = a.owner OR (coalesce(a.net, '') <> '' AND c.net = a.net))))
 $$;
 
--- Settled detail expires across engines and producers; scores and credit
--- aggregates are independent records. $2/$3 remain for deployed callers.
--- Recheck after locking with a fresh statement snapshot: an ask that committed
--- while the row lock was awaited must keep its question and demand together.
+-- Unarchived callers cannot remove history. The private archive service calls
+-- factory_forget_archived only after the object and manifest pass readback.
 CREATE OR REPLACE FUNCTION factory_forget_past(text, text, text, bigint) RETURNS bigint
 LANGUAGE plpgsql SECURITY DEFINER AS $$
+BEGIN
+  RETURN 0;
+END $$;
+
+-- Each archive contains every column of the rows its cleanup can remove.
+CREATE OR REPLACE FUNCTION factory_task_detail(text) RETURNS jsonb LANGUAGE sql STABLE AS $$
+  SELECT jsonb_build_object('question',to_jsonb(q),
+    'answers',coalesce((SELECT jsonb_agg(to_jsonb(a) ORDER BY a.id) FROM answers a WHERE a.question=q.id),'[]'::jsonb),
+    'demands',coalesce((SELECT jsonb_agg(to_jsonb(d) ORDER BY d.producer,d.ref) FROM demands d WHERE d.question=q.id),'[]'::jsonb),
+    'engine_refusals',coalesce((SELECT jsonb_agg(to_jsonb(e) ORDER BY e.device,e.engine) FROM engine_refusals e WHERE e.question=q.id),'[]'::jsonb),
+    'led_questions',coalesce((SELECT jsonb_agg(to_jsonb(l) ORDER BY l.engine) FROM led_questions l WHERE l.question=q.id),'[]'::jsonb))
+  FROM questions q WHERE q.id=$1
+$$;
+
+CREATE OR REPLACE FUNCTION factory_archive_candidates(text,bigint) RETURNS jsonb LANGUAGE sql STABLE AS $$
+  SELECT coalesce(jsonb_agg(factory_task_detail(t.id)),'[]'::jsonb) FROM (
+    SELECT q.id FROM questions q
+     WHERE ((q.state='fact' AND q.fact_at<$1) OR
+       (q.state='withdrawn' AND q.opened_at<$1 AND coalesce(q.withdrawn_at,q.opened_at)<$1))
+       AND factory_past_safe(q.id,$1)
+     LIMIT LEAST(GREATEST($2,0),100)) t
+$$;
+
+-- Lock and recheck the exact archived rows with a fresh statement snapshot.
+-- A new ask, credit update or changed result leaves the current detail intact.
+CREATE OR REPLACE FUNCTION factory_forget_archived(text,jsonb,text,text) RETURNS jsonb LANGUAGE plpgsql AS $$
 DECLARE v text[];
 BEGIN
+  IF coalesce($3,'') !~ '^r2:wfsim-pg-backup/task-details-v1/[0-9]{8}/[a-f0-9]{32}/manifest[.]json$'
+     OR coalesce($4,'') !~ '^[a-f0-9]{64}$' OR coalesce(jsonb_typeof($2),'')<>'array' OR jsonb_array_length($2)>100 THEN
+    RAISE EXCEPTION 'invalid verified task archive';
+  END IF;
   SELECT coalesce(array_agg(t.id), '{}') INTO v FROM (
-    SELECT q.id FROM questions q
+    SELECT q.id FROM questions q JOIN jsonb_array_elements($2) a ON q.id=a#>>'{question,id}'
      WHERE ((q.state = 'fact' AND q.fact_at < $1) OR (q.state = 'withdrawn' AND q.opened_at < $1 AND coalesce(q.withdrawn_at, q.opened_at) < $1))
        AND factory_past_safe(q.id, $1)
-     LIMIT LEAST(GREATEST($4,0),100) FOR UPDATE OF q SKIP LOCKED) t;
+     ORDER BY q.id FOR UPDATE OF q SKIP LOCKED) t;
   SELECT coalesce(array_agg(q.id), '{}') INTO v FROM questions q WHERE q.id = ANY (v)
      AND ((q.state = 'fact' AND q.fact_at < $1) OR (q.state = 'withdrawn' AND q.opened_at < $1 AND coalesce(q.withdrawn_at, q.opened_at) < $1))
-     AND factory_past_safe(q.id, $1);
-  IF cardinality(v) = 0 THEN RETURN 0; END IF;
+     AND factory_past_safe(q.id, $1)
+     AND EXISTS (SELECT 1 FROM jsonb_array_elements($2) a WHERE a#>>'{question,id}'=q.id AND a=factory_task_detail(q.id));
+  IF cardinality(v) = 0 THEN RETURN '[]'::jsonb; END IF;
   DELETE FROM answers WHERE question = ANY (v);
   DELETE FROM demands WHERE question = ANY (v) AND state <> 'live';
   DELETE FROM engine_refusals WHERE question = ANY (v);
   DELETE FROM settle_queue WHERE question = ANY (v);
   DELETE FROM led_questions WHERE question = ANY (v);
   DELETE FROM questions WHERE id = ANY (v) AND state IN ('fact', 'withdrawn');
-  RETURN cardinality(v);
+  RETURN to_jsonb(v);
 END $$;
+REVOKE ALL ON FUNCTION factory_task_detail(text),factory_archive_candidates(text,bigint),
+  factory_forget_archived(text,jsonb,text,text) FROM PUBLIC;
 
 -- A BOARD ROW STILL OWED (worker/board_tasks.js): `queue` holds it.
 CREATE OR REPLACE FUNCTION board_owed(text, text, text) RETURNS boolean LANGUAGE sql STABLE AS $$

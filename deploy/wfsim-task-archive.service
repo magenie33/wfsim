@@ -1,0 +1,15 @@
+[Unit]
+Description=WFSim verified task detail archive
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/wfsim-task-archive
+ExecStart=/usr/bin/python3 scripts/pg_task_archive.py
+Nice=15
+CPUWeight=10
+IOWeight=10
+MemoryMax=512M
+TimeoutStartSec=180
+UMask=0077

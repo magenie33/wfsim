@@ -1,0 +1,10 @@
+[Unit]
+Description=Archive WFSim settled task detail
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=30s
+Unit=wfsim-task-archive.service
+
+[Install]
+WantedBy=timers.target

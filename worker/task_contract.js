@@ -121,6 +121,7 @@ export const coolDownMs = (refusals) => 86_400_000 * 3 ** Math.max(0, refusals |
 /// Settled task detail expires after this window, across engines and producers.
 /// Live delivery, unpaid credit, recent activity and refusals remain protected
 /// (worker/pg/sync.sql `factory_forget_past`); scores and credit aggregates stay.
-export const KEPT_MS = 14 * 86_400_000;
+export const TASK_DETAIL_KEEP_DAYS = 7;
+export const KEPT_MS = TASK_DETAIL_KEEP_DAYS * 86_400_000;
 
 export const askingIds = (since, now) => `(SELECT a.id FROM factory_asking(?${since}::text, ?${now}::text) AS a(id))`;

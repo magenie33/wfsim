@@ -777,15 +777,20 @@ engine, on a lease kept, and on a re-ask that leaves the dispute.
 ## `check_forget_past`
 
 Plain node on PGlite: the library's window (docs/BOARD.md §"The settler").
-`factory_forget_past` expires settled task detail across engines and producers
-before `KEPT_MS`. Live or recently served demands, recent answers, outstanding
+`factory_forget_archived` expires unchanged captured detail across engines and
+producers before the seven-day `KEPT_MS`; unarchived cleanup cannot delete.
+Live or recently served demands, recent answers, outstanding
 witness credit, settlement, leases and refusal markers remain protected, as do
 open, spot and disputed questions. Batches skip ineligible rows. Scores and
 credit aggregates and a current calibration proof survive; an expired lease
 cannot earn credit, and a fresh ask
 can open the forgotten question again. Refusals reach back only the window.
 Fails on either legacy blanket exemption, deletion before delivery or credit
-completes, and a legacy large request bypassing the per-call bound.
+completes, changed content after capture, and a large request bypassing the
+per-call bound. `python scripts/check_task_archive.py` exercises the actual
+archive pipeline: compressed exact roundtrip, integers beyond JavaScript's safe
+range, payload and manifest upload/readback failure, corrupt/foreign archives
+and memory bounds. No failing transfer can reach database pruning.
 
 ## `check_initiator`
 

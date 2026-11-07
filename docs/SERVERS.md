@@ -102,10 +102,10 @@ up to ten minutes, preserving a longer configured interval. The daemon records t
 resources and measured durations in `factory_findings.capacity`.
 
 Initiator cleanup locks at most 1,000 completed rows per table and uses indexed
-state ranges to skip active rows. Retention takes at most 100 questions per call,
-including callers with an older larger budget; the daemon runs up to five calls
-per minute. Both skip locked rows. Delivery, recent activity, credit and current
-calibration proof keep their existing retention guards.
+state ranges to skip active rows. Task retention archives at most 100 questions
+per call in private R2 before pruning; the unarchived daemon call returns zero.
+Both skip locked rows. Delivery, recent activity, credit and current calibration
+proof keep their retention guards.
 
 `WFSIM_BACKGROUND_DUTY_PCT` sets each adaptive job's wall-time budget
 (1–25, default 5), not a CPU utilization limit.
@@ -133,6 +133,26 @@ to another host does not create another primary database or a second settler.
 Move the active daemon by stopping the old service before starting the new one.
 
 ## Database storage
+
+`python scripts/ship_task_archive.py` installs the versioned archive tool and
+`wfsim-task-archive.timer` beside the database. It requires the database host's
+existing private R2 rclone configuration. `TASK_DETAIL_KEEP_DAYS` in
+`worker/task_contract.js` owns the seven-day hot window. The timer runs serial
+bounded batches, with eight-second statements and one-second lock waits. Each
+pass spends at most thirty seconds starting batches; individual transfers and
+the service retain their own timeout. Failed uploads or readbacks leave rows
+in PostgreSQL. The archive contains complete questions, answers, closed demands,
+engine refusals and dispatch hints; builds, scores and contribution aggregates
+remain independent live records.
+
+Archives use `r2:wfsim-pg-backup/task-details-v1/<UTC day>/<batch>/`, outside
+the nightly backup's thirty-day expiry. Each gzip object has a final manifest
+with question ids, cutoff, byte counts and SHA-256 hashes. This captures history;
+only PostgreSQL supplies current state. Archive age does not assert that its
+rows were deleted: pruning rechecks both eligibility and exact content under
+the question lock. `python scripts/pg_task_archive.py --verify <manifest>` reads
+and checks a batch independently. Local status is
+`/var/lib/wfsim-task-archive/latest.json`; failures are in the service journal.
 
 `worker/pg/library.sql` sets vacuum thresholds on the factory and board tables:
 2% of dead versions plus a fixed floor, with an earlier insert threshold to keep
