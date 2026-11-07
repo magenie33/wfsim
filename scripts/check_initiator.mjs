@@ -84,6 +84,20 @@ check("…a live one keeps it, and the system's is never a code to erase",
   (await L.get("SELECT initiator FROM demands WHERE ref = 'u1'")).initiator === "user:heavy"
   && (await L.get("SELECT initiator FROM demands WHERE ref = 's0'")).initiator === "system");
 
+const backlog = await testDb("library");
+await backlog.exec(`INSERT INTO questions (id,verb,request,state,due_at,opened_at,initiator)
+  SELECT 'closed-'||i,'simulate','{}','fact','x','x','user:old' FROM generate_series(1,1007) i;
+  INSERT INTO demands (producer,ref,question,state,asked_at,due_at,initiator)
+  SELECT 'sweep','closed-'||i,'closed-'||i,'served','x','x','bot:old' FROM generate_series(1,1007) i;`);
+const drain = async () => Number((await backlog.get("SELECT factory_forget_codes() AS n")).n);
+const batches = [await drain(), await drain(), await drain()];
+check("code cleanup commits bounded batches and reaches the remaining rows on its next pass",
+  JSON.stringify(batches) === '[2000,14,0]', JSON.stringify(batches));
+check("code cleanup changes no task state or task count",
+  Number((await backlog.get("SELECT count(*) AS n FROM questions WHERE state='fact' AND initiator IS NULL")).n) === 1007
+  && Number((await backlog.get("SELECT count(*) AS n FROM demands WHERE state='served' AND initiator IS NULL")).n) === 1007);
+await backlog.close();
+
 // ---- where it comes from ----
 check("a player's arrival is whoever its row names, every other batch WFSim's — a backfill's too",
   initiatorOf("arrivals-2026-10-14", "user:q") === "user:q" && initiatorOf("arrivals-2026-10-14") === null

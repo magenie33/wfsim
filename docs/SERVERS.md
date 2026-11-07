@@ -101,6 +101,12 @@ and one hour. The tally refreshes
 up to ten minutes, preserving a longer configured interval. The daemon records the
 resources and measured durations in `factory_findings.capacity`.
 
+Initiator cleanup locks at most 1,000 completed rows per table and clears their
+codes in one short transaction. Retention takes at most 100 questions per call,
+including callers with an older larger budget; the daemon runs up to five calls
+per minute. Both skip locked rows. Delivery, recent activity, credit and current
+calibration proof keep their existing retention guards.
+
 `WFSIM_BACKGROUND_DUTY_PCT` sets each adaptive job's wall-time budget
 (1–25, default 5), not a CPU utilization limit.
 `WFSIM_BACKGROUND_MAX_MS` bounds sample backoff (60,000–3,600,000, default

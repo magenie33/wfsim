@@ -279,10 +279,16 @@ $$;
 -- longer open lose a user or bot initiator (the settler's pass, dial
 -- `initiator_forget_ms`). The rows erased.
 CREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS bigint LANGUAGE sql AS $$
-  WITH d AS (UPDATE demands SET initiator = NULL
-               WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state <> 'live' RETURNING 1),
-  q AS (UPDATE questions SET initiator = NULL
-          WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state <> 'open' RETURNING 1)
+  WITH ds AS MATERIALIZED (SELECT producer,ref FROM demands
+       WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state <> 'live'
+       LIMIT 1000 FOR UPDATE SKIP LOCKED),
+  qs AS MATERIALIZED (SELECT id FROM questions
+       WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state <> 'open'
+       LIMIT 1000 FOR UPDATE SKIP LOCKED),
+  d AS (UPDATE demands x SET initiator = NULL FROM ds
+          WHERE x.producer=ds.producer AND x.ref=ds.ref AND x.state <> 'live' RETURNING 1),
+  q AS (UPDATE questions x SET initiator = NULL FROM qs
+          WHERE x.id=qs.id AND x.state <> 'open' RETURNING 1)
   SELECT (SELECT count(*) FROM d) + (SELECT count(*) FROM q)
 $$;
 
@@ -347,7 +353,7 @@ BEGIN
     SELECT q.id FROM questions q
      WHERE ((q.state = 'fact' AND q.fact_at < $1) OR (q.state = 'withdrawn' AND q.opened_at < $1 AND coalesce(q.withdrawn_at, q.opened_at) < $1))
        AND factory_past_safe(q.id, $1)
-     LIMIT $4 FOR UPDATE OF q SKIP LOCKED) t;
+     LIMIT LEAST(GREATEST($4,0),100) FOR UPDATE OF q SKIP LOCKED) t;
   SELECT coalesce(array_agg(q.id), '{}') INTO v FROM questions q WHERE q.id = ANY (v)
      AND ((q.state = 'fact' AND q.fact_at < $1) OR (q.state = 'withdrawn' AND q.opened_at < $1 AND coalesce(q.withdrawn_at, q.opened_at) < $1))
      AND factory_past_safe(q.id, $1);

@@ -18,7 +18,8 @@ try {
     return { total: row?.querySelector('b')?.textContent,
       rows: [...box.querySelectorAll('.order-list li')].map(li => li.textContent.trim()),
       note: box.querySelector('.bh .set-note')?.textContent,
-      eta: [...box.querySelectorAll('dt')].some(n => n.textContent === 'Cleared in') };
+      eta: [...box.querySelectorAll('dt')].some(n => n.textContent === 'Cleared in'),
+      estimate: [...box.querySelectorAll('.kv')].find(k => k.querySelector('dt').textContent === 'Cleared in')?.textContent.trim() || null };
   })()`);
   let state = await draw(demand);
   app.check("the goal includes work not admitted to the queue", state.total === "1,000", JSON.stringify(state));
@@ -40,6 +41,26 @@ try {
     state.total === '1,000' && state.note === originalNote && !state.eta && state.rows.length === 2, JSON.stringify(state));
   state = await draw({ ...demand, goal: null, last_complete: goal }, now + 3 * 3600000);
   app.check("a later demand response with no fresh goal retains that same complete count", state.total === '1,000' && state.note === originalNote && !state.eta, JSON.stringify(state));
+  const later = now + 3 * 3600000;
+  const clearance = { state: 'ready', at: new Date(later).toISOString(), engine, snapshot: goal.snapshot, started_at: goal.started_at,
+    total: 1000, priced: 1000, unpriced: 0, hours: 5, known_hours: 5, range_hours: [4,6], sample_hours: 24 };
+  const based = { ...demand, goal: null, last_complete: goal, clearance };
+  state = await draw(based, later);
+  app.check("retained inventory has a newly sampled estimate bound to its original cut",
+    state.total === '1,000' && state.note === originalNote && state.estimate?.includes('excluding new tasks')
+    && state.estimate.includes('4 h') && state.estimate.includes('6 h'), JSON.stringify(state));
+  state = await draw({ ...based, clearance: { ...clearance, state:'partial', hours:null, priced:900, unpriced:100 } }, later);
+  app.check("partial prices show known work and the unpriced task count", state.estimate?.includes('known work')
+    && state.estimate.includes('100 tasks still need cost samples'), JSON.stringify(state));
+  for (const [status, text] of [['no_capacity','Waiting for compute capacity'],['no_samples','Awaiting task cost samples']]) {
+    state = await draw({ ...based, clearance:{...clearance,state:status} }, later);
+    app.check("missing inputs give an explicit clearance state: " + status, state.estimate?.includes(text), JSON.stringify(state));
+  }
+  for (const bad of [{...clearance,snapshot:'other'}, {...clearance,engine:'95d73da96acb'},
+    {...clearance,range_hours:[6,4]}, {...clearance,unpriced:1}, {...clearance,at:new Date(later-11*60000).toISOString()}]) {
+    state = await draw({...based,clearance:bad},later);
+    app.check("an inconsistent or outdated estimate cannot appear as a clearance duration", state.estimate?.includes('Estimate updating'), JSON.stringify(state));
+  }
   const clockSkew = { ...goal, at: new Date(now + 1000).toISOString() };
   state = await draw({ ...demand, goal: clockSkew });
   app.check("a valid fresh goal preserves the server's clock tolerance", state.total === '1,000' && state.eta, JSON.stringify(state));
@@ -64,10 +85,16 @@ try {
       const all = await api('/api/i18n'); LANG = 'zh'; I18N = all.zh;
       computeDemand = ${JSON.stringify({ ...demand, goal: null, last_complete: stale })};
       const box = document.createElement('div'); box.innerHTML = computeDemandHtml();
-      return { note: box.querySelector('.bh .set-note')?.textContent,
+      const note = box.querySelector('.bh .set-note')?.textContent;
+      computeDemand = ${JSON.stringify({ ...based, last_complete: stale, clearance: { ...clearance, state:'partial',
+        started_at:stale.started_at, at:new Date(now).toISOString(), priced:900, unpriced:100, hours:null } })};
+      box.innerHTML = computeDemandHtml();
+      return { note, estimate: [...box.querySelectorAll('.kv')].find(k=>k.querySelector('dt').textContent==='预计清空')?.textContent,
         expected: '上次完整统计 · 截至 ' + new Date(${JSON.stringify(stale.started_at)}).toLocaleString(accountLocale()) };
     } finally { LANG = language; I18N = overlay; }
   })()`);
   app.check("the retained count labels its original cut in Chinese too", localized.note === localized.expected, JSON.stringify(localized));
+  app.check("the partial estimate and missing cost samples are explained in Chinese", localized.estimate?.includes('已知部分约')
+    && localized.estimate.includes('另有 100 项任务待补耗时样本'), JSON.stringify(localized));
 } catch (error) { app.check("complete demand renders without errors", false, String(error)); }
 finally { await app.finish("complete compute demand is independent of admission"); }

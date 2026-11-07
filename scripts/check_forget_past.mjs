@@ -138,5 +138,14 @@ check("a refusal reopens the fact it witnessed inside the window", (await L.get(
 check("…and leaves standing one it witnessed before it", (await L.get("SELECT state FROM questions WHERE id = 'liar-old'")).state === "fact");
 check("…and takes back only the work of the window", out.taken_back === 100 && out.reopened === 1, JSON.stringify(out));
 
+const backlog = await testDb("library");
+await backlog.run(`INSERT INTO questions (id,verb,request,state,due_at,opened_at,canon,fact_engine,fact_at)
+  SELECT 'expired-'||i,'simulate','{}','fact',?1::text,?1::text,'c','e0',?1::text FROM generate_series(1,107) i`, OLD);
+const capped = async () => Number((await backlog.get("SELECT factory_forget_past(?::text,'e1','[]',2000) AS n", BEFORE)).n);
+const batches = [await capped(), await capped(), await capped()];
+check("retention bounds legacy large requests and commits the remaining work next pass",
+  JSON.stringify(batches) === '[100,7,0]', JSON.stringify(batches));
+await backlog.close();
+
 console.log(failures ? `\n${failures} failed` : "\nthe library keeps a window, and only what the window and the board still need");
 process.exit(failures ? 1 : 0);

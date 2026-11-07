@@ -158,7 +158,7 @@ await L.run("INSERT INTO queue (batch,build_id,ruler,mode) VALUES ('rescore-capa
 let samples = 0;
 const budgets = [];
 const sampled = { LIBRARY: { ...L,
-  prepare(sql) { if (/WITH s AS \(/.test(sql)) samples++; return L.prepare(sql); },
+  prepare(sql) { if (/WITH s AS/.test(sql)) samples++; return L.prepare(sql); },
   batch(statements) {
     const budget = statements.find(s => /^SET LOCAL statement_timeout/.test(s.sql));
     if (budget) budgets.push(budget.sql);
