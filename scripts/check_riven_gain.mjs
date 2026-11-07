@@ -13,6 +13,8 @@ import { appraiseRoute } from "../worker/appraise.js";
 import { verifyRoute, PACK_PROTOCOL as PROTOCOL } from "../worker/verify.js";
 import { boardTasksRoute } from "../worker/board_tasks.js";
 import { canon } from "../worker/tasks.js";
+import { facts } from "../worker/factory.js";
+import { headlessRivenGainRequest } from "../mcp/headless.js";
 import { testDb } from "./pg/test_db.mjs";
 
 let failures = 0;
@@ -275,6 +277,50 @@ const retried = await appraise("POST", `/api/appraise/${lostAsk}/request`, froze
 check("a freeze whose ask was lost is asked on the retry, as first stored",
   retried.body.stored === false && (await L.get("SELECT count(*) AS n FROM demands WHERE ref = ? AND state = 'live'", lostAsk)).n === 1
   && canon(JSON.parse((await L.get("SELECT request FROM questions WHERE id = ?", await questionOf(lostAsk))).request).request) === canon(frozen(2).request));
+
+console.log("\nindependently frozen identical cards");
+{
+  await freeLeases();
+  await L.run("UPDATE questions SET state = 'withdrawn'");
+  const meta = {
+    weapons: [{ id: "torid", modes: ["base"], mods: [] }], defaults: { runs: 1000 },
+    search_presets: { presets: [{ riven: true, finalists: 1, candidate_runs: 10, search_strategy: "four_elements" }] },
+    benchmarks: [{ id: "standard_single_target", scenario: { duration: 180 } }], riven_rules: { max_rank: 8 }
+  };
+  const freeze = async (code) => appraise("POST", `/api/appraise/${code}/request`, { engine: "e1",
+    ...headlessRivenGainRequest(meta, { weapon: "torid", ruler: "standard_single_target", card: riven }) }, bot);
+  const first = await open("same-first"), second = await open("same-second"), cancelled = await open("same-cancelled");
+  for (const c of [first, second, cancelled]) await freeze(c);
+  const q = await questionOf(first);
+  check("separately frozen identical cards share a question and retain separate demands",
+    await questionOf(second) === q && await questionOf(cancelled) === q
+    && (await L.get("SELECT count(*) AS n FROM demands WHERE question = ? AND state = 'live'", q)).n === 3);
+  await facts().withdraw(env, "chat", cancelled, Date.now());
+  check("withdrawing one ask leaves the others live",
+    (await L.get("SELECT count(*) AS n FROM demands WHERE question = ? AND state = 'live'", q)).n === 2);
+  const before = [await credited(A), await credited(B)];
+  const firstTask = await work(A, "e1", 8, "192.0.2.11");
+  check("the shared question still needs an independent second witness", firstTask?.code === first || firstTask?.code === second);
+  await answer(firstTask, A, {}, "192.0.2.11");
+  check("the first answer settles neither ask and credits nobody",
+    !(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", first)).agreed_at
+    && !(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", second)).agreed_at
+    && await credited(A) === before[0]);
+  check("another device of that owner cannot supply the second witness", (await work(D))?.kind !== "riven_gain");
+  await answer(await work(B, "e1", 8, "198.51.100.11"), B, {}, "198.51.100.11");
+  check("two witnesses deliver both active asks, leave the withdrawn one alone, and credit each witness once",
+    !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", first)).agreed_at
+    && !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", second)).agreed_at
+    && !(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", cancelled)).agreed_at
+    && await credited(A) === before[0] + 4e9 && await credited(B) === before[1] + 4e9);
+  const repeat = await open("same-later");
+  await freeze(repeat);
+  check("a later identical ask receives its own deliverable without new answers or credit",
+    await questionOf(repeat) === q && !!(await L.get("SELECT agreed_at FROM appraisals WHERE code = ?", repeat)).agreed_at
+    && !!await L.get("SELECT 1 FROM appraisal_results WHERE code = ?", repeat)
+    && (await L.get("SELECT count(*) AS n FROM answers WHERE question = ?", q)).n === 2
+    && await credited(A) === before[0] + 4e9 && await credited(B) === before[1] + 4e9);
+}
 
 console.log(failures ? `\n${failures} failed` : "\na riven gain is run by the community and credited when two owners agree");
 process.exitCode = failures ? 1 : 0;

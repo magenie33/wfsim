@@ -475,8 +475,12 @@ comparison. Executor disclosure and queue ownership are in `docs/TASKS.md`.
    such answers equal in build, score and work credit both, and the agreed build
    goes into the board's door as a reader's submission would (`submitRecord`).
    One frozen request asked twice — a chat asking for a shape a survey already
-   agreed — is one question, answered at once. The search is deterministic for
-   a frozen request, so honest computers agree to the bit. The chat is told the
+   agreed — is one question, answered at once. New bot and survey requests use
+   one request-local riven name, so identical cards and fights share the same
+   question. Explicit saved card references remain intact. Each appraisal
+   retains its own delivery; reuse does not add another computation credit.
+   Existing frozen requests keep their identities. The search is deterministic
+   for a frozen request, so honest computers agree to the bit. The chat is told the
    community is on it, and the link stays as the asker's own faster way. A
    computer still searching renews its lease every two minutes
    (`/api/appraise/<code>/renew`), so a slow one is never overtaken by its own

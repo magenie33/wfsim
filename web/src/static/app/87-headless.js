@@ -766,11 +766,11 @@ function headlessDefaultRuns(meta) {
 
 /// THE RIVEN GAIN'S SEARCH: `{ request, context }`, what a clean page builds for
 /// `weapon` under `ruler` with `card` (`{ bonuses, malus, rank, polarity }`) as
-/// the riven `rivenId` (a new one when absent) — the optimize request, and what
+/// the riven `rivenId` (a request-local name when absent) — the optimize request, and what
 /// turns its result into a build (68-board-submit.js `boardBuildContext`).
 /// `runs` is the final round's, a clean page's own. Null for an unknown weapon
 /// or ruler.
-function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = headlessNewRivenId(), runs = headlessDefaultRuns(meta) }) {
+function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = "appraisal", runs = headlessDefaultRuns(meta) }) {
   const w = headlessWeaponOf(meta, weapon);
   const bench = (meta.benchmarks || []).find((b) => b.id === ruler);
   const preset = ((meta.search_presets || {}).presets || []).find((p) => p.riven);

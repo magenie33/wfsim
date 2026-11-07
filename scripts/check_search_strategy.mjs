@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createContext, runInContext } from "node:vm";
 import { headlessRivenGainRequest } from "../mcp/headless.js";
+import { questionId } from "../worker/task_contract.js";
 
 const source = name => readFileSync(`web/src/static/app/${name}.js`, "utf8");
 const scope = createContext({ console });
@@ -69,6 +70,50 @@ assert.equal(read(`optimizeBody().search_strategy`), appraisal.search_strategy);
 assert.equal(read(`optimizeBody().starts.length`), 1);
 assert.deepEqual(read(`optimizeBody().starts[0].fixed`), appraisal.starts[0].fixed);
 console.log("  ok  built-ins and headless appraisal supply one user start, retaining its riven and evolutions");
+
+const card = { bonuses: [{ id: "critical_damage", roll: 1.07 }, { id: "multishot", roll: 0.94 }],
+  malus: { id: "status_duration", roll: 1.03 }, rank: 8, polarity: "madurai" };
+scope.identityCard = card;
+runInContext(`
+  const savedClock = Date.now, savedRandom = Math.random;
+  let identityClock = 1700000000000;
+  Date.now = () => identityClock++;
+  Math.random = () => 0.25;
+`, scope);
+const freeze = () => read(`headlessRivenGainRequest(META, { weapon: "test", ruler: "test_ruler", card: identityCard })`);
+const firstFreeze = freeze(), secondFreeze = freeze();
+runInContext(`Date.now = savedClock; Math.random = savedRandom;`, scope);
+assert.deepEqual(firstFreeze, secondFreeze, "separate appraisals of the same inputs must freeze the same question");
+const meta = read("META");
+const wire = value => JSON.parse(JSON.stringify(value));
+const frozen = wire(headlessRivenGainRequest(meta, { weapon: "test", ruler: "test_ruler", card }));
+assert.deepEqual(frozen, firstFreeze, "the bot and page share default request identity");
+const identity = await questionId("optimize", frozen);
+assert.equal(await questionId("optimize", secondFreeze), identity);
+const riven = frozen.request.rivens[0];
+assert.equal(frozen.request.starts[0].slots[0], `riven:${riven.id}`);
+assert.deepEqual(Object.keys(frozen.context.rivens), [`riven:${riven.id}`]);
+for (const change of [
+  copy => { copy.bonuses[0].roll = 1.08; }, copy => { copy.bonuses[0].id = "damage"; },
+  copy => { copy.malus.roll = 1.02; }, copy => { copy.malus.id = "zoom"; },
+  copy => { copy.rank = 7; }, copy => { copy.polarity = "naramon"; },
+]) {
+  const changed = structuredClone(card); change(changed);
+  const other = wire(headlessRivenGainRequest(meta, { weapon: "test", ruler: "test_ruler", card: changed }));
+  assert.notEqual(await questionId("optimize", other), identity, "card values must remain distinct questions");
+}
+for (const key of ["weapon", "duration", "runs", "seed", "candidate_runs", "search_strategy"]) {
+  const changed = structuredClone(frozen);
+  changed.request[key] = typeof changed.request[key] === "number" ? changed.request[key] + 1 : "other";
+  assert.notEqual(await questionId("optimize", changed), identity, `${key} remains part of the question`);
+}
+for (const id of ["saved-card-A", "saved-card-B"]) {
+  const explicit = headlessRivenGainRequest(meta, { weapon: "test", ruler: "test_ruler", card, rivenId: id });
+  assert.equal(explicit.request.rivens[0].id, id, "owned card references are preserved");
+  const normalized = JSON.parse(JSON.stringify(explicit).replaceAll(id, riven.id));
+  assert.deepEqual(normalized, JSON.parse(JSON.stringify(frozen)), "only the task-local name differs");
+}
+console.log("  ok  fresh appraisal identity is deterministic; card values, fight and explicit saved-card references stay distinct");
 
 runInContext(`
   const legacy = {

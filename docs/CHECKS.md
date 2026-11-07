@@ -1159,6 +1159,10 @@ row, and a shape before a rescore. A question frozen on an older engine is
 still handed out; a chat asking what a survey agreed is answered at once with
 a build to tell; and an appraisal frozen before the factory is adopted once,
 due as of when it was opened, its answers carried.
+Independently frozen identical cards share one question with separate demands:
+withdrawing one leaves the others live, two independent witnesses are still
+required, and each witness receives credit once. A later identical ask gets
+its own deliverable without another answer or credit.
 
 ## `check_ledger`
 
