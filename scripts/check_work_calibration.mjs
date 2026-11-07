@@ -62,6 +62,7 @@ try {
   assert.equal((await page('z', 0)).length, 1);
   const security = await db.get(`SELECT prosecdef,proconfig FROM pg_proc WHERE oid=?1::regprocedure`, signature);
   assert(security.prosecdef && security.proconfig.some(setting => setting.startsWith('search_path=')));
+  assert(security.proconfig.includes('plan_cache_mode=force_custom_plan'), 'cursor reads need a plan for their current bounds');
   console.log('ok: calibration pages match the grouped oracle, preserve legacy offsets, cap rows and restrict table access');
 } finally { await db.close(); }
 

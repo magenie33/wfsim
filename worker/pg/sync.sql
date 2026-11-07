@@ -415,17 +415,23 @@ REVOKE ALL ON FUNCTION factory_task_detail(text),factory_archive_candidates(text
 -- Cursor pages avoid rescanning earlier groups; bodies are optional for sampling.
 SELECT set_config('search_path',quote_ident(current_schema())||',pg_catalog,pg_temp',false);
 CREATE OR REPLACE FUNCTION factory_calibration_page(text,text,text,bigint,bigint,boolean,boolean)
-RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path FROM CURRENT SET plan_cache_mode = force_custom_plan AS $$
+BEGIN
+  -- Each cursor has different selectivity; its bounds must shape the page plan.
+  RETURN (
   SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.id),'[]'::jsonb) FROM (
     SELECT q.id,CASE WHEN $6 THEN q.request ELSE NULL END AS request,
            max(a.work) AS work,max(a.counts) AS counts,
            '['||string_agg(to_json(a.device)::text,',' ORDER BY a.id)||']' AS devices
       FROM questions q JOIN answers a ON a.question=q.id
      WHERE q.verb='simulate' AND q.id >= $3 AND (q.id > $3 OR $7)
+       AND a.question >= $3
        AND a.credited=1 AND a.official=0 AND a.void=0 AND a.at>$1 AND a.at<=$2
      GROUP BY q.id ORDER BY q.id
      LIMIT LEAST(GREATEST($5,1),2000) OFFSET GREATEST($4,0)
-  ) t
+  ) t);
+END
 $$;
 REVOKE ALL ON FUNCTION factory_calibration_page(text,text,text,bigint,bigint,boolean,boolean) FROM PUBLIC;
 

@@ -23,7 +23,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const jobs = api(`repos/${repository}/actions/runs/${id}/jobs?per_page=100`).jobs;
   const workflow = api(`repos/${repository}/actions/workflows/work.yml`).id;
   const source = measurementProof(run, jobs, repository, workflow);
-  execFileSync('git', ['fetch', '--no-tags', 'origin', source], { stdio: 'pipe' });
+  execFileSync('git', ['fetch', '--filter=blob:none', '--no-tags', 'origin', source], { stdio: 'pipe' });
   execFileSync('git', ['diff', '--exit-code', '--quiet', source, 'HEAD', '--',
     'engine', 'webapi', 'wasm', 'optimizer', 'native', 'data', 'tools/gas-macro',
     'Cargo.toml', 'Cargo.lock', 'mise.toml', 'scripts/data_packs.py', 'scripts/wasm_engine.mjs',
