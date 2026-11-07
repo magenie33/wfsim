@@ -86,16 +86,16 @@ check("…a live one keeps it, and the system's is never a code to erase",
 
 const backlog = await testDb("library");
 await backlog.exec(`INSERT INTO questions (id,verb,request,state,due_at,opened_at,initiator)
-  SELECT 'closed-'||i,'simulate','{}','fact','x','x','user:old' FROM generate_series(1,1007) i;
+  SELECT 'closed-'||i,'simulate','{}',CASE WHEN i%2=0 THEN 'fact' ELSE 'withdrawn' END,'x','x','user:old' FROM generate_series(1,1007) i;
   INSERT INTO demands (producer,ref,question,state,asked_at,due_at,initiator)
-  SELECT 'sweep','closed-'||i,'closed-'||i,'served','x','x','bot:old' FROM generate_series(1,1007) i;`);
+  SELECT 'sweep','closed-'||i,'closed-'||i,CASE WHEN i%2=0 THEN 'served' ELSE 'withdrawn' END,'x','x','bot:old' FROM generate_series(1,1007) i;`);
 const drain = async () => Number((await backlog.get("SELECT factory_forget_codes() AS n")).n);
 const batches = [await drain(), await drain(), await drain()];
 check("code cleanup commits bounded batches and reaches the remaining rows on its next pass",
   JSON.stringify(batches) === '[2000,14,0]', JSON.stringify(batches));
 check("code cleanup changes no task state or task count",
-  Number((await backlog.get("SELECT count(*) AS n FROM questions WHERE state='fact' AND initiator IS NULL")).n) === 1007
-  && Number((await backlog.get("SELECT count(*) AS n FROM demands WHERE state='served' AND initiator IS NULL")).n) === 1007);
+  Number((await backlog.get("SELECT count(*) AS n FROM questions WHERE state IN ('fact','withdrawn') AND initiator IS NULL")).n) === 1007
+  && Number((await backlog.get("SELECT count(*) AS n FROM demands WHERE state IN ('served','withdrawn') AND initiator IS NULL")).n) === 1007);
 await backlog.close();
 
 // ---- where it comes from ----

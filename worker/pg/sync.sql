@@ -279,12 +279,18 @@ $$;
 -- longer open lose a user or bot initiator (the settler's pass, dial
 -- `initiator_forget_ms`). The rows erased.
 CREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS bigint LANGUAGE sql AS $$
-  WITH ds AS MATERIALIZED (SELECT producer,ref FROM demands
-       WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state <> 'live'
-       LIMIT 1000 FOR UPDATE SKIP LOCKED),
-  qs AS MATERIALIZED (SELECT id FROM questions
-       WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state <> 'open'
-       LIMIT 1000 FOR UPDATE SKIP LOCKED),
+  -- Separate ranges skip the active state through the existing state indexes;
+  -- a not-equal filter would walk active rows before reaching a bounded batch.
+  WITH d_before AS MATERIALIZED (SELECT producer,ref FROM demands
+       WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state < 'live' FOR UPDATE SKIP LOCKED),
+  d_after AS MATERIALIZED (SELECT producer,ref FROM demands
+       WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state > 'live' FOR UPDATE SKIP LOCKED),
+  ds AS MATERIALIZED (SELECT * FROM d_before UNION ALL SELECT * FROM d_after LIMIT 1000),
+  q_before AS MATERIALIZED (SELECT id FROM questions
+       WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state < 'open' FOR UPDATE SKIP LOCKED),
+  q_after AS MATERIALIZED (SELECT id FROM questions
+       WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state > 'open' FOR UPDATE SKIP LOCKED),
+  qs AS MATERIALIZED (SELECT * FROM q_before UNION ALL SELECT * FROM q_after LIMIT 1000),
   d AS (UPDATE demands x SET initiator = NULL FROM ds
           WHERE x.producer=ds.producer AND x.ref=ds.ref AND x.state <> 'live' RETURNING 1),
   q AS (UPDATE questions x SET initiator = NULL FROM qs
