@@ -48,6 +48,21 @@ const r = await evaluate(`(async () => {
   const compIds = await type(tr('Companion'));
   out.companionsByKind = companions.length > 0 && companions.every(c => compIds.includes(c.id));
   out.guardianZh = (await type('守护')).includes('sentinel');
+  const claws = META.weapons.filter(w => w.mod_class === 'beast_claws');
+  const compWeapons = META.weapons.filter(w => w.slot === 'sentinel');
+  const compSlot = META.equipment_slots.find(s => s.id === 'sentinel');
+  const clawWords = ['Beast Claws', '利爪'];
+  const slotWords = [compSlot.name, tr(compSlot.name)];
+  out.topClaws = claws.length > 0;
+  for (const word of clawWords) {
+    const ids = await type(word);
+    out.topClaws = out.topClaws && claws.every(w => ids.includes(w.id));
+  }
+  out.topCompSlot = true;
+  for (const word of slotWords) {
+    const ids = await type(word);
+    out.topCompSlot = out.topCompSlot && compWeapons.every(w => ids.includes(w.id));
+  }
   const visit = async (q, kind, id, path) => {
     await type(q);
     const row = document.querySelector('#wsearch-list .opt[data-kind="' + kind + '"][data-id="' + id + '"]');
@@ -67,6 +82,18 @@ const r = await evaluate(`(async () => {
   const homeFrames = await homeSearch(tr('Warframes'));
   out.homeFrames = frames.every(f => homeFrames.includes(warframePath(f)));
   out.homeGuardian = (await homeSearch('守护')).includes(companionPath(compHost('sentinel')));
+  out.homeClaws = true;
+  for (const word of clawWords) {
+    const paths = await homeSearch(word);
+    out.homeClaws = out.homeClaws && claws.every(w => paths.includes(weaponPath(w.id)));
+  }
+  out.homeCompSlot = true;
+  for (const word of slotWords) {
+    const paths = await homeSearch(word);
+    out.homeCompSlot = out.homeCompSlot && compWeapons.every(w => paths.includes(weaponPath(w.id)));
+  }
+  const spaced = META.weapons.find(w => w.name === '野猪 Prime');
+  out.homeTightName = !!spaced && (await homeSearch('野猪Prime')).includes(weaponPath(spaced.id));
   return out;
 })()`);
 check("an empty box opens nothing", r.emptyShut === true, JSON.stringify(r));
@@ -80,6 +107,9 @@ check("Warframes and companions are searchable by their localized kind", r.frame
 check("the Sentinel is searchable by its Chinese name", r.guardianZh, JSON.stringify(r));
 check("weapon, Warframe and companion results open their own pages", r.weaponRoute && r.frameRoute && r.companionRoute, JSON.stringify(r));
 check("the home search also finds Warframes and the Sentinel in Chinese", r.homeFrames && r.homeGuardian, JSON.stringify(r));
+check("home and topbar find every claw by kind and Chinese claw names", r.homeClaws && r.topClaws, JSON.stringify(r));
+check("home and topbar find every companion weapon by its equipment slot", r.homeCompSlot && r.topCompSlot, JSON.stringify(r));
+check("home search matches localized weapon names without their spaces", r.homeTightName, JSON.stringify(r));
 
 // ON A PHONE the results take the screen's width under the bar, what floats over
 // the screen steps aside while they are open, and every row's kind is in the

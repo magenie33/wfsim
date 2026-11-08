@@ -380,7 +380,8 @@ and a run is 战斗, and a game term is DE's own (裂罅, 异况超量, 超宏�
 
 The topbar searches weapons, Warframes and companion hosts by name or kind.
 Results show their kind and open that equipment's page. The home search
-also matches Warframe and companion categories and localized host names.
+uses the same weapon matcher, including localized names, kinds and equipment
+slots. It also matches Warframe and companion categories and localized host names.
 
 ## Every box takes a Chinese input method
 

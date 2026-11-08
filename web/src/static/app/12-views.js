@@ -516,7 +516,7 @@ function renderHome() {
     }
     const all = (META.weapons || []).filter((w) => w.slot === slot.id);
     const st = homeFilters[slot.id] || (homeFilters[slot.id] = slotFilterNew());
-    const kept = all.filter((w) => slotFilterMatch(st, w) && nameMatches(homeQuery, w.name, w.name_en));
+    const kept = all.filter((w) => slotFilterMatch(st, w) && searchHit(w, homeQuery.trim().toLowerCase()));
     const rows = all.length >= FILTER_FROM ? slotFilterRows(all, st) : "";
     return { slot, total: all.length, cards: kept.map(weaponCard), filters: rows,
       active: !!st.type + !!st.cls + st.tags.length };
