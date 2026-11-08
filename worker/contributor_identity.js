@@ -2,12 +2,12 @@
 // Public identity is stable; names and visibility are resolved from current account state.
 import { shownName } from "./names.js";
 
-export async function contributorAccounts(env, ids) {
+export async function contributorAccounts(env, ids, byProfile = false) {
   if (!env.ACCOUNTS || !ids.length) return new Map();
   const wanted = JSON.stringify([...new Set(ids)]);
   const { results } = await env.ACCOUNTS.prepare(`SELECT a.id,a.profile_id,a.username,a.display_name,c.named,
     h.display_name AS held_name,h.reason AS held_reason FROM accounts a LEFT JOIN contribution_choice c ON c.account=a.id
-    LEFT JOIN display_name_holds h ON h.account=a.id WHERE a.id IN (SELECT jsonb_array_elements_text((?::text)::jsonb))`)
+    LEFT JOIN display_name_holds h ON h.account=a.id WHERE a.${byProfile ? "profile_id" : "id"} IN (SELECT jsonb_array_elements_text((?::text)::jsonb))`)
     .bind(wanted).all();
   const missing = results.filter(row => !row.profile_id).map(row => ({ id: row.id, profile: crypto.randomUUID().replaceAll("-", "") }));
   if (missing.length) {

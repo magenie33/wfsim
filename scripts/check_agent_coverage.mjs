@@ -133,9 +133,9 @@ for (const w of WEAPONS) {
 
 const profileFixture = await computationFixture(app.BASE);
 try {
-  await send("Page.navigate", { url: profileFixture.base + "/people/me" });
+  await send("Page.navigate", { url: profileFixture.base + "/user/me?kind=board" });
   for (let n = 0; n < 100; n++) {
-    if (await evaluate("typeof computationProfile !== 'undefined' && computationProfile?.value && !computationProfile.loading")) break;
+    if (await evaluate("typeof computationProfile !== 'undefined' && computationProfile?.value && !computationProfile.loading && !computationProfile.recordsLoading && !computationProfile.statsLoading")) break;
     await app.sleep(250);
   }
   const profile = await evaluate(SCAN);

@@ -20,7 +20,14 @@ const AUTH_PATHS = { "/login": "login", "/signup": "signup", "/reset": "reset", 
   "/account/sync": "sync", "/contributors": "contributors", "/compute": "compute", "/clan": "clan",
   "/notifications": "notifications", "/account/recommendations": "recommendations" };
 /// …and the pages an extension mounts (`EXT.pages`), routed the same way.
-const authKindOf = (path) => /^\/people\/(me|[a-f0-9]{32})\/?$/.test(path) ? "profile"
+const userProfilePath = (id = "me") => "/user/" + encodeURIComponent(id);
+const userProfileLink = (id, name, cls = "") => id
+  ? `<a class="user-link${cls ? " " + escHtml(cls) : ""}" href="${escHtml(userProfilePath(id))}">${escHtml(name)}</a>` : escHtml(name);
+function normalizeUserProfileAddress() {
+  const match = location.pathname.match(/^\/(?:user|people)\/(me|[a-f0-9]{32})\/?$/);
+  if (match && location.pathname !== userProfilePath(match[1])) history.replaceState(history.state, "", userProfilePath(match[1]) + location.search + location.hash);
+}
+const authKindOf = (path) => /^\/(?:user|people)\/(me|[a-f0-9]{32})\/?$/.test(path) ? "profile"
   : /^\/calculations\/[a-f0-9]{32}\/?$/.test(path) ? "calculation"
   : AUTH_PATHS[path.replace(/\/$/, "")] || extKindOf(path.replace(/\/$/, ""));
 /// EACH PAGE ITS OWN `app.view` KIND, so the way in can be read step by step;
@@ -231,7 +238,7 @@ function renderAccountEntry() {
       <div class="acct-menu" id="acct-menu" role="menu" hidden>
         <div class="who"><span class="avatar">${escHtml(accountInitial(account))}</span><div><b>${escHtml(accountName(account))}</b>
           <span>@${escHtml(account.username || "")}</span></div></div>
-        <a href="/people/me" role="menuitem">${aT("My profile")}</a>
+        <a href="${userProfilePath()}" role="menuitem">${aT("My profile")}</a>
         <a href="/account" role="menuitem">${aT("Account settings")}</a>
         <a href="/account/recommendations" role="menuitem">${aT("Mine")}</a>
         <a href="/account/sync" role="menuitem">${aT("Cloud sync")}</a>
@@ -616,7 +623,7 @@ const contributorsOrdered = () => (contributorsState || []).map((c, i) => ({ c, 
 
 function contributorRowInner(c, at, shown) {
   const who = c.name === null ? `<span class="rank-name muted">${aT("Anonymous contributor")}</span>`
-    : `${c.profile ? `<a class="rank-name" href="/people/${escHtml(c.profile)}">${escHtml(c.name)}</a>`
+    : `${c.profile ? userProfileLink(c.profile, c.name, "rank-name")
       : `<span class="rank-name">${escHtml(c.name)}</span>`}${extHookNow("contributorMark", c.mark) || ""}`;
   return `<span class="rank-n">${at + 1}</span><span class="rank-who">${contributorRankBadge(c.contributor_rank)}${who}${
     c.you ? `<span class="rank-you">${aT("(you)")}</span>` : ""}</span><span class="rank-pts">${escHtml(shown.toLocaleString(accountLocale()))}</span>`;

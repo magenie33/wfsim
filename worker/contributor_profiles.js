@@ -42,7 +42,7 @@ export async function contributorProfilesRoute(request, env, path) {
   const profile = path.match(/^\/api\/contributors\/profile\/([a-f0-9]{32})$/);
   const record = path.match(/^\/api\/computations\/([a-f0-9]{32})$/);
   if (!profile && !record && !["/api/account/contribution-profile", "/api/computations/names"].includes(path)) return null;
-  if (!env.ACCOUNTS || !env.LIBRARY) return no("unavailable", 503);
+  if (!env.ACCOUNTS || (!env.LIBRARY && (record || path === "/api/computations/names"))) return no("unavailable", 503);
   if (await limited(env, request, "computation_records")) return no("rate_limited", 429);
   if (path === "/api/computations/names") {
     if (request.method !== "POST" || !sameSite(request)) return no("bad_request", 403);
@@ -61,19 +61,23 @@ export async function contributorProfilesRoute(request, env, path) {
     return reply({ ok: true, record: (await namesForRows(env, [row], "computation_witnesses", "question"))[0] });
   }
   const me = await sessionAccount(env, request);
-  let account;
-  if (profile) account = (await env.ACCOUNTS.prepare("SELECT id FROM accounts WHERE profile_id=?").bind(profile[1]).first())?.id;
-  else account = me;
-  if (!account) return no(profile ? "not_found" : "not_signed_in", profile ? 404 : 401);
-  const person = (await contributorAccounts(env, [account])).get(account);
+  if (!profile && !me) return no("not_signed_in", 401);
+  const people = await contributorAccounts(env, [profile ? profile[1] : me], !!profile);
+  const person = profile ? people.values().next().value : people.get(me), account = person?.id;
   if (!person || !person.named && account !== me) return no("not_found", 404);
   const query = new URL(request.url).searchParams, kind = query.get("kind") || "board", weapon = query.get("weapon") || "";
+  const view = query.get("view") || "full", size = Number(query.get("limit") || 50);
   let before = null;
   try { before = query.has("before") ? JSON.parse(query.get("before")) : null; } catch { return no("bad_cursor"); }
-  if (!["board", "optimization"].includes(kind) || weapon && !SLUG.test(weapon) || before && (!Array.isArray(before)
+  if (!["full", "identity", "summary", "records"].includes(view) || !Number.isInteger(size) || size < 1 || size > 50
+    || !["board", "optimization"].includes(kind) || weapon && !SLUG.test(weapon) || before && (!Array.isArray(before)
     || before.length !== (kind === "board" ? 4 : 2) || !before.every(bounded))) return no("bad_query");
+  const identity = { id: person.profile_id, name: person.name, username: person.username, named: !!person.named, you: account === me };
+  if (view === "identity") return reply({ ok: true, profile: identity });
+  if (!env.LIBRARY) return no("unavailable", 503);
+  const contribution = view === "records" ? {} : await contributionOf(env, account);
+  if (view === "summary") return reply({ ok: true, profile: { ...identity, ...contribution }, keep_days: 14 });
   const owners = await ownershipSpans(env, account);
-  const contribution = await contributionOf(env, account);
   let rows, next;
   if (kind === "board") {
     const cursor = before || ["9999", "~", "~", "~"];
@@ -82,19 +86,18 @@ export async function contributorProfilesRoute(request, env, path) {
       JOIN builds b ON b.id=s.identity WHERE ${OWNED_WITNESS_SQL}
       AND (?2::text='' OR b.weapon=?2::text) AND (s.finished_at,s.identity,s.ruler,s.mode)<(?3::text,?4::text,?5::text,?6::text)
       AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=s.identity AND f.ruler=s.ruler AND f.mode=s.mode AND f.retired_at IS NOT NULL)
-      ORDER BY s.finished_at DESC,s.identity DESC,s.ruler DESC,s.mode DESC LIMIT 51`).bind(owners, weapon, ...cursor).all());
-    next = rows.length > 50 ? rows[49] : null;
-    rows = (await namesForRows(env, rows.slice(0, 50), "score_witnesses", "score")).map(row => ({ ...row, record: JSON.parse(row.record) }));
+      ORDER BY s.finished_at DESC,s.identity DESC,s.ruler DESC,s.mode DESC LIMIT ?7::bigint`).bind(owners, weapon, ...cursor, size + 1).all());
+    next = rows.length > size ? rows[size - 1] : null;
+    rows = (await namesForRows(env, rows.slice(0, size), "score_witnesses", "score")).map(row => ({ ...row, record: JSON.parse(row.record) }));
     next = next ? [next.finished_at, next.identity, next.ruler, next.mode] : null;
   } else {
     const cursor = before || ["9999", "~"];
     ({ results: rows } = await env.LIBRARY.prepare(`SELECT DISTINCT r.* FROM computation_records r JOIN computation_witnesses w ON w.question=r.question
       WHERE r.kind='optimization' AND ${OWNED_WITNESS_SQL} AND r.expires_at>?2::text
       AND (?3::text='' OR r.weapon=?3::text) AND (r.completed_at,r.question)<(?4::text,?5::text)
-      ORDER BY r.completed_at DESC,r.question DESC LIMIT 51`).bind(owners, iso(Date.now()), weapon, ...cursor).all());
-    next = rows.length > 50 ? [rows[49].completed_at, rows[49].question] : null;
-    rows = await namesForRows(env, rows.slice(0, 50), "computation_witnesses", "question");
+      ORDER BY r.completed_at DESC,r.question DESC LIMIT ?6::bigint`).bind(owners, iso(Date.now()), weapon, ...cursor, size + 1).all());
+    next = rows.length > size ? [rows[size - 1].completed_at, rows[size - 1].question] : null;
+    rows = await namesForRows(env, rows.slice(0, size), "computation_witnesses", "question");
   }
-  return reply({ ok: true, profile: { id: person.profile_id, name: person.name, username: person.username,
-    named: !!person.named, you: account === me, ...contribution }, kind, keep_days: 14, candidates: rows, next });
+  return reply({ ok: true, profile: { ...identity, ...contribution }, kind, keep_days: 14, candidates: rows, next });
 }
