@@ -1,4 +1,4 @@
-# All 648 Warframe weapons in WFSim
+# All 665 Warframe weapons in WFSim
 
 Each links to its page as markdown; drop `.md` for the calculator.
 
@@ -644,26 +644,43 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Zylok Prime](https://wfsim.app/weapons/Zylok_Prime.md): Pistol · Secondary · Mastery Rank 13
 - [Zymos](https://wfsim.app/weapons/Zymos.md): Pistol · Secondary · Mastery Rank 11
 
-## Sentinel (21)
+## Sentinel (38)
 
+- [Adarza Claws](https://wfsim.app/weapons/Adarza_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
 - [Artax](https://wfsim.app/weapons/Artax.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Burst Laser](https://wfsim.app/weapons/Burst_Laser.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Burst Laser Prime](https://wfsim.app/weapons/Burst_Laser_Prime.md): Sentinel Weapon · Sentinel · Mastery Rank 0
+- [Chesa Claws](https://wfsim.app/weapons/Chesa_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
+- [Crescent Claws](https://wfsim.app/weapons/Crescent_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
 - [Cryotra](https://wfsim.app/weapons/Cryotra.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Deconstructor](https://wfsim.app/weapons/Deconstructor.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Deconstructor Prime](https://wfsim.app/weapons/Deconstructor_Prime.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Deth Machine Rifle](https://wfsim.app/weapons/Deth_Machine_Rifle.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Deth Machine Rifle Prime](https://wfsim.app/weapons/Deth_Machine_Rifle_Prime.md): Sentinel Weapon · Sentinel · Mastery Rank 0
+- [Helminth Claws](https://wfsim.app/weapons/Helminth_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
 - [Helstrum](https://wfsim.app/weapons/Helstrum.md): Sentinel Weapon · Sentinel · Mastery Rank 0
+- [Huras Claws](https://wfsim.app/weapons/Huras_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
 - [Laser Rifle](https://wfsim.app/weapons/Laser_Rifle.md): Sentinel Weapon · Sentinel · Mastery Rank 0
+- [Medjay Claws](https://wfsim.app/weapons/Medjay_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
 - [Multron](https://wfsim.app/weapons/Multron.md): Sentinel Weapon · Sentinel · Mastery Rank 3
+- [Panzer Claws](https://wfsim.app/weapons/Panzer_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
+- [Pharaoh Claws](https://wfsim.app/weapons/Pharaoh_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
 - [Prime Laser Rifle](https://wfsim.app/weapons/Prime_Laser_Rifle.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Prisma Burst Laser](https://wfsim.app/weapons/Prisma_Burst_Laser.md): Sentinel Weapon · Sentinel · Mastery Rank 0
+- [Raksa Claws](https://wfsim.app/weapons/Raksa_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
+- [Sahasa Claws](https://wfsim.app/weapons/Sahasa_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
+- [Sly Claws](https://wfsim.app/weapons/Sly_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
+- [Smeeta Claws](https://wfsim.app/weapons/Smeeta_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
 - [Stinger](https://wfsim.app/weapons/Stinger.md): Sentinel Weapon · Sentinel · Mastery Rank 0
+- [Sunika Claws](https://wfsim.app/weapons/Sunika_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
 - [Sweeper](https://wfsim.app/weapons/Sweeper.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Sweeper Prime](https://wfsim.app/weapons/Sweeper_Prime.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Tazicor](https://wfsim.app/weapons/Tazicor.md): Sentinel Weapon · Sentinel · Mastery Rank 3
+- [Vasca Claws](https://wfsim.app/weapons/Vasca_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
+- [Venari Claws](https://wfsim.app/weapons/Venari_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
+- [Venari Prime Claws](https://wfsim.app/weapons/Venari_Prime_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
 - [Verglas](https://wfsim.app/weapons/Verglas.md): Sentinel Weapon · Sentinel · Mastery Rank 0
 - [Verglas Prime](https://wfsim.app/weapons/Verglas_Prime.md): Sentinel Weapon · Sentinel · Mastery Rank 0
+- [Vizier Claws](https://wfsim.app/weapons/Vizier_Claws.md): Beast Claws · Sentinel · Mastery Rank 0
 - [Vulcax](https://wfsim.app/weapons/Vulcax.md): Sentinel Weapon · Sentinel · Mastery Rank 14
 - [Vulklok](https://wfsim.app/weapons/Vulklok.md): Sentinel Weapon · Sentinel · Mastery Rank 0

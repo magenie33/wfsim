@@ -1,0 +1,13 @@
+# Crescent Claws
+
+Beast Claws · Sentinel · Mastery Rank 0. 100 base damage (electricity 50, puncture 50), 22.5% crit chance, 2x crit multiplier, 17.5% status chance.
+
+## Not modelled here
+
+- The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.
+- Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.
+
+## In WFSim
+
+- Build, simulate and optimize it: https://wfsim.app/weapons/Crescent_Claws
+- Every published board row, as JSON: https://wfsim.app/board/crescent_claws.json
