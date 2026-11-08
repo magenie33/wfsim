@@ -668,6 +668,7 @@ impl FightParams {
     /// `stage_mb` is THAT attack part's ModifiedBase: an explosion's elemental
     /// mods are a percentage of the explosion's own base (MECHANICS §7), and
     /// an ability sized "additive with elemental mods" is sized the same way.
+    #[inline(always)]
     pub(super) fn with_live_elements(
         &self,
         qvec: DamageVector,
@@ -699,6 +700,7 @@ impl FightParams {
     }
 
     /// [`Self::with_live_elements`] before the snap, for Extra Hit brackets.
+    #[inline(always)]
     pub(super) fn with_live_elements_unquantized(
         &self,
         qvec: DamageVector,
