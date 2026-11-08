@@ -326,12 +326,14 @@ stays the working copy: signed out, or without the feature, nothing runs.
 | rule | where it is held |
 | --- | --- |
 | a change is an entry whose signature moved since the last round; a deletion is an entry gone | `syncRound`, `wfsim-sync` |
-| a change carries the version it was made from (`base`); one made from a version no longer current is a conflict, and both are kept — the account's version as the entry, this browser's as a copy beside it, the editor staying on its own | `syncBase`, `syncConflict` |
+| a change carries the version it was made from (`base`); identical content acknowledges the current version; a real conflict keeps the account's entry and this browser's local-only copy, with the editor on its own | `syncBase`, `syncConflict` |
 | each browser names itself and reports how its round went, so one that cannot sync is visible from the others | `syncDevice`, `syncReport` |
-| a round runs after an edit settles, on sign-in, on coming back to the tab, and once on leaving it | `syncSoon`, `pagehide` |
-| the first round on a browser is a union: everything here is pushed, everything there pulled | `syncRound` |
+| signing in on a new browser leaves sync off; the reader enables it from the account page, and may pause it without deleting anything | `syncNow`, `syncPause` |
+| while enabled, a round runs after an edit settles, on sign-in, on coming back to the tab, and once on leaving it | `syncSoon`, `pagehide` |
+| the first explicitly requested round merges the selected local entries with the account's; tabs share one round at a time through Web Locks | `syncNow`, `syncRound` |
 | a result never travels: it is a record of its own (§Results) | `syncBody` |
 | an entry edited while the round ran keeps the edit; the next round pushes it | `syncApply` |
+| an old account's reply, a paused round, a malformed entry and an older version cannot replace the browser's saved state | `syncRound`, `syncValidEntry`, `syncApply` |
 | two entries may share a name, so nothing is renamed on the way in | `syncApply` |
 | the page re-applies an entry on screen that changed, for every collection `COLLECTIONS` names | `syncShow` |
 | a browser that synced with another account merges nothing until the reader asks on `/account`, and counts none of it as this account's | `other`, `syncAdopt`, `syncedCounts` |
