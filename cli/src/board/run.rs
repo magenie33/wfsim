@@ -162,6 +162,13 @@ fn each_ruler() {
         eprintln!("wfsim-board --each-ruler counts and fights nothing: it takes --dry-run");
         std::process::exit(2);
     }
+    let workers = if has_flag("--inventory-workers") {
+        flag("--inventory-workers").and_then(|value| value.parse::<usize>().ok())
+            .filter(|n| (1..=super::assemble::MAX_THREADS).contains(n)).unwrap_or_else(|| {
+                eprintln!("--inventory-workers requires an integer from 1 to {}", super::assemble::MAX_THREADS);
+                std::process::exit(2);
+            })
+    } else { super::assemble::MAX_THREADS };
     let roster: Vec<String> = wfsim_engine::board::benchmarks::all()
         .iter()
         .map(|b| b.id.to_string())
@@ -202,7 +209,8 @@ fn each_ruler() {
     );
     let started = std::time::Instant::now();
     let completed = std::sync::atomic::AtomicUsize::new(0);
-    let logs = super::assemble::par_map(&roster, |id| {
+    inventory_progress(serde_json::json!({ "phase": "rulers", "event": "start", "workers": workers }));
+    let logs = super::assemble::par_map_limit(&roster, workers, |id| {
         let started = std::time::Instant::now();
         let facts = by.lock().expect("facts").remove(id).unwrap_or_default();
         let mine = |name: &str| flag(name).map(|v| v.replace("{id}", id));

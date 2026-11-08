@@ -25,13 +25,14 @@ const [child, full, leader, roll] = canonical([record, parent, lead, rolled]);
 assert.equal(child.id, '6b96ab9988535a7badff7904ccba032c', 'saved child identity stays frozen');
 assert.equal(full.id, '73e98d44d3ef0b61a2b5e33bb10ea262', 'intake parent identity stays frozen');
 
-function missing(name, records, facts = []) {
+function missing(name, records, facts = [], workers) {
   const source = join(dir, name), queue = source + '.queue', measured = source + '.facts';
   writeFileSync(queue, '');
   writeFileSync(measured, facts.map(row => JSON.stringify({ ruler: 'standard_single_target', mode: 'base',
     finished_at: '2026-11-01T00:00:00.000Z', ...row })).join('\n'));
   execFileSync(binary, ['--each-ruler', '--dry-run', '--gate', '--facts-in', measured,
-    '--queue-in', queue, '--queue-missing', source + '.{id}.missing'], {
+    '--queue-in', queue, '--queue-missing', source + '.{id}.missing',
+    ...(workers === undefined ? [] : ['--inventory-workers', String(workers)])], {
     input: JSON.stringify(records), encoding: 'utf8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'],
   });
   const roster = execFileSync(binary, ['--rulers'], { encoding: 'utf8', timeout: 30000 }).trim().split(/\s+/);
@@ -40,6 +41,11 @@ function missing(name, records, facts = []) {
 
 try {
   const waiting = missing('waiting', [child.record, full.record]);
+  for (const workers of [1, 2]) assert.deepEqual(missing(`workers-${workers}`, [child.record, full.record], [], workers), waiting,
+    'bounded parallel rulers preserve every ordered missing row');
+  for (const workers of [['0'], ['9'], ['broken'], []]) assert.throws(() => execFileSync(binary,
+    ['--each-ruler', '--dry-run', '--inventory-workers', ...workers], { input: '[]', stdio: 'pipe', timeout: 30000 }),
+    error => error.status === 2 && error.stderr.toString().includes('--inventory-workers requires'));
   assert.equal(waiting.filter(row => row.build_id === child.id).length, 0,
     'a lower rank waits for its existing canonical parent on every ruler and mode');
   assert(waiting.some(row => row.build_id === full.id), 'the parent still receives its first fight');

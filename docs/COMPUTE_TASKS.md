@@ -144,6 +144,8 @@ pressure and cgroup memory events are recorded when available. The final exit
 report retains CPU time and peak RSS; periodic readings survive a lost runner.
 Native enumeration retains source records as JSON text for refusal diagnostics;
 parsed records are temporary, and validated builds are shared across rulers.
+`--inventory-workers 1..8` bounds concurrent ruler walks without changing their
+admission rules or ordered outputs. Library normalization retains its shared pool.
 
 ### Incremental inventory
 
