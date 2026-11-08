@@ -1525,7 +1525,7 @@ function headlessBenchmarkName(meta, id, translate = (x) => x) {
 /// one — or a benchmark yaml — cannot reintroduce them: how the weapon is fired
 /// belongs to the build, and how hard a fight is measured to the reader (the
 /// official rulers' own runs are the scorer's, which no page setting moves).
-const HEADLESS_DEAD_SCENARIO_FIELDS = ["form", "mode", "runs"];
+const HEADLESS_DEAD_SCENARIO_FIELDS = ["form", "mode", "runs", "attack_interval_seconds"];
 
 /// A SCENARIO AS THE LIVE FIGHT, onto a COMPLETE fight — the defaults — and never
 /// onto the fight before it: `st` states only what it has an opinion about, so
@@ -1676,12 +1676,12 @@ function headlessDefaultRuns(meta) {
 /// the riven `rivenId` (a request-local name when absent) — the optimize request, and what
 /// turns its result into a build (68-board-submit.js `boardBuildContext`).
 /// `runs` is the final round's, a clean page's own. Null for an unknown weapon
-/// or ruler.
+/// or ruler, or a weapon that takes no riven.
 function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = "appraisal", runs = headlessDefaultRuns(meta) }) {
   const w = headlessWeaponOf(meta, weapon);
   const bench = (meta.benchmarks || []).find((b) => b.id === ruler);
   const preset = ((meta.search_presets || {}).presets || []).find((p) => p.riven);
-  if (!w || !bench || !preset) return null;
+  if (!w || w.no_riven || !bench || !preset) return null;
   const contact = 2 * (Number(meta.body_radius_m) || 0.25);
   const sim = { ...headlessScenarioOnto(meta, bench.scenario, contact, "kpm"), __weapon: weapon };
   const mod = "riven:" + rivenId;

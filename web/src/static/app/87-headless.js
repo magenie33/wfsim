@@ -769,12 +769,12 @@ function headlessDefaultRuns(meta) {
 /// the riven `rivenId` (a request-local name when absent) — the optimize request, and what
 /// turns its result into a build (68-board-submit.js `boardBuildContext`).
 /// `runs` is the final round's, a clean page's own. Null for an unknown weapon
-/// or ruler.
+/// or ruler, or a weapon that takes no riven.
 function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = "appraisal", runs = headlessDefaultRuns(meta) }) {
   const w = headlessWeaponOf(meta, weapon);
   const bench = (meta.benchmarks || []).find((b) => b.id === ruler);
   const preset = ((meta.search_presets || {}).presets || []).find((p) => p.riven);
-  if (!w || !bench || !preset) return null;
+  if (!w || w.no_riven || !bench || !preset) return null;
   const contact = 2 * (Number(meta.body_radius_m) || 0.25);
   const sim = { ...headlessScenarioOnto(meta, bench.scenario, contact, "kpm"), __weapon: weapon };
   const mod = "riven:" + rivenId;

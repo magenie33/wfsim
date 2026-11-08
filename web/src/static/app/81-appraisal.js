@@ -80,6 +80,7 @@ async function openAppraisal(code, freeze = false) {
 /// asker's card reads, and one riven-pinned start under the preset's strategy,
 /// answering with the preset's count at its runs a candidate.
 async function setUpAppraisal(w, job) {
+  if (w.no_riven) throw new Error("This weapon takes no riven.");
   await agentDo("shell.preset.open", { bar: "scenario", preset: job.ruler });
   const rv = job.riven || {};
   const id = newRiven({ bonuses: (rv.bonuses || []).map((b) => ({ id: b.id, roll: b.roll })),
