@@ -784,11 +784,15 @@ function headlessRivenGainRequest(meta, { weapon, ruler, card, rivenId = "apprai
   const mode = headlessDefaultMode(meta, weapon, null);
   const valence = headlessDefaultValence(meta, weapon, null);
   const assembly = headlessDefaultAssembly(meta, weapon, null);
-  // A WEAPON WITH ONE STANCE holds it, and one locked to its frames (an Exalted
-  // weapon) is held by the first of them, unbuilt (40-official-builds.js
-  // `defaultWielder`); every other holder is the floor, which the wire omits.
+  // A companion keeps its declared carrier's identity even without cards.
+  // Exalted weapons use their first allowed frame; the ordinary Prototype is
+  // omitted, matching `defaultWielder` and `wielderPayloadOf`.
   const stance = w.fixed_stance || "";
-  const wielder = !w.sentinel && (w.wielders || []).length ? { frame: w.wielders[0] } : undefined;
+  const host = (meta.companions || []).find((c) => c.id === w.companion_default);
+  const wielder = w.sentinel ? { companion: w.companion_default,
+    assembly: { ...(host?.default_assembly || {}) }, gilded: true,
+    gild_polarity: host?.body?.gild_polarity || undefined, mods: [] }
+    : (w.wielders || []).length ? { frame: w.wielders[0] } : undefined;
   const request = {
     weapon,
     rivens: [{ id: rivenId, name: "riven 1", spec }],
