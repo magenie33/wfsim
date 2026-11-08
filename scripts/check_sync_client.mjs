@@ -244,6 +244,8 @@ const r = await evaluate(`(async () => {
   const copy = after.find((p) => p.id !== 'b1' && /b1|preset 1/.test(p.name || '') && (p.state || {}).slots && p.state.slots[0].mod === 'heavy_caliber') || null;
   out.conflict = [((pushedFirst || {}).slots || [])[0]?.mod, b1now.state && b1now.state.slots[0].mod, !!copy, !!copy && srv.acc1.has(copy.id) === false];
   await syncNow();
+  out.copyLocal = !!copy && !srv.acc1.has(copy.id) && builds().find((p) => p.id === copy.id).cloud_sync === false;
+  if (copy) { setCloudSync(L, copy.id, true); await syncNow(); }
   out.copySynced = !!copy && srv.acc1.has(copy.id);
 
   // REMINDERS SYNC AS A POOL OF THEIR OWN: made on one browser, they reach the
@@ -344,7 +346,8 @@ check("an item the server rejects does not hold back the one beside it, and is n
   ok(r.rejected) === ok([true, true, true, "big:bad_body"]), ok(r.rejected));
 check("two browsers that change one entry keep both: the account's version as the entry, the second one's as a copy beside it",
   ok(r.conflict) === ok(["shred", "shred", true, true]), ok(r.conflict));
-check("...and the copy syncs as an entry of its own", r.copySynced === true);
+check("...and the conflict copy stays local until explicitly selected", r.copyLocal === true);
+check("...then it syncs as an entry of its own", r.copySynced === true);
 check("a reminder made on one browser is pushed to its own list", r.remPushed === "wfsim-reminders", ok(r.remPushed));
 check("...past its pool's allowance a new one stays on this browser", ok(r.remPast) === ok([true, false]), ok(r.remPast));
 check("...it reaches the other browser", r.remArrived === true);

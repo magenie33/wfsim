@@ -39,7 +39,7 @@ const syncPool = (list) => (list === REMINDERS_KEY ? "reminders" : list.startsWi
 /// and a count of them read as this account's allowance taken.
 function syncedCounts() {
   const out = { presets: 0, customs: 0, reminders: 0 };
-  if (syncStatus.state === "other") return out;
+  if (syncStatus.state === "other" || !syncEnabled()) return out;
   for (const { list, p } of syncLocal().values()) if (isCloudSynced(p)) out[syncPool(list)]++;
   return out;
 }
@@ -101,7 +101,10 @@ let syncTimer = null, syncRunning = null, syncQueued = null;
 function syncState() {
   try {
     const s = JSON.parse(localStorage.getItem(SYNC_KEY));
-    if (s && typeof s === "object" && s.known) return s;
+    if (s && typeof s === "object" && s.known && typeof s.known === "object" && !Array.isArray(s.known)) {
+      s.known = Object.assign(Object.create(null), s.known);
+      return s;
+    }
   } catch (_) { /* none */ }
   return null;
 }
@@ -112,9 +115,13 @@ const saveSyncState = (s) => { try { localStorage.setItem(SYNC_KEY, JSON.stringi
 const syncBody = (p) => { const { lastResult, ...rest } = p; return rest; };
 /// WHAT COUNTS AS A CHANGE: everything that travels except when it was saved,
 /// which an auto-save moves without changing anything.
-function syncSig(p) {
+function syncComparable(p) {
   const { lastResult, savedAt, ...rest } = p;
-  const s = JSON.stringify(rest);
+  return JSON.stringify(rest, (_, value) => value && typeof value === "object" && !Array.isArray(value)
+    ? Object.fromEntries(Object.keys(value).sort().map((key) => [key, value[key]])) : value);
+}
+function syncSig(p) {
+  const s = syncComparable(p);
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193);
   return (h >>> 0).toString(36) + ":" + s.length;
@@ -176,34 +183,58 @@ function syncSoon(ms = SYNC_DELAY_MS) {
   if (syncStatus.account !== accountState.account.id) syncStatus = { state: "idle", at: 0, full: false, account: accountState.account.id };
   if (syncStatus.state === "not_included" || syncStatus.state === "other") return;
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(() => { syncTimer = null; syncNow(); }, ms);
+  syncTimer = setTimeout(() => { syncTimer = null; syncNow({ automatic: true }); }, ms);
+}
+
+const syncEnabled = (who = accountState.account?.id) => {
+  const st = syncState();
+  return !!who && st?.account === who && st.enabled !== false;
+};
+function syncPause() {
+  const st = syncState();
+  if (st) saveSyncState({ ...st, enabled: false });
+  clearTimeout(syncTimer);
+  syncTimer = null;
+  setSyncStatus({ state: "paused" });
 }
 
 /// One round: push what changed here, then pull what changed elsewhere. A
 /// round asked for while one runs runs once more after it.
-function syncNow() {
+function syncNow({ automatic = false } = {}) {
+  const who = accountState.account?.id;
+  if (!who) return Promise.resolve();
+  const st = syncState();
+  if (automatic && !syncEnabled(who) && (!st || st.account === who)) {
+    setSyncStatus({ state: "paused" });
+    return Promise.resolve();
+  }
+  if (!automatic && (!st || (st.account === who && st.enabled === false))) {
+    saveSyncState({ ...(st || { account: who, cursor: 0, known: {} }), enabled: true });
+  }
   // A ROUND ASKED FOR WHILE ONE RUNS IS THE NEXT ONE, and what it returns is
   // that round: the one running collected its changes before this call, so
   // resolving with it would tell the caller an edit had gone when it had not.
   if (syncRunning) {
-    if (!syncQueued) syncQueued = syncRunning.then(() => { syncQueued = null; return syncNow(); });
+    if (!syncQueued) syncQueued = syncRunning.then(() => { syncQueued = null; return syncNow({ automatic }); });
     return syncQueued;
   }
   // SYNC NEVER TAKES THE PAGE DOWN: whatever a round throws is its status.
-  syncRunning = syncRound().catch((e) => setSyncStatus({ state: "error", reason: String(e && e.message || e) }))
-    .then(syncReport)
+  const round = () => syncRound(who);
+  syncRunning = (navigator.locks ? navigator.locks.request(`wfsim-sync:${who}`, round) : round())
+    .catch((e) => { if (syncEnabled(who) && accountState.account?.id === who) setSyncStatus({ state: "error", reason: String(e && e.message || e) }); })
+    .then(() => { if (syncEnabled(who) && accountState.account?.id === who) return syncReport(); })
     .finally(() => { syncRunning = null; });
   return syncRunning;
 }
 
-async function syncRound() {
-  const who = accountState.account && accountState.account.id;
-  if (!who) return;
+async function syncRound(who) {
+  if (!who || accountState.account?.id !== who) return;
   let st = syncState();
   // ANOTHER ACCOUNT'S ENTRIES ARE NOT MERGED WITHOUT A WORD: this browser
   // synced with someone else, and signing in here must not hand their builds
   // to this account. The account page offers the merge (`syncAdopt`).
   if (st && st.account && st.account !== who) { setSyncStatus({ state: "other" }); return; }
+  if (!syncEnabled(who)) return;
   const first = !st;
   if (first) st = { account: who, cursor: 0, known: {} };
   flushPresetSaves();
@@ -283,6 +314,7 @@ async function syncRound() {
   for (let i = 0; i < changes.length; i += SYNC_CHUNK) {
     const chunk = changes.slice(i, i + SYNC_CHUNK);
     const r = await syncCall({ changes: chunk.map(({ sig, off, ...c }) => c), pull: false });
+    if (accountState.account?.id !== who || !syncEnabled(who)) return;
     if (!r.ok) return syncRefused(r);
     syncAllowance = r.allowance || null;
     if (r.full) syncStatus.full = true;
@@ -319,12 +351,14 @@ async function syncRound() {
   // 3. PULL, every page.
   const pulled = [];
   let r = await syncCall({ since: st.cursor });
+  if (accountState.account?.id !== who || !syncEnabled(who)) return;
   if (!pulledPage(r)) return syncRefused(r);
   syncAllowance = r.allowance || null;
   pulled.push(...r.entries);
   let cursor = r.cursor;
   while (r.next) {
     r = await syncCall({ after: r.next });
+    if (accountState.account?.id !== who || !syncEnabled(who)) return;
     if (!pulledPage(r)) return syncRefused(r);
     pulled.push(...r.entries);
     cursor = Math.max(cursor, r.cursor);
@@ -377,17 +411,26 @@ async function syncReport() {
 /// had, and none for one this browser agreed before versions — which keeps the
 /// old rule once, and learns its version from the answer.
 const syncBase = (k) => (!k ? 0 : k.v ?? undefined);
+const syncValidEntry = (e) => !!e && typeof e.id === "string" && isSyncList(e.list)
+  && (e.body === null || (e.body && typeof e.body === "object" && !Array.isArray(e.body)
+    && e.body.id === e.id && !e.body.builtin
+    && (e.body.state === undefined || (e.body.state && typeof e.body.state === "object" && !Array.isArray(e.body.state)))));
 
 /// TWO BROWSERS CHANGED ONE ENTRY: both are kept. The account's version stays
 /// the entry; this browser's becomes an entry of its own beside it, named so,
 /// and the editor that had it open stays on it. A deletion that lost keeps the
 /// account's version; an edit to an entry deleted elsewhere is kept as new.
 function syncConflict(st, c, cf, settled) {
+  if (!syncValidEntry(cf) || cf.list !== c.list) throw new Error("bad_reply");
   let ps;
   try { ps = JSON.parse(localStorage.getItem(c.list)); } catch (_) { ps = null; }
   if (!Array.isArray(ps)) ps = [];
   const at = ps.findIndex((p) => p && p.id === c.id);
   const mine = at >= 0 ? ps[at] : null;
+  if (mine && cf.body && syncComparable(mine) === syncComparable(cf.body)) {
+    st.known[c.id] = { list: cf.list, sig: syncSig(mine), at: Date.now(), v: cf.version };
+    return;
+  }
   const domain = syncDomain(c.list);
   if (domain === "reminders") {
     // A REMINDER'S ONE EDIT is whether it is quiet: the account's state is it.
@@ -399,6 +442,7 @@ function syncConflict(st, c, cf, settled) {
     if (mine && !c.deleted) {
       const old = mine.id;
       mine.id = presetNewId();
+      mine.cloud_sync = false;
       const doc = presetDoc(domain);
       if (doc && doc.active() === old) doc.setActive(mine.id);
       settled.ids.add(mine.id);
@@ -407,7 +451,7 @@ function syncConflict(st, c, cf, settled) {
   } else {
     st.known[c.id] = { list: cf.list, sig: syncSig(cf.body), at: Date.now(), v: cf.version };
     if (mine && !c.deleted) {
-      const copy = { ...mine, id: presetNewId(), name: tr("{name} (conflict)").replace("{name}", mine.name || "") };
+      const copy = { ...mine, id: presetNewId(), cloud_sync: false, name: tr("{name} (conflict)").replace("{name}", mine.name || "") };
       ps[at] = cf.body;
       ps.splice(at + 1, 0, copy);
       const doc = presetDoc(domain);
@@ -440,6 +484,7 @@ function syncRefused(r) {
 /// changed, for `syncShow`, or null.
 function syncApply(st, entries, sigs) {
   if (!entries.length) return null;
+  if (!entries.every(syncValidEntry)) throw new Error("bad_reply");
   const lists = new Map();
   const listOf = (k) => {
     if (!lists.has(k)) {
@@ -454,6 +499,9 @@ function syncApply(st, entries, sigs) {
   for (const pulled of entries) {
     const e = syncHome(pulled);
     const here = current.get(e.id);
+    const known = st.known[e.id];
+    if (Number.isInteger(known?.v) && Number.isInteger(e.version) && e.version < known.v) continue;
+    if (here?.p.cloud_sync === false && (!known || known.off) && e.body?.cloud_sync !== false) continue;
     if (sigs.has(e.id) && (!here || syncSig(here.p) !== sigs.get(e.id))) continue;
     if (e.body === null) {
       if (here) {
@@ -560,7 +608,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible" && Date.now() - (syncStatus.at || 0) > SYNC_IDLE_MS) syncSoon(0);
 });
 window.addEventListener("pagehide", () => {
-  if (!syncTimer) return;
+  if (!syncTimer || syncRunning || !syncEnabled()) return;
   clearTimeout(syncTimer);
   syncTimer = null;
   const st = syncState();

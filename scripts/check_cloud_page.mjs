@@ -6,7 +6,7 @@
 // deletes, and what the account deleted in its window can be restored.
 import { openApp } from "./cdp.mjs";
 
-const app = await openApp({ boot: 12000, lang: "en" });
+const app = await openApp({ boot: 12000, lang: "en", base: process.env.WFSIM_BASE });
 const { evaluate, check } = app;
 
 const r = await evaluate(`(async () => {
@@ -43,6 +43,13 @@ const r = await evaluate(`(async () => {
   const stored = (id) => JSON.parse(localStorage.getItem('wfsim-presets-builder-builds')).find((p) => p.id === id);
   history.pushState({}, '', '/account/sync'); route(); await loadAccount(); await sleep(800);
   const out = {};
+  out.firstOff = syncStatus.state === 'paused' && !syncState()
+    && !!page().querySelector('[data-auth="sync-now"]') && syncedCounts().presets === 0;
+  page().querySelector('[data-auth="sync-now"]').click(); await sleep(600);
+  page().querySelector('[data-auth="sync-pause"]').click(); await sleep(150);
+  out.paused = syncStatus.state === 'paused' && syncState().enabled === false
+    && [...page().querySelectorAll('[data-ctoggle]')].every(el => el.disabled);
+  page().querySelector('[data-auth="sync-now"]').click(); await sleep(300);
   out.nav = !!page().querySelector('.set-side a[href="/account/sync"].on');
   await sleep(400);
   const devs = [...page().querySelectorAll('.set-main .block')].find((b) => /Devices/.test(b.querySelector('h2').textContent));
@@ -98,6 +105,8 @@ check("every item, from every collection and weapon, newest first",
   ok(r.order) === ok(["crit torid", "furis one", "a crowd", "my riven", "old torid"]), ok(r.order));
 check("a build opens on its weapon, by id", /^\/weapons\/Torid\?build=t1$/.test(r.link || ""), r.link);
 check("nothing on the page deletes", r.deletes === false);
+check("the first login leaves sync off until this browser enables it", r.firstOff === true);
+check("pausing preserves saved items and disables item sync actions", r.paused === true);
 check("an item switches off, kept on this browser", r.off === true);
 check("...and on again", r.on === true);
 check("the status filter shows only what it names", ok(r.local) === ok(["old torid"]), ok(r.local));

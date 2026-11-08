@@ -67,7 +67,7 @@ function cloudLink(domain, p) {
   return "";
 }
 const CLOUD_STATE = { error: "Could not sync just now.", other: "This browser holds items synced with another account.",
-  not_included: "Not available for this account" };
+  paused: "Sync is off on this browser.", not_included: "Not available for this account" };
 const CLOUD_KIND = { "builder-builds": "Builds", "simulator-scenarios": "Scenarios", optimizer: "Searches",
   warframes: "Warframe builds", companions: "Companions", operators: "Operator builds", rivens: "Rivens", enemies: "Custom enemies",
   reminders: "Reminders" };
@@ -76,7 +76,7 @@ const CLOUD_KIND = { "builder-builds": "Builds", "simulator-scenarios": "Scenari
 function cloudItems() {
   const rejected = new Map(((syncStatus && syncStatus.unsynced) || []).map((u) => [u.id, u.reason]));
   // ANOTHER ACCOUNT'S ITEMS are on this browser only, as far as this account knows.
-  const mine = syncStatus.state !== "other";
+  const mine = syncStatus.state !== "other" && syncEnabled();
   const out = [];
   for (const [id, { list, p }] of syncLocal()) {
     const domain = syncDomain(list);
@@ -112,7 +112,8 @@ function cloudPage(a) {
         <span class="sp"></span>
         <button class="ghost-btn btn-sm" data-saves="export">${aT("Export")}</button>
         <button class="ghost-btn btn-sm" data-saves="import">${aT("Import")}</button>
-        <button class="ghost-btn btn-sm" data-auth="sync-now">${aT("Sync now")}</button></div></div></div>`;
+        ${syncEnabled() ? `<button class="ghost-btn btn-sm" data-auth="sync-pause">${aT("Pause sync")}</button>` : ""}
+        <button class="ghost-btn btn-sm" data-auth="sync-now">${aT(syncEnabled() ? "Sync now" : "Enable sync")}</button></div></div></div>`;
   return `<div class="settings">${settingsNav(a, "sync")}
     <div class="set-main"><h1 class="page">${aT("Cloud sync")}</h1>${usage}${cloudDevicesHtml()}
       <div class="block" id="cloud-items">${cloudListHtml()}</div>
@@ -185,7 +186,7 @@ function cloudListHtml() {
     return `<tr><td><input type="checkbox" data-cpick="${escHtml(x.id)}" ${cloudPicked.has(x.id) ? "checked" : ""} aria-label="${aT("Select")}"></td>
       <td class="nm">${escHtml(x.name)}</td><td class="muted">${aT(CLOUD_KIND[x.domain] || x.domain)}</td>
       <td>${x.owner ? escHtml(x.owner) : `<span class="muted">—</span>`}</td><td class="muted">${escHtml(day(x.saved))}</td>
-      <td><button type="button" class="cloud ${cls}" data-ctoggle="${escHtml(x.id)}" ${x.state === "rejected" ? "disabled" : ""}>${CLOUD_SVG}${escHtml(text)}</button></td>
+      <td><button type="button" class="cloud ${cls}" data-ctoggle="${escHtml(x.id)}" ${x.state === "rejected" || !syncEnabled() ? "disabled" : ""}>${CLOUD_SVG}${escHtml(text)}</button></td>
       <td>${x.link ? `<a class="open" href="${escHtml(x.link)}">${aT("Open")} ↗</a>` : ""}</td></tr>`;
   };
   // BY WEAPON: one group per owner, the owners in the order their newest item was saved.

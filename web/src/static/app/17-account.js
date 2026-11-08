@@ -477,6 +477,8 @@ function syncRowHtml() {
     return row(aT("This browser holds items synced with another account."),
       `<button class="ghost-btn btn-sm" data-auth="sync-adopt">${aT("Add them to this account")}</button>`);
   }
+  if (s.state === "paused") return row(aT("Sync is off on this browser."),
+    `<button class="ghost-btn btn-sm" data-auth="sync-now">${aT("Enable sync")}</button>`);
   if (s.state === "error") {
     return row(`${aT("Could not sync just now.")}${s.reason ? ` <span class="set-note">(${escHtml(s.reason)})</span>` : ""}`,
       `<button class="ghost-btn btn-sm" data-auth="sync-now">${aT("Try again")}</button>`);
@@ -1113,6 +1115,7 @@ async function authAct(el) {
       return renderAuthPage(kind);
     }
     if (what === "sync-now") { await syncNow(); return; }
+    if (what === "sync-pause") { syncPause(); renderAuthPage(kind); return; }
     if (what === "sync-adopt") { await syncAdopt(); return; }
     if (what === "export") {
       const r = await accountCall("POST", "/api/account/export", {});
