@@ -84,6 +84,10 @@ const evaluate = (expression, inventoryOnly) => runInNewContext(expression.repla
   .replace(/steps\.intake\.outcome/g, inventoryOnly ? "'skipped'" : "'success'"), {}, { timeout: 20 });
 
 try {
+  const group = lines.find(line => /^  group:/.test(line))?.replace(/^  group:\s*/, "") || "";
+  const groupOf = mode => group.startsWith("${{") ? evaluate(group, mode) : group.replace(/^["']|["']$/g, "");
+  check(groupOf(true) === "board-inventory" && groupOf(false) === "board-queue",
+    "inventory-only has a stable independent slot while normal queue runs keep theirs");
   const only = reconcile("1"), expected = ["capture", "enumerate", "roster", "bind", "publish"];
   check(only.status === 0 && JSON.stringify(only.phases) === JSON.stringify(expected),
     "inventory-only captures, enumerates, binds and publishes once without pacing, dispatch or purge", JSON.stringify(only.phases) + only.stderr);
