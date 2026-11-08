@@ -183,6 +183,12 @@ const trash = await evaluate(`(async () => {
   box().querySelector('[data-crestore="gone1"]').click(); await sleep(600);
   out.refused = !!document.getElementById('page-note')
     && !JSON.parse(localStorage.getItem(LIST) || '[]').some((p) => p.id === 'gone1');
+  syncPause();
+  refuse = false;
+  box().querySelector('[data-crestore="gone1"]').click(); await sleep(600);
+  out.restorePaused = restored && syncState().enabled === false
+    && !JSON.parse(localStorage.getItem(LIST) || '[]').some((p) => p.id === 'gone1');
+  restored = false; cloudTrash = null; await syncNow(); renderAuthPage('sync'); await sleep(300);
   refuse = false;
   box().querySelector('[data-crestore="gone1"]').click(); await sleep(1200);
   out.back = JSON.parse(localStorage.getItem(LIST) || '[]').some((p) => p.id === 'gone1');
@@ -192,6 +198,7 @@ const trash = await evaluate(`(async () => {
 })()`);
 check("what can be restored is listed, with the days left", trash.listed === true, JSON.stringify(trash));
 check("a restore the allowance refuses says so, and adds nothing", trash.refused === true, JSON.stringify(trash));
+check("restoring a cloud item leaves browser sync paused until explicitly enabled", trash.restorePaused === true, JSON.stringify(trash));
 check("a restore brings the item back to this browser", trash.back === true, JSON.stringify(trash));
 check("...and it leaves the list", trash.empty === true, JSON.stringify(trash));
 

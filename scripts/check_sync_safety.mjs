@@ -6,6 +6,7 @@ import vm from "node:vm";
 const source = readFileSync(new URL("../web/src/static/app/37-sync.js", import.meta.url), "utf8");
 const list = "wfsim-presets-builder-builds";
 function browser() {
+  const handlers=[];
   const storage = {};
   Object.defineProperties(storage, {
     getItem: { value: (k) => storage[k] ?? null },
@@ -13,7 +14,7 @@ function browser() {
     removeItem: { value: (k) => { delete storage[k]; } },
   });
   const context = vm.createContext({ localStorage: storage, accountState: { account: { id: "a" } },
-    REMINDERS_KEY: "wfsim-reminders", document: { addEventListener() {} }, window: { addEventListener() {} },
+    REMINDERS_KEY: "wfsim-reminders", document: { addEventListener(name,fn) { handlers.push({name,fn}); } }, window: { addEventListener() {} },
     navigator: {}, setTimeout, clearTimeout, console, Response, structuredClone,
     flushPresetSaves() {}, ownerKeyed() { return null; }, customRefs() { return []; },
     presetNewId: (() => { let id = 0; return () => "copy" + ++id; })(), presetDoc() { return null; },
@@ -22,7 +23,7 @@ function browser() {
   });
   vm.runInContext(source, context);
   vm.runInContext("syncDevice=()=>({id:'device',label:'Browser'});syncReport=async()=>{};syncShow=()=>{}", context);
-  return { context, storage, run: (code) => vm.runInContext(code, context) };
+  return { context, storage, handlers, run: (code) => vm.runInContext(code, context) };
 }
 let failed = 0;
 async function check(name, fn) {
@@ -106,5 +107,20 @@ await check("overlap pages cannot replace an acknowledged newer version",()=>{
   const b=browser();b.storage.setItem(list,JSON.stringify([{id:"x",state:{n:3}}]));
   b.run("syncApply({known:{x:{v:3}}},[{id:'x',list:'"+list+"',version:2,body:{id:'x',state:{n:2}}}],new Map())");
   assert.equal(JSON.parse(b.storage.getItem(list))[0].state.n,3);
+});
+await check("restoring one cloud entry never enables a paused browser or uploads its local collection",async()=>{
+  const b=browser();let pushes=0;
+  b.storage.setItem("wfsim-sync",JSON.stringify({account:"a",known:{},cursor:0,enabled:false}));
+  b.storage.setItem(list,JSON.stringify([{id:"local",state:{}}]));
+  b.context.renderAuthPage=()=>{};
+  b.context.onTyped=()=>{};
+  b.context.fetch=async(_,o)=>{
+    const input=JSON.parse(o.body);if(input.changes?.length)pushes++;
+    return new Response(JSON.stringify({ok:true,restored:["gone"],entries:[],cursor:0}));
+  };
+  vm.runInContext(readFileSync(new URL("../web/src/static/app/19-cloud-page.js",import.meta.url),"utf8"),b.context);
+  const button={dataset:{crestore:"gone"},disabled:false};
+  await b.handlers.find(h=>h.name==="click").fn({target:{closest:()=>button}});
+  assert.equal(b.run("syncState().enabled"),false);assert.equal(pushes,0);
 });
 process.exitCode = failed ? 1 : 0;
