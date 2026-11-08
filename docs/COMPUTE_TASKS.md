@@ -104,6 +104,11 @@ file while preserving existing swap. Capture and classifier scratch retain at
 least 60 GiB free after allocation; insufficient capacity releases only unused
 Android, .NET and GHC SDKs, then stops preparation if the reserve is still short.
 Each ruler's temporary output is removed after its ordered merge succeeds.
+Full reconciliation defaults to two concurrent ruler walks;
+`WFSIM_INVENTORY_WORKERS` overrides that budget. The standalone classifier
+uses a quarter of available memory for its SQLite pager, capped at 4 GiB.
+In-process callers retain the 16 MiB default unless they supply a validated
+`cacheKiB` budget, at most 16 GiB. These settings change resources only.
 
 The scan also emits current canonical build records through the engine's
 existing normalization, preserving mod ranks, assembly, wielder and explicit
