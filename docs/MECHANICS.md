@@ -2841,6 +2841,19 @@ form is skipped).
 
 ---
 
+### Capped melee contact spheres
+
+An attack's `melee_radius` declares a hit sphere and a distinct-target limit.
+Range additions enlarge that sphere; additional targets raise the limit.
+The aimed body is first, then nearest intersecting bodies up to the cap, each
+taking one direct hit through the ordinary damage and status pipeline. This
+does not add damage to a lone target or schedule another action.
+
+The pet is assumed to have approached the aimed target, and the sphere is
+centered on that target. Intersections use the arena's body footprint.
+Bone motion, visibility, native selection order and the range consumer are
+unverified; these placement and ordering assumptions require calibration.
+
 ## 9. Temporal integration (pipeline layer [8])
 
 **Definition.** Advance along the time axis to produce a damage-vs-time series.

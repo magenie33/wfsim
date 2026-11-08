@@ -31,8 +31,11 @@ attack:
   combo_multiplies_damage: false
   damage:
     slash: 110.0
+  melee_radius:
+    radius_m: 1.0
+    max_targets: 1
 unmodeled:
 - The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.
-- Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.
+- Companion movement, bone trajectories, visibility, attack selection, precepts and posture target selection are not simulated. The hit sphere is assumed centered on the aimed target; range bonuses enlarge its radius, and nearest intersecting bodies fill the target cap.
 source:
   url: https://wiki.warframe.com/w/Vasca_Claws

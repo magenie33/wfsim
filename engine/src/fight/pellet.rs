@@ -1826,8 +1826,8 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             // swing has no punch-through budget (nothing in the melee
             // pool grants one and the wiki excludes slams and AoE from
             // Follow Through by name), so the two can never both fire.
-            if let Some(ft) = active.follow_through.filter(|_| direct) {
-                spread_from_follow_through(
+            if let Some(ft) = active.follow_through.or(active.melee_radius.map(|_| 1.0)).filter(|_| direct) {
+                spread_from_melee(
                 seat,
                 windows,
                     bodies,
@@ -1836,6 +1836,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                     melee_struck,
                     &mut influence_seeds,
                     ft,
+                    if active.melee_radius.is_some() { SpreadBy::MeleeRadius } else { SpreadBy::FollowThrough },
                     raw / bucket,
                     shares,
                     crit_multiplier,

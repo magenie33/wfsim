@@ -793,6 +793,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         evo_heavy_windup_speed: 0.0,
         evo_proc_conversion: None,
         follow_through: s.attack.follow_through,
+        melee_radius: s.attack.melee_radius,
         spends_combo: s.attack.spends_combo,
         combo_multiplies_damage: s.attack.combo_multiplies_damage,
         paced_by_casting: s.attack.paced_by_casting,

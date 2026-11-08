@@ -40,6 +40,7 @@ mod m118_vectis_prime_compression;
 mod m119_multishot_rides_the_round;
 mod m123_laetum_acuity;
 mod melee;
+mod swipe;
 mod heavy_status;
 mod ceramic_dagger;
 mod okina;
@@ -234,6 +235,7 @@ impl Default for FightParams {
             melee_heavy: None,
             melee_profiles: Default::default(),
             follow_through: None,
+            melee_radius: None,
             slam: None,
             shockwave: None,
             heavy: None,

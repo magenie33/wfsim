@@ -87,6 +87,8 @@ pub enum Origin {
     /// in. Sharing a row would make the one column that says WHY this body was
     /// hit answer the wrong question.
     FollowThrough,
+    /// A capped melee hit sphere reaching another body.
+    MeleeRadius,
     /// A chaining beam's hop.
     Chain,
     /// A projectile that bounced.
@@ -139,6 +141,7 @@ impl Origin {
             Origin::Multishot => "multishot",
             Origin::PunchThrough => "punch_through",
             Origin::FollowThrough => "follow_through",
+            Origin::MeleeRadius => "melee_radius",
             Origin::Chain => "chain",
             Origin::Ricochet => "ricochet",
             Origin::Echo => "echo",

@@ -336,6 +336,7 @@ impl ResolvedRadial {
 /// The resolved panel: everything the dummy sim needs from layers [1]+[2].
 #[derive(Debug, Clone)]
 pub struct ResolvedPanel {
+    pub melee_radius: Option<crate::model::MeleeRadius>,
     pub heavy_damage_mods_apply: bool,
     pub combo_damage_applies: bool,
     pub wait_for_lingering: bool,

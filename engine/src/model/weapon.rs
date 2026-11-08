@@ -7,6 +7,14 @@ use super::*;
 use crate::rules::damage::{DamageType, DamageVector};
 use serde::Deserialize;
 
+/// A melee hit sphere, placed at the aimed contact under the contact assumption.
+#[derive(Debug, Clone, Copy, Deserialize, serde::Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct MeleeRadius {
+    pub radius_m: f64,
+    pub max_targets: usize,
+}
+
 /// Attack scheduling, separate from the displayed fire-rate stat.
 #[derive(Debug, Clone, Copy, Default, Deserialize, serde::Serialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
@@ -872,6 +880,7 @@ pub struct ZoomLevel {
 /// weapon's BASE stats before mods).
 #[derive(Debug, Clone)]
 pub struct WeaponBase {
+    pub melee_radius: Option<MeleeRadius>,
     pub tennokai_can_convert: bool,
     pub heavy_damage_mods_apply: bool,
     pub combo_damage_applies: bool,

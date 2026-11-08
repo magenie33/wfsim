@@ -597,6 +597,8 @@ pub enum ModEffect {
     /// carries the metres now — which matters, because a flat 3 m more than
     /// doubles a hammer's 2.5 and would be a rounding error on a whip.
     MeleeRange(f64),
+    /// Additional distinct enemies a melee radius attack may hit.
+    AdditionalTargets(f64),
     /// SLAM DAMAGE (Seismic Wave's `+200% Slam Attack Damage`).
     ///
     /// It pays only on an attack that IS a slam, which in this model is a form

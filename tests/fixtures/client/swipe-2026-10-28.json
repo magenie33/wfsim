@@ -1,0 +1,396 @@
+{
+  "source": {
+    "batch_id": "20261108T111018Z-companion-category-source-review",
+    "manifest_sha256": "0abadf1692dfb7e1eeb5793533f3836abca68b6b15451bc239cb4212ba93a448",
+    "archive": {
+      "path": "companion-evidence.zip",
+      "bytes": 67760117,
+      "sha256": "db71c0b4bcca63bc75f2ba35f26711e375e0a7df5770c359cc07cb95171b8341"
+    },
+    "members": [
+      {
+        "path": "objects.json",
+        "bytes": 8579794,
+        "sha256": "da3e4f85e086cbd2d0c2a139e136ef3c8fd43afb85de47a72481f1785b448b4e"
+      },
+      {
+        "path": "raw-ancestry.json",
+        "bytes": 2764770,
+        "sha256": "2acfef2de8e27923c520c59749e43d6919ba8147abd59a0e4bdb19be5972b2fa"
+      },
+      {
+        "path": "precision/rank-objects.json",
+        "bytes": 1785242,
+        "sha256": "a9dc147f12753cdc7a751d32de2691cb0a2433139a54ce563c39a02d971eb130"
+      },
+      {
+        "path": "precision/canonical-rank-values.csv",
+        "bytes": 193905,
+        "sha256": "2f8bdec6c19cbd89f3d28dcea4733b207283ee35db8b8630af87eb68a4d397ba"
+      }
+    ]
+  },
+  "client_build": "2026.10.28.09.54",
+  "verified_outer_files": 6,
+  "verified_archive_members": 6681,
+  "card": {
+    "path": "/Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowSwipePrecept",
+    "name_en": "Swipe",
+    "name_zh": "\u6325\u51fb",
+    "item_compatibility": "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon",
+    "entries": [
+      {
+        "UpgradeType": "WEAPON_TARGET_AMOUNT",
+        "OperationType": "ADD",
+        "Value": "1",
+        "DamageType": "DT_ANY",
+        "AutoType": "0",
+        "ValidType": "\"\"",
+        "SymbolFilter": "\"\"",
+        "UpgradeObject": "\"\"",
+        "ValidPostures": "{}",
+        "ValidModifiers": "{}",
+        "InvalidModifiers": "{}",
+        "ValidProcTypes": "{}",
+        "OverrideLocalization": "1",
+        "LocTag": "/Lotus/Language/Upgrades/CatbrowSwipePreceptModDesc",
+        "LocKeyWordScript": "{\nScript=/Lotus/Scripts/Mods/ModDescriptionStats.lua\nFunction=GetDescriptionInfo\n_displayAsPercent={\n0\n}\n_absoluteValue={\n0,\n0\n}\n_maxDecimals={\n-1\n}\n_addPlusses={\n0\n}\n_multiplyDown={\n0\n}\n}",
+        "SmallerIsBetter": "0",
+        "RoundTo": "0.1",
+        "RoundingMode": "RM_ROUND",
+        "AllowConditionalLocMerge": "0"
+      },
+      {
+        "UpgradeType": "WEAPON_RANGE",
+        "OperationType": "ADD",
+        "Value": "0.5",
+        "DamageType": "DT_ANY",
+        "AutoType": "0",
+        "ValidType": "\"\"",
+        "SymbolFilter": "\"\"",
+        "UpgradeObject": "\"\"",
+        "ValidPostures": "{}",
+        "ValidModifiers": "{}",
+        "InvalidModifiers": "{}",
+        "ValidProcTypes": "{}",
+        "OverrideLocalization": "1",
+        "LocTag": "\"\"",
+        "LocKeyWordScript": "{\nScript=\"\"\n}",
+        "DisplayAsMultiplier": "0",
+        "DisplayAsPercent": "0",
+        "ReverseValueSymbol": "0",
+        "SmallerIsBetter": "0",
+        "RoundTo": "0.1",
+        "RoundingMode": "RM_ROUND",
+        "AllowConditionalLocMerge": "0"
+      }
+    ],
+    "rank_values": [
+      {
+        "path": "/Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowSwipePrecept",
+        "array": "Upgrades",
+        "entry_index": "0",
+        "attribute": "WEAPON_TARGET_AMOUNT",
+        "operation": "ADD",
+        "rank": "0",
+        "canonical_decimal": "1",
+        "float32_bits_le": "0000803f",
+        "display_as_percent": "",
+        "round_to": "0.1",
+        "rounding_mode": "RM_ROUND"
+      },
+      {
+        "path": "/Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowSwipePrecept",
+        "array": "Upgrades",
+        "entry_index": "0",
+        "attribute": "WEAPON_TARGET_AMOUNT",
+        "operation": "ADD",
+        "rank": "1",
+        "canonical_decimal": "2",
+        "float32_bits_le": "00000040",
+        "display_as_percent": "",
+        "round_to": "0.1",
+        "rounding_mode": "RM_ROUND"
+      },
+      {
+        "path": "/Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowSwipePrecept",
+        "array": "Upgrades",
+        "entry_index": "0",
+        "attribute": "WEAPON_TARGET_AMOUNT",
+        "operation": "ADD",
+        "rank": "2",
+        "canonical_decimal": "3",
+        "float32_bits_le": "00004040",
+        "display_as_percent": "",
+        "round_to": "0.1",
+        "rounding_mode": "RM_ROUND"
+      },
+      {
+        "path": "/Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowSwipePrecept",
+        "array": "Upgrades",
+        "entry_index": "0",
+        "attribute": "WEAPON_TARGET_AMOUNT",
+        "operation": "ADD",
+        "rank": "3",
+        "canonical_decimal": "4",
+        "float32_bits_le": "00008040",
+        "display_as_percent": "",
+        "round_to": "0.1",
+        "rounding_mode": "RM_ROUND"
+      },
+      {
+        "path": "/Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowSwipePrecept",
+        "array": "Upgrades",
+        "entry_index": "1",
+        "attribute": "WEAPON_RANGE",
+        "operation": "ADD",
+        "rank": "0",
+        "canonical_decimal": "0.5",
+        "float32_bits_le": "0000003f",
+        "display_as_percent": "0",
+        "round_to": "0.1",
+        "rounding_mode": "RM_ROUND"
+      },
+      {
+        "path": "/Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowSwipePrecept",
+        "array": "Upgrades",
+        "entry_index": "1",
+        "attribute": "WEAPON_RANGE",
+        "operation": "ADD",
+        "rank": "1",
+        "canonical_decimal": "1",
+        "float32_bits_le": "0000803f",
+        "display_as_percent": "0",
+        "round_to": "0.1",
+        "rounding_mode": "RM_ROUND"
+      },
+      {
+        "path": "/Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowSwipePrecept",
+        "array": "Upgrades",
+        "entry_index": "1",
+        "attribute": "WEAPON_RANGE",
+        "operation": "ADD",
+        "rank": "2",
+        "canonical_decimal": "1.5",
+        "float32_bits_le": "0000c03f",
+        "display_as_percent": "0",
+        "round_to": "0.1",
+        "rounding_mode": "RM_ROUND"
+      },
+      {
+        "path": "/Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowSwipePrecept",
+        "array": "Upgrades",
+        "entry_index": "1",
+        "attribute": "WEAPON_RANGE",
+        "operation": "ADD",
+        "rank": "3",
+        "canonical_decimal": "2",
+        "float32_bits_le": "00000040",
+        "display_as_percent": "0",
+        "round_to": "0.1",
+        "rounding_mode": "RM_ROUND"
+      }
+    ]
+  },
+  "weapons": [
+    {
+      "weapon": "adarza_claws",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/AdarzaPetWeapon",
+      "parent_chain": [
+        "/Lotus/Types/Friendly/Pets/BeastWeapons/AdarzaPetWeapon",
+        "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon",
+        "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+        "/Lotus/Types/Game/LotusMeleeWeapon"
+      ],
+      "behavior_owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/AdarzaPetWeapon",
+      "own_text_sha256": "797cbaf766762be748ef9d99fdaf338b60da7ad018afdf4f162f6c677826e87c",
+      "fire_type": "/EE/Types/Game/WeaponMeleeRadiusFireBehavior",
+      "attack_data": {
+        "attackBone": "GAME_C1_JAW1",
+        "attackEndBone": "\"\"",
+        "distance": "0.5",
+        "radius": "1"
+      },
+      "max_hit_avatars_per_attack": "1",
+      "melee_radius": {
+        "radius_m": 1.0,
+        "max_targets": 1
+      }
+    },
+    {
+      "weapon": "crescent_claws",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/CrescentVulpaphylaPetWeapon",
+      "parent_chain": [
+        "/Lotus/Types/Friendly/Pets/BeastWeapons/CrescentVulpaphylaPetWeapon",
+        "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon",
+        "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+        "/Lotus/Types/Game/LotusMeleeWeapon"
+      ],
+      "behavior_owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/CrescentVulpaphylaPetWeapon",
+      "own_text_sha256": "9b380fa980a3f4b79a0039b89ffbe19f7fe475fe7829256ba835178f29360e8f",
+      "fire_type": "/EE/Types/Game/WeaponMeleeRadiusFireBehavior",
+      "attack_data": {
+        "attackBone": "GAME_C1_JAW1",
+        "attackEndBone": "\"\"",
+        "distance": "0.5",
+        "radius": "1"
+      },
+      "max_hit_avatars_per_attack": "1",
+      "melee_radius": {
+        "radius_m": 1.0,
+        "max_targets": 1
+      }
+    },
+    {
+      "weapon": "panzer_claws",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/PanzerVulpaphylaPetWeapon",
+      "parent_chain": [
+        "/Lotus/Types/Friendly/Pets/BeastWeapons/PanzerVulpaphylaPetWeapon",
+        "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon",
+        "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+        "/Lotus/Types/Game/LotusMeleeWeapon"
+      ],
+      "behavior_owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/PanzerVulpaphylaPetWeapon",
+      "own_text_sha256": "3a1609de1f0dce1a02aaf22b258a5447b13383635644392c46d89dd4b0fcbc81",
+      "fire_type": "/EE/Types/Game/WeaponMeleeRadiusFireBehavior",
+      "attack_data": {
+        "attackBone": "GAME_C1_JAW1",
+        "attackEndBone": "\"\"",
+        "distance": "0.5",
+        "radius": "1"
+      },
+      "max_hit_avatars_per_attack": "1",
+      "melee_radius": {
+        "radius_m": 1.0,
+        "max_targets": 1
+      }
+    },
+    {
+      "weapon": "sly_claws",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/SlyVulpaphylaPetWeapon",
+      "parent_chain": [
+        "/Lotus/Types/Friendly/Pets/BeastWeapons/SlyVulpaphylaPetWeapon",
+        "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon",
+        "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+        "/Lotus/Types/Game/LotusMeleeWeapon"
+      ],
+      "behavior_owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/SlyVulpaphylaPetWeapon",
+      "own_text_sha256": "1380f65dfa76d640d1c901ca94b7da065aa67c442eb0215739c41e819ca75d5c",
+      "fire_type": "/EE/Types/Game/WeaponMeleeRadiusFireBehavior",
+      "attack_data": {
+        "attackBone": "GAME_C1_JAW1",
+        "attackEndBone": "\"\"",
+        "distance": "0.5",
+        "radius": "1"
+      },
+      "max_hit_avatars_per_attack": "1",
+      "melee_radius": {
+        "radius_m": 1.0,
+        "max_targets": 1
+      }
+    },
+    {
+      "weapon": "smeeta_claws",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/SmeetaPetWeapon",
+      "parent_chain": [
+        "/Lotus/Types/Friendly/Pets/BeastWeapons/SmeetaPetWeapon",
+        "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon",
+        "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+        "/Lotus/Types/Game/LotusMeleeWeapon"
+      ],
+      "behavior_owner": "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon",
+      "own_text_sha256": "1d0bcb9947dd32c370f40c5b67468e8a1d2a1ed3c7bdef4e99764419a37bdeb0",
+      "fire_type": "/EE/Types/Game/WeaponMeleeRadiusFireBehavior",
+      "attack_data": {
+        "attackBone": "GAME_C1_JAW1",
+        "attackEndBone": "\"\"",
+        "distance": "0.5",
+        "radius": "1"
+      },
+      "max_hit_avatars_per_attack": "1",
+      "melee_radius": {
+        "radius_m": 1.0,
+        "max_targets": 1
+      }
+    },
+    {
+      "weapon": "vasca_claws",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/VascaPetWeapon",
+      "parent_chain": [
+        "/Lotus/Types/Friendly/Pets/BeastWeapons/VascaPetWeapon",
+        "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon",
+        "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+        "/Lotus/Types/Game/LotusMeleeWeapon"
+      ],
+      "behavior_owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/VascaPetWeapon",
+      "own_text_sha256": "666b798248f9e001f382894f93c39c8c1e1e817cc6726661d321e7330fe6ca64",
+      "fire_type": "/EE/Types/Game/WeaponMeleeRadiusFireBehavior",
+      "attack_data": {
+        "attackBone": "GAME_C1_JAW1",
+        "attackEndBone": "\"\"",
+        "distance": "0.5",
+        "radius": "1"
+      },
+      "max_hit_avatars_per_attack": "1",
+      "melee_radius": {
+        "radius_m": 1.0,
+        "max_targets": 1
+      }
+    },
+    {
+      "weapon": "venari_claws",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPetWeapon",
+      "parent_chain": [
+        "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPetWeapon",
+        "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon",
+        "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+        "/Lotus/Types/Game/LotusMeleeWeapon"
+      ],
+      "behavior_owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPetWeapon",
+      "own_text_sha256": "9391e8929f6e16a4d41142da6198710307cbadf2bc333a6499fc1b3168e03f1f",
+      "fire_type": "/EE/Types/Game/WeaponMeleeRadiusFireBehavior",
+      "attack_data": {
+        "attackBone": "GAME_C1_JAW1",
+        "attackEndBone": "\"\"",
+        "distance": "0.5",
+        "radius": "1"
+      },
+      "max_hit_avatars_per_attack": "1",
+      "melee_radius": {
+        "radius_m": 1.0,
+        "max_targets": 1
+      }
+    },
+    {
+      "weapon": "venari_prime_claws",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPrimePetWeapon",
+      "parent_chain": [
+        "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPrimePetWeapon",
+        "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPetWeapon",
+        "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon",
+        "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+        "/Lotus/Types/Game/LotusMeleeWeapon"
+      ],
+      "behavior_owner": "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPrimePetWeapon",
+      "own_text_sha256": "dc488b6110c63877b990e00119e72b6f434cc48bd3f92614298e9feb1cc7ea19",
+      "fire_type": "/EE/Types/Game/WeaponMeleeRadiusFireBehavior",
+      "attack_data": {
+        "attackBone": "GAME_C1_JAW1",
+        "attackEndBone": "\"\"",
+        "distance": "0.5",
+        "radius": "1"
+      },
+      "max_hit_avatars_per_attack": "1",
+      "melee_radius": {
+        "radius_m": 1.0,
+        "max_targets": 1
+      }
+    }
+  ],
+  "assumptions": [
+    "The pet has approached the aimed target; the hit sphere is centered on that target.",
+    "WEAPON_RANGE adds to the sphere radius. Intersections use the arena body footprint.",
+    "The aimed target is first, then nearest intersecting bodies with index ties. Native selection order is unverified.",
+    "Bone trajectories, visibility, repeated animation contacts, AI movement and the native range consumer are not replayed."
+  ]
+}

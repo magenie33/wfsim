@@ -920,6 +920,20 @@ impl FightParams {
         out.into_iter().map(|(i, _)| i).collect()
     }
 
+    /// Contact is assumed at the aimed body; bone motion and approach are absent.
+    /// Neighbours intersect the hit sphere through the arena's body footprint.
+    pub fn melee_radius_struck(&self, extra_reach_m: f64) -> Vec<usize> {
+        let Some(area) = self.melee_radius else { return Vec::new() };
+        let radius = (area.radius_m + extra_reach_m).max(0.0);
+        let mut neighbours: Vec<(usize, f64)> = self.others.iter().enumerate()
+            .filter_map(|(i, f)| {
+                let distance = self.target_at.distance(f.at);
+                crate::rules::space::caught_by_blast(distance, radius).then_some((i + 1, distance))
+            }).collect();
+        neighbours.sort_by(|a, b| a.1.total_cmp(&b.1).then(a.0.cmp(&b.0)));
+        std::iter::once(0).chain(neighbours.into_iter().map(|(i, _)| i)).collect()
+    }
+
     /// THE GAP between the two bodies — surface to surface, zero at contact,
     /// and THE DISTANCE A SHOT FLIES.
     ///
@@ -1485,6 +1499,7 @@ impl FightParams {
             melee_heavy,
             melee_profiles,
             follow_through: panel.follow_through,
+            melee_radius: panel.melee_radius,
             slam: panel.slam,
             shockwave: panel.shockwave,
             heavy: panel.heavy,

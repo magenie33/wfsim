@@ -994,6 +994,14 @@ rate is bound. The dog's two-second lunge gate does not set the ordinary cycle.
 
 ### Companion bodies and modular parts
 
+The cadence importer also verifies the closed companion category batch before
+importing Swipe. `tests/fixtures/client/swipe-2026-10-28.json` binds its two ADD
+upgrades, eight rank values and exact compatible weapon-parent chains. Native
+first/third-person attack data agree on a jaw bone, 0.5 m offset, 1 m radius and
+one target. Weapon IDs in `exclusive_to` derive from that ancestry. The native
+range consumer and runtime contact pose are not replayed; geometry assumptions
+are listed separately in the fixture and [MECHANICS.md](MECHANICS.md).
+
 `scripts/import_client_companions.py --exchange <root> --wiki <raw-module>
 [--export <public-export/en>] [--check]` verifies the closed metadata manifest,
 archive and effective-record/dictionary members. It joins body and weapon

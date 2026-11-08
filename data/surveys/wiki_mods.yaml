@@ -3586,7 +3586,7 @@ mods:
   path: warframe_mods/swing_line.yaml
 - name: Swipe
   category: companion
-  path: companion_mods/swipe.yaml
+  path: mods/beast_claws/swipe.yaml
 - name: Swirling Tiger
   category: weapon
   path: mods/dual_swords/swirling_tiger.yaml

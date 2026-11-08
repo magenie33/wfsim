@@ -98,6 +98,8 @@ where
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct AttackSpec {
+    #[serde(default)]
+    pub melee_radius: Option<crate::model::MeleeRadius>,
     #[serde(default = "yes")]
     pub heavy_damage_mods_apply: bool,
     #[serde(default = "yes")]

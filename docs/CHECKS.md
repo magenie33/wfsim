@@ -2124,6 +2124,13 @@ Sentinel cards without individual models' exclusive precepts, and shows computed
 and spends capacity; a rank down costs one less. Claws have modelled bodies and
 read-only automatic interval estimates, without a scenario override.
 
+## `check_swipe`
+
+Exactly eight native-compatible claws offer Swipe. Its maximum and rank-zero
+panels report the resolved hit radius and target cap, with sources in metres
+and counts. The previous model without a weapon-pool entry fails all four
+assertions.
+
 ## `check_companion_host`
 
 The fight refuses illegal Deconstructor/claw/Hound hosts and foreign modular
@@ -2582,3 +2589,7 @@ Claw resolution covers ordinary damage/crit cards, physical conversion and
 post-coalescing elemental conversion. Simulation checks bind family interval
 proxies to raw clip rates and reviewed wait inputs, and cover automatic timing,
 discarded legacy interval fields, scheduled shot counts and robotic-host isolation.
+Swipe regressions bind the weapon pool to exact native ancestry, cover every
+rank's range/target cap, intersecting bodies, nearest-first selection, one hit
+per body and unchanged lone-target damage. The panel reports metres and target
+counts with flat sources; the browser checks the eligible claw pools and rows.

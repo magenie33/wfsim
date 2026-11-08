@@ -1004,6 +1004,8 @@ pub(super) fn swing_this_shot(
     // everything within the weapon's range; an ordinary one sweeps in
     // front. Empty for a gun, which never asks.
     let melee_struck = match &swing {
+        _ if active.melee_radius.is_some() => active.melee_radius_struck(
+            buff_total(active, crate::model::BuffGrant::MeleeRange, buff_stacks, t)),
         Some(h) if active.follow_through.is_some() => active
             .melee_struck(h.all_around, buff_total(active, crate::model::BuffGrant::MeleeRange, buff_stacks, t)),
         _ => Vec::new(),

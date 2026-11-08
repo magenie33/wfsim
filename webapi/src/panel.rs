@@ -845,6 +845,9 @@ fn mod_sources(
                 // THE FIVE THAT PAY ONLY IN SOME MODES, or not as a stat at
                 // all. Each says what it is worth and WHERE, because a panel
                 // number would be a lie in five of the seven melee modes.
+                AdditionalTargets(_) => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": "it limits the distinct enemies reached by a melee contact"})),
                 MeleeComboDurationMultiplier(_) | MeleeRange(_) => conditionals.push(json!({
                     "mod": name, "desc": e.describe(), "active": true,
                     "why": "it changes the fight rather than a damage stat — reach decides how many                             bodies a swing reaches, and the clock decides how long the counter lives"})),
@@ -1472,6 +1475,24 @@ fn form_section(
                 "no single-target damage (a struck target is hit once); in a crowd every enemy it catches starts its own chain ({} hops, {} m, x{} per hop)",
                 bp.chain_hops, num(bp.chain_range_m), num(bp.chain_damage_per_hop)),
             "sources": sources("radius", None) }));
+    }
+    if let (Some(bb), Some(bp)) = (base.melee_radius, panel.melee_radius) {
+        for (key, label, before, after, range) in [
+            ("melee_radius", "Melee Hit Radius", format!("{} m", num(bb.radius_m)), format!("{} m", num(bp.radius_m)), true),
+            ("melee_targets", "Maximum Melee Targets", bb.max_targets.to_string(), bp.max_targets.to_string(), false),
+        ] {
+            let terms: Vec<Value> = refs.iter().flat_map(|m| m.effects.iter().filter_map(move |e| {
+                let amount = match (range, e) {
+                    (true, wfsim_engine::model::ModEffect::MeleeRange(v)) => format!("+{} m", num(*v)),
+                    (false, wfsim_engine::model::ModEffect::AdditionalTargets(v)) => format!("+{v:.0}"),
+                    _ => return None,
+                };
+                Some(json!({"mod": m.name, "value": amount}))
+            })).collect();
+            stats.push(json!({"key": key, "label": label, "base": before, "final": after,
+                "note": "Contact is assumed at the aimed target; nearby intersecting enemies fill the target limit.",
+                "sources": terms}));
+        }
     }
     // PER-WEAPON behavior: GunCO sources (Galvanized Strike, Carnage Reign,
     // Secondary Shiver) combine differently per weapon class, and their base
@@ -2314,6 +2335,20 @@ mod source_row_tests {
     fn row<'a>(p: &'a Value, form: &str, label: &str) -> &'a Value {
         rows(p, form).into_iter().find(|r| r["label"] == json!(label))
             .unwrap_or_else(|| panic!("no {label} row on {form}"))
+    }
+
+    #[test]
+    fn swipe_panel_states_range_and_target_limit_in_their_own_units() {
+        let p = panel_json(&json!({"weapon": "adarza_claws", "mods": ["swipe"]}));
+        let radius = row(&p, "Base Form", "Melee Hit Radius");
+        let targets = row(&p, "Base Form", "Maximum Melee Targets");
+        assert_eq!(radius["base"], "1.0 m");
+        assert_eq!(radius["final"], "3.0 m");
+        assert_eq!(radius["sources"][0]["value"], "+2.0 m");
+        assert_eq!(targets["base"], "1");
+        assert_eq!(targets["final"], "5");
+        assert_eq!(targets["sources"][0]["value"], "+4");
+        assert!(radius["sources"][0].get("fraction").is_none());
     }
 
     /// THE VECTIS PRIME, which printed all three wrong: Primed Shred's

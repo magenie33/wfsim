@@ -706,6 +706,9 @@ jobs:
       - name: Supported lower mod ranks reach the fight
         if: matrix.group == 'account'
         run: node scripts/check_every_rank.mjs
+      - name: Swipe exposes only eligible claws and applies its rank limits
+        if: matrix.group == 'builder'
+        run: node scripts/check_swipe.mjs
       - name: Read-only build rivens stay separate from owned customs
         if: matrix.group == 'account'
         run: node scripts/check_riven_board.mjs

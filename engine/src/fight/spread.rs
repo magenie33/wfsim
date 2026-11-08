@@ -65,6 +65,8 @@ pub(super) enum SpreadBy {
     /// the decay is geometric rather than distance-based, and it never
     /// headshots — so it is its own arm rather than a flag on that one.
     FollowThrough,
+    /// Other bodies caught by the same capped melee hit sphere.
+    MeleeRadius,
 }
 
 #[wfsim_gas_macro::metered]
@@ -456,6 +458,7 @@ pub(super) fn spread_hit(
                 SpreadBy::Ricochet => crate::record::Origin::Ricochet,
                 SpreadBy::PunchThrough => crate::record::Origin::PunchThrough,
                 SpreadBy::FollowThrough => crate::record::Origin::FollowThrough,
+                SpreadBy::MeleeRadius => crate::record::Origin::MeleeRadius,
             },
             // THE AIMED PELLET'S OWN NUMBER with its Condition Overload
             // bucket divided back out, so this body multiplies in its own —
@@ -642,7 +645,7 @@ pub(super) struct SpreadStrike {
 /// A DIRECT HIT IN EVERY SENSE: it may HEADSHOT and it is per PELLET, the
 /// opposite of a chain hop. ONLY FOR A WEAPON WITH NO BEAM — where there is
 /// one, `spread_from_seeds` already emits these bodies as its seeds.
-/// EVERY BODY A MELEE SWING REACHED PAST THE FIRST, at `FT^(n-1)`.
+/// Other bodies reached by a swing or capped melee contact sphere.
 ///
 /// `struck` is `melee_struck`'s answer, nearest first with the aimed body at
 /// index 0, so `n` is the position in it. NEVER A HEADSHOT: melee here puts
@@ -650,7 +653,7 @@ pub(super) struct SpreadStrike {
 /// the aimed body alone.
 #[allow(clippy::too_many_arguments)]
 #[wfsim_gas_macro::metered]
-pub(super) fn spread_from_follow_through(
+pub(super) fn spread_from_melee(
     // WHOSE ATTACK REACHED HERE. One strike, however far it travelled
     // and whatever it travelled through.
     seat: Seat,
@@ -664,6 +667,7 @@ pub(super) fn spread_from_follow_through(
     // SWING struck, and these are the ones the aimed path never sees.
     seeds: &mut Vec<(usize, Landed)>,
     follow_through: f64,
+    by: SpreadBy,
     raw_per_bucket: f64,
     shares: TypeShares,
     crit_multiplier: f64,
@@ -681,7 +685,12 @@ pub(super) fn spread_from_follow_through(
     t: f64,
     tennokai_heavy: bool,
 ) {
+    let cap = active.melee_radius.map_or(usize::MAX, |r| r.max_targets);
+    let mut reached = 1;
     for (n, &sidx) in struck.iter().enumerate().skip(1) {
+        if reached >= cap { break; }
+        if by == SpreadBy::MeleeRadius
+            && (bodies[sidx].fallen || bodies[sidx].state.phase != Phase::Physical) { continue; }
         let share = follow_through.powi_portable(n as i32);
         if share <= 0.0 {
             break;
@@ -702,11 +711,12 @@ pub(super) fn spread_from_follow_through(
             w,
             &inst, foe, &spec, raw_per_bucket, shares, crit_multiplier, crit_tier, attrition,
             modded_base, status_chance, forced, status_vector, params, active, gal, arc, r, rec, d, t,
-            SpreadBy::FollowThrough,
+            by,
             tennokai_heavy,
             true,
         );
         seeds.push((sidx, landed));
+        reached += 1;
     }
 }
 

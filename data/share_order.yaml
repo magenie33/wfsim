@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 9c5d5a1b4ba36dc1
-count: 3915
+digest: 4de59d44db606d27
+count: 3916
 ids:
   - acceltra
   - acceltra_prime
@@ -3925,3 +3925,4 @@ ids:
   - shock_collar
   - shocking_claws
   - venom_teeth
+  - swipe

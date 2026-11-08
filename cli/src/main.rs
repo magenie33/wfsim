@@ -45,6 +45,7 @@ fn dual_toxocyst_baseline() -> FightParams {
         melee_damage_mods_apply: true,
         universal_damage_mods_apply: true,
         follow_through: None,
+        melee_radius: None,
         slam: None,
         shockwave: None,
         heavy: None,

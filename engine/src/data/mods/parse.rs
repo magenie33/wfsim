@@ -252,6 +252,7 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
         }
         // METRES, not a percentage — DE's own card reads `+3 Range`.
         "melee_range_bonus_m" => ModEffect::MeleeRange(max("rankMax")),
+        "additional_targets" => ModEffect::AdditionalTargets(max("rankMax")),
         "slam_damage_bonus" => ModEffect::SlamDamage(max("rankMax")),
         "heavy_attack_damage_bonus" => ModEffect::HeavyAttackDamage(max("rankMax")),
         "combo_count_chance" => ModEffect::ComboCountChance(max("rankMax")),

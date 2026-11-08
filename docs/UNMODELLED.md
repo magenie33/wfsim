@@ -911,5 +911,8 @@ action proxies selected by inherited pet weapon family: Catbrow Melee01 base
 clip plus the reviewed 0.1-second AI reevaluation delay, or the Kubrow Melee
 base clip. This does not bind each variant's AI or runtime animation rate.
 The interval is automatic and is labelled as an estimate. Claws have no board
-admission while their cycle is uncalibrated. Attacks are assumed to connect;
-the claw's contact geometry is not modelled as a weapon reach.
+admission while their cycle is uncalibrated. Attacks are assumed to connect.
+Catbrow-derived claws apply Swipe's extra targets and range to a capped sphere
+assumed centered on the aimed body. Native bone motion, visibility, contact
+pose, range-consumer details and target ordering remain uncalibrated. Pounce
+and Sharpened Claws precepts are not simulated.

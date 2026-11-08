@@ -1,0 +1,30 @@
+id: swipe
+name: Swipe
+rarity: uncommon
+polarity: madurai
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowSwipePrecept
+compat: kavat_claws
+precept: false
+description: Strikes X additional enemies and increases Attack Range by Xm.
+effects:
+- kind: additional_targets
+  rank0: 1.0
+  rankMax: 4.0
+  text: Strikes 4 additional enemies and increases Attack Range by 2m.
+- kind: melee_range_bonus_m
+  rank0: 0.5
+  rankMax: 2.0
+  text: Strikes 4 additional enemies and increases Attack Range by 2m.
+source:
+  url: https://wiki.warframe.com/w/Swipe
+exclusive_to:
+- adarza_claws
+- crescent_claws
+- panzer_claws
+- sly_claws
+- smeeta_claws
+- vasca_claws
+- venari_claws
+- venari_prime_claws

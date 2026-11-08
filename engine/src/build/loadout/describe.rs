@@ -130,6 +130,7 @@ impl ModEffect {
                 "{} on the melee combo counter's clock", pct(v)
             ),
             MeleeRange(v) => format!("+{v:.1} m of melee reach"),
+            AdditionalTargets(v) => format!("+{v:.0} melee targets"),
             SlamDamage(v) => format!(
                 "+{} slam damage — which pays on a slam and on nothing else, so it is worth                  zero in every mode that swings",
                 pct(v)

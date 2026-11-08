@@ -90,6 +90,8 @@ impl CompanionMod {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RawMod {
+    #[serde(default, rename = "exclusive_to")]
+    _exclusive_to: Vec<String>,
     #[serde(default)]
     family: Option<String>,
     #[serde(default, rename = "combos")]
@@ -164,6 +166,7 @@ pub fn companion_mods() -> &'static [CompanionMod] {
         let mut out: Vec<CompanionMod> = crate::data::files_under("companion_mods/")
             .chain(crate::data::files_under("mods/beast_claws/"))
             .map(|(p, text)| {
+                let weapon_mod = p.starts_with("mods/beast_claws/");
                 let r: RawMod = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
                 // Body stats, weapon effects and explicitly unsupported lines are distinct.
                 let mut element_per_hit = None;
@@ -177,11 +180,11 @@ pub fn companion_mods() -> &'static [CompanionMod] {
                             assert!(BODY_STATS.contains(&stat.as_str()), "{p}: invalid body stat {stat}");
                             stat_bonuses.push((stat.clone(), e.bonus.expect("body stat bonus")));
                         }
-                        _ if r.compat == "beast_claws" => {}
+                        _ if weapon_mod => {}
                         k => panic!("{p}: unknown companion effect `{k}`"),
                     }
                 }
-                let description = if r.compat == "beast_claws" {
+                let description = if weapon_mod {
                     crate::data::mods::desc_info(&r.id)
                         .map(|info| crate::prose::Prose::from(info.at(r.max_rank)))
                         .unwrap_or(r.description)

@@ -184,6 +184,83 @@ def ordinary_interval_proxies(batches, prior_metadata, prior_manifest):
         'verified_archive_members': sum(len(v) for v in manifest['archive_members'].values())}
 
 
+def load_swipe(exchange):
+    batch = exchange / 'batches/20261108T111018Z-companion-category-source-review'
+    manifest = verify_closed_batch(batch)
+    payload, binding = source(batch, 'companion-evidence.zip', ['objects.json', 'raw-ancestry.json',
+        'precision/rank-objects.json', 'precision/canonical-rank-values.csv'])
+    raw = {r['path']: r for r in json.loads(payload['raw-ancestry.json'])}
+    objects = {r['path']: r for r in json.loads(payload['objects.json'])}
+    path = '/Lotus/Types/Friendly/Pets/CatbrowPetPrecepts/CatbrowSwipePrecept'
+    card = fields(raw[path]['ownText'])
+    entries = [fields(b) for b in blocks(card['Upgrades'])]
+    assert [(e['UpgradeType'], e['OperationType'], e['Value']) for e in entries] == [
+        ('WEAPON_TARGET_AMOUNT', 'ADD', '1'), ('WEAPON_RANGE', 'ADD', '0.5')]
+    rank = next(r for r in json.loads(payload['precision/rank-objects.json']) if r['path'] == path)
+    assert rank['rank_rule']['max_rank'] == 3
+    ranks = [r for r in csv.DictReader(io.StringIO(payload['precision/canonical-rank-values.csv'].decode('utf-8-sig')))
+             if r['path'] == path]
+    assert len(ranks) == 8
+    for r in ranks:
+        e = entries[int(r['entry_index'])]
+        expected = struct.pack('<f', float(e['Value']) * (int(r['rank']) + 1))
+        assert r['attribute'] == e['UpgradeType'] and r['operation'] == 'ADD'
+        assert expected.hex() == r['float32_bits_le'] == struct.pack('<f', float(r['canonical_decimal'])).hex()
+    weapons = []
+    for p in sorted((ROOT / 'data/weapons/beast_claws').glob('*.yaml')):
+        doc = yaml.safe_load(p.read_text())
+        chain, current = [], doc['internal_name']
+        while current in raw and current not in chain:
+            chain.append(current)
+            current = raw[current]['parent']
+        if card['ItemCompatibility'] not in chain:
+            continue
+        owner = next(p for p in chain if 'Behaviors' in fields(raw[p]['ownText']))
+        behavior = fields(next(blocks(fields(raw[owner]['ownText'])['Behaviors'])))
+        assert behavior['fire:Type'] == '/EE/Types/Game/WeaponMeleeRadiusFireBehavior'
+        fire = fields(behavior['fire:WeaponMeleeRadiusFireBehavior'].strip('{}\n'))
+        first = fields(fire['FirstPersonAttackData'].strip('{}\n'))
+        third = fields(fire['ThirdPersonAttackData'].strip('{}\n'))
+        assert first == third
+        assert third == {'attackBone': 'GAME_C1_JAW1', 'attackEndBone': '""', 'distance': '0.5', 'radius': '1'}
+        assert fire['MaxHitAvatarsPerAttack'] == '1'
+        weapons.append({'weapon': doc['id'], 'path': doc['internal_name'], 'parent_chain': chain,
+            'behavior_owner': owner, 'own_text_sha256': hashlib.sha256(raw[owner]['ownText'].encode()).hexdigest(),
+            'fire_type': behavior['fire:Type'], 'attack_data': third,
+            'max_hit_avatars_per_attack': fire['MaxHitAvatarsPerAttack'],
+            'melee_radius': {'radius_m': canonical(third['radius']), 'max_targets': int(fire['MaxHitAvatarsPerAttack'])}})
+    assert len(weapons) == 8
+    return {'source': binding, 'client_build': manifest['client_build'],
+        'verified_outer_files': len(manifest['files']),
+        'verified_archive_members': sum(len(v) for v in manifest['archive_members'].values()),
+        'card': {'path': path, 'name_en': objects[path]['name_en'], 'name_zh': objects[path]['name_zh'],
+                 'item_compatibility': card['ItemCompatibility'], 'entries': entries, 'rank_values': ranks},
+        'weapons': weapons,
+        'assumptions': ['The pet has approached the aimed target; the hit sphere is centered on that target.',
+            'WEAPON_RANGE adds to the sphere radius. Intersections use the arena body footprint.',
+            'The aimed target is first, then nearest intersecting bodies with index ties. Native selection order is unverified.',
+            'Bone trajectories, visibility, repeated animation contacts, AI movement and the native range consumer are not replayed.']}
+
+
+def import_swipe(fixture):
+    old = ROOT / 'data/companion_mods/swipe.yaml'
+    target = ROOT / 'data/mods/beast_claws/swipe.yaml'
+    doc = yaml.safe_load((old if old.exists() else target).read_text())
+    assert doc['internal_name'] == fixture['card']['path'] and doc['max_rank'] == 3
+    doc['exclusive_to'] = [w['weapon'] for w in fixture['weapons']]
+    doc['description'] = 'Strikes X additional enemies and increases Attack Range by Xm.'
+    doc['effects'] = []
+    for i, kind in enumerate(['additional_targets', 'melee_range_bonus_m']):
+        values = {int(r['rank']): float(r['canonical_decimal']) for r in fixture['card']['rank_values']
+                  if r['entry_index'] == str(i)}
+        doc['effects'].append({'kind': kind, 'rank0': values[0], 'rankMax': values[3],
+            'text': 'Strikes 4 additional enemies and increases Attack Range by 2m.'})
+    output(target, dump(doc))
+    if old.exists() and not CHECK:
+        old.unlink()
+    output(ROOT / 'tests/fixtures/client/swipe-2026-10-28.json', json.dumps(fixture, indent=2) + '\n')
+
+
 def main():
     global CHECK
     ap = argparse.ArgumentParser(description=__doc__)
@@ -191,6 +268,7 @@ def main():
     ap.add_argument('--check', action='store_true')
     args = ap.parse_args()
     CHECK = args.check
+    swipe = load_swipe(args.exchange)
     export_path = ROOT / 'vendor/public-export/en/ExportUpgrades_en.json'
     export = {r['uniqueName']: r for r in json.loads(export_path.read_bytes())['ExportUpgrades']}
     batches = args.exchange / 'batches'
@@ -313,6 +391,10 @@ def main():
                    'The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.',
                    'Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.'],
                'source': {'url': 'https://wiki.warframe.com/w/' + name.replace(' ', '_')}}
+        contact = next((w for w in swipe['weapons'] if w['path'] == path), None)
+        if contact:
+            attack['melee_radius'] = contact['melee_radius']
+            doc['unmodeled'][1] = 'Companion movement, bone trajectories, visibility, attack selection, precepts and posture target selection are not simulated. The hit sphere is assumed centered on the aimed target; range bonuses enlarge its radius, and nearest intersecting bodies fill the target cap.'
         output(weapon_dir / f'{identity}.yaml', dump(doc))
         fixture['claws'].append({'weapon': identity, 'name': name, 'name_zh': chinese.get(label, ''),
                                  'source': path, 'icon': f['Icon'], 'attack_data': damage, 'impact': {k: impact[k] for k in
@@ -417,6 +499,7 @@ def main():
     out = ROOT / 'tests/fixtures/client/cadence-claws-2026-10-28.json'
     out.parent.mkdir(parents=True, exist_ok=True)
     output(out, json.dumps(fixture, indent=2) + '\n')
+    import_swipe(swipe)
     print(json.dumps({'refire_profiles': len(fixture['refire_profiles']), 'claws': len(fixture['claws']),
                       'claw_mods': len(fixture['mod_inputs']), 'fixture': str(out)}))
 

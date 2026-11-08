@@ -3265,6 +3265,10 @@
         "damage": {
           "puncture": 45.0,
           "slash": 45.0
+        },
+        "melee_radius": {
+          "radius_m": 1.0,
+          "max_targets": 1
         }
       }
     },
@@ -3364,6 +3368,10 @@
         "damage": {
           "puncture": 50.0,
           "electricity": 50.0
+        },
+        "melee_radius": {
+          "radius_m": 1.0,
+          "max_targets": 1
         }
       }
     },
@@ -3562,6 +3570,10 @@
         "damage": {
           "slash": 45.0,
           "toxin": 45.0
+        },
+        "melee_radius": {
+          "radius_m": 1.0,
+          "max_targets": 1
         }
       }
     },
@@ -3760,6 +3772,10 @@
         "damage": {
           "impact": 40.0,
           "magnetic": 40.0
+        },
+        "melee_radius": {
+          "radius_m": 1.0,
+          "max_targets": 1
         }
       }
     },
@@ -3802,6 +3818,10 @@
         "combo_multiplies_damage": false,
         "damage": {
           "slash": 80.0
+        },
+        "melee_radius": {
+          "radius_m": 1.0,
+          "max_targets": 1
         }
       }
     },
@@ -3886,6 +3906,10 @@
         "combo_multiplies_damage": false,
         "damage": {
           "slash": 110.0
+        },
+        "melee_radius": {
+          "radius_m": 1.0,
+          "max_targets": 1
         }
       }
     },
@@ -3928,6 +3952,10 @@
         "combo_multiplies_damage": false,
         "damage": {
           "slash": 40.0
+        },
+        "melee_radius": {
+          "radius_m": 1.0,
+          "max_targets": 1
         }
       }
     },
@@ -3970,6 +3998,10 @@
         "combo_multiplies_damage": false,
         "damage": {
           "slash": 55.0
+        },
+        "melee_radius": {
+          "radius_m": 1.0,
+          "max_targets": 1
         }
       }
     },

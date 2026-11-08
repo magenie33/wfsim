@@ -537,6 +537,7 @@ pub struct FightParams {
     /// `FT^(n-1)`, the share a swing has left for the n-th body it reaches.
     /// `None` on anything that is not a melee swing.
     pub follow_through: Option<f64>,
+    pub melee_radius: Option<crate::model::MeleeRadius>,
     /// THE WEAPON'S OWN SLAM, fired by a combo swing that ends on one — three
     /// of Crushing Ruin's four combos do. `None` everywhere else.
     pub slam: Option<crate::build::loadout::ResolvedRadial>,

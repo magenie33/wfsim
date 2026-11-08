@@ -1,4 +1,9 @@
 ui:
+  "Melee Hit Radius": "近战命中半径"
+  "Maximum Melee Targets": "近战目标上限"
+  "melee radius": "近战范围命中"
+  "it limits the distinct enemies reached by a melee contact": "它决定一次近战接触可命中的不同敌人数量上限"
+  "Contact is assumed at the aimed target; nearby intersecting enemies fill the target limit.": "假设已接近主目标；附近与命中区域相交的敌人按目标上限结算。"
   "Assembly": "装配"
   "Ungilded": "未镀金"
   "Gilding polarity": "镀金极性"

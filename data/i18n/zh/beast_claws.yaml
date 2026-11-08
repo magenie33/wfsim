@@ -22,5 +22,6 @@ ui:
   ? The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.
   : 完整攻击周期尚未校准。模拟会根据该武器族代表性的普通攻击动作估算间隔。
   Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.: 假定攻击命中目标。尚未模拟同伴移动、接触判定、攻击动作选择、指令和姿势的目标选择。
+  'Companion movement, bone trajectories, visibility, attack selection, precepts and posture target selection are not simulated. The hit sphere is assumed centered on the aimed target; range bonuses enlarge its radius, and nearest intersecting bodies fill the target cap.': 假设命中球以主目标为中心；范围加成增加半径，与命中区域相交的敌人按距离和目标上限结算。尚未模拟同伴移动、骨骼轨迹、视线、攻击动作选择、指令和姿势的目标选择。
   The beast body and owner link are not modelled.: 尚未建模野兽本体与主人的关联。
   The active-projectile cap, recall and return availability are not simulated; the fire rate is the nominal refire timer.: 尚未模拟在途投射物数量上限、召回与返程后的可投掷时点；射速表示名义射击间隔。

@@ -296,6 +296,7 @@ pub fn resolve_for(
     let mut heavy_efficiency = base.evo_heavy_attack_efficiency;
     let mut combo_duration_mult = 1.0f64;
     let mut melee_range_add = 0.0f64;
+    let mut additional_targets = 0.0f64;
     let mut slam_damage = 0.0f64;
     let mut heavy_damage = 0.0f64;
     let mut combo_count_chance = base.evo_combo_count_chance;
@@ -504,6 +505,7 @@ pub fn resolve_for(
                 // the seconds bucket beside Body Count.
                 ModEffect::MeleeComboDurationMultiplier(v) => combo_duration_mult *= 1.0 + v,
                 ModEffect::MeleeRange(v) => melee_range_add += v,
+                ModEffect::AdditionalTargets(v) => additional_targets += v,
                 ModEffect::SlamDamage(v) => slam_damage += v,
                 ModEffect::HeavyAttackDamage(v) => heavy_damage += v,
                 ModEffect::ComboCountChance(v) => combo_count_chance += v,
@@ -1847,6 +1849,10 @@ pub fn resolve_for(
         follow_through: base
             .follow_through
             .map(|f| f * (1.0 + base.evo_follow_through_bonus)),
+        melee_radius: base.melee_radius.map(|r| crate::model::MeleeRadius {
+            radius_m: (r.radius_m + melee_range_add + base.evo_melee_range_m).max(0.0),
+            max_targets: (r.max_targets as f64 + additional_targets).max(0.0) as usize,
+        }),
         spends_combo: base.spends_combo,
         combo_multiplies_damage: base.combo_multiplies_damage,
         // *"Melee Combo duration cannot be reduced below 0.1 seconds"* (wiki),
