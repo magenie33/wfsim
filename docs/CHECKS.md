@@ -2118,9 +2118,9 @@ untouched.
 ## `check_companion_mods`
 
 The searchable catalogue includes beast and claw cards outside the robotic
-host's equipment pool; filtering it leaves that pool unchanged. The default
-Prototype draws ten general slots with common innate polarities, offers only
-its compatible pool, and shows computed effects. Seating a card creates a build
+host's equipment pool; filtering it leaves that pool unchanged. The Sentinel
+Prototype draws ten general slots with common innate polarities, offers shared
+Sentinel cards without individual models' exclusive precepts, and shows computed effects. Seating a card creates a build
 and spends capacity; a rank down costs one less. Claws have modelled bodies and
 read-only automatic interval estimates, without a scenario override.
 
@@ -2131,10 +2131,11 @@ parts. The picker offers only the weapon's carriers and preserves even an
 unmodded body's identity. A companion frames its builder and nothing further;
 ordinary weapons still hold Warframes. The catalogue has concrete bodies,
 scoped prototypes and parts. MOA/Hound minima have concrete witnesses; the
-general ranged health minimum is 367.5. A part chosen through the picker is
+general ranged default is the Sentinel Prototype (450 health, 130 shield,
+80 armor); MOA retains its own fixed 367.5 health minimum. A part chosen through the picker is
 saved and reaches the weapon request while the companion catalogue is absent.
 The agent door selects the same scoped default and refuses incompatible hosts.
-Exactly four Prototypes have fixed bases and no part/gilding controls; a retired
+Exactly three Prototypes have fixed bases and no part/gilding controls; a retired
 gilding toggle cannot change them. The Deconstructors offer only the concrete
 Helios pair and default to ordinary Helios.
 Against the previous implementation the guard check rejects all four results,
@@ -2150,11 +2151,11 @@ the `app.error` the live log counted.
 
 ## `check_fired_up`
 
-A Sentinel offers Fired Up and the global Prototype does not. Fired Up is marked
+A Sentinel offers Fired Up and the MOA Prototype does not. Fired Up is marked
 as a weapon effect and Enhanced Vitality as a body-stat effect. A Verglas sends
 the linked body's cards and ranks; its score climbs from no card to rank 0 to
 max rank. A forged incompatible Fired Up build is refused. An unmodded body
-keeps its identity in the request.
+keeps its identity in the request. The MOA Prototype refuses Fired Up.
 
 ## `check_embed_chrome`
 

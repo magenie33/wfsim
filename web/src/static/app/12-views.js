@@ -137,8 +137,10 @@ async function route() {
   const compRoute = location.pathname.match(/^\/companions\/([^/]+?)(?:\/builder)?\/?$/);
   const compSlug = compRoute && decodeURIComponent(compRoute[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
   const compHit = compSlug && compHosts().find((c) =>
-    c.id === compSlug || (c.name_en || c.name).toLowerCase().replace(/[\s-]+/g, "_") === compSlug
+    c.id === companionId(compSlug) || (c.name_en || c.name).toLowerCase().replace(/[\s-]+/g, "_") === compSlug
       || c.name.toLowerCase().replace(/[\s-]+/g, "_") === compSlug) || null;
+  if (compHit && compSlug === COMP_LEGACY_ID) history.replaceState(history.state, "",
+    companionPath(compHit) + (/\/builder\/?$/.test(location.pathname) ? "/builder" : "") + location.search + location.hash);
   // `/<name>` — a category the builder does not hold yet (`holds: placeholder`).
   const stub = placeholderSlots().find((sl) => location.pathname.replace(/\/$/, "").toLowerCase() === placeholderPath(sl)) || null;
   const m = (support || bench || dl || util || wfHit || opRoute || compHit || stub || authKind) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/builder|\/build-library|\/simulator|\/optimizer|\/rivens|\/riven-analyst|\/enemies|\/benchmark|\/card)?\/?$/);

@@ -1456,7 +1456,7 @@ each; even an unmodded body keeps its identity in the request.
 
 The body builder shows computed health, shield and armor, compatible weapons,
 and optional source notes for each Prototype's fixed base. Only concrete
-modular bodies select parts, gilded state and gilding polarity. The four
+modular bodies select parts, gilded state and gilding polarity. The three
 Prototypes have no assembly or gilding controls. Both Deconstructors select a
 concrete Helios body, defaulting to ordinary Helios.
 The saved preset and library card retain those parts. Body-stat cards are marked

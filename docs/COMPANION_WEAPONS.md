@@ -22,7 +22,8 @@ entries yet and are shown as unavailable on their compatible bodies.
 
 The general ranged set has **19 weapons**. Every one can be carried by all
 17 Sentinel variants and every MOA model/component configuration. Hounds and
-Beasts cannot carry them.
+Beasts cannot carry them. Their default wielder is the Sentinel Prototype;
+the MOA Prototype and concrete eligible bodies remain selectable.
 
 | Weapon | Eligible carriers |
 | --- | --- |
@@ -65,8 +66,8 @@ The remaining **five robotic weapons** have narrower scopes:
 Both Deconstructors therefore share the Helios carrier scope. A lowest-stat
 representative must be selected inside that pair, rather than from unrelated
 Sentinels or MOAs. All three Hound weapons share one Hound scope, including
-component variation. They are absent from the weapon roster; the other 21
-robotic weapons are present.
+component variation, and default to the Hound Prototype. They are absent from
+the weapon roster; the other 21 robotic weapons are present.
 
 Sources: [Sentinel](https://wiki.warframe.com/w/Sentinel),
 [MOA](https://wiki.warframe.com/w/MOA_(Companion)),
@@ -135,15 +136,14 @@ checking only an exact variant path would admit forbidden Prime weapons.
 
 ## Derived prototypes
 
-There are four Prototypes. Their base attributes are fixed to each scope's
+There are three companion Prototypes: Sentinel, MOA and Hound. Their base attributes are fixed to each scope's
 unmodded rank-30/gilded minima, with no assembly or gilding choices. Body mods
 scale the fixed base. The source notes can name different bodies or assemblies
 for each attribute. These values derive from the body and part records.
 
 | Prototype | Scope | Health | Shield | Armor |
 | --- | --- | ---: | ---: | ---: |
-| Prototype Companion | All Sentinels and MOAs; general ranged default | 367.5 | 130 | 80 |
-| Sentinel | All 17 Sentinel variants | 450 | 130 | 80 |
+| Sentinel | All 17 Sentinel variants; general ranged default | 450 | 130 | 80 |
 | Prototype MOA | All 640 MOA assemblies | 367.5 | 315 | 350 |
 | Prototype Hound | All 81 Hound assemblies | 315 | 315 | 315 |
 

@@ -88,7 +88,7 @@ scopes:
   - helstrum
   - multron
   - cryotra
-  default: prototype_companion
+  default: sentinel
 - id: venari
   companions:
   - venari

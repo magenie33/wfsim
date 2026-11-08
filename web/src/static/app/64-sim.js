@@ -295,6 +295,7 @@ const tennoFloor = () => {
 const wfFloorLine = () => {
   if ((weaponInfo($("weapon").value) || {}).wielder_modelled === false) return "";
   const f = tennoFloor();
+  const companion = !!weaponInfo($("weapon").value)?.sentinel;
   // WHOLE NUMBERS STAY WHOLE. Four of these five are integers and `sig2` wrote
   // "250.00" for them, which reads as a measurement rather than as a stat.
   const num = (v) => (Number.isInteger(v) ? String(v) : sig2(v));
@@ -302,11 +303,11 @@ const wfFloorLine = () => {
   return `<div class="wffloor" title="${escHtml(tr(
     "the fight's wielder before any override: each stat is the LOWEST any released Warframe has at rank 30, so a bonus it pays is one every frame pays. EVERY OFFICIAL BOARD IS SCORED ON THIS WIELDER — tick a box below to test a real frame instead"))}">`
     + `<span class="wffloor-h">${escHtml(
-        (f.name === "Prototype Companion" ? tr("Companion floor") : tr(f.name || "Prototype"))
+        (companion ? holderName(buildWielder.frame) : tr(f.name || "Prototype"))
         + " · " + tr("the wielder before the overrides below — every board is scored on the Prototype"))}</span>`
     + cell(tr("Health"), f.health) + cell(tr("Shield"), f.shield)
     + cell(tr("Armor"), f.armor) + cell(tr("Max energy"), f.energy)
-    + (f.name === "Prototype Companion" ? "" : cell(tr("Sprint"), f.sprint))
+    + (companion ? "" : cell(tr("Sprint"), f.sprint))
     + `</div>`;
 };
 

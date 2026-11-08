@@ -26,7 +26,7 @@ const r = await evaluate(`(async () => {
   const built = loadPresetList('companions', 'sentinel');
   const id = built[0] && built[0].id;
   // THE FLOOR HOST NEVER OFFERS IT.
-  const floorOffers = compPool('prototype_companion').some((m) => m.id === 'fired_up');
+  const floorOffers = compPool('prototype_moa').some((m) => m.id === 'fired_up');
 
   history.pushState({}, '', weaponPath('verglas') + '/builder'); route(); await sleep(4000);
   setWielder({ frame: 'sentinel', preset: id }); await sleep(1500);
@@ -36,13 +36,13 @@ const r = await evaluate(`(async () => {
   const withCard = await score(body);
   const bare = await score({ ...body, wielder: undefined });
   const rank0 = await score({ ...body, wielder: { companion: 'sentinel', mods: [{ id: 'fired_up', rank: 0 }] } });
-  const onFloor = await api('/api/simulate', { ...body, wielder: { companion: 'prototype_companion', mods: [{ id: 'fired_up' }] } });
-  setWielder({ frame: 'prototype_companion', preset: null }); await sleep(800);
+  const onFloor = await api('/api/simulate', { ...body, wielder: { companion: 'prototype_moa', mods: [{ id: 'fired_up' }] } });
+  setWielder({ frame: 'prototype_moa', preset: null }); await sleep(800);
   const floorPayload = wielderPayload();
   return { offered, chips, id, floorOffers, payload, withCard, bare, rank0, onFloor, floorPayload };
 })()`);
 console.log(JSON.stringify(r, null, 1));
-check("a Sentinel offers Fired Up and the floor host does not",
+check("a Sentinel offers Fired Up and the MOA Prototype does not",
   r.offered.fired && r.offered.vitality && !r.floorOffers, JSON.stringify([r.offered, r.floorOffers]));
 check("Fired Up and the supported body stat are marked as modelled",
   r.chips.length === 2 && r.chips[0].pays && !r.chips[0].inert && r.chips[1].pays && !r.chips[1].inert,
@@ -53,7 +53,7 @@ check("the Verglas sends the Sentinel's cards, each at its rank",
   JSON.stringify(r.payload));
 check("Fired Up at max rank raises the Verglas's score, and rank 0 less",
   r.withCard > r.rank0 && r.rank0 > r.bare, JSON.stringify([r.withCard, r.rank0, r.bare]));
-check("the floor host refuses Fired Up and keeps its identity without mods",
-  !!r.onFloor.error && r.floorPayload.companion === 'prototype_companion' && r.floorPayload.mods.length === 0,
+check("the MOA Prototype refuses Fired Up and keeps its identity without mods",
+  !!r.onFloor.error && r.floorPayload.companion === 'prototype_moa' && r.floorPayload.mods.length === 0,
   JSON.stringify([r.onFloor, r.floorPayload]));
 await app.finish("Fired Up pays on a robotic weapon");

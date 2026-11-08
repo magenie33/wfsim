@@ -229,9 +229,9 @@ mod tests {
     #[test]
     fn a_companion_host_is_named_and_its_stats_are_the_floors() {
         let c = companions();
-        assert_eq!(c.len(), 40);
+        assert_eq!(c.len(), 39);
         assert_eq!(c.iter().filter(|c| c.prototype_scope.is_none()).count(), 36);
-        assert_eq!(companion(PROTOTYPE_COMPANION).unwrap().name, crate::data::companions::sentinel_wielder().name);
+        assert_eq!(companion(SENTINEL_PROTOTYPE).unwrap().name, crate::data::companions::sentinel_wielder().name);
         assert!(c.windows(2).all(|pair| !pair[0].prototype_scope.is_some() || pair[1].prototype_scope.is_some()));
     }
 
@@ -268,23 +268,17 @@ mod tests {
         assert!((max.per_stack - 0.05).abs() < 1e-12 && (max.max_bonus - 1.0).abs() < 1e-12);
         let r2 = on("sentinel", vec![SlotPick { id: "enhanced_vitality".into(), ..Default::default() }, pick(Some(2))]).expect("rank 2");
         assert!((r2.per_stack - 0.025).abs() < 1e-12 && (r2.max_bonus - 0.5).abs() < 1e-12);
-        assert_eq!(on(PROTOTYPE_COMPANION, vec![pick(None)]), None, "the floor host cannot seat it");
+        assert_eq!(on("prototype_moa", vec![pick(None)]), None, "the floor host cannot seat it");
         assert_eq!(on("nobody", vec![pick(None)]), None);
         assert_eq!(on("sentinel", vec![]), None);
     }
 
-    /// THE FLOOR HOST SEATS WHAT EVERY COMPANION SEATS, and no model's own card:
-    /// it is the floor of the Sentinels and the MOA, not one of them.
     #[test]
-    fn the_floor_host_seats_only_the_universal_cards() {
-        let seen: Vec<&CompanionMod> = seatable_by("prototype_companion").collect();
-        assert!(seen.iter().all(|m| m.fits() != Compat::Only));
-        assert!(seen.len() >= 30 && seen.len() < companion_mods().len(), "{}", seen.len());
-        // Enhanced Vitality is every companion's; Assault Mode is a Sentinel's.
-        assert!(seen.iter().any(|m| m.id == "enhanced_vitality"));
-        assert!(!seen.iter().any(|m| m.id == "assault_mode"));
-        // …and a Sentinel host, when there is one, seats its own.
-        assert!(seatable_by("sentinel").any(|m| m.id == "assault_mode"));
+    fn sentinel_prototype_seats_shared_sentinel_cards_without_model_exclusives() {
+        let seen: Vec<_> = seatable_by(SENTINEL_PROTOTYPE).collect();
+        assert!(seen.iter().all(|m| ["companion", "robotic", "sentinel"].contains(&m.compat.as_str())));
+        for id in ["enhanced_vitality", "assault_mode", "fired_up"] { assert!(seen.iter().any(|m| m.id == id)); }
+        assert!(!seen.iter().any(|m| m.id == "investigator"));
     }
 
     /// A RANK COSTS A POINT, the same ladder every other pool uses.

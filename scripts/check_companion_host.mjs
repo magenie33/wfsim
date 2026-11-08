@@ -74,21 +74,21 @@ const r = await evaluate(`(async () => {
     moaFloor:compHost('prototype_moa').body, houndFloor:compHost('prototype_hound').body };
 })()`);
 console.log(JSON.stringify(r, null, 1));
-check("the default floor derives the MOA's unrounded 367.5 health",
-  r.start.floor.health === 367.5 && r.start.floor.shield === 130 && r.start.floor.armor === 80,
+check("the ranged default is the Sentinel Prototype with450 health",
+  r.start.floor.health === 450 && r.start.floor.shield === 130 && r.start.floor.armor === 80,
   JSON.stringify(r.start.floor));
 check("a robotic weapon names its actual companion host even without mods",
-  r.start.link === '{"frame":"prototype_companion","preset":null}' && r.start.payload?.companion === 'prototype_companion', JSON.stringify(r.start));
+  r.start.link === '{"frame":"sentinel","preset":null}' && r.start.payload?.companion === 'sentinel', JSON.stringify(r.start));
 check("...and its picker offers the hosts, never a Warframe",
   r.offered.length === r.expectedCarriers.length && r.expectedCarriers.every(id => r.offered.includes(id)),
   JSON.stringify(r.offered));
 check("its Wielder frames the companion's own page, which frames nothing further",
-  /^\/companions\/Prototype_Companion\?embed=1/.test(r.framed.src) && r.framed.bar && !r.framed.nested,
+  /^\/companions\/Sentinel\?embed=1/.test(r.framed.src) && r.framed.bar && !r.framed.nested,
   JSON.stringify(r.framed));
-check("a build of the host keeps its identity when no card is seated",
-  r.held.resolved === "c1" && r.held.payload?.companion === 'prototype_companion' && /preset 1/.test(r.held.sub), JSON.stringify(r.held));
+check("a saved legacy generic-host build migrates to Sentinel without losing its id",
+  r.held.resolved === "c1" && r.held.payload?.companion === 'sentinel' && /preset 1/.test(r.held.sub), JSON.stringify(r.held));
 check("an ordinary weapon still holds a Warframe", r.ordinary.link.includes("prototype"), JSON.stringify(r.ordinary));
-check("all concrete bodies, four prototypes and modular parts are in the catalogue", r.bodies === 40 && r.parts === 49);
+check("all concrete bodies, three prototypes and modular parts are in the catalogue", r.bodies === 39 && r.parts === 49);
 check("the Deconstructors offer only the two concrete Helios bodies",
   r.helios.length === 2 && ['helios','helios_prime'].every(id => r.helios.includes(id)), JSON.stringify(r.helios));
 check("Smeeta Claws offer only Smeeta", JSON.stringify(r.claw) === '["smeeta_kavat"]', JSON.stringify(r.claw));

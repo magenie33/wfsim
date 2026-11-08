@@ -10,9 +10,20 @@ let comp = null;
 let compActive = "";
 
 const compHosts = () => (META && META.companions) || [];
-const compHost = (id) => compHosts().find((c) => c.id === id) || null;
+const COMP_LEGACY_ID = "prototype_companion";
+const companionId = id => id === COMP_LEGACY_ID ? "sentinel" : id;
+const compHost = (id) => compHosts().find((c) => c.id === companionId(id)) || null;
 const companionPath = (c) => "/companions/" + String(c.name_en || c.name).replace(/ /g, "_");
-const compList = (id) => presetListWithIds(COMP_BUILDS, id);
+function compList(id) {
+  const whole = loadPresetWhole(COMP_BUILDS);
+  if (whole.some(p => p.scope === COMP_LEGACY_ID)) {
+    const moved = whole.filter(p => p.scope !== COMP_LEGACY_ID).concat(whole.filter(p => p.scope === COMP_LEGACY_ID)
+      .map(p => ({...p, scope:"sentinel", savedAt:Date.now(), state:{...p.state, companion:"sentinel"}})));
+    localStorage.setItem(presetListKey(COMP_BUILDS), JSON.stringify(moved));
+    syncSoon();
+  }
+  return presetListWithIds(COMP_BUILDS, companionId(id));
+}
 const compSlotCount = () => (WFCAT && WFCAT.companion_slots) || COMP_SLOTS;
 const compMod = (id) => (WFCAT && id && WFCAT.companion_mods.find((m) => m.id === id)) || null;
 /// WHAT THIS HOST SEATS: the universal cards, plus any naming it. Mirrors

@@ -162,7 +162,7 @@ pub fn sentinel_wielder() -> &'static crate::data::tenno::Tenno {
     static T: std::sync::OnceLock<crate::data::tenno::Tenno> = std::sync::OnceLock::new();
     T.get_or_init(|| {
         let r = crate::data::companions::resolve(&crate::data::companions::CompanionBuild {
-            companion: crate::data::companions::PROTOTYPE_COMPANION.into(), ..Default::default()
+            companion: carrier_scope("robotic_ranged").expect("ranged companion scope").default.clone(), ..Default::default()
         }).expect("default companion scope");
         let mut t = crate::data::tenno::default_tenno().clone();
         t.id = r.companion;

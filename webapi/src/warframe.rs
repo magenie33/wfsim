@@ -96,7 +96,7 @@ pub fn warframe_catalog_json() -> Value {
         "companion_part_labels": wfsim_engine::data::companions::companion_part_labels(),
         "companion_gild_polarities": wfsim_engine::data::companions::GILD_POLARITIES,
         "companion_polarities": wfsim_engine::data::companions::resolve(&wfsim_engine::data::companions::CompanionBuild {
-            companion: wfsim_engine::data::companions::PROTOTYPE_COMPANION.into(), ..Default::default()
+            companion: wfsim_engine::data::companions::sentinel_wielder().id.clone(), ..Default::default()
         }).expect("default companion").polarities.iter().map(|p| polarity_label(p)).collect::<Vec<_>>(),
         "companion_mods": wfsim_engine::data::companions::companion_mods().iter().map(|m| json!({
             "id": m.id,

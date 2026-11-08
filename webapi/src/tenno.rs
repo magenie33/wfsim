@@ -324,7 +324,7 @@ mod wielder_tests {
         let link = |host: &str| json!({"wielder": {"companion": host, "mods": [{"id": "fired_up", "rank": 5}]}});
         let piled = tenno_from(&link("sentinel"), verglas).element_per_hit.expect("Fired Up");
         assert!((piled.max_bonus - 1.0).abs() < 1e-12);
-        assert_eq!(tenno_from(&link("prototype_companion"), verglas).element_per_hit, None);
+        assert_eq!(tenno_from(&link("prototype_moa"), verglas).element_per_hit, None);
         assert_eq!(tenno_from(&json!({}), verglas).element_per_hit, None);
         // …ON A ROBOTIC WEAPON ONLY: a Warframe's gun is not the companion's.
         assert_eq!(tenno_from(&link("sentinel"), weapon("praedos")).element_per_hit, None);
@@ -342,7 +342,7 @@ mod wielder_tests {
             r["score"].as_f64().expect("a score")
         };
         let floor = score(json!({}));
-        let mut invalid = link("prototype_companion");
+        let mut invalid = link("prototype_moa");
         invalid["weapon"] = json!("verglas");
         assert!(simulate_json(&invalid)["error"].as_str().unwrap().contains("cannot seat fired_up"));
         let fired = score(link("sentinel"));

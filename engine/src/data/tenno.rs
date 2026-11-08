@@ -743,14 +743,11 @@ mod tests {
     fn a_companion_weapon_is_held_by_a_sentinel_and_it_is_a_different_floor() {
         let s = crate::data::companions::sentinel_wielder();
         let w = default_tenno();
-        assert_eq!(s.id, "prototype_companion");
-        // The MOA's lowest health, 367, is under every Sentinel's (Wyrm Prime's
-        // 450), so it sets that floor; Shade's shield and Carrier's armor are
-        // under every MOA's, so they set theirs.
-        assert_eq!(s.health, 367.5, "350 * (1 + 0.1 - 0.05), gilded MOA parts");
+        assert_eq!(s.id, "sentinel");
+        assert_eq!(s.health, 450.0, "Wyrm Prime, the Sentinel health minimum");
         assert_eq!(s.shield, 130.0, "Shade");
         assert_eq!(s.armor, 80.0, "Carrier and eleven others");
-        assert_eq!(s.name, "Prototype Companion");
+        assert_eq!(s.name, "Sentinel");
         // The wiki's Sentinel infobox has no Energy row and no sprint row; the
         // export lists `power` and the house rule is the wiki's.
         assert_eq!(s.energy, 0.0);

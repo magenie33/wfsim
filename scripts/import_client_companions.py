@@ -206,7 +206,7 @@ def main():
         {'id': 'moas', 'companions': ['moa'], 'weapons': [], 'default': 'prototype_moa'},
         {'id': 'hounds', 'companions': ['hound'], 'weapons': [], 'default': 'prototype_hound'},
         {'id': 'helios', 'companions': ['helios', 'helios_prime'], 'weapons': [], 'default': 'helios'},
-        {'id': 'robotic_ranged', 'companions': sentinel_ids + ['moa'], 'weapons': [], 'default': 'prototype_companion'},
+        {'id': 'robotic_ranged', 'companions': sentinel_ids + ['moa'], 'weapons': [], 'default': 'sentinel'},
     ])
     scope_by_id = {s['id']: s for s in scopes}
     weapon_ids = {}
@@ -235,9 +235,11 @@ def main():
                            if yaml.safe_load(p.read_text())['internal_name'] == path)
         weapon = yaml.safe_load(weapon_file.read_text())
         scopes.append({'id': body['id'], 'companions': [body['id']], 'weapons': [weapon['id']], 'default': body['id']})
-    proto_names = {'sentinel': 'Sentinel', 'prototype_companion': 'Prototype Companion',
+    proto_names = {'sentinel': 'Sentinel',
                    'prototype_moa': 'Prototype MOA', 'prototype_hound': 'Prototype Hound'}
     for scope in scopes:
+        if scope['id'] == 'robotic_ranged':
+            continue
         identity = scope['default']
         if identity not in proto_names:
             continue

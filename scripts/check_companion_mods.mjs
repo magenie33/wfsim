@@ -11,7 +11,7 @@ const { evaluate, check } = app;
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear(); sessionStorage.clear();
-  history.pushState({}, '', '/companions/Prototype_Companion'); route(); await sleep(4500);
+  history.pushState({}, '', '/companions/Sentinel'); route(); await sleep(4500);
   const slots = document.querySelectorAll('#comp-mod-slots .slot').length;
   // A POLARITY DRAWS AS ART, so an empty one is the nopol glyph rather than
   // empty text — counting text counted none of them.
@@ -24,11 +24,12 @@ const r = await evaluate(`(async () => {
   const hint = document.querySelector('#comp-mods-block .exhint');
   const says = !!hint && hint.textContent.trim().length > 20 && hint.hasAttribute('data-i18n');
   // THE POOL: every card is unmodelled, and a model's own card is not offered.
-  const pool = compPool('prototype_companion');
+  const pool = compPool('sentinel');
   const all = WFCAT.companion_mods;
   const offered = { pool: pool.length, all: all.length,
-    onlyUniversal: pool.every((m) => m.compat === 'companion' || m.compat === 'robotic'),
+    onlyUniversal: pool.every((m) => ['companion','robotic','sentinel'].includes(m.compat)),
     hasAssault: pool.some((m) => m.id === 'assault_mode'),
+    hasInvestigator: pool.some((m) => m.id === 'investigator'),
     hasVitality: pool.some((m) => m.id === 'enhanced_vitality') };
   // SEAT ONE, through the picker the reader uses.
   document.querySelector('#comp-mod-slots .slot').click(); await sleep(700);
@@ -36,7 +37,7 @@ const r = await evaluate(`(async () => {
   const row = rows.find((o) => o.dataset.id === 'enhanced_vitality');
   row.click(); await sleep(1200);
   const seated = { mod: comp.slots[0].mod, cap: document.getElementById('comp-capacity').textContent,
-    stored: loadPresetList('companions', 'prototype_companion').length,
+    stored: loadPresetList('companions', 'sentinel').length,
     forma: document.getElementById('comp-forma').textContent };
   // …AND A RANK COSTS A POINT.
   const before = compUsed();
@@ -54,8 +55,8 @@ const r = await evaluate(`(async () => {
 console.log(JSON.stringify(r, null, 1));
 check("ten general slots, with four innate Penjaga polarities",
   r.slots === 10 && r.innate === 4 && r.penjaga === 4, JSON.stringify([r.slots, r.innate, r.penjaga]));
-check("the pool is every companion's, never a model's own",
-  r.offered.onlyUniversal && r.offered.hasVitality && !r.offered.hasAssault
+check("the Sentinel pool includes shared precepts and excludes model exclusives",
+  r.offered.onlyUniversal && r.offered.hasVitality && r.offered.hasAssault && !r.offered.hasInvestigator
   && r.offered.pool < r.offered.all, JSON.stringify(r.offered));
 check("...and the page says plainly what of it pays", r.says === true);
 check("seating one through the picker spends capacity and is born as a build",

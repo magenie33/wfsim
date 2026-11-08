@@ -53,7 +53,7 @@ fn concrete_bodies_and_parts_match_client_inputs() {
     assert_eq!(companion("adarza_kavat").unwrap().stats.unwrap().shield, 270.0, "client overrides wiki 230");
     assert_eq!(companion("wyrm").unwrap().stats.unwrap().armor, 80.0, "wiki Prime path alias must not replace base armor");
     assert_eq!(companion("wyrm_prime").unwrap().stats.unwrap().armor, 150.0);
-    assert_eq!(resolve(&build("prototype_companion")).unwrap().polarities, ["penjaga"; 4]);
+    assert_eq!(resolve(&build("sentinel")).unwrap().polarities, ["penjaga"; 4]);
 }
 
 #[test]
@@ -148,8 +148,7 @@ fn moa_parts_modify_base_but_hound_brackets_add_with_mods() {
 #[test]
 fn prototypes_derive_attribute_minima_with_legal_witnesses() {
     for (id, expected) in [("prototype_moa", [367.5, 315.0, 350.0]), ("prototype_hound", [315.0, 315.0, 315.0]),
-                           ("sentinel", [450.0, 130.0, 80.0]),
-                           ("prototype_companion", [367.5, 130.0, 80.0])] {
+                           ("sentinel", [450.0, 130.0, 80.0])] {
         let b = build(id);
         let r = resolve(&b).unwrap();
         let scope = carrier_scope(companion(id).unwrap().prototype_scope.as_deref().unwrap()).unwrap();
@@ -164,10 +163,13 @@ fn prototypes_derive_attribute_minima_with_legal_witnesses() {
 }
 
 #[test]
-fn exactly_four_prototypes_have_fixed_bases_and_helios_is_concrete() {
+fn exactly_three_prototypes_have_fixed_bases_and_helios_is_concrete() {
     let prototypes: Vec<_> = companions().iter().filter(|c| c.prototype_scope.is_some()).collect();
-    assert_eq!(prototypes.len(), 4);
+    assert_eq!(prototypes.len(), 3);
     assert!(companion("prototype_helios").is_none());
+    assert!(!companions().iter().any(|c| c.id == "prototype_companion"));
+    assert_eq!(resolve(&build("prototype_companion")).unwrap().companion, "sentinel");
+    assert_eq!(weapon_scope("verglas").unwrap().default, "sentinel");
     assert!(companion("helios").unwrap().prototype_scope.is_none());
     for host in prototypes {
         let normal = resolve(&build(&host.id)).unwrap();

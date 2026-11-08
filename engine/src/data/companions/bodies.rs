@@ -72,7 +72,7 @@ pub struct CarrierWeapon {
     pub modelled: bool,
 }
 
-pub const PROTOTYPE_COMPANION: &str = "prototype_companion";
+pub const SENTINEL_PROTOTYPE: &str = "sentinel";
 pub const BODY_STATS: [&str; 3] = ["health", "shield", "armor"];
 
 pub fn companions() -> &'static [Companion] {
@@ -92,6 +92,8 @@ pub fn companions() -> &'static [Companion] {
 }
 
 pub fn companion(id: &str) -> Option<&'static Companion> {
+    // Saved builds keep resolving the retired generic host as the Sentinel Prototype.
+    let id = if id == "prototype_companion" { SENTINEL_PROTOTYPE } else { id };
     companions().iter().find(|c| c.id == id)
 }
 
