@@ -61,13 +61,11 @@ on:
         type: string
         default: ""
 
-# ONE AT A TIME, AND THE RUNNING ONE WINS. Two of these would both read the same
-# inbox and derive the same builds — writing one row twice, which is harmless —
-# but they would also both reconcile, and the second would ask again for
-# everything the first has not finished measuring. Cancelling the NEW one keeps
-# the hour that is already paid for.
+# Queue mutation runs serialize without cancelling a running pass. Inventory-only
+# dispatches have their own serialized slot; they publish coherent snapshots
+# without admitting or purging queue rows.
 concurrency:
-  group: board-queue
+  group: ${{ inputs.inventory_only && 'board-inventory' || 'board-queue' }}
   cancel-in-progress: false
 
 env:

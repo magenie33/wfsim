@@ -141,7 +141,9 @@ and never task input.
 The queue workflow's `inventory_only` input skips intake and publishes the same
 complete snapshot, including insert-only canonical build bindings. It stops
 before queue admission or cleanup and rejects rescore, weapons, why, day and
-cancel inputs. Normal scheduled reconciliation keeps its existing path.
+cancel inputs. These scans serialize in an independent concurrency group so a
+queue mutation run cannot block a requested count. Normal scheduled
+reconciliation keeps its existing path.
 
 Each full-inventory phase reports progress every thirty seconds. Its process
 RSS, peak RSS, swap, available host memory, scratch space, Linux memory/I/O

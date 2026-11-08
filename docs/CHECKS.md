@@ -2325,6 +2325,8 @@ The inventory-only queue input skips intake and rejects mutation inputs. The
 actual reconciliation shell publishes once, cleans its snapshot files and
 stops before pacing, dispatch or purging; publication failure stays failed.
 The actual shell passes its default two-worker budget and an explicit override.
+Inventory-only dispatches use a stable independent concurrency slot; normal
+queue runs retain theirs.
 The normal reconciliation still reaches its queue updates.
 
 Hosted inventory memory preparation runs through the actual shell with fake
