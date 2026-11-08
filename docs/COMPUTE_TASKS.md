@@ -104,6 +104,8 @@ file while preserving existing swap. Capture and classifier scratch retain at
 least 60 GiB free after allocation; insufficient capacity releases only unused
 Android, .NET and GHC SDKs, then stops preparation if the reserve is still short.
 Each ruler's temporary output is removed after its ordered merge succeeds.
+The swap and scratch reserve are checked again after cache restoration, builds
+and intake, immediately before the full capture.
 Full reconciliation defaults to two concurrent ruler walks;
 `WFSIM_INVENTORY_WORKERS` overrides that budget. The standalone classifier
 uses a quarter of available memory for its SQLite pager, capped at 4 GiB.

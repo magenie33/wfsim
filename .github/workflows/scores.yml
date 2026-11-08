@@ -325,6 +325,13 @@ jobs:
       # READ, RECONCILE, READ AGAIN. The second read hands the shards a queue
       # that already holds this run's arrivals; without it a build waits a whole
       # run just to be asked for.
+      - name: check complete inventory scratch
+        if: steps.wired.outputs.yes == 'true'
+        env:
+          INVENTORY_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          INVENTORY_RUNNER_OS: ${{ runner.os }}
+        run: bash scripts/prepare_inventory_memory.sh --check
+
       - name: what is owed
         if: steps.wired.outputs.yes == 'true'
         env:

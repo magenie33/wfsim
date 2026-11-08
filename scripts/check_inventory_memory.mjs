@@ -75,15 +75,22 @@ function run(extra = {}, setup = () => {}) {
   const paths = { fixture, work, temp, runner, swap, old };
   setup(paths);
   const values = typeof extra === 'function' ? extra(paths) : extra;
-  const result = spawnSync('bash', [join(SOURCE, 'scripts/prepare_inventory_memory.sh')], {
-    cwd: work, encoding: 'utf8', timeout: 10000, maxBuffer: 1024 * 1024,
-    env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, GITHUB_ACTIONS: 'true',
+  const environment = { ...process.env, PATH: `${bin}:${process.env.PATH}`, GITHUB_ACTIONS: 'true',
       INVENTORY_RUNNER_ENVIRONMENT: 'github-hosted', INVENTORY_RUNNER_OS: 'Linux',
       RUNNER_TEMP: runner, TMPDIR: temp, MEMORY_LOG: log, MEMORY_STATE: statePath, MEMORY_BIN: bin,
-      MEMORY_FAIL: '', MEMORY_LOW_PATH: '', MEMORY_LOW_AFTER: '', MEMORY_WRONG_SIZE: '', MEMORY_KERNEL: '', MEMORY_RECOVER: '', ...values },
+      MEMORY_FAIL: '', MEMORY_LOW_PATH: '', MEMORY_LOW_AFTER: '', MEMORY_WRONG_SIZE: '', MEMORY_KERNEL: '', MEMORY_RECOVER: '', ...values };
+  const result = spawnSync('bash', [join(SOURCE, 'scripts/prepare_inventory_memory.sh')], {
+    cwd: work, encoding: 'utf8', timeout: 10000, maxBuffer: 1024 * 1024, env: environment,
   });
-  return { ...result, ...paths, calls: readFileSync(log, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse),
+  return { ...result, ...paths, log, statePath, environment, calls: readFileSync(log, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse),
     state: JSON.parse(readFileSync(statePath, 'utf8')), oldContent: readFileSync(old, 'utf8') };
+}
+function recheck(prepared, extra = {}) {
+  const result = spawnSync('bash', [join(SOURCE, 'scripts/prepare_inventory_memory.sh'), '--check'], {
+    cwd: prepared.work, encoding: 'utf8', timeout: 10000, env: { ...prepared.environment, ...extra },
+  });
+  return { ...result, calls: readFileSync(prepared.log, 'utf8').trim().split('\n').filter(Boolean).map(JSON.parse),
+    state: JSON.parse(readFileSync(prepared.statePath, 'utf8')) };
 }
 const called = (result, name) => result.calls.some(call => call[0] === name);
 const allocated = result => called(result, 'fallocate');
@@ -106,7 +113,30 @@ try {
       && steps.findIndex(step => step.includes('bash scripts/reconcile_queue.sh')) > index;
   });
   check(wired.every(Boolean), 'queue and scores prepare hosted memory after wiring and before intake and complete capture');
+  const afterSetup = ['queue.yml', 'scores.yml'].map(name => {
+    const text = readFileSync(join(WORKFLOWS, name), 'utf8'), steps = text.split(/(?=^ {6}- )/m);
+    const scan = steps.findIndex(step => step.includes('bash scripts/reconcile_queue.sh'));
+    const guard = steps.findIndex(step => step.includes('- name: check complete inventory scratch'));
+    return guard > 0 && guard === scan - 1 && steps[guard].includes('run: bash scripts/prepare_inventory_memory.sh --check')
+      && steps.every((step, index) => !step.includes('cargo build') && !step.includes('actions/cache@') || index < guard || index > scan);
+  });
+  check(afterSetup.every(Boolean), 'both full scans recheck scratch after cached builds and intake immediately before capture');
   const success = run();
+  const checked = recheck(success);
+  check(checked.status === 0 && checked.calls.filter(call => call[0] === 'fallocate').length === 1
+    && checked.state.active.includes(success.swap) && checked.state.active.includes(success.old),
+  'a post-setup recheck preserves the prepared swap without allocating it again', checked.stderr);
+  const cached = run(), low = recheck(cached, { MEMORY_LOW_PATH: cached.work });
+  check(low.status !== 0 && low.stderr.includes('insufficient scratch after cached builds')
+    && low.calls.filter(call => call[0] === 'fallocate').length === 1,
+  'cache growth below the scratch floor stops before complete capture', low.stderr);
+  const reclaimable = run(), reclaimed = recheck(reclaimable, { MEMORY_LOW_PATH: reclaimable.work, MEMORY_RECOVER: 'yes' });
+  check(reclaimed.status === 0 && reclaimed.state.cleaned && reclaimed.calls.filter(call => call[0] === 'fallocate').length === 1,
+    'a post-cache recheck can release only the existing unused SDK allowance', reclaimed.stderr);
+  const missing = run(); rmSync(missing.swap);
+  check(recheck(missing).status !== 0, 'a post-setup check refuses a missing prepared swap');
+  const lostSwap = run(); writeFileSync(lostSwap.statePath, JSON.stringify({ ...lostSwap.state, active: [lostSwap.old] }));
+  check(recheck(lostSwap).status !== 0, 'a post-setup check refuses an inactive prepared swap');
   check(success.status === 0 && success.state.bytes === '25769803776' && success.state.active.includes(success.swap)
     && success.state.active.includes(success.old) && success.oldContent === 'existing swap'
     && success.calls.filter(call => call[0] === 'fallocate').length === 1
