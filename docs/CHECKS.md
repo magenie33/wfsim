@@ -4,6 +4,10 @@
 order, current name resolution, stable profiles, anonymous credit, native
 measurement replacement, private-input exclusion, exact 14-day expiry and
 permanent aggregate counts after cleanup, device transfers and cursor boundaries.
+It also runs unregistered work through the real device claim and account purge:
+no guest profile, first-claim recovery, anonymous deletion and no inheritance by
+a later holder, whose subsequent work starts its own contribution history.
+Deleting the retained ownership span is a negative control for inheritance.
 Its negative control reverses
 witness positions and must fail the order assertion.
 `check_computation_profiles_page.mjs` drives the real account/profile routes
