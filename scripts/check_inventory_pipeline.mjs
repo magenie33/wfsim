@@ -78,12 +78,13 @@ const catalogState = () => {
   try { return { state, meta: structuredClone(catalog.meta), digest: catalog.digest(), summary: catalog.summary(), tuples: [...catalog.tuples()] }; }
   finally { catalog.close(); }
 };
-async function fullOracle(raw, meta, tag) {
+async function fullOracle(raw, meta, tag, workers) {
   const out = join(dir, `oracle-${tag}`); mkdirSync(out);
   const stderr = openSync(join(out, 'stderr'), 'w');
   try {
     execFileSync(binary, ['--each-ruler', '--dry-run', '--gate', '--queue-in', raw.queue, '--facts-in', raw.facts,
-      '--inventory-builds', join(out, 'canonical'), '--queue-missing', join(out, '{id}.missing'), '--queue-orphans', join(out, '{id}.orphans')],
+      '--inventory-builds', join(out, 'canonical'), '--queue-missing', join(out, '{id}.missing'), '--queue-orphans', join(out, '{id}.orphans'),
+      ...(workers === undefined ? [] : ['--inventory-workers', String(workers)])],
     { input: readFileSync(raw.library), stdio: ['pipe', 'pipe', stderr], timeout: 60000 });
   } finally { closeSync(stderr); }
   for (const suffix of ['missing', 'orphans']) writeFileSync(join(out, suffix), roster.map(r => readFileSync(join(out, `${r}.${suffix}`), 'utf8')).join(''));
@@ -149,6 +150,11 @@ try {
   assert.equal(boot.published.started_at, originalReceipt.started_at); assert.equal(boot.published.snapshot, originalReceipt.snapshot);
   assert.equal(Number(await scalar("SELECT count(*) FROM inventory_dirty WHERE scope='question' AND key=$1", [future])), 1);
   const firstOracle = await fullOracle(bootstrapRaw, bootstrapMeta, 'bootstrap'); equalPlan(firstOracle, catalogState());
+  for (const workers of [1, 2]) {
+    const limited = await fullOracle(bootstrapRaw, bootstrapMeta, `workers-${workers}`, workers);
+    for (const key of ['rows', 'queued', 'orders', 'verbs', 'question_digest']) assert.deepEqual(limited[key], firstOracle[key],
+      `worker limit ${workers} changes classified ${key}`);
+  }
   assert.equal(catalogState().meta.audit_digest, firstOracle.question_digest);
   assert(!existsSync(bootstrapCapture), 'completed bootstrap payload was not reclaimed');
   const publication = json(join(work, 'inventory/last-publication.json'));

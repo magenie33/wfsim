@@ -49,13 +49,15 @@ and mode. A real lower-rank record keeps its frozen identity and waits for
 its canonical full-rank parent. Qualifying parents release variants; parents
 below the entry line do not. Legacy variants without a stored parent and
 roll-only alternatives retain their rules. `WFSIM_INVENTORY_BOARD_BIN` selects
-the built native binary.
+the built native binary. One and two concurrent ruler walks must produce the
+same ordered rows as the default; invalid worker limits fail before scanning.
 
 `check_inventory_pipeline.mjs` runs the actual `wfsim-board --serve` against
 frozen PGlite cuts and compares every classified question with an independent
 `--each-ruler --gate` walk. It covers source deletion, canonical aliases,
 retirement, multiple apply chunks, later writes, durable acknowledgment and
-input cleanup. Set `WFSIM_INVENTORY_BOARD_BIN` to select an existing binary;
+input cleanup. One and two concurrent ruler walks retain the exact classified
+question digest. Set `WFSIM_INVENTORY_BOARD_BIN` to select an existing binary;
 otherwise it uses `target/debug/wfsim-board`. A missing binary fails the check.
 
 `check_live_ranker.mjs` connects the production Bash publication consumer to

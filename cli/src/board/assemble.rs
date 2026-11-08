@@ -143,7 +143,7 @@ fn content_key(raw: &RawValue) -> (u64, u64) {
 /// PAST THIS MANY THREADS THE DOOR GETS SLOWER, not faster: it allocates in
 /// every step, and on 28 cores deriving the whole library took 70 s against
 /// 21 s on eight.
-const MAX_THREADS: usize = 8;
+pub(super) const MAX_THREADS: usize = 8;
 
 /// `f` over `items` on up to [`MAX_THREADS`] cores, in `items` order.
 ///
@@ -151,10 +151,15 @@ const MAX_THREADS: usize = 8;
 /// orders of magnitude (a riven of two elements orders its mods by search) and
 /// a weapon's by its library, so equal slices leave one thread with the work.
 pub(crate) fn par_map<T: Sync, U: Send>(items: &[T], f: impl Fn(&T) -> U + Sync) -> Vec<U> {
+    par_map_limit(items, MAX_THREADS, f)
+}
+
+pub(crate) fn par_map_limit<T: Sync, U: Send>(items: &[T], limit: usize, f: impl Fn(&T) -> U + Sync) -> Vec<U> {
     let next = std::sync::atomic::AtomicUsize::new(0);
     let n = std::thread::available_parallelism()
         .map_or(1, |n| n.get())
         .min(MAX_THREADS)
+        .min(limit.max(1))
         .min(items.len().max(1));
     let mut out: Vec<(usize, U)> = std::thread::scope(|s| {
         let handles: Vec<_> = (0..n)
@@ -974,6 +979,23 @@ fn swap(root: &Path, next: &Path) {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn limited_parallel_walks_preserve_order_and_bound_live_workers() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let live = AtomicUsize::new(0);
+        let peak = AtomicUsize::new(0);
+        let items: Vec<usize> = (0..24).collect();
+        let output = par_map_limit(&items, 2, |value| {
+            let active = live.fetch_add(1, Ordering::SeqCst) + 1;
+            peak.fetch_max(active, Ordering::SeqCst);
+            std::thread::sleep(std::time::Duration::from_millis(5));
+            live.fetch_sub(1, Ordering::SeqCst);
+            value * 3
+        });
+        assert!(peak.load(Ordering::SeqCst) <= 2);
+        assert_eq!(output, items.iter().map(|value| value * 3).collect::<Vec<_>>());
+    }
 
     #[test]
     fn retirement_removes_a_published_fact_until_a_new_measurement() {
