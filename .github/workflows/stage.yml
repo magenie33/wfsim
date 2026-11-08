@@ -42,6 +42,7 @@ jobs:
         with:
           shared-key: ci-tests
       - name: isolate the metadata borrowing failure
-        run: cargo test -p wfsim-engine --lib data::weapons::tests::metadata:: -- --nocapture
+        run: |
+          cargo test -p wfsim-engine --lib data::weapons::tests::metadata:: -- --nocapture
       - name: reproduce with the complete engine test suite
         run: cargo test -p wfsim-engine --lib
