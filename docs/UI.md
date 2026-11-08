@@ -974,9 +974,9 @@ Arch-Gun deployment and per-class rules are available from every weapon under
 All settings. Technical details read the full document without a second editor.
 Quick calc preferences stay in Builder; run counts stay in the bottom run block.
 
-Beast claws require a final attack interval in the scenario. The field starts
-unset, travels with scenario presets and is stated beside the fight's duration.
-It applies only to weapons whose attack cycle needs that supplied interval.
+Beast claws use an adjustable assumed attack interval, defaulting to one second.
+It travels with scenario presets and is stated beside the fight's duration.
+The assumption applies only to weapons whose attack cycle is uncalibrated.
 
 The global buff catalog is the union of the existing legal scope enumeration
 for every weapon. Equal ids retain their metadata variants and applicable

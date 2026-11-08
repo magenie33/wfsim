@@ -452,16 +452,12 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
     };
     let info = crate::registry::weapon_of(v)?;
     let attack_interval_seconds = match v.get("attack_interval_seconds").filter(|x| !x.is_null()) {
-        None => None,
+        None => crate::registry::wspec(&info.id).attack.refire.assumed_interval(),
         Some(x) => match x.as_f64().filter(|s| s.is_finite() && (0.001..=3600.0).contains(s)) {
             Some(s) => Some(s),
             None => return Err(err_json("attack_interval_seconds must be between 0.001 and 3600")),
         },
     };
-    if crate::registry::wspec(&info.id).attack.refire == wfsim_engine::model::RefireRule::SuppliedInterval
-        && attack_interval_seconds.is_none() {
-        return Err(err_json("This weapon needs an explicit attack_interval_seconds: its attack cycle is not calibrated."));
-    }
     // Per-buff configured policy (Sim panel section 2). Present ⇒ Emergent sim
     // with each buff carrying its own initial stacks + lock. Absent ⇒ the
     // legacy `assume_max`/`frenzy` knobs (byte-for-byte with the old path).

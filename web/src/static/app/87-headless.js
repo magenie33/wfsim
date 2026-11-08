@@ -486,7 +486,7 @@ function headlessDefaultScenario(meta, contact, metric) {
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || metric,
     ...(d.seed === undefined ? {} : { seed: d.seed }),
     // NO `form`: how the weapon is played belongs to the build.
-    duration: d.duration, buffs: {},
+    duration: d.duration, attack_interval_seconds: d.attack_interval_seconds, buffs: {},
     // WARFRAME ABILITY BUFFS. `ability_strength` is a TYPED OVERRIDE, a
     // fraction (1 = 100%), and NULL means the wielder's own — the linked
     // Warframe build's (`applyScenario` reads an older page's stored 1 as null).

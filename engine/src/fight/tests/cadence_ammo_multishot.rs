@@ -13,8 +13,8 @@ fn native_refire_and_supplied_interval_schedule_actual_shots() {
         attack_interval_seconds: Some(0.2), ..p.clone() }, 1, 42);
     assert_eq!(explicit.mean_shots, 3.0);
     let missing = monte_carlo(&FightParams { refire: RefireRule::SuppliedInterval,
-        attack_interval_seconds: None, ..p }, 1, 42);
-    assert_eq!(missing.mean_shots, 1.0, "an unknown cycle never invents repeated attacks");
+        attack_interval_seconds: None, duration_seconds: 1.01, ..p }, 1, 42);
+    assert_eq!(missing.mean_shots, 2.0, "the default assumption is one attack per second");
 }
 
 /// A FLAT BASE-DAMAGE BUFF IS NOT DILUTED BY SERRATION, and that is the

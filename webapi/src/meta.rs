@@ -515,6 +515,7 @@ pub fn meta_json() -> Value {
                     .unwrap_or_default(),
                 "sentinel": w.sentinel,
                 "refire": wspec(&w.id).attack.refire,
+                "assumed_attack_interval_seconds": wspec(&w.id).attack.refire.assumed_interval(),
                 "wielder_modelled": wspec(&w.id).wielder_modelled,
                 // An Arch-Gun has none either, so `sentinel` cannot answer it.
                 "has_exilus_slot": wfsim_engine::data::weapons::has_exilus_slot(&w.id),
@@ -1431,6 +1432,7 @@ pub fn meta_json() -> Value {
             // alone. Only the DEFAULT moves: a saved scenario carries its own
             // duration and keeps it.
             "duration": 180.0,
+            "attack_interval_seconds": wfsim_engine::model::RefireRule::SuppliedInterval.assumed_interval(),
             "runs": crate::fight::DEFAULT_RUNS,
             // The final-round contract, for an API caller. The WEB does not
             // read these: `final_runs` is the scenario's `runs` and

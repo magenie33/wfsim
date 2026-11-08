@@ -31,7 +31,7 @@ attack:
   damage:
     slash: 80.0
 unmodeled:
-- The complete attack cycle is not calibrated. Simulation needs an explicit final attack interval for this build; animation lengths are not attack intervals.
+- The complete attack cycle is not calibrated. Simulation uses an assumed attack interval unless one is supplied; animation lengths are not attack intervals.
 - Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.
 source:
   url: https://wiki.warframe.com/w/Smeeta_Claws

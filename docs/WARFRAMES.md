@@ -322,8 +322,8 @@ Companion effects keep their actual recipient and trigger:
   reads those same files. Conditioning converts base physical damage before
   modifiers. Elemental conversion runs after coalescing and covers both declared
   elemental masks. Unsupported conditional effects and posture AI remain visible.
-  The complete attack cycle is uncalibrated: simulation requires an explicit
-  final `attack_interval_seconds` for the tested build. It is not inferred from
+  The complete attack cycle is uncalibrated: simulation assumes a one-second
+  interval unless `attack_interval_seconds` supplies another. It is not inferred from
   a clip or scaled by an assumed animation-speed rule. The beast body and owner
   link are not modelled, and robotic host effects cannot reach its claws.
 - Hunter Synergy and Mecha Overdrive read the owner's modded primary weapon,
