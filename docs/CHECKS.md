@@ -4,6 +4,8 @@
 order, current name resolution, stable profiles, anonymous credit, native
 measurement replacement, private-input exclusion, exact 14-day expiry and
 permanent aggregate counts after cleanup, device transfers and cursor boundaries.
+Identity-only requests must work without the library database; summary requests
+must avoid record tables and record-only requests must avoid contribution totals.
 It also runs unregistered work through the real device claim and account purge:
 no guest profile, first-claim recovery, anonymous deletion and no inheritance by
 a later holder, whose subsequent work starts its own contribution history.
@@ -15,6 +17,9 @@ and published Laetum data. It checks exact build links, publication removal
 with the score retained, renamed and anonymous signatures, the optimization
 record link, actual Library names and mobile layout. Its negative control
 removes the publication before the restoration assertion.
+It withholds summary and record responses to verify that identity renders first
+and the overview requests no list. Legacy addresses retain their filters and
+fragment under `/user/`. Name links retain their shared hover and keyboard styles.
 
 `check_native_pgo.py` refuses changed numerical responses, missing timing cases,
 individual regressions and cross-target training. `check_native_pgo.mjs` checks

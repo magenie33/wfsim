@@ -1998,8 +1998,10 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .rank-who>*{white-space:nowrap}
 .rank-name{overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .rank-name.muted{color:var(--muted)}
-.computation-names a,.computation-credits a,.calculation-record a{color:var(--accent);text-decoration:none}
-.computation-names a:hover,.computation-credits a:hover{text-decoration:underline}
+.calculation-record a{color:var(--accent);text-decoration:none}
+a.user-link{color:var(--text);font-weight:500;text-decoration:none;border-radius:3px;transition:color .12s,background-color .12s}
+a.user-link:hover{color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);text-decoration:none}
+a.user-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;text-decoration:none}
 .computation-credits{font-size:12px;line-height:1.8;overflow-wrap:anywhere}
 .contributor-profile{max-width:1100px;margin:28px auto;padding:0 20px 40px}
 .profile-heading{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding-bottom:18px;border-bottom:1px solid var(--line)}
@@ -2019,6 +2021,12 @@ a.run-btn{display:flex;align-items:center;justify-content:center;text-decoration
 .profile-build h3 a{color:var(--text);text-decoration:none}
 .profile-build .fd-card{margin:14px 0}
 .profile-build .fine{overflow-wrap:anywhere}
+.profile-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px;margin:22px 0}
+.profile-overview>a{display:flex;flex-direction:column;gap:14px;color:var(--text);text-decoration:none;transition:border-color .12s}
+.profile-overview>a:hover{border-color:var(--accent)}
+.profile-overview>a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.profile-overview h3{margin:0}
+.profile-status{font-size:12px;margin:12px 0}
 .contributor-profile>.fine,.profile-build>.fine,.calculation-record{text-align:left}
 .calculation-record{margin:10px 0}
 .brow-credits{text-align:right;padding:0 10px 3px;font-size:10.5px;color:var(--text-2)}
