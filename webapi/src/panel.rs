@@ -2408,8 +2408,8 @@ mod a_passive_names_itself {
     /// **A WEAPON THAT OFFERS A BUFF CARD STATES THE PASSIVE BEHIND IT.**
     ///
     /// With no mods, no arcanes and no evolutions on the build, a card can
-    /// only come from the WEAPON or from the WIELDER, and the wielder's is
-    /// already named by the frame's own `passive:` prose. So every remaining
+    /// come from the weapon, the wielder or the shared scenario combo state.
+    /// The frame names its passive, and scenario state is not a passive. Every remaining
     /// card belongs to a weapon mechanic, and one with no `passive_lines`
     /// entry is a mechanic the page never names — a reader has to know the
     /// weapon has it before the knob means anything.
@@ -2430,6 +2430,7 @@ mod a_passive_names_itself {
                     a.iter()
                         .filter_map(|b| b["id"].as_str())
                         .filter(|id| *id != wfsim_engine::data::rage::BUFF_ID)
+                        .filter(|id| *id != "melee_combo")
                         .collect()
                 })
                 .unwrap_or_default();

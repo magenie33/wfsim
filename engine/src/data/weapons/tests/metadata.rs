@@ -8,7 +8,11 @@ fn repeated_panels_borrow_the_catalogs_metadata() {
         for _ in 0..16 {
             let panel = base_panel(id, false);
             assert!(std::ptr::eq(panel.class, raw.class.as_str()), "{id}: class was copied");
-            assert!(std::ptr::eq(panel.slot, raw.rules_slot()), "{id}: slot was copied");
+            assert_eq!(panel.slot, raw.rules_slot(), "{id}: slot changed");
+            // Weapon-type aliases are static literals; their addresses may differ across codegen units.
+            if raw.rules_slot() == raw.slot.as_str() {
+                assert!(std::ptr::eq(panel.slot, raw.slot.as_str()), "{id}: slot was copied");
+            }
             assert!(std::ptr::eq(panel.mod_pools, first.mod_pools), "{id}: pool view was rebuilt");
             assert_eq!(panel.mod_pools.len(), raw.mod_pools.len());
             for (actual, expected) in panel.mod_pools.iter().zip(&raw.mod_pools) {
