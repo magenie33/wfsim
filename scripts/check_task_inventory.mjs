@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { classifyInventory } from './classify_compute_inventory.mjs';
 import { bindInventoryBuilds } from './bind_inventory_builds.mjs';
-import { publishInventory } from './compute_inventory.mjs';
+import { publishInventory, inventoryCacheKiB } from './compute_inventory.mjs';
 import { inventoryWrite, readInventory, readInventoryState, INVENTORY_MAX_MS } from '../worker/task_inventory.js';
 import { testDb } from './pg/test_db.mjs';
 import worker from '../worker/index.js';
@@ -15,6 +15,9 @@ const dir = mkdtempSync(join(tmpdir(), 'compute-inventory-test-')), now = Date.n
 const file = (name, rows) => { const p = join(dir, name); writeFileSync(p, rows.map(r => JSON.stringify(r)).join('\n') + '\n'); return p; };
 const row = (id, ruler = 'r') => ({ build_id: id, ruler, mode: 'base' });
 try {
+  for (const [available, expected] of [[0, 16384], [-1, 16384], [NaN, 16384],
+    [1024 ** 3, 256 * 1024], [8 * 1024 ** 3, 2 * 1024 ** 2], [64 * 1024 ** 3, 4 * 1024 ** 2]])
+    assert.equal(inventoryCacheKiB(available), expected);
   const records = ['a', 'cached', 'spot', 'orphan', 'unadmitted'].map(id => ({ id, record: { input: id } }));
   records.push({ id: 'alias', record: records[0].record });
   const id = async build => questionId('simulate', { record: records.find(r => r.id === build).record, ruler: 'r', mode: 'base' });
@@ -42,6 +45,14 @@ try {
   assert.equal(readFileSync(questions, 'utf8'), tuples, 'a failed audit replaced the completed task set');
   await assert.rejects(classifyInventory({ ...input, tasks: file('duplicate-states', [...states, states[0]]),
     meta: { ...meta, counts: { ...meta.counts, tasks: states.length + 1 } } }), /duplicate inventory task state/);
+  for (const cacheKiB of [16384, 1024 ** 2, 4 * 1024 ** 2, 16 * 1024 ** 2]) {
+    const path = join(dir, `cached-questions-${cacheKiB}`);
+    assert.deepEqual(await classifyInventory({ ...input, questions: path, cacheKiB }), audited);
+    assert.equal(readFileSync(path, "utf8"), tuples);
+  }
+  for (const cacheKiB of [0, -1, NaN, 16383, 16 * 1024 ** 2 + 1, "16384;DROP TABLE records"])
+    await assert.rejects(classifyInventory({ ...input, cacheKiB }), /invalid inventory cache budget/);
+  console.log("ok: bounded pager budgets preserve every question and category; invalid budgets fail before SQL");
   const stored = await classifyInventory({ ...input,
     canonical: file('conflicting-canonical', [{ id: 'a', record: { input: 'different' } }]) });
   assert.deepEqual(stored, plan, 'an engine fallback replaced an existing stored record');

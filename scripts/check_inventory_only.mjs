@@ -52,7 +52,7 @@ function phaseTool() {
   else throw new Error(`unexpected phase ${command}`);
 }
 
-function reconcile(mode, failPublication = false) {
+function reconcile(mode, failPublication = false, workers) {
   const work = mkdtempSync(join(temporary, "case-")), bin = join(work, "bin"), scripts = join(work, "scripts");
   mkdirSync(bin); mkdirSync(scripts); mkdirSync(join(work, "tmp"));
   const tool = `#!${process.execPath}\n(${phaseTool.toString()})();\n`;
@@ -63,7 +63,8 @@ function reconcile(mode, failPublication = false) {
   const log = join(work, "phases.jsonl"), env = { ...process.env, PATH: `${bin}:${process.env.PATH}`, TMPDIR: join(work, "tmp"),
     WFSIM_BOARD: join(bin, "board"), WFSIM_TEST_LOG: log, WFSIM_TEST_NODE: process.execPath,
     WFSIM_TEST_TOOL: join(work, "phase-tool.cjs") };
-  delete env.INVENTORY_ONLY; delete env.WFSIM_TEST_FAIL_PUBLISH;
+  delete env.INVENTORY_ONLY; delete env.WFSIM_TEST_FAIL_PUBLISH; delete env.WFSIM_INVENTORY_WORKERS;
+  if (workers !== undefined) env.WFSIM_INVENTORY_WORKERS = workers;
   if (mode !== undefined) env.INVENTORY_ONLY = mode;
   if (failPublication) env.WFSIM_TEST_FAIL_PUBLISH = "1";
   const result = spawnSync("bash", [join(SOURCE, "scripts/reconcile_queue.sh"), "library.json", "facts.ndjson", "queue.ndjson"],
@@ -98,6 +99,9 @@ try {
     && JSON.stringify(bind.slice(1)) === JSON.stringify([prefix + ".builds", prefix + ".canonical", missing, "queue.ndjson", orphans, roster])
     && JSON.stringify(publish.slice(1)) === JSON.stringify(["queue.ndjson", missing, orphans, "facts.ndjson", roster, prefix]),
   "inventory-only keeps the existing snapshot and enumeration arguments");
+  check(enumerate[enumerate.indexOf("--inventory-workers") + 1] === "2", "full reconciliation defaults to two concurrent ruler walks");
+  const override = reconcile("1", false, "1").trace.find(row => row.phase === "enumerate")?.args || [];
+  check(override[override.indexOf("--inventory-workers") + 1] === "1", "an explicit worker budget reaches the native walk");
   const removed = prefix ? [prefix, ...[".builds", ".canonical", ".tasks", ".json"].map(suffix => prefix + suffix), roster, missing, orphans] : [];
   check(removed.length === 8 && removed.every(path => !existsSync(path)) && existsSync(join(only.work, "queue.ndjson")),
     "inventory-only cleans its snapshot, roster and temporary candidates after publication");

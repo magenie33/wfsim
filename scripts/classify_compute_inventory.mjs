@@ -9,6 +9,9 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { canon, questionId } from '../worker/task_contract.js';
 
+export const INVENTORY_MIN_CACHE_KIB = 16 * 1024;
+export const INVENTORY_MAX_CACHE_KIB = 16 * 1024 * 1024;
+
 async function* rows(path) {
   for await (const line of createInterface({ input: createReadStream(path), crlfDelay: Infinity })) {
     if (line.trim()) { const row = JSON.parse(line); if (!row || typeof row !== 'object') throw new Error('invalid inventory row'); yield row; }
@@ -33,13 +36,15 @@ async function exportQuestions(db, path) {
   } finally { out.destroy(); rmSync(partial, { force: true }); }
 }
 
-export async function classifyInventory({ queue, missing, orphans, builds, canonical, tasks, meta, rulers, questions }) {
+export async function classifyInventory({ queue, missing, orphans, builds, canonical, tasks, meta, rulers, questions, cacheKiB = INVENTORY_MIN_CACHE_KIB }) {
+  if (!Number.isSafeInteger(cacheKiB) || cacheKiB < INVENTORY_MIN_CACHE_KIB || cacheKiB > INVENTORY_MAX_CACHE_KIB)
+    throw new Error('invalid inventory cache budget');
   if (!meta?.snapshot || !meta.engine || !meta.started_at || !Array.isArray(rulers) || !rulers.length
     || !Number.isSafeInteger(meta.counts?.queue) || meta.counts.queue < 0) throw new Error('incomplete inventory snapshot');
   const roster = new Set(rulers);
   const dir = mkdtempSync(join(tmpdir(), 'compute-classified-')), db = new DatabaseSync(join(dir, 'tasks.db'));
   try {
-    db.exec(`PRAGMA journal_mode=MEMORY;PRAGMA synchronous=OFF;PRAGMA cache_size=-16384;
+    db.exec(`PRAGMA journal_mode=MEMORY;PRAGMA synchronous=OFF;PRAGMA cache_size=-${cacheKiB};
       CREATE TABLE records(id TEXT PRIMARY KEY,record TEXT NOT NULL) WITHOUT ROWID;
       CREATE TABLE states(id BLOB UNIQUE,ordinal INTEGER PRIMARY KEY,state TEXT,fact_engine TEXT,kind TEXT,verb TEXT,served_answered INTEGER);
       CREATE TABLE excluded(build TEXT,ruler TEXT,mode TEXT,PRIMARY KEY(build,ruler,mode)) WITHOUT ROWID;

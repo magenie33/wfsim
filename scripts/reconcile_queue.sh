@@ -47,7 +47,7 @@ parts=$(mktemp -d)
 # correction is the case where a parked build may deserve another look.
 # EVERY RULER IN ONE PROCESS (`--each-ruler`), the library and the facts read
 # once, each ruler into its own files, joined in roster order.
-python3 scripts/inventory_phase.py enumerate -- "$BOARD" --each-ruler --dry-run --gate --facts-in "$FACTS" --queue-in "$OUT" \
+python3 scripts/inventory_phase.py enumerate -- "$BOARD" --each-ruler --dry-run --inventory-workers "${WFSIM_INVENTORY_WORKERS:-2}" --gate --facts-in "$FACTS" --queue-in "$OUT" \
   --inventory-builds "$inventory.canonical" \
   --queue-missing "$parts/{id}.missing" --queue-orphans "$parts/{id}.orphans" < "$LIB" > /dev/null
 roster=$(mktemp)
