@@ -38,6 +38,9 @@
 # count it replaced, because a count cannot tell "the page says none" from
 # "nobody looked".
 #
+# Client-only claw entries record their unresolved contact geometry instead
+# of claiming a weapon reach; their simulations assume attacks connect.
+#
 # WHAT THE PAGES ACTUALLY SAID, once all of them had been read:
 #
 #   300 m   x75   the ordinary reach — rifles, pistols, shotguns, most Arch-Guns
@@ -53,6 +56,24 @@
 
 
 checked:
+  # Client contact geometry is unresolved; these attacks assume contact.
+  adarza_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  chesa_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  crescent_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  helminth_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  huras_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  medjay_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  panzer_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  pharaoh_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  raksa_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  sahasa_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  sly_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  smeeta_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  sunika_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  vasca_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  venari_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  venari_prime_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
+  vizier_claws: { range: null, type: client, note: "contact geometry is unmodelled; see the closed claw fixture" }
   argo_and_vel_heavy: { range: null, type: projectile, note: 'the heavy glaive page states no maximum flight range; the explosion radius is not a flight range' }
   edun_heavy: { range: null, type: projectile, note: 'the thrown polearm page states no maximum flight range; the 5 m explosion radius is not a flight range' }
   acceltra:                    { range: null, type: projectile, note: 'the direct-hit block states no Range; Projectile at 70 m/s. Its 4.0 m is the explosion RADIUS, not a reach' }

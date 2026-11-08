@@ -47,6 +47,7 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 150
   fire_rate: 3.33
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   # Seven pellets of 40 Radiation apiece, 280 a shot.
   multishot: 7.0
   ammo_cost: 1

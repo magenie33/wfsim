@@ -20,6 +20,7 @@ attack:
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 1.17
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   # TWENTY-EIGHT PELLETS: four barrels of seven, and the damage is PER PELLET.
   multishot: 28.0
   # THE WHOLE MAGAZINE, which is why the magazine is 4 and this costs 4.

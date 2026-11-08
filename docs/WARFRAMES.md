@@ -317,11 +317,15 @@ Companion effects keep their actual recipient and trigger:
   attacks and Sharpened Claws have no companion attack timeline here. Ambush
   buffs Shade's owner after Ghost ends; Cat's Eye buffs nearby allies. Neither
   is a damage modifier on Shade's robotic weapon.
-- Beast claws are separate weapons. Bite, Maul and elemental claw mods have
-  known stat rules, but this roster has no claw base stats or attacks to resolve
-  them against. Conditioning replaces base physical damage; elemental Claws
-  conversion excludes combined elements and Momentous Bond. Postures also
-  direct the beast's target selection. These clauses remain `unmodelled`.
+- Beast claws are separate weapons with client-sourced base damage, crit and
+  status inputs. Their cards live in `mods/beast_claws/`; the companion catalogue
+  reads those same files. Conditioning converts base physical damage before
+  modifiers. Elemental conversion runs after coalescing and covers both declared
+  elemental masks. Unsupported conditional effects and posture AI remain visible.
+  The complete attack cycle is uncalibrated: simulation requires an explicit
+  final `attack_interval_seconds` for the tested build. It is not inferred from
+  a clip or scaled by an assumed animation-speed rule. The beast body and owner
+  link are not modelled, and robotic host effects cannot reach its claws.
 - Hunter Synergy and Mecha Overdrive read the owner's modded primary weapon,
   not the companion's current weapon. Tandem Bond transfers combo from the
   companion's hits and grants a separate buff after the owner's heavy hit.

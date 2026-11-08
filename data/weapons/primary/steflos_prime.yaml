@@ -50,6 +50,7 @@ attack:
   projectile_speed_mps: 20
   projectile_width_m: 2.0
   fire_rate: 3.0
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.18

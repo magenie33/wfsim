@@ -1727,7 +1727,7 @@ mod asset_tests {
             // and this skip would never fire off it.
             let unmoddable = wfsim_engine::data::weapons::spec(&w.id)
                 .is_some_and(|s| s.mod_pools.is_empty());
-            if unmoddable {
+            if unmoddable || wfsim_engine::data::weapons::spec(&w.id).is_some_and(|s| s.no_riven) {
                 continue;
             }
             let class = riven_class(w);

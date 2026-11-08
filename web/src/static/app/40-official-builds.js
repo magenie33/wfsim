@@ -110,6 +110,10 @@ function renderWielder() {
   const host = $("wielder-row");
   if (!host || !META) return;
   const w = weaponInfo($("weapon").value) || {};
+  if (w.wielder_modelled === false) {
+    host.textContent = tr("The beast body and owner link are not modelled.");
+    return;
+  }
   const allowed = w.wielders || [];
   // WHAT KIND OF HOLDER, and nothing finer: the Warframes with their faces — or,
   // for a robotic weapon, the companion hosts — searchable. WHICH PRESET of it is
@@ -151,6 +155,10 @@ function renderWielder() {
 /// editor only when it is asked for.
 function renderWielderDetail() {
   const box = $("wielder-detail");
+  if ((weaponInfo($("weapon").value) || {}).wielder_modelled === false) {
+    if (box) box.textContent = tr("The beast body and owner link are not modelled.");
+    return;
+  }
   const id = buildWielder.frame;
   const name = holderName(id);
   // A FRAMED PAGE NEVER FRAMES: it has this markup too, and would nest itself.

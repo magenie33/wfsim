@@ -38,6 +38,7 @@ let rivenContextWeapon = "";
 // changes (`loadPresetWhole`) and `rivenNames` is replaced, never edited, so a
 // key that serialised both cost more than the list it saved — every `modById`.
 function rivenMods() {
+  if (weaponInfo($("weapon").value)?.no_riven) return [];
   const w = $("weapon").value, owner = presetWeapon(), whole = loadPresetWhole(RIVENS);
   const c = rivenModCache;
   if (c.w === w && c.owner === owner && c.whole === whole && c.names === rivenNames) return c.list;

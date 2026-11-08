@@ -141,6 +141,8 @@ pub struct AttackSpec {
     #[serde(default)]
     pub projectile_speed_mps: Option<f64>,
     pub fire_rate: f64,
+    #[serde(default)]
+    pub refire: crate::model::RefireRule,
     /// The DRAW before the shot (the module's per-attack `ChargeTime`), and
     /// with it the weapon's real cadence. VERBATIM (wiki Fire Rate), the bow
     /// formula and the one it excludes bows from:

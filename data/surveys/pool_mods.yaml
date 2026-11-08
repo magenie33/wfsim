@@ -12,22 +12,22 @@
 # app refuses by RULE (flawed variants, riven placeholders, Conclave-only),
 # and the rule rides beside it.
 #
-# 468 of 719 carried, 248 excluded by rule, 3 still to transcribe.
+# 495 of 740 carried, 242 excluded by rule, 3 still to transcribe.
 #
 # Per pool (carried / in export, gap):
 #   archgun            37/ 39 gap 0   assault_rifle       8/ 15 gap 0   assault_saw         1/  1 gap 0
-#   blade_and_whip      1/  2 gap 0   bow                 3/ 10 gap 0   claws               3/ 10 gap 0
-#   dagger              4/  6 gap 0   dual_daggers        4/  5 gap 0   dual_nikanas        1/  1 gap 0
-#   dual_swords         3/  4 gap 0   fist                3/  4 gap 0   glaive             11/ 16 gap 0
-#   gunblade            2/  2 gap 0   hammer              2/  3 gap 0   heavy_blade         3/  4 gap 0
-#   heavy_scythe        1/  1 gap 0   machete             2/  3 gap 0   melee              91/143 gap 0
-#   nikana              3/  4 gap 0   nunchaku            1/  2 gap 0   pistol             84/140 gap 1
-#   polearm             4/  5 gap 0   primary            10/ 10 gap 0   rapier              1/  2 gap 0
-#   rifle              73/120 gap 0   scythe              2/  3 gap 0   shotgun            76/119 gap 1
-#   sniper              9/ 14 gap 1   sparring            2/  3 gap 0   staff               1/  2 gap 0
-#   sword               4/  5 gap 0   sword_and_shield    2/  3 gap 0   tome                8/  8 gap 0
-#   tonfa               2/  3 gap 0   two_handed_nikana   1/  1 gap 0   valkyr_talons       0/  0 gap 0
-#   warfan              2/  2 gap 0   whip                3/  4 gap 0
+#   beast_claws        27/ 27 gap 0   blade_and_whip      1/  2 gap 0   bow                 3/ 10 gap 0
+#   claws               3/  4 gap 0   dagger              4/  6 gap 0   dual_daggers        4/  5 gap 0
+#   dual_nikanas        1/  1 gap 0   dual_swords         3/  4 gap 0   fist                3/  4 gap 0
+#   glaive             11/ 16 gap 0   gunblade            2/  2 gap 0   hammer              2/  3 gap 0
+#   heavy_blade         3/  4 gap 0   heavy_scythe        1/  1 gap 0   machete             2/  3 gap 0
+#   melee              91/143 gap 0   nikana              3/  4 gap 0   nunchaku            1/  2 gap 0
+#   pistol             84/140 gap 1   polearm             4/  5 gap 0   primary            10/ 10 gap 0
+#   rapier              1/  2 gap 0   rifle              73/120 gap 0   scythe              2/  3 gap 0
+#   shotgun            76/119 gap 1   sniper              9/ 14 gap 1   sparring            2/  3 gap 0
+#   staff               1/  2 gap 0   sword               4/  5 gap 0   sword_and_shield    2/  3 gap 0
+#   tome                8/  8 gap 0   tonfa               2/  3 gap 0   two_handed_nikana   1/  1 gap 0
+#   valkyr_talons       0/  0 gap 0   warfan              2/  2 gap 0   whip                3/  4 gap 0
 mods:
   - name: Ammo Chain
     pool: archgun
@@ -258,6 +258,114 @@ mods:
     pool: assault_saw
     internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SawBladeCmbOneMeleeTree
     carried: data/mods/assault_saw/butchers_revelry.yaml
+  - name: Assassin Posture
+    pool: beast_claws
+    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance
+    carried: data/mods/beast_claws/assassin_posture.yaml
+  - name: Balanced Posture
+    pool: beast_claws
+    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastNeutralStance
+    carried: data/mods/beast_claws/balanced_posture.yaml
+  - name: Bell Ringer
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastKnockdownWeaponMod
+    carried: data/mods/beast_claws/bell_ringer.yaml
+  - name: Bite
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/KubrowCritMod
+    carried: data/mods/beast_claws/bite.yaml
+  - name: Bloodthirst
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastDrainingBiteMod
+    carried: data/mods/beast_claws/bloodthirst.yaml
+  - name: Brute Conditioning
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastBruteConditioningMod
+    carried: data/mods/beast_claws/brute_conditioning.yaml
+  - name: Burning Claws
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/KubrowHeatConversionMod
+    carried: data/mods/beast_claws/burning_claws.yaml
+  - name: Chilling Claws
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/KubrowColdConversionMod
+    carried: data/mods/beast_claws/chilling_claws.yaml
+  - name: Cull the Weak
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastCullTheWeakMod
+    carried: data/mods/beast_claws/cull_the_weak.yaml
+  - name: Disabling Conditioning
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastDisablingConditioningMod
+    carried: data/mods/beast_claws/disabling_conditioning.yaml
+  - name: Elusive Posture
+    pool: beast_claws
+    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPacifistStance
+    carried: data/mods/beast_claws/elusive_posture.yaml
+  - name: Flame Gland
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/DualStat/KubrowFireEventMeleeMod
+    carried: data/mods/beast_claws/flame_gland.yaml
+  - name: Frenzied Posture
+    pool: beast_claws
+    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastSpreadAttacksStance
+    carried: data/mods/beast_claws/frenzied_posture.yaml
+  - name: Frost Jaw
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/DualStat/KubrowIceEventMeleeMod
+    carried: data/mods/beast_claws/frost_jaw.yaml
+  - name: Hunter Synergy
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sets/Hunter/CompanionHunterSynergyMod
+    carried: data/mods/beast_claws/hunter_synergy.yaml
+  - name: Immunity Resistance
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastWeakenedImmunityMod
+    carried: data/mods/beast_claws/immunity_resistance.yaml
+  - name: Magnetic Claws
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/DualStat/KubrowMagneticEventMeleeMod
+    carried: data/mods/beast_claws/magnetic_claws.yaml
+  - name: Magnetic Strike
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastMagneticImpactMod
+    carried: data/mods/beast_claws/magnetic_strike.yaml
+  - name: Maul
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/KubrowMeleeDamageMod
+    carried: data/mods/beast_claws/maul.yaml
+  - name: Persistent Posture
+    pool: beast_claws
+    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPersistentStance
+    carried: data/mods/beast_claws/persistent_posture.yaml
+  - name: Precision Conditioning
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastPrecisionConditioningMod
+    carried: data/mods/beast_claws/precision_conditioning.yaml
+  - name: Protector Posture
+    pool: beast_claws
+    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastProtectorStance
+    carried: data/mods/beast_claws/protector_posture.yaml
+  - name: Radon Claws
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/DualStat/KubrowRadiationEventMeleeMod
+    carried: data/mods/beast_claws/radon_claws.yaml
+  - name: Sepsis Claws
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/KubrowToxicConversionMod
+    carried: data/mods/beast_claws/sepsis_claws.yaml
+  - name: Shock Collar
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/DualStat/KubrowElectEventMeleeMod
+    carried: data/mods/beast_claws/shock_collar.yaml
+  - name: Shocking Claws
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/KubrowElectricConversionMod
+    carried: data/mods/beast_claws/shocking_claws.yaml
+  - name: Venom Teeth
+    pool: beast_claws
+    internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/DualStat/KubrowPoisonEventMeleeMod
+    carried: data/mods/beast_claws/venom_teeth.yaml
   - name: Defiled Snapdragon
     pool: blade_and_whip
     internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/SwordWhipCmbOneMeleeTree
@@ -314,44 +422,14 @@ mods:
     internal_name: /Lotus/Upgrades/Mods/Rifle/Intermediate/BowExplosionChanceModIntermediate
     carried: excluded
     reason: "flawed variant: a shorter rank ladder on a mod already carried, strictly worse at every rank"
-  - name: Assassin Posture
-    pool: claws
-    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance
-    carried: excluded
-    reason: "companion posture: a Kubrow or Kavat's stance under the shared `Claws` tag, seated on the beast"
-  - name: Balanced Posture
-    pool: claws
-    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastNeutralStance
-    carried: excluded
-    reason: "companion posture: a Kubrow or Kavat's stance under the shared `Claws` tag, seated on the beast"
-  - name: Elusive Posture
-    pool: claws
-    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPacifistStance
-    carried: excluded
-    reason: "companion posture: a Kubrow or Kavat's stance under the shared `Claws` tag, seated on the beast"
   - name: Four Riders
     pool: claws
     internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ClawCmbThreeMeleeTree
     carried: data/mods/claws/four_riders.yaml
-  - name: Frenzied Posture
-    pool: claws
-    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastSpreadAttacksStance
-    carried: excluded
-    reason: "companion posture: a Kubrow or Kavat's stance under the shared `Claws` tag, seated on the beast"
   - name: Malicious Raptor
     pool: claws
     internal_name: /Lotus/Weapons/Tenno/Melee/MeleeTrees/ClawCmbOneMeleeTree
     carried: data/mods/claws/malicious_raptor.yaml
-  - name: Persistent Posture
-    pool: claws
-    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPersistentStance
-    carried: excluded
-    reason: "companion posture: a Kubrow or Kavat's stance under the shared `Claws` tag, seated on the beast"
-  - name: Protector Posture
-    pool: claws
-    internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastProtectorStance
-    carried: excluded
-    reason: "companion posture: a Kubrow or Kavat's stance under the shared `Claws` tag, seated on the beast"
   - name: Scarlet Hurricane
     pool: claws
     internal_name: /Lotus/Upgrades/Mods/PvPMods/Stances/PvPClawStanceOne

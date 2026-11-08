@@ -345,6 +345,10 @@ pub fn resolve_for(
         ProcConv { from, to, chance, low_rate_threshold: 0.0, low_rate_multiplier: 1.0 }
     });
     let mut elem_bonus: Vec<(DamageType, f64)> = Vec::new();
+    let mut physical_conversion = None;
+    let mut elemental_conversion = None;
+    let mut post_coalesce_elements = Vec::new();
+    let mut noncrit_bonus = base.noncrit_bonus;
     let mut adaptive_element = None;
     // SEEDED from the weapon, not empty: an evolution's indirect stat is a
     // property of the weapon by the time `resolve` runs (evolutions are folded
@@ -604,6 +608,13 @@ pub fn resolve_for(
                     }
                 }
                 ModEffect::AdaptiveElement(ref spec) => adaptive_element = Some(spec.clone()),
+                ModEffect::DamageConversion { to, physical: true } => physical_conversion = Some(to),
+                ModEffect::DamageConversion { to, physical: false } => elemental_conversion = Some(to),
+                ModEffect::PostCoalesceElement(t, v) => {
+                    post_coalesce_elements.push((t, v));
+                    elem_bonus.push((t, v));
+                }
+                ModEffect::NonCritDamage(v) => noncrit_bonus = Some((1.0, v)),
                 ModEffect::Element(t, v) | ModEffect::CombinedElement(t, v) => {
                     if let Some(x) = elem_bonus.iter_mut().find(|(a, _)| *a == t) {
                         x.1 += v;
@@ -656,7 +667,8 @@ pub fn resolve_for(
                             earned_on,
                         })
                     }
-                    StackPolicy::BaseOnly => {} // sentinel: conditional never fires
+                    StackPolicy::BaseOnly if earned_on.is_none() => co += per_stack * max_stacks as f64,
+                    StackPolicy::BaseOnly => {}
                 },
                 ModEffect::OnHeadshotCritChance { bonus, duration } => match policy {
                     StackPolicy::AssumedMax => cc += bonus,
@@ -1115,6 +1127,17 @@ pub fn resolve_for(
                      inject: bool,
                      piled: f64|
      -> (DamageVector, f64) {
+        let mut converted_base;
+        let base_vector = if let Some(to) = physical_conversion {
+            converted_base = *base_vector;
+            let mut amount = 0.0;
+            for t in [DamageType::Impact, DamageType::Puncture, DamageType::Slash] {
+                amount += converted_base.get(t);
+                converted_base.set(t, 0.0);
+            }
+            converted_base.add(to, amount);
+            &converted_base
+        } else { base_vector };
         let modified_base = base_vector.total() * (1.0 + base_damage);
         let scale = 1.0 + base_damage;
         let mut physical = DamageVector::new();
@@ -1206,7 +1229,20 @@ pub fn resolve_for(
                 input.injected.push((e.element, modified_base * piled));
             }
         }
-        (elements::combine(&physical, &input), modified_base)
+        let mut damage = elements::combine(&physical, &input);
+        if let Some(to) = elemental_conversion {
+            let entries: Vec<_> = damage.iter_nonzero().filter(|(t, _)|
+                t.is_primary_element() || t.is_secondary_element()).collect();
+            let amount = entries.iter().map(|(_, v)| v).sum();
+            for (t, _) in entries {
+                damage.set(t, 0.0);
+            }
+            damage.add(to, amount);
+        }
+        for &(t, v) in &post_coalesce_elements {
+            damage.add(t, modified_base * v);
+        }
+        (damage, modified_base)
     };
     let build = |base_vector: &DamageVector, elem_bonus: Option<&mut Vec<(DamageType, f64)>>| {
         build_in(base_vector, elem_bonus, base_damage, true, 0.0)
@@ -1942,6 +1978,7 @@ pub fn resolve_for(
         base_crit_damage: quantize_base_crit_damage(base.base_crit_damage),
         base_status_chance: base.base_status_chance,
         fire_rate: base.base_fire_rate * (1.0 + fr + evo_fr_bonus),
+        refire: base.refire,
         // A charged weapon's fire-rate bonuses DIVIDE the draw instead of
         // multiplying a rate (wiki Fire Rate: on charge weapons the bonus
         // "decreases the charge time"). Same bucket, reciprocal application —
@@ -2015,7 +2052,7 @@ pub fn resolve_for(
         headshot_damage_bonus: base.headshot_damage_bonus
             + headshot_damage
             + zoom.headshot_damage,
-        noncrit_bonus: base.noncrit_bonus,
+        noncrit_bonus,
         stacking_buffs: base
             .stacking_buffs
             .iter()

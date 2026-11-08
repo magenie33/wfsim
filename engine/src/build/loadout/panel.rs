@@ -583,6 +583,7 @@ pub struct ResolvedPanel {
     pub base_crit_damage: f64,
     pub base_status_chance: f64,
     pub fire_rate: f64,
+    pub refire: crate::model::RefireRule,
     /// MODDED charge time (bows) — `base / (1 + fire-rate bonuses)`, the same
     /// factor `fire_rate` is multiplied by, so the two never disagree about
     /// what a fire-rate mod did. `Some` means the sim paces on this instead of

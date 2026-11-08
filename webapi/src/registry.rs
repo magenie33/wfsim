@@ -197,7 +197,7 @@ pub(crate) fn weapons() -> &'static [WeaponInfo] {
     W.get_or_init(|| {
         wfsim_engine::data::weapons::roster()
             .map(|s| {
-                let sentinel = s.class.contains("sentinel");
+                let sentinel = s.slot == "sentinel";
                 let incarnon = s.transforms_to.is_some();
                 // The weapon's OWN forms, in its own order — every entry of
                 // its transform group, each registering a kind from the
@@ -503,6 +503,8 @@ mod one_picture_one_weapon {
     /// data/kitguns/README.md.
     fn subject(id: &str) -> &str {
         let Some(s) = wfsim_engine::data::weapons::spec(id) else { return id };
+        // The client declares the same BeastClaws.png icon for every beast.
+        if s.class == "beast_claws" { return "beast_claws"; }
         if let Some(z) = &s.zaw { return &z.strike; }
         match s.kitgun.as_deref().and_then(|k| {
             wfsim_engine::data::weapons::kitguns::chambers().iter().find(|c| c.id == k)

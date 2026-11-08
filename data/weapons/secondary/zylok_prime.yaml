@@ -42,6 +42,7 @@ attack:
   trigger: duplex
   shot_type: hit_scan
   fire_rate: 1.8
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": true}
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.12

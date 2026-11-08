@@ -1,0 +1,22 @@
+id: brute_conditioning
+name: Brute Conditioning
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastBruteConditioningMod
+compat: beast_claws
+precept: false
+description: "+X% Melee Damage\nConvert all base Physical Damage to Impact Damage"
+effects:
+- kind: base_damage_bonus
+  rank0: 0.35
+  rankMax: 3.85
+  text: "+385% Melee Damage\nConvert all base Physical Damage to Impact Damage"
+- kind: damage_conversion
+  from: physical
+  element: impact
+  text: "+385% Melee Damage\nConvert all base Physical Damage to Impact Damage"
+source:
+  url: https://wiki.warframe.com/w/Brute_Conditioning
+family: beast_conditioning

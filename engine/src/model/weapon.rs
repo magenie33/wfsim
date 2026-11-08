@@ -7,6 +7,34 @@ use super::*;
 use crate::rules::damage::{DamageType, DamageVector};
 use serde::Deserialize;
 
+/// The native refire timer, separate from the displayed fire-rate stat.
+#[derive(Debug, Clone, Copy, Default, Deserialize, serde::Serialize, PartialEq)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum RefireRule {
+    #[default]
+    Rate,
+    NativeRate,
+    SemiAutomatic {
+        #[serde(default)]
+        skip_wait_on_empty: bool,
+    },
+    SuppliedInterval,
+}
+
+#[wfsim_gas_macro::metered]
+impl RefireRule {
+    /// Matching-client ordinary semi timer: RVA 0x169c400; explicit empty-clip bypass.
+    pub fn interval(self, rate: f64, empty: bool) -> f64 {
+        match self {
+            Self::Rate => 1.0 / rate,
+            Self::NativeRate => f64::from(1.0_f32 / rate as f32),
+            Self::SemiAutomatic { skip_wait_on_empty: true } if empty => 0.0,
+            Self::SemiAutomatic { .. } => f64::from((1.0_f32 / rate as f32).max(0.1_f32)),
+            Self::SuppliedInterval => f64::INFINITY,
+        }
+    }
+}
+
 /// Direct-hit damage falloff: full damage inside `start_m`, decreasing
 /// linearly until `reduction` of it is GONE at `end_m`, and flat beyond.
 ///
@@ -883,6 +911,7 @@ pub struct WeaponBase {
     pub base_crit_damage: f64,
     pub base_status_chance: f64,
     pub base_fire_rate: f64,
+    pub refire: RefireRule,
     /// CHARGE trigger (bows): the draw before the shot, unmodded. `Some` moves
     /// the cadence off `1 / fire_rate` — a charged weapon fires once its draw
     /// completes, and fire-rate bonuses shorten THAT. `base_fire_rate` stays

@@ -1,5 +1,22 @@
 use super::*;
 
+#[test]
+fn native_refire_and_supplied_interval_schedule_actual_shots() {
+    use crate::model::RefireRule;
+    let p = FightParams { fire_rate: 20.0, duration_seconds: 0.44, ..FightParams::default() };
+    let automatic = monte_carlo(&p, 1, 42);
+    let semi = monte_carlo(&FightParams { refire: RefireRule::SemiAutomatic { skip_wait_on_empty: false },
+        ..p.clone() }, 1, 42);
+    assert_eq!(automatic.mean_shots, 9.0);
+    assert_eq!(semi.mean_shots, 5.0);
+    let explicit = monte_carlo(&FightParams { refire: RefireRule::SuppliedInterval,
+        attack_interval_seconds: Some(0.2), ..p.clone() }, 1, 42);
+    assert_eq!(explicit.mean_shots, 3.0);
+    let missing = monte_carlo(&FightParams { refire: RefireRule::SuppliedInterval,
+        attack_interval_seconds: None, ..p }, 1, 42);
+    assert_eq!(missing.mean_shots, 1.0, "an unknown cycle never invents repeated attacks");
+}
+
 /// A FLAT BASE-DAMAGE BUFF IS NOT DILUTED BY SERRATION, and that is the
 /// only reason it is a bracket of its own.
 ///

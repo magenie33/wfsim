@@ -64,6 +64,7 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 260
   fire_rate: 2.33
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.26

@@ -1,0 +1,21 @@
+id: assassin_posture
+name: Assassin Posture
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance
+compat: beast_claws
+precept: true
+description: The companion will prioritize Eximus and other high-ranking enemies. +X% Overguard Damage
+effects:
+- kind: unmodelled
+  text: The companion will prioritize Eximus and other high-ranking enemies. +300% Overguard Damage
+  rank0: 0.75
+  rankMax: 3.0
+- kind: unmodelled
+  text: The companion will prioritize Eximus and other high-ranking enemies. +300% Overguard Damage
+source:
+  url: https://wiki.warframe.com/w/Assassin_Posture
+family: beast_posture
+combos: {}

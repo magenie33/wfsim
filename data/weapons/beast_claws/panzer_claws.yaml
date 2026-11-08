@@ -1,0 +1,38 @@
+id: panzer_claws
+name: Panzer Claws
+slot: sentinel
+weapon_type: melee
+wielder_modelled: false
+no_riven: true
+class: beast_claws
+form: base
+default_form: true
+mod_pools:
+- beast_claws
+mastery_rank: 0
+max_rank: 30
+polarities: []
+internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/PanzerVulpaphylaPetWeapon
+co_behavior: additive_with_base_damage
+attack:
+  trigger: melee
+  shot_type: hit_scan
+  fire_rate: 1.0
+  refire:
+    kind: supplied_interval
+  multishot: 1.0
+  ammo_cost: 0
+  no_magazine: true
+  crit_chance: 0.25
+  crit_multiplier: 2.0
+  status_chance: 0.125
+  punch_through_m: 0.0
+  combo_multiplies_damage: false
+  damage:
+    slash: 45.0
+    toxin: 45.0
+unmodeled:
+- The complete attack cycle is not calibrated. Simulation needs an explicit final attack interval for this build; animation lengths are not attack intervals.
+- Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.
+source:
+  url: https://wiki.warframe.com/w/Panzer_Claws

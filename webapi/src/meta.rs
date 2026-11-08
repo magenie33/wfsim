@@ -268,6 +268,7 @@ pub fn meta_json() -> Value {
                 // The riven stat pool this weapon draws from — not always its
                 // mod class (a bow's mods are `bow`, its rivens are `rifle`).
                 "riven_class": riven_class(w),
+                "no_riven": wspec(&w.id).no_riven,
                 // …minus the stats THIS weapon cannot roll. The pool is per
                 // class, but a sentinel weapon has no Zoom and no Recoil, a
                 // hit-scan one has no flight speed, an infinite-ammo one has
@@ -513,6 +514,8 @@ pub fn meta_json() -> Value {
                     .map(|s| s.class.clone())
                     .unwrap_or_default(),
                 "sentinel": w.sentinel,
+                "refire": wspec(&w.id).attack.refire,
+                "wielder_modelled": wspec(&w.id).wielder_modelled,
                 // An Arch-Gun has none either, so `sentinel` cannot answer it.
                 "has_exilus_slot": wfsim_engine::data::weapons::has_exilus_slot(&w.id),
                 // AN EXALTED WEAPON IS RANKED APART, and the page needs to know

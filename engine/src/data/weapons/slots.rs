@@ -13,7 +13,7 @@ use super::*;
 /// disagree about how many seats a weapon has.
 pub fn arcane_pools(weapon: &str) -> Vec<&'static str> {
     let Some(s) = spec(weapon) else { return Vec::new() };
-    if s.class.contains("sentinel") {
+    if s.slot == "sentinel" {
         return Vec::new();
     }
     let own = match s.rules_slot() {
@@ -72,7 +72,7 @@ pub fn exilus_polarity(id: &str) -> Option<Polarity> {
 /// (`rules::capacity::plan_forma`).
 pub fn has_exilus_slot(id: &str) -> bool {
     let Some(s) = spec(id) else { return false };
-    !s.class.contains("sentinel") && !s.no_exilus_slot && matches!(s.rules_slot(), "primary" | "secondary" | "melee")
+    s.slot != "sentinel" && !s.no_exilus_slot && matches!(s.rules_slot(), "primary" | "secondary" | "melee")
 }
 
 /// …AND THE STANCE SLOT'S, which is a capacity GRANT rather than a discount.

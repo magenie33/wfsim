@@ -165,6 +165,17 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
             }
         }
         "base_damage_bonus" => ModEffect::BaseDamage(max("rankMax")),
+        "noncrit_damage_bonus" => ModEffect::NonCritDamage(max("rankMax")),
+        "post_coalesce_element" => ModEffect::PostCoalesceElement(
+            element(v.get("element").and_then(Value::as_str)?)?, max("rankMax")),
+        "damage_conversion" => ModEffect::DamageConversion {
+            to: element(v.get("element").and_then(Value::as_str)?)?,
+            physical: match v.get("from").and_then(Value::as_str)? {
+                "physical" => true,
+                "elemental" => false,
+                _ => return None,
+            },
+        },
         "base_damage_if_no_enemy_within" => ModEffect::BaseDamageIfNoEnemyWithin {
             bonus: max("rankMax"),
             metres: f(v, "range_m")?,

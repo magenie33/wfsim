@@ -56,6 +56,7 @@ attack:
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 5.0
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   # "Innate 10-pellet multishot", and the damage below is PER PELLET.
   multishot: 10.0
   ammo_cost: 1

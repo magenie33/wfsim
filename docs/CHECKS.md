@@ -2522,3 +2522,11 @@ sharing another weapon preserves its mod rank and evolutions without changing
 the current build, fight or presets. All six preset domains retain access to 100 entries.
 The unchanged expanded bar fails the same 100-build fixture. Runs in the
 page-rest views group; accepts `WFSIM_BASE`.
+
+## Parsed firing cadence and claws
+
+Engine source regressions bind imported refire rules and claw vectors to the
+closed client fixture and check native cadence vectors at their float32 nodes.
+Claw resolution covers ordinary damage/crit cards, physical conversion and
+post-coalescing elemental conversion. Simulation checks cover explicit interval
+validation, scheduled shot counts and isolation from robotic host effects.

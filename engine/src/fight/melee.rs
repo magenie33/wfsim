@@ -652,6 +652,9 @@ pub(super) fn seconds_to_next_shot(
     incarnon: &IncarnonState,
     melee: &mut MeleeState,
 ) -> f64 {
+    if active.refire == crate::model::RefireRule::SuppliedInterval {
+        return active.attack_interval_seconds.unwrap_or(f64::INFINITY);
+    }
     if let Some(h) = swing.as_ref().filter(|h| h.event_timing.is_some()) {
         let converted = melee.input.as_ref().is_some_and(|i| i.converted);
         let mut recovery = (h.delay_seconds - h.hit_delay_seconds.unwrap_or(0.0)).max(0.0) / rate.max(1e-9);
@@ -792,7 +795,7 @@ pub(super) fn seconds_to_next_shot(
                     !ammo.rounds_this_mag.is_multiple_of(b.count) && can_fire(mag_now, 1.0);
                 if pull_goes_on { b.delay_seconds / live } else { 1.0 / rate }
             }
-            _ => 1.0 / rate,
+            _ => active.refire.interval(rate, active.ammo_cost > 0.0 && !can_fire(ammo.loaded, active.ammo_cost)),
         },
     }
 }

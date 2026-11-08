@@ -56,7 +56,8 @@ attack:
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 40
-  fire_rate: 1.33
+  fire_rate: 1.3333334
+  refire: {kind: native_rate}
   multishot: 1.0
   ammo_cost: 1
   # IT NEVER CRITS. 0.00% and 1.00x, both printed on the page — not an
@@ -68,6 +69,7 @@ attack:
   damage: { impact: 53.333333, puncture: 53.333333, slash: 53.333333 }   # 160 a throw
 
 unmodeled:
+  - "The active-projectile cap, recall and return availability are not simulated; the fire rate is the nominal refire timer."
   - "It cannot be modded here: it uses melee and thrown melee mods (Pressure Point, Fury, Whirlwind, Power Throw), which are not offered for it. Its base numbers are right; a build is not available."
   - "The damage type rotation is averaged: the weapon deals 160 of one type at a time, cycling Impact, Puncture, Slash, and this entry splits it evenly. Total damage and status mix are exact; armour is not, because mitigation applies per instance."
   - "The projectiles bounce off walls like a thrown glaive; there are no walls here."

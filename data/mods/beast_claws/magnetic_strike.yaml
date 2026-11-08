@@ -1,0 +1,19 @@
+id: magnetic_strike
+name: Magnetic Strike
+rarity: common
+polarity: madurai
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastMagneticImpactMod
+compat: beast_claws
+precept: false
+description: X% Chance to apply a Magnetic status effect when inflicting an Impact status effect
+effects:
+- kind: unmodelled
+  text: 100% Chance to apply a Magnetic status effect when inflicting an Impact status effect
+  rank0: 0.25
+  rankMax: 1.0
+- kind: unmodelled
+  text: 100% Chance to apply a Magnetic status effect when inflicting an Impact status effect
+source:
+  url: https://wiki.warframe.com/w/Magnetic_Strike

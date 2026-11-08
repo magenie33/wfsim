@@ -4114,3 +4114,5 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
   .recommendation-control{min-width:0}.recommendation-vote{font-size:11px;padding:0 7px}
   body.on-build-library .fd-main tr.fr>td:last-child>.fd-open{font-size:11px;height:23px}
 }
+#riven-block.no-riven > :not(.no-riven-note){display:none}
+.no-riven-note{padding:16px}

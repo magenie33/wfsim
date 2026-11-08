@@ -64,6 +64,7 @@ attack:
   # roster. What it fires is a WAVE with innate infinite punch-through.
   shot_type: projectile
   fire_rate: 5.0
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.22

@@ -87,6 +87,7 @@ fn main() {
     let mut scenario = Scenario {
         params: std::sync::Arc::new(|_: &Candidate, _: usize| None),
         arena: wfsim_engine::arena::Arena {
+            attack_interval_seconds: None,
             apl: Default::default(),
             squad_size: 1,
             target_id: "e1".to_string(),
