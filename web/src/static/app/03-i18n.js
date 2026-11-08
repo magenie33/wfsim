@@ -146,7 +146,9 @@ const searchBlob = (x) => {
   // languages: a Kitgun chamber is a "Kitgun" on screen and a shotgun by class,
   // and the topbar search has no filter row — a kind is a word in the box.
   const cls = x.mod_class ? x.mod_class.replace(/^./, (c) => c.toUpperCase()) : "";
+  const slot = ((META && META.equipment_slots) || []).find((s) => s.id === x.slot);
   x._search = [x.name, x.name_en, x.subtype, x.subtype && tr(x.subtype), cls, cls && tr(cls),
+    slot && slot.name, slot && tr(slot.name),
     eff.join(" "), tf(eff.join(" ")),
     official.join(" "), alt.join(" ")]
     .filter(Boolean).join(" ").toLowerCase();

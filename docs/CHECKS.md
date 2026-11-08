@@ -2085,6 +2085,10 @@ Primary and secondary Kitguns are both searchable with distinct slot-qualified n
 Warframes and companions are searchable by name and localized kind; the
 Sentinel also matches its Chinese name. Each kind opens its own page. The home
 search also finds Warframes and the Sentinel by their localized category/name.
+Home and topbar weapon searches both match the Beast Claws kind, Chinese claw
+names and the Companion Weapon slot in English and Chinese, preserving every
+eligible result. Home search also matches localized weapon names with their
+spaces omitted.
 
 ## `check_cloud_page`
 
