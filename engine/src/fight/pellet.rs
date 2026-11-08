@@ -37,6 +37,7 @@ pub(super) struct Strike<'a> {
     pub(super) modded_base: f64,
     pub(super) co_base: crate::model::CoBase,
     pub(super) combo_multiplier: f64,
+    pub(super) melee_combo: f64,
     pub(super) combo_spec: Option<crate::model::SniperCombo>,
     pub(super) swing: &'a Option<crate::model::ComboHit>,
     pub(super) swing_mult: f64,
@@ -230,6 +231,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         modded_base,
         co_base,
         combo_multiplier,
+        melee_combo,
         combo_spec,
         swing,
         swing_mult,
@@ -1127,6 +1129,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
                 windows.streak, tendril.count, crit_per_hit.stacks, bar,
                 combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t)
                     + u32::from(direct && pellet_lands && active.sniper_combo.is_some() && params.combo_builds),
+                melee_combo,
                 incarnon.incarnon_until,
         *influence_until,
             );

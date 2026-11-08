@@ -211,4 +211,27 @@ check(`${tag} ...and no card in it is silent`,
 check(`${tag} ...and Tennokai gives it something to decide`,
   exilus.paying >= 5, JSON.stringify(exilus.paying));
 
-await finish("a melee weapon's two extra slots");
+await app.load('/weapons/Nikana_Prime/simulator',1500);
+const combo = await evaluate(`(async()=>{
+  if (officialScenarioActive()) $('sim-official-copy').click();
+  gainPrefs.on=false;saveGainPrefs();
+  for(let n=0;n<40&&!$('sim-buffs').querySelector('[data-b="melee_combo"]');n++) await new Promise(r=>setTimeout(r,100));
+  const field=f=>$('sim-buffs').querySelector('[data-b="melee_combo"][data-f="'+f+'"]');
+  if(!field('stacks')) return {missing:true};
+  const card=field('stacks').closest('.buff-card'),initial=field('stacks').value,unlocked=!field('locked').checked;
+  const set=(f,v)=>{const el=field(f);if(f==='locked')el.checked=v;else el.value=v;el.dispatchEvent(new Event('change'));};
+  set('stacks',220);set('locked',true);
+  const held=structuredClone(theFight().buffs.melee_combo);
+  set('locked',false);
+  const opening=structuredClone(theFight().buffs.melee_combo);
+  await new Promise(r=>setTimeout(r,600));
+  return {initial,unlocked,held,opening,name:card.querySelector('.bn').textContent,
+    snapshot:snapshotScenario().buffs.melee_combo};
+})()`);
+check('melee scenario offers opening points and an explicit maintain control',!combo.missing&&combo.initial==='0'&&combo.unlocked,JSON.stringify(combo));
+check('maintained and opening-only points travel in the shared fight',combo.held?.stacks===220&&combo.held.locked===true&&combo.opening?.stacks===220&&combo.opening.locked===false,JSON.stringify(combo));
+check('melee combo points survive scenario snapshots',combo.snapshot?.stacks===220&&combo.snapshot.locked===false,JSON.stringify(combo));
+await app.load('/weapons/Nikana_Prime/simulator',1000);
+const restored = await evaluate(`sim.buffs.melee_combo`);
+check('melee combo points persist across reloads',restored?.stacks===220&&restored.locked===false,JSON.stringify(restored));
+await finish("a melee weapon's two extra slots and scenario combo");

@@ -828,6 +828,8 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
   }
   const card = (b) => {
     const c = buffViewConfig(b, cfg);
+    const meleeCombo = b.id === "melee_combo";
+    const startingLabel = meleeCombo ? "Starting points" : "Starting stacks";
     // ONE control for every buff, a toggle included: a
     // one-stack buff reads "1 / 1" like the rest instead of a checkbox that
     // said "active" and meant the same thing in different words.
@@ -835,7 +837,9 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
     // 0 because the modelled fight is "in it a while, but not in contact for
     // the last few seconds" — it is earned back on its own trigger. Only a
     // permanent buff opens full, because a lull cannot take it away.
-    const startWhy = b.permanent
+    const startWhy = meleeCombo
+      ? tr("Points present when the fight starts. They build, expire and are spent normally.")
+      : b.permanent
       ? tr("permanent — nothing grants or decays it, so it holds all run")
       : tr("stacks the run STARTS with. 0 = earned in-fight on this buff's own trigger, which is what a fight that has not been in contact for a few seconds looks like");
     // UNCAPPED buffs exist: Secondary Enervate ramps a stack per hit with no
@@ -843,12 +847,14 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
     // input takes no `max` — clamping it to a number we invented would be the
     // one place the UI disagreed with the mechanic.
     const cap = b.cap_varies ? tr("by source") : b.uncapped ? "∞" : b.max_stacks ?? "—";
-    const ctl = `<span class="bstep" title="${escHtml(startWhy)}"><input type="number" data-b="${b.id}" data-f="stacks" min="0" value="${b.default_varies && !cfg[b.id] ? "" : c.stacks ?? ""}" placeholder="${escHtml(tr("Default"))}" aria-label="${escHtml(tr("Starting stacks"))}"><span class="bmax" title="${escHtml(tr("This build's cap; the global setting is retained."))}">/ ${cap}</span></span>`;
+    const ctl = `<span class="bstep" title="${escHtml(startWhy)}"><input type="number" data-b="${b.id}" data-f="stacks" min="0" value="${b.default_varies && !cfg[b.id] ? "" : c.stacks ?? ""}" placeholder="${escHtml(tr("Default"))}" aria-label="${escHtml(tr(startingLabel))}"><span class="bmax" title="${escHtml(tr("This build's cap; the global setting is retained."))}">/ ${cap}</span></span>`;
     // NOT "lock": that read as "freeze this buff", so
     // locking one at zero looked like a way to switch it off forever. It only
     // removes the TIMEOUT — the count still starts where it is set and still
     // climbs on every trigger.
-    const lock = b.permanent
+    const lock = meleeCombo
+      ? `<label class="block-lock" title="${escHtml(tr("Keep at least these points throughout the fight, including after heavy attacks. Off: starting points only."))}"><input type="checkbox" data-b="${b.id}" data-f="locked" ${c.locked ? "checked" : ""}> ${escHtml(tr("Maintain throughout"))}</label>`
+      : b.permanent
       ? `<label class="block-lock dis" title="${escHtml(tr("permanent stacks — they never decay and cannot build in-sim, so the count holds for the whole run"))}"><input type="checkbox" checked disabled> ${escHtml(tr("no timeout"))}</label>`
       : `<label class="block-lock" title="${escHtml(tr("the stacks never expire — they still start where you set them and still build on every trigger"))}"><input type="checkbox" data-b="${b.id}" data-f="locked" ${c.locked ? "checked" : ""}> ${escHtml(tr("no timeout"))}</label>`;
     // In the WIDER view, a buff the build does not carry is still settable —
@@ -874,7 +880,7 @@ function renderBuffCards(box, list, cfg, have, opts = {}) {
       ? `<small class="scenario-effective">${escHtml(tr("Current effective value"))}: ${denied ? 0 : b.max_stacks}</small>` : "";
     return `<div class="buff-card${off ? " off" : ""}${denied ? " denied" : ""}" data-buff-id="${escHtml(b.id)}" data-search="${escHtml(search)}">
       <span class="bn">${escHtml(buffCardName(b.name))}${grants}<span class="buff-status">${b.applicable === false ? escHtml(tr("Not used by this weapon")) : off ? escHtml(tr("not equipped")) : ""}${why}</span></span>
-      <span class="bctl"><span class="buff-control-label">${escHtml(tr("Starting stacks"))}</span>${ctl}</span>
+      <span class="bctl"><span class="buff-control-label">${escHtml(tr(startingLabel))}</span>${ctl}</span>
       ${lock}${effective}
       ${cfg[b.id] ? `<button type="button" class="ghost-btn small buff-reset" data-buff-reset="${escHtml(b.id)}">${escHtml(tr("Use source default"))}</button>` : `<small class="buff-default">${escHtml(tr(b.default_varies ? "Defaults depend on source" : "Source default"))}</small>`}
     </div>`;

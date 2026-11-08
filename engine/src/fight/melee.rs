@@ -89,7 +89,7 @@ pub(super) fn floor_steps_down(active: &FightParams, buff_stacks: &mut [LiveStac
         if at > melee.combo_expiry {
             melee.combo_points = 0.0;
         }
-        let held = melee_combo_points(melee.combo_points, floor, at - melee.combo_spent_t);
+        let held = melee.points_at(active, floor, at);
         floor -= fell;
         if held > floor {
             melee.combo_points = held;
@@ -299,6 +299,18 @@ pub(super) struct MeleeState {
     /// it. The explosion is read where it lands, where the explosion SPENDS the counter as a heavy attack does.
     pub(super) detonating: bool,
     pub(super) recalling: bool,
+}
+
+#[wfsim_gas_macro::metered]
+impl MeleeState {
+    fn maintained_points(active: &FightParams) -> f64 {
+        if active.melee_combo_held { f64::from(active.melee_combo_initial) } else { 0.0 }
+    }
+
+    pub(super) fn points_at(&self, active: &FightParams, initial: f64, t: f64) -> f64 {
+        let held = if t > self.combo_expiry || active.combo_frozen { 0.0 } else { self.combo_points };
+        melee_combo_points(held, initial, t - self.combo_spent_t).max(Self::maintained_points(active))
+    }
 }
 
 /// One committed input, held across its separately resolved attack events.
@@ -673,7 +685,7 @@ pub(super) fn seconds_to_next_shot(
                 let next = current_melee_event(active, melee).unwrap();
                 let lead = next.windup_seconds + next.hit_delay_seconds.unwrap_or(0.0) / rate.max(1e-9);
                 let between_contacts = now + recovery + lead - melee.combo_spent_t;
-                recovery += heavy_cycle_seconds(between_contacts, melee.combo_points, initial_now) - between_contacts;
+                recovery += heavy_cycle_seconds(between_contacts, melee.combo_points.max(MeleeState::maintained_points(active)), initial_now) - between_contacts;
             }
             melee.input = None;
         }
@@ -779,7 +791,7 @@ pub(super) fn seconds_to_next_shot(
             // heavy slam make the same decision and the next weapon needs
             // no field.
             if active.spends_combo || melee.detonating {
-                heavy_cycle_seconds(cycle, melee.combo_points, initial_now)
+                heavy_cycle_seconds(cycle, melee.combo_points.max(MeleeState::maintained_points(active)), initial_now)
             } else {
                 cycle
             }
@@ -863,7 +875,7 @@ pub(super) fn swing_this_shot(
         // this does and is therefore UNDER-reported here.
         melee.combo_points = 0.0;
     }
-    let mut combo_now = melee_combo_points(melee.combo_points, initial_now, t - melee.combo_spent_t);
+    let mut combo_now = melee.points_at(active, initial_now, t);
     let input_heavy = active.spends_combo || melee.input.as_ref().is_some_and(|i| i.converted);
     if let Some(i) = melee.input.as_mut().filter(|_| input_heavy) {
         combo_now = *i.combo_now.get_or_insert(combo_now);

@@ -137,6 +137,15 @@ did until the two sums became one.
 
 ### Initial combo is a FLOOR that refills
 
+The scenario's Melee Combo Counter card sets points already present at the
+start of the fight. These points use the weapon's combo duration, grow on
+landed light attacks and are spent by heavy attacks. Maintain throughout
+keeps at least the configured points through expiry and spending; earned
+points above them still follow the normal counter. This setting is separate
+from a build's Initial Combo stat and its 40-points-per-second regeneration.
+The card travels as `buffs.melee_combo: {stacks, locked}`; absent means zero
+starting points with normal counter behavior.
+
 > *"Initial Combo grants a minimum value of combo points when **idle** or after
 > a combo reset. Heavy attacks spend initial combo, which regenerates at a rate
 > of 40 combo points per second."*

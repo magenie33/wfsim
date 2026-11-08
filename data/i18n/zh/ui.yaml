@@ -6,6 +6,12 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "Melee Combo Counter": "近战连击点数"
+  "Starting points": "初始点数"
+  "Maintain throughout": "全程维持"
+  "Points present when the fight starts. They build, expire and are spent normally.": "战斗开始时已有的连击点数，之后正常积累、衰减和消耗。"
+  "Keep at least these points throughout the fight, including after heavy attacks. Off: starting points only.": "全程至少维持这些点数，重击后也维持。关闭时仅在开场赋予点数。"
+  "2x at 20 points, +1x every 20, up to 12x": "20 点为 2 倍，每 20 点增加 1 倍，上限 12 倍"
   "Build uploads queued": "配装上传已排队"
   "Legal builds found during optimization enter the Build Library using each task's saved upload setting.": "优化过程中找到的合法配装会按各任务保存的上传设置加入配装库。"
   "New tasks keep build uploads off.": "新任务将关闭配装上传。"

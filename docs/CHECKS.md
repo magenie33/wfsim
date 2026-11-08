@@ -1483,6 +1483,9 @@ Kitgun bytes are also exercised by `check_share_short`.
 
 ## `check_melee_slots`
 
+The scenario offers opening melee combo points and Maintain throughout.
+Both settings reach the shared fight, snapshots and reload persistence.
+
 A melee weapon has TWO slots a gun does not, and one
 decides what it swings. Slot wiring is asserted on the WIRE or on a real
 `/api/simulate`. Its info card puts stance, main mods and Exilus in separate

@@ -200,6 +200,7 @@ pub(super) fn land_the_shot(l: &Landing, me: &mut Combatant, g: &mut Ground) -> 
             modded_base: l.modded_base,
             co_base: l.co_base,
             combo_multiplier: l.combo_multiplier,
+            melee_combo: l.combo_now,
             combo_spec: me.fixed.combo_spec,
             swing: &l.swing,
             swing_mult: l.swing_mult,

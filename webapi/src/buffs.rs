@@ -493,9 +493,23 @@ pub(crate) fn enumerate_buffs(
             trigger: None,
         });
     }
+    let melee = wfsim_engine::data::weapons::spec(&info.id).is_some_and(|s| s.rules_slot() == "melee");
+    if melee {
+        push(BuffMeta {
+            id: "melee_combo".into(),
+            name: "Melee Combo Counter".into(),
+            grants: "2x at 20 points, +1x every 20, up to 12x".into(),
+            max_stacks: wfsim_engine::fight::MELEE_COMBO_MAX_POINTS,
+            kind: "stacking",
+            default_stacks: 0,
+            default_locked: false,
+            permanent: false,
+            uncapped: false,
+            trigger: None,
+        });
+    }
     // RAGE IS THE WIELDER'S, earned by a melee weapon: a card in whole percent
     // that opens the meter and, locked, holds it (`wfsim_engine::data::rage`).
-    let melee = wfsim_engine::data::weapons::spec(&info.id).is_some_and(|s| s.rules_slot() == "melee");
     if let Some(s) = wfsim_engine::data::warframes::warframe(&tenno.id).and_then(|f| f.rage).filter(|_| melee) {
         push(BuffMeta {
             id: wfsim_engine::data::rage::BUFF_ID.into(),
@@ -1395,6 +1409,35 @@ mod secondary_outburst {
         let (six, thirteen) = (set(6), set(13));
         assert!(bare < six && six < thirteen, "{bare} -> {six} -> {thirteen}");
         assert_eq!(set(20), thirteen, "13x is the cap");
+    }
+}
+
+#[cfg(test)]
+mod melee_combo_scenario {
+    use serde_json::json;
+
+    #[test]
+    fn melee_combo_is_settable_without_mods_and_moves_the_shared_fight() {
+        let request = json!({"weapon":"nikana_prime", "mods":[], "mode":"heavy",
+            "duration":10, "runs":4, "seed":7});
+        let panel = crate::panel::panel_json(&request);
+        let card = panel["buffs"].as_array().unwrap().iter().find(|b| b["id"] == "melee_combo").unwrap();
+        assert_eq!(card["default_stacks"], 0);
+        assert_eq!(card["default_locked"], false);
+        assert!(card["trigger"].is_null(), "buff trigger switches do not disable the counter");
+        let damage = |points: u32, held: bool| {
+            let mut v = request.clone();
+            v["buffs"] = json!({"melee_combo":{"stacks":points,"locked":held}});
+            let r = crate::simulate::simulate_json(&v);
+            assert!(r.get("error").is_none(), "{r}");
+            r["dps"].as_f64().unwrap()
+        };
+        let (cold, opening, held) = (damage(0, false), damage(220, false), damage(220, true));
+        assert!(cold < opening && opening < held, "{cold} < {opening} < {held}");
+        let mut gun = request;
+        gun["weapon"] = json!("braton");
+        gun["mode"] = json!("base");
+        assert!(!crate::panel::panel_json(&gun)["buffs"].as_array().unwrap().iter().any(|b| b["id"] == "melee_combo"));
     }
 }
 

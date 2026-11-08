@@ -225,7 +225,7 @@ function fightCardHtml(s = sim) {
       : Math.round(s.extra_stats[k] * 100) / 100 + (unit === "x" ? "x" : "")}`));
   const buffs = Object.entries(s.buffs || {}).filter(([, c]) => c && (c.stacks > 0 || c.locked)).map(([id, c]) => {
     const b = (scenarioCatalog || buffList).find((x) => x.id === id) || {};
-    return chip(`${b.name ? buffCardName(b.name) : prettify(id)} ${c.stacks || 0}${b.max_stacks > 1 ? `/${b.max_stacks}` : ""}${c.locked ? ` · ${tr("no timeout")}` : ""}`);
+    return chip(`${b.name ? buffCardName(b.name) : prettify(id)} ${c.stacks || 0}${b.max_stacks > 1 ? `/${b.max_stacks}` : ""}${c.locked ? ` · ${tr(id === "melee_combo" ? "Maintain throughout" : "no timeout")}` : ""}`);
   });
   const targets = (s.formation || []).map(body => {
     const e = allEnemies().find(e => e.id === (body.enemy || s.enemy));

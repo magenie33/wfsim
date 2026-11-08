@@ -377,10 +377,18 @@ Two consequences worth knowing:
   `duration: 0.0` beside the flag; a zero duration in a decay loop is an
   infinite loop waiting for a reader.
 
+### Melee combo points
+
+The Melee Combo Counter card stores `buffs.melee_combo: {stacks, locked}`.
+Its count is opening combo points, with the weapon's normal expiry and heavy
+attack spending. Its Maintain throughout option keeps at least that count
+through expiry and spending; hits can still build above it. It is independent
+of the build's refilling Initial Combo stat. Other buff cards retain their
+ordinary no-timeout behavior.
+
 ### A buff whose end is an EVENT, not a clock
 
-`NO_TIMEOUT` is the implementation of locking because every buff in the pool
-ends on a timer — except one. The **Ocucor's tendrils** (`tendrils`) are gained
+`NO_TIMEOUT` removes expiry from timed buffs. The **Ocucor's tendrils** (`tendrils`) are gained
 on a kill and cleared by a MAGAZINE EVENT: "Tendrils disappear upon reloading
 or emptying the magazine." There is no duration to overwrite, so the card's two
 knobs land where the same sentences point:
