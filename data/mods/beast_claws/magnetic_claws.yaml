@@ -1,0 +1,22 @@
+id: magnetic_claws
+name: Magnetic Claws
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/DualStat/KubrowMagneticEventMeleeMod
+compat: beast_claws
+precept: false
+description: "+X% Magnetic\n+X% Status Duration"
+effects:
+- kind: elemental_damage_bonus
+  element: magnetic
+  rank0: 0.15
+  rankMax: 0.6
+  text: "+60% Magnetic\n+40% Status Duration"
+- kind: status_duration_bonus
+  rank0: 0.1
+  rankMax: 0.4
+  text: "+60% Magnetic\n+40% Status Duration"
+source:
+  url: https://wiki.warframe.com/w/Magnetic_Claws

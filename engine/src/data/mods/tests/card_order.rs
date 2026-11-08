@@ -24,6 +24,13 @@ use super::*;
 /// because a lone word matches too easily to be evidence of anything.
 fn spoken_at(e: &Value, hay: &str) -> Option<(usize, String)> {
     let kind = e.get("kind").and_then(Value::as_str)?;
+    if ["elemental_damage_bonus", "combined_element_bonus", "post_coalesce_element"].contains(&kind) {
+        if let Some(name) = e.get("element").and_then(Value::as_str) {
+            if let Some(at) = hay.find(name) {
+                return Some((at, name.to_string()));
+            }
+        }
+    }
     // A syndicate radial is named by its SYNDICATE (Purity, Truth), never
     // by its kind — "syndicate radial" appears on no card.
     if kind == "syndicate_radial" {

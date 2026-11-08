@@ -60,6 +60,7 @@ attack:
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 1.0
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   # see notes: read_engine_nothing_engine
   ammo_cost: 1

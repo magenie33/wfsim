@@ -1,0 +1,19 @@
+id: bloodthirst
+name: Bloodthirst
+rarity: common
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastDrainingBiteMod
+compat: beast_claws
+precept: false
+description: X health stolen each hit per stack of Slash.
+effects:
+- kind: unmodelled
+  text: 100 health stolen each hit per stack of Slash.
+  rank0: 25.0
+  rankMax: 100.0
+- kind: unmodelled
+  text: 100 health stolen each hit per stack of Slash.
+source:
+  url: https://wiki.warframe.com/w/Bloodthirst

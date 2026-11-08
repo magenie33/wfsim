@@ -366,6 +366,9 @@ pub(super) fn effect_of(def: &RivenStat, v: f64) -> Option<ModEffect> {
 /// and this one decides whether a riven's Heat pairs with the build's Cold.
 pub fn class_for_weapon(weapon: &str) -> Option<&'static str> {
     let spec = crate::data::weapons::spec(weapon)?;
+    if spec.no_riven {
+        return None;
+    }
     if let Some(c) = spec.riven_class.as_deref() {
         return Some(c);
     }

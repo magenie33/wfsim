@@ -1,0 +1,27 @@
+weapons:
+  adarza_claws: 镜像利爪
+  chesa_claws: 寻猎利爪
+  crescent_claws: 月刃利爪
+  helminth_claws: Helminth 利爪
+  huras_claws: 匿踪利爪
+  medjay_claws: 守卫利爪
+  panzer_claws: 铁甲利爪
+  pharaoh_claws: 法老利爪
+  raksa_claws: 防护利爪
+  sahasa_claws: 突击利爪
+  sly_claws: 狡黠利爪
+  smeeta_claws: 笑面利爪
+  sunika_claws: 猎杀利爪
+  vasca_claws: 噬血利爪
+  venari_claws: 薇娜丽利爪
+  venari_prime_claws: 薇娜丽 Prime 利爪
+  vizier_claws: 宰相利爪
+ui:
+  This weapon takes no riven.: 此武器无法装备裂罅 MOD。
+  Attack interval (s): 攻击间隔（秒）
+  The final interval between attacks for this build; the companion attack cycle is not calibrated.: 当前配装两次攻击之间的最终间隔；同伴的完整攻击周期尚未校准。
+  ? The complete attack cycle is not calibrated. Simulation needs an explicit final attack interval for this build; animation lengths are not attack intervals.
+  : 完整攻击周期尚未校准。模拟需要填写当前配装的最终攻击间隔；动画片长不等于攻击间隔。
+  Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.: 假定攻击命中目标。尚未模拟同伴移动、接触判定、攻击动作选择、指令和姿势的目标选择。
+  The beast body and owner link are not modelled.: 尚未建模野兽本体与主人的关联。
+  The active-projectile cap, recall and return availability are not simulated; the fire rate is the nominal refire timer.: 尚未模拟在途投射物数量上限、召回与返程后的可投掷时点；射速表示名义射击间隔。

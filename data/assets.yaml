@@ -4,6 +4,23 @@
 # Files: python scripts/fetch_images.py (web/cache/img/, then site/img/).
 
 weapons:
+  adarza_claws: BeastClaws.png
+  chesa_claws: BeastClaws.png
+  crescent_claws: BeastClaws.png
+  helminth_claws: BeastClaws.png
+  huras_claws: BeastClaws.png
+  medjay_claws: BeastClaws.png
+  panzer_claws: BeastClaws.png
+  pharaoh_claws: BeastClaws.png
+  raksa_claws: BeastClaws.png
+  sahasa_claws: BeastClaws.png
+  sly_claws: BeastClaws.png
+  smeeta_claws: BeastClaws.png
+  sunika_claws: BeastClaws.png
+  vasca_claws: BeastClaws.png
+  venari_claws: BeastClaws.png
+  venari_prime_claws: BeastClaws.png
+  vizier_claws: BeastClaws.png
   caustacyst_heavy: Caustacyst.png
   coda_caustacyst_heavy: CodaCaustacyst.png
   zenistar_heavy: Zenistar.png
@@ -2329,6 +2346,33 @@ weapons:
   zenistar_heavy_slam: Zenistar.png
   zenistar_slide: Zenistar.png
 mods:
+  assassin_posture: BeastVIPStance.jpg
+  balanced_posture: BeastNeutralStance.jpg
+  bell_ringer: BeastKnockdownWeaponMod.jpg
+  bite: KubrowHunterAttack.jpg
+  bloodthirst: BeastDrainingBiteMod.jpg
+  brute_conditioning: BeastBruteConditioningMod.jpg
+  burning_claws: KubrowHeatConversionMod.jpg
+  chilling_claws: KubrowColdConversionMod.jpg
+  cull_the_weak: BeastCullTheWeakMod.jpg
+  disabling_conditioning: BeastDisablingConditionMod.jpg
+  elusive_posture: BeastPacifistStance.jpg
+  flame_gland: KubrowDualFire.jpg
+  frenzied_posture: BeastSpreadAttacksStance.jpg
+  frost_jaw: KubrowDualIce.jpg
+  hunter_synergy: HunterSynergy.jpg
+  immunity_resistance: BeastWeakenedImmunityMod.jpg
+  magnetic_claws: KubrowMagneticEventMeleeMod.jpg
+  magnetic_strike: BeastMagneticImpactMod.jpg
+  maul: KubrowAdventurerAttack.jpg
+  persistent_posture: BeastPersistentStance.jpg
+  precision_conditioning: BeastPrecisionConditionMod.jpg
+  protector_posture: BeastProtectorStance.jpg
+  radon_claws: KubrowRadiationEventMeleeMod.jpg
+  sepsis_claws: KubrowToxicConversionMod.jpg
+  shock_collar: KubrowDualElect.jpg
+  shocking_claws: KubrowElectricConversionMod.jpg
+  venom_teeth: KubrowDualPoison.jpg
   # Official DE game illustrations, from Public Export or game extraction.
   # Download provenance is recorded in scripts/fetch_images.py.
   # Every riven uses DE's unveiled card `OmegaMod.png`.

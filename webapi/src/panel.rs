@@ -601,10 +601,14 @@ fn mod_sources(
                 // DRAW and leaves an uncharged form's cadence alone.
                 ChargeRate(x) => push("charge_rate", x, None),
                 ReloadSpeed(x) => push("reload", x, None),
-                Element(t, x) | CombinedElement(t, x) => {
+                Element(t, x) | CombinedElement(t, x) | PostCoalesceElement(t, x) => {
                     src.push(("elements", name.clone(), x, Some(format!("{t:?}"))));
                 }
                 // Physical (IPS) mod: scales the base of that physical type.
+                NonCritDamage(_) | DamageConversion { .. } => conditionals.push(json!({
+                    "mod": name, "desc": e.describe(), "active": true,
+                    "why": e.describe(),
+                })),
                 Physical(t, x) => {
                     let multiplier = forms_list.first().and_then(|(_, _, base)| base.physical_mods.as_ref())
                         .map_or(1.0, |p| p.spec.multiplier);

@@ -238,6 +238,16 @@ pub fn locales() -> &'static [(String, LocaleSpec)] {
                 None => out.push((code.to_string(), spec)),
             }
         }
+        for (_, spec) in &mut out {
+            for m in crate::data::mods::class_pool("beast_claws") {
+                if let Some(name) = spec.companion_mods.get(m.id) {
+                    spec.mods.entry(m.id.to_string()).or_insert_with(|| name.clone());
+                }
+                if let Some(ranks) = spec.companion_mod_descriptions.get(m.id) {
+                    spec.mod_descriptions.entry(m.id.to_string()).or_insert_with(|| ranks.clone());
+                }
+            }
+        }
         out
     })
 }

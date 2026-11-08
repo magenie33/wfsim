@@ -20,6 +20,7 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 40
   fire_rate: 2
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   # "Alternate Fire consumes 15 ammo" (page). The module's AmmoCost of 1 is
   # the beam's seed, and the page wins.

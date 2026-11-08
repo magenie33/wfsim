@@ -967,7 +967,20 @@ else. Both halves refuse independently: the script will not record a key that
 joins to nothing, and the test fails when an entry states a key the survey does
 not hold. Verified to bite — a key one path segment short (the Hema's
 `/LongGuns/`) fails the test naming the weapon and both paths, and makes the script exit non-zero
-rather than write.
+rather than write. Client-sourced claws absent from the Public Export resolve
+against the exact internal paths in the closed client fixture instead.
+
+### Parsed firing cadence and beast claws
+
+`scripts/import_client_cadence.py --exchange <root> [--check]` verifies closed
+batch manifests, archive hashes and selected member hashes before importing
+native refire profiles, claw stats and supported card operations. The public
+fixture `tests/fixtures/client/cadence-claws-2026-10-28.json` retains the source
+bindings, raw attack inputs, native card operations and float32 cadence vectors.
+Names come from the client's English and Chinese dictionaries. Public Export
+card text supplies display descriptions; it supplies no mechanical scalar.
+The importer requires PyYAML and `vendor/public-export/en/ExportUpgrades_en.json`.
+`--check` compares the checked-in data and fixture with those inputs.
 
 ## Equippability: the wiki module is the only structured source
 

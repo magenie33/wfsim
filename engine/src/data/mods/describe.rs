@@ -43,6 +43,11 @@ impl ModDescInfo {
 /// radial" appears on no card.
 pub(crate) fn effect_spoken_at(e: &Value, hay: &str) -> Option<usize> {
     let kind = e.get("kind").and_then(Value::as_str)?;
+    if ["elemental_damage_bonus", "combined_element_bonus", "post_coalesce_element"].contains(&kind) {
+        if let Some(at) = e.get("element").and_then(Value::as_str).and_then(|name| hay.find(name)) {
+            return Some(at);
+        }
+    }
     if kind == "syndicate_radial" {
         let sy = e.get("syndicate").and_then(Value::as_str)?.to_lowercase();
         return hay.find(&sy);

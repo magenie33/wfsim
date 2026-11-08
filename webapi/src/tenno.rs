@@ -38,6 +38,9 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
     // which no Warframe build parses as — and what its cards pile on the
     // weapon comes with it. The board never reads it: no ruler keeps a wielder
     // for a weapon that is not Exalted (`board::builds::carries_wielder`).
+    if !crate::registry::wspec(&info.id).wielder_modelled {
+        return t;
+    }
     if info.sentinel {
         t.element_per_hit = v
             .get("wielder")

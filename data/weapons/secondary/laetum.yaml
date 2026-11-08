@@ -58,6 +58,7 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 100
   fire_rate: 2.5
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   # see notes: read_engine_nothing_engine
   ammo_cost: 1

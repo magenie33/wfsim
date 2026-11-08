@@ -23,6 +23,8 @@ use wfsim_engine::rules::scaling;
 
 fn dual_toxocyst_baseline() -> FightParams {
     FightParams {
+        refire: wfsim_engine::model::RefireRule::Rate,
+        attack_interval_seconds: None,
         heavy_damage_mods_apply: true,
         combo_damage_applies: true,
         wait_for_lingering: false,

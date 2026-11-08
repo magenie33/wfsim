@@ -55,6 +55,10 @@ UNIQUE_NAMES = {
 # Official DE game artwork absent from Public Export. browse.wf hosts these
 # extracted copies; it is a third-party download host, not a DE service.
 EXTRACTED_ART = {
+    "BeastClaws.png": (
+        "https://browse.wf/Lotus/Interface/Icons/GeneticLab/BeastClaws.png",
+        "e2a80efdf1ea6c334cb546fdfb1c63f1e49d474628daf8438aa7a20cb3e49ade",
+    ),
     "BerserkerHysteriaAbility.png": (
         "https://browse.wf/Lotus/Interface/Cards/Images/BerserkerHysteriaAbility.png",
         "7a7c5cc9431750a9a7d39697e1d942ade2c6db6b12fb1e73ad4b44045861256f",

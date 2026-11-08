@@ -38,6 +38,7 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 60
   fire_rate: 1.33
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   # THE WHOLE MAGAZINE — 80 is the unmodded one, and "Consumes all remaining
   # ammunition" is the rule behind the number.

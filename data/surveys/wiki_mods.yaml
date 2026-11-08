@@ -223,7 +223,7 @@ mods:
   path: mods/bow/arrow_mutation.yaml
 - name: Assassin Posture
   category: companion
-  path: companion_mods/assassin_posture.yaml
+  path: mods/beast_claws/assassin_posture.yaml
 - name: Assault Mode
   category: companion
   path: companion_mods/assault_mode.yaml
@@ -280,7 +280,7 @@ mods:
   path: warframe_mods/axios_javelineers.yaml
 - name: Balanced Posture
   category: companion
-  path: companion_mods/balanced_posture.yaml
+  path: mods/beast_claws/balanced_posture.yaml
 - name: Balefire Surge
   category: warframe
   path: warframe_mods/balefire_surge.yaml
@@ -316,7 +316,7 @@ mods:
   path: warframe_mods/beguiling_lantern.yaml
 - name: Bell Ringer
   category: companion
-  path: companion_mods/bell_ringer.yaml
+  path: mods/beast_claws/bell_ringer.yaml
 - name: Berserker Fury
   category: weapon
   path: mods/melee/berserker_fury.yaml
@@ -328,7 +328,7 @@ mods:
   path: mods/rifle/biotic_rounds.yaml
 - name: Bite
   category: companion
-  path: companion_mods/bite.yaml
+  path: mods/beast_claws/bite.yaml
 - name: Biting Frost
   category: warframe
   path: warframe_mods/biting_frost.yaml
@@ -376,7 +376,7 @@ mods:
   path: mods/melee/blood_rush.yaml
 - name: Bloodthirst
   category: companion
-  path: companion_mods/bloodthirst.yaml
+  path: mods/beast_claws/bloodthirst.yaml
 - name: Blunderbuss
   category: weapon
   path: mods/shotgun/blunderbuss.yaml
@@ -424,7 +424,7 @@ mods:
   path: mods/sparring/brutal_tide.yaml
 - name: Brute Conditioning
   category: companion
-  path: companion_mods/brute_conditioning.yaml
+  path: mods/beast_claws/brute_conditioning.yaml
 - name: Bullet Dance
   category: weapon
   path: mods/gunblade/bullet_dance.yaml
@@ -433,7 +433,7 @@ mods:
   path: mods/shotgun/burdened_magazine.yaml
 - name: Burning Claws
   category: companion
-  path: companion_mods/burning_claws.yaml
+  path: mods/beast_claws/burning_claws.yaml
 - name: Burning Hate
   category: weapon
   path: mods/melee/burning_hate.yaml
@@ -532,7 +532,7 @@ mods:
   path: companion_mods/charm.yaml
 - name: Chilling Claws
   category: companion
-  path: companion_mods/chilling_claws.yaml
+  path: mods/beast_claws/chilling_claws.yaml
 - name: Chilling Globe
   category: warframe
   path: warframe_mods/chilling_globe.yaml
@@ -751,7 +751,7 @@ mods:
   path: mods/rifle/cryo_rounds.yaml
 - name: Cull the Weak
   category: companion
-  path: companion_mods/cull_the_weak.yaml
+  path: mods/beast_claws/cull_the_weak.yaml
 - name: Cunning Aspect
   category: weapon
   reason: Conclave-only card; the builder uses PvE pools
@@ -826,7 +826,7 @@ mods:
   reason: Conclave-only card; the builder uses PvE pools
 - name: Disabling Conditioning
   category: companion
-  path: companion_mods/disabling_conditioning.yaml
+  path: mods/beast_claws/disabling_conditioning.yaml
 - name: Disarming Purity
   category: weapon
   path: mods/rifle/disarming_purity.yaml
@@ -925,7 +925,7 @@ mods:
   path: mods/sword_and_shield/eleventh_storm.yaml
 - name: Elusive Posture
   category: companion
-  path: companion_mods/elusive_posture.yaml
+  path: mods/beast_claws/elusive_posture.yaml
 - name: Elusive Retribution
   category: warframe
   path: warframe_mods/elusive_retribution.yaml
@@ -1132,7 +1132,7 @@ mods:
   reason: Conclave-only card; the builder uses PvE pools
 - name: Flame Gland
   category: companion
-  path: companion_mods/flame_gland.yaml
+  path: mods/beast_claws/flame_gland.yaml
 - name: Flame Repellent
   category: warframe
   path: warframe_mods/flame_repellent.yaml
@@ -1498,7 +1498,7 @@ mods:
   path: warframe_mods/freeze_force.yaml
 - name: Frenzied Posture
   category: companion
-  path: companion_mods/frenzied_posture.yaml
+  path: mods/beast_claws/frenzied_posture.yaml
 - name: Frigid Blast
   category: weapon
   path: mods/shotgun/frigid_blast.yaml
@@ -1507,7 +1507,7 @@ mods:
   reason: innate ability stance; not an equippable mod item
 - name: Frost Jaw
   category: companion
-  path: companion_mods/frost_jaw.yaml
+  path: mods/beast_claws/frost_jaw.yaml
 - name: Frostbite
   category: weapon
   path: mods/pistol/frostbite.yaml
@@ -1786,7 +1786,7 @@ mods:
   path: companion_mods/hunter_recovery.yaml
 - name: Hunter Synergy
   category: companion
-  path: companion_mods/hunter_synergy.yaml
+  path: mods/beast_claws/hunter_synergy.yaml
 - name: Hunter Track
   category: weapon
   path: mods/primary/hunter_track.yaml
@@ -1843,7 +1843,7 @@ mods:
   path: warframe_mods/immolated_radiance.yaml
 - name: Immunity Resistance
   category: companion
-  path: companion_mods/immunity_resistance.yaml
+  path: mods/beast_claws/immunity_resistance.yaml
 - name: Impaler Munitions
   category: weapon
   reason: Conclave-only card; the builder uses PvE pools
@@ -2074,7 +2074,7 @@ mods:
   path: mods/rifle/magnetic_capacity.yaml
 - name: Magnetic Claws
   category: companion
-  path: companion_mods/magnetic_claws.yaml
+  path: mods/beast_claws/magnetic_claws.yaml
 - name: Magnetic Might
   category: weapon
   path: mods/pistol/magnetic_might.yaml
@@ -2086,7 +2086,7 @@ mods:
   path: mods/shotgun/magnetic_strafe.yaml
 - name: Magnetic Strike
   category: companion
-  path: companion_mods/magnetic_strike.yaml
+  path: mods/beast_claws/magnetic_strike.yaml
 - name: Magnetic Welt
   category: weapon
   path: mods/shotgun/magnetic_welt.yaml
@@ -2134,7 +2134,7 @@ mods:
   path: mods/melee/masters_edge.yaml
 - name: Maul
   category: companion
-  path: companion_mods/maul.yaml
+  path: mods/beast_claws/maul.yaml
 - name: Maximum Capacity
   category: weapon
   reason: Conclave-only card; the builder uses PvE pools
@@ -2416,7 +2416,7 @@ mods:
   path: mods/pistol/perpetual_agony.yaml
 - name: Persistent Posture
   category: companion
-  path: companion_mods/persistent_posture.yaml
+  path: mods/beast_claws/persistent_posture.yaml
 - name: Phoenix Renewal
   category: warframe
   path: warframe_mods/phoenix_renewal.yaml
@@ -2515,7 +2515,7 @@ mods:
   reason: Conclave-only card; the builder uses PvE pools
 - name: Precision Conditioning
   category: companion
-  path: companion_mods/precision_conditioning.yaml
+  path: mods/beast_claws/precision_conditioning.yaml
 - name: Precision Intensify
   category: warframe
   path: warframe_mods/precision_intensify.yaml
@@ -2770,7 +2770,7 @@ mods:
   path: companion_mods/protect.yaml
 - name: Protector Posture
   category: companion
-  path: companion_mods/protector_posture.yaml
+  path: mods/beast_claws/protector_posture.yaml
 - name: Proton Jet
   category: weapon
   path: mods/rifle/proton_jet.yaml
@@ -2833,7 +2833,7 @@ mods:
   path: mods/rifle/radiated_reload.yaml
 - name: Radon Claws
   category: companion
-  path: companion_mods/radon_claws.yaml
+  path: mods/beast_claws/radon_claws.yaml
 - name: Rage
   category: warframe
   path: warframe_mods/rage.yaml
@@ -3190,7 +3190,7 @@ mods:
   path: mods/pistol/sentient_surge.yaml
 - name: Sepsis Claws
   category: companion
-  path: companion_mods/sepsis_claws.yaml
+  path: mods/beast_claws/sepsis_claws.yaml
 - name: Sequence Burn
   category: weapon
   path: mods/pistol/sequence_burn.yaml
@@ -3277,13 +3277,13 @@ mods:
   path: warframe_mods/shock_absorbers.yaml
 - name: Shock Collar
   category: companion
-  path: companion_mods/shock_collar.yaml
+  path: mods/beast_claws/shock_collar.yaml
 - name: Shock Trooper
   category: warframe
   path: warframe_mods/shock_trooper.yaml
 - name: Shocking Claws
   category: companion
-  path: companion_mods/shocking_claws.yaml
+  path: mods/beast_claws/shocking_claws.yaml
 - name: Shocking Speed
   category: warframe
   path: warframe_mods/shocking_speed.yaml
@@ -3853,7 +3853,7 @@ mods:
   path: warframe_mods/venom_dose.yaml
 - name: Venom Teeth
   category: companion
-  path: companion_mods/venom_teeth.yaml
+  path: mods/beast_claws/venom_teeth.yaml
 - name: Venomous Clip
   category: weapon
   path: mods/archgun/venomous_clip.yaml

@@ -194,7 +194,7 @@ fn an_entry_with_no_transcribed_spread_lands_everything_and_admits_it() {
     // question with a completely different mechanic.
     let id = crate::data::weapons::all()
         .iter()
-        .filter(|w| w.rules_slot() != "melee")
+        .filter(|w| w.rules_slot() != "melee" && w.attack.trigger != "melee")
         .map(|w| w.id.clone())
         .find(|id| crate::model::WeaponBase::from_data(id, false, &[]).spread.is_none())
         .expect("the roster still has entries waiting on the spread intake");
@@ -370,7 +370,7 @@ fn every_entry_either_has_a_spread_or_admits_it_has_none() {
         // either stands inside it or does not. So there is nothing to
         // transcribe, and `spread_not_transcribed` would be a false
         // admission: it says a number exists and we did not write it down.
-        if w.rules_slot() == "melee" {
+        if w.rules_slot() == "melee" || w.attack.trigger == "melee" {
             continue;
         }
         if crate::model::WeaponBase::from_data(&w.id, false, &[]).spread.is_some() {

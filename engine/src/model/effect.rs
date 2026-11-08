@@ -396,6 +396,12 @@ pub enum ModEffect {
     /// Primary element: ModifiedBase × bonus enters the hierarchy at this
     /// mod's position.
     Element(DamageType, f64),
+    /// Elemental bonus applied after element coalescing.
+    PostCoalesceElement(DamageType, f64),
+    /// Guaranteed additional damage on noncritical hits.
+    NonCritDamage(f64),
+    /// Conversion before mods (physical) or after coalescing (elemental).
+    DamageConversion { to: DamageType, physical: bool },
     /// Combined-element mod (Magnetic Might): added outside the hierarchy.
     CombinedElement(DamageType, f64),
     /// Target-selected element added after combination, without increasing DoT bases.

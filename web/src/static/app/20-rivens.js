@@ -164,6 +164,7 @@ function openRiven(id) {
 /// "+ new riven": a blank card — or `card`, one read off a screenshot — saved
 /// and opened. Returns its id.
 function newRiven(card) {
+  if (weaponInfo($("weapon").value)?.no_riven) return;
   const ps = loadPresetList(RIVENS);
   const name = freeName(ps, (n) => autoPresetName("riven", n));
   const id = newRivenId(loadPresetWhole(RIVENS));
@@ -209,6 +210,19 @@ function copyRiven() {
 
 function renderRivens() {
   if (!META || !$("riven-block")) return;
+  const block = $("riven-block"), noRiven = !!weaponInfo($("weapon").value)?.no_riven;
+  block.classList.toggle("no-riven", noRiven);
+  let note = block.querySelector(".no-riven-note");
+  if (!note) {
+    note = document.createElement("p");
+    note.className = "no-riven-note";
+    block.appendChild(note);
+  }
+  note.hidden = !noRiven;
+  if (noRiven) {
+    note.textContent = tr("This weapon takes no riven.");
+    return;
+  }
   wireRivenOcr();
   wireTypedRivens();
   renderRivenAppraisalControls();

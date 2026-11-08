@@ -72,6 +72,10 @@ pub fn validate_for_board_with(
 /// once (`wfsim-board --project`). `weapon` is the id the build was submitted
 /// under.
 pub fn admit_for_board(benchmark: &str, weapon: &str, b: &ValidBuild) -> Result<(), String> {
+    if crate::data::weapons::spec(weapon).is_some_and(|s|
+        s.attack.refire == crate::model::RefireRule::SuppliedInterval) {
+        return Err("This weapon has no calibrated attack cycle for a board ruler".into());
+    }
     let req = match crate::board::benchmarks::get(benchmark) {
         Some(bm) => bm.build.clone(),
         // An unknown benchmark admits nothing: scoring a build against a ruler

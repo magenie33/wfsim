@@ -521,6 +521,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         base_crit_damage: s.attack.crit_multiplier,
         base_status_chance: s.attack.status_chance,
         base_fire_rate: s.attack.fire_rate,
+        refire: s.attack.refire,
         headshot_bonus_multiplicative: s.headshot_bonus_multiplicative,
         // Straight through: what a shot COSTS is a weapon constant, and no mod
         // in the roster changes it (ammo EFFICIENCY is its own, separate term).

@@ -1,0 +1,27 @@
+id: burning_claws
+name: Burning Claws
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/KubrowHeatConversionMod
+compat: beast_claws
+precept: false
+description: "+X% Heat\n+X% Status Chance\nConverts all elemental damage from these claws to Heat damage"
+effects:
+- kind: post_coalesce_element
+  element: heat
+  rank0: 0.3
+  rankMax: 3.3
+  text: "+330% Heat\n+330% Status Chance\nConverts all elemental damage from these claws to Heat damage"
+- kind: status_chance_bonus
+  rank0: 0.3
+  rankMax: 3.3
+  text: "+330% Heat\n+330% Status Chance\nConverts all elemental damage from these claws to Heat damage"
+- kind: damage_conversion
+  from: elemental
+  element: heat
+  text: "+330% Heat\n+330% Status Chance\nConverts all elemental damage from these claws to Heat damage"
+source:
+  url: https://wiki.warframe.com/w/Burning_Claws
+family: beast_element_conversion

@@ -23,6 +23,10 @@ fn intern(s: String) -> &'static str {
 }
 
 pub(crate) fn riven_stat_ids_ok(v: &Value, info: &WeaponInfo) -> Result<(), String> {
+    if crate::registry::wspec(&info.id).no_riven
+        && v.get("rivens").and_then(Value::as_array).is_some_and(|a| !a.is_empty()) {
+        return Err(format!("{} takes no riven", info.id));
+    }
     let class = riven_class(info);
     let pool = wfsim_engine::build::rivens::pool(&class);
     let known = |x: &Value| -> Result<(), String> {
@@ -151,6 +155,9 @@ pub fn riven_json(v: &Value) -> Value {
         Ok(info) => info,
         Err(no) => return no,
     };
+    if crate::registry::wspec(&info.id).no_riven {
+        return crate::request::err_json(format!("{} takes no riven", info.id));
+    }
     let class = riven_class(info);
     // A slot may carry a `roll` OR a `value`. `value` is what you type off a
     // riven you already own; it is turned into the roll it implies and

@@ -7,8 +7,8 @@
 #
 # Never edit by hand: run the generator, which only ever appends.
 #
-digest: 10c84c3c1229f863
-count: 3871
+digest: 9c5d5a1b4ba36dc1
+count: 3915
 ids:
   - acceltra
   - acceltra_prime
@@ -3881,3 +3881,47 @@ ids:
   - thunderbolt
   - toxic_blight
   - vulcan_blitz
+  - adarza_claws
+  - chesa_claws
+  - crescent_claws
+  - helminth_claws
+  - huras_claws
+  - medjay_claws
+  - panzer_claws
+  - pharaoh_claws
+  - raksa_claws
+  - sahasa_claws
+  - sly_claws
+  - smeeta_claws
+  - sunika_claws
+  - vasca_claws
+  - venari_claws
+  - venari_prime_claws
+  - vizier_claws
+  - assassin_posture
+  - balanced_posture
+  - bell_ringer
+  - bite
+  - bloodthirst
+  - brute_conditioning
+  - burning_claws
+  - chilling_claws
+  - cull_the_weak
+  - disabling_conditioning
+  - elusive_posture
+  - flame_gland
+  - frenzied_posture
+  - frost_jaw
+  - hunter_synergy
+  - immunity_resistance
+  - magnetic_claws
+  - magnetic_strike
+  - maul
+  - persistent_posture
+  - precision_conditioning
+  - protector_posture
+  - radon_claws
+  - sepsis_claws
+  - shock_collar
+  - shocking_claws
+  - venom_teeth

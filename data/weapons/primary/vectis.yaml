@@ -54,6 +54,7 @@ attack:
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 1.5
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": true}
   # see notes: falloff_feeds_the_riven_pool
   falloff:
     start_m: 400

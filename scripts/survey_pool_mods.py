@@ -29,6 +29,7 @@ import io
 import json
 import os
 import re
+import yaml
 
 import de_export
 
@@ -41,6 +42,7 @@ OUT = os.path.join(ROOT, 'data/surveys/pool_mods.yaml')
 # the MOD's business (`requires_weapon`/`excludes_weapon` on its own card), not
 # a reason to file it somewhere the weapon cannot see it.
 POOL_TAG = {
+    ('MELEE', 'Claws'): 'beast_claws',
     ('PRIMARY', 'PRIMARY'): 'primary',
     ('PRIMARY', 'Rifle'): 'rifle',
     ('PRIMARY', 'Rifle (No Aoe)'): 'rifle',
@@ -188,10 +190,6 @@ def rule_out(uniq, name, carried_names):
     if uniq.endswith('WeaponMeleeDamageOnHeavyKillMod'):
         return ("an unreleased variant sharing a released card's display name — the wiki's "
                 "Pressure Point rank table is the bare path's, +120% at rank 5")
-    # A COMPANION'S POSTURE. DE files a Kubrow or Kavat stance under `Claws`,
-    # the same tag the Tenno claws' stances carry; it seats on the beast.
-    if '/Pets/' in uniq:
-        return "companion posture: a Kubrow or Kavat's stance under the shared `Claws` tag, seated on the beast"
     if '/PvPMods/' in uniq:
         return 'Conclave: a PvP-path mod the wiki mod tables leave tagged "Exclusive to PvP" (the PvE-legal ones are carried and pinned by name in the engine)'
     return None
@@ -217,9 +215,7 @@ def roster_pools():
     out = set()
     for p in glob.glob(os.path.join(ROOT, 'data/weapons/*/*.yaml')):
         text = io.open(p, encoding='utf-8').read()
-        m = re.search(r'^mod_pools:\s*\[([^\]]*)\]', text, re.M)
-        if m:
-            out.update(t.strip() for t in m.group(1).split(',') if t.strip())
+        out.update(yaml.safe_load(text).get('mod_pools', []))
     return out
 
 
@@ -241,6 +237,8 @@ def main():
     rows, shipped_nothing = [], []
     for m in mods:
         pool = POOL_TAG.get((m.get('type'), m.get('compatName')))
+        if '/Pets/' in m.get('uniqueName', '') and m.get('type') == 'STANCE':
+            pool = 'beast_claws'
         if pool is None or pool not in claimed:
             continue
         uniq = m.get('uniqueName', '')

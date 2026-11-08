@@ -1,0 +1,21 @@
+id: frenzied_posture
+name: Frenzied Posture
+rarity: common
+polarity: penjaga
+base_drain: 2
+max_rank: 3
+internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastSpreadAttacksStance
+compat: beast_claws
+precept: true
+description: The companion prefers to change its target after each attack. +X% Status Duration
+effects:
+- kind: unmodelled
+  text: The companion prefers to change its target after each attack. +80% Status Duration
+  rank0: 0.2
+  rankMax: 0.8
+- kind: unmodelled
+  text: The companion prefers to change its target after each attack. +80% Status Duration
+source:
+  url: https://wiki.warframe.com/w/Frenzied_Posture
+family: beast_posture
+combos: {}

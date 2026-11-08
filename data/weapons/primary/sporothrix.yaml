@@ -41,6 +41,7 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 270
   fire_rate: 1.83
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
   # ONE PER CENT crit, against a 53% status chance — this weapon is a status

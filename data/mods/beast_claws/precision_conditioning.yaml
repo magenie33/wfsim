@@ -1,0 +1,22 @@
+id: precision_conditioning
+name: Precision Conditioning
+rarity: uncommon
+polarity: madurai
+base_drain: 4
+max_rank: 10
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastPrecisionConditioningMod
+compat: beast_claws
+precept: false
+description: "+X% Melee Damage\nConvert all base Physical Damage to Slash Damage"
+effects:
+- kind: base_damage_bonus
+  rank0: 0.35
+  rankMax: 3.85
+  text: "+385% Melee Damage\nConvert all base Physical Damage to Slash Damage"
+- kind: damage_conversion
+  from: physical
+  element: slash
+  text: "+385% Melee Damage\nConvert all base Physical Damage to Slash Damage"
+source:
+  url: https://wiki.warframe.com/w/Precision_Conditioning
+family: beast_conditioning

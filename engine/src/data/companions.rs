@@ -123,6 +123,12 @@ impl CompanionMod {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RawMod {
+    #[serde(default, rename = "family")]
+    _family: Option<String>,
+    #[serde(default, rename = "combos")]
+    _combos: Option<serde_norway::Value>,
+    #[serde(default, rename = "set")]
+    _set: Option<String>,
     id: String,
     name: String,
     rarity: String,
@@ -142,6 +148,12 @@ struct RawMod {
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RawEffect {
+    #[serde(default, rename = "rank0")]
+    _rank0: Option<f64>,
+    #[serde(default, rename = "rankMax")]
+    _rank_max: Option<f64>,
+    #[serde(default, rename = "from")]
+    _from: Option<String>,
     kind: String,
     text: String,
     /// `element_per_hit` only: the element, its share per hit and its ceiling
@@ -179,6 +191,7 @@ pub fn companion_mods() -> &'static [CompanionMod] {
     static M: OnceLock<Vec<CompanionMod>> = OnceLock::new();
     M.get_or_init(|| {
         let mut out: Vec<CompanionMod> = crate::data::files_under("companion_mods/")
+            .chain(crate::data::files_under("mods/beast_claws/"))
             .map(|(p, text)| {
                 let r: RawMod = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
                 // TWO KINDS: a line the fight runs on the companion's weapon,
@@ -188,9 +201,15 @@ pub fn companion_mods() -> &'static [CompanionMod] {
                     match e.kind.as_str() {
                         "unmodelled" => {}
                         "element_per_hit" => element_per_hit = Some(element_per_hit_of(p, e)),
+                        _ if r.compat == "beast_claws" => {}
                         k => panic!("{p}: a companion card's line is `unmodelled` or `element_per_hit`, not `{k}`"),
                     }
                 }
+                let description = if r.compat == "beast_claws" {
+                    crate::data::mods::desc_info(&r.id)
+                        .map(|info| crate::prose::Prose::from(info.at(r.max_rank)))
+                        .unwrap_or(r.description)
+                } else { r.description };
                 CompanionMod {
                     id: r.id,
                     name: r.name,
@@ -201,7 +220,7 @@ pub fn companion_mods() -> &'static [CompanionMod] {
                     compat: r.compat,
                     precept: r.precept,
                     internal_name: r.internal_name,
-                    description: r.description,
+                    description,
                     effects: r.effects.into_iter().map(|e| e.text).collect(),
                     element_per_hit,
                     url: r.source.url,

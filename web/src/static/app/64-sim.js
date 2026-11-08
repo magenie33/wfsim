@@ -60,6 +60,10 @@ function aplHtml(w) {
 /// the way to the page that edits it. The Builder's Wielder block is the
 /// complete editor; this is the summary of what is being tested.
 async function renderSimWielder(host) {
+  if ((weaponInfo($("weapon").value) || {}).wielder_modelled === false) {
+    if (host) host.textContent = tr("The beast body and owner link are not modelled.");
+    return;
+  }
   await loadWarframeCatalog();
   const held = buildWielder;
   if (!host || !host.isConnected) return;
@@ -192,6 +196,8 @@ function fightCardHtml(s = sim) {
   if (s.eximus) enemy.push(chip(tr("Eximus")));
   const play = [
     chip(`${s.duration} s`),
+    ...((weaponInfo($("weapon").value) || {}).refire?.kind === "supplied_interval" && Number(s.attack_interval_seconds) > 0
+      ? [chip(`${tr("Attack interval (s)")}: ${s.attack_interval_seconds}`)] : []),
     chip(`${s.headshot_pct}% ${tr("headshots")}`),
     ...(s.gauge_charging_headshots && (weaponInfo($("weapon").value) || {}).has_cycle
       ? [chip(tr("headshots while charging"))] : []),
@@ -285,6 +291,7 @@ const tennoFloor = () => {
 /// `data/tenno/default.yaml`'s claim, and it is why a number here means
 /// something: a bonus this player pays is a bonus EVERY frame pays.
 const wfFloorLine = () => {
+  if ((weaponInfo($("weapon").value) || {}).wielder_modelled === false) return "";
   const f = tennoFloor();
   // WHOLE NUMBERS STAY WHOLE. Four of these five are integers and `sig2` wrote
   // "250.00" for them, which reads as a measurement rather than as a stat.
@@ -522,6 +529,7 @@ function renderScenarioFields(ids, opts = {}) {
       ${zoomField(w, sim)}
       ${headshotField(w, sim)}
       ${chargingHeadshotField(w, sim)}
+      ${w.refire?.kind === "supplied_interval" ? `<label title="${escHtml(tr("The final interval between attacks for this build; the companion attack cycle is not calibrated."))}">${escHtml(tr("Attack interval (s)"))} <input type="number" data-k="attack_interval_seconds" min="0.001" max="3600" step="0.01" value="${sim.attack_interval_seconds ?? ""}" required></label>` : ""}
       <label class="check" title="${escHtml(tr("the wielder's state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off"))}"><input type="checkbox" data-k="invisible"${sim.invisible ? " checked" : ""}> ${escHtml(tr("Invisible"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"while Airborne\""))}"><input type="checkbox" data-k="airborne"${sim.airborne ? " checked" : ""}> ${escHtml(tr("Airborne"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"while Sliding\" — held for the whole engagement"))}"><input type="checkbox" data-k="sliding"${sim.sliding ? " checked" : ""}> ${escHtml(tr("Sliding"))}</label>

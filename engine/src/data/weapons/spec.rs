@@ -177,6 +177,8 @@ pub struct WeaponSpec {
     #[serde(default)]
     pub accuracy: Option<f64>,
     pub slot: String,
+    #[serde(default = "yes")]
+    pub wielder_modelled: bool,
     pub class: String,
     /// WHAT KIND OF WEAPON IT IS, beside where it is equipped (`slot`). The
     /// two agree on almost every weapon and are both stated anyway: a sentinel
@@ -315,6 +317,9 @@ pub struct WeaponSpec {
     /// primary Kitgun takes its chamber's card, which is a pistol riven.
     #[serde(default)]
     pub riven_class: Option<String>,
+    /// This weapon takes no riven, even if a mod pool gains riven stats later.
+    #[serde(default)]
+    pub no_riven: bool,
     /// AN EXALTED WEAPON — one an ability summons (Valkyr Talons, by Hysteria).
     /// It is the weapon's half of DE's `POWER_WEAPON` tag: a card whose
     /// incompatibility tags carry it (`excludes_weapon: [power_weapon]`) is

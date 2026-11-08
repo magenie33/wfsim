@@ -889,3 +889,13 @@ exclusions in the survey.
 The builder resolves Narin’s base stats, ability costs and entered max-rank ability numbers with their stated strength, range and duration scaling. The Ice meter, Sangodae drops and pickups, its 50% Cold Extra Hit with a guaranteed Cold status, its fixed 15 s window, and the 25% ability damage multiplier are not run in combat. The passive is marked as weapon-affecting and unmodelled.
 
 Neote’s casts and status applications, Naraemagi’s absorption and restoration, Hakchum’s landing and storm with Cold vulnerability, and Nurinarim’s gating, drain, marks, stripping and frozen explosions are not simulated. The ability entries disclose these limits; panel numbers alone do not implement their combat effects. Sources: [passive](https://wiki.warframe.com/w/Narin/Abilities/Passive), [abilities](https://wiki.warframe.com/w/Narin/Abilities).
+
+## Beast attack cycles
+
+Claw base stats and supported weapon cards resolve through the ordinary damage
+pipeline. Attack selection, movement, posture AI, contact markers and accepted
+next-action times are unresolved. A simulation requires an explicit final
+attack interval for the chosen build. Changing this interval is an assumption
+about the fight; it is not an inferred animation duration. Claws have no board
+admission while their cycle is uncalibrated. Attacks are assumed to connect;
+the claw's contact geometry is not modelled as a weapon reach.

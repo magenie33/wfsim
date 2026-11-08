@@ -69,6 +69,7 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 150
   fire_rate: 3.33
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   # "Innate multishot of 10 pellets" — 26 Radiation apiece, 260 a shot.
   multishot: 10.0
   ammo_cost: 1

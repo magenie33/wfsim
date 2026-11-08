@@ -2851,7 +2851,17 @@ DoT stacking, buff duration and refresh. Steady DPS, burst DPS, and TTK are
 
 ### Fire cadence on a CHARGE weapon — bows have their own formula
 
-The shot interval is normally `1 / modded fire rate`. A charge weapon pays a
+The shot interval follows the attack's declared `refire` rule. Ordinary
+automatic states use `1 / current effective fire rate`, including spool and
+live buffs. Audited ordinary semi states use `max(1 / rate, 0.1f32)` and retain
+their declared empty-clip bypass. This constrains cadence without rewriting
+the fire-rate stat or applying a cap to other native classes. The additional
+native runtime bypass is not mapped to a game setting here; frame scheduling
+and a universal FPS ceiling are not modelled.
+Source bindings and float32 vectors live in
+`tests/fixtures/client/cadence-claws-2026-10-28.json`; the importer joins exact
+internal paths and state profiles. Unresolved custom states retain their
+existing rules. A charge weapon pays a
 DRAW instead, and the wiki (`Fire Rate`) states two different formulas for
 what that costs — VERBATIM, with the exception spelled out in the second:
 

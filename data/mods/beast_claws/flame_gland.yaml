@@ -1,0 +1,22 @@
+id: flame_gland
+name: Flame Gland
+rarity: rare
+polarity: madurai
+base_drain: 4
+max_rank: 3
+internal_name: /Lotus/Upgrades/Mods/Sentinel/Kubrow/DualStat/KubrowFireEventMeleeMod
+compat: beast_claws
+precept: false
+description: "+X% Heat\n+X% Status Chance"
+effects:
+- kind: elemental_damage_bonus
+  element: heat
+  rank0: 0.15
+  rankMax: 0.6
+  text: "+60% Heat\n+60% Status Chance"
+- kind: status_chance_bonus
+  rank0: 0.15
+  rankMax: 0.6
+  text: "+60% Heat\n+60% Status Chance"
+source:
+  url: https://wiki.warframe.com/w/Flame_Gland

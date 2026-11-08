@@ -67,4 +67,51 @@ check("the searchable catalogue includes beast claws outside the robotic host's 
   r.catalogue.all === r.offered.all && r.catalogue.hasBite && r.catalogue.noBiteInHost
   && r.catalogue.filtered > 0 && r.catalogue.filtered < r.catalogue.all,
   JSON.stringify(r.catalogue));
-await app.finish("a companion seats its pool");
+const claws = await evaluate(`(async () => {
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  history.pushState({}, '', weaponPath('adarza_claws') + '/builder');
+  await route();
+  for (let i = 0; i < 100 && document.getElementById('weapon').value !== 'adarza_claws'; i++) await sleep(100);
+  await sleep(1500);
+  const w = weaponInfo('adarza_claws');
+  const axes = weaponAxes('adarza_claws');
+  const pool = axes.mods;
+  history.pushState({}, '', weaponPath('adarza_claws') + '/simulator');
+  await route();
+  await sleep(1500);
+  document.querySelector('#preset-bar-simulator-scenarios .pchip.add').click();
+  await sleep(500);
+  renderSim();
+  const field = document.querySelector('[data-k="attack_interval_seconds"]');
+  if (field) {
+    field.value = '0.2';
+    field.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  const req = { weapon: 'adarza_claws', duration: 1.01, runs: 1, distance: 0,
+    headshot_pct: 0, mods: ['maul', 'bite'] };
+  let missing;
+  try { missing = await api('/api/simulate', req); }
+  catch (e) { missing = { error: String(e) }; }
+  const result = await api('/api/simulate', { ...req, attack_interval_seconds: 0.2 });
+  await sleep(600);
+  const persisted = loadPresetList(SCENARIOS).find(p => p.id === activeScenario)?.state.attack_interval_seconds;
+  return { count: META.weapons.filter(w => w.mod_class === 'beast_claws').length,
+    manual: w.refire.kind, body: w.wielder_modelled,
+    mainHasBite: pool.some(m => m.id === 'bite'), mainHasMaul: pool.some(m => m.id === 'maul'),
+    noRifle: !pool.some(m => m.id === 'serration'), stance: axes.stance.length,
+    noExilus: !axes.hasExilus, noArcane: axes.arcanes.length === 0, noRiven: w.no_riven,
+    declared: META.scenario_axes.some(a => a.id === 'attack_interval_seconds'),
+    field: !!field, changed: sim.attack_interval_seconds, persisted, missing: !!missing.error,
+    shots: result.shots, damage: result.dps,
+    card: fightCardHtml(sim).includes('0.2') };
+})()`);
+check("all seventeen claw weapons expose their supported card pool", claws.count === 17
+  && claws.mainHasBite && claws.mainHasMaul && claws.noRifle, JSON.stringify(claws));
+check("postures use their own slot; claws have no exilus or arcane", claws.stance === 6
+  && claws.noExilus && claws.noArcane && claws.noRiven, JSON.stringify(claws));
+check("claws ask for an explicit final interval and keep it in the scenario", claws.manual === "supplied_interval"
+  && claws.body === false && claws.field && claws.changed === 0.2 && claws.persisted === 0.2
+  && claws.card && claws.declared, JSON.stringify(claws));
+check("an absent claw interval is refused, and an explicit interval schedules attacks", claws.missing
+  && claws.shots === 6 && claws.damage > 0, JSON.stringify(claws));
+await app.finish("a companion seats its pool and claws use explicit timing");

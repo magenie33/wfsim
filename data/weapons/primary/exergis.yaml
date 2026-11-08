@@ -46,6 +46,7 @@ attack:
   shot_type: projectile
   projectile_speed_mps: 100
   fire_rate: 3.33
+  refire: {"kind": "semi_automatic", "skip_wait_on_empty": true}
   # "Innate multishot of 3 pellets", 540 apiece.
   multishot: 3.0
   ammo_cost: 1
