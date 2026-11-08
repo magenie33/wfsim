@@ -15,15 +15,15 @@
   <meta property="og:url" content="https://wfsim.app/warframes/Mag_Prime" />
   <meta property="og:image" content="https://wfsim.app/logo.svg" />
   
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Mag Prime","description":"Mag Prime — Warframe build: mods, aura, exilus, arcanes, archon shards and a Helminth infusion, with the stats and abilities they resolve to.","url":"https://wfsim.app/warframes/Mag_Prime","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Mag Prime","item":"https://wfsim.app/warframes/Mag_Prime"}]},"dateModified":"2026-11-08"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Mag Prime","description":"Mag Prime — Warframe build: mods, aura, exilus, arcanes, archon shards and a Helminth infusion, with the stats and abilities they resolve to.","url":"https://wfsim.app/warframes/Mag_Prime","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Mag Prime","item":"https://wfsim.app/warframes/Mag_Prime"}]},"dateModified":"2026-11-09"}</script>
   <meta name="twitter:card" content="summary" />
   
   <link rel="stylesheet" href="/asset/style.c52d6a8658ca.css" />
   
-  <link rel="preload" href="/pkg/wfsim_wasm_bg.f4690ed9ef23.wasm" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/meta.880e2bf3b48d.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/i18n.73e4eb08043d.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/pack.data.d0c2156b33ec.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/wfsim_wasm_bg.736d2a0c0986.wasm" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/meta.426ecbf09b25.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/i18n.712718a63a73.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/pack.data.a118fa7f1ab4.json" as="fetch" crossorigin />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
   
@@ -617,8 +617,21 @@
     <div id="comp-library-status" class="sim-hint" aria-live="polite"></div>
     <section id="comp-library" class="library-panel" hidden></section>
     <div class="preset-bar" id="preset-bar-companions"></div>
+    <section class="block" id="comp-body-block">
+      <div class="bh"><span class="n">1</span><h2 data-i18n>Body</h2></div>
+      <div class="bb">
+        <div class="field-grid" id="comp-assembly"></div>
+        <label id="comp-gilded-row" class="check" hidden><input type="checkbox" id="comp-gilded"> <span data-i18n>GILDED</span></label>
+        <div id="comp-gild-polarity" class="field-grid"></div>
+        <div class="hint" id="comp-prototype-note" data-i18n>Fixed base attributes are the minimum within this Prototype's carrier scope.</div>
+        <div id="comp-floor-sources" class="hint"></div>
+        <div class="hint"><span data-i18n>Compatible weapons</span>: <span id="comp-body-scope"></span></div>
+        <div class="hint" id="comp-body-unmodelled"></div>
+        <div class="hint" id="comp-body-refused" aria-live="polite"></div>
+      </div>
+    </section>
     <section class="block" id="comp-mods-block">
-      <div class="bh"><span class="n">1</span><h2 data-i18n>Mods</h2>
+      <div class="bh"><span class="n">2</span><h2 data-i18n>Mods</h2>
         <span class="sub">
           <span class="cap" id="comp-capacity">0 / 0</span>
           <span class="forma" id="comp-forma">0 Forma</span>
@@ -626,7 +639,7 @@
       </div>
       <div class="bb">
         <div id="comp-mod-slots" class="slots"></div>
-        <div class="exhint" data-i18n>Only a card marked In the fight moves a weapon's numbers: Fired Up piles Heat on the robotic weapon this build holds, at the rank seated. No robotic weapon reads its wielder's stats and no precept is run, so for every other card this answers capacity and Forma.</div>
+        <div class="exhint" data-i18n>Body stats modify this companion. In the fight marks effects applied to its weapon. Other card effects are not computed.</div>
       </div>
     </section>
     <details class="block" id="comp-catalogue-block">
@@ -724,14 +737,9 @@
     
     <a href="/method" data-native data-i18n>Method</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">e110ded3</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">72c263fc</span>
     </div>
   </footer>
-
-  <script>window.WFSIM_WASM = true;</script>
-
-  <script src="/asset/app.83b1e7f36755.js"></script>
-  <script type="module" src="/asset/nona.49e7e5dce064/index.js"></script>
 
 <div class="jump" id="jump" hidden>
   <button type="button" class="jump-grip" id="jump-grip" title="drag to move — click to open or close" data-i18n-title><span class="jg-h">⠿</span><span class="jg-i">☰</span><span class="jg-n" id="jump-now"></span></button>
@@ -743,5 +751,8 @@
     <div class="jump-body" id="jump-body"></div>
   </div>
 </div>
+  <script>window.WFSIM_WASM = true;</script>
+  <script src="/asset/app.0addf8081f1a.js"></script>
+  <script type="module" src="/asset/nona.49e7e5dce064/index.js"></script>
 </body>
 </html>
