@@ -192,6 +192,13 @@ jobs:
       # this closes the gap to it. It ADDS ONLY, and only rows that have no
       # score, so running it every hour asks for nothing twice: the queue's own
       # primary key absorbs a repeat.
+      - name: check complete inventory scratch
+        if: steps.wired.outputs.yes == 'true'
+        env:
+          INVENTORY_RUNNER_ENVIRONMENT: ${{ runner.environment }}
+          INVENTORY_RUNNER_OS: ${{ runner.os }}
+        run: bash scripts/prepare_inventory_memory.sh --check
+
       - name: ask for what has no score
         if: steps.wired.outputs.yes == 'true'
         env:

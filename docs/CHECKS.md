@@ -2333,6 +2333,8 @@ Hosted inventory memory preparation runs through the actual shell with fake
 privileged tools. It checks runner identity, free scratch space, exclusive swap
 file creation, allocation size and activation while preserving existing swap.
 Invalid capacity and failed commands stop before inventory work.
+Post-setup checks retain the prepared swap, reject missing or inactive swap and
+refuse scratch consumed by cached builds before starting the full capture.
 Ordered merges release copied ruler files; a failed copy retains its inputs.
 Phase measurement fixtures check Linux pressure, swap and cgroup OOM counters,
 missing processes and a real child's failed exit with an early resource report.
