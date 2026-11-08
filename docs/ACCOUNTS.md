@@ -129,9 +129,18 @@ in can have its own idea of what linking means.
 ## Calculation attribution
 
 `accounts.profile_id` is a random public address, independent of the account
-and device ids. `/people/<profile_id>` shows a named contributor's current
-board builds and optimization records from the last 14 days. `/people/me`
+and device ids. `/user/<profile_id>` shows a named contributor's current
+board builds and optimization records from the last 14 days. `/user/me`
 also works for an anonymous owner. The ranking and result names link there.
+Legacy `/people/` addresses resolve to the corresponding `/user/` address,
+preserving the profile id, filters and fragment. User names share `user-link`
+styling across the ranking and calculation records: no underline, an accent
+hover state and a visible keyboard focus ring.
+The default overview loads identity independently of the library database,
+then contribution totals. Board and optimization lists load only when selected,
+in twelve-candidate pages checked against actual publication. Their loading or
+failure does not hide the user card. Public visibility is resolved on every
+request; a registered anonymous owner still sees their own profile.
 Unregistered contributors earn anonymous credit without a contribution profile.
 The first device claim includes its unclaimed history. Deleting an account
 removes its profile and name links while retaining anonymous calculation credit.

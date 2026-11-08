@@ -89,6 +89,38 @@ await check('public names follow actual completion order and expose no private i
   assert.ok(result.witnesses.every(w => /^[a-f0-9]{32}$/.test(w.profile) && !('device' in w) && !('owner' in w)));
 });
 const publicId = (await mine('ann')).profile.id;
+await check('identity and summary avoid record scans while retaining current privacy', async () => {
+  const request = view => new Request('https://wfsim.test/api/contributors/profile/' + publicId + '?view=' + view);
+  const identityResponse = await contributorProfilesRoute(request('identity'), { ...env, LIBRARY: null }, '/api/contributors/profile/' + publicId);
+  const identityValue = await identityResponse.json();
+  assert.equal(identityResponse.status, 200);
+  assert.equal(identityValue.profile.name, 'ANN');
+  assert.ok(!('points' in identityValue.profile) && !('candidates' in identityValue));
+  const noRecords = { ...env, LIBRARY: { prepare(sql) {
+    assert.ok(!/score_witnesses|computation_records/.test(sql), 'summary must not query record tables');
+    return library.prepare(sql);
+  } } };
+  const summaryResponse = await contributorProfilesRoute(request('summary'), noRecords, '/api/contributors/profile/' + publicId);
+  const summary = await summaryResponse.json();
+  assert.equal(summaryResponse.status, 200);
+  assert.equal(summary.profile.signatures, 1);
+  assert.ok(!('candidates' in summary));
+  await choose('ann', false);
+  for (const view of ['identity', 'summary', 'records']) assert.equal((await call('/api/contributors/profile/' + publicId + '?view=' + view)).status, 404);
+  await choose('ann', true);
+});
+await check('record-only pages avoid contribution totals and enforce bounded page sizes', async () => {
+  const boundedEnv = { ...env, LIBRARY: { prepare(sql) {
+    assert.ok(!/\bverifiers\b|\bverifier_hours\b/.test(sql), 'records must not query aggregate counters');
+    return library.prepare(sql);
+  } } };
+  const path = '/api/contributors/profile/' + publicId;
+  const response = await contributorProfilesRoute(new Request('https://wfsim.test' + path + '?view=records&limit=1'), boundedEnv, path);
+  const value = await response.json();
+  assert.equal(response.status, 200); assert.equal(value.candidates.length, 1);
+  assert.ok(!('points' in value.profile));
+  for (const limit of ['0', '51', '1.5', 'bad']) assert.equal((await call(path + '?limit=' + limit)).status, 400);
+});
 await check('renaming changes existing signatures while preserving the profile address', async () => {
   await accounts.run("UPDATE accounts SET display_name='New Ann' WHERE id='ann'");
   assert.equal((await computationNames(env, ask))[0].witnesses[0].name, 'New Ann');

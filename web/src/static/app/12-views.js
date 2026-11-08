@@ -58,6 +58,7 @@ let routeGen = 0;
 async function route() {
   // BOOT DRAWS THE FIRST PAGE, from whatever address a redirect left by then.
   if (!bootRouted) return;
+  normalizeUserProfileAddress();
   closeArenaEditor(false);
   libraryBeforeRoute();
   normalizeLibraryAddress();
