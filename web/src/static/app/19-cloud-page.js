@@ -156,7 +156,7 @@ document.addEventListener("click", async (e) => {
   if (!t) return;
   t.disabled = true;
   const r = await syncCall({ restore: [t.dataset.crestore] });
-  if (r && r.ok && (r.restored || []).length) await syncNow();
+  if (r && r.ok && (r.restored || []).length) await syncNow({ automatic: true });
   else noteInline(tr(r && r.ok && (r.refused || []).length
     ? "Not restored: the account's sync allowance is used"
     : "Could not restore just now."));
