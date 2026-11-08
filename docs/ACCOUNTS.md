@@ -132,6 +132,11 @@ in can have its own idea of what linking means.
 and device ids. `/people/<profile_id>` shows a named contributor's current
 board builds and optimization records from the last 14 days. `/people/me`
 also works for an anonymous owner. The ranking and result names link there.
+Unregistered contributors earn anonymous credit without a contribution profile.
+The first device claim includes its unclaimed history. Deleting an account
+removes its profile and name links while retaining anonymous calculation credit.
+Closed ownership spans remain with no account, so a later claim cannot inherit
+the deleted account's history or cumulative signatures.
 The existing `contribution_choice.named` governs all public attribution.
 Changing it never removes work or cumulative signatures; every read resolves
 the current name and visibility. Anonymous public records contain no profile id.

@@ -9,7 +9,7 @@ import { contributorProfilesRoute, computationNames } from '../worker/contributo
 import { contributionRoute } from '../worker/contribution.js';
 import { witnessNames } from '../worker/contributor_identity.js';
 import { acceptedWitnesses } from '../worker/task_contract.js';
-import { sha256 } from '../worker/accounts.js';
+import { purgeDeleted, sha256 } from '../worker/accounts.js';
 import { computationWrites, purgeComputationRecords, COMPUTATION_KEEP_MS } from '../worker/computation_records.js';
 
 const library = await testDb('library'), accounts = await testDb('accounts');
@@ -213,6 +213,71 @@ await check('exclusive cursors paginate a contributor without repeating or skipp
   assert.equal(next.candidates.length, 1);
   assert.equal(new Set([...first.candidates, ...next.candidates].map(row => row.question)).size, 51);
   assert.equal(next.next, null);
+});
+await check('unregistered work has no profile, first claims recover it and deleted ownership cannot be claimed again', async () => {
+  const OriginalDate = Date;
+  let clock = OriginalDate.parse('2026-11-08T12:30:00.000Z');
+  globalThis.Date = class extends OriginalDate {
+    constructor(...args) { super(...(args.length ? args : [clock])); }
+    static now() { return clock; }
+  };
+  const guest = 'e'.repeat(24), result = { build: { mods: [] }, score: 9 };
+  const complete = async (round, holder) => {
+    const question = await f.demand(env, { producer: 'search', ref: 'claim-lifecycle-' + round, verb: 'optimize',
+      request: { weapon: 'torid', claim_lifecycle: round }, due_in_ms: 100000 }, engine);
+    for (const witness of [{ device: guest, owner: holder, net: 'guest', siblings: [guest] },
+      { device: devices.bob, owner: 'bob', net: 'bob', siblings: [devices.bob] }]) {
+      const leased = await f.next(env, witness, engine);
+      assert.equal(leased?.question, question);
+      await f.answer(env, witness, { lease: leased.lease, engine, work: 100, result });
+    }
+    return question;
+  };
+  const claim = async person => {
+    const path = '/api/account/devices/claim';
+    const response = await contributionRoute(new Request('https://wfsim.test' + path, { method: 'POST',
+      headers: { 'content-type': 'application/json', cookie: 'wfsim_session=' + person }, body: JSON.stringify({ verifier: guest }) }), env, path);
+    assert.equal(response.status, 200);
+  };
+  try {
+    await library.run('INSERT INTO verifiers (id,seen) VALUES (?,?)', guest, new Date().toISOString());
+    const question = await complete(1, guest), accountsBefore = (await accounts.get('SELECT count(*) AS n FROM accounts')).n;
+    assert.equal((await call('/api/account/contribution-profile')).status, 401);
+    assert.equal((await accounts.get('SELECT count(*) AS n FROM accounts')).n, accountsBefore);
+    assert.equal((await library.get('SELECT signatures FROM verifiers WHERE id=?', guest)).signatures, 1);
+    assert.equal((await call('/api/computations/' + question)).record.witnesses[0].profile, null);
+    for (const person of ['claimant', 'later_holder']) {
+      await accounts.run('INSERT INTO accounts (id,created_at,username,display_name) VALUES (?,?,?,?)', person, new Date().toISOString(), person, person.toUpperCase());
+      await accounts.run("INSERT INTO sessions (token_hash,account,expires_at) VALUES (?,?,'2999-01-01')", await sha256(person), person);
+    }
+    await claim('claimant');
+    const own = await call('/api/account/contribution-profile?kind=optimization', 'wfsim_session=claimant');
+    assert.equal(own.profile.signatures, 1);
+    assert.deepEqual(own.candidates.map(row => row.question), [question]);
+    assert.equal(own.profile.named, false);
+    assert.equal((await call('/api/contributors/profile/' + own.profile.id)).status, 404);
+    await choose('claimant', true);
+    assert.equal((await call('/api/computations/' + question)).record.witnesses[0].name, 'CLAIMANT');
+    await accounts.run("UPDATE accounts SET delete_after='2000-01-01' WHERE id='claimant'");
+    assert.equal(await purgeDeleted(env), 1);
+    assert.equal((await call('/api/contributors/profile/' + own.profile.id)).status, 404);
+    const anonymous = (await call('/api/computations/' + question)).record.witnesses[0];
+    assert.equal(anonymous.name, null);
+    assert.equal(anonymous.profile, null);
+    assert.equal((await library.get('SELECT signatures FROM verifiers WHERE id=?', guest)).signatures, 1);
+    assert.equal((await accounts.get('SELECT account FROM device_spans WHERE verifier=?', guest)).account, null);
+    if (process.argv.includes('--negative-control-claim')) await accounts.run('DELETE FROM device_spans WHERE verifier=?', guest);
+    await claim('later_holder');
+    const later = await call('/api/account/contribution-profile?kind=optimization', 'wfsim_session=later_holder');
+    assert.equal(later.profile.signatures, 0);
+    assert.equal(later.candidates.length, 0);
+    clock += 3600000;
+    const subsequent = await complete(2, 'later_holder');
+    const fresh = await call('/api/account/contribution-profile?kind=optimization', 'wfsim_session=later_holder');
+    assert.equal(fresh.profile.signatures, 1);
+    assert.deepEqual(fresh.candidates.map(row => row.question), [subsequent]);
+    assert.equal((await call('/api/computations/' + question)).record.witnesses[0].name, null);
+  } finally { globalThis.Date = OriginalDate; }
 });
 await accounts.close(); await library.close();
 console.log(`\n${passed} attribution checks passed`);
