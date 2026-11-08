@@ -86,8 +86,6 @@ pub struct Arena {
     /// which is why the optimizer needs it while needing neither run count nor
     /// metric.
     pub duration_seconds: f64,
-    /// Measured or assumed final attack interval for a weapon without calibrated cadence.
-    pub attack_interval_seconds: Option<f64>,
     /// HOW MANY PEOPLE ARE IN THE SQUAD — 1, and always was, until a ruler
     /// asked for the target a full squad meets.
     ///
@@ -185,7 +183,6 @@ impl Arena {
             // was measured under.
             aim_at: None,
             duration_seconds,
-            attack_interval_seconds: None,
             // The fixture is the NEUTRAL player, and no frame is running
             // anything for them.
             abilities: Vec::new(),

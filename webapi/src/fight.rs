@@ -451,13 +451,6 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         )));
     };
     let info = crate::registry::weapon_of(v)?;
-    let attack_interval_seconds = match v.get("attack_interval_seconds").filter(|x| !x.is_null()) {
-        None => crate::registry::wspec(&info.id).attack.refire.assumed_interval(),
-        Some(x) => match x.as_f64().filter(|s| s.is_finite() && (0.001..=3600.0).contains(s)) {
-            Some(s) => Some(s),
-            None => return Err(err_json("attack_interval_seconds must be between 0.001 and 3600")),
-        },
-    };
     // Per-buff configured policy (Sim panel section 2). Present ⇒ Emergent sim
     // with each buff carrying its own initial stacks + lock. Absent ⇒ the
     // legacy `assume_max`/`frenzy` knobs (byte-for-byte with the old path).
@@ -777,7 +770,6 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         // every golden value and both boards rest on.
         aim_at,
         duration_seconds: duration,
-        attack_interval_seconds,
         // WARFRAME ABILITY BUFFS — parsed HERE, in `parse_fight`, which is what
         // makes the optimizer score under them without a line of optimizer code
         // (the house rule: anything that is a property of the fight goes in the

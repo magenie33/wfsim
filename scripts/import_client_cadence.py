@@ -6,7 +6,7 @@ import hashlib
 import io
 import json
 import math
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import struct
 import zipfile
@@ -119,6 +119,71 @@ def source(batch, archive, names):
                     'archive': expected, 'members': [declared[n] for n in names]}
 
 
+def verify_closed_batch(batch):
+    raw = (batch / 'manifest.json').read_bytes()
+    ready = json.loads((batch / 'READY.json').read_bytes())
+    assert ready['batch_id'] == batch.name
+    assert hashlib.sha256(raw).hexdigest() == ready['manifest_sha256']
+    manifest = json.loads(raw)
+    for item in manifest['files']:
+        relative = PurePosixPath(item['path'])
+        assert not relative.is_absolute() and '..' not in relative.parts
+        payload = (batch / item['path']).read_bytes()
+        assert len(payload) == item['bytes'] and hashlib.sha256(payload).hexdigest() == item['sha256']
+    for archive, members in manifest['archive_members'].items():
+        with zipfile.ZipFile(batch / archive) as z:
+            assert len(z.namelist()) == len(members)
+            assert set(z.namelist()) == {m['path'] for m in members}
+            for item in members:
+                payload = z.read(item['path'])
+                assert len(payload) == item['bytes'] and hashlib.sha256(payload).hexdigest() == item['sha256']
+    return manifest
+
+
+def ordinary_interval_proxies(batches, prior_metadata, prior_manifest):
+    batch = batches / '20261108T052700Z-beast-attack-interval'
+    manifest = verify_closed_batch(batch)
+    data, binding = source(batch, 'evidence.zip', ['evidence.json', 'verification.json',
+        'prior-evidence/representative-beast-attacks.json', 'prior-evidence/beast-logic-graphs.json',
+        'prior-evidence/metadata-composed.json'])
+    evidence, verification = (json.loads(data[n]) for n in ['evidence.json', 'verification.json'])
+    assert evidence['dependency']['batch_id'] == '20261107T231054Z-companion-cadence-aiming'
+    assert len(evidence['functions']) == 18
+    assert evidence['dependency']['manifest_sha256'] == prior_manifest
+    assert data['prior-evidence/metadata-composed.json'] == prior_metadata
+    with zipfile.ZipFile(batch / 'evidence.zip') as z:
+        for function in evidence['functions']:
+            for fragment in function['chained_fragments']:
+                code = bytes.fromhex(z.read(f'native/{fragment["stem"]}.hex.txt').decode())
+                assert len(code) == fragment['bytes'] and hashlib.sha256(code).hexdigest() == fragment['sha256']
+    assert all(v is None for v in evidence['runtime_interval_seconds'].values())
+    assert verification['passed'] == 16 and verification['failed'] == 0
+    for v in verification['vectors']:
+        if v['case'] == 'simple_stop_delay':
+            assert struct.pack('<f', v['reevaluation_delay_float32']).hex() == v['bits_le'] == 'cdcccc3d'
+        else:
+            assert v['returned_status'] == (0 if v['melee_started_phase'] and not v['weapon_active_predicate'] else 2)
+    graphs = json.loads(data['prior-evidence/beast-logic-graphs.json'])
+    cat = next(n for g in graphs if g['path'].endswith('/CatbrowLogicGraph')
+               for n in g['nodes'] if n['id'] == 19)
+    endpoints = re.search(r'TimeBetweenAttacksRange=\{([^}]+)\}', cat['raw'])[1].split(',')
+    assert endpoints == ['0.1', '0.1']
+    attacks = json.loads(data['prior-evidence/representative-beast-attacks.json'])
+    proxies = {}
+    for family, clip, delay in [('catbrow', '/Lotus/Animations/Creatures/Catbrow/Melee01_anim.fbx', float(endpoints[0])),
+                                ('kubrow', '/Lotus/Animations/Creatures/KubrowFeral/Melee_anim.fbx', 0.0)]:
+        row = next(r for r in attacks if r['direct_reference']['path'] == clip)
+        base = row['base_clip_rows'][0]
+        assert canonical(1 / base['sequence_rate_float32']) == canonical(base['base_clip_seconds_float32'])
+        proxies[family] = {'reference': row, 'post_action_delay_seconds': canonical(delay),
+            'assumed_seconds': canonical(base['base_clip_seconds_float32'] + struct.unpack('<f', struct.pack('<f', delay))[0])}
+    return {'source': binding, 'family_proxies': proxies, 'weapon_proxies': [],
+        'verification': verification, 'runtime_interval_seconds': evidence['runtime_interval_seconds'],
+        'limitations': evidence['limitations'], 'scope': 'Ordinary-action proxies selected by inherited pet weapon family; variant AI and runtime completion remain uncalibrated.',
+        'verified_native_functions': len(evidence['functions']), 'verified_outer_files': len(manifest['files']),
+        'verified_archive_members': sum(len(v) for v in manifest['archive_members'].values())}
+
+
 def main():
     global CHECK
     ap = argparse.ArgumentParser(description=__doc__)
@@ -145,6 +210,8 @@ def main():
                'display_source_sha256': hashlib.sha256(export_path.read_bytes()).hexdigest(),
                'cadence_vectors': json.loads(data['native/cadence-verification.json']),
                'refire_profiles': [], 'claws': [], 'mod_inputs': []}
+    fixture['assumed_intervals'] = ordinary_interval_proxies(batches, data['metadata-composed.json'],
+                                                          companion_source['manifest_sha256'])
     docs = {d['id']: (p, d) for p in (ROOT / 'data/weapons').rglob('*.yaml')
             if (d := yaml.safe_load(p.read_text())).get('id')}
     grouped = {}
@@ -220,8 +287,18 @@ def main():
                       for k in ['DT_IMPACT', 'DT_PUNCTURE', 'DT_SLASH'] if float(damage[k])}
         else:
             vector = {TYPES[damage['Type']]: canonical(damage['Amount'])}
+        lineage, parent = [], r['parent']
+        while parent not in ['/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon',
+                             '/Lotus/Types/Friendly/Pets/KubrowPetMeleeWeapon']:
+            lineage.append(parent)
+            parent = metadata[parent]['parent']
+        lineage.append(parent)
+        family = 'catbrow' if parent.endswith('/CatbrowPetMeleeWeapon') else 'kubrow'
+        estimate = fixture['assumed_intervals']['family_proxies'][family]['assumed_seconds']
+        fixture['assumed_intervals']['weapon_proxies'].append({'weapon': identity, 'source': path,
+            'parent_chain': lineage, 'proxy_family': family})
         attack = {'trigger': 'melee', 'shot_type': 'hit_scan', 'fire_rate': 1.0,
-                  'refire': {'kind': 'supplied_interval'}, 'multishot': 1.0,
+                  'refire': {'kind': 'assumed_interval', 'assumed_seconds': estimate}, 'multishot': 1.0,
                   'ammo_cost': 0, 'no_magazine': True,
                   'crit_chance': canonical(impact['criticalHitChance']),
                   'crit_multiplier': canonical(impact['criticalHitDamageMultiplier']),
@@ -233,7 +310,7 @@ def main():
                'mod_pools': ['beast_claws'], 'mastery_rank': 0, 'max_rank': 30,
                'polarities': [], 'internal_name': path, 'co_behavior': 'additive_with_base_damage',
                'attack': attack, 'unmodeled': [
-                   'The complete attack cycle is not calibrated. Simulation uses an assumed attack interval unless one is supplied; animation lengths are not attack intervals.',
+                   'The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.',
                    'Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.'],
                'source': {'url': 'https://wiki.warframe.com/w/' + name.replace(' ', '_')}}
         output(weapon_dir / f'{identity}.yaml', dump(doc))

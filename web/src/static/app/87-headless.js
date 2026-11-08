@@ -486,7 +486,7 @@ function headlessDefaultScenario(meta, contact, metric) {
     infinite_ammo: d.infinite_ammo !== false, metric: d.metric || metric,
     ...(d.seed === undefined ? {} : { seed: d.seed }),
     // NO `form`: how the weapon is played belongs to the build.
-    duration: d.duration, attack_interval_seconds: d.attack_interval_seconds, buffs: {},
+    duration: d.duration, buffs: {},
     // WARFRAME ABILITY BUFFS. `ability_strength` is a TYPED OVERRIDE, a
     // fraction (1 = 100%), and NULL means the wielder's own — the linked
     // Warframe build's (`applyScenario` reads an older page's stored 1 as null).
@@ -618,7 +618,7 @@ function headlessBenchmarkName(meta, id, translate = (x) => x) {
 /// one — or a benchmark yaml — cannot reintroduce them: how the weapon is fired
 /// belongs to the build, and how hard a fight is measured to the reader (the
 /// official rulers' own runs are the scorer's, which no page setting moves).
-const HEADLESS_DEAD_SCENARIO_FIELDS = ["form", "mode", "runs"];
+const HEADLESS_DEAD_SCENARIO_FIELDS = ["form", "mode", "runs", "attack_interval_seconds"];
 
 /// A SCENARIO AS THE LIVE FIGHT, onto a COMPLETE fight — the defaults — and never
 /// onto the fight before it: `st` states only what it has an opinion about, so

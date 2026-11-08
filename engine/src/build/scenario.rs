@@ -278,7 +278,6 @@ pub const SCENARIO_AXES: &[ScenarioAxis] = &[
 
     // ---- the engagement --------------------------------------------------
     ScenarioAxis { id: "duration", kind: AxisKind::Number { min: 1.0, max: 3600.0 }, group: Group::Engagement, requires: FREE },
-    ScenarioAxis { id: "attack_interval_seconds", kind: AxisKind::Number { min: 0.001, max: 3600.0 }, group: Group::Engagement, requires: FREE },
     ScenarioAxis { id: "metric", kind: AxisKind::Id, group: Group::Engagement, requires: FREE },
     // THE ORDER IS THE RULE. No reserve at all wins over cannot-refill, because
     // a weapon with nothing to run out of is not a weapon whose pickups you are

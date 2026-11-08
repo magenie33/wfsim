@@ -2858,6 +2858,9 @@ their declared empty-clip bypass. This constrains cadence without rewriting
 the fire-rate stat or applying a cap to other native classes. The additional
 native runtime bypass is not mapped to a game setting here; frame scheduling
 and a universal FPS ceiling are not modelled.
+An uncalibrated attack may declare an `assumed_seconds` family proxy under
+`assumed_interval`. That attack's timing is automatic; the proxy does not
+establish runtime AI completion or attack-speed scaling.
 Source bindings and float32 vectors live in
 `tests/fixtures/client/cadence-claws-2026-10-28.json`; the importer joins exact
 internal paths and state profiles. Unresolved custom states retain their

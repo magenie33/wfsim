@@ -73,7 +73,7 @@ pub fn validate_for_board_with(
 /// under.
 pub fn admit_for_board(benchmark: &str, weapon: &str, b: &ValidBuild) -> Result<(), String> {
     if crate::data::weapons::spec(weapon).is_some_and(|s|
-        s.attack.refire == crate::model::RefireRule::SuppliedInterval) {
+        s.attack.refire.assumed_interval().is_some()) {
         return Err("This weapon has no calibrated attack cycle for a board ruler".into());
     }
     let req = match crate::board::benchmarks::get(benchmark) {

@@ -1,7 +1,7 @@
 use super::*;
 
 #[test]
-fn native_refire_and_supplied_interval_schedule_actual_shots() {
+fn native_refire_and_assumed_intervals_schedule_actual_shots() {
     use crate::model::RefireRule;
     let p = FightParams { fire_rate: 20.0, duration_seconds: 0.44, ..FightParams::default() };
     let automatic = monte_carlo(&p, 1, 42);
@@ -9,12 +9,15 @@ fn native_refire_and_supplied_interval_schedule_actual_shots() {
         ..p.clone() }, 1, 42);
     assert_eq!(automatic.mean_shots, 9.0);
     assert_eq!(semi.mean_shots, 5.0);
-    let explicit = monte_carlo(&FightParams { refire: RefireRule::SuppliedInterval,
-        attack_interval_seconds: Some(0.2), ..p.clone() }, 1, 42);
-    assert_eq!(explicit.mean_shots, 3.0);
-    let missing = monte_carlo(&FightParams { refire: RefireRule::SuppliedInterval,
-        attack_interval_seconds: None, duration_seconds: 1.01, ..p }, 1, 42);
-    assert_eq!(missing.mean_shots, 2.0, "the default assumption is one attack per second");
+    let estimated = monte_carlo(&FightParams { refire: RefireRule::AssumedInterval { assumed_seconds: 0.2 },
+        ..p.clone() }, 1, 42);
+    assert_eq!(estimated.mean_shots, 3.0);
+    let ordinary = monte_carlo(&FightParams { refire: RefireRule::AssumedInterval { assumed_seconds: 1.1333334 },
+        duration_seconds: 1.01, ..p.clone() }, 1, 42);
+    assert_eq!(ordinary.mean_shots, 1.0, "the attack's own estimate controls its timing");
+    let other = monte_carlo(&FightParams { refire: RefireRule::AssumedInterval { assumed_seconds: 1.0 },
+        duration_seconds: 1.01, ..p }, 1, 42);
+    assert_eq!(other.mean_shots, 2.0);
 }
 
 /// A FLAT BASE-DAMAGE BUFF IS NOT DILUTED BY SERRATION, and that is the

@@ -972,9 +972,11 @@ Arch-Gun deployment and per-class rules are available from every weapon under
 All settings. Technical details read the full document without a second editor.
 Quick calc preferences stay in Builder; run counts stay in the bottom run block.
 
-Beast claws use an adjustable assumed attack interval, defaulting to one second.
-It travels with scenario presets and is stated beside the fight's duration.
-The assumption applies only to weapons whose attack cycle is uncalibrated.
+Beast claw timing is automatic, using the weapon's ordinary-action family proxy:
+about 1.133 seconds for Catbrow-derived weapons and one second for Kubrow-derived
+weapons. The page and fight card show this estimate without an interval input.
+The legacy interval field is dropped from saved scenarios and ignored by the
+API. Complete runtime cycles remain uncalibrated.
 
 The global buff catalog is the union of the existing legal scope enumeration
 for every weapon. Equal ids retain their metadata variants and applicable

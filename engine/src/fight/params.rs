@@ -187,7 +187,6 @@ pub struct FightParams {
     /// (Frenzy x2.5) to schedule the next shot.
     pub fire_rate: f64,
     pub refire: crate::model::RefireRule,
-    pub attack_interval_seconds: Option<f64>,
     /// CHARGE trigger (bows): the modded draw before the shot. When `Some` it
     /// REPLACES `1 / fire_rate` as the interval between pulls — the weapon
     /// fires the moment the draw finishes — and live fire-rate buffs divide it

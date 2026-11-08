@@ -7,7 +7,7 @@ use super::*;
 use crate::rules::damage::{DamageType, DamageVector};
 use serde::Deserialize;
 
-/// The native refire timer, separate from the displayed fire-rate stat.
+/// Attack scheduling, separate from the displayed fire-rate stat.
 #[derive(Debug, Clone, Copy, Default, Deserialize, serde::Serialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum RefireRule {
@@ -18,15 +18,22 @@ pub enum RefireRule {
         #[serde(default)]
         skip_wait_on_empty: bool,
     },
-    SuppliedInterval,
+    #[serde(alias = "supplied_interval")]
+    AssumedInterval {
+        #[serde(default = "default_assumed_seconds")]
+        assumed_seconds: f64,
+    },
 }
+
+#[wfsim_gas_macro::metered]
+fn default_assumed_seconds() -> f64 { 1.0 }
 
 #[wfsim_gas_macro::metered]
 impl RefireRule {
     /// A stated assumption for attacks whose complete cycle is uncalibrated.
     pub fn assumed_interval(self) -> Option<f64> {
         match self {
-            Self::SuppliedInterval => Some(1.0),
+            Self::AssumedInterval { assumed_seconds } => Some(assumed_seconds),
             _ => None,
         }
     }
@@ -38,7 +45,7 @@ impl RefireRule {
             Self::NativeRate => f64::from(1.0_f32 / rate as f32),
             Self::SemiAutomatic { skip_wait_on_empty: true } if empty => 0.0,
             Self::SemiAutomatic { .. } => f64::from((1.0_f32 / rate as f32).max(0.1_f32)),
-            Self::SuppliedInterval => self.assumed_interval().unwrap(),
+            Self::AssumedInterval { assumed_seconds } => assumed_seconds,
         }
     }
 }

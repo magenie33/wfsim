@@ -56,7 +56,7 @@ fn claw_inputs_reproduce_the_declared_client_vectors() {
         let raw: serde_norway::Value = serde_norway::from_str(crate::data::file(
             &format!("weapons/beast_claws/{id}.yaml")).unwrap()).unwrap();
         assert_eq!(raw["internal_name"].as_str(), row["source"].as_str());
-        assert_eq!(w.attack.refire, RefireRule::SuppliedInterval);
+        assert_eq!(w.attack.refire, serde_json::from_value(row["attack"]["refire"].clone()).unwrap());
         let panel = base_panel(id, false);
         assert_eq!(panel.base_crit_chance as f32, row["attack"]["crit_chance"].as_f64().unwrap() as f32, "{id}: crit chance");
         assert_eq!(panel.base_crit_damage as f32, row["attack"]["crit_multiplier"].as_f64().unwrap() as f32, "{id}: crit damage");
@@ -70,6 +70,32 @@ fn claw_inputs_reproduce_the_declared_client_vectors() {
         assert!(w.no_riven);
         assert!(crate::build::rivens::class_for_weapon(id).is_none());
         assert_eq!(row["icon"], "Icon=/Lotus/Interface/Icons/GeneticLab/BeastClaws.png");
+    }
+}
+
+#[test]
+fn assumed_claw_intervals_follow_the_reviewed_ordinary_action_proxies() {
+    let f = fixture();
+    let assumptions = &f["assumed_intervals"];
+    assert!(assumptions["runtime_interval_seconds"]["kavat"].is_null());
+    assert!(assumptions["runtime_interval_seconds"]["kubrow"].is_null());
+    assert_eq!(assumptions["verified_outer_files"], 4);
+    assert_eq!(assumptions["verified_archive_members"], 126);
+    for row in assumptions["weapon_proxies"].as_array().unwrap() {
+        let family = row["proxy_family"].as_str().unwrap();
+        let proxy = &assumptions["family_proxies"][family];
+        let clip = &proxy["reference"]["base_clip_rows"][0];
+        let rate = clip["sequence_rate_float32"].as_f64().unwrap() as f32;
+        let delay = proxy["post_action_delay_seconds"].as_f64().unwrap() as f32;
+        let estimated = 1.0_f32 / rate + delay;
+        let actual = spec(row["weapon"].as_str().unwrap()).unwrap().attack.refire.assumed_interval().unwrap();
+        assert_eq!(actual as f32, estimated, "{row}");
+        if family == "catbrow" {
+            assert_eq!(delay.to_le_bytes(), [0xcd, 0xcc, 0xcc, 0x3d]);
+            assert!(actual > 1.13 && actual < 1.14);
+        } else {
+            assert_eq!(actual, 1.0);
+        }
     }
 }
 
