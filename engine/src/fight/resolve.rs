@@ -110,6 +110,7 @@ pub(super) fn resolve_the_shot(
     d: &mut crate::rules::rng::Draws,
     t: f64,
     combo_multiplier: f64,
+    melee_combo: f64,
     bar: &mut BuffBar,
     arc: &mut ArcRuntime,
     gal: &mut GalStacks,
@@ -575,6 +576,7 @@ pub(super) fn resolve_the_shot(
                 windows.base_damage_after_reload, windows.base_damage_eximus,
                 windows.streak, tendril.count, crit_per_hit.stacks, bar,
                 combo_at(combo_spec, params.combo_held, sniper_combo.count, sniper_combo.last_hit, t),
+                melee_combo,
                 incarnon.incarnon_until,
                 influence_until,
             );

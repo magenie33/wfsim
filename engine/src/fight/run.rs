@@ -280,6 +280,13 @@ pub(super) fn sample_frames_up_to(
                 .enumerate()
                 .map(|(si, me)| {
                     let roster = rep.buffs.get(si).map_or(&[][..], Vec::as_slice);
+                    let active = match &me.params.cycle {
+                        Some(c) if me.incarnon.in_base_form => &c.base_form,
+                        _ => me.params,
+                    };
+                    let initial = active.initial_combo + buff_total(active, crate::model::BuffGrant::InitialCombo, &mut me.buff_stacks, *next_frame);
+                    floor_steps_down(active, &mut me.buff_stacks, &mut me.melee, initial);
+                    let melee_combo = me.melee.points_at(active, initial, *next_frame);
                     sample_stacks(
                         me.params, roster, *next_frame, &mut me.arc, &mut me.gal,
                         &mut me.buff_stacks,
@@ -289,6 +296,7 @@ pub(super) fn sample_frames_up_to(
                         me.windows.streak, me.tendril.count, me.crit_per_hit.stacks, &me.bar,
                         combo_at(me.fixed.combo_spec, me.params.combo_held,
                             me.sniper_combo.count, me.sniper_combo.last_hit, *next_frame),
+                        melee_combo,
                         me.incarnon.incarnon_until,
                         me.influence_until,
                     )
@@ -732,7 +740,7 @@ pub fn run_once_traced(
                 let i = me.melee.input.as_ref().unwrap();
                 let (tennokai, converted, mark) = (i.tennokai, i.converted, i.kill_mark);
                 let initial = active.initial_combo;
-                let combo = melee_combo_points(me.melee.combo_points, initial, t - me.melee.combo_spent_t);
+                let combo = me.melee.points_at(active, initial, t);
                 after_swing(&h, active, me.params, rec, d, combo, melee_combo_multiplier(combo), false,
                     tennokai, mark, converted, r.pellets, t, &mut r, &mut me.melee,
                     &mut me.incarnon, &me.ammo, &mut me.arc, &mut bodies);
@@ -872,6 +880,7 @@ pub fn run_once_traced(
             d,
             t,
             combo_multiplier,
+            combo_now,
             &mut me.bar,
             &mut me.arc,
             &mut me.gal,

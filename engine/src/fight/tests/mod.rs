@@ -59,6 +59,7 @@ mod replay_debilitate_misc;
 mod replay_reads_every_buff;
 mod ripper_rounds;
 mod sniper_combo_fight;
+mod scenario_combo;
 mod spliced_riven;
 mod status_crit_parts;
 mod status_composition;
@@ -242,6 +243,8 @@ impl Default for FightParams {
             combo_duration_seconds: 0.0,
             combo_frozen: false,
             initial_combo: 0.0,
+            melee_combo_initial: 0,
+            melee_combo_held: false,
             heavy_attack_efficiency: 0.0,
             crit_chance_per_combo: 0.0,
             status_chance_per_combo: 0.0,

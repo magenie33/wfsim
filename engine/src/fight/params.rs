@@ -1,6 +1,9 @@
 use super::*;
 use crate::target::BodyPart;
 
+/// Points at the top of the ordinary melee combo ladder.
+pub const MELEE_COMBO_MAX_POINTS: u32 = ((MELEE_COMBO_MAX - 1.0) * MELEE_COMBO_POINTS_PER_TIER) as u32;
+
 /// WHAT ARMS THE SECOND SET OF NUMBERS — the one thing a gun's Incarnon and a
 /// melee's genuinely disagree about, said as data instead of as two mechanisms.
 ///
@@ -565,6 +568,10 @@ pub struct FightParams {
     /// in 0.75 s against a 1.07 s cycle, so every heavy lands at 2x rather
     /// than at 1x.
     pub initial_combo: f64,
+    /// Scenario points present at the start, separate from the build's refilling floor.
+    pub melee_combo_initial: u32,
+    /// Keep at least the scenario's points through expiry and heavy attacks.
+    pub melee_combo_held: bool,
     /// Fraction of the counter a heavy attack does NOT spend.
     ///
     /// *"40% heavy attack efficiency will change the amount spent to 60% combo

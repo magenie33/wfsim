@@ -130,6 +130,9 @@ impl FightParams {
         {
             push!("sniper_combo", 0);
         }
+        if self.form.is_melee() {
+            push!("melee_combo", MELEE_COMBO_MAX_POINTS);
+        }
         // TENDRILS — the Ocucor's passive, and a buff by every test that
         // matters: it is gained on a trigger (a kill), it is lost on one (a
         // magazine event), and it has a cap. It is rostered only when a mod
@@ -276,6 +279,12 @@ impl FightParams {
         if let Some(&(stacks, locked)) = cfg.get("sniper_combo") {
             self.combo_initial = stacks;
             self.combo_held = locked;
+        }
+        if self.form.is_melee() {
+            if let Some(&(points, held)) = cfg.get("melee_combo") {
+                self.melee_combo_initial = points.min(MELEE_COMBO_MAX_POINTS);
+                self.melee_combo_held = held;
+            }
         }
         // The tendril count, seeded like any stack count. `locked` cannot be a
         // duration here — a tendril has no clock, it is cleared by a magazine
@@ -1483,6 +1492,8 @@ impl FightParams {
             combo_duration_seconds: panel.combo_duration_seconds,
             combo_frozen: panel.combo_frozen,
             initial_combo: panel.initial_combo,
+            melee_combo_initial: 0,
+            melee_combo_held: false,
             heavy_attack_efficiency: panel.heavy_attack_efficiency,
             crit_chance_per_combo: panel.crit_chance_per_combo,
             status_chance_per_combo: panel.status_chance_per_combo,

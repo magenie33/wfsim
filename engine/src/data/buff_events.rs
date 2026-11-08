@@ -93,7 +93,7 @@ pub fn of_builtin(id: &str) -> Option<Option<&'static str>> {
         // build axis already, so there is no scenario switch that could take it
         // away. A ruler cannot say "no heavy attacks happen" the way it can say
         // "nothing dies".
-        "melee_incarnon" => return Some(None),
+        "melee_incarnon" | "melee_combo" => return Some(None),
         _ => return None,
     }))
 }

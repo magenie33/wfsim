@@ -35,6 +35,7 @@ pub(super) fn sample_stacks(
     crit_chance_hit_stacks: u32,
     bar: &BuffBar,
     combo: u32,
+    melee_combo: f64,
     // When a melee Incarnon's window closes; 0.0 before it is ever armed, so
     // "up" is `now < this` and needs no second flag.
     incarnon_until: f64,
@@ -89,6 +90,7 @@ pub(super) fn sample_stacks(
             // ...and the same for the combo, which is why the frame series is
             // u16: this is the first buff whose honest count runs past 255.
             "sniper_combo" => (cap(combo), unknown),
+            "melee_combo" => (cap(melee_combo as u32), unknown),
             // Off the loop's own clock, like the windows around it: the fight
             // is the only thing that knows when the heavy attack that armed it
             // went down.
