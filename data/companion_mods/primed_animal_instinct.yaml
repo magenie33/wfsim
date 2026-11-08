@@ -1,5 +1,6 @@
 id: primed_animal_instinct
 name: "Primed Animal Instinct"
+family: animal_instinct
 rarity: legendary
 polarity: naramon
 base_drain: 6

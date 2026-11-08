@@ -1,0 +1,21 @@
+id: helios_prime
+name: Helios Prime
+kind: sentinel
+groups:
+- companion
+- helios
+- robotic
+- sentinel
+stats:
+  health: 700.0
+  shield: 300.0
+  armor: 100.0
+polarities:
+- penjaga
+- vazarin
+- penjaga
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/PrimeHeliosPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Helios_Prime

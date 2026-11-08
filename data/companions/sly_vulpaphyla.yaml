@@ -1,0 +1,19 @@
+id: sly_vulpaphyla
+name: Sly Vulpaphyla
+kind: vulpaphyla
+groups:
+- beast
+- companion
+- kavat
+- sly_vulpaphyla
+- vulpaphyla
+stats:
+  health: 680.0
+  shield: 370.0
+  armor: 300.0
+polarities:
+- penjaga
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/VulpineInfestedCatbrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Sly_Vulpaphyla
+assembly: vulpaphyla

@@ -22,7 +22,7 @@ fn verglas(mods: &[&str], rank: Option<u32>) -> crate::build::loadout::ResolvedP
         .iter()
         .map(|id| pool.iter().find(|m| m.id == *id).unwrap_or_else(|| panic!("{id} on the Verglas")))
         .collect();
-    let mut tenno = crate::data::tenno::sentinel_wielder().clone();
+    let mut tenno = crate::data::companions::sentinel_wielder().clone();
     tenno.element_per_hit = rank.map(fired_up);
     crate::build::loadout::resolve_for(&base, &cards, crate::model::StackPolicy::Emergent, &tenno)
 }

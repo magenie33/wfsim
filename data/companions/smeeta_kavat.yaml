@@ -1,0 +1,18 @@
+id: smeeta_kavat
+name: Smeeta Kavat
+kind: kavat
+groups:
+- beast
+- companion
+- kavat
+- smeeta_kavat
+stats:
+  health: 390.0
+  shield: 230.0
+  armor: 300.0
+polarities:
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Game/CatbrowPet/CheshireCatbrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Smeeta_Kavat

@@ -1,0 +1,19 @@
+id: sahasa_kubrow
+name: Sahasa Kubrow
+kind: kubrow
+groups:
+- beast
+- companion
+- kubrow
+- sahasa_kubrow
+stats:
+  health: 940.0
+  shield: 290.0
+  armor: 300.0
+polarities:
+- penjaga
+- vazarin
+- penjaga
+internal_name: /Lotus/Types/Game/KubrowPet/AdventurerKubrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Sahasa_Kubrow

@@ -9,7 +9,7 @@ use crate::registry::assets;
 use crate::request::err_json;
 
 /// `madurai` -> `Madurai`, the spelling the page's polarity art is keyed by.
-fn polarity_label(p: &str) -> String {
+pub(crate) fn polarity_label(p: &str) -> String {
     let mut c = p.chars();
     c.next().map_or(String::new(), |f| f.to_uppercase().collect::<String>() + c.as_str())
 }
@@ -92,9 +92,12 @@ pub fn warframe_catalog_json() -> Value {
         // fetch serves both. A card pays only where `pays` says so — the
         // one line a fight runs on the companion's weapon (`data/companion_mods/`).
         "companion_slots": wfsim_engine::data::companions::COMPANION_MOD_SLOTS,
-        "companion_polarities": std::iter::repeat_n(
-            polarity_label(wfsim_engine::data::companions::COMPANION_POLARITY),
-            wfsim_engine::data::companions::COMPANION_INNATE_POLARITIES).collect::<Vec<_>>(),
+        "companion_parts": wfsim_engine::data::companions::companion_parts(),
+        "companion_part_labels": wfsim_engine::data::companions::companion_part_labels(),
+        "companion_gild_polarities": wfsim_engine::data::companions::GILD_POLARITIES,
+        "companion_polarities": wfsim_engine::data::companions::resolve(&wfsim_engine::data::companions::CompanionBuild {
+            companion: wfsim_engine::data::companions::PROTOTYPE_COMPANION.into(), ..Default::default()
+        }).expect("default companion").polarities.iter().map(|p| polarity_label(p)).collect::<Vec<_>>(),
         "companion_mods": wfsim_engine::data::companions::companion_mods().iter().map(|m| json!({
             "id": m.id,
             "name": m.name,
@@ -106,6 +109,8 @@ pub fn warframe_catalog_json() -> Value {
             "compat": m.compat,
             "precept": m.precept,
             "pays": m.pays(),
+            "models_body": m.models_body(),
+            "family": m.family,
             "description": m.description,
             "effects": m.effects,
             "url": m.url,

@@ -1,0 +1,19 @@
+id: crescent_vulpaphyla
+name: Crescent Vulpaphyla
+kind: vulpaphyla
+groups:
+- beast
+- companion
+- crescent_vulpaphyla
+- kavat
+- vulpaphyla
+stats:
+  health: 680.0
+  shield: 370.0
+  armor: 300.0
+polarities:
+- penjaga
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/HornedInfestedCatbrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Crescent_Vulpaphyla
+assembly: vulpaphyla

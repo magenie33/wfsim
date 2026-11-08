@@ -137,7 +137,8 @@ async function route() {
   const compRoute = location.pathname.match(/^\/companions\/([^/]+?)(?:\/builder)?\/?$/);
   const compSlug = compRoute && decodeURIComponent(compRoute[1]).trim().toLowerCase().replace(/[\s-]+/g, "_");
   const compHit = compSlug && compHosts().find((c) =>
-    c.id === compSlug || c.name.toLowerCase().replace(/[\s-]+/g, "_") === compSlug) || null;
+    c.id === compSlug || (c.name_en || c.name).toLowerCase().replace(/[\s-]+/g, "_") === compSlug
+      || c.name.toLowerCase().replace(/[\s-]+/g, "_") === compSlug) || null;
   // `/<name>` — a category the builder does not hold yet (`holds: placeholder`).
   const stub = placeholderSlots().find((sl) => location.pathname.replace(/\/$/, "").toLowerCase() === placeholderPath(sl)) || null;
   const m = (support || bench || dl || util || wfHit || opRoute || compHit || stub || authKind) ? null : location.pathname.match(/^\/weapons\/([^/]+?)(\/builder|\/build-library|\/simulator|\/optimizer|\/rivens|\/riven-analyst|\/enemies|\/benchmark|\/card)?\/?$/);
@@ -506,7 +507,7 @@ function renderHome() {
     }
     if (slot.holds === "companion") {
       const all = compHosts();
-      return { slot, total: all.length, cards: all.filter((c) => nameMatches(homeQuery, c.name, tr(c.name), slot.name, tr(slot.name))).map(companionCard) };
+      return { slot, total: all.length, cards: all.filter((c) => nameMatches(homeQuery, c.name, c.name_en, tr(c.name), c.kind, slot.name, tr(slot.name))).map(companionCard) };
     }
     if (slot.holds === "placeholder") {
       return { slot, total: 1, cards: nameMatches(homeQuery, tr(slot.name), slot.name) ? [placeholderCard(slot)] : [] };

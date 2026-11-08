@@ -1,5 +1,6 @@
 id: regen
 name: "Regen"
+family: regen
 rarity: common
 polarity: penjaga
 base_drain: 2

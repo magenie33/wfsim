@@ -1,0 +1,1271 @@
+{
+  "source": {
+    "batch_id": "20261106T150853Z-client-metadata-offline",
+    "manifest_sha256": "dbeb51209c791af1692f91f087826805b8f99198ee0958ec4606170ab2badea2",
+    "archive": {
+      "path": "data.zip",
+      "bytes": 154034501,
+      "sha256": "07ccb255fb91e33fea8cbe068ea71cfdac116a1f8e52137358293276aa92f522"
+    },
+    "members": [
+      {
+        "path": "packages_effective.jsonl",
+        "bytes": 608602899,
+        "sha256": "feaecf8775e37e9035d2f429e0c87113281ff061a2a4b9271a33af53f432c0b0"
+      },
+      {
+        "path": "dict.en.json",
+        "bytes": 17772472,
+        "sha256": "a950e10b8b998ca2b1636e30dd6ffd261c5cdb21ac84d72c98625d5b57db37cc"
+      },
+      {
+        "path": "dict.zh.json",
+        "bytes": 18020015,
+        "sha256": "5f232439f02007b4ac5125b04be6469e01f9f236e415445ade8ed8fd35af65f0"
+      }
+    ]
+  },
+  "wiki": {
+    "url": "https://wiki.warframe.com/w/Module:Companions/data?action=raw",
+    "sha256": "a071dd78100536a7eaa63d8ccae4460bdf34729f30b2005f8671167576da2e90",
+    "identity_corrections": [
+      {
+        "page": "Wyrm/Prime",
+        "reported": "/Lotus/Types/Sentinels/SentinelPowersuits/WyrmPowerSuit",
+        "corrected": "/Lotus/Types/Sentinels/SentinelPowersuits/PrimeWyrmPowerSuit"
+      }
+    ],
+    "armor_fallback": {
+      "diriga": 80,
+      "carrier": 80,
+      "dethcube": 80,
+      "nautilus": 80,
+      "djinn": 80,
+      "helios": 80,
+      "prisma_shade": 80,
+      "oxylus": 80,
+      "shade": 80,
+      "taxon": 80,
+      "wyrm": 80
+    },
+    "polarity_fallback": {
+      "diriga": [
+        "penjaga",
+        "penjaga",
+        "penjaga",
+        "penjaga"
+      ],
+      "dethcube": [
+        "penjaga",
+        "penjaga",
+        "penjaga",
+        "penjaga"
+      ],
+      "nautilus": [
+        "penjaga",
+        "penjaga",
+        "penjaga",
+        "penjaga"
+      ],
+      "wyrm_prime": [
+        "penjaga",
+        "penjaga",
+        "penjaga",
+        "penjaga"
+      ],
+      "shade": [
+        "penjaga",
+        "penjaga",
+        "penjaga",
+        "penjaga"
+      ],
+      "taxon": [
+        "penjaga",
+        "penjaga",
+        "penjaga",
+        "penjaga"
+      ],
+      "wyrm": [
+        "penjaga",
+        "penjaga",
+        "penjaga",
+        "penjaga"
+      ]
+    }
+  },
+  "mod_inputs": [
+    {
+      "id": "calculated_redirection",
+      "source": "/Lotus/Upgrades/Mods/Sentinel/SentinelShieldMaxMod",
+      "rank_value": "0.2273",
+      "max_rank": 10,
+      "max_bonus": 2.5003
+    },
+    {
+      "id": "enhanced_vitality",
+      "source": "/Lotus/Upgrades/Mods/Sentinel/SentinelHealthMaxMod",
+      "rank_value": "0.2273",
+      "max_rank": 10,
+      "max_bonus": 2.5003
+    },
+    {
+      "id": "metal_fiber",
+      "source": "/Lotus/Upgrades/Mods/Sentinel/SentinelArmourMod",
+      "rank_value": "0.2273",
+      "max_rank": 10,
+      "max_bonus": 2.5003
+    }
+  ],
+  "records": {
+    "/Lotus/Powersuits/Khora/Kavat/KhoraKavatPowerSuit": {
+      "parent": "/Lotus/Types/Game/CatbrowPet/CatbrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Suits/KhoraKavatName",
+        "ArmourRatingOverride": "ArmourRatingOverride=350",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_TACTIC,\nAP_DEFENSE,\nAP_ATTACK,\nAP_PRECEPT\n}",
+        "MaxHealthOverride": "MaxHealthOverride=900",
+        "MaxShieldOverride": "MaxShieldOverride=0",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Powersuits/Khora/Kavat/KhoraPrimeKavatPowerSuit": {
+      "parent": "/Lotus/Powersuits/Khora/Kavat/KhoraKavatPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Primes/VenariPrimeName",
+        "ArmourRatingOverride": "ArmourRatingOverride=450",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_TACTIC,\nAP_DEFENSE,\nAP_ATTACK,\nAP_PRECEPT\n}",
+        "MaxHealthOverride": "MaxHealthOverride=1050",
+        "MaxShieldOverride": "MaxShieldOverride=0",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPrimePetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/ArmoredInfestedCatbrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/BaseInfestedCatbrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterRareName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=680",
+        "MaxShieldOverride": "MaxShieldOverride=370",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/PanzerVulpaphylaPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/CatbrowPetAntigenBase": {
+      "parent": "/Lotus/Types/Game/CreaturePetParts/LotusCreaturePetAntigen",
+      "fields": {
+        "PartType": "PartType=LWPT_CATBROW_ANTIGEN"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/CatbrowPetMutagenBase": {
+      "parent": "/Lotus/Types/Game/CreaturePetParts/LotusCreaturePetPart",
+      "fields": {
+        "PartType": "PartType=LWPT_CATBROW_MUTAGEN"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterAntigenA": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/CatbrowPetAntigenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_CATBROW_ANTIGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterAntigenA",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterAntigenADesc",
+        "OverridePolarity": "OverridePolarity=AP_ATTACK"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterAntigenB": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/CatbrowPetAntigenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_CATBROW_ANTIGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterAntigenB",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterAntigenBDesc",
+        "OverridePolarity": "OverridePolarity=AP_DEFENSE"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterAntigenC": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/CatbrowPetAntigenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_CATBROW_ANTIGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterAntigenC",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterAntigenCDesc",
+        "OverridePolarity": "OverridePolarity=AP_TACTIC"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterAntigenD": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/CatbrowPetAntigenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_CATBROW_ANTIGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterAntigenD",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterAntigenDDesc",
+        "OverridePolarity": "OverridePolarity=AP_PRECEPT"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterMutagenA": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/CatbrowPetMutagenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_CATBROW_MUTAGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterMutagenA",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterMutagenADesc",
+        "Upgrades": "Upgrades={\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_PUNCTURE\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_FIRE\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterMutagenB": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/CatbrowPetMutagenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_CATBROW_MUTAGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterMutagenB",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterMutagenBDesc",
+        "Upgrades": "Upgrades={\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_ELECTRICITY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_SLASH\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterMutagenC": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/CatbrowPetMutagenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_CATBROW_MUTAGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterMutagenC",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterMutagenCDesc",
+        "Upgrades": "Upgrades={\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_IMPACT\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_FREEZE\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterMutagenD": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/CatbrowPetMutagenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_CATBROW_MUTAGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterMutagenD",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterMutagenDDesc",
+        "Upgrades": "Upgrades={\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_POISON\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_SLASH\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorAntigenA": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/KubrowPetAntigenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_KUBROW_ANTIGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorAntigenA",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorAntigenADesc",
+        "OverridePolarity": "OverridePolarity=AP_ATTACK"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorAntigenB": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/KubrowPetAntigenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_KUBROW_ANTIGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorAntigenB",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorAntigenBDesc",
+        "OverridePolarity": "OverridePolarity=AP_DEFENSE"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorAntigenC": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/KubrowPetAntigenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_KUBROW_ANTIGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorAntigenC",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorAntigenCDesc",
+        "OverridePolarity": "OverridePolarity=AP_TACTIC"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorAntigenD": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/KubrowPetAntigenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_KUBROW_ANTIGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorAntigenD",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorAntigenDDesc",
+        "OverridePolarity": "OverridePolarity=AP_PRECEPT"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorMutagenA": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/KubrowPetMutagenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_KUBROW_MUTAGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorMutagenA",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorMutagenADesc",
+        "Upgrades": "Upgrades={\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_FIRE\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_PUNCTURE\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorMutagenB": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/KubrowPetMutagenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_KUBROW_MUTAGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorMutagenB",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorMutagenBDesc",
+        "Upgrades": "Upgrades={\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_ELECTRICITY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_SLASH\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorMutagenC": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/KubrowPetMutagenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_KUBROW_MUTAGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorMutagenC",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorMutagenCDesc",
+        "Upgrades": "Upgrades={\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_IMPACT\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_FREEZE\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorMutagenD": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/KubrowPetMutagenBase",
+      "fields": {
+        "PartType": "PartType=LWPT_KUBROW_MUTAGEN",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorMutagenD",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorMutagenDDesc",
+        "Upgrades": "Upgrades={\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_POISON\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=AVATAR_DAMAGE_TAKEN\nOperationType=MULTIPLY\nValue=0.5\nDamageType=DT_SLASH\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/KubrowPetAntigenBase": {
+      "parent": "/Lotus/Types/Game/CreaturePetParts/LotusCreaturePetAntigen",
+      "fields": {
+        "PartType": "PartType=LWPT_KUBROW_ANTIGEN"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/KubrowPetMutagenBase": {
+      "parent": "/Lotus/Types/Game/CreaturePetParts/LotusCreaturePetPart",
+      "fields": {
+        "PartType": "PartType=LWPT_KUBROW_MUTAGEN"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/HornedInfestedCatbrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/BaseInfestedCatbrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterUncommonName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=680",
+        "MaxShieldOverride": "MaxShieldOverride=370",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/CrescentVulpaphylaPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/MedjayPredatorKubrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/BasePredatorKubrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorRareName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=710",
+        "MaxShieldOverride": "MaxShieldOverride=350",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/MedjayPredasitePetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/PharaohPredatorKubrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/BasePredatorKubrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorUncommonName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=710",
+        "MaxShieldOverride": "MaxShieldOverride=350",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/PharaohPredasitePetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/VizierPredatorKubrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/BasePredatorKubrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedPredatorCommonName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=710",
+        "MaxShieldOverride": "MaxShieldOverride=350",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/VizierPredasitePetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/CreaturePets/VulpineInfestedCatbrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Friendly/Pets/CreaturePets/BaseInfestedCatbrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/InfestedMicroplanet/InfestedCritterCommonName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=680",
+        "MaxShieldOverride": "MaxShieldOverride=370",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/SlyVulpaphylaPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon": {
+      "parent": "/Lotus/Weapons/Tenno/Rifle/LotusAssaultRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/CryoxionWeapon"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon": {
+      "parent": "/Lotus/Weapons/Tenno/Rifle/LotusAssaultRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/HextraWeapon"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon": {
+      "parent": "/Lotus/Weapons/ClanTech/LotusSpecialRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/SwarmerWeapon"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon": {
+      "parent": "/Lotus/Weapons/Tenno/Rifle/LotusAssaultRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/TazronWeapon"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon": {
+      "parent": "/Lotus/Weapons/ClanTech/LotusSpecialRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/ThermocorWeapon"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MeleeMoaPetEngine": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetEngineBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_ENGINE",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetEngineMelee",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetEngineMeleeDesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.15000001",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=0.15000001",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.075000003",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=0.075000003"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MeleeMoaPetPayload": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetPayloadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_PAYLOAD",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetPayloadMelee",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetPayloadMeleeDesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.1",
+        "MaxShieldModifier": "MaxShieldModifier=-0.1",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=0.1",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.050000001",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=-0.050000001",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=0.050000001"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetEngineArcotek": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetEngineBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_ENGINE",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetEngineArcotek",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetEngineArcotekDesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.1",
+        "MaxShieldModifier": "MaxShieldModifier=0.1",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=0.1",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.050000001",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=0.050000001",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=0.050000001"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetEngineKrisys": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetEngineBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_ENGINE",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetEngineKrisys",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetEngineKrisysDesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.1",
+        "MaxShieldModifier": "MaxShieldModifier=0.050000001",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=0.15000001",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.050000001",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=0.025",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=0.075000003"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetEngineThricore": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetEngineBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_ENGINE",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetEngineThricore",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetEngineThricoreDesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.1",
+        "MaxShieldModifier": "MaxShieldModifier=0.15000001",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=0.050000001",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.050000001",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=0.075000003",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=0.025"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadLambeo": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetHeadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_HEAD",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetHeadLambeo",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetHeadLambeoDesc"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadMelee": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetHeadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_HEAD",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetHeadMelee",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetHeadMeleeDesc"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadOloro": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetHeadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_HEAD",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetHeadOloro",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetHeadOloroDesc"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadPara": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetHeadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_HEAD",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetHeadParaMoa",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetHeadParaMoaDesc"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetLegA": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetLegBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_LEG",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetLegA",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetLegADesc"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetLegB": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetLegBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_LEG",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetLegB",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetLegBDesc",
+        "OverridePolarity": "OverridePolarity=AP_DEFENSE"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetLegC": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetLegBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_LEG",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetLegC",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetLegCDesc",
+        "OverridePolarity": "OverridePolarity=AP_ATTACK"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetLegD": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetLegBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_LEG",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetLegD",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetLegDDesc",
+        "OverridePolarity": "OverridePolarity=AP_TACTIC"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetLegMelee": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetLegBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_LEG",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetLegMelee",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetLegMeleeDesc",
+        "OverridePolarity": "OverridePolarity=AP_TACTIC"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadAegron": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetPayloadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_PAYLOAD",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetPayloadAegron",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetPayloadAegronDesc",
+        "MaxHealthModifier": "MaxHealthModifier=-0.050000001",
+        "MaxShieldModifier": "MaxShieldModifier=0.050000001",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=0.1",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=-0.025",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=0.025",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=0.050000001"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadCryoxion": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetPayloadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_PAYLOAD",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetPayloadCryoxion",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetPayloadCryoxionDesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.050000001",
+        "MaxShieldModifier": "MaxShieldModifier=-0.050000001",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=0.1",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.025",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=-0.025",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=0.050000001"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadDarta": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetPayloadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_PAYLOAD",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetPayloadDartra",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetPayloadDartraDesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.050000001",
+        "MaxShieldModifier": "MaxShieldModifier=0.1",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=-0.050000001",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.025",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=0.050000001",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=-0.025"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadHextra": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetPayloadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_PAYLOAD",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetPayloadHextra",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetPayloadHextraDesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.1",
+        "MaxShieldModifier": "MaxShieldModifier=0.050000001",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=-0.050000001",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.050000001",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=0.025",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=-0.025"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadMunitron": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetPayloadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_PAYLOAD",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetPayloadMunitron",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetPayloadMunitronDesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.1",
+        "MaxShieldModifier": "MaxShieldModifier=-0.050000001",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=0.050000001",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.050000001",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=-0.025",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=0.025"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadTazron": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetPayloadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_PAYLOAD",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetPayloadTazron",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetPayloadTazronDesc",
+        "MaxHealthModifier": "MaxHealthModifier=-0.050000001",
+        "MaxShieldModifier": "MaxShieldModifier=0.1",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=0.050000001",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=-0.025",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=0.050000001",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=0.025"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadThermocor": {
+      "parent": "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetPayloadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_MOA_PAYLOAD",
+        "ModifyBase": "ModifyBase=1",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetPayloadThermocor",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/SolarisVenus/MoaPetPayloadThermocorDesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.2",
+        "MaxShieldModifier": "MaxShieldModifier=-0.050000001",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=-0.050000001",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.1",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=-0.025",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=-0.025"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/MoaPets/MoaPetPowerSuit": {
+      "parent": "/Lotus/Types/Game/Pets/ModularRoboticPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/MoaPetItem",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}",
+        "ArmourRatingOverride": "ArmourRatingOverride=0",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeaponIP": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetMeleeWeaponIPName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeaponIS": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetMeleeWeaponISName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeaponPS": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetMeleeWeaponPSName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartBodyA": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetBodyBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_BODY",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetBodyA",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetBodyADesc",
+        "BaseHealth": "BaseHealth=350",
+        "BaseShields": "BaseShields=450",
+        "BaseArmor": "BaseArmor=350"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartBodyB": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetBodyBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_BODY",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetBodyB",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetBodyBDesc",
+        "BaseHealth": "BaseHealth=350",
+        "BaseShields": "BaseShields=350",
+        "BaseArmor": "BaseArmor=450"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartBodyC": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetBodyBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_BODY",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetBodyC",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetBodyCDesc",
+        "BaseHealth": "BaseHealth=450",
+        "BaseShields": "BaseShields=350",
+        "BaseArmor": "BaseArmor=350"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadA": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetHeadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_HEAD",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetHeadA",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetHeadADesc"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadB": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetHeadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_HEAD",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetHeadB",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetHeadBDesc"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadC": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetHeadBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_HEAD",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetHeadC",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetHeadCDesc"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartLegsA": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetLegBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_LEG",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetLegsA",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetLegsADesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.2",
+        "MaxShieldModifier": "MaxShieldModifier=0.30000001",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=-0.1",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.1",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=0.15000001",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=-0.050000001"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartLegsB": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetLegBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_LEG",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetLegsB",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetLegsBDesc",
+        "MaxHealthModifier": "MaxHealthModifier=0.30000001",
+        "MaxShieldModifier": "MaxShieldModifier=-0.1",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=0.2",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=0.15000001",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=-0.050000001",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=0.1"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartLegsC": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetLegBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_LEG",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetLegsC",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetLegsCDesc",
+        "MaxHealthModifier": "MaxHealthModifier=-0.1",
+        "MaxShieldModifier": "MaxShieldModifier=0.2",
+        "MaxArmourRatingModifier": "MaxArmourRatingModifier=0.30000001",
+        "UngildedMaxHealthModifier": "UngildedMaxHealthModifier=-0.050000001",
+        "UngildedMaxShieldModifier": "UngildedMaxShieldModifier=0.1",
+        "UngildedMaxArmourModifier": "UngildedMaxArmourModifier=0.15000001"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartTailA": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetTailBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_TAIL",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetTailA",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetTailADesc",
+        "OverridePolarity": "OverridePolarity=AP_TACTIC"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartTailB": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetTailBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_TAIL",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetTailB",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetTailBDesc",
+        "OverridePolarity": "OverridePolarity=AP_ATTACK"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartTailC": {
+      "parent": "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetTailBase",
+      "fields": {
+        "PartType": "PartType=LWPT_ZANUKA_TAIL",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetTailC",
+        "LocalizeDescTag": "LocalizeDescTag=/Lotus/Language/Pets/ZanukaPetTailCDesc",
+        "OverridePolarity": "OverridePolarity=AP_DEFENSE"
+      }
+    },
+    "/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetPowerSuit": {
+      "parent": "/Lotus/Types/Game/Pets/ModularRoboticPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/ZanukaPetItemName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}",
+        "ArmourRatingOverride": "ArmourRatingOverride=0",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Game/CatbrowPet/CheshireCatbrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Game/CatbrowPet/StandardCatbrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/CheshireCatbrowName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=390",
+        "MaxShieldOverride": "MaxShieldOverride=230",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/SmeetaPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Game/CatbrowPet/MirrorCatbrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Game/CatbrowPet/StandardCatbrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/MirrorCatbrowName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=310",
+        "MaxShieldOverride": "MaxShieldOverride=270",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/AdarzaPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Game/CatbrowPet/VampireCatbrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Game/CatbrowPet/VariantCatbrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/VampireKavatName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=310",
+        "MaxShieldOverride": "MaxShieldOverride=270",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/VascaPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Game/KubrowPet/AdventurerKubrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Game/KubrowPet/TrueKubrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/AdventurerKubrowName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_DEFENSE,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=940",
+        "MaxShieldOverride": "MaxShieldOverride=290",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/SahasaPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Game/KubrowPet/ChargerKubrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Game/KubrowPet/InfestedKubrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/InfestedKubrowName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=710",
+        "MaxShieldOverride": "MaxShieldOverride=330",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/HelminthPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Game/KubrowPet/FurtiveKubrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Game/KubrowPet/TrueKubrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/FurtiveKubrowName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=560",
+        "MaxShieldOverride": "MaxShieldOverride=490",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/HurasPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Game/KubrowPet/GuardKubrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Game/KubrowPet/TrueKubrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/GuardKubrowName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_DEFENSE,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=750",
+        "MaxShieldOverride": "MaxShieldOverride=390",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/RaksaPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Game/KubrowPet/HunterKubrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Game/KubrowPet/TrueKubrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/HunterKubrowName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=830",
+        "MaxShieldOverride": "MaxShieldOverride=350",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/SunikaPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Game/KubrowPet/RetrieverKubrowPetPowerSuit": {
+      "parent": "/Lotus/Types/Game/KubrowPet/TrueKubrowPetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/RetrieverKubrowName",
+        "ArmourRatingOverride": "ArmourRatingOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol,\n/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/Gremlin,\n/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle,\n/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun,\n/Lotus/Types/Sentinels/SentinelWeapons/SentStickyBeam,\n/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/CryoxionWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/HextraWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/MoaPetMeleeWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/SwarmerWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/TazronWeapon,\n/Lotus/Types/Friendly/Pets/MoaPets/MoaPetComponents/ThermocorMoaWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "LevelUpgrades": "LevelUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n},\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\n}\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_DEFENSE,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "MaxHealthOverride": "MaxHealthOverride=940",
+        "MaxShieldOverride": "MaxShieldOverride=290",
+        "SpecialSlotItem": "SpecialSlotItem={\nSPECIAL_B_SLOT={\nItemType=/Lotus/Types/Friendly/Pets/BeastWeapons/ChesaPetWeapon\n}\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/ArcDronePowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/SentinelPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/ArcDroneName",
+        "MaxHealthOverride": "MaxHealthOverride=700",
+        "MaxShieldOverride": "MaxShieldOverride=150",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/CarrierPowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/CarrierBasePowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/CarrierSentinelName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_DEFENSE,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}",
+        "MaxHealthOverride": "MaxHealthOverride=560",
+        "MaxShieldOverride": "MaxShieldOverride=250",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/DethCubePowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/DethCubeBasePowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/DethCubePowerSuitStoreItemName",
+        "MaxHealthOverride": "MaxHealthOverride=560",
+        "MaxShieldOverride": "MaxShieldOverride=250",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/EmpyreanSentinelPowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/EmpyreanSentinelBasePowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Pets/EmpyreanSentinelName",
+        "MaxHealthOverride": "MaxHealthOverride=560",
+        "MaxShieldOverride": "MaxShieldOverride=250",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/GubberPowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/SentinelPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/DjinnSentinelName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_TACTIC,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}",
+        "MaxHealthOverride": "MaxHealthOverride=560",
+        "MaxShieldOverride": "MaxShieldOverride=250",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/MeleePetPowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/SentinelPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/MeleePetName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_DEFENSE,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}",
+        "MaxHealthOverride": "MaxHealthOverride=560",
+        "MaxShieldOverride": "MaxShieldOverride=250",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/NautilusPrimeSentinelPowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/EmpyreanSentinelBasePowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Primes/NautilusPrimeSentinelName",
+        "MaxHealthOverride": "MaxHealthOverride=560",
+        "MaxShieldOverride": "MaxShieldOverride=350",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_DEFENSE,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}",
+        "ArmourRatingOverride": "ArmourRatingOverride=175"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/PrimeCarrierPowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/CarrierBasePowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/PrimeCarrierSentinelName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_DEFENSE,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}",
+        "MaxHealthOverride": "MaxHealthOverride=650",
+        "MaxShieldOverride": "MaxShieldOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "ArmourRatingOverride": "ArmourRatingOverride=150"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/PrimeDethCubePowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/DethCubeBasePowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Primes/DethcubePrimeName",
+        "MaxHealthOverride": "MaxHealthOverride=600",
+        "MaxShieldOverride": "MaxShieldOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_DEFENSE,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}",
+        "ArmourRatingOverride": "ArmourRatingOverride=150"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/PrimeHeliosPowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/MeleePetPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Primes/PrimeHeliosName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_DEFENSE,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}",
+        "MaxHealthOverride": "MaxHealthOverride=700",
+        "MaxShieldOverride": "MaxShieldOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "ArmourRatingOverride": "ArmourRatingOverride=100"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/PrimeShadePowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/ShadePowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Primes/PrimeShadeName",
+        "MaxHealthOverride": "MaxHealthOverride=700",
+        "MaxShieldOverride": "MaxShieldOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_TACTIC,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}",
+        "ArmourRatingOverride": "ArmourRatingOverride=100"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/PrimeWyrmPowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/WyrmBasePowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/WyrmPrimeName",
+        "MaxHealthOverride": "MaxHealthOverride=450",
+        "MaxShieldOverride": "MaxShieldOverride=600",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "ArmourRatingOverride": "ArmourRatingOverride=150"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/PrismaShadePowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/ShadePowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/PrismaSentinelName",
+        "MaxHealthOverride": "MaxHealthOverride=700",
+        "MaxShieldOverride": "MaxShieldOverride=300",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_TACTIC,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/RadarPowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/RadarBasePowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/SolarisVenus/RadarSentinelName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_DEFENSE,\nAP_UNIVERSAL,\nAP_PRECEPT,\nAP_PRECEPT,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_PRECEPT\n}",
+        "MaxHealthOverride": "MaxHealthOverride=560",
+        "MaxShieldOverride": "MaxShieldOverride=250",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/ShadePowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/SentinelPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/ShadePowerSuitStoreItemName",
+        "MaxHealthOverride": "MaxHealthOverride=600",
+        "MaxShieldOverride": "MaxShieldOverride=130",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/TnSentinelCrossPowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/SentinelPowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/TnSentinelCrossName",
+        "MaxHealthOverride": "MaxHealthOverride=560",
+        "MaxShieldOverride": "MaxShieldOverride=250",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelPowersuits/WyrmPowerSuit": {
+      "parent": "/Lotus/Types/Sentinels/SentinelPowersuits/WyrmBasePowerSuit",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/WyrmPowerSuitStoreItemName",
+        "MaxHealthOverride": "MaxHealthOverride=560",
+        "MaxShieldOverride": "MaxShieldOverride=250",
+        "IncompatibleWeapons": "IncompatibleWeapons={\n/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon,\n/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon,\n/Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetMeleeWeapon\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol": {
+      "parent": "/Lotus/Weapons/Tenno/Pistol/LotusPistol",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/BurstLaserPistolStoreItemName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/DeconstructorPrime/PrimeHeliosGlaiveWeapon": {
+      "parent": "/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Primes/PrimeHeliosGlaiveWeaponName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle": {
+      "parent": "/Lotus/Weapons/Tenno/Rifle/LotusAssaultRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/DethMachineRifleName"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/Gremlin": {
+      "parent": "/Lotus/Weapons/Tenno/Rifle/LotusAssaultRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Weapons/SentinelGremlinName"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle": {
+      "parent": "/Lotus/Weapons/Tenno/Rifle/LotusAssaultRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/LaserRifleStoreItemName"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/PrimeBurstLaserPistol": {
+      "parent": "/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/PrimeBurstLaserPistolStoreItemName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/PrimeDethMachineRifle": {
+      "parent": "/Lotus/Types/Sentinels/SentinelWeapons/DethMachineRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Primes/PrimeDethMachineRifleName"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/PrimeLaserRifle": {
+      "parent": "/Lotus/Types/Sentinels/SentinelWeapons/LaserRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/PrimeLaserRifleStoreItemName"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/PrimeSentShotgun": {
+      "parent": "/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_ATTACK,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/PrimeSentinelShotgunName"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/PrismaBurstLaserPistol": {
+      "parent": "/Lotus/Types/Sentinels/SentinelWeapons/BurstLaserPistol",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/PrismaBurstLaserPistolStoreItemName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/SentBioWeapon": {
+      "parent": "/Lotus/Weapons/Tenno/Rifle/LotusAssaultRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/SentinelBioWeaponName"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/SentElecRailgun": {
+      "parent": "/Lotus/Weapons/Tenno/Rifle/LotusLongGunSniperRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/SentElecRailgunName"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/SentGlaiveWeapon": {
+      "parent": "/Lotus/Weapons/Tenno/Melee/LotusGlaiveWeaponBase",
+      "fields": {
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/HeliosGlaiveWeaponName",
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/SentShotgun": {
+      "parent": "/Lotus/Weapons/Tenno/Shotgun/LotusShotgun",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_ATTACK,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Items/SentinelShotgunName"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayPrimeRifle": {
+      "parent": "/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_TACTIC,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Primes/FreezeRayPrimeName"
+      }
+    },
+    "/Lotus/Types/Sentinels/SentinelWeapons/SentinelFreezeRayRifle": {
+      "parent": "/Lotus/Weapons/Tenno/Rifle/LotusAssaultRifle",
+      "fields": {
+        "ArtifactSlots": "ArtifactSlots={\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL,\nAP_UNIVERSAL\n}",
+        "LocalizeTag": "LocalizeTag=/Lotus/Language/Weapons/SentinelFreezeRayRifleName"
+      }
+    },
+    "/Lotus/Upgrades/Mods/Sentinel/SentinelArmourMod": {
+      "parent": "/Lotus/Upgrades/Mods/BaseArmourMod",
+      "fields": {
+        "Upgrades": "Upgrades={\n{\nUpgradeType=AVATAR_ARMOUR\nOperationType=STACKING_MULTIPLY\nValue=0.2273\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Upgrades/Armour\nLocKeyWordScript={\nScript=\"\"\n}\nDisplayAsMultiplier=0\nDisplayAsPercent=1\nReverseValueSymbol=0\nSmallerIsBetter=0\nRoundTo=1\nRoundingMode=RM_ROUND\n}\n}",
+        "BaseDrain": "BaseDrain=QA_MEDIUM",
+        "FusionLimit": "FusionLimit=QA_VERY_HIGH",
+        "ItemCompatibility": "ItemCompatibility=/Lotus/Types/Game/SentinelPowerSuit"
+      }
+    },
+    "/Lotus/Upgrades/Mods/Sentinel/SentinelHealthMaxMod": {
+      "parent": "/Lotus/Upgrades/Mods/BaseHealthMod",
+      "fields": {
+        "Upgrades": "Upgrades={\n{\nUpgradeType=AVATAR_HEALTH_MAX\nOperationType=STACKING_MULTIPLY\nValue=0.2273\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Upgrades/AvatarHealthMax\nLocKeyWordScript={\nScript=\"\"\n}\nDisplayAsMultiplier=0\nDisplayAsPercent=1\nReverseValueSymbol=0\nSmallerIsBetter=0\nRoundTo=1\nRoundingMode=RM_ROUND\n}\n}",
+        "FusionLimit": "FusionLimit=QA_VERY_HIGH",
+        "ItemCompatibility": "ItemCompatibility=/Lotus/Types/Game/SentinelPowerSuit"
+      }
+    },
+    "/Lotus/Upgrades/Mods/Sentinel/SentinelShieldMaxMod": {
+      "parent": "/Lotus/Upgrades/Mods/BaseShieldMaxMod",
+      "fields": {
+        "Upgrades": "Upgrades={\n{\nUpgradeType=AVATAR_SHIELD_MAX\nOperationType=STACKING_MULTIPLY\nValue=0.2273\nDamageType=DT_ANY\nAutoType=0\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Upgrades/AvatarShieldMaxModDesc\nLocKeyWordScript={\nScript=\"\"\n}\nDisplayAsMultiplier=0\nDisplayAsPercent=1\nReverseValueSymbol=0\nSmallerIsBetter=0\nRoundTo=1\nRoundingMode=RM_ROUND\n}\n}",
+        "BaseDrain": "BaseDrain=QA_MEDIUM",
+        "FusionLimit": "FusionLimit=QA_VERY_HIGH",
+        "ItemCompatibility": "ItemCompatibility=/Lotus/Types/Game/SentinelPowerSuit"
+      }
+    }
+  }
+}

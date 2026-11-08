@@ -1,14 +1,7 @@
 // ---- THE COMPANION HOST -------------------------------------------------
 //
-// `/companions/<Name>`: what carries a robotic weapon — a Sentinel or a MOA —
-// and therefore the holder a Sentinel weapon's build links, exactly as any other
-// weapon links a Warframe. Its stat block is the wielder floor
-// (`META.sentinel_floor`) and its pool is `data/companion_mods/`.
-//
-// ONE CARD PAYS, and each seated card says which it is: Fired Up piles heat on
-// the robotic weapon a build holds (`pays`); no robotic weapon pool reads a
-// wielder's stat and no precept is run, so every other card is capacity and
-// Forma. docs/WARFRAMES.md §Companions.
+// Bodies, modular parts and scoped prototypes share the companion builder.
+// Legal carriers and mod pools come from metadata. docs/WARFRAMES.md §Companions.
 const COMP_BUILDS = "companions";
 // TEN GENERAL SLOTS AND NO SPECIAL ONE — W`Mod`. Served rather than assumed
 // (`companion_slots`), with this as the value before the catalogue lands.
@@ -18,18 +11,19 @@ let compActive = "";
 
 const compHosts = () => (META && META.companions) || [];
 const compHost = (id) => compHosts().find((c) => c.id === id) || null;
-const companionPath = (c) => "/companions/" + String(c.name).replace(/ /g, "_");
+const companionPath = (c) => "/companions/" + String(c.name_en || c.name).replace(/ /g, "_");
 const compList = (id) => presetListWithIds(COMP_BUILDS, id);
 const compSlotCount = () => (WFCAT && WFCAT.companion_slots) || COMP_SLOTS;
 const compMod = (id) => (WFCAT && id && WFCAT.companion_mods.find((m) => m.id === id)) || null;
 /// WHAT THIS HOST SEATS: the universal cards, plus any naming it. Mirrors
 /// `data::companions::seatable_by`.
 const compPool = (host) => ((WFCAT && WFCAT.companion_mods) || [])
-  .filter((m) => m.compat === "companion" || m.compat === "robotic" || m.compat === host);
+  .filter((m) => (compHost(host)?.groups || []).includes(m.compat));
 /// WHETHER A CARD MOVES THE FIGHT, as a chip: the one kind that does, or the
 /// panel's own ⊘ for a card nothing computes.
 const compPaysChip = (m) => (m.pays
   ? ` <span class="exchip" title="${escHtml(tr("its weapon's fight runs this card, at the rank seated"))}">${escHtml(tr("In the fight"))}</span>`
+  : m.models_body ? ` <span class="exchip">${escHtml(tr("Body stats"))}</span>`
   : ` <span class="wf-adm unmodelled" title="${escHtml(tr("not computed by this panel yet"))}">⊘</span>`);
 /// DE'S OWN CARD at a rank in the display language when there is one, else ours.
 const compLines = (m, r) => {
@@ -37,13 +31,27 @@ const compLines = (m, r) => {
   if (zh && zh.length) return String(zh[Math.max(0, Math.min(zh.length - 1, r))]).split("\n").filter(Boolean);
   return m.effects;
 };
-/// The innate polarities every companion has, served beside the slot count.
-const compInnate = () => (WFCAT && WFCAT.companion_polarities) || [];
+/// Innate polarities include selected parts and the gilding polarity.
+const compParts = (id) => ((WFCAT && WFCAT.companion_parts) || []).filter(p => p.family === compHost(id)?.assembly);
+const compPart = (id) => ((WFCAT && WFCAT.companion_parts) || []).find(p => p.id === id);
+const compInnate = (id = comp?.companion, assembly = comp?.assembly, gilded = comp?.gilded !== false, gildPolarity = comp?.gild_polarity) => {
+  const c = compHost(id);
+  if (!c) return [];
+  if (!c.assembly || !WFCAT) return c.body?.polarities || [];
+  const pols = [...(c.polarities || [])];
+  for (const p of compParts(id)) if ((assembly || c.default_assembly || {})[p.slot] === p.id && p.polarity) {
+    pols.push(p.polarity.charAt(0).toUpperCase() + p.polarity.slice(1));
+  }
+  const gift = gildPolarity || c.body?.gild_polarity;
+  if (gilded && gift) pols.push(gift.charAt(0).toUpperCase() + gift.slice(1));
+  return pols;
+};
 
 function compBlank(id) {
   const slots = Array.from({ length: compSlotCount() }, () => ({ mod: null, pol: null, rank: null }));
-  compInnate().forEach((p, i) => { if (slots[i]) slots[i].pol = p; });
-  return { companion: id, slots };
+  compInnate(id, compHost(id)?.default_assembly, true, compHost(id)?.body?.gild_polarity).forEach((p, i) => { if (slots[i]) slots[i].pol = p; });
+  return { companion: id, assembly: {...(compHost(id)?.default_assembly || {})}, gilded: true,
+    gild_polarity: compHost(id)?.body?.gild_polarity || null, slots };
 }
 
 /// A stored build, repaired against today's catalogue: a card that is gone
@@ -51,11 +59,21 @@ function compBlank(id) {
 function compNormalize(st, id) {
   const b = compBlank(id);
   const s = st || {};
+  const assembly = {...b.assembly};
+  for (const [slot, part] of Object.entries(s.assembly || {})) {
+    if (compParts(id).some(p => p.slot === slot && p.id === part)) assembly[slot] = part;
+  }
+  const pool = compPool(id);
   return {
     companion: id,
+    assembly,
+    gilded: s.gilded !== false,
+    gild_polarity: s.gild_polarity || b.gild_polarity,
     slots: b.slots.map((x, i) => {
       const y = (s.slots || [])[i];
-      return y ? { mod: compMod(y.mod) ? y.mod : null, pol: y.pol ?? null, rank: y.rank ?? null } : x;
+      return y ? { mod: pool.some(m => m.id === y.mod) ? y.mod : null,
+        pol: compHost(id)?.assembly && s.gilded === false ? compInnate(id, assembly, false)[i] || null : y.pol ?? null, rank: y.rank ?? null }
+        : {...x, pol: compInnate(id, assembly, s.gilded !== false, s.gild_polarity || b.gild_polarity)[i] || null};
     }),
   };
 }
@@ -76,14 +94,88 @@ async function showCompanion(id) {
 
 function renderCompanion() {
   const c = compHost(comp.companion);
-  const f = META.sentinel_floor || {};
   $("comp-name").textContent = c.name;
-  $("comp-tags").innerHTML = [["Health", f.health], ["Shield", f.shield], ["Armor", f.armor]]
-    .map(([k, v]) => `<span class="tag">${escHtml(tr(k))} ${v}</span>`).join("");
+  renderCompBody();
+  renderCompStats();
+  refreshCompPanel();
   renderCompPresetBar();
   renderCompMods();
   renderCompCatalogue();
   $("comp-catalogue-search").oninput = renderCompCatalogue;
+}
+
+let compPanel = null, compPanelPending = "", compPanelTimer = null;
+const compPanelKey = () => JSON.stringify(companionLibraryPayload());
+
+function renderCompStats() {
+  const c = compHost(comp.companion);
+  const body = compPanel?.key === compPanelKey() ? compPanel.body : c.body;
+  const f = body?.stats || {};
+  $("comp-tags").innerHTML = [["Health", f.health], ["Shield", f.shield], ["Armor", f.armor]]
+    .map(([k, v]) => `<span class="tag">${escHtml(tr(k))} ${Math.round(Number(v) * 1000) / 1000}</span>`).join("");
+  $("comp-body-refused").textContent = (body?.refused || []).join("; ");
+  $("comp-body-unmodelled").textContent = (body?.unmodelled || []).map(tr).join(" ");
+  $("comp-floor-sources").innerHTML = (body?.floor_sources || []).map(source => {
+    const host = compHost(source.companion);
+    const parts = Object.values(source.assembly || {}).map(id => compPart(id)?.name || id);
+    return `<div>${escHtml(tr(source.stat.charAt(0).toUpperCase() + source.stat.slice(1)))}: ${escHtml(host?.name || source.companion)}${parts.length ? " · " + escHtml(parts.join(" · ")) : ""}</div>`;
+  }).join("");
+}
+
+function refreshCompPanel() {
+  const key = compPanelKey();
+  if (compPanel?.key === key || compPanelPending === key) return;
+  clearTimeout(compPanelTimer);
+  compPanelPending = key;
+  compPanelTimer = setTimeout(async () => {
+    const body = await api("/api/companion/panel", JSON.parse(key));
+    if (!comp || compPanelKey() !== key) return;
+    compPanelPending = "";
+    if (body?.error) { $("comp-body-refused").textContent = body.error; return; }
+    compPanel = {key, body};
+    renderCompStats();
+  }, 120);
+}
+
+function compAssemblyChanged(slot, value) {
+  const before = compInnate();
+  comp.assembly[slot] = value;
+  const after = compInnate();
+  comp.slots.forEach((s, i) => { if (s.pol === (before[i] || null)) s.pol = after[i] || null; });
+  compChanged();
+}
+
+function renderCompBody() {
+  const c = compHost(comp.companion);
+  const box = $("comp-assembly");
+  const slots = [...new Set(compParts(comp.companion).map(p => p.slot))];
+  box.innerHTML = slots.map(slot => {
+    const label = WFCAT.companion_part_labels?.[slot] || slot;
+    return `<label>${escHtml(tr(label))} ${ddButton("dd-comp-" + slot, {
+      value: comp.assembly[slot], search: true,
+      items: compParts(comp.companion).filter(p => p.slot === slot).map(p => ({value: p.id, label: p.name})),
+      onPick: value => compAssemblyChanged(slot, value),
+    })}</label>`;
+  }).join("");
+  const modular = !!c.assembly;
+  const gilding = modular || c.has_modular_members;
+  $("comp-gilded-row").hidden = !gilding;
+  $("comp-gilded").checked = comp.gilded;
+  const repolarize = mutate => {
+    const before = compInnate(); mutate(); const after = compInnate();
+    comp.slots.forEach((s, i) => { if ((modular && !comp.gilded) || s.pol === (before[i] || null)) s.pol = after[i] || null; });
+    compChanged();
+  };
+  $("comp-gilded").onchange = e => repolarize(() => { comp.gilded = e.target.checked; });
+  $("comp-gild-polarity").hidden = !modular || !comp.gilded;
+  $("comp-gild-polarity").innerHTML = modular && comp.gilded ? `<label>${escHtml(tr("Gilding polarity"))} ${ddButton("dd-comp-gild-polarity", {
+    value: comp.gild_polarity, items: (WFCAT.companion_gild_polarities || []).map(p => ({value:p, label:p.charAt(0).toUpperCase() + p.slice(1)})),
+    onPick: p => repolarize(() => { comp.gild_polarity = p; }),
+  })}</label>` : "";
+  $("comp-body-scope").innerHTML = (c.weapons || []).map(w => w.modelled
+    ? `<a href="${weaponPath(w.id)}">${escHtml(weaponInfo(w.id)?.name || w.name)}</a>`
+    : `${escHtml(w.name)} (${escHtml(tr("Not built yet"))})`).join(" · ");
+  $("comp-prototype-note").hidden = !c.prototype_scope;
 }
 
 /// The full companion catalog includes models and claws the robotic host cannot seat.
@@ -182,6 +274,7 @@ function compSlotEl(i) {
     e.stopPropagation();
     openCompPolMenu(i, e.currentTarget);
   }));
+  if (compHost(comp.companion)?.assembly && !comp.gilded) el.querySelectorAll('.pol-btn').forEach(b => { b.disabled = true; });
   return el;
 }
 
@@ -189,7 +282,7 @@ function openCompPolMenu(i, anchor) {
   closePopovers();
   const menu = $("slot-menu");
   const cur = comp.slots[i].pol;
-  menu.innerHTML = WF_POLS.map((p) => `<div class="mi ${p === cur ? "sel" : ""}" data-p="${p}">${polGlyph(p)} ${p === "Omni" ? "Omni (any)" : p}</div>`).join("")
+  menu.innerHTML = WF_POLS.filter(p => p !== "Umbra").map((p) => `<div class="mi ${p === cur ? "sel" : ""}" data-p="${p}">${polGlyph(p)} ${p === "Omni" ? "Omni (any)" : p}</div>`).join("")
     + `<div class="mi ${!cur ? "sel" : ""}" data-p="">◇ none</div>`;
   place(menu, anchor);
   menu.querySelectorAll(".mi").forEach((o) => o.addEventListener("click", () => {
@@ -209,15 +302,20 @@ function openCompPicker(idx, anchor) {
   s.focus();
 }
 
-/// THE POOL THIS HOST SEATS. A card already in another slot is offered as a
-/// SWAP; nothing else is refused, because a companion card has no family, no
-/// set and no ability to augment.
+/// Duplicate cards swap slots; families and host precept limits restrict additions.
 function renderCompMenu(idx, query) {
   const q = (query || "").trim().toLowerCase();
   const menu = $("wf-menu");
   const own = compMod(comp.slots[idx].mod);
   const at = (id) => comp.slots.findIndex((s, i) => i !== idx && s.mod === id);
-  const hits = compPool(comp.companion).filter((m) => searchHit(m, q))
+  const other = comp.slots.filter((s, i) => i !== idx).map(s => compMod(s.mod)).filter(Boolean);
+  const limits = compHost(comp.companion)?.precept_limits || {};
+  const fits = m => {
+    if (other.some(o => o.id === m.id)) return true;
+    if (m.family && other.some(o => o.family === m.family)) return false;
+    return !m.precept || limits[m.compat] == null || other.filter(o => o.precept && o.compat === m.compat).length < limits[m.compat];
+  };
+  const hits = compPool(comp.companion).filter((m) => fits(m) && searchHit(m, q))
     .sort((a, b) => (b.id === (own && own.id)) - (a.id === (own && own.id)) || a.name.localeCompare(b.name));
   menu.innerHTML = hits.length ? hits.map((m) => {
     const placed = at(m.id);

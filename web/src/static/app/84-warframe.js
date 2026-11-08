@@ -50,6 +50,7 @@ async function readWarframeCatalog() {
   c.artifact_mods.forEach((m) => over(m, "artifact_mods"));
   c.artifact_arcanes.forEach((a) => over(a, "artifact_arcanes"));
   (c.companion_mods || []).forEach((m) => over(m, "companion_mods"));
+  (c.companion_parts || []).forEach((p) => over(p, "companion_parts"));
   WFCAT = c;
   return c;
 }

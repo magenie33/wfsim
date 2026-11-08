@@ -1,0 +1,21 @@
+id: oxylus
+name: Oxylus
+kind: sentinel
+groups:
+- companion
+- oxylus
+- robotic
+- sentinel
+stats:
+  health: 560.0
+  shield: 250.0
+  armor: 80
+polarities:
+- penjaga
+- vazarin
+- penjaga
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/RadarPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Oxylus

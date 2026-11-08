@@ -1,0 +1,21 @@
+id: nautilus_prime
+name: Nautilus Prime
+kind: sentinel
+groups:
+- companion
+- nautilus
+- robotic
+- sentinel
+stats:
+  health: 560.0
+  shield: 350.0
+  armor: 175.0
+polarities:
+- penjaga
+- penjaga
+- penjaga
+- vazarin
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/NautilusPrimeSentinelPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Nautilus_Prime

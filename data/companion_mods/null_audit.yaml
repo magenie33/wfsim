@@ -1,5 +1,6 @@
 id: null_audit
 name: Null Audit
+family: hound_audit
 rarity: rare
 polarity: penjaga
 base_drain: 0

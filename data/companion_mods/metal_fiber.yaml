@@ -1,5 +1,6 @@
 id: metal_fiber
 name: "Metal Fiber"
+family: companion_armor
 rarity: common
 polarity: vazarin
 base_drain: 4
@@ -10,7 +11,9 @@ precept: false
 description: "+250% Armor"
 
 effects:
-  - kind: unmodelled
+  - kind: body_stat
+    stat: armor
+    bonus: 2.5003
     text: "+250% Armor"
 
 source:

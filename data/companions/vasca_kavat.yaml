@@ -1,0 +1,18 @@
+id: vasca_kavat
+name: Vasca Kavat
+kind: kavat
+groups:
+- beast
+- companion
+- kavat
+- vasca_kavat
+stats:
+  health: 310.0
+  shield: 270.0
+  armor: 300.0
+polarities:
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Game/CatbrowPet/VampireCatbrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Vasca_Kavat

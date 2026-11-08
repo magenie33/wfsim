@@ -57,6 +57,13 @@ pub fn canonical(input: &Value) -> Result<Value, String> {
             let mut b: comp::CompanionBuild = serde_json::from_value(build.clone()).map_err(|e| e.to_string())?;
             if b.mods.len() != comp::COMPANION_MOD_SLOTS { return Err("needs 10 mods".into()); }
             if !comp::companions().iter().any(|c| c.id == b.companion) { return Err("unknown companion".into()); }
+            if !b.gilded && comp::companion(&b.companion).is_some_and(|c| c.assembly.is_some()) {
+                return Err("modular companion library builds must be gilded".into());
+            }
+            let resolved = comp::resolve(&b)?;
+            if !resolved.refused.is_empty() { return Err(resolved.refused.join("; ")); }
+            b.assembly = resolved.assembly;
+            b.gild_polarity = resolved.gild_polarity;
             let mut seen = std::collections::BTreeSet::new();
             let mut drain = 0;
             for p in &mut b.mods {

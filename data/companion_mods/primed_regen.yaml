@@ -1,5 +1,6 @@
 id: primed_regen
 name: "Primed Regen"
+family: regen
 rarity: legendary
 polarity: penjaga
 base_drain: 4

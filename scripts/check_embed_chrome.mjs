@@ -12,7 +12,7 @@ const { evaluate, check } = app;
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   localStorage.clear(); sessionStorage.clear();
-  history.pushState({}, '', '/weapons/Praedos'); route(); await sleep(3500);
+  history.pushState({}, '', '/weapons/Praedos/builder'); route(); await sleep(3500);
   document.querySelector('#wielder-block > .bh').click(); await sleep(9000);
   const shown = (doc, sel) => [...doc.querySelectorAll(sel)].filter((e) => {
     const s = doc.defaultView.getComputedStyle(e);

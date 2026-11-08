@@ -1,0 +1,96 @@
+companions:
+  venari: 薇娜丽
+  venari_prime: 薇娜丽 Prime
+  panzer_vulpaphyla: 铁甲狐帕菲拉
+  crescent_vulpaphyla: 月刃狐帕菲拉
+  medjay_predasite: 守卫扑猎达赛
+  pharaoh_predasite: 法老扑猎达赛
+  vizier_predasite: 宰相扑猎达赛
+  sly_vulpaphyla: 狡黠狐帕菲拉
+  smeeta_kavat: 笑面型库娃
+  adarza_kavat: 镜像型库娃
+  vasca_kavat: 噬血型库娃
+  sahasa_kubrow: 突击型库狛
+  helminth_charger: Helminth 疾冲者
+  huras_kubrow: 匿踪型库狛
+  raksa_kubrow: 防护型库狛
+  sunika_kubrow: 猎杀型库狛
+  chesa_kubrow: 寻猎型库狛
+  diriga: 电气浮囊
+  carrier: 搬运者
+  dethcube: 死亡魔方
+  nautilus: 鹦鹉螺
+  djinn: 引灵
+  helios: 赫利俄斯
+  nautilus_prime: 鹦鹉螺 Prime
+  carrier_prime: 搬运者 Prime
+  dethcube_prime: 死亡魔方 Prime
+  helios_prime: 赫利俄斯 Prime
+  shade_prime: 阴影 Prime
+  wyrm_prime: 蛟龙 Prime
+  prisma_shade: 棱晶 阴影
+  oxylus: 奥克绪罗斯
+  shade: 阴影
+  taxon: 塔克桑
+  wyrm: 蛟龙
+  moa: 恐鸟
+  hound: 猎犬
+companion_parts:
+  virox_antigen: 韦罗斯抗原
+  desus_antigen: 迪瑟斯抗原
+  plagen_antigen: 佩莱臻抗原
+  poxi_antigen: 波希抗原
+  adra_mutagen: 阿德拉突变原
+  elsa_mutagen: 艾尔莎突变原
+  zarim_mutagen: 萨里姆突变原
+  phijar_mutagen: 菲加突变原
+  elasmun_antigen: 伊拉森抗原
+  iranon_antigen: 伊拉农抗原
+  ibexan_antigen: 艾比森抗原
+  tethron_antigen: 泰赛隆抗原
+  leptosam_mutagen: 勒普多萨姆突变原
+  chiten_mutagen: 奇顿突变原
+  arioli_mutagen: 阿里奥利突变原
+  monachod_mutagen: 蒙纳卓突变原
+  lehan_core: 厉悍核心
+  tyli_gyro: 泰利陀螺仪
+  alcrom_core: 艾克洛姆核心
+  krisys_core: 科里西斯核心
+  drex_core: 德勒克斯核心
+  lambeo_moa: 拉姆比欧恐鸟
+  nychus_moa: 尼丘斯恐鸟
+  oloro_moa: 欧罗若恐鸟
+  para_moa: 帕拉恐鸟
+  drimper_bracket: 德利柏脚架
+  tian_bracket: 天脚架
+  jonsin_bracket: 将信脚架
+  gauth_bracket: 高斯脚架
+  hona_bracket: 豪纳脚架
+  aegron_gyro: 艾格隆陀螺仪
+  trux_gyro: 特鲁克斯陀螺仪
+  harpen_gyro: 哈朋陀螺仪
+  hextra_gyro: 海克斯特拉陀螺仪
+  munit_gyro: 穆尼特陀螺仪
+  phazor_gyro: 费泽尔陀螺仪
+  atheca_gyro: 阿西卡陀螺仪
+  adlet_core: 艾莱核心
+  garmr_core: 加姆核心
+  raiju_core: 莱胡核心
+  dorma_hound: 铎玛猎犬
+  bhaira_hound: 拜拉猎犬
+  hec_hound: 骸克猎犬
+  cela_bracket: 塞拉脚架
+  urga_bracket: 厄加脚架
+  zubb_bracket: 乍布脚架
+  wanz_stabilizer: 万兹稳定器
+  hinta_stabilizer: 辛塔稳定器
+  frak_stabilizer: 锐克稳定器
+ui:
+  MODEL: 型号
+  CORE: 核心
+  GYRO: 陀螺仪
+  BRACKET: 脚架
+  STABILIZER: 稳定器
+  Antigen: 抗原
+  Mutagen: 突变原
+  GILDED: 已镀金

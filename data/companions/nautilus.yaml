@@ -1,0 +1,20 @@
+id: nautilus
+name: Nautilus
+kind: sentinel
+groups:
+- companion
+- nautilus
+- robotic
+- sentinel
+stats:
+  health: 560.0
+  shield: 250.0
+  armor: 80
+polarities:
+- penjaga
+- penjaga
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/EmpyreanSentinelPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Nautilus

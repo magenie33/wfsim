@@ -557,7 +557,9 @@ function weaponPresetInfo(p, weapon = p.scope || p.state.weapon || presetWeapon(
     + recommendationControl(p, "preset_info");
 }
 function companionPresetInfo(state) {
-  return buildCardHtml({mods:(state.slots || []).filter(s => s?.mod).map(s => {
+  const parts = Object.values(state.assembly || {}).map(id => compPart(id)?.name || id);
+  if (parts.length) parts.push(tr(state.gilded === false ? "Ungilded" : "Gilded"));
+  return (parts.length ? presetInfoSection("Assembly", parts) : "") + buildCardHtml({mods:(state.slots || []).filter(s => s?.mod).map(s => {
     const m = compMod(s.mod); return {label:m?.name || s.mod, img:m ? IMG(m.image) : null, rank:s.rank ?? m?.max_rank};
   })});
 }

@@ -1,0 +1,19 @@
+id: medjay_predasite
+name: Medjay Predasite
+kind: predasite
+groups:
+- beast
+- companion
+- kubrow
+- medjay_predasite
+- predasite
+stats:
+  health: 710.0
+  shield: 350.0
+  armor: 300.0
+polarities:
+- penjaga
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/MedjayPredatorKubrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Medjay_Predasite
+assembly: predasite

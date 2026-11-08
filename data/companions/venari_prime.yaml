@@ -1,0 +1,20 @@
+id: venari_prime
+name: Venari Prime
+kind: kavat
+groups:
+- beast
+- companion
+- kavat
+- venari
+stats:
+  health: 1050.0
+  shield: 0.0
+  armor: 450.0
+polarities:
+- naramon
+- vazarin
+- madurai
+- penjaga
+internal_name: /Lotus/Powersuits/Khora/Kavat/KhoraPrimeKavatPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Venari_Prime

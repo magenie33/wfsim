@@ -1,0 +1,20 @@
+id: shade
+name: Shade
+kind: sentinel
+groups:
+- companion
+- robotic
+- sentinel
+- shade
+stats:
+  health: 600.0
+  shield: 130.0
+  armor: 80
+polarities:
+- penjaga
+- penjaga
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/ShadePowerSuit
+source:
+  url: https://wiki.warframe.com/w/Shade

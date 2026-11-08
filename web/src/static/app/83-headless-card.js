@@ -46,6 +46,7 @@ function headlessApplyNames(meta, i18n) {
     for (const t of w.evolutions || []) for (const o of t.options || []) over(o, "evolutions");
   }
   for (const e of meta.enemies || []) over(e, "enemies");
+  for (const c of meta.companions || []) over(c, "companions");
   for (const pool of Object.values(meta.mod_pools || {})) for (const m of pool) over(m, "mods");
   for (const a of meta.arcanes || []) over(a, "arcanes");
 }

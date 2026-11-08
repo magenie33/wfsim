@@ -1,0 +1,10 @@
+ui:
+  "Assembly": "装配"
+  "Ungilded": "未镀金"
+  "Gilding polarity": "镀金极性"
+  "Body stats": "本体属性"
+  "Compatible weapons": "可装备武器"
+  "Each attribute is the minimum within this Prototype's legal carrier scope. The sources below can be different assemblies.": "每项属性分别取此原型合法携带范围内的最低值，下列来源可以是不同装配。"
+  "Body stats modify this companion. In the fight marks effects applied to its weapon. Other card effects are not computed.": "本体属性修改此同伴；标记为战斗生效的效果作用于它的武器。其余卡片效果尚未计算。"
+  "Companion movement, survival events, precept AI and owner links are not simulated.": "尚未模拟同伴移动、生存事件、指令 AI 和主人关联。"
+  "Mutagen damage resistances and inherited combinations are not simulated.": "尚未模拟抗性及遗传组合。"

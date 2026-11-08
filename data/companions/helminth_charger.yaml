@@ -1,0 +1,19 @@
+id: helminth_charger
+name: Helminth Charger
+kind: helminth
+groups:
+- beast
+- companion
+- helminth_charger
+- kubrow
+stats:
+  health: 710.0
+  shield: 330.0
+  armor: 300.0
+polarities:
+- penjaga
+- madurai
+- penjaga
+internal_name: /Lotus/Types/Game/KubrowPet/ChargerKubrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Helminth_Charger

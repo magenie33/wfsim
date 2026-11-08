@@ -1,0 +1,22 @@
+id: shade_prime
+name: Shade Prime
+kind: sentinel
+groups:
+- companion
+- robotic
+- sentinel
+- shade
+stats:
+  health: 700.0
+  shield: 300.0
+  armor: 100.0
+polarities:
+- penjaga
+- naramon
+- penjaga
+- penjaga
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/PrimeShadePowerSuit
+source:
+  url: https://wiki.warframe.com/w/Shade_Prime

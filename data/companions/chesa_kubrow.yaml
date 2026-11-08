@@ -1,0 +1,19 @@
+id: chesa_kubrow
+name: Chesa Kubrow
+kind: kubrow
+groups:
+- beast
+- chesa_kubrow
+- companion
+- kubrow
+stats:
+  health: 940.0
+  shield: 290.0
+  armor: 300.0
+polarities:
+- penjaga
+- vazarin
+- penjaga
+internal_name: /Lotus/Types/Game/KubrowPet/RetrieverKubrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Chesa_Kubrow

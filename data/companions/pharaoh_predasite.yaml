@@ -1,0 +1,19 @@
+id: pharaoh_predasite
+name: Pharaoh Predasite
+kind: predasite
+groups:
+- beast
+- companion
+- kubrow
+- pharaoh_predasite
+- predasite
+stats:
+  health: 710.0
+  shield: 350.0
+  armor: 300.0
+polarities:
+- penjaga
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/PharaohPredatorKubrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Pharaoh_Predasite
+assembly: predasite

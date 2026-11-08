@@ -1,0 +1,16 @@
+id: hound
+name: Hound
+kind: hound
+groups:
+- companion
+- robotic
+- hound
+polarities:
+- penjaga
+- penjaga
+- penjaga
+- penjaga
+assembly: hound
+internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Hound_(Companion)

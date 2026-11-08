@@ -1,0 +1,21 @@
+id: djinn
+name: Djinn
+kind: sentinel
+groups:
+- companion
+- djinn
+- robotic
+- sentinel
+stats:
+  health: 560.0
+  shield: 250.0
+  armor: 80
+polarities:
+- penjaga
+- naramon
+- penjaga
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/GubberPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Djinn

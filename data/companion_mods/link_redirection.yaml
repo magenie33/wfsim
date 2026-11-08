@@ -1,5 +1,6 @@
 id: link_redirection
 name: "Link Redirection"
+family: companion_shield
 rarity: uncommon
 polarity: vazarin
 base_drain: 4

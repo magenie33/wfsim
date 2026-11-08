@@ -93,12 +93,13 @@ pub struct LocaleSpec {
     /// filled from our English (`scripts/de_i18n.py frame_passives`).
     #[serde(default)]
     pub warframe_passives: BTreeMap<String, String>,
-    /// THE COMPANION BUILDER'S cards (`data/companion_mods/`), joined on
-    /// `internal_name`: a name, and DE's card text one entry per rank. No
-    /// table for a host: `data/companions/` names a kind, and DE's export has
-    /// no entry for one.
+    /// Companion card names and per-rank text, joined by internal path.
     #[serde(default)]
     pub companion_mods: BTreeMap<String, String>,
+    #[serde(default)]
+    pub companions: BTreeMap<String, String>,
+    #[serde(default)]
+    pub companion_parts: BTreeMap<String, String>,
     #[serde(default)]
     pub companion_mod_descriptions: BTreeMap<String, Vec<String>>,
     /// THE ROUGH CATALOGUE (`data/catalogue/`), keyed `<slot>/<id>`: a card's
@@ -199,6 +200,8 @@ impl LocaleSpec {
         maps(&mut self.warframe_ability_descriptions, other.warframe_ability_descriptions, path, "warframe_ability_descriptions");
         maps(&mut self.warframe_passives, other.warframe_passives, path, "warframe_passives");
         maps(&mut self.companion_mods, other.companion_mods, path, "companion_mods");
+        maps(&mut self.companions, other.companions, path, "companions");
+        maps(&mut self.companion_parts, other.companion_parts, path, "companion_parts");
         lists(&mut self.companion_mod_descriptions, other.companion_mod_descriptions, path, "companion_mod_descriptions");
         maps(&mut self.catalogue, other.catalogue, path, "catalogue");
         maps(&mut self.catalogue_descriptions, other.catalogue_descriptions, path, "catalogue_descriptions");

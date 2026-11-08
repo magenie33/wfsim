@@ -1,5 +1,6 @@
 id: enhanced_vitality
 name: "Enhanced Vitality"
+family: companion_health
 rarity: common
 polarity: vazarin
 base_drain: 2
@@ -10,7 +11,9 @@ precept: false
 description: "+250% Health"
 
 effects:
-  - kind: unmodelled
+  - kind: body_stat
+    stat: health
+    bonus: 2.5003
     text: "+250% Health"
 
 source:

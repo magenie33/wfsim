@@ -1,0 +1,427 @@
+slot_labels:
+  model: MODEL
+  core: CORE
+  gyro: GYRO
+  bracket: BRACKET
+  stabilizer: STABILIZER
+  antigen: Antigen
+  mutagen: Mutagen
+parts:
+- id: virox_antigen
+  name: VIROX ANTIGEN
+  family: vulpaphyla
+  slot: antigen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterAntigenA
+  polarity: madurai
+- id: desus_antigen
+  name: DESUS ANTIGEN
+  family: vulpaphyla
+  slot: antigen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterAntigenB
+  polarity: vazarin
+- id: plagen_antigen
+  name: PLAGEN ANTIGEN
+  family: vulpaphyla
+  slot: antigen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterAntigenC
+  polarity: naramon
+- id: poxi_antigen
+  name: POXI ANTIGEN
+  family: vulpaphyla
+  slot: antigen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterAntigenD
+  polarity: penjaga
+- id: adra_mutagen
+  name: ADRA MUTAGEN
+  family: vulpaphyla
+  slot: mutagen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterMutagenA
+  unmodelled:
+  - Mutagen damage resistances and inherited combinations are not simulated.
+- id: elsa_mutagen
+  name: ELSA MUTAGEN
+  family: vulpaphyla
+  slot: mutagen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterMutagenB
+  unmodelled:
+  - Mutagen damage resistances and inherited combinations are not simulated.
+- id: zarim_mutagen
+  name: ZARIM MUTAGEN
+  family: vulpaphyla
+  slot: mutagen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterMutagenC
+  unmodelled:
+  - Mutagen damage resistances and inherited combinations are not simulated.
+- id: phijar_mutagen
+  name: PHIJAR MUTAGEN
+  family: vulpaphyla
+  slot: mutagen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedCritterMutagenD
+  unmodelled:
+  - Mutagen damage resistances and inherited combinations are not simulated.
+- id: elasmun_antigen
+  name: ELASMUN ANTIGEN
+  family: predasite
+  slot: antigen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorAntigenA
+  polarity: madurai
+- id: iranon_antigen
+  name: IRANON ANTIGEN
+  family: predasite
+  slot: antigen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorAntigenB
+  polarity: vazarin
+- id: ibexan_antigen
+  name: IBEXAN ANTIGEN
+  family: predasite
+  slot: antigen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorAntigenC
+  polarity: naramon
+- id: tethron_antigen
+  name: TETHRON ANTIGEN
+  family: predasite
+  slot: antigen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorAntigenD
+  polarity: penjaga
+- id: leptosam_mutagen
+  name: LEPTOSAM MUTAGEN
+  family: predasite
+  slot: mutagen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorMutagenA
+  unmodelled:
+  - Mutagen damage resistances and inherited combinations are not simulated.
+- id: chiten_mutagen
+  name: CHITEN MUTAGEN
+  family: predasite
+  slot: mutagen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorMutagenB
+  unmodelled:
+  - Mutagen damage resistances and inherited combinations are not simulated.
+- id: arioli_mutagen
+  name: ARIOLI MUTAGEN
+  family: predasite
+  slot: mutagen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorMutagenC
+  unmodelled:
+  - Mutagen damage resistances and inherited combinations are not simulated.
+- id: monachod_mutagen
+  name: MONACHOD MUTAGEN
+  family: predasite
+  slot: mutagen
+  internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/CreaturePetParts/Deimos/InfestedPredatorMutagenD
+  unmodelled:
+  - Mutagen damage resistances and inherited combinations are not simulated.
+- id: lehan_core
+  name: Lehan Core
+  family: moa
+  slot: core
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MeleeMoaPetEngine
+  modify_base: true
+  bonus:
+    health: 0.15
+    armor: 0.15
+  ungilded_bonus:
+    health: 0.075
+    armor: 0.075
+- id: tyli_gyro
+  name: Tyli Gyro
+  family: moa
+  slot: gyro
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MeleeMoaPetPayload
+  modify_base: true
+  bonus:
+    health: 0.1
+    shield: -0.1
+    armor: 0.1
+  ungilded_bonus:
+    health: 0.05
+    shield: -0.05
+    armor: 0.05
+- id: alcrom_core
+  name: Alcrom Core
+  family: moa
+  slot: core
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetEngineArcotek
+  modify_base: true
+  bonus:
+    health: 0.1
+    shield: 0.1
+    armor: 0.1
+  ungilded_bonus:
+    health: 0.05
+    shield: 0.05
+    armor: 0.05
+- id: krisys_core
+  name: Krisys Core
+  family: moa
+  slot: core
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetEngineKrisys
+  modify_base: true
+  bonus:
+    health: 0.1
+    shield: 0.05
+    armor: 0.15
+  ungilded_bonus:
+    health: 0.05
+    shield: 0.025
+    armor: 0.075
+- id: drex_core
+  name: Drex Core
+  family: moa
+  slot: core
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetEngineThricore
+  modify_base: true
+  bonus:
+    health: 0.1
+    shield: 0.15
+    armor: 0.05
+  ungilded_bonus:
+    health: 0.05
+    shield: 0.075
+    armor: 0.025
+- id: lambeo_moa
+  name: Lambeo Moa
+  family: moa
+  slot: model
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadLambeo
+- id: nychus_moa
+  name: Nychus Moa
+  family: moa
+  slot: model
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadMelee
+- id: oloro_moa
+  name: Oloro Moa
+  family: moa
+  slot: model
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadOloro
+- id: para_moa
+  name: Para Moa
+  family: moa
+  slot: model
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetHeadPara
+- id: drimper_bracket
+  name: Drimper Bracket
+  family: moa
+  slot: bracket
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetLegA
+- id: tian_bracket
+  name: Tian Bracket
+  family: moa
+  slot: bracket
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetLegB
+  polarity: vazarin
+- id: jonsin_bracket
+  name: Jonsin Bracket
+  family: moa
+  slot: bracket
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetLegC
+  polarity: madurai
+- id: gauth_bracket
+  name: Gauth Bracket
+  family: moa
+  slot: bracket
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetLegD
+  polarity: naramon
+- id: hona_bracket
+  name: Hona Bracket
+  family: moa
+  slot: bracket
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetLegMelee
+  polarity: naramon
+- id: aegron_gyro
+  name: Aegron Gyro
+  family: moa
+  slot: gyro
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadAegron
+  modify_base: true
+  bonus:
+    health: -0.05
+    shield: 0.05
+    armor: 0.1
+  ungilded_bonus:
+    health: -0.025
+    shield: 0.025
+    armor: 0.05
+- id: trux_gyro
+  name: Trux Gyro
+  family: moa
+  slot: gyro
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadCryoxion
+  modify_base: true
+  bonus:
+    health: 0.05
+    shield: -0.05
+    armor: 0.1
+  ungilded_bonus:
+    health: 0.025
+    shield: -0.025
+    armor: 0.05
+- id: harpen_gyro
+  name: Harpen Gyro
+  family: moa
+  slot: gyro
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadDarta
+  modify_base: true
+  bonus:
+    health: 0.05
+    shield: 0.1
+    armor: -0.05
+  ungilded_bonus:
+    health: 0.025
+    shield: 0.05
+    armor: -0.025
+- id: hextra_gyro
+  name: Hextra Gyro
+  family: moa
+  slot: gyro
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadHextra
+  modify_base: true
+  bonus:
+    health: 0.1
+    shield: 0.05
+    armor: -0.05
+  ungilded_bonus:
+    health: 0.05
+    shield: 0.025
+    armor: -0.025
+- id: munit_gyro
+  name: Munit Gyro
+  family: moa
+  slot: gyro
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadMunitron
+  modify_base: true
+  bonus:
+    health: 0.1
+    shield: -0.05
+    armor: 0.05
+  ungilded_bonus:
+    health: 0.05
+    shield: -0.025
+    armor: 0.025
+- id: phazor_gyro
+  name: Phazor Gyro
+  family: moa
+  slot: gyro
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadTazron
+  modify_base: true
+  bonus:
+    health: -0.05
+    shield: 0.1
+    armor: 0.05
+  ungilded_bonus:
+    health: -0.025
+    shield: 0.05
+    armor: 0.025
+- id: atheca_gyro
+  name: Atheca Gyro
+  family: moa
+  slot: gyro
+  internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetParts/MoaPetPayloadThermocor
+  modify_base: true
+  bonus:
+    health: 0.2
+    shield: -0.05
+    armor: -0.05
+  ungilded_bonus:
+    health: 0.1
+    shield: -0.025
+    armor: -0.025
+- id: adlet_core
+  name: Adlet Core
+  family: hound
+  slot: core
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartBodyA
+  base:
+    health: 350.0
+    shield: 450.0
+    armor: 350.0
+- id: garmr_core
+  name: Garmr Core
+  family: hound
+  slot: core
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartBodyB
+  base:
+    health: 350.0
+    shield: 350.0
+    armor: 450.0
+- id: raiju_core
+  name: Raiju Core
+  family: hound
+  slot: core
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartBodyC
+  base:
+    health: 450.0
+    shield: 350.0
+    armor: 350.0
+- id: dorma_hound
+  name: Dorma Hound
+  family: hound
+  slot: model
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadA
+- id: bhaira_hound
+  name: Bhaira Hound
+  family: hound
+  slot: model
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadB
+- id: hec_hound
+  name: Hec Hound
+  family: hound
+  slot: model
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartHeadC
+- id: cela_bracket
+  name: Cela Bracket
+  family: hound
+  slot: bracket
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartLegsA
+  bonus:
+    health: 0.2
+    shield: 0.3
+    armor: -0.1
+  ungilded_bonus:
+    health: 0.1
+    shield: 0.15
+    armor: -0.05
+- id: urga_bracket
+  name: Urga Bracket
+  family: hound
+  slot: bracket
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartLegsB
+  bonus:
+    health: 0.3
+    shield: -0.1
+    armor: 0.2
+  ungilded_bonus:
+    health: 0.15
+    shield: -0.05
+    armor: 0.1
+- id: zubb_bracket
+  name: Zubb Bracket
+  family: hound
+  slot: bracket
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartLegsC
+  bonus:
+    health: -0.1
+    shield: 0.2
+    armor: 0.3
+  ungilded_bonus:
+    health: -0.05
+    shield: 0.1
+    armor: 0.15
+- id: wanz_stabilizer
+  name: Wanz Stabilizer
+  family: hound
+  slot: stabilizer
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartTailA
+  polarity: naramon
+- id: hinta_stabilizer
+  name: Hinta Stabilizer
+  family: hound
+  slot: stabilizer
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartTailB
+  polarity: madurai
+- id: frak_stabilizer
+  name: Frak Stabilizer
+  family: hound
+  slot: stabilizer
+  internal_name: /Lotus/Types/Friendly/Pets/ZanukaPets/ZanukaPetParts/ZanukaPetPartTailC
+  polarity: vazarin

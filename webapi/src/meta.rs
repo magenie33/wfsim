@@ -517,6 +517,9 @@ pub fn meta_json() -> Value {
                 "refire": wspec(&w.id).attack.refire,
                 "assumed_attack_interval_seconds": wspec(&w.id).attack.refire.assumed_interval(),
                 "wielder_modelled": wspec(&w.id).wielder_modelled,
+                "companion_carriers": wfsim_engine::data::companions::carriers(&w.id).iter().map(|c| &c.id).collect::<Vec<_>>(),
+                "companion_default": wfsim_engine::data::companions::weapon_scope(&w.id).map(|s| &s.prototype),
+                "companion_scope": wfsim_engine::data::companions::weapon_scope(&w.id).map(|s| &s.id),
                 // An Arch-Gun has none either, so `sentinel` cannot answer it.
                 "has_exilus_slot": wfsim_engine::data::weapons::has_exilus_slot(&w.id),
                 // AN EXALTED WEAPON IS RANKED APART, and the page needs to know
@@ -988,11 +991,22 @@ pub fn meta_json() -> Value {
             "weapon_passive_unmodelled": (f.passive_unmodelled == Some(wfsim_engine::data::warframes::PassiveReach::Weapon))
                 .then_some(&f.passive),
         })).collect::<Vec<_>>(),
-        // THE COMPANIONS A ROBOTIC WEAPON CAN BE HELD BY — a Sentinel or a MOA;
-        // their stat block is `sentinel_floor` below.
+        // Concrete bodies and derived prototypes share the same resolver.
         "companions": wfsim_engine::data::companions::companions().iter().map(|c| json!({
             "id": c.id,
             "name": c.name,
+            "kind": c.kind,
+            "groups": wfsim_engine::data::companions::host_groups(c),
+            "precept_limits": wfsim_engine::data::companions::host_precept_limits(c),
+            "weapons": wfsim_engine::data::companions::carrier_weapons(c),
+            "prototype_scope": c.prototype_scope,
+            "assembly": c.assembly,
+            "has_modular_members": c.prototype_scope.as_deref()
+                .and_then(wfsim_engine::data::companions::carrier_scope).is_some_and(|s| s.companions.iter()
+                    .filter_map(|id| wfsim_engine::data::companions::companion(id)).any(|h| h.assembly.is_some())),
+            "default_assembly": wfsim_engine::data::companions::default_parts(c),
+            "polarities": c.polarities.iter().map(|p| crate::warframe::polarity_label(p)).collect::<Vec<_>>(),
+            "body": crate::companion::companion_panel_json(&json!({"companion":c.id})),
         })).collect::<Vec<_>>(),
         // THE OPERATOR'S card, its own home group: a player has one Operator.
         "operator_image": assets().operators.get("operator"),
@@ -1070,7 +1084,7 @@ pub fn meta_json() -> Value {
                 .collect::<Vec<_>>(),
         },
         "tenno_floor": floor_json(wfsim_engine::data::tenno::default_tenno()),
-        "sentinel_floor": floor_json(wfsim_engine::data::tenno::sentinel_wielder()),
+        "sentinel_floor": floor_json(wfsim_engine::data::companions::sentinel_wielder()),
         "factions": factions,
         // WARFRAME ABILITY BUFFS, the catalogue the scenario's own section
         // draws from (`data/abilities/`). `value` and `duration_seconds` are the

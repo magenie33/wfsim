@@ -2118,20 +2118,24 @@ untouched.
 ## `check_companion_mods`
 
 The searchable catalogue includes beast and claw cards outside the robotic
-host's equipment pool, and filtering it leaves that pool unchanged.
-
-The companion builder draws ten general slots with four innate Penjaga
-polarities, offers the universal pool and no model's own card, says plainly
-what of it pays, and seating one through the picker spends capacity and is born
-as a build; a rank down costs a point less.
+host's equipment pool; filtering it leaves that pool unchanged. The default
+Prototype draws ten general slots with common innate polarities, offers only
+its compatible pool, and shows computed effects. Seating a card creates a build
+and spends capacity; a rank down costs one less. Claws have modelled bodies and
+read-only automatic interval estimates, without a scenario override.
 
 ## `check_companion_host`
 
-A robotic weapon is held by the companion host and, while the host seats no
-card, sends no wielder; its picker offers the hosts and never a Warframe, and its block frames the host's own page,
-which frames nothing further. A build of the host is what the weapon holds, and
-an ordinary weapon still holds a Warframe. The floor is the Sentinels' and the
-MOA's lowest (367 / 130 / 80).
+The fight refuses illegal Deconstructor/claw/Hound hosts and foreign modular
+parts. The picker offers only the weapon's carriers and preserves even an
+unmodded body's identity. A companion frames its builder and nothing further;
+ordinary weapons still hold Warframes. The catalogue has concrete bodies,
+scoped prototypes and parts. MOA/Hound minima have concrete witnesses; the
+general ranged health minimum is 367.5. A part chosen through the picker is
+saved and reaches the weapon request while the companion catalogue is absent.
+The agent door selects the same scoped default and refuses incompatible hosts.
+Against the previous implementation the guard check rejects all four results,
+and the saved-assembly assertion catches fallback to the default core.
 
 ## `check_bar_before_catalog`
 
@@ -2143,11 +2147,11 @@ the `app.error` the live log counted.
 
 ## `check_fired_up`
 
-A Sentinel offers Fired Up and the floor host does not; seated, it is marked as
-the card the fight runs and Enhanced Vitality as not computed. A Verglas linking
-that Sentinel sends its cards with their ranks as the wielder, and its score
-climbs from no card to rank 0 to max rank; on the floor host the card pays
-nothing, and the floor host with no build sends no wielder.
+A Sentinel offers Fired Up and the global Prototype does not. Fired Up is marked
+as a weapon effect and Enhanced Vitality as a body-stat effect. A Verglas sends
+the linked body's cards and ranks; its score climbs from no card to rank 0 to
+max rank. A forged incompatible Fired Up build is refused. An unmodded body
+keeps its identity in the request.
 
 ## `check_embed_chrome`
 

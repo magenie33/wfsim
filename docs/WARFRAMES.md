@@ -266,73 +266,57 @@ different wielder and never reaches the board.
 
 ## Companions
 
-**A ROBOTIC WEAPON IS HELD BY A COMPANION, NOT BY A WARFRAME.** Its legal
-carrier set is weapon-specific: the two Deconstructors accept only Helios and
-Helios Prime. [COMPANION_WEAPONS.md](COMPANION_WEAPONS.md) states every weapon's
-carrier scope, including Hounds and Beast claws. The implemented robotic
-weapon's `wielder` link names a companion HOST
-(`data/companions/`, `engine::data::tenno::companions`) and its picker offers
-the hosts and no frame; it does not enforce those per-weapon carrier scopes.
+A companion weapon links a companion body or a weapon-scoped Prototype.
+`data/companion_scopes.yaml` declares the legal carriers and default for each
+weapon; [COMPANION_WEAPONS.md](COMPANION_WEAPONS.md) lists the boundaries.
+The picker and the shared panel/simulation/search parser enforce the same set.
+An explicit illegal host, foreign part, incompatible mod family or excessive
+precept selection is refused.
 
-- The host's stat block is the wielder floor, `data/tenno/sentinel.yaml`: the
-  LOWEST any of the 17 Sentinels or the MOA has, stat by stat, stated nowhere
-  else. Sentinel stats are the wiki's infoboxes; a MOA is 350 / 350 / 350 before
-  its parts, and the wiki prints the range they reach ("367-473 for Health,
-  315-438 for Shields and 350-438 for Armor"), whose lows are the floor's
-  candidates. Health is the MOA's 367 and shield and armor are the Sentinels'.
-- A COMPANION BUILD IS MODS, AND ONE OF THEM PAYS. `data/companion_mods/`
-  holds robotic, beast and beast-claw cards; **TEN GENERAL SLOTS** and no special one
-  (W`Mod`: *"Companions have 10 general slots"*), **FOUR INNATE PENJAGA
-  POLARITIES** on every companion (W`Sentinel`; W`MOA_(Companion)`: *"Like
-  Sentinels, MOAs start with four Penjaga polarities"*, a bracket adding at most
-  one more, which the floor host does not take), and an Orokin Reactor doubles
-  capacity as it does a Warframe's. No robotic weapon pool reads a wielder's
-  stat and no precept is run, so a card is `unmodelled` — except a line about
-  the companion's WEAPON, `element_per_hit` (Fired Up's Heat a hit, docs/
-  MECHANICS.md §3 rule 8), the one other kind the loader takes. A robotic
-  weapon sends its host's seated cards as its wielder, `{companion, mods}` with
-  each card's rank, and nothing while none is seated; the server reads what of
-  them a fight runs (`data::companions::CompanionBuild`) into the floor's
-  Tenno, through `parse_fight`, so a search scores what the simulator replays.
-  No ruler keeps it (`carries_wielder`): every board row is the floor host's.
-- **A HOST SEATS THE UNIVERSAL CARDS AND ITS OWN.** `compat` is DE's own
-  `compatName`: `companion` and `robotic` fit every companion, and anything else
-  names a kind (`sentinel`, `moa`) or one model. The floor host is the floor of
-  all of them rather than one of them, so it seats the 37 universal cards and no
-  model's own (`data::companions::seatable_by`); the **Sentinel** host seats
-  those and every Sentinel's own, Fired Up among them, on the same floor stats.
-- The link follows the same rules as a Warframe link, by preset id
-  (docs/UI.md §The default is the blank). The WARFRAME BEHIND A COMPANION — the
-  aura and archon shards a robotic weapon takes from it — is not modelled: that
-  is a link a companion does not carry yet.
+`data/companions/` contains concrete bodies and scoped prototypes.
+`data/companion_parts.yaml` supplies the modular families. A MOA selects model,
+core, gyro and bracket; a Hound selects model, core, bracket and stabilizer.
+Vulpaphyla and Predasites select mutagen and antigen. Every selected part belongs
+to its family's slot; missing slots receive complete legal defaults. Gilding
+selects the client gilded modifiers and grants one ordinary polarity, chosen
+on the concrete body. Innate polarities come from the body and selected parts.
+Mutagen resistances and inherited combinations remain unmodelled.
 
-The companion page's searchable Mod catalogue lists every companion card,
-including model-specific precepts and beast-claw cards. The robotic host's
-picker offers only the cards it can seat; the catalogue does not equip them.
+MOA parts with `ModifyBase` change the base before body mods multiply it.
+Hound cores supply base attributes; bracket bonuses add to body-mod bonuses.
+`data::companions::resolve` owns both formulas. Enhanced Vitality, Calculated
+Redirection and Metal Fiber modify health, shield and armor at the seated rank.
+Their native per-rank coefficient is 0.2273; the displayed +250% card rounds
+the rank-10 coefficient 2.5003.
 
-Companion effects keep their actual recipient and trigger:
+A Prototype enumerates its legal concrete bodies and every legal assembly,
+applies the selected gilded state and body mods, then takes each attribute's
+minimum. Its three witnesses name the actual body and parts that attain those
+minima. Its mod pool is the intersection of the represented bodies' compatible
+groups. Its innate polarities are the common multiset; it gets no additional
+gilding polarity shared by all possible choices. There is no copied stat floor.
 
-- Body stats and utility need their own context. Hastened Deflection and Mecha
-  Recharge modify companion shield recovery, which the fight does not run.
-  Fetch, Retriever cards and Scan Aquatic Lifeforms need pickups, loot or fishing.
-- Precepts need the companion's actions and targets. Viral Quills, Hound
-  attacks and Sharpened Claws have no companion attack timeline here. Ambush
-  buffs Shade's owner after Ghost ends; Cat's Eye buffs nearby allies. Neither
-  is a damage modifier on Shade's robotic weapon.
-- Beast claws are separate weapons with client-sourced base damage, crit and
-  status inputs. Their cards live in `mods/beast_claws/`; the companion catalogue
-  reads those same files. Conditioning converts base physical damage before
-  modifiers. Elemental conversion runs after coalescing and covers both declared
-  elemental masks. Unsupported conditional effects and posture AI remain visible.
-  The complete attack cycle is uncalibrated. Default intervals use representative
-  ordinary-action proxies for the inherited pet weapon family. The page shows
-  the automatic estimate without an interval input. There is no assumed
-  animation-speed scaling rule. The beast body and owner
-  link are not modelled, and robotic host effects cannot reach its claws.
-- Hunter Synergy and Mecha Overdrive read the owner's modded primary weapon,
-  not the companion's current weapon. Tandem Bond transfers combo from the
-  companion's hits and grants a separate buff after the owner's heavy hit.
-  They require linked actors and their actual events.
+A body has ten general mod slots, no Exilus or Arcane slot, and reactor capacity
+under the reader's Forma rules. Model-specific precepts stay with their compatible
+body; MOAs can seat any two MOA precepts. Hounds can seat one Audit, one Denial and
+one Prospectus. Mod variants and each Link/body-stat pair are mutually exclusive.
+Fired Up's per-hit Heat affects the carried weapon; unsupported utility, owner
+links and precept AI are disclosed separately from computed body stats.
+
+The saved weapon link keeps `{frame, preset}`; its request resolves to
+`{companion, assembly, gilded, gild_polarity, mods}`. Even an unmodded concrete
+body sends its identity. Missing assembly/gilding fields preserve old presets:
+parts default legally and gilding defaults on. Assembly and gilding are part of
+public-library build identity; public modular builds must be gilded. A board
+ruler that does not carry a wielder uses the weapon's own scoped default.
+
+The companion page's searchable Mod catalogue includes beast-claw cards without
+equipping them on the body. Claws remain separate weapons with their own mod
+pool and fixed breed/variant binding. Their automatic ordinary-action interval
+is a family proxy, without a manual override or assumed speed-scaling rule.
+The complete AI cycle is uncalibrated. Movement, companion survival events,
+precept timelines and the owner's Warframe link are not simulated. Hunter
+Synergy, Mecha Overdrive and Tandem Bond require those linked actors and events.
 
 ## Adding a frame
 

@@ -305,7 +305,7 @@ def main():
                   'status_chance': canonical(damage['ProcChance']), 'punch_through_m': 0.0,
                   'combo_multiplies_damage': False, 'damage': vector}
         doc = {'id': identity, 'name': name, 'slot': 'sentinel', 'weapon_type': 'melee',
-               'wielder_modelled': False, 'no_riven': True,
+               'wielder_modelled': True, 'no_riven': True,
                'class': 'beast_claws', 'form': 'base', 'default_form': True,
                'mod_pools': ['beast_claws'], 'mastery_rank': 0, 'max_rank': 30,
                'polarities': [], 'internal_name': path, 'co_behavior': 'additive_with_base_damage',

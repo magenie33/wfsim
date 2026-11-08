@@ -63,6 +63,7 @@ pub use simulate::{
 };
 pub use catalogue::catalogue_json;
 pub use warframe::{operator_panel_json, warframe_catalog_json, warframe_panel_json};
+mod companion;
 
 use serde_json::Value;
 
@@ -97,6 +98,7 @@ pub const ROUTES: &[(&str, Endpoint)] = &[
     ("/api/forma/optimize", forma_optimize_json),
     ("/api/warframe/catalog", |_| warframe_catalog_json()),
     ("/api/warframe/panel", warframe_panel_json),
+    ("/api/companion/panel", companion::companion_panel_json),
     ("/api/equipment/build", warframe::equipment_build_json),
     ("/api/operator/panel", operator_panel_json),
     ("/api/catalogue", |_| catalogue_json()),

@@ -1,0 +1,20 @@
+id: dethcube
+name: Dethcube
+kind: sentinel
+groups:
+- companion
+- dethcube
+- robotic
+- sentinel
+stats:
+  health: 560.0
+  shield: 250.0
+  armor: 80
+polarities:
+- penjaga
+- penjaga
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/DethCubePowerSuit
+source:
+  url: https://wiki.warframe.com/w/Dethcube

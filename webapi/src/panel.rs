@@ -54,6 +54,7 @@ pub fn panel_json(v: &Value) -> Value {
         Ok(info) => info,
         Err(no) => return no,
     };
+    if let Err(no) = crate::tenno::validate_companion_wielder(v, info) { return no; }
     // THE PLAYER, RESOLVED ONCE AND FIRST, because the mod loop needs it: a
     // mod that scales off the Tenno has to say what THIS one is worth to it.
     // One call rather than two, because two `tenno_from` in one function is two

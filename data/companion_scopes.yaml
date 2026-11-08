@@ -1,0 +1,193 @@
+scopes:
+- id: sentinels
+  companions:
+  - diriga
+  - carrier
+  - dethcube
+  - nautilus
+  - djinn
+  - helios
+  - nautilus_prime
+  - carrier_prime
+  - dethcube_prime
+  - helios_prime
+  - shade_prime
+  - wyrm_prime
+  - prisma_shade
+  - oxylus
+  - shade
+  - taxon
+  - wyrm
+  weapons: []
+  prototype: sentinel
+- id: moas
+  companions:
+  - moa
+  weapons: []
+  prototype: prototype_moa
+- id: hounds
+  companions:
+  - hound
+  weapons:
+  - batoten
+  - lacerten
+  - akaten
+  prototype: prototype_hound
+  unmodelled_weapons:
+  - id: batoten
+    name: Batoten
+  - id: lacerten
+    name: Lacerten
+  - id: akaten
+    name: Akaten
+- id: helios
+  companions:
+  - helios
+  - helios_prime
+  weapons:
+  - deconstructor
+  - deconstructor_prime
+  prototype: prototype_helios
+- id: robotic_ranged
+  companions:
+  - diriga
+  - carrier
+  - dethcube
+  - nautilus
+  - djinn
+  - helios
+  - nautilus_prime
+  - carrier_prime
+  - dethcube_prime
+  - helios_prime
+  - shade_prime
+  - wyrm_prime
+  - prisma_shade
+  - oxylus
+  - shade
+  - taxon
+  - wyrm
+  - moa
+  weapons:
+  - verglas
+  - verglas_prime
+  - sweeper
+  - vulklok
+  - stinger
+  - prisma_burst_laser
+  - sweeper_prime
+  - prime_laser_rifle
+  - deth_machine_rifle_prime
+  - burst_laser_prime
+  - laser_rifle
+  - artax
+  - deth_machine_rifle
+  - burst_laser
+  - vulcax
+  - tazicor
+  - helstrum
+  - multron
+  - cryotra
+  prototype: prototype_companion
+- id: venari
+  companions:
+  - venari
+  weapons:
+  - venari_claws
+  prototype: venari
+- id: venari_prime
+  companions:
+  - venari_prime
+  weapons:
+  - venari_prime_claws
+  prototype: venari_prime
+- id: panzer_vulpaphyla
+  companions:
+  - panzer_vulpaphyla
+  weapons:
+  - panzer_claws
+  prototype: panzer_vulpaphyla
+- id: crescent_vulpaphyla
+  companions:
+  - crescent_vulpaphyla
+  weapons:
+  - crescent_claws
+  prototype: crescent_vulpaphyla
+- id: medjay_predasite
+  companions:
+  - medjay_predasite
+  weapons:
+  - medjay_claws
+  prototype: medjay_predasite
+- id: pharaoh_predasite
+  companions:
+  - pharaoh_predasite
+  weapons:
+  - pharaoh_claws
+  prototype: pharaoh_predasite
+- id: vizier_predasite
+  companions:
+  - vizier_predasite
+  weapons:
+  - vizier_claws
+  prototype: vizier_predasite
+- id: sly_vulpaphyla
+  companions:
+  - sly_vulpaphyla
+  weapons:
+  - sly_claws
+  prototype: sly_vulpaphyla
+- id: smeeta_kavat
+  companions:
+  - smeeta_kavat
+  weapons:
+  - smeeta_claws
+  prototype: smeeta_kavat
+- id: adarza_kavat
+  companions:
+  - adarza_kavat
+  weapons:
+  - adarza_claws
+  prototype: adarza_kavat
+- id: vasca_kavat
+  companions:
+  - vasca_kavat
+  weapons:
+  - vasca_claws
+  prototype: vasca_kavat
+- id: sahasa_kubrow
+  companions:
+  - sahasa_kubrow
+  weapons:
+  - sahasa_claws
+  prototype: sahasa_kubrow
+- id: helminth_charger
+  companions:
+  - helminth_charger
+  weapons:
+  - helminth_claws
+  prototype: helminth_charger
+- id: huras_kubrow
+  companions:
+  - huras_kubrow
+  weapons:
+  - huras_claws
+  prototype: huras_kubrow
+- id: raksa_kubrow
+  companions:
+  - raksa_kubrow
+  weapons:
+  - raksa_claws
+  prototype: raksa_kubrow
+- id: sunika_kubrow
+  companions:
+  - sunika_kubrow
+  weapons:
+  - sunika_claws
+  prototype: sunika_kubrow
+- id: chesa_kubrow
+  companions:
+  - chesa_kubrow
+  weapons:
+  - chesa_claws
+  prototype: chesa_kubrow

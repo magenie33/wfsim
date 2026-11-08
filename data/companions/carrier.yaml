@@ -1,0 +1,21 @@
+id: carrier
+name: Carrier
+kind: sentinel
+groups:
+- carrier
+- companion
+- robotic
+- sentinel
+stats:
+  health: 560.0
+  shield: 250.0
+  armor: 80
+polarities:
+- penjaga
+- vazarin
+- penjaga
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/CarrierPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Carrier

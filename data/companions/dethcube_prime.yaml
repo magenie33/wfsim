@@ -1,0 +1,21 @@
+id: dethcube_prime
+name: Dethcube Prime
+kind: sentinel
+groups:
+- companion
+- dethcube
+- robotic
+- sentinel
+stats:
+  health: 600.0
+  shield: 300.0
+  armor: 150.0
+polarities:
+- penjaga
+- vazarin
+- penjaga
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/PrimeDethCubePowerSuit
+source:
+  url: https://wiki.warframe.com/w/Dethcube_Prime

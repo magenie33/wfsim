@@ -1,5 +1,6 @@
 id: evasive_denial
 name: Evasive Denial
+family: hound_denial
 rarity: rare
 polarity: penjaga
 base_drain: 0

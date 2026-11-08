@@ -1,0 +1,19 @@
+id: huras_kubrow
+name: Huras Kubrow
+kind: kubrow
+groups:
+- beast
+- companion
+- huras_kubrow
+- kubrow
+stats:
+  health: 560.0
+  shield: 490.0
+  armor: 300.0
+polarities:
+- penjaga
+- madurai
+- penjaga
+internal_name: /Lotus/Types/Game/KubrowPet/FurtiveKubrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Huras_Kubrow

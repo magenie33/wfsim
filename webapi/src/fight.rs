@@ -451,6 +451,7 @@ pub(crate) fn parse_fight(v: &Value) -> Result<Fight, Value> {
         )));
     };
     let info = crate::registry::weapon_of(v)?;
+    crate::tenno::validate_companion_wielder(v, info)?;
     // Per-buff configured policy (Sim panel section 2). Present ⇒ Emergent sim
     // with each buff carrying its own initial stacks + lock. Absent ⇒ the
     // legacy `assume_max`/`frenzy` knobs (byte-for-byte with the old path).

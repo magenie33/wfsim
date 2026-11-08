@@ -1,0 +1,18 @@
+id: adarza_kavat
+name: Adarza Kavat
+kind: kavat
+groups:
+- adarza_kavat
+- beast
+- companion
+- kavat
+stats:
+  health: 310.0
+  shield: 270.0
+  armor: 300.0
+polarities:
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Game/CatbrowPet/MirrorCatbrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Adarza_Kavat

@@ -1,0 +1,20 @@
+id: diriga
+name: Diriga
+kind: sentinel
+groups:
+- companion
+- diriga
+- robotic
+- sentinel
+stats:
+  health: 700.0
+  shield: 150.0
+  armor: 80
+polarities:
+- penjaga
+- penjaga
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/ArcDronePowerSuit
+source:
+  url: https://wiki.warframe.com/w/Diriga

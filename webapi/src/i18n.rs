@@ -34,6 +34,8 @@ pub fn i18n_json() -> Value {
                 "warframe_ability_descriptions": l.warframe_ability_descriptions,
                 "warframe_passives": l.warframe_passives,
                 "companion_mods": l.companion_mods,
+                "companions": l.companions,
+                "companion_parts": l.companion_parts,
                 "companion_mod_descriptions": l.companion_mod_descriptions,
                 "catalogue": l.catalogue,
                 "catalogue_descriptions": l.catalogue_descriptions,

@@ -1875,8 +1875,7 @@ def prerender(flagged: str, catalog: Path) -> None:
         name = spec["name"]
         file = "companions/" + wiki_slug(name)
         path = url_path("/" + file)
-        desc = (f"{name} — the companion that carries a robotic weapon: its stat floor and the "
-                "Warframe that owns it, whose aura and archon shards the weapon takes.")
+        desc = f"{name} — companion body stats, modular parts, compatible weapons and Mod builds."
         out = APP / file / "index.html"
         out.parent.mkdir(parents=True, exist_ok=True)
         put(out, shell(flagged, titled_page(name, "companion", zh_ui("Companion")),

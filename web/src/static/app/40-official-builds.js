@@ -22,10 +22,7 @@ const wielderIdOf = (v) => {
 /// The stored build a link means; `null` for the default, the blank.
 const wielderBuild = (v) => wielderList(v.frame).find((x) => x.id === wielderIdOf(v)) || null;
 
-/// A HOLDER IS A WARFRAME OR, for a robotic weapon, A COMPANION HOST
-/// (`data/companions/`) — a Sentinel or a MOA, which is what carries one. A link
-/// is `{frame, preset}` either way, `frame` naming whichever it is, and a host's
-/// presets are its own.
+/// A holder link is `{frame, preset}` for both Warframes and companion bodies.
 const isHostId = (id) => !!compHost(id);
 const wielderList = (frame) => (isHostId(frame) ? compList(frame) : presetListWithIds(WF_BUILDS, frame));
 /// The page a holder's presets are edited on.
@@ -40,12 +37,12 @@ const holderName = (id) => (compHost(id) || (META.warframes || []).find((x) => x
 function defaultWielder(weaponId, v) {
   const info = weaponInfo(weaponId) || {};
   const allowed = info.wielders || [];
-  const holds = (id) => (info.sentinel ? isHostId(id)
+  const holds = (id) => (info.sentinel ? (info.companion_carriers || []).includes(id)
     : (META.warframes || []).some((f) => f.id === id) && (!allowed.length || allowed.includes(id)));
   // THE FLOOR BY NAME, never by position: the roster ends with it, and a
   // second host would otherwise become every robotic weapon's default.
   const first = info.sentinel
-    ? ((compHosts().find((c) => c.id === PROTOTYPE_COMPANION_ID) || compHosts()[0] || {}).id)
+    ? info.companion_default
     : (allowed.length ? allowed[0] : PROTOTYPE_ID);
   const frame = v && holds(v.frame) ? v.frame : first;
   return { frame, preset: v && v.frame === frame && v.preset ? v.preset : null };
@@ -55,18 +52,17 @@ function defaultWielder(weaponId, v) {
 /// while nothing is written for it: that is the floor every ruler scores in, and
 /// the wire keeps saying it as no wielder, so no stored link or board row moves.
 ///
-/// A COMPANION HOST SENDS ITS CARDS, `{companion, mods}`, and nothing while it
-/// seats none: the server reads what of them the fight runs (Fired Up) and
-/// answers the rest with the companion floor (`sentinel_wielder`). No ruler
-/// keeps it (`board::builds::carries_wielder`).
+/// A companion sends its identity, assembly and cards even with no mods.
 /// WHO IS HOLDING A WEAPON, as request fields — from a LINK rather than from
 /// the editor, because a fight holds a seat per build and only one of them is
 /// open (`seatPayload`).
 function wielderPayloadOf(v) {
   if (isHostId(v.frame)) {
-    const slots = ((wielderBuild(v) || {}).state || {}).slots || [];
+    const state = ((wielderBuild(v) || {}).state || {});
+    const slots = state.slots || [];
     const mods = slots.filter((s) => s && s.mod).map((s) => (s.rank == null ? { id: s.mod } : { id: s.mod, rank: s.rank }));
-    return mods.length ? { companion: v.frame, mods } : undefined;
+    return { companion: v.frame, assembly: {...(compHost(v.frame)?.default_assembly || {}), ...(state.assembly || {})},
+      gilded: state.gilded !== false, gild_polarity: state.gild_polarity || compHost(v.frame)?.body?.gild_polarity || undefined, mods };
   }
   const b = wielderBuild(v);
   if (b) return wfPayloadOf({ ...b.state, frame: v.frame });
@@ -119,7 +115,7 @@ function renderWielder() {
   // for a robotic weapon, the companion hosts — searchable. WHICH PRESET of it is
   // the second control's, declared here by the weapon that links.
   const items = w.sentinel
-    ? compHosts().map((c) => ({ value: c.id, label: c.name }))
+    ? compHosts().filter(c => (w.companion_carriers || []).includes(c.id)).map((c) => ({ value: c.id, label: c.name }))
     : (META.warframes || []).filter((f) => !allowed.length || allowed.includes(f.id)).map((f) => ({
       value: f.id, label: f.name, image: f.image,
       hint: f.id === PROTOTYPE_ID ? tr("the floor every board is scored on") : null,
@@ -223,7 +219,7 @@ function linkersOfCompanionPreset(companion, id) {
   const first = (compList(companion)[0] || {}).id;
   return weaponLinks((state, w) => {
     if (!(w && w.sentinel)) return false;
-    const v = state.wielder || { frame: companion, preset: null };
+    const v = defaultWielder(w.id, state.wielder);
     return v.frame === companion && (v.preset ? v.preset === id : id === first);
   });
 }
@@ -250,7 +246,7 @@ function linkersOfOperatorPreset(id) {
 /// WHO HOLDS THE WEAPON — a frame, or a frame's saved build. Set by the
 /// dropdown and the door alike.
 function setWielder(v) {
-  buildWielder = v;
+  buildWielder = defaultWielder($("weapon").value, v);
   renderWielder();
   renderSimBuild();
   renderWeaponName();
@@ -261,10 +257,11 @@ function setWielder(v) {
 const wielderChoices = () => {
   const w = weaponInfo($("weapon").value) || {};
   const allowed = w.wielders || [];
-  const holders = w.sentinel ? compHosts()
+  const holders = w.sentinel ? compHosts().filter(c => (w.companion_carriers || []).includes(c.id))
     : (META.warframes || []).filter((f) => !allowed.length || allowed.includes(f.id));
   return {
-    prototype_allowed: !allowed.length && !w.sentinel,
+    prototype_allowed: w.sentinel ? !!w.companion_default : !allowed.length,
+    prototype: w.sentinel ? w.companion_default : PROTOTYPE_ID,
     frames: holders.map((f) => ({
       id: f.id, name: f.name, builds: wielderList(f.id).map((p) => ({ id: p.id, name: p.name })),
     })),

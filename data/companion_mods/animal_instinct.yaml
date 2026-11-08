@@ -1,5 +1,6 @@
 id: animal_instinct
 name: "Animal Instinct"
+family: animal_instinct
 rarity: rare
 polarity: naramon
 base_drain: 6

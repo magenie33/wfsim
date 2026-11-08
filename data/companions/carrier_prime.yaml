@@ -1,0 +1,22 @@
+id: carrier_prime
+name: Carrier Prime
+kind: sentinel
+groups:
+- carrier
+- companion
+- robotic
+- sentinel
+stats:
+  health: 650.0
+  shield: 300.0
+  armor: 150.0
+polarities:
+- penjaga
+- vazarin
+- penjaga
+- penjaga
+- madurai
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/PrimeCarrierPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Carrier_Prime

@@ -559,25 +559,6 @@ pub fn default_tenno() -> &'static Tenno {
     })
 }
 
-/// THE WIELDER OF A COMPANION WEAPON — a Sentinel, not a Warframe.
-///
-/// TWO ACTORS, ONE OF WHICH HOLDS THE GUN. A robotic weapon
-/// is carried by a companion while the WARFRAME is still in the fight behind it,
-/// bringing the aura and the archon shards — so only the wielder's own STAT
-/// BLOCK comes from here and everything else stays the Warframe's. The auras a
-/// companion weapon can take are the proof that it does: `rifle_amp` reaches an
-/// Artax, and an aura is something a Warframe wears.
-///
-/// Same floor rule as [`default_tenno`], different roster: the lowest any
-/// released Sentinel has, stat by stat. See `data/tenno/sentinel.yaml`.
-pub fn sentinel_wielder() -> &'static Tenno {
-    static T: OnceLock<Tenno> = OnceLock::new();
-    T.get_or_init(|| {
-        let text = crate::data::file("tenno/sentinel.yaml").expect("embedded data/tenno/sentinel.yaml");
-        serde_norway::from_str(text).expect("parse data/tenno/sentinel.yaml")
-    })
-}
-
 /// ONE WARFRAME, as the three numbers a weapon perk can ask about.
 ///
 /// Health and shield are deliberately absent — see `data/frames.yaml`: the
@@ -760,13 +741,13 @@ mod tests {
     /// numbers would pass just as well on a file that had been copied.
     #[test]
     fn a_companion_weapon_is_held_by_a_sentinel_and_it_is_a_different_floor() {
-        let s = sentinel_wielder();
+        let s = crate::data::companions::sentinel_wielder();
         let w = default_tenno();
-        assert_eq!(s.id, "sentinel");
+        assert_eq!(s.id, "prototype_companion");
         // The MOA's lowest health, 367, is under every Sentinel's (Wyrm Prime's
         // 450), so it sets that floor; Shade's shield and Carrier's armor are
         // under every MOA's, so they set theirs.
-        assert_eq!(s.health, 367.0, "MOA: \"Possible stat ranges are 367-473 for Health\"");
+        assert_eq!(s.health, 367.5, "350 * (1 + 0.1 - 0.05), gilded MOA parts");
         assert_eq!(s.shield, 130.0, "Shade");
         assert_eq!(s.armor, 80.0, "Carrier and eleven others");
         assert_eq!(s.name, "Prototype Companion");

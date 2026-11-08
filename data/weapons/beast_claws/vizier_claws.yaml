@@ -2,7 +2,7 @@ id: vizier_claws
 name: Vizier Claws
 slot: sentinel
 weapon_type: melee
-wielder_modelled: false
+wielder_modelled: true
 no_riven: true
 class: beast_claws
 form: base

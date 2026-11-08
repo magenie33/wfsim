@@ -1,0 +1,19 @@
+id: panzer_vulpaphyla
+name: Panzer Vulpaphyla
+kind: vulpaphyla
+groups:
+- beast
+- companion
+- kavat
+- panzer_vulpaphyla
+- vulpaphyla
+stats:
+  health: 680.0
+  shield: 370.0
+  armor: 300.0
+polarities:
+- penjaga
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/ArmoredInfestedCatbrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Panzer_Vulpaphyla
+assembly: vulpaphyla

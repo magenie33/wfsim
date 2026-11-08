@@ -1,0 +1,20 @@
+id: wyrm_prime
+name: Wyrm Prime
+kind: sentinel
+groups:
+- companion
+- robotic
+- sentinel
+- wyrm
+stats:
+  health: 450.0
+  shield: 600.0
+  armor: 150.0
+polarities:
+- penjaga
+- penjaga
+- penjaga
+- penjaga
+internal_name: /Lotus/Types/Sentinels/SentinelPowersuits/PrimeWyrmPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Wyrm_Prime

@@ -1,0 +1,19 @@
+id: sunika_kubrow
+name: Sunika Kubrow
+kind: kubrow
+groups:
+- beast
+- companion
+- kubrow
+- sunika_kubrow
+stats:
+  health: 830.0
+  shield: 350.0
+  armor: 300.0
+polarities:
+- penjaga
+- madurai
+- penjaga
+internal_name: /Lotus/Types/Game/KubrowPet/HunterKubrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Sunika_Kubrow

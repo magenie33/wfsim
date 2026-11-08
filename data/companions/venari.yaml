@@ -1,0 +1,20 @@
+id: venari
+name: Venari
+kind: kavat
+groups:
+- beast
+- companion
+- kavat
+- venari
+stats:
+  health: 900.0
+  shield: 0.0
+  armor: 350.0
+polarities:
+- naramon
+- vazarin
+- madurai
+- penjaga
+internal_name: /Lotus/Powersuits/Khora/Kavat/KhoraKavatPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Venari

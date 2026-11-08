@@ -1,0 +1,22 @@
+id: moa
+name: Moa
+kind: moa
+groups:
+- companion
+- robotic
+- moa
+stats:
+  health: 350
+  shield: 350
+  armor: 350
+polarities:
+- penjaga
+- penjaga
+- penjaga
+- penjaga
+assembly: moa
+internal_name: /Lotus/Types/Friendly/Pets/MoaPets/MoaPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/MOA_(Companion)
+precept_limits:
+  moa: 2

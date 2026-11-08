@@ -1,5 +1,6 @@
 id: repo_audit
 name: Repo Audit
+family: hound_audit
 rarity: rare
 polarity: penjaga
 base_drain: 0

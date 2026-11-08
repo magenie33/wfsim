@@ -890,6 +890,18 @@ The builder resolves Narin’s base stats, ability costs and entered max-rank ab
 
 Neote’s casts and status applications, Naraemagi’s absorption and restoration, Hakchum’s landing and storm with Cold vulnerability, and Nurinarim’s gating, drain, marks, stripping and frozen explosions are not simulated. The ability entries disclose these limits; panel numbers alone do not implement their combat effects. Sources: [passive](https://wiki.warframe.com/w/Narin/Abilities/Passive), [abilities](https://wiki.warframe.com/w/Narin/Abilities).
 
+## Companion bodies and actions
+
+Companion health, shield, armor, innate polarities and modular parts resolve in
+the body builder and reach its weapon's wielder. Enhanced Vitality, Calculated
+Redirection and Metal Fiber modify those attributes; Fired Up affects the weapon.
+Movement, survival events, shield recovery, pickups, precept AI and linked owner
+Warframe events are not simulated. Owner-reading Link mods, Hunter Synergy,
+Mecha Overdrive and Tandem Bond therefore retain explicit unmodelled effects.
+Vulpaphyla/Predasite antigen polarity is applied; mutagen damage resistance and
+inherited mutagen/antigen combinations are not. Akaten, Batoten and Lacerten
+have legal Hound carrier metadata but no combat weapon entries.
+
 ## Beast attack cycles
 
 Claw base stats and supported weapon cards resolve through the ordinary damage

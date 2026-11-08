@@ -1,5 +1,6 @@
 id: calculated_redirection
 name: "Calculated Redirection"
+family: companion_shield
 rarity: common
 polarity: vazarin
 base_drain: 4
@@ -10,7 +11,9 @@ precept: false
 description: "+250% Shield Capacity"
 
 effects:
-  - kind: unmodelled
+  - kind: body_stat
+    stat: shield
+    bonus: 2.5003
     text: "+250% Shield Capacity"
 
 source:

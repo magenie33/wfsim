@@ -12,11 +12,11 @@ weapon to one eligible host also narrows the host's mod pool. A prototype must
 state its carrier scope and the sources of its attributes; a pooled mod list
 does not grant every carrier every model's exclusive precepts.
 
-This is the game eligibility reference. The implemented host picker and its
-shared stat block are described in [WARFRAMES.md](WARFRAMES.md#companions).
-They do not enforce all these restrictions. Beast bodies and Hound weapons are
-not implemented. The existing universal robotic floor is not a substitute for
-a weapon-specific carrier scope.
+`data/companion_scopes.yaml` is the executable carrier authority. The host
+picker, body panel and shared fight parser apply it. Concrete body and assembly
+resolution is described in [WARFRAMES.md](WARFRAMES.md#companions).
+Hound bodies and parts are modelled; the three Hound weapons have no combat
+entries yet and are shown as unavailable on their compatible bodies.
 
 ## Robotic weapons
 
@@ -133,10 +133,33 @@ Hound bodies exclude the ranged robotic families and allow all three Hound
 weapon variants. The weapon's ancestors must be checked against exclusions;
 checking only an exact variant path would admit forbidden Prime weapons.
 
-A prototype cannot use an attribute from outside its weapon's legal set.
-Comparing multiple eligible classes also requires a stated comparison rule:
-the classes can have lower health and higher shields or armor than each other.
-Carrier eligibility alone does not define a total order. Body rank, component
-effects and permitted inherited variation must be resolved before claiming a
-numerical floor. This reference establishes equipment scope; it supplies no new
-combat scalar or default-host selection.
+## Derived prototypes
+
+Each attribute is the minimum across the declared bodies and legal assemblies,
+after applying body mods and the selected gilded state. The panel names a legal
+witness for each attribute; the witnesses need not be the same individual.
+These are the unmodded gilded values; runtime resolution derives them from the
+body and part records rather than reading this table.
+
+| Prototype | Scope | Health | Shield | Armor |
+| --- | --- | ---: | ---: | ---: |
+| Prototype Companion | All Sentinels and MOAs; general ranged default | 367.5 | 130 | 80 |
+| Sentinel | All 17 Sentinel variants | 450 | 130 | 80 |
+| Prototype MOA | All 640 MOA assemblies | 367.5 | 315 | 350 |
+| Prototype Hound | All 81 Hound assemblies | 315 | 315 | 315 |
+| Prototype Helios | Helios and Helios Prime; Deconstructor default | 560 | 250 | 80 |
+
+The Helios prototype's attributes all come from ordinary Helios. Fixed breeds
+with invariant base attributes use the actual breed body directly. Modular
+Vulpaphyla and Predasite bodies retain their own part selectors; their parts
+change polarity and unsupported resistance rules, not these three base stats.
+Prototypes expose only mods compatible with every represented body, so the
+Sentinel prototype cannot equip an individual Sentinel's exclusive precept.
+
+The hash-checked importer is `scripts/import_client_companions.py`; its public
+fixture is `tests/fixtures/client/companions-2026-10-28.json`. Native body stats,
+artifact slots and part modifiers take precedence over wiki infobox rounding.
+The MOA's 350/350/350 module base and absent Sentinel armor/slot overrides use the
+wiki companion module. Component formulas distinguish MOA `ModifyBase` from
+Hound additive bracket bonuses. No attack timing or AI behavior follows from
+these body attributes.

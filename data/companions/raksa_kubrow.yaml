@@ -1,0 +1,19 @@
+id: raksa_kubrow
+name: Raksa Kubrow
+kind: kubrow
+groups:
+- beast
+- companion
+- kubrow
+- raksa_kubrow
+stats:
+  health: 750.0
+  shield: 390.0
+  armor: 300.0
+polarities:
+- penjaga
+- vazarin
+- penjaga
+internal_name: /Lotus/Types/Game/KubrowPet/GuardKubrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Raksa_Kubrow

@@ -693,19 +693,19 @@ const AGENT_ACTIONS = [
   {
     id: "builder.wielder.set",
     writes: "build",
-    what: "Set an unmodded or saved Warframe build as wielder; frame=null selects the Prototype. Wielder stats and abilities affect weapon results.",
+    what: "Set an unmodded or saved Warframe or companion build as wielder; frame=null selects the weapon's default holder.",
     anchor: "#wielder-row",
     needs_weapon: true,
     args: {
-      frame: { kind: "string", required: true, nullable: true, what: "Warframe id, or null for the Prototype" },
+      frame: { kind: "string", required: true, nullable: true, what: "Warframe or companion id, or null for the default" },
       build: { kind: "string", what: "one of that frame's saved build ids" },
     },
     run({ frame, build }) {
       const c = wielderChoices();
       if (frame === null) {
         if (!c.prototype_allowed) return agentNo("prototype_not_allowed", { alternatives: c.frames.map((f) => f.id) });
-        setWielder(wielderLinkFor(PROTOTYPE_ID));
-        return { text: "held by the Prototype" };
+        setWielder(wielderLinkFor(c.prototype));
+        return { text: `held by ${holderName(c.prototype)}` };
       }
       const f = c.frames.find((x) => x.id === frame);
       if (!f) return agentNo("bad_argument", { argument: "frame", alternatives: c.frames.map((x) => x.id).slice(0, 12) });

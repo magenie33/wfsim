@@ -106,7 +106,7 @@ check("all seventeen claw weapons expose their supported card pool", claws.count
 check("postures use their own slot; claws have no exilus or arcane", claws.stance === 6
   && claws.noExilus && claws.noArcane && claws.noRiven, JSON.stringify(claws));
 check("claw timing is automatic and has no scenario input", claws.timing === "assumed_interval"
-  && claws.body === false && !claws.field && claws.readOnly && !claws.declared
+  && claws.body === true && !claws.field && claws.readOnly && !claws.declared
   && claws.legacyRemoved && claws.card, JSON.stringify(claws));
 check("claws use their family estimate and ignore the old interval field", claws.estimate === 1.1333334
   && claws.estimatedCard && claws.assumedShots === 1 && claws.dogShots === 2

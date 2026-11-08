@@ -1,0 +1,19 @@
+id: vizier_predasite
+name: Vizier Predasite
+kind: predasite
+groups:
+- beast
+- companion
+- kubrow
+- predasite
+- vizier_predasite
+stats:
+  health: 710.0
+  shield: 350.0
+  armor: 300.0
+polarities:
+- penjaga
+internal_name: /Lotus/Types/Friendly/Pets/CreaturePets/VizierPredatorKubrowPetPowerSuit
+source:
+  url: https://wiki.warframe.com/w/Vizier_Predasite
+assembly: predasite

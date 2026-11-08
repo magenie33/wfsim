@@ -1,5 +1,6 @@
 id: link_vitality
 name: "Link Vitality"
+family: companion_health
 rarity: uncommon
 polarity: vazarin
 base_drain: 2

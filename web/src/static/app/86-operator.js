@@ -430,6 +430,7 @@ function renderWarframeLibrary() {
 const equipmentLibraries = new Map(), equipmentUploads = new Map();
 const equipmentScope = (kind, id) => kind + ":" + id;
 const companionLibraryPayload = () => ({companion:comp.companion,
+  assembly:comp.assembly, gilded:comp.gilded, gild_polarity:comp.gild_polarity || undefined,
   mods:comp.slots.filter(s => s.mod).map(s => ({id:s.mod, rank:s.rank}))});
 const equipmentBase = (kind, id) => kind === "warframe" ? warframePath(wfFrames().find(f => f.id === id)) : companionPath(compHost(id));
 const equipmentStatus = (kind, text) => {
@@ -486,7 +487,8 @@ function equipmentState(record) {
     state.helminth = b.helminth || {slot:0, ability:null};
     return state;
   }
-  return {companion:b.companion, slots:b.mods.map(p => ({mod:p.id, rank:p.rank ?? null, pol:compMod(p.id)?.polarity || null}))};
+  return {companion:b.companion, assembly:b.assembly, gilded:b.gilded !== false, gild_polarity:b.gild_polarity,
+    slots:b.mods.map(p => ({mod:p.id, rank:p.rank ?? null, pol:compMod(p.id)?.polarity || null}))};
 }
 
 async function readEquipmentLibrary(kind, id, more = false) {
@@ -581,7 +583,7 @@ function renderCompanionLibrary() {
   $("comp-module-tabs").innerHTML = [["", "Build Library"], ["/builder", "Builder"]]
     .map(([suffix, label]) => `<a class="mtab${editor === (suffix === "/builder") ? " sel" : ""}" href="${base + suffix}">${escHtml(tr(label))}</a>`).join("");
   $("comp-module-tabs").hidden = !!EMBED;
-  ["preset-bar-companions", "comp-mods-block", "comp-catalogue-block"].forEach(id => $(id).hidden = !editor);
+  ["preset-bar-companions", "comp-body-block", "comp-mods-block", "comp-catalogue-block"].forEach(id => $(id).hidden = !editor);
   $("comp-library").hidden = editor;
   if (!editor) renderEquipmentLibrary("companion", comp.companion, $("comp-library"));
 }

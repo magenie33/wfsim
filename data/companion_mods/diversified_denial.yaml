@@ -1,5 +1,6 @@
 id: diversified_denial
 name: Diversified Denial
+family: hound_denial
 rarity: rare
 polarity: penjaga
 base_drain: 0

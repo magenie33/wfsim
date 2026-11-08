@@ -64,7 +64,9 @@ try {
     out.companionLibrary=!document.getElementById('comp-library').hidden && document.getElementById('comp-mods-block').hidden;
     await nav('/companions/Sentinel/builder');
     out.companionBuilder=document.getElementById('comp-library').hidden && !document.getElementById('comp-mods-block').hidden;
-    comp.slots=compPool('sentinel').slice(0,10).map(m=>({mod:m.id,rank:null,pol:m.polarity}));
+    const families=new Set();
+    comp.slots=compPool('sentinel').filter(m=>families.has(m.family || m.id) ? false : (families.add(m.family || m.id),true))
+      .slice(0,10).map(m=>({mod:m.id,rank:null,pol:m.polarity}));
     localStorage.removeItem('wfsim-equipment-uploaded-companion:sentinel');
     compChanged(); await sleep(1900);
     out.companionAuto=sent.some(s=>s.kind==='companion' && s.build.mods.length===10);

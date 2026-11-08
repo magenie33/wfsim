@@ -12,10 +12,6 @@ use crate::request::{get_bool, get_f64};
 /// are the Warframe module's resolve of that build, and its archon shards and
 /// own aura come with it.
 ///
-/// A COMPANION WEAPON IS CARRIED BY A COMPANION, a Sentinel or a MOA, whose stat
-/// block this keeps — 367/130/80 against a Warframe's 250/0/105 — while the
-/// Warframe that owns it still brings the shards and the aura: `rifle_amp`
-/// reaches an Artax.
 /// THE WARFRAME A REQUEST NAMES, as the board's door wants it: the build
 /// itself, not the Tenno it resolves to.
 ///
@@ -29,15 +25,29 @@ pub(crate) fn wielder_build_of(v: &Value) -> Option<wfsim_engine::data::warframe
 
 pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::tenno::Tenno {
     use wfsim_engine::data::warframes as wf;
+    use wfsim_engine::data::companions as comp;
+    if let Some(build) = comp::weapon_build(&info.id, v.get("wielder")
+        .and_then(|x| serde_json::from_value(x.clone()).ok())) {
+        let resolved = comp::resolve(&build).or_else(|_| {
+            comp::resolve(&comp::weapon_build(&info.id, None).expect("companion weapon"))
+        }).expect("valid default companion");
+        let mut t = wfsim_engine::data::tenno::default_tenno().clone();
+        t.id = resolved.companion;
+        t.name = resolved.name;
+        t.health = resolved.stats.health;
+        t.shield = resolved.stats.shield;
+        t.armor = resolved.stats.armor;
+        t.energy = 0.0;
+        t.sprint = 0.0;
+        t.element_per_hit = resolved.element_per_hit;
+        return t;
+    }
     let mut t = if info.sentinel {
-        wfsim_engine::data::tenno::sentinel_wielder().clone()
+        wfsim_engine::data::companions::sentinel_wielder().clone()
     } else {
         wfsim_engine::data::tenno::default_tenno().clone()
     };
-    // A ROBOTIC WEAPON'S LINK NAMES A COMPANION BUILD — `{companion, mods}`,
-    // which no Warframe build parses as — and what its cards pile on the
-    // weapon comes with it. The board never reads it: no ruler keeps a wielder
-    // for a weapon that is not Exalted (`board::builds::carries_wielder`).
+    // Companion carrier scopes resolve before the Warframe path.
     if !crate::registry::wspec(&info.id).wielder_modelled {
         return t;
     }
@@ -103,6 +113,21 @@ pub(crate) fn wielder_from(v: &Value, info: &WeaponInfo) -> wfsim_engine::data::
         t.auras.push(wfsim_engine::data::auras::AuraPick { id: a.id.clone(), count: 1 });
     }
     t
+}
+
+/// Both panel and fight reject invalid companion parts or cards before deriving stats.
+pub(crate) fn validate_companion_wielder(v: &Value, info: &WeaponInfo) -> Result<(), Value> {
+    use wfsim_engine::data::companions as comp;
+    let Some(scope) = comp::weapon_scope(&info.id) else { return Ok(()) };
+    let Some(asked) = v.get("wielder").filter(|x| !x.is_null()) else { return Ok(()) };
+    let build: comp::CompanionBuild = serde_json::from_value(asked.clone())
+        .map_err(|e| crate::request::err_json(format!("bad companion wielder: {e}")))?;
+    if !comp::companion(&build.companion).is_some_and(|h| comp::can_carry(scope, h)) {
+        return Err(crate::request::err_json("this companion cannot carry the weapon"));
+    }
+    let resolved = comp::resolve(&build).map_err(crate::request::err_json)?;
+    if !resolved.refused.is_empty() { return Err(crate::request::err_json(resolved.refused.join("; "))); }
+    Ok(())
 }
 
 /// The fight's TENNO — the wielder ([`wielder_from`]), then what the fight adds:
@@ -317,7 +342,9 @@ mod wielder_tests {
             r["score"].as_f64().expect("a score")
         };
         let floor = score(json!({}));
-        assert_eq!(score(link("prototype_companion")), floor, "the floor host seats no Fired Up");
+        let mut invalid = link("prototype_companion");
+        invalid["weapon"] = json!("verglas");
+        assert!(simulate_json(&invalid)["error"].as_str().unwrap().contains("cannot seat fired_up"));
         let fired = score(link("sentinel"));
         assert!(fired > floor, "Fired Up bought nothing: {fired} against {floor}");
     }

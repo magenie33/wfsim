@@ -992,6 +992,29 @@ ordinary Melee base clip alone. These family proxies are assumptions, rounded
 to float32 for storage. Neither variant AI completion nor effective playback
 rate is bound. The dog's two-second lunge gate does not set the ordinary cycle.
 
+### Companion bodies and modular parts
+
+`scripts/import_client_companions.py --exchange <root> --wiki <raw-module>
+[--export <public-export/en>] [--check]` verifies the closed metadata manifest,
+archive and effective-record/dictionary members. It joins body and weapon
+identities by exact internal path, imports body health/shield/armor and innate
+polarities, modular base/modifier fields, native names and three body-stat cards.
+The fixture `tests/fixtures/client/companions-2026-10-28.json` preserves selected
+raw records, native per-rank inputs, hashes and wiki armor/polarity fallbacks.
+
+MOA's base attributes and missing Sentinel armor/innate-slot overrides use raw
+`Module:Companions/data`. Client part `ModifyBase` determines whether modifiers
+change base before mods (MOA) or add with mods (Hound). Gilded and ungilded
+fields are distinct. The native 0.2273 per-rank body-mod value is retained;
+rounded card text does not replace it. Neither Public Export `levelStats` nor
+rendered rounded assembly ranges supply these values. The importer requires
+modern Python and PyYAML; `--check` compares every generated record and fixture.
+
+The raw wiki module aliases Wyrm Prime's internal path to ordinary Wyrm's.
+The importer corrects that one reported path to the distinct exported Prime
+suit identity before the exact-path join and records the erratum in the fixture.
+Duplicate identities otherwise fail; a Prime row must not overwrite base armor.
+
 ## Equippability: the wiki module is the only structured source
 
 A mod's `excludes_weapon` mirrors DE's own incompatibility tags. DE's Public
