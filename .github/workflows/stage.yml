@@ -19,7 +19,7 @@ jobs:
       - name: restore the complete public input cache
         run: python scripts/build_cache.py public-pull
       - name: fetch and validate the declared game images
-        run: python scripts/fetch_images.py
+        run: python scripts/art_cache_1108.py
       - name: validate all declared build inputs
         run: python scripts/build_site_app.py --check-inputs
       - name: publish compatible input cache additions
@@ -28,4 +28,20 @@ jobs:
           COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
           COS_BUCKET: ${{ secrets.COS_BUCKET }}
           COS_REGION: ${{ secrets.COS_REGION }}
+          COS_ACCELERATE: '1'
         run: python scripts/build_cache.py push
+  metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.97.1'
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ci-tests
+      - name: isolate the metadata borrowing failure
+        run: cargo test -p wfsim-engine --lib data::weapons::tests::metadata:: -- --nocapture
+      - name: reproduce with the complete engine test suite
+        run: cargo test -p wfsim-engine --lib
