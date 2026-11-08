@@ -266,11 +266,13 @@ different wielder and never reaches the board.
 
 ## Companions
 
-**A ROBOTIC WEAPON IS HELD BY A COMPANION, NOT BY A WARFRAME.** A weapon whose
-class is a Sentinel weapon (`sentinel: true`, 21 of them) is carried by a
-Sentinel or a MOA, so its `wielder` link names a companion HOST
+**A ROBOTIC WEAPON IS HELD BY A COMPANION, NOT BY A WARFRAME.** Its legal
+carrier set is weapon-specific: the two Deconstructors accept only Helios and
+Helios Prime. [COMPANION_WEAPONS.md](COMPANION_WEAPONS.md) states every weapon's
+carrier scope, including Hounds and Beast claws. The implemented robotic
+weapon's `wielder` link names a companion HOST
 (`data/companions/`, `engine::data::tenno::companions`) and its picker offers
-the hosts and no frame.
+the hosts and no frame; it does not enforce those per-weapon carrier scopes.
 
 - The host's stat block is the wielder floor, `data/tenno/sentinel.yaml`: the
   LOWEST any of the 17 Sentinels or the MOA has, stat by stat, stated nowhere
