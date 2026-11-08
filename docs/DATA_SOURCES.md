@@ -982,6 +982,16 @@ card text supplies display descriptions; it supplies no mechanical scalar.
 The importer requires PyYAML and `vendor/public-export/en/ExportUpgrades_en.json`.
 `--check` compares the checked-in data and fixture with those inputs.
 
+The closed `20261108T052700Z-beast-attack-interval` batch supplies the ordinary
+attack proxy inputs. Its four outer files, 126 archive members and machine-code
+fragments for 18 native functions are hash-verified, including reused metadata.
+The fixture records the 16 bounded native cases, raw representative clips and
+weapon-parent chains. Catbrow-derived weapons use the Melee01 base clip plus
+the reviewed float32(0.1) AI reevaluation delay; Kubrow-derived weapons use the
+ordinary Melee base clip alone. These family proxies are assumptions, rounded
+to float32 for storage. Neither variant AI completion nor effective playback
+rate is bound. The dog's two-second lunge gate does not set the ordinary cycle.
+
 ## Equippability: the wiki module is the only structured source
 
 A mod's `excludes_weapon` mirrors DE's own incompatibility tags. DE's Public

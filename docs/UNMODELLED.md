@@ -894,8 +894,10 @@ Neote’s casts and status applications, Naraemagi’s absorption and restoratio
 
 Claw base stats and supported weapon cards resolve through the ordinary damage
 pipeline. Attack selection, movement, posture AI, contact markers and accepted
-next-action times are unresolved. Simulation assumes one second between attacks
-unless the scenario supplies a final interval. Changing this is an assumption
-about the fight; it is not an inferred animation duration. Claws have no board
+next-action times are unresolved. Default intervals are representative ordinary
+action proxies selected by inherited pet weapon family: Catbrow Melee01 base
+clip plus the reviewed 0.1-second AI reevaluation delay, or the Kubrow Melee
+base clip. This does not bind each variant's AI or runtime animation rate.
+The interval is automatic and is labelled as an estimate. Claws have no board
 admission while their cycle is uncalibrated. Attacks are assumed to connect;
 the claw's contact geometry is not modelled as a weapon reach.

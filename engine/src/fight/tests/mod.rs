@@ -157,7 +157,6 @@ impl Default for FightParams {
             heavy_status: None,
             fire_rate: 1.0,
             refire: crate::model::RefireRule::Rate,
-            attack_interval_seconds: None,
             charge_seconds: None,
             bow_cycle: None,
             charge_cadence: crate::model::ChargeCadence::DrawThenRate,

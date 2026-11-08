@@ -79,40 +79,36 @@ const claws = await evaluate(`(async () => {
   history.pushState({}, '', weaponPath('adarza_claws') + '/simulator');
   await route();
   await sleep(1500);
-  document.querySelector('#preset-bar-simulator-scenarios .pchip.add').click();
-  await sleep(500);
   renderSim();
   const field = document.querySelector('[data-k="attack_interval_seconds"]');
-  const defaultValue = Number(field?.value);
-  const assumedCard = fightCardHtml(sim).includes(tr('Assumed attack interval (s)'));
-  if (field) {
-    field.value = '0.2';
-    field.dispatchEvent(new Event('change', { bubbles: true }));
-  }
+  const readOnly = document.querySelector('[data-attack-interval]');
+  const estimatedCard = fightCardHtml(sim).includes(tr('Estimated attack interval (s)'));
+  const restored = headlessScenarioOnto(META, { ...sim, attack_interval_seconds: 0.2 }, CONTACT_M, METRIC_FALLBACK.id);
   const req = { weapon: 'adarza_claws', duration: 1.01, runs: 1, distance: 0,
     headshot_pct: 0, mods: ['maul', 'bite'] };
   const assumed = await api('/api/simulate', req);
+  const dog = await api('/api/simulate', { ...req, weapon: 'chesa_claws' });
   const result = await api('/api/simulate', { ...req, attack_interval_seconds: 0.2 });
-  await sleep(600);
-  const persisted = loadPresetList(SCENARIOS).find(p => p.id === activeScenario)?.state.attack_interval_seconds;
   return { count: META.weapons.filter(w => w.mod_class === 'beast_claws').length,
-    manual: w.refire.kind, body: w.wielder_modelled,
+    timing: w.refire.kind, body: w.wielder_modelled,
     mainHasBite: pool.some(m => m.id === 'bite'), mainHasMaul: pool.some(m => m.id === 'maul'),
     noRifle: !pool.some(m => m.id === 'serration'), stance: axes.stance.length,
     noExilus: !axes.hasExilus, noArcane: axes.arcanes.length === 0, noRiven: w.no_riven,
     declared: META.scenario_axes.some(a => a.id === 'attack_interval_seconds'),
-    field: !!field, defaultValue, assumedCard, assumedShots: assumed.shots,
-    changed: sim.attack_interval_seconds, persisted,
+    field: !!field, readOnly: !!readOnly, estimate: w.assumed_attack_interval_seconds,
+    estimatedCard, assumedShots: assumed.shots, dogShots: dog.shots,
+    legacyRemoved: !Object.hasOwn(restored, 'attack_interval_seconds'),
     shots: result.shots, damage: result.dps,
-    card: fightCardHtml(sim).includes('0.2') };
+    card: fightCardHtml(sim).includes('1.133') };
 })()`);
 check("all seventeen claw weapons expose their supported card pool", claws.count === 17
   && claws.mainHasBite && claws.mainHasMaul && claws.noRifle, JSON.stringify(claws));
 check("postures use their own slot; claws have no exilus or arcane", claws.stance === 6
   && claws.noExilus && claws.noArcane && claws.noRiven, JSON.stringify(claws));
-check("claws show an adjustable assumed interval and keep it in the scenario", claws.manual === "supplied_interval"
-  && claws.body === false && claws.field && claws.changed === 0.2 && claws.persisted === 0.2
-  && claws.card && claws.declared, JSON.stringify(claws));
-check("claws run with the one-second assumption or an explicit interval", claws.defaultValue === 1
-  && claws.assumedCard && claws.assumedShots === 2 && claws.shots === 6 && claws.damage > 0, JSON.stringify(claws));
-await app.finish("a companion seats its pool and claws use adjustable assumed timing");
+check("claw timing is automatic and has no scenario input", claws.timing === "assumed_interval"
+  && claws.body === false && !claws.field && claws.readOnly && !claws.declared
+  && claws.legacyRemoved && claws.card, JSON.stringify(claws));
+check("claws use their family estimate and ignore the old interval field", claws.estimate === 1.1333334
+  && claws.estimatedCard && claws.assumedShots === 1 && claws.dogShots === 2
+  && claws.shots === 1 && claws.damage > 0, JSON.stringify(claws));
+await app.finish("a companion seats its pool and claw timing is automatic");

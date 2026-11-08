@@ -652,8 +652,8 @@ pub(super) fn seconds_to_next_shot(
     incarnon: &IncarnonState,
     melee: &mut MeleeState,
 ) -> f64 {
-    if active.refire == crate::model::RefireRule::SuppliedInterval {
-        return active.attack_interval_seconds.unwrap_or_else(|| active.refire.interval(rate, false));
+    if let Some(assumed) = active.refire.assumed_interval() {
+        return assumed;
     }
     if let Some(h) = swing.as_ref().filter(|h| h.event_timing.is_some()) {
         let converted = melee.input.as_ref().is_some_and(|i| i.converted);

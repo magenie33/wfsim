@@ -2564,6 +2564,6 @@ page-rest views group; accepts `WFSIM_BASE`.
 Engine source regressions bind imported refire rules and claw vectors to the
 closed client fixture and check native cadence vectors at their float32 nodes.
 Claw resolution covers ordinary damage/crit cards, physical conversion and
-post-coalescing elemental conversion. Simulation checks cover the assumed
-one-second interval, explicit overrides, validation, scheduled shot counts and
-isolation from robotic host effects.
+post-coalescing elemental conversion. Simulation checks bind family interval
+proxies to raw clip rates and reviewed wait inputs, and cover automatic timing,
+discarded legacy interval fields, scheduled shot counts and robotic-host isolation.

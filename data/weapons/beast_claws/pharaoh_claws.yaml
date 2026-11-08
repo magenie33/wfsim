@@ -19,7 +19,8 @@ attack:
   shot_type: hit_scan
   fire_rate: 1.0
   refire:
-    kind: supplied_interval
+    kind: assumed_interval
+    assumed_seconds: 1.0
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
@@ -32,7 +33,7 @@ attack:
     puncture: 162.5
     gas: 162.5
 unmodeled:
-- The complete attack cycle is not calibrated. Simulation uses an assumed attack interval unless one is supplied; animation lengths are not attack intervals.
+- The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.
 - Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.
 source:
   url: https://wiki.warframe.com/w/Pharaoh_Claws

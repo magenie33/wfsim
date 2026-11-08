@@ -3251,7 +3251,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.1333334
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3293,7 +3294,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.0
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3348,7 +3350,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.1333334
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3390,7 +3393,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.0
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3431,7 +3435,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.0
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3486,7 +3491,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.0
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3542,7 +3548,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.1333334
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3598,7 +3605,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.0
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3640,7 +3648,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.0
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3681,7 +3690,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.0
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3736,7 +3746,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.1333334
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3778,7 +3789,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.1333334
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3819,7 +3831,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.0
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3860,7 +3873,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.1333334
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3901,7 +3915,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.1333334
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3942,7 +3957,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.1333334
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -3997,7 +4013,8 @@
         "shot_type": "hit_scan",
         "fire_rate": 1.0,
         "refire": {
-          "kind": "supplied_interval"
+          "kind": "assumed_interval",
+          "assumed_seconds": 1.0
         },
         "multishot": 1.0,
         "ammo_cost": 0,
@@ -6268,6 +6285,410 @@
       ]
     }
   ],
+  "assumed_intervals": {
+    "source": {
+      "batch_id": "20261108T052700Z-beast-attack-interval",
+      "manifest_sha256": "059b7ee452dd3348b6e5c7f083e689d467cdfa353111f149f0de2e159f68dca0",
+      "archive": {
+        "path": "evidence.zip",
+        "bytes": 266018,
+        "sha256": "428d2e7dcfc9731fbad2a8b8f52d727517d1e020ace97e66c0b18b95fb53e48a"
+      },
+      "members": [
+        {
+          "path": "evidence.json",
+          "bytes": 16065,
+          "sha256": "09f337ded00f3ef7c44220aa07764a805e50d67ef3848fb510963b0474288051"
+        },
+        {
+          "path": "verification.json",
+          "bytes": 4347,
+          "sha256": "ae07916f65de506a8d2228394fa5046b9870a1f82c5fedff0031ff6da55ec4f0"
+        },
+        {
+          "path": "prior-evidence/representative-beast-attacks.json",
+          "bytes": 5560,
+          "sha256": "464fafd44ce2afc7e0092a56d5b80b9b37f492e636c361f4bc7e13c592900044"
+        },
+        {
+          "path": "prior-evidence/beast-logic-graphs.json",
+          "bytes": 79117,
+          "sha256": "5e5e816b37c8b5a1a2cce737b640b0d987d949b553af1f26b1e053c860f8f084"
+        },
+        {
+          "path": "prior-evidence/metadata-composed.json",
+          "bytes": 1064419,
+          "sha256": "3bf279eec6fb195a8c7446df8d42b24d61d76d5ae17dc7e52ee736d3365063f8"
+        }
+      ]
+    },
+    "family_proxies": {
+      "catbrow": {
+        "reference": {
+          "pet_tree": "/Lotus/Types/Friendly/Pets/CatbrowPetAnimTree.animtree",
+          "tree_cache": "H.AnimRetarget.cache",
+          "direct_reference": {
+            "offset": 24709,
+            "bytes": 52,
+            "path": "/Lotus/Animations/Creatures/Catbrow/Melee01_anim.fbx"
+          },
+          "base_clip_rows": [
+            {
+              "path": "/Lotus/Animations/Creatures/Catbrow/Melee01_anim.fbx",
+              "skeleton": "DomesticCatbrowHeadA1",
+              "action": "Take 001",
+              "sequence_rate_float32": 0.9677419066429138,
+              "rate_bits_le": "efbd773f",
+              "base_clip_seconds_float32": 1.033333420753479,
+              "resource_attribs": "Attribs={\n    TeleportPhysicsCapsuleForRootMotion=1\n    StartEvents={\n        StartAnimationAdjustment\n    }\n}",
+              "status": "base clip only; runtime rate, contact and unlock remain separate"
+            }
+          ],
+          "runtime_contact_seconds": null,
+          "runtime_next_attack_seconds": null,
+          "effective_playback_rate": null,
+          "null_means": "Unresolved by this audit, never zero"
+        },
+        "post_action_delay_seconds": 0.1,
+        "assumed_seconds": 1.1333334
+      },
+      "kubrow": {
+        "reference": {
+          "pet_tree": "/Lotus/Types/Friendly/Pets/KubrowPetAnimTree.animtree",
+          "tree_cache": "H.AnimRetarget.cache",
+          "direct_reference": {
+            "offset": 21723,
+            "bytes": 54,
+            "path": "/Lotus/Animations/Creatures/KubrowFeral/Melee_anim.fbx"
+          },
+          "base_clip_rows": [
+            {
+              "path": "/Lotus/Animations/Creatures/KubrowFeral/Melee_anim.fbx",
+              "skeleton": "Kubrow",
+              "action": "Take 001",
+              "sequence_rate_float32": 1.0,
+              "rate_bits_le": "0000803f",
+              "base_clip_seconds_float32": 1.0,
+              "resource_attribs": "",
+              "status": "base clip only; runtime rate, contact and unlock remain separate"
+            }
+          ],
+          "runtime_contact_seconds": null,
+          "runtime_next_attack_seconds": null,
+          "effective_playback_rate": null,
+          "null_means": "Unresolved by this audit, never zero"
+        },
+        "post_action_delay_seconds": 0.0,
+        "assumed_seconds": 1.0
+      }
+    },
+    "weapon_proxies": [
+      {
+        "weapon": "adarza_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/AdarzaPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon"
+        ],
+        "proxy_family": "catbrow"
+      },
+      {
+        "weapon": "chesa_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/ChesaPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/KubrowPetMeleeWeapon"
+        ],
+        "proxy_family": "kubrow"
+      },
+      {
+        "weapon": "crescent_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/CrescentVulpaphylaPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon"
+        ],
+        "proxy_family": "catbrow"
+      },
+      {
+        "weapon": "helminth_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/HelminthPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/KubrowPetMeleeWeapon"
+        ],
+        "proxy_family": "kubrow"
+      },
+      {
+        "weapon": "huras_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/HurasPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/KubrowPetMeleeWeapon"
+        ],
+        "proxy_family": "kubrow"
+      },
+      {
+        "weapon": "medjay_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/MedjayPredasitePetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/KubrowPetMeleeWeapon"
+        ],
+        "proxy_family": "kubrow"
+      },
+      {
+        "weapon": "panzer_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/PanzerVulpaphylaPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon"
+        ],
+        "proxy_family": "catbrow"
+      },
+      {
+        "weapon": "pharaoh_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/PharaohPredasitePetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/KubrowPetMeleeWeapon"
+        ],
+        "proxy_family": "kubrow"
+      },
+      {
+        "weapon": "raksa_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/RaksaPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/KubrowPetMeleeWeapon"
+        ],
+        "proxy_family": "kubrow"
+      },
+      {
+        "weapon": "sahasa_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/SahasaPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/KubrowPetMeleeWeapon"
+        ],
+        "proxy_family": "kubrow"
+      },
+      {
+        "weapon": "sly_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/SlyVulpaphylaPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon"
+        ],
+        "proxy_family": "catbrow"
+      },
+      {
+        "weapon": "smeeta_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/SmeetaPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon"
+        ],
+        "proxy_family": "catbrow"
+      },
+      {
+        "weapon": "sunika_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/SunikaPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/KubrowPetMeleeWeapon"
+        ],
+        "proxy_family": "kubrow"
+      },
+      {
+        "weapon": "vasca_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/VascaPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon"
+        ],
+        "proxy_family": "catbrow"
+      },
+      {
+        "weapon": "venari_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon"
+        ],
+        "proxy_family": "catbrow"
+      },
+      {
+        "weapon": "venari_prime_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPrimePetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/BeastWeapons/VenariPetWeapon",
+          "/Lotus/Types/Friendly/Pets/CatbrowPetMeleeWeapon"
+        ],
+        "proxy_family": "catbrow"
+      },
+      {
+        "weapon": "vizier_claws",
+        "source": "/Lotus/Types/Friendly/Pets/BeastWeapons/VizierPredasitePetWeapon",
+        "parent_chain": [
+          "/Lotus/Types/Friendly/Pets/KubrowPetMeleeWeapon"
+        ],
+        "proxy_family": "kubrow"
+      }
+    ],
+    "verification": {
+      "passed": 16,
+      "failed": 0,
+      "vectors": [
+        {
+          "case": "simple_update",
+          "melee_started_phase": 0,
+          "weapon_active_predicate": 0,
+          "returned_status": 2,
+          "expected_status": 2
+        },
+        {
+          "case": "simple_update",
+          "melee_started_phase": 0,
+          "weapon_active_predicate": 1,
+          "returned_status": 2,
+          "expected_status": 2
+        },
+        {
+          "case": "simple_update",
+          "melee_started_phase": 1,
+          "weapon_active_predicate": 1,
+          "returned_status": 2,
+          "expected_status": 2
+        },
+        {
+          "case": "simple_update",
+          "melee_started_phase": 1,
+          "weapon_active_predicate": 0,
+          "returned_status": 0,
+          "expected_status": 0
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 0,
+          "stubbed_distribution_draw": -10,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 0,
+          "stubbed_distribution_draw": 0,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 0,
+          "stubbed_distribution_draw": 0.1,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 0,
+          "stubbed_distribution_draw": 10,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 0.5,
+          "stubbed_distribution_draw": -10,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 0.5,
+          "stubbed_distribution_draw": 0,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 0.5,
+          "stubbed_distribution_draw": 0.1,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 0.5,
+          "stubbed_distribution_draw": 10,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 1,
+          "stubbed_distribution_draw": -10,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 1,
+          "stubbed_distribution_draw": 0,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 1,
+          "stubbed_distribution_draw": 0.1,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        },
+        {
+          "case": "simple_stop_delay",
+          "agent_query": 1,
+          "stubbed_distribution_draw": 10,
+          "reevaluation_delay_float32": 0.10000000149011612,
+          "bits_le": "cdcccc3d",
+          "native_matches": true
+        }
+      ],
+      "method": "Original matching-client x64 update/stop/range/clamp/delay-setter instructions, explicit boundary stubs",
+      "stubbed_boundaries": [
+        "facing update",
+        "parent stop",
+        "clear input",
+        "get owner avatar",
+        "range distribution draw",
+        "weapon active predicate",
+        "agent query",
+        "animation interface"
+      ],
+      "object_setup": [
+        "Stop cases use package WaitForMeleeToEnd=0 and StopMeleeOnStop=0",
+        "ShouldModifyPosture is disabled only in the replay to omit unrelated posture cleanup",
+        "Update cases supply remaining timeout=2, Timer=5 and dt=float32(0.016)"
+      ],
+      "not_verified": [
+        "Full AI scheduler",
+        "Compiled pet animation FSM",
+        "End-to-end attack period",
+        "Animation rate scaling"
+      ]
+    },
+    "runtime_interval_seconds": {
+      "kavat": null,
+      "kubrow": null
+    },
+    "limitations": [
+      "No full animation/scheduler/input-acceptance cycle is calibrated",
+      "Do not assume cat base clip plus 0.1 is the runtime period",
+      "Dog ordinary-swing branch has no equivalent separate cooldown in the inspected handler; other layers can still wait",
+      "No attack-speed-upgrade scaling rule is established by this follow-up",
+      "Previous sentinel PM_AIM and slam trajectory/recovery unknowns remain unchanged"
+    ],
+    "scope": "Ordinary-action proxies selected by inherited pet weapon family; variant AI and runtime completion remain uncalibrated.",
+    "verified_native_functions": 18,
+    "verified_outer_files": 4,
+    "verified_archive_members": 126
+  },
   "rate_inputs": [
     {
       "weapon": "deconstructor",

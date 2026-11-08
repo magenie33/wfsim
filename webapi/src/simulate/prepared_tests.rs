@@ -3,24 +3,27 @@ use crate::board_rows::{board_fold_json, board_runs_json, fold_runs};
 use wfsim_engine::fight::Shard;
 
 #[test]
-fn claws_assume_an_interval_and_keep_overrides_across_preparation() {
+fn claws_use_family_intervals_and_ignore_legacy_overrides() {
     let mut request = json!({"weapon":"adarza_claws", "duration":1.01,
         "runs":1, "distance":0, "headshot_pct":0, "mods":["maul", "bite"]});
     let assumed = PreparedSimulation::new(&request).unwrap();
-    assert_eq!(assumed.params.attack_interval_seconds, Some(1.0));
-    assert_eq!(simulate_json(&request)["shots"], json!(2.0));
+    assert_eq!(assumed.params.refire.assumed_interval(), Some(1.1333334));
+    assert_eq!(simulate_json(&request)["shots"], json!(1.0));
+    let mut dog = request.clone();
+    dog["weapon"] = json!("chesa_claws");
+    assert_eq!(PreparedSimulation::new(&dog).unwrap().params.refire.assumed_interval(), Some(1.0));
+    assert_eq!(simulate_json(&dog)["shots"], json!(2.0));
     assert!(crate::parse_optimize(&json!({"weapon":"adarza_claws", "mods":{"maul":"search"},
         "build_min":1, "build_size":1, "duration":1.01, "runs":1})).is_ok());
-    for value in [json!(0), json!(-1), json!("0.2"), json!(3601)] {
+    for value in [json!(0), json!(-1), json!("0.2"), json!(3601), json!(0.2)] {
         request["attack_interval_seconds"] = value;
-        assert!(parse_fight(&request).is_err());
+        assert_eq!(simulate_json(&request)["shots"], json!(1.0));
     }
     request["attack_interval_seconds"] = json!(0.2);
     let prepared = PreparedSimulation::new(&request).unwrap();
-    assert_eq!(prepared.params.attack_interval_seconds, Some(0.2));
-    assert_eq!(prepared.params.refire, wfsim_engine::model::RefireRule::SuppliedInterval);
+    assert_eq!(prepared.params.refire.assumed_interval(), Some(1.1333334));
     assert!(prepared.params.no_magazine);
-    assert_eq!(simulate_json(&request)["shots"], json!(6.0));
+    assert_eq!(simulate_json(&request)["shots"], json!(1.0));
     assert_eq!(crate::riven_json(&json!({"weapon":"adarza_claws"}))["ok"], json!(false));
     let before = crate::tenno::wielder_from(&request, crate::registry::weapon_of(&request).unwrap());
     request["wielder"] = json!({"companion":"sentinel", "mods":[{"id":"fired_up","rank":5}]});

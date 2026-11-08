@@ -249,7 +249,6 @@ fn arena_for(c: &Cfg) -> Arena {
     // fixed length, and it reaches a state — every body at its cap for the whole
     // engagement — that a build killing 537 bodies a run never sees.
     crowd(Arena {
-        attack_interval_seconds: None,
         apl: Default::default(),
         squad_size: 1,
         target_id: "e1".to_string(),

@@ -1432,7 +1432,6 @@ pub fn meta_json() -> Value {
             // alone. Only the DEFAULT moves: a saved scenario carries its own
             // duration and keeps it.
             "duration": 180.0,
-            "attack_interval_seconds": wfsim_engine::model::RefireRule::SuppliedInterval.assumed_interval(),
             "runs": crate::fight::DEFAULT_RUNS,
             // The final-round contract, for an API caller. The WEB does not
             // read these: `final_runs` is the scenario's `runs` and
