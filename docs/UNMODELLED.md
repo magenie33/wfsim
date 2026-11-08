@@ -894,8 +894,8 @@ Neote’s casts and status applications, Naraemagi’s absorption and restoratio
 
 Claw base stats and supported weapon cards resolve through the ordinary damage
 pipeline. Attack selection, movement, posture AI, contact markers and accepted
-next-action times are unresolved. A simulation requires an explicit final
-attack interval for the chosen build. Changing this interval is an assumption
+next-action times are unresolved. Simulation assumes one second between attacks
+unless the scenario supplies a final interval. Changing this is an assumption
 about the fight; it is not an inferred animation duration. Claws have no board
 admission while their cycle is uncalibrated. Attacks are assumed to connect;
 the claw's contact geometry is not modelled as a weapon reach.

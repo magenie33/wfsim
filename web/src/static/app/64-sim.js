@@ -185,6 +185,8 @@ const buildCardHtml = (d) => headlessBuildCardHtml(pageSay(), d);
 /// for a surface that runs the simulator's fight and does not edit it. A section
 /// the fight leaves empty says so, the way the build card does.
 function fightCardHtml(s = sim) {
+  const w = weaponInfo($("weapon").value) || {};
+  const interval = s.attack_interval_seconds ?? w.assumed_attack_interval_seconds;
   const chip = (label, title) => `<span class="sb-chip"${title ? ` title="${escHtml(title)}"` : ""}><span>${escHtml(label)}</span></span>`;
   const section = (head, chips, empty) => `<div class="sb-h">${escHtml(head)}</div><div class="sb-chips">${
     chips.join("") || `<span class="sb-empty">${escHtml(empty)}</span>`}</div>`;
@@ -196,8 +198,8 @@ function fightCardHtml(s = sim) {
   if (s.eximus) enemy.push(chip(tr("Eximus")));
   const play = [
     chip(`${s.duration} s`),
-    ...((weaponInfo($("weapon").value) || {}).refire?.kind === "supplied_interval" && Number(s.attack_interval_seconds) > 0
-      ? [chip(`${tr("Attack interval (s)")}: ${s.attack_interval_seconds}`)] : []),
+    ...(w.refire?.kind === "supplied_interval" && Number(interval) > 0
+      ? [chip(`${tr("Assumed attack interval (s)")}: ${interval}`)] : []),
     chip(`${s.headshot_pct}% ${tr("headshots")}`),
     ...(s.gauge_charging_headshots && (weaponInfo($("weapon").value) || {}).has_cycle
       ? [chip(tr("headshots while charging"))] : []),
@@ -529,7 +531,7 @@ function renderScenarioFields(ids, opts = {}) {
       ${zoomField(w, sim)}
       ${headshotField(w, sim)}
       ${chargingHeadshotField(w, sim)}
-      ${w.refire?.kind === "supplied_interval" ? `<label title="${escHtml(tr("The final interval between attacks for this build; the companion attack cycle is not calibrated."))}">${escHtml(tr("Attack interval (s)"))} <input type="number" data-k="attack_interval_seconds" min="0.001" max="3600" step="0.01" value="${sim.attack_interval_seconds ?? ""}" required></label>` : ""}
+      ${w.refire?.kind === "supplied_interval" ? `<label title="${escHtml(tr("The final interval between attacks for this build; the companion attack cycle is not calibrated."))}">${escHtml(tr("Assumed attack interval (s)"))} <input type="number" data-k="attack_interval_seconds" min="0.001" max="3600" step="0.01" value="${sim.attack_interval_seconds ?? w.assumed_attack_interval_seconds}"></label>` : ""}
       <label class="check" title="${escHtml(tr("the wielder's state: mods that only pay while Invisible (Spectral Serration) grant nothing when this is off"))}"><input type="checkbox" data-k="invisible"${sim.invisible ? " checked" : ""}> ${escHtml(tr("Invisible"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"while Airborne\""))}"><input type="checkbox" data-k="airborne"${sim.airborne ? " checked" : ""}> ${escHtml(tr("Airborne"))}</label>
       <label class="check" title="${escHtml(tr("the wielder's state: what a card means by \"while Sliding\" — held for the whole engagement"))}"><input type="checkbox" data-k="sliding"${sim.sliding ? " checked" : ""}> ${escHtml(tr("Sliding"))}</label>

@@ -23,6 +23,14 @@ pub enum RefireRule {
 
 #[wfsim_gas_macro::metered]
 impl RefireRule {
+    /// A stated assumption for attacks whose complete cycle is uncalibrated.
+    pub fn assumed_interval(self) -> Option<f64> {
+        match self {
+            Self::SuppliedInterval => Some(1.0),
+            _ => None,
+        }
+    }
+
     /// Matching-client ordinary semi timer: RVA 0x169c400; explicit empty-clip bypass.
     pub fn interval(self, rate: f64, empty: bool) -> f64 {
         match self {
@@ -30,7 +38,7 @@ impl RefireRule {
             Self::NativeRate => f64::from(1.0_f32 / rate as f32),
             Self::SemiAutomatic { skip_wait_on_empty: true } if empty => 0.0,
             Self::SemiAutomatic { .. } => f64::from((1.0_f32 / rate as f32).max(0.1_f32)),
-            Self::SuppliedInterval => f64::INFINITY,
+            Self::SuppliedInterval => self.assumed_interval().unwrap(),
         }
     }
 }

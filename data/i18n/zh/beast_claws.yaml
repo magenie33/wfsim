@@ -18,10 +18,10 @@ weapons:
   vizier_claws: 宰相利爪
 ui:
   This weapon takes no riven.: 此武器无法装备裂罅 MOD。
-  Attack interval (s): 攻击间隔（秒）
+  Assumed attack interval (s): 假定攻击间隔（秒）
   The final interval between attacks for this build; the companion attack cycle is not calibrated.: 当前配装两次攻击之间的最终间隔；同伴的完整攻击周期尚未校准。
-  ? The complete attack cycle is not calibrated. Simulation needs an explicit final attack interval for this build; animation lengths are not attack intervals.
-  : 完整攻击周期尚未校准。模拟需要填写当前配装的最终攻击间隔；动画片长不等于攻击间隔。
+  ? The complete attack cycle is not calibrated. Simulation uses an assumed attack interval unless one is supplied; animation lengths are not attack intervals.
+  : 完整攻击周期尚未校准。模拟默认使用假定攻击间隔，也可以手动填写；动画片长不等于攻击间隔。
   Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.: 假定攻击命中目标。尚未模拟同伴移动、接触判定、攻击动作选择、指令和姿势的目标选择。
   The beast body and owner link are not modelled.: 尚未建模野兽本体与主人的关联。
   The active-projectile cap, recall and return availability are not simulated; the fire rate is the nominal refire timer.: 尚未模拟在途投射物数量上限、召回与返程后的可投掷时点；射速表示名义射击间隔。

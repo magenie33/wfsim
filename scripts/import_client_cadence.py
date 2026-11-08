@@ -233,7 +233,7 @@ def main():
                'mod_pools': ['beast_claws'], 'mastery_rank': 0, 'max_rank': 30,
                'polarities': [], 'internal_name': path, 'co_behavior': 'additive_with_base_damage',
                'attack': attack, 'unmodeled': [
-                   'The complete attack cycle is not calibrated. Simulation needs an explicit final attack interval for this build; animation lengths are not attack intervals.',
+                   'The complete attack cycle is not calibrated. Simulation uses an assumed attack interval unless one is supplied; animation lengths are not attack intervals.',
                    'Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.'],
                'source': {'url': 'https://wiki.warframe.com/w/' + name.replace(' ', '_')}}
         output(weapon_dir / f'{identity}.yaml', dump(doc))
