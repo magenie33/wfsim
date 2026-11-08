@@ -248,7 +248,9 @@ of order, and a part is a fragment of one classic script — the page's
 top-level names stay globals. It asserts that nothing but parts sits in the
 directory, that no two share a prefix, that no part runs past the line ceiling
 (a ratchet: split a part, never raise it), and that no whole
-`web/src/static/app.js` competes with the parts. No browser.
+`web/src/static/app.js` competes with the parts. The shell starts the app after
+all page markup, so a streamed response cannot initialize incomplete controls.
+No browser.
 
 ## `check_time_storage`
 

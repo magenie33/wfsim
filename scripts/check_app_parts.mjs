@@ -41,5 +41,12 @@ const whole = resolve(APP_PARTS_DIR, "..", "app.js");
 check("app parts there is no web/src/static/app.js beside them — the parts are the one source",
   !existsSync(whole), "delete it; the served app.js is joined from the parts");
 
+const shell = readFileSync(resolve(APP_PARTS_DIR, "..", "index.html"), "utf8").replace(/<!--[\s\S]*?-->/g, "");
+const boot = shell.split('<script src="/app.js"></script>');
+const after = (boot[1] || "").replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+  .replace(/<\/(?:body|html)\s*>/gi, "").trim();
+check("app shell parses every control before starting the app",
+  boot.length === 2 && after === "", "place the app script after all page markup");
+
 console.log(failures ? `\n${failures} failed` : "\napp.js is its parts");
 process.exit(failures ? 1 : 0);
