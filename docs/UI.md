@@ -1455,8 +1455,10 @@ from the weapon's carrier scope. The body's bar lists its presets and who links
 each; even an unmodded body keeps its identity in the request.
 
 The body builder shows computed health, shield and armor, compatible weapons,
-and each Prototype attribute's concrete witness. Modular bodies select their
-parts, gilded state and gilding polarity with the ordinary searchable controls.
+and optional source notes for each Prototype's fixed base. Only concrete
+modular bodies select parts, gilded state and gilding polarity. The four
+Prototypes have no assembly or gilding controls. Both Deconstructors select a
+concrete Helios body, defaulting to ordinary Helios.
 The saved preset and library card retain those parts. Body-stat cards are marked
 **Body stats**, weapon effects such as Fired Up **In the fight**, and unsupported
 effects ⊘. Families and precept limits restrict the picker. Innate polarities

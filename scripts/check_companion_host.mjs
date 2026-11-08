@@ -55,6 +55,10 @@ const r = await evaluate(`(async () => {
   WFCAT = null;
   const withoutCatalog = wielderPayloadOf({frame:'moa', preset:saved.id});
   WFCAT = cat;
+  await nav('/companions/Prototype_MOA/builder');
+  const prototypeFixed = document.getElementById('comp-gilded-row').hidden && !document.querySelector('#comp-assembly .dd');
+  const unmodded = await api('/api/companion/panel', {companion:'prototype_moa'});
+  const oldToggle = await api('/api/companion/panel', {companion:'prototype_moa', gilded:false});
   const deconstructor = weaponInfo('deconstructor_prime');
   const claw = weaponInfo('smeeta_claws');
   const apiHost = await api('/api/panel', {weapon:'deconstructor_prime', wielder:{companion:'helios'}});
@@ -63,7 +67,7 @@ const r = await evaluate(`(async () => {
   const doorHost = wielderPayload().companion;
   const doorRefused = await window.wfsim.do('builder.wielder.set', {frame:'shade'});
   return { weapon: weapon.id, start, offered, framed, held, ordinary, assembled, withoutCatalog,
-    doorDefault, doorHost, doorRefused,
+    doorDefault, doorHost, doorRefused, prototypeFixed, unmodded, oldToggle,
     expectedCarriers: weapon.companion_carriers,
     helios:deconstructor.companion_carriers, claw:claw.companion_carriers,
     bodies:META.companions.length, parts:WFCAT.companion_parts.length, apiHost:apiHost.wielder,
@@ -84,15 +88,18 @@ check("its Wielder frames the companion's own page, which frames nothing further
 check("a build of the host keeps its identity when no card is seated",
   r.held.resolved === "c1" && r.held.payload?.companion === 'prototype_companion' && /preset 1/.test(r.held.sub), JSON.stringify(r.held));
 check("an ordinary weapon still holds a Warframe", r.ordinary.link.includes("prototype"), JSON.stringify(r.ordinary));
-check("all concrete bodies, five prototypes and modular parts are in the catalogue", r.bodies === 41 && r.parts === 49);
-check("the Deconstructors offer only the Helios pair and their scoped Prototype",
-  r.helios.length === 3 && ['helios','helios_prime','prototype_helios'].every(id => r.helios.includes(id)), JSON.stringify(r.helios));
+check("all concrete bodies, four prototypes and modular parts are in the catalogue", r.bodies === 40 && r.parts === 49);
+check("the Deconstructors offer only the two concrete Helios bodies",
+  r.helios.length === 2 && ['helios','helios_prime'].every(id => r.helios.includes(id)), JSON.stringify(r.helios));
 check("Smeeta Claws offer only Smeeta", JSON.stringify(r.claw) === '["smeeta_kavat"]', JSON.stringify(r.claw));
 check("the selected unmodded body reaches the weapon panel", r.apiHost.health === 560 && r.apiHost.shield === 250 && r.apiHost.armor === 80, JSON.stringify(r.apiHost));
 check("changing a modular part through the picker is saved with the build", r.assembled.core === 'drex_core' && r.assembled.saved === 'drex_core', JSON.stringify(r.assembled));
 check("a saved assembly reaches the fight before the companion catalogue loads", r.withoutCatalog.assembly.core === 'drex_core', JSON.stringify(r.withoutCatalog));
 check("the agent door selects the weapon's scoped default and refuses an illegal host", r.doorDefault.ok
-  && r.doorHost === 'prototype_helios' && !r.doorRefused.ok, JSON.stringify([r.doorDefault,r.doorHost,r.doorRefused]));
+  && r.doorHost === 'helios' && !r.doorRefused.ok, JSON.stringify([r.doorDefault,r.doorHost,r.doorRefused]));
 check("MOA and Hound prototypes show minima with three concrete witnesses", r.moaFloor.stats.health === 367.5
   && r.houndFloor.stats.health === 315 && r.moaFloor.floor_sources.length === 3 && r.houndFloor.floor_sources.length === 3);
+check("prototypes have fixed base attributes without part or gilding controls", r.prototypeFixed
+  && JSON.stringify(r.unmodded.base) === JSON.stringify(r.oldToggle.base)
+  && JSON.stringify(r.unmodded.stats) === JSON.stringify(r.oldToggle.stats));
 await app.finish("a companion weapon is held by a companion");

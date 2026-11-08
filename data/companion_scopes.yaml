@@ -19,12 +19,12 @@ scopes:
   - taxon
   - wyrm
   weapons: []
-  prototype: sentinel
+  default: sentinel
 - id: moas
   companions:
   - moa
   weapons: []
-  prototype: prototype_moa
+  default: prototype_moa
 - id: hounds
   companions:
   - hound
@@ -32,7 +32,7 @@ scopes:
   - batoten
   - lacerten
   - akaten
-  prototype: prototype_hound
+  default: prototype_hound
   unmodelled_weapons:
   - id: batoten
     name: Batoten
@@ -47,7 +47,7 @@ scopes:
   weapons:
   - deconstructor
   - deconstructor_prime
-  prototype: prototype_helios
+  default: helios
 - id: robotic_ranged
   companions:
   - diriga
@@ -88,106 +88,106 @@ scopes:
   - helstrum
   - multron
   - cryotra
-  prototype: prototype_companion
+  default: prototype_companion
 - id: venari
   companions:
   - venari
   weapons:
   - venari_claws
-  prototype: venari
+  default: venari
 - id: venari_prime
   companions:
   - venari_prime
   weapons:
   - venari_prime_claws
-  prototype: venari_prime
+  default: venari_prime
 - id: panzer_vulpaphyla
   companions:
   - panzer_vulpaphyla
   weapons:
   - panzer_claws
-  prototype: panzer_vulpaphyla
+  default: panzer_vulpaphyla
 - id: crescent_vulpaphyla
   companions:
   - crescent_vulpaphyla
   weapons:
   - crescent_claws
-  prototype: crescent_vulpaphyla
+  default: crescent_vulpaphyla
 - id: medjay_predasite
   companions:
   - medjay_predasite
   weapons:
   - medjay_claws
-  prototype: medjay_predasite
+  default: medjay_predasite
 - id: pharaoh_predasite
   companions:
   - pharaoh_predasite
   weapons:
   - pharaoh_claws
-  prototype: pharaoh_predasite
+  default: pharaoh_predasite
 - id: vizier_predasite
   companions:
   - vizier_predasite
   weapons:
   - vizier_claws
-  prototype: vizier_predasite
+  default: vizier_predasite
 - id: sly_vulpaphyla
   companions:
   - sly_vulpaphyla
   weapons:
   - sly_claws
-  prototype: sly_vulpaphyla
+  default: sly_vulpaphyla
 - id: smeeta_kavat
   companions:
   - smeeta_kavat
   weapons:
   - smeeta_claws
-  prototype: smeeta_kavat
+  default: smeeta_kavat
 - id: adarza_kavat
   companions:
   - adarza_kavat
   weapons:
   - adarza_claws
-  prototype: adarza_kavat
+  default: adarza_kavat
 - id: vasca_kavat
   companions:
   - vasca_kavat
   weapons:
   - vasca_claws
-  prototype: vasca_kavat
+  default: vasca_kavat
 - id: sahasa_kubrow
   companions:
   - sahasa_kubrow
   weapons:
   - sahasa_claws
-  prototype: sahasa_kubrow
+  default: sahasa_kubrow
 - id: helminth_charger
   companions:
   - helminth_charger
   weapons:
   - helminth_claws
-  prototype: helminth_charger
+  default: helminth_charger
 - id: huras_kubrow
   companions:
   - huras_kubrow
   weapons:
   - huras_claws
-  prototype: huras_kubrow
+  default: huras_kubrow
 - id: raksa_kubrow
   companions:
   - raksa_kubrow
   weapons:
   - raksa_claws
-  prototype: raksa_kubrow
+  default: raksa_kubrow
 - id: sunika_kubrow
   companions:
   - sunika_kubrow
   weapons:
   - sunika_claws
-  prototype: sunika_kubrow
+  default: sunika_kubrow
 - id: chesa_kubrow
   companions:
   - chesa_kubrow
   weapons:
   - chesa_claws
-  prototype: chesa_kubrow
+  default: chesa_kubrow

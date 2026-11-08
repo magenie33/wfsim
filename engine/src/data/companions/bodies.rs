@@ -58,7 +58,7 @@ pub struct CarrierScope {
     pub id: String,
     pub companions: Vec<String>,
     pub weapons: Vec<String>,
-    pub prototype: String,
+    pub default: String,
     #[serde(default)]
     pub unmodelled_weapons: Vec<CarrierWeapon>,
 }

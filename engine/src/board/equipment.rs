@@ -62,6 +62,7 @@ pub fn canonical(input: &Value) -> Result<Value, String> {
             }
             let resolved = comp::resolve(&b)?;
             if !resolved.refused.is_empty() { return Err(resolved.refused.join("; ")); }
+            if comp::companion(&b.companion).is_some_and(|c| c.prototype_scope.is_some()) { b.gilded = true; }
             b.assembly = resolved.assembly;
             b.gild_polarity = resolved.gild_polarity;
             let mut seen = std::collections::BTreeSet::new();

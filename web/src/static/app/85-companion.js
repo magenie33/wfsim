@@ -67,7 +67,7 @@ function compNormalize(st, id) {
   return {
     companion: id,
     assembly,
-    gilded: s.gilded !== false,
+    gilded: compHost(id)?.prototype_scope ? true : s.gilded !== false,
     gild_polarity: s.gild_polarity || b.gild_polarity,
     slots: b.slots.map((x, i) => {
       const y = (s.slots || [])[i];
@@ -158,7 +158,7 @@ function renderCompBody() {
     })}</label>`;
   }).join("");
   const modular = !!c.assembly;
-  const gilding = modular || c.has_modular_members;
+  const gilding = modular;
   $("comp-gilded-row").hidden = !gilding;
   $("comp-gilded").checked = comp.gilded;
   const repolarize = mutate => {

@@ -289,12 +289,14 @@ Redirection and Metal Fiber modify health, shield and armor at the seated rank.
 Their native per-rank coefficient is 0.2273; the displayed +250% card rounds
 the rank-10 coefficient 2.5003.
 
-A Prototype enumerates its legal concrete bodies and every legal assembly,
-applies the selected gilded state and body mods, then takes each attribute's
-minimum. Its three witnesses name the actual body and parts that attain those
-minima. Its mod pool is the intersection of the represented bodies' compatible
-groups. Its innate polarities are the common multiset; it gets no additional
-gilding polarity shared by all possible choices. There is no copied stat floor.
+There are four Prototypes: generic Companion, Sentinel, MOA and Hound.
+Each has fixed minimum base attributes from the unmodded rank-30 bodies and
+gilded assemblies in its scope. It has no selectable assembly or gilding state;
+body-stat mods multiply this fixed base. The source notes name the bodies and
+assemblies that establish each minimum. Its mod pool is the intersection of
+the represented bodies' compatible groups, and its innate polarities are their
+common multiset. Helios is a concrete body; both Deconstructors default to
+ordinary Helios and can also select Helios Prime.
 
 A body has ten general mod slots, no Exilus or Arcane slot, and reactor capacity
 under the reader's Forma rules. Model-specific precepts stay with their compatible

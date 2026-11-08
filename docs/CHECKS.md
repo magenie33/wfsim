@@ -2134,6 +2134,9 @@ scoped prototypes and parts. MOA/Hound minima have concrete witnesses; the
 general ranged health minimum is 367.5. A part chosen through the picker is
 saved and reaches the weapon request while the companion catalogue is absent.
 The agent door selects the same scoped default and refuses incompatible hosts.
+Exactly four Prototypes have fixed bases and no part/gilding controls; a retired
+gilding toggle cannot change them. The Deconstructors offer only the concrete
+Helios pair and default to ordinary Helios.
 Against the previous implementation the guard check rejects all four results,
 and the saved-assembly assertion catches fallback to the default core.
 

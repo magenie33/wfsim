@@ -73,7 +73,7 @@ fn weapon_carrier_scopes_preserve_exclusivity_and_fixed_claws() {
     let source = source();
     let helios = weapon_scope("deconstructor_prime").unwrap();
     assert_eq!(helios.companions, ["helios", "helios_prime"]);
-    assert_eq!(helios.prototype, "prototype_helios");
+    assert_eq!(helios.default, "helios");
     assert!(!can_carry(helios, companion("shade").unwrap()));
     assert!(!can_carry(helios, companion("sentinel").unwrap()));
     assert!(!can_carry(helios, companion("moa").unwrap()));
@@ -107,7 +107,7 @@ fn every_registered_companion_weapon_has_one_scope() {
     for w in crate::data::weapons::all().iter().filter(|w| w.slot == "sentinel") {
         assert_eq!(carrier_scopes().iter().filter(|s| s.weapons.contains(&w.id)).count(), 1, "{}", w.id);
         let scope = weapon_scope(&w.id).unwrap();
-        assert!(can_carry(scope, companion(&scope.prototype).unwrap()));
+        assert!(can_carry(scope, companion(&scope.default).unwrap()));
     }
 }
 
@@ -148,7 +148,7 @@ fn moa_parts_modify_base_but_hound_brackets_add_with_mods() {
 #[test]
 fn prototypes_derive_attribute_minima_with_legal_witnesses() {
     for (id, expected) in [("prototype_moa", [367.5, 315.0, 350.0]), ("prototype_hound", [315.0, 315.0, 315.0]),
-                           ("prototype_helios", [560.0, 250.0, 80.0]), ("sentinel", [450.0, 130.0, 80.0]),
+                           ("sentinel", [450.0, 130.0, 80.0]),
                            ("prototype_companion", [367.5, 130.0, 80.0])] {
         let b = build(id);
         let r = resolve(&b).unwrap();
@@ -164,12 +164,31 @@ fn prototypes_derive_attribute_minima_with_legal_witnesses() {
 }
 
 #[test]
+fn exactly_four_prototypes_have_fixed_bases_and_helios_is_concrete() {
+    let prototypes: Vec<_> = companions().iter().filter(|c| c.prototype_scope.is_some()).collect();
+    assert_eq!(prototypes.len(), 4);
+    assert!(companion("prototype_helios").is_none());
+    assert!(companion("helios").unwrap().prototype_scope.is_none());
+    for host in prototypes {
+        let normal = resolve(&build(&host.id)).unwrap();
+        let old_toggle = resolve(&CompanionBuild { gilded: false, ..build(&host.id) }).unwrap();
+        assert_eq!(old_toggle.base, normal.base);
+        assert_eq!(old_toggle.stats, normal.stats);
+        let modded = resolve(&CompanionBuild { mods: vec![crate::data::warframes::SlotPick {
+            id: "enhanced_vitality".into(), ..Default::default()
+        }], ..build(&host.id) }).unwrap();
+        assert_eq!(modded.base, normal.base);
+        close(modded.stats.health, normal.base.health * 3.5003);
+    }
+}
+
+#[test]
 fn body_mod_compatibility_and_rank_follow_the_selected_scope() {
     let has = |host, id| seatable_by(host).any(|m| m.id == id);
     assert!(has("helios_prime", "investigator"));
     assert!(!has("shade", "investigator"));
     assert!(!has("sentinel", "investigator"));
-    assert!(has("prototype_helios", "investigator"));
+    assert!(has("helios", "investigator"));
     assert!(has("prototype_moa", "hard_engage"));
     assert!(!has("moa", "fired_up"));
     assert!(!has("smeeta_kavat", "fired_up"));

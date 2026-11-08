@@ -135,11 +135,10 @@ checking only an exact variant path would admit forbidden Prime weapons.
 
 ## Derived prototypes
 
-Each attribute is the minimum across the declared bodies and legal assemblies,
-after applying body mods and the selected gilded state. The panel names a legal
-witness for each attribute; the witnesses need not be the same individual.
-These are the unmodded gilded values; runtime resolution derives them from the
-body and part records rather than reading this table.
+There are four Prototypes. Their base attributes are fixed to each scope's
+unmodded rank-30/gilded minima, with no assembly or gilding choices. Body mods
+scale the fixed base. The source notes can name different bodies or assemblies
+for each attribute. These values derive from the body and part records.
 
 | Prototype | Scope | Health | Shield | Armor |
 | --- | --- | ---: | ---: | ---: |
@@ -147,10 +146,10 @@ body and part records rather than reading this table.
 | Sentinel | All 17 Sentinel variants | 450 | 130 | 80 |
 | Prototype MOA | All 640 MOA assemblies | 367.5 | 315 | 350 |
 | Prototype Hound | All 81 Hound assemblies | 315 | 315 | 315 |
-| Prototype Helios | Helios and Helios Prime; Deconstructor default | 560 | 250 | 80 |
 
-The Helios prototype's attributes all come from ordinary Helios. Fixed breeds
-with invariant base attributes use the actual breed body directly. Modular
+Helios is not a Prototype. Both Deconstructors default to ordinary Helios
+(560 health, 250 shield, 80 armor); their picker contains only Helios and Helios
+Prime. Fixed breeds with invariant base attributes use the actual breed directly. Modular
 Vulpaphyla and Predasite bodies retain their own part selectors; their parts
 change polarity and unsupported resistance rules, not these three base stats.
 Prototypes expose only mods compatible with every represented body, so the

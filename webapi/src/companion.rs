@@ -44,7 +44,7 @@ mod tests {
         let weapon = crate::panel_json(&json!({"weapon":"verglas", "wielder":body}));
         for stat in comp::BODY_STATS { assert_eq!(own["stats"][stat], weapon["wielder"][stat]); }
         let proto = crate::panel_json(&json!({"weapon":"deconstructor_prime"}));
-        assert_eq!(proto["wielder"]["name"], "Prototype Helios");
+        assert_eq!(proto["wielder"]["name"], "Helios");
         assert_eq!(proto["wielder"]["health"], 560.0);
     }
 

@@ -229,7 +229,7 @@ mod tests {
     #[test]
     fn a_companion_host_is_named_and_its_stats_are_the_floors() {
         let c = companions();
-        assert_eq!(c.len(), 41);
+        assert_eq!(c.len(), 40);
         assert_eq!(c.iter().filter(|c| c.prototype_scope.is_none()).count(), 36);
         assert_eq!(companion(PROTOTYPE_COMPANION).unwrap().name, crate::data::companions::sentinel_wielder().name);
         assert!(c.windows(2).all(|pair| !pair[0].prototype_scope.is_some() || pair[1].prototype_scope.is_some()));

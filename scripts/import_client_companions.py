@@ -202,11 +202,11 @@ def main():
     scopes = []
     sentinel_ids = [b['id'] for b in bodies if b['kind'] == 'sentinel']
     scopes.extend([
-        {'id': 'sentinels', 'companions': sentinel_ids, 'weapons': [], 'prototype': 'sentinel'},
-        {'id': 'moas', 'companions': ['moa'], 'weapons': [], 'prototype': 'prototype_moa'},
-        {'id': 'hounds', 'companions': ['hound'], 'weapons': [], 'prototype': 'prototype_hound'},
-        {'id': 'helios', 'companions': ['helios', 'helios_prime'], 'weapons': [], 'prototype': 'prototype_helios'},
-        {'id': 'robotic_ranged', 'companions': sentinel_ids + ['moa'], 'weapons': [], 'prototype': 'prototype_companion'},
+        {'id': 'sentinels', 'companions': sentinel_ids, 'weapons': [], 'default': 'sentinel'},
+        {'id': 'moas', 'companions': ['moa'], 'weapons': [], 'default': 'prototype_moa'},
+        {'id': 'hounds', 'companions': ['hound'], 'weapons': [], 'default': 'prototype_hound'},
+        {'id': 'helios', 'companions': ['helios', 'helios_prime'], 'weapons': [], 'default': 'helios'},
+        {'id': 'robotic_ranged', 'companions': sentinel_ids + ['moa'], 'weapons': [], 'default': 'prototype_companion'},
     ])
     scope_by_id = {s['id']: s for s in scopes}
     weapon_ids = {}
@@ -234,11 +234,11 @@ def main():
         weapon_file = next(p for p in (ROOT / 'data/weapons/beast_claws').glob('*.yaml')
                            if yaml.safe_load(p.read_text())['internal_name'] == path)
         weapon = yaml.safe_load(weapon_file.read_text())
-        scopes.append({'id': body['id'], 'companions': [body['id']], 'weapons': [weapon['id']], 'prototype': body['id']})
+        scopes.append({'id': body['id'], 'companions': [body['id']], 'weapons': [weapon['id']], 'default': body['id']})
     proto_names = {'sentinel': 'Sentinel', 'prototype_companion': 'Prototype Companion',
-                   'prototype_moa': 'Prototype MOA', 'prototype_hound': 'Prototype Hound', 'prototype_helios': 'Prototype Helios'}
+                   'prototype_moa': 'Prototype MOA', 'prototype_hound': 'Prototype Hound'}
     for scope in scopes:
-        identity = scope['prototype']
+        identity = scope['default']
         if identity not in proto_names:
             continue
         kinds = sorted({b['kind'] for b in bodies if b['id'] in scope['companions']})

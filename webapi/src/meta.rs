@@ -518,7 +518,7 @@ pub fn meta_json() -> Value {
                 "assumed_attack_interval_seconds": wspec(&w.id).attack.refire.assumed_interval(),
                 "wielder_modelled": wspec(&w.id).wielder_modelled,
                 "companion_carriers": wfsim_engine::data::companions::carriers(&w.id).iter().map(|c| &c.id).collect::<Vec<_>>(),
-                "companion_default": wfsim_engine::data::companions::weapon_scope(&w.id).map(|s| &s.prototype),
+                "companion_default": wfsim_engine::data::companions::weapon_scope(&w.id).map(|s| &s.default),
                 "companion_scope": wfsim_engine::data::companions::weapon_scope(&w.id).map(|s| &s.id),
                 // An Arch-Gun has none either, so `sentinel` cannot answer it.
                 "has_exilus_slot": wfsim_engine::data::weapons::has_exilus_slot(&w.id),
@@ -1001,9 +1001,6 @@ pub fn meta_json() -> Value {
             "weapons": wfsim_engine::data::companions::carrier_weapons(c),
             "prototype_scope": c.prototype_scope,
             "assembly": c.assembly,
-            "has_modular_members": c.prototype_scope.as_deref()
-                .and_then(wfsim_engine::data::companions::carrier_scope).is_some_and(|s| s.companions.iter()
-                    .filter_map(|id| wfsim_engine::data::companions::companion(id)).any(|h| h.assembly.is_some())),
             "default_assembly": wfsim_engine::data::companions::default_parts(c),
             "polarities": c.polarities.iter().map(|p| crate::warframe::polarity_label(p)).collect::<Vec<_>>(),
             "body": crate::companion::companion_panel_json(&json!({"companion":c.id})),

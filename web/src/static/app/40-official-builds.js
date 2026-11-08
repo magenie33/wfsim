@@ -62,7 +62,7 @@ function wielderPayloadOf(v) {
     const slots = state.slots || [];
     const mods = slots.filter((s) => s && s.mod).map((s) => (s.rank == null ? { id: s.mod } : { id: s.mod, rank: s.rank }));
     return { companion: v.frame, assembly: {...(compHost(v.frame)?.default_assembly || {}), ...(state.assembly || {})},
-      gilded: state.gilded !== false, gild_polarity: state.gild_polarity || compHost(v.frame)?.body?.gild_polarity || undefined, mods };
+      gilded: compHost(v.frame)?.prototype_scope ? true : state.gilded !== false, gild_polarity: state.gild_polarity || compHost(v.frame)?.body?.gild_polarity || undefined, mods };
   }
   const b = wielderBuild(v);
   if (b) return wfPayloadOf({ ...b.state, frame: v.frame });

@@ -88,43 +88,52 @@ fn mod_bonus(build: &CompanionBuild, host: &str, refused: &mut Vec<String>) -> (
     (bonus, pile)
 }
 
+struct PrototypeFloor {
+    stats: BodyStats,
+    polarities: Vec<String>,
+    sources: Vec<FloorSource>,
+}
+
+/// A prototype has fixed minimum base stats, without an assembly or gilding state.
+fn prototype_floor(scope: &CarrierScope) -> Result<PrototypeFloor, String> {
+    let mut sources = Vec::new();
+    let mut minimum = BodyStats { health: f64::INFINITY, shield: f64::INFINITY, armor: f64::INFINITY };
+    let mut pols: Option<Vec<String>> = None;
+    for id in &scope.companions {
+        let member = companion(id).ok_or_else(|| format!("unknown carrier: {id}"))?;
+        for assembly in assemblies(member) {
+            let body = assemble(member, &assembly, true)?;
+            let stats = body.base.apply(body.bonus);
+            for stat in BODY_STATS {
+                let min = match stat { "health" => &mut minimum.health, "shield" => &mut minimum.shield, _ => &mut minimum.armor };
+                if stats.get(stat) < *min {
+                    *min = stats.get(stat);
+                    sources.retain(|s: &FloorSource| s.stat != stat);
+                    sources.push(FloorSource { stat: stat.into(), companion: id.clone(), assembly: assembly.clone(), value: *min });
+                }
+            }
+            if let Some(pool) = &mut pols {
+                let mut available = body.polarities;
+                pool.retain(|p| available.iter().position(|q| q == p).map(|i| { available.remove(i); }).is_some());
+            } else { pols = Some(body.polarities); }
+        }
+    }
+    if !minimum.health.is_finite() { return Err("empty prototype carrier scope".into()); }
+    Ok(PrototypeFloor { stats: minimum, polarities: pols.unwrap_or_default(), sources })
+}
+
 pub fn resolve(build: &CompanionBuild) -> Result<ResolvedCompanion, String> {
     let host = companion(&build.companion).ok_or_else(|| format!("unknown companion: {}", build.companion))?;
     let mut refused = Vec::new();
     let (mods, pile) = mod_bonus(build, &host.id, &mut refused);
     if let Some(scope) = host.prototype_scope.as_deref().and_then(carrier_scope) {
         if !build.assembly.is_empty() || build.gild_polarity.is_some() { return Err("a prototype has no selectable assembly or gilding polarity".into()); }
-        let mut sources = Vec::new();
-        let mut minimum = BodyStats { health: f64::INFINITY, shield: f64::INFINITY, armor: f64::INFINITY };
-        let mut minimum_base = minimum;
-        let mut pols: Option<Vec<String>> = None;
-        for id in &scope.companions {
-            let member = companion(id).ok_or_else(|| format!("unknown carrier: {id}"))?;
-            for a in assemblies(member) {
-                let mut body = assemble(member, &a, build.gilded)?;
-                let bare = body.base.apply(body.bonus);
-                body.bonus.add(mods);
-                let stats = body.base.apply(body.bonus);
-                for stat in BODY_STATS {
-                    let (min, base) = match stat { "health" => (&mut minimum.health, &mut minimum_base.health),
-                        "shield" => (&mut minimum.shield, &mut minimum_base.shield), _ => (&mut minimum.armor, &mut minimum_base.armor) };
-                    *base = base.min(bare.get(stat));
-                    if stats.get(stat) < *min {
-                        *min = stats.get(stat);
-                        sources.retain(|s: &FloorSource| s.stat != stat);
-                        sources.push(FloorSource { stat: stat.into(), companion: id.clone(), assembly: a.clone(), value: *min });
-                    }
-                }
-                if let Some(pool) = &mut pols {
-                    let mut available = body.polarities;
-                    pool.retain(|p| available.iter().position(|q| q == p).map(|i| { available.remove(i); }).is_some());
-                } else { pols = Some(body.polarities); }
-            }
-        }
-        if !minimum.health.is_finite() { return Err("empty prototype carrier scope".into()); }
-        return Ok(ResolvedCompanion { companion: host.id.clone(), name: host.name.clone(), base: minimum_base, stats: minimum,
-            assembly: CompanionAssembly::new(), gild_polarity: None, polarities: pols.unwrap_or_default(), floor_sources: sources,
-            unmodelled: vec!["Companion movement, survival events, precept AI and owner links are not simulated.".into()], refused, element_per_hit: pile });
+        let floor = prototype_floor(scope)?;
+        return Ok(ResolvedCompanion { companion: host.id.clone(), name: host.name.clone(), base: floor.stats,
+            stats: floor.stats.apply(mods), assembly: CompanionAssembly::new(), gild_polarity: None,
+            polarities: floor.polarities, floor_sources: floor.sources,
+            unmodelled: vec!["Companion movement, survival events, precept AI and owner links are not simulated.".into()],
+            refused, element_per_hit: pile });
     }
     let mut body = assemble(host, &build.assembly, build.gilded)?;
     let gild_polarity = if host.assembly.is_some() && build.gilded {
@@ -145,7 +154,7 @@ pub fn resolve(build: &CompanionBuild) -> Result<ResolvedCompanion, String> {
 pub fn weapon_build(weapon: &str, asked: Option<CompanionBuild>) -> Option<CompanionBuild> {
     let scope = weapon_scope(weapon)?;
     Some(asked.filter(|b| companion(&b.companion).is_some_and(|h| can_carry(scope, h)))
-        .unwrap_or_else(|| CompanionBuild { companion: scope.prototype.clone(), ..Default::default() }))
+        .unwrap_or_else(|| CompanionBuild { companion: scope.default.clone(), ..Default::default() }))
 }
 
 /// Compatibility floor for ranged robotic weapons, derived from legal bodies.
