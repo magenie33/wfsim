@@ -244,7 +244,7 @@ function renderAccountEntry() {
         <nav class="account-panel-links" aria-label="${aT("Personal center")}">
           <a href="${userProfilePath()}?kind=board">${aT("Verified builds")}</a>
           <a href="${userProfilePath()}?kind=optimization">${aT("Optimizations · last 14 days")}</a>
-          <a href="/account/recommendations">${aT("My recommendations")}</a>
+          <a href="${userProfilePath()}?section=recommendations">${aT("My recommendations")}</a>
           <a href="/account/sync">${aT("Cloud sync")}</a>
           <a href="/account">${aT("Account settings")}</a>
           ${extMenuItems(account).map((p) => `<a href="${escHtml(p.path)}?from=menu">${aT(p.label)}</a>`).join("")}
@@ -425,6 +425,7 @@ function accountMethods(a) {
 /// it, and a display name, which is free text. The first username change is
 /// at once, each later one a day after the last (docs/ACCOUNTS.md §"Names").
 function accountProfileBlock(a) {
+  const draft = authFlow.profileDraft || a;
   const after = a.rename_after
     ? tr("The username can change again after {time}.").replace("{time}",
       new Date(a.rename_after).toLocaleString(accountLocale(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }))
@@ -432,9 +433,9 @@ function accountProfileBlock(a) {
   const body = authFlow.open === "profile"
     ? `<div class="inline-form">
         <div class="field"><label for="auth-username">${aT("Username")}</label>
-          <input id="auth-username" type="text" autocomplete="username" maxlength="20" spellcheck="false" value="${escHtml(a.username)}"${a.rename_after ? " disabled" : ""}></div>
+          <input id="auth-username" type="text" autocomplete="username" maxlength="20" spellcheck="false" value="${escHtml(draft.username)}"${a.rename_after ? " disabled" : ""}></div>
         <div class="field"><label for="auth-display">${aT("Display name")}</label>
-          <input id="auth-display" type="text" autocomplete="nickname" maxlength="32" value="${escHtml(a.display_name || "")}" placeholder="${escHtml(a.username)}"></div>
+          <input id="auth-display" type="text" autocomplete="nickname" maxlength="32" value="${escHtml(draft.display_name || "")}" placeholder="${escHtml(a.username)}"></div>
         <button class="run-btn" data-auth="profile">${aT("Save")}</button></div>${authError()}
       <p class="set-note">${aT("Letters, digits and underscores for the username; anything for the display name. Everything you sign shows your current name.")}${after ? " " + escHtml(after) : ""}</p>`
     : `<dl class="kvs"><div class="kv"><dt>${aT("Username")}</dt><dd>@${escHtml(a.username)}${
@@ -486,7 +487,7 @@ function settingsNav(a, here) {
     <div class="me"><span class="avatar avatar-lg">${escHtml(accountInitial(a))}</span>
       <div><b>${escHtml(accountName(a))}</b><span>${escHtml(tr("Joined {date}").replace("{date}", since))}</span></div></div>
     ${link("/account", "account", "Account")}
-    ${link("/account/recommendations", "recommendations", "My recommendations")}
+    ${link(userProfilePath() + "?section=recommendations", "recommendations", "My recommendations")}
     ${link("/account/sync", "sync", "Cloud sync")}
     ${Object.entries(EXT.pages).filter(([, p]) => p.settings && (!p.available || p.available()))
       .map(([k, p]) => link(p.path, k, p.nav)).join("")}</nav>`;
@@ -1059,6 +1060,7 @@ async function authAct(el) {
       return authSignedIn(r);
     }
     if (what === "open") {
+      if (el.dataset.open === "profile") authFlow.profileDraft = { ...accountState.account };
       authFlow = { ...authFlow, step: 1, open: authFlow.open === el.dataset.open ? null : el.dataset.open };
       return renderAuthPage(kind);
     }
@@ -1106,7 +1108,12 @@ async function authAct(el) {
         ...(a.rename_after ? {} : { username: authVal("auth-username") }), display_name: authVal("auth-display") });
       if (!(r && r.ok)) return fail(r);
       presetToast(tr("Saved."));
-      authFlow = { ...authFlow, open: null, error: null };
+      authFlow = { ...authFlow, open: null, error: null, profileDraft: null };
+      if (userHomeOwner()) {
+        const p = computationProfile.value.profile;
+        p.name = accountName(r.account); p.username = r.account.username;
+        loadProfileRecords(computationProfile);
+      }
       return loadAccount();
     }
     if (what === "agent-revoke") {
@@ -1143,6 +1150,10 @@ async function authAct(el) {
       const r = await accountCall("POST", "/api/account/contribution", { named: el.dataset.named === "yes" });
       if (!(r && r.ok)) return fail(r);
       await loadDevices();
+      if (userHomeOwner()) {
+        computationProfile.value.profile.named = el.dataset.named === "yes";
+        loadProfileRecords(computationProfile);
+      }
       contributorsState = null;
       return renderAuthPage(kind);
     }

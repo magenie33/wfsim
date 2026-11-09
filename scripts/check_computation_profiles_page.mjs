@@ -7,8 +7,12 @@ const staticServer = process.env.WFSIM_BASE ? null : await serveSite(new URL("..
 const fixture = await computationFixture(process.env.WFSIM_BASE || "http://127.0.0.1:" + staticServer.address().port);
 const app = await openApp({ base: fixture.base, lang: "zh", boot: 1500 });
 const held = new Map(), blocked = new Set(["summary", "records", "full"]), requested = new Map(), interceptionErrors = [];
-await app.send("Fetch.enable", { patterns: [{ urlPattern: "*/api/account/contribution-profile*" }, { urlPattern: "*/api/contributors/profile/*" }] });
+await app.send("Fetch.enable", { patterns: [{ urlPattern: "*/api/account/contribution-profile*" }, { urlPattern: "*/api/contributors/profile/*" }, { urlPattern: "*/api/account/recommendations*" }] });
 app.on("Fetch.requestPaused", event => {
+  if (new URL(event.request.url).pathname.startsWith("/api/account/recommendations")) {
+    requested.set("private", (requested.get("private") || 0) + 1);
+    app.send("Fetch.continueRequest", { requestId: event.requestId }).catch(error => interceptionErrors.push(String(error))); return;
+  }
   const view = new URL(event.request.url).searchParams.get("view") || "full";
   requested.set(view, (requested.get(view) || 0) + 1);
   if (blocked.has(view)) { if (!held.has(view)) held.set(view, []); held.get(view).push(event.requestId); }
@@ -30,7 +34,7 @@ async function review(name) {
 try {
   await app.load("/people/me?weapon=laetum#profile", 600);
   await until("!!document.querySelector('.profile-heading h2')");
-  check("Legacy profile addresses preserve query and fragment on the canonical user route", await app.evaluate("location.pathname === '/user/me' && location.search === '?weapon=laetum' && location.hash === '#profile'"), await app.evaluate("location.href"));
+  check("Legacy and own-profile aliases resolve to the same stable public user address", await app.evaluate("location.pathname === '/user/" + fixture.profileIds.aaa + "' && location.search === '?weapon=laetum' && location.hash === '#profile'"), await app.evaluate("location.href"));
   check("Identity appears while contribution totals are withheld", await app.evaluate("document.querySelector('.profile-heading h2').innerText.includes('aaa') && computationProfile.statsLoading && computationProfile.value.profile.points == null"));
   check("The default profile loads verified builds independently of identity", await app.evaluate("computationProfile.tab === 'board' && computationProfile.recordsLoading") && !requested.get("full"));
   await release("summary");
@@ -40,7 +44,27 @@ try {
   await until("computationProfile?.value && !computationProfile.loading && !computationProfile.statsLoading && !computationProfile.recordsLoading");
   check("Own profile lists a real currently published build", await app.evaluate("document.querySelectorAll('.profile-build').length === 1"));
   check("Lifetime signatures and points are distinct", await app.evaluate("document.querySelector('.profile-heading').innerText.includes('128') && document.querySelector('.profile-heading').innerText.includes('128,640')"));
-  check("Owners see their verification role on actual published calculations", await app.evaluate("document.querySelector('.profile-verification')?.innerText.includes(tr('You verified this calculation')) && !!document.querySelector('.profile-private a[href=\"/account/sync\"]')"));
+  check("Owners see their verification role on actual published calculations", await app.evaluate("document.querySelector('.profile-verification')?.innerText.includes(tr('You verified this calculation')) && !!document.querySelector('.profile-private [data-user-section=presets]')"));
+  await until("!!document.querySelector('.profile-owner-section .recommendation-history-build')");
+  check("Recommendation history is embedded in the owner's homepage", await app.evaluate("!!document.querySelector('.profile-owner-section .recommendation-history-build a[href*=recommend_build]') && location.pathname.startsWith('/user/') && document.querySelector('.profile-owner-heading').innerText.includes(tr('Only you'))"));
+  check("Embedded recommendations retain their exact canonical build link", await app.evaluate("document.querySelector('.profile-owner-section .recommendation-history-build a').search.includes('recommend_build=" + fixture.identity + "')"));
+  await app.evaluate("document.querySelector('.profile-private [data-auth=open]').click()");
+  await until("!!document.querySelector('.profile-inline-editor #auth-display')");
+  await app.evaluate("(() => {const input=document.querySelector('#auth-display');input.focus();input.value='Home edited name';input.dispatchEvent(new Event('input',{bubbles:true}));renderComputationState(computationProfile);renderRecommendationHistory();})()");
+  check("Background profile/history renders preserve an active inline edit", await app.evaluate("document.activeElement.id === 'auth-display' && document.querySelector('#auth-display').value === 'Home edited name'"));
+  await app.evaluate("document.querySelector('.profile-inline-editor [data-auth=profile]').click()");
+  await until("document.querySelector('.profile-heading h2')?.innerText.includes('Home edited name') && !document.querySelector('.profile-inline-editor')");
+  check("Inline profile edits save through the real account route without leaving the homepage", await app.evaluate("location.pathname === '/user/" + fixture.profileIds.aaa + "' && accountState.account.display_name === 'Home edited name'"));
+  await until("!computationProfile.recordsLoading && document.querySelector('.profile-build .computation-credits')?.innerText.includes('Home edited name')");
+  check("Saving a profile name also refreshes the existing calculation signatures", await app.evaluate("document.querySelector('.profile-build .computation-credits').innerText.includes('Home edited name')"));
+  const publicReads = requested.get("records");
+  await app.evaluate("localStorage.setItem(presetListKey('builder-builds'),JSON.stringify([{id:'home-private-test',name:'PRIVATE_ONLY_HOME_PRESET',scope:'laetum',savedAt:1,state:{}}]));document.querySelector('.profile-private [data-user-section=presets]').click()");
+  check("Private presets are searchable inside the same homepage", await app.evaluate("location.pathname === '/user/" + fixture.profileIds.aaa + "' && !!document.querySelector('#cloud-q') && document.querySelector('#cloud-items').innerText.includes('PRIVATE_ONLY_HOME_PRESET')"));
+  check("Changing private sections does not reload public verification records", requested.get("records") === publicReads);
+  await app.evaluate("document.querySelector('#cloud-q').value='no such preset';document.querySelector('#cloud-q').dispatchEvent(new Event('input',{bubbles:true}))");
+  check("The embedded preset browser uses its real search controls", await app.evaluate("!document.querySelector('#cloud-items tbody').innerText.includes('PRIVATE_ONLY_HOME_PRESET')"));
+  await app.evaluate("document.querySelector('.profile-owner-section [data-user-section=recommendations]').click()");
+  check("Returning to recommendations restores the shared history component", await app.evaluate("!!document.querySelector('.profile-owner-section .recommendation-history-build') && !document.querySelector('#cloud-items')"));
   await app.evaluate("document.querySelector('#account-toggle').click()");
   check("The avatar opens an independent personal dialog instead of a menu", await app.evaluate("!document.querySelector('#acct-menu').hidden && document.querySelector('#account-panel').getAttribute('role') === 'dialog' && document.querySelector('#account-toggle').getAttribute('aria-haspopup') === 'dialog' && !document.querySelector('#acct-menu [role=menuitem]')"));
   check("The personal panel leads directly to verified builds and account tools", await app.evaluate("!!document.querySelector('#acct-menu a[href=\"/user/me?kind=board\"]') && !!document.querySelector('#acct-menu a[href=\"/account/sync\"]') && !!document.querySelector('#acct-menu a[href=\"/account\"]')"));
@@ -90,7 +114,7 @@ try {
   check("Keyboard user links retain a visible focus ring", await app.evaluate("(() => { const a=document.querySelector('.computation-credits a'); a.focus(); return a.matches(':focus-visible') && getComputedStyle(a).outlineStyle === 'solid'; })()"));
   check("The build link includes the engine's canonical identity", await app.evaluate("document.querySelector('.profile-build h3 a').search.includes('computed_build=" + fixture.identity + "')"));
   await app.evaluate("document.querySelector('.profile-tabs a[href*=optimization]').click()");
-  await until("computationProfile?.value?.kind === 'optimization' && !computationProfile.loading");
+  await until("computationProfile?.value?.kind === 'optimization' && !computationProfile.loading && !computationProfile.recordsLoading");
   check("Optimization tab shows the fourteen day rule", await app.evaluate("document.querySelector('.contributor-profile').innerText.includes('14') && document.querySelectorAll('.profile-build').length === 1"));
   await app.evaluate("document.querySelector('.profile-build h3 a').click()");
   await until("!!document.querySelector('.computation-record')");
@@ -132,6 +156,7 @@ try {
   }
   blocked.add("summary");
   blocked.add("records");
+  const privateReads = requested.get("private") || 0;
   await app.evaluate("(() => { const row=document.createElement('div'); row.id='profile-ranking-entry-check'; row.className='rank-row'; row.innerHTML=contributorRowInner({key:'profile-fixture',name:'bbb',profile:" + JSON.stringify(fixture.profileIds.bbb) + ",contributor_rank:computationProfile.value.profile.contributor_rank},1,1); document.querySelector('#auth-page').append(row); })()");
   check("The ranking renderer uses the shared canonical user link", await app.evaluate("(() => { const a=document.querySelector('#profile-ranking-entry-check a'); return a.getAttribute('href') === '/user/" + fixture.profileIds.bbb + "' && a.classList.contains('user-link') && getComputedStyle(a).textDecorationLine === 'none'; })()"));
   await app.evaluate("document.querySelector('#profile-ranking-entry-check a').click()");
@@ -140,6 +165,8 @@ try {
   check("Public profiles expose neither personal tools nor the owner's verification label", await app.evaluate("!document.querySelector('.profile-private') && !document.querySelector('.profile-verification')"));
   await release("summary"); await release("records");
   await until("!computationProfile.statsLoading && !computationProfile.recordsLoading");
+  await app.evaluate("history.replaceState(history.state,'',location.pathname+'?section=recommendations');renderAuthPage('profile')");
+  check("Another user's profile never loads or displays the signed-in owner's private recommendations or presets", (requested.get("private") || 0) === privateReads && await app.evaluate("!document.querySelector('.profile-owner-section') && !document.querySelector('.recommendation-history-build') && !document.querySelector('#auth-page').innerText.includes('PRIVATE_ONLY_HOME_PRESET')"));
   await app.send("Emulation.setDeviceMetricsOverride", { width: 360, height: 800, deviceScaleFactor: 1, mobile: true });
   await app.evaluate("accountState={providers:['email'],account:null,loaded:true};renderAccountEntry()");
   check("Public profiles fit a narrow phone with the real signed-out entry", await app.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1 && !!document.querySelector('#account .signin-btn')"));

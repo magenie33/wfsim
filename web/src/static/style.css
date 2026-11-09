@@ -2026,6 +2026,13 @@ a.user-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;tex
 .profile-eyebrow{display:block;color:var(--muted);font-size:11px;margin-bottom:6px}
 .profile-private{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 12px}
 .profile-private a{text-decoration:none}
+.profile-inline-editor{max-width:580px;margin:18px 0}
+.profile-owner-section{margin-top:36px;padding-top:24px;border-top:1px solid var(--line);scroll-margin-top:115px}
+.profile-owner-heading{display:flex;align-items:center;gap:12px}
+.profile-owner-heading h2{font-size:19px;margin:0}
+.profile-owner-section .profile-tabs{margin-top:12px}
+.profile-owner-section #cloud-items{overflow:hidden}
+.profile-owner-section .recommendation-pages{justify-content:flex-start}
 .profile-section-title{font-size:19px;margin:30px 0 0}
 .profile-search{display:flex;align-items:center;gap:10px;flex:1;min-width:200px;padding:12px 14px;font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--line);border-radius:10px;cursor:pointer;text-align:left}
 .profile-search:hover{border-color:var(--accent)}

@@ -434,7 +434,16 @@ of tied builds retain their own controls. The same build across rulers and
 modes and entry points shares its daily allowance and pending state. Dates
 settle in UTC; the next boundary is also printed in the reader's time zone.
 
-Mine (`/account/recommendations`) shows contribution points and permanent
+The owner's user homepage embeds recommendation history in its private personal
+section; it shares the public profile's address and keeps its public content in
+place. Recommendation and preset tabs switch that private region only. Names
+and attribution visibility are edited on the same page. Recommendation history
+reuses the exact Library build cards, dates, weights and filters; weapon selection
+uses the profile's equipment search panel. Six cards appear initially, with more
+available in place. Private presets reuse the browser inventory's search, grouping,
+sync controls and editor links. These regions are absent for visitors.
+
+The compatibility page (`/account/recommendations`) shows contribution points and permanent
 recommendation points, with recommendation history below. Its default view
 lists builds available today; pending and all-time views, weapon filtering
 and pagination retain expired records. Each entry links to that exact build

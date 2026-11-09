@@ -37,6 +37,8 @@ export async function computationFixture(upstream, port = 0, controls = false) {
   if (!/^[a-f0-9]{32}$/.test(identity || "")) throw new Error("The fixture build must have an engine identity.");
   const measured = new Date(row.measured_at).toISOString();
   await env.LIBRARY.run("INSERT INTO builds (id,at,record) VALUES (?,?,?)", identity, at.slice(0, 10), JSON.stringify(record));
+  await env.ACCOUNTS.run("INSERT INTO recommendation_targets (identity,weapon,record,ruler,mode) VALUES (?,'laetum',?,?,?)", identity, JSON.stringify(record), row.benchmark, row.mode || "base");
+  await env.ACCOUNTS.run("INSERT INTO recommendations (account,identity,day) VALUES (?,?,CURRENT_DATE-1)", account, identity);
   await env.LIBRARY.run("INSERT INTO scores (identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES (?,?,?,?,?,'kpm',0,?,?)",
     identity, row.benchmark, row.mode || "base", "verified:" + row.measured_by, row.score, measured, measured);
   for (const [i, name] of ["aaa", "bbb"].entries()) await env.LIBRARY.run(`INSERT INTO score_witnesses
@@ -64,7 +66,7 @@ export async function computationFixture(upstream, port = 0, controls = false) {
       else if (url.pathname.startsWith("/api/contributors/profile/") || url.pathname.startsWith("/api/computations/") || url.pathname === "/api/account/contribution-profile") response = await contributorProfilesRoute(request, env, url.pathname);
       else if (url.pathname === "/api/contributors" || url.pathname.startsWith("/api/account/devices") || url.pathname === "/api/account/contribution") response = await contributionRoute(request, env, url.pathname);
       else if (url.pathname.startsWith("/api/recommendations/") || url.pathname.startsWith("/api/account/recommendations")) response = await recommendationsRoute(request, env, url.pathname);
-      else if (url.pathname.startsWith("/api/auth/") || url.pathname === "/api/account") response = await accountRoute(request, env, url.pathname);
+      else if (url.pathname.startsWith("/api/auth/") || ["/api/account", "/api/account/profile"].includes(url.pathname)) response = await accountRoute(request, env, url.pathname);
       else if (url.pathname === "/api/account/agents") response = Response.json({ ok: true, agents: [] });
       if (!response) {
         const proxyHeaders = new Headers(headers); proxyHeaders.delete("host");

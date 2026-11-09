@@ -246,7 +246,10 @@ async function publishedComputationRows(candidates) {
   }));
   return candidates.filter(entry => matched.has(entry));
 }
-const computationPageKey = () => location.pathname + location.search + ":" + (accountState.account?.id || "");
+const computationPageKey = () => {
+  const query = new URLSearchParams(location.search); query.delete("section");
+  return location.pathname + (query.size ? "?" + query : "") + ":" + (accountState.account?.id || "");
+};
 function computationPage(main, kind) {
   if (kind === "profile") normalizeUserProfileAddress();
   if (!META) { main.innerHTML = `<p role="status">${aT("Loading user profile…")}</p>`; return; }
@@ -296,11 +299,10 @@ function computationPage(main, kind) {
     <div><span class="profile-eyebrow">${aT(p.you ? "My profile" : "User profile")}</span><h2>${escHtml(p.name)} ${p.contributor_rank == null ? "" : contributorRankBadge(p.contributor_rank)}</h2><span class="muted">@${escHtml(p.username || "")}</span></div>
     <div class="profile-totals"><b>${total("signatures")}</b><span>${aT("Lifetime signatures")}</span></div>
     <div class="profile-totals"><b>${total("points")}</b><span>${aT("Contribution points")}</span></div></header>
-    ${p.you ? `<nav class="profile-private" aria-label="${aT("Personal center")}"><a class="ghost-btn small" href="/account#profile">${aT("Edit profile")}</a><a class="ghost-btn small" href="/account/sync">${aT("My presets")}</a><a class="ghost-btn small" href="/account/recommendations">${aT("My recommendations")}</a><a class="ghost-btn small" href="/contributors">${aT("Name visibility")}</a></nav>
-      <p class="fine">${aT(p.named ? "Your name is public on calculations and the ranking." : "You are anonymous. Your calculation credit is kept.")}</p>` : ""}${stats}
+    ${userHomeControlsHtml(p)}${stats}
     <h2 class="profile-section-title">${aT("Verified calculations")}</h2>
     <nav class="profile-tabs" aria-label="${aT("Verified calculations")}"><a href="${escHtml(href("board"))}" ${tab === "board" ? 'aria-current="page"' : ""}>${aT("Verified builds")}</a>
-      <a href="${escHtml(href("optimization"))}" ${tab === "optimization" ? 'aria-current="page"' : ""}>${aT("Optimizations · last 14 days")}</a></nav>${body}</div>`;
+      <a href="${escHtml(href("optimization"))}" ${tab === "optimization" ? 'aria-current="page"' : ""}>${aT("Optimizations · last 14 days")}</a></nav>${body}${userHomePrivateHtml(p)}</div>`;
 }
 const profileVerificationHtml = own => own ? `<p class="profile-verification"><span aria-hidden="true">✓</span> ${aT("You verified this calculation")}</p>` : "";
 function computationBuildHtml(entry, own = false) {
@@ -320,6 +322,7 @@ function computationOptimizationHtml(entry, own = false) {
     <div class="computation-credits">${computationWitnessHtml(entry.witnesses)}</div></article>`;
 }
 function renderComputationState(state, kind = "profile") {
+  if (userHomeEditing()) return;
   if (state === computationProfile && state.key === computationPageKey()) renderAuthPage(kind);
 }
 function rejectComputationProfile(state, error) {
@@ -337,21 +340,22 @@ async function loadProfileSummary(state) {
   } finally { state.statsLoading = false; renderComputationState(state); }
 }
 async function loadProfileRecords(state, more = false) {
+  const generation = state.recordsGeneration = (state.recordsGeneration || 0) + 1;
   state.recordsLoading = true; state.recordsError = "";
   try {
     const query = new URLSearchParams(state.query);
     query.set("view", "records"); query.set("limit", "12"); query.set("kind", state.tab);
     if (more && state.next) query.set("before", JSON.stringify(state.next)); else query.delete("before");
     const value = await computationCall(state.api + "?" + query);
-    if (state !== computationProfile || state.closed) return;
+    if (state !== computationProfile || state.closed || generation !== state.recordsGeneration) return;
     const rows = value.kind === "board" ? await publishedComputationRows(value.candidates) : value.candidates || [];
-    if (state !== computationProfile || state.closed) return;
+    if (state !== computationProfile || state.closed || generation !== state.recordsGeneration) return;
     state.value.profile = { ...state.value.profile, ...value.profile };
     state.rows = more ? state.rows.concat(rows) : rows; state.next = value.next;
   } catch (error) {
-    if (state !== computationProfile) return;
+    if (state !== computationProfile || generation !== state.recordsGeneration) return;
     rejectComputationProfile(state, error); state.recordsError = error.message;
-  } finally { state.recordsLoading = false; renderComputationState(state); }
+  } finally { if (generation === state.recordsGeneration) { state.recordsLoading = false; renderComputationState(state); } }
 }
 async function loadComputationProfile(state, kind, more = false) {
   if (more && kind === "profile") { await loadProfileRecords(state, true); return; }
@@ -363,17 +367,27 @@ async function loadComputationProfile(state, kind, more = false) {
     const value = await computationCall(state.api + (kind === "profile" ? "?view=identity" : ""));
     if (state !== computationProfile) return;
     if (kind === "calculation") { state.value = value; return; }
+    if (id === "me" && value.profile.you) {
+      history.replaceState(history.state, "", userProfilePath(value.profile.id) + location.search + location.hash);
+      state.key = computationPageKey();
+      state.owner = value.profile.id + ":" + (accountState.account?.id || "");
+      state.api = "/api/contributors/profile/" + value.profile.id;
+    }
     state.value = { profile: { ...state.value?.profile, ...value.profile }, kind: state.tab };
     state.loading = false; state.statsLoading = true; state.recordsLoading = true;
     renderComputationState(state);
-    await Promise.all([loadProfileSummary(state), loadProfileRecords(state)]);
+    await Promise.all([loadProfileSummary(state), loadProfileRecords(state), ...(value.profile.you ? [loadRecommendationPoints()] : [])]);
   } catch (error) {
     if (state !== computationProfile) return;
     state.value = null; state.error = error.message;
   } finally { state.loading = false; renderComputationState(state, kind); }
 }
-function setProfileWeapon(id) {
+function setProfileWeapon(id, context = profileWeaponPicker?.dataset.context || "records") {
   closeProfileWeaponPicker(false);
+  if (context === "recommendations") {
+    recommendationHistoryWeapon = id; recommendationHistoryOffset = 0;
+    recommendationHistory = null; loadRecommendationHistory(); renderAuthPage("profile"); return;
+  }
   const query = new URLSearchParams(location.search); query.delete("before");
   if (id) query.set("weapon", id); else query.delete("weapon");
   nav(location.pathname + (query.size ? "?" + query : "") + location.hash);
@@ -386,10 +400,11 @@ function closeProfileWeaponPicker(restore = true) {
   button?.setAttribute("aria-expanded", "false");
   if (restore) button?.focus({ preventScroll: true });
 }
-function openProfileWeaponPicker() {
+function openProfileWeaponPicker(context = "records") {
   if (profileWeaponPicker || authKindOf(location.pathname) !== "profile") return;
   setAccountPanel(false, false); closePopovers();
   const overlay = document.createElement("div"); overlay.className = "profile-weapon-window";
+  overlay.dataset.context = context;
   overlay.innerHTML = `<section class="profile-weapon-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-weapon-title">
     <header class="jump-head"><h2 id="profile-weapon-title">${aT("Search verified calculations")}</h2><button class="ghost-btn small" data-profile-picker-close>${aT("Close")} · Esc</button></header>
     <div class="profile-picker-tools"><div class="addbar"><input type="search" aria-label="${aT("Search weapons…")}" placeholder="${aT("Search weapons…")}"></div><button class="ghost-btn small" data-profile-weapon="">${aT("All weapons")}</button><span class="muted" role="status" data-profile-picker-count></span></div>
@@ -397,8 +412,8 @@ function openProfileWeaponPicker() {
   profileWeaponPicker = overlay; document.body.append(overlay); document.body.classList.add("profile-picker-open");
   document.querySelector("[data-computation-weapon]")?.setAttribute("aria-expanded", "true");
   const input = overlay.querySelector("input"), results = overlay.querySelector(".combo-menu");
-  const selected = new URLSearchParams(location.search).get("weapon");
-  const weapons = (META.weapons || []).filter(w => !w.hidden).slice().sort((a, b) => weaponEntryName(a).localeCompare(weaponEntryName(b), LANG));
+  const selected = context === "recommendations" ? recommendationHistoryWeapon : new URLSearchParams(location.search).get("weapon");
+  const weapons = (META.weapons || []).filter(w => !w.hidden && (context !== "recommendations" || recommendationHistory?.weapons?.includes(w.id))).slice().sort((a, b) => weaponEntryName(a).localeCompare(weaponEntryName(b), LANG));
   const render = () => {
     const query = input.value.trim().toLocaleLowerCase(), matches = weapons.filter(w => searchHit(w, query));
     overlay.querySelector("[data-profile-picker-count]").textContent = trF("{n} results", { n: matches.length });
@@ -409,7 +424,7 @@ function openProfileWeaponPicker() {
   overlay.addEventListener("click", event => {
     if (event.target === overlay || event.target.closest("[data-profile-picker-close]")) closeProfileWeaponPicker();
     const pick = event.target.closest("[data-profile-weapon]");
-    if (pick) setProfileWeapon(pick.dataset.profileWeapon);
+    if (pick) setProfileWeapon(pick.dataset.profileWeapon, context);
   });
   overlay.addEventListener("keydown", event => {
     if (imeComposing(event)) return;
@@ -429,7 +444,8 @@ function openProfileWeaponPicker() {
   render(); input.focus({ preventScroll: true });
 }
 document.addEventListener("click", event => {
-  if (event.target.closest("[data-computation-weapon]")) openProfileWeaponPicker();
+  const search = event.target.closest("[data-computation-weapon]");
+  if (search) openProfileWeaponPicker(search.dataset.computationWeapon || "records");
   const weapon = event.target.closest(".profile-filter[data-profile-weapon]");
   if (weapon) setProfileWeapon(weapon.dataset.profileWeapon);
   const retry = event.target.closest("[data-computation-retry]");
@@ -443,4 +459,50 @@ document.addEventListener("click", event => {
   if (event.target.closest("[data-computation-more]") && computationProfile && !computationProfile.recordsLoading) {
     loadComputationProfile(computationProfile, "profile", true); renderAuthPage("profile");
   }
+});
+// Public content is shared; account-owned controls and collections are rendered only for the owner.
+function userHomeOwner(section = null) {
+  return authKindOf(location.pathname) === "profile" && computationProfile?.key === computationPageKey()
+    && !!accountState.account && !!computationProfile.value?.profile.you
+    && (!section || (new URLSearchParams(location.search).get("section") || "recommendations") === section);
+}
+function userHomeEditing() {
+  return userHomeOwner() && authFlow.open === "profile" && !!document.activeElement?.closest(".profile-inline-editor");
+}
+function userHomeSectionPath(section) {
+  const query = new URLSearchParams(location.search); query.set("section", section); query.delete("before");
+  return location.pathname + "?" + query + location.hash;
+}
+function userHomeControlsHtml(profile) {
+  if (!profile.you || !userHomeOwner()) return "";
+  return `<nav class="profile-private" aria-label="${aT("Personal center")}">
+    <button class="ghost-btn small" data-auth="open" data-open="profile">${aT(authFlow.open === "profile" ? "Close" : "Edit profile")}</button>
+    <a class="ghost-btn small" data-user-section="presets" href="${escHtml(userHomeSectionPath("presets"))}">${aT("My presets")}</a>
+    <a class="ghost-btn small" data-user-section="recommendations" href="${escHtml(userHomeSectionPath("recommendations"))}">${aT("My recommendations")}</a>
+    ${contributionNameButton(profile)}</nav>
+    <p class="fine">${aT(profile.named ? "Your name is public on calculations and the ranking." : "You are anonymous. Your calculation credit is kept.")}</p>
+    ${authFlow.open === "profile" ? `<div class="profile-inline-editor">${accountProfileBlock(accountState.account)}</div>` : ""}`;
+}
+function userHomePrivateHtml(profile) {
+  if (!profile.you || !userHomeOwner()) return "";
+  const section = new URLSearchParams(location.search).get("section") === "presets" ? "presets" : "recommendations";
+  let content;
+  if (section === "presets") {
+    cloudForget(accountState.account.id);
+    content = `<div class="block" id="cloud-items">${cloudListHtml()}</div><a class="ghost-btn small" href="/account/sync">${aT("Cloud sync")}</a>`;
+  } else content = recommendationsPage(accountState.account, true);
+  return `<section class="profile-owner-section" aria-labelledby="profile-owner-title"><header class="profile-owner-heading"><h2 id="profile-owner-title">${aT("Personal center")}</h2><span class="tag muted">${aT("Only you")}</span></header>
+    <nav class="profile-tabs" aria-label="${aT("Personal center")}">${[["recommendations", "My recommendations"], ["presets", "My presets"]].map(([id, label]) => `<a data-user-section="${id}" href="${escHtml(userHomeSectionPath(id))}"${section === id ? ' aria-current="page"' : ""}>${aT(label)}</a>`).join("")}</nav>${content}</section>`;
+}
+document.addEventListener("click", event => {
+  const link = event.target.closest("[data-user-section]");
+  if (!link || !userHomeOwner() || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  event.preventDefault(); event.stopPropagation();
+  history.pushState(history.state, "", link.href); renderAuthPage("profile");
+  document.querySelector(".profile-owner-section")?.scrollIntoView({ block: "start" });
+}, true);
+onTyped(document, event => {
+  if (!["auth-username", "auth-display"].includes(event.target?.id) || authFlow.open !== "profile") return;
+  const field = event.target.id === "auth-username" ? "username" : "display_name";
+  authFlow.profileDraft = { ...(authFlow.profileDraft || accountState.account), [field]: event.target.value };
 });

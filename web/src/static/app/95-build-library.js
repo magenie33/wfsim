@@ -297,6 +297,12 @@ addEventListener("scroll", () => { if (libraryActive) libraryScroll = scrollY; }
 // Recommendation identity comes from the engine; votes and periods come from the account service.
 let recommendationLibrary = null, recommendationHistory = null, recommendationHistoryLoading = false;
 let recommendationHistoryFilter = "available", recommendationHistoryWeapon = "", recommendationHistoryOffset = 0;
+let recommendationHomeVisible = 6;
+const recommendationHistoryVisible = () => authKindOf(location.pathname) === "recommendations" || userHomeOwner("recommendations");
+function renderRecommendationHistory() {
+  if (userHomeEditing()) return;
+  if (recommendationHistoryVisible()) renderAuthPage(authKindOf(location.pathname));
+}
 let recommendationAccount = { id: null, points: null, day: null, revision: 0, pending: new Set(), known: new Set() };
 let recommendationTimer = null;
 let recommendationQueued = false, recommendationObserver = null;
@@ -402,7 +408,7 @@ function recommendationPeriod(value) {
   recommendationTimer = setTimeout(() => {
     owner.known.clear(); owner.pending.clear(); recommendationHistory = null;
     if (recommendationLibrary) recommendationLibrary.heat = null;
-    if (authKindOf(location.pathname) === "recommendations") loadRecommendationHistory();
+    if (recommendationHistoryVisible()) loadRecommendationHistory();
     else refreshLibraryRecommendations();
   }, Math.min(Math.max(250, wait + 250), 2147483647));
   return true;
@@ -585,7 +591,7 @@ function recommendationLibraryActions(event) {
 document.addEventListener("click", recommendationLibraryActions, true);
 function recommendationLibraryNote() {
   const data = recommendationLibrary;
-  return `<div class="recommendation-library-note">${recommendationSettlement(data?.period)}<a href="/account/recommendations">${escHtml(tr("My recommendations"))}</a>`
+  return `<div class="recommendation-library-note">${recommendationSettlement(data?.period)}<a href="${userProfilePath()}?section=recommendations">${escHtml(tr("My recommendations"))}</a>`
     + (data?.loading ? `<span data-recommend-loading role="status">${escHtml(tr("Loading recommendations…"))}</span>` : "")
     + (recommendationRequested() ? `<span>${escHtml(tr(new URLSearchParams(location.search).has("computed_build") ? "Selected build" : "Your recommended build"))} <button type="button" class="ghost-btn small" data-recommend-clear>${escHtml(tr("Show all builds"))}</button></span>` : "")
     + (data?.error ? `<span role="status">${escHtml(tr(data.error))} <button class="ghost-btn small" type="button" data-recommend-retry>${escHtml(tr("Retry"))}</button></span>` : "") + `</div>`;
@@ -635,10 +641,10 @@ async function loadRecommendationHistory() {
   }
   finally {
     recommendationHistoryLoading = false;
-    if (authKindOf(location.pathname) === "recommendations") renderAuthPage("recommendations");
+    renderRecommendationHistory();
   }
 }
-function recommendationsPage(account) {
+function recommendationsPage(account, embedded = false) {
   recommendationOwner();
   if (!META) return `<div class="settings">${settingsNav(account, "recommendations")}<div class="set-main"><div class="block"><div class="bh"><h2>${aT("My recommendations")}</h2></div><div class="bb">${aT("Loading…")}</div></div></div></div>`;
   if (!recommendationHistory && !recommendationHistoryLoading) loadRecommendationHistory();
@@ -648,8 +654,10 @@ function recommendationsPage(account) {
   const stats = `<dl class="recommendation-points"><div><dt>${aT("Contribution points")}</dt><dd>${contribution == null ? "—" : escHtml(computePts(contribution))}</dd></div><div><dt>${aT("Recommendation points")}</dt><dd>${points == null ? "—" : escHtml(points.toLocaleString(accountLocale()))}</dd></div></dl>`;
   const status = value?.error ? `<p role="status">${aT(value.error)} <button type="button" class="ghost-btn" data-recommend-history-retry>${aT("Retry")}</button></p>` : !value ? `<p>${aT("Loading…")}</p>` : "";
   const counts = value?.total != null ? `<div class="recommendation-filters">${[["available", "Available today", value.available], ["pending", "Recommended today", value.pending], ["all", "All", value.total]].map(([id, label, n]) => `<button type="button" class="ghost-btn${recommendationHistoryFilter === id ? " on" : ""}" data-recommend-filter="${id}" aria-pressed="${recommendationHistoryFilter === id}">${aT(label)} <span>${n}</span></button>`).join("")}`
-    + `<label>${aT("Weapon")}<select id="recommendation-history-weapon"><option value="">${aT("All weapons")}</option>${(value.weapons || []).map(id => `<option value="${escHtml(id)}"${recommendationHistoryWeapon === id ? " selected" : ""}>${escHtml(weaponInfo(id)?.name || id)}</option>`).join("")}</select></label></div>` : "";
-  const builds = (value?.builds || []).map(entry => {
+    + (embedded ? `<button class="ghost-btn small" data-computation-weapon="recommendations" aria-haspopup="dialog">${escHtml(recommendationHistoryWeapon ? weaponEntryName(weaponInfo(recommendationHistoryWeapon)) : tr("All weapons"))}</button></div>`
+    :
+    `<label>${aT("Weapon")}<select id="recommendation-history-weapon"><option value="">${aT("All weapons")}</option>${(value.weapons || []).map(id => `<option value="${escHtml(id)}"${recommendationHistoryWeapon === id ? " selected" : ""}>${escHtml(weaponInfo(id)?.name || id)}</option>`).join("")}</select></label></div>`) : "";
+  const builds = (value?.builds || []).slice(0, embedded ? recommendationHomeVisible : 50).map(entry => {
     const w = weaponInfo(entry.weapon), heat = value.heat?.[entry.identity];
     const date = entry.last_day + " UTC";
     return `<article class="recommendation-history-build"><header>${w?.image ? imgTag(IMG(w.image), "recommendation-weapon") : ""}<div><a href="${escHtml(recommendationHistoryLink(entry))}">${escHtml(w?.name || entry.weapon)}</a><p>${escHtml(trF("Last recommendation: {date}", { date }))}</p></div><div class="recommendation-heat"><b>${heat == null ? "—" : heat.toFixed(1)}</b> <span>${aT("Popularity score")}</span>`
@@ -659,10 +667,13 @@ function recommendationsPage(account) {
       + `<table class="items"><thead><tr><th>${aT("Recommendation day")}</th><th>${aT("Current weight")}</th></tr></thead><tbody>${recommendationVoteRows(entry.votes)}</tbody></table>`
       + (entry.points + Number(entry.pending) > entry.votes.length ? `<button type="button" class="ghost-btn small" data-recommend-older="${entry.identity}" data-before="${entry.votes.at(-1)?.day || ""}">${aT("Show older recommendations")}</button>` : "") + `</details></article>`;
   }).join("");
-  return `<div class="settings">${settingsNav(account, "recommendations")}<div class="set-main"><div class="block"><div class="bh"><h2>${aT("Mine")}</h2></div><div class="bb">${stats}</div></div><div class="block"><div class="bh"><h2>${aT("My recommendations")}</h2></div><div class="bb">${recommendationSettlement(value)}${counts}${status}</div>${builds || (value?.builds ? `<div class="bb"><p class="set-note">${aT("No recommendations in this view.")}</p></div>` : "")}`
-    + (value?.builds ? `<div class="bb recommendation-pages">${recommendationHistoryOffset ? `<button type="button" class="ghost-btn" data-recommend-page="${Math.max(0, recommendationHistoryOffset - 50)}">${aT("Previous page")}</button>` : ""}${value.next != null ? `<button type="button" class="ghost-btn" data-recommend-page="${value.next}">${aT("Next page")}</button>` : ""}</div>` : "") + `</div></div></div>`;
+  const more = embedded && value?.builds?.length > recommendationHomeVisible ? `<button class="ghost-btn" data-recommend-home-more>${aT("Show more")}</button>` : "";
+  const body = `<div class="block"><div class="bh"><h2>${aT("My recommendations")}</h2></div><div class="bb">${embedded ? `<p>${aT("Recommendation points")} · ${points == null ? "—" : escHtml(points.toLocaleString(accountLocale()))}</p>` : ""}${recommendationSettlement(value)}${counts}${status}</div>${builds || (value?.builds ? `<div class="bb"><p class="set-note">${aT("No recommendations in this view.")}</p></div>` : "")}`
+    + (value?.builds ? `<div class="bb recommendation-pages">${more}${recommendationHistoryOffset ? `<button type="button" class="ghost-btn" data-recommend-page="${Math.max(0, recommendationHistoryOffset - 50)}">${aT("Previous page")}</button>` : ""}${value.next != null && !more ? `<button type="button" class="ghost-btn" data-recommend-page="${value.next}">${aT("Next page")}</button>` : ""}</div>` : "") + `</div>`;
+  return embedded ? body : `<div class="settings">${settingsNav(account, "recommendations")}<div class="set-main"><div class="block"><div class="bh"><h2>${aT("Mine")}</h2></div><div class="bb">${stats}</div></div>${body}</div></div>`;
 }
 document.addEventListener("click", event => {
+  if (event.target.closest("[data-recommend-home-more]") && userHomeOwner("recommendations")) { recommendationHomeVisible += 6; renderRecommendationHistory(); return; }
   const older = event.target.closest("[data-recommend-older]");
   if (older) {
     older.disabled = true;
@@ -678,6 +689,7 @@ document.addEventListener("click", event => {
   else if (page) recommendationHistoryOffset = Number(page.dataset.recommendPage);
   else if (!event.target.closest("[data-recommend-history-retry]")) return;
   recommendationHistory = null; loadRecommendationHistory();
+  renderRecommendationHistory();
 });
 document.addEventListener("change", event => {
   if (event.target.id !== "recommendation-history-weapon") return;
@@ -688,7 +700,7 @@ window.addEventListener("focus", () => {
   if (!recommendationAvailable()) return;
   if (recommendationLibrary && [...document.querySelectorAll("[data-recommend-build]")].some(node => node.getClientRects().length)) {
     recommendationAccount.known.clear(); recommendationLibrary.heat = null; refreshLibraryRecommendations();
-  } else if (authKindOf(location.pathname) === "recommendations") {
+  } else if (recommendationHistoryVisible()) {
     recommendationHistory = null; loadRecommendationHistory();
   }
 });

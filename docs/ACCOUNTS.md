@@ -132,6 +132,8 @@ in can have its own idea of what linking means.
 and device ids. `/user/<profile_id>` shows a named contributor's current
 board builds and optimization records from the last 14 days. `/user/me`
 also works for an anonymous owner. The ranking and result names link there.
+After resolving the owner, `/user/me` uses the same stable `/user/<profile_id>`
+address as visitors, preserving query and fragment.
 Legacy `/people/` addresses resolve to the corresponding `/user/` address,
 preserving the profile id, filters and fragment. User names share `user-link`
 styling across the ranking and calculation records: no underline, an accent
@@ -145,6 +147,12 @@ typing filters local equipment and selecting requests that weapon's records.
 The owner sees private shortcuts and a verification label on their own accepted
 records. Visitors see neither. Public visibility is resolved on every
 request; a registered anonymous owner still sees their own profile.
+The owner edits their name and attribution visibility in place. Below the shared
+public records, a private personal section embeds recommendation history and the
+existing browser-preset inventory. `section=recommendations|presets` selects this
+region without reloading public records; visitors ignore it and never request the
+owner's private history. Preset contents retain their existing local/sync ownership
+and are not published by appearing on the owner's homepage.
 Unregistered contributors earn anonymous credit without a contribution profile.
 The first device claim includes its unclaimed history. Deleting an account
 removes its profile and name links while retaining anonymous calculation credit.

@@ -24,6 +24,12 @@ and keyboard styles. The avatar opens a personal dialog with direct contribution
 links; the weapon dialog shares localized search, defers filtering requests until
 selection, preserves IME composition and supports keyboard navigation. The owner
 gets their actual verification label and private shortcuts; visitors do not.
+Owner aliases resolve to the visitor's stable profile address. The same page saves
+real inline profile edits, preserves an active draft across passive refreshes,
+embeds exact recommendation history and searches private presets. Switching the
+private section must not reload public records. A signed-in visitor carrying
+`section=recommendations` cannot trigger private history reads or expose cached
+recommendations and browser presets from their own account on another profile.
 
 `check_native_pgo.py` refuses changed numerical responses, missing timing cases,
 individual regressions and cross-target training. `check_native_pgo.mjs` checks
