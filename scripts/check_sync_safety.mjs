@@ -109,10 +109,12 @@ await check("overlap pages cannot replace an acknowledged newer version",()=>{
   assert.equal(JSON.parse(b.storage.getItem(list))[0].state.n,3);
 });
 await check("restoring one cloud entry never enables a paused browser or uploads its local collection",async()=>{
-  const b=browser();let pushes=0;
+  const b=browser();let pushes=0;const rendered=[];
   b.storage.setItem("wfsim-sync",JSON.stringify({account:"a",known:{},cursor:0,enabled:false}));
   b.storage.setItem(list,JSON.stringify([{id:"local",state:{}}]));
-  b.context.renderAuthPage=()=>{};
+  b.context.location={pathname:"/account/sync"};
+  b.context.authKindOf=()=>"sync";
+  b.context.renderAuthPage=kind=>rendered.push(kind);
   b.context.onTyped=()=>{};
   b.context.fetch=async(_,o)=>{
     const input=JSON.parse(o.body);if(input.changes?.length)pushes++;
@@ -122,5 +124,6 @@ await check("restoring one cloud entry never enables a paused browser or uploads
   const button={dataset:{crestore:"gone"},disabled:false};
   await b.handlers.find(h=>h.name==="click").fn({target:{closest:()=>button}});
   assert.equal(b.run("syncState().enabled"),false);assert.equal(pushes,0);
+  assert.deepEqual(rendered,["sync"]);
 });
 process.exitCode = failed ? 1 : 0;
