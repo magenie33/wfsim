@@ -486,6 +486,8 @@ jobs:
         run: npm ci --silent --prefix scripts/pg
       - name: The board's pipeline reads and writes Postgres
         run: node scripts/check_pg_scripts.mjs
+      - name: Queue cancellation preserves demand ownership
+        run: node scripts/check_cancel_queue.mjs
       - name: Official settlement reports failures and releases claims
         run: node scripts/check_settle.mjs
       - name: Live board uploads preserve progress within bounded cycles
@@ -516,6 +518,10 @@ jobs:
           sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE wfsim_score_test LOGIN PASSWORD 'fixture'"
           sudo -u postgres createdb --owner=wfsim_score_test wfsim_score_inputs
           node scripts/check_score_inputs.mjs
+      - name: Queue cancellation uses the production Postgres driver
+        env:
+          WFSIM_CANCEL_QUEUE_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
+        run: node scripts/check_cancel_queue.mjs
       - name: Maintenance preserves native board behavior and source checks
         if: fromJSON(needs.plan.outputs.plan).fast
         run: |

@@ -34,7 +34,7 @@ pick_body() {
   jq -n -c --argjson sel "$1" --argjson kinds "$BOARD_KINDS" --argjson n "$SLICE" --arg row "$SELECT_ROW" '{
     sql: ("WITH named AS (SELECT d.producer, d.ref, d.question, d.payload::jsonb ->> '"'"'identity'"'"' AS build_id,"
       + " d.payload::jsonb ->> '"'"'ruler'"'"' AS ruler, d.payload::jsonb ->> '"'"'mode'"'"' AS mode FROM demands d"
-      + " WHERE d.state = '"'"'live'"'"' AND d.producer IN (SELECT jsonb_array_elements_text(?3::jsonb)))"
+      + " WHERE d.state = '"'"'live'"'"' AND d.producer IN (SELECT jsonb_array_elements_text((?3::text)::jsonb)))"
       + " SELECT n.* FROM (SELECT q.id, q.waits, q.due_at FROM questions q WHERE q.state = '"'"'open'"'"'"
       + " AND EXISTS (SELECT 1 FROM named n WHERE n.question = q.id AND EXISTS (SELECT 1 FROM queue x"
       + " WHERE x.build_id = n.build_id AND x.ruler = n.ruler AND x.mode = n.mode AND " + $row + "))"
@@ -48,7 +48,7 @@ pick_body() {
 delete_body() {
   jq -n -c --argjson sel "$1" --argjson keys "$2" --arg row "$SELECT_ROW" '{
     sql: ("DELETE FROM queue WHERE (batch, build_id, ruler, mode) IN (SELECT x.batch, x.build_id, x.ruler, x.mode FROM queue x"
-      + " JOIN jsonb_to_recordset(?3::jsonb) AS k(build_id text, ruler text, mode text)"
+      + " JOIN jsonb_to_recordset((?3::text)::jsonb) AS k(build_id text, ruler text, mode text)"
       + " ON x.build_id = k.build_id AND x.ruler = k.ruler AND x.mode = k.mode"
       + " WHERE " + $row + " ORDER BY x.batch, x.build_id, x.ruler, x.mode FOR UPDATE OF x SKIP LOCKED)"),
     params: [$sel.batch, $sel.ruler, ($keys | tojson)] }'
@@ -67,8 +67,8 @@ delete_rest_body() {
 demands_of_body() {
   jq -n -c --argjson keys "$1" --argjson kinds "$BOARD_KINDS" '{
     sql: ("SELECT d.producer, d.ref, d.question FROM demands d"
-      + " JOIN jsonb_to_recordset(?1::jsonb) AS k(build_id text, ruler text, mode text) ON d.ref = k.build_id || '"'"'|'"'"' || k.ruler || '"'"'|'"'"' || k.mode"
-      + " WHERE d.state = '"'"'live'"'"' AND d.producer IN (SELECT jsonb_array_elements_text(?2::jsonb))"),
+      + " JOIN jsonb_to_recordset((?1::text)::jsonb) AS k(build_id text, ruler text, mode text) ON d.ref = k.build_id || '"'"'|'"'"' || k.ruler || '"'"'|'"'"' || k.mode"
+      + " WHERE d.state = '"'"'live'"'"' AND d.producer IN (SELECT jsonb_array_elements_text((?2::text)::jsonb))"),
     params: [($keys | tojson), ($kinds | tojson)] }'
 }
 
@@ -76,7 +76,7 @@ demands_of_body() {
 withdraw_body() {
   jq -n -c --argjson ds "$1" '{
     sql: ("UPDATE demands SET state = '"'"'withdrawn'"'"' WHERE (producer, ref) IN (SELECT d.producer, d.ref FROM demands d"
-      + " JOIN jsonb_to_recordset(?1::jsonb) AS k(producer text, ref text) ON d.producer = k.producer AND d.ref = k.ref"
+      + " JOIN jsonb_to_recordset((?1::text)::jsonb) AS k(producer text, ref text) ON d.producer = k.producer AND d.ref = k.ref"
       + " WHERE d.state = '"'"'live'"'"' AND NOT board_owed(d.payload::jsonb ->> '"'"'identity'"'"', d.payload::jsonb ->> '"'"'ruler'"'"',"
       + " d.payload::jsonb ->> '"'"'mode'"'"') ORDER BY d.producer, d.ref FOR UPDATE OF d SKIP LOCKED)"),
     params: [($ds | tojson)] }'
@@ -86,7 +86,7 @@ withdraw_body() {
 restate_body() {
   jq -n -c --argjson ids "$1" '{
     sql: ("SELECT g.id, factory_restate(g.id) FROM (SELECT id FROM questions"
-      + " WHERE id IN (SELECT jsonb_array_elements_text(?1::jsonb)) ORDER BY id FOR UPDATE SKIP LOCKED) g"),
+      + " WHERE id IN (SELECT jsonb_array_elements_text((?1::text)::jsonb)) ORDER BY id FOR UPDATE SKIP LOCKED) g"),
     params: [($ids | tojson)] }'
 }
 
