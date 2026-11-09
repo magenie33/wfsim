@@ -144,6 +144,9 @@ late writes and expired or superseded publication without recapturing history.
 `check_score_inputs.mjs` reads leased calculations against 20,000 unrelated
 database rows. It verifies primary-key plans, queue order, duplicate demands,
 cancelled batches, source number precision and failed-capture preservation.
+With `WFSIM_SCORE_INPUTS_PG_URL` naming a local test database, the same check
+runs through the production `postgres.js` driver in an isolated schema. CI
+runs both backends; the wire path verifies JSON parameter serialization.
 `check_rescore_paths.mjs` rejects full inventory prerequisites in scoring.
 
 `check_default_parent.mjs` runs the native dry inventory across every ruler

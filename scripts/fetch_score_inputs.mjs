@@ -50,7 +50,7 @@ export async function captureScoreInputs({ sql, claim, directory, engine, max = 
         if (!keys.length) break;
         // Parameterized primary-key probes cannot turn a small claim into a queue scan.
         const rows = await tx.unsafe(`SELECT q.*,b.at,source.record,f.fact FROM
-          jsonb_to_recordset($1::jsonb) AS k(build_id text,ruler text,mode text)
+          jsonb_to_recordset(($1::text)::jsonb) AS k(build_id text,ruler text,mode text)
           CROSS JOIN LATERAL (SELECT q.batch,q.build_id,q.ruler,q.mode FROM queue q
             WHERE q.build_id=k.build_id AND q.ruler=k.ruler AND q.mode=k.mode LIMIT 1) q
           JOIN batches b ON b.id=q.batch
