@@ -48,10 +48,17 @@ try {
   await release("records"); await release("full");
   await until("computationProfile?.value && !computationProfile.loading && !computationProfile.statsLoading && !computationProfile.recordsLoading");
   check("Own profile lists a real currently published build", await app.evaluate("document.querySelectorAll('.profile-build').length === 1"));
+  check("Verified builds start compact with full MOD details folded", await app.evaluate("[...document.querySelectorAll('.profile-build')].every(card=>card.querySelector(':scope>.home-record:not([open])>summary.rt-card') && card.getBoundingClientRect().height<=150 && !card.querySelector('.fd-card').checkVisibility())"));
+  await app.evaluate("document.querySelector('.profile-build .home-record>summary').click()");
+  await until("homeRecordOpen.size > 0");
+  check("Opening a compact card reveals its real build and actions", await app.evaluate("document.querySelector('.profile-build .fd-card').getClientRects().length>0 && document.querySelector('.profile-build [data-profile-share]').getClientRects().length>0"));
+  await app.evaluate("renderComputationState(computationProfile)");
+  check("Passive refresh preserves an expanded build", await app.evaluate("document.querySelector('.profile-build .home-record').open && document.querySelector('.profile-build .fd-card').getClientRects().length>0"));
   check("Lifetime signatures and points are distinct", await app.evaluate("document.querySelector('.profile-heading').innerText.includes('128') && document.querySelector('.profile-heading').innerText.includes('128,640')"));
   check("Owners see their verification role on actual published calculations", await app.evaluate("document.querySelector('.profile-verification')?.innerText.includes(tr('You verified this calculation')) && !!document.querySelector('.profile-private [data-user-section=presets]')"));
   await until("!!document.querySelector('.profile-owner-section .recommendation-history-build')");
   check("Recommendation history is embedded in the owner's homepage", await app.evaluate("!!document.querySelector('.profile-owner-section .recommendation-history-build a[href*=recommend_build]') && location.pathname.startsWith('/user/') && document.querySelector('.profile-owner-heading').innerText.includes(tr('Only you'))"));
+  check("Homepage recommendations use the same compact folded card", await app.evaluate("!!document.querySelector('.recommendation-history-build>.home-record:not([open])>summary.rt-card') && document.querySelector('.recommendation-history-build').getBoundingClientRect().height<=150 && !document.querySelector('.recommendation-history-build .fd-card').checkVisibility()"));
   check("Embedded recommendations retain their exact canonical build link", await app.evaluate("document.querySelector('.profile-owner-section .recommendation-history-build a').search.includes('recommend_build=" + fixture.identity + "')"));
   await app.evaluate("document.querySelector('.profile-private [data-auth=open]').click()");
   await until("!!document.querySelector('.profile-inline-editor #auth-display')");
@@ -118,7 +125,7 @@ try {
   await app.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
   check("Keyboard user links retain a visible focus ring", await app.evaluate("(() => { const a=document.querySelector('.computation-credits a'); a.focus(); return a.matches(':focus-visible') && getComputedStyle(a).outlineStyle === 'solid'; })()"));
   check("The build link carries the exact verified build including its riven", await app.evaluate(`(async () => {
-    const entry = computationProfile.rows[0], url = new URL(document.querySelector('.profile-build h3 a').href);
+    const entry = computationProfile.rows[0], url = new URL(document.querySelector('.profile-build [data-profile-build-link]').href);
     const d = await decodeShare(url.searchParams.get(SHARE_PARAM));
     const ranked = s => s?.mod && (s.mod.startsWith('~') ? BOARD_RIVEN_SLOT : headlessRankedId(META, s.mod, s.rank));
     const rv = d.rivens[0]?.s, prefix = evoPrefixFor(d.w);
@@ -133,7 +140,7 @@ try {
   await app.evaluate("document.querySelector('.profile-tabs a[href*=optimization]').click()");
   await until("computationProfile?.value?.kind === 'optimization' && !computationProfile.loading && !computationProfile.recordsLoading");
   check("Optimization tab shows the fourteen day rule", await app.evaluate("document.querySelector('.contributor-profile').innerText.includes('14') && document.querySelectorAll('.profile-build').length === 1"));
-  await app.evaluate("document.querySelector('.profile-build h3 a').click()");
+  await app.evaluate("document.querySelector('.profile-build a[href^=\"/calculations/\"]').click()");
   await until("!!document.querySelector('.computation-record')");
   check("Calculation provenance is directly addressable", await app.evaluate("document.querySelector('.computation-record').innerText.includes('123456789abc') && document.querySelector('.computation-record').innerText.includes('bbb')"));
   await fixture.env.ACCOUNTS.run("UPDATE accounts SET display_name='aaa_new' WHERE id=?", fixture.account);
@@ -146,11 +153,12 @@ try {
   check("Accepted verification remains visible outside the published library", await app.evaluate("document.querySelectorAll('.profile-build').length === 1 && computationProfile.value.profile.signatures === 128"));
   const inventory = await app.evaluate("JSON.stringify([loadPresetList(BUILDS),loadPresetList(RIVENS)])");
   const inventoryStorage = await app.evaluate("[presetListKey(BUILDS),presetListKey(RIVENS)].map(key=>[key,localStorage.getItem(key)])");
+  await app.evaluate("document.querySelector('.profile-build .home-record').open=true");
   await app.evaluate("document.querySelector('[data-profile-share]').click()");
   await until("!!document.querySelector('.profile-build .sh-url')");
-  check("Unpublished verified builds use the existing working share panel", await app.evaluate("new URL(document.querySelector('.profile-build .sh-url').value).searchParams.get(SHARE_PARAM) === new URL(document.querySelector('.profile-build h3 a').href).searchParams.get(SHARE_PARAM)"));
+  check("Unpublished verified builds use the existing working share panel", await app.evaluate("new URL(document.querySelector('.profile-build .sh-url').value).searchParams.get(SHARE_PARAM) === new URL(document.querySelector('.profile-build [data-profile-build-link]').href).searchParams.get(SHARE_PARAM)"));
   check("Viewing and sharing verification history creates no presets or rivens", await app.evaluate("JSON.stringify([loadPresetList(BUILDS),loadPresetList(RIVENS)])") === inventory);
-  const buildUrl = await app.evaluate("document.querySelector('.profile-build h3 a').getAttribute('href')");
+  const buildUrl = await app.evaluate("document.querySelector('.profile-build [data-profile-build-link]').getAttribute('href')");
   await app.load(buildUrl, 1800);
   await until("slots.some(s => isRivenId(s.mod))");
   check("An unpublished verification opens its exact build in Builder", await app.evaluate("document.querySelector('#module-tabs .mtab.sel')?.getAttribute('href') === '/weapons/Laetum/builder' && slots.slice(0,8).filter(s=>s.mod).length === " + fixture.row.mods.length + " && slots[HEADLESS_EXILUS].mod === '" + fixture.row.exilus + "' && !!rivenEntryFor(slots.find(s=>isRivenId(s.mod)).mod)"));
@@ -198,9 +206,10 @@ try {
   const privateReads = requested.get("private") || 0;
   await app.evaluate("(() => { const row=document.createElement('div'); row.id='profile-ranking-entry-check'; row.className='rank-row'; row.innerHTML=contributorRowInner({key:'profile-fixture',name:'bbb',profile:" + JSON.stringify(fixture.profileIds.bbb) + ",contributor_rank:computationProfile.value.profile.contributor_rank},1,1); document.querySelector('#auth-page').append(row); })()");
   check("The ranking renderer uses the shared canonical user link", await app.evaluate("(() => { const a=document.querySelector('#profile-ranking-entry-check a'); return a.getAttribute('href') === '/user/" + fixture.profileIds.bbb + "' && a.classList.contains('user-link') && getComputedStyle(a).textDecorationLine === 'none'; })()"));
-  await app.evaluate("document.querySelector('#profile-ranking-entry-check a').click()");
+  await app.evaluate("document.querySelector('.profile-build .computation-credits a[href=\"/user/" + fixture.profileIds.bbb + "\"]').click()");
   await until("document.querySelector('.profile-heading h2')?.innerText.includes('bbb')");
   check("Another user's identity appears before their record list", await app.evaluate("location.pathname === '/user/" + fixture.profileIds.bbb + "' && computationProfile.statsLoading && computationProfile.recordsLoading && !computationProfile.value.profile.you"));
+  check("Co-verifier links on compact cards open the other player's profile", await app.evaluate("document.querySelector('.profile-heading h2').innerText.includes('bbb') && location.pathname === '/user/" + fixture.profileIds.bbb + "'"));
   check("Public profiles expose neither personal tools nor the owner's verification label", await app.evaluate("!document.querySelector('.profile-private') && !document.querySelector('.profile-verification')"));
   await release("summary"); await release("records");
   await until("!computationProfile.statsLoading && !computationProfile.recordsLoading");
@@ -215,6 +224,7 @@ try {
   await app.load("/user/me", 800);
   await until("computationProfile?.value && !computationProfile.loading && !computationProfile.recordsLoading && !computationProfile.statsLoading && !recommendationHistoryLoading");
   check("Verified builds use the existing pager and show ten items", await app.evaluate("document.querySelectorAll('.profile-builds>.profile-build').length === 10 && !!document.querySelector('.compute-pager [data-profile-page]')"));
+  check("Ten compact builds scroll inside a bounded list", await app.evaluate("(()=>{const list=document.querySelector('.profile-builds');return list.scrollHeight>list.clientHeight && list.getBoundingClientRect().height<=innerHeight*.71 && getComputedStyle(list).overflowY==='auto';})()"));
   const firstBuilds = await app.evaluate("computationProfile.rows.map(row=>row.identity).join(',')");
   await app.evaluate("document.querySelector('[data-profile-page=\"1\"]').click()");
   await until("computationProfile.recordPage === 1 && !computationProfile.recordsLoading");
@@ -239,7 +249,7 @@ try {
   await app.evaluate("document.querySelector('[data-recommend-page=\"0\"]').click()");
   await until("recommendationHistoryOffset === 0 && !recommendationHistoryLoading && !!recommendationHistory?.builds");
   check("The previous recommendation page restores the original builds", await app.evaluate("recommendationHistory.builds.map(row=>row.identity).join(',') === " + JSON.stringify(firstRecommendations)));
-  await app.evaluate("document.querySelector('details[data-recommend-votes]').open=true");
+  await app.evaluate("document.querySelector('.recommendation-history-build>.home-record>summary').click();document.querySelector('details[data-recommend-votes]').open=true");
   await until("recommendationVotePages.get(document.querySelector('details[data-recommend-votes]'))?.loaded");
   check("Nested recommendation dates are capped at ten with the shared pager", await app.evaluate("document.querySelector('details[data-recommend-votes]').querySelectorAll('tbody tr').length === 10 && !!document.querySelector('details .compute-pager [data-recommend-vote-page]')"));
   const firstDates = await app.evaluate("document.querySelector('details[data-recommend-votes] tbody').innerText");

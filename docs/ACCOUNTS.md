@@ -143,7 +143,9 @@ totals and the selected record list independently. Current accepted build
 verifications are the default, in ten-candidate pages. Their stored records must
 match the engine's canonical build identities. Participation is independent of
 curated Library membership; retired measurements remain excluded by the API.
-Each entry opens its exact recorded build and uses the existing share panel,
+Compact summaries reuse the compute task card and keep current co-verifiers
+visible. Full build details expand inside bounded scrolling lists. Each entry
+opens its exact recorded build and uses the existing share panel,
 including its riven, without saving either merely by viewing or sharing history.
 Their loading or failure does not hide the user card. Weapon filtering opens a
 separate search panel with the site's shared localized equipment matcher;

@@ -272,7 +272,7 @@ function computationPage(main, kind) {
       <span>${escHtml(weapon ? weaponEntryName(weapon) : tr("Search weapons…"))}</span><span class="muted">${aT("Weapon")}</span></button>
       <button class="ghost-btn small" data-computation-retry="records">${aT("Refresh")}</button><span class="muted">${escHtml(trF("Showing {n}", { n: state.rows.length }))}</span></div>
     ${weapon ? `<button class="ghost-btn small profile-filter" data-profile-weapon="" aria-label="${aT("All weapons")}">${escHtml(weaponEntryName(weapon))} <span aria-hidden="true">×</span></button>` : ""}
-    <div class="profile-builds" aria-busy="${state.recordsLoading}">${state.rows.map(entry => tab === "board" ? computationBuildHtml(entry, p.you) : computationOptimizationHtml(entry, p.you)).join("")}</div>
+    <div class="profile-builds home-record-list scroll-thin" aria-busy="${state.recordsLoading}">${state.rows.map(entry => tab === "board" ? computationBuildHtml(entry, p.you) : computationOptimizationHtml(entry, p.you)).join("")}</div>
     ${!state.recordsLoading && !state.rows.length && !state.recordsError && !state.next ? `<p class="muted">${aT("No calculation records here yet.")}</p>` : ""}${records}
     ${computePagerHtml({ page: state.recordPage, hasNext: !!state.next, loading: state.recordsLoading }, page => `data-profile-page="${page}"`)}`;
   main.innerHTML = `<div class="contributor-profile"><header class="profile-heading"><span class="avatar">${escHtml((p.name || "?").slice(0, 1).toUpperCase())}</span>
@@ -284,16 +284,30 @@ function computationPage(main, kind) {
     <nav class="profile-tabs" aria-label="${aT("Verified calculations")}"><a href="${escHtml(href("board"))}" ${tab === "board" ? 'aria-current="page"' : ""}>${aT("Verified builds")}</a>
       <a href="${escHtml(href("optimization"))}" ${tab === "optimization" ? 'aria-current="page"' : ""}>${aT("Optimizations · last 14 days")}</a></nav>${body}${userHomePrivateHtml(p)}</div>`;
 }
-const profileVerificationHtml = own => own ? `<p class="profile-verification"><span aria-hidden="true">✓</span> ${aT("You verified this calculation")}</p>` : "";
+const homeRecordOpen = new Set();
+function homeRecordHtml(key, card, body) {
+  return `<details class="home-record" data-home-record="${escHtml(key)}"${homeRecordOpen.has(key) ? " open" : ""}>${computeCompactCardHtml({ ...card, tag: "summary",
+    side: card.side + `<span class="rt-chevron" aria-hidden="true">⌄</span>` })}<div class="rt-detail">${body}</div></details>`;
+}
+document.addEventListener("toggle", event => {
+  const details = event.target;
+  if (!details.isConnected || !details.matches("details[data-home-record]")) return;
+  if (details.open) homeRecordOpen.add(details.dataset.homeRecord); else homeRecordOpen.delete(details.dataset.homeRecord);
+}, true);
+const profileVerificationHtml = own => own ? `<span class="rt-pill rt-ok profile-verification"><svg class="rt-tick" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6.5 5 9.2 10 3"/></svg>${aT("You verified this calculation")}</span>` : "";
 function computationBuildHtml(entry, own = false) {
   const w = weaponInfo(entry.weapon);
   if (!w) return "";
-  return `<article class="profile-build">${profileVerificationHtml(own)}<h3>${imgTag(IMG(w.image), "mod")}<a href="${escHtml(computationBuildLink(entry))}">${escHtml(weaponEntryName(w))}</a><span>${escHtml(String(entry.score.toFixed(4)))}</span></h3>
-    <p class="fine">${escHtml(benchLabelOr(entry.ruler, entry.ruler))} · ${escHtml(modeLabel(w, entry.mode))}</p>
-    <div class="computation-credits">${computationWitnessHtml(entry.witnesses)}</div>${recommendationHistoryCard(entry)}
-    <details class="profile-calculation-info"><summary>${aT("Calculation details")}</summary><p class="fine">${escHtml(measuredText(entry.finished_at, pageSay().zone))} · ${aT("engine")} ${escHtml(entry.measured_by.replace(/^verified:/, ""))}</p></details>
-    <a class="ghost-btn small" href="${escHtml(computationBuildLink(entry))}">${aT("View build")}</a>
-    <button class="ghost-btn small" data-profile-share="${escHtml(entry.identity)}" data-ruler="${escHtml(entry.ruler)}" data-mode="${escHtml(entry.mode)}">${aT("share")}</button></article>`;
+  const context = escHtml(benchLabelOr(entry.ruler, entry.ruler)) + " · " + escHtml(modeLabel(w, entry.mode));
+  const body = `<p class="fine">${context}</p>${recommendationHistoryCard(entry)}<p class="fine">${escHtml(measuredText(entry.finished_at, pageSay().zone))} · ${aT("engine")} ${escHtml(entry.measured_by.replace(/^verified:/, ""))}</p>
+    <div class="rt-acts"><a class="ghost-btn small" data-profile-build-link href="${escHtml(computationBuildLink(entry))}">${aT("View build")}</a>
+    <button class="ghost-btn small" data-profile-share="${escHtml(entry.identity)}" data-ruler="${escHtml(entry.ruler)}" data-mode="${escHtml(entry.mode)}">${aT("share")}</button></div>`;
+  return `<article class="profile-build">${homeRecordHtml(["verified", entry.identity, entry.ruler, entry.mode].join(":"), {
+    image: w.image ? IMG(w.image) : "", name: escHtml(weaponEntryName(w)),
+    sub: context,
+    result: `<span class="computation-credits">${computationWitnessHtml(entry.witnesses)}</span>`,
+    side: `<span class="rt-result">${escHtml(fmtScore(entry.score))} ${escHtml(rulerUnit(tr(benchList().find(bench => bench.id === entry.ruler)?.name || "")))}</span>${profileVerificationHtml(own)}`,
+  }, body)}</article>`;
 }
 const computationBuildLink = entry => entry.buildLink;
 function computationBuild(entry) {
@@ -304,9 +318,11 @@ function computationBuild(entry) {
 }
 function computationOptimizationHtml(entry, own = false) {
   const w = weaponInfo(entry.weapon);
-  return `<article class="profile-build">${profileVerificationHtml(own)}<h3><a href="/calculations/${entry.question}">${aT("Optimization")}${w ? ` · ${escHtml(weaponEntryName(w))}` : ""}</a></h3>
-    <p class="fine">${escHtml(measuredText(entry.completed_at, pageSay().zone))} · ${aT("engine")} ${escHtml(entry.engine)}</p>
-    <div class="computation-credits">${computationWitnessHtml(entry.witnesses)}</div></article>`;
+  return `<article class="profile-build">${homeRecordHtml("optimization:" + entry.question, {
+    image: w?.image ? IMG(w.image) : "", name: `${aT("Optimization")}${w ? ` · ${escHtml(weaponEntryName(w))}` : ""}`,
+    sub: escHtml(measuredText(entry.completed_at, pageSay().zone)),
+    result: `<span class="computation-credits">${computationWitnessHtml(entry.witnesses)}</span>`, side: profileVerificationHtml(own),
+  }, `<p class="fine">${aT("engine")} ${escHtml(entry.engine)}</p><a class="ghost-btn small" href="/calculations/${entry.question}">${aT("Calculation details")}</a>`)}</article>`;
 }
 function renderComputationState(state, kind = "profile") {
   if (userHomeEditing()) return;
