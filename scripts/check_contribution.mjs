@@ -9,7 +9,7 @@
 // site; deleting the account releases its devices.
 //   node scripts/check_contribution.mjs
 import { contributionRoute, contributorRank, demandOf, DEMAND_KEY, publishContributors, CONTRIBUTORS_KEY, tallyOf, tallyBase, periodStarts, periodWindows, NOW_WINDOW_MS, starvedOf } from "../worker/contribution.js";
-import { sha256 } from "../worker/accounts.js";
+import { accountRoute, sha256 } from "../worker/accounts.js";
 import { testDb } from "./pg/test_db.mjs";
 import { PACE_HOURS } from "../worker/instant.js";
 import { inventoryWrite, INVENTORY_MAX_MS } from "../worker/task_inventory.js";
@@ -22,13 +22,25 @@ const check = (what, ok, detail = "") => {
 };
 
 const accounts = await testDb("accounts"), library = await testDb("library");
-// THE PAID HALF, stubbed: it proves a mark for Ann and Cy, and records whom it was asked about.
+// Only an explicitly selected eligible fixture label has a public mark.
 const askedCloud = [];
+const fixtureMark = { kind: "fixture", label: { en: "Fixture", zh: "测试身份" } };
+const eligible = new Set(["acct-ann", "acct-bob", "acct-cy"]);
 const CLOUD = { fetch: async (req) => {
+  if (new URL(req.url).pathname === "/internal/identity") {
+    if (req.method !== "GET") throw new Error("identity choices require GET");
+    return Response.json({ ok: true, labels: eligible.has(req.headers.get("x-wfsim-account"))
+      ? [{ id: fixtureMark.kind, label: fixtureMark.label }] : [] });
+  }
+  if (new URL(req.url).pathname !== "/internal/marks" || req.method !== "POST") throw new Error("unexpected identity request");
   const { accounts: ids } = await req.json();
   askedCloud.push(...ids);
-  const held = { "acct-ann": { tier: "member", titles: [] }, "acct-cy": { tier: "patron", titles: [] } };
-  return new Response(JSON.stringify({ ok: true, marks: Object.fromEntries(ids.filter((i) => held[i]).map((i) => [i, held[i]])) }));
+  const marks = {};
+  for (const id of ids) {
+    const choice = await accounts.get("SELECT named,label FROM contribution_choice WHERE account=?", id);
+    if (eligible.has(id) && choice?.named && choice.label === fixtureMark.kind) marks[id] = fixtureMark;
+  }
+  return Response.json({ ok: true, marks });
 } };
 const env = { ACCOUNTS: accounts, LIBRARY: library, AUTH_SECRET: "x", CLOUD };
 
@@ -62,6 +74,13 @@ const relabel = (cookie, id, label) => call("/api/account/devices/label", { cook
 const remove = (cookie, id) => call("/api/account/devices/remove", { cookie, body: { id } });
 const mine = (cookie) => call("/api/account/devices", { cookie });
 const choose = (cookie, named) => call("/api/account/contribution", { cookie, body: { named } });
+const selectIdentity = async (cookie, named, label) => {
+  const path = "/api/account/identity";
+  const response = await accountRoute(new Request("https://wfsim.app" + path, { method: "POST",
+    headers: { cookie, origin: "https://wfsim.app", "content-type": "application/json" },
+    body: JSON.stringify({ named, label }) }), env, path);
+  return { status: response.status, ...await response.json() };
+};
 const ranking = async (cookie = "", q = "") => (await call(`/api/contributors${q}`, { cookie })).contributors;
 
 const ann = await person("acct-ann", "ann", "Ann"), bob = await person("acct-bob", "bob"), cy = await person("acct-cy", "cy");
@@ -119,13 +138,20 @@ check("the reader's own row is marked to them, and to nobody else",
   JSON.stringify((await ranking(ann)).map((e) => !!e.you)) === "[false,true,false]" && !(await ranking()).some((e) => e.you));
 
 await choose(ann, true); await choose(bob, true); await choose(cy, false);
+const noLabel = await ranking();
+check("named consent alone selects no label and asks the private service for no marks",
+  noLabel.filter(e => e.name).length === 2 && noLabel.every(e => !("mark" in e)) && askedCloud.length === 0, JSON.stringify(noLabel));
+check("the identity API accepts an eligible selection, including a hidden choice, and rejects an ineligible one",
+  (await selectIdentity(ann, true, fixtureMark.kind)).status === 200
+  && (await selectIdentity(cy, false, fixtureMark.kind)).status === 200
+  && (await selectIdentity(bob, true, "ineligible-fixture")).status === 403);
 const named = await ranking();
 check("agreed, a row shows the display name alone, or the username when there is none",
   JSON.stringify(named.map((e) => e.name)) === JSON.stringify([null, "Ann", "bob"]) && named.every((e) => !("username" in e)),
   JSON.stringify(named));
-check("...a named row carries the mark the paid half proves, and only named rows were asked about",
-  JSON.stringify(named[1].mark) === JSON.stringify({ tier: "member", titles: [] }) && !("mark" in named[0]) && !("mark" in named[2])
-  && !askedCloud.includes("acct-cy"), `${JSON.stringify(named)} ${askedCloud}`);
+check("...only a named row with a selected eligible label carries its opaque mark or is asked about",
+  JSON.stringify(named[1].mark) === JSON.stringify(fixtureMark) && !("mark" in named[0]) && !("mark" in named[2])
+  && !askedCloud.includes("acct-cy") && !askedCloud.includes("acct-bob"), `${JSON.stringify(named)} ${askedCloud}`);
 check("...and a no is kept, so it is not asked again", (await mine(cy)).decided === true && (await mine(cy)).named === false);
 await accounts.run("UPDATE accounts SET display_name = 'wf.jiuuvd.cn' WHERE id = 'acct-ann'");
 check("a display name set before the rule that refuses it is shown as the username, and kept",
@@ -452,6 +478,8 @@ const PUBLIC = {
   get: async (k) => (bucket.has(k) ? { text: async () => bucket.get(k).body } : null),
   put: async (k, body, o) => { bucket.set(k, { body, uploaded: new Date(), meta: o.httpMetadata }); },
 };
+check("the named cron target explicitly selects its eligible identity label",
+  (await selectIdentity(bob, true, fixtureMark.kind)).status === 200);
 const { results: holders } = await accounts.prepare(`SELECT a.id, a.username, a.display_name, COALESCE(c.named, 0) AS named
   FROM accounts a LEFT JOIN contribution_choice c ON c.account = a.id`).all();
 const shown = new Set(holders.filter((r) => r.named).flatMap((r) => [r.username, r.display_name]).filter(Boolean));
@@ -483,18 +511,26 @@ check("...once a period: a cron inside it writes nothing, one a period on writes
 // for past a reader's four seconds, and a silent one leaves the last file.
 const published = bucket.get(CONTRIBUTORS_KEY);
 const cloudOf = (f) => ({ ...env, CLOUD: { fetch: f } });
+let revision = 0, slowCalls = 0, failedCalls = 0;
+// A new choice revision makes each transport probe independent of the marks cache.
+const coldChoice = () => accounts.run("UPDATE contribution_choice SET chosen_at=? WHERE account='acct-bob'",
+  new Date(Date.now() + ++revision).toISOString());
 const slow = cloudOf(async (req) => {
-  const { accounts: ids } = await req.json();
+  slowCalls++;
   await new Promise((r) => setTimeout(r, 5_000));
-  return new Response(JSON.stringify({ ok: true, marks: Object.fromEntries(ids.map((i) => [i, { tier: "member", titles: [] }])) }));
+  return CLOUD.fetch(req);
 });
 const marksIn = () => JSON.parse(bucket.get(CONTRIBUTORS_KEY).body).rankings.all.filter((e) => e.mark).length;
+await coldChoice();
+const slowAt = Date.now();
 check("the cron waits for a paid half slower than a reader's wait, and its file keeps the marks",
-  await publishContributors(slow, Date.now() + 20 * 60_000) && marksIn() > 0, String(marksIn()));
+  await publishContributors(slow, Date.now() + 20 * 60_000) && marksIn() > 0 && slowCalls === 1 && Date.now() - slowAt >= 4_000,
+  JSON.stringify({ marks: marksIn(), requests: slowCalls, elapsed: Date.now() - slowAt }));
 const lastFile = bucket.get(CONTRIBUTORS_KEY).body;
+await coldChoice();
 check("...and one that does not answer publishes nothing, so the last marks stay served",
-  !(await publishContributors(cloudOf(async () => { throw new Error("down"); }), Date.now() + 30 * 60_000))
-  && bucket.get(CONTRIBUTORS_KEY).body === lastFile && marksIn() > 0);
+  !(await publishContributors(cloudOf(async () => { failedCalls++; throw new Error("down"); }), Date.now() + 30 * 60_000))
+  && failedCalls === 1 && bucket.get(CONTRIBUTORS_KEY).body === lastFile && marksIn() > 0);
 bucket.set(CONTRIBUTORS_KEY, published);
 const text = bucket.get(CONTRIBUTORS_KEY).body, file = JSON.parse(text);
 check("the file carries no account id, no device's id, and no name an account did not agree to show",
