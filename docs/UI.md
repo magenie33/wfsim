@@ -3,6 +3,10 @@
 Besides the build and configuration forms, the page draws a **live 2D top-down
 view of the fight**.
 
+Data-loading placeholders use `loadingHtml` and the boot screen's three-dot
+animation. Each section keeps its loaded content visible while another request
+finishes. Reduced motion disables the dots' animation.
+
 ## Every scenario has ONE core metric, and nothing on the page names it
 
 What a run is judged by is a term of the SCENARIO. The metrics are declared

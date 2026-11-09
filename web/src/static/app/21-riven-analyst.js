@@ -43,7 +43,7 @@ function renderPublishedRivens() {
   if (!box || !w || !META) return;
   const wanted = raRuler || libraryDefaultBenchmark();
   if (!ensureBoardCell(w.id, wanted, renderPublishedRivens)) {
-    box.innerHTML = benchSelectorHtml(wanted) + `<p class="wb-empty">${escHtml(tr("Loading…"))}</p>`;
+    box.innerHTML = benchSelectorHtml(wanted) + `<p class="wb-empty">${loadingHtml()}</p>`;
     wireBenchSelector(box, (id) => { raRuler = id; renderPublishedRivens(); }); return;
   }
   // AS DEEP AS THE BUILD BAR READS, so every row drawn here is one it can open.

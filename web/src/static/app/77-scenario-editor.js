@@ -62,7 +62,7 @@ function renderSimBuffs() {
   const list = scenarioBuffProjection();
   renderBuffCards(host,list,sim.buffs,new Set(buffList.map(buff => buff.id)));
   if (!scenarioCatalog) {
-    host.insertAdjacentHTML("afterbegin",`<div class="scenario-catalog-status" data-view-only>${escHtml(scenarioCatalogError || tr("Loading global buffs…"))}${scenarioCatalogError ? ` <button type="button" class="ghost-btn small" data-view-only data-buff-retry>${escHtml(tr("Retry"))}</button>` : ""}</div>`);
+    host.insertAdjacentHTML("afterbegin",`<div class="scenario-catalog-status" data-view-only>${scenarioCatalogError ? escHtml(scenarioCatalogError) : loadingHtml("Loading global buffs…")}${scenarioCatalogError ? ` <button type="button" class="ghost-btn small" data-view-only data-buff-retry>${escHtml(tr("Retry"))}</button>` : ""}</div>`);
     const retry = host.querySelector("[data-buff-retry]");
     if (retry) retry.onclick = () => { scenarioCatalogError = ""; renderSimBuffs(); };
   }

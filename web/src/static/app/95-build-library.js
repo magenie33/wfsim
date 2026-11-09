@@ -200,7 +200,7 @@ function libraryAfterRender(w, all, list, groups, drawList) {
   if (!boardHasCell(w.id, finder.b)) {
     const state = boardFileState(w.id), failed = state.failed.has(boardCellDir(finder.b));
     const count = box.querySelector(".library-result-count");
-    count.textContent = tr(failed ? "The board could not be reached." : "Loading…");
+    count.innerHTML = failed ? escHtml(tr("The board could not be reached.")) : loadingHtml();
     if (failed) {
       const retry = document.createElement("button"); retry.className = "ghost-btn small"; retry.textContent = tr("Retry");
       retry.onclick = () => { state.failed.delete(boardCellDir(finder.b)); loadWeaponBoard(w.id).then(renderBuildFinder); }; count.append(" ", retry);
@@ -479,7 +479,7 @@ async function loadLibraryRecommendations(w, all) {
   const note = $("build-finder").querySelector(".recommendation-library-note");
   if (note && !note.querySelector("[data-recommend-loading]")) {
     const status = document.createElement("span"); status.dataset.recommendLoading = "";
-    status.setAttribute("role", "status"); status.textContent = tr("Loading recommendations…"); note.append(status);
+    status.innerHTML = loadingHtml("Loading recommendations…"); note.append(status);
   }
   let stage = "heat";
   try {
@@ -591,7 +591,7 @@ document.addEventListener("click", recommendationLibraryActions, true);
 function recommendationLibraryNote() {
   const data = recommendationLibrary;
   return `<div class="recommendation-library-note">${recommendationSettlement(data?.period)}<a href="${userProfilePath()}?section=recommendations">${escHtml(tr("My recommendations"))}</a>`
-    + (data?.loading ? `<span data-recommend-loading role="status">${escHtml(tr("Loading recommendations…"))}</span>` : "")
+    + (data?.loading ? `<span data-recommend-loading>${loadingHtml("Loading recommendations…")}</span>` : "")
     + (recommendationRequested() ? `<span>${escHtml(tr(new URLSearchParams(location.search).has("computed_build") ? "Selected build" : "Your recommended build"))} <button type="button" class="ghost-btn small" data-recommend-clear>${escHtml(tr("Show all builds"))}</button></span>` : "")
     + (data?.error ? `<span role="status">${escHtml(tr(data.error))} <button class="ghost-btn small" type="button" data-recommend-retry>${escHtml(tr("Retry"))}</button></span>` : "") + `</div>`;
 }
@@ -626,7 +626,7 @@ async function loadRecommendationVotePage(details, page = 0) {
   if (!state) { state = { page: 0, cursors: [null], loading: false, loaded: false }; recommendationVotePages.set(details, state); }
   if (state.loading || page < 0 || page && !state.cursors[page]) return;
   state.loading = true; recommendationVotePager(details, state);
-  const status = details.querySelector("[data-vote-status]"); status.textContent = tr("Loading…");
+  const status = details.querySelector("[data-vote-status]"); status.innerHTML = loadingHtml();
   const query = new URLSearchParams({ identity: details.dataset.recommendVotes, limit: String(LIST_PAGE_SIZE) });
   if (page) query.set("before", state.cursors[page]);
   try {
@@ -675,13 +675,13 @@ async function loadRecommendationHistory() {
 }
 function recommendationsPage(account, embedded = false) {
   recommendationOwner();
-  if (!META) return `<div class="settings">${settingsNav(account, "recommendations")}<div class="set-main"><div class="block"><div class="bh"><h2>${aT("My recommendations")}</h2></div><div class="bb">${aT("Loading…")}</div></div></div></div>`;
+  if (!META) return `<div class="settings">${settingsNav(account, "recommendations")}<div class="set-main"><div class="block"><div class="bh"><h2>${aT("My recommendations")}</h2></div><div class="bb">${loadingHtml()}</div></div></div></div>`;
   if (!recommendationHistory && !recommendationHistoryLoading) loadRecommendationHistory();
   const value = recommendationHistory;
   const points = recommendationAccount.points;
   const contribution = devicesState?.points;
   const stats = `<dl class="recommendation-points"><div><dt>${aT("Contribution points")}</dt><dd>${contribution == null ? "—" : escHtml(computePts(contribution))}</dd></div><div><dt>${aT("Recommendation points")}</dt><dd>${points == null ? "—" : escHtml(points.toLocaleString(accountLocale()))}</dd></div></dl>`;
-  const status = value?.error ? `<p role="status">${aT(value.error)} <button type="button" class="ghost-btn" data-recommend-history-retry>${aT("Retry")}</button></p>` : !value ? `<p>${aT("Loading…")}</p>` : "";
+  const status = value?.error ? `<p role="status">${aT(value.error)} <button type="button" class="ghost-btn" data-recommend-history-retry>${aT("Retry")}</button></p>` : !value ? `<p>${loadingHtml()}</p>` : "";
   const counts = value?.total != null ? `<div class="recommendation-filters">${[["available", "Available today", value.available], ["pending", "Recommended today", value.pending], ["all", "All", value.total]].map(([id, label, n]) => `<button type="button" class="ghost-btn${recommendationHistoryFilter === id ? " on" : ""}" data-recommend-filter="${id}" aria-pressed="${recommendationHistoryFilter === id}">${aT(label)} <span>${n}</span></button>`).join("")}`
     + (embedded ? `<button class="ghost-btn small" data-computation-weapon="recommendations" aria-haspopup="dialog">${escHtml(recommendationHistoryWeapon ? weaponEntryName(weaponInfo(recommendationHistoryWeapon)) : tr("All weapons"))}</button></div>`
     :

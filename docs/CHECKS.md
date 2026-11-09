@@ -13,12 +13,14 @@ Deleting the retained ownership span is a negative control for inheritance.
 Its negative control reverses
 witness positions and must fail the order assertion.
 `check_computation_profiles_page.mjs` drives the real account/profile routes
-and published Laetum data. It checks exact build links, publication removal
-with the score retained, renamed and anonymous signatures, the optimization
+and published Laetum data. It checks accepted verification outside the curated
+Library, exact build links with riven round trips, sharing without preset writes,
+explicit measurement retirement, renamed and anonymous signatures, the optimization
 record link, actual Library names and mobile layout. Its negative control
-removes the publication before the restoration assertion.
+retires the measurement before the restoration assertion.
 It withholds summary and record responses to verify that identity renders first
-while the default verified-build list loads independently. Legacy addresses retain
+while the default verified-build list loads independently with the shared three-dot
+loading animation and reduced-motion behavior. Legacy addresses retain
 their filters and fragment under `/user/`. Name links retain their shared hover
 and keyboard styles. The avatar opens a personal dialog with direct contribution
 links; the weapon dialog shares localized search, defers filtering requests until
