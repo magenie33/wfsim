@@ -462,6 +462,20 @@ single rolled value is required. Prime weapon suffixes accept P/p in fx, zk
 and pz without selecting the base weapon. Replies keep the engine's printed
 value-before-name lines; Combo Duration's seconds cannot become the SC alias.
 
+## `check_ocr_worker` and `check_riven_ocr`
+
+Worker tests cover concurrent reads, initialization errors, worker crashes,
+unreadable messages, failed image transfers and worker construction. Every
+failure releases pending callers and allows a fresh read. The previous worker
+leaves a concurrent caller pending and fails the bounded negative control.
+
+The browser check loads the real pinned OCR models and reads two synthetic
+riven lines into numeric stats. Its static-host proxy serves the first runtime
+module with a non-JavaScript MIME type, checks that recognition fails, and
+requires the next read and a warm read to succeed. Serving every module with
+that bad MIME type must fail the check. Models remain lazy and no image sample
+is uploaded.
+
 ## `check_appraise`
 
 Riven appraisal's door (`worker/appraise.js`) with no network: only a bot opens

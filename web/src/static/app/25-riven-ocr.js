@@ -14,7 +14,8 @@ function ocrWorkerMain() {
   let ready = null;
   const boot = (base) => {
     importScripts(base + "ort-1.30.0.wasm.min.js");
-    ort.env.wasm.wasmPaths = { mjs: base + "ort-wasm-simd-threaded-1.30.0.mjs",
+    // A .js URL keeps the module's JavaScript MIME type on each static host.
+    ort.env.wasm.wasmPaths = { mjs: base + "ort-wasm-simd-threaded-1.30.0.js",
       wasm: base + "ort-wasm-simd-threaded-1.30.0.wasm" };
     ort.env.wasm.numThreads = self.crossOriginIsolated ? Math.min(4, navigator.hardwareConcurrency || 1) : 1;
     return Promise.all([
@@ -95,27 +96,51 @@ function ocrWorkerMain() {
       postMessage({ id: e.data.id, lines: await read(m, e.data.bitmap) });
     } catch (err) {
       postMessage({ id: e.data.id, error: String((err && err.message) || err) });
+    } finally {
+      e.data.bitmap.close();
     }
   };
 }
 
 let ocrWorker = null;
 let ocrSeq = 0;
+const ocrPending = new Map();
+function ocrWorkerFailed(worker, error) {
+  if (worker !== ocrWorker) return;
+  ocrWorker = null;
+  worker.terminate();
+  for (const pending of ocrPending.values()) pending.reject(error);
+  ocrPending.clear();
+}
 /// THE LINES ON AN IMAGE, each `{ text, box: [x, y, w, h] }` in its pixels.
 async function ocrLines(blob) {
   const bitmap = await createImageBitmap(blob);
   if (!ocrWorker) {
-    ocrWorker = new Worker(URL.createObjectURL(new Blob([`(${ocrWorkerMain.toString()})()`], { type: "text/javascript" })));
+    const url = URL.createObjectURL(new Blob([`(${ocrWorkerMain.toString()})()`], { type: "text/javascript" }));
+    try { ocrWorker = new Worker(url); }
+    catch (error) { bitmap.close(); throw error; }
+    finally { URL.revokeObjectURL(url); }
+    const worker = ocrWorker;
+    worker.addEventListener("message", (e) => {
+      if (worker !== ocrWorker) return;
+      const pending = ocrPending.get(e.data.id);
+      if (!pending) return;
+      if (e.data.error) { ocrWorkerFailed(worker, new Error(e.data.error)); return; }
+      ocrPending.delete(e.data.id);
+      pending.resolve(e.data.lines);
+    });
+    worker.addEventListener("error", (e) => {
+      e.preventDefault();
+      ocrWorkerFailed(worker, new Error(e.message || "OCR worker failed"));
+    });
+    worker.addEventListener("messageerror", () => ocrWorkerFailed(worker, new Error("OCR worker message could not be read")));
   }
+  const worker = ocrWorker;
   const id = ++ocrSeq;
   return new Promise((resolve, reject) => {
-    const on = (e) => {
-      if (e.data.id !== id) return;
-      ocrWorker.removeEventListener("message", on);
-      if (e.data.error) reject(new Error(e.data.error)); else resolve(e.data.lines);
-    };
-    ocrWorker.addEventListener("message", on);
-    ocrWorker.postMessage({ id, base: new URL(OCR_BASE, location.href).href, bitmap }, [bitmap]);
+    ocrPending.set(id, { resolve, reject });
+    try { worker.postMessage({ id, base: new URL(OCR_BASE, location.href).href, bitmap }, [bitmap]); }
+    catch (error) { bitmap.close(); ocrWorkerFailed(worker, error); }
   });
 }
 

@@ -115,6 +115,7 @@ jobs:
       - run: node scripts/check_user_task_queue.mjs
       - run: node scripts/check_optimizer_build_uploads.mjs
       - run: node scripts/check_app_parts.mjs
+      - run: node scripts/check_ocr_worker.mjs
       - run: node scripts/check_ime_keys.mjs
       - run: node scripts/check_engine_layers.mjs
       - run: node scripts/test_nona_core.mjs
@@ -702,6 +703,9 @@ jobs:
       - name: A build bar redrawn before its page has a build throws nothing
         if: matrix.group == 'account'
         run: node scripts/check_bar_before_catalog.mjs
+      - name: Riven OCR loads real models and recovers after a failed module response
+        if: matrix.group == 'builder'
+        run: node scripts/check_riven_ocr.mjs
       - name: Collected mods compute supported clauses and disclose the rest
         if: matrix.group == 'account'
         run: node scripts/check_collected_mods.mjs

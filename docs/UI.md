@@ -1183,6 +1183,12 @@ community execution. Import, export and editing remain in Rivens. Text import
 feeds the same saved cards as the editor and screenshot reader. Each batch
 item retains its own failure, retry and saved report.
 
+The screenshot reader initializes its pinned, same-origin OCR models on the
+first image. Its runtime module uses a `.js` URL so static hosts send a
+JavaScript MIME type. A worker failure rejects its pending reads and discards
+that worker; another image starts a fresh worker. Successful reads reuse the
+initialized models. Recognized values enter the ordinary saved-riven review.
+
 ## Results
 
 **A RUN IS A RECORD, WRITTEN ONCE** (`35-results.js`): the build and the fight
