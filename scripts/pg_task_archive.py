@@ -76,7 +76,7 @@ class Postgres:
         body = f"BEGIN {mode};\nSET LOCAL statement_timeout='8s';\n"
         body += "SET LOCAL lock_timeout='1s';\nSET LOCAL temp_file_limit='32MB';\n"
         body += "SET LOCAL standard_conforming_strings=on;\nSET LOCAL ROLE wfsim;\n"
-        body += "SET LOCAL plan_cache_mode='force_generic_plan';\n"
+        body += "SET LOCAL plan_cache_mode='force_custom_plan';\n"
         body += sql + ';\nCOMMIT;\n'
         result = subprocess.run(['sudo', '-u', 'postgres', 'psql', '-X', '-q', '-At',
             '-v', 'ON_ERROR_STOP=1', '-d', 'wfsim'], input=body, text=True,
