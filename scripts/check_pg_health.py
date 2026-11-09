@@ -26,7 +26,7 @@ class Health(unittest.TestCase):
         probes['board']['value']['newest_epoch'] -= 86400
         db = probes['database']['value']
         db['inventory']['started_at'] = health.instant(now - 14400)
-        db['sessions'] = [{'state': 'idle in transaction', 'transaction_seconds': 400}, {'blockers': [123]}]
+        db['sessions'] = [{'state': 'idle in transaction', 'transaction_seconds': 400, 'idle_seconds': 400}, {'blockers': [123]}]
         report = health.assess(probes, now=now)
         self.assertEqual(set(report['alerts']), {'board_stale', 'inventory_stale', 'idle_transaction', 'database_lock_wait'})
         self.assertEqual(report['event'], 'incident')
@@ -36,6 +36,11 @@ class Health(unittest.TestCase):
         recovered = health.assess(self.fixture()[1], repeated, now + 60)
         self.assertEqual(recovered['event'], 'recovered')
         self.assertEqual(recovered['incident_id'], report['incident_id'])
+
+    def test_long_capture_with_recent_activity_is_not_an_idle_stall(self):
+        now, probes = self.fixture()
+        probes['database']['value']['sessions'] = [{'state': 'idle in transaction', 'transaction_seconds': 1800, 'idle_seconds': 2}]
+        self.assertNotIn('idle_transaction', health.assess(probes, now=now)['alerts'])
 
     def test_unknown_observation_is_failure_and_capture_age_wins(self):
         now, probes = self.fixture()
