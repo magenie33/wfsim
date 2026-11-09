@@ -295,7 +295,7 @@ function computeCliHtml() {
   const base = `${CLI_RELEASE_ORIGIN}/cli/releases/${encodeURIComponent(r.version)}`;
   return `<section class="block" id="compute-cli"><div class="bh"><h2>${aT("Official CLI")}</h2></div><div class="bb">
     <p>${aT("Run Together in a terminal or on a server.")}</p><div class="compute-overview-controls">${links}</div>
-    <p><code>wfsim join</code></p>${r.npm === true ? `<p><code>npx @wfsim/cli@latest join</code></p>` : ""}
+    <p><code>wfsim join</code></p>${r.npm === true ? `<p><code>npx wfsim@latest join</code></p>` : ""}
     <p class="set-note">${aT("Default CPU range: 0–50%. Sign in later with wfsim login to claim this device.")}</p>
     <p class="auth-foot"><a href="https://github.com/magenie33/wfsim/blob/main/client/README.md" target="_blank" rel="noopener">${aT("Instructions")}</a> ·
       <a href="${base}/SHA256SUMS">SHA-256</a> · <a href="${base}/source.zip">${aT("Source code")}</a></p></div></section>`;
