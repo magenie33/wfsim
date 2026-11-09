@@ -8,10 +8,11 @@ exercised, and whether a visit produces a RESULT or nothing.
 
 ## Why the edge cannot answer it
 
-The deployed site makes **zero server requests after boot**. `api()`
+Combat simulation and search run locally. `api()`
 (`web/src/static/app/08-checkpoint-api.js`) dispatches to worker RPC on the
-static build, so `/api/simulate`, `/api/optimize` and the rest never touch the
-network. Cloudflare's own counts are also biased in ways that cannot be
+static build, so those completed calculations cannot be counted from network
+requests. Accounts, usage points and community work still contact the server.
+Cloudflare's own counts are also biased in ways that cannot be
 filtered out on the free plan:
 
 - **`/asset/*` and `/pkg/*` are `immutable`**, so a returning reader requests
@@ -23,9 +24,23 @@ filtered out on the free plan:
   (user agent `bastion early hints` / `nginx-ssl early hints`, answered 504)
   share the same counters. Referer and ASN are not queryable on the free plan.
 
-So the edge gives an order of magnitude for "how many", and nothing for "how
-well". Both come from the usage points below, and every count is read from the
-log, which samples nothing.
+The edge is not an audience total: direct-origin requests are absent and
+proxied subdomains can add unrelated traffic. Audience and results come from
+the usage points below, and every count is read from the unsampled log.
+
+## Reporting audience
+
+Internal and public reports use the same definitions. Report observed browsers,
+result-producing browsers and returning browsers, with their source, calendar
+window and coverage. Browser ids are not exact people: storage resets and
+multiple devices can increase them, while privacy choices and failed points
+leave activity unobserved. Do not choose a larger source for a better-looking
+number or infer a precise human count from requests, IPs or browser traits.
+
+Preserve raw observations. Separate confirmed automation with its evidence;
+uncertain traffic remains labelled as uncertain. A geography, hosting network,
+headless trait or absence of a pointer alone does not establish automation.
+Heuristic filters must be disclosed alongside their unscreened observations.
 
 ## Rules
 
