@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - In game the chain can pass through corpses (page); here a body that dies is removed, so a chain that would hop through a corpse to an enemy behind it finds nothing.
 
 ## In WFSim
