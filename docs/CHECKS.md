@@ -538,7 +538,11 @@ account switching, cross-origin rejection and polling isolation behind a shared
 network. It also checks that account maintenance guards the route.
 
 `client.yml` checks the independent Rust CLI workspace on all supported host
-platforms. `cargo test --manifest-path client/Cargo.toml` covers range parsing,
+platforms. `check_client_release.mjs` checks the upload list derived from native
+manifest entries and the single `npm pack --json` result, including scoped and
+unscoped tarballs, duplicate names, missing files and stale or stray artifacts.
+It also checks that the workflow uses this list, without overlapping globs.
+`cargo test --manifest-path client/Cargo.toml` covers range parsing,
 persistent identity, corrupt identity refusal, global fractional CPU budgets,
 cancellation, outbox acknowledgments and shared result-payload fixtures.
 `check_client_launcher.mjs` exercises native consent, zero-budget operation,
