@@ -1660,6 +1660,45 @@ pub fn run_optimize(
     run_optimize_resumable(plan, state, on_enumerated, on_round, None, None, None)
 }
 
+/// A blocking call for native or wasm compute hosts without a progress channel.
+/// Quick-fleet leaders keep their caller thread between rounds; scorers are independent.
+pub(crate) fn compute_optimize_json(body: &Value) -> Value {
+    let mut request = body.clone();
+    if let Some(object)=request.as_object_mut(){object.insert("threads".into(),json!(1));}
+    match parse_optimize(&request) {
+        Ok(plan) => run_optimize(plan, &FunnelState::default(), |_, _| {}, None),
+        Err(error) => error,
+    }
+}
+
+#[cfg(test)]
+mod compute_host_tests {
+    use super::*;
+    #[test]
+    fn compute_door_uses_the_same_quick_leader_and_score_protocol() {
+        let fixture:Value=serde_json::from_str(include_str!("../../tests/client_search.json")).unwrap();
+        let mut request=fixture["request"].clone();
+        request["quick_fleet"]=json!({"lead":true,"fresh":true,"scores":[]});
+        request["threads"]=json!(256);
+        let via_route=crate::route("/api/compute/optimize",&request).expect("compute door");
+        assert_ne!(via_route["ok"],false,"{via_route}");
+        assert!(via_route["pending"].as_array().is_some_and(|x|!x.is_empty()));
+        request["threads"]=json!(1);
+        let direct=run_optimize(parse_optimize(&request).unwrap(),&FunnelState::default(),|_,_|{},None);
+        assert_eq!(via_route["pending"],direct["pending"]);
+        request["quick_fleet"]=json!({"score":direct["pending"]});
+        let scored=crate::route("/api/compute/optimize",&request).unwrap();
+        assert_ne!(scored["ok"],false,"{scored}");
+        assert!(scored["scores"].as_array().is_some_and(|x|!x.is_empty()));
+        assert!(scored["work"].as_u64().is_some_and(|n|n>0));
+    }
+    #[test]
+    fn invalid_compute_request_is_an_engine_error() {
+        let r=crate::route("/api/compute/optimize",&json!({"weapon":"__no_such_weapon__"})).unwrap();
+        assert_eq!(r["ok"],false);assert!(r["error"].is_string());
+    }
+}
+
 /// As [`run_optimize`], plus the two halves of resumability: `resume` skips
 /// straight to a saved round, and `on_checkpoint` publishes the field after
 /// every completed round.

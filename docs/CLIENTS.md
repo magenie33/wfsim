@@ -1,5 +1,13 @@
 # Volunteer compute clients
 
+## Official CLI
+
+The official single-machine host is `client/`, an independent Rust workspace.
+It loads the same signed native engine and data pack described below. Usage,
+CPU ranges, persistent identity, background operation and supported platforms
+are in [client/README.md](../client/README.md). Its npm launcher starts the
+same native executable after checking the immutable package manifest's hash.
+
 ## Account recommendations
 
 Recommendation clients use the routes in `ACCOUNTS.md` with a claimed bearer
@@ -122,6 +130,32 @@ already multiplied by the owner's `sync_scale_pct`.
   accepted; each is one client for `PACKS_HELD`, and ids of one owner or one
   network never confirm each other.
 
+## Browser device claims
+
+Any compliant client can claim its device through a browser on another machine.
+These JSON POST routes need no client registration or account bearer key:
+
+1. `/api/account/devices/link/start` with `{ verifier, label }` returns
+   `{ device_code, user_code, verification_uri, verification_uri_complete,
+   expires_in: 600, interval: 10 }`. The verifier is the recognized persistent
+   24-hex identity; label is one line of 1–40 characters. Keep `device_code`
+   private; show the short `user_code` and browser address to the person.
+2. Poll `/api/account/devices/link/poll` with `{ device_code }` no more often
+   than `interval` seconds. It returns `status: pending | claimed | expired`,
+   without the account identity. Stop at expiry; respect rate-limit replies.
+3. The person opens `/compute?device_code=<user_code>`, signs in and explicitly
+   approves the displayed device. The page uses `/link/review` and
+   `/link/approve` with `{ user_code }` under the browser's account session.
+
+The code expires in ten minutes. The server keeps hashes of both credentials;
+only its internal row holds the full verifier. Review exposes the label and
+six-character device id. One account reserves an approval, so another cannot
+reuse it; the first can retry an interrupted approval. Claiming calls the same
+ownership rule as `/api/account/devices/claim`: first unclaimed history follows
+the first claim, and a subsequent account receives only its own ownership span.
+This flow grants no access to account data or billing. Startup writes remove
+expired authorization rows; deleting an account removes its authorization rows.
+
 ## Consent
 
 - Nothing is computed until the person running the machine says yes to a
@@ -203,9 +237,16 @@ and a download is all that costs.
   ptr`, the wasm module's `install_data`, called once before the first call;
   `wfsim_api(path, path_len, body, body_len, &len) -> ptr`, UTF-8 in and out,
   the wasm module's `api(path, body)` exactly; and `wfsim_free(ptr, len)` to
-  give each answer of either back. `abi: 1` was the last two alone. Calls are
-  independent; one library serves any number of threads, and one install
+  give each answer of either back. `abi: 1` was the last two alone. Board calls
+  are independent; one library serves any number of threads, and one install
   serves them all.
+- `/api/compute/optimize` accepts the optimizer request through `wfsim_api`
+  or wasm `api`, calling the same parser and solver as wasm's `optimize` export.
+  It blocks until that call completes, without progress or checkpoint callbacks.
+  Each call uses one engine worker; the host controls parallelism and CPU pacing.
+  For `quick_fleet`, keep every leader call of one search on the same thread
+  until it finishes; scorer calls may run on any other threads. Start the next
+  search with `fresh: true`. Keep the request unchanged between its rounds.
 - To follow the served engine: when `/release.json` names an engine other than
   the loaded one, fetch its `engine/<engine>.json`, verify, download the
   library and its `data`, load, install, and compute the next pack on it. The old one keeps working meanwhile within its

@@ -1,0 +1,22 @@
+[
+  {
+    "result": { "mods": ["serration", "riven:one", "vigilante_supplies"], "exilus": "vigilante_supplies", "arcane": ["primary_merciless", "none"], "evolutions": ["choice"], "mode": "base" },
+    "context": { "weapon": "braton_prime", "mode": "cycle", "benchmark": "standard_single_target", "valence": "", "rivens": { "riven:one": { "riven_pos": ["damage", "critical_chance"], "riven_neg": "zoom", "riven_rolls": [0.5, 0.6, 0.7] } } },
+    "expected": { "benchmark": "standard_single_target", "weapon": "braton_prime", "mode": "base", "mods": ["serration", "riven"], "riven_pos": ["damage", "critical_chance"], "riven_neg": "zoom", "riven_rolls": [0.5, 0.6, 0.7], "evolutions": ["choice"], "arcanes": ["primary_merciless"], "valence": "", "exilus": "vigilante_supplies" }
+  },
+  {
+    "result": { "mods": ["pressure_point"], "arcane": "melee_exposure", "exilus": "none", "replay": { "assembly": { "grip": "g", "link": "l" } } },
+    "context": { "weapon": "zaw", "mode": "base", "stance": "clashing_forest", "valence": "", "wielder": { "warframe": "excalibur" } },
+    "expected": { "weapon": "zaw", "mode": "base", "mods": ["pressure_point", "clashing_forest"], "riven_pos": [], "riven_neg": "", "evolutions": [], "arcanes": ["melee_exposure"], "valence": "", "grip": "g", "link": "l", "wielder": { "warframe": "excalibur" } }
+  },
+  {
+    "result": { "mods": ["a", "stance"], "assembly": { "grip": "new", "loader": "chosen" }, "valence": "heat" },
+    "context": { "weapon": "kitgun", "mode": "base", "stance": "stance", "grip": "old", "loader": "old", "valence": "cold" },
+    "expected": { "weapon": "kitgun", "mode": "base", "mods": ["a", "stance"], "riven_pos": [], "riven_neg": "", "evolutions": [], "arcanes": [], "valence": "heat", "grip": "new", "loader": "chosen" }
+  },
+  {
+    "result": { "mods": ["serration"], "replay": { "assembly": null }, "arcane": null },
+    "context": { "weapon": "braton_prime", "mode": "base", "valence": "", "grip": "", "loader": "", "link": "", "wielder": null },
+    "expected": { "weapon": "braton_prime", "mode": "base", "mods": ["serration"], "riven_pos": [], "riven_neg": "", "evolutions": [], "arcanes": [], "valence": "", "grip": "", "loader": "", "link": "" }
+  }
+]

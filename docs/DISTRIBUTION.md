@@ -10,6 +10,28 @@ question about the engine at all — it is a question about **which build of it
 the reader is running**. Distribution is the whole of it, and this file is where
 that is decided.
 
+## Volunteer CLI host
+
+The official volunteer CLI is a separate host in `client/`. Its package build
+identifies that executable; computation follows the shared signed engine and
+data channel in `CLIENTS.md`. `client-release.yml` builds one native executable
+per supported platform, then publishes those exact files to GitHub Releases and
+the existing COS mirror. The npm package carries their immutable hashes and
+starts the same executable. `scripts/build_client_release.mjs` prepares the
+manifest and package; `scripts/release_client.py --dry-run <directory>` verifies
+the files before an upload. The source archive and checksums travel beside
+the binaries. The public mirror's entry point is `cli/latest.json`.
+Publication checks that the checked engine artifact matches the public release
+and exposes the native optimizer door before making CLI downloads discoverable.
+An unknown polling credential checks device-link route and schema readiness
+without registering or claiming a device. The compute
+page shows the npm command only for a release published to npm.
+
+The host supervises a compute process for one engine generation. A generation
+change drains work and replaces that process; the OS releases native static and
+thread state. Identity, settings and unacknowledged answers stay in the device
+directory across the replacement.
+
 ## Three planes
 
 A file's change rate and its trust requirement decide which plane it belongs to.

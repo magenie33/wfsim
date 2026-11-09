@@ -1,0 +1,35 @@
+name: CLI
+on:
+  pull_request:
+    paths: ["client/**", "desktop/src/trust.rs", "mcp/headless.js", "tests/client_payloads.json", "tests/client_search.json", "scripts/check_client_launcher.mjs", ".github/workflows/client.yml"]
+  push:
+    branches: [main]
+    paths: ["client/**", "desktop/src/trust.rs", "mcp/headless.js", "tests/client_payloads.json", "tests/client_search.json", "scripts/check_client_launcher.mjs", ".github/workflows/client.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  client:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.97.1"
+          components: clippy,rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: client
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.23.4"
+      - run: cargo fmt --check --manifest-path client/Cargo.toml
+      - run: cargo clippy --locked --manifest-path client/Cargo.toml --all-targets -- -D warnings
+      - run: cargo test --locked --manifest-path client/Cargo.toml
+      - run: cargo build --locked --manifest-path client/Cargo.toml
+      - run: node scripts/check_client_launcher.mjs

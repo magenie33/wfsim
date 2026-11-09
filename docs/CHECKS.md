@@ -534,6 +534,35 @@ Cold loads of a hyphenated weapon tab record every weapon-image assignment;
 all must name the requested weapon, including a Kitgun slot. This fails if
 boot first applies the default weapon. Run this portion with `--arrival-only`.
 
+## `check_device_link` and the official CLI
+
+`check_device_link.mjs` exercises the public volunteer-device browser flow on
+the real accounts schema: anonymous start, credential hashes and expiry,
+explicit signed-in approval, retryable reservation, first-history ownership,
+account switching, cross-origin rejection and polling isolation behind a shared
+network. It also checks that account maintenance guards the route.
+
+`client.yml` checks the independent Rust CLI workspace on all supported host
+platforms. `cargo test --manifest-path client/Cargo.toml` covers range parsing,
+persistent identity, corrupt identity refusal, global fractional CPU budgets,
+cancellation, outbox acknowledgments and shared result-payload fixtures.
+`check_client_launcher.mjs` exercises native consent, zero-budget operation,
+lost replies, durable acknowledgments, single-instance exclusion, background
+stop/resume and the verified npm entry. It uses a loopback fake server and
+never requests live work. Its payload fixtures are checked against the
+authoritative `headlessBoardPayloadFromResult` adapter.
+`check_device_link_page.mjs` checks the real approval component and compute
+action against the account route in Chrome, including a 390-pixel viewport.
+`check_client_protocol.mjs cache=<verified engine-cache directory>` uses the
+signed native engine with synthetic loopback leases to check short-lease
+renewals, all held rows, zero-budget release, resume, native process replacement
+on engine invalidation and shutdown with the same device identity.
+`check_client_search.mjs` writes the frozen quick-search reference through the
+shipped wasm optimizer. The ignored Rust
+`native_compute_matches_the_wasm_reference` conformance test takes explicit
+local library/data/reference paths and compares build, score, work and counts;
+it does not bypass production signature verification.
+
 ## `check_accounts`
 
 The account rules run against the real schema in PGlite with provider and mail

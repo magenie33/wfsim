@@ -40,6 +40,15 @@ metadata documents from the same constants as its endpoints.
 | the account page lists its agents and disconnects one in a click; an agent may revoke its own key | `/api/account/agents`, `AGENT_PATHS.revoke` |
 | deleting the account deletes its agents' keys; the export lists them | `ON DELETE CASCADE`, `agentsOf` |
 
+## Volunteer devices
+
+Volunteer CLI clients use the limited browser device-claim flow in
+[`CLIENTS.md`](CLIENTS.md#browser-device-claims). Its ten-minute authorizations
+live in `device_links`, in this database, with hashed approval and polling
+codes. Approval invokes the existing contribution ownership rule and issues no
+account bearer credential. Apply `worker/pg/accounts.sql` before publishing
+the device-link routes.
+
 ## Recommendations
 
 `worker/recommendations.js` keeps recommendations in the accounts database.

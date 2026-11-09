@@ -830,6 +830,12 @@ jobs:
       - name: The account rules hold against the real schema
         if: matrix.group == 'library'
         run: node scripts/check_accounts.mjs
+      - name: Volunteer clients claim devices through the same public browser flow
+        if: matrix.group == 'library'
+        run: node scripts/check_device_link.mjs
+      - name: Device approval uses the shared compute controls and fits a phone
+        if: matrix.group == 'library'
+        run: node scripts/check_device_link_page.mjs
       - name: Recommendations settle at UTC midnight and retain account points
         if: matrix.group == 'library'
         run: node scripts/check_recommendations.mjs

@@ -56,6 +56,7 @@ target-*/
 # The desktop shell is its own cargo workspace, so the root `/target` rule does
 # not reach it.
 /desktop/target
+/client/target
 
 # Installers and the source archive that ships beside them. Built by
 # `scripts/build_desktop.py`, uploaded to the network drive, never committed —

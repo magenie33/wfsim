@@ -1,0 +1,118 @@
+name: Release CLI
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "CLI host version (empty uses 0.1.0-date.run)"
+        type: string
+        default: ""
+      npm:
+        description: "Also publish the prepared npm launcher (requires package access)"
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - id: version
+        env:
+          REQUESTED: ${{ inputs.version }}
+        run: |
+          node -e 'const fs=require("node:fs");const v=process.env.REQUESTED||`0.1.0-${new Date().toISOString().slice(0,10).replaceAll("-","")}.${process.env.GITHUB_RUN_NUMBER}`;if(!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(v))throw Error("invalid version");fs.appendFileSync(process.env.GITHUB_OUTPUT,`version=${v}\n`);'
+  build:
+    needs: version
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: x86_64-linux, artifact: wfsim-x86_64-linux }
+          - { os: windows-latest, target: x86_64-windows, artifact: wfsim-x86_64-windows.exe }
+          - { os: macos-latest, target: aarch64-macos, artifact: wfsim-aarch64-macos }
+          - { os: macos-15-intel, target: x86_64-macos, artifact: wfsim-x86_64-macos }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      WFSIM_CLI_BUILD: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: "1.97.1"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: client
+      - if: runner.os != 'Linux'
+        run: cargo test --locked --manifest-path client/Cargo.toml
+      - if: runner.os != 'Linux'
+        run: cargo build --release --locked --manifest-path client/Cargo.toml
+      - if: runner.os == 'Linux'
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src -e WFSIM_CLI_BUILD rust:1.97.1-bullseye \
+            sh -c 'cargo test --locked --manifest-path client/Cargo.toml && cargo build --release --locked --manifest-path client/Cargo.toml'
+      - shell: bash
+        env:
+          ARTIFACT: ${{ matrix.artifact }}
+        run: |
+          mkdir -p out
+          if [ "$RUNNER_OS" = Windows ]; then cp client/target/release/wfsim.exe "out/$ARTIFACT"; else cp client/target/release/wfsim "out/$ARTIFACT"; fi
+          if [ "$RUNNER_OS" = macOS ]; then codesign --force --sign - "out/$ARTIFACT"; fi
+          "out/$ARTIFACT" --version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.target }}
+          path: out/*
+  publish:
+    needs: [version, build]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+          registry-url: 'https://registry.npmjs.org'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cli-*
+          path: target/client-artifacts
+          merge-multiple: true
+      - run: node scripts/check_client_live_engine.mjs
+      - env:
+          CLI_VERSION: ${{ needs.version.outputs.version }}
+          CLI_NPM: ${{ inputs.npm }}
+        run: |
+          node scripts/build_client_release.mjs "version=$CLI_VERSION" "npm=$CLI_NPM"
+          git archive --format=zip --output=target/client-release/source.zip HEAD
+          python3 scripts/release_client.py target/client-release --dry-run
+          npm pack ./target/client-release/npm --pack-destination target/client-release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-prepared-release
+          path: target/client-release/*
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          CLI_VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          gh release create "cli-$CLI_VERSION" --target "$GITHUB_SHA" --title "WFSim CLI $CLI_VERSION" \
+            --notes-file client/README.md --latest=false \
+            target/client-release/wfsim-* target/client-release/release.json \
+            target/client-release/SHA256SUMS target/client-release/source.zip target/client-release/*.tgz
+      - if: inputs.npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish ./target/client-release/npm --access public --provenance
+      - env:
+          COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
+          COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
+          COS_BUCKET: ${{ secrets.COS_BUCKET }}
+          COS_REGION: ${{ secrets.COS_REGION }}
+          COS_ACCELERATE: '1'
+        run: python3 scripts/release_client.py target/client-release

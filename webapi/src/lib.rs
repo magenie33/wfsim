@@ -67,10 +67,10 @@ mod companion;
 
 use serde_json::Value;
 
-/// A pure endpoint: the request body in, the response out.
+/// A synchronous endpoint: the request body in, the response out.
 pub type Endpoint = fn(&Value) -> Value;
 
-/// EVERY PURE ENDPOINT, by the path the frontend knows it by. The native server
+/// EVERY SYNCHRONOUS ENDPOINT, by the path the frontend knows it by. The native server
 /// and the wasm worker both dispatch through [`route`], so an endpoint added
 /// here reaches both transports and one added anywhere else reaches one.
 /// `/api/meta`, `/api/i18n` and `/api/warframe/catalog` ignore the body.
@@ -95,6 +95,7 @@ pub const ROUTES: &[(&str, Endpoint)] = &[
     ("/api/build/static", static_stats::static_stats_json),
     ("/api/forma/plan", forma_plan_json),
     ("/api/optimize/check", optimize_check_json),
+    ("/api/compute/optimize", optimize::compute_optimize_json),
     ("/api/forma/optimize", forma_optimize_json),
     ("/api/warframe/catalog", |_| warframe_catalog_json()),
     ("/api/warframe/panel", warframe_panel_json),
@@ -105,7 +106,7 @@ pub const ROUTES: &[(&str, Endpoint)] = &[
     ("/api/qr", qr::qr_json),
 ];
 
-/// The response to a pure endpoint, or `None` for a path [`ROUTES`] does not
+/// The response to a synchronous endpoint, or `None` for a path [`ROUTES`] does not
 /// hold. The stateful ones — the optimize job, a simulate that reports
 /// progress, a shard — stay with the transport that owns the state.
 pub fn route(path: &str, body: &Value) -> Option<Value> {

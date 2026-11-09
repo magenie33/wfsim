@@ -28,6 +28,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS accounts_username ON accounts (username);
 ALTER TABLE accounts ADD COLUMN IF NOT EXISTS profile_id TEXT COLLATE "C";
 CREATE UNIQUE INDEX IF NOT EXISTS accounts_profile_id ON accounts (profile_id);
 
+-- A ten-minute browser claim for any volunteer client, without an account key.
+CREATE TABLE IF NOT EXISTS device_links (
+  token_hash TEXT COLLATE "C" PRIMARY KEY,
+  code_hash TEXT COLLATE "C" NOT NULL UNIQUE,
+  verifier TEXT COLLATE "C" NOT NULL,
+  label TEXT COLLATE "C" NOT NULL,
+  expires_at TEXT COLLATE "C" NOT NULL,
+  account TEXT COLLATE "C" REFERENCES accounts (id) ON DELETE CASCADE,
+  claimed_at TEXT COLLATE "C"
+);
+CREATE INDEX IF NOT EXISTS device_links_expires ON device_links (expires_at);
+
 -- Recommendation targets are library identities; personal votes stay in this database.
 CREATE TABLE IF NOT EXISTS recommendation_targets (
   identity TEXT COLLATE "C" PRIMARY KEY,
