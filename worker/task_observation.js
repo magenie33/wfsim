@@ -32,21 +32,24 @@ export function createObservation() {
       const active = (await db.prepare("SELECT count(*) AS n FROM verifiers WHERE last_at > ?").bind(recent).first()).n;
       if (!active) return;
       const ceiling = ceilingS((await dialsOf(env, now)).row_ceiling_ms);
-      const { results: stalled } = await db.prepare(`WITH RECURSIVE producers(producer) AS (
-          SELECT min(producer) FROM demands WHERE state = 'live'
+      const { results: producers } = await db.prepare(`WITH RECURSIVE producers(producer) AS (
+          (SELECT producer FROM demands WHERE state = 'live' ORDER BY producer LIMIT 1)
           UNION ALL
-          SELECT (SELECT min(d.producer) FROM demands d WHERE d.state = 'live' AND d.producer > p.producer)
+          SELECT (SELECT d.producer FROM demands d WHERE d.state = 'live' AND d.producer > p.producer ORDER BY d.producer LIMIT 1)
           FROM producers p WHERE p.producer IS NOT NULL),
-        answered AS MATERIALIZED (SELECT DISTINCT e.producer FROM answers a JOIN demands e ON e.question = a.question WHERE a.at > ?2::text),
+        answered AS MATERIALIZED (SELECT DISTINCT e.producer FROM answers a JOIN demands e ON e.question = a.question WHERE a.at > ?1::text),
         silent AS MATERIALIZED (SELECT p.producer FROM producers p WHERE p.producer IS NOT NULL
           AND NOT EXISTS (SELECT 1 FROM answered a WHERE a.producer = p.producer))
-        SELECT p.producer, x.questions, x.oldest_due FROM silent p CROSS JOIN LATERAL (
-          SELECT count(DISTINCT d.question) AS questions, min(d.due_at) AS oldest_due
+        SELECT producer FROM silent`).bind(recent).all();
+      // Each producer is a bound constant, so rare kinds use demands_live rather than a whole-table estimate.
+      for (const p of producers) {
+        const row = await db.prepare(`SELECT count(DISTINCT d.question) AS questions, min(d.due_at) AS oldest_due
           FROM demands d CROSS JOIN LATERAL (SELECT 1 FROM questions q WHERE q.id = d.question AND q.state = 'open'
             AND factory_takeable(q.lease_until, q.leased_at, ?1::text, ?3::bigint) LIMIT 1) q
-          WHERE d.state = 'live' AND d.due_at < ?1::text AND d.producer = p.producer
-          HAVING count(*) > 0) x`).bind(at, recent, ceiling).all();
-      for (const p of stalled) out.push({ kind: `stalled:${p.producer}`, ...p, witnesses_active: active });
+          WHERE d.state = 'live' AND d.due_at < ?1::text AND d.producer = ?2::text`)
+          .bind(at, p.producer, ceiling).first();
+        if (row.questions) out.push({ kind: `stalled:${p.producer}`, producer: p.producer, ...row, witnesses_active: active });
+      }
     });
     await observe("nondeterministic", async () => {
       const odd = (await db.prepare(`SELECT SUM(n) AS n FROM (
@@ -72,18 +75,23 @@ export function createObservation() {
         .bind(...OFFICIAL_STATES, cutoff, cutoff).first()).n;
       if (unsettled) out.push({ kind: "unsettled", questions: unsettled });
     });
-    // PAST DUE AND STILL OPEN, by kind: the official machines take what is past
-    // due within the hour, so a pile of it, or one left hours late, is a fleet
-    // and a backstop both behind. A refresh past due is a row past fourteen days.
+    // PAST DUE AND STILL OPEN, by kind. Stop once the alert threshold is crossed;
+    // a large queue is a lower bound, not another full inventory scan.
     await observe("overdue", async () => {
       const { results: late } = await db.prepare(
-      `SELECT d.producer, count(*) AS questions, min(q.due_at) AS oldest_due
-         FROM questions q JOIN demands d ON d.question = q.id AND d.state = 'live'
-        WHERE q.state = 'open' AND q.waits IN (0, 1) AND q.due_at < ?
-        GROUP BY d.producer`).bind(at).all();
-      const lateTotal = late.reduce((n, p) => n + p.questions, 0);
+      `WITH overdue AS MATERIALIZED (
+         SELECT q.id,q.due_at FROM questions q WHERE q.state='open' AND q.waits IN (0,1) AND q.due_at<?1::text
+           AND EXISTS (SELECT 1 FROM demands d WHERE d.question=q.id AND d.state='live')
+         ORDER BY q.waits DESC,q.due_at,q.id LIMIT ?2::bigint)
+       SELECT d.producer,count(DISTINCT q.id) AS questions,min(q.due_at) AS oldest_due,
+         (SELECT count(*) FROM overdue) AS total,
+         (SELECT count(*) FROM overdue)>=?2::bigint AS at_least
+       FROM overdue q CROSS JOIN LATERAL (
+         SELECT producer FROM demands WHERE question=q.id AND state='live' OFFSET 0) d
+       GROUP BY d.producer`).bind(at, OVERDUE_MAX + 1).all();
+      const lateTotal = late[0]?.total || 0;
       if (lateTotal >= OVERDUE_MAX || late.some((p) => Date.parse(p.oldest_due) < now - OVERDUE_HOURS_MS)) {
-        out.push({ kind: "overdue", questions: lateTotal, producers: late });
+        out.push({ kind: "overdue", questions: lateTotal, at_least: late.some(p => p.at_least), producers: late });
       }
     });
     // CLIENTS DISAGREEING WITH THE FACTS of the last hour on the served engine,

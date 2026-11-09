@@ -1207,6 +1207,8 @@ problem, and a new kind of task is a new producer that takes its share.
   those, the waited-on first, then the least `used`. A pack is one producer's
   rows. Where no producer's row finds a question the plain order does, so
   liveness never rests on `producer_use`.
+  A busy witness that cannot take a standalone head chooses again among
+  packable rows, under the same producer order.
 - **NO SHARE IS BANKED.** A new producer starts at the least any has used, and
   the watchdog lifts one with nothing open to the least used among those with
   open work (`liftIdle`), so one that comes back after a quiet day is level,

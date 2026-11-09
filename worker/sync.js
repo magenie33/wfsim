@@ -226,12 +226,16 @@ async function rest(x, { taken, dropped }) {
   if (want <= 0 || holds.packs >= d.packs_held) return say({ ...base, pack: null, work: null, next_ms: 0 });
 
   const engine = b.engine;
-  const head = (await f.headOf(env, w, engine, now, d).all()).results[0];
+  let head = (await f.headOf(env, w, engine, now, d).all()).results[0];
   if (!head && !grace) return idle();
   // A QUESTION SOMEONE WAITS ON goes alone, to a computer holding nothing; one
   // holding rows is handed a pack of the rest (a pack never holds a waited row),
   // or a busy fleet idled while any waited row stood open.
   if (!grace && !f.packable(head) && holds.questions === 0) return alone(x, base, idle);
+  if (!grace && !f.packable(head)) {
+    head = await f.headOf(env, w, engine, now, d, true).first();
+    if (!head) return idle();
+  }
   const per = { ...d, pack_ms: Math.max(1, want), pack_max: d.pack8_max }, rows = packRows(pace, per);
   const fair = await db.prepare("SELECT * FROM factory_open(?1::text, ?2::bigint, ?3::text, ?4::bigint)")
     .bind(at, null, iso(now - 2 * d.asked_every_ms), rows).first();

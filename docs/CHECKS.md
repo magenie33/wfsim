@@ -722,6 +722,13 @@ the arrivals; build and family acknowledgments precede inbox deletion.
 The inbox reader's self-test holds the full-page boundary and repeated reads:
 a bounded prefix remains processable and replaces the previous output.
 
+## `check_settle`
+
+The official cycle and its CLI run against local transport fixtures. An empty
+queue and recovered transient failures succeed; persistent failures stop and
+fail the workflow. A refused shipment preserves its error, sends no official
+acknowledgment and releases its claims. The old loop and CLI fail three checks.
+
 ## `check_dials`
 
 Plain node on PGlite: a dial never set, or a table that cannot be read, is its
@@ -1060,8 +1067,9 @@ cancelled rows is a full one of the live rows behind them, every dead row its
 picks found withdrawn.
 A pack's answers sent together, in two parts, make every state, fact, credit
 and hour that each alone makes, and two settlings of one question at once pay
-each witness once. The watchdog says a stalled kind, a dispute nobody settled,
-once a cause; a question four hours past due but not one an hour past; clients
+each witness once. The watchdog says a stalled kind and a dispute nobody settled,
+once a cause. It reports a large overdue queue as a bounded lower bound with a
+sampled age; a question four hours past due but not one an hour past; clients
 disagreeing with the hour's facts on the served engine, the worst owner first,
 but not a few among many, another engine's or an older hour's; and a scene's
 cell rulers still filling, measured and owed, then nothing once full. A recheck leaves two agreeing open, needing a third, nobody

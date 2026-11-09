@@ -54,10 +54,10 @@ function describe(f, now) {
   }
   if (f.kind === "overdue") {
     const oldest = f.producers.reduce((m, p) => Math.max(m, hoursAgo(p.oldest_due, now)), 0);
-    const by = f.producers.map((p) => `${p.producer} ${p.questions}`).join("，");
+    const by = f.producers.map((p) => `${p.producer} ${p.at_least ? "至少 " : ""}${p.questions}`).join("，");
     return ["watch", "过了截止时间还没做的题",
-      `${f.questions} 个题已过截止时间（${by}），最久的超期 ${fmtHours(oldest)}。` +
-      `\n高峰时偶尔出现可以等；连续几轮还在、数字没降，说明志愿者和官方后备都跟不上，要加算力或叫 agent 查派发。`];
+      `${f.at_least ? "至少 " : ""}${f.questions} 个题已过截止时间（${by}），${f.at_least ? "本次检查中" : ""}最久的超期 ${fmtHours(oldest)}。` +
+      `\n高峰时偶尔出现可以等；连续几轮还在，说明志愿者和官方后备都跟不上，要加算力或叫 agent 查派发。`];
   }
   if (f.kind === "disagreeing") {
     const top = f.owners.map((o) => `${o.owner ?? "未认领"} ${o.differ}/${o.answers}（${o.devices} 台）`).join("，");

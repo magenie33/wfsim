@@ -81,25 +81,33 @@ $$;
 -- waited-on first, then the producer that has used least; where no producer's
 -- row finds one the plain order does. The official machines ($2 = 1) take what
 -- is past its deadline and what only they settle ($11, json), in the plain order.
-CREATE OR REPLACE FUNCTION factory_head(text, bigint, bigint, text, text, text, text, text, bigint, bigint, text)
+CREATE OR REPLACE FUNCTION factory_head(text, bigint, bigint, text, text, text, text, text, bigint, bigint, text, text)
 RETURNS TABLE (id text, verb text, request text, state text, due_at text, waits bigint, producer text)
 LANGUAGE sql STABLE AS $$
+  WITH eligible AS NOT MATERIALIZED (
+    SELECT * FROM factory_eligible($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) q
+    WHERE $12 IS NULL OR (q.waits = 0 AND q.verb IN (SELECT jsonb_array_elements_text($12::jsonb))))
   SELECT z.id, z.verb, z.request, z.state, z.due_at, z.waits, z.producer FROM (
     (SELECT 0 AS fallback, x.* FROM producer_use u CROSS JOIN LATERAL (
        SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer
-       FROM factory_eligible($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) q
+       FROM eligible q
        WHERE q.state = 'open' AND q.producer = u.producer ORDER BY q.waits DESC, q.due_at, q.id LIMIT 1) x
      WHERE $2 = 0 ORDER BY x.waits DESC, u.used, x.due_at, x.id LIMIT 1)
     UNION ALL
     (SELECT 1, q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer
-     FROM factory_eligible($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) q
+     FROM eligible q
      WHERE $2 = 0 AND q.state = 'open' ORDER BY q.waits DESC, q.due_at, q.id LIMIT 1)
     UNION ALL
     (SELECT 2, q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer
-     FROM factory_eligible($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) q
+     FROM eligible q
      WHERE $2 = 1 AND ((q.state = 'open' AND q.due_at < $1) OR q.state IN (SELECT jsonb_array_elements_text($11::jsonb)))
      ORDER BY q.waits DESC, q.due_at, q.id LIMIT 1)
   ) z ORDER BY z.fallback LIMIT 1
+$$;
+CREATE OR REPLACE FUNCTION factory_head(text, bigint, bigint, text, text, text, text, text, bigint, bigint, text)
+RETURNS TABLE (id text, verb text, request text, state text, due_at text, waits bigint, producer text)
+LANGUAGE sql STABLE AS $$
+  SELECT * FROM factory_head($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NULL::text)
 $$;
 
 -- A PACK'S ROWS, locked: up to $14 open questions nobody waits on, of a packable
@@ -783,6 +791,17 @@ BEGIN
   IF NOT v_grace AND NOT v_packable AND v_holds.questions = 0 THEN
     r := r || jsonb_build_object('outcome', 'alone');
     RETURN;
+  END IF;
+  -- A busy witness chooses the fairest packable head, not a global fallback.
+  IF NOT v_grace AND NOT v_packable THEN
+    SELECT * INTO v_head FROM factory_head(v_at, 0, v_lanes, v_engine, v_siblings, v_owner, v_net, NULL,
+      v_ceiling, v_grace_s, p ->> 'official_states', (p -> 'packable')::text);
+    v_packable := FOUND;
+    IF NOT v_packable THEN
+      UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+      r := r || jsonb_build_object('outcome', 'idle');
+      RETURN;
+    END IF;
   END IF;
   SELECT * INTO v_fair FROM factory_open(v_at, NULL, p #>> '{fair,asking_since}', (p #>> '{fair,per}')::bigint);
   IF (p #>> '{fair,cap}')::bigint <> 0 AND v_fair.asking > (p #>> '{fair,cap}')::bigint

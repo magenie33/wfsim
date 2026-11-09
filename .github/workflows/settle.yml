@@ -53,15 +53,7 @@ jobs:
         run: |
           set -euo pipefail
           export WITNESS_LANES=$(nproc)
-          end=$(( $(date +%s) + SETTLE_MINUTES * 60 ))
-          mkdir -p work
-          while [ "$(date +%s)" -lt "$end" ]; do
-            code=0
-            node scripts/live_orders.mjs settle work . || code=$?
-            # 3 IS NOTHING LEFT TO CLAIM; anything else is tried again.
-            [ "$code" = 3 ] && { echo "settle: nothing left"; break; }
-            [ "$code" = 0 ] || { echo "settle: cycle failed ($code)"; sleep 30; }
-          done
+          bash scripts/settle_cycles.sh work .
       - name: release the claim
         if: always()
         run: |

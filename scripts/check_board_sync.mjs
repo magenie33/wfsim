@@ -167,11 +167,19 @@ check("while work is short a pack is at most open over asking, and leased short"
 // F8 — A QUESTION SOMEONE WAITS ON goes alone, to a computer holding nothing.
 await L.run("UPDATE questions SET waits = 1 WHERE id = (SELECT id FROM questions WHERE state = 'open' AND leased_to IS NULL ORDER BY id LIMIT 1)");
 const waiting = (await L.get("SELECT id FROM questions WHERE waits = 1")).id;
+const fairRefill = await L.get("SELECT id,producer,due_at FROM questions WHERE state='open' AND waits=0 AND leased_to IS NULL ORDER BY id DESC LIMIT 1");
+await L.run("UPDATE questions SET producer='survey_build',due_at='2999-01-01' WHERE id=?", fairRefill.id);
+await L.run("UPDATE demands SET producer='survey_build' WHERE question=?", fairRefill.id);
+await L.run("INSERT INTO producer_use (producer,used,answer_ms) VALUES ('survey_build',-1000000,1)");
 await comeBack(C);
 const busy = await as(C, { held: [{ lease: shortPack.pack.lease, rows: shortPack.pack.tasks.map((t) => t.question) }] });
 check("a computer holding a pack is never handed a question someone waits on",
   !(busy.work && busy.work.question === waiting) && !(busy.pack && busy.pack.tasks.some((t) => t.question === waiting)), JSON.stringify(busy).slice(0, 200));
 check("…but is handed a pack of the rest, not idled while it stands open", !!(busy.pack && busy.pack.tasks.length), JSON.stringify(busy).slice(0, 200));
+check("a busy refill preserves producer fairness behind a waited-on head", busy.pack?.tasks.some(t => t.question === fairRefill.id), JSON.stringify(busy.pack?.tasks.map(t => t.question)));
+await L.run("UPDATE questions SET producer=?,due_at=? WHERE id=?", fairRefill.producer, fairRefill.due_at, fairRefill.id);
+await L.run("UPDATE demands SET producer=? WHERE question=?", fairRefill.producer, fairRefill.id);
+await L.run("DELETE FROM producer_use WHERE producer='survey_build'");
 await comeBack(D);
 const alone = await as(D);
 check("…a computer holding nothing is, alone, as a pack of one its page runs",

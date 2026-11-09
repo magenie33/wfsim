@@ -46,46 +46,48 @@ async function settle() {
   const facts = [], reviews = [];
   let claimed = 0;
   try {
-    const { tasks } = await official("claim", { witness: WITNESS, engine: w.engine, states: ["disputed", "spot", "nondeterministic"],
-      producers: BOARD_WORK_KINDS, max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
-    if (tasks.length < SETTLE_PER_CYCLE) {
-      const fallback = await official("claim", { witness: WITNESS, engine: w.engine, states: ["open"], producers: ["board_review"],
-        max: SETTLE_PER_CYCLE - tasks.length, lease_ms: 2 * SETTLE_FIGHT_MS });
-      tasks.push(...fallback.tasks);
-    }
-    claimed = tasks.length;
-    for (const t of tasks) {
-      const d = t.demands[0];
-      if (!d) { console.error(`orders: ${t.question.slice(0, 8)} came with no demand — skipped`); continue; }
-      const row = { record: t.request.record, identity: d.payload.identity, ruler: t.request.ruler, mode: t.request.mode };
-      const began = new Date();
-      let timer;
-      const late = new Promise((_, no) => { timer = setTimeout(() => no(LATE), SETTLE_FIGHT_MS); });
-      let got = null, stuck = false;
-      try { got = await Promise.race([w.row(row), late]); }
-      catch (e) { stuck = e === LATE; console.error(`orders: ${row.identity.slice(0, 8)} did not fight — ${e.message}`); }
-      finally { clearTimeout(timer); }
-      console.error(`orders: settled ${t.state} ${row.identity.slice(0, 8)} ${row.ruler}/${row.mode}${got ? "" : " — no fact"}`);
-      // A FIGHT STILL RUNNING holds its lanes: the rows behind it wait for a later cycle.
-      if (stuck) break;
-      if (!got) continue;
-      const done = new Date();
-      if (d.producer === "board_review") {
-        reviews.push({ ref: d.ref, result: { score: got.score, metric: got.metric }, work: got.work });
-        continue;
+    try {
+      const { tasks } = await official("claim", { witness: WITNESS, engine: w.engine, states: ["disputed", "spot", "nondeterministic"],
+        producers: BOARD_WORK_KINDS, max: SETTLE_PER_CYCLE, lease_ms: 2 * SETTLE_FIGHT_MS });
+      if (tasks.length < SETTLE_PER_CYCLE) {
+        const fallback = await official("claim", { witness: WITNESS, engine: w.engine, states: ["open"], producers: ["board_review"],
+          max: SETTLE_PER_CYCLE - tasks.length, lease_ms: 2 * SETTLE_FIGHT_MS });
+        tasks.push(...fallback.tasks);
       }
-      facts.push({ identity: row.identity, ruler: row.ruler, metric: got.metric, mode: row.mode, measured_by: w.engine || "",
-        score: got.score, cost_seconds: (done - began) / 1000, started_at: began.toISOString(), finished_at: done.toISOString(), work: got.work });
+      claimed = tasks.length;
+      for (const t of tasks) {
+        const d = t.demands[0];
+        if (!d) { console.error(`orders: ${t.question.slice(0, 8)} came with no demand — skipped`); continue; }
+        const row = { record: t.request.record, identity: d.payload.identity, ruler: t.request.ruler, mode: t.request.mode };
+        const began = new Date();
+        let timer;
+        const late = new Promise((_, no) => { timer = setTimeout(() => no(LATE), SETTLE_FIGHT_MS); });
+        let got = null, stuck = false;
+        try { got = await Promise.race([w.row(row), late]); }
+        catch (e) { stuck = e === LATE; console.error(`orders: ${row.identity.slice(0, 8)} did not fight — ${e.message}`); }
+        finally { clearTimeout(timer); }
+        console.error(`orders: computed ${t.state} ${row.identity.slice(0, 8)} ${row.ruler}/${row.mode}${got ? "" : " — no fact"}`);
+        // A FIGHT STILL RUNNING holds its lanes: the rows behind it wait for a later cycle.
+        if (stuck) break;
+        if (!got) continue;
+        const done = new Date();
+        if (d.producer === "board_review") {
+          reviews.push({ ref: d.ref, result: { score: got.score, metric: got.metric }, work: got.work });
+          continue;
+        }
+        facts.push({ identity: row.identity, ruler: row.ruler, metric: got.metric, mode: row.mode, measured_by: w.engine || "",
+          score: got.score, cost_seconds: (done - began) / 1000, started_at: began.toISOString(), finished_at: done.toISOString(), work: got.work });
+      }
+    } finally { await w.close(); }
+    if (reviews.length) await official("answer", { witness: WITNESS, engine: w.engine, producers: ["board_review"], answers: reviews });
+    if (facts.length) {
+      writeFileSync(join(dir, "facts.ndjson"), facts.map((f) => `${JSON.stringify(f)}\n`).join(""));
+      execFileSync("bash", [join(HERE, "ship_facts.sh"), join(dir, "facts.ndjson")], { stdio: ["ignore", "inherit", "inherit"] });
+      await tell(facts, w.engine, (what, body) => official(what, { ...body, witness: WITNESS }));
+      console.error(`orders: recorded ${facts.length} facts`);
     }
-  } finally { await w.close(); }
-  if (reviews.length) await official("answer", { witness: WITNESS, engine: w.engine, producers: ["board_review"], answers: reviews });
-  if (facts.length) {
-    writeFileSync(join(dir, "facts.ndjson"), facts.map((f) => `${JSON.stringify(f)}\n`).join(""));
-    execFileSync("bash", [join(HERE, "ship_facts.sh"), join(dir, "facts.ndjson")], { stdio: ["ignore", "ignore", "inherit"] });
-    await tell(facts, w.engine, (what, body) => official(what, { ...body, witness: WITNESS }));
-  }
-  await official("release", { witness: WITNESS });
-  return claimed;
+    return claimed;
+  } finally { await official("release", { witness: WITNESS }); }
 }
 
 if (mode === "settle") { if (!(await settle())) process.exitCode = 3; }

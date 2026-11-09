@@ -454,6 +454,13 @@ console.log("\nthe watchdog");
   check("a question an hour past due is a queue, not said", !(await f.audit(env, NOW + 3_600_000)).some((x) => x.kind === "overdue"));
   const late = (await f.audit(env, NOW + 4 * 3_600_000)).find((x) => x.kind === "overdue");
   check("...one four hours past due is said, by its kind", late && late.questions === 1 && late.producers[0].producer === "q", JSON.stringify(late));
+  await f.demandAll(env, Array.from({ length: 1002 }, (_, i) => ({ producer: 'q', ref: 'late-' + i,
+    verb: 'simulate', request: { late: i }, due_in_ms: 10 })), 'e1', NOW);
+  const bounded = (await f.audit(env, NOW + 4 * 3_600_000)).find(x => x.kind === 'overdue');
+  check('a large overdue queue is a bounded lower bound, not a full inventory', bounded.questions === 1001 && bounded.at_least, JSON.stringify(bounded));
+  const { watchdogText } = await import('../worker/watchdog_say.js');
+  check('a bounded overdue observation says at least and limits its age claim', watchdogText(bounded, NOW).includes('至少 1001')
+    && watchdogText(bounded, NOW).includes('本次检查中'));
 }
 {
   // CLIENTS DISAGREEING with the hour's facts on the served engine are said, by

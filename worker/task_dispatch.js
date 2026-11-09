@@ -263,12 +263,13 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
 
   const releaseAllOf = (env, device, now = Date.now()) => env.LIBRARY.prepare(
     `UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder("leased_to = ? AND lease_until > ?")}`).bind(device, iso(now));
-  const headOf = (env, w, engine, now = Date.now(), d = DIAL_DEFAULTS) => env.LIBRARY.prepare(HEAD)
-    .bind(...eligibleArgs(w, engine, iso(now), d));
+  const headOf = (env, w, engine, now = Date.now(), d = DIAL_DEFAULTS, pack = false) => env.LIBRARY.prepare(pack ? PACK_HEAD : HEAD)
+    .bind(...eligibleArgs(w, engine, iso(now), d), ...(pack ? [PACKABLE] : []));
   const packable = (q) => !q.waits && !!(verbs[q.verb] || {}).pack;
 
   const HEAD = `SELECT * FROM factory_head(?1::text, ?2::bigint, ?3::bigint, ?4::text, ?5::text, ?6::text, ?7::text, ?8::text,
     ?9::bigint, ?10::bigint, ?11::text)`;
+  const PACK_HEAD = HEAD.replace(/\)$/, ', ?12::text)');
   function eligibleArgs(w, engine, at, d = DIAL_DEFAULTS) {
     return [at, w.official ? 1 : 0, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || "", w.before ?? null,
       ceilingS(d.row_ceiling_ms), ceilingS(d.settle_grace_ms), JSON.stringify(OFFICIAL_STATES)];

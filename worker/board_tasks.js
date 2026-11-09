@@ -110,9 +110,7 @@ export const BOARD_KINDS_SQL = `(${BOARD_KINDS.map((k) => `'${k}'`).join(", ")})
 export async function cellsFilling(env, now = Date.now(), since_ms = 6 * 3_600_000) {
   const db = env.LIBRARY;
   const { results: owed } = await db.prepare(
-    `SELECT ruler, count(*) AS owed FROM (
-       SELECT ruler, build_id || '|' || mode AS row_key FROM queue WHERE ruler LIKE '%!_!_%' ESCAPE '!'
-       GROUP BY ruler, build_id || '|' || mode) rows GROUP BY ruler`).all();
+    `SELECT ruler, count(*) AS owed FROM queue WHERE ruler LIKE '%!_!_%' ESCAPE '!' GROUP BY ruler`).all();
   if (!owed.length) return [];
   const { results: measured } = await db.prepare(
     `SELECT ruler, count(*) AS measured, sum(CASE WHEN finished_at > ?1::text THEN 1 ELSE 0 END) AS recent,
