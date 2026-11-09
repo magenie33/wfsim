@@ -259,11 +259,11 @@ const opt = await evaluate(`(async () => {
       duration: 8, runs: 2, finalists: 3, threads: 1, buffs: {},
       strategy: 'exhaust',
     };
-    const r = await postJson('/api/optimize', body);
+    const r = await api('/api/optimize', body);
     let s = r;
     for (let i = 0; i < 400 && (!s || !s.done); i++) {
       await sleep(300);
-      s = await postJson('/api/optimize/status', {});
+      s = await api('/api/optimize/status', {});
     }
     const res = (s && s.result && s.result.results) || (s && s.results) || [];
     return { n: (s && (s.candidates || (s.result||{}).candidates)) || 0,
@@ -318,11 +318,11 @@ const added = await evaluate(`(async () => {
     ...theFight(),
     duration: 8, runs: 2, finalists: 3, threads: 1, buffs: {},
   };
-  const r0 = await postJson('/api/optimize', body);
+  const r0 = await api('/api/optimize', body);
   let s = r0;
   for (let i = 0; i < 400 && (!s || !s.done); i++) {
     await sleep(300);
-    s = await postJson('/api/optimize/status', {});
+    s = await api('/api/optimize/status', {});
   }
   const res = (s && s.result) || s;
   const row = ((res || {}).results || [])[0];
