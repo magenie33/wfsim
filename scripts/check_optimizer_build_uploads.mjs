@@ -422,6 +422,7 @@ await check("an opted-out community task still computes without any build POST",
   let computed = 0, posts = 0, delivery;
   const scope = vm.createContext({ crypto: webcrypto, console, TextEncoder, AbortController, setTimeout, clearTimeout,
     MutationObserver: class { observe() {} }, setInterval: () => 0,
+    onTyped() {},
     document: { documentElement: {}, addEventListener() {} },
     window: { addEventListener() {} }, userTaskSources: new Map(), communityLanes: () => 1, communityRest: () => 0,
     ownTabBusy: () => false, initUserTasks: async () => { throw new Error("opt-out must not open the upload store"); },
