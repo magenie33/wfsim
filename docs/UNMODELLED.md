@@ -524,6 +524,41 @@ These are things the engine COULD do today and deliberately does not, because
 doing them means inventing a play pattern. The repo's rule is that a policy is
 the owner's call, not the model's (the 99-stack decision).
 
+### Secondary client calibration — remaining consumers
+
+Every secondary form has a reviewed input binding and adopted-field receipt in
+`tests/fixtures/client/secondary-calibration-2026-10-28.json`. Ordinary parsed
+inputs and the shared resting 3D sampler are applied; source coverage does not
+establish a fully verified runtime model. Shared primary calibration limitations
+also apply wherever their reason ids are present on a secondary entry.
+
+- `client_modular_secondary_assembly`: secondary part overrides are bound;
+  final assembly still uses published component tables.
+- `client_secondary_charge_packet`: charge projectile and duration are bound;
+  the final consumer of the damage cap is unverified.
+- `client_secondary_clip_charge`: Tenet Plinx retains its unmodded full-clip
+  composite damage, radial status and recharge cycle. Dynamic capacity scaling,
+  native explosion packet scaling and accepted-input timing remain unverified.
+- `client_secondary_return_ammo`: Cantare and Riot-848 retain their return-ammo
+  economy; the parsed reserve alone does not prove finite pickup ammunition.
+- `client_secondary_orb_packet`: Grimoire retains measured strike/blast damage;
+  native chain attenuation, target selection, meter and animation consumers
+  remain unverified. Lifetime and strike interval use their native fields.
+- `client_secondary_blob`: attached and explosive packets are bound separately;
+  unspecified base status, tick initialization, overflow and child bounce
+  consumers retain the declared measured or approximated rules.
+- `client_secondary_reload_grenade`: packets, count and fan use parsed inputs;
+  release, flight, impact and Critical Mutation group ordering remain open.
+- `client_secondary_toggle_reload`: Scyotid magazine reload uses ordinary-fire
+  timing; toggle recovery and callback timing remain open.
+
+Alternative native behaviors, including deployed turrets, unrepresented bursts,
+Embolist's augment attack, Stug's charge and Onos's power shot, are separately
+bound under `client_secondary_other_behavior`. Placeholder non-attack states
+are classified separately and do not become extra damage. Existing
+weapon-specific admissions retain their force; binding a dossier does not imply
+that its scripts, alternative attacks or conditional upgrades are simulated.
+
 ### Primary client calibration — remaining consumers
 
 Every primary form has an explicit source binding and adopted-field receipt in

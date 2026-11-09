@@ -97,7 +97,12 @@ attack:
 
 # incarnon_evolutions: see data/weapons/secondary/zylok_prime.yaml (shared group)
 
+  range_m: 300
 source:
   url: https://wiki.warframe.com/w/Zylok_Incarnon_Genesis
   # wiki module Attacks[].AttackName: "Incarnon Form" and "Incarnon Form Radial Attack"
 
+unmodeled:
+  - reason: client_radial_critical
+
+# see notes: client_secondary_calibration

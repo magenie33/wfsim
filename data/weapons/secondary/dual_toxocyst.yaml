@@ -33,7 +33,7 @@ conclave: true
 introduced: "18.5"           # Update 18.5
 internal_name: /Lotus/Weapons/Infested/Pistols/InfVomitGun/InfVomitGunWep
 ammo_type: secondary
-ammo_max: 72
+ammo_max: 60
 ammo_pickup: 40
 magazine: 12
 reload_seconds: 2.35
@@ -56,7 +56,12 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
-    max_deg: 12
+    max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.5
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 1.0
@@ -94,3 +99,8 @@ perks:
 source:
   url: https://wiki.warframe.com/w/Dual_Toxocyst
   # note: Stats from the wiki's structured Lua data module.
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

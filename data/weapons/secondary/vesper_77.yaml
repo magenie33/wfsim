@@ -44,9 +44,14 @@ attack:
   spread:
     min_deg: 0.5
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.5
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 2.08
+  fire_rate: 2.08333333333333
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -59,8 +64,11 @@ attack:
   damage: { impact: 72, puncture: 108 }   # total 180
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: silent_weapon
   - "The laser sight highlights weak points on screen, an aiming aid; the sim draws headshots from the fight's headshot rate."
 
 source:
   url: https://wiki.warframe.com/w/Vesper_77
+
+# see notes: client_secondary_calibration

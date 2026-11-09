@@ -57,3 +57,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Acrid
+
+unmodeled:
+  - reason: client_projectile_callbacks
+
+# see notes: client_secondary_calibration

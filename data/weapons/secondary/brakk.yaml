@@ -35,6 +35,11 @@ attack:
   spread:
     min_deg: 9.0
     max_deg: 17.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 20.0
+      hip_max_deg: 27.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 5
@@ -55,3 +60,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Brakk
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

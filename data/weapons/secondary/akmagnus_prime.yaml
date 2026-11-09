@@ -37,9 +37,14 @@ attack:
   spread:
     min_deg: 2.0
     max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 10.0
+      hip_max_deg: 22.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 5.67
+  fire_rate: 5.66666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -54,7 +59,10 @@ attack:
   damage: { impact: 44.1, puncture: 26.95, slash: 26.95 }   # total 98
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Chamber Cascade: a hit or a damaging status has a 4% chance to grant 100% ammo efficiency for 4 s (wiki). Reserves are infinite by default, so it adds nothing here."
 
 source:
   url: https://wiki.warframe.com/w/Akmagnus_Prime
+
+# see notes: client_secondary_calibration

@@ -157,7 +157,7 @@ fn the_catabolyst_family_resolves_its_throw_and_its_augment() {
 
     let three = resolved("coda_catabolyst", &["critical_mutation"]);
     let g = three.reload_grenade.expect("the Coda throws");
-    assert_eq!((g.count, g.fan_deg), (3, 45.0));
+    assert_eq!((g.count, g.fan_deg), (3, 30.0));
     assert!((g.from_empty.blast.damage.total() - 658.0).abs() < 1e-9 && (g.from_empty.blast.radius_m - 5.0).abs() < 1e-9);
     assert!((g.partial.blast.damage.total() - 74.0).abs() < 1e-9 && (g.partial.blast.radius_m - 3.0).abs() < 1e-9);
     assert_eq!(g.crit_per_kill, Some((0.3, 3.0, 0.3)));

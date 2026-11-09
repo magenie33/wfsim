@@ -70,9 +70,9 @@ attack:
   # weaker weapon, which is the same shape the Boar family shows.
   # see notes: falloff_feeds_the_riven_pool
   falloff:
-    start_m: 10
-    end_m: 16
-    reduction: 0.2167   # fraction REMOVED past end_m
+    start_m: 10.0
+    end_m: 16.0
+    reduction: 0.216666666667
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki, Incarnon Form: "Range: 16.0 m"
   range_m: 16.0
@@ -88,3 +88,7 @@ source:
   # /Lotus/Weapons/MK1Series/MK1Furis — speed 12, crit 20%, 3.0x, status 8%,
   # Heat 60; falloff per the module (see furis_incarnon.yaml).
 
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

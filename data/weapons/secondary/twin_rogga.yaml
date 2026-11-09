@@ -36,6 +36,11 @@ attack:
   spread:
     min_deg: 10.0
     max_deg: 15.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 10.0
+      hip_max_deg: 15.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 2.5
@@ -51,8 +56,13 @@ attack:
   falloff:
     start_m: 10.0
     end_m: 20.0
-    reduction: 0.7872
+    reduction: 0.787234046809
   damage: { impact: 18.8, puncture: 23.5, slash: 4.7 }   # 47 a pellet, 705 a shot
 
 source:
   url: https://wiki.warframe.com/w/Twin_Rogga
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

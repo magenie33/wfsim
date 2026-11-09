@@ -36,7 +36,12 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 8
+    max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 3.0
+      hip_max_deg: 12.0
   trigger: burst
   # THE BURST. The listed `fire_rate` counts PULLS, not rounds — so reading it
   # as rounds per second understates this weapon by its burst count. Both
@@ -53,10 +58,15 @@ attack:
   status_chance: 0.2
   punch_through_m: 0.0
   # see notes: wall_ramp_full_damage_2
-  range_m: 300.0
+  range_m: 1000
   damage: { impact: 20, slash: 15, puncture: 15 }   # total 50
 
 # incarnon_evolutions: definitions live in data/evolutions/sicarus_prime_*.yaml.
 
 source:
   url: https://wiki.warframe.com/w/Sicarus_Prime
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

@@ -77,6 +77,7 @@ attack:
   damage: { heat: 184, impact: 106 }
 
 unmodeled:
+  - reason: client_modular_secondary_assembly
   - "The guaranteed Impact proc reaches only 9 m (further with Projectile Speed mods) but is applied at every distance here."
   - "The projectile is wide, like the Arca Plasmor's (page); the sim fires a ray, so with infinite punch through only bodies on the line are hit."
   - "Its 20 m range is the projectile's 0.42 s lifetime, so Projectile Speed mods extend it in game; here they move the falloff and the cut-off stays at 20 m."
@@ -86,3 +87,5 @@ unmodeled:
 source:
   url: https://wiki.warframe.com/w/Catchmoon
   module: https://wiki.warframe.com/w/Module:Weapons/data/modular
+
+# see notes: client_secondary_calibration

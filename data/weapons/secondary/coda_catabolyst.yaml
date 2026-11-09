@@ -75,7 +75,7 @@ attack:
   falloff:
     start_m: 9.0
     end_m: 19.0
-    reduction: 0.9811
+    reduction: 0.982142857143
   damage: { corrosive: 56 }   # total 56
 
   # A BEAM THAT SPLASHES — "The zone of impact or maximum beam range has a
@@ -102,17 +102,20 @@ attack:
   # "Partial Reload Impact / Explosion"). "Damage, critical chance, status
   # chance, and explosion range increase when reloading with no ammo in the
   # magazine."
-  # THREE grenades, "at a 45 degree angle towards the reticle" — read as a fan
-  # 45 degrees edge to edge, so the outer two land beside the aimed body and
-  # reach it only where their blast does.
+  # The animation callback spawns three entities across a 30-degree total fan.
+  # The outer directions are -15 and +15 degrees from the reticle.
   #
   # "Initial hit and explosion apply status separately", so the contact and the
   # blast are two instances. The blast falls off "from 100% to 50% from central
   # impact", takes no headshot, and its "Radius is not affected by Fulmination".
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
   reload_grenade:
     contact_co_behavior: independent
     count: 3
-    fan_deg: 45
+    fan_deg: 30
     from_empty:
       damage: { impact: 11 }
       crit_chance: 0.31
@@ -148,12 +151,17 @@ attack:
 # the 20% floor exactly, so no `beam_ramp_floor` override.
 
 unmodeled:
+  - reason: client_secondary_reload_grenade
+  - reason: client_beam_target_ramp
+  - reason: client_accuracy_runtime
   - "Unmeasured: when in the reload the grenade lands. The page says it is thrown mid-reload without a time, so it lands halfway through; the throw itself takes no time."
   - "The explosion's self-stagger, which costs the wielder time when the target stands inside the blast, is not modelled."
   - "Galvanized Shot's bug on the grenade's direct hit (multiplicative with base damage; the Bugs section of the wiki's Catabolyst page) is not modelled."
   - "Interrupting the reload to throw again without reloading, the exploit the page describes, is not modelled."
-  - "The 45-degree fan is read as edge to edge around the reticle; the page does not say."
   - "This weapon never reloads on its own; the sim reloads it, so forgetting to costs nothing here."
 
 source:
   url: https://wiki.warframe.com/w/Coda_Catabolyst
+beam_ramp_floor: 0.2
+
+# see notes: client_secondary_calibration

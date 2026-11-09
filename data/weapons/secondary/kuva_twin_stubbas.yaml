@@ -41,7 +41,12 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
-    max_deg: 6
+    max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.5
+      hip_max_deg: 18.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 10.0
@@ -58,3 +63,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Twin_Stubbas
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

@@ -71,6 +71,7 @@ attack:
     damage: { blast: 797 }   # total 797
 
 unmodeled:
+  - reason: client_projectile_callbacks
   - "The mines are detonated by hand with the alt-fire, up to four at a time (wiki). The sim detonates each on landing: the ceiling for one mine. Sticking four and detonating them together is not modelled."
   - "Mines stick to surfaces, enemies and allies, and multishot throws them in a very wide horizontal spread (wiki), so on this weapon multishot covers ground rather than adding damage to one target."
   - reason: explosion_ignores_cover
@@ -79,3 +80,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Aegrit
+
+# see notes: client_secondary_calibration

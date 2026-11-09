@@ -37,6 +37,11 @@ attack:
   spread:
     min_deg: 5.0
     max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 12.0
+      hip_max_deg: 23.0
   # THE MODULE SAYS `Auto-Spool` and there is no `sustained_fire_rate:`
   # here: the page publishes no starting fraction, and a spool is
   # transcribed from its own page or not at all. See `unmodeled:`.
@@ -54,9 +59,13 @@ attack:
   damage: { impact: 1.8, puncture: 7.2, slash: 9 }   # total 18
 
 unmodeled:
+  - reason: client_rate_spool
+  - reason: client_accuracy_runtime
   - "The page gives the spool as a count, 6 shots to full fire rate, not as a starting fraction, so the spool is not entered."
   - reason: auto_spool_ramp
     rate: 12.5
 
 source:
   url: https://wiki.warframe.com/w/Aksomati
+
+# see notes: client_secondary_calibration

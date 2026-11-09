@@ -37,6 +37,11 @@ attack:
   spread:
     min_deg: 0.2
     max_deg: 8.5
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.2
+      hip_max_deg: 14.5
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 5
@@ -55,3 +60,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Lato_Vandal
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

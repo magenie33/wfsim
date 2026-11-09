@@ -5,6 +5,7 @@ mod client_cadence;
 mod client_primary;
 mod client_scourge;
 mod primary_calibration;
+mod secondary_calibration;
 mod burston_incarnon_radial;
 mod catalog;
 mod condition_overload_catalog;

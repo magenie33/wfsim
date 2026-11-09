@@ -18,6 +18,8 @@ max_rank: 30
 # WHAT THIS SIM DOES NOT MODEL ABOUT IT. Read off the weapon PAGE rather than
 # the module, which carries none of it (WEAPON_INTAKE §"READ THE PAGE").
 unmodeled:
+  - reason: client_projectile_acceleration
+  - reason: client_accuracy_runtime
   - "The rockets home within 15 degrees; every shot here hits anyway, so homing adds nothing."
   - "The +50% reload speed while sprinting is not modelled: the player stands still here (Gauss and Gauss Prime double it to +100%)."
   - "Self-stagger is not modelled: an explosion at the wielder's feet can interrupt the 2-round burst so only one rocket fires (wiki)."
@@ -51,7 +53,12 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 2.5
-    max_deg: 5
+    max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.5
+      hip_max_deg: 5.0
   trigger: burst
   # TWO ROCKETS A PULL, and the listed `fire_rate` counts PULLS. The wiki's
   # Notes name the count outright — "the guaranteed 2-round burst" — and the
@@ -62,7 +69,7 @@ attack:
     delay_seconds: 0.12
   shot_type: projectile
   projectile_speed_mps: 80
-  fire_rate: 3.667
+  fire_rate: 3.66666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.18
@@ -92,3 +99,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Akarius_Prime
+
+# see notes: client_secondary_calibration

@@ -35,13 +35,18 @@ attack:
   spread:
     min_deg: 0.5
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 6.5
+      hip_max_deg: 18.0
   trigger: burst
   # see notes: burst_listed_fire_rate
   burst:
     count: 2
     delay_seconds: 0.05       # module BurstDelay
   shot_type: hit_scan
-  fire_rate: 2.83
+  fire_rate: 2.83333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.05
@@ -54,3 +59,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Kraken
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

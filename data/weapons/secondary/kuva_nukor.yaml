@@ -38,12 +38,7 @@ ammo_pickup: 20
 magazine: 77
 reload_seconds: 2
 
-# THE RAMP STARTS AT 30%, not the wiki's "most weapons" 20%. Verbatim: "Takes
-# 0.6 seconds of firing to ramp up the damage from 30% to 100%. After firing
-# stops for 0.8 seconds, the damage decays back to 30% over 2 seconds." The 0.6
-# and the 0.8 are the engine's own constants (BEAM_RAMP_SECONDS,
-# BEAM_DECAY_DELAY) and match this weapon exactly; only the floor differs.
-beam_ramp_floor: 0.30
+beam_ramp_floor: 0.2
 
 # MICROWAVE — this weapon's own invisible status effect, and the one thing on its
 # page that changes the SINGLE-TARGET number. VERBATIM (wiki `Microwave`): "a
@@ -123,9 +118,14 @@ attack:
       damage_per_hop: 0.50
       compounds: false
       origin: radius_targets
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
   damage: { radiation: 21 }   # total 21
 
 unmodeled:
+  - reason: client_beam_target_ramp
   - "Microwave also enlarges the body part it hit, an aiming aid the sim does not use. Its status count is modelled."
 
 source:
@@ -134,3 +134,5 @@ source:
   # magazine 77, max ammo 210, reload 2.00 s, fire rate 10.00,
   # Radiation 21, crit 7.00%, crit mult 5.00x, status 50.00%, punch
   # through 0.0 m, beam range 29.0 m, polarities None).
+
+# see notes: client_secondary_calibration

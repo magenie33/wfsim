@@ -37,6 +37,11 @@ attack:
   spread:
     min_deg: 2.0
     max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 8.0
+      hip_max_deg: 11.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 20
@@ -48,7 +53,15 @@ attack:
   punch_through_m: 0.0
   # see notes: wall_ramp_full_damage
   range_m: 300.0
-  damage: { impact: 4, puncture: 3.33, slash: 2.67 }   # 10 a pellet, 20 a shot
+  damage:
+    impact: 4.0
+    puncture: 3.33333
+    slash: 2.66667
 
 source:
   url: https://wiki.warframe.com/w/Twin_Grakatas
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

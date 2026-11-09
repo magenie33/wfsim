@@ -194,6 +194,8 @@ attack:
     damage: { electricity: 200 }   # total 200 (module 250 x0.8)
 
 unmodeled:
+  - reason: client_secondary_orb_packet
+  - reason: client_projectile_callbacks
   # THE METER IS MODELLED as of 2026-08-28 — `meter:` above — so the loudest
   # admission this roster had ("everything below is the ceiling rather than the
   # average, and by a wide margin") is retired outright rather than reworded.
@@ -221,3 +223,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Grimoire
+
+# see notes: client_secondary_calibration

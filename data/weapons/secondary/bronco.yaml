@@ -36,8 +36,13 @@ co_behavior: additive_with_base_damage
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 18
-    max_deg: 36
+    min_deg: 18.0
+    max_deg: 36.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 24.0
+      hip_max_deg: 42.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 4
@@ -46,13 +51,13 @@ attack:
   ammo_cost: 1
   crit_chance: 0.06
   crit_multiplier: 2
-  status_chance: 0.0943
+  status_chance: 0.0942857142857143
   punch_through_m: 0.0
   # see notes: falloff_feeds_the_riven_pool
   falloff:
-    start_m: 7
-    end_m: 14
-    reduction: 0.75   # fraction REMOVED past end_m
+    start_m: 7.0
+    end_m: 14.0
+    reduction: 0.761904753333
   # see notes: wall_ramp_full_damage_2
   range_m: 300.0
   damage: { impact: 33.6, slash: 4.2, puncture: 4.2 }   # total 42.0
@@ -61,3 +66,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Bronco
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

@@ -26,7 +26,7 @@ ammo_type: secondary
 ammo_max: 210
 ammo_pickup: 60
 magazine: 15
-reload_seconds: 1.7  # module: Reload
+reload_seconds: 1.667
 # scripts/audit_weapon_stats.py catches drift from the module's own 1.7 s —
 # the module is the only source that has this weapon at all, so nothing
 # else cross-checks the transcription.
@@ -39,6 +39,11 @@ attack:
   spread:
     min_deg: 5.0
     max_deg: 15.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 8.0
+      hip_max_deg: 20.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 6.5
@@ -52,5 +57,11 @@ attack:
   # see notes: no_range_row_attack
   damage: { impact: 20, puncture: 55 }   # total 75
 
+  range_m: 300
 source:
   url: https://wiki.warframe.com/w/EFV-8_Mars
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

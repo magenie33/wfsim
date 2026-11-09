@@ -283,8 +283,7 @@ fn overwhelming_attrition_is_diluted_by_base_damage_mods() {
 
 /// Rapid Wrath's +20% fire rate joins the ORDINARY fire-rate bucket —
 /// the same additive one the mods feed. Additive with
-/// Gunslinger's +72%: 6.67 x (1 + 0.72 + 0.20) = 12.81, NOT the
-/// multiplicative 6.67 x 1.72 x 1.20 = 13.77.
+/// Gunslinger's +72%: the combined factor is 1 + 0.72 + 0.20.
 #[test]
 fn rapid_wrath_is_additive_with_fire_rate_mods() {
     let pool = crate::data::mods::pistol_pool();
@@ -294,15 +293,16 @@ fn rapid_wrath_is_additive_with_fire_rate_mods() {
         let b = WeaponBase::from_data("laetum_incarnon", true, evos);
         crate::build::loadout::resolve(&b, mods, crate::model::StackPolicy::AssumedMax).fire_rate
     };
+    let nominal = 400.0 / 60.0;
     let base = fr(&[], &[]);
-    assert!((base - 6.67).abs() < 1e-9, "base fire rate {base}");
-    assert!((fr(&["laetum_rapid_wrath"], &[]) - 6.67 * 1.20).abs() < 1e-9);
-    assert!((fr(&[], &gunslinger) - 6.67 * 1.72).abs() < 1e-9);
+    assert!((base - nominal).abs() < 1e-9, "base fire rate {base}");
+    assert!((fr(&["laetum_rapid_wrath"], &[]) - nominal * 1.20).abs() < 1e-9);
+    assert!((fr(&[], &gunslinger) - nominal * 1.72).abs() < 1e-9);
     let both = fr(&["laetum_rapid_wrath"], &gunslinger);
     assert!(
-        (both - 6.67 * 1.92).abs() < 1e-9,
-        "must be ADDITIVE (12.81), got {both} — multiplicative would be {}",
-        6.67 * 1.72 * 1.20
+        (both - nominal * 1.92).abs() < 1e-9,
+        "must be additive, got {both} — multiplicative would be {}",
+        nominal * 1.72 * 1.20
     );
 }
 

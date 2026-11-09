@@ -196,8 +196,8 @@ number's source.
 Disagreements are not rounding. Record which source you took and why, in the
 file — every existing weapon does.
 
-The whole-primary calibration uses the parsed-input adoption rule in
-`DATA_SOURCES.md` §Whole-primary calibration. That receipt binds every form and
+The whole-primary and whole-secondary calibrations use the parsed-input adoption rules in
+`DATA_SOURCES.md` §Whole-primary calibration and §Whole-secondary calibration. Each receipt binds every form and
 records unsupported consumers separately; a dossier's presence does not establish
 complete runtime coverage.
 

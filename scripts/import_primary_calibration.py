@@ -83,7 +83,7 @@ def resolve(objects, token, owner_path, scope):
     return matches[0]
 
 
-def supplement(batch):
+def supplement(batch, extra_tokens=()):
     manifest_raw = (batch / 'manifest.json').read_bytes()
     manifest = json.loads(manifest_raw)
     ready = json.loads((batch / 'READY.json').read_bytes())
@@ -103,14 +103,15 @@ def supplement(batch):
         for line in stream:
             digest.update(line)
             size += len(line)
-            if not any(t in line for t in (b'1999InfShotgunWaveProjectile', b'Modular', b'Kitgun')):
+            if not any(t in line for t in (b'1999InfShotgunWaveProjectile', b'Modular', b'Kitgun', *extra_tokens)):
                 continue
             row = json.loads(line)
             path = row['path']
             if (path.startswith('/Lotus/Weapons/') and (
                     ('Modular' in path or 'Kitgun' in path) and path.endswith('Part')
                     or path.endswith('/1999InfShotgunWaveProjectile'))
-                    or path.startswith('/Lotus/Types/') and 'Modular' in path):
+                    or path.startswith('/Lotus/Types/') and 'Modular' in path
+                    or any(t.decode() in path for t in extra_tokens)):
                 selected.append(row)
     assert size == member['bytes'] and digest.hexdigest() == member['sha256']
     return selected, {'batch_id': OFFLINE, 'manifest_sha256': PINS[OFFLINE],
@@ -189,9 +190,11 @@ def calibrate(objects, binding, dossier, doc):
         or k in ('ClipIsBattery', 'AmmoClipSize', 'AmmoCapacity', 'MaxCharges')}
     updates, limits = row['applied'], row['limits']
     if binding['behavior'] is None:
-        typed, types = roles(outer['PrimaryBehaviorOverrides'].partition('=')[2].strip()[1:-1])
-        row.update(role_types=types, primary_override=typed)
-        limits.append('client_modular_assembly')
+        key = binding.get('modular_override', 'PrimaryBehaviorOverrides')
+        typed, types = roles(outer[key].partition('=')[2].strip()[1:-1])
+        row.update(role_types=types)
+        row['primary_override' if key == 'PrimaryBehaviorOverrides' else 'secondary_override'] = typed
+        limits.append('client_modular_assembly' if key == 'PrimaryBehaviorOverrides' else 'client_modular_secondary_assembly')
         return row
     raw = list(blocks(outer['Behaviors'].partition('=')[2]))[binding['behavior']]
     typed, types = roles(raw)
@@ -212,7 +215,7 @@ def calibrate(objects, binding, dossier, doc):
     projectile = objects[path]['composed_fields'] if path else {}
     if path:
         proc = attack.get('ProcChance', '0')
-        attack = members(objects, path, 'AttackData')
+        attack = members(objects, path, binding.get('damage_key', 'AttackData'))
         attack.setdefault('ProcChance', proc)
         crit = number(projectile.get('CriticalChance', '').partition('=')[2] or None, crit)
         cd = number(projectile.get('CriticalMultiplier', '').partition('=')[2] or None, cd)
@@ -228,7 +231,7 @@ def calibrate(objects, binding, dossier, doc):
         limits.append('client_ammo_runtime')
     if state.get('ReloadAfterEveryShot') == '1' and cost == 0:
         limits.append('client_forced_reload')
-    if binding['form'] != 'incarnon' and not a.get('no_magazine') and not doc.get('meter'):
+    if binding['form'] != 'incarnon' and not a.get('no_magazine') and not a.get('meter'):
         native_clip = number(outer.get('AmmoClipSize', '').partition('=')[2] or None)
         if state.get('ReloadAfterEveryShot') == '1':
             native_clip = 1 if cost > 0 else doc.get('magazine', 1)
@@ -254,7 +257,8 @@ def calibrate(objects, binding, dossier, doc):
     charged = 'ChargeTime' in state
     if charged:
         if binding['charge_stage'] == 'full':
-            factor *= number(state.get('MaxDamageMultiplier')) or number(state.get('DamageMultiplier'), 1)
+            maximum = 0 if binding.get('charge_factor') == 'state_damage' else number(state.get('MaxDamageMultiplier'))
+            factor *= maximum or number(state.get('DamageMultiplier'), 1)
         elif 'ChargeBeamStateBehavior' in types['state:Type']:
             factor *= number(state.get('DamageMultiplier'), 1) * number(state.get('MinChargeRatio'))
         else:
@@ -299,7 +303,8 @@ def calibrate(objects, binding, dossier, doc):
             limits.append('client_clip_burst')
         adopt(updates, doc, ('attack', 'burst'), {'count': int(count_burst),
             'delay_seconds': number(state.get('BurstDelay'), a['burst']['delay_seconds'])})
-    if charged and (a.get('charge_seconds') is not None or 'ChargeBeamStateBehavior' in types['state:Type']):
+    if charged and (binding.get('apply_charge_time') or a.get('charge_seconds') is not None
+            or 'ChargeBeamStateBehavior' in types['state:Type']):
         duration = number(state.get('ChargeTime'))
         if binding['charge_stage'] == 'minimum':
             duration *= number(state.get('MinChargeRatio'))

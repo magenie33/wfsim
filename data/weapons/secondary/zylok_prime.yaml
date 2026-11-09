@@ -15,6 +15,7 @@ transforms_to: zylok_prime_incarnon
 
 # see notes: bulk_intake_stats_are
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The duplex trigger is not modelled: one pull fires two rounds in game, and this entry paces one per pull."
 accuracy: 23.53
 disposition: 1.2
@@ -38,10 +39,15 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
-    max_deg: 8
+    max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.5
+      hip_max_deg: 18.0
   trigger: duplex
   shot_type: hit_scan
-  fire_rate: 1.8
+  fire_rate: 1.5
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": true}
   multishot: 1.0
   ammo_cost: 1
@@ -57,3 +63,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Zylok_Prime
+
+# see notes: client_secondary_calibration

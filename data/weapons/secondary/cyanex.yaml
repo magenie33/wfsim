@@ -41,10 +41,15 @@ attack:
   spread:
     min_deg: 50.0
     max_deg: 60.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 50.0
+      hip_max_deg: 60.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 24
-  fire_rate: 4.67
+  fire_rate: 4.66666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.08
@@ -68,9 +73,12 @@ attack:
     damage: { gas: 41 }   # total 41
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The projectiles home on enemies (wiki); shots here already land where aimed, so homing adds nothing."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Cyanex
+
+# see notes: client_secondary_calibration

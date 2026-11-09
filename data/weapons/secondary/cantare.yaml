@@ -45,7 +45,7 @@ attack:
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 70
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.18
@@ -59,9 +59,12 @@ attack:
   damage: { puncture: 27, slash: 63 }   # total 90
 
 unmodeled:
+  - reason: client_secondary_return_ammo
   - "On a reload the blades return, damaging everything in their path with critical chance set to 300% (wiki). A reload here fires nothing, so the number is the throw alone and reads well low."
   - "Cantare Chorale: hitting enemies with the returning blades grants allies in range +20% reload speed for 30 s (wiki). The return is not fired and there are no allies here."
   - reason: silent_weapon
 
 source:
   url: https://wiki.warframe.com/w/Cantare
+
+# see notes: client_secondary_calibration

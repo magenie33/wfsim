@@ -88,6 +88,7 @@ attack:
     # explosion" — so it inherits, and is deliberately not restated.
 
 unmodeled:
+  - reason: client_modular_secondary_assembly
   - "The explosion is a reverse cone that damages enemies in front of the target (page); this fight gives a blast no facing, so it is a full 1.9 m sphere. Against a crowd it reaches enemies the game would not, so the number reads high."
   - reason: projectile_must_be_led
   - reason: self_stagger
@@ -95,3 +96,5 @@ unmodeled:
 source:
   url: https://wiki.warframe.com/w/Tombfinger
   module: https://wiki.warframe.com/w/Module:Modular/data
+
+# see notes: client_secondary_calibration

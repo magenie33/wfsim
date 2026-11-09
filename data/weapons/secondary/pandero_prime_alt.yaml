@@ -15,6 +15,11 @@ attack:
   spread:
     min_deg: 6.5
     max_deg: 18.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.5
+      hip_max_deg: 18.0
   trigger: burst
   # THE BURST COUNT IS THE MAGAZINE, which is the one thing this entry cannot
   # say properly: `count` is a constant and the real number is however many
@@ -24,7 +29,7 @@ attack:
     count: 8
     delay_seconds: 0.1       # module BurstDelay
   shot_type: hit_scan
-  fire_rate: 4.17
+  fire_rate: 4.16666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.3
@@ -34,9 +39,14 @@ attack:
   # see notes: no_range_row_attack
   damage: { impact: 26, puncture: 26, slash: 52 }   # total 104
 
+  range_m: 300
 unmodeled:
+  - reason: client_clip_burst
+  - reason: client_accuracy_runtime
   - "The burst empties the magazine, and this entry fires a fixed count, the unmodded magazine. Magazine mods lengthen the burst (page), so a build with one reads low."
   - "The alt-fire prevents zoom, so Hydraulic Crosshairs and Sharpened Bullets do not work on it (page); this entry does not apply that limit, so with those mods it reads high."
 
 source:
   url: https://wiki.warframe.com/w/Pandero_Prime
+
+# see notes: client_secondary_calibration

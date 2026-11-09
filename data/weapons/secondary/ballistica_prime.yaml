@@ -20,6 +20,7 @@ spawn_on_kill:
   range_m: 50.0
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "A partly charged shot is not modelled: an early release multiplies the Normal Shot's own base by (1 + charge) and adds the evolution's flat damage outside that, so 50% is 40 x 1.5 + 3, not 43 x 1.5. Only the two ends are carried: no charge, and the full charge."
   - "A ghost is counted, not fought: a charged-shot kill leaves one for 7 s and the run reports how many there were, but a ghost neither attacks nor blocks here."
 accuracy: 4
@@ -32,7 +33,7 @@ introduced: "Update 21.6"
 internal_name: /Lotus/Weapons/Tenno/Pistols/PrimeBallistica/PrimeBallistica
 noise: silent
 ammo_type: secondary
-ammo_max: 210
+ammo_max: 320
 ammo_pickup: 40
 # THE MAGAZINE IS COUNTED IN AMMO, NOT IN SHOTS: wiki infobox "Magazine Size
 # 32" with "Ammo Cost 4" on both attacks, so the 210 reserve is 52 shots.
@@ -54,11 +55,16 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 50
+    max_deg: 50.0
+    sampling:
+      horizontal_ratio: 0.4
+      uniform: true
+      hip_min_deg: 2.5
+      hip_max_deg: 50.0
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 140
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   charge_seconds: 0.8
   charge_cadence: draw_then_rate
   multishot: 4.0
@@ -75,3 +81,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Ballistica_Prime
+
+# see notes: client_secondary_calibration

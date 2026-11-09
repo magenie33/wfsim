@@ -60,10 +60,15 @@ attack:
   spread:
     min_deg: 7.0
     max_deg: 9.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 9.0
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 260
-  fire_rate: 2.33
+  fire_rate: 2.33333333333333
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -98,8 +103,11 @@ attack:
     status_chance: 0.40
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Bullseye Reload, its passive: a headshot grants +25% reload speed for 4 s, stacking to 2 (wiki). It is not applied, so a headshot build reads low."
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Spirex
+
+# see notes: client_secondary_calibration

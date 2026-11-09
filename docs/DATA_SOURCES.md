@@ -82,6 +82,43 @@ copy of this export.
 
 ## Pinned primary form and sampler inputs
 
+### Whole-secondary calibration
+
+`scripts/import_secondary_calibration.py --exchange <exchange> --check` verifies
+`tests/fixtures/client/secondary-bindings.json` and regenerates
+`secondary-calibration-2026-10-28.json`. Every secondary form binds an exact
+internal owner, behavior index and selected projectile/component. Supplemental
+effective records resolve Riot-848's digit-prefixed projectile; modular secondary
+entries bind `BehaviorOverrides`, separately from primary overrides. The engine's
+inheritance allowlist determines which weapon-level fields a form receives.
+Weapon-level mastery and disposition bind `RequiredLevel` and
+`OmegaAttenuation` once on each weapon's metadata entry. Every non-melee native behavior is classified as a selected form, an unmodelled
+alternative or a placeholder non-attack state; a missing classification fails.
+
+Parsed inputs take priority over conflicting published values and timing
+conventions under the same consumer rules as whole-primary calibration. Native
+refire, charge, reload, beam ramps, ranges and ordinary packet statistics are
+applied. Composite retentions record the raw packet candidate and the scoped
+reason rather than presenting a retained convention as parsed final damage.
+
+Stug binds `EmbedAttack` for attached damage and `EmbedDeathAttack` for its
+explosion, independently of the zero-damage launch packet. Its fuse, declared
+stack cap, radius and explosion falloff use native inputs. An omitted base status
+member does not establish zero status. Grimoire binds native orb lifetime and
+strike interval while retaining M63's measured component damage; chain attenuation
+and the final upgrade consumer remain unverified. A metered attack does not
+inherit the weapon's ordinary magazine economy.
+
+Catabolyst grenade packets and animation callbacks are independently pinned.
+Coda's three entities form a 30-degree total fan. Throw markers remain distinct
+from fitted release seconds, flight and impact time. Tenet Plinx's full-clip
+attack retains its fixed composite damage and recharge until their consumers are
+resolved; its raw radial status is also retained pending that review. Epitaph and
+Staticor select the appropriate charge projectile without treating a multiplier
+cap as an established final damage multiplier. Return-ammo weapons retain their
+resource convention; Scyotid magazine reload binds the ordinary-fire state rather
+than its toggle action's short timer. `UNMODELLED.md` owns the remaining scope.
+
 ### Whole-primary calibration
 
 `scripts/import_primary_calibration.py --exchange <exchange> --check` verifies

@@ -49,7 +49,7 @@ attack:
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 60
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.08
@@ -73,6 +73,7 @@ attack:
   damage: { electricity: 160 }   # total 160
 
 unmodeled:
+  - reason: client_projectile_callbacks
   - "The explosion is the whole weapon, and its radius is not modelled: the mine deals no contact damage, so this entry carries the blast as the shot's own damage. Against one target, as in this fight and on the boards, the number is exact; against a crowd it reads low."
   - "The mines are detonated by hand with the alt-fire, and several can be laid first (wiki). The sim detonates each on landing: the ceiling for one mine. Laying several and detonating them together is not modelled."
   - "Mines stick to surfaces, enemies and allies, and multishot throws them in a very wide horizontal spread (wiki), so on this weapon multishot covers ground rather than adding damage to one target."
@@ -81,3 +82,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Castanas
+
+# see notes: client_secondary_calibration

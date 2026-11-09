@@ -43,12 +43,17 @@ co_behavior: independent
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 5
-    max_deg: 15
+    min_deg: 5.0
+    max_deg: 15.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 5.0
+      hip_max_deg: 15.0
   trigger: auto
   shot_type: projectile
-  projectile_speed_mps: 70
-  fire_rate: 3.33
+  projectile_speed_mps: 50
+  fire_rate: 3.33333333333333
   # TWO BASE MULTISHOT, which the Genesis page states in as many words:
   # "Incarnon Form grants its projectiles head-homing properties, with
   # increased base damage weighted towards Slash, Critical Chance, and
@@ -75,3 +80,7 @@ source:
   url: https://wiki.warframe.com/w/Kunai_Incarnon_Genesis
   # wiki module Attacks[].AttackName: "Incarnon Form"
 
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

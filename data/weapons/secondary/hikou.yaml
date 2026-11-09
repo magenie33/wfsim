@@ -39,7 +39,7 @@ attack:
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 70
-  fire_rate: 6.67
+  fire_rate: 6.66666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.04
@@ -55,3 +55,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Hikou
+
+# see notes: client_secondary_calibration

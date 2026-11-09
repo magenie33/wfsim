@@ -35,9 +35,14 @@ attack:
   spread:
     min_deg: 1.5
     max_deg: 11.5
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 7.5
+      hip_max_deg: 17.5
   trigger: auto
   shot_type: hit_scan
-  fire_rate: 14.38
+  fire_rate: 14.3833333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.15
@@ -50,3 +55,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Viper
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

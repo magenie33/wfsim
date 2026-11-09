@@ -37,6 +37,11 @@ attack:
   spread:
     min_deg: 2.0
     max_deg: 3.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.0
+      hip_max_deg: 3.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 15
@@ -51,7 +56,10 @@ attack:
   damage: { electricity: 11, impact: 9, puncture: 2, slash: 7 }   # total 29
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Reloading from an empty magazine releases an 8 m shockwave, 10 Electricity at 100% status plus a forced Electricity proc (wiki). The engine has no reload-triggered explosion, so it is not counted."
 
 source:
   url: https://wiki.warframe.com/w/Quatz
+
+# see notes: client_secondary_calibration

@@ -38,9 +38,14 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 2.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 21.0
+      hip_max_deg: 41.0
   trigger: auto
   shot_type: projectile
-  projectile_speed_mps: 500
+  projectile_speed_mps: 180
   fire_rate: 1.5
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
@@ -54,3 +59,9 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Euphona_Prime
+
+unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration
