@@ -161,7 +161,7 @@ document.addEventListener("click", async (e) => {
     ? "Not restored: the account's sync allowance is used"
     : "Could not restore just now."));
   cloudTrash = null;
-  renderAuthPage("sync");
+  renderAuthPage(authKindOf(location.pathname));
 });
 
 function cloudListHtml() {
