@@ -56,6 +56,7 @@ const ACCOUNT_SAYS = {
   unavailable: "This way to sign in is not set up yet.",
   bad_email: "That is not an email address.",
   bad_password: "A password needs at least 8 characters.",
+  bad_choice: "Choose an available identity label.",
   wrong_credentials: "The email or the password is not right.",
   wrong_password: "The current password is not right.",
   locked: "Too many wrong passwords. Wait 15 minutes, or reset the password.",
@@ -445,7 +446,7 @@ function accountProfileBlock(a) {
         a.display_name_hidden ? ` <span class="tag warn">${aT("hidden")}</span>` : ""}</dd><span></span></div></dl>${
       a.display_name_hidden ? `<p class="set-note">${escHtml(trF("Your display name is hidden, so others see your username. Reason: {why}. Changing your display name shows it again.",
         { why: nameWhy(a.display_name_why) }))}</p>` : ""}`;
-  return `<div class="block" id="profile"><div class="bh"><h2>${aT("Profile")}</h2></div><div class="bb">${body}</div></div>`;
+  return `<div class="block" id="profile"><div class="bh"><h2>${aT("Profile")}</h2></div><div class="bb">${body}${accountIdentityHtml(a)}</div></div>`;
 }
 
 function accountEmailBlock(a) {
@@ -1146,6 +1147,20 @@ async function authAct(el) {
       meritState = r.on ? r : null;
       return renderAuthPage(kind);
     }
+    if (what === "identity-retry") {
+      accountIdentity = null; return renderAuthPage(kind);
+    }
+    if (what === "identity-save") {
+      const box = el.closest("[data-identity-settings]"), named = !box.querySelector("[data-identity-anonymous]").checked;
+      const label = box.querySelector("[data-identity-label-choice]").value;
+      if (authFlow.open === "profile" && $("auth-display")) authFlow.profileDraft = { username: $("auth-username").value, display_name: $("auth-display").value };
+      const response = await accountCall("POST", "/api/account/identity", { named, label });
+      if (!response?.ok) return fail(response);
+      accountIdentity = null; contributorsState = null; calculationNameRequests.clear();
+      for (const item of computationRows.values()) item.at = 0;
+      if (userHomeOwner()) await loadComputationProfile(computationProfile, "profile");
+      return renderAuthPage(kind);
+    }
     if (what === "contribution-named") {
       const r = await accountCall("POST", "/api/account/contribution", { named: el.dataset.named === "yes" });
       if (!(r && r.ok)) return fail(r);
@@ -1155,6 +1170,7 @@ async function authAct(el) {
         loadProfileRecords(computationProfile);
       }
       contributorsState = null;
+      accountIdentity = null;
       return renderAuthPage(kind);
     }
     if (what === "sync-now") { await syncNow(); return; }

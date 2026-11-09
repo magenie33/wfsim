@@ -79,7 +79,7 @@ export async function cardDocument(engine, url, { lang = "zh", css = siteStyle()
   // A RIVEN'S STATS FROM THE ENGINE, whole: the page fills them in afterwards.
   const riven = (wp, spec) => h.headlessRivenAnswer(say, engine.api("/api/riven", { weapon: wp.id, ...spec }));
   const card = h.headlessLongCard(say, w, ask, { rows, job, verdict, origin: SITE, riven });
-  const qr = engine.api("/api/qr", { text: card.link });
+  const qr = ask.kind === "appraise" ? null : engine.api("/api/qr", { text: card.link });
   // EVERY PICTURE EAGER, as the page sets them before its screenshot.
   const inside = card.draw(qr && qr.svg).replace(/ loading="lazy"/g, ' loading="eager"')
     .replace(/ src="([^"]*)"/g, (_, src) => ` src="${inlined(src, img)}"`);

@@ -2,7 +2,7 @@
 const appraisalSelection = new Set();
 let appraisalRuler = null;
 USER_TASK_TYPES.set("appraisal", {
-  ...USER_TASK_TYPES.get("optimization"), icon: "◇", community: { kind: "optimization", finish: finishSavedAppraisal },
+  ...USER_TASK_TYPES.get("optimization"), icon: "◇", community: { kind: "appraisal", finish: finishSavedAppraisal },
   validate(request) {
     USER_TASK_TYPES.get("optimization").validate(request);
     if (!request.rivens?.length) throw new Error("An appraisal needs a riven.");
@@ -43,8 +43,13 @@ async function replaySavedAppraisal(task, execution, search) {
       return simulateFleet(body, (done, total) => execution.report({ phase: "Appraisal replay", done, total }), { signal: execution.signal });
     },
   });
-  if (!verdict.ok) throw new Error(verdict.reason || "the replay did not run");
-  return { search, verdict };
+  if (!verdict.ok) throw Object.assign(new Error(verdict.reason || "the replay did not run"), { candidateRejected: true });
+  let delivery = search.delivery || null;
+  if (!delivery && task.destination === "local") {
+    try { delivery = (await communityTaskCall("source", { task: task.id, profile: task.origin.author_profile,
+      engine: task.engine, weapon: task.request.weapon })).source; } catch (_) { /* The completed calculation remains available offline. */ }
+  }
+  return { search, verdict, delivery };
 }
 async function submitSavedAppraisals(ids, ruler, destination = "local", capture = null) {
   const weapon = capture?.weapon || presetWeapon();
@@ -61,7 +66,8 @@ async function submitSavedAppraisals(ids, ruler, destination = "local", capture 
     if (!asked) throw new Error("Choose a ruler.");
     entries.push({ kind: "appraisal", request: asked.request, destination, origin: { weapon, ruler, board_upload: boardUpload,
       riven_id: card.id, riven_name: card.name, board: asked.context,
-      preset_name: META.search_presets.presets.find(preset => preset.riven)?.name, scenario: ruler, batch, batch_name: "Riven analysis", appraisal: null } });
+      preset_name: META.search_presets.presets.find(preset => preset.riven)?.name, scenario: ruler, batch, batch_name: "Riven analysis", appraisal: null,
+      author_profile: accountState.account?.profile_id || null } });
   }
   const tasks = await queue.createMany(entries);
   fetch("/api/board/calibrate", { method: "POST", headers: { "content-type": "application/json" },
@@ -82,7 +88,7 @@ function renderSavedAppraisal(record) {
   const summary = document.createElement("div"); summary.className = "appraisal";
   summary.innerHTML = `<b>${escHtml(record.origin.riven_name || tr("Riven analysis"))}</b> · ${escHtml(tr("Riven grade"))}: ${verdict.grade}/100`
     + `<div>${escHtml(verdict.shown)} · ${escHtml(tr("vs the best riven-free build"))}: ${verdict.gain == null ? "—" : escHtml(gainPct(verdict.gain))}</div>`
-    + `<div>${escHtml(tr("Graded {g}.").replace("{g}", new Date(verdict.at).toLocaleString()))} · ${escHtml(record.request.weapon)}</div>`;
+    + `<div>${escHtml(tr("Graded {g}.").replace("{g}", new Date(verdict.at).toLocaleString()))} · ${escHtml(record.request.weapon)}</div>` + deliveryRecordHtml(record.result.delivery);
   box.prepend(summary);
 }
 function renderRivenAppraisalControls() {

@@ -10,7 +10,6 @@
 
 /// The appraisal open on this page: `{ code, job, phase, first }`, or null.
 let appraisal = null;
-const APPRAISAL_NAME = "wfsim-appraisal-name";
 
 const appraisalActive = () => !!(appraisal && appraisal.job);
 
@@ -67,7 +66,7 @@ async function openAppraisal(code, freeze = false) {
     }
     appraisal.phase = "searching";
     renderAppraisal();
-    await runSearch(() => asked.request, { appraisal: { code: appraisal.code, thanks: appraisalName() } });
+    await runSearch(() => asked.request, { appraisal: { code: appraisal.code, profile: accountState.account?.profile_id || null } });
   } catch (e) {
     appraisal.phase = "failed";
     appraisal.error = String((e && e.message) || e);
@@ -93,14 +92,6 @@ async function setUpAppraisal(w, job) {
   if (own) pickPreset(optBarCfg(), "search:" + own.id);
 }
 
-/// THE NAME AS TYPED, kept as it is typed: the banner is redrawn as the search
-/// moves on, and a name typed into the box it replaced must not be lost.
-let appraisalTyped = null;
-function appraisalName() {
-  if (appraisalTyped != null) return appraisalTyped.trim();
-  try { return (localStorage.getItem(APPRAISAL_NAME) || "").trim(); } catch (_) { return ""; }
-}
-
 /// THE BANNER over the optimizer: what this page is doing for whom, and how far.
 function renderAppraisal() {
   const block = $("opt-block");
@@ -123,17 +114,8 @@ function renderAppraisal() {
     "done-before": tr("This riven's gain has already been found. Thank you for coming!"),
     failed: `${tr("The riven gain could not finish")}: ${appraisal.error || ""}`,
   }[p] || "";
-  const saved = appraisalName();
-  const asking = p === "setting-up" || p === "searching";
   box.innerHTML = `<div class="appraisal-h"><b>${escHtml(tr("Riven gain"))}</b></div>
-    <div class="appraisal-b">${escHtml(said)}</div>
-    ${asking ? `<label class="appraisal-n">${escHtml(tr("Your name, to be thanked in the chat (optional)"))}
-      <input id="appraisal-name" maxlength="24" value="${escHtml(saved)}" autocomplete="nickname"></label>` : ""}`;
-  const input = $("appraisal-name");
-  if (input) input.oninput = () => {
-    appraisalTyped = input.value;
-    try { localStorage.setItem(APPRAISAL_NAME, input.value.trim()); } catch (_) { /* this visit only */ }
-  };
+    <div class="appraisal-b">${escHtml(said)}</div>`;
 }
 
 // The task owns the chat reply even after its original page has closed.
@@ -141,11 +123,10 @@ async function sendCapturedAppraisal(task, result) {
   const best = (result.results || []).find((row) => row?.mods?.length);
   if (!best) throw new Error("the search ranked nothing");
   if (appraisal?.code === task.origin.appraisal.code) { appraisal.phase = "sending"; renderAppraisal(); }
-  let thanks = task.origin.appraisal.thanks;
-  try { thanks = localStorage.getItem(APPRAISAL_NAME) || thanks; } catch (_) { /* the captured preference remains */ }
   const response = await fetch(`/api/appraise/${encodeURIComponent(task.origin.appraisal.code)}/result`, {
     method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ build: boardPayloadFromResult(best, task.origin.board), thanks }),
+    body: JSON.stringify({ build: boardPayloadFromResult(best, task.origin.board), task: task.id,
+      owner: await communityTaskOwner(), profile: task.origin.appraisal.profile, engine: task.engine, weapon: task.request.weapon }),
   });
   const body = await response.json();
   if (!response.ok || !body.ok) {

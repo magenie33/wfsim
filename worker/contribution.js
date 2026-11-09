@@ -36,7 +36,6 @@
 // so a newcomer can lead somewhere; `ranks` is the account's place on each of the
 // three, for the showcase a share card draws (`31-share-card.js`).
 import { json, no, now, sameSite, sessionAccount, sha256 } from "./accounts.js";
-import { cloudMarks } from "./cloud.js";
 import { iso, PACE_HOURS } from "./instant.js";
 import { clearanceOf } from "./clearance.js";
 import { SURVEY_CHANNEL, SURVEY_KEEP_MS } from "./appraise.js";
@@ -47,7 +46,7 @@ import { meritTotals } from "./merit.js";
 import { dialsOf } from "./dials.js";
 import { BOARD_KINDS } from "./board_kinds.js";
 import { readInventoryState } from "./task_inventory.js";
-import { contributorAccounts } from "./contributor_identity.js";
+import { contributorAccounts, contributorMarks } from "./contributor_identity.js";
 
 /// Work is counted in billionths of a point (engine/src/fight/gas.rs prices it).
 const WORK_PER_POINT = 1e9;
@@ -555,21 +554,6 @@ async function kept(request, env) {
 /// seconds. A reader's ask waits `MARKS_WAIT_MS` at most and falls back to the
 /// last marks drawn; the published ranking waits for the answer (`wait`) and is
 /// null without one, since a badge gone for ten minutes reads as a refund.
-const MARKS_KEEP_MS = 10 * 60_000, MARKS_WAIT_MS = 4_000;
-let marksHere = null;
-async function marksOfNamed(env, named, wait = false) {
-  if (!wait && marksHere && Date.now() - marksHere.at < MARKS_KEEP_MS && named.every((id) => marksHere.asked.has(id))) return marksHere.marks;
-  const parts = [];
-  for (let i = 0; i < named.length; i += PER_STATEMENT) parts.push(cloudMarks(env, named.slice(i, i + PER_STATEMENT)));
-  const asking = Promise.all(parts).then((got) => {
-    if (got.some((g) => g === null)) return null;
-    marksHere = { at: Date.now(), asked: new Set(named), marks: Object.assign({}, ...got) };
-    return marksHere.marks;
-  });
-  if (wait) return asking;
-  const late = new Promise((res) => setTimeout(() => res(null), MARKS_WAIT_MS));
-  return (await Promise.race([asking, late])) || (marksHere ? marksHere.marks : {});
-}
 async function keptWorkedOut(request, env) {
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const at = new Request(new URL("/api/contributors/kept", request.url).toString());
@@ -591,7 +575,7 @@ async function everyoneOf(env, wait = false) {
   const day = keyDay(), rows = await standings(env, day);
   const profiles = await contributorAccounts(env, rows.filter(row => row.named).map(row => row.id));
   // THE PAID HALF answers a hundred accounts an ask, so the named rows go in parts.
-  const marks = await marksOfNamed(env, rows.filter((e) => e.named).map((e) => e.id), wait);
+  const marks = await contributorMarks(env, profiles, wait);
   if (!marks) return null;
   const everyone = rows.map((e) => ({ key: e.key, name: e.named ? e.name : null,
     ...(e.named ? { profile: profiles.get(e.id)?.profile_id } : {}),
