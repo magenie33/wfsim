@@ -15,8 +15,9 @@ export async function contributorMarks(env, people, wait = false) {
   }
   if (!missing.length) return marks;
   const asking = (async () => {
-    const parts = [];
-    for (let at = 0; at < missing.length; at += 100) parts.push(await cloudMarks(env, missing.slice(at, at + 100).map(person => person.id)));
+    const requests = [];
+    for (let at = 0; at < missing.length; at += 100) requests.push(cloudMarks(env, missing.slice(at, at + 100).map(person => person.id)));
+    const parts = await Promise.all(requests);
     if (parts.some(part => part === null)) return null;
     const found = Object.assign({}, ...parts);
     if (marksCache.size > 20_000) marksCache.clear();
@@ -30,7 +31,7 @@ export async function contributorMarks(env, people, wait = false) {
   if (wait) return asking;
   let timer;
   const timeout = new Promise(resolve => { timer = setTimeout(() => resolve(marks), 4000); timer.unref?.(); });
-  try { return await Promise.race([asking, timeout]); } finally { clearTimeout(timer); }
+  try { return (await Promise.race([asking, timeout])) || marks; } finally { clearTimeout(timer); }
 }
 
 export async function contributorAccounts(env, ids, byProfile = false) {

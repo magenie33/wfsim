@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { testDb } from "./pg/test_db.mjs";
 import { facts } from "../worker/factory.js";
+import { appraiseRoute, askRiven } from "../worker/appraise.js";
 import { accountRoute, sha256 } from "../worker/accounts.js";
 import { contributorProfilesRoute } from "../worker/contributor_profiles.js";
 const { userTasksRoute } = await import(process.env.WFSIM_USER_TASK_MODULE || "../worker/user_tasks.js");
@@ -104,6 +105,40 @@ await check("local delivery uses the captured signed-in account and adds no volu
   const wrong = await userTasksRoute(req(path, { ...body, task: randomUUID(), profile: profiles.second }, "first"), env, path);
   assert.equal((await wrong.json()).source, null);
   assert.equal((await env.LIBRARY.get("SELECT sum(signatures) AS n FROM verifiers")).n, 2);
+});
+await check("FX delivers and names its first actual calculator before consensus, then preserves both witnesses", async () => {
+  env.BOT_RELAY_TOKEN = "delivery-bot";
+  const botCall = async (path, body) => {
+    const response = await appraiseRoute(new Request("https://wfsim.test" + path, {method:"POST",
+      headers:{authorization:"Bearer delivery-bot"}, body:JSON.stringify(body)}), env, path);
+    assert.equal(response.status,200); return response.json();
+  };
+  const opened = await botCall("/api/appraise/new", {channel:"qq",asker:"test",room:"fixture",weapon:"torid",
+    ruler:"standard_single_target",riven:{bonuses:[{id:"multishot",roll:1}],rank:8}});
+  const code = opened.code;
+  await askRiven(env, {code,channel:"qq",asker:"test",weapon:"torid",ruler:"standard_single_target"},
+    {request:{weapon:"torid",runs:2},context:{weapon:"torid"}}, Date.now());
+  const calculator = {...first,lanes:8}, leased = await facts().next(env,calculator,engine);
+  assert.ok(leased && leased.demands.some(d=>d.ref === code));
+  const result = {build:{weapon:"torid",mods:["serration"]},score:12};
+  await facts().answer(env,calculator,{lease:leased.lease,engine,work:123,result});
+  assert.equal((await env.LIBRARY.get("SELECT state FROM questions WHERE id=?",leased.question)).state,"open");
+  const pending = await botCall("/api/appraise/claim",{channel:"qq"});
+  assert.equal(pending.judge.length,1);
+  await identity("first",{named:true,label:role.kind});
+  const told = await botCall("/api/appraise/claim",{channel:"qq",judged:[{id:pending.judge[0].id,ok:true,verdict:{score:12}}]});
+  assert.equal(told.tell[0].calculator.name,"renamed first");
+  assert.equal(told.tell[0].calculator.mark.kind,role.kind);
+  assert.equal((await env.LIBRARY.get("SELECT sum(signatures) AS n FROM verifiers")).n,2);
+  const verifying = {...second,lanes:8}, lease = await facts().next(env,verifying,engine);
+  assert.equal(lease.question,leased.question);
+  await facts().answer(env,verifying,{lease:lease.lease,engine,work:123,result});
+  const agreed = await proof(leased.question);
+  assert.equal(agreed.record.weapon,"torid");
+  assert.deepEqual(agreed.record.witnesses.map(w=>w.name),["renamed first","second"]);
+  assert.equal((await env.LIBRARY.get("SELECT sum(signatures) AS n FROM verifiers")).n,4);
+  const row = await env.LIBRARY.get("SELECT source FROM appraisal_results WHERE id=?",pending.judge[0].id);
+  assert.equal((await proof(row.source)).record.witnesses.length,1);
 });
 await env.LIBRARY.close(); await env.ACCOUNTS.close();
 console.log(`\n${passed} delivery and identity checks passed`);

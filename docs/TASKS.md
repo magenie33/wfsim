@@ -129,9 +129,12 @@ receipt for the original initiator; executor identity never replaces it
 `simulate_report` and `optimize_report` compare complete reports, including all
 finalists and the fields needed to open or replay them. Wall-clock timings are
 excluded from agreement; calculation fields and engine work participate.
-Two independent witnesses are required. Disagreeing reports are shown as a
-failed request, never an unchecked result. The existing simulation and quick
-search entry points perform the work.
+Two independent witnesses are required for agreement and contribution credit.
+Simulation and ordinary optimization deliver agreed reports. Riven appraisal
+delivers the first candidate that passes the shared local replay, while the
+factory continues independent confirmation in the background. A rejected
+candidate advances an answer-id cursor so the next report can be replayed.
+The existing simulation and quick search entry points perform the work.
 
 Clients advertise `calculation-reports-v1`. The factory's shared eligibility
 rule excludes these verbs for older clients, on protocol 8's JavaScript and SQL
@@ -158,6 +161,14 @@ Public computation records contain only weapon, kind, engine, completion time
 and accepted witnesses. They expire after 14 days and disclose no private inputs
 or report. Optimization attribution counts the task once for each accepted
 witness; its finalists do not each create another optimization signature.
+
+A separate `delivery` computation record identifies one delivered candidate.
+It never adds credit or appears in optimization history. Its witnesses resolve
+current identity preferences; agreed optimization records retain both accepted
+people, ordered by completion, with calculation and verification roles. Local
+delivery captures the signed-in public profile before execution and verifies
+it again on registration. Only the server creates the `account:<account-id>`
+witness namespace; a changed login cannot acquire an earlier calculation.
 
 Acceptance commands are stable and idempotent, including after a lost response.
 Cancellation tombstones prevent an earlier cancel from being lost to a later

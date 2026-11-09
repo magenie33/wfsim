@@ -92,6 +92,7 @@ function headlessSpeaker(meta, i18n, lang, zone) {
 const headlessTrF = (say, template, params) => Object.entries(params || {}).reduce(
   (s, [k, v]) => s.split(`{${k}}`).join(v), say.t(template));
 function headlessContributorText(say, person) {
+  if (person?.official) return say.t("Official compute");
   if (!person?.name) return say.t("Anonymous contributor");
   const label = person.mark?.label;
   const shown = typeof label === "string" ? say.t(label) : label?.[say.lang] || label?.en;

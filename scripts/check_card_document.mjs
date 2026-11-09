@@ -60,7 +60,7 @@ const rv = row.riven;
 const JOB = { ok: true, code: "CHECK1", weapon: "laetum", ruler: primary, at: 0, done: true,
   riven: { bonuses: rv.bonuses.map((id, i) => ({ id, roll: rv.rolls[i] })),
     malus: rv.malus ? { id: rv.malus, roll: rv.rolls[rv.bonuses.length] } : null, rank: 7 } };
-const RESULT = { id: 1, thanks: "check", build: { benchmark: primary, weapon: "laetum", mode: row.mode, mods: row.mods,
+const RESULT = { id: 1, thanks: "check", calculator: { name: "check", mark: { kind: "fixture", label: { en: "Fixture", zh: "测试身份" } } }, build: { benchmark: primary, weapon: "laetum", mode: row.mode, mods: row.mods,
   evolutions: row.evolutions, arcanes: row.arcanes, exilus: row.exilus, valence: row.valence,
   riven_pos: [...rv.bonuses].sort(), riven_neg: rv.malus || "" } };
 const appraisal = async (code, result) => (code === JOB.code ? { ...JOB, ...(result === RESULT.id ? { result: RESULT } : {}) } : null);

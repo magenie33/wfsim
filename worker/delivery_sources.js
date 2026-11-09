@@ -5,6 +5,7 @@ import { contributorAccounts, witnessNames } from "./contributor_identity.js";
 import { COMPUTATION_KEEP_MS } from "./computation_records.js";
 import { iso } from "./instant.js";
 import { questionId } from "./task_contract.js";
+import { ENGINE_ID } from "./verify.js";
 
 export const deliveryKey = (question, device, at) => questionId("delivery", { question, device, at });
 async function keepSource(env, { id, engine, weapon, owner, device, official = 0, at }) {
@@ -24,7 +25,8 @@ export async function answerDeliverySource(env, question, answer, weapon) {
 }
 export async function localDeliverySource(env, request, body) {
   if (!/^[a-f0-9-]{36}$/.test(body.task || "") || !/^[a-f0-9]{64}$/.test(body.owner || "")
-    || !/^[a-f0-9]{32}$/.test(body.profile || "")) return null;
+    || !/^[a-f0-9]{32}$/.test(body.profile || "") || !ENGINE_ID.test(body.engine || "")
+    || !/^[a-z0-9_]{1,100}$/.test(body.weapon || "")) return null;
   const owner = await sessionAccount(env, request);
   if (!owner) return null;
   const account = (await contributorAccounts(env, [owner])).get(owner);

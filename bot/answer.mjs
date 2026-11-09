@@ -156,6 +156,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   /// each. A number alone is how many rows a ranking shows. An anonymous
   /// contributor is never found by anything.
   async function gx(rest) {
+    const display = person => headless.headlessContributorText(headless.headlessSpeaker({}, { zh }, "zh"), person);
     const ask = rest.trim();
     const count = /^\d+$/.test(ask) ? Math.max(1, Math.min(MAX_SHOWN, Number(ask))) : null;
     const name = count === null ? ask : "";
@@ -169,16 +170,16 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
       if (!p) return t("Nobody on the ranking shows the name “{name}”. A name appears there only once its owner chooses to show it. (＞﹏＜)", { name });
       const card = `${SITE}/contributors/card?name=${encodeURIComponent(name)}`;
       const cr = p.contributor_rank;
-      const text = [t("{name}'s contribution", { name }) + (cr ? ` · ${t("Contributor rank {n}", { n: cr.rank })}` : "")].concat(periods.map(([id, key, label]) => `${t(label)}: ${
+      const text = [t("{name}'s contribution", { name: display(p) }) + (cr ? ` · ${t("Contributor rank {n}", { n: cr.rank })}` : "")].concat(periods.map(([id, key, label]) => `${t(label)}: ${
         p.ranks[id] ? `#${p.ranks[id]} · ${num(p[key])}` : t("Not on this ranking yet.")}`)).join("\n");
-      return { line: t("{name}'s place on the three rankings. (*/ω＼*)", { name }), card, text };
+      return { line: t("{name}'s place on the three rankings. (*/ω＼*)", { name: display(p) }), card, text };
     }
     const all = await Promise.all(periods.map(([id]) => get(id === "all" ? "" : `?period=${id}`)));
     if (!all[0]) return t("Nona could not reach the ranking just now. Try again in a moment. (＞﹏＜)");
     const n = count || 5;
     const card = `${SITE}/contributors/card?n=${n}`;
     const text = periods.map(([, key, label], i) => [t(label)].concat(((all[i] && all[i].contributors) || []).slice(0, n)
-      .map((c, k) => `#${k + 1} ${c.name === null ? t("Anonymous contributor") : c.name}${
+      .map((c, k) => `#${k + 1} ${display(c)}${
         c.contributor_rank ? ` [${c.contributor_rank.rank}]` : ""} · ${num(c[key])}`)).join("\n")).join("\n\n");
     const computing = all[0].computing || 0;
     return { line: computing

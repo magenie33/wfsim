@@ -624,7 +624,9 @@ jobs:
         run: node scripts/check_computation_profiles_page.mjs
       - name: Community transfer completes through two real WASM witnesses
         if: matrix.group == 'community'
-        run: node scripts/check_task_service_browser.mjs
+        run: |
+          node scripts/check_task_service_browser.mjs
+          node scripts/check_riven_delivery_page.mjs
       - name: Protocol 8 on the page keeps every result and holds to the signal and next_ms
         if: matrix.group == 'community'
         run: node scripts/check_compute_queue.mjs
@@ -947,6 +949,8 @@ jobs:
         run: node scripts/check_feedback.mjs
       - name: User calculations retain ownership, share verified reports and exclude incompatible clients
         run: node scripts/check_user_task_service.mjs
+      - name: Riven delivery names its first calculator while two accepted witnesses retain credit
+        run: node scripts/check_riven_delivery.mjs
       - name: Expedited board reviews preserve old scores until fresh independent agreement
         run: node scripts/check_board_reviews.mjs
       - name: New family candidates share verified optimization and stop after one generation

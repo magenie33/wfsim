@@ -34,7 +34,7 @@ const RECLAIM_MS = 120_000;
 const REFREEZE_MS = 60_000;
 /// How many appraisals one asker / one room may open in an hour.
 const PER_ASKER = 5, PER_ROOM = 20, HOUR = 3_600_000;
-const MAX_BUILD = 8_000, MAX_THANKS = 24;
+const MAX_BUILD = 8_000;
 /// A frozen search: the optimize request the page builds, which carries the fight.
 const MAX_REQUEST = 65_536;
 /// A RIVEN GAIN SOMEONE IS WAITING ON GOES TO THE COMPUTER THAT RUNS IT FASTEST:
@@ -56,23 +56,10 @@ const newCode = () => {
   return [...b].map((x) => CODE_CHARS[x % CODE_CHARS.length]).join("");
 };
 
-/// A name to thank, as a person typed it: short, one line, and never a link —
-/// it is posted into a chat on their behalf.
-const cleanThanks = (s) => {
-  const t = String(s || "").replace(/[\u0000-\u001f\u007f<>]/g, " ")
-    .replace(/(https?:\/\/|www\.)\S*/gi, "").replace(/\S+\.(com|net|org|cn|app|io|gg)\b\S*/gi, "")
-    .replace(/\s+/g, " ").trim().slice(0, MAX_THANKS).trim();
-  // …AND NEVER A WORD A CHAT MUST NOT CARRY (worker/names.js): dropped, not
-  // refused — the build still counts, it is only not thanked by that name.
-  return nameBlocked(t) ? "" : t;
-};
-
 const botAuthed = (request, env) => {
   const auth = request.headers.get("authorization") || "";
   return !!env.BOT_RELAY_TOKEN && auth === `Bearer ${env.BOT_RELAY_TOKEN}`;
 };
-
-import { nameBlocked } from "./names.js";
 
 export async function appraiseRoute(request, env, path, ctx) {
   if (!env.LIBRARY) return json({ ok: false, error: "not offered here" }, 501);
@@ -312,7 +299,7 @@ async function mine(request, env) {
   return json({ ok: true, tasks: out });
 }
 
-/// A BUILD HANDED BACK: `{ build, thanks }`, a board record and an optional name.
+/// A local hand-back captures its task and public profile; attribution is account-resolved.
 /// Every one is kept until the bot judges it; the first it accepts wins. One sent
 /// under a volunteer lease carries `{ lease, verifier, score, work }` instead.
 async function handBack(request, env, code) {
