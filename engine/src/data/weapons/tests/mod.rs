@@ -1,5 +1,6 @@
 use super::*;
 
+mod admissions;
 mod battery;
 mod client_cadence;
 mod client_melee;

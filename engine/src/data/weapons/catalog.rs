@@ -141,11 +141,29 @@ pub fn all() -> &'static [WeaponSpec] {
                     // reason id and a template, not a parent.
                 }
                 render_admissions(&mut v, p);
-                serde_norway::from_value::<WeaponSpec>(v)
-                    .unwrap_or_else(|e| panic!("parse {p}: {e}"))
+                let mut spec = serde_norway::from_value::<WeaponSpec>(v)
+                    .unwrap_or_else(|e| panic!("parse {p}: {e}"));
+                share_admissions(&mut spec);
+                spec
             })
             .collect()
     })
+}
+
+/// Identical admissions borrow the reason table across forms and catalogs.
+/// Parameterized text keeps its rendered value; every field still travels.
+fn share_admissions(spec: &mut WeaponSpec) {
+    use std::borrow::Cow;
+    for (text, part) in spec.unmodeled.iter_mut().zip(&mut spec.unmodeled_parts) {
+        let Some(template) = part.reason.as_deref().and_then(|id| reasons().get(id)) else { continue };
+        if part.template.as_deref() == Some(template.as_str()) {
+            part.template = Some(Cow::Borrowed(template));
+        }
+        if text.as_ref() == template.as_str() && part.text.as_ref() == template.as_str() {
+            *text = Cow::Borrowed(template);
+            part.text = Cow::Borrowed(template);
+        }
+    }
 }
 
 /// A top-level scalar read off the text, so the parents are known before any
