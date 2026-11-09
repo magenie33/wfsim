@@ -38,6 +38,11 @@ attack:
   spread:
     min_deg: 18.0
     max_deg: 36.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 24.0
+      hip_max_deg: 42.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 5.0
@@ -46,15 +51,20 @@ attack:
   ammo_cost: 1
   crit_chance: 0.06
   crit_multiplier: 2.0
-  status_chance: 0.0314
+  status_chance: 0.0314285714285714
   punch_through_m: 0.0
   # see notes: wall_ramp_full_damage
   range_m: 300.0
   falloff:
     start_m: 7.0
     end_m: 14.0
-    reduction: 0.75
+    reduction: 0.761904753333
   damage: { impact: 33.6, puncture: 4.2, slash: 4.2 }   # 42 a pellet, 294 a shot
 
 source:
   url: https://wiki.warframe.com/w/Akbronco
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

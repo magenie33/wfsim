@@ -78,3 +78,8 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Gaze
   module: https://wiki.warframe.com/w/Module:Weapons/data/modular
+
+unmodeled:
+  - reason: client_modular_secondary_assembly
+
+# see notes: client_secondary_calibration

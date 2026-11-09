@@ -9,6 +9,14 @@
 # an entry from being orphaned.
 
 notes:
+  client_secondary_calibration: |
+    scripts/import_secondary_calibration.py binds every secondary form to its
+    native behavior and selected damage component. Exact source hashes,
+    original tokens, adopted fields and retained composite conventions live in
+    tests/fixtures/client/secondary-calibration-2026-10-28.json. Parsed inputs
+    take priority, including timing, after identifying their consumer. Native
+    launch packets do not replace attached ticks, deployed orbs or full-clip
+    damage. Unsupported consumers remain explicit in docs/UNMODELLED.md.
   client_primary_calibration: |
     scripts/import_primary_calibration.py binds every primary form to its
     native behavior and actual projectile, with source hashes and adopted

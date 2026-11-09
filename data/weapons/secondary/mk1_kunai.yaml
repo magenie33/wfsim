@@ -40,7 +40,7 @@ attack:
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 70
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.05
@@ -54,3 +54,4 @@ attack:
 source:
   url: https://wiki.warframe.com/w/MK1-Kunai
 
+# see notes: client_secondary_calibration

@@ -16,6 +16,11 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 1.2
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 1.0
+      hip_max_deg: 1.2
   trigger: burst
   # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 4 rounds
   # fired at once (the module gives a delay of zero).
@@ -35,7 +40,10 @@ attack:
   damage: { electricity: 11, impact: 9, puncture: 2, slash: 7 }   # total 29
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Each shot lands in a small square around the aim point and can miss small targets (wiki); this entry uses the module's 1-1.2 degree spread for that square."
 
 source:
   url: https://wiki.warframe.com/w/Quatz
+
+# see notes: client_secondary_calibration

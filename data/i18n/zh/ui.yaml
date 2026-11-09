@@ -6,6 +6,15 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "Native alternative behavior declarations are bound as evidence; their runtime availability and complete attack sequences are not simulated. Only the declared entry modes are used.": "已绑定原生替代攻击状态作为来源证据；尚未模拟其实际启用条件和完整攻击流程，目前只使用条目中声明的模式。"
+  "Kitgun statistics use the published assembly tables; native secondary overrides are bound, but the runtime part-composition consumer is unverified.": "组合枪数值使用已公布的组装表；已绑定原生副武器覆盖参数，但尚未核实运行时的部件合成流程。"
+  "Charge time and the selected projectile use parsed inputs. The native charge-cap multiplier consumer is unverified; damage uses the declared packet without multiplying it by that cap.": "蓄力时间和所选弹体使用解析参数；尚未核实原生蓄力倍率上限的实际作用，伤害使用声明的组件值，不再乘以上限。"
+  "The full-magazine attack retains its fixed unmodded damage and recharge cycle; native clip-dependent scaling, explosion damage/status and alternate-fire recharge consumers are unverified.": "整弹匣攻击保留无弹匣容量加成时的固定伤害和充能循环；尚未核实原生弹匣倍率、爆炸伤害与触发，以及副射充能流程。"
+  "Returning-projectile ammunition keeps its declared resource convention; the native reserve field does not establish a finite pickup-based ammo pool.": "回收弹体的弹药保留条目声明的资源规则；原生备用弹药字段尚不能证明它使用有限的拾取弹药池。"
+  "Orb strikes and the final explosion retain their measured damage. Native launch packets, chain attenuation, target selection, meter and animation consumers are unverified; their raw values do not replace the deployed orb sequence.": "球体打击和最终爆炸保留实测伤害；尚未核实原生发射组件、连锁衰减、选敌、计量条及动作流程，原始参数不直接替换已部署球体的连续攻击。"
+  "Attached damage, fuse and explosion use separate native components. Unspecified base status, tick initialization, stack overflow and bounce consumers retain the declared measured or approximated rules.": "黏附伤害、引信和爆炸分别使用对应的原生组件；未声明的基础触发、跳伤初始化、堆叠溢出和弹跳流程保留条目中的实测或近似规则。"
+  "Reload grenade packets, count and fan use parsed inputs. Release, flight and impact clocks and Critical Mutation group ordering remain unmodelled; the declared mid-reload impact approximation remains in use.": "换弹手雷的伤害组件、数量和扇形使用解析参数；尚未模拟出手、飞行、命中各自的计时及致命突变的分组事件顺序，目前仍近似为换弹中途命中。"
+  "The alternate-fire state's short timer belongs to its toggle action; magazine reload uses the parsed primary-fire state. Toggle recovery and snare callback timing remain unmodelled.": "副射状态的短计时属于切换动作；弹匣换弹使用解析的普通射击状态参数。尚未模拟切换恢复与束缚回调时序。"
   "Official CLI": "官方 CLI"
   "Run Together in a terminal or on a server.": "在终端或服务器上参与一起算。"
   "Default CPU range: 0–50%. Sign in later with wfsim login to claim this device.": "默认 CPU 区间为 0–50%。之后可运行 wfsim login 登录并认领设备。"

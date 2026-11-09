@@ -13,7 +13,12 @@ co_behavior: additive_with_base_damage
 attack:
   spread:
     min_deg: 0.5
-    max_deg: 12
+    max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 6.5
+      hip_max_deg: 18.0
   trigger: burst
   # THE BURST COUNT IS THE MAGAZINE, which is the one thing this entry cannot
   # say properly: `count` is a constant and the real number is however many
@@ -24,7 +29,7 @@ attack:
     count: 21
     delay_seconds: 0.05
   shot_type: hit_scan
-  fire_rate: 4.17
+  fire_rate: 4.16666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.21
@@ -36,8 +41,13 @@ attack:
   damage: { impact: 32.25, puncture: 5.375, slash: 5.375 }   # total 43
 
 unmodeled:
+  - reason: client_clip_burst
+  - reason: client_accuracy_runtime
   - "The burst empties the magazine, and this entry fires a fixed 21 rounds, the unmodded magazine. Magazine mods make the real burst longer, so a build with one reads low."
   - "The burst can be interrupted by a quick melee, a roll or a weapon swap; the sim does none of those, so it always runs to the end."
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Kraken
+reload_seconds: 2
+
+# see notes: client_secondary_calibration

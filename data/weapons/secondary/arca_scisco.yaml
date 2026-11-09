@@ -36,9 +36,14 @@ attack:
   spread:
     min_deg: 0.25
     max_deg: 6.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.5
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 4.667
+  fire_rate: 4.66666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -51,8 +56,11 @@ attack:
   damage: { puncture: 36, slash: 24 }   # total 60
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Target Analysis: each shot grants +4% flat critical and status chance, stacking to 5 for 2 s (wiki). The engine has no shot-counting buff, so a build here fires at 18% / 26% where held fire reaches 38% / 46%. It is most of the weapon; the number reads low."
   - reason: zoom_steps
 
 source:
   url: https://wiki.warframe.com/w/Arca_Scisco
+
+# see notes: client_secondary_calibration

@@ -20,10 +20,15 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 1.5
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 15.0
+      hip_max_deg: 25.0
   trigger: burst
   shot_type: projectile
   projectile_speed_mps: 60
-  fire_rate: 4.67
+  fire_rate: 4.66666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.08
@@ -43,7 +48,11 @@ attack:
     delay_seconds: 0.08     # module BurstDelay
 
 unmodeled:
+  - reason: client_clip_burst
+  - reason: client_accuracy_runtime
   - "The burst empties the magazine, and this entry fires a fixed count, the unmodded magazine. Magazine mods lengthen the burst (page), so a build with one reads low."
 
 source:
   url: https://wiki.warframe.com/w/Cyanex
+
+# see notes: client_secondary_calibration

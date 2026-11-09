@@ -29,6 +29,11 @@ attack:
   spread:
     min_deg: 50.0
     max_deg: 60.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 50.0
+      hip_max_deg: 60.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 60
@@ -57,9 +62,12 @@ attack:
     damage: { heat: 480 }   # total 480
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Lock-on marks several targets and sends a missile at each (wiki); the engine fires at the aimed body only, so against a crowd the number reads low by the number marked."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Sepulcrum
+
+# see notes: client_secondary_calibration

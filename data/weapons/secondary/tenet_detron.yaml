@@ -29,7 +29,7 @@ ammo_type: secondary
 ammo_max: 210
 ammo_pickup: 20
 magazine: 6
-reload_seconds: 1.05
+reload_seconds: 1
 
 # Condition Overload: THE CATALOG NAMES THIS ATTACK AND CALLS IT ORDINARY.
 # Verbatim row (docs/CATALOGS.md §1):
@@ -65,10 +65,15 @@ attack:
   spread:
     min_deg: 4.0
     max_deg: 6.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 10.0
+      hip_max_deg: 14.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 150
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   # "Innate multishot of 10 pellets" — 26 Radiation apiece, 260 a shot.
   multishot: 10.0
@@ -91,8 +96,11 @@ attack:
   damage: { radiation: 26 }   # 26 a pellet, 260 a shot
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The Condition Overload bonus ignores damage falloff (the catalog's notes on both rows); here it falls off with the shot, so a status-stacking build at range reads low."
   - "The in-game falloff display is wrong on this weapon (page): it shows 13-22 m, and full damage holds to about 28 m. The 26-52 m entered here is the module's and infobox's."
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Detron
+
+# see notes: client_secondary_calibration

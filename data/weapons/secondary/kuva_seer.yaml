@@ -52,7 +52,12 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
-    max_deg: 12
+    max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.5
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: projectile
   fire_rate: 2.5
@@ -86,7 +91,11 @@ attack:
     damage: { corrosive: 69.0 }
 
 unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_accuracy_runtime
   - reason: explosion_ignores_cover
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Seer
+
+# see notes: client_secondary_calibration

@@ -51,13 +51,13 @@ attack:
     max_deg: 0.0
   trigger: semi_auto
   shot_type: projectile
-  projectile_speed_mps: 80
+  projectile_speed_mps: 50
   fire_rate: 1.25
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
-  crit_chance: 0.0
-  crit_multiplier: 1.0
+  crit_chance: 0.1
+  crit_multiplier: 2
   status_chance: 0.0
   # AN AoE ATTACK TAKES NO PUNCH THROUGH (MECHANICS §13).
   punch_through_m: 0.0
@@ -82,6 +82,7 @@ attack:
     damage: { impact: 50 }   # total 50
 
 unmodeled:
+  - reason: client_projectile_callbacks
   - "The projectile explodes on impact or after 15 m (wiki). This entry treats 15 m as the reach, which stops the direct hit correctly but also stops the explosion, so beyond 15 m it deals nothing here while in game it still explodes."
   - "Its guaranteed knockback and ragdoll (wiki) are crowd control, not damage, and are not applied. The number is unaffected."
   - "Projectiles bounce off surfaces (wiki); there are no walls here."
@@ -89,3 +90,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Sonicor
+
+# see notes: client_secondary_calibration

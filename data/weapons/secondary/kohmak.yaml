@@ -36,6 +36,11 @@ attack:
   spread:
     min_deg: 5.0
     max_deg: 20.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 10.0
+      hip_max_deg: 30.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 5
@@ -44,19 +49,24 @@ attack:
   crit_chance: 0.11
   crit_multiplier: 2.0
   status_chance: 0.138
-  punch_through_m: 0.0
+  punch_through_m: 1.5
   # see notes: wall_ramp_full_damage_3
   range_m: 300.0
   falloff:
     start_m: 12.0
     end_m: 24.0
-    reduction: 0.8333
+    reduction: 0.666666666667
   damage: { impact: 6, puncture: 6, slash: 18 }   # 30 a pellet, 150 a shot
 
 unmodeled:
+  - reason: client_spool_pellets
+  - reason: client_rate_spool
+  - reason: client_accuracy_runtime
   - "The pellet count spools up too, one more per consecutive shot (page); this entry fires the full count from the first shot. No fire-rate ramp is published either, so the rate is the settled one."
   - reason: auto_spool_ramp
     rate: 5.0
 
 source:
   url: https://wiki.warframe.com/w/Kohmak
+
+# see notes: client_secondary_calibration

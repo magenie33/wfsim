@@ -70,3 +70,7 @@ source:
   url: https://wiki.warframe.com/w/Gammacor_Incarnon_Genesis
   # wiki module Attacks[].AttackName: "Incarnon Form" and "Incarnon Form Radial Attack"
 
+unmodeled:
+  - reason: client_projectile_callbacks
+
+# see notes: client_secondary_calibration

@@ -36,6 +36,11 @@ attack:
   spread:
     min_deg: 2.0
     max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 10.0
+      hip_max_deg: 22.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 5
@@ -47,8 +52,13 @@ attack:
   status_chance: 0.22
   punch_through_m: 0.0
   # see notes: wall_ramp_full_damage
-  range_m: 300.0
+  range_m: 1000
   damage: { impact: 44.1, puncture: 26.95, slash: 26.95 }   # total 98
 
 source:
   url: https://wiki.warframe.com/w/Akmagnus
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

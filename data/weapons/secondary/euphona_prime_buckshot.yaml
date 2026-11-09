@@ -16,6 +16,11 @@ attack:
   spread:
     min_deg: 21.0
     max_deg: 41.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 21.0
+      hip_max_deg: 41.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 1.5
@@ -30,8 +35,13 @@ attack:
   falloff:
     start_m: 6.0
     end_m: 12.0
-    reduction: 0.9886
+    reduction: 0.988636363636
   damage: { impact: 4.4, puncture: 17.6, slash: 66 }   # 88 a pellet, 880 a shot
 
 source:
   url: https://wiki.warframe.com/w/Euphona_Prime
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

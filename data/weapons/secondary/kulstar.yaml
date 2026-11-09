@@ -37,6 +37,11 @@ attack:
   spread:
     min_deg: 2.5
     max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 2.5
+      hip_max_deg: 5.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 100
@@ -83,6 +88,8 @@ attack:
       status_chance: 0.19
 
 unmodeled:
+  - reason: client_projectile_acceleration
+  - reason: client_accuracy_runtime
   - reason: explosion_ignores_cover
   - reason: self_stagger
   - reason: cluster_bomblet_co
@@ -90,3 +97,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Kulstar
+
+# see notes: client_secondary_calibration

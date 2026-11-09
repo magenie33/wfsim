@@ -45,7 +45,7 @@ attack:
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 80
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   charge_seconds: 0.4
   charge_cadence: draw_then_rate
   multishot: 1.0
@@ -69,3 +69,7 @@ source:
   url: https://wiki.warframe.com/w/Ballistica_Incarnon_Genesis
   # wiki module `Attacks[].AttackName`: "Incarnon Form"
 
+unmodeled:
+  - reason: client_projectile_collision
+
+# see notes: client_secondary_calibration

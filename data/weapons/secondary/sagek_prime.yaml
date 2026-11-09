@@ -39,9 +39,14 @@ attack:
   spread:
     min_deg: 1.5
     max_deg: 11.5
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 7.5
+      hip_max_deg: 17.5
   trigger: auto
   shot_type: hit_scan
-  fire_rate: 12.33
+  fire_rate: 12.3333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.30
@@ -52,10 +57,16 @@ attack:
   punch_through_m: 0.0
   # see notes: wall_ramp_full_damage
   range_m: 300.0
-  damage: { impact: 6.112, puncture: 8.246, slash: 11.642 }   # total 26
+  damage:
+    impact: 6.3
+    puncture: 8.5
+    slash: 12.0
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Critical hits have a 6% chance to set the next shot's status chance to 500% (wiki). The engine does not model this crit-triggered status lock, so it procs at its card's 1%. It is most of the weapon; the number reads low."
 
 source:
   url: https://wiki.warframe.com/w/Sagek_Prime
+
+# see notes: client_secondary_calibration

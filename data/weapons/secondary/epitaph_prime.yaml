@@ -39,6 +39,11 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 1.5
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.0
+      hip_max_deg: 3.0
   # NO CLIP AND NO RELOAD: a shot draws straight from the reserve, so a charged
   # shot is the draw plus the listed rate's interval and nothing after it.
   # Owner-measured (M114); the wiki says it too — "No magazine; does not need
@@ -63,3 +68,9 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Epitaph_Prime
+
+unmodeled:
+  - reason: client_secondary_charge_packet
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

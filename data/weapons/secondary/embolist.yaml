@@ -2,10 +2,7 @@ id: embolist
 name: Embolist
 slot: secondary
 weapon_type: secondary
-# A NINE-METRE TOXIN SPRAY WITH A ONE-METRE SPHERE AT THE END OF IT, and a 41%
-# status chance that is the highest in this batch. The shortest reach of any
-# weapon in the roster, and the ramp floor to match it: 45%, the highest of any
-# beam but the Phage's.
+# A short-range Toxin spray with a terminal damage sphere.
 class: pistol
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -33,10 +30,7 @@ reload_seconds: 1.3
 # see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
-# WHERE THE RAMP STARTS. "Damage ramps up from 45% to 100% over 0.6 seconds when
-# firing. After firing stops for 0.8 seconds, the damage decays back to 45% over
-# 2 seconds" — a stated exception to the 20% most beams get.
-beam_ramp_floor: 0.45
+beam_ramp_floor: 0.3
 
 attack:
   # see notes: cone_half_angle_from
@@ -66,7 +60,17 @@ attack:
       origin: radius_targets
   # THE REACH IS THE BEAM'S and lives in the `beam:` block above —
   # wiki: "Range: 9.0 m".
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
   damage: { toxin: 35 }   # total 35
 
 source:
   url: https://wiki.warframe.com/w/Embolist
+
+unmodeled:
+  - reason: client_secondary_other_behavior
+  - reason: client_beam_target_ramp
+
+# see notes: client_secondary_calibration

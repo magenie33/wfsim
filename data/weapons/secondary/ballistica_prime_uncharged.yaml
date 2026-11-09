@@ -16,13 +16,18 @@ attack:
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 0.0
-    max_deg: 50
+    max_deg: 50.0
+    sampling:
+      horizontal_ratio: 0.4
+      uniform: true
+      hip_min_deg: 2.5
+      hip_max_deg: 50.0
   # Tapping is a semi-auto press, not a draw, and it costs the same four ammo
   # ("Consumes 4 ammo per shot regardless of charge-up", wiki).
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 70
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   multishot: 4.0
   ammo_cost: 4
   crit_chance: 0.2
@@ -36,3 +41,8 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Ballistica_Prime
   # wiki module `Attacks[].AttackName`: "Normal Shot"
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

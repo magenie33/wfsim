@@ -40,7 +40,7 @@ attack:
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 50
-  fire_rate: 2.83
+  fire_rate: 2.83333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.23
@@ -55,3 +55,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Fusilai
+
+# see notes: client_secondary_calibration

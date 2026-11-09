@@ -17,11 +17,16 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 3.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 1.0
+      hip_max_deg: 3.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 1.6
   multishot: 1.0
-  ammo_cost: 1
+  ammo_cost: 4
   crit_chance: 0.08
   crit_multiplier: 2.4
   status_chance: 0.32
@@ -30,6 +35,9 @@ attack:
   damage: { toxin: 40 }   # total 40
 
 unmodeled:
+  - reason: client_secondary_toggle_reload
+  - reason: client_projectile_callbacks
+  - reason: client_accuracy_runtime
   - "The snare damages, paralyses for about 6 s and pulls up to 8 enemies within 15 m, the count multiplied by multishot (wiki). The engine applies it to the aimed body only, so the 40 Toxin here is all it pays."
   - "Its damage is not affected by mods and does not combine with modded elements (wiki); the engine scales every attack by the build, so a modded build reads high in this mode."
   - "Its radius is not affected by Fulmination (wiki); this entry has no radius for it to change anyway."
@@ -37,3 +45,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Scyotid
+
+# see notes: client_secondary_calibration

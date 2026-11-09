@@ -37,6 +37,11 @@ attack:
   spread:
     min_deg: 0.5
     max_deg: 7.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.5
+      hip_max_deg: 13.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 100
@@ -52,7 +57,10 @@ attack:
   damage: { impact: 4.4, puncture: 37.84, slash: 1.76 }   # total 44
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: bolt_corpse_ragdoll
 
 source:
   url: https://wiki.warframe.com/w/Akbolto_Prime
+
+# see notes: client_secondary_calibration

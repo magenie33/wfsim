@@ -39,12 +39,15 @@ attack:
   punch_through_m: 2.0
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 13.0 m" on this attack.
-  range_m: 13.0
+  range_m: 12
   damage: { heat: 88 }   # total 88
 
 unmodeled:
+  - reason: client_clip_burst
   - "The burst empties the magazine, and this entry fires a fixed count, the unmodded magazine. Magazine mods lengthen the burst (page), so a build with one reads low."
   - "The cone is 2 m thick (wiki); the sim fires a ray with no width."
 
 source:
   url: https://wiki.warframe.com/w/Athodai
+
+# see notes: client_secondary_calibration

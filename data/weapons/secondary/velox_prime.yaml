@@ -36,6 +36,11 @@ attack:
   spread:
     min_deg: 2.0
     max_deg: 6.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 4.0
+      hip_max_deg: 10.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 17.0
@@ -50,8 +55,11 @@ attack:
   damage: { impact: 6.48, puncture: 7.56, slash: 12.96 }   # total 27
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: empty_reload_is_faster
     seconds: 2.6
 
 source:
   url: https://wiki.warframe.com/w/Velox_Prime
+
+# see notes: client_secondary_calibration

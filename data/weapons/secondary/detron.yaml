@@ -43,17 +43,22 @@ attack:
   spread:
     min_deg: 12.0
     max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 18.0
+      hip_max_deg: 25.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 150
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   # Seven pellets of 40 Radiation apiece, 280 a shot.
   multishot: 7.0
   ammo_cost: 1
   crit_chance: 0.04
   crit_multiplier: 1.5
-  status_chance: 0.1286
+  status_chance: 0.128571428571429
   punch_through_m: 0.0
   # NO RANGE ROW on this attack — Projectile at 150 m/s. See
   # data/surveys/weapon_range.yaml.
@@ -62,9 +67,14 @@ attack:
   # is what the infobox's floor figure is computed from.
   falloff:
     start_m: 13.0
-    end_m: 22.0
-    reduction: 0.6231
+    end_m: 26.0
+    reduction: 0.65
   damage: { radiation: 40 }   # 40 a pellet, 280 a shot
 
 source:
   url: https://wiki.warframe.com/w/Detron
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

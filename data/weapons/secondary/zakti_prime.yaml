@@ -38,6 +38,11 @@ attack:
   spread:
     min_deg: 2.5
     max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.5
+      hip_max_deg: 5.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 140
@@ -69,8 +74,11 @@ attack:
     damage: { gas: 100 }   # total 100
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The cloud arrives 1 s after the dart lands (wiki); here it resolves on impact, so nothing walks out of it."
   - reason: explosion_ignores_cover
 
 source:
   url: https://wiki.warframe.com/w/Zakti_Prime
+
+# see notes: client_secondary_calibration

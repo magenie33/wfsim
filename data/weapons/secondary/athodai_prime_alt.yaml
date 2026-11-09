@@ -43,8 +43,11 @@ attack:
   damage: { heat: 100 }   # total 100
 
 unmodeled:
+  - reason: client_clip_burst
   - "The burst empties the magazine, and this entry fires a fixed count, the unmodded magazine. Magazine mods lengthen the burst (page), so a build with one reads low."
   - "The cone is 2 m thick (wiki); the sim fires a ray with no width."
 
 source:
   url: https://wiki.warframe.com/w/Athodai_Prime
+
+# see notes: client_secondary_calibration

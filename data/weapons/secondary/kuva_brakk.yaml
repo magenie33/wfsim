@@ -51,8 +51,13 @@ valence:
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 9
-    max_deg: 17
+    min_deg: 9.0
+    max_deg: 17.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 20.0
+      hip_max_deg: 27.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 5.0
@@ -77,9 +82,14 @@ attack:
   falloff:
     start_m: 10.0
     end_m: 20.0
-    reduction: 0.96
+    reduction: 0.933333333333
   # "Primarily Impact damage weapon."
   damage: { impact: 6.75, puncture: 3.75, slash: 4.5 }   # 15 per pellet
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Brakk
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

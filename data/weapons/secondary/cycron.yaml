@@ -81,10 +81,17 @@ attack:
       damage_per_hop: 0.0
       origin: radius_targets
 
-# THE RAMP FLOOR IS 30%, not the engine's 20% default: "Damage ramps up from 30%
-# to 100% over 0.6 seconds when firing. After firing stops for 0.8 seconds, the
-# damage decays back to 30% over 2 seconds." Identical to the Tenet's.
-beam_ramp_floor: 0.30
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
+beam_ramp_floor: 0.2
 
 source:
   url: https://wiki.warframe.com/w/Cycron
+
+unmodeled:
+  - reason: client_beam_target_ramp
+  - reason: client_battery_defaults
+
+# see notes: client_secondary_calibration

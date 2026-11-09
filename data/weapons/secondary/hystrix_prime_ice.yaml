@@ -17,6 +17,11 @@ attack:
   spread:
     min_deg: 5.0
     max_deg: 9.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 8.0
+      hip_max_deg: 14.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 80
@@ -32,8 +37,11 @@ attack:
   damage: { impact: 2.76, puncture: 39.56, slash: 3.68 }   # total 46
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: quill_corpse_ragdoll
   - reason: khora_headshot_reload
 
 source:
   url: https://wiki.warframe.com/w/Hystrix_Prime
+
+# see notes: client_secondary_calibration

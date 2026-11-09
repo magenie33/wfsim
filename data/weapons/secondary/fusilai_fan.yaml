@@ -25,7 +25,7 @@ attack:
   ammo_cost: 3
   crit_chance: 0.03
   crit_multiplier: 1.5
-  status_chance: 0.123
+  status_chance: 0.123333333333333
   punch_through_m: 0.0
   # see notes: no_range_row_attack
   damage: { puncture: 30.8, slash: 46.2 }   # 77 a pellet, 231 a shot
@@ -35,3 +35,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Fusilai
+
+# see notes: client_secondary_calibration

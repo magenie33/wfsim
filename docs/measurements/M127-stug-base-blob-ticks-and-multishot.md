@@ -322,3 +322,12 @@ explicit conservative rule.
 
 Tests: `fight::tests::m127_stug`; M109 birth/merge boundaries are covered there
 and in `fight::tests::blobs`.
+
+## Parsed input adoption
+
+The secondary calibration receipt binds attached `EmbedAttack` and explosive
+`EmbedDeathAttack` separately. Incarnon nominal rate uses 150 RPM (2.5 Hz); the
+explosion uses its configured `ExplosionFallOff=0.3`. The reported damage and
+clock observations above remain unchanged and do not measure radial falloff.
+`tests/fixtures/client/secondary-calibration-2026-10-28.json` records adopted
+inputs and unverified native consumers separately.

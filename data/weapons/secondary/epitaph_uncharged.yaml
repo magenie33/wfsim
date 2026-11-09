@@ -21,6 +21,11 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 1.5
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.0
+      hip_max_deg: 3.0
   # NO CLIP AND NO RELOAD, as on the charged shot — the weapon's, not the form's (M114).
   no_magazine: true
   trigger: semi_auto
@@ -51,8 +56,13 @@ attack:
     damage: { blast: 20 }   # total 20
 
 unmodeled:
+  - reason: client_projectile_callbacks
+  - reason: client_projectile_acceleration
+  - reason: client_accuracy_runtime
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Epitaph
+
+# see notes: client_secondary_calibration

@@ -67,9 +67,21 @@ attack:
       range_m: 7.0
       damage_per_hop: 0.75
       origin: radius_targets
+      compounds: true
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
   damage: { heat: 29 }   # total 29
 
 # incarnon_evolutions: definitions live in data/evolutions/atomos_*.yaml.
 
 source:
   url: https://wiki.warframe.com/w/Atomos
+beam_ramp_floor: 0.2
+
+unmodeled:
+  - reason: client_beam_target_ramp
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

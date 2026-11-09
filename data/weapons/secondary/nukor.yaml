@@ -45,7 +45,7 @@ attack:
   shot_type: hit_scan
   fire_rate: 10
   multishot: 1.0
-  ammo_cost: 0.5
+  ammo_cost: 1
   crit_chance: 0.03
   crit_multiplier: 4.0
   status_chance: 0.29
@@ -60,3 +60,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Nukor
+
+# see notes: client_secondary_calibration

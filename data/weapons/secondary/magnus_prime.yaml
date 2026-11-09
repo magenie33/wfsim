@@ -36,6 +36,11 @@ attack:
   spread:
     min_deg: 0.5
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.5
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 5.0
@@ -51,7 +56,10 @@ attack:
   damage: { impact: 44.1, puncture: 26.95, slash: 26.95 }   # total 98
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Chamber Cascade: a hit or a damaging status has a 4% chance to grant 100% ammo efficiency for 4 s (wiki). Reserves are infinite by default, so it adds nothing here."
 
 source:
   url: https://wiki.warframe.com/w/Magnus_Prime
+
+# see notes: client_secondary_calibration

@@ -1,0 +1,2695 @@
+{
+  "groups": [
+    {
+      "group": "acrid",
+      "owner": "/Lotus/Weapons/ClanTech/Bio/AcidDartPistol",
+      "forms": [
+        {
+          "id": "acrid",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "aegrit",
+      "owner": "/Lotus/Weapons/Grineer/ThrowingWeapons/GrnVorStickyBomb/GrnVorStickyBomb",
+      "forms": [
+        {
+          "id": "aegrit",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "afuris",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/AkimboAutoPistols",
+      "forms": [
+        {
+          "id": "afuris",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "afuris_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAfuris/PrimeAFurisWeapon",
+      "forms": [
+        {
+          "id": "afuris_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akarius",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/SapientPistol/SapientPistol",
+      "forms": [
+        {
+          "id": "akarius",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akarius_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAkarius/PrimeAkariusWeapon",
+      "forms": [
+        {
+          "id": "akarius_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akbolto",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/AkimboBolto",
+      "forms": [
+        {
+          "id": "akbolto",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akbolto_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAkbolto/PrimeAkBoltoWeapon",
+      "forms": [
+        {
+          "id": "akbolto_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akbronco",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/AkimboShotGun",
+      "forms": [
+        {
+          "id": "akbronco",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akbronco_prime",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/PrimeAkimboShotGun",
+      "forms": [
+        {
+          "id": "akbronco_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akjagara",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TigrisRedeemerSetPistol/TnoBladedPistols",
+      "forms": [
+        {
+          "id": "akjagara",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akjagara_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAkjagara/AkJagaraPrime",
+      "forms": [
+        {
+          "id": "akjagara_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "aklato",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/AkimboPistol",
+      "forms": [
+        {
+          "id": "aklato",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "aklex",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/AkLexPistols",
+      "forms": [
+        {
+          "id": "aklex",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "aklex_prime",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/AkLexPrimePistols",
+      "forms": [
+        {
+          "id": "aklex_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akmagnus",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/DualMagnus",
+      "forms": [
+        {
+          "id": "akmagnus",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akmagnus_prime",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/DualMagnusPrime",
+      "forms": [
+        {
+          "id": "akmagnus_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "aksomati",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/SomaSidearm/AkimboSomaPistols",
+      "forms": [
+        {
+          "id": "aksomati",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "aksomati_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAksomati/PrimeAksomati",
+      "forms": [
+        {
+          "id": "aksomati_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "aksondol",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/DuelistPistols/DuelistPistols",
+      "forms": [
+        {
+          "id": "aksondol",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akstiletto",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TennoUzi/TennoUzi",
+      "forms": [
+        {
+          "id": "akstiletto",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akstiletto_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAkstiletto/PrimeAkstiletto",
+      "forms": [
+        {
+          "id": "akstiletto_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akvasto",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/DualVastos",
+      "forms": [
+        {
+          "id": "akvasto",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akvasto_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeVasto/AkPrimeVasto/AkPrimeVastoPistol",
+      "forms": [
+        {
+          "id": "akvasto_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "akzani",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/HarlequinGun/HarlequinPistols",
+      "forms": [
+        {
+          "id": "akzani",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "angstrum",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpHandRL/CorpusHandRocketLauncher",
+      "forms": [
+        {
+          "id": "angstrum",
+          "form": "charged",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "apply_charge_time": true,
+          "weapon_metadata": true
+        },
+        {
+          "id": "angstrum_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "arca_scisco",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/SniperPistol/CrpScopeGun",
+      "forms": [
+        {
+          "id": "arca_scisco",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "athodai",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnJetTurbine/TnJetTurbinePistolWeapon",
+      "forms": [
+        {
+          "id": "athodai",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "athodai_alt",
+          "form": "alt_fire",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "athodai_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeAthodai/PrimeAthodaiPistolWeapon",
+      "forms": [
+        {
+          "id": "athodai_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "athodai_prime_alt",
+          "form": "alt_fire",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "atomos",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/HeatGun/GrnHeatGun",
+      "forms": [
+        {
+          "id": "atomos",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "atomos_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "azima",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/SundialGun/SundialPistol",
+      "forms": [
+        {
+          "id": "azima",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "unmodelled_behaviors": [
+            1
+          ],
+          "limits": [
+            "client_secondary_other_behavior"
+          ],
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "ballistica",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/AutomaticHandCrossbow/AutoCrossBow",
+      "forms": [
+        {
+          "id": "ballistica",
+          "form": "charged",
+          "behavior": 0,
+          "projectile_key": "chargedProjectileType",
+          "charge_stage": "full",
+          "apply_charge_time": true,
+          "unmodelled_behaviors": [
+            1
+          ],
+          "limits": [
+            "client_secondary_other_behavior"
+          ],
+          "weapon_metadata": true
+        },
+        {
+          "id": "ballistica_incarnon",
+          "form": "incarnon",
+          "behavior": 2,
+          "projectile_key": "chargedProjectileType",
+          "charge_stage": "full",
+          "apply_charge_time": true
+        }
+      ]
+    },
+    {
+      "group": "ballistica_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeBallistica/PrimeBallistica",
+      "forms": [
+        {
+          "id": "ballistica_prime",
+          "form": "charged",
+          "behavior": 0,
+          "projectile_key": "chargedProjectileType",
+          "charge_stage": "full",
+          "apply_charge_time": true,
+          "weapon_metadata": true
+        },
+        {
+          "id": "ballistica_prime_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "chargedProjectileType",
+          "charge_stage": "full",
+          "apply_charge_time": true
+        },
+        {
+          "id": "ballistica_prime_uncharged",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "minimum",
+          "apply_charge_time": true
+        }
+      ]
+    },
+    {
+      "group": "bolto",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/CrossBow",
+      "forms": [
+        {
+          "id": "bolto",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "brakk",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrineerHandShotgun/GrineerHandCannon",
+      "forms": [
+        {
+          "id": "brakk",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "bronco",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/HandShotGun",
+      "forms": [
+        {
+          "id": "bronco",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "bronco_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "bronco_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/BroncoPrime",
+      "forms": [
+        {
+          "id": "bronco_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "bronco_prime_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "cantare",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/TnChoirframeKunai/TnChoirframeKunai",
+      "forms": [
+        {
+          "id": "cantare",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "retain": {
+            "ammo_max": "client_secondary_return_ammo"
+          },
+          "limits": [
+            "client_secondary_return_ammo"
+          ],
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "castanas",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/StickyBomb/StickyBombs",
+      "forms": [
+        {
+          "id": "castanas",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "catabolyst",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfBeamPistol/InfBeamPistol",
+      "forms": [
+        {
+          "id": "catabolyst",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "component_model": "reload_grenade",
+          "limits": [
+            "client_secondary_reload_grenade"
+          ],
+          "grenade_attachment": "/Lotus/Weapons/Infested/Pistols/InfBeamPistol/InfBeamPistolAttachment",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "catchmoon_secondary",
+      "owner": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelAPart",
+      "forms": [
+        {
+          "id": "catchmoon_secondary",
+          "form": "base",
+          "behavior": null,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "modular_override": "BehaviorOverrides",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "cestra",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CorpusMinigun/CorpusMinigun",
+      "forms": [
+        {
+          "id": "cestra",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "cestra_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "coda_catabolyst",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaCatabolyst",
+      "forms": [
+        {
+          "id": "coda_catabolyst",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "component_model": "reload_grenade",
+          "limits": [
+            "client_secondary_reload_grenade"
+          ],
+          "grenade_attachment": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaCatabolystPistolAttachment",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "coda_pox",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaPox",
+      "forms": [
+        {
+          "id": "coda_pox",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "coda_tysis",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaTysis",
+      "forms": [
+        {
+          "id": "coda_tysis",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "cyanex",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpSentAmalgPistol/CrpSentAmalgPistol",
+      "forms": [
+        {
+          "id": "cyanex",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "cyanex_burst",
+          "form": "alt_fire",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "cycron",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpChargeGun/CrpChargeGun",
+      "forms": [
+        {
+          "id": "cycron",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "despair",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/StalkerKunai",
+      "forms": [
+        {
+          "id": "despair",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "despair_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "detron",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CorpusHandShotgun/CorpusHandCannon",
+      "forms": [
+        {
+          "id": "detron",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "dex_furis",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/DexFuris/DexFuris",
+      "forms": [
+        {
+          "id": "dex_furis",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "dual_cestra",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CorpusMinigun/DualCorpusMinigun",
+      "forms": [
+        {
+          "id": "dual_cestra",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "dual_coda_torxica",
+      "owner": "/Lotus/Weapons/Infested/InfestedLich/Pistols/1999InfSporePistol/1999InfSporePistolWeapon",
+      "forms": [
+        {
+          "id": "dual_coda_torxica",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "dual_toxocyst",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfVomitGun/InfVomitGunWep",
+      "forms": [
+        {
+          "id": "dual_toxocyst",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "dual_toxocyst_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "efv_8_mars",
+      "owner": "/Lotus/Weapons/Lasria/LasGooPistol/LasGooPistolPlayerWeapon",
+      "forms": [
+        {
+          "id": "efv_8_mars",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "efv_8_mars_alt",
+          "form": "charged",
+          "behavior": 1,
+          "projectile_key": "chargedProjectileType",
+          "charge_stage": "full",
+          "apply_charge_time": true
+        }
+      ]
+    },
+    {
+      "group": "embolist",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfestedPistol",
+      "forms": [
+        {
+          "id": "embolist",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "unmodelled_behaviors": [
+            1
+          ],
+          "limits": [
+            "client_secondary_other_behavior"
+          ],
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "epitaph",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnWraitheSidearm/TnWraitheSidearmWeapon",
+      "forms": [
+        {
+          "id": "epitaph",
+          "form": "charged",
+          "behavior": 0,
+          "projectile_key": "chargedProjectileType",
+          "charge_stage": "full",
+          "charge_factor": "state_damage",
+          "limits": [
+            "client_secondary_charge_packet"
+          ],
+          "apply_charge_time": true,
+          "weapon_metadata": true
+        },
+        {
+          "id": "epitaph_uncharged",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "minimum",
+          "apply_charge_time": true
+        }
+      ]
+    },
+    {
+      "group": "epitaph_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeEpitaph/PrimeEpitaphSidearmWeapon",
+      "forms": [
+        {
+          "id": "epitaph_prime",
+          "form": "charged",
+          "behavior": 0,
+          "projectile_key": "chargedProjectileType",
+          "charge_stage": "full",
+          "charge_factor": "state_damage",
+          "limits": [
+            "client_secondary_charge_packet"
+          ],
+          "apply_charge_time": true,
+          "weapon_metadata": true
+        },
+        {
+          "id": "epitaph_prime_uncharged",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "minimum",
+          "apply_charge_time": true
+        }
+      ]
+    },
+    {
+      "group": "euphona_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/AllNew1hSG/AllNew1hSG",
+      "forms": [
+        {
+          "id": "euphona_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "euphona_prime_buckshot",
+          "form": "alt_fire",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "furis",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/AutoPistol",
+      "forms": [
+        {
+          "id": "furis",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "furis_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "fusilai",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/GlassKunai/GlassKunaiWeapon",
+      "forms": [
+        {
+          "id": "fusilai",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "fusilai_fan",
+          "form": "semi_auto",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "gammacor",
+      "owner": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray",
+      "forms": [
+        {
+          "id": "gammacor",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "gammacor_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "gaze_secondary",
+      "owner": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelDPart",
+      "forms": [
+        {
+          "id": "gaze_secondary",
+          "form": "base",
+          "behavior": null,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "modular_override": "BehaviorOverrides",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "grimoire",
+      "owner": "/Lotus/Weapons/Tenno/Grimoire/TnGrimoire",
+      "forms": [
+        {
+          "id": "grimoire",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "grimoire_active",
+          "form": "alt_fire",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "component_model": "orb",
+          "retain": {
+            "attack.damage": "client_secondary_orb_packet",
+            "attack.radial.damage": "client_secondary_orb_packet",
+            "reload_seconds": "client_secondary_orb_packet"
+          },
+          "limits": [
+            "client_secondary_orb_packet"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "hikou",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/TennoStars",
+      "forms": [
+        {
+          "id": "hikou",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "hikou_prime",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/PrimeThrowingStar/PrimeHikou",
+      "forms": [
+        {
+          "id": "hikou_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "hystrix",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/QuillDartgun/QuillDartGunWeapon",
+      "forms": [
+        {
+          "id": "hystrix",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "hystrix_electric",
+          "form": "electricity",
+          "behavior": 2,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        },
+        {
+          "id": "hystrix_fire",
+          "form": "heat",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        },
+        {
+          "id": "hystrix_ice",
+          "form": "cold",
+          "behavior": 3,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "hystrix_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeHystrix/PrimeHystrixWeapon",
+      "forms": [
+        {
+          "id": "hystrix_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "hystrix_prime_electric",
+          "form": "electricity",
+          "behavior": 2,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        },
+        {
+          "id": "hystrix_prime_fire",
+          "form": "heat",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        },
+        {
+          "id": "hystrix_prime_ice",
+          "form": "cold",
+          "behavior": 3,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "knell",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnPriestPistolScope/TnPriestPistolWeapon",
+      "forms": [
+        {
+          "id": "knell",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "knell_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeKnell/PrimeKnellWeapon",
+      "forms": [
+        {
+          "id": "knell_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "kohmak",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrnKohmPistol/GrnKohmPistol",
+      "forms": [
+        {
+          "id": "kohmak",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "kompressa",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnYareliPistol/TnYareliPistolWeapon",
+      "forms": [
+        {
+          "id": "kompressa",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "kompressa_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeKompressa/PrimeKompressa",
+      "forms": [
+        {
+          "id": "kompressa_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "kraken",
+      "owner": "/Lotus/Weapons/Grineer/GrineerPistol/GrnHeavyPistol",
+      "forms": [
+        {
+          "id": "kraken",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "kulstar",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrnTorpedoPistol/GrnTorpedoPistol",
+      "forms": [
+        {
+          "id": "kulstar",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "kunai",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/Kunai",
+      "forms": [
+        {
+          "id": "kunai",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "kunai_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "kuva_brakk",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Brakk/KuvaBrakk",
+      "forms": [
+        {
+          "id": "kuva_brakk",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "kuva_kraken",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Kraken/KuvaKraken",
+      "forms": [
+        {
+          "id": "kuva_kraken",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "kuva_kraken_mag_burst",
+          "form": "alt_fire",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "kuva_nukor",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Nukor/KuvaNukor",
+      "forms": [
+        {
+          "id": "kuva_nukor",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "kuva_seer",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Seer/KuvaSeer",
+      "forms": [
+        {
+          "id": "kuva_seer",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "kuva_twin_stubbas",
+      "owner": "/Lotus/Weapons/Grineer/KuvaLich/Secondaries/Stubba/KuvaStubba",
+      "forms": [
+        {
+          "id": "kuva_twin_stubbas",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "laetum",
+      "owner": "/Lotus/Weapons/Tenno/Zariman/Pistols/HeavyPistol/ZarimanHeavyPistol",
+      "forms": [
+        {
+          "id": "laetum",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "laetum_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "lato",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/Pistol",
+      "forms": [
+        {
+          "id": "lato",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "lato_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "lato_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/LatoPrime",
+      "forms": [
+        {
+          "id": "lato_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "lato_prime_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "lato_vandal",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/LatoVandal",
+      "forms": [
+        {
+          "id": "lato_vandal",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "lato_vandal_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "lex",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/HeavyPistol",
+      "forms": [
+        {
+          "id": "lex",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "lex_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "lex_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeLex/PrimeLex",
+      "forms": [
+        {
+          "id": "lex_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "lex_prime_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "magnus",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/Magnum/Magnum",
+      "forms": [
+        {
+          "id": "magnus",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "magnus_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeMagnus/PrimeMagnusWeapon",
+      "forms": [
+        {
+          "id": "magnus_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "mara_detron",
+      "owner": "/Lotus/Weapons/VoidTrader/VTDetron",
+      "forms": [
+        {
+          "id": "mara_detron",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "marelok",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrineerLeverActionPistol/GLAPistol",
+      "forms": [
+        {
+          "id": "marelok",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "mk1_furis",
+      "owner": "/Lotus/Weapons/MK1Series/MK1Furis",
+      "forms": [
+        {
+          "id": "mk1_furis",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "mk1_furis_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "mk1_kunai",
+      "owner": "/Lotus/Weapons/MK1Series/MK1Kunai",
+      "forms": [
+        {
+          "id": "mk1_kunai",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "mk1_kunai_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "nukor",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrineerMicrowavegun/GrnMicrowavePistol",
+      "forms": [
+        {
+          "id": "nukor",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "ocucor",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpSentExperimentPistol/CrpSentExperimentPistol",
+      "forms": [
+        {
+          "id": "ocucor",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "onos",
+      "owner": "/Lotus/Weapons/Thanotech/EntratiWristGun/EntratiWristGunWeapon",
+      "forms": [
+        {
+          "id": "onos",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "onos_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "unmodelled_behaviors": [
+            2
+          ],
+          "limits": [
+            "client_secondary_other_behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "pandero",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnBardPistol/TnBardPistolGun",
+      "forms": [
+        {
+          "id": "pandero",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "pandero_alt",
+          "form": "alt_fire",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "pandero_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimePandero/PanderoPrimeWeapon",
+      "forms": [
+        {
+          "id": "pandero_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "pandero_prime_alt",
+          "form": "alt_fire",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "plinx",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpSonificBlastor/CrpBlastorWeapon",
+      "forms": [
+        {
+          "id": "plinx",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "pox",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfProximityStars/InfProximityStars",
+      "forms": [
+        {
+          "id": "pox",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "prisma_angstrum",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpHandRL/PrismaAngstrum",
+      "forms": [
+        {
+          "id": "prisma_angstrum",
+          "form": "charged",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "apply_charge_time": true,
+          "weapon_metadata": true
+        },
+        {
+          "id": "prisma_angstrum_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "prisma_twin_gremlins",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrineerBulbousSMG/Prisma/PrismaTwinGremlinsWeapon",
+      "forms": [
+        {
+          "id": "prisma_twin_gremlins",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "pyrana",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/SawnOffShotgun/TennoHandShotgun",
+      "forms": [
+        {
+          "id": "pyrana",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "non_attack_behaviors": [
+            1
+          ],
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "pyrana_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimePyrana/PrimePyranaPistol",
+      "forms": [
+        {
+          "id": "pyrana_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "quatz",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrnAmphisPistol/GrnAmphisPistol",
+      "forms": [
+        {
+          "id": "quatz",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "quatz_burst",
+          "form": "aimed",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "rakta_ballistica",
+      "owner": "/Lotus/Weapons/Syndicates/RedVeil/Pistols/RVBallistica",
+      "forms": [
+        {
+          "id": "rakta_ballistica",
+          "form": "charged",
+          "behavior": 0,
+          "projectile_key": "chargedProjectileType",
+          "charge_stage": "full",
+          "apply_charge_time": true,
+          "unmodelled_behaviors": [
+            1
+          ],
+          "limits": [
+            "client_secondary_other_behavior"
+          ],
+          "weapon_metadata": true
+        },
+        {
+          "id": "rakta_ballistica_incarnon",
+          "form": "incarnon",
+          "behavior": 2,
+          "projectile_key": "chargedProjectileType",
+          "charge_stage": "full",
+          "apply_charge_time": true
+        }
+      ]
+    },
+    {
+      "group": "rattleguts_secondary",
+      "owner": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelCPart",
+      "forms": [
+        {
+          "id": "rattleguts_secondary",
+          "form": "base",
+          "behavior": null,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "modular_override": "BehaviorOverrides",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "riot_848",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/1999EntHybridPistolWeapon/1999EntHybridPistolWeapon",
+      "forms": [
+        {
+          "id": "riot_848",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "retain": {
+            "ammo_max": "client_secondary_return_ammo"
+          },
+          "limits": [
+            "client_secondary_return_ammo"
+          ],
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "sagek_prime",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrnOrokinPistol/GrnOrokinPistol",
+      "forms": [
+        {
+          "id": "sagek_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "sancti_castanas",
+      "owner": "/Lotus/Weapons/Syndicates/NewLoka/Pistols/NLCastanas",
+      "forms": [
+        {
+          "id": "sancti_castanas",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "scyotid",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/TnOraxiaFlechette/TnOraxiaFlechette",
+      "forms": [
+        {
+          "id": "scyotid",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "scyotid_snare",
+          "form": "semi_auto",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "reload_behavior": 0,
+          "limits": [
+            "client_secondary_toggle_reload"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "secura_dual_cestra",
+      "owner": "/Lotus/Weapons/Syndicates/PerrinSequence/Pistols/PSDualCestra",
+      "forms": [
+        {
+          "id": "secura_dual_cestra",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "seer",
+      "owner": "/Lotus/Weapons/Grineer/GrineerPistol/GrnScopedPistolPlayer",
+      "forms": [
+        {
+          "id": "seer",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "sepulcrum",
+      "owner": "/Lotus/Weapons/Thanotech/ThanoPistol/ThanotechPistol",
+      "forms": [
+        {
+          "id": "sepulcrum",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "sepulcrum_lockon",
+          "form": "alt_fire",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "sicarus",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/BurstPistol",
+      "forms": [
+        {
+          "id": "sicarus",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "sicarus_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "sicarus_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeSicarus/PrimeSicarusPistol",
+      "forms": [
+        {
+          "id": "sicarus_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "sicarus_prime_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "sonicor",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpAirPistol/CrpAirPistolArray",
+      "forms": [
+        {
+          "id": "sonicor",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "spectra",
+      "owner": "/Lotus/Weapons/ClanTech/Energy/CrpLaserPistol",
+      "forms": [
+        {
+          "id": "spectra",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "spectra_vandal",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CorpusModularPistol/Vandal/CrpLaserPistolVandal",
+      "forms": [
+        {
+          "id": "spectra_vandal",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "spira",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/LiDagger/LiDagger",
+      "forms": [
+        {
+          "id": "spira",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "spira_prime",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/PrimeLiDagger/PrimeLiDagger",
+      "forms": [
+        {
+          "id": "spira_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "sporelacer_secondary",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelEgg/InfModularBarrelEggPart",
+      "forms": [
+        {
+          "id": "sporelacer_secondary",
+          "form": "base",
+          "behavior": null,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "modular_override": "BehaviorOverrides",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "staticor",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpElectroMag/CrpElectroMag",
+      "forms": [
+        {
+          "id": "staticor",
+          "form": "charged",
+          "behavior": 0,
+          "projectile_key": "chargedProjectileType",
+          "charge_stage": "full",
+          "charge_factor": "state_damage",
+          "limits": [
+            "client_secondary_charge_packet"
+          ],
+          "apply_charge_time": true,
+          "weapon_metadata": true
+        },
+        {
+          "id": "staticor_uncharged",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "minimum",
+          "apply_charge_time": true
+        }
+      ]
+    },
+    {
+      "group": "stubba",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrnUzi/GrnUziWeapon",
+      "forms": [
+        {
+          "id": "stubba",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "stug",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrineerCrossbow/GrineerGooGun",
+      "forms": [
+        {
+          "id": "stug",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "damage_key": "EmbedAttack",
+          "component_model": "blob",
+          "limits": [
+            "client_secondary_blob",
+            "client_secondary_other_behavior"
+          ],
+          "retain": {
+            "attack.status_chance": "client_secondary_blob"
+          },
+          "unmodelled_behaviors": [
+            1
+          ],
+          "weapon_metadata": true
+        },
+        {
+          "id": "stug_incarnon",
+          "form": "incarnon",
+          "behavior": 2,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "damage_key": "EmbedAttack",
+          "component_model": "blob",
+          "limits": [
+            "client_secondary_blob"
+          ]
+        }
+      ]
+    },
+    {
+      "group": "synoid_gammacor",
+      "owner": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSSynoidGammacor",
+      "forms": [
+        {
+          "id": "synoid_gammacor",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "synoid_gammacor_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "talons",
+      "owner": "/Lotus/Weapons/Tenno/ThrowingWeapons/U18ThrowingKnives/U18throwingknives",
+      "forms": [
+        {
+          "id": "talons",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "telos_akbolto",
+      "owner": "/Lotus/Weapons/Syndicates/ArbitersOfHexis/Pistols/AHAkbolto",
+      "forms": [
+        {
+          "id": "telos_akbolto",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "tenet_cycron",
+      "owner": "/Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBECycron/CrpBECycron",
+      "forms": [
+        {
+          "id": "tenet_cycron",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "tenet_detron",
+      "owner": "/Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBEDetron/CrpBEDetron",
+      "forms": [
+        {
+          "id": "tenet_detron",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "tenet_detron_mag_burst",
+          "form": "alt_fire",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "tenet_diplos",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpBriefcaseAkimbo/CrpBriefcaseAkimboPistol",
+      "forms": [
+        {
+          "id": "tenet_diplos",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "tenet_diplos_lock_on",
+          "form": "aimed",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "tenet_plinx",
+      "owner": "/Lotus/Weapons/Corpus/BoardExec/Secondary/CrpBEPlinx/CrpBEPlinxWeapon",
+      "forms": [
+        {
+          "id": "tenet_plinx",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "tenet_plinx_charged",
+          "form": "alt_fire",
+          "behavior": 1,
+          "projectile_key": "chargedProjectileType",
+          "charge_stage": "full",
+          "retain": {
+            "magazine": "client_secondary_clip_charge",
+            "battery": "client_secondary_clip_charge",
+            "reload_seconds": "client_secondary_clip_charge",
+            "attack.damage": "client_secondary_clip_charge",
+            "attack.radial.damage": "client_secondary_clip_charge",
+            "attack.radial.status_chance": "client_secondary_clip_charge"
+          },
+          "limits": [
+            "client_secondary_clip_charge"
+          ],
+          "apply_charge_time": true
+        }
+      ]
+    },
+    {
+      "group": "tenet_spirex",
+      "owner": "/Lotus/Weapons/Corpus/Pistols/CrpIgniterPistol/CrpIgniterPistol",
+      "forms": [
+        {
+          "id": "tenet_spirex",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "tombfinger_secondary",
+      "owner": "/Lotus/Weapons/SolarisUnited/Secondary/SUModularSecondarySet1/Barrel/SUModularSecondaryBarrelBPart",
+      "forms": [
+        {
+          "id": "tombfinger_secondary",
+          "form": "base",
+          "behavior": null,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "modular_override": "BehaviorOverrides",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "twin_grakatas",
+      "owner": "/Lotus/Weapons/Grineer/LongGuns/GrineerAssaultRifle/TwinGrakatas",
+      "forms": [
+        {
+          "id": "twin_grakatas",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "twin_gremlins",
+      "owner": "/Lotus/Weapons/Grineer/GrineerPistol/GrineerAkimboPistol",
+      "forms": [
+        {
+          "id": "twin_gremlins",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "twin_kohmak",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrnDWUniques/GrnTwinKohmaks",
+      "forms": [
+        {
+          "id": "twin_kohmak",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "twin_rogga",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/GrnQueenGuardDualPistol/GrnQueenGuardDualPistols",
+      "forms": [
+        {
+          "id": "twin_rogga",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "twin_vipers",
+      "owner": "/Lotus/Weapons/Tenno/Akimbo/AkimboViperPistols",
+      "forms": [
+        {
+          "id": "twin_vipers",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "twin_vipers_wraith",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/WraithTwinVipers/WraithTwinVipers",
+      "forms": [
+        {
+          "id": "twin_vipers_wraith",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "tysis",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfestedDartPistol/InfestedDartPistol",
+      "forms": [
+        {
+          "id": "tysis",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "vasto",
+      "owner": "/Lotus/Weapons/Tenno/Pistol/RevolverPistol",
+      "forms": [
+        {
+          "id": "vasto",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "vasto_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "vasto_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeVasto/PrimeVastoPistol",
+      "forms": [
+        {
+          "id": "vasto_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "vasto_prime_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full"
+        }
+      ]
+    },
+    {
+      "group": "vaykor_marelok",
+      "owner": "/Lotus/Weapons/Syndicates/SteelMeridian/Pistols/SMMarelok",
+      "forms": [
+        {
+          "id": "vaykor_marelok",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "velox",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnOdaliskSmg/TnOdaliskSmgPistol",
+      "forms": [
+        {
+          "id": "velox",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "velox_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeVelox/PrimeVeloxPistol",
+      "forms": [
+        {
+          "id": "velox_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "non_attack_behaviors": [
+            1
+          ],
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "vermisplicer_secondary",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfKitGun/Barrels/InfBarrelBeam/InfModularBarrelBeamPart",
+      "forms": [
+        {
+          "id": "vermisplicer_secondary",
+          "form": "base",
+          "behavior": null,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "modular_override": "BehaviorOverrides",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "vesper_77",
+      "owner": "/Lotus/Weapons/Lasria/LasSilencedPistol/LasSilencedPistolWeapon",
+      "forms": [
+        {
+          "id": "vesper_77",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "viper",
+      "owner": "/Lotus/Weapons/Grineer/GrineerPistol/GrineerLightPistol",
+      "forms": [
+        {
+          "id": "viper",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "viper_wraith",
+      "owner": "/Lotus/Weapons/Grineer/Pistols/WraithSingleViper/WraithSingleViper",
+      "forms": [
+        {
+          "id": "viper_wraith",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "zakti",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/TnGuandoPistol/TnGuandoPistolGun",
+      "forms": [
+        {
+          "id": "zakti",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "zakti_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeZakti/PrimeZaktiPistol",
+      "forms": [
+        {
+          "id": "zakti_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    },
+    {
+      "group": "zylok",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/ConclaveLeverPistol/ConclaveLeverPistol",
+      "forms": [
+        {
+          "id": "zylok",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "zylok_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "apply_charge_time": true
+        }
+      ]
+    },
+    {
+      "group": "zylok_prime",
+      "owner": "/Lotus/Weapons/Tenno/Pistols/PrimeZylok/ZylokPrimePistol",
+      "forms": [
+        {
+          "id": "zylok_prime",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        },
+        {
+          "id": "zylok_prime_incarnon",
+          "form": "incarnon",
+          "behavior": 1,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "apply_charge_time": true
+        }
+      ]
+    },
+    {
+      "group": "zymos",
+      "owner": "/Lotus/Weapons/Infested/Pistols/InfUzi/InfUziWeapon",
+      "forms": [
+        {
+          "id": "zymos",
+          "form": "base",
+          "behavior": 0,
+          "projectile_key": "projectileType",
+          "charge_stage": "full",
+          "weapon_metadata": true
+        }
+      ]
+    }
+  ]
+}
