@@ -4885,7 +4885,7 @@
       "falloff_data": {
         "range": "{15,25}",
         "floor": "11",
-        "base_amount": 21.999998899999998
+        "base_amount": 21.9999989
       },
       "accuracy": {
         "aimed": {
@@ -36157,7 +36157,7 @@
       "falloff_data": {
         "range": "{26,52}",
         "floor": "12",
-        "base_amount": 53.999998919999996
+        "base_amount": 53.99999892
       },
       "accuracy": {
         "aimed": {

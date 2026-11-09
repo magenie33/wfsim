@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 import zipfile
@@ -393,7 +394,7 @@ def calibrate(objects, binding, dossier, doc):
     floor_raw = projectile.get('DamageFallOffMinDamage', '').partition('=')[2] if path else impact.get('damageFallOffMinDamage')
     if span_raw and floor_raw:
         span, floor = pair(span_raw), number(floor_raw)
-        base_amount = sum(damage(attack).values())
+        base_amount = math.fsum(damage(attack).values())
         if span[1] > span[0] and base_amount > 0:
             row['falloff_data'] = {'range': span_raw, 'floor': floor_raw, 'base_amount': base_amount}
             reduction = 1 - floor / base_amount
