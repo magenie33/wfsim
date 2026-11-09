@@ -32,6 +32,22 @@ change drains work and replaces that process; the OS releases native static and
 thread state. Identity, settings and unacknowledged answers stay in the device
 directory across the replacement.
 
+### CLI host versions
+
+CLI host versions follow [SemVer](https://semver.org/). Before `1.0.0`,
+compatible fixes advance the patch number; features and incompatible command or
+configuration changes advance the minor number and reset the patch. `1.0.0`
+establishes the supported command and configuration compatibility contract.
+From then on, incompatible changes advance major, compatible additions minor,
+and compatible fixes patch; advancing a component resets those to its right.
+
+A regular release sets the workflow's `version` explicitly. Leaving it empty
+generates a dated prerelease; named test builds use `beta.N` or `rc.N` suffixes.
+Every native target, the npm package and the CLI manifest carry the same host
+version. Published executable and package bytes are immutable; changing either
+requires a new host version. Engine and data updates keep their shared channel
+identities and do not by themselves require a new CLI host version.
+
 ## Three planes
 
 A file's change rate and its trust requirement decide which plane it belongs to.
