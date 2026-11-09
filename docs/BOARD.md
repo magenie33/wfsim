@@ -1033,10 +1033,10 @@ triggers it when frozen. Bulk surveys do not trigger it.
 #### Setting a server up
 
 Schema updates apply `worker/pg/library.sql`, then `worker/pg/sync.sql`, then
-`deploy/factoryd_grants.sql` before the corresponding Worker and daemon release.
+`deploy/factoryd_grants.sql` and `deploy/computation_grants.sql` before the corresponding Worker and daemon release.
 The board-review producer needs the daemon's read/update grant on
-`board_reviews`; the pipeline continues to write `scores` through its existing
-grant.
+`board_reviews`. The pipeline's score replacement trigger needs `DELETE` and
+key-column `SELECT` on `score_witnesses`; it cannot read witness owners or devices.
 
 The databases, their owners, the DDL — applied as each file's header says — and
 the pipeline's roles:
@@ -1052,6 +1052,7 @@ sudo -u postgres psql -d wfsim -c "CREATE ROLE wfsim_pipeline LOGIN PASSWORD '�
   -c "GRANT SELECT, INSERT, UPDATE, DELETE ON inbox, builds, equipment_inbox, equipment_builds, scores, batches, queue TO wfsim_pipeline" \
   -c "GRANT SELECT ON verifiers, verifier_hours, verifier_asks, adjustments, factory_events TO wfsim_pipeline" \
   -c "GRANT SELECT (code, channel, request) ON appraisals TO wfsim_pipeline"
+sudo -u postgres psql -d wfsim -v ON_ERROR_STOP=1 -c 'SET ROLE wfsim' -f deploy/computation_grants.sql
 sudo -u postgres psql -d wfsim_accounts -c "CREATE ROLE wfsim_accounts_pipeline LOGIN PASSWORD '…'" \
   -c "GRANT SELECT ON devices TO wfsim_accounts_pipeline"
 ```

@@ -22,6 +22,9 @@ const users = ['ann', 'bob', 'cy', 'dan'];
 const devices = Object.fromEntries(users.map((person, i) => [person, String(i + 1).repeat(24)]));
 let passed = 0;
 const check = async (name, fn) => { await fn(); passed++; console.log('  ok  ' + name); };
+const pipelineSchema = (await library.get('SELECT current_schema() AS name')).name;
+await library.exec(`CREATE ROLE wfsim_pipeline; GRANT USAGE ON SCHEMA ${pipelineSchema} TO wfsim_pipeline;
+  GRANT SELECT, INSERT, UPDATE, DELETE ON scores TO wfsim_pipeline;`);
 await check('the upgrade applies twice to a pre-attribution database and only shortens optimization details', async () => {
   await library.exec('DROP TABLE score_witnesses,computation_witnesses,computation_records; DROP TRIGGER scores_replace_witnesses ON scores; DROP FUNCTION score_witnesses_replaced(); ALTER TABLE questions DROP COLUMN witnesses; ALTER TABLE verifiers DROP COLUMN signatures; ALTER TABLE verifier_hours DROP COLUMN signatures');
   await accounts.exec('ALTER TABLE accounts DROP COLUMN profile_id');
@@ -31,6 +34,18 @@ await check('the upgrade applies twice to a pre-attribution database and only sh
   assert.equal((await library.get("SELECT expires_at FROM user_calculations WHERE kind='optimization'")).expires_at, '2026-01-16T00:00:00.000Z');
   assert.equal((await library.get("SELECT expires_at FROM user_calculations WHERE kind='simulation'")).expires_at, '2026-02-01T00:00:00.000Z');
   await library.run('DELETE FROM user_calculations');
+});
+await check('the pipeline replaces a score and clears its old witnesses without reading private witness columns', async () => {
+  await library.exec(`INSERT INTO scores VALUES ('pipeline-check','ruler','base','engine',1,'kpm',1,'old','old',NULL);
+    INSERT INTO score_witnesses VALUES ('pipeline-check','ruler','base','old','engine','private-owner','private-device',0,'old','old',1);
+    SET ROLE wfsim_pipeline;`);
+  try {
+    await library.run("UPDATE scores SET finished_at='new' WHERE identity='pipeline-check'");
+    const privateColumn = await library.get("SELECT has_column_privilege(current_user,'score_witnesses','owner','SELECT') AS allowed");
+    assert.equal(privateColumn.allowed, false);
+  } finally { await library.exec('RESET ROLE'); }
+  assert.equal((await library.get("SELECT count(*) AS n FROM score_witnesses WHERE identity='pipeline-check'")).n, 0);
+  await library.run("DELETE FROM scores WHERE identity='pipeline-check'");
 });
 const call = async (path, cookie = '', body) => {
   const request = new Request('https://wfsim.test' + path, { method: body ? 'POST' : 'GET', headers: { cookie, origin: 'https://wfsim.test', ...(body ? { 'content-type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });

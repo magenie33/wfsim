@@ -26,6 +26,7 @@ export function computationSchemaSql(kind = "library") {
   statements.push(...[...(schema + library).matchAll(/CREATE INDEX IF NOT EXISTS (?:computation_records|computation_witnesses|score_witnesses)_[^;]+;/g)].map(match => match[0]));
   statements.push(find(library, /CREATE OR REPLACE FUNCTION score_witnesses_replaced\([^]*?EXECUTE FUNCTION score_witnesses_replaced\(\);/));
   statements.push(find(schema, /UPDATE user_calculations SET expires_at=[^;]+;/));
+  statements.push(readFileSync(new URL("../deploy/computation_grants.sql", import.meta.url), "utf8"));
   return statements.join("\n") + "\n";
 }
 if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.meta.url) process.stdout.write(computationSchemaSql(process.argv[2]));
