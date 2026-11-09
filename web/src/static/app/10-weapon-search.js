@@ -1,16 +1,13 @@
 // ---- topbar weapon search: one box, rows navigate ----------------------
-/// SOLO AND TOGETHER, TWO SLIDERS (docs/UI.md §"Compute: solo and together"): the share of the
-/// device the reader's own computing takes, and the share computing together
-/// takes, each 10–100%, together with its switch and the battery choice. One
-/// control wherever a `.cs` host is — the top bar's menu and the compute page —
-/// drawn once into an empty host and PAINTED in place after, so a slider being
-/// dragged is never redrawn under the pointer. A percentage, never a core
-/// count: the together share is the share on any device (`communityPower`).
+// Both ranges use one control, painted in place to preserve dragging and numeric edits.
 function computeSharesHtml() {
   const row = (key, name, note, extra = "") => `<div class="cs-row" data-cs-row="${key}">
     <div class="cs-h"><b>${escHtml(tr(name))}</b>${extra}<span class="cs-v" data-cs-v="${key}"></span></div>
-    <input type="range" min="10" max="100" step="10" data-cs="${key}" aria-label="${escHtml(tr(name))}">
-    <small>${escHtml(tr(note))}</small></div>`;
+    <div class="cs-range" data-cs-track="${key}"><span class="cs-track"></span><span class="cs-fill"></span>${["min", "max"].map(end =>
+      `<input type="range" min="0" max="100" step="1" data-cs="${key}" data-bound="${end}" aria-label="${escHtml(tr(name) + " · " + tr(end === "min" ? "Minimum" : "Maximum"))}">`).join("")}</div>
+    <div class="cs-numbers">${["min", "max"].map(end => `<label><span>${escHtml(tr(end === "min" ? "Minimum" : "Maximum"))}</span>
+      <input type="number" min="0" max="100" step="1" inputmode="numeric" data-cs="${key}" data-bound="${end}" aria-label="${escHtml(tr(name) + " · " + tr(end === "min" ? "Minimum" : "Maximum"))}"><span>%</span></label>`).join("")}</div>
+    <small>${escHtml(tr(note))}</small><small data-cs-target="${key}"></small></div>`;
   return row("solo", "Solo", "When you press Run, it computes your own builds")
     + (WASM ? row("together", "Compute together", "With the volunteers, it runs simulation and optimization tasks for every player",
       `<label class="cs-on"><input type="checkbox" data-cs="on">${escHtml(tr("on"))}</label>`)
@@ -18,22 +15,36 @@ function computeSharesHtml() {
       + (relayServes() ? `<label class="cs-road">${escHtml(tr("Road"))} <select data-cs="road">${
         [["auto", "Automatic (the quicker)"], ["direct", "Direct"], ["relay", "Hong Kong relay"]]
           .map(([v, name]) => `<option value="${v}">${escHtml(tr(name))}</option>`).join("")}</select></label>` : "")
-      + `<div class="cs-sum" data-cs-sum></div>` : "");
+      + `<div class="cs-sum" data-cs-sum></div>` : "")
+    + `<small class="cs-note">${escHtml(tr("Adjusts within your range using page responsiveness. CPU usage is approximate; combined targets above 100% share in proportion."))}</small>`;
 }
-function paintComputeShares(host, solo = computePct, together = communityShare()) {
+function paintComputeShares(host, solo = computeRange("solo"), together = computeRange("together")) {
   const on = boardVerifyOn();
   const set = (sel, f) => host.querySelectorAll(sel).forEach(f);
-  set('[data-cs="solo"]', (el) => { if (document.activeElement !== el) el.value = String(solo); });
-  set('[data-cs="together"]', (el) => { if (document.activeElement !== el) el.value = String(together); el.disabled = !on; });
+  for (const [kind, range] of [["solo", solo], ["together", together]]) {
+    set(`[data-cs="${kind}"][data-bound]`, el => {
+      if (document.activeElement !== el) el.value = String(range[el.dataset.bound]);
+      el.disabled = kind === "together" && !on;
+      if (el.type === "range") {
+        el.setAttribute(el.dataset.bound === "min" ? "aria-valuemax" : "aria-valuemin", String(range[el.dataset.bound === "min" ? "max" : "min"]));
+      }
+    });
+    set(`[data-cs-track="${kind}"]`, el => {
+      el.style.setProperty("--cs-min", `${range.min}%`); el.style.setProperty("--cs-max", `${range.max}%`);
+    });
+    set(`[data-cs-v="${kind}"]`, el => { el.textContent = kind === "together" && !on ? tr("off") : `${range.min}–${range.max}%`; });
+    set(`[data-cs-target="${kind}"]`, el => {
+      el.textContent = kind === "together" && !on ? "" : range.max === 0 ? tr("Paused at 0%.")
+        : tr("Current target: {n}%").replace("{n}", Math.round(computeBudget.target(kind)));
+    });
+  }
   set('[data-cs="on"]', (el) => { el.checked = on; });
   set('[data-cs="battery"]', (el) => { el.checked = computeOnBattery(); el.disabled = !on; });
   set('[data-cs="road"]', (el) => { el.value = computeRoad(); el.disabled = !on; });
-  set('[data-cs-v="solo"]', (el) => { el.textContent = `${solo}%`; });
-  set('[data-cs-v="together"]', (el) => { el.textContent = on ? `${together}%` : tr("off"); });
   set('[data-cs-row="together"]', (el) => el.classList.toggle("cs-off", !on));
-  const sum = solo + (on ? together : 0);
+  const sum = solo.max + (on ? together.max : 0);
   set("[data-cs-sum]", (el) => {
-    el.textContent = !on ? "" : tr(sum <= 100 ? "{sum}% in all · the two never touch" : "{sum}% in all · while both run, they share in proportion")
+    el.textContent = !on ? "" : tr(sum <= 100 ? "Up to {sum}% combined" : "Up to {sum}% requested · shared in proportion above 100%")
       .replace("{sum}", sum);
   });
 }
@@ -47,26 +58,42 @@ function renderComputePicker() {
   });
   document.querySelectorAll(".compute-toggle").forEach(host => paintComputeShares(host));
 }
-/// …AND WHAT IT DOES: a slider moved is said at once, and set when it is let go
-/// — solo's share drops the reader's pool (`setComputePct`), so not on every
-/// step of a drag. Switching together on is the yes to the statement the card
-/// shows (`setBoardVerify`), as it always was in this menu.
 document.addEventListener("input", (e) => {
-  const el = e.target.closest && e.target.closest('.cs input[type="range"]');
-  if (!el) return;
-  const host = el.closest(".cs"), v = Number(el.value);
-  paintComputeShares(host, el.dataset.cs === "solo" ? v : computePct, el.dataset.cs === "together" ? v : communityShare());
+  const el = e.target.closest && e.target.closest('.cs input[data-bound]');
+  if (!el || imeComposing(e)) return;
+  if (el.type === "range") setComputeRange(el.dataset.cs, el.dataset.bound, el.value);
 });
 document.addEventListener("change", (e) => {
   const el = e.target.closest && e.target.closest(".cs [data-cs], .compute-toggle [data-cs]");
   if (!el) return;
   const k = el.dataset.cs;
-  if (k === "solo") setComputePct(Number(el.value));
-  else if (k === "together") setCommunityShare(Number(el.value));
+  if (el.dataset.bound) {
+    if (imeComposing(e)) return;
+    setComputeRange(k, el.dataset.bound, el.value);
+    el.value = String(computeRange(k)[el.dataset.bound]);
+  }
   else if (k === "on") setBoardVerify(el.checked);
   else if (k === "battery") setComputeOnBattery(el.checked);
   else if (k === "road") setComputeRoad(el.value);
   renderComputePicker();
+});
+document.addEventListener("keydown", e => {
+  const el = e.target.closest?.('.cs input[type="number"][data-bound]');
+  if (el && e.key === "Enter" && !imeComposing(e)) { e.preventDefault(); el.dispatchEvent(new Event("change", { bubbles: true })); }
+});
+document.addEventListener("pointerdown", e => {
+  const track = e.target.closest?.("[data-cs-track]");
+  if (!track || e.button !== 0 || track.querySelector("input").disabled) return;
+  e.preventDefault();
+  const kind = track.dataset.csTrack, range = computeRange(kind), box = track.getBoundingClientRect();
+  const at = event => Math.max(0, Math.min(100, Math.round(100 * (event.clientX - box.left) / box.width)));
+  const end = at(e) < (range.min + range.max) / 2 ? "min" : "max";
+  const input = track.querySelector(`[data-bound="${end}"]`);
+  input.focus(); track.setPointerCapture(e.pointerId);
+  const move = event => { setComputeRange(kind, end, at(event)); input.value = String(computeRange(kind)[end]); };
+  const stop = () => { track.removeEventListener("pointermove", move); track.removeEventListener("pointerup", stop); track.removeEventListener("pointercancel", stop); };
+  track.addEventListener("pointermove", move); track.addEventListener("pointerup", stop); track.addEventListener("pointercancel", stop);
+  move(e);
 });
 
 /// How long typing must pause before the list is drawn again: a list of every

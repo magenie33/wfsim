@@ -92,9 +92,7 @@ onmessage = async (e) => {
       : wasm_bindgen.api(msg.path, body);
     postMessage({ id: msg.id, payload: JSON.parse(out) });
   } else if (msg.kind === "rest") {
-    // A REST BETWEEN PIECES, so a lane runs the share of the time its owner set
-    // (69-board-work.js `communityRest`). Kept here, not on the page: a page in
-    // the background has its timers slowed, a worker does not.
+    // Cooperative rests and zero-time warmup do not enter the engine.
     setTimeout(() => postMessage({ id: msg.id, kind: "rested", payload: { ok: true } }), Math.max(0, Math.min(30000, msg.ms || 0)));
   } else if (msg.kind === "optimize") {
     const onProgress = (p) => postMessage({ kind: "progress", payload: JSON.parse(p) });

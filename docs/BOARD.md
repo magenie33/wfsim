@@ -1504,17 +1504,20 @@ yes, since each ask again is a reader interrupted. Eight rules:
    says so and fills with the task.
    **SOLO AND TOGETHER** are the two words the page says, never "help" or
    "community computing": SOLO is the share the reader's own calculations
-   take (10–100%, 50% unless set, `computePct`), TOGETHER the share computing
-   together takes (10–100%, 30% unless set, with its own switch,
-   `communityShare`) — two sliders, the same control in the settings menu and
-   on `/compute`. Neither pauses for the other. A share is of the device's
-   PROCESSING POWER, not its core count: together runs as lanes each resting
-   between pieces for the share of the time the setting leaves
-   (`communityPower`, `communityRest`, the rest kept in the worker), so 30% is
-   30% on one core or thirty-two; solo runs whole lanes, since the reader is
-   waiting. Within 100% together the two never touch; past it, while the
-   reader computes, they share in proportion, solo counted at the lanes it
-   holds. Together holds itself on battery unless the reader allows it
+   take, TOGETHER the share computing together takes, with its own switch —
+   each a 0–100% integer range, default 0–50%, edited by two handles or numeric
+   fields in the settings menu and on `/compute`. Existing percentages and
+   consented resource shares remain fixed ranges. Neither pauses for the other. Both use `ComputeBudget`:
+   requested percentages become fractional-core time budgets, heavy calls wait
+   between safe pieces, and their execution time is charged to the same scheduler.
+   Targets above 100% combined share in proportion; two fixed 100% requests
+   receive 50% each while both run. A configured lower bound is a requested
+   target, not an allocation guaranteed against the other consumer. A zero
+   upper bound leaves Together enabled while computing and new work requests
+   stop and held work is returned. An adaptive zero target returns held work too.
+   Visible-page scheduling delay lowers adaptive
+   targets and recovery raises them gradually; it is not an OS CPU measurement.
+   Together holds itself on battery unless the reader allows it
    (`computeOnBattery`), and with the browser's data saver on; a device that
    reports no power state counts as on power. NO RULE NAMES A KIND OF DEVICE:
    the reader decides where it runs. A page the browser freezes hands back

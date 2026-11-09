@@ -9,10 +9,47 @@
 // interception.
 //   node scripts/check_compute.mjs        (WFSIM_BASE=<origin> for a dev server)
 import { openApp } from "./cdp.mjs";
+import { checkComputeRanges } from "./check_compute_ranges.mjs";
+
+await checkComputeRanges();
 
 const app = await openApp({ boot: 13000, base: process.env.WFSIM_BASE });
 const { evaluate, check } = app;
 await app.setLang("en", 20000);
+
+const budgetRun = await evaluate(`(async () => {
+  if (!WASM) return { native: true };
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const saved = { ...computeRange('solo') }, gains = gainPrefs.on;
+  gainPrefs.on = false; restartCalc();
+  const body = { weapon: 'braton_prime', enemy: 'thrax_centurion', level: 200, duration: 1, runs: 12 };
+  try {
+    setComputePct(0);
+    const controller = new AbortController();
+    let finished = false;
+    const cancelled = simulateFleet(body, null, { signal: controller.signal }).then(result => { finished = true; return result; });
+    await sleep(150);
+    const zero = !finished && computeBudget.running.solo === 0;
+    controller.abort();
+    const stopped = await Promise.race([cancelled, sleep(2000).then(() => ({ timeout: true }))]);
+    let resumed = false;
+    const pending = simulateFleet(body).then(result => { resumed = true; return result; });
+    await sleep(150);
+    const waiting = !resumed;
+    setComputePct(50);
+    const result = await Promise.race([pending, sleep(10000).then(() => ({ timeout: true }))]);
+    const reference = await api('/api/simulate', body);
+    return { zero, cancelled: stopped.cancelled === true, waiting, resumed: result.runs === 12,
+      unchanged: result.runs === reference.runs && Math.abs(result.score - reference.score) < 1e-12
+        && Math.abs(result.dps - reference.dps) < Math.abs(reference.dps) * 1e-12 + 1e-12,
+      error: result.error || reference.error };
+  } finally {
+    setComputeRange('solo', 'min', saved.min); setComputeRange('solo', 'max', saved.max);
+    gainPrefs.on = gains;
+  }
+})()`);
+check("[built site] Solo at zero starts no simulation piece and cancellation still settles", budgetRun.native || budgetRun.zero && budgetRun.cancelled, JSON.stringify(budgetRun));
+check("[built site] raising Solo's zero limit resumes the same calculation with every run and the same measurement", budgetRun.native || budgetRun.waiting && budgetRun.resumed && budgetRun.unchanged, JSON.stringify(budgetRun));
 
 const r = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((ok) => setTimeout(ok, ms));
@@ -222,7 +259,7 @@ const c = await evaluate(`(async () => {
   // device whether or not the reader is at it, as lanes each running a share of
   // the time; past 100% with solo, while the reader computes, the two in proportion.
   const cores = detectedCores().n;
-  localStorage.removeItem("wfsim-community-share");
+  setCommunityShare(30);
   lastTouched = Date.now(); out.power30 = communityPower(); out.want30 = cores * 0.3;
   out.lanes30 = communityLanes(); out.duty30 = communityDuty();
   setCommunityShare(100); setComputePct(100);
@@ -235,10 +272,42 @@ const c = await evaluate(`(async () => {
   renderComputePicker();
   const cs = document.getElementById("compute-select");
   out.sliders = cs ? cs.querySelectorAll('input[type="range"]').length : 0;
-  const tog = cs && cs.querySelector('[data-cs="together"]');
+  const tog = cs && cs.querySelector('[data-cs="together"][data-bound="max"]');
   if (tog) { tog.value = "60"; tog.dispatchEvent(new Event("change", { bubbles: true })); }
   out.set60 = communityShare() === 60;
   out.sum = cs ? (cs.querySelector("[data-cs-sum]") || {}).textContent : "";
+  const number = end => cs.querySelector('input[type="number"][data-cs="together"][data-bound="' + end + '"]');
+  number('max').value = '17'; number('max').dispatchEvent(new Event('change', { bubbles: true }));
+  number('min').value = '3'; number('min').dispatchEvent(new Event('change', { bubbles: true }));
+  out.numericRange = { ...computeRange('together') };
+  out.numericSaved = JSON.parse(localStorage.getItem(COMPUTE_RANGES_KEY)).together;
+  const menu = cs.closest('.tbmore'), menuWasOpen = menu?.classList.contains('open');
+  const topbar = cs.closest('.topbar'), topbarWasOpen = topbar?.classList.contains('menu-open');
+  menu?.classList.add('open');
+  topbar?.classList.add('menu-open');
+  const focused = number('min'); focused.focus(); focused.value = '2'; renderComputePicker();
+  out.editKept = document.activeElement === focused && focused.value === '2' && number('min') === focused;
+  focused.dispatchEvent(new Event('change', { bubbles: true })); focused.blur();
+  if (!menuWasOpen) menu?.classList.remove('open');
+  if (!topbarWasOpen) topbar?.classList.remove('menu-open');
+  const minimum = cs.querySelector('input[type="range"][data-cs="together"][data-bound="min"]');
+  minimum.value = '19'; minimum.dispatchEvent(new Event('input', { bubbles: true }));
+  out.crossed = { ...computeRange('together') };
+  number('max').value = '0'; number('max').dispatchEvent(new Event('change', { bubbles: true }));
+  out.zero = boardVerifyOn() && computeHeld() === 'limit' && computeState().key === 'held'
+    && computeRange('together').min === 0 && computeRange('together').max === 0
+    && cs.querySelector('[data-cs="on"]').checked && !number('max').disabled;
+  out.zeroWant = boardSyncBody(verifierId(), { want: 60000, results: [] }).want_ms;
+  number('max').value = ''; number('max').dispatchEvent(new Event('change', { bubbles: true }));
+  out.emptyKept = number('max').value === '0' && computeRange('together').max === 0;
+  setComputeRange('together', 'max', 50);
+  computeBudget.pressure(500); computeBudget.pressure(500);
+  out.autoZero = computeHeld() === 'busy' && boardSyncBody(verifierId(), { want: 60000, results: [] }).want_ms === 0;
+  resumeCut = { lease: 'budget-paused', task: { question: 'budget-row' }, cut: { folded: 1 } };
+  out.autoReturned = keptCut({ lease: 'budget-paused', row: 'budget-row' }) === null && resumeCut === null;
+  computeBudget.pressure(0, 1);
+  setCommunityShare(30);
+  out.resumed = boardVerifyOn() && computeHeld() === '';
   localStorage.removeItem("wfsim-community-share"); renderComputePicker();
   // THE ROAD (69-board-work.js \`computeRoad\`): one the reader named is the only
   // one a call takes, with every road dropping; automatic tries the other.
@@ -281,8 +350,15 @@ check("together takes its share of the device whether or not the reader is at it
   Math.abs(k.power30 - k.want30) < 1e-9 && k.lanes30 === Math.ceil(k.want30 - 1e-9) && Math.abs(k.duty30 * k.lanes30 - k.want30) < 1e-9, c);
 check("...past 100% with solo, while the reader computes, the two share the device in proportion; within it, they never touch",
   k.alone100 === k.cores && Math.abs(k.shared100 - k.cores / 2) < 1e-9 && Math.abs(k.under100 - k.want30) < 1e-9, c);
-check("solo and together are two sliders in the menu, together's set where it is let go, and the sum said",
-  k.sliders === 2 && k.set60 && /110% in all/.test(k.sum), c);
+check("solo and together each have two range endpoints, together's edit is kept and the combined maximum is shown",
+  k.sliders === 4 && k.set60 && /110% requested/.test(k.sum), c);
+check("numeric endpoints keep single-percentage-point values and persist the same range",
+  k.numericRange.min === 3 && k.numericRange.max === 17 && JSON.stringify(k.numericRange) === JSON.stringify(k.numericSaved), c);
+check("repainting preserves an unfinished numeric edit and its focused node", k.editKept, c);
+check("moving the lower handle past the upper handle keeps the range ordered", k.crossed.min === 19 && k.crossed.max === 19, c);
+check("zero keeps Together enabled and editable while asking for no new work", k.zero && k.zeroWant === 0 && k.emptyKept, c);
+check("raising zero resumes without asking for consent again", k.resumed, c);
+check("an adaptive zero target asks for no new work and retains no paused lease", k.autoZero && k.autoReturned, c);
 check("...and a yes to an older statement is asked again", k.oldYes, c);
 check("a road the reader names in the menu is the only one taken, even when it drops the call; automatic tries both",
   k.roadRelay === "relay" && k.roadDirect === "direct" && k.roadAuto === "direct,relay"
@@ -338,7 +414,7 @@ const f = await evaluate(`(async () => {
   const request = { ...order.request, runs: 48 };
   const one = await api("/api/board/fold", { request, from: 0, count: 48 });
   const want = await api("/api/board/score", { ruler: "standard_single_target", request, acc: one.acc });
-  setCommunityShare(100); lastTouched = 0;
+  setCommunityShare(100); setBoardVerify(true); lastTouched = 0;
   const used = new Set();
   (await boardLanes(communityLanes())).forEach((l, i) => {
     const call = l.call;

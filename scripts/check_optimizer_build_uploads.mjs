@@ -6,7 +6,8 @@ import vm from "node:vm";
 const read = name => readFileSync(new URL("../web/src/static/" + name, import.meta.url), "utf8");
 let storeSource = read("app/53-task-store.js"), taskSource = read("app/57-optimization-tasks.js");
 let appraisalSource = read("app/63-riven-tasks.js");
-let fleetSource = read("app/08-checkpoint-api.js");
+let fleetSource = "async function computeRun(_, work, live) { return live() ? work() : { cancelled: true }; }\n"
+  + read("app/08-checkpoint-api.js");
 const negative = process.env.WFSIM_BUILD_UPLOAD_NEGATIVE;
 if (negative === "unbounded-batch") storeSource = storeSource.replace("takeValues(prefix, 128)", "takeValues(prefix, 1000000)");
 else if (negative === "early-ack") taskSource = taskSource.replace("await keepOptimizationBuilds(status.builds || [], link.source);",

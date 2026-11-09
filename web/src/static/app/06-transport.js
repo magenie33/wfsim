@@ -1,120 +1,164 @@
-// ---- transport: api(path, body) --------------------------------------
+// ---- compute ranges and transport ------------------------------------
+const COMPUTE_RANGES_KEY = "wfsim-compute-ranges";
+const computePercent = value => ["number", "string"].includes(typeof value) && Number.isFinite(Number(value)) && String(value).trim() !== ""
+  ? Math.max(0, Math.min(100, Math.round(Number(value)))) : null;
+const computeRangeValue = value => value && computePercent(value.min) !== null && computePercent(value.max) !== null
+  ? { min: Math.min(computePercent(value.min), computePercent(value.max)), max: computePercent(value.max) } : null;
+function readComputeRanges() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(COMPUTE_RANGES_KEY)) || {}; } catch (_) { /* use the device's settings */ }
+  let previousConsent = false;
+  try { const consent = JSON.parse(localStorage.getItem("wfsim-compute-consent")); previousConsent = consent?.v === 3 && consent.on === true; } catch (_) { /* no prior consent */ }
+  const legacy = (key, fallback) => {
+    let raw = null;
+    try { raw = localStorage.getItem(key); } catch (_) { /* storage unavailable */ }
+    const value = raw === null ? null : computePercent(({ saver: 10, balanced: 50, full: 100 })[raw] ?? raw);
+    return value === null ? fallback : { min: value, max: value };
+  };
+  return {
+    solo: computeRangeValue(saved.solo) || legacy("wfsim-compute", { min: 0, max: 50 }),
+    together: computeRangeValue(saved.together) || legacy("wfsim-community-share", previousConsent ? { min: 30, max: 30 } : { min: 0, max: 50 }),
+  };
+}
+let computeRanges = readComputeRanges();
+const computeRange = kind => computeRanges[kind];
+
+// Ranges describe requested shares; concurrent requests above 100 share proportionally.
+// Headroom is a host observation in 0..1. Browsers supply responsiveness, not OS CPU usage.
+class ComputeBudget {
+  constructor({ cores, range, active = () => false, now = () => performance.now(), wake = (fn, ms) => setTimeout(fn, ms), clear = id => clearTimeout(id) }) {
+    Object.assign(this, { cores, range, active, now, wake, clear });
+    this.headroom = 1;
+    this.queue = [];
+    this.running = { solo: 0, together: 0 };
+    this.debt = { solo: 0, together: 0 };
+    this.at = now();
+    this.timer = null;
+  }
+  target(kind) {
+    const { min, max } = this.range(kind);
+    return min + (max - min) * this.headroom;
+  }
+  shares(requested) {
+    const live = kind => kind === requested || this.active(kind) || this.running[kind] > 0 || this.queue.some(job => job.kind === kind);
+    const solo = live("solo") ? this.target("solo") : 0;
+    const together = live("together") ? this.target("together") : 0;
+    const scale = Math.max(100, solo + together);
+    return { solo: solo * 100 / scale, together: together * 100 / scale };
+  }
+  settle() {
+    const now = this.now(), elapsed = Math.max(0, now - this.at), shares = this.shares();
+    for (const kind of ["solo", "together"]) {
+      const share = shares[kind] || this.target(kind);
+      this.debt[kind] = Math.max(0, this.debt[kind] + elapsed * (this.running[kind] - this.cores() * share / 100));
+    }
+    this.at = now;
+  }
+  pressure(lag, recovery = 0.02) {
+    this.settle();
+    this.headroom = lag > 50 ? Math.max(0, this.headroom - Math.min(0.5, lag / 500)) : Math.min(1, this.headroom + recovery);
+    this.pump();
+  }
+  changed() { this.at = this.now(); this.pump(); }
+  run(kind, work, live = () => true) {
+    return new Promise((resolve, reject) => {
+      this.settle();
+      this.queue.push({ kind, work, live, resolve, reject });
+      this.pump();
+    });
+  }
+  pump() {
+    if (this.timer !== null) { this.clear(this.timer); this.timer = null; }
+    this.settle();
+    for (let i = 0; i < this.queue.length;) {
+      const job = this.queue[i], kind = job.kind;
+      if (!job.live()) { this.queue.splice(i, 1); job.resolve({ ok: false, cancelled: true }); continue; }
+      const power = this.cores() * this.shares()[kind] / 100;
+      const slots = Math.ceil(power - 1e-9);
+      if (power <= 0 || this.running[kind] >= slots || this.running.solo + this.running.together >= this.cores() || this.debt[kind] > 0.01) { i++; continue; }
+      this.queue.splice(i, 1);
+      this.running[kind]++;
+      Promise.resolve().then(job.work).then(job.resolve, job.reject).finally(() => {
+        this.settle();
+        this.running[kind]--;
+        this.pump();
+      });
+    }
+    if (this.queue.length) {
+      const shares = this.shares();
+      const delays = this.queue.map(({ kind }) => {
+        const power = this.cores() * shares[kind] / 100;
+        return power > 0 && this.debt[kind] > 0 ? this.debt[kind] / power : 100;
+      });
+      this.timer = this.wake(() => { this.timer = null; this.pump(); }, Math.max(1, Math.min(100, ...delays)));
+    }
+  }
+}
+const computeBudget = new ComputeBudget({
+  cores: () => detectedCores().n, range: computeRange,
+  active: kind => kind === "solo" ? readerBusy() : !!computeNow && boardVerifyOn() && !computeHeld(),
+});
+const COMPUTE_TIMING = Symbol("compute timing");
+const computeRun = (kind, work, live) => computeBudget.run(kind, async () => {
+  const began = performance.now(), result = await work();
+  if (result && typeof result === "object" && Object.isExtensible(result))
+    Object.defineProperty(result, COMPUTE_TIMING, { value: performance.now() - began, configurable: true });
+  return result;
+}, live);
+const computeElapsed = (result, began) => result?.[COMPUTE_TIMING] ?? performance.now() - began;
+const computeShare = kind => computeBudget.shares(kind)[kind];
+const computeLaneCount = kind => Math.max(1, Math.ceil(detectedCores().n * computeRange(kind).max / 100 - 1e-9));
+function setComputeRange(kind, end, value) {
+  const number = computePercent(value);
+  if (!(kind in computeRanges) || !["min", "max"].includes(end) || number === null) return false;
+  computeBudget.settle();
+  const range = { ...computeRange(kind), [end]: number };
+  if (range.min > range.max) range[end === "min" ? "max" : "min"] = number;
+  computeRanges[kind] = range;
+  computePct = computeRanges.solo.max;
+  try { localStorage.setItem(COMPUTE_RANGES_KEY, JSON.stringify(computeRanges)); } catch (_) { /* this page only */ }
+  computeBudget.changed();
+  renderComputePicker();
+  return true;
+}
+// Hidden-tab timer throttling is not evidence of machine pressure.
+let computePressureAt = performance.now();
+setInterval(() => {
+  const now = performance.now(), elapsed = now - computePressureAt, lag = elapsed - 500;
+  computePressureAt = now;
+  if (computeBudget.queue.length || computeBudget.running.solo || computeBudget.running.together
+    || boardVerifyOn() && computeRange("together").min !== computeRange("together").max) {
+    computeBudget.pressure(document.hidden ? 0 : lag, Math.min(1, elapsed / 25_000));
+    if (!document.hidden) renderComputePicker();
+  }
+}, 500);
+document.addEventListener("visibilitychange", () => { computePressureAt = performance.now(); });
 // Native: fetch to the local server. Wasm: a Web Worker owns the engine, and
 // the optimize start/status/cancel triad is emulated against a DEDICATED
 // optimize worker whose progress fills the status shape the poller renders.
 // Cancel = terminate that worker, since all its state is inside it.
-/// ONE POOL OF WORKERS, and every wasm call this page makes runs on it —
-/// `api`'s RPC, the simulator's shards and the quick calc's lanes. Three pools
-/// is up to seventeen wasm instances on an eight-core machine, each with its
-/// own copy of the engine's memory. SIZE: every core but one, capped at eight;
-/// THE OPTIMIZER KEEPS ITS OWN, because a search owns them for minutes. A LANE
-/// IS A QUEUE — one message at a time, so `busy` is queue depth.
-/// HOW MUCH OF THE MACHINE THIS PAGE MAY USE — one setting, and it is GLOBAL.
-///
-/// Every heavy thing here is N workers running the engine flat out — the right
-/// default on a desktop and a hand-warmer on a phone. The lever is the WORKER
-/// COUNT: a longer run on fewer cores is cooler than a shorter one on all of
-/// them, for the same answer. A PERCENTAGE rather than a named tier, since the
-/// core count is something the page can ASK FOR, so one setting means the same
-/// on a phone and a workstation. IT IS NOT A QUALITY SETTING: one lane and
-/// eight produce the same numbers, and the run COUNT is the accuracy knob.
-const COMPUTE_KEY = "wfsim-compute";
-/// HALF, by decision. It is cooler than what this page did
-/// before on a phone and faster on a desktop with more than sixteen threads,
-/// which is the same change in both directions: the old default was a fixed
-/// eight whatever the machine was. It is a DEFAULT, not a limit — see the
-/// ceiling note below, of which there is now none.
-const COMPUTE_DEFAULT_PCT = 50;
-/// THERE IS NO CEILING. 100% means every logical processor
-/// the machine reports, on the desktop build and in a browser alike.
-///
-/// NOT capped at sixteen. Each lane is a Web Worker holding its own instance
-/// of the wasm module, so the last few cost memory rather than heat. MEASURED,
-/// that instance is **48 MB** (0/1/4/8/16 lanes,
-/// linear to within 2%) — so a 28-core machine spends 1.3 GB to use all of
-/// itself, about 4% of what such a machine has. A cap was protecting nobody
-/// and taking 43% of the CPU away from precisely the readers who had the most
-/// of it, because core count and installed memory travel together: nobody
-/// builds 64 cores onto 8 GB.
-///
-/// The share stays the reader's the whole way, which is this control's own
-/// principle — "a share the reader can move, rather than a number this file
-/// works out for them" — and a ceiling was the one place that principle had an
-/// exception.
-
-/// WHAT THE MACHINE SAYS IT HAS, and how much that is worth believing.
-///
-/// `navigator.hardwareConcurrency` is the only thing a page can ask, and three
-/// things about it matter here:
-///
-///   · it counts LOGICAL processors, not cores — a four-core CPU with SMT
-///     answers 8, and a phone counts its efficiency cores among them, so a
-///     phone's "8" is not eight cores' worth of work;
-///   · the spec lets a browser report FEWER on purpose ("don't treat this as an
-///     absolute measurement"), and Firefox's resistFingerprinting and Tor do;
-///   · it is absent on iOS Safari 11 through 15.3 — five years of iPhones —
-///     where `undefined` falls back to 4 and the control says it is guessing.
-///
-/// All three argue for the same thing: a share the reader can move, rather than
-/// a number this file works out for them.
+/// ONE POOL OF WORKERS serves the reader's calls. Shared budgets pace heavy calls.
 const detectedCores = () => {
   const n = Number(navigator.hardwareConcurrency);
   return Number.isFinite(n) && n >= 1
     ? { n: Math.floor(n), known: true }
     : { n: 4, known: false };
 };
-
-/// The reader's share, 10–100. Migrates the three named tiers this shipped with
-/// for a few hours on 2026-08-18, so nobody's stored setting reads as garbage.
-const readComputePct = () => {
-  const raw = localStorage.getItem(COMPUTE_KEY);
-  const legacy = { saver: 10, balanced: 50, full: 100 }[raw];
-  const n = legacy ?? Number(raw);
-  return Number.isFinite(n) && n >= 10 && n <= 100
-    ? Math.round(n / 10) * 10
-    : COMPUTE_DEFAULT_PCT;
-};
-let computePct = readComputePct();
-
+let computePct = computeRange("solo").max;
 let pool = [];
-/// The lane count that share comes to on this machine — at least one, and never
-/// more than the ceiling.
-const poolSize = () => Math.max(1, Math.round((detectedCores().n * computePct) / 100));
-
-/// THE SHARES WORTH OFFERING — one per distinct lane count.
-///
-/// Ten fixed steps read badly at both ends: on a 4-core machine two steps share
-/// a lane count, and rows that buy the same thing say the same thing twice. So the list is built from
-/// what the shares actually BUY on this machine, keeping the cheapest share
-/// that reaches each count — which also makes the last row always mean "all of
-/// them", whatever the machine is.
+const poolSize = () => computeLaneCount("solo");
 const computeSteps = () => {
-  const { n: cores } = detectedCores();
-  const lanes = (pct) => Math.max(1, Math.round((cores * pct) / 100));
-  const out = [];
-  const seen = new Set();
-  for (let pct = 10; pct <= 100; pct += 10) {
-    const n = lanes(pct);
-    if (seen.has(n)) continue;
-    seen.add(n);
-    out.push({ pct, lanes: n });
+  const out = [], seen = new Set();
+  for (let pct = 1; pct <= 100; pct++) {
+    const lanes = Math.max(1, Math.ceil(detectedCores().n * pct / 100));
+    if (!seen.has(lanes)) { seen.add(lanes); out.push({ pct, lanes }); }
   }
   return out;
 };
-
-/// Change it, and MEAN IT NOW. The pool is built once and held, so a setting
-/// that only applied to the next page load would read as broken on the machine
-/// it was set to rescue. Dropping the pool is safe at any moment — every waiter
-/// is settled with `cancelled` and the callers that can re-ask do (`laneAsk`).
 function setComputePct(pct) {
-  // THE STEP IT WAS SET TO, kept as set: a slider that jumped to the next share
-  // buying a different lane count would not be where the reader let it go.
-  const n = Math.max(10, Math.min(100, Math.round(Number(pct) / 10) * 10));
-  if (!Number.isFinite(n) || n === computePct) return;
-  computePct = n;
-  try { localStorage.setItem(COMPUTE_KEY, String(n)); } catch (_) { /* private mode */ }
-  cancelSim();
-  renderComputePicker();
+  if (computePercent(pct) === null) return;
+  setComputeRange("solo", "min", pct);
+  setComputeRange("solo", "max", pct);
 }
 
 /// WHO OUTRANKS WHOM WHEN TWO SURFACES WANT THE SAME CORES.
@@ -384,7 +428,8 @@ function makeLane(pool = "reader") {
   const w = spawnEngine();
   const pending = new Map();
   const progress = new Map();
-  let seq = 0, dead = false, busy = 0, warm = false, warming = null, loadCause = null;
+  let seq = 0, dead = false, workerFailed = false, busy = 0, queued = 0, warm = false, warming = null, loadCause = null;
+  let heavyQueue = Promise.resolve();
   // WHEN THIS WORKER LAST SAID ANYTHING ABOUT A REQUEST — id to timestamp.
   //
   // A WORKER THAT NEITHER ANSWERS NOR FAILS was the one hang nothing caught.
@@ -405,7 +450,7 @@ function makeLane(pool = "reader") {
   const running = () => calls.values().next().value;
   const settleReaders = () => { readerInFlight = Math.max(0, readerInFlight - readerIds.size); readerIds.clear(); };
   const perish = (why) => {
-    dead = true;
+    dead = true; workerFailed = true;
     pending.forEach((res) => res({ ok: false, error: why, worker_dead: true }));
     pending.clear(); progress.clear(); calls.clear(); wd.clear(); busy = 0; settleReaders();
   };
@@ -464,7 +509,7 @@ function makeLane(pool = "reader") {
   };
   const lane = {
     worker: w,
-    get busy() { return busy; },
+    get busy() { return busy + queued; },
     get dead() { return dead; },
     // NOBODY IS COMING BACK once the worker is terminated, so a cancel settles
     // every waiter itself. Without this the promises hang, the caller never
@@ -485,7 +530,21 @@ function makeLane(pool = "reader") {
       busy = 0;
       settleReaders();
     },
-    send(msg, onProgress, community = false) {
+    async send(msg, onProgress, community = false, live = () => true) {
+      const heavy = msg.kind === "shard" || msg.kind === "merge" || msg.kind === "api"
+        && ["/api/simulate", "/api/board/runs", "/api/board/fold", "/api/board/score"].includes(msg.path);
+      if (!heavy) return lane.sendNow(msg, onProgress, community);
+      queued++;
+      try {
+        await lane.warmed();
+        const pending = heavyQueue.then(() => computeRun(community ? "together" : "solo", () => lane.sendNow(msg, onProgress, community),
+          () => !dead && live() && (!community || boardVerifyOn() && !computeHeld() && !computeFrozen)));
+        heavyQueue = pending.catch(() => {});
+        const result = await pending;
+        return result?.cancelled && workerFailed ? { ok: false, worker_dead: true } : result;
+      } finally { queued--; }
+    },
+    sendNow(msg, onProgress, community = false) {
       return new Promise((res) => {
         if (dead) { res({ ok: false, cancelled: true }); return; }
         const id = ++seq;
@@ -500,11 +559,12 @@ function makeLane(pool = "reader") {
     },
     /// An ENDPOINT on this lane. Progress is asked for explicitly because only
     /// `/api/simulate` reports it — see the worker.
-    call(path, body, onProgress, community = false) {
+    call(path, body, onProgress, community = false, live) {
       return lane.send(
         { kind: "api", path, body: body ?? {}, progress: !!onProgress },
         onProgress,
         community,
+        live,
       );
     },
     get warm() { return warm; },
@@ -655,11 +715,11 @@ async function laneSimulate(lane, body, live) {
     if (live && !live()) return null;
     const n = Math.min(count, runs - from);
     const t0 = performance.now();
-    let r = await lane.send({ kind: "shard", body, from, count: n });
+    let r = await lane.send({ kind: "shard", body, from, count: n }, null, false, live);
     if (gone(r)) {
       if (live && !live()) return null;
       lane = freeLane();
-      r = await lane.send({ kind: "shard", body, from, count: n });
+      r = await lane.send({ kind: "shard", body, from, count: n }, null, false, live);
       if (gone(r)) return null;
     }
     // THE ENGINE'S REFUSAL IS AN ANSWER — passed on whole, as one call's would be.
@@ -668,7 +728,7 @@ async function laneSimulate(lane, body, live) {
     from += n;
     count = Math.max(1, Math.round((n * 250) / Math.max(1, performance.now() - t0)));
   }
-  const m = await lane.send({ kind: "merge", body, shards: parts });
+  const m = await lane.send({ kind: "merge", body, shards: parts }, null, false, live);
   return gone(m) ? laneAsk(freeLane(), "/api/simulate", body, live) : m;
 }
 
@@ -689,9 +749,8 @@ async function laneSimulate(lane, body, live) {
 /// Anything observing what the page simulates must wrap this too, matching on
 /// the request rather than on being the only caller.
 ///
-/// FALLS BACK TO ONE CALL when there is nothing to gain — a single lane, or so
-/// few runs that a slice would be one engagement. Sharding costs a shard each
-/// on the wire and a merge at the end, not worth paying to halve a millisecond.
+/// One engagement uses the ordinary endpoint. Longer calculations use pieces
+/// even on one lane, so fractional and zero budgets can wait between pieces.
 async function simulateFleet(body, onProgress, opts) {
   const cancelled = () => !!opts?.signal?.aborted || !!(opts?.live && !opts.live());
   // A current background scan retries a reclaimed pool; an explicit stop ends it.
@@ -711,15 +770,10 @@ async function simulateFleet(body, onProgress, opts) {
   // `api` is a fetch and the fetches already parallelise.
   if (!WASM) return api("/api/simulate", body, onProgress, opts);
   const runs = Math.max(1, Number(body.runs) || 1);
-  // THE SIZE IS DECIDED BEFORE THE WORKERS EXIST, so a simulation that falls
-  // back does not pay for a pool it will not use.
-  const n = poolSize();
-  if (n < 2 || runs < n * 2) {
-    return ask(() => api("/api/simulate", body, onProgress, opts), false);
-  }
-  const ls = await lanes();
-  // EVERY RUN COVERED EXACTLY ONCE, remainder to the first lanes. A gap or an
-  // overlap is not a slow answer, it is a wrong one.
+  // A single engagement is atomic and needs no additional fleet.
+  if (runs === 1) return ask(() => api("/api/simulate", body, onProgress, opts), false);
+  const ls = await lanes(Math.min(poolSize(), runs));
+  // Every run is covered exactly once; lane count never changes the run count.
   const total = runs;
   // CHUNKS A LANE PULLS, SIZED FROM WHAT THIS FIGHT COSTS ON THIS MACHINE.
   //
@@ -756,9 +810,14 @@ async function simulateFleet(body, onProgress, opts) {
   let failed = null;
   let stopped = false;
 
-  await Promise.all(ls.map(async (lane, k) => {
+  const runners = [];
+  const runLane = async (lane, k) => {
     for (;;) {
       if (stopped || failed || cancelled() || cursor >= runs) return;
+      while (ls.length < Math.min(poolSize(), runs)) {
+        const index = ls.length, added = laneAt(index);
+        ls.push(added); runners.push(runLane(added, index).catch(error => { failed = { ok: false, error: String(error?.message || error) }; }));
+      }
       // …AND BACKGROUND WORK WAITS FOR THE FOREGROUND FIRST. Between pieces
       // only: the piece already running is a quarter second, so a person's Run
       // waits for that rather than for the scan.
@@ -795,11 +854,11 @@ async function simulateFleet(body, onProgress, opts) {
       // simulation, and for the quick calc this call is the baseline every
       // candidate is measured against.
       const r = await ask((fresh) => (fresh ? freeLane() : lane).send({ kind: "shard", body, from, count },
-        (d) => { live.set(k, d); tick(); }));
+        (d) => { live.set(k, d); tick(); }, false, () => !cancelled() && !failed && !stopped));
       live.set(k, 0);
       // A CANCELLED PIECE CANCELS THE SIMULATION — there is no answer to merge
       // from a fraction of the runs, and the reader asked for it to stop.
-      if (r && r.cancelled) { stopped = true; return; }
+      if (r && r.cancelled) { if (!failed) stopped = true; return; }
       if (!r || r.error) { failed = r || { ok: false, error: "a shard failed" }; return; }
       parts.push(r);
       banked += count;
@@ -810,7 +869,9 @@ async function simulateFleet(body, onProgress, opts) {
       est = est === null ? per : est * 0.7 + per * 0.3;
       tick();
     }
-  }));
+  };
+  runners.push(...ls.map((lane, index) => runLane(lane, index).catch(error => { failed = { ok: false, error: String(error?.message || error) }; })));
+  for (let index = 0; index < runners.length; index++) await runners[index];
 
   if (stopped || cancelled()) return { ok: false, cancelled: true };
   if (failed) return failed;
@@ -825,7 +886,7 @@ async function simulateFleet(body, onProgress, opts) {
   // THE PIECES MERGE IN ANY ORDER AND ANY NUMBER: a shard carries sums, and the
   // median is chosen by ranking what every piece brought back. That is what
   // lets the split be decided while the work is already running.
-  return ask(() => freeLane().send({ kind: "merge", body, shards: parts }));
+  return ask(() => freeLane().send({ kind: "merge", body, shards: parts }, null, false, () => !cancelled()));
 }
 
 /// STOP EVERY WASM CALL IN FLIGHT, which is the only way to interrupt one: it

@@ -8,15 +8,15 @@ async function communitySimulationReport(request, signal) {
   try {
     await Promise.all(lanes.map(async (lane, index) => {
       while (next < pieces.length && !signal.aborted) {
-        while (!signal.aborted && next < pieces.length && (ownTabBusy() || index >= communityLanes())) await new Promise((resolve) => setTimeout(resolve, 250));
+        while (!signal.aborted && next < pieces.length && index >= communityLanes()) await new Promise((resolve) => setTimeout(resolve, 250));
         if (signal.aborted) throw new Error("Cancelled");
         if (next >= pieces.length) break;
-        const at = next++, from = at * count, n = Math.min(count, runs - from), began = performance.now();
+        const at = next++, from = at * count, n = Math.min(count, runs - from);
         const part = await lane.send({ kind: "shard", body: request, from, count: n }, null, true);
-        if (!part || part.ok === false || part.cancelled) throw Object.assign(new Error(part?.error || "The worker could not finish."), { engineRefused: part?.ok === false && !part.worker_dead });
+        if (!part || part.ok === false || part.cancelled) throw Object.assign(new Error(part?.error || "The worker could not finish."),
+          { engineRefused: part?.ok === false && !part.worker_dead && !part.cancelled && !signal.aborted });
         pieces[at] = part; finished += n;
         computeProgress(finished, runs);
-        await lane.send({ kind: "rest", ms: communityRest(performance.now() - began) }, null, true);
       }
     }));
     if (signal.aborted) throw new Error("Cancelled");
@@ -25,9 +25,8 @@ async function communitySimulationReport(request, signal) {
 }
 async function communityOptimizationReport(request, { signal, buildSource }) {
   if (signal.aborted) throw new Error("Cancelled");
-  const job = quickFleet(request, () => communityLanes(), async () => {
-    while (ownTabBusy() && !signal.aborted) await new Promise((resolve) => setTimeout(resolve, 250));
-  }, { keep: true, rest: communityRest, onBuilds: builds => keepOptimizationBuilds(builds, buildSource) });
+  const job = quickFleet(request, () => communityLanes(), async () => {},
+    { keep: true, kind: "together", onBuilds: builds => keepOptimizationBuilds(builds, buildSource) });
   const stop = () => { job.cancelled = true; job.workers.forEach((worker) => worker.terminate()); };
   signal.addEventListener("abort", stop, { once: true });
   try {

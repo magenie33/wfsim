@@ -13,13 +13,13 @@
 /// SOLO AND TOGETHER, SIDE BY SIDE (docs/BOARD.md §"Contribution" rule 0): the
 /// reader's own computing takes its share (06-transport.js `computePct`) and
 /// this takes the together share (`communityShare`), each on workers of its own,
-/// and neither pauses for the other. A piece is sized to about `PIECE_MS`, so a
-/// changed share takes hold within one; what the pieces take is `communityPower`.
+/// and neither pauses for the other. The shared budget paces each safe piece;
+/// a changed range takes hold before a lane starts another piece.
 const PIECE_MS = 250;
 
 /// ONE ROW, MEASURED: its runs fought on the together lanes, folded in run
 /// order, then scored, with what the pieces and the folds took in ms summed over
-/// the lanes (`compute_ms`) — the rests between them (`communityRest`) are not
+/// the lanes (`compute_ms`) — the budget waits between them are not
 /// in it — and how many lanes there were (`lanes`).
 /// `null` when the engine refused or `live()` went false between pieces.
 ///
@@ -67,7 +67,7 @@ async function measureRow(request, ruler, live, onPiece = () => {}, from = null)
       if (failed) return;
       const began = performance.now();
       const step = await ask(0, "/api/board/fold", { request, acc, pieces });
-      spent += performance.now() - began;
+      spent += computeElapsed(step, began);
       if (step) { acc = step.acc; onPiece(Math.min(runs, folded), runs, { acc, folded: upto, spent }); } else failed = true;
     });
   };
@@ -83,20 +83,18 @@ async function measureRow(request, ruler, live, onPiece = () => {}, from = null)
       const began = performance.now();
       const r = await ask(k, "/api/board/runs", { request, from, count });
       if (!r || !Array.isArray(r.shards) || r.shards.length !== count) { failed = true; return; }
-      const ms = Math.max(1, performance.now() - began);
+      const ms = Math.max(1, computeElapsed(r, began));
       spent += ms;
       est = est === null ? ms / count : est * 0.7 + (ms / count) * 0.3;
       r.shards.forEach((x, i) => ready.set(from + i, x));
       fold();
-      const rest = communityRest(ms);
-      if (rest) await boardLaneAt(k).send({ kind: "rest", ms: rest }, null, true);
     }
   }));
   await merging;
   if (failed || folded !== runs) return null;
   const began = performance.now();
   const s = await ask(0, "/api/board/score", { ruler, request, acc });
-  spent += performance.now() - began;
+  spent += computeElapsed(s, began);
   return s && Number.isFinite(s.score) ? { ...s, compute_ms: Math.round(spent), lanes: ls.length } : null;
 }
 
@@ -141,6 +139,7 @@ function boardVerifyOn() {
 }
 function setBoardVerify(on) {
   try {
+    localStorage.setItem(COMPUTE_RANGES_KEY, JSON.stringify(computeRanges));
     localStorage.setItem(CONSENT_KEY, JSON.stringify({ v: COMPUTE_CONSENT_V, on: !!on, at: new Date().toISOString() }));
   } catch (_) { /* private mode: nothing kept, so nothing runs */ }
   renderBoardConsent();
@@ -149,46 +148,16 @@ function setBoardVerify(on) {
   renderComputePicker();
 }
 
-/// HOW MUCH OF THE DEVICE: a share of its processing power the reader sets in
-/// the compute menu (`COMMUNITY_SHARES`), 30% unless they do, whether or not
-/// they are using it — the shape of their own share, with off beside it. The
-/// statement they agreed to says so (`COMPUTE_CONSENT_V`).
-const COMMUNITY_SHARE_KEY = "wfsim-community-share";
-const COMMUNITY_SHARES = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-function communityShare() {
-  try {
-    const n = Number(localStorage.getItem(COMMUNITY_SHARE_KEY));
-    return COMMUNITY_SHARES.includes(n) ? n : 30;
-  } catch (_) { return 30; }
-}
+// Compatibility setters select a fixed range; both consumers use ComputeBudget.
+function communityShare() { return computeRange("together").max; }
 function setCommunityShare(pct) {
-  try { localStorage.setItem(COMMUNITY_SHARE_KEY, String(pct)); } catch (_) { /* this page only */ }
+  if (computePercent(pct) === null) return;
+  setComputeRange("together", "min", pct);
+  setComputeRange("together", "max", pct);
 }
-/// THE PROCESSING POWER IT TAKES NOW, in cores, fractional. Solo and together
-/// add up to no more than 100% by default and then never touch; past it, while
-/// the reader's own work runs, the two share the device in proportion — solo
-/// counted at what it really holds (`poolSize`, whole lanes), since a lane
-/// does not rest.
-function communityPower() {
-  const cores = detectedCores().n, together = communityShare();
-  const solo = (100 * Math.min(cores, poolSize())) / cores;
-  const share = readerBusy() && solo + together > 100 ? (100 * together) / (solo + together) : together;
-  return (cores * share) / 100;
-}
-/// …AS LANES, rounded up, each running `communityDuty()` of the time: 30% of
-/// eight cores is three lanes at 80%, and 30% of one core is one lane at 30%,
-/// so the share is the share on any device. A lane rests after each piece for
-/// as long as the duty asks (`communityRest`), in its worker, where a page in
-/// the background does not slow the clock.
-function communityLanes() {
-  return Math.max(1, Math.ceil(communityPower() - 1e-9));
-}
+function communityPower() { return detectedCores().n * computeShare("together") / 100; }
+function communityLanes() { return computeLaneCount("together"); }
 const communityDuty = () => Math.min(1, communityPower() / communityLanes());
-/// The rest after `ms` of work, capped well inside a lane's silence watch.
-const communityRest = (ms) => {
-  const d = communityDuty();
-  return d >= 0.999 ? 0 : Math.min(30_000, Math.round((ms * (1 - d)) / d));
-};
 
 /// …AND EVEN WITH A YES, NOT NOW: on battery unless the reader allows it
 /// (`computeOnBattery`), or with the browser's data saver on. `why` says which.
@@ -212,6 +181,8 @@ try {
   }
 } catch (_) { /* no battery API: a desktop, as far as this can tell */ }
 function computeHeld() {
+  if (computeRange("together").max === 0) return "limit";
+  if (computeBudget.target("together") === 0) return "busy";
   if (computeBattery && !computeBattery.charging && !computeOnBattery()) return "battery";
   if (navigator.connection && navigator.connection.saveData) return "data";
   return "";
@@ -592,7 +563,7 @@ function boardSyncBody(id, { want, keep = null, results }) {
   const c = computeConsent(), idle = idleLoad();
   return { verifier: id, engine: ENGINE_ID, protocol: 8, capabilities: ["calculation-reports-v1"], ...(c ? { consent: { v: c.v, at: c.at } } : {}),
     lanes: communityLanes(), ...(boardPaceMs ? { pace_ms: Math.min(syncDials.sync_lease_ms, Math.max(100, Math.round(boardPaceMs))) } : {}),
-    want_ms: c && c.on ? Math.max(0, Math.round(want)) : 0, held: heldRows(),
+    want_ms: c && c.on && !computeHeld() ? Math.max(0, Math.round(want)) : 0, held: heldRows(),
     results: results.map(({ verifier: _v, engine: _e, at: _a, key: _k, ...r }) => r),
     ...(keep ? { keep } : {}), ...(refusedPending.length ? { refused: refusedPending.slice(0, 50) } : {}),
     ...(Object.keys(idle).length ? { idle: Object.entries(idle).map(([hour, x]) => ({ hour, ...x })) } : {}),
@@ -813,6 +784,7 @@ function loadCut(id) {
 }
 /// …THE ROW A PACK GIVEN BACK KEEPS, its fold saved: the one it was computing, if any of it folded.
 function keptCut(p) {
+  if (computeBudget.target("together") === 0) { dropCut(); return null; }
   const c = resumeCut;
   if (!c || c.lease !== p.lease || c.task.question !== p.row || p.lost === p.row) return null;
   saveCut();
@@ -956,7 +928,7 @@ async function rivenGainOnce(w, id) {
   if (!boardVerifyOn() || computeHeld() || computeFrozen) { giveBack(); computeEnd(null); return true; }
   // THE CORES IT MAY TAKE ARE ASKED EVERY ROUND, and its workers kept for the next one (`quickFleet`).
   const job = quickFleet(w.request, () => communityLanes(), undefined,
-    { keep: true, rest: communityRest, onBuilds: builds => keepOptimizationBuilds(builds, buildSource) });
+    { keep: true, kind: "together", onBuilds: builds => keepOptimizationBuilds(builds, buildSource) });
   // STILL AT IT, said every `RIVEN_RENEW_MS` so the lease runs on while the
   // search does; told the task went elsewhere, it stops (worker/appraise.js `renew`).
   let lost = false, said = performance.now();

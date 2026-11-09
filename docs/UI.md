@@ -1268,12 +1268,20 @@ only cumulative totals. The top bar's count and task ring share one link to
 
 The page names its two shares SOLO and TOGETHER (自己算 and 一起算), never
 "help" or "community computing", and says DEVICE, never computer, phone or
-tablet, so a new kind of device changes no word. They are two sliders, 10–100%,
-together with its own switch and the battery choice beside it: one control
+tablet, so a new kind of device changes no word. Each has a two-handle range
+and editable minimum/maximum percentages, 0–100 in one-percentage-point steps.
+Both default to 0–50. Existing percentages and the resource share already
+consented to remain fixed ranges;
+changing one endpoint past the other moves the other endpoint to match.
+Together has its own switch and the battery choice beside it: one control
 (`computeSharesHtml`) in the settings menu and on `/compute`, painted in place so
 a slider being dragged is never redrawn. It shows percentages of processing
-power, never core counts. The rules behind it are docs/BOARD.md §"Contribution"
-rule 0.
+power, never core counts. A zero upper bound pauses calculation while Together
+stays enabled. The current target and combined maximum update in place.
+Browser adaptation observes visible-page scheduling delays, lowers its target
+quickly and restores it gradually. It estimates responsiveness, not machine-wide
+CPU availability; hidden-tab timer throttling is excluded. Equal endpoints
+select a fixed target. The rules behind it are docs/BOARD.md §"Contribution" rule 0.
 
 A device is first called what its system, browser and — on a phone — maker and
 model say (`deviceGuessReady`: ua-parser-js, pinned in `web/lib/pins.json` and
