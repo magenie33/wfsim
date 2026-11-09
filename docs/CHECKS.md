@@ -635,6 +635,10 @@ URL, workflow identity permissions and the existing main/release protection.
 top options, denied/unknown reads, read-before-write races and audited readback.
 The protected `cors_only` release path requires exact-SHA qualified CI and skips
 native builds, tags, npm and immutable release assets.
+`check_client_manifest` checks the fixed same-origin public pointer, credential
+isolation, unchanged response bytes, upstream failures and native registration.
+The device-claim browser check loads all four downloads through that gateway.
+Normal CLI publication does not require bucket-management permissions.
 `cargo test --manifest-path client/Cargo.toml` covers range parsing,
 persistent identity, corrupt identity refusal, global fractional CPU budgets,
 cancellation, outbox acknowledgments and shared result-payload fixtures.

@@ -6,6 +6,7 @@ import { openApp } from './cdp.mjs';
 import { testDb } from './pg/test_db.mjs';
 import { deviceLinkRoute } from '../worker/device_link.js';
 import { sha256 } from '../worker/accounts.js';
+import { clientRelease } from '../worker/client_release.js';
 
 const env={ACCOUNTS:await testDb('accounts'),AUTH_SECRET:'browser-device-link'};
 await env.ACCOUNTS.run("INSERT INTO accounts(id,created_at,username) VALUES('alice','2026-01-01','alice')");
@@ -19,6 +20,10 @@ const manifest={v:1,version:'0.1.0-test',npm:false,files:Object.fromEntries(['x8
 let origin;
 const server=createServer(async(req,res)=>{
   const url=new URL(req.url,origin||'http://localhost');
+  if(url.pathname==='/api/cli/latest'){
+    const response=await clientRelease(new Request(origin+req.url,{method:req.method}),async()=>new Response(JSON.stringify(manifest)));
+    res.writeHead(response.status,Object.fromEntries(response.headers));res.end(await response.text());return;
+  }
   if(url.pathname.startsWith('/api/')){
     let body='';for await(const c of req)body+=c;
     const response=await deviceLinkRoute(new Request(origin+req.url,{method:req.method,headers:req.headers,body}),env,url.pathname);
@@ -30,7 +35,7 @@ const server=createServer(async(req,res)=>{
     res.end(`let accountState={account:null}; const $=id=>document.getElementById(id);
       const escHtml=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
       const aT=escHtml;
-      const fetchJson=async()=>(${JSON.stringify(manifest)});
+      const fetchJson=async url=>(await fetch(url)).json();
       const accountCall=async(method,path,body)=>(await fetch(path,{method,headers:{'content-type':'application/json'},body:JSON.stringify(body)})).json();
       const loadDevices=async()=>{window.deviceLoads=(window.deviceLoads||0)+1;};
       ${widget}\n${action}
@@ -51,6 +56,8 @@ try{
   app=await openApp({base:origin,boot:200});
   await app.load(`/compute?device_code=${code}`,200);
   await ready(`!!document.querySelector('#compute-device-link a')`);
+  await ready(`document.querySelectorAll('#compute-cli a.ghost-btn').length===4`);
+  app.check('four native downloads load through the same-origin manifest gateway',await app.evaluate(`document.querySelectorAll('#compute-cli a.ghost-btn').length===4`));
   app.check('signed-out approval preserves the short code through sign-in',await app.evaluate(`document.querySelector('#compute-device-link a').getAttribute('href').includes(encodeURIComponent('/compute?device_code=${code}'))`));
   await app.evaluate(`accountState.account={id:'alice'};computeDraw($('auth-page'))`);await ready(`!!document.querySelector('[data-auth="compute-device-link-approve"]')`);
   app.check('the actual approval component reviews the device before claiming',await app.evaluate(`document.querySelector('#compute-device-link').textContent.includes('My server') && !!document.querySelector('[data-auth="compute-device-link-approve"]')`));
@@ -71,7 +78,7 @@ try{
   await app.evaluate(`history.replaceState(null,'','/compute');computeDraw($('auth-page'))`);
   app.check('leaving the code removes the old approval surface',await app.evaluate(`!document.querySelector('#compute-device-link')`));
   assert.equal(app.failures,0);
-  console.log('Device claim page: 9 checks passed with the actual component, compute action and account route.');
+  console.log('Device claim page: 10 checks passed with the actual component, manifest gateway, compute action and account route.');
 }finally{
   if(app)await app.close();await new Promise(r=>server.close(r));await env.ACCOUNTS.close();
 }

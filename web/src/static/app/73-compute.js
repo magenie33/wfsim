@@ -277,7 +277,7 @@ const CLI_RELEASE_ORIGIN = "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.co
 async function loadComputeCli(main) {
   if (computeCliAsked) return;
   computeCliAsked = true;
-  const r = await fetchJson(`${CLI_RELEASE_ORIGIN}/cli/latest.json`).catch(() => null);
+  const r = await fetchJson("/api/cli/latest").catch(() => null);
   if (!(r?.v === 1 && /^[0-9A-Za-z.-]+$/.test(r.version || "") && r.files && typeof r.files === "object")) return;
   computeCliRelease = r;
   if (location.pathname === "/compute") computeDraw(main);

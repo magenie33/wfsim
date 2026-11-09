@@ -121,8 +121,9 @@ class CorsChecks(unittest.TestCase):
         job = workflow.split("  cors:\n", 1)[1].split("\n  version:", 1)[0]
         for forbidden in ("cargo ", "gh release", "npm publish", "scripts/release_client.py"):
             self.assertNotIn(forbidden, job)
-        self.assertIn("--apply --configure-only", workflow)
-        self.assertLess(workflow.index("python3 scripts/release_client.py target/client-release\n"), workflow.index("python3 scripts/client_cors.py --verify-only"))
+        publish = workflow.split("\n  publish:", 1)[1]
+        self.assertNotIn("scripts/client_cors.py", publish)
+        self.assertIn("python3 scripts/release_client.py target/client-release", publish)
 
 
 if __name__ == "__main__":

@@ -44,6 +44,7 @@ import { syncRoute } from "./sync.js";
 import { noteFactoryCall } from "./factory_calls.js";
 import { contributionRoute, publishContributors } from "./contribution.js";
 import { deviceLinkRoute } from "./device_link.js";
+import { clientRelease, CLI_MANIFEST_PATH } from "./client_release.js";
 import { meritRoute, mintMerit, settleMerit } from "./merit.js";
 import { clanRoute } from "./clan.js";
 import { feedbackRoute } from "./feedback.js";
@@ -738,6 +739,7 @@ export default {
   async fetch(request, env, ctx) {
     request = websiteRequest(request, env);
     if (request instanceof Response) return request;
+    if (new URL(request.url).pathname === CLI_MANIFEST_PATH) return clientRelease(request);
     const f = withDatabases(env);
     try {
       return await serve(request, f.env, ctx);
