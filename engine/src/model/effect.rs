@@ -206,6 +206,7 @@ pub enum TargetPreference {
     Avoid,
 }
 
+#[wfsim_gas_macro::metered]
 impl TargetPreference {
     pub fn label(self) -> &'static str {
         match self {
