@@ -1,7 +1,7 @@
 // RIVEN APPRAISAL'S PAGE (81-appraisal.js), against a stand-in for its door:
 // the link opens the weapon's optimizer under the appraisal's ruler with the
 // riven pinned in its one start, the search starts with no click, and when it
-// finishes the winner goes back as a BUILD — no score — with the name typed,
+// finishes the winner goes back as a BUILD with its captured account reference,
 // while the finalists go to the board without asking.
 //   node scripts/check_appraisal_page.mjs      (minutes: it runs a real search)
 import { openApp, sleep } from "./cdp.mjs";
@@ -64,8 +64,8 @@ const chips = await evaluate(`[...document.querySelectorAll("#card-page [data-ri
 check("the appraisal's picture draws the asker's card with its numbers and rolls", chips.length === 3
   && chips.every(t => /[+-]\d+(?:\.\d+)?%/.test(t))
   && JSON.stringify(chips.map(t => Number(t.match(/×(\d+(?:\.\d+)?)$/)?.[1]))) === JSON.stringify([1.1, 1.05, 0.9]), JSON.stringify(chips));
-check("…its code, and a QR code to the appraisal", (await evaluate(`document.querySelector("#card-page").textContent`)).includes("TEST7")
-  && await evaluate(`!!document.querySelector("#card-page .lc-qr svg")`));
+check("…its code, without a scan invitation", (await evaluate(`document.querySelector("#card-page").textContent`)).includes("TEST7")
+  && await evaluate(`!document.querySelector("#card-page .lc-qr")`));
 // WHAT THE READER ALREADY HAS: their presets, rivens and search checkpoint,
 // which an appraisal opened in this browser must leave exactly as they were.
 const OWN = `JSON.stringify(Object.keys(localStorage).filter((k) => /presets|riven|ckpt/i.test(k)).sort()
@@ -90,7 +90,7 @@ check("the search started without a click", await evaluate("optJobId != null || 
 // THE QUESTION AS THE SEARCH ASKS IT, kept to set beside the frozen one below.
 const asked = await evaluate("JSON.stringify(optimizeBody())");
 check("a banner says what the page is doing", /riven gain|裂罅收益/i.test(await evaluate(`($("appraisal-banner") || {}).textContent || ""`)));
-await evaluate(`(() => { const i = $("appraisal-name"); i.value = "Kai"; i.dispatchEvent(new Event("input")); })()`);
+check("there is no separate typed attribution field", await evaluate(`!$("appraisal-name")`));
 
 let sent = null;
 for (let i = 0; i < 240 && !sent; i++) {
@@ -104,7 +104,7 @@ if (sent) {
   check("…as a build with the riven in it", r.build && r.build.weapon === "torid" && r.build.mods.includes("riven")
     && JSON.stringify(r.build.riven_pos) === JSON.stringify(["critical_damage", "multishot"]) && r.build.riven_neg === "zoom", JSON.stringify(r.build));
   check("…carrying no score", !/score|shown|kpm/i.test(JSON.stringify(r)), JSON.stringify(r).slice(0, 200));
-  check("…and the name that was typed", r.thanks === "Kai", r.thanks);
+  check("…with a task and browser owner, without a typed name", !r.thanks && typeof r.task === "string" && /^[a-f0-9]{64}$/.test(r.owner), JSON.stringify(r));
   await sleep(4000);
   const board = JSON.parse(await evaluate("JSON.stringify(window.__sent.board)"));
   check("the finalists go to the board even with the board switched off here", deliveryFixture?.delivered.length > 0

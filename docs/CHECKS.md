@@ -1,3 +1,15 @@
+`check_riven_delivery.mjs` exercises the real producer, factory, schemas and
+account routes. A first candidate delivers without credit; an independently
+matching second witness credits both people in completion order. Delivery
+continues to identify only its candidate's author. Current nickname, anonymity,
+selected opaque labels, forged choices, browser ownership, candidate cursors and
+captured-account local delivery are checked separately. Importing the previous
+user-task module through `WFSIM_USER_TASK_MODULE` must fail the early-delivery
+assertion. `check_riven_delivery_page.mjs` verifies that a waiting candidate
+reaches replay, a rejected candidate advances the cursor, and delivery retains
+the accepted source. The private extension checks actual label eligibility and
+rendering.
+
 # The browser and node checks
 
 `import_secondary_calibration.py --exchange <exchange> --check` verifies every
@@ -523,8 +535,7 @@ is uploaded.
 
 Riven appraisal's door (`worker/appraise.js`) with no network: only a bot opens
 one, the page reads it without the chat it came from, an asker opens at most
-five an hour, every build handed back is kept with its thanks stripped of
-links, the first build the bot accepts wins once, a told appraisal is not told
+five an hour, every build handed back is kept without trusting typed thanks, the first build the bot accepts wins once, a told appraisal is not told
 again, and each channel's bot sees only its own.
 
 ## `check_appraisal_page`

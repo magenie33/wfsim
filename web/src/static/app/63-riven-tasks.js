@@ -32,7 +32,7 @@ async function finishSavedAppraisal(task, execution, search) {
 async function replaySavedAppraisal(task, execution, search) {
   execution.report({ phase: "Appraisal replay", done: 0, total: 0 });
   const best = (search.results || []).find((row) => row?.mods?.length);
-  if (!best) throw new Error("the search ranked nothing");
+  if (!best) throw Object.assign(new Error("the search ranked nothing"), { candidateRejected: true });
   const job = { ruler: task.origin.ruler, riven: task.request.rivens[0].spec,
     result: { build: boardPayloadFromResult(best, task.origin.board) } };
   const verdict = await headlessAppraisalReplay(pageSay(), weaponInfo(task.request.weapon), job, [], {

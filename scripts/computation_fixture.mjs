@@ -66,7 +66,7 @@ export async function computationFixture(upstream, port = 0, controls = false) {
       else if (url.pathname.startsWith("/api/contributors/profile/") || url.pathname.startsWith("/api/computations/") || url.pathname === "/api/account/contribution-profile") response = await contributorProfilesRoute(request, env, url.pathname);
       else if (url.pathname === "/api/contributors" || url.pathname.startsWith("/api/account/devices") || url.pathname === "/api/account/contribution") response = await contributionRoute(request, env, url.pathname);
       else if (url.pathname.startsWith("/api/recommendations/") || url.pathname.startsWith("/api/account/recommendations")) response = await recommendationsRoute(request, env, url.pathname);
-      else if (url.pathname.startsWith("/api/auth/") || ["/api/account", "/api/account/profile"].includes(url.pathname)) response = await accountRoute(request, env, url.pathname);
+      else if (url.pathname.startsWith("/api/auth/") || ["/api/account", "/api/account/profile", "/api/account/identity"].includes(url.pathname)) response = await accountRoute(request, env, url.pathname);
       else if (url.pathname === "/api/account/agents") response = Response.json({ ok: true, agents: [] });
       if (!response) {
         const proxyHeaders = new Headers(headers); proxyHeaders.delete("host");

@@ -2,7 +2,7 @@
 // Browser-owned requests consume facts from the same fair factory as the board.
 import { facts, DEADLINE_MS } from "./factory.js";
 import { canon, questionId, witnessOf } from "./tasks.js";
-import { sameSite, sha256 } from "./accounts.js";
+import { sameSite, sha256, limited } from "./accounts.js";
 import { json, servedRelease, netOf, unrecognised, ENGINE_ID, LEASE_ID, QUESTION_ID, countsOf } from "./verify.js";
 import { dialsOf } from "./dials.js";
 import { iso } from "./instant.js";
@@ -88,6 +88,7 @@ export async function userTasksRoute(request, env, path) {
   if (!OWNER.test(body.owner || "")) return json({ ok: false, error: "needs browser ownership" }, 401);
   const owner = await sha256(body.owner);
   if (path === "/api/user-tasks/source") {
+    if (await limited(env, request, "delivery_source")) return json({ ok: false, error: "slow down" }, 429);
     if (!UUID.test(body.task || "") || !ENGINE_ID.test(body.engine || "") || !/^[a-z0-9_]{1,100}$/.test(body.weapon || ""))
       return json({ ok: false, error: "invalid source" }, 400);
     return json({ ok: true, source: await localDeliverySource(env, request, body) });

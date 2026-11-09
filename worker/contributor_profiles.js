@@ -74,8 +74,7 @@ export async function contributorProfilesRoute(request, env, path) {
     || before.length !== (kind === "board" ? 4 : 2) || !before.every(bounded))) return no("bad_query");
   const identity = { id: person.profile_id, name: person.name, username: person.username, named: !!person.named, you: account === me };
   if (view === "identity") return reply({ ok: true, profile: identity });
-  const mark = (await contributorMarks(env, people))[account];
-  if (mark) identity.mark = mark;
+  identity.mark = (await contributorMarks(env, people))?.[account] || null;
   if (!env.LIBRARY) return no("unavailable", 503);
   const contribution = view === "records" ? {} : await contributionOf(env, account);
   if (view === "summary") return reply({ ok: true, profile: { ...identity, ...contribution }, keep_days: 14 });

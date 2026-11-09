@@ -218,5 +218,13 @@ for (const c of cases) {
   check(`${c.malus}: an impossible printed value creates no appraisal`, opened.length === 1);
 }
 
+const speaker = headless.headlessSpeaker({}, { zh }, "zh");
+check("delivery text uses the selected localized identity label", headless.headlessContributorText(speaker,
+  { name: "Calculator", mark: { kind: "creator", label: { en: "Creator", zh: "作者" } } }) === "Calculator · 作者");
+check("anonymous delivery text cannot carry a supplied identity label", headless.headlessContributorText(speaker,
+  { name: null, mark: { label: { zh: "作者" } } }) === speaker.t("Anonymous contributor"));
+check("official delivery is identified as official compute", headless.headlessContributorText(speaker,
+  { official: true, name: "runner" }) === speaker.t("Official compute"));
+
 console.log(`${checked} checks, ${failed} failed${failed > 16 ? ` (${failed - 16} more failures)` : ""}`);
 process.exit(failed ? 1 : 0);

@@ -116,7 +116,8 @@ const computationWitnessHtml = (witnesses, roles = false) => witnesses.map((w, i
   return roles ? `<span class="computation-witness"><span class="muted">${aT(i ? "Verified by" : "Calculated by")}</span> ${name}</span>` : name;
 }).join(`<span aria-hidden="true"> · </span>`);
 function deliveryRecordHtml(source) {
-  return `<p class="calculation-record fine">${aT("Delivered by")} <span${/^[a-f0-9]{32}$/.test(source || "") ? ` data-delivery-source="${source}"` : ""}>${aT("Anonymous contributor")}</span></p>`;
+  const known = /^[a-f0-9]{32}$/.test(source || "");
+  return `<p class="calculation-record fine">${aT("Delivered by")} <span${known ? ` data-delivery-source="${source}"` : ""}>${known ? loadingHtml() : aT("Anonymous contributor")}</span></p>`;
 }
 function calculationRecordHtml(record) {
   if (!record) return "";
@@ -266,7 +267,7 @@ function computationPage(main, kind) {
   }
   if (kind === "calculation") {
     const r = value.record, w = weaponInfo(r.weapon);
-    main.innerHTML = `<div class="auth-page"><article class="auth-card computation-record"><h2>${aT(r.kind === "simulation" ? "Simulation" : "Optimization")}${w ? ` · ${escHtml(weaponEntryName(w))}` : ""}</h2>
+    main.innerHTML = `<div class="auth-page"><article class="auth-card computation-record"><h2>${aT(r.kind === "delivery" ? "Riven analysis" : r.kind === "simulation" ? "Simulation" : "Optimization")}${w ? ` · ${escHtml(weaponEntryName(w))}` : ""}</h2>
       <p>${escHtml(measuredText(r.completed_at, pageSay().zone))} · ${aT("engine")} ${escHtml(r.engine)}</p>
       <p class="computation-credits">${computationWitnessHtml(r.witnesses, r.kind === "optimization")}</p><p class="fine">${aT("Calculation records are shown for 14 days. Lifetime signatures are kept.")}</p>${status}</article></div>`;
     return;
@@ -539,7 +540,7 @@ let accountIdentity = null;
 function identityControlsHtml(state) {
   if (state.error) return `<p role="status">${aT(state.error)} <button class="ghost-btn small" data-auth="identity-retry">${aT("Retry")}</button></p>`;
   const value = state.value;
-  if (!value) return `<p role="status">${aT("Loading…")}</p>`;
+  if (!value) return `<p>${loadingHtml()}</p>`;
   const labelText = item => typeof item.label === "string" ? tr(item.label) : item.label?.[LANG] || item.label?.en || "";
   const selected = value.label || "none", available = value.labels.some(item => item.id === selected);
   return `<div class="inline-form identity-settings"><h3>${aT("Public identity")}</h3>

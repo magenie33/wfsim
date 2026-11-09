@@ -549,11 +549,8 @@ async function kept(request, env) {
   keptHere = { at: Date.now(), body };
   return body;
 }
-/// THE NAMED ROWS' MARKS, asked of the paid half every `MARKS_KEEP_MS` an
-/// isolate: a mark is a tier or a title, which moves in days, and the asking is
-/// seconds. A reader's ask waits `MARKS_WAIT_MS` at most and falls back to the
-/// last marks drawn; the published ranking waits for the answer (`wait`) and is
-/// null without one, since a badge gone for ten minutes reads as a refund.
+/// The edge keeps contribution totals for one minute. Current identity settings
+/// are applied when rows are projected for the reader.
 async function keptWorkedOut(request, env) {
   const cache = typeof caches !== "undefined" ? caches.default : null;
   const at = new Request(new URL("/api/contributors/kept", request.url).toString());
