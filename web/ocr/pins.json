@@ -3,7 +3,7 @@
     { "name": "ort-1.30.0.wasm.min.js", "package": "onnxruntime-web", "version": "1.30.0",
       "path": "package/dist/ort.wasm.min.js",
       "sha256": "faece07e84faa9001f5104bbe4e5c70861d06cb2376a0dea1fa0ad33a67adc81" },
-    { "name": "ort-wasm-simd-threaded-1.30.0.mjs", "package": "onnxruntime-web", "version": "1.30.0",
+    { "name": "ort-wasm-simd-threaded-1.30.0.js", "package": "onnxruntime-web", "version": "1.30.0",
       "path": "package/dist/ort-wasm-simd-threaded.mjs",
       "sha256": "e13f7f94fc51b4ca72b12faeb1ee95f4ace6dfbc8939bc718aabdc0a27c4299b" },
     { "name": "ort-wasm-simd-threaded-1.30.0.wasm", "package": "onnxruntime-web", "version": "1.30.0",
