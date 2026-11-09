@@ -73,6 +73,27 @@ async function* batches(input, limit = LIMIT) {
 async function* outputPaths(path) {
   if (existsSync(path)) for await (const row of readInventoryRows(path)) yield row.path;
 }
+export async function acknowledgeInventory(sql, catalog, generation, input, report = () => {}, maxGroups = 128) {
+  if (!Number.isSafeInteger(maxGroups) || maxGroups < 1 || maxGroups > 128) throw new Error('invalid inventory ACK page bound');
+  let page = [], bytes = 2, processed = 0, requests = 0;
+  const flush = async () => {
+    if (!page.length) return;
+    for (const { changes } of page) catalog.recordReceipts(changes);
+    await sql.unsafe(`SELECT sum(inventory_ack($1::text,value::text))::text AS matched
+      FROM jsonb_array_elements(($2::text)::jsonb)`, [generation, '[' + page.map(part => part.text).join(',') + ']']);
+    for (const { changes } of page) { catalog.acknowledge(changes); processed += changes.length; }
+    report({ processed, chunks: ++requests }); page = []; bytes = 2;
+  };
+  for await (const changes of input) {
+    if (!Array.isArray(changes) || changes.length > LIMIT) throw new Error('inventory ACK chunk exceeds bound');
+    if (!changes.length) continue;
+    const text = JSON.stringify(changes), size = Buffer.byteLength(text) + 1;
+    // An existing oversized chunk travels alone; no key is truncated or dropped.
+    if (page.length && (page.length >= maxGroups || bytes + size > 4 * 1024 ** 2)) await flush();
+    page.push({ changes, text }); bytes += size;
+  }
+  await flush();
+}
 export async function* inventoryCursor(tx, name, query, args = [], { maxRows = 5000, report = () => {} } = {}) {
   if (!/^[a-z][a-z0-9_]*$/.test(name)) throw new Error('invalid inventory cursor name');
   let limit = Math.min(5000, maxRows), largest = 1, total = 0;
@@ -318,11 +339,8 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
       report('audited', { epoch: receipt.epoch, rows: audit.plan.rows });
     }
     report('acknowledging', { epoch: receipt.epoch });
-    for await (const changes of batches(cut.changes)) {
-      catalog.recordReceipts(changes);
-      await sql.unsafe('SELECT inventory_ack($1::text,$2::text)', [state.generation, JSON.stringify(changes)]);
-      catalog.acknowledge(changes);
-    }
+    await acknowledgeInventory(sql, catalog, state.generation, batches(cut.changes),
+      fields => report('acknowledging', { epoch: receipt.epoch, ...fields }));
     const plan = { ...catalog.finishEpoch(), source }, body = JSON.parse(inventoryWrite(plan).params[1]);
     report('publishing', { epoch: receipt.epoch });
     const [{ published }] = await sql.unsafe('SELECT inventory_publish_cut($1::text,$2::text) published',

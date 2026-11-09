@@ -217,6 +217,12 @@ batches and independent consumers join the same question; verification retains
 the full classifier's precedence. Replacement commits before acknowledgment,
 and acknowledgments compare the captured revision. A persisted token ledger
 makes replay after local acknowledgment idempotent.
+The coordinator sends at most 128 existing 256-key ACK chunks per SQL request,
+targeting 4MiB of UTF-8 input; an existing larger chunk travels alone. Every
+chunk's local receipt is durable before sending. One SQL statement invokes
+the unchanged validator and exact-revision ACK for each chunk, so a failure
+rolls back the whole page. Local acknowledgments follow database success;
+a lost response replays the durable receipts without counting them twice.
 
 A generation is fenced by engine, adapter and classifier contract. Bootstrap
 compares every effective question id, category and registration flag with the
