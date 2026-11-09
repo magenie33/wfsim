@@ -79,6 +79,8 @@ jobs:
         with:
           node-version: '22.23.4'
           registry-url: 'https://registry.npmjs.org'
+      - if: inputs.npm
+        run: npm install --global npm@11.21.2
       - uses: actions/download-artifact@v4
         with:
           pattern: cli-*
@@ -108,8 +110,6 @@ jobs:
             --notes-file client/README.md --latest=false \
             "${cli_assets[@]}"
       - if: inputs.npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish ./target/client-release/npm --access public --provenance
       - env:
           COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}

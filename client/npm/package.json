@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "description": "Join WFSim volunteer computing with the official native client",
   "license": "AGPL-3.0-or-later",
-  "repository": "github:magenie33/wfsim",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magenie33/wfsim.git"
+  },
   "homepage": "https://wfsim.app/compute",
   "type": "module",
   "engines": { "node": ">=22.23.4" },
