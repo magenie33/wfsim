@@ -18,12 +18,12 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Raksa Claws","description":"Raksa Claws — Beast Claws · Sentinel · Mastery Rank 0. 250 base damage (puncture 250), 7.5% crit chance, 2.5x crit multiplier, 20% status chance. Build it, simulate the fight, and optimize the mods.","url":"https://wfsim.app/weapons/Raksa_Claws","inLanguage":"en","isPartOf":{"@type":"WebApplication","name":"WFSim","url":"https://wfsim.app/"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WFSim","item":"https://wfsim.app/"},{"@type":"ListItem","position":2,"name":"Raksa Claws","item":"https://wfsim.app/weapons/Raksa_Claws"}]},"dateModified":"2026-11-09"}</script>
   <meta name="twitter:card" content="summary" />
   
-  <link rel="stylesheet" href="/asset/style.c52d6a8658ca.css" />
+  <link rel="stylesheet" href="/asset/style.f5416785668d.css" />
   
-  <link rel="preload" href="/pkg/wfsim_wasm_bg.736d2a0c0986.wasm" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/meta.426ecbf09b25.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/i18n.712718a63a73.json" as="fetch" crossorigin />
-  <link rel="preload" href="/pkg/pack.data.a118fa7f1ab4.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/wfsim_wasm_bg.e000d988b0b7.wasm" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/meta.b94b85ed92c1.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/i18n.cb404cc85056.json" as="fetch" crossorigin />
+  <link rel="preload" href="/pkg/pack.data.75e0f0555e5b.json" as="fetch" crossorigin />
   <link rel="icon" type="image/svg+xml" href="/logo.svg" />
   <link rel="ai-catalog" href="/.well-known/ai-catalog.json" type="application/json" />
   
@@ -261,7 +261,7 @@
 
     <nav class="module-tabs" id="module-tabs"></nav>
     <div id="doc" class="doc" data-url="/weapons/Raksa_Claws">
-<section class="fold sect library-summary shut" data-fold="library-summary"><h2 class="fold-h">Summary</h2><div class="library-summary-body"><p class="library-summary-scope">Standard Single Target · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM</p><p data-library-lead>No build has been measured under these board conditions.</p><p class="library-summary-coverage">This scope contains 0 build records across 0 ways of using the weapon. Published results cover 0 of 48 board conditions for this weapon.</p><details class="support-details"><summary>Not modelled here</summary><ul><li>The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.</li><li>Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.</li></ul></details></div></section>    </div>
+<section class="fold sect library-summary shut" data-fold="library-summary"><h2 class="fold-h">Summary</h2><div class="library-summary-body"><p class="library-summary-scope">Standard Single Target · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM</p><p data-library-lead>No build has been measured under these board conditions.</p><p class="library-summary-coverage">This scope contains 0 build records across 0 ways of using the weapon. Published results cover 0 of 48 board conditions for this weapon.</p><details class="support-details"><summary>Not modelled here</summary><ul><li>The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.</li><li>Attacks are assumed to connect. Companion movement, contact geometry, native attack selection, target scoring and precepts are not simulated. Postures use deterministic target intent.</li></ul></details></div></section>    </div>
 
     <section class="block wbench" data-module="benchmark" id="wbench-block">
       <div class="bh"><h2 data-i18n>Benchmark</h2><span class="sub" id="wbench-sub"></span></div>
@@ -305,9 +305,10 @@
       <div class="bb">
         
         <div id="stance-block">
-          <div class="exlabel" data-i18n>Stance</div>
+          <div id="stance-label" class="exlabel">Stance</div>
           <div id="stance" class="slots"></div>
-          <div class="exhint" data-i18n>A stance decides what the weapon actually swings: it publishes a combo per mode, and installing one replaces the weapon's own. It also GRANTS capacity instead of costing it — 10 on a slot of its own polarity, 5 on a bare one, 4 on the wrong colour.</div>
+          <div id="stance-combo-hint" class="exhint" data-i18n>A stance decides what the weapon actually swings: it publishes a combo per mode, and installing one replaces the weapon's own. It also GRANTS capacity instead of costing it — 10 on a slot of its own polarity, 5 on a bare one, 4 on the wrong colour.</div>
+          <div id="posture-hint" class="exhint" hidden data-i18n>Postures guide companion targeting and may add combat bonuses. Equip one Posture; each card states its remaining modelling limits.</div>
         </div>
         <div id="mod-slots" class="slots"></div>
         
@@ -734,7 +735,7 @@
     
     <a href="/method" data-native data-i18n>Method</a>
     
-    · <span class="build-stamp" id="build-stamp" title="which build this page is">01f8b467</span>
+    · <span class="build-stamp" id="build-stamp" title="which build this page is">2d743f69</span>
     </div>
   </footer>
 
@@ -749,7 +750,7 @@
   </div>
 </div>
   <script>window.WFSIM_WASM = true;</script>
-  <script src="/asset/app.99d62fc5b08d.js"></script>
+  <script src="/asset/app.40d4b0b174b9.js"></script>
   <script type="module" src="/asset/nona.49e7e5dce064/index.js"></script>
 </body>
 </html>

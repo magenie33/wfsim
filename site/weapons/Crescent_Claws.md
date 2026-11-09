@@ -5,7 +5,7 @@ Beast Claws · Sentinel · Mastery Rank 0. 100 base damage (electricity 50, punc
 ## Not modelled here
 
 - The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.
-- Companion movement, bone trajectories, visibility, attack selection, precepts and posture target selection are not simulated. The hit sphere is assumed centered on the aimed target; range bonuses enlarge its radius, and nearest intersecting bodies fill the target cap.
+- Companion movement, bone trajectories, visibility, native attack selection, target scoring and precepts are not simulated. The hit sphere is assumed centered on the selected contact target; range bonuses enlarge its radius, and nearest intersecting bodies fill the target cap. Postures use deterministic target intent.
 
 ## In WFSim
 

@@ -5,7 +5,7 @@ Beast Claws · Sentinel · Mastery Rank 0. 250 base damage (puncture 250), 7.5% 
 ## Not modelled here
 
 - The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.
-- Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.
+- Attacks are assumed to connect. Companion movement, contact geometry, native attack selection, target scoring and precepts are not simulated. Postures use deterministic target intent.
 
 ## In WFSim
 
