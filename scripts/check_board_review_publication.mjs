@@ -4,6 +4,7 @@ import fs from "node:fs";
 import vm from "node:vm";
 
 const source = fs.readFileSync(new URL("../web/src/static/app/59-simulation-tasks.js", import.meta.url), "utf8");
+const headlessSource = fs.readFileSync(new URL("../web/src/static/app/83-headless-card.js", import.meta.url), "utf8");
 const marker = "// A review observes one public verification round";
 assert.ok(source.includes(marker), "the production review observer must be present");
 
@@ -33,6 +34,7 @@ function observer(outcomes = [false, true]) {
     },
     host, track,
   });
+  vm.runInContext(block(headlessSource, "function headlessBoardRecord(", "async function headlessMeasurementWitnesses("), context);
   vm.runInContext(source.slice(source.indexOf(marker)), context);
   vm.runInContext(`
     saveBoardReviewTrackers = async () => {};

@@ -119,12 +119,12 @@ function headlessBoardRecord(weapon, row) {
     ...(row.wielder ? { wielder: JSON.parse(JSON.stringify(row.wielder)) } : {}),
     ...(riven ? { riven_pos: riven.bonuses, riven_neg: riven.malus || "", riven_rolls: riven.rolls } : {}) };
 }
-async function headlessMeasurementWitnesses(weapon, rows, { api, names }) {
+async function headlessMeasurementWitnesses(weapon, rows, { api: request, names }) {
   const found = new Map(rows.map(row => [row, []]));
   const known = [...new Set(rows)].filter(row => row.measured_at && row.measured_by && row.benchmark && Number.isFinite(row.score));
   if (!known.length) return found;
   try {
-    const keys = await api("/api/build/keys", { kind: "build", builds: known.map(row => headlessBoardRecord(weapon, row)) });
+    const keys = await request("/api/build/keys", { kind: "build", builds: known.map(row => headlessBoardRecord(weapon, row)) });
     if (!keys?.ok || keys.keys?.length !== known.length) throw new Error("identity unavailable");
     const records = known.map((row, i) => ({ identity: keys.keys[i], ruler: row.benchmark, mode: row.mode || "base",
       score: row.score, measured_at: row.measured_at, measured_by: row.measured_by }));
