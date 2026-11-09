@@ -139,8 +139,12 @@ preserving the profile id, filters and fragment. User names share `user-link`
 styling across the ranking and calculation records: no underline, an accent
 hover state and a visible keyboard focus ring.
 The profile loads identity independently of the library database, then contribution
-totals and the selected record list independently. Current verified board builds
-are the default, in ten-candidate pages checked against actual publication.
+totals and the selected record list independently. Current accepted build
+verifications are the default, in ten-candidate pages. Their stored records must
+match the engine's canonical build identities. Participation is independent of
+curated Library membership; retired measurements remain excluded by the API.
+Each entry opens its exact recorded build and uses the existing share panel,
+including its riven, without saving either merely by viewing or sharing history.
 Their loading or failure does not hide the user card. Weapon filtering opens a
 separate search panel with the site's shared localized equipment matcher;
 typing filters local equipment and selecting requests that weapon's records.
@@ -165,11 +169,12 @@ The existing `contribution_choice.named` governs all public attribution.
 Changing it never removes work or cumulative signatures; every read resolves
 the current name and visibility. Anonymous public records contain no profile id.
 
-Accepted independent witnesses are ordered by completion time. Current board
-attribution requires the exact latest score clock and actual published board
-membership. The page verifies canonical build ids through `/api/build/keys`;
-stored scores alone do not prove publication. Pagination counts the displayed
-rows, with a weapon filter and further candidate pages. Native replacement
+Accepted independent witnesses are ordered by completion time. Names on a
+published Library row require its exact latest score clock, engine and score.
+The page verifies canonical build ids through `/api/build/keys`. Profile history
+uses accepted witnesses for the exact current score independently of publication.
+Pagination counts the displayed rows, with a weapon filter and further candidate
+pages. Native replacement
 measurements clear the old witnesses; legacy community measurements without a
 witness record show no invented names. Bare native engines show official compute.
 

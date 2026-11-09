@@ -41,6 +41,7 @@ let ALT_NAMES = null;
 // /api/i18n) — nothing hardcoded here. English needs no catalog: the source
 // string is the fallback.
 const tr = (s) => (I18N && I18N.ui && I18N.ui[s]) || (EXT.strings[LANG] || {})[s] || s;
+const loadingHtml = (label = "Loading…") => `<span class="loading-status" role="status">${escHtml(tr(label).replace(/(?:…|\.\.\.)$/, ""))}<span class="loading-dots" aria-hidden="true"><span class="bdot">·</span><span class="bdot">·</span><span class="bdot">·</span></span></span>`;
 /// ONE ADMISSION, in the display language.
 ///
 /// A gap that repeats is a REASON with parameters rather than a sentence

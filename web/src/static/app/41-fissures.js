@@ -125,7 +125,7 @@ function fissureBuild(box) {
   if (!worldNames) {
     box.innerHTML = worldNamesFailed
       ? `<div class="sim-empty">${escHtml(tr("The world state could not be reached."))} <button type="button" class="ghost-btn small" data-names-retry>${escHtml(tr("Retry"))}</button></div>`
-      : `<div class="sim-empty">${escHtml(tr("Loading…"))}</div>`;
+      : `<div class="sim-empty">${loadingHtml()}</div>`;
     const again = box.querySelector("[data-names-retry]");
     if (again) again.onclick = () => { worldNamesFailed = false; renderUtility(); };
     else worldNamesLoad().then(renderUtility);
