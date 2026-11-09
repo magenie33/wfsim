@@ -126,9 +126,8 @@ jobs:
   # makes "shard by index" a split they agree on without talking.
   submissions:
     runs-on: ubuntu-latest
-    # Bound intake separately and leave room for the complete inventory capture,
-    # classification and scoring preparation. A failed intake still permits the
-    # inventory refresh, and its failure is restored before this job ends.
+    # Intake is bounded separately; leased input capture still runs after a
+    # failed intake, whose failure is restored before this job ends.
     timeout-minutes: 105
     outputs:
       wired: ${{ steps.wired.outputs.yes }}
@@ -153,54 +152,8 @@ jobs:
           if [ -n "$PG_PIPELINE_URL" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
 
-      - name: prepare complete inventory memory
-        if: steps.wired.outputs.yes == 'true'
-        env:
-          INVENTORY_RUNNER_ENVIRONMENT: ${{ runner.environment }}
-          INVENTORY_RUNNER_OS: ${{ runner.os }}
-        run: bash scripts/prepare_inventory_memory.sh
-
-
-      # WHAT THE LAST BOARD WAS BUILT FROM, as the floor this run may not fall
-      # under. A short read publishes a board built from a short list, and every
-      # row missing from it is gone with nothing saying so — `guard_shrink` in
-      # the script is what refuses that.
-      #
-      # A LIBRARY THAT SHRANK ON PURPOSE TRIPS IT TOO, and that is the guard
-      # working: a migration that dedupes or re-keys the table has to land
-      # before the next run, and until it does the run stops loudly instead of
-      # publishing a board missing whatever the read did not return.
-      - name: what the last board was built from
-        if: steps.wired.outputs.yes == 'true'
-        id: floor
-        run: |
-          set -euo pipefail
-          n=$(grep -h 'submissions:' data/board_state.yaml 2>/dev/null \
-                | awk '{print $2}' | sort -n | tail -1 || echo 0)
-          n=${n:-0}
-          echo "floor=$(( n * 9 / 10 ))" >> "$GITHUB_OUTPUT"
-          echo "last board was built from $n submissions"
-
-      # THE LIBRARY, IN ONE QUERY. It was a key listing metered at a thousand
-      # operations a DAY plus one request per build, so everything around it
-      # existed to avoid paying twice: a cached `library.json`, a pruning pass, a
-      # three-try retry, and a flag to skip the listing on a rescore. A database
-      # answers it whole, in order, and none of that is needed.
-      #
-      # A FILE RATHER THAN A BLOCK OF YAML, so the thing tested is the thing that
-      # ---- THE QUEUE BECOMES THE LIBRARY, BEFORE THE LIBRARY IS READ ----
-      #
-      # The door has no game data, so a submission arrives VERBATIM in `inbox`
-      # and nothing has yet said what build it is: telling two apart needs the
-      # mod pool, because an elemental card enters the element sequence and a
-      # plain one does not, and the sequence decides the pairing. `wfsim-intake`
-      # has the engine and does that here.
-      #
-      # BEFORE `fetch_library.sh`, and that is the whole placement: a submission
-      # that arrived since the last run is in the library this run scores rather
-      # than the next one.
-      #
-      # THE CACHE IS RESTORED FIRST so the two binaries share one compile.
+      # Intake and scoring share the compile cache. Inventory repair is an
+      # independent producer; leased calculations do not wait for its scan.
       - uses: actions/cache@v4
         if: steps.wired.outputs.yes == 'true'
         with:
@@ -245,31 +198,6 @@ jobs:
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
-      # runs: `scripts/fetch_library.sh --self-test` drives it against a stub
-      # `curl`, and CI runs that.
-      - name: read the library
-        if: steps.wired.outputs.yes == 'true'
-        env:
-          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
-          FLOOR: ${{ steps.floor.outputs.floor }}
-        run: |
-          set -euo pipefail
-          bash scripts/fetch_library.sh library.json
-
-      # THE LIST IS ALSO THE ONLY OFF-SITE COPY OF THE LIBRARY, which is the one
-      # irreplaceable thing in this pipeline — the boards are derived from it,
-      # the site is generated, the code is in git, and what players sent lives in
-      # exactly one database. Thirty days of rolling artifacts costs nothing
-      # and is the difference between "restore yesterday's" and "ask everyone to
-      # submit again".
-      - name: keep the list for the scorers
-        if: steps.wired.outputs.yes == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: library
-          path: library.json
-          retention-days: 30
-
       # THE SCORER, HERE TOO. One build against the shared cache, so the step
       # below can ask it what is left rather than guessing from a hash.
       - uses: actions/cache@v4
@@ -290,48 +218,6 @@ jobs:
           access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           pg_url: ${{ secrets.PG_PIPELINE_URL }}
-      # IS THERE ANYTHING TO DO — ASKED BY WALKING, NOT BY DECLARING.
-      #
-      # A run where every row is reusable still fanned out to `SHARDS` jobs and
-      # paid a checkout, a build and a cache restore for each, to write the board
-      # it already had. `--dry-run` walks the boards exactly as a scoring run
-      # does — the same validation and the same reuse —
-      # and counts what is left instead of fighting it, so the answer is the
-      # SCORER'S OWN. A second opinion computed here could disagree with it, and
-      # the direction it would disagree in is a board that quietly stops moving.
-      #
-      # ANYTHING IT CANNOT ANSWER MEANS WORK: a build that fails to validate, a
-      # board that will not parse, a benchmark with no file. Being wrong that way
-      # costs one run; being wrong the other way costs a board nobody updates.
-      - name: the databases
-        if: steps.wired.outputs.yes == 'true'
-        uses: ./.github/actions/databases
-        with:
-          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          pg_url: ${{ secrets.PG_PIPELINE_URL }}
-      # ---- WHAT IS OWED, AND WHAT NOBODY HAS ASKED FOR YET ----------------
-      #
-      # A run does not decide what to compute, it READS it: `queue` holds one
-      # row per (batch, build, ruler, mode) somebody asked for and `batches.at`
-      # is the order, so the whole of "what is this run doing" is a file.
-      #
-      # THE RECONCILIATION IS WHY A HAND-WRITTEN QUEUE CANNOT LOSE A ROW. The
-      # queue is written by intake for an arrival and by a person for a rescore,
-      # and a hand-written list's one failure is a row nobody wrote — never
-      # computed and never noticed. `builds x rulers x modes` is the DEFINITION
-      # of what should exist; this closes the gap to it every run, in seconds.
-      #
-      # READ, RECONCILE, READ AGAIN. The second read hands the shards a queue
-      # that already holds this run's arrivals; without it a build waits a whole
-      # run just to be asked for.
-      - name: check complete inventory scratch
-        if: steps.wired.outputs.yes == 'true'
-        env:
-          INVENTORY_RUNNER_ENVIRONMENT: ${{ runner.environment }}
-          INVENTORY_RUNNER_OS: ${{ runner.os }}
-        run: bash scripts/prepare_inventory_memory.sh --check
-
       - name: what is owed
         if: steps.wired.outputs.yes == 'true'
         env:
@@ -339,13 +225,16 @@ jobs:
         run: |
           set -euo pipefail
           python3 -c "import yaml" 2>/dev/null || python3 -m pip install --quiet pyyaml==6.0.3
-          bash scripts/reconcile_queue.sh library.json facts-known.ndjson queue.ndjson
-          # …AND WHAT THIS RUN TAKES IS WHAT IT CLAIMED: a question past its
-          # deadline that no client is fighting, moved out of the clients' reach
-          # before it is read (docs/BOARD.md §"The fact factory"). The reconciliation above read
-          # every row, because what is owed does not depend on who measures it.
           ENGINE=$(python3 -c "import sys; sys.path.insert(0, 'scripts'); from build_site_app import engine_id; print(engine_id())")
-          ENGINE="$ENGINE" bash scripts/fetch_queue.sh queue.ndjson
+          ENGINE="$ENGINE" node scripts/fetch_score_inputs.mjs
+
+      - name: keep the leased builds for the scorers
+        if: steps.wired.outputs.yes == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: library
+          path: library.json
+          retention-days: 1
 
       # …AND HANDED TO EVERY JOB BELOW, so the database is read ONCE a run.
       - uses: actions/upload-artifact@v4

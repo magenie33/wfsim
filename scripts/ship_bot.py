@@ -142,6 +142,7 @@ def card_assets(t: dict) -> None:
 LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/wasm_witness.mjs", "scripts/order_credit.mjs",
                 "scripts/live_publish.mjs", "scripts/board_heads.mjs",
                 "scripts/inventory_pipeline.mjs", "scripts/incremental_inventory.mjs", "scripts/inventory_inputs.mjs",
+                "scripts/inventory_relational_pipeline.mjs", "scripts/inventory_relations.mjs", "scripts/inventory_operator.mjs",
                 "scripts/classify_compute_inventory.mjs", "scripts/capture_compute_inventory.mjs",
                 "scripts/board_meta.py", "scripts/fetch_library.sh", "scripts/library_array.mjs", "scripts/fetch_facts.sh",
                 "scripts/ship_facts.sh", "scripts/ship_builds.sh", "scripts/build_batches.mjs", "scripts/ship_family.mjs",
