@@ -9,10 +9,8 @@ const ui = await evaluate(`(async () => {
   const wait = () => new Promise(resolve => setTimeout(resolve, 150));
   const demandLoader = loadComputeDemand;
   loadComputeDemand = async () => {};
-  const inventoryAt = Date.now() - 60_000;
-  computeDemand = { orders: [{ kind: 'new_build', total: 20, dispatched: 20 }], goal: { v: 1, engine: ENGINE_ID, snapshot: '100:100:',
-    started_at: new Date(inventoryAt).toISOString(), at: new Date(inventoryAt).toISOString(), expires_at: new Date(inventoryAt + 3 * 3600000).toISOString(),
-    total: 100, registered: 20, orders: [{ kind: 'board', total: 100 }], verbs: { simulate: 100 }, clear_hours: 1 }, owed: {}, per_hour: { volunteers: 5, official: 1 }, clear_hours: 1, surveys: [] };
+  computeDemand = { at: new Date().toISOString(), orders: [{ kind: 'new_build', total: 20, dispatched: 20 }],
+    owed: {}, per_hour: { volunteers: 5, official: 1 }, clear_hours: 1, surveys: [] };
   clearInterval(computeTimer); computeTimer = setInterval(() => {}, 60000);
   accountState.loaded = true; accountState.providers = ["email"]; accountState.account = { id: "paged-account" };
   computeAskedFor = "paged-account";
@@ -34,7 +32,7 @@ const ui = await evaluate(`(async () => {
   const defaults = 'compute-demand,rt-live,compute-community,compute-browser,compute-devices,compute-history,compute-ledger,compute-account-ledger';
   out.hierarchy = order() === defaults && !document.querySelector('#rt-live .rt-list');
   const goal = document.getElementById('compute-demand');
-  out.goal = document.querySelector('#compute-workspace > .block') === goal && !goal.classList.contains('shut') && goal.textContent.includes('leaderboard calculations 100');
+  out.goal = document.querySelector('#compute-workspace > .block') === goal && !goal.classList.contains('shut') && goal.textContent.includes('new builds 20');
   out.identity = document.querySelector('#compute-community').textContent.includes('WFSim Volunteer') && !!document.querySelector('#compute-community .cr-badge') && !document.querySelector('#compute-devices .cr-badge');
   const browser = document.getElementById("compute-browser"), live = document.getElementById("rt-live"), historyCard = document.getElementById("compute-history");
   const foldedSettings = browser.classList.contains('shut');
@@ -114,7 +112,7 @@ const initial = await evaluate(`(async () => {
     const goal = document.getElementById('compute-demand');
     const live = document.getElementById('rt-live');
     computeRedraw(true);
-    return { absent, shown: !!goal && goal.textContent.includes('leaderboard calculations 100'), liveKept: document.getElementById('rt-live') === live };
+    return { absent, shown: !!goal && goal.textContent.includes('new builds 20'), liveKept: document.getElementById('rt-live') === live };
   } finally {
     [loadComputeDemand, navComputing, loadTaskStates, loadLedgers, loadHomeTally] = loaders;
   }

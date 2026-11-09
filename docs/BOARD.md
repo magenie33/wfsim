@@ -1679,14 +1679,11 @@ see two.
           orders: [{ kind, total }], verbs: { verb: count }, clear_hours } | null }
 ```
 
-**THE COMMUNITY GOAL IS THE COMPLETE WORKLOAD SNAPSHOT.** `goal.total` includes
-engine-admitted missing rows not yet in the dispatch queue, with duplicates,
-orphans and retired rulers removed. Registered active task types outside the
-scan's producer coverage join it at publication. The page states the scan's
-input time and uses its workload for the clearance estimate. Admission pacing
-does not change membership. A partial, invalid or expired scan supplies no
-goal; partial queue counts never replace it. `COMPUTE_TASKS.md` defines its
-freshness and publication rules.
+The community goal sums `orders`, the actual queued work, and displays this
+reading's update time and optional `clear_hours`. Queue admission owns which
+work enters the total. Full-library `goal` snapshots remain separate workload
+observations; their absence, expiry or engine version does not hide the queue.
+`COMPUTE_TASKS.md` defines the inventory's freshness and publication rules.
 
 - `owed`: pending calculation keys by why. A repeated request retains the
   existing owning batch; a new build's live demand still identifies its work.

@@ -1,4 +1,4 @@
-// The community goal reads complete inventory, independently of dispatch pacing.
+// The community goal reads the current queue, without a library census.
 import { openApp } from "./cdp.mjs";
 
 const app = await openApp({ boot: 11000, base: process.env.WFSIM_BASE, lang: "en" });
@@ -6,95 +6,72 @@ try {
   const now = Date.now(), engine = await app.evaluate('ENGINE_ID');
   const goal = { v: 1, at: new Date(now - 60_000).toISOString(), started_at: new Date(now - 3600000).toISOString(),
     expires_at: new Date(now + 2 * 3600000).toISOString(), snapshot: '100:100:', engine, total: 1000, registered: 20,
-    orders: [{ kind: "board", total: 900 }, { kind: "future_scope", total: 100 }], verbs: { simulate: 1000 }, clear_hours: 7.7 };
-  const demand = { ok: true, owed: { new_builds: 20 }, orders: [{ kind: "new_build", total: 20, dispatched: 10 }],
+    orders: [{ kind: "board", total: 1000 }], verbs: { simulate: 1000 }, clear_hours: 7.7 };
+  const demand = { ok: true, at: new Date(now - 30_000).toISOString(), owed: { new_builds: 20 },
+    orders: [{ kind: "new_build", total: 20, dispatched: 10 }, { kind: "future_scope", total: 3, dispatched: 0 }],
     goal, per_hour: { volunteers: 100, official: 10 }, clear_hours: 0.1, surveys: [] };
-  const draw = async (d, at = now) => app.evaluate(`(() => {
+  const draw = async d => app.evaluate(`(() => {
     computeDemand = ${JSON.stringify(d)};
-    const actualNow = Date.now;
-    const box = document.createElement('div');
-    try { Date.now = () => ${at}; box.innerHTML = computeDemandHtml(); } finally { Date.now = actualNow; }
+    const box = document.createElement('div'); box.innerHTML = computeDemandHtml();
     const row = [...box.querySelectorAll('.kv')].find(k => k.querySelector('dt').textContent === 'Total orders');
     return { total: row?.querySelector('b')?.textContent,
       rows: [...box.querySelectorAll('.order-list li')].map(li => li.textContent.trim()),
       note: box.querySelector('.bh .set-note')?.textContent,
-      eta: [...box.querySelectorAll('dt')].some(n => n.textContent === 'Cleared in'),
       estimate: [...box.querySelectorAll('.kv')].find(k => k.querySelector('dt').textContent === 'Cleared in')?.textContent.trim() || null };
   })()`);
   let state = await draw(demand);
-  app.check("the goal includes work not admitted to the queue", state.total === "1,000", JSON.stringify(state));
-  app.check("every task kind is listed, including a newly registered kind", state.rows.join('|') === "leaderboard calculations 900|future_scope 100", JSON.stringify(state));
-  const originalNote = state.note;
-  const cut = await app.evaluate(`new Date(${JSON.stringify(goal.started_at)}).toLocaleString(accountLocale())`);
-  app.check("the complete scan names its original input time and its own clearance estimate", state.note === 'Last complete count · as of ' + cut && state.eta, JSON.stringify(state));
-  state = await draw({ ...demand, orders: [{ kind: "new_build", total: 200, dispatched: 100 }] });
-  app.check("admitting more work does not inflate the goal", state.total === "1,000", JSON.stringify(state));
-  state = await draw({ ...demand, goal: { ...goal, total: 950, orders: [{ kind: "board", total: 850 }, { kind: "future_scope", total: 100 }], verbs: { simulate: 950 } } });
-  app.check("confirmed completion reduces the next complete inventory", state.total === "950", JSON.stringify(state));
-  for (const incomplete of [null, { ...goal, expires_at: new Date(Date.now() - 1).toISOString() }]) {
-    state = await draw({ ...demand, goal: incomplete });
-    app.check("an absent or expired scan cannot present the partial queue as full demand", state.total === "—" && !state.eta
-      && state.rows.length === 0 && state.note === "Checking total demand", JSON.stringify(state));
+  app.check("total orders sums actual queued work, excluding prospective inventory", state.total === "23", JSON.stringify(state));
+  app.check("queued task kinds are listed and unknown kinds retain their ids",
+    state.rows.join('|') === "new builds 20|future_scope 3", JSON.stringify(state));
+  const updated = await app.evaluate(`new Date(${JSON.stringify(demand.at)}).toLocaleString(accountLocale())`);
+  app.check("the queue reading supplies its update time and clearance estimate",
+    state.note === 'Updated ' + updated && state.estimate?.includes('6 min'), JSON.stringify(state));
+  state = await draw({ ...demand, orders: [{ kind: 'new_build', total: 200, dispatched: 100 }] });
+  app.check("new queue entries increase the total", state.total === '200', JSON.stringify(state));
+  state = await draw({ ...demand, orders: [{ kind: 'new_build', total: 15, dispatched: 10 }] });
+  app.check("completed or cancelled queue entries reduce the total", state.total === '15', JSON.stringify(state));
+  state = await draw({ ...demand, orders: demand.orders.map(o => ({ ...o, dispatched: o.total })) });
+  app.check("leased work remains pending and is counted once", state.total === '23', JSON.stringify(state));
+  for (const inventory of [null, { ...goal, engine: '95d73da96acb' }, { ...goal, expires_at: new Date(now - 1).toISOString() }, { total: 999999 }]) {
+    state = await draw({ ...demand, goal: inventory, last_complete: inventory });
+    app.check("missing, expired, different-engine or malformed inventory cannot hide the queue",
+      state.total === '23' && state.note === 'Updated ' + updated, JSON.stringify(state));
   }
-  state = await draw({ ...demand, last_complete: goal }, now + 3 * 3600000);
-  app.check("a cached response crossing expiry retains the original same-engine complete count and timestamp without an ETA",
-    state.total === '1,000' && state.note === originalNote && !state.eta && state.rows.length === 2, JSON.stringify(state));
-  state = await draw({ ...demand, goal: null, last_complete: goal }, now + 3 * 3600000);
-  app.check("a later demand response with no fresh goal retains that same complete count", state.total === '1,000' && state.note === originalNote && !state.eta, JSON.stringify(state));
-  const later = now + 3 * 3600000;
-  const clearance = { state: 'ready', at: new Date(later).toISOString(), engine, snapshot: goal.snapshot, started_at: goal.started_at,
-    total: 1000, priced: 1000, unpriced: 0, hours: 5, known_hours: 5, range_hours: [4,6], sample_hours: 24 };
-  const based = { ...demand, goal: null, last_complete: goal, clearance };
-  state = await draw(based, later);
-  app.check("retained inventory has a newly sampled estimate bound to its original cut",
-    state.total === '1,000' && state.note === originalNote && state.estimate?.includes('excluding new tasks')
-    && state.estimate.includes('4 h') && state.estimate.includes('6 h'), JSON.stringify(state));
-  state = await draw({ ...based, clearance: { ...clearance, state:'partial', hours:null, priced:900, unpriced:100 } }, later);
-  app.check("partial prices show known work and the unpriced task count", state.estimate?.includes('known work')
-    && state.estimate.includes('100 tasks still need cost samples'), JSON.stringify(state));
-  for (const [status, text] of [['no_capacity','Waiting for compute capacity'],['no_samples','Awaiting task cost samples']]) {
-    state = await draw({ ...based, clearance:{...clearance,state:status} }, later);
-    app.check("missing inputs give an explicit clearance state: " + status, state.estimate?.includes(text), JSON.stringify(state));
+  state = await draw({ ...demand, orders: [], clear_hours: 7 });
+  app.check("an empty queue is zero even while inventory still has work", state.total === '0' && !state.estimate && !state.rows.length, JSON.stringify(state));
+  for (const orders of [undefined, null, [null], [{ kind: 'new_build', total: -1 }], [{ kind: 'new_build', total: '20' }]]) {
+    state = await draw({ ...demand, orders });
+    app.check("a missing or invalid queue reading cannot invent a zero or use inventory", state.total === '—' && !state.estimate && !state.rows.length, JSON.stringify(state));
   }
-  for (const bad of [{...clearance,snapshot:'other'}, {...clearance,engine:'95d73da96acb'},
-    {...clearance,range_hours:[6,4]}, {...clearance,unpriced:1}, {...clearance,at:new Date(later-11*60000).toISOString()}]) {
-    state = await draw({...based,clearance:bad},later);
-    app.check("an inconsistent or outdated estimate cannot appear as a clearance duration", state.estimate?.includes('Estimate updating'), JSON.stringify(state));
+  for (const clear_hours of [null, -1, '1']) {
+    state = await draw({ ...demand, clear_hours });
+    app.check("missing or invalid queue cost estimates do not affect the count", state.total === '23' && !state.estimate, JSON.stringify(state));
   }
-  const clockSkew = { ...goal, at: new Date(now + 1000).toISOString() };
-  state = await draw({ ...demand, goal: clockSkew });
-  app.check("a valid fresh goal preserves the server's clock tolerance", state.total === '1,000' && state.eta, JSON.stringify(state));
-  state = await draw({ ...demand, goal: null, last_complete: clockSkew });
-  app.check("the display-only fallback still refuses a future publication", state.total === '—' && !state.eta, JSON.stringify(state));
-  const obsolete = { ...goal, engine: '95d73da96acb', total: 17976524, orders: [{ kind: 'board', total: 17976524 }], verbs: { simulate: 17976524 } };
-  for (const incomplete of [obsolete, { ...goal, engine: null }, { ...goal, at: new Date(now + 60_001).toISOString() },
-    { ...goal, orders: [null] }, { ...goal, verbs: { simulate: 999 } }, { ...goal, registered: 1001 },
-    { ...goal, expires_at: new Date(Date.parse(goal.expires_at) + 60_000).toISOString() }]) {
-    state = await draw({ ...demand, goal: incomplete, last_complete: incomplete });
-    app.check("an obsolete, unknown-engine, future or malformed snapshot cannot render a count", state.total === '—' && !state.eta
-      && state.rows.length === 0 && state.note === 'Checking total demand', JSON.stringify(state));
-  }
-  state = await draw({ ...demand, goal: { ...goal, total: 0, registered: 0, orders: [], verbs: {}, clear_hours: null } });
-  app.check("a confirmed empty inventory is shown as zero", state.total === "0" && !state.eta, JSON.stringify(state));
-  state = await draw({ ...demand, goal: null, last_complete: { ...goal, total: 0, registered: 0, orders: [], verbs: {} } }, now + 3 * 3600000);
-  app.check("an expired complete empty inventory also remains zero", state.total === "0" && state.note === originalNote && !state.eta, JSON.stringify(state));
-  const stale = { ...goal, started_at: new Date(now - 5 * 3600000).toISOString(), at: new Date(now - 4 * 3600000).toISOString(), expires_at: new Date(now - 2 * 3600000).toISOString() };
+  const transport = await app.evaluate(`(async () => {
+    const loaders = [fetchJson, accountCall], saved = computeDemand;
+    const current = ${JSON.stringify(demand)};
+    try {
+      computeDemand = current;
+      fetchJson = accountCall = async () => null;
+      await loadComputeDemand(); const retained = computeDemand === current;
+      const replacement = { ...current, orders: [] };
+      accountCall = async () => replacement;
+      await loadComputeDemand();
+      return { retained, updated: computeDemand === replacement };
+    } finally { [fetchJson, accountCall] = loaders; computeDemand = saved; }
+  })()`);
+  app.check("a failed refresh retains the queue reading and a later API fallback replaces it", transport.retained && transport.updated, JSON.stringify(transport));
   const localized = await app.evaluate(`(async () => {
     const language = LANG, overlay = I18N;
     try {
       const all = await api('/api/i18n'); LANG = 'zh'; I18N = all.zh;
-      computeDemand = ${JSON.stringify({ ...demand, goal: null, last_complete: stale })};
+      computeDemand = ${JSON.stringify({ ...demand, goal: null })};
       const box = document.createElement('div'); box.innerHTML = computeDemandHtml();
-      const note = box.querySelector('.bh .set-note')?.textContent;
-      computeDemand = ${JSON.stringify({ ...based, last_complete: stale, clearance: { ...clearance, state:'partial',
-        started_at:stale.started_at, at:new Date(now).toISOString(), priced:900, unpriced:100, hours:null } })};
-      box.innerHTML = computeDemandHtml();
-      return { note, estimate: [...box.querySelectorAll('.kv')].find(k=>k.querySelector('dt').textContent==='预计清空')?.textContent,
-        expected: '上次完整统计 · 截至 ' + new Date(${JSON.stringify(stale.started_at)}).toLocaleString(accountLocale()) };
+      return { text: box.textContent, note: box.querySelector('.bh .set-note')?.textContent,
+        expected: '更新于 ' + new Date(${JSON.stringify(demand.at)}).toLocaleString(accountLocale()) };
     } finally { LANG = language; I18N = overlay; }
   })()`);
-  app.check("the retained count labels its original cut in Chinese too", localized.note === localized.expected, JSON.stringify(localized));
-  app.check("the partial estimate and missing cost samples are explained in Chinese", localized.estimate?.includes('已知部分约')
-    && localized.estimate.includes('另有 100 项任务待补耗时样本'), JSON.stringify(localized));
-} catch (error) { app.check("complete demand renders without errors", false, String(error)); }
-finally { await app.finish("complete compute demand is independent of admission"); }
+  app.check("the queue count and update time render in Chinese", localized.note === localized.expected
+    && localized.text.includes('23') && localized.text.includes('future_scope 3'), JSON.stringify(localized));
+} catch (error) { app.check("queue demand renders without errors", false, String(error)); }
+finally { await app.finish("total orders follows the current queue"); }

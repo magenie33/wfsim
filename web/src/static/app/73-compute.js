@@ -774,7 +774,7 @@ let computeDemand = null;
 async function loadComputeDemand() {
   let r = await fetchJson(`${BOARD_ORIGIN}/demand.json`);
   if (!(r && r.ok)) r = await accountCall("GET", "/api/board/demand");
-  computeDemand = r && r.ok ? r : null;
+  if (r && r.ok) computeDemand = r;
 }
 /// HOURS AS A COUNTDOWN: days, hours and minutes, to the minute, the larger
 /// units dropped while they are zero. The pace beside it says what it rests on.
@@ -791,61 +791,18 @@ const ORDER_KIND_NAMES = { rescore: "rescores after a model change {n}", sweep: 
   new_build: "new builds {n}", refresh: "requested score refreshes {n}", riven_gain: "riven gains {n}", user_calculation: "player calculations {n}",
   board: "leaderboard calculations {n}", board_review: "leaderboard reviews {n}", chat: "riven analyses {n}", survey: "survey searches {n}",
   family_build: "related weapon searches {n}", verification: "result checks {n}" };
-function completeDemandInventory(value, now) {
-  return value?.v === 1 && value.engine === ENGINE_ID && typeof value.snapshot === "string" && !!value.snapshot
-    && Number.isSafeInteger(value.total) && value.total >= 0
-    && Number.isSafeInteger(value.registered) && value.registered >= 0 && value.registered <= value.total
-    && Number.isFinite(Date.parse(value.at)) && Number.isFinite(Date.parse(value.started_at))
-    && Date.parse(value.started_at) <= Date.parse(value.at) && Date.parse(value.at) <= now
-    && Date.parse(value.at) < Date.parse(value.expires_at)
-    && Date.parse(value.expires_at) === Date.parse(value.started_at) + 3 * 60 * 60_000
-    && Array.isArray(value.orders) && value.orders.every(o => o && typeof o.kind === "string" && Number.isSafeInteger(o.total) && o.total >= 0)
-    && value.orders.reduce((n, o) => n + o.total, 0) === value.total
-    && value.verbs && Object.values(value.verbs).every(n => Number.isSafeInteger(n) && n >= 0)
-    && Object.values(value.verbs).reduce((n, x) => n + x, 0) === value.total;
-}
-function computeClearanceHtml(complete, goal, now) {
-  if (!complete) return "";
-  const c = computeDemand.clearance;
-  const row = (value, note) => `<div class="kv"><dt>${aT("Cleared in")}</dt><dd><b style="font-size:16px">${escHtml(value)}</b>${
-    note ? `<div class="set-note" style="margin-top:4px">${escHtml(note)}</div>` : ""}</dd></div>`;
-  if (!c) return goal?.clear_hours == null || !goal.total ? ""
-    : row(demandHours(goal.clear_hours), tr("at the last 24 hours' average compute"));
-  const integer = n => Number.isSafeInteger(n) && n >= 0;
-  const current = c.engine === ENGINE_ID && c.engine === complete.engine && c.snapshot === complete.snapshot
-    && c.started_at === complete.started_at && c.total === complete.total
-    && integer(c.priced) && integer(c.unpriced) && c.priced + c.unpriced === c.total
-    && Number.isFinite(Date.parse(c.at)) && Date.parse(c.at) <= now + 60_000 && now - Date.parse(c.at) < 10 * 60_000;
-  if (!current) return row(tr("Estimate updating"), "");
-  if (c.state === "empty" && !c.total) return row(tr("No pending tasks"), "");
-  if (c.state === "no_capacity") return row(tr("Waiting for compute capacity"), "");
-  if (c.state === "no_samples") return row(tr("Awaiting task cost samples"), "");
-  const range = c.range_hours;
-  if (!["ready", "partial"].includes(c.state) || !Array.isArray(range) || range.length !== 2
-    || !range.every(n => Number.isFinite(n) && n >= 0) || range[0] > range[1]
-    || !Number.isFinite(c.known_hours) || c.known_hours < range[0] || c.known_hours > range[1]
-    || (c.state === "ready" ? c.unpriced !== 0 || c.hours !== c.known_hours : !c.unpriced || !c.priced || c.hours !== null))
-    return row(tr("Estimate updating"), "");
-  const low = demandHours(range[0]), high = demandHours(range[1]);
-  const time = low === high ? low : tr("{low}–{high}").replace("{low}", low).replace("{high}", high);
-  return c.state === "partial"
-    ? row(tr("{time} for known work").replace("{time}", time), tr("{n} tasks still need cost samples · excluding new tasks").replace("{n}", computeCount(c.unpriced)))
-    : row(time, tr("Based on the last complete count and recent daily compute · excluding new tasks"));
-}
 function computeDemandHtml() {
   const d = computeDemand;
   if (!d) return "";
   const n = (x) => Number(x || 0).toLocaleString(accountLocale());
   const big = (x) => `<b style="font-size:16px">${escHtml(x)}</b>`;
-  // The complete scan includes work not yet admitted to the dispatcher.
-  const now = Date.now();
-  const goal = completeDemandInventory(d.goal, now + 60_000) && Date.parse(d.goal.expires_at) > now ? d.goal : null;
-  const complete = goal || (completeDemandInventory(d.last_complete, now) ? d.last_complete : null);
-  const orders = complete?.orders || [];
-  const owed = complete?.total;
+  const orders = Array.isArray(d.orders) && d.orders.every(o => o && typeof o.kind === "string"
+    && Number.isSafeInteger(o.total) && o.total >= 0) ? d.orders : null;
+  const owed = orders?.reduce((sum, o) => sum + o.total, 0);
+  const counted = Number.isSafeInteger(owed) && owed >= 0;
   const done = d.per_hour.volunteers + d.per_hour.official;
   const share = done ? Math.round((100 * d.per_hour.volunteers) / done) : 0;
-  const list = orders.filter(o => o.total).map(o => `<li><span>${escHtml(tr(ORDER_KIND_NAMES[o.kind] || `${o.kind} {n}`).replace("{n}", n(o.total)))}</span></li>`).join("");
+  const list = (counted ? orders : []).filter(o => o.total).map(o => `<li><span>${escHtml(tr(ORDER_KIND_NAMES[o.kind] || `${o.kind} {n}`).replace("{n}", n(o.total)))}</span></li>`).join("");
   // EACH SURVEY IS A GOAL the reader can watch close: every riven shape of one
   // weapon, how many are confirmed and how many begun.
   const goals = (d.surveys || []).map((g) => {
@@ -858,12 +815,15 @@ function computeDemandHtml() {
       <div class="set-note">${escHtml(tr("{n} begun · each shape uses the Four elements strategy, and counts once two owners on two networks agree").replace("{n}", n(g.started)))}${
         g.clear_hours == null ? "" : ` · ${escHtml(tr("done in {t}").replace("{t}", demandHours(g.clear_hours)))}`}</div></div></div>`;
   }).join("");
-  const clearance = computeClearanceHtml(complete, goal, now);
-  const updated = complete ? tr("Last complete count · as of {time}").replace("{time}", new Date(complete.started_at).toLocaleString(accountLocale())) : tr("Checking total demand");
+  const clearance = counted && owed > 0 && Number.isFinite(d.clear_hours) && d.clear_hours >= 0
+    ? `<div class="kv"><dt>${aT("Cleared in")}</dt><dd>${big(demandHours(d.clear_hours))}
+      <div class="set-note">${aT("at the last 24 hours' average compute")}</div></dd></div>` : "";
+  const updated = Number.isFinite(Date.parse(d.at))
+    ? tr("Updated {time}").replace("{time}", new Date(d.at).toLocaleString(accountLocale())) : "";
   return `<div class="block" id="compute-demand"><div class="bh"><h2>${aT("Community goal")}</h2><span class="set-note" style="margin-left:auto">${
     escHtml(updated)}</span></div><div class="bb"><dl class="kvs">
     <div class="kv"><dt>${aT("Computing now")}</dt><dd><span class="online-dot"></span>${big(computingCount === null ? "—" : n(computingCount))} ${aT("devices")}</dd></div>
-    <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(complete ? n(owed) : "—")} ${aT("tasks")}${
+    <div class="kv"><dt>${aT("Total orders")}</dt><dd style="min-width:0">${big(counted ? n(owed) : "—")} ${aT("tasks")}${
       list ? `<ul class="order-list">${list}</ul>` : ""}</dd></div>
     ${goals ? `<div class="kv"><dt>${aT("Goals")}</dt><dd style="min-width:0">${goals}</dd></div>` : ""}
     <div class="kv"><dt>${aT("Done per hour")}</dt><dd>${big(n(done))} ${aT("rows of scores")}

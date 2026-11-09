@@ -378,17 +378,14 @@ the panel.
 
 ## `check_compute_orders`
 
-The community goal (`73-compute.js` `computeDemandHtml`) reads complete
-inventory independently of the partial queue. Admission leaves the total
-unchanged; confirmed completion reduces the next inventory. Each task kind is
-listed, unknown kinds keep their ids, and update time and clearance estimate
-belong to that inventory. A complete same-engine snapshot remains displayable
-after expiry with its original timestamp. A separately sampled clearance estimate
-binds to that same cut, names its assumptions and states partial pricing or missing
-capacity. Mismatched, malformed or old estimates supply no duration. Unknown,
-different-engine, future or malformed snapshots cannot supply a total; a
-confirmed empty inventory is zero. CDN objects crossing expiry retain the
-same snapshot, and the API returns the daemon's exact object.
+The community goal (`73-compute.js` `computeDemandHtml`) sums the current
+queue's order counts. New entries increase the total, completion and cancellation
+reduce it, and leased work stays counted once. Each task kind is listed and
+unknown kinds retain their ids. Missing, expired or different-engine inventory
+cannot hide the queue. An empty queue shows zero; a missing or malformed queue
+reading stays unknown. Update time and the optional clearance estimate come
+from the queue reading. Failed refreshes retain the previous reading; the API
+fallback can replace it. Counts and update times are checked in Chinese too.
 
 ## `check_task_modules`, `check_task_inventory` and `check_inventory_capture`
 
