@@ -400,6 +400,19 @@ BEGIN
 END $$;
 REVOKE ALL ON FUNCTION inventory_epoch_changes(text) FROM PUBLIC;
 
+CREATE OR REPLACE FUNCTION inventory_epoch_open(text) RETURNS refcursor
+LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
+DECLARE output refcursor := 'inventory_epoch_'||$1::bigint::text;
+BEGIN
+  IF NOT EXISTS(SELECT 1 FROM inventory_epochs e WHERE e.epoch=$1::bigint AND e.capture_tx=txid_current()::text
+    AND e.status='capturing' AND e.snapshot=pg_current_snapshot()::text)
+    THEN RAISE EXCEPTION 'inventory epoch does not own this snapshot'; END IF;
+  -- RETURN QUERY materializes the entire backlog before the first FETCH.
+  OPEN output NO SCROLL FOR SELECT d.scope,d.key,d.revision::text FROM inventory_dirty d ORDER BY d.scope,d.key;
+  RETURN output;
+END $$;
+REVOKE ALL ON FUNCTION inventory_epoch_open(text) FROM PUBLIC;
+
 CREATE OR REPLACE FUNCTION inventory_epoch_seal(text,bigint,text) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path FROM CURRENT AS $$
 DECLARE held inventory_epochs%ROWTYPE; dirty_count bigint;

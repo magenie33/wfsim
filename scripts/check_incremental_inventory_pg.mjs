@@ -213,6 +213,7 @@ try {
     await pg.exec('ROLLBACK');
     assert.equal(await call('inventory_epoch_status', [cut.epoch]), null);
     await assert.rejects(call('inventory_epoch_changes', [cut.epoch]), /does not own this snapshot/);
+    await assert.rejects(call('inventory_epoch_open', [cut.epoch]), /does not own this snapshot/);
     await pg.exec('BEGIN ISOLATION LEVEL REPEATABLE READ');
     await call('inventory_epoch_begin', [generation]);
     await assert.rejects(build('forbidden-epoch-write'), /may write receipts only/); await pg.exec('ROLLBACK');
@@ -224,13 +225,14 @@ try {
     assert.equal((await changes()).length, 256);
     await pg.exec('BEGIN ISOLATION LEVEL REPEATABLE READ');
     const cut = await call('inventory_epoch_begin', [generation]);
-    await query('DECLARE epoch_keys NO SCROLL CURSOR FOR SELECT * FROM inventory_epoch_changes($1::text)', [cut.epoch]);
+    const portal = await call('inventory_epoch_open', [cut.epoch]);
+    assert.match(portal, /^inventory_epoch_[0-9]+$/);
     captured = [];
     for (;;) {
-      const page = await query('FETCH FORWARD 97 FROM epoch_keys'); captured.push(...page);
+      const page = await query(`FETCH FORWARD 97 FROM ${portal}`); captured.push(...page);
       if (page.length < 97) break;
     }
-    await pg.exec('CLOSE epoch_keys'); assert.equal(captured.length, 400);
+    await pg.exec(`CLOSE ${portal}`); assert.equal(captured.length, 400);
     const input = await call('inventory_inputs', [engine, covers, captured.slice(0, 256)]);
     assert.equal(input.snapshot, cut.snapshot); assert.equal(input.started_at, cut.started_at);
     await pg.exec('SAVEPOINT invalid_seal');
@@ -244,6 +246,7 @@ try {
     await pg.exec('ROLLBACK TO sealed_business');
     await pg.exec('COMMIT'); assert.deepEqual(await call('inventory_epoch_status', [cut.epoch]), frozen);
     await assert.rejects(call('inventory_epoch_changes', [cut.epoch]), /does not own this snapshot/);
+    await assert.rejects(call('inventory_epoch_open', [cut.epoch]), /does not own this snapshot/);
   });
   await check('later writes survive frozen-token ACK and cannot starve publication of its original cut', async () => {
     await query("UPDATE builds SET record='{\"weapon\":\"braton\"}' WHERE id='epoch-1'");
@@ -299,6 +302,7 @@ try {
       SET ROLE inventory_pipeline_check`);
     assert.equal((await call('inventory_status')).generation, generation);
     await assert.rejects(query('SELECT * FROM inventory_dirty'), /permission denied/);
+    await assert.rejects(call('inventory_epoch_open', ['1']), /permission denied/);
     await assert.rejects(query("SELECT nextval('inventory_revision')"), /permission denied/);
     await assert.rejects(build('forged-source'), /permission denied/);
     await assert.rejects(query("UPDATE inventory_epochs SET status='sealed'"), /permission denied/);

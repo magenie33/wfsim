@@ -239,6 +239,11 @@ the next page toward 8MiB; this is a sizing target, not a hard byte limit for
 unseen rows. Cohort pages retain their 5,000-row ceiling. Each FETCH has its
 own statement timeout within the original capture budget and snapshot. Phase
 diagnostics record page rows, bytes, fetch time and the next requested size.
+The restricted `inventory_epoch_open` function validates the owning receipt
+and opens a transaction-local cursor over the primary-key index. It returns
+the portal name, avoiding a whole-result PL/pgSQL `RETURN QUERY` spool. The
+pipeline receives function execution rights without access to private tables;
+the legacy set-returning API remains available to older callers.
 
 Generation replacement and sealed-cut publication lock the generation state,
 not the dirty table. Source writers can commit during both operations: a cut
