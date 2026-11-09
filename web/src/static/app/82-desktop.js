@@ -458,13 +458,17 @@ function nativeOffForSession(why) {
 }
 /// One call of the native door, its answer parsed; `null` when it could not answer.
 async function nativeApi(path, body) {
-  try {
-    const text = await window.__TAURI_INTERNALS__.invoke("engine", { engine: ENGINE_ID, path, body: JSON.stringify(body ?? {}) });
-    return JSON.parse(text);
-  } catch (e) {
-    nativeOffForSession(String((e && e.message) || e));
-    return null;
-  }
+  const call = async () => {
+    try {
+      const text = await window.__TAURI_INTERNALS__.invoke("engine", { engine: ENGINE_ID, path, body: JSON.stringify(body ?? {}) });
+      return JSON.parse(text);
+    } catch (e) {
+      nativeOffForSession(String((e && e.message) || e));
+      return null;
+    }
+  };
+  return ["/api/board/runs", "/api/board/fold", "/api/board/score"].includes(path)
+    ? computeRun("together", call, () => boardVerifyOn() && !computeHeld() && !computeFrozen) : call();
 }
 /// Whether the board's rows go native: proven now, or proven already.
 function nativeBoardReady() {

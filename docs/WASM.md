@@ -401,13 +401,17 @@ share the worker pool; a person's Run holds priority for its duration, and
 background work yields between pieces, never mid-piece, so the foreground
 waits for one piece rather than for the scan (`check_run_outranks_scan.mjs`).
 
-**…AND THE COMMUNITY'S WORK YIELDS TO ALL OF IT.** A board order or a
-volunteer riven gain runs only while the reader computes nothing: no call of
-theirs on the pool (`readerInFlight`, counted on the lane — a call is the
-reader's unless the community's work tagged it), no search, scan or Shapley
-between calls, and no other WFSim tab saying it is busy (`readerBusy`). A board
-order waits between pieces and re-asks a piece the reader's Stop took; a riven
-gain, on workers of its own, stops (`check_compute.mjs`).
+**SOLO AND TOGETHER SHARE ONE BUDGET IMPLEMENTATION.** `ComputeBudget` charges
+heavy lane calls, native board calls and optimizer calls to their consumer's
+fractional-core time budget. Calls wait before their next safe piece, without
+changing the engine request. Concurrent requested shares above 100% are scaled
+proportionally; waiting, cancellation and range changes use the same queue.
+Metadata and control calls remain available at zero. The browser adjusts ranges
+from visible-page scheduling delay; it cannot measure machine-wide CPU idle time.
+The control is an average execution budget, not an instantaneous CPU cap. One
+engine call is atomic: a long individual fight or legacy search call finishes
+before a new budget can take effect. Fixed grouping of volunteer reports and
+ordered optimizer scores remain unchanged (`check_compute_ranges`, `check_quick_fleet`).
 
 **THE RUN COUNT IS NOT ONE OF THE THINGS THAT ADAPT.** Adaptation is a property
 of the SCHEDULER — how the work is cut up, which lane takes it, what waits for

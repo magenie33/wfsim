@@ -243,7 +243,7 @@ const page = {
   boardProtocol: 8, syncNotBefore: 0, syncInFlight: null, syncWork: null, bootSyncAt: 1, lastSyncAt: 100_000, resultsMem: [],
   jittered: (ms) => ms, keptResults: async () => [], loadCut: () => null, maybeReloadForRelease() {}, idleCount() {},
   communityLanes: () => 4,
-  communityPower: () => 4, performance: { now: () => monotonic }, PIECE_MS: 250,
+  communityPower: () => 4, computeElapsed: (_, began) => monotonic - began, performance: { now: () => monotonic }, PIECE_MS: 250,
   boardVerifyOn: () => true, computeHeld: () => false, computeFrozen: false, returned: 0,
   reads: 0, measured: 0, asked: 0,
 };

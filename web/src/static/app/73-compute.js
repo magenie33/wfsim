@@ -75,14 +75,14 @@ function computeResultHtml(t) {
 /// THE QUESTION, asked once on a computer that can compute and has not
 /// answered the current statement (69-board-work.js `computeConsent`): a card
 /// in the corner, never a dialog, never on a card page a bot photographs, and
-/// gone once answered either way. Its words are the statement consented to —
-/// change them and `COMPUTE_CONSENT_V` with them.
+/// gone once answered either way. Asking for more requires a new consent
+/// version; wording changes and narrower resource use preserve existing consent.
 const computeAskable = () => WASM && computeConsent() === null
   && !/\/card$|^\/appraise\//.test(location.pathname);
 function computeAskHtml() {
   return `<b>${aT("Compute WFSim together?")}</b>
     <p>${aT("Turned on, this device joins the other volunteers in running WFSim's simulation and optimization tasks for every player. A result counts only when two volunteers compute it separately and get exactly the same answer, and your device is one of them.")}</p>
-    <p>${aT("It takes 30% of this device's processing power by default, only while a WFSim page is open. You can set it from 10% to 100% in the compute menu at the top, beside Solo, the share your own calculations take (50% by default); past 100% together, the two share it in proportion while both run. It pauses on battery unless you change that in the menu; while it runs the device uses more power and runs warmer, and one click stops it.")}</p>
+    <p>${aT("Solo and Together each default to a 0–50% range of this device's processing power. Set either end from 0% to 100% in the compute menu, by dragging or typing. It adjusts within that range to keep the page responsive; CPU usage is approximate. Combined targets above 100% share in proportion. Together runs only while a WFSim page is open, pauses on battery unless you allow it, and uses power and produces heat. One click stops it.")}</p>
     <p>${aT("It is a voluntary contribution: everything it computes is free for every player, WFSim never makes money from it, and it is unpaid. Your contribution is counted to this browser, and, if you like, under your name on the contributors' ranking.")}</p>
     <div class="ca-acts"><button class="run-btn btn-sm" data-compute-ask="yes">${aT("Join")}</button>
       <button class="ghost-btn btn-sm" data-compute-ask="no">${aT("No thanks")}</button>
@@ -149,6 +149,8 @@ function computeState() {
     .replace("{t}", new Date(boardBannedUntil).toLocaleString(accountLocale())) };
   if (held === "battery") return s("held", "Paused while this device runs on battery.");
   if (held === "data") return s("held", "Paused while the browser saves data.");
+  if (held === "limit") return s("held", "Paused at 0%.");
+  if (held === "busy") return s("held", "Paused while this page is busy.");
   if (boardStale) return s("held", "A new version is out; this page refreshes itself once what you started ends.");
   if (computeNow) return s("computing", "Computing now.");
   return s("waiting", "Waiting for the next task.");

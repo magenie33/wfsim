@@ -17,7 +17,7 @@ async function checkSignals() {
   const drain = async () => { for (let i = 0; i < 16; i++) await Promise.resolve(); };
   const sandbox = createContext({
     Date: class extends Date { static now() { return now; } }, performance: { now: () => now },
-    setTimeout, clearTimeout, poolSize: () => 2,
+    setTimeout, clearTimeout, poolSize: () => 2, computeRun: async (_, work, live) => live() ? work() : { cancelled: true },
     watchSilence: () => ({ heard() {}, done() {}, start() {}, clear() {} }),
     spawnEngine: () => {
       const worker = { postMessage: (m) => messages.push({ worker, ...m }), terminate() {},
@@ -156,7 +156,7 @@ async function checkFailures() {
       const fail = () => { throw new Error(fault); };
       const sandbox = createContext({
         Date: class extends Date { static now() { return now; } }, performance: { now: () => now },
-        setTimeout, clearTimeout, poolSize: () => 2,
+        setTimeout, clearTimeout, poolSize: () => 2, computeRun: async (_, work, live) => live() ? work() : { cancelled: true },
         setInterval: f => { timers.set(++timerId, f); return timerId; }, clearInterval: id => timers.delete(id),
         spawnEngine: () => {
           if (++spawns === 2 && fault === "partial spawn") fail();

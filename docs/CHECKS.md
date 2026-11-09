@@ -973,6 +973,13 @@ fails. It failed with `run_price` changed in the doc, and with a key added.
 
 ## `check_compute`
 
+Runs `check_compute_ranges` before the browser: default and legacy setting
+migration, integer endpoint edits, adaptive pressure/recovery, 100/100 and 100/50
+allocation, zero/resume/cancel, single-core 1% execution time and non-starvation
+on one core are exercised with a controlled clock. The browser checks both
+range handles and numeric inputs, zero with Together still enabled, and
+settings persistence. `check_compute_ranges.mjs` can also run independently.
+
 The `/compute` page, the account answered by interception. This browser's tasks
 are drawn from what it kept and by each task's KIND: a board order as its
 weapon and ruler, linked to that board and never naming its mods, and a kind
@@ -986,11 +993,12 @@ default's yes and a yes to an older statement are no answer — a no is kept, a
 card page never carries it, a yes turns it on with the statement and when; the
 top bar's ring says a task runs, keeps its size and the search's when the task
 ends, and leaves only when computing is turned off; a battery holds it unless
-the reader allows it; together takes its share of the device whether or not
-the reader is at it, as lanes running that share of the time, and past 100%
-with solo, while the reader computes, the two share in proportion; solo and
-together are two sliders in the menu, a slider let go sets its share, and the
-sum is said. A row cut short resumes: a page that goes mid-row keeps that row back
+the reader allows it; fixed Together requests take their time-budgeted share,
+and targets above 100% combined share in proportion. Both ranges have two
+handles and numeric fields; edits persist, keep focus and maintain ordered
+endpoints. A zero Together upper bound leaves it enabled without asking for
+work. Solo at zero waits, cancels and resumes with the same runs and measurement.
+A row cut short resumes: a page that goes mid-row keeps that row back
 from what it gives back, its fold saved with its engine; the next ask renews
 it before asking for anything and folds on to the uncut row's bits; a row
 taken since is dropped unanswered, another engine's fold never renewed, and

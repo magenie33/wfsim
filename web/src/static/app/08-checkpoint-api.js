@@ -157,8 +157,8 @@ function optimizerWorkerSignals() {
 /// worker scores a slice of them, and the scores go back to the leader, until
 /// it answers with the result. Every worker is busy on every batch, whatever
 /// the number of starts.
-function woptQuickFleet(body, n, onBuilds) {
-  const job = quickFleet(body, n, undefined, { onBuilds });
+function woptQuickFleet(body, onBuilds) {
+  const job = quickFleet(body, () => woptWorkerCount(), undefined, { onBuilds });
   wopt = job;
   return { ok: true, job_id: job.id };
 }
@@ -189,7 +189,7 @@ function fleetKeep(workers) {
 /// however many workers scored it. `keep` hands the workers back (`fleetKeep`);
 /// `rest(ms)` is how long a worker rests after a call that took `ms`, so a
 /// background search runs the share of the time its owner set.
-function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () => 0, onBuilds = async () => {} } = {}) {
+function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () => 0, kind = "solo", onBuilds = async () => {} } = {}) {
   const lanesNow = () => Math.max(1, Math.floor(typeof n === "function" ? n() : n) || 1);
   const job = { id: woptNextId++, workers: [], status: null, result: null, board: null,
     cancelled: false, shards: lanesNow(), t0: Date.now() };
@@ -276,11 +276,15 @@ function quickFleet(body, n, pace = async () => {}, { keep = false, rest = () =>
     return call(i, r, null, true);
   };
   const timed = async (i, b, onProgress) => {
-    const t = performance.now();
-    const o = await call(i, b, onProgress);
-    const ms = performance.now() - t;
-    done.cpu_ms += ms;
-    if (o) await pause(i, ms);
+    let ms = 0;
+    const o = await computeRun(kind, async () => {
+      const t = performance.now();
+      const result = await call(i, b, onProgress);
+      ms = performance.now() - t;
+      done.cpu_ms += ms;
+      return result;
+    }, () => !job.cancelled && !job.result);
+    if (o && !o.cancelled) await pause(i, ms);
     return job.cancelled || job.result ? null : o;
   };
   const grow = (k) => {
@@ -358,7 +362,7 @@ function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOpti
   }
   const { __resume, ...req } = body ?? {}; // the resume marker is transport, not scope
   body = req;
-  if (body.strategy === "quick" && !checkpoint) return woptQuickFleet(body, Math.max(1, woptWorkerCount()), onBuilds);
+  if (body.strategy === "quick" && !checkpoint) return woptQuickFleet(body, onBuilds);
   // A CHECKPOINT is one worker's field, so it can only resume a run that had
   // one worker. Rather than resume a fraction of a fleet, a resume runs
   // unsharded — slower, but it is continuing a search that already exists.
@@ -390,10 +394,13 @@ function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOpti
     };
   };
   const watchdogs = [];
+  const budgetReleases = [];
+  job.releaseBudget = () => budgetReleases.forEach(release => release());
   const failJob = (i, why) => {
     if (job.parts[i] || job.result || job.cancelled) return;
     job.parts[i] = { ok: false, error: why };
     job.result = job.parts[i];
+    job.releaseBudget();
     watchdogs.forEach(wd => wd.clear());
     job.workers.forEach((worker, index) => { signals.finish(index); worker?.terminate(); });
     job.workers = [];
@@ -411,6 +418,9 @@ function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOpti
     // progress bar that has stopped and no way to tell it from a slow one.
     const wd = watchSilence(() => gone("worker stopped answering"));
     watchdogs.push(wd);
+    let releaseBudget;
+    const returned = new Promise(resolve => { releaseBudget = resolve; });
+    budgetReleases.push(releaseBudget);
     let deliveries = null;
     w.onmessage = (e) => {
       wd.heard();
@@ -433,6 +443,7 @@ function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOpti
         }
       }
       if (e.data.kind === "result") {
+        releaseBudget();
         wd.done();
         signals.finish(i);
         w.terminate();
@@ -460,12 +471,17 @@ function woptStart(body, checkpoint, onCheckpoint, onBuilds = builds => keepOpti
       job.status = rollup();
     };
     w.onerror = (e) => { e?.preventDefault?.(); gone(String(e?.message || "worker error")); };
-    signals.start(i, "scoring");
+    signals.start(i, "resting");
     job.status = rollup();
-    try {
-      wd.start();
-      w.postMessage({ kind: "optimize", body: { ...body, shard: i, shards }, checkpoint: checkpoint || null });
-    } catch (error) { gone(String(error?.message || error)); }
+    computeRun("solo", () => {
+      if (job.cancelled || job.result) return;
+      signals.start(i, "scoring"); job.status = rollup();
+      try {
+        wd.start();
+        w.postMessage({ kind: "optimize", body: { ...body, shard: i, shards }, checkpoint: checkpoint || null });
+      } catch (error) { gone(String(error?.message || error)); }
+      return returned;
+    }, () => !job.cancelled && !job.result).catch(error => gone(String(error?.message || error)));
   }
   wopt = job;
   return { ok: true, job_id: job.id };
@@ -499,6 +515,7 @@ function woptCancel() {
     wopt.workers.forEach((w) => w && w.terminate());
     wopt.workers = [];
     wopt.cancelled = true;
+    wopt.releaseBudget?.();
   }
   return { ok: true, job_id: wopt.id };
 }
@@ -539,7 +556,8 @@ async function api(path, body, onProgress, opts) {
   // pool that is genuinely gone must end in an answer rather than a loop.
   let r = null;
   for (let attempt = 0; attempt < 3; attempt++) {
-    r = await freeLane().call(path, body, onProgress, !!(opts && opts.community));
+    r = await freeLane().call(path, body, onProgress, !!(opts && opts.community),
+      () => !opts?.signal?.aborted && (!opts?.live || opts.live()));
     if (!r || !r.worker_dead) return r;
     const i = pool.findIndex((l) => l && l.dead);
     if (i >= 0) pool[i] = null;
