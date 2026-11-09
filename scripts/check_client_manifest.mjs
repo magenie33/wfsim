@@ -17,8 +17,27 @@ const result = await clientRelease(incoming, async request => {asked=request; re
 check('the same-origin gateway returns the canonical manifest bytes, including unknown fields', result.status===200 && await result.text()===bytes);
 check('only the fixed public COS pointer is requested, regardless of caller query', asked.url===canonical && asked.method==='GET');
 check('reader cookies, authorization and account identity never travel upstream', !asked.headers.has('cookie') && !asked.headers.has('authorization') && !asked.headers.has('x-wfsim-account'));
-check('redirects are refused and the upstream request has a bounded signal', asked.redirect==='error' && !!asked.signal);
+check('redirects are handled manually and the upstream request has a bounded signal', asked.redirect==='manual' && !!asked.signal);
 check('the reply is JSON without upstream cookies or CORS dependence', result.headers.get('content-type').includes('application/json') && !result.headers.has('set-cookie') && !result.headers.has('access-control-allow-origin') && result.headers.get('cache-control')==='no-store');
+const OriginalRequest=globalThis.Request;
+try {
+  globalThis.Request=class extends OriginalRequest {
+    constructor(input,options) {
+      if(options?.redirect==='error') throw new TypeError('Cloudflare supports follow and manual redirect modes');
+      super(input,options);
+    }
+  };
+  const edge=await clientRelease(incoming,async()=>new Response(bytes));
+  check('the gateway supports Cloudflare Request redirect constraints',edge.status===200&&await edge.text()===bytes);
+} finally {globalThis.Request=OriginalRequest;}
+for(const status of [301,302,303,307,308]) {
+  let requests=0;
+  const redirect=await clientRelease(incoming,async request=>{
+    requests++; check(`HTTP ${status} is fetched without following its Location`,request.redirect==='manual');
+    return new Response(bytes,{status,headers:{location:'https://attacker.example/manifest'}});
+  });
+  check(`HTTP ${status} with a valid manifest cannot replace the canonical release`,requests===1&&redirect.status===502&&(await redirect.json()).error==='cli_manifest_unavailable');
+}
 for(const method of ['POST','PUT','DELETE','HEAD']) {
   let fetched=false;
   const r=await clientRelease(new Request('https://wfsim.app'+CLI_MANIFEST_PATH,{method}),async()=>{fetched=true;});

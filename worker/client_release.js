@@ -7,7 +7,7 @@ export async function clientRelease(request, fetcher = fetch) {
   if (request.method !== "GET") return new Response(null, { status: 405, headers: { allow: "GET" } });
   try {
     const upstream = await fetcher(new Request(LATEST, {
-      headers: { accept: "application/json" }, redirect: "error", signal: AbortSignal.timeout(10000),
+      headers: { accept: "application/json" }, redirect: "manual", signal: AbortSignal.timeout(10000),
     }));
     if (!upstream.ok || Number(upstream.headers.get("content-length")) > MAX_BYTES) throw Error("unavailable");
     const bytes = await upstream.arrayBuffer();
