@@ -2051,16 +2051,24 @@ a.user-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;tex
 .profile-picker-results .info{min-width:0;display:flex;flex-direction:column}
 .profile-picker-results .mn{overflow-wrap:anywhere}
 .profile-picker-results .sim-empty{grid-column:1/-1}
-.profile-builds{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px;margin:16px 0}
-.profile-build{padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;min-width:0}
-.profile-build h3{display:flex;align-items:center;gap:12px;font-size:15px;margin:0 0 8px}
-.profile-build h3 img{width:42px;height:36px;object-fit:contain;flex:none}
-.profile-build h3 a{flex:1}
-.profile-build h3 a{color:var(--text);text-decoration:none}
+.home-record-list{max-height:min(420px,60dvh);overflow:auto;overscroll-behavior:contain;padding:0 4px 4px}
+.profile-builds{margin:16px 0}
+.profile-build{min-width:0}
+.home-record>summary{list-style:none}
+.home-record>summary::-webkit-details-marker{display:none}
+.home-record[open]>summary{border-radius:10px 10px 0 0}
+.home-record .rt-name,.home-record .rt-sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-record .rt-name a{color:var(--text);text-decoration:none}
+.home-record .computation-credits{display:flex;flex-wrap:wrap;gap:3px 5px;font-size:12px}
+.home-record .rt-result{display:block}
+.home-record .rt-side .rt-result{font-weight:600;font-variant-numeric:tabular-nums}
+.home-record .rt-pill{font-size:11px}
+.rt-chevron{display:inline-block;margin-left:8px;color:var(--muted)}
+.home-record[open]>summary .rt-chevron{transform:rotate(180deg)}
+.home-recommendation .rt-detail>details{font-size:11px;color:var(--muted);margin-top:12px}
 .profile-build .fd-card{margin:14px 0}
 .profile-build .fine{overflow-wrap:anywhere}
-.profile-verification{display:flex;align-items:center;gap:7px;margin:0 0 14px;color:var(--good-text);font-size:12px}
-.profile-verification>span{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border:1px solid color-mix(in srgb,var(--good) 30%,var(--line));border-radius:50%;background:color-mix(in srgb,var(--good) 8%,transparent)}
+.home-record .profile-verification{margin-top:4px}
 .profile-calculation-info{font-size:11px;color:var(--muted);margin:10px 0 14px}
 .profile-calculation-info summary{cursor:pointer}
 .profile-status{font-size:12px;margin:12px 0}
@@ -2068,7 +2076,7 @@ a.user-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;tex
 .calculation-record{margin:10px 0}
 .brow-credits{text-align:right;padding:0 10px 3px;font-size:10.5px;color:var(--text-2)}
 .brow-credits:empty{display:none}
-@media(max-width:540px){.contributor-profile{padding:0 12px 28px}.profile-heading{gap:12px}.profile-totals{flex:1;min-width:40%}.profile-build{padding:12px}.profile-tabs{gap:14px;font-size:13px}}
+@media(max-width:540px){.contributor-profile{padding:0 12px 28px}.profile-heading{gap:12px}.profile-totals{flex:1;min-width:40%}.profile-tabs{gap:14px;font-size:13px}}
 @media(max-width:640px){.profile-picker-open .profile-weapon-window{align-items:flex-end;padding:0}.profile-weapon-window .profile-weapon-dialog{height:85dvh;border-radius:16px 16px 0 0}.profile-picker-results{grid-template-columns:1fr}.account-panel-body{padding:18px}.profile-search{flex-basis:100%}}
 .rank-pts{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
 .rank-head .rank-pts{font-weight:400}
@@ -2133,6 +2141,9 @@ a.user-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;tex
 @keyframes rtArrive{from{opacity:0;transform:translateY(-14px) scale(.98)}to{opacity:1;transform:none}}
 .rt-card.rt-lit{box-shadow:0 0 0 2px color-mix(in srgb,var(--good) 45%,transparent)}
 .rt-name{font-weight:600}
+.rt-copy{display:block;min-width:0}
+.rt-copy>.rt-name,.rt-copy>.rt-sub,.rt-copy>.rt-result{display:block}
+.rt-side>.rt-when{display:block}
 .rt-sub,.rt-when{font-size:12px;color:var(--muted)}
 .rt-result{font-size:13px;margin-top:2px;font-variant-numeric:tabular-nums}
 .rt-verb{display:inline-block;font-size:11px;font-weight:600;line-height:16px;padding:0 6px;margin-right:6px;border-radius:4px;vertical-align:1px;color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent)}
@@ -4158,6 +4169,7 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .recommendation-filters label{display:flex;flex-direction:row;gap:7px;align-items:center;margin-left:auto;font-size:11px;color:var(--muted)}
 .recommendation-filters select{width:auto;max-width:160px;font-size:12px}
 .recommendation-history-build{padding:14px;border-top:1px solid var(--line)}
+.recommendation-history-build.home-recommendation{padding:0;border:0}
 .recommendation-history-build>header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .recommendation-history-build>header>div:not(.recommendation-heat){flex:1;min-width:0}
 .recommendation-history-build>header a{font-size:13px;font-weight:650;color:var(--text);text-decoration:none}
@@ -4165,8 +4177,8 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 .recommendation-weapon{width:56px;height:38px;object-fit:contain;flex-shrink:0}
 .recommendation-history-build>footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:11px;color:var(--muted)}
 .recommendation-history-build>footer a{display:inline-flex;align-items:center;text-decoration:none;white-space:nowrap}
-.recommendation-history-build>details{margin-top:12px;font-size:11px;color:var(--muted)}
-.recommendation-history-build>details>summary{cursor:pointer;list-style:none;text-decoration:underline;text-underline-offset:3px}
+.recommendation-history-build details[data-recommend-votes]{margin-top:12px;font-size:11px;color:var(--muted)}
+.recommendation-history-build details[data-recommend-votes]>summary{cursor:pointer;list-style:none;text-decoration:underline;text-underline-offset:3px}
 .recommendation-history-build .items{width:100%;margin-top:10px}
 .recommendation-pages{display:flex;gap:8px;justify-content:flex-end}
 .recommendation-control[data-recommend-surface=preset]{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;min-width:0;margin:0}

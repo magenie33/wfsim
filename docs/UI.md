@@ -449,6 +449,12 @@ at most ten items per page. Previous and next replace the current rows; filters
 reset to the first page. Private presets reuse the browser inventory's search, grouping,
 sync controls and editor links. These regions are absent for visitors.
 
+Verified records and embedded recommendations use the compute history's compact
+card renderer in bounded scrolling lists. Their summaries keep the equipment,
+result and current co-verifiers visible. Full build cards, sharing and recommendation
+dates expand inline; passive refreshes retain expanded records. Public and owner
+views share the same cards, with the owner's verification badge added to their own.
+
 The compatibility page (`/account/recommendations`) shows contribution points and permanent
 recommendation points, with recommendation history below. Its default view
 lists builds available today; pending and all-time views, weapon filtering

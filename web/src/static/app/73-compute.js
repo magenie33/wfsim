@@ -624,15 +624,21 @@ function computePillHtml(t, fresh) {
   if (s === "gone") return `<span class="rt-pill rt-gone">${aT("not counted — the row was no longer owed")}</span>`;
   return `<span class="rt-pill rt-wait"><span class="rt-dot"></span>${escHtml(tr("waiting for another device · about +{n}").replace("{n}", n(taskPts(t))))}</span>`;
 }
+function computeCompactCardHtml({ tag = "div", attrs = "", image, name, sub = "", result = "", side = "" }) {
+  return `<${tag} class="rt-card" ${attrs}>${image ? `<img src="${escHtml(image)}" alt="">` : "<span></span>"}
+    <span class="rt-copy"><span class="rt-name">${name}</span><span class="rt-sub">${sub}</span>
+      ${result ? `<span class="rt-result">${result}</span>` : ""}</span><span class="rt-side">${side}</span></${tag}>`;
+}
 function computeCardEl(t) {
   const w = computeWeaponOf(t);
   const tpl = document.createElement("template");
-  tpl.innerHTML = `<div class="rt-card" data-auth="compute-task" data-key="${escHtml(computeKeyOf(t))}" data-state="${escHtml(computeCardState(t))}" role="button" tabindex="0">
-    ${w && w.image ? `<img src="${IMG(w.image)}" alt="">` : "<span></span>"}
-    <div style="min-width:0"><div class="rt-name">${computeKind(t).verb ? `<span class="rt-verb" data-verb="${escHtml(computeKind(t).verb)}">${aT(computeKind(t).verb)}</span>` : ""}${escHtml(w ? tr(w.name) : tr(computeKind(t).name))}</div>
-      <div class="rt-sub">${escHtml(computeSubOf(t, w))}</div>
-      ${t.score != null ? `<div class="rt-result">${computeResultHtml(t)}</div>` : ""}</div>
-    <div class="rt-side"><span data-pill>${computePillHtml(t, false)}</span><div class="rt-when" data-when></div></div></div>`;
+  tpl.innerHTML = computeCompactCardHtml({
+    attrs: `data-auth="compute-task" data-key="${escHtml(computeKeyOf(t))}" data-state="${escHtml(computeCardState(t))}" role="button" tabindex="0"`,
+    image: w?.image ? IMG(w.image) : "",
+    name: `${computeKind(t).verb ? `<span class="rt-verb" data-verb="${escHtml(computeKind(t).verb)}">${aT(computeKind(t).verb)}</span>` : ""}${escHtml(w ? tr(w.name) : tr(computeKind(t).name))}`,
+    sub: escHtml(computeSubOf(t, w)), result: t.score != null ? computeResultHtml(t) : "",
+    side: `<span data-pill>${computePillHtml(t, false)}</span><span class="rt-when" data-when></span>`,
+  });
   return tpl.content.firstElementChild;
 }
 let computeDetail = null;

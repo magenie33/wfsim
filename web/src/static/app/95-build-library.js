@@ -689,16 +689,25 @@ function recommendationsPage(account, embedded = false) {
   const builds = (value?.builds || []).slice(0, LIST_PAGE_SIZE).map(entry => {
     const w = weaponInfo(entry.weapon), heat = value.heat?.[entry.identity];
     const date = entry.last_day + " UTC";
-    return `<article class="recommendation-history-build"><header>${w?.image ? imgTag(IMG(w.image), "recommendation-weapon") : ""}<div><a href="${escHtml(recommendationHistoryLink(entry))}">${escHtml(w?.name || entry.weapon)}</a><p>${escHtml(trF("Last recommendation: {date}", { date }))}</p></div><div class="recommendation-heat"><b>${heat == null ? "—" : heat.toFixed(1)}</b> <span>${aT("Popularity score")}</span>`
-      + (entry.measurement ? `<small class="recommendation-score" title="${escHtml(entry.measurement.finished_at)}">${escHtml(fmtScore(entry.measurement.score))} ${escHtml(rulerUnit(tr(benchList().find(bench => bench.id === entry.ruler)?.name || "")))}</small>` : "") + `</div></header>`
-      + recommendationHistoryCard(entry) + `<footer><span>${aT(entry.pending ? "Recommended today" : "Available today")}${entry.pending ? ` · ${aT("Pending settlement")}` : ""}</span><a class="fd-open" href="${escHtml(recommendationHistoryLink(entry))}">${aT("Open Build Library")} →</a></footer>`
+    const header = `<header>${w?.image ? imgTag(IMG(w.image), "recommendation-weapon") : ""}<div><a href="${escHtml(recommendationHistoryLink(entry))}">${escHtml(w?.name || entry.weapon)}</a><p>${escHtml(trF("Last recommendation: {date}", { date }))}</p></div><div class="recommendation-heat"><b>${heat == null ? "—" : heat.toFixed(1)}</b> <span>${aT("Popularity score")}</span>`
+      + (entry.measurement ? `<small class="recommendation-score" title="${escHtml(entry.measurement.finished_at)}">${escHtml(fmtScore(entry.measurement.score))} ${escHtml(rulerUnit(tr(benchList().find(bench => bench.id === entry.ruler)?.name || "")))}</small>` : "") + `</div></header>`;
+    const body = recommendationHistoryCard(entry) + `<footer class="rt-acts"><span>${aT(entry.pending ? "Recommended today" : "Available today")}${entry.pending ? ` · ${aT("Pending settlement")}` : ""}</span><a class="fd-open" href="${escHtml(recommendationHistoryLink(entry))}">${aT("Open Build Library")} →</a></footer>`
       + `<details data-recommend-votes="${entry.identity}" data-vote-total="${entry.points + Number(entry.pending)}"><summary>${aT("Recommendation history")} · ${entry.points + Number(entry.pending)}</summary><p class="set-note">${aT("Settled recommendations add permanent points. Heat decreases separately.")}</p>`
-      + `<table class="items"><thead><tr><th>${aT("Recommendation day")}</th><th>${aT("Current weight")}</th></tr></thead><tbody>${recommendationVoteRows(entry.votes.slice(0, LIST_PAGE_SIZE))}</tbody></table><p role="status" data-vote-status></p><div data-vote-pager></div></details></article>`;
+      + `<table class="items"><thead><tr><th>${aT("Recommendation day")}</th><th>${aT("Current weight")}</th></tr></thead><tbody>${recommendationVoteRows(entry.votes.slice(0, LIST_PAGE_SIZE))}</tbody></table><p role="status" data-vote-status></p><div data-vote-pager></div></details>`;
+    const compact = embedded ? homeRecordHtml("recommendation:" + entry.identity, {
+      image: w?.image ? IMG(w.image) : "", name: `<a href="${escHtml(recommendationHistoryLink(entry))}">${escHtml(w ? weaponEntryName(w) : entry.weapon)}</a>`,
+      sub: escHtml(trF("Last recommendation: {date}", { date })),
+      result: `<span class="rt-pill ${entry.pending ? "rt-wait" : "rt-ok"}">${aT(entry.pending ? "Recommended today" : "Available today")}</span>`,
+      side: `<span class="recommendation-heat"><b>${heat == null ? "—" : heat.toFixed(1)}</b> ${aT("Popularity score")}</span>`
+        + (entry.measurement ? `<span class="rt-when">${escHtml(fmtScore(entry.measurement.score))} ${escHtml(rulerUnit(tr(benchList().find(bench => bench.id === entry.ruler)?.name || "")))}</span>` : ""),
+    }, body) : header + body;
+    return `<article class="recommendation-history-build${embedded ? " home-recommendation" : ""}">${compact}</article>`;
   }).join("");
   const pager = value?.builds ? computePagerHtml({ page: Math.floor(recommendationHistoryOffset / LIST_PAGE_SIZE),
     pages: value.count == null ? null : Math.max(1, Math.ceil(value.count / LIST_PAGE_SIZE)), total: value.count, hasNext: value.next != null,
     loading: recommendationHistoryLoading }, page => `data-recommend-page="${page * LIST_PAGE_SIZE}"`) : "";
-  const body = `<div class="block"><div class="bh"><h2>${aT("My recommendations")}</h2></div><div class="bb">${embedded ? `<p>${aT("Recommendation points")} · ${points == null ? "—" : escHtml(points.toLocaleString(accountLocale()))}</p>` : ""}${recommendationSettlement(value)}${counts}${status}</div>${builds || (value?.builds ? `<div class="bb"><p class="set-note">${aT("No recommendations in this view.")}</p></div>` : "")}`
+  const content = builds ? embedded ? `<div class="home-record-list scroll-thin">${builds}</div>` : builds : value?.builds ? `<div class="bb"><p class="set-note">${aT("No recommendations in this view.")}</p></div>` : "";
+  const body = `<div class="block"><div class="bh"><h2>${aT("My recommendations")}</h2></div><div class="bb">${embedded ? `<p>${aT("Recommendation points")} · ${points == null ? "—" : escHtml(points.toLocaleString(accountLocale()))}</p>` : ""}${recommendationSettlement(value)}${counts}${status}</div>${content}`
     + (pager ? `<div class="bb">${pager}</div>` : "") + `</div>`;
   return embedded ? body : `<div class="settings">${settingsNav(account, "recommendations")}<div class="set-main"><div class="block"><div class="bh"><h2>${aT("Mine")}</h2></div><div class="bb">${stats}</div></div>${body}</div></div>`;
 }

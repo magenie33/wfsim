@@ -36,6 +36,9 @@ Its pagination fixture adds twenty-three engine-keyed published builds, stored
 recommendations, accepted optimization records and vote dates. The shared pager
 must cap each visible list at ten, replace rows, restore preceding identities,
 show the remaining final page and reset filtered presets to page one.
+Verified and embedded recommendation summaries start compact, expand to their
+complete build and actions, retain expansion through passive refresh and scroll
+within a bounded list. The same renderer still serves the compute task history.
 
 `check_native_pgo.py` refuses changed numerical responses, missing timing cases,
 individual regressions and cross-target training. `check_native_pgo.mjs` checks
