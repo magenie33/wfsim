@@ -173,9 +173,9 @@ const r = await evaluate(`(async () => {
     && JSON.stringify(body.player_at) === JSON.stringify(sim.player_at);
 
   // …and out where the cone is wider than a body, the shipping build drops
-  // pellets. A Braton's aimed cone is 2 degrees, so a 0.25 m body is missed
-  // past about 7 m; 25 m is unambiguously out there.
-  sim.target_at = [0, 25]; markScenarioDirty(); renderSim(); await sleep(700);
+  // pellets. The calibrated resting sampler reaches beyond the body's radius
+  // at fifty metres.
+  sim.target_at = [0, 50]; markScenarioDirty(); renderSim(); await sleep(700);
   const farRun = await api('/api/simulate',
     { ...buildPayload(), ...theFight(), runs: 6, seed: 7, duration: 8 });
   out.farHitRate = farRun.pellets / Math.max(farRun.shots, 1);
