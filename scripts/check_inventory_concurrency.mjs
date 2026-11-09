@@ -76,6 +76,12 @@ try {
     await assert.rejects(call('inventory_ack', [previous, []]), /generation changed/);
     await assert.rejects(call('inventory_publish_cut', [cut.epoch, { ...body(), generation: previous }]), /fence changed/);
   });
+  await check('health SQL reads real PostgreSQL activity without changing inventory', async () => {
+    const sql = execFileSync('python3', ['-c', 'import sys; sys.path.insert(0,"scripts"); import pg_health; print(pg_health.SQL)'], { encoding: 'utf8' });
+    const before = await call('inventory_status');
+    await a.unsafe(sql);
+    assert.deepEqual(await call('inventory_status'), before);
+  });
   console.log(`${checks} inventory concurrency checks passed (including both broken-lock controls)`);
 } finally {
   await Promise.allSettled([a?.end({ timeout: 1 }), b?.end({ timeout: 1 })]);

@@ -1,0 +1,22 @@
+[Unit]
+Description=WFSim read-only pipeline health evidence
+After=postgresql.service
+
+[Service]
+Type=oneshot
+User=postgres
+Group=postgres
+WorkingDirectory=/opt/wfsim-health
+ExecStart=/usr/bin/python3 /opt/wfsim-health/scripts/pg_health.py
+StateDirectory=wfsim-health
+StateDirectoryMode=0700
+UMask=0077
+TimeoutStartSec=45
+Nice=15
+CPUWeight=10
+MemoryMax=128M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+SuccessExitStatus=1

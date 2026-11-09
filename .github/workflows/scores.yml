@@ -228,6 +228,15 @@ jobs:
           ENGINE=$(python3 -c "import sys; sys.path.insert(0, 'scripts'); from build_site_app import engine_id; print(engine_id())")
           ENGINE="$ENGINE" node scripts/fetch_score_inputs.mjs
 
+      - name: keep input diagnostics even when capture fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: score-input-diagnostics
+          path: diagnostics/
+          retention-days: 14
+          if-no-files-found: ignore
+
       - name: keep the leased builds for the scorers
         if: steps.wired.outputs.yes == 'true'
         uses: actions/upload-artifact@v4

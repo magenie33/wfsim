@@ -241,6 +241,15 @@ empty current backlog rather than a sealed snapshot.
 
 ### Relational inventory runner
 
+Both inventory runners write atomic phase status and bounded rotating events
+under the work directory's `diagnostics/`. Source, engine, generation, epoch,
+run id, row counts and process memory identify each attempt. Heartbeats update
+`updated_at` without moving `last_progress_at`; a failed or interrupted run
+retains its last phase and safe error code. Official scoring uses the same
+diagnostics for claiming and input capture, uploaded even on failure with a
+fourteen-day artifact lifetime. Diagnostic output goes to stderr so ranker
+command pipes remain intact.
+
 `inventory_relational_pipeline.mjs` is an alternative, explicitly selected
 inventory runner. It requires the existing inventory schema and a binary
 directory containing `wfsim-board`, `ENGINE` and `VERSION`:

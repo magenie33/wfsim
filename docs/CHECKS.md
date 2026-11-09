@@ -139,6 +139,10 @@ keys, permission boundaries and publication at the original sealed cut time.
 container and exercises independent writers, late commits, exact-revision ACK
 and generation fences. Its original table-lock variants must time out under
 the same writers that the snapshot publisher permits.
+`check_pg_health.py` rejects stale outputs behind active services, unknown
+probes, engine mismatches and prolonged settlement backlog; it checks incident
+recovery and bounded retention. `check_pipeline_monitor.mjs` keeps heartbeat
+and progress clocks distinct and checks crash evidence, redaction and rotation.
 
 `check_library_array.mjs` verifies complete records and number precision,
 atomic failure, empty input and an 80MiB export under a 24MiB Node heap.

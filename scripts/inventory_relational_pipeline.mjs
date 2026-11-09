@@ -14,6 +14,7 @@ import { openCatalog } from './incremental_inventory.mjs';
 import { InventoryRelations } from './inventory_relations.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
 import { auditInventoryInputs } from './inventory_inputs.mjs';
+import { pipelineMonitor } from './pipeline_monitor.mjs';
 import { captureEpoch, saveInventoryState as save, hashInventoryFile, collectInventoryFiles as collect,
   checkInventoryDisk as disk } from './inventory_pipeline.mjs';
 
@@ -89,7 +90,7 @@ async function audit(index, cut, directory) {
     rows: result.plan.rows, queued: result.plan.queued, digest: result.plan.question_digest } });
 }
 
-export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000, operator: supplied }) {
+export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000, operator: supplied, report = progress }) {
   const root = join(work, 'inventory'), statePath = join(root, 'state.json'); mkdirSync(root, { recursive: true }); disk(root);
   const source = readFileSync(join(bin, 'VERSION'), 'utf8').trim(), engine = readFileSync(join(bin, 'ENGINE'), 'utf8').trim();
   const algorithm = createHash('sha256');
@@ -103,6 +104,7 @@ export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000,
     const contract = { v: 1, algorithm: 'board-inventory-relations-v1', covers: BOARD_KINDS,
       adapter: await hashInventoryFile(join(bin, 'wfsim-board')), classifier: algorithm.digest('hex'), operator: operator.contract };
     let state = existsSync(statePath) ? load(statePath) : null;
+    report('generation');
     const [{ status }] = await sql.unsafe('SELECT inventory_status() status');
     if (!state || state.generation !== status?.generation || canon(status.contract) !== canon(contract) || status.engine !== engine) {
       const [{ generation }] = await sql.unsafe('SELECT inventory_begin($1::text,$2::text,$3::text) generation',
@@ -117,8 +119,9 @@ export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000,
     const until = performance.now() + budgetMs;
     if (!state.pending && state.published_at && Date.now() - Date.parse(state.published_at) < 60000) return { pending: false };
     if (!state.pending) {
+      report('capture', { generation: state.generation });
       state.pending = await captureEpoch({ sql, catalog, generation: state.generation, dir: join(root, `capture-${Date.now()}`),
-        bootstrap: !catalog.meta.complete, relational: true });
+        bootstrap: !catalog.meta.complete, relational: true, report });
       save(statePath, state);
     }
     const cut = state.pending, receipt = cut.receipt, directory = dirname(cut.capture);
@@ -133,12 +136,14 @@ export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000,
         const elapsed = Math.max(1, performance.now() - start), estimate = Math.floor(input.limit * 100 / elapsed);
         input = { ...input, offset: page.offset, count: input.count + page.rows.length,
           limit: Math.max(1, Math.min(256, input.limit * 2, estimate)) };
+        const processed = input.count;
         if (page.done) {
           const expected = cut.bootstrap && cut.meta.counts[kind === 'builds' ? 'library' : kind];
           if (cut.bootstrap && input.count !== expected) throw Error(`incomplete relational ${kind}`);
           input = { ...input, file: input.file + 1, offset: 0, count: 0 };
         }
         catalog.setMeta({ ...catalog.meta, input });
+        report(`input-${kind}`, { epoch: receipt.epoch, rows: processed });
         if (performance.now() >= until) break;
       }
       if (input.file === files.length) catalog.freezeEpoch();
@@ -146,10 +151,11 @@ export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000,
     }
     if (index.pending()) {
       const result = await index.step(operate, { budgetMs: Math.max(0, until - performance.now()) });
-      progress('processing', { epoch: receipt.epoch, ...result });
+      report('processing', { epoch: receipt.epoch, ...result.metrics });
       if (result.pending) return { pending: true, stage: 'processing', metrics: result.metrics };
     }
-    if (!catalog.meta.complete) { await audit(index, cut, directory); progress('audited', { epoch: receipt.epoch }); }
+    if (!catalog.meta.complete) { report('audit', { epoch: receipt.epoch }); await audit(index, cut, directory); report('audited', { epoch: receipt.epoch }); }
+    report('acknowledging', { epoch: receipt.epoch });
     for (let offset = catalog.meta.ack?.epoch === receipt.epoch ? catalog.meta.ack.offset : 0;;) {
       const page = await readPage(cut.changes, offset, 256);
       if (page.rows.length) {
@@ -172,6 +178,7 @@ export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000,
     }
     const body = JSON.parse(inventoryWrite(plan).params[1]);
     let published;
+    report('publishing', { epoch: receipt.epoch });
     try {
       [{ published }] = await sql.unsafe('SELECT inventory_publish_cut($1::text,$2::text) published',
         [receipt.epoch, JSON.stringify({ ...body, generation: state.generation, contract })]);
@@ -182,7 +189,7 @@ export async function runRelationalInventory({ work, bin, sql, budgetMs = 15000,
     }
     catalog.activate(published); save(join(root, 'last-publication.json'), { receipt: published, capture: load(cut.capture) });
     state.published_at = published.at; state.pending = null; save(statePath, state); collect(root, state);
-    progress('published', { epoch: receipt.epoch, total: published.total });
+    report('published', { epoch: receipt.epoch, total: published.total });
     return { pending: false, published, metrics: index.metrics };
   } finally { catalog?.close(); if (!supplied) await operator.close(); }
 }
@@ -192,6 +199,11 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   if (!work || !bin || !process.env.PG_URL) throw Error('usage: inventory_relational_pipeline.mjs <work> <bin> (PG_URL required)');
   const sql = postgres(process.env.PG_URL, { max: 1, fetch_types: false, connect_timeout: 15, onnotice: () => {},
     connection: { application_name: 'wfsim-relational-inventory' } });
-  try { console.log(JSON.stringify(await runRelationalInventory({ work: resolve(work), bin: resolve(bin), sql }))); }
+  const monitor = pipelineMonitor(join(work, 'diagnostics'), 'relational-inventory', {
+    source: readFileSync(join(bin, 'VERSION'), 'utf8').trim(), engine: readFileSync(join(bin, 'ENGINE'), 'utf8').trim() });
+  try {
+    const result = await runRelationalInventory({ work: resolve(work), bin: resolve(bin), sql, report: monitor.report });
+    monitor.finish(result.pending ? 'pending' : 'complete'); console.log(JSON.stringify(result));
+  } catch (error) { monitor.finish('failed', error); process.exitCode = 1; }
   finally { await sql.end({ timeout: 5 }); }
 }
