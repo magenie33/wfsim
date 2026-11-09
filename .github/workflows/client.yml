@@ -1,10 +1,10 @@
 name: CLI
 on:
   pull_request:
-    paths: ["client/**", "desktop/src/trust.rs", "mcp/headless.js", "tests/client_payloads.json", "tests/client_search.json", "scripts/check_client_launcher.mjs", ".github/workflows/client.yml"]
+    paths: ["client/**", "desktop/src/trust.rs", "mcp/headless.js", "tests/client_payloads.json", "tests/client_search.json", "scripts/check_client_launcher.mjs", "scripts/client_release_files.mjs", "scripts/check_client_release.mjs", ".github/workflows/client.yml", ".github/workflows/client-release.yml"]
   push:
     branches: [main]
-    paths: ["client/**", "desktop/src/trust.rs", "mcp/headless.js", "tests/client_payloads.json", "tests/client_search.json", "scripts/check_client_launcher.mjs", ".github/workflows/client.yml"]
+    paths: ["client/**", "desktop/src/trust.rs", "mcp/headless.js", "tests/client_payloads.json", "tests/client_search.json", "scripts/check_client_launcher.mjs", "scripts/client_release_files.mjs", "scripts/check_client_release.mjs", ".github/workflows/client.yml", ".github/workflows/client-release.yml"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,6 +28,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22.23.4"
+      - run: node scripts/check_client_release.mjs
       - run: cargo fmt --check --manifest-path client/Cargo.toml
       - run: cargo clippy --locked --manifest-path client/Cargo.toml --all-targets -- -D warnings
       - run: cargo test --locked --manifest-path client/Cargo.toml

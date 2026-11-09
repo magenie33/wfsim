@@ -84,6 +84,7 @@ jobs:
           pattern: cli-*
           path: target/client-artifacts
           merge-multiple: true
+      - run: node scripts/check_client_release.mjs
       - run: node scripts/check_client_live_engine.mjs
       - env:
           CLI_VERSION: ${{ needs.version.outputs.version }}
@@ -92,7 +93,7 @@ jobs:
           node scripts/build_client_release.mjs "version=$CLI_VERSION" "npm=$CLI_NPM"
           git archive --format=zip --output=target/client-release/source.zip HEAD
           python3 scripts/release_client.py target/client-release --dry-run
-          npm pack ./target/client-release/npm --pack-destination target/client-release
+          npm pack ./target/client-release/npm --pack-destination target/client-release --json > target/client-release/npm-pack.json
       - uses: actions/upload-artifact@v4
         with:
           name: cli-prepared-release
@@ -101,10 +102,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CLI_VERSION: ${{ needs.version.outputs.version }}
         run: |
+          node scripts/client_release_files.mjs target/client-release > target/client-release-assets.txt
+          mapfile -t cli_assets < target/client-release-assets.txt
           gh release create "cli-$CLI_VERSION" --target "$GITHUB_SHA" --title "WFSim CLI $CLI_VERSION" \
             --notes-file client/README.md --latest=false \
-            target/client-release/wfsim-* target/client-release/release.json \
-            target/client-release/SHA256SUMS target/client-release/source.zip target/client-release/*.tgz
+            "${cli_assets[@]}"
       - if: inputs.npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
