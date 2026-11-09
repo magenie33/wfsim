@@ -1311,8 +1311,8 @@ questions, never a heavier client.
 - **Asking.** `ship_queue.sh` writes the batch and its queue rows, then asks
   the factory for each (`/api/board/ask`, the factory's secret) — from the bot
   server the moment a submission lands (`live_board.sh`: `wfsim-intake
-  --orders`, `ship_builds.sh`), from `queue.yml` hourly, and from a scorer
-  run's reconciliation. THE FIGHT AN ARRIVAL NAMED IS WAITED ON: the runner
+  --orders`, `ship_builds.sh`), from `queue.yml` hourly, and from scoring
+  preparation's intake. THE FIGHT AN ARRIVAL NAMED IS WAITED ON: the runner
   marks that row `named` (`wfsim-intake --asked`) and the worker asks it as a
   question someone waits on (`rowAsk`), so the row the player just ran goes
   ahead of the build's other rows and every row nobody waits on; a backfill's
@@ -1343,8 +1343,8 @@ questions, never a heavier client.
   names queued rows that door refuses, and deletes them only with `--delete`.
   EVERY OWED ROW IS ASKED FOR: the
   backfill (`ship_queue.sh --backfill`) asks for any queue row nobody asked
-  for, since a run stopped between writing the queue and asking leaves rows
-  only the scorer is ever handed.
+  for. A run stopped between writing the queue and asking leaves unregistered
+  work; maintenance repairs it before any witness can lease it.
 - **Leasing, in PACKS.** `/api/board/work` (`worker/verify.js`) hands a client
   the factory's next questions it may answer — a board row as its library
   RECORD, a ruler and a mode, never a number — in the factory's order, as a
@@ -1452,9 +1452,10 @@ questions, never a heavier client.
   (`clean`), back to none. A refusal needs the same engine; agreement does not.
 - **Nobody online** costs nothing. A row past its deadline is the official
   machines' too: a `scores.yml` run CLAIMS from the factory every board
-  question past its deadline that no client holds (`fetch_queue.sh`, as
-  `official:scorer`) before it reads, and reads only what it claimed and the
-  rows nobody asked the factory for — so a row never goes to both. Its facts are
+  question past its deadline that no client holds (`fetch_score_inputs.mjs`, as
+  `official:scorer`), up to its claim budget. It reads only those calculations'
+  queue rows, builds and measurements through indexed keys. Full inventory
+  repair is independent of this scoring preparation. Its facts are
   its answers (`order_credit.mjs`): a client whose bits it reproduced is paid
   (§"Contribution" rule 1), one it did not is not, and the run's last job
   releases what it left. Official claims read each allowed state separately

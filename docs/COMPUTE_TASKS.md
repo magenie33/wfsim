@@ -3,6 +3,21 @@
 `worker/tasks.js` preserves the factory API and composes independent modules.
 Business types register verbs and producers in `worker/factory.js`.
 
+Official scoring claims overdue questions before reading inputs.
+`fetch_score_inputs.mjs` resolves the claimed board references through indexed
+queue, build and fact keys in one repeatable-read snapshot. Its disk spool
+deduplicates aliases and preserves batch time/key order for every shard.
+It retains at most 40,000 claimed questions, reads 256 calculation keys per
+database call and exports only their builds and measurements. Cancelled batches
+and missing builds do not enter the scoring input. The release job returns
+unanswered leases even when preparation fails.
+
+Scoring never enumerates the complete library or reconciles the queue.
+Missing demand registration belongs to queue maintenance's backfill; it cannot
+bypass leasing by being handed directly to a scorer. Complete backup remains
+owned by `backup.yml` and the database backup service; the scoring artifact is
+only the current run's input.
+
 | Module | Owns |
 | --- | --- |
 | `task_contract.js` | Canonical identity, witness independence and lifecycle constants |
@@ -107,7 +122,7 @@ partial files never become a published inventory. The engine walks that
 snapshot with the existing admission gate before scene pacing. Retired rulers
 and refused orphan rows are excluded.
 
-GitHub-hosted Linux queue and scoring preparation add an ephemeral 24 GiB swap
+GitHub-hosted Linux full queue maintenance adds an ephemeral 24 GiB swap
 file while preserving existing swap. Capture and classifier scratch retain at
 least 60 GiB free after allocation; insufficient capacity releases only unused
 Android, .NET and GHC SDKs, then stops preparation if the reserve is still short.
@@ -170,8 +185,8 @@ admission rules or ordered outputs. Library normalization retains its shared poo
 It uses the existing ranker command pipes, with one filesystem lock around a
 cycle. The ranker starts empty and derives the coherent bootstrap once. This
 path replaces the ranker's hourly library reload and rolling score
-read with authoritative source updates. The normal queue and scoring workflows
-retain full reconciliation as a fallback.
+read with authoritative source updates. Normal queue maintenance retains full
+reconciliation as a fallback. Official scoring reads only its leased inputs.
 
 Live board uploads run in one background process with a per-request timeout.
 Confirmed file hashes are flushed through an atomic checkpoint replacement;
@@ -217,6 +232,52 @@ removed after publication; current and previous catalog generations and the
 last publication manifest remain. SQLite uses a 16MiB page cache, bounded
 imports and no memory mapping; the coordinator reserves 8GiB of filesystem
 space and caps initial capture at 45 minutes and delta capture at 15 minutes.
+
+### Relational inventory runner
+
+`inventory_relational_pipeline.mjs` is an alternative, explicitly selected
+inventory runner. It requires the existing inventory schema and a binary
+directory containing `wfsim-board`, `ENGINE` and `VERSION`:
+
+```sh
+mkdir -p /path/to/work
+flock -n /path/to/work/inventory.lock node --max-old-space-size=192 \
+  scripts/inventory_relational_pipeline.mjs /path/to/work /path/to/bin
+```
+
+Invoke another cycle while the returned `pending` is true; otherwise wait at
+least a minute. The runner does not install a service or change `live_board.sh`.
+Select exactly one inventory coordinator for a database generation. The
+ranker coordinator and this runner must not run concurrently, even in separate
+work directories. Board publication and queue admission remain separate
+consumers; a published inventory count never creates or cancels work.
+
+The native `--inventory-operator` supplies canonical records, admitted ruler
+bits, modes, default dependencies, ruler families and the authoritative entry
+decision. It holds no library. Requests are limited to 256 items and 8MiB.
+The board adapter stores these relationships in SQLite and maintains group
+maxima, reverse dependencies and score intervals through indexes. Semantic
+comparison keys come from the engine; they do not define execution batches.
+Unchanged maxima propagate nothing. Changed maxima visit the conservative
+threshold-crossing interval, then ask the engine for the exact final decision.
+Parents also invalidate their dependent rank and roll variants.
+
+The first generation streams a complete source snapshot into disk indexes.
+Subsequent cuts capture changed identities and lifecycle records without
+expanding them into weapon cohorts. Adaptive input pages target 100ms within
+the operator's item limit. Byte offsets, pending ranges, candidate jobs and
+revision receipts survive process restart. A completed projection precedes
+acknowledgment, and source updates after the cut retain their own dirty token.
+Publication keeps the captured database clock. An expired cut retains its
+baseline and takes a new delta cut; it does not renormalize history.
+
+Engine, binary or algorithm changes create a new fenced generation.
+Bootstrap audits the question union with the disk classifier; CI independently
+compares membership with the complete native walk. This is a board adapter
+with explicit dependencies, not a general incremental SQL planner. A change
+affecting every membership still requires proportional output work. The
+indexed maximum query may examine multiple high scores when target admission
+filters them; the time budget bounds cycles softly, not individual SQL calls.
 
 Apply the additive task schema before enabling this path. Rollback sets
 `INCREMENTAL_INVENTORY=0` and restarts the live service on the current validated

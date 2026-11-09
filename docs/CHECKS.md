@@ -86,6 +86,21 @@ worker gets from Hyperdrive; it needs `npm install --prefix scripts/pg`.
 
 ## Inventory checks
 
+`check_inventory_relations.mjs` compares every question/category/queued tuple
+with an independent native full walk. It covers aliases, deletion, threshold
+changes, retirement, scene fallback, old ruler families, queue withdrawal,
+rank and roll parent dependencies, and restart during propagation.
+`check_inventory_ranges.mjs` compares identical changes in 1,000 and 10,000
+records, asserting equal normalization and propagation work and indexed range
+plans. `check_inventory_relational_pipeline.mjs` exercises sealed PGlite cuts,
+interrupted input and engine work, byte checkpoints, acknowledgment order,
+late writes and expired or superseded publication without recapturing history.
+
+`check_score_inputs.mjs` reads leased calculations against 20,000 unrelated
+database rows. It verifies primary-key plans, queue order, duplicate demands,
+cancelled batches, source number precision and failed-capture preservation.
+`check_rescore_paths.mjs` rejects full inventory prerequisites in scoring.
+
 `check_default_parent.mjs` runs the native dry inventory across every ruler
 and mode. A real lower-rank record keeps its frozen identity and waits for
 its canonical full-rank parent. Qualifying parents release variants; parents

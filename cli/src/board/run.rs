@@ -32,6 +32,7 @@ pub fn run() {
     // EVERY RULER'S BOARD, ASSEMBLED FROM THE FACTS: once, or held and kept
     // current (`board::assemble`). A ruler's run below fights; it never publishes.
     match std::env::args().nth(1).as_deref() {
+        Some("--inventory-operator") => return super::assemble::operator::serve(),
         Some("--inventory-builds") => {
             write_inventory_builds(
                 &library(),
