@@ -18,6 +18,10 @@
 //
 //   node scripts/check_mode_def.mjs
 import { openApp } from "./cdp.mjs";
+import { readFileSync } from "node:fs";
+
+const toridTransition = JSON.parse(readFileSync(new URL("../tests/fixtures/client/primary-five-2026-10-28.json", import.meta.url), "utf8"))
+  .forms.find(form => form.id === "torid_incarnon").transition;
 
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, send, sleep, BASE } = app;
@@ -79,7 +83,8 @@ for (const lang of ["en", "zh"]) {
             && /一次.*返回/.test(r.text) && /0.*弹药/.test(r.text) && /不.*换弹/.test(r.text), r.text);
     }
     if (weapon === "Torid") check(`${weapon}/${lang}: magazine exhaustion and transition times`,
-      /170/.test(r.text) && /1\.00/.test(r.text)
+      /170/.test(r.text) && r.text.includes(toridTransition.entry_seconds.toFixed(2))
+        && r.text.includes(toridTransition.exit_seconds.toFixed(2))
         && (lang === "en" ? /ammunition.*spent/i.test(r.text) : /弹药.*耗尽/.test(r.text)), r.text);
     if (weapon === "Nunchasa") check(`${weapon}/${lang}: weighted contacts and alternate draw`,
       /0\.5/.test(r.text) && /1\.5/.test(r.text), r.text);
