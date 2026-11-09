@@ -58,6 +58,13 @@ export async function loadEngine({ site = SITE } = {}) {
       if (!response.ok) throw new Error(`board: ${response.status}`);
       return response.json();
     },
+    computationNames: (weapon, rows) => headless.headlessMeasurementWitnesses(weapon, rows, {api: async (path, body) => api(path, body),
+      names: async body => {
+        const response = await fetch(site + "/api/computations/names", {method:"POST",headers:{"content-type":"application/json"},
+          body:JSON.stringify(body),cache:"no-store",signal:AbortSignal.timeout(8000)});
+        if (!response.ok) throw new Error("attribution: " + response.status);
+        return response.json();
+      }}),
     // THE HEADS, for a top-N answer (docs/BOARD.md §"The heads"); every row
     // where a weapon has none yet.
     async boardHeads(id) {

@@ -53,8 +53,8 @@ async function qq(path, body) {
   return text ? JSON.parse(text) : {};
 }
 
-/// A CARD ALREADY DRAWN is the same picture while the published board is: kept
-/// by its address and the board's `digest`, read at most once a minute, and for
+/// Cached cards require the same board digest and current public attribution.
+/// The board digest is read at most once a minute, and cards are kept for
 /// ten minutes at most, since a card prints how long ago it was measured.
 const CARD_KEEP_MS = 600_000, CARD_KEEP_MAX = 64, STAMP_EVERY_MS = 60_000;
 const cards = new Map();
@@ -67,20 +67,20 @@ async function boardDigest() {
 }
 /// A CARD AND ITS VERDICT, `{ png, verdict }`: drawn here (bot/card.mjs), and
 /// only a card that is not a weapon's opens the page.
-async function drawCard(url) {
-  const doc = await cardDocument(engine, url);
+async function drawCard(url, snapshot) {
+  const doc = await cardDocument(engine, url, snapshot);
   if (!doc) return { png: await renderCard(url), verdict: null };
   return { png: await renderDocument(doc.html), verdict: doc.verdict };
 }
 
-async function cardFor(url) {
+async function cardFor(url, version = "", snapshot) {
   const digest = await boardDigest();
   const hit = digest && cards.get(url);
-  if (hit && hit.digest === digest && Date.now() - hit.at < CARD_KEEP_MS) return hit.png;
-  const { png } = await drawCard(url);
+  if (hit && hit.digest === digest && hit.version === version && Date.now() - hit.at < CARD_KEEP_MS) return hit.png;
+  const { png } = await drawCard(url, snapshot);
   if (digest) {
     cards.delete(url);
-    cards.set(url, { png, digest, at: Date.now() });
+    cards.set(url, { png, digest, version, at: Date.now() });
     if (cards.size > CARD_KEEP_MAX) cards.delete(cards.keys().next().value);
   }
   return png;
@@ -94,7 +94,7 @@ async function send(row, ans) {
   const reply = { msg_id: row.body.id, msg_seq: 1 };
   if (ans.card) {
     try {
-      const png = await cardFor(ans.card);
+      const png = await cardFor(ans.card, ans.cardVersion || "", ans.cardData);
       const media = await qq(`${chat}/files`, { file_type: 1, file_data: png.toString("base64"), srv_send_msg: false });
       await qq(`${chat}/messages`, { ...reply, msg_type: 7, content: ans.line, media: { file_info: media.file_info } });
       return;
@@ -123,7 +123,7 @@ async function openAppraisal(row, ask) {
 /// search `headlessRivenGainRequest` builds from the appraisal — the one its
 /// page sends — on this bot's own engine, which ships with the site, stored
 /// with the appraisal (worker/appraise.js §"Volunteer work"). Until it is
-/// stored nobody but a scan can answer it, so one still unfrozen a minute on
+/// stored only direct-link execution can answer it, so one still unfrozen a minute on
 /// comes back from the claim and is frozen again.
 const FREEZE_AGAIN_MS = 60_000;
 /// When each code's last freeze failed; Infinity while one runs, or for good

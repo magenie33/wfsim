@@ -1,3 +1,12 @@
+`check_nona_results.mjs` runs the shared zk/pz selection and witness lookup
+against published builds, actual engine identities and the production account
+projection. It checks one bounded batch, ordered calculation/verification names,
+public profile links, current anonymity and renames, exact-measurement matching,
+explicit lookup failure, localized fixed-copy templates, FX replay/delivery
+wording, readable command failure and identity-aware image-cache invalidation.
+Importing the previous bot answer module through `WFSIM_BOT_ANSWER_MODULE` must
+fail the zk attribution assertion.
+
 `check_riven_delivery.mjs` exercises the real producer, factory, schemas and
 account routes. A first candidate delivers without credit; an independently
 matching second witness credits both people in completion order. Delivery
@@ -563,7 +572,7 @@ optimizer under the appraisal's ruler with one pinned-riven start and the
 Four elements strategy, answering one build
 at ten fights a candidate; the search starts with no click; the reader's own
 presets, rivens and checkpoint are left exactly as they were; the winner goes
-back as a build carrying that riven's shape and the typed name and no score;
+back as a build carrying that riven's shape and captured account reference, without a score;
 and the finalists reach the board even with uploading switched off.
 Delivery uses signed test receipts issued by the production authorizer;
 missing, forged and mismatched authorization is refused.
@@ -2783,3 +2792,7 @@ Swipe regressions bind the weapon pool to exact native ancestry, cover every
 rank's range/target cap, intersecting bodies, nearest-first selection, one hit
 per body and unchanged lone-target damage. The panel reports metres and target
 counts with flat sources; the browser checks the eligible claw pools and rows.
+
+For source previews, `WFSIM_SOURCE_I18N=1` overlays the current UI YAML on the
+bot test engine before card parity checks. It is not used for built-artifact
+validation, where the candidate's installed data must already contain the copy.

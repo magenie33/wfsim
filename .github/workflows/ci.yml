@@ -961,6 +961,8 @@ jobs:
         run: node scripts/check_user_task_service.mjs
       - name: Riven delivery names its first calculator while two accepted witnesses retain credit
         run: node scripts/check_riven_delivery.mjs
+      - name: Nona result copy and exact published measurement witnesses agree
+        run: (python3 -c "import yaml" 2>/dev/null || pip install --quiet pyyaml==6.0.3) && node scripts/check_nona_results.mjs
       - name: Expedited board reviews preserve old scores until fresh independent agreement
         run: node scripts/check_board_reviews.mjs
       - name: New family candidates share verified optimization and stop after one generation

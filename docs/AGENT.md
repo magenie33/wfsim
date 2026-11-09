@@ -382,6 +382,22 @@ moved) to the server, restarts it and checks the engine it holds
 IT READS THE PUBLISHED BOARD, the one the card page draws from, so the words
 and the image of one answer stand on the same rows.
 
+Fixed chat copy distinguishes board lookup, submitted search and replayed
+result delivery. Waiting messages promise no completion time. The result names
+its delivery author; it does not announce independent consensus or claim the
+community's work as Nona's. Help, command panels, receipt, running, result and
+retry messages use the same English-source overlay.
+
+Each displayed zk/pz entry and its riven-free baseline resolves the existing
+exact measurement's accepted witnesses in one batch. Calculation and verification
+roles retain completion order. Current anonymity and opaque selected labels are
+projected by the accounts service. Public names link to their profiles on the
+card page; unavailable or unrecorded attribution is stated without inventing a
+contributor. The image and text fallback use the same selection and witness
+projection. The image cache includes current public attribution; a changed name,
+anonymity choice or label cannot reuse an older identity's cached image.
+
+
 IT DRAWS ITS OWN CARD (`bot/card.mjs`): the card page's drawing,
 `headlessLongCard` (83-headless-card.js), run on the bot's engine, the riven lines
 and the QR code from that engine, written as one document with the stylesheet
@@ -483,7 +499,8 @@ comparison. Executor disclosure and queue ownership are in `docs/TASKS.md`.
    retains its own delivery; reuse does not add another computation credit.
    Existing frozen requests keep their identities. The search is deterministic
    for a frozen request, so honest computers agree to the bit. The chat is told the
-   community is on it, and the link stays as the asker's own faster way. A
+   request was submitted; a lease event says a device took it. The result is
+   announced after replay. A
    computer still searching renews its lease every two minutes
    (`/api/appraise/<code>/renew`), so a slow one is never overtaken by its own
    lease, and stops when told the task went elsewhere. A chat's riven gain

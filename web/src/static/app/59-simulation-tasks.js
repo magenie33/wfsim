@@ -199,14 +199,7 @@ function boardReviewRequest(value) {
   body.arcane_rank = (body.arcane || []).map((id, i) => body.arcane_rank?.[i] ?? arcaneById(id)?.max_rank ?? null);
   return JSON.stringify(boardReviewCanonical(body));
 }
-function boardReviewRecord(weapon, row) {
-  const riven = row.riven || (row.riven_pos?.length
-    ? { bonuses: row.riven_pos, malus: row.riven_neg, rolls: row.riven_rolls } : null);
-  return { weapon, mods: row.mods || [], evolutions: row.evolutions || [], arcanes: row.arcanes || [],
-    valence: row.valence || "", exilus: row.exilus || "", grip: row.grip || "", loader: row.loader || "", link: row.link || "",
-    ...(row.wielder ? { wielder: taskClone(row.wielder) } : {}),
-    ...(riven ? { riven_pos: riven.bonuses, riven_neg: riven.malus || "", riven_rolls: riven.rolls } : {}) };
-}
+function boardReviewRecord(weapon, row) { return headlessBoardRecord(weapon, row); }
 
 // Compare only fetched publication with the frozen record and current fact.
 // Missing rows count only when the existing inclusive entry-line rule excludes them.

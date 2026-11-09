@@ -38,9 +38,12 @@ async function renderCardPage(w, ask) {
   // number a chat is told is this page's, never the searcher's.
   const verdict = kind === "appraise" && job && job.result ? await appraisalReplay(w, job) : null;
   if (verdict) document.body.dataset.verdict = JSON.stringify(headlessVerdictRecord(verdict));
-  const card = headlessLongCard({ ...pageSay(), computationRecord: row => computationBadge(w.id, row) }, w, ask, { rows: BOARD[w.id] || [], job, verdict, origin: LIVE_ORIGIN,
+  const rows = BOARD[w.id] || [], selected = headlessCardBoard(pageSay(), w, ask, rows);
+  const witnesses = kind === "appraise" ? new Map() : await headlessMeasurementWitnesses(w.id, selected.rows, {api,
+    names: body => computationCall("/api/computations/names", body)});
+  const card = headlessLongCard(pageSay(), w, ask, { rows, job, verdict, witnesses, origin: LIVE_ORIGIN,
     riven: rivenCardGot });
-  const qr = await api("/api/qr", { text: card.link });
+  const qr = kind === "appraise" ? null : await api("/api/qr", { text: card.link });
   // THE CARDS ARE DRAWN ONLY WHEN THEY GO STRAIGHT ONTO THE PAGE: a riven's
   // values arrive into the elements already there, so nothing may sit between.
   box.classList.toggle("lc-way-in", card.wayIn);

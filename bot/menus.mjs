@@ -18,12 +18,12 @@ const MARK = "wfsim:nona";
 const { zh } = await loadEngine();
 const t = (x) => (zh.ui && zh.ui[x]) || x;
 const COMMANDS = [
-  { type: "command", name: "pz", desc: t("the best builds on the board") },
-  { type: "command", name: "zk", desc: t("rivens against the best build without one") },
-  { type: "command", name: "fx", desc: t("the gain of your own riven") },
-  { type: "command", name: "gx", desc: t("the compute contribution rankings") },
-  { type: "command", name: "帮助", desc: t("what Nona can do") },
-  { type: "link", name: t("WFSim, the site"), desc: t("open the site"), link: "https://wfsim.app" },
+  { type: "command", name: "pz", desc: t("look up measured builds") },
+  { type: "command", name: "zk", desc: t("look up riven rankings and calculation witnesses") },
+  { type: "command", name: "fx", desc: t("compute your riven's gain") },
+  { type: "command", name: "gx", desc: t("look up compute contributions") },
+  { type: "command", name: "帮助", desc: t("commands and examples") },
+  { type: "link", name: t("WFSim, the site"), desc: t("open WFSim"), link: "https://wfsim.app" },
 ];
 const MENU = [
   { type: "send_message", name: t("Builds"), send_message: "pz " },

@@ -19,6 +19,20 @@ export { readRivenLines };
 export function makeAnswer({ run, meta, zh, headless, host }) {
   const t = (s, p = {}) => Object.entries(p).reduce((x, [k, v]) => x.split(`{${k}}`).join(String(v)),
     (zh.ui && zh.ui[s]) || s);
+  const say = headless.headlessSpeaker(meta, { zh }, "zh");
+  const boardAttribution = async (weapon, url) => {
+    try {
+      if (!host?.board || !host?.computationNames) return {entries:[],names:new Map()};
+      const boardRows = await host.board(weapon.id) || [];
+      const selected = headless.headlessCardBoard(say, weapon, headless.headlessCardAsk(new URL(url).search), boardRows);
+      return {...selected,boardRows,names:await host.computationNames(weapon.id,selected.rows)};
+    } catch (_) { return {entries:[],names:new Map()}; }
+  };
+  const cardAttribution = attribution => ({
+    cardVersion: (attribution.rows || []).map(row => headless.headlessWitnessesHtml(say,attribution.names.get(row),SITE)).join("\n"),
+    ...(attribution.boardRows ? {cardData:{rows:attribution.boardRows,witnesses:attribution.names}} : {}),
+  });
+  const attributionText = (attribution, row) => headless.headlessWitnessesText(say, attribution.names.get(row));
   const weaponName = (w) => (zh.weapons && zh.weapons[w.id]) || w.name;
   const modName = (id) => { const c = String(id).split("@")[0]; return (zh.mods && zh.mods[c]) || c; };
   const arcaneName = (id) => (zh.arcanes && zh.arcanes[id]) || id;
@@ -84,17 +98,17 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
   const rulerList = () => benches.map(rulerShort).join("、");
 
   const help = () => [
-    t("I am Nona, WFSim's assistant. Send zk or pz… not that I was waiting for you. (⁄ ⁄•⁄ω⁄•⁄ ⁄)"),
-    t("zk weapon [ruler] [stats] [count]: the rivens the board has measured for this weapon, against its best build without one."),
-    t("pz weapon [ruler] [riven] [count]: the best builds the board has measured for this weapon; add riven for builds that carry one."),
-    t("fx weapon [ruler] each stat with its number: the gain of your own riven — the volunteers' devices search its best build together."),
-    t("gx [name]: the compute contribution rankings — all time, this month, this week; with the name the ranking shows, that person's place on each."),
-    t("For example: {a}, or {b}", { a: "zk 托里德 双暴 负任意 5", b: "pz 托里德 爆破使 紫卡 3" }),
+    t("Nona here. Builds, rivens, or your own riven gain? Pick a command. (￣ー￣)ゞ"),
+    t("zk weapon [ruler] [stats] [count]: look up the riven ranking and its calculation witnesses."),
+    t("pz weapon [ruler] [riven] [count]: look up measured builds; add riven for builds with one."),
+    t("fx weapon [ruler] each stat with its number: submit your riven for community search; Nona replays the result before posting it."),
+    t("gx [name or count]: look up lifetime, recent and weekly compute contributions; use a public nickname to find one person."),
+    t("Try {a}, or {b}.", { a: "zk 托里德 双暴 负任意 5", b: "pz 托里德 爆破使 紫卡 3" }),
   ].join("\n");
-  const UNREAD = "I could not read “{word}”… Write a stat as the card does, or as short as 双暴, 暴伤 or 负任意. (・_・;)";
-  const NO_WEAPON = "Which weapon? Put its name after the command, like {e}. (・_・;)";
-  const NOT_FOUND = "No weapon by that name. Check it again — Chinese or English both work. (＞﹏＜)";
-  const NOT_MEASURED = "Nobody has measured this one yet. Measure a build on wfsim.app… then I will remember it. (´；ω；`)";
+  const UNREAD = "I could not read “{word}”. Use the card's stat name, or an alias such as 双暴, 暴伤 or 负任意. (・_・;)";
+  const NO_WEAPON = "Which weapon? Add its name, like {e}. (・_・;)";
+  const NOT_FOUND = "I could not find that weapon. Check the name; Chinese and English both work. (・_・;)";
+  const NOT_MEASURED = "There are no published results for this weapon under that ruler yet. (・_・;)";
 
   async function pz(rest) {
     if (!rest) return t(NO_WEAPON, { e: "pz 托里德 3" });
@@ -106,7 +120,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const said = rivenWords.find((x) => x && afterCount.includes(x));
     const named = rulerIn(said ? afterCount.replace(said, "") : afterCount);
     // A WORD THAT IS NOT A RULER IS SAID, never quietly read as the default one.
-    if (named.left) return t("I could not read “{word}”… The rulers are {list}; add riven for builds with one. (・_・;)", { word: named.left, list: rulerList() });
+    if (named.left) return t("I could not read “{word}”. Choose a ruler from {list}; add riven for a build with one. (・_・;)", { word: named.left, list: rulerList() });
     const ruler = named.ruler || defaultRuler();
     const r = await run("builder.board.read", { weapon: hit.w.id, riven: said ? "with" : "without", limit: n || 3, distinct: true, pooled: true });
     if (r.ok === false) return t(NOT_MEASURED);
@@ -114,13 +128,14 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     if (!rows.length) return t(NOT_MEASURED);
     const shown = rows.length;
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=pz&ruler=${encodeURIComponent(ruler.id)}&n=${shown}${said ? "&rv=1" : ""}`;
+    const attribution = await boardAttribution(hit.w, card);
     const text = [`${weaponName(hit.w)} · ${rulerShort(ruler)}`]
-      .concat(rows.map((x) => `#${x.rank}${x.tied > 1 ? `（${t("{n} builds tie", { n: x.tied })}）` : ""} ${x.score}  ${(x.build ? x.build.mods.map(modName) : x.mods).join("、")}${
+      .concat(rows.map((x, i) => `#${x.rank}${x.tied > 1 ? `（${t("{n} builds tie", { n: x.tied })}）` : ""} ${x.score}  ${(x.build ? x.build.mods.map(modName) : x.mods).join("、")}${
         x.build && x.build.arcane.length ? ` | ${t("Arcane")}: ${x.build.arcane.map(arcaneName).join("、")}` : ""}${
-        x.build && x.build.evolutions.length ? ` | ${t("Evolutions")}: ${x.build.evolutions.map(evoName).join("、")}` : ""}`))
+        x.build && x.build.evolutions.length ? ` | ${t("Evolutions")}: ${x.build.evolutions.map(evoName).join("、")}` : ""}\n  ${attributionText(attribution,attribution.entries[i]?.row)}`))
       .join("\n");
-    return { line: t(said ? "The top {n} riven builds of {w} under {ruler}. (￣ー￣)ゞ" : "The top {n} builds of {w} under {ruler}. (￣ー￣)ゞ",
-      { w: weaponName(hit.w), ruler: rulerShort(ruler), n: shown }), card, text };
+    return { line: t(said ? "Found {n} riven builds for {w} under {ruler}. (￣ー￣)ゞ" : "Found {n} builds for {w} under {ruler}. (￣ー￣)ゞ",
+      { w: weaponName(hit.w), ruler: rulerShort(ruler), n: shown }), card, text, ...cardAttribution(attribution) };
   }
 
   async function zk(rest) {
@@ -136,19 +151,20 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
       ...(named.ruler ? { ruler: named.ruler.id } : {}) });
     if (r.ok === false || !r.groups.length) return t(NOT_MEASURED);
     const g = r.groups.find((x) => x.rivens.length);
-    if (!g) return t("No riven on the board has these stats yet. (￣^￣)");
+    if (!g) return t("The board has no riven matching these stats yet. Try fewer filters. (・_・;)");
     const top = headless.distinctTop(g.rivens, n || 3, () => "", meta);
     const shown = top.length;
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=zk&ruler=${encodeURIComponent(g.ruler_id)}&n=${shown}`
       + (ask.bonuses.length ? `&has=${ask.bonuses.map(encodeURIComponent).join(",")}` : "")
       + (ask.malus ? `&malus=${encodeURIComponent(ask.malus)}` : "");
+    const attribution = await boardAttribution(hit.w, card);
     const line = (x) => `#${x.rank} ${x.stat_ids.bonuses.map((id) => signedStatZh(cls, id)).join(" ")}${
       x.stat_ids.malus ? " " + signedStatZh(cls, x.stat_ids.malus, true) : ""}  ${x.score}${x.gain == null ? "" : `（${x.gain >= 0 ? "+" : "−"}${Math.abs(x.gain * 100).toFixed(1)}%）`}`;
     const text = [`${weaponName(hit.w)} · ${t(g.ruler).split(" · ")[0]}`,
-      `${t("The board's best riven-free build")}: ${g.riven_free ? g.riven_free.score : "—"}`]
-      .concat(top.map(line)).join("\n");
-    return { line: t("These are {w}'s rivens under {ruler}, against the best build without one. I ran every one. (*/ω＼*)",
-      { w: weaponName(hit.w), ruler: t(g.ruler).split(" · ")[0] }), card, text };
+      `${t("The board's best riven-free build")}: ${g.riven_free ? g.riven_free.score : "—"}${g.riven_free ? "\n  " + attributionText(attribution,attribution.top?.row) : ""}`]
+      .concat(top.map((x,i) => line(x) + "\n  " + attributionText(attribution,attribution.entries[i]?.row))).join("\n");
+    return { line: t("Here is {w}'s riven ranking under {ruler}, compared with the best build without a riven. (*/ω＼*)",
+      { w: weaponName(hit.w), ruler: t(g.ruler).split(" · ")[0] }), card, text, ...cardAttribution(attribution) };
   }
 
   /// GX: THE COMPUTE RANKINGS, all three — or, after it, the exact name the
@@ -161,21 +177,21 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const count = /^\d+$/.test(ask) ? Math.max(1, Math.min(MAX_SHOWN, Number(ask))) : null;
     const name = count === null ? ask : "";
     const get = (q) => fetch(`${SITE}/api/contributors${q}`).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-    const periods = [["all", "points", "All-time ranking"], ["recent", "recent", "Monthly ranking"], ["week", "week", "Weekly ranking"]];
+    const periods = [["all", "points", "All-time ranking"], ["recent", "recent", "Recent ranking"], ["week", "week", "Weekly ranking"]];
     const num = (x) => (x || 0).toLocaleString("en-US");
     if (name) {
       const r = await get(`?name=${encodeURIComponent(name)}`);
-      if (!r) return t("Nona could not reach the ranking just now. Try again in a moment. (＞﹏＜)");
+      if (!r) return t("The contribution ranking could not be loaded. Try again shortly. (・_・;)");
       const p = r.person;
-      if (!p) return t("Nobody on the ranking shows the name “{name}”. A name appears there only once its owner chooses to show it. (＞﹏＜)", { name });
+      if (!p) return t("No public contributor named “{name}” was found. Check their public nickname. (・_・;)", { name });
       const card = `${SITE}/contributors/card?name=${encodeURIComponent(name)}`;
       const cr = p.contributor_rank;
       const text = [t("{name}'s contribution", { name: display(p) }) + (cr ? ` · ${t("Contributor rank {n}", { n: cr.rank })}` : "")].concat(periods.map(([id, key, label]) => `${t(label)}: ${
         p.ranks[id] ? `#${p.ranks[id]} · ${num(p[key])}` : t("Not on this ranking yet.")}`)).join("\n");
-      return { line: t("{name}'s place on the three rankings. (*/ω＼*)", { name: display(p) }), card, text };
+      return { line: t("{name}'s compute contribution record. (*/ω＼*)", { name: display(p) }), card, text, cardVersion:JSON.stringify(p) };
     }
     const all = await Promise.all(periods.map(([id]) => get(id === "all" ? "" : `?period=${id}`)));
-    if (!all[0]) return t("Nona could not reach the ranking just now. Try again in a moment. (＞﹏＜)");
+    if (!all[0]) return t("The contribution ranking could not be loaded. Try again shortly. (・_・;)");
     const n = count || 5;
     const card = `${SITE}/contributors/card?n=${n}`;
     const text = periods.map(([, key, label], i) => [t(label)].concat(((all[i] && all[i].contributors) || []).slice(0, n)
@@ -183,8 +199,8 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
         c.contributor_rank ? ` [${c.contributor_rank.rank}]` : ""} · ${num(c[key])}`)).join("\n")).join("\n\n");
     const computing = all[0].computing || 0;
     return { line: computing
-      ? t("The contribution rankings — all time, this month, this week. {n} devices are computing together right now. (￣ー￣)ゞ", { n: computing })
-      : t("The contribution rankings — all time, this month, this week. (￣ー￣)ゞ"), card, text };
+      ? t("Lifetime, recent and weekly compute contributions. {n} devices are computing now. Thank you all! (￣ー￣)ゞ", { n: computing })
+      : t("Here are the lifetime, recent and weekly compute contributions. Thank you all! (￣ー￣)ゞ"), card, text, cardVersion:JSON.stringify(all.map(r=>(r?.contributors || []).slice(0,n))) };
   }
 
   /// FX: THE ASKER'S OWN RIVEN, appraised by whoever opens its link — docs/AGENT.md
@@ -200,18 +216,18 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const cls = hit.w.riven_class;
     const pool = (meta.riven_stats || {})[cls] || [];
     const read = readRivenLines(named.left, pool, [zh]);
-    if (read.error === "format") return t("Each stat needs the number on the card, like {e}. (・_・;)", { e: example });
+    if (read.error === "format") return t("Include each stat's card value, like {e}. (・_・;)", { e: example });
     if (read.error === "unread") return t(UNREAD, { word: read.word });
-    if (read.error === "ambiguous") return t("“{word}” names more than one stat; give each its own number. (・_・;)", { word: read.word });
-    if (read.error === "contradicts") return t("“{word}” says positive and negative at once; give one. (・_・;)", { word: read.word });
+    if (read.error === "ambiguous") return t("“{word}” includes several stats. Write a separate value for each. (・_・;)", { word: read.word });
+    if (read.error === "contradicts") return t("“{word}” has conflicting signs. Keep the sign shown on the card. (・_・;)", { word: read.word });
     const bonuses = read.lines.filter((x) => !x.malus);
     const maluses = read.lines.filter((x) => x.malus);
-    if (bonuses.length < 2 || bonuses.length > 3 || maluses.length > 1) return t("A riven has two or three positive stats and at most one negative. (・_・;)");
+    if (bonuses.length < 2 || bonuses.length > 3 || maluses.length > 1) return t("Please check the card: a riven needs two or three bonuses and at most one malus. (・_・;)");
     const rank = (meta.riven_rules || {}).max_rank ?? 8;
     const base = await host.api("/api/riven", { weapon: hit.w.id, rank, polarity: "madurai",
       bonuses: bonuses.map((b) => ({ id: b.id, roll: 1 })), malus: maluses[0] ? { id: maluses[0].id, roll: 1 } : null });
-    if (!base || base.ok === false) return t(NOT_FOUND);
-    if ((base.illegal || []).length) return t("This riven is not a legal one: {why} (＞﹏＜)", { why: base.illegal.join("; ") });
+    if (!base || base.ok === false) return t("This riven could not be checked. Try again shortly. (・_・;)");
+    if ((base.illegal || []).length) return t("This riven could not pass the card checks: {why} (・_・;)", { why: base.illegal.join("; ") });
     const slots = bonuses.map((b, i) => ({ ...b, slot: String(i) })).concat(maluses.map((m) => ({ ...m, slot: "malus" })));
     const values = [];
     for (const sl of slots) {
@@ -225,7 +241,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
       if (value < min - slack || value > max + slack) {
         const show = (x) => Math.abs(Number(x)).toFixed(st.decimals ?? 1);
         const [lo, hi] = [show(st.min), show(st.max)].sort((a, b) => a - b);
-        return t("{stat} {value} is outside this weapon's range ({lo}–{hi}). (￣^￣)",
+        return t("{stat} {value} is outside this weapon's range ({lo}–{hi}). Check the weapon and value. (・_・;)",
           { stat: statZh(cls, sl.id), value: sl.value, lo, hi });
       }
       values.push({ id: sl.id, value, malus: sl.slot === "malus" });
@@ -234,34 +250,39 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const resolved = await host.api("/api/riven", { weapon: hit.w.id, rank, polarity: "madurai",
       bonuses: values.filter((s) => !s.malus).map(({ id, value }) => ({ id, value })),
       malus: malusValue ? { id: malusValue.id, value: malusValue.value } : null });
-    if (!resolved || resolved.ok === false) return t(NOT_FOUND);
+    if (!resolved || resolved.ok === false) return t("This riven could not be checked. Try again shortly. (・_・;)");
     const rolled = slots.map((sl) => ({ id: sl.id, roll: (resolved.stats || []).find((s) => s.slot === sl.slot)?.roll,
       malus: sl.slot === "malus" }));
-    if (rolled.some((s) => !Number.isFinite(s.roll))) return t(NOT_FOUND);
+    if (rolled.some((s) => !Number.isFinite(s.roll))) return t("This riven could not be checked. Try again shortly. (・_・;)");
     const riven = { bonuses: rolled.filter((x) => !x.malus).map(({ id, roll }) => ({ id, roll })),
       malus: rolled.filter((x) => x.malus).map(({ id, roll }) => ({ id, roll }))[0] || null, rank };
     const opened = ctx && ctx.openAppraisal ? await ctx.openAppraisal({ weapon: hit.w.id, ruler: ruler.id, riven }) : null;
     if (!opened || !opened.code) {
-      return t(opened && /limit/.test(opened.error || "") ? "Nona is still busy with your earlier ones. Try again in a while. (´；ω；`)"
-        : "Nona could not start the riven gain just now. Try again in a moment. (＞﹏＜)");
+      return t(opened && /limit/.test(opened.error || "") ? "Too many riven requests were submitted just now. Try again later. (・_・;)"
+        : "The riven request could not be submitted. Try again shortly. (・_・;)");
     }
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=appraise&code=${opened.code}`;
     const say = headless.headlessSpeaker({}, { zh }, "zh");
     const line = slots.map((sl) => say.tf(resolved.stats.find((s) => s.slot === sl.slot).text)).join(" ");
-    return { line: t("Nona read it. The volunteers' devices are computing it together — usually a minute or two — and Nona will post the answer here. Riven gain {code}. (๑•̀ㅂ•́)و✧", { code: opened.code }),
+    return { line: t("Nona has your riven, code {code}. I will replay the result and post it here when it passes. (๑•̀ㅂ•́)و✧", { code: opened.code }),
       card, text: `${weaponName(hit.w)} · ${rulerShort(ruler)} · ${line}\n${SITE}/appraise/${opened.code}` };
   }
 
   /// …AND WHILE IT WAITS: a computer has taken it.
-  const started = (s) => t("A volunteer's device has taken riven gain {code} — usually a few minutes. Nona will post the answer here. (｀・ω・´)", { code: s.code });
+  const started = (s) => t("A device has started riven gain {code}. Nona will post the result after replay. (｀・ω・´)", { code: s.code });
 
   /// `{ text }`, or `{ line, card, text }` — the long image at `card` with
   /// `line` under it, and `text` the answer in words if the image cannot be made.
   async function answer(text, ctx) {
-    const p = parse(text);
-    const r = p.cmd === "zk" ? await zk(p.rest) : p.cmd === "pz" ? await pz(p.rest) : p.cmd === "fx" ? await fx(p.rest, ctx)
-      : p.cmd === "gx" ? await gx(p.rest) : help();
-    return typeof r === "string" ? { text: r } : r;
+    try {
+      const p = parse(text);
+      const r = p.cmd === "zk" ? await zk(p.rest) : p.cmd === "pz" ? await pz(p.rest) : p.cmd === "fx" ? await fx(p.rest, ctx)
+        : p.cmd === "gx" ? await gx(p.rest) : help();
+      return typeof r === "string" ? { text: r } : r;
+    } catch (error) {
+      console.error("nona command failed", error?.message || "unknown error");
+      return {text:t("Nona could not finish this request. Try again shortly. (・_・;)")};
+    }
   }
   /// WHAT NONA SAYS WITH AN APPRAISAL'S ANSWER: the replayed number, its gain on
   /// the board's riven-free leader, and thanks; `late` when it arrives on someone
@@ -274,11 +295,11 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     // GRADED BY THE REPLAY (45-card-page.js `rivenGrade`); an answer judged
     // before the grade existed carries none and is told without one.
     const said = typeof v.grade === "number"
-      ? t("{w} with this riven: {shown}, {gain} against the best build without one, grade {grade}/100 against the {n} rivens on the board — how it was read is in the picture. Thanks to {who} for searching it! (⁄ ⁄•⁄ω⁄•⁄ ⁄)",
+      ? t("Replay passed. {w}: {shown}, {gain} against the best riven-free build; grade {grade}/100 against {n} board rivens. Delivered by {who}. Thank you! (*/ω＼*)",
         { w: weaponName(w), shown: v.shown || "—", gain, grade: v.grade, n: v.of || 0, who })
-      : t("{w} with this riven: {shown}, {gain} against the best build without one. Thanks to {who} for searching it! (⁄ ⁄•⁄ω⁄•⁄ ⁄)",
+      : t("Replay passed. {w}: {shown}, {gain} against the best riven-free build. Delivered by {who}. Thank you! (*/ω＼*)",
         { w: weaponName(w), shown: v.shown || "—", gain, who });
-    return late ? `${t("The riven gain from earlier is in.")} ${said}` : said;
+    return late ? `${t("The earlier riven result is here.")} ${said}` : said;
   };
   /// The long image of an appraisal's answer — the page that replays it.
   answer.started = started;
