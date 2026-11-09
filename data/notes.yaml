@@ -16,7 +16,8 @@ notes:
     randomizes the cone parameter before its elliptical disk sample; uniform
     fire iterations use equal azimuths. The resting envelope remains in use.
     Dynamic envelope/emission ordering, native seed initialization, special
-    emitters, camera transforms and uncompensated recoil remain unmodelled.
+    emitters remain unmodelled. Default aim perfectly compensates camera recoil;
+    intrinsic spread retains a 3D ray projected to the arena plane plus height.
     Beam cooldown divides elapsed ramp time, so normalized decay divides by
     rise_seconds times cooldown_divisor. Target-local ramp state is unmodelled.
   physical_mod_potency_wiki: |

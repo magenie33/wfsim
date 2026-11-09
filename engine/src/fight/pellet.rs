@@ -697,11 +697,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // fires ONCE PER PULL where the weapon says so, from the ACTIVE
     // form (M32).
     // ---- WHERE THIS PELLET WENT (MECHANICS §11) --------------
-    // Spread is an ANGLE, so what it costs is a function of range.
-    // Drawn uniform over [0, 2 x spread], whose mean is the stat's own
-    // definition; the direction is not drawn, because the target is a
-    // circle. NOT DRAWN AT ALL unless a miss is possible, which is what
-    // leaves `d.aim` untouched in every fight with no range in it.
+    // Spread samples retain both angle and direction, including vertical scatter.
     let range = params.range_to_centre();
     let gap_m = params.gap();
     // HOW FAR THE TARGET ALREADY IS FROM THE AIM LINE, before a degree
@@ -743,14 +739,15 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
         _ => (0.0, 0.0),
     };
     (round_aim.dev, round_aim.phi) = (dev, phi);
-    let aim_offset = match active.spread {
-        Some(s) if !s.is_pinpoint() && range > 0.0 => {
-            crate::rules::space::miss_distance_off_axis(range, off_axis, dev, phi)
-        }
-        // A PINPOINT WEAPON POINTED ELSEWHERE still misses: no spread
-        // does not mean no aim.
-        _ => crate::rules::space::miss_distance(range, off_axis),
-    };
+    let off_axis_miss = (off_axis > 0.0).then(|| crate::rules::space::detonation_of_miss(
+        crate::rules::space::muzzle(params.player_at, params.aim_point()),
+        params.aim_point(), params.target_at, dev, phi,
+    ));
+    // On-axis R*sin(deviation) is the exact same 3D ray distance, without a basis.
+    let aim_offset = off_axis_miss.map_or_else(
+        || crate::rules::space::miss_distance(range, dev),
+        |projected| projected.distance_to(params.target_at),
+    );
     // …AND A BODY IS A CIRCLE OF ONE RADIUS: hitting the circle is a
     // hit, so this is ray-versus-circle and nothing more
     // (`rules::space::miss_distance`). It asks only whether the pellet reached
@@ -785,26 +782,20 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // wire before this landed: 7115 with the shot on target, 7120 with
     // it nine metres off.
     //
-    // A ROUND THAT HIT DETONATES ON THE SURFACE it touched; one that
-    // missed detonates where it actually passed. The two agree at the
-    // boundary, and `detonation_of_miss` is built so that its distance
-    // back to the aimed body IS `aim_offset` — so this cannot move the
-    // aimed body's number, which is asserted in `space`.
+    // Hits use the model's facing surface; misses use the 3D ray's closest point.
     let det = if pellet_lands {
         crate::rules::space::Detonation {
             at: crate::rules::space::detonation_point(params.target_at, params.player_at),
             height_m: 0.0,
         }
     } else {
-        crate::rules::space::detonation_of_miss(
+        off_axis_miss.unwrap_or_else(|| crate::rules::space::detonation_of_miss(
             crate::rules::space::muzzle(params.player_at, params.aim_point()),
             params.aim_point(),
             params.target_at,
-            range,
-            off_axis,
             dev,
             phi,
-        )
+        ))
     };
     if pellet_lands {
         *landed_this_shot = true;

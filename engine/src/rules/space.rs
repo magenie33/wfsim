@@ -179,47 +179,8 @@ pub fn off_axis_deg(muzzle: Vec2, aim_at: Vec2, body: Vec2) -> f64 {
     cos.acos_portable().to_degrees()
 }
 
-/// WHERE A PELLET PASSES a body, when the weapon is not pointed at it.
-///
-/// The cone is around the AIM line and the body sits `off_axis` degrees off it,
-/// so the two offsets are added as VECTORS in the plane the shot crosses, with
-/// the pellet's direction around the cone uniform. `phi` is that direction, in
-/// turns.
-///
-/// Pointed straight at the body (`off_axis == 0`) it collapses to
-/// [`miss_distance`] exactly and reads no `phi` — which is what keeps every
-/// fight this engine has ever run byte-identical, and why the caller draws
-/// `phi` only when it is going to be used.
-#[wfsim_gas_macro::metered]
-pub fn miss_distance_off_axis(range_m: f64, off_axis_deg: f64, deviation_deg: f64, phi: f64) -> f64 {
-    if off_axis_deg <= 0.0 {
-        return miss_distance(range_m, deviation_deg);
-    }
-    let a = miss_distance(range_m, off_axis_deg);
-    let b = miss_distance(range_m, deviation_deg);
-    let c = (phi * std::f64::consts::TAU).cos_portable();
-    (a * a + b * b - 2.0 * a * b * c).max(0.0).sqrt()
-}
-
-/// WHERE THE PELLET ACTUALLY WENT OFF, when it did not hit anything.
-///
-/// A FLOOR POINT AND A HEIGHT, because the arena is a plane and the spread cone
-/// is not. Only the cone's IN-FLOOR component moves the epicentre across the
-/// arena; the rest is how far over or under the shot went, a real distance to
-/// every body on the floor that belongs in the range.
-///
-/// WHY IT EXISTS. [`miss_distance_off_axis`] answers "how far did it pass the
-/// aimed body", which is the whole question while a fight holds ONE body. With
-/// a crowd the SIDE decides who is in the blast, and without this every other
-/// body reads its distance from the AIMED BODY'S SURFACE however wide the shot
-/// went: a shot nine metres wide dropped the aimed body's damage 61% and left
-/// the body two metres behind it on 7120 against 7115.
-///
-/// IT CANNOT MOVE THE AIMED BODY'S NUMBER by construction: with the body at
-/// `O + a·û` and the pellet at `O + b·cos(2πφ)·û + b·sin(2πφ)·v̂` the distance
-/// between them is `√(a² + b² − 2ab·cos 2πφ)`, which is
-/// [`miss_distance_off_axis`] exactly — that formula's two vectors kept apart
-/// rather than collapsed into their difference.
+/// An explosion's floor projection and height above the target-centre plane.
+/// Vertical scatter remains a distance to every body in the arena.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Detonation {
     /// Where it went off, on the floor.
@@ -239,57 +200,31 @@ impl Detonation {
     }
 }
 
-/// Build the detonation for a pellet that left `deviation_deg` off the aim
-/// line, `phi` turns around the cone.
-///
-/// `toward` is the body the offsets are measured against — the û axis points at
-/// it, which is what makes `phi` mean the same angle it means in
-/// [`miss_distance_off_axis`]. When the weapon points straight at that body the
-/// axis is any perpendicular and the answer is symmetric in `phi`, so the
-/// choice does not matter; it is taken from the aim line so it is never
-/// undefined.
+/// Closest point on the actual 3D ray: Q=M+max(dot(T-M,D),0)*D.
+/// `phi` starts on the aim line's fixed in-plane perpendicular; a quarter turn
+/// is vertical. The basis does not turn toward whichever body is being tested.
+/// Missed explosives use this point as their arena detonation convention.
 #[wfsim_gas_macro::metered]
 pub fn detonation_of_miss(
     muzzle: Vec2,
     aim_at: Vec2,
     toward: Vec2,
-    range_m: f64,
-    off_axis_deg: f64,
     deviation_deg: f64,
     phi: f64,
 ) -> Detonation {
     let (ax, ay) = (aim_at.x - muzzle.x, aim_at.y - muzzle.y);
     let la = ax.hypot_portable(ay);
     if la <= 0.0 {
-        return Detonation { at: toward, height_m: 0.0 };
+        return Detonation { at: muzzle, height_m: 0.0 };
     }
-    let dir = Vec2::new(ax / la, ay / la);
-    // THE ORIGIN IS THE BODY'S FOOT ON THE AIM RAY, not the ray's point at
-    // `range_m`. `a` in the scalar is a PERPENDICULAR distance
-    // (`range_m · sin θ`), so the station it is measured at is `range_m · cos θ`
-    // along the ray — using `range_m` there instead was wrong by
-    // `range_m(1 − cos θ)` and showed up the moment the weapon was pointed off
-    // the body at all.
-    let (sin_o, cos_o) = off_axis_deg.to_radians().sin_cos_portable();
-    let along = range_m * cos_o;
-    let o = Vec2::new(muzzle.x + dir.x * along, muzzle.y + dir.y * along);
-    // …and the in-floor perpendicular, oriented TOWARD the body so that `phi`
-    // is measured from the same direction the scalar formula measures it from.
-    let mut u = Vec2::new(-dir.y, dir.x);
-    if (toward.x - o.x) * u.x + (toward.y - o.y) * u.y < 0.0 {
-        u = Vec2::new(-u.x, -u.y);
-    }
-    // THE BODY, RECONSTRUCTED rather than read: `o + a·û` is where the scalar
-    // believes it stands, and the epicentre has to be placed in the scalar's
-    // own frame or the two stop agreeing. They differ only by the plane model's
-    // own approximation, which is not this function's to correct.
-    let a = range_m * sin_o;
-    let b = miss_distance(range_m, deviation_deg);
-    let (s, c) = (phi * std::f64::consts::TAU).sin_cos_portable();
-    let base = Vec2::new(o.x + u.x * a, o.y + u.y * a);
+    let (fx, fy) = (ax / la, ay / la);
+    let (sd, cd) = deviation_deg.to_radians().sin_cos_portable();
+    let (sp, cp) = (phi * std::f64::consts::TAU).sin_cos_portable();
+    let (dx, dy, dz) = (fx * cd - fy * sd * cp, fy * cd + fx * sd * cp, sd * sp);
+    let along = ((toward.x - muzzle.x) * dx + (toward.y - muzzle.y) * dy).max(0.0);
     Detonation {
-        at: Vec2::new(base.x + u.x * (b * c - a), base.y + u.y * (b * c - a)),
-        height_m: (b * s).abs(),
+        at: Vec2::new(muzzle.x + dx * along, muzzle.y + dy * along),
+        height_m: (dz * along).abs(),
     }
 }
 
@@ -1212,70 +1147,43 @@ mod tests {
         // Degenerate inputs answer zero rather than NaN.
         assert_eq!(off_axis_deg(m, m, foe), 0.0);
 
-        // …AND THE OFFSET COLLAPSES TO THE ON-AXIS ONE when it is zero, at
-        // every phi, which is the property the old numbers rest on.
         for phi in [0.0, 0.25, 0.5, 0.7] {
-            assert_eq!(miss_distance_off_axis(20.0, 0.0, 2.0, phi), miss_distance(20.0, 2.0));
+            let projected = detonation_of_miss(m, foe, foe, 2.0, phi);
+            assert!((projected.distance_to(foe) - miss_distance(10.0, 2.0)).abs() < 1e-12);
         }
-        // Off axis it is a vector sum: pointing 2 degrees away and deviating 2
-        // degrees BACK lands on the body, and deviating 2 degrees further out
-        // doubles the miss.
-        let back = miss_distance_off_axis(20.0, 2.0, 2.0, 0.0);
-        let away = miss_distance_off_axis(20.0, 2.0, 2.0, 0.5);
-        assert!(back < 1e-9, "{back}");
-        assert!((away - 2.0 * miss_distance(20.0, 2.0)).abs() < 1e-9, "{away}");
+        let angle = 2.0_f64.to_radians();
+        let foe = Vec2::new(-20.0 * angle.sin(), 20.0 * angle.cos());
+        let aim = Vec2::new(0.0, 20.0);
+        let back = detonation_of_miss(m, aim, foe, 2.0, 0.0);
+        let away = detonation_of_miss(m, aim, foe, 2.0, 0.5);
+        assert!(back.distance_to(foe) < 1e-9);
+        assert!((away.distance_to(foe) - miss_distance(20.0, 4.0)).abs() < 1e-9);
     }
 
-    /// THE THREE BLAST RULES, which are one idea: a body is a CIRCLE and a
-    /// blast meets it at its nearest surface.
-    /// THE DETONATION AND THE SCALAR ARE ONE MODEL, and this is the property
-    /// that says so: however wide the shot and whichever way it went, the
-    /// distance from the epicentre to the AIMED body is the miss distance the
-    /// engine has always computed. So giving the crowd a real epicentre cannot
-    /// move the aimed body's number — the two are the same two vectors, kept
-    /// apart instead of collapsed.
     #[test]
-    fn a_detonation_is_the_miss_distance_it_came_from() {
+    fn a_detonation_is_the_closest_point_on_the_spread_ray() {
         let shooter = Vec2::new(0.0, 0.5);
         for &(bx, by) in &[(0.0, 10.0), (3.0, 10.0), (-4.0, 7.0), (0.2, 25.0)] {
             let body = Vec2::new(bx, by);
             for &aim in &[body, Vec2::new(2.0, 10.0), Vec2::new(-5.0, 9.0)] {
-                // The caller's own two steps: the shot leaves the MUZZLE, and
-                // the range is measured from the shooter (which steps to the
-                // muzzle itself — handing it one subtracts a radius twice).
                 let muzzle = muzzle(shooter, aim);
-                let range = range_to_centre(shooter, body);
-                let off = off_axis_deg(muzzle, aim, body);
-                for dev in [0.0, 1.0, 5.0, 20.0] {
+                let (ax, ay) = (aim.x - muzzle.x, aim.y - muzzle.y);
+                let length = ax.hypot(ay);
+                for dev in [0.0_f64, 1.0, 5.0, 20.0] {
                     for phi in [0.0, 0.125, 0.25, 0.5, 0.75, 0.9] {
-                        let d = detonation_of_miss(muzzle, aim, body, range, off, dev, phi);
-                        let scalar = miss_distance_off_axis(range, off, dev, phi);
-                        // EXACT where the weapon points AT the body, which is
-                        // every fight this engine ran before aim became a place
-                        // you choose — so no existing number can move.
-                        //
-                        // Pointed ELSEWHERE the two differ by about a
-                        // millimetre, and it is the SCALAR that is loose: it
-                        // uses `range_m` as the lever for an angle measured at
-                        // the muzzle, while the muzzle steps toward the AIM
-                        // rather than toward the body. Reconstructing the frame
-                        // does not inherit that, and the difference is four
-                        // orders of magnitude under the resolution of anything
-                        // this engine is calibrated against.
-                        // …and RELATIVE past that, because the gap grows with
-                        // the angle. THE EXACT ARM IS THE ONE THAT MATTERS —
-                        // it is every fight before aim became a place, so this
-                        // test's real job is to pin that at 1e-9. Off-axis it
-                        // only confirms the two stay the same model: the worst
-                        // case in this grid is 1.27%, at 49 degrees off with a
-                        // 20 degree cone, which is a shot pointed nowhere near
-                        // the body it is being measured against.
-                        let tol = if off <= 0.0 { 1e-9 } else { 0.02 * scalar.max(1.0) + 0.02 };
-                        assert!(
-                            (d.distance_to(body) - scalar).abs() < tol,
-                            "body {body:?} aim {aim:?} off {off} dev {dev} phi {phi}:                              detonation says {}, the scalar says {scalar}",
-                            d.distance_to(body),
-                        );
+                        let d = detonation_of_miss(muzzle, aim, body, dev, phi);
+                        let (sd, cd) = dev.to_radians().sin_cos();
+                        let (sp, cp) = (phi * std::f64::consts::TAU).sin_cos();
+                        let ray = [(ax * cd - ay * sd * cp) / length,
+                            (ay * cd + ax * sd * cp) / length, sd * sp];
+                        let t = ((body.x - muzzle.x) * ray[0] + (body.y - muzzle.y) * ray[1]).max(0.0);
+                        let expected = [muzzle.x + t * ray[0], muzzle.y + t * ray[1], t * ray[2]];
+                        assert!((d.at.x - expected[0]).abs() < 1e-10);
+                        assert!((d.at.y - expected[1]).abs() < 1e-10);
+                        assert!((d.height_m - expected[2].abs()).abs() < 1e-10);
+                        let delta = [body.x - d.at.x, body.y - d.at.y, -d.height_m];
+                        assert!((delta[0] * ray[0] + delta[1] * ray[1]
+                            - expected[2] * ray[2]).abs() < 1e-9);
                     }
                 }
             }
@@ -1293,17 +1201,43 @@ mod tests {
         let target = Vec2::new(0.0, 10.0);
         let bystander = Vec2::new(0.0, 12.0);
         let muzzle = muzzle(shooter, target);
-        let range = range_to_centre(shooter, target);
         // phi = 0 sends the pellet along the floor, away from the aim line.
-        let near = detonation_of_miss(muzzle, target, target, range, 0.0, 0.0, 0.0);
-        let wide = detonation_of_miss(muzzle, target, target, range, 0.0, 30.0, 0.0);
+        let near = detonation_of_miss(muzzle, target, target, 0.0, 0.0);
+        let wide = detonation_of_miss(muzzle, target, target, 30.0, 0.0);
         assert!(near.distance_to(bystander) < wide.distance_to(bystander),
             "a wide shot must be farther from the bystander: {} vs {}",
             near.distance_to(bystander), wide.distance_to(bystander));
         // …and straight up is still a real distance to everyone on the floor.
-        let over = detonation_of_miss(muzzle, target, target, range, 0.0, 30.0, 0.25);
+        let over = detonation_of_miss(muzzle, target, target, 30.0, 0.25);
         assert!(over.height_m > 1.0, "height {}", over.height_m);
         assert!(over.distance_to(bystander) > near.distance_to(bystander));
+    }
+
+    #[test]
+    fn spread_projection_retains_the_actual_three_dimensional_ray() {
+        let muzzle = Vec2::ORIGIN;
+        let body = Vec2::new(0.0, 10.0);
+        let over = detonation_of_miss(muzzle, body, body, 60.0, 0.25);
+        // D=(0, 1/2, sqrt(3)/2); the closest ray parameter is dot(T,D)=5.
+        assert!((over.at.y - 2.5).abs() < 1e-12, "{over:?}");
+        assert!((over.height_m - 5.0 * 3.0_f64.sqrt() / 2.0).abs() < 1e-12, "{over:?}");
+        assert!((over.distance_to(body) - 5.0 * 3.0_f64.sqrt()).abs() < 1e-12);
+
+        let behind = Vec2::new(0.0, -10.0);
+        let backwards = detonation_of_miss(muzzle, body, behind, 0.0, 0.0);
+        assert_eq!(backwards.at, muzzle, "a forward ray cannot approach a body behind its origin");
+        assert_eq!(backwards.distance_to(behind), 10.0);
+    }
+
+    #[test]
+    fn vertical_scatter_cannot_be_flattened_into_a_hit_on_the_floor() {
+        let muzzle = Vec2::ORIGIN;
+        let body = Vec2::new(0.0, 20.0);
+        for phase in [0.0, 0.25, 0.5, 0.75] {
+            let projected = detonation_of_miss(muzzle, body, body, 2.0, phase);
+            assert!((projected.distance_to(body) - miss_distance(20.0, 2.0)).abs() < 1e-10);
+            assert!(projected.distance_to(body) > BODY_RADIUS_M);
+        }
     }
 
     #[test]

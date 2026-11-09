@@ -3307,8 +3307,9 @@ facing is DERIVED rather than stored — you are looking at what you are shootin
 at — so aiming at a second target turns the shooter and there is no third piece
 of state to keep in sync.
 
-**HITTING THE CIRCLE IS A HIT**, which makes the question ray-versus-circle and
-nothing more. A pellet that leaves θ degrees off the aim line passes
+The body proxy has a circular cross-section of radius `r`. Its centre is on
+the arena plane; the shot retains a three-dimensional direction. When aimed
+at that centre, a pellet leaving θ degrees off the aim line passes
 
 ```
 miss = range · sin(θ)           hit ⟺ miss ≤ r
@@ -3380,9 +3381,10 @@ rounding; native seed setup and cross-call correlations are uncalibrated.
 Those profiles select their declared hip or aimed resting range from the
 Tenno's aiming state. Native `WEAPON_SPREAD` upgrades reduce each endpoint by
 `max(1 - accuracy_bonus, 0)`; the added-spread term follows that scaling.
-Attuned Accuracy requires aiming. Live growth, recovery, smoothing, special
-emitters and camera transforms remain unmodelled. The fixed-reticle contract
-compensates camera recoil and retains intrinsic spread.
+Attuned Accuracy requires aiming. Live growth, recovery, smoothing and special
+emitters remain unmodelled. The default fixed-reticle contract perfectly
+compensates camera recoil, which does not reduce hit rate. Intrinsic spread
+still applies.
 
 ## 12. BEAM CHAINING — the mechanic a second target turns on
 
@@ -3514,20 +3516,31 @@ nothing** it goes off at ONE point, and every body reads its distance from it:
   perfectly. With ONE body the two readings coincide, so only a crowd tells
   them apart.
 
-`space::detonation_of_miss` places it and invents nothing: the model already
-draws how far the pellet deviated and, when the weapon points off the body, which
-way around the cone it went. Collapsed into one scalar they lose the side; kept
-apart they are a **point on the floor plus a height** — the cone's
-cross-section is a disc, only its in-floor part moves the epicentre across the
-arena, and the rest is how far over or under the shot went, which is a real
-distance to everyone standing on the floor.
+`space::detonation_of_miss` places the miss at the closest point on the actual
+three-dimensional ray. For muzzle `M`, target centre `T` and unit direction `D`:
 
-**IT CANNOT MOVE THE AIMED BODY'S NUMBER**, by construction rather than by care:
-with the body at `O + a·û` and the pellet at `O + b·cos(2πφ)·û + b·sin(2πφ)·v̂`,
-the distance between them is `√(a² + b² − 2ab·cos 2πφ)`, which is
-`miss_distance_off_axis` exactly. That identity is asserted at `1e-9` wherever
-the weapon points at the body — which is every fight the engine ran before aim
-became a place you choose, and every board ruler, since none sets an aim point.
+```
+t = max(dot(T - M, D), 0)
+Q = M + t * D
+miss = length(T - Q)
+```
+
+The direction is formed in a fixed basis: forward along the aim line,
+horizontal perpendicular to it, and vertical. Testing a body on either side
+does not rotate that basis. `Q` is retained as a plane point plus height above
+the target-centre plane. Every blast distance includes that height; dropping
+it would let vertical misses hit bodies on their floor projection.
+
+When aimed at the target, the miss distance reduces to `range * sin(theta)`.
+Off axis, the same projected point supplies both the direct-hit distance and
+the missed blast's position, using the actual muzzle-to-target vector. The
+nonnegative ray parameter prevents a shot from approaching a target behind
+its origin. Native Cartesian vectors and analytic ray cases pin this mapping.
+
+Closest approach is the arena's convention for missed explosive placement.
+Terrain collisions and ballistic ground impacts are unmodelled. Landed hits
+retain the facing-surface convention; the body is a shared radius proxy and
+head/body-part sampling remains a separate input, without a 3D silhouette.
 
 **The stage runs whenever the blast reaches ANYBODY**, not only the aimed body,
 so the bodies standing where it actually landed take it. Its gate compares

@@ -81,6 +81,24 @@ fn primary_sampler_geometry_reproduces_bounded_native_directions() {
         let phi = phase * std::f64::consts::TAU;
         assert!((slope * phi.cos() - x / z).abs() < 5e-7, "{row}: horizontal");
         assert!((slope * phi.sin() - y / z).abs() < 5e-7, "{row}: vertical");
+        // Native Cartesian directions independently pin the arena projection.
+        for turn in [0.0_f64, 0.7, 2.1] {
+            let (fy, fx) = turn.sin_cos();
+            let muzzle = crate::rules::space::Vec2::new(0.3, -0.2);
+            let aim = crate::rules::space::Vec2::new(muzzle.x + fx, muzzle.y + fy);
+            let norm = x.hypot(y).hypot(z);
+            let ray = [(fx * z - fy * x) / norm, (fy * z + fx * x) / norm, y / norm];
+            for (forward, sideways) in [(20.0, 0.0), (17.0, 4.0), (10.0, -8.0), (-5.0, 1.0)] {
+                let body = crate::rules::space::Vec2::new(muzzle.x + fx * forward - fy * sideways,
+                    muzzle.y + fy * forward + fx * sideways);
+                let t = ((body.x - muzzle.x) * ray[0] + (body.y - muzzle.y) * ray[1]).max(0.0);
+                let expected = [muzzle.x + t * ray[0], muzzle.y + t * ray[1], (t * ray[2]).abs()];
+                let projected = crate::rules::space::detonation_of_miss(muzzle, aim, body, dev, phase);
+                assert!((projected.at.x - expected[0]).abs() < 5e-5, "{row}: floor x");
+                assert!((projected.at.y - expected[1]).abs() < 5e-5, "{row}: floor y");
+                assert!((projected.height_m - expected[2]).abs() < 5e-5, "{row}: height");
+            }
+        }
         checked += 1;
     }
     assert_eq!(checked, 126);

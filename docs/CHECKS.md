@@ -2684,6 +2684,10 @@ vectors check angle and Cartesian direction within float32 rounding; they do
 not claim native seed identity. Beam tests distinguish time-state cooldown
 from normalized cooldown. Legacy cone sampling and display-rounded RPM fail
 the rebuilt source checks.
+The 126 native Cartesian directions also pin 1,512 projection cases across
+rotated aim axes and targets on either side or behind the muzzle. Analytic
+space tests check closest approach, retained vertical scatter and forward-ray
+clamping; the wide-angle projection test must reject the transverse approximation.
 
 Engine source regressions bind imported refire rules and claw vectors to the
 closed client fixture and check native cadence vectors at their float32 nodes.
