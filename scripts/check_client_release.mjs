@@ -70,7 +70,7 @@ try {
   const node = publish.match(/node-version:\s*['"]?(\d+)\.(\d+)\.(\d+)/);
   assert(node && (+node[1] > 22 || +node[1] === 22 && +node[2] >= 14), 'trusted publishing needs Node 22.14 or later');
   assert(publish.includes('id-token: write') && publish.includes('environment: release'));
-  assert(publish.includes("if: github.ref == 'refs/heads/main'"));
+  assert(publish.includes("!inputs.cors_only && github.ref == 'refs/heads/main'"));
   assert(!publish.includes('NPM_TOKEN') && !publish.includes('NODE_AUTH_TOKEN'), 'npm publication uses the workflow identity');
   ok('trusted publishing has a supported npm and preserves main/environment protection without a token secret');
   const pkg = JSON.parse(readFileSync('client/npm/package.json', 'utf8'));
