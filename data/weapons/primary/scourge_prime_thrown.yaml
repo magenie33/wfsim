@@ -13,21 +13,9 @@ transform_group: scourge_prime
 
 introduced: "Update 31.0"
 noise: silent               # the throw is SILENT where the primary fire is ALARMING
-# ONE THROW IS ONE MAGAZINE. The throw's cycle is WIND-UP → release → RELOAD,
-# every time — "Throwing the spear consumes 1 ammo, then reloads the weapon" is
-# unconditional, not a magazine running dry. So this entry's
-# magazine is 1 and the 0.6 s lands after every throw, which is the same shape a
-# bow's nock has here (`cernos_prime.yaml`; engine/src/fight/: "the cycle is charge +
-# reload however the two are ordered"). The 40 rounds belong to the PRIMARY FIRE
-# entry, which is the attack that spends them.
-#
-# The wind-up is `1 / fire_rate` = 1.0 s at base and shortens with fire-rate
-# bonuses, so the cycle is 1.0 + 0.6 = 1.6 s and a fire-rate mod buys only the
-# wind-up's share of it. Magazine mods are inert by construction: a reload draws
-# `floor(capacity − current)` whole rounds, so a 1.66-round capacity still loads
-# one.
+# One throw is one magazine. The reported sequence is wind-up, release, reload;
+# each bound state supplies its own parsed reload time (M43 provenance).
 magazine: 1
-reload_seconds: 0.6
 
 # CONDITION OVERLOAD — MULTIPLYING, and this entry is the one the catalog
 # names. Verbatim, both rows of the pair:
@@ -47,6 +35,8 @@ co_behavior: independent
 
 # Source/runtime limits are shared in client_scourge_inputs.
 unmodeled:
+  - reason: client_projectile_acceleration
+  - reason: client_projectile_callbacks
   - reason: client_scourge_throw
   - reason: client_scourge_field
   - reason: client_accuracy_runtime
@@ -65,7 +55,7 @@ attack:
       hip_max_deg: 18
   trigger: semi
   shot_type: projectile
-  projectile_speed_mps: 150
+  projectile_speed_mps: 90
   fire_rate: 1.0
   multishot: 1.0
   ammo_cost: 1
@@ -75,8 +65,8 @@ attack:
   punch_through_m: 0.0
   damage: { impact: 140, puncture: 30, slash: 30 }   # total 200
 
-  # M42 retains the target debuff; spatial field/steering consumers are unmodelled.
-  attractor_seconds: 4.7
+  # Parsed attractor lifetime; spatial field/steering consumers are unmodelled.
+  attractor_seconds: 5
 
   # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
   #   Attack Name   Throw + AoE            Base Radius   7.0 m
@@ -122,3 +112,5 @@ source:
   # wiki module `Attacks[].AttackName`: "Spear Throw" and "Spear Explosion".
 
 # see notes: client_scourge_inputs
+
+# see notes: client_primary_calibration

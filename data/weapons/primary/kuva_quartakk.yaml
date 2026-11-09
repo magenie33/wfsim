@@ -44,8 +44,13 @@ attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data. Tighter than the hip-fire's, which is the point of it.
   spread:
-    min_deg: 1
+    min_deg: 1.0
     max_deg: 1.2
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 12.0
+      hip_max_deg: 22.0
   trigger: burst
   # FOUR ROUNDS A PULL, and `fire_rate` counts PULLS — the guard exists because
   # a burst weapon without this block understates itself by its burst count.
@@ -56,7 +61,7 @@ attack:
     count: 4
     delay_seconds: 0.0
   shot_type: hit_scan
-  fire_rate: 1.58
+  fire_rate: 1.58333333333333
   # FOUR ROUNDS AT ONCE. "Aimed fire shoots four rounds simultaneously in a
   # burst", and the page adds why that is not the same as four fast shots: "All
   # four shots fire simultaneously (reduces miss chance vs. consecutive fire)".
@@ -77,3 +82,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Quartakk
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

@@ -46,7 +46,7 @@ attack:
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 160
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   charge_seconds: 0.5
   multishot: 10.0
   ammo_cost: 1
@@ -58,7 +58,11 @@ attack:
   damage: { impact: 7, puncture: 7, slash: 56 }   # 70 a pellet, 700 a shot
 
 unmodeled:
+  - reason: client_special_spread
+  - reason: client_accuracy_runtime
   - "Shots ricochet once (wiki), which reaches enemies behind cover; there are no walls here."
 
 source:
   url: https://wiki.warframe.com/w/Drakgoon
+
+# see notes: client_primary_calibration

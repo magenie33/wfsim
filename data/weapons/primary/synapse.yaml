@@ -24,7 +24,7 @@ introduced: "10.0"
 internal_name: /Lotus/Weapons/Infested/LongGuns/InfestedRifle
 noise: alarming
 ammo_type: primary
-ammo_max: 540
+ammo_max: 560
 ammo_pickup: 80
 magazine: 70
 reload_seconds: 1.5
@@ -74,5 +74,15 @@ attack:
 # back to 20% over 2 seconds", which is BEAM_RAMP_SECONDS, BEAM_DECAY_DELAY and
 # the 20% floor exactly.
 
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
 source:
   url: https://wiki.warframe.com/w/Synapse
+beam_ramp_floor: 0.2
+
+unmodeled:
+  - reason: client_beam_target_ramp
+
+# see notes: client_primary_calibration

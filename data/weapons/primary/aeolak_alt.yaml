@@ -20,6 +20,11 @@ attack:
   spread:
     min_deg: 8.0
     max_deg: 15.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 8.0
+      hip_max_deg: 15.0
   trigger: charged_auto
   shot_type: projectile
   projectile_speed_mps: 60
@@ -55,8 +60,11 @@ attack:
     damage: { blast: 789 }   # total 789
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Aeolak
+
+# see notes: client_primary_calibration

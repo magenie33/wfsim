@@ -31,8 +31,11 @@ attack:
   damage: { impact: 10, puncture: 10, slash: 80 }   # total 100
 
 unmodeled:
+  - reason: client_ammo_runtime
   - "The sawblade is deployed 6 m in front of the wielder and stays there; the engine fires it like a beam at the target, so if the enemy is not on that spot the number reads high."
   - "It uses ammo only when dealing damage (wiki); reserves are infinite here, so this changes nothing."
 
 source:
   url: https://wiki.warframe.com/w/Panthera
+
+# see notes: client_primary_calibration

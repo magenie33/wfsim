@@ -40,10 +40,15 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 7
+    max_deg: 7.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 13.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 4.17
+  fire_rate: 4.16666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -70,3 +75,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Latron
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

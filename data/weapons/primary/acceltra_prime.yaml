@@ -44,6 +44,11 @@ attack:
   spread:
     min_deg: 1.5
     max_deg: 7.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 1.5
+      hip_max_deg: 7.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 70
@@ -82,7 +87,14 @@ attack:
     takes_blast_radius_mods: true
     damage: { puncture: 42.4, slash: 10.6 }   # total 53
 
+  falloff:
+    start_m: 40.0
+    end_m: 60.0
+    reduction: 0.204545454545
 unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_projectile_acceleration
+  - reason: client_accuracy_runtime
   - "The rockets arm only after 7 m (wiki); closer, they hit without exploding. The sim applies the explosion at every range, so a fight set inside 7 m reads high by the whole explosion, most of the weapon."
   - "Reloading while sprinting gives +25% reload speed (+50% on Gauss); nobody moves here, so the reload is always the standing one."
   - reason: explosion_ignores_cover
@@ -90,3 +102,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Acceltra_Prime
+
+# see notes: client_primary_calibration

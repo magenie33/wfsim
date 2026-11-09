@@ -28,5 +28,15 @@ attack:
   # see notes: no_range_row_attack
   damage: { electricity: 12 }   # 12 a pellet, 24 a shot
 
+  range_m: 9
 source:
   url: https://wiki.warframe.com/w/Basmu
+battery:
+  regen_per_second: 42.0
+  delay_empty_seconds: 2.0
+  delay_partial_seconds: 0.2
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

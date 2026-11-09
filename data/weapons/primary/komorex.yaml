@@ -46,7 +46,12 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 10
+    max_deg: 10.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 15.0
+      hip_max_deg: 25.0
   trigger: semi_auto
   shot_type: projectile
   fire_rate: 5.0
@@ -80,10 +85,17 @@ attack:
     crit_chance: 0.16
     crit_multiplier: 2.1
     status_chance: 0.34
+  falloff:
+    start_m: 400.0
+    end_m: 600.0
+    reduction: 0.546391761649
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: sniper_combo_miss
     seconds: 2
   - "The second zoom level is not modelled. On this weapon it is a trade, not a buff: 3.5x gives +100% damage, +3 m explosion radius and -75% fire rate, half the sustained DPS for a much bigger single hit. This entry is the first level."
   - "The first zoom's -50% recoil and +2 m punch through are not read here."
 source:
   url: https://wiki.warframe.com/w/Komorex
+
+# see notes: client_primary_calibration

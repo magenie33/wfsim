@@ -62,7 +62,11 @@ attack:
   damage: { viral: 5 }   # 5 a beam, 35 a tick
 
 unmodeled:
+  - reason: client_special_spread
+  - reason: client_accuracy_runtime
   - "From the hip the seven beams spread; aiming focuses them on the crosshair (wiki). The sim aims, so all seven land: the ceiling against one enemy."
 
 source:
   url: https://wiki.warframe.com/w/Phage
+
+# see notes: client_primary_calibration

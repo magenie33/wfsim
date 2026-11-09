@@ -135,20 +135,13 @@ fn a_weapon_deals_nothing_past_its_range() {
         run_once(&p, &mut Rng::new(0x5EED)).effective_damage()
     };
 
-    // THE BASE IS 20 m AND THE PRIME IS 25 — the wiki's own numbers, and
-    // the one edge the Prime has over it.
-    assert!(at("phantasma", 19.0) > 0.0, "19 m is inside 20");
-    assert!(at("phantasma", 20.0) > 0.0, "the wall is inclusive");
-    assert_eq!(at("phantasma", 21.0), 0.0, "21 m is past 20 and must be nothing");
-    assert!(at("phantasma_prime", 21.0) > 0.0, "the Prime reaches 25");
-    assert_eq!(at("phantasma_prime", 26.0), 0.0, "26 m is past 25");
-    // NO TAPER: the beams deal full damage right up to the wall, so the
-    // number at 1 m and at 19 m is the same one.
-    assert!(
-        (at("phantasma", 1.0) - at("phantasma", 19.0)).abs() < 1e-9,
-        "no damage falloff means no damage falloff: {} at 1 m against {} at 19 m",
-        at("phantasma", 1.0), at("phantasma", 19.0),
-    );
+    // Parsed trace reaches are 19 m and 23 m. The wall includes its endpoint.
+    for (id, reach) in [("phantasma", 19.0), ("phantasma_prime", 23.0)] {
+        assert!(at(id, reach - 1.0) > 0.0, "{id}: inside the wall");
+        assert!(at(id, reach) > 0.0, "{id}: the wall is inclusive");
+        assert_eq!(at(id, reach + 1.0), 0.0, "{id}: past the wall");
+        assert!((at(id, 1.0) - at(id, reach)).abs() < 1e-9, "{id}: no taper before the wall");
+    }
     // THE NEGATIVE CONTROL. A weapon that declares no range is unlimited,
     // which is what every weapon in this engine was until today — so this
     // must not have quietly become a cap on the whole roster.

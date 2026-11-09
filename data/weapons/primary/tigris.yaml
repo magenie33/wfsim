@@ -37,6 +37,11 @@ attack:
   spread:
     min_deg: 6.0
     max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 12.0
+      hip_max_deg: 22.0
   trigger: duplex
   shot_type: hit_scan
   fire_rate: 2
@@ -57,3 +62,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Tigris
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

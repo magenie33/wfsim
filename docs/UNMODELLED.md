@@ -524,6 +524,44 @@ These are things the engine COULD do today and deliberately does not, because
 doing them means inventing a play pattern. The repo's rule is that a policy is
 the owner's call, not the model's (the 99-stack decision).
 
+### Primary client calibration — remaining consumers
+
+Every primary form has an explicit source binding and adopted-field receipt in
+`tests/fixtures/client/primary-calibration-2026-10-28.json`. Coverage of these inputs
+does not establish complete runtime or in-game calibration. Supported ordinary
+damage, rates, charge, reload and generic sampler inputs are applied; the register
+below is scoped to the affected entries through structured reason ids.
+
+- `client_accuracy_runtime`: resting hip/aim envelopes; growth, recovery,
+  smoothing and emission order remain unmodelled. Perfect recoil compensation
+  holds the reticle steady and is the default player model.
+- `client_special_spread`: fan, first-pellet and charge-dependent emission.
+- `client_beam_target_ramp`: shared ramp progress instead of target-local state.
+- `client_spool_pellets` and `client_rate_spool`: a declared pellet stage and
+  shot-count ramp span; native counter cadence and reset remain unverified.
+- `client_clip_burst`: base-magazine burst length rather than dynamic capacity.
+- `client_ammo_runtime` and `client_forced_reload`: zero-ammo state/script
+  debits and forced reloads retain their declared cycle approximation.
+- `client_falloff_runtime`: an absolute floor above the direct packet's base
+  does not establish the active damage-falloff consumer.
+- `client_projectile_collision` and `client_beam_trace_punch`: native collision
+  dimensions and trace depth do not establish unreviewed targeting consumers.
+- `client_projectile_callbacks`: unverified callback timing, scaling and effects.
+- `client_projectile_acceleration`: the declared constant-flight approximation.
+- `client_radial_critical`: published radial critical rules while the native
+  packet's critical-upgrade consumer remains unverified.
+- `client_composite_attack`: beacon/merged-orb components remain distinct from
+  launch packets. Raw launch statistics are not applied to those composites.
+- `client_modular_assembly`: all primary chamber overrides are bound, but native
+  runtime part composition is unverified; published assembly tables remain.
+- `client_battery_defaults`: absent defaults or script-driven recharge retain
+  the declared recharge convention. A bow's battery flag does not replace its
+  separate nock timer.
+
+These limits supplement each weapon's existing specific admissions. The 3D
+direction sampler projects its ray into the arena plane with height retained;
+human silhouettes and a spread-driven headshot model remain outside that geometry.
+
 ### Scourge and Scourge Prime — source bindings and open consumers
 
 `tests/fixtures/client/scourge-2026-10-28.json` binds both behaviors, each direct
@@ -534,18 +572,18 @@ Primary collision remains a ray. The native wave projectile declares both
 InitialWidth and InitialRadius; their collision consumer is unreviewed, so
 neither is silently adopted as the engine's projectile width.
 
-The thrown entry retains the M43 cycle: 1.0 s of wind-up plus 0.6 s of reload,
-with one throw per magazine. `LotusSpearGunStateBehavior.reloadTime` is not a
-measurement of that whole sequence and does not replace it. M42 owns removal of
-the old field at the next throw's start and persistence of its applied debuff.
-The current target convention remains a 4.7 s CO status applied after the throw's
-pellets; it does not change the scenario's headshot rate.
+The thrown entry keeps one throw per magazine and the wind-up/reload sequence.
+Parsed calibration adopts each bound state's reload time and attractor
+`LifeSpan=5` for the target-only CO approximation. M42/M43 preserve their original
+observations separately from this source-derived timing. Removal of the old field
+at the next throw's start does not remove the target debuff; the approximation
+does not change the scenario's headshot rate.
 
 The package declares separate normal and charged projectile records; those
 names do not establish two player-accessible attacks. Prime records
 contain 200 damage at 90 m/s and 300 damage at 150 m/s; their live selector is
-unreviewed. The wiki throw line supplies the retained 150 m/s travel convention,
-while the damage matches the normal candidate. Gravity, speed decay and the
+unreviewed. Prime adopts the normal candidate's 90 m/s; acceleration-affected
+flight retains a declared constant-speed approximation. Gravity, speed decay and the
 throw's `IgnoreFireIterations` consumer remain unmodelled; multishot currently
 uses separate damage instances. These limitations are `client_scourge_throw`.
 

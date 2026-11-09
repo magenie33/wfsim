@@ -24,11 +24,12 @@ gauge_form:
     resource: incarnon_charges
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
-  transmute_in_seconds: 5      # = base reload time, unmodded
+  # see notes: incarnon_package_transition_time
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 0.6
 
 pseudo_reload:
   magazine: 40
-  reload_seconds: 6.0
 
 # see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
@@ -76,3 +77,8 @@ source:
   url: https://wiki.warframe.com/w/Strun_Incarnon_Genesis
   # wiki module `Attacks[].AttackName`: "Incarnon Form" and "Incarnon Form AoE"
 
+unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

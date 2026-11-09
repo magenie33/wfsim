@@ -37,9 +37,14 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 0.0
+      hip_max_deg: 20.0
   trigger: auto
   shot_type: hit_scan
-  fire_rate: 11.67
+  fire_rate: 11.6666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.28
@@ -59,8 +64,12 @@ attack:
     over_shots: 8.0
 
 unmodeled:
+  - reason: client_rate_spool
+  - reason: client_accuracy_runtime
   - "It needs 40 shots to reach full accuracy (wiki); this entry uses the settled spread, so an early burst is tighter here than in game."
   - reason: spool_rebuilds_after_reload
 
 source:
   url: https://wiki.warframe.com/w/Tenora
+
+# see notes: client_primary_calibration

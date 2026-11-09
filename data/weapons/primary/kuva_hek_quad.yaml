@@ -15,11 +15,16 @@ attack:
   # "Very low accuracy" — the cone is nearly twice the single barrel's and it
   # barely varies, which is what firing four spreads at once looks like.
   spread:
-    min_deg: 19
-    max_deg: 23
+    min_deg: 19.0
+    max_deg: 23.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 19.0
+      hip_max_deg: 23.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 1.17
+  fire_rate: 1.16666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   # TWENTY-EIGHT PELLETS: four barrels of seven, and the damage is PER PELLET.
   multishot: 28.0
@@ -29,7 +34,7 @@ attack:
   crit_multiplier: 2.1
   # PER PELLET — a quarter of the single barrel's, because the shot's total
   # status budget is spread over four times the pellets.
-  status_chance: 0.0332
+  status_chance: 0.0332142857142857
   punch_through_m: 0.3
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past. The
   # ALT-FIRE reaches far further than the single barrel — 1000 m against 300 —
@@ -42,11 +47,14 @@ attack:
   falloff:
     start_m: 15.0
     end_m: 30.0
-    reduction: 0.989
+    reduction: 0.988505747701
   damage: { impact: 13.05, puncture: 56.55, slash: 17.4 }   # 87 per pellet
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The alt-fire needs four rounds and reloads instead when there are fewer; the sim fires it whenever the mode is chosen, so a low magazine does not force a reload here."
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Hek
+
+# see notes: client_primary_calibration

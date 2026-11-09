@@ -37,6 +37,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 45
@@ -73,6 +78,8 @@ attack:
     damage: { viral: 1003 }   # total 1003
 
 unmodeled:
+  - reason: client_projectile_callbacks
+  - reason: client_accuracy_runtime
   - "The arrow also throws appendages that grab enemies within 9 m and drag them in, dealing 90 damage each (module). The engine carries one explosion per attack, so neither the pull nor the damage is counted."
   - reason: explosion_ignores_cover
   - reason: self_stagger
@@ -80,3 +87,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Proboscis_Cernos
+
+# see notes: client_primary_calibration

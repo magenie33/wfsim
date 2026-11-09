@@ -46,8 +46,8 @@ attack:
   trigger: charged_auto
   charge_seconds: 0.3
   shot_type: projectile
-  projectile_speed_mps: 150
-  fire_rate: 3.33
+  projectile_speed_mps: 130
+  fire_rate: 3.33333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.2
@@ -77,8 +77,11 @@ attack:
     damage: { heat: 120 }   # total 120
 
 unmodeled:
+  - reason: client_projectile_collision
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Javlok
+
+# see notes: client_primary_calibration

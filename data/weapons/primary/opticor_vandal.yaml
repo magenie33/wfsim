@@ -72,7 +72,8 @@ attack:
     status_chance: 0.3
     takes_multishot: false
     takes_blast_radius_mods: true
-    damage: { magnetic: 200 }   # total 200
+    damage:
+      magnetic: 200.0
     # see notes: catalog_says_aoe_part
     #
     #   Opticor Vandal | Charged Hitscan Radial Attack | Hitscan | 300 | 600 | 200% | Adding
@@ -85,9 +86,12 @@ attack:
     takes_condition_overload: true
 
 unmodeled:
+  - reason: client_radial_critical
   - "The wiki's Condition Overload catalog gives this weapon's radial its own row, 200% of its base; that row is not entered here yet, so the radial takes 100% and a status-stacking build reads low on it."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Opticor_Vandal
+
+# see notes: client_primary_calibration

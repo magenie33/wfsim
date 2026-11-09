@@ -65,17 +65,22 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 7.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 1.0
+      hip_max_deg: 7.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 57
-  fire_rate: 3.83
+  fire_rate: 3.83333333333333
   # Seven pellets, 41 damage apiece, 287 a shot — the same barrage the Coda
   # fires, and the same per-pellet vector.
   multishot: 7.0
   ammo_cost: 1
   crit_chance: 0.25
   crit_multiplier: 2.3
-  status_chance: 0.0929
+  status_chance: 0.0928571428571429
   # NO INNATE PUNCH THROUGH, where the CODA carries 1.9 m — the deepest in that
   # batch. One of the few places an adversary variant adds a mechanic.
   punch_through_m: 0.0
@@ -90,3 +95,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Bubonico
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

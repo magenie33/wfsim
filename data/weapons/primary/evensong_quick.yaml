@@ -15,9 +15,14 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: projectile
-  projectile_speed_mps: 85
+  projectile_speed_mps: 95
   fire_rate: 1
   charge_seconds: 0.0
   multishot: 1.0
@@ -31,3 +36,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Evensong
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

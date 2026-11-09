@@ -17,7 +17,6 @@ noise: silent               # the throw is SILENT where the primary fire is ALAR
 # throw is WIND-UP → release → RELOAD every time, so the magazine is 1 and the
 # 40 rounds belong to the primary-fire entry.
 magazine: 1
-reload_seconds: 0.6
 
 # CONDITION OVERLOAD — MULTIPLYING, and this entry is the one the catalog
 # names. Verbatim, both rows of the pair:
@@ -36,6 +35,8 @@ co_behavior: independent
 
 # Source/runtime limits are shared in client_scourge_inputs.
 unmodeled:
+  - reason: client_projectile_acceleration
+  - reason: client_projectile_callbacks
   - reason: client_scourge_throw
   - reason: client_scourge_field
   - reason: client_accuracy_runtime
@@ -64,8 +65,8 @@ attack:
   punch_through_m: 0.0
   damage: { impact: 105, puncture: 22.5, slash: 22.5 }   # total 150
 
-  # M42 retains the target debuff; spatial field/steering consumers are unmodelled.
-  attractor_seconds: 4.7
+  # Parsed attractor lifetime; spatial field/steering consumers are unmodelled.
+  attractor_seconds: 5
 
   # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
   #   Attack Name   Throw + AoE            Base Radius   7.0 m
@@ -111,3 +112,5 @@ source:
   # wiki module `Attacks[].AttackName`: "Spear Throw Impact" and "Spear Throw Explosion".
 
 # see notes: client_scourge_inputs
+
+# see notes: client_primary_calibration

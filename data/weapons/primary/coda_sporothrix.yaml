@@ -45,7 +45,7 @@ attack:
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 270
-  fire_rate: 1.83
+  fire_rate: 1.83333333333333
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -71,10 +71,17 @@ attack:
     crit_chance: 0.05
     crit_multiplier: 3.0
     status_chance: 0.55
+  falloff:
+    start_m: 400.0
+    end_m: 600.0
+    reduction: 0.736702117128
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: sniper_combo_miss
     seconds: 2
   - reason: zoom_steps
   - "The barb's 0.9 s eruption delay is not modelled: the explosion arrives with the shot, so a short fight gets its damage early."
 source:
   url: https://wiki.warframe.com/w/Coda_Sporothrix
+
+# see notes: client_primary_calibration

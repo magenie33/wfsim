@@ -1,0 +1,958 @@
+{
+  "client_build": "2026.10.28.09.54",
+  "batch_id": "20261106T160514Z-animation-incarnon-timing",
+  "manifest_sha256": "2d12018a10e8bd302c70bfc5ca09bfa04d8448d852fcbcada539a0faf7839e1e",
+  "switching_export_sha256": "a314823bf485865dcaabc38024322c6cb271352b60c08e75fc9003ac55a324fa",
+  "packages_bin_sha256": "e74b5477f645ff5298ba9e8678aa68e2b1e3f58e9a31b855891bf2ab5f353f2c",
+  "executable_sha256": "dae100202115919c89440c9ef320f691113ee8dcaf01205cbd180072c35aabdb",
+  "weapons": [
+    {
+      "internal_name": "/Lotus/Weapons/MK1Series/MK1Furis",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/MK1Series/MK1Kunai",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/MK1Series/MK1Paris",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/MK1Series/MK1Strun",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Bows/HuntingBow",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Bows/PrimeHuntingBow",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Bows/StalkerBow",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Rifle/Rifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Rifle/SemiAutoRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Rifle/BoltoRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Rifle/BurstRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Rifle/TennoAR",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Rifle/HeavyRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Rifle/StartingRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Rifle/TennoSniperRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Rifle/BratonPrime",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Rifle/LatronPrime",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Rifle/VIPRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/1999/Rusalka/LasFurisRusalka",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/ClanTech/Bio/BioWeapon",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistol/Pistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistol/HeavyPistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistol/BurstPistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistol/AutoPistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistol/HandShotGun",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistol/RevolverPistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistol/BroncoPrime",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistol/CoHLoanerPistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistol/LatoPrime",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistol/LatoVandal",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Shotgun/Shotgun",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Shotgun/FullAutoShotgun",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Shotgun/PrimeBoar",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Shotgun/ShotgunVandal",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/ClanTech/Energy/EnergyRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.69999999"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/ClanTech/Energy/DeraVandal",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.69999999"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tau/OrokinEmpire/TauDaxNinjaKunai",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tau/OrokinEmpire/TauDaxPrimeSybarisRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/ThrowingWeapons/Kunai",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/ThrowingWeapons/StalkerKunai",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistols/PrimeLex/PrimeLex",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/1999/ProtoframeSpecters/LasBronco",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/1999/ProtoframeSpecters/LasFuris",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/1999/ProtoframeSpecters/LasLex",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/1999/ProtoframeSpecters/LasVasto",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Grineer/Pistols/HeatGun/GrnHeatGun",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Corpus/Pistols/CrpHandRL/CorpusHandRocketLauncher",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Corpus/Pistols/CrpHandRL/PrismaAngstrum",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Lasria/LasSilencedPistol/LasriaPistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/LongGuns/PrimeSoma/PrimeSomaRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistols/PrimeVasto/PrimeVastoPistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistols/PrimeZylok/ZylokPrimePistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/LongGuns/PrimeStrun/PrimeStrunWeapon",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "2"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "1"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Thanotech/EntratiWristGun/EntratiWristGunWeapon",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "3"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "1"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Syndicates/RedVeil/Pistols/RVBallistica",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 2,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/LongGuns/DexTheThird/DexTheThird",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/LongGuns/PrimeBoltor/PrimeBoltor",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/LongGuns/PrimeVectis/PrimeVectisRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistols/PrimeSicarus/PrimeSicarusPistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Infested/InfestedLich/DJRom/DJRomTorid",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/LongGuns/PrimeBurston/PrimeBurston",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/LongGuns/PrimeSybaris/PrimeSybarisRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/LongGuns/WraithLatron/WraithLatron",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "1"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Corpus/Pistols/CorpusMinigun/CorpusMinigun",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Infested/Pistols/InfVomitGun/InfVomitGunWep",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Grineer/LongGuns/WraithGorgon/WraithGorgon",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/LongGuns/TnoLeverAction/TnoLeverActionRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistols/PrimeBallistica/PrimeBallistica",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Grineer/Pistols/GrineerCrossbow/GrineerGooGun",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 2,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSDroidArray",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Syndicates/CephalonSuda/Pistols/CSSynoidGammacor",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Grineer/LongGuns/VoidTraderGorgon/VTGorgon",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistols/ConclaveLeverPistol/ConclaveLeverPistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Zariman/Pistols/HeavyPistol/ZarimanHeavyPistol",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "2"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "1"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Zariman/LongGuns/PumpShotgun/ZarimanPumpShotgun",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "3"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "1"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Grineer/LongGuns/GrineerSawbladeGun/SawBladeGun",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Syndicates/ArbitersOfHexis/LongGuns/AHBoltor",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "1"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Pistols/AutomaticHandCrossbow/AutoCrossBow",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "1.4"
+      },
+      "exit": {
+        "behavior_index": 2,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "0.60000002"
+      }
+    },
+    {
+      "internal_name": "/Lotus/Weapons/Tenno/Zariman/LongGuns/SemiAutoRifle/ZarimanSemiAutoRifle",
+      "entry": {
+        "behavior_index": 0,
+        "mode_switch_time": "3"
+      },
+      "exit": {
+        "behavior_index": 1,
+        "behavior_tag": "/Lotus/Language/Mods/ZarimanRifleAltFireUnlockEvo",
+        "mode_switch_time": "1"
+      }
+    }
+  ]
+}

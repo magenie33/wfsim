@@ -51,9 +51,14 @@ attack:
   spread:
     min_deg: 0.8
     max_deg: 1.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 0.8
+      hip_max_deg: 1.0
   trigger: auto
   shot_type: hit_scan
-  fire_rate: 9.33
+  fire_rate: 9.33333333333333
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -66,8 +71,12 @@ attack:
   damage: { electricity: 25, puncture: 8 }   # total 33
 
 unmodeled:
+  - reason: client_battery_defaults
+  - reason: client_accuracy_runtime
   - "Switching modes takes 1 s of animation (0.5 s on Wisp); the sim never switches, so each mode is measured as the whole weapon."
   - "It gets nothing from reload-triggered mods such as Spring-Loaded Chamber (wiki), because a battery never reloads."
 
 source:
   url: https://wiki.warframe.com/w/Fulmin
+
+# see notes: client_primary_calibration

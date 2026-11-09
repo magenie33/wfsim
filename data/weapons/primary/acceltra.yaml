@@ -35,7 +35,7 @@ reload_seconds: 2
 #
 # see notes: entry_read_adding_at
 co_behavior: additive_with_base_damage
-co_base_fraction: 0.743
+co_base_fraction: 1
 
 attack:
   extra_hit_reads: even   # see notes: extra_hit_reads
@@ -43,6 +43,11 @@ attack:
   spread:
     min_deg: 1.5
     max_deg: 7.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 1.5
+      hip_max_deg: 7.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 70
@@ -67,7 +72,8 @@ attack:
     effectiveness: 1.00
     stacking: multiplies
     radius_calculation: snapshot
-  damage: { impact: 35 }   # total 35
+  damage:
+    impact: 26.0
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:
     extra_hit_reads: even   # see notes: extra_hit_reads
@@ -82,6 +88,10 @@ attack:
     damage: { puncture: 35.2, slash: 8.8 }   # total 44
 
 unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_falloff_runtime
+  - reason: client_projectile_acceleration
+  - reason: client_accuracy_runtime
   - "The rockets arm only after 7 m (wiki); closer, they hit without exploding. The sim applies the explosion at every range, so a fight set inside 7 m reads high by the whole explosion, most of the weapon."
   - "Reloading while sprinting gives +25% reload speed (+50% on Gauss); nobody moves here, so the reload is always the standing one."
   - reason: explosion_ignores_cover
@@ -89,3 +99,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Acceltra
+
+# see notes: client_primary_calibration

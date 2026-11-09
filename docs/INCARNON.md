@@ -136,6 +136,34 @@ says 45 — measure it before trusting either).
 **Almost every adapter charges on WEAKPOINT hits. Three charge on DIRECT hits:
 Torid, Angstrum, Stug** (wiki, Incarnon — verbatim in `torid_incarnon.yaml`).
 
+### Entry and exit timing
+
+Each firearm declares both `gauge_form.transmute_in_seconds` and
+`transmute_out_seconds`. Their source is the corresponding profiles'
+`ModeSwitchTime`, joined by the base weapon's internal path to
+`tests/fixtures/incarnon/switching-2026-10-28.json`. The transformed profile is
+identified by its Incarnon behavior tag; it is not always profile 1.
+
+`ModeSwitchTime` is independent of magazine `reloadTime`. The native duration
+getter applies reload-speed upgrades, then mode-switch-speed upgrades, and
+divides the selected state time by the resulting speed, clamped to at least
+0.01. The simulator applies its reload-speed bucket to both directions.
+`FullClipModeSwitchTime` is zero on the imported profiles.
+
+The locked-gauge reload reduction derives its duration from entry plus exit;
+`pseudo_reload` supplies the charge capacity, not a second timing value.
+The panel and the cycle simulator consume the same transition data.
+
+`uv run --with PyYAML python scripts/import_incarnon_timing.py --check` verifies
+the YAML against the pinned export; `--apply` updates the timing fields.
+The engine's `incarnon_transitions_match_the_client_profiles` test also checks
+the loaded forms, derived downtime, and reload-speed scaling.
+
+The source hashes and calibration provenance are recorded in
+[M9](measurements/M09-incarnon-transition-timings.md). These are configured state
+durations. Complete input-to-first-shot latency, input/tick rounding, and the
+depleted-charge exit call path remain distinct runtime questions.
+
 ### A CHARGE POOL IS NOT A MAGAZINE, and nothing in the game treats it as one
 
 Roster-wide invariant, stated measured: **no mechanism anywhere

@@ -22,7 +22,7 @@ attack:
   trigger: charge
   charge_seconds: 1.5
   shot_type: projectile
-  projectile_speed_mps: 85
+  projectile_speed_mps: 70
   fire_rate: 1
   multishot: 1.0
   ammo_cost: 1
@@ -36,8 +36,21 @@ attack:
   cold_trail: { duration_seconds: 10.0, tick_interval_seconds: 1.0 }
   damage: { cold: 500, puncture: 250, slash: 250 }
 
+  spread:
+    min_deg: 0.0
+    max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
 unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_projectile_callbacks
+  - reason: client_accuracy_runtime
   - reason: spread_not_transcribed
 
 source:
   url: https://wiki.warframe.com/w/Nunchasa
+
+# see notes: client_primary_calibration

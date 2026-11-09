@@ -7,8 +7,7 @@ weapon_type: primary
 # HIT-SCAN rifle with a 300 m reach and no punch through, where this is a 30 m
 # HELD beam with 0.5 m of it. The family name and the model are all they share.
 #
-# IT IS ALSO THE THIRD RAMP FLOOR. The roster had 20% and 30%; this page says
-# 25%, which is why `beam_ramp_floor` is a number and not an enum.
+# Parsed impact behavior supplies the damage-ramp floor.
 class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -35,18 +34,13 @@ ammo_type: primary
 ammo_max: 0
 ammo_pickup: 0
 magazine: 50
-reload_seconds: 2.25
+reload_seconds: 1.75
 
-# THE BATTERY — "Has a 1 second delay after the weapon stops firing before
-# regenerating ammo. Then, regenerates 40 ammo per second; takes 1.25 seconds to
-# regenerate a fully depleted battery excluding the delay."
-#
-# ONE DELAY, so both fields carry it: nothing on this page tells a partial
-# battery from an empty one, and inventing a difference would invent a fact.
+# Parsed recharge: 0.5 s delay, then 40 rounds per second.
 battery:
   regen_per_second: 40.0
-  delay_empty_seconds: 1.0
-  delay_partial_seconds: 1.0
+  delay_empty_seconds: 0.5
+  delay_partial_seconds: 0.5
 
 # see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
@@ -86,10 +80,17 @@ attack:
       damage_per_hop: 0.0
       origin: radius_targets
 
-# THE RAMP FLOOR IS 25%, which is neither of the two the roster already had:
-# "Damage ramps up from 25% to 100%". The 0.6 s and the 0.8 s decay delay are
-# the engine's own constants and match; only the floor differs.
-beam_ramp_floor: 0.25
+# Parsed ramp and attenuation bounds; see client_primary_calibration.
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
+beam_ramp_floor: 0.2
 
 source:
   url: https://wiki.warframe.com/w/Flux_Rifle
+
+unmodeled:
+  - reason: client_beam_target_ramp
+
+# see notes: client_primary_calibration

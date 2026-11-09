@@ -16,6 +16,7 @@ transforms_to: miter_incarnon
 
 # see notes: bulk_intake_stats_are_2
 unmodeled:
+  - reason: client_projectile_collision
   - "The Uncharged Shot is not modelled; this entry carries only the Charged Shot."
   - reason: spread_not_transcribed
 accuracy: 100
@@ -77,3 +78,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Miter
+
+# see notes: client_primary_calibration

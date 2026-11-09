@@ -36,6 +36,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 6.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.0
+      hip_max_deg: 8.0
   trigger: burst
   # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 5 rounds
   # spaced by the delay below.
@@ -56,3 +61,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Hind
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

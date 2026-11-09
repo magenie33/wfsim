@@ -61,7 +61,10 @@ attack:
     effectiveness: 1.00
     stacking: adds
     radius_calculation: snapshot
-  damage: { impact: 100, puncture: 850, slash: 50 }   # total 1000
+  damage:
+    impact: 100.0
+    puncture: 850.0
+    slash: 49.999952
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:
     radius_m: 6.0
@@ -72,7 +75,8 @@ attack:
     status_chance: 0.2
     takes_multishot: false
     takes_blast_radius_mods: true
-    damage: { magnetic: 400 }   # total 400
+    damage:
+      magnetic: 400.0
     # see notes: catalog_says_aoe_part
     #
     #   Opticor | Charged Hitscan Direct Hit Radial | Hitscan | 400 | 1000 | 250% | Adding
@@ -85,9 +89,12 @@ attack:
     takes_condition_overload: true
 
 unmodeled:
+  - reason: client_radial_critical
   - "The wiki's Condition Overload catalog gives this weapon's radial its own row, 250% of its base; that row is not entered here yet, so the radial takes 100% and a status-stacking build reads low on it."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Opticor
+
+# see notes: client_primary_calibration

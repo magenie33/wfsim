@@ -39,10 +39,15 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.0
+      hip_max_deg: 3.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 90
-  fire_rate: 4.17
+  fire_rate: 4.16666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.2
@@ -53,9 +58,12 @@ attack:
   damage: { impact: 5, puncture: 75, slash: 20 }   # total 100
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Not offered here: the bow-exclusive Thunderbolt, which on this weapon turns every bolt into a grenade, a second damage source."
   - reason: bolt_corpse_ragdoll
   - reason: silent_weapon
 
 source:
   url: https://wiki.warframe.com/w/Zhuge
+
+# see notes: client_primary_calibration

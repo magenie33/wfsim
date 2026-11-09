@@ -68,12 +68,17 @@ Five things, and the last two are the ones that keep being got wrong:
    across a form or a slot.
 
 **WHAT DOES NOT TRAVEL IS A FRACTION.** `co_base_fraction` is a measurement of
-one weapon's own damage — the Acceltra's 74.3% is its 26 against its 35, and
+one weapon's own damage — the catalog's Acceltra 74.3% is its 26 against its 35, and
 there is no rule to put the Prime's 44 through. So the Prime carries the class
 and NOT the number, and says so. The exception is a fraction the row explains
 rather than measures: every bow reads a half because *"CO-bonus only applies to
 base (uncharged) damage; bows have innate 2x damage multiplier when fully
 charged"*, which is a mechanism, so the Daikyu carries the Prime's half.
+
+The primary calibration adopts Acceltra's parsed direct base of 26. Its catalog
+CO amount remains 26, so the fraction against that adopted base is 1.0. The
+catalog's rounded relative column is not multiplied into a different denominator.
+The primary source receipt checks both the adopted vector and this normalization.
 
 Enforced by two tests.
 `the_only_condition_overload_anomalies_are_the_ones_the_catalog_names` carries

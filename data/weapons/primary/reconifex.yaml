@@ -40,6 +40,11 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 3.0
+      hip_max_deg: 9.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 8.0
@@ -53,11 +58,14 @@ attack:
   # wiki: "Range: 1000.0 m", Hit-Scan — a SNIPER's reach on a belt-fed rifle,
   # which is the module's own figure and not a transcription of the 300 m every
   # other rifle in the roster carries.
-  range_m: 1000.0
+  range_m: 300
   damage: { impact: 16, puncture: 24 }   # total 40
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Pressing reload again 22-38% into a reload cuts it to 1 s and loads Heat rounds with +25% damage and guaranteed status (wiki). It is a timed input the sim does not press, so every reload is the full 5 s with ordinary rounds, and the number reads well low."
 
 source:
   url: https://wiki.warframe.com/w/Reconifex
+
+# see notes: client_primary_calibration

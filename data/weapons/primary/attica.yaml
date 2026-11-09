@@ -39,10 +39,15 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.0
+      hip_max_deg: 3.0
   trigger: auto
   shot_type: projectile
-  projectile_speed_mps: 90
-  fire_rate: 3.67
+  projectile_speed_mps: 120
+  fire_rate: 3.66666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.25
@@ -53,9 +58,12 @@ attack:
   damage: { impact: 4, puncture: 60, slash: 16 }   # total 80
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Not offered here: Spring-Loaded Broadhead and the bow-exclusive Thunderbolt. Thunderbolt turns every arrow into a grenade, a second damage source."
   - reason: bolt_corpse_ragdoll
   - reason: silent_weapon
 
 source:
   url: https://wiki.warframe.com/w/Attica
+
+# see notes: client_primary_calibration

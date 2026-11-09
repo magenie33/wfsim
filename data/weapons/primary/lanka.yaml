@@ -64,9 +64,7 @@ attack:
   charge_seconds: 1.0
   shot_type: projectile
   projectile_speed_mps: 250
-  # The page prints "inf attacks/sec": the draw IS the cadence here, so the
-  # listed rate says nothing and `charge_seconds` is what paces it.
-  # UNMEASURED: the engine still adds 1 / rate as for any sniper — MEASUREMENTS queue, Lanka.
+  # Native zero refire selects draw_only; the positive rate is a modifier anchor.
   fire_rate: 1.0
   multishot: 1.0
   ammo_cost: 1
@@ -79,7 +77,13 @@ attack:
   punch_through_m: 5.0
   infinite_body_punch_through: true
   damage: { electricity: 525.0 }
+  charge_cadence: "draw_only"
+  falloff:
+    start_m: 400.0
+    end_m: 600.0
+    reduction: 0.52380952381
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: sniper_combo_miss
     seconds: 6
   - reason: zoom_steps
@@ -87,3 +91,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Lanka
+
+# see notes: client_primary_calibration
