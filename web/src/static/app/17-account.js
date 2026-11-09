@@ -6,7 +6,7 @@
 // account control at all.
 //
 // THE SHAPE A SERIOUS PRODUCT HAS (docs/ACCOUNTS.md §"On the page"): one entry
-// in the top bar — "Sign in", or an avatar with a short menu — and pages of
+// in the top bar — "Sign in", or an avatar opening the personal panel — and pages of
 // their own for everything else: /login, /signup, /reset, /account. Mail goes
 // out only to prove an address; signing in with a password sends nothing.
 
@@ -224,6 +224,7 @@ const extLoads = (kind) => Object.entries(EXT.pages)
 // ---- the top bar: one entry --------------------------------------------------------------
 
 function renderAccountEntry() {
+  setAccountPanel(false, false);
   const footer = $("ext-footer");
   if (footer) footer.innerHTML = extHookNow("footer") || "";
   const box = $("account");
@@ -234,17 +235,21 @@ function renderAccountEntry() {
   if (box.hidden) return;
   const here = location.pathname + location.search;
   box.innerHTML = account
-    ? `<button class="avatar${account.display_name_hidden ? " noted" : ""}" id="account-toggle" aria-haspopup="menu" aria-expanded="false" title="${aT("Account")}">${escHtml(accountInitial(account))}</button>
-      <div class="acct-menu" id="acct-menu" role="menu" hidden>
-        <div class="who"><span class="avatar">${escHtml(accountInitial(account))}</span><div><b>${escHtml(accountName(account))}</b>
+    ? `<button class="avatar${account.display_name_hidden ? " noted" : ""}" id="account-toggle" aria-haspopup="dialog" aria-controls="account-panel" aria-expanded="false" title="${aT("Personal center")}" aria-label="${aT("Personal center")}">${escHtml(accountInitial(account))}</button>
+      <div class="account-panel-window" id="acct-menu" hidden><section class="account-panel-dialog" id="account-panel" role="dialog" aria-modal="true" aria-labelledby="account-panel-title">
+        <header class="jump-head"><h2 id="account-panel-title">${aT("Personal center")}</h2><button class="ghost-btn small" data-acct="close">${aT("Close")} · Esc</button></header>
+        <div class="account-panel-body"><div class="who"><span class="avatar avatar-lg">${escHtml(accountInitial(account))}</span><div><b>${escHtml(accountName(account))}</b>
           <span>@${escHtml(account.username || "")}</span></div></div>
-        <a href="${userProfilePath()}" role="menuitem">${aT("My profile")}</a>
-        <a href="/account" role="menuitem">${aT("Account settings")}</a>
-        <a href="/account/recommendations" role="menuitem">${aT("Mine")}</a>
-        <a href="/account/sync" role="menuitem">${aT("Cloud sync")}</a>
-        ${extMenuItems(account).map((p) => `<a href="${escHtml(p.path)}?from=menu" role="menuitem">${aT(p.label)}</a>`).join("")}
-        <hr><a href="#" role="menuitem" data-acct="logout">${aT("Sign out")}</a>
-      </div>`
+        <a class="account-home-card" href="${userProfilePath()}"><span>${aT("My profile")}</span><strong>${aT("Verified calculations")} <span aria-hidden="true">↗</span></strong></a>
+        <nav class="account-panel-links" aria-label="${aT("Personal center")}">
+          <a href="${userProfilePath()}?kind=board">${aT("Verified builds")}</a>
+          <a href="${userProfilePath()}?kind=optimization">${aT("Optimizations · last 14 days")}</a>
+          <a href="/account/recommendations">${aT("My recommendations")}</a>
+          <a href="/account/sync">${aT("Cloud sync")}</a>
+          <a href="/account">${aT("Account settings")}</a>
+          ${extMenuItems(account).map((p) => `<a href="${escHtml(p.path)}?from=menu">${aT(p.label)}</a>`).join("")}
+        </nav><button class="ghost-btn small" data-acct="logout">${aT("Sign out")}</button></div>
+      </section></div>`
     // SIGNED OUT, an extension's page anyone may open stands beside "Sign in",
     // a plain link at the bar's weight: the menu that names it is not there yet.
     : `${extMenuItems(null).map((p) =>
@@ -252,20 +257,28 @@ function renderAccountEntry() {
       + `<a class="signin-btn" href="/login?return=${encodeURIComponent(authKindOf(location.pathname) ? "/" : here)}">${aT("Sign in")}</a>`;
 }
 
+function setAccountPanel(open, restore = true) {
+  const panel = $("acct-menu"), button = $("account-toggle");
+  const wasOpen = panel && !panel.hidden;
+  if (open && (!panel || !button)) return;
+  if (panel) panel.hidden = !open;
+  button?.setAttribute("aria-expanded", String(open));
+  document.body.classList.toggle("account-panel-open", open);
+  if (open) {
+    closePopovers(); closeProfileWeaponPicker(false);
+    panel.querySelector("[data-acct=close]")?.focus({ preventScroll: true });
+  } else if (wasOpen && restore) button?.focus({ preventScroll: true });
+}
+
 (function () {
   const box = $("account");
   if (!box) return;
-  const menu = (open) => {
-    const m = $("acct-menu"), b = $("account-toggle");
-    if (!m || !b) return;
-    m.hidden = !open;
-    b.setAttribute("aria-expanded", open ? "true" : "false");
-  };
   box.addEventListener("click", async (e) => {
-    if (e.target.closest("#account-toggle")) { e.stopPropagation(); menu($("acct-menu").hidden); return; }
+    if (e.target.closest("#account-toggle")) { e.stopPropagation(); setAccountPanel($("acct-menu").hidden); return; }
+    if (e.target === $("acct-menu") || e.target.closest("[data-acct=close]")) { setAccountPanel(false); return; }
     if (e.target.closest("[data-acct=logout]")) {
       e.preventDefault();
-      menu(false);
+      setAccountPanel(false);
       // Off the settings page first: redrawn signed out, it would send the
       // reader to sign in again.
       const leave = authKindOf(location.pathname) === "account";
@@ -276,10 +289,17 @@ function renderAccountEntry() {
       await loadAccount();
       return;
     }
-    if (e.target.closest(".acct-menu a[href]")) menu(false);
+    if (e.target.closest("#acct-menu a[href]")) setAccountPanel(false, false);
   });
-  document.addEventListener("click", (e) => { if (!e.target.closest("#account")) menu(false); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !imeComposing(e)) menu(false); });
+  document.addEventListener("keydown", (e) => {
+    const panel = $("acct-menu");
+    if (!panel || panel.hidden || imeComposing(e)) return;
+    if (e.key === "Escape") { e.preventDefault(); setAccountPanel(false); }
+    if (e.key !== "Tab") return;
+    const nodes = [...panel.querySelectorAll("button,a[href]")].filter(node => !node.disabled && node.getClientRects().length);
+    if (e.shiftKey && document.activeElement === nodes[0]) { e.preventDefault(); nodes.at(-1)?.focus(); }
+    else if (!e.shiftKey && document.activeElement === nodes.at(-1)) { e.preventDefault(); nodes[0]?.focus(); }
+  });
   // AN OAUTH ROUND TRIP COMES BACK WITH ITS OUTCOME ON THE ADDRESS, said once
   // as a toast — or, on a sign-in page, in the card — and taken off.
   const q = new URLSearchParams(location.search);
