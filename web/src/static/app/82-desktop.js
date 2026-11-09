@@ -457,7 +457,7 @@ function nativeOffForSession(why) {
   console.log(`native engine off for this session, computing on wasm: ${why}`);
 }
 /// One call of the native door, its answer parsed; `null` when it could not answer.
-async function nativeApi(path, body) {
+async function nativeApi(path, body, kind = "together") {
   const call = async () => {
     try {
       const text = await window.__TAURI_INTERNALS__.invoke("engine", { engine: ENGINE_ID, path, body: JSON.stringify(body ?? {}) });
@@ -468,29 +468,35 @@ async function nativeApi(path, body) {
     }
   };
   return ["/api/board/runs", "/api/board/fold", "/api/board/score"].includes(path)
-    ? computeRun("together", call, () => boardVerifyOn() && !computeHeld() && !computeFrozen) : call();
+    ? computeRun(kind, call, () => kind === "solo" || boardVerifyOn() && !computeHeld() && !computeFrozen) : call();
 }
 /// Whether the board's rows go native: proven now, or proven already.
 function nativeBoardReady() {
   if (nativeOff) return Promise.resolve(false);
+  const kind = boardVerifyOn() && !computeHeld() ? "together" : "solo";
   if (!nativeProof) {
+    if (computeRange(kind).max === 0) return Promise.resolve(false);
     nativeProof = !window.__WFSIM_DESKTOP__ || !window.__TAURI_INTERNALS__ || ENGINE_ID === "dev"
       ? Promise.resolve(false)
-      : proveNative().catch((e) => { nativeOffForSession(String((e && e.message) || e)); return false; });
+      : proveNative(kind).catch((e) => {
+        if (computeRange(kind).max === 0 || kind === "together" && (!boardVerifyOn() || computeHeld() || computeFrozen)) nativeProof = null;
+        else nativeOffForSession(String((e && e.message) || e));
+        return false;
+      });
   }
   return nativeProof.then((ok) => ok && !nativeOff);
 }
-async function proveNative() {
+async function proveNative(kind = "together") {
   const named = await fetch("/native/engine.json", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null));
   if (!named || named.engine !== ENGINE_ID) throw new Error(`the library is engine ${named && named.engine}, the page ${ENGINE_ID}`);
   const lanes = await boardLanes(communityLanes());
   const viaWasm = async (k, path, body) => {
-    const r = await boardLaneAt(k % lanes.length).call(path, body, null, true);
+    const r = await boardLaneAt(k % lanes.length).call(path, body, null, kind === "together");
     if (!(r && r.ok)) throw new Error(`wasm ${path}: ${(r && r.error) || "no answer"}`);
     return r;
   };
   const viaNative = async (_, path, body) => {
-    const r = await nativeApi(path, body);
+    const r = await nativeApi(path, body, kind);
     if (!(r && r.ok)) throw new Error(`native ${path}: ${(r && r.error) || "no answer"}`);
     return r;
   };

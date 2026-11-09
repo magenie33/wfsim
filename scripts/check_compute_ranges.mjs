@@ -132,6 +132,28 @@ export async function checkComputeRanges(source = read()) {
     + "\nglobalThis.run = communitySimulationReport;", cancelledReport);
   await assert.rejects(cancelledReport.run({ runs: 1 }, new AbortController().signal),
     error => !error.engineRefused, "a budget pause is never reported as an engine refusal");
+  const desktop = readFileSync(new URL("../web/src/static/app/82-desktop.js", import.meta.url), "utf8");
+  let togetherOn = false;
+  const proofKinds = [], limits = { solo: { max: 50 }, together: { max: 50 } };
+  const native = vm.createContext({ window: { __WFSIM_DESKTOP__: true, __TAURI_INTERNALS__: {} }, ENGINE_ID: "test-engine",
+    boardVerifyOn: () => togetherOn, computeHeld: () => "", computeFrozen: false, computeRange: kind => limits[kind],
+    proveNative: async kind => { proofKinds.push(kind); return true; } });
+  vm.runInContext("let nativeOff = false, nativeProof = null; function nativeOffForSession() { nativeOff = true; }\n"
+    + desktop.slice(desktop.indexOf("function nativeBoardReady()"), desktop.indexOf("async function proveNative("))
+    + "\nglobalThis.probe = { run: nativeBoardReady, reset() { nativeProof = null; nativeOff = false; }, state() { return { off: nativeOff, empty: nativeProof === null }; } };", native);
+  assert.equal(await native.probe.run(), true, "desktop verification can run while Together is off");
+  assert.equal(proofKinds.at(-1), "solo", "an independent desktop diagnostic uses Solo's budget");
+  native.probe.reset(); limits.solo.max = 0;
+  assert.equal(await native.probe.run(), false, "zero starts no diagnostic calculation");
+  assert.equal(native.probe.state().empty, true, "a zero budget does not cache a failed native proof");
+  limits.solo.max = 50; togetherOn = true;
+  native.proveNative = async kind => { proofKinds.push(kind); togetherOn = false; throw new Error("paused"); };
+  assert.equal(await native.probe.run(), false);
+  assert.equal(native.probe.state().off, false, "pausing a native proof never disables the native engine");
+  assert.equal(native.probe.state().empty, true, "an interrupted proof remains retryable");
+  togetherOn = true; native.proveNative = async kind => { proofKinds.push(kind); return true; };
+  assert.equal(await native.probe.run(), true);
+  assert.equal(proofKinds.at(-1), "together", "a volunteer's native proof respects Together's budget");
   console.log("compute ranges: migration, integer inputs, adaptive targets, zero/resume/cancel, fractional CPU time and proportional sharing pass");
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) await checkComputeRanges();
