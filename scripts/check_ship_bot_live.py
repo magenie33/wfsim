@@ -50,7 +50,7 @@ def exercise(ship, change=None):
             assert command[0] in ("systemctl", "date")
             if command[0] == "date":
                 return str(mode["start"])
-            assert "wfsim-live" in command and "--timestamp=us" in command
+            assert "wfsim-live" in command and "--timestamp=us+utc" in command
             mode["calls"] += 1
             pid = mode["pid"] + (1 if mode.get("restart") and mode["calls"] > 1 else 0)
             return "\n".join(f"{key}={value}" for key, value in {

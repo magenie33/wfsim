@@ -242,7 +242,7 @@ root = pathlib.Path(request["root"])
 assert root.is_absolute() and root.resolve(strict=True) == root
 def state():
     fields = "ActiveState,MainPID,ExecMainStartTimestamp,WorkingDirectory,FragmentPath,DropInPaths,EnvironmentFiles,NeedDaemonReload"
-    text = subprocess.check_output(["systemctl", "show", "wfsim-live", "--timestamp=us", "--property=" + fields], text=True)
+    text = subprocess.check_output(["systemctl", "show", "wfsim-live", "--timestamp=us+utc", "--property=" + fields], text=True)
     values = dict(line.split("=", 1) for line in text.splitlines())
     assert values["ActiveState"] == "active" and values["NeedDaemonReload"] == "no" and int(values["MainPID"]) > 0
     assert values["WorkingDirectory"] == str(root)
