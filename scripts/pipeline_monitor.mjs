@@ -4,7 +4,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync
 import { join } from 'node:path';
 
 const fields = new Set(['generation', 'epoch', 'rows', 'chunks', 'changes', 'scopes', 'total', 'leased', 'processed', 'records', 'facts', 'started_at', 'snapshot',
-  'normalized', 'groups', 'leaders', 'range_rows', 'candidates', 'outputs']);
+  'normalized', 'groups', 'leaders', 'range_rows', 'candidates', 'outputs', 'page_rows', 'page_bytes', 'fetch_ms', 'next_rows']);
 export function pipelineMonitor(directory, name, context = {}, { now = Date.now, heartbeatMs = 30000, limit = 2 * 1024 ** 2, log = console.error } = {}) {
   mkdirSync(directory, { recursive: true });
   const path = join(directory, `${name}.json`), history = join(directory, `${name}.ndjson`);

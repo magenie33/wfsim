@@ -986,6 +986,7 @@ jobs:
         run: |
           node scripts/check_task_inventory.mjs
           node scripts/check_inventory_capture.mjs
+          node scripts/check_inventory_cursor.mjs
           node scripts/check_library_array.mjs
           node scripts/check_incremental_inventory.mjs
           node scripts/check_incremental_inventory_pg.mjs

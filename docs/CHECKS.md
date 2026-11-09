@@ -139,6 +139,11 @@ keys, permission boundaries and publication at the original sealed cut time.
 container and exercises independent writers, late commits, exact-revision ACK
 and generation fences. Its original table-lock variants must time out under
 the same writers that the snapshot publisher permits.
+Adaptive cursor coverage retains a frozen source across late writes and
+separate statement timeouts. `check_inventory_cursor.mjs` consumes 27,038,064
+ordered tokens with a 96MiB Node old-space limit and a 400-FETCH budget; the original
+5,000-row pages must exhaust that budget. Wide UTF-8 rows shrink subsequent
+pages, and an interrupted consumer closes the cursor.
 `check_pg_health.py` rejects stale outputs behind active services, unknown
 probes, engine mismatches and prolonged settlement backlog; it checks incident
 recovery and bounded retention. `check_pipeline_monitor.mjs` keeps heartbeat
