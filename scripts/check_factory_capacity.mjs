@@ -226,6 +226,25 @@ for (const mode of ["force_generic_plan", "force_custom_plan"]) {
   assert.ok(readQuestions <= 100, `${mode}: healthy producers must be excluded before their overdue questions are read (${readQuestions})`);
 }
 await A.exec("DEALLOCATE stalled_audit; RESET plan_cache_mode");
+await A.run("DELETE FROM answers WHERE question='audit-1'");
+const crowded = (await f.audit({ LIBRARY: observed }, now)).find(row => row.kind === "stalled:busy");
+assert.equal(crowded?.questions, 1001, "a large silent producer must stop at the observation bound");
+assert.equal(crowded?.at_least, true, "a bounded observation must not claim an exact total");
+await A.exec(`PREPARE crowded_stall AS ${placeholders(auditSql)}`);
+const crowdedArgs = [...auditArgs]; crowdedArgs[1] = "busy";
+for (const mode of ["force_generic_plan", "force_custom_plan"]) {
+  await A.exec(`SET plan_cache_mode=${mode}`);
+  const plan = await A.get(`EXPLAIN (ANALYZE,FORMAT JSON,TIMING OFF) EXECUTE crowded_stall(${crowdedArgs.map(literal).join(",")})`);
+  let read = 0;
+  const walk = node => {
+    if (node["Relation Name"] === "questions") read += (node["Actual Rows"] + (node["Rows Removed by Filter"] || 0)) * node["Actual Loops"];
+    for (const child of node.Plans || []) walk(child);
+  };
+  walk(plan["QUERY PLAN"][0].Plan);
+  assert(read <= 1100, `${mode}: a silent producer caused ${read} question reads`);
+}
+await A.exec("DEALLOCATE crowded_stall; RESET plan_cache_mode");
+console.log("ok: a large silent producer uses a bounded lower count under generic and custom plans");
 await A.run("UPDATE questions SET state='spot', opened_at=? WHERE id='audit-20000'", new Date(now - 3 * 3_600_000).toISOString());
 await A.exec(`INSERT INTO answers (question,engine,device,owner,net,canon,result,work,at)
   SELECT question,'fresh','new-witness','new-owner','','c','{}',1,'${at}' FROM demands WHERE producer='busy'`);
