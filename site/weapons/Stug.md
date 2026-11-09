@@ -19,10 +19,12 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native alternative behavior declarations are bound as evidence; their runtime availability and complete attack sequences are not simulated. Only the declared entry modes are used.
+- Attached damage, fuse and explosion use separate native components. Unspecified base status, tick initialization, stack overflow and bounce consumers retain the declared measured or approximated rules.
+- Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated.
 - Bouncing Incarnon child projectiles are assumed to leave the fight and hit nobody, including crowds (M127). Their damage and parameters are recorded.
 - Attachment is resolved per body part; separate nearby patches on one part are not modelled (M127).
 - Unmeasured: spawn-time projectile quantities beyond one full blob are capped here; the emitter's handling of the remainder is not traced (M109).
-- Unmeasured: the explosion's falloff is read as 70%, from the page's bug note, rather than the 30% in its table.
 
 ## In WFSim
 

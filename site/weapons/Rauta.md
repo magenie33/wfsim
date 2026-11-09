@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Each pellet adds 2 to the melee combo count, up to 28 a shot, and on Kullervo it adds 7 s of combo duration (wiki). There is no melee weapon here, so none of this applies.
 
 ## In WFSim

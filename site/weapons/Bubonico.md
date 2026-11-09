@@ -2,7 +2,7 @@
 
 Chinese name: 横痃重炮
 
-Shotgun · Primary · Mastery Rank 13. 41 base damage x7 multishot (impact 2, puncture 13, slash 19, toxin 7), 25% crit chance, 2.3x crit multiplier, 9.29% status chance.
+Shotgun · Primary · Mastery Rank 13. 41 base damage x7 multishot (impact 2, puncture 13, slash 19, toxin 7), 25% crit chance, 2.3x crit multiplier, 9.28571% status chance.
 
 ## Best riven-free build on the WFSim board, as of 2026-11-10
 
@@ -16,6 +16,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Standard Multi Target | 5x5 at 3 m · Thrax Centurion Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 40.0344 | Incendiary Coat, Blaze, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Vicious Spread, Magnetic Strafe, Primary Crux | 2026-10-24 06:31 UTC · dac6ecbaf97e |
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 0.5438 | Incendiary Coat, Blaze, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Vicious Spread, Magnetic Strafe, Primary Crux | 2026-10-24 05:46 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 2.2697 | Incendiary Coat, Blaze, Scattering Inferno, Galvanized Hell, Primed Point Blank, Shotgun Elementalist, Vicious Spread, Magnetic Strafe, Primary Crux | 2026-10-24 05:50 UTC · dac6ecbaf97e |
+
+## Not modelled here
+
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 
 ## In WFSim
 

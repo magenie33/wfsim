@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.
 - Kills leave an extra corpse, which the page notes for Nekros' Desecrate; it is a loot mechanic and changes nothing here.
 
 ## In WFSim

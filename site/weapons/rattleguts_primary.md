@@ -17,6 +17,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.1154 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-24 05:47 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.3719 | Primed Cryo Rounds, Malignant Force, Hellfire, Galvanized Chamber, Heavy Caliber, Serration, Critical Delay, Vital Sense, Pax Bolt, Fractalized Reset | 2026-10-24 05:47 UTC · dac6ecbaf97e |
 
+## Not modelled here
+
+- Kitgun statistics use the published assembly tables; native primary overrides are bound, but the runtime part-composition consumer is unverified.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/rattleguts_primary

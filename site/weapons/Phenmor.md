@@ -17,6 +17,11 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | cycle | 3.3416 | Infected Clip, Stormbringer, High Voltage, Galvanized Chamber, Serration, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Primary Debilitate | 2026-10-24 03:32 UTC · db272037fe1d |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | cycle | 21.1759 | Primed Cryo Rounds, Infected Clip, Hellfire, Galvanized Chamber, Serration, Galvanized Aptitude, Vile Acceleration, Magnetic Capacity, Primary Deadhead | 2026-10-24 02:56 UTC · db272037fe1d |
 
+## Not modelled here
+
+- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Phenmor

@@ -17,6 +17,11 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 0.1150 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Serration, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Terminal Velocity, Primary Debilitate | 2026-10-24 05:13 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | alternate | 0.3605 | Malignant Force, Rime Rounds, Hellfire, Galvanized Chamber, Serration, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Terminal Velocity, Primary Debilitate | 2026-10-24 05:11 UTC · dac6ecbaf97e |
 
+## Not modelled here
+
+- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Alternox_Prime

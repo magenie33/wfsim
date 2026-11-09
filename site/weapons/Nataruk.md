@@ -17,6 +17,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
+- The parsed fire packet's zero ammo requirement does not establish the state or script's resource debit; the declared ammo convention remains in use.
+- The native fan, first-pellet or charge-dependent spread override is not simulated; the declared spread approximation remains in use.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - This is the perfect release, not the ordinary full draw: the arsenal shows it and this entry carries its numbers. A mistimed release gets the module's second attack instead, a one-second draw for less damage, which is not carried. The engine has no way to describe a timing window, so one weapon cannot carry both.
 - This weapon is silent; there is nobody to alert here, so stealth is worth nothing.
 

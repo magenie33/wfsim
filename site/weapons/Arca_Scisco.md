@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Target Analysis: each shot grants +4% flat critical and status chance, stacking to 5 for 2 s (wiki). The engine has no shot-counting buff, so a build here fires at 18% / 26% where held fire reaches 38% / 46%. It is most of the weapon; the number reads low.
 - Lower zoom levels are not modelled: the scope always sits at its top level and its best buff.
 

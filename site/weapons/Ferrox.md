@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Radial critical statistics retain the published rule; the native radial packet's critical-upgrade consumer is unverified.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The wiki's Condition Overload catalog gives this weapon's radial its own row, 350% of its base; that row is not entered here yet, so the radial takes 100% and a status-stacking build reads low on it.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 - It reloads 33% of its magazine a second while holstered or deployed; it is never holstered here, so the reload is always the full one.

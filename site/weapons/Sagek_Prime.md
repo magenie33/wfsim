@@ -2,7 +2,7 @@
 
 Chinese name: 杀格 Prime
 
-Pistol · Secondary · Mastery Rank 14. 26 base damage (impact 6.112, puncture 8.246, slash 11.642), 30% crit chance, 2.2x crit multiplier, 1% status chance.
+Pistol · Secondary · Mastery Rank 14. 26.8 base damage (impact 6.3, puncture 8.5, slash 12), 30% crit chance, 2.2x crit multiplier, 1% status chance.
 
 ## Best riven-free build on the WFSim board, as of 2026-11-10
 
@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Critical hits have a 6% chance to set the next shot's status chance to 500% (wiki). The engine does not model this crit-triggered status lock, so it procs at its card's 1%. It is most of the weapon; the number reads low.
 
 ## In WFSim

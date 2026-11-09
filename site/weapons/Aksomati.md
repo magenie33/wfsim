@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Fire-rate ramp endpoints use parsed values; ramp length retains the declared shot-count convention because the native counter's update cadence is unverified.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The page gives the spool as a count, 6 shots to full fire rate, not as a starting fraction, so the spool is not entered.
 - The auto-spool ramp is not modelled: the rate is the spooled-up 12.5/s from the first shot, so a short burst is faster here than in game.
 

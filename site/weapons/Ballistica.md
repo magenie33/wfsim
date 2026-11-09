@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native alternative behavior declarations are bound as evidence; their runtime availability and complete attack sequences are not simulated. Only the declared entry modes are used.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The Burst Shot is not modelled; this entry carries only the Charged Shot.
 
 ## In WFSim

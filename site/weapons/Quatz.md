@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Reloading from an empty magazine releases an 8 m shockwave, 10 Electricity at 100% status plus a forced Electricity proc (wiki). The engine has no reload-triggered explosion, so it is not counted.
 
 ## In WFSim

@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 
 ## In WFSim

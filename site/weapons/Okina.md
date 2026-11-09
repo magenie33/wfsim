@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
+- Melee reach, sweep/thrust arcs and bone motion retain the declared arena approximation. Native collision dimensions alone do not establish the animated contact surface.
 - The 5% Movement Speed bonus while held: nobody moves here.
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
 - Unpublished: how long a spectral dagger orbits before it seeks (the Incarnon Form card uses a stand-in), and which enemy it seeks (here, the nearest within 15 m). Both decide how soon a kill pays; neither is measured.

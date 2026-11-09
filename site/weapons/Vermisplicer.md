@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Kitgun statistics use the published assembly tables; native primary overrides are bound, but the runtime part-composition consumer is unverified.
 - The three tendrils fan out within 6 m of the main target (page); here the chain hops 6 m from each previous enemy. Against a tight group the two agree; an enemy 6-12 m from the first is reached here and not in game.
 - With punch through, chains come only from the furthest target the beam hits (page); here every body the beam crosses starts its own chain, so the number reads high.
 - Chains skip enemies already hit by the main beam (page); here a chain can hit a body the beam passed through, so the number reads high.

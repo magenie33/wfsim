@@ -17,6 +17,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.9891 | Primed Cryo Rounds, Malignant Force, Hellfire, Heavy Caliber, Primary Acuity, Galvanized Aptitude, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-24 05:43 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 6.2814 | Primed Cryo Rounds, Malignant Force, Hellfire, Primary Acuity, Galvanized Aptitude, Rifle Elementalist, Vile Acceleration, Vital Sense, Vigilante Supplies, Primary Crux | 2026-10-24 05:43 UTC · dac6ecbaf97e |
 
+## Not modelled here
+
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tenet_Flux_Rifle

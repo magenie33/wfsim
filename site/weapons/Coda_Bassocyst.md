@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
 - The alt-fire is a finisher tool: it latches a mite onto up to 6 enemies, marking their heads for 5 s and dealing Impact and Magnetic damage each second for 10 s, and against an enemy open to a Mercy it teleports the player in. It is out of reach here: it needs a target within 25 m, its damage over time has no form in the engine, and this fight has no execution threshold. The catalog's row for it reads 'Does not apply'.
 - A Mercy kill grants +100% damage and multishot for 20 s, refreshed on each Mercy, which doubles the weapon. This fight cannot perform a Mercy, so the number reads low.
 - The projectile's thickness is left blank on the page; the sim fires a ray, so only bodies on the line are hit either way.

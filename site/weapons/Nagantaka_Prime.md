@@ -2,7 +2,7 @@
 
 Chinese name: 噬蛇弩 Prime
 
-Crossbow · Primary · Mastery Rank 12. 173 base damage (impact 1.7, puncture 15.6, slash 155.7), 25% crit chance, 2.3x crit multiplier, 39% status chance.
+Crossbow · Primary · Mastery Rank 12. 173 base damage (impact 1.73, puncture 15.57, slash 155.7), 25% crit chance, 2.3x crit multiplier, 39% status chance.
 
 ## Best riven-free build on the WFSim board, as of 2026-11-10
 
@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Headshot kills from the bolt boost reload speed by 50% (wiki); a kill-triggered buff the engine does not model.
 - Used by Garuda it gains 1 m of innate punch through (wiki), a Warframe-specific bonus not modelled here.
 - On a kill the body follows the bolt, damaging anyone in its path (wiki). There is no ragdoll here, so against a crowd the number reads low.

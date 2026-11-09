@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Aiming raises a shield that blocks frontal projectiles, closing on a reload or a charge (wiki). Nothing shoots back here; the number is unaffected.
 
 ## In WFSim

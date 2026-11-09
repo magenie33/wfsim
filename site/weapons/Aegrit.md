@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated.
 - The mines are detonated by hand with the alt-fire, up to four at a time (wiki). The sim detonates each on landing: the ceiling for one mine. Sticking four and detonating them together is not modelled.
 - Mines stick to surfaces, enemies and allies, and multishot throws them in a very wide horizontal spread (wiki), so on this weapon multishot covers ground rather than adding damage to one target.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.

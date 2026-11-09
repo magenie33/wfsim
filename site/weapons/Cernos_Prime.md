@@ -17,6 +17,11 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.6308 | Malignant Force, Rime Rounds, Split Flights, Serration, Galvanized Scope, Hunter Munitions, Rifle Elementalist, Vital Sense, Vigilante Supplies, Longbow Sharpshot | 2026-10-24 05:27 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.8822 | Malignant Force, Rime Rounds, Split Flights, Serration, Galvanized Scope, Hunter Munitions, Rifle Elementalist, Vital Sense, Vigilante Supplies, Longbow Sharpshot | 2026-10-24 05:27 UTC · dac6ecbaf97e |
 
+## Not modelled here
+
+- The native fan, first-pellet or charge-dependent spread override is not simulated; the declared spread approximation remains in use.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Cernos_Prime

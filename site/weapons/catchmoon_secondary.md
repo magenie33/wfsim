@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Kitgun statistics use the published assembly tables; native secondary overrides are bound, but the runtime part-composition consumer is unverified.
 - The guaranteed Impact proc reaches only 9 m (further with Projectile Speed mods) but is applied at every distance here.
 - The projectile is wide, like the Arca Plasmor's (page); the sim fires a ray, so with infinite punch through only bodies on the line are hit.
 - Its 20 m range is the projectile's 0.42 s lifetime, so Projectile Speed mods extend it in game; here they move the falloff and the cut-off stays at 20 m.

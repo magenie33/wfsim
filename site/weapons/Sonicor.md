@@ -2,7 +2,7 @@
 
 Chinese name: 超音波冲击枪
 
-Pistol · Secondary · Mastery Rank 2. 150 base damage (impact 150), 0% crit chance, 1x crit multiplier, 0% status chance.
+Pistol · Secondary · Mastery Rank 2. 150 base damage (impact 150), 10% crit chance, 2x crit multiplier, 0% status chance.
 
 ## Best riven-free build on the WFSim board, as of 2026-11-10
 
@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated.
 - The projectile explodes on impact or after 15 m (wiki). This entry treats 15 m as the reach, which stops the direct hit correctly but also stops the explosion, so beyond 15 m it deals nothing here while in game it still explodes.
 - Its guaranteed knockback and ragdoll (wiki) are crowd control, not damage, and are not applied. The number is unaffected.
 - Projectiles bounce off surfaces (wiki); there are no walls here.

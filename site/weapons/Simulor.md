@@ -19,6 +19,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Flight uses the declared constant speed; native projectile acceleration is not simulated.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- This attack uses the published beacon or orb component; native launch-packet statistics do not establish the scripted damage sequence.
 - Orbs merge: a new orb joining one in the air triggers 'Orb Merging Damage' in 4 m, growing with the number merged (wiki). The engine resolves each shot on its own, so the merge is not counted and the number reads well low for a player stacking orbs.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.

@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Kitgun statistics use the published assembly tables; native secondary overrides are bound, but the runtime part-composition consumer is unverified.
 - The explosion is a reverse cone that damages enemies in front of the target (page); this fight gives a blast no facing, so it is a full 1.9 m sphere. Against a crowd it reaches enemies the game would not, so the number reads high.
 - The projectile has travel time and must be led at range (wiki). Every shot here connects instantly, so against a moving target the real hit rate is lower.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.

@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Bullseye Reload, its passive: a headshot grants +25% reload speed for 4 s, stacking to 2 (wiki). It is not applied, so a headshot build reads low.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 

@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Some battery defaults are absent from the parsed records; the published recharge convention remains in use.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The battery discharge when the magazine empties, a 20 m pulse for 100 Impact, is not built yet. Its rule is published: base damage, faction damage and Firestorm apply; elemental and multishot bonuses do not, and blast-radius mods reach it. Its status is a 100% chance, not a forced proc. The number reads low.
 - The discharge also strips Sentient and Shadow Stalker damage resistances; no target here has any.
 - +30% Movement Speed while aiming and the explosion's self-stagger are not read here.

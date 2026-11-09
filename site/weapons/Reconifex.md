@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Pressing reload again 22-38% into a reload cuts it to 1 s and loads Heat rounds with +25% damage and guaranteed status (wiki). It is a timed input the sim does not press, so every reload is the full 5 s with ordinary rounds, and the number reads well low.
 
 ## In WFSim

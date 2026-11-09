@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Its drawback, converting health to ammo (up to 5% of max health), is not modelled: nothing shoots back and the Tenno has no health here, so the rifle is shown without its cost.
 - The 5% life steal on headshots adds nothing here: there is nothing to heal.
 

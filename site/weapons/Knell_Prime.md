@@ -17,6 +17,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 1.8311 | Convulsion, Pathogen Rounds, Frostbite, Pistol Acuity, Hornet Strike, Primed Target Cracker, Primed Pistol Gambit, Anemic Agility, Eject Magazine, Secondary Deadhead | 2026-10-24 05:37 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 24.3950 | Deep Freeze, Pathogen Rounds, Primed Heated Charge, Galvanized Diffusion, Galvanized Crosshairs, Galvanized Shot, Lethal Torrent, Magnetic Might, Secondary Deadhead | 2026-10-24 05:28 UTC · dac6ecbaf97e |
 
+## Not modelled here
+
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Knell_Prime

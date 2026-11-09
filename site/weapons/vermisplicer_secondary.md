@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Kitgun statistics use the published assembly tables; native secondary overrides are bound, but the runtime part-composition consumer is unverified.
 - The tendrils aim themselves at different enemies and can fail to lock, losing damage (page). All five land on the target here, which is what staying at melee range and aiming directly produces.
 - The tendrils auto-target with a slight delay before dealing damage, while ammo is spent (page); not modelled.
 - An auto-targeted tendril always aims at the enemy's centre and never headshots; only one aimed above the enemy can.

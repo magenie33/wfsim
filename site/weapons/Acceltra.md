@@ -2,7 +2,7 @@
 
 Chinese name: 迅发电浆炮
 
-Rifle · Primary · Mastery Rank 8. 35 base damage (impact 35), 32% crit chance, 2.8x crit multiplier, 6% status chance.
+Rifle · Primary · Mastery Rank 8. 26 base damage (impact 26), 32% crit chance, 2.8x crit multiplier, 6% status chance.
 
 ## Best riven-free build on the WFSim board, as of 2026-11-10
 
@@ -19,6 +19,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
+- The parsed falloff floor exceeds the direct packet's base damage; that falloff consumer is unverified and the declared falloff convention remains in use.
+- Flight uses the declared constant speed; native projectile acceleration is not simulated.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The rockets arm only after 7 m (wiki); closer, they hit without exploding. The sim applies the explosion at every range, so a fight set inside 7 m reads high by the whole explosion, most of the weapon.
 - Reloading while sprinting gives +25% reload speed (+50% on Gauss); nobody moves here, so the reload is always the standing one.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.

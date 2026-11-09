@@ -2,7 +2,7 @@
 
 Chinese name: 勇气·海克
 
-Shotgun · Primary · Mastery Rank 12. 75 base damage x7 multishot (impact 11.25, puncture 48.75, slash 15), 25% crit chance, 2x crit multiplier, 10.7% status chance.
+Shotgun · Primary · Mastery Rank 12. 75 base damage x7 multishot (impact 11.25, puncture 48.75, slash 15), 25% crit chance, 2x crit multiplier, 10.7143% status chance.
 
 ## Best riven-free build on the WFSim board, as of 2026-11-10
 
@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The Justice syndicate effect detonates a radial blast and heals the wielder (wiki). It runs on a syndicate meter the sim does not track; the blast is not counted.
 
 ## In WFSim

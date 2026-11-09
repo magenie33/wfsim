@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The spores are most of the weapon: an enemy hit by it and then killed spreads spores to 3 enemies within 20 m, with Cold every second and 50% vulnerability to this weapon for 20 s. It needs a kill and other enemies, so against one standing target it adds nothing; in a room it roughly doubles the weapon.
 
 ## In WFSim

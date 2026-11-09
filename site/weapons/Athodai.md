@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Overdrive: a weak-point kill grants +100% fire rate, +100% ammo efficiency and -100% recoil for 8 s, and disables the alt-fire meanwhile (wiki). The engine does not model kill-triggered buffs, so this entry fires at its listed rate throughout.
 
 ## In WFSim

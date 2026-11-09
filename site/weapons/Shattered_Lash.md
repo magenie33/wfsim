@@ -6,6 +6,7 @@ Exalted Weapon · Exalted · Mastery Rank 0. 400 base damage (puncture 400), 20%
 
 ## Not modelled here
 
+- Ability and cast overrides retain the declared damage/status profile and measured combo rules. The raw melee weapon packet does not establish final ability damage; verified weapon clock inputs apply separately.
 - A cast's length is unpublished: each cast here takes one second at 1.0x Casting Speed, which sets how often it hits and changes no single hit.
 - Energy is unlimited here: every cast costs 25, scaled by Efficiency, and nothing runs dry.
 - The combo counter gains 20 once per cast that hits; here a cast earns it per body it hits, which is the same against one target.

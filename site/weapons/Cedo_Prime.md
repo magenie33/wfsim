@@ -17,6 +17,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.2222 | Incendiary Coat, Blaze, Scattering Inferno, Hell's Chamber, Primed Point Blank, Shotgun Barrage, Shotgun Elementalist, Magnetic Strafe, Vigilante Supplies, Primary Crux | 2026-10-22 22:07 UTC · 62a82930d1d3 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 5.0069 | Primed Chilling Grasp, Toxic Barrage, Scattering Inferno, Galvanized Hell, Primed Ravage, Galvanized Savvy, Repeater Clip, Magnetic Strafe, Shotgun Vendetta | 2026-10-23 01:07 UTC · 62a82930d1d3 |
 
+## Not modelled here
+
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Cedo_Prime

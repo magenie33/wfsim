@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Equipping it also takes the melee slot, so a Vinquibus loadout has no melee weapon; this fight has no melee to give up.
 - Headshots grant 2 stacks (max 16) of Vinquibus Precision, +250% melee damage; it lands on a weapon the sim does not fire, so it adds nothing here.
 

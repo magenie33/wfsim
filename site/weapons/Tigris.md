@@ -17,6 +17,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.3861 | Toxic Barrage, Chilling Reload, Blaze, Galvanized Hell, Galvanized Savvy, Shotgun Elementalist, Atomic Fallout, Magnetic Strafe, Vigilante Supplies, Primary Crux | 2026-11-04 13:28 UTC · 9e4647c46c76 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 4.6322 | Toxic Barrage, Chilling Reload, Blaze, Galvanized Hell, Galvanized Savvy, Shotgun Elementalist, Atomic Fallout, Magnetic Strafe, Vigilante Supplies, Primary Crux | 2026-11-04 13:27 UTC · 9e4647c46c76 |
 
+## Not modelled here
+
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Tigris

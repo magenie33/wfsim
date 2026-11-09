@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.
 - Microwave also enlarges the body part it hit, an aiming aid the sim does not use. Its status count is modelled.
 
 ## In WFSim

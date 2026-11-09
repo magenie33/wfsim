@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Flight uses the declared constant speed; native projectile acceleration is not simulated.
+- The parsed fire packet's zero ammo requirement does not establish the state or script's resource debit; the declared ammo convention remains in use.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 

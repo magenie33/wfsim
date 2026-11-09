@@ -19,6 +19,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Charge time and the selected projectile use parsed inputs. The native charge-cap multiplier consumer is unverified; damage uses the declared packet without multiplying it by that cap.
+- The parsed fire packet's zero ammo requirement does not establish the state or script's resource debit; the declared ammo convention remains in use.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 

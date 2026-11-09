@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
 - Projectile lifetime and growth are not modelled: the base lifetime is 0.6 s, each enemy hit adds 50% lifetime up to 10 s, and the projectile grows in size. The simulation uses a fixed 2 m width and does not stop the projectile when its lifetime expires.
 - Citrine and Citrine Prime grant this weapon +40% Projectile Speed; that signature bonus is not modelled.
 

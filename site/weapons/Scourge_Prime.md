@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
 - Primary fire uses ray collision; the native projectile's collision width is not simulated.
 - Primary-fire Condition Overload uses the catalog's additive rule; its conflict with the weapon page's multiplicative claim is unresolved.
 - It reloads 33% of its magazine a second while holstered or deployed; it is never holstered here.

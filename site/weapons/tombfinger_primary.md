@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Kitgun statistics use the published assembly tables; native primary overrides are bound, but the runtime part-composition consumer is unverified.
 - The quick shot is not a form here: tapping fires a smaller explosion (1.7 m, 30-108 Radiation by grip, falloff to 75%) with the same total damage split differently, and that split is unpublished. One in-game reading would settle it.
 - The projectile has travel time and must be led at range (wiki). Every shot here connects instantly, so against a moving target the real hit rate is lower.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.

@@ -17,6 +17,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.01783 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-24 05:54 UTC · dac6ecbaf97e |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 0.1501 | Infected Clip, Galvanized Chamber, Galvanized Aptitude, Critical Delay, Hammer Shot, Rifle Elementalist, Vile Acceleration, Vital Sense, Primary Blight | 2026-10-24 05:54 UTC · dac6ecbaf97e |
 
+## Not modelled here
+
+- Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Flux_Rifle

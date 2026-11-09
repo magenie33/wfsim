@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
 - An enemy killed directly by it leaves a Gas cloud whose ticks deal half the killing shot's damage (wiki). The engine has no hit that exists only after a kill, so against anything that dies the number reads low by roughly a third.
 
 ## In WFSim

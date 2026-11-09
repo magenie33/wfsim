@@ -17,6 +17,11 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | alternate | 0.4605 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Anemic Agility, Magnetic Might, Primed Steady Hands, Cascadia Flare | 2026-11-05 03:51 UTC · 9e4647c46c76 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.5726 | Primed Heated Charge, Pistol Acuity, Hornet Strike, Magnum Force, Primed Target Cracker, Galvanized Shot, Anemic Agility, Gunslinger, Primed Steady Hands, Secondary Encumber | 2026-11-05 03:48 UTC · 9e4647c46c76 |
 
+## Not modelled here
+
+- Charge time and the selected projectile use parsed inputs. The native charge-cap multiplier consumer is unverified; damage uses the declared packet without multiplying it by that cap.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Epitaph

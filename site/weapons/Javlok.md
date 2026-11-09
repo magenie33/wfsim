@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 

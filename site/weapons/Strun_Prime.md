@@ -2,7 +2,7 @@
 
 Chinese name: 斯特朗 Prime
 
-Shotgun · Primary · Mastery Rank 14. 54 base damage x12 multishot (impact 24.3, puncture 8.1, slash 21.6), 24% crit chance, 2.2x crit multiplier, 6.67% status chance.
+Shotgun · Primary · Mastery Rank 14. 54 base damage x12 multishot (impact 24.3, puncture 8.1, slash 21.6), 24% crit chance, 2.2x crit multiplier, 6.66667% status chance.
 
 ## Best riven-free build on the WFSim board, as of 2026-11-10
 
@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - A reload is never interrupted here: in game you can fire mid-reload and keep the shells already loaded. A listed reload is a whole reload, by design.
 
 ## In WFSim

@@ -19,11 +19,13 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Reload grenade packets, count and fan use parsed inputs. Release, flight and impact clocks and Critical Mutation group ordering remain unmodelled; the declared mid-reload impact approximation remains in use.
+- Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Unmeasured: when in the reload the grenade lands. The page says it is thrown mid-reload without a time, so it lands halfway through; the throw itself takes no time.
 - The explosion's self-stagger, which costs the wielder time when the target stands inside the blast, is not modelled.
 - Galvanized Shot's bug on the grenade's direct hit (multiplicative with base damage; the Bugs section of the wiki's Catabolyst page) is not modelled.
 - Interrupting the reload to throw again without reloading, the exploit the page describes, is not modelled.
-- The 45-degree fan is read as edge to edge around the reticle; the page does not say.
 - This weapon never reloads on its own; the sim reloads it, so forgetting to costs nothing here.
 
 ## In WFSim

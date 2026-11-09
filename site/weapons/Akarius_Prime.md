@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Flight uses the declared constant speed; native projectile acceleration is not simulated.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The rockets home within 15 degrees; every shot here hits anyway, so homing adds nothing.
 - The +50% reload speed while sprinting is not modelled: the player stands still here (Gauss and Gauss Prime double it to +100%).
 - Self-stagger is not modelled: an explosion at the wielder's feet can interrupt the 2-round burst so only one rocket fires (wiki).

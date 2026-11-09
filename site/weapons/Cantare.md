@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Returning-projectile ammunition keeps its declared resource convention; the native reserve field does not establish a finite pickup-based ammo pool.
 - On a reload the blades return, damaging everything in their path with critical chance set to 300% (wiki). A reload here fires nothing, so the number is the throw alone and reads well low.
 - Cantare Chorale: hitting enemies with the returning blades grants allies in range +20% reload speed for 30 s (wiki). The return is not fired and there are no allies here.
 - This weapon is silent; there is nobody to alert here, so stealth is worth nothing.

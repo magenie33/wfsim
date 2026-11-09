@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Kitgun statistics use the published assembly tables; native primary overrides are bound, but the runtime part-composition consumer is unverified.
 - The sac bounces up to twice and explodes on each bounce (page); only the first explosion is fired here, because where a bounce lands depends on the room.
 - The projectile has travel time and must be led at range (wiki). Every shot here connects instantly, so against a moving target the real hit rate is lower.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.

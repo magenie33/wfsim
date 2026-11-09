@@ -2,7 +2,7 @@
 
 Chinese name: 金工火神
 
-Sniper · Primary · Mastery Rank 3. 225 base damage (impact 180, puncture 33.8, slash 11.2), 20% crit chance, 2x crit multiplier, 25% status chance.
+Sniper · Primary · Mastery Rank 3. 225 base damage (impact 180, puncture 33.75, slash 11.25), 20% crit chance, 2x crit multiplier, 25% status chance.
 
 ## Best riven-free build on the WFSim board, as of 2026-11-10
 
@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - A miss while scoped drops the combo counter by one. This entry cannot miss, so only its 2 s timer removes a stack, and the number is the ceiling.
 - Lower zoom levels are not modelled: the scope always sits at its top level and its best buff.
 

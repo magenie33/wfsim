@@ -17,6 +17,11 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 2.6700 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Primed Target Cracker, Primed Pistol Gambit, Lethal Torrent, Pistol Elementalist, Primed Pistol Ammo Mutation, Cascadia Flare | 2026-10-24 02:42 UTC · db272037fe1d |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 8.6171 | Frostbite, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Hornet Strike, Lethal Torrent, Pistol Elementalist, Magnetic Might, Secondary Enervate | 2026-10-24 02:38 UTC · db272037fe1d |
 
+## Not modelled here
+
+- Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Atomos

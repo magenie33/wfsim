@@ -547,7 +547,7 @@ Each links to its page as markdown; drop `.md` for the calculator.
 - [Epitaph](https://wfsim.app/weapons/Epitaph.md): Pistol · Secondary · Mastery Rank 8
 - [Epitaph Prime](https://wfsim.app/weapons/Epitaph_Prime.md): Pistol · Secondary · Mastery Rank 14
 - [Euphona Prime](https://wfsim.app/weapons/Euphona_Prime.md): Shotgun Sidearm · Secondary · Mastery Rank 14
-- [Furis](https://wfsim.app/weapons/Furis.md): Pistol · Secondary · Mastery Rank 2
+- [Furis](https://wfsim.app/weapons/Furis.md): Pistol · Secondary · Mastery Rank 1
 - [Fusilai](https://wfsim.app/weapons/Fusilai.md): Pistol · Secondary · Mastery Rank 7
 - [Gammacor](https://wfsim.app/weapons/Gammacor.md): Pistol · Secondary · Mastery Rank 2
 - [Gaze](https://wfsim.app/weapons/gaze_secondary.md): Pistol · Secondary · Mastery Rank 0

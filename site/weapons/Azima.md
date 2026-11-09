@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native alternative behavior declarations are bound as evidence; their runtime availability and complete attack sequences are not simulated. Only the declared entry modes are used.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The alt-fire spends the whole magazine to deploy a turret that shoots on its own, with a 75 Blast expiry blast (wiki, module). The engine has no deployed turret, so neither the turret nor the magazine it costs is counted.
 
 ## In WFSim

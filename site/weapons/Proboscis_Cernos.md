@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The arrow also throws appendages that grab enemies within 9 m and drag them in, dealing 90 damage each (module). The engine carries one explosion per attack, so neither the pull nor the damage is counted.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.

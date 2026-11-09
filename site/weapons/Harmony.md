@@ -19,6 +19,9 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary.
+- Slam damage and critical rules retain the declared component model. Radius uses the maximum-height convention; ascent, descent, ground contact and recovery are not a calibrated physical cycle. Native attenuation and clip lengths do not establish that cycle.
+- Melee reach, sweep/thrust arcs and bone motion retain the declared arena approximation. Native collision dimensions alone do not establish the animated contact surface.
 - Power Spike's partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number reads low.
 - The wiki publishes no slide attack figure or duration for this weapon, so there is no slide mode.
 - Direct heavy-hit detonation includes the hit's own Slash, Heat, Toxin, Electricity and Gas procs. Its retained damage types, mitigation and headshot cap are not calibrated in game. Radial and heavy-slam detonation, the allied duration grant and Jade's Ensemble are not modelled. Heavy kills grant the wielder's ordinary weapon status procs +30% duration for 30 s.

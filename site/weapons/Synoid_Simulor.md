@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+- This attack uses the published beacon or orb component; native launch-packet statistics do not establish the scripted damage sequence.
 - Orbs merge, and a full set collapses into a singularity dealing damage over time in 5 m (module). The engine resolves each shot on its own, so neither is counted; this is most of the weapon, and the number reads well low.
 - The Entropy syndicate effect detonates enemies and restores the wielder's Energy (wiki). It runs on a syndicate meter the sim does not track; it is not counted.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.

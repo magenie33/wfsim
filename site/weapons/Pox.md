@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated.
 - The cloud's Condition Overload term is 50 against its own base of 20, the catalog's 250%; that is not entered here, so it takes 100% and a status-stacking build reads low on it.
 - The throw is silent and the cloud is not; there is nobody to alert here.
 - This weapon cannot equip Concealed Explosives, the thrown-exclusive mod, which is not offered here either way.

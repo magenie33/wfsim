@@ -6,6 +6,7 @@ Sentinel Weapon · Sentinel · Mastery Rank 0. 160 base damage (impact 53.3333, 
 
 ## Not modelled here
 
+- Companion melee retains its separate weapon and AI cadence model. Player melee animation parameters do not establish companion target selection, attack completion or retrieval time.
 - The active-projectile cap, recall and return availability are not simulated; the fire rate is the nominal refire timer.
 - It cannot be modded here: it uses melee and thrown melee mods (Pressure Point, Fury, Whirlwind, Power Throw), which are not offered for it. Its base numbers are right; a build is not available.
 - The damage type rotation is averaged: the weapon deals 160 of one type at a time, cycling Impact, Puncture, Slash, and this entry splits it evenly. Total damage and status mix are exact; armour is not, because mitigation applies per instance.

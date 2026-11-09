@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Returning-projectile ammunition keeps its declared resource convention; the native reserve field does not establish a finite pickup-based ammo pool.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The explosion comes on the reload: rounds lodge in surfaces and explode in 1.5 m when reloading, up to 32 at a time (wiki). The engine's explosions go off on impact, so the 48 Blast a round is not counted, and against anything that survives a magazine the number reads low by about four fifths.
 - It uses no ammo pickups and has a reserve of zero (module); reserves are infinite here, so the limit it is built around does not apply.
 

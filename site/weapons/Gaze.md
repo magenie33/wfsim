@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Kitgun statistics use the published assembly tables; native primary overrides are bound, but the runtime part-composition consumer is unverified.
 - The sphere also forms at the beam's maximum range (3 m, page); here the range is a hard limit, so a target up to 3 m beyond it takes nothing.
 - Punch through moves the sphere to the last point of contact (page), so a punch-through build sets it off behind the last body it passes.
 

@@ -226,7 +226,7 @@
 - [Fulmin Prime](https://wfsim.app/weapons/Fulmin_Prime.md): Rifle · Primary · Mastery Rank 12
 - [Furax](https://wfsim.app/weapons/Furax.md): Fist · Melee · Mastery Rank 5
 - [Furax Wraith](https://wfsim.app/weapons/Furax_Wraith.md): Fist · Melee · Mastery Rank 9
-- [Furis](https://wfsim.app/weapons/Furis.md): Pistol · Secondary · Mastery Rank 2
+- [Furis](https://wfsim.app/weapons/Furis.md): Pistol · Secondary · Mastery Rank 1
 - [Fusilai](https://wfsim.app/weapons/Fusilai.md): Pistol · Secondary · Mastery Rank 7
 - [Galariak Prime](https://wfsim.app/weapons/Galariak_Prime.md): Scythe · Melee · Mastery Rank 14
 - [Galatine](https://wfsim.app/weapons/Galatine.md): Heavy Blade · Melee · Mastery Rank 3

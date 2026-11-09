@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The cloud arrives 1 s after the dart lands (wiki); here it resolves on impact, so nothing walks out of it.
 - The explosion staggers enemies, opening them to finishers and stealth multipliers (wiki); there is no melee and no stealth here.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.

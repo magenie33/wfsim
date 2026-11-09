@@ -19,6 +19,8 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Flight uses the declared constant speed; native projectile acceleration is not simulated.
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - The blast needs no line of sight. There is no cover here, so the perk adds nothing.
 - In game the blast staggers the wielder; the player has no body here, so it costs nothing.
 - The bomblets take no Condition Overload: the wiki's catalog gives them a rule of their own (Kulstar | Cluster Bombs | Projectile | 75 | 200 | 257% | Adding — "CO-bonus uses parent projectile damage value"), and the engine sets the rule per weapon. They read low by that term only.

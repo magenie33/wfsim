@@ -19,6 +19,7 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 
 ## Not modelled here
 
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
 - Landing a tracer round grants +50% absolute critical chance for 20 s, unaffected by mods (wiki). The bonus comes from the other firing mode and the engine cannot carry it across, so this entry fires at 23% where a player with a beacon on the target fires at 73%. It is most of the weapon; the number reads low.
 - The primary fire homes on a beaconed target for 20 s (wiki); shots here already land where aimed, so homing adds nothing.
 

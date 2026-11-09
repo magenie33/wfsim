@@ -17,6 +17,10 @@ Each row is measured on its own, and says when and by which WFSim commit; the ga
 | Demolisher | one target · Demolisher Devourer Lv 9999 SP · 100% headshots, aiming · 4-player health · 180 s · KPM | base | 0.4771 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Merciless Gunfight, Galvanized Diffusion, Primed Target Cracker, Galvanized Shot, Semi-Pistol Cannonade, Primed Steady Hands, Secondary Enervate | 2026-10-29 09:29 UTC · be8a95fc1ba2 |
 | Heavy Gunner | one target · Eximus Corrupted Heavy Gunner Lv 9999 SP · 100% headshots, aiming · 180 s · KPM | base | 2.8831 | Ice Storm, Pistol Pestilence, Primed Heated Charge, Galvanized Diffusion, Galvanized Shot, Lethal Torrent, Pistol Elementalist, Magnetic Might, Primed Steady Hands, Secondary Enervate | 2026-10-29 08:23 UTC · be8a95fc1ba2 |
 
+## Not modelled here
+
+- Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.
+
 ## In WFSim
 
 - Build, simulate and optimize it: https://wfsim.app/weapons/Brakk
