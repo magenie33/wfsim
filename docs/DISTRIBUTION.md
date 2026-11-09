@@ -48,6 +48,26 @@ version. Published executable and package bytes are immutable; changing either
 requires a new host version. Engine and data updates keep their shared channel
 identities and do not by themselves require a new CLI host version.
 
+### npm publishing
+
+The first npm publication uses the verified prepared package after its matching
+native downloads are public. Its package version must equal the native host
+version. An interactive maintainer publishes that tarball with account 2FA,
+then configures the existing package's trusted publisher:
+
+```sh
+npm publish <verified-package.tgz> --access public
+npm trust github wfsim --repo magenie33/wfsim --file client-release.yml --env release --allow-publish
+```
+
+Trusted-publisher management requires npm 11.15.0 or later. The release job pins
+npm 11.21.2 and uses GitHub OIDC under the existing main-only `release`
+environment, with no npm token secret. Its package repository URL names the
+same GitHub repository. Subsequent releases use the workflow's npm option and
+retain provenance. [npm's trusted publishing contract](https://docs.npmjs.com/trusted-publishers/)
+defines the registry-side setup. A local login session lasts two hours and is
+separate from the workflow's publishing identity; recheck it before bootstrap.
+
 ## Three planes
 
 A file's change rate and its trust requirement decide which plane it belongs to.

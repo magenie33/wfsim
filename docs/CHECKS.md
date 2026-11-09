@@ -585,6 +585,8 @@ platforms. `check_client_release.mjs` checks the upload list derived from native
 manifest entries and the single `npm pack --json` result, including scoped and
 unscoped tarballs, duplicate names, missing files and stale or stray artifacts.
 It also checks that the workflow uses this list, without overlapping globs.
+Trusted publishing checks require a supported npm version, the exact repository
+URL, workflow identity permissions and the existing main/release protection.
 `cargo test --manifest-path client/Cargo.toml` covers range parsing,
 persistent identity, corrupt identity refusal, global fractional CPU budgets,
 cancellation, outbox acknowledgments and shared result-payload fixtures.

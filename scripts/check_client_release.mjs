@@ -64,6 +64,19 @@ try {
   assert(workflow.includes('node scripts/check_client_release.mjs'));
   assert(readFileSync('.github/workflows/client.yml', 'utf8').includes('node scripts/check_client_release.mjs'));
   ok('the release workflow uses the checked exact list instead of overlapping globs');
+  const publish = workflow.slice(workflow.indexOf('\n  publish:'));
+  const npm = publish.match(/npm install --global npm@(\d+)\.(\d+)\.(\d+)/);
+  assert(npm && (+npm[1] > 11 || +npm[1] === 11 && +npm[2] >= 15), 'pin npm with trusted-publisher management support');
+  const node = publish.match(/node-version:\s*['"]?(\d+)\.(\d+)\.(\d+)/);
+  assert(node && (+node[1] > 22 || +node[1] === 22 && +node[2] >= 14), 'trusted publishing needs Node 22.14 or later');
+  assert(publish.includes('id-token: write') && publish.includes('environment: release'));
+  assert(publish.includes("if: github.ref == 'refs/heads/main'"));
+  assert(!publish.includes('NPM_TOKEN') && !publish.includes('NODE_AUTH_TOKEN'), 'npm publication uses the workflow identity');
+  ok('trusted publishing has a supported npm and preserves main/environment protection without a token secret');
+  const pkg = JSON.parse(readFileSync('client/npm/package.json', 'utf8'));
+  assert.equal(pkg.repository?.type, 'git');
+  assert.equal(pkg.repository?.url, 'git+https://github.com/magenie33/wfsim.git');
+  ok('the npm repository URL matches the authorized GitHub publisher');
   console.log(`CLI release assets: ${checks} checks passed; no upload or native rebuild.`);
 } finally {
   rmSync(temporary, { recursive: true, force: true });
