@@ -7,6 +7,8 @@ form: slide
 transform_group: amanata
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_heavy_unpublished
   - reason: melee_passive_unmodelled
     passive: "Amanata's Rolls: a random blessing — 40% final Critical Chance, 30% final Status Chance, 30% Status Damage, +1 m range, 20% attack speed, or all five — rerolled every 30 hits"
@@ -22,7 +24,7 @@ attack:
   status_chance: 0.24
   punch_through_m: 0.0
   range_m: 3.0
-  follow_through: 1.0
+  follow_through: 1
   damage:
     puncture: 37.8
     slash: 88.2
@@ -31,3 +33,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Amanata
+
+# see notes: client_melee_calibration

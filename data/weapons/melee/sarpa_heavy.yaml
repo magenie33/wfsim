@@ -6,6 +6,9 @@ form: heavy
 transform_group: sarpa
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - reason: gunblade_heavy_package_limits
 - reason: gunblade_sarpa_burst_limits
 - Sarpa shots have innate punch through, but its depth is unpublished; this profile gives them no body
@@ -127,3 +130,5 @@ attack:
     max_deg: 20
 source:
   url: https://wiki.warframe.com/w/Sarpa
+
+# see notes: client_melee_calibration

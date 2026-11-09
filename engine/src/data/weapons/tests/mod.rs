@@ -2,6 +2,7 @@ use super::*;
 
 mod battery;
 mod client_cadence;
+mod client_melee;
 mod client_primary;
 mod client_scourge;
 mod primary_calibration;

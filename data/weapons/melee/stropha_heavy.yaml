@@ -6,6 +6,9 @@ form: heavy
 transform_group: stropha
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - reason: gunblade_heavy_package_limits
 - reason: gunblade_stropha_geometry
 attack:
@@ -70,3 +73,5 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Stropha
 headshot_multiplier: 1.0
+
+# see notes: client_melee_calibration

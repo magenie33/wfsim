@@ -69,6 +69,7 @@ attack:
   damage: { impact: 43.333333, puncture: 43.333333, slash: 43.333333 }   # 130 a throw
 
 unmodeled:
+  - reason: client_melee_companion
   - "The active-projectile cap, recall and return availability are not simulated; the fire rate is the nominal refire timer."
   - "It cannot be modded here: it uses melee and thrown melee mods (Pressure Point, Fury, Whirlwind, Power Throw), which are not offered for it. Its base numbers are right; a build is not available."
   - "The damage type rotation is averaged: the weapon deals 130 of one type at a time, cycling Impact, Puncture, Slash, and this entry splits it evenly. Total damage and status mix are exact; armour is not, because mitigation applies per instance."
@@ -78,3 +79,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Deconstructor
+
+# see notes: client_melee_calibration

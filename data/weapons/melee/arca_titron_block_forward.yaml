@@ -7,6 +7,8 @@ form: block_forward
 transform_group: arca_titron
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
   reads low.'
 - reason: melee_passive_unmodelled
@@ -35,3 +37,5 @@ attack:
     context: CC_GROUND_BRANCH_A
 source:
   url: https://wiki.warframe.com/w/Arca_Titron
+
+# see notes: client_melee_calibration

@@ -7,6 +7,8 @@ form: slide
 transform_group: zenistar
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_attack_unmodelled
   attacks: Attacks While Disc Deployed
 attack:
@@ -21,7 +23,7 @@ attack:
   status_chance: 0.3
   punch_through_m: 0.0
   range_m: 2.6
-  follow_through: 1.0
+  follow_through: 1
   damage:
     impact: 80
     slash: 68
@@ -31,3 +33,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Zenistar
+
+# see notes: client_melee_calibration

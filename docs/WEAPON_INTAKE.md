@@ -79,6 +79,11 @@ mechanics already pinned by an existing measurement needs no new one.
 `#[test]`s inside the engine modules, each citing an `M<n>` from
 docs/MEASUREMENTS.md.)
 
+Whole-melee calibration follows `DATA_SOURCES.md` §Whole-melee client
+calibration: parsed inputs take priority after consumer review, while earlier
+resource clocks and unsupported composite rules retain explicit limitations.
+Every declared form requires a reviewed exact-owner/component binding.
+
 ## READ THE PAGE, NOT ONLY THE MODULE
 
 The filter that picks "simple" weapons reads the data module's STRUCTURED

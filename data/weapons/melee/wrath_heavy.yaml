@@ -8,6 +8,8 @@ form: heavy
 transform_group: wrath
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_legacy
+  - reason: client_melee_geometry
   - reason: melee_slide_unpublished
   - reason: heavy_charge_share_assumed
     published: 1.0
@@ -69,3 +71,5 @@ attack:
     combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Wrath
+
+# see notes: client_melee_calibration

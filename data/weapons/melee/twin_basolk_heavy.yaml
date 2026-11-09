@@ -6,7 +6,9 @@ inherits: twin_basolk
 form: heavy
 transform_group: twin_basolk
 co_behavior: additive_with_base_damage
-unmodeled: []
+unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -34,3 +36,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Twin_Basolk
+
+# see notes: client_melee_calibration

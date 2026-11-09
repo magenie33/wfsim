@@ -30,3 +30,10 @@ attack:
     slash: 78.675
     viral: 57.675
   combo_script: []
+
+unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
+  - reason: client_melee_assembly
+
+# see notes: client_melee_calibration

@@ -7,6 +7,8 @@ form: heavy
 transform_group: coda_motovore
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: physical_mod_passive_unmeasured
 attack:
   trigger: melee
@@ -34,3 +36,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Coda_Motovore
+
+# see notes: client_melee_calibration

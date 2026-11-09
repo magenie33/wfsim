@@ -7,6 +7,8 @@ form: heavy
 transform_group: dual_keres
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_passive_unmodelled
   passive: wielded by Khora, 20% Heavy Attack Efficiency
 attack:
@@ -35,3 +37,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Dual_Keres
+
+# see notes: client_melee_calibration

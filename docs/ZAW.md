@@ -72,7 +72,8 @@ fixture's unassembled weapon has its own placeholder stats; it does not
 establish more precise grip/link speed values. Reach comes from the finished
 weapon table on the
 [Zaw page](https://wiki.warframe.com/w/Zaw), not the strike infobox's 1 m
-preview. Follow Through comes from each handedness's package action tree.
+preview. Follow Through comes from each handedness's package action tree;
+slide attacks retain full damage on every target under the shared melee rule.
 Slam elements, radii and forced effects use the package's per-strike/handedness
 records. Final slam damage, inherited critical stats and falloff follow the
 shared melee rule and [M69](measurements/M69-slam-radial-and-flat-add.md). The

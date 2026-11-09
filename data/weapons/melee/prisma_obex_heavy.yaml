@@ -7,6 +7,8 @@ form: heavy
 transform_group: prisma_obex
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_incarnon_slam_arms_unmodelled
 - reason: melee_passive_unmodelled
   passive: most of its quick attacks count as headshots even when not aimed at the head
@@ -36,3 +38,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Prisma_Obex
+
+# see notes: client_melee_calibration

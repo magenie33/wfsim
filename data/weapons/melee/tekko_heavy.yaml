@@ -7,6 +7,8 @@ form: heavy
 transform_group: tekko
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_slide_unpublished
 - reason: melee_passive_unmodelled
   passive: 'with Atlas, its signature bonus: +6% base Status Chance'
@@ -36,3 +38,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Tekko
+
+# see notes: client_melee_calibration

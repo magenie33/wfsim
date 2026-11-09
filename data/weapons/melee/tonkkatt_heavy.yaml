@@ -7,6 +7,8 @@ form: heavy
 transform_group: tonkkatt
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_passive_unmodelled
   passive: raising the combo multiplier grants +4% Heat for 15 s, up to 30 stacks, refreshed by each new stack
 attack:
@@ -34,3 +36,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Tonkkatt
+
+# see notes: client_melee_calibration

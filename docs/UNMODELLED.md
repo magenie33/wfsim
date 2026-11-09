@@ -518,6 +518,35 @@ cards, Covert Lethality, Boreal's Contempt and Nira's Contempt
 (`data/surveys/pool_mods.yaml`). Melee WEAPON augments (Blade of Truth, Justice
 Blades, …) are not surveyed at all: `survey_weapon_mods.py` reads gun types only.
 
+## Whole-melee client calibration — remaining consumers
+
+Every melee entry has a reviewed owner/component binding in
+`tests/fixtures/client/melee-calibration-2026-10-28.json`. Supported ordinary
+inputs are applied; a declaration or a matching earlier export is not a complete
+runtime calibration. Each reason is scoped to the affected forms.
+
+- `client_melee_timing`: current action properties/references are checked;
+  older resource durations and markers remain in use where no replacement is
+  available. Playback fitting, collision windows and accepted input remain open.
+- `client_melee_legacy`: retained motion/recovery approximation where a complete
+  event timeline is unavailable; verified weapon wind-up applies independently.
+- `client_melee_geometry`: declared reach/arcs rather than animated bone contact.
+- `client_melee_slam`: declared damage/critical model and maximum-height radius;
+  ascent, descent, collision and recovery are not a calibrated physical cycle.
+- `client_melee_special`: unresolved selectors, intrinsic multipliers or callbacks
+  retain their declared sequence and modifier rules.
+- `client_melee_ability`: ability/cast damage and measured combo overrides remain
+  distinct from the raw weapon packet.
+- `client_melee_assembly`: published Zaw assembly statistics remain authoritative;
+  native part declarations do not establish the final runtime composition.
+- `client_melee_counter`: unsupported native initial/tier/cap differences remain
+  recorded, including the existing weapon-specific counter admissions.
+- `client_melee_companion`: separate companion targeting and AI/retrieval cadence.
+
+These reasons supplement existing weapon-specific limitations. They do not
+remove measured observations or imply that native callbacks and passives are
+applied merely because a dossier records them.
+
 ## Open decisions, not missing machinery
 
 These are things the engine COULD do today and deliberately does not, because

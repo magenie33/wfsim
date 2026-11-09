@@ -46,6 +46,9 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_slam
+- reason: client_melee_geometry
 - 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
   reads low.'
 attack:
@@ -85,3 +88,5 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Praedos
   # The combo table: https://wiki.warframe.com/w/Sovereign_Outcast
+
+# see notes: client_melee_calibration

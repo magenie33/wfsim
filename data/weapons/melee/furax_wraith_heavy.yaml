@@ -7,6 +7,9 @@ form: heavy
 transform_group: furax_wraith
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
+- reason: client_melee_counter
 - reason: melee_slide_unpublished
 - reason: melee_passive_unmodelled
   passive: its combo counter starts at 20
@@ -36,3 +39,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Furax_Wraith
+
+# see notes: client_melee_calibration

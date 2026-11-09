@@ -8,6 +8,8 @@ form: heavy_slam
 transform_group: dex_nikana
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_slam
+  - reason: client_melee_counter
   - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
   - reason: melee_passive_unmodelled
     passive: "its combo multiplier rises every 11 hits rather than 20, and stops at 11x"
@@ -48,3 +50,5 @@ attack:
     combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Dex_Nikana
+
+# see notes: client_melee_calibration

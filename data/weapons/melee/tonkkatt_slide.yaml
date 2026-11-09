@@ -7,6 +7,8 @@ form: slide
 transform_group: tonkkatt
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_passive_unmodelled
     passive: "raising the combo multiplier grants +4% Heat for 15 s, up to 30 stacks, refreshed by each new stack"
 attack:
@@ -21,7 +23,7 @@ attack:
   status_chance: 0.21
   punch_through_m: 0.0
   range_m: 2.5
-  follow_through: 1.0
+  follow_through: 1
   heavy:
     multiplier: 5.0
     windup_seconds: 0.69999999
@@ -33,3 +35,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Tonkkatt
+
+# see notes: client_melee_calibration

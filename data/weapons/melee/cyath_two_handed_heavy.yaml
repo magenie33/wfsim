@@ -10,6 +10,9 @@ co_behavior: additive_with_base_damage
 source:
   url: https://wiki.warframe.com/w/Cyath
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
+- reason: client_melee_assembly
 - reason: heavy_charge_share_assumed
   published: 0.9
   charge: 0.3
@@ -50,3 +53,5 @@ attack:
     - knockdown
     combo_points: 0
     combo_points_base: 0
+
+# see notes: client_melee_calibration

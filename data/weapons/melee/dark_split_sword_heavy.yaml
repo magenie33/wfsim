@@ -7,7 +7,9 @@ inherits: dark_split_sword
 form: heavy
 transform_group: dark_split_sword
 co_behavior: additive_with_base_damage
-unmodeled: []
+unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -34,3 +36,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Dark_Split-Sword
+
+# see notes: client_melee_calibration

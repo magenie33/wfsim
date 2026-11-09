@@ -7,6 +7,8 @@ form: heavy
 transform_group: dorrclave
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_slide_unpublished
 - reason: melee_passive_unmodelled
   passive: 'Rising Vendetta: 10 kills or assists grant +0.5 Follow Through and +100% flat Status Chance to the next 10 attacks that hit'
@@ -34,3 +36,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Dorrclave
+
+# see notes: client_melee_calibration

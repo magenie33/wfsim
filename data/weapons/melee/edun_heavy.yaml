@@ -6,6 +6,9 @@ form: heavy
 transform_group: edun
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - Heavy-attack mod bonuses apply only if the projectile lands during a heavy attack animation. The simulation applies them
   to every direct heavy projectile instead of checking the animation window.
 - Tennokai grants its combo-free input, but its bonus damage should not apply to the throw; that exclusion is not modelled.
@@ -55,3 +58,5 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Edun
 co_base_fraction: 0.25
+
+# see notes: client_melee_calibration

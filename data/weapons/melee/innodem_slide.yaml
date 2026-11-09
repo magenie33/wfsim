@@ -7,6 +7,8 @@ form: slide
 transform_group: innodem
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_attack_unmodelled
     attacks: "Dagger Projectile"
 attack:
@@ -21,7 +23,7 @@ attack:
   status_chance: 0.22
   punch_through_m: 0.0
   range_m: 1.8
-  follow_through: 1.0
+  follow_through: 1
   heavy:
     multiplier: 5.0
     windup_seconds: 0.64999998
@@ -34,3 +36,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Innodem
+
+# see notes: client_melee_calibration

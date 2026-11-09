@@ -50,6 +50,7 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
+  - reason: client_melee_ability
   - "A cast's length is unpublished: each cast here takes one second at 1.0x Casting Speed, which sets how often it hits and changes no single hit."
   - "Energy is unlimited here: every cast costs 25, scaled by Efficiency, and nothing runs dry."
   - "The combo counter gains 20 once per cast that hits; here a cast earns it per body it hits, which is the same against one target."
@@ -91,3 +92,6 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Shattered_Lash_(Weapon)
   # The ability's numbers: https://wiki.warframe.com/w/Shattered_Lash
+disposition: 1.2
+
+# see notes: client_melee_calibration

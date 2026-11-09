@@ -7,6 +7,8 @@ form: throw
 transform_group: wolf_sledge
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_special
+  - reason: client_melee_legacy
   - reason: wolf_sledge_throw_limits
 attack:
   trigger: melee
@@ -60,5 +62,8 @@ attack:
     combo_points: 1
     combo_points_base: 1
   projectile_speed_mps: 50.0
+  throw_charge_seconds: 1
 source:
   url: https://wiki.warframe.com/w/Wolf_Sledge
+
+# see notes: client_melee_calibration

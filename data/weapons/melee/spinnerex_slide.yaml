@@ -7,6 +7,8 @@ form: slide
 transform_group: spinnerex
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_passive_unmodelled
     passive: "an enemy it hit in the last 5 s that dies has a 10% chance per Toxin status on it to explode for 480 Toxin in 10 m, with a forced Toxin status"
 attack:
@@ -21,7 +23,7 @@ attack:
   status_chance: 0.4
   punch_through_m: 0.0
   range_m: 3.0
-  follow_through: 1.0
+  follow_through: 1
   heavy:
     multiplier: 4.5
     windup_seconds: 2.0
@@ -32,3 +34,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Spinnerex
+
+# see notes: client_melee_calibration

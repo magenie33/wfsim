@@ -7,6 +7,8 @@ form: slide
 transform_group: kuva_shildeg
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_valence_unmodelled
     family: Kuva
 attack:
@@ -21,7 +23,7 @@ attack:
   status_chance: 0.27
   punch_through_m: 0.0
   range_m: 3.0
-  follow_through: 1.0
+  follow_through: 1
   heavy:
     multiplier: 6.0
     windup_seconds: 0.5
@@ -34,3 +36,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Kuva_Shildeg
+
+# see notes: client_melee_calibration

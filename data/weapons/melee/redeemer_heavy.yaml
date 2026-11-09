@@ -6,6 +6,9 @@ form: heavy
 transform_group: redeemer
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - reason: gunblade_heavy_package_limits
 - The wiki heavy total is 900; the package action gives 4 times the 300-damage ranged volley before physical
   bonuses. This profile follows the package multiplier; the difference is unmeasured.
@@ -70,3 +73,5 @@ attack:
     max_deg: 20
 source:
   url: https://wiki.warframe.com/w/Redeemer
+
+# see notes: client_melee_calibration

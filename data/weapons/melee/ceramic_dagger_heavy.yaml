@@ -7,6 +7,9 @@ form: heavy
 transform_group: ceramic_dagger
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - reason: ceramic_dagger_projectile_timing
 attack:
   trigger: melee
@@ -126,3 +129,5 @@ attack:
         takes_multishot: true
 source:
   url: https://wiki.warframe.com/w/Ceramic_Dagger
+
+# see notes: client_melee_calibration

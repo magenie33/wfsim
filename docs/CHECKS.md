@@ -38,6 +38,13 @@ Changing a nominal rate must fail the compiled check after forcing a data rebuil
 The combat-model check covers charge-only cadence, shell-loop phases and battery
 delays. Existing native sampler vectors also exercise 3D-to-arena projection.
 
+`import_client_melee.py --exchange <exchange> --check` verifies every melee
+owner/form/component binding, current action properties and supported tree
+references, pinned archives and generated source receipts. Compiled melee
+coverage compares adopted fields, retained ability conventions and scoped
+limitations; shared actions/trees compare against independently checked sources.
+The negative controls alter an adopted value and a shared action multiplier.
+
 `check_compute_attribution.mjs` verifies actual witness settlement, completion
 order, current name resolution, stable profiles, anonymous credit, native
 measurement replacement, private-input exclusion, exact 14-day expiry and

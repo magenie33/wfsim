@@ -29,3 +29,10 @@ attack:
     puncture: 55.5
     slash: 144.3
   combo_script: []
+
+unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
+  - reason: client_melee_assembly
+
+# see notes: client_melee_calibration

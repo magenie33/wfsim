@@ -6,6 +6,8 @@ form: slide
 transform_group: syam
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: special_heavy_profile_limits
 attack:
   trigger: melee
@@ -19,7 +21,7 @@ attack:
   status_chance: 0.34
   punch_through_m: 0.0
   range_m: 2.5
-  follow_through: 1.0
+  follow_through: 1
   damage:
     impact: 54
     puncture: 108
@@ -29,3 +31,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Syam
+
+# see notes: client_melee_calibration

@@ -7,6 +7,9 @@ form_name: Charged Projectile
 transform_group: corufell_prime
 co_behavior: independent
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - reason: corufell_projectile_timing
 - reason: corufell_projectile_width
 - reason: corufell_signature_windup
@@ -15,13 +18,13 @@ attack:
   trigger: melee
   shot_type: projectile
   projectile_speed_mps: 40
-  fire_rate: 1.0
+  fire_rate: 1.08333333333333
   multishot: 1.0
   ammo_cost: 0
   no_magazine: true
   crit_chance: 0.3
   crit_multiplier: 2.5
-  status_chance: 0.14
+  status_chance: 0.2
   punch_through_m: 0.0
   infinite_body_punch_through: true
   falloff:
@@ -62,3 +65,5 @@ attack:
           combo_points: 0
 source:
   url: https://wiki.warframe.com/w/Corufell_Prime
+
+# see notes: client_melee_calibration

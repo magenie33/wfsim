@@ -1071,6 +1071,43 @@ not hold. Verified to bite — a key one path segment short (the Hema's
 rather than write. Client-sourced claws absent from the Public Export resolve
 against the exact internal paths in the closed client fixture instead.
 
+### Whole-melee client calibration
+
+`scripts/import_client_melee.py --exchange <exchange> --check` verifies the
+immutable roster and complete effective-record archive, joins by exact internal
+owner and checks every form in `tests/fixtures/client/melee-bindings.json`.
+`melee-calibration-2026-10-28.json` records raw source inputs, selected components,
+adopted fields and retained rules. Companion melee and assembled Zaws have
+separate consumers; a player's melee interval or an unassembled part's damage
+must not replace those models. Dark Split-Sword binds its concrete child weapon
+for each class rather than firing its abstract hybrid owner.
+
+Parsed inputs take priority over conflicting published values, especially weapon
+cadence and charge, after identifying the actual consumer. Ordinary sweep stats,
+follow-through on ordinary sweeps, combo duration and projectile packets use
+their bound members. Slides retain full follow-through, and ranged/area
+components retain their own rules. ExplosionFallOff binds bounce explosions;
+it does not establish a recall explosion's falloff consumer.
+Equivalent existing float32 spellings and small damage-vector rounding remain
+unchanged. Native initial/tier/cap exceptions not supported by the engine remain
+unmodelled rather than appearing as applied rules in the YAML.
+
+Current action properties and supported tree contexts are independently checked
+against `tests/fixtures/melee/package-2026-10-08.json`. Its resource durations and
+markers remain the clock source wherever the current snapshots do not provide
+replacement clips. A current metadata reference does not validate an older clip's
+length, a cancellation boundary or contact pose. Shared actions remain defined
+once in `data/melee/actions.yaml`; manual geometry masks retain their own source.
+`import_melee_package.py --check` and the current-source importer must both pass.
+
+Non-ability talons use the same package action importer as ordinary melee.
+Fixed-stance measured combo rules remain declared; their independently verified
+weapon wind-up applies without inventing a new motion timeline. Ability-scaled
+packets remain separate from raw weapon placeholders. The slam evidence binds
+configuration and audited radius arithmetic, but does not replace a measured
+slam-damage rule or calibrate jump, descent and accepted-next-action times.
+`UNMODELLED.md` owns the remaining runtime limitations.
+
 ### Parsed firing cadence and beast claws
 
 `scripts/import_client_cadence.py --exchange <root> [--check]` verifies closed

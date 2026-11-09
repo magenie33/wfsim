@@ -7,6 +7,8 @@ form: heavy
 transform_group: cobra_and_crane
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_own_combo_unmodelled
   combos: aerial attack
 - reason: melee_slide_unpublished
@@ -37,3 +39,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Cobra_&_Crane
+
+# see notes: client_melee_calibration

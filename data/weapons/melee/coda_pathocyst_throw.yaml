@@ -8,6 +8,8 @@ form: throw
 transform_group: coda_pathocyst
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_special
+  - reason: client_melee_legacy
   - reason: glaive_bounce_count_assumed
   - reason: glaive_bounce_explosion_assumed
   - reason: glaive_detonation_ends_bounces
@@ -69,3 +71,5 @@ attack:
   forced_procs: []
 source:
   url: https://wiki.warframe.com/w/Coda_Pathocyst
+
+# see notes: client_melee_calibration

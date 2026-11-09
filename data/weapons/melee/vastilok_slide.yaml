@@ -7,6 +7,8 @@ form: slide
 transform_group: vastilok
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: gunblade_light_shots_unmodelled
 attack:
   trigger: melee
@@ -20,7 +22,7 @@ attack:
   status_chance: 0.31
   punch_through_m: 0.0
   range_m: 1.0
-  follow_through: 1.0
+  follow_through: 1
   damage:
     impact: 19.53
     puncture: 25.11
@@ -30,3 +32,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Vastilok
+
+# see notes: client_melee_calibration

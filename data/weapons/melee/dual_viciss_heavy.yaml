@@ -7,6 +7,8 @@ form: heavy
 transform_group: dual_viciss
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_passive_unmodelled
   passive: each enemy it inflicts Gas on grants +7% attack speed and +8% movement speed for 10 s, up to 5 stacks, refreshed by each new stack
 attack:
@@ -35,3 +37,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Dual_Viciss
+
+# see notes: client_melee_calibration

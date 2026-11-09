@@ -7,6 +7,8 @@ form: heavy
 transform_group: paracesis
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_passive_unmodelled
   passive: each rank past 30 adds damage against Sentients, and at rank 40 it gains Void damage properties against them
 - reason: melee_passive_unmodelled
@@ -37,3 +39,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Paracesis
+
+# see notes: client_melee_calibration

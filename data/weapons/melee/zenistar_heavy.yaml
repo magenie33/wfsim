@@ -6,6 +6,9 @@ form: heavy
 transform_group: zenistar
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - The heavy mode deploys one disc, waits for its aura to expire, then deploys again. Early recall, moving beyond recall range
   and light attacks while the disc is deployed are not modelled.
 - Disc flight speed and collision stopping are unmeasured. The model places the explosion and aura on the first struck body
@@ -98,3 +101,5 @@ attack:
       combo_script: []
 source:
   url: https://wiki.warframe.com/w/Zenistar
+
+# see notes: client_melee_calibration

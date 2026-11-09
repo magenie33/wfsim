@@ -66,7 +66,11 @@ fn scenario_combo_does_not_grant_a_counter_to_a_gun() {
 
 #[test]
 fn scenario_combo_remains_configurable_without_a_stance_script() {
-    let params = configured("garuda_prime_talons", 100, false);
+    let base = crate::model::WeaponBase::from_data("garuda_prime_talons", false, &[]);
+    let mut panel = crate::build::loadout::resolve(&base, &[], crate::model::StackPolicy::Emergent);
+    panel.combo_script.clear();
+    let mut params = FightParams::from_panel(&panel, &crate::arena::Arena::training(10.0), &ArcaneFx::none());
+    params.apply_buff_config(&BuffConfig::from([("melee_combo".into(), (100, false))]));
     assert!(params.combo_script.is_empty());
     assert_eq!(params.melee_combo_initial, 100);
     assert!(params.buff_roster().iter().any(|b| b.id == "melee_combo"));

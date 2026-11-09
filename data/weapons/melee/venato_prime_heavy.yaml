@@ -7,6 +7,8 @@ form: heavy
 transform_group: venato_prime
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_slide_unpublished
 - reason: melee_passive_unmodelled
   passive: a status it applies has a 100% chance to also apply Tau; wielded by Caliban, attacks have a 50% chance of an extra combo point
@@ -36,3 +38,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Venato_Prime
+
+# see notes: client_melee_calibration

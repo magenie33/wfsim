@@ -40,6 +40,8 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - 'The 5% Movement Speed bonus while held: nobody moves here.'
 - 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
   reads low.'
@@ -84,3 +86,5 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Okina_Prime
   # The combo table: https://wiki.warframe.com/w/Spinning_Needle
+
+# see notes: client_melee_calibration

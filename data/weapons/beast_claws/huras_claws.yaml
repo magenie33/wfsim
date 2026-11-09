@@ -32,7 +32,10 @@ attack:
   damage:
     slash: 350.0
 unmodeled:
+- reason: client_melee_companion
 - The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.
 - Attacks are assumed to connect. Companion movement, contact geometry, native attack selection, target scoring and precepts are not simulated. Postures use deterministic target intent.
 source:
   url: https://wiki.warframe.com/w/Huras_Claws
+
+# see notes: client_melee_calibration

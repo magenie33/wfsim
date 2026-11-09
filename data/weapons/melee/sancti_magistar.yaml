@@ -60,6 +60,9 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_slam
+- reason: client_melee_geometry
 - A heavy attack grants every attack 5% life steal plus 5% per combo level, permanently, shared with allies within 15 m. Nothing damages the Tenno here and there
   are no allies, so it adds nothing.
 - A 20% chance to resist a status effect while held protects the wielder; nothing shoots back here.
@@ -101,3 +104,5 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Sancti_Magistar
   # The combo table: https://wiki.warframe.com/w/Crushing_Ruin
+
+# see notes: client_melee_calibration

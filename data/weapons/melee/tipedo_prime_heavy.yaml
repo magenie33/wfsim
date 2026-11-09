@@ -8,6 +8,8 @@ form: heavy
 transform_group: tipedo_prime
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_legacy
+  - reason: client_melee_geometry
   - reason: heavy_charge_share_assumed
     published: 0.5
     charge: 0.1667
@@ -50,3 +52,5 @@ attack:
     combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Tipedo_Prime
+
+# see notes: client_melee_calibration
