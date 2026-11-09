@@ -1,0 +1,469 @@
+{
+  "source": {
+    "batch_id": "20261109T053558Z-weapon-roster-dossiers",
+    "manifest_sha256": "7b830c6730e20621029d67d9d26e9aa8a216c998c32de73e2e22fe187c979d91",
+    "archive": {
+      "path": "weapon-roster-dossiers.zip",
+      "bytes": 26610207,
+      "sha256": "0204e7947e3f45afd746b696e5405c90e80af6c1924795885be206ae05e5a18c"
+    },
+    "members": [
+      {
+        "path": "shared/objects.jsonl",
+        "bytes": 391622746,
+        "sha256": "ccd1260624914a56a4521f3382d2918e8986ffcf144fa1753ee99800425eece8"
+      },
+      {
+        "path": "weapons/scourge/dossier.json",
+        "bytes": 29189,
+        "sha256": "97b35c965352a5c3898e630ef426e8bbf63aea5975320f0f844d824dfd06dc0c"
+      },
+      {
+        "path": "weapons/scourge_prime/dossier.json",
+        "bytes": 34412,
+        "sha256": "79dc0b8a181415302947c65a7a4a827befa82c15aed45f7b38622c58bb8bacdd"
+      }
+    ]
+  },
+  "forms": [
+    {
+      "id": "scourge",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearGun",
+      "behavior_index": 0,
+      "role_types": {
+        "fire:Type": "/Lotus/Types/Game/LotusWeaponProjectileFireBehavior",
+        "impact:Type": "/Lotus/Types/Weapon/LotusWeaponImpactBehavior",
+        "state:Type": "/EE/Types/Game/WeaponAutomaticStateBehavior"
+      },
+      "fire": {
+        "IgnoreFireIterations": "0",
+        "fireIterations": "1",
+        "ammoRequirement": "1",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "state": {
+        "fireRate": "160",
+        "reloadTime": "2.5"
+      },
+      "projectile_candidate": {
+        "owner": "/Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearPrimaryFireWaveProjectile",
+        "attack": {
+          "Type": "DT_CORROSIVE",
+          "Amount": "70",
+          "ProcChance": "0.30000001"
+        },
+        "explosion": {
+          "Type": "DT_CORROSIVE",
+          "Amount": "55",
+          "ProcChance": "0.30000001"
+        },
+        "fields": {
+          "CriticalChance": "CriticalChance=0.02",
+          "CriticalMultiplier": "CriticalMultiplier=1.5",
+          "ExplosionFallOff": "ExplosionFallOff=0.30000001",
+          "DamageRadius": "DamageRadius=1.7",
+          "KinematicInitialSpeed": "KinematicInitialSpeed=40",
+          "KinematicMaxSpeed": "KinematicMaxSpeed=40",
+          "InitialWidth": "InitialWidth=0.5",
+          "InitialRadius": "InitialRadius=0.1"
+        },
+        "crit_chance": 0.02,
+        "crit_multiplier": 1.5
+      },
+      "expected": {
+        "damage": {
+          "corrosive": 70.0
+        },
+        "radial_damage": {
+          "corrosive": 55.0
+        },
+        "crit_chance": 0.02,
+        "crit_multiplier": 1.5,
+        "status_chance": 0.3,
+        "radial_status_chance": 0.3,
+        "radius_m": 1.7,
+        "falloff_reduction": 0.3,
+        "fire_rate": 2.6666666666666665,
+        "disposition": 1.2,
+        "magazine": 40.0,
+        "ammo_max": 200.0,
+        "reload_seconds": 2.5,
+        "projectile_speed_mps": 40.0
+      }
+    },
+    {
+      "id": "scourge_thrown",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearGun",
+      "behavior_index": 1,
+      "role_types": {
+        "fire:Type": "/Lotus/Types/Game/LotusWeaponProjectileFireBehavior",
+        "impact:Type": "/Lotus/Types/Weapon/LotusWeaponImpactBehavior",
+        "state:Type": "/Lotus/Types/Weapon/LotusSpearGunStateBehavior"
+      },
+      "fire": {
+        "IgnoreFireIterations": "1",
+        "fireIterations": "1",
+        "ammoRequirement": "1",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "state": {
+        "fireRate": "60",
+        "reloadTime": "2.5",
+        "ReloadAfterEveryShot": "1",
+        "DestroyActiveProjectiles": "1",
+        "DetonateOnSwapToPrimary": "1"
+      },
+      "projectile_candidate": {
+        "owner": "/Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearChargedProjectile",
+        "attack": {
+          "Amount": "150",
+          "DT_IMPACT": "0.69999999",
+          "DT_PUNCTURE": "0.15000001",
+          "DT_SLASH": "0.14999998",
+          "ProcChance": "0.30000001"
+        },
+        "explosion": {
+          "Type": "DT_CORROSIVE",
+          "Amount": "55",
+          "ProcChance": "0.30000001",
+          "ForcedProcs": "{\nPT_KNOCKBACK\n}"
+        },
+        "fields": {
+          "DealDamageThroughImpactBehavior": "DealDamageThroughImpactBehavior=1",
+          "KinematicInitialSpeed": "KinematicInitialSpeed=150",
+          "KinematicMaxSpeed": "KinematicMaxSpeed=150",
+          "ScriptInstance": "ScriptInstance={\nScript=/Lotus/Scripts/WeaponAttachments/SpearWeapons.lua\nFunction=ReleasePriestSpear\n_recallEffect=/Lotus/Fx/Weapons/Grineer/FlameSpear/FlameSpearRecall\n_embedFx=\"\"\n_pickupTrigger=TnPriestSpearEntity\n_projectorType=/Lotus/Fx/Projectors/WeaponProjector\n_specialTrigger=\"\"\n_equipBestWeapon=1\n_tetherSound2D=\"\"\n_tetherSound3D=\"\"\n_attractorType=TnPriestSpearBulletAttractor\n_attractorPulseTime=5\n_attractorRadius=14\n_attractorAttachBone=GAME_C1_HEAD1\n_pulseEffect=/Lotus/Fx/Weapons/Tenno/PriestSpear/PriestSpearPulse\n_attractorAttachFx=/Lotus/Fx/Weapons/Tenno/PriestSpear/PriestSpearAttractorAttach\n_explosionTimer=0\n_explosionEffect=\"\"\n_explosionDamageMultiplierUsingAmmo=0\n}",
+          "CriticalChance": "CriticalChance=0.039999999",
+          "CriticalMultiplier": "CriticalMultiplier=2",
+          "ExplosionFallOff": "ExplosionFallOff=0.60000002",
+          "DamageRadius": "DamageRadius=7",
+          "MaxLife": "MaxLife=20",
+          "SetLifeOnImpact": "SetLifeOnImpact=1",
+          "KinematicVelocityAccel": "KinematicVelocityAccel=-2",
+          "KinematicGravity": "KinematicGravity=1"
+        },
+        "crit_chance": 0.04,
+        "crit_multiplier": 2.0
+      },
+      "expected": {
+        "damage": {
+          "impact": 105.0,
+          "puncture": 22.5,
+          "slash": 22.499997
+        },
+        "radial_damage": {
+          "corrosive": 55.0
+        },
+        "crit_chance": 0.04,
+        "crit_multiplier": 2.0,
+        "status_chance": 0.3,
+        "radial_status_chance": 0.3,
+        "radius_m": 7.0,
+        "falloff_reduction": 0.6,
+        "fire_rate": 1.0,
+        "disposition": 1.2
+      },
+      "charged_candidate": {
+        "owner": "/Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearChargedProjectile",
+        "attack": {
+          "Amount": "150",
+          "DT_IMPACT": "0.69999999",
+          "DT_PUNCTURE": "0.15000001",
+          "DT_SLASH": "0.14999998",
+          "ProcChance": "0.30000001"
+        },
+        "explosion": {
+          "Type": "DT_CORROSIVE",
+          "Amount": "55",
+          "ProcChance": "0.30000001",
+          "ForcedProcs": "{\nPT_KNOCKBACK\n}"
+        },
+        "fields": {
+          "DealDamageThroughImpactBehavior": "DealDamageThroughImpactBehavior=1",
+          "KinematicInitialSpeed": "KinematicInitialSpeed=150",
+          "KinematicMaxSpeed": "KinematicMaxSpeed=150",
+          "ScriptInstance": "ScriptInstance={\nScript=/Lotus/Scripts/WeaponAttachments/SpearWeapons.lua\nFunction=ReleasePriestSpear\n_recallEffect=/Lotus/Fx/Weapons/Grineer/FlameSpear/FlameSpearRecall\n_embedFx=\"\"\n_pickupTrigger=TnPriestSpearEntity\n_projectorType=/Lotus/Fx/Projectors/WeaponProjector\n_specialTrigger=\"\"\n_equipBestWeapon=1\n_tetherSound2D=\"\"\n_tetherSound3D=\"\"\n_attractorType=TnPriestSpearBulletAttractor\n_attractorPulseTime=5\n_attractorRadius=14\n_attractorAttachBone=GAME_C1_HEAD1\n_pulseEffect=/Lotus/Fx/Weapons/Tenno/PriestSpear/PriestSpearPulse\n_attractorAttachFx=/Lotus/Fx/Weapons/Tenno/PriestSpear/PriestSpearAttractorAttach\n_explosionTimer=0\n_explosionEffect=\"\"\n_explosionDamageMultiplierUsingAmmo=0\n}",
+          "CriticalChance": "CriticalChance=0.039999999",
+          "CriticalMultiplier": "CriticalMultiplier=2",
+          "ExplosionFallOff": "ExplosionFallOff=0.60000002",
+          "DamageRadius": "DamageRadius=7",
+          "MaxLife": "MaxLife=20",
+          "SetLifeOnImpact": "SetLifeOnImpact=1",
+          "KinematicVelocityAccel": "KinematicVelocityAccel=-2",
+          "KinematicGravity": "KinematicGravity=1"
+        },
+        "crit_chance": 0.04,
+        "crit_multiplier": 2.0
+      },
+      "retained_conventions": {
+        "magazine": 1,
+        "reload_seconds": 0.6,
+        "attractor_seconds": 4.7,
+        "projectile_speed_mps": 150,
+        "sources": {
+          "cycle": "M43",
+          "attractor": "M42 and wiki effective-duration convention",
+          "projectile_speed_mps": "wiki throw stat; native selector unreviewed"
+        }
+      },
+      "accuracy": {
+        "aimed": {
+          "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
+          "raw": "Spread={\nSHOOTING={\nrange={0,12}\ntype=ST_EXPONENTIAL\nrate=8\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}",
+          "min": 0.0,
+          "max": 12.0
+        },
+        "hip": {
+          "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo",
+          "raw": "Spread={\nSHOOTING={\nrange={6,18}\ntype=ST_EXPONENTIAL\nrate=8\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}",
+          "min": 6.0,
+          "max": 18.0
+        }
+      },
+      "sampling": {
+        "horizontal_ratio": 0.5,
+        "uniform": false,
+        "hip_min_deg": 6.0,
+        "hip_max_deg": 18.0
+      }
+    },
+    {
+      "id": "scourge_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeScourge/PrimeScourgeWeapon",
+      "behavior_index": 0,
+      "role_types": {
+        "fire:Type": "/Lotus/Types/Game/LotusWeaponProjectileFireBehavior",
+        "impact:Type": "/Lotus/Types/Weapon/LotusWeaponImpactBehavior",
+        "state:Type": "/EE/Types/Game/WeaponAutomaticStateBehavior"
+      },
+      "fire": {
+        "IgnoreFireIterations": "0",
+        "fireIterations": "1",
+        "ammoRequirement": "1",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "state": {
+        "fireRate": "160",
+        "reloadTime": "2.2"
+      },
+      "projectile_candidate": {
+        "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeScourge/PrimeScourgePrimaryFireWaveProjectile",
+        "attack": {
+          "Type": "DT_CORROSIVE",
+          "Amount": "80",
+          "ProcChance": "0.30000001"
+        },
+        "explosion": {
+          "Type": "DT_CORROSIVE",
+          "Amount": "60",
+          "ProcChance": "0.30000001"
+        },
+        "fields": {
+          "CriticalChance": "CriticalChance=0.1",
+          "CriticalMultiplier": "CriticalMultiplier=2",
+          "ExplosionFallOff": "ExplosionFallOff=0.30000001",
+          "DamageRadius": "DamageRadius=1.7",
+          "KinematicInitialSpeed": "KinematicInitialSpeed=40",
+          "KinematicMaxSpeed": "KinematicMaxSpeed=40",
+          "InitialWidth": "InitialWidth=0.5",
+          "InitialRadius": "InitialRadius=0.1"
+        },
+        "crit_chance": 0.1,
+        "crit_multiplier": 2.0
+      },
+      "expected": {
+        "damage": {
+          "corrosive": 80.0
+        },
+        "radial_damage": {
+          "corrosive": 60.0
+        },
+        "crit_chance": 0.1,
+        "crit_multiplier": 2.0,
+        "status_chance": 0.3,
+        "radial_status_chance": 0.3,
+        "radius_m": 1.7,
+        "falloff_reduction": 0.3,
+        "fire_rate": 2.6666666666666665,
+        "disposition": 1.2,
+        "magazine": 40.0,
+        "ammo_max": 360.0,
+        "reload_seconds": 2.2,
+        "projectile_speed_mps": 40.0
+      }
+    },
+    {
+      "id": "scourge_prime_thrown",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeScourge/PrimeScourgeWeapon",
+      "behavior_index": 1,
+      "role_types": {
+        "fire:Type": "/Lotus/Types/Game/LotusWeaponProjectileFireBehavior",
+        "impact:Type": "/Lotus/Types/Weapon/LotusWeaponImpactBehavior",
+        "state:Type": "/Lotus/Types/Weapon/LotusSpearGunStateBehavior"
+      },
+      "fire": {
+        "IgnoreFireIterations": "1",
+        "fireIterations": "1",
+        "ammoRequirement": "1",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "state": {
+        "fireRate": "60",
+        "reloadTime": "2.2",
+        "ReloadAfterEveryShot": "1",
+        "DestroyActiveProjectiles": "1",
+        "DetonateOnSwapToPrimary": "1"
+      },
+      "projectile_candidate": {
+        "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeScourge/PrimeScourgeSpearProjectile",
+        "attack": {
+          "Amount": "200",
+          "DT_IMPACT": "0.69999999",
+          "DT_PUNCTURE": "0.15000001",
+          "DT_SLASH": "0.14999998",
+          "ProcChance": "0.30000001"
+        },
+        "explosion": {
+          "Type": "DT_CORROSIVE",
+          "Amount": "55",
+          "ProcChance": "0.30000001",
+          "ForcedProcs": "{\nPT_KNOCKBACK\n}"
+        },
+        "fields": {
+          "DealDamageThroughImpactBehavior": "DealDamageThroughImpactBehavior=1",
+          "KinematicInitialSpeed": "KinematicInitialSpeed=90",
+          "KinematicMaxSpeed": "KinematicMaxSpeed=90",
+          "ScriptInstance": "ScriptInstance={\nScript=/Lotus/Scripts/WeaponAttachments/SpearWeapons.lua\nFunction=ReleasePriestSpear\n_recallEffect=/Lotus/Fx/Weapons/Grineer/FlameSpear/FlameSpearRecall\n_embedFx=\"\"\n_pickupTrigger=TnPriestSpearEntity\n_projectorType=/Lotus/Fx/Projectors/WeaponProjector\n_specialTrigger=\"\"\n_equipBestWeapon=1\n_tetherSound2D=\"\"\n_tetherSound3D=\"\"\n_attractorType=TnPriestSpearBulletAttractor\n_attractorPulseTime=5\n_attractorRadius=14\n_attractorAttachBone=GAME_C1_HEAD1\n_pulseEffect=/Lotus/Fx/Weapons/Tenno/PriestSpear/PriestSpearPulse\n_attractorAttachFx=/Lotus/Fx/Weapons/Tenno/PriestSpear/PriestSpearAttractorAttach\n_explosionTimer=0\n_explosionEffect=\"\"\n_explosionDamageMultiplierUsingAmmo=0\n}",
+          "CriticalChance": "CriticalChance=0.1",
+          "CriticalMultiplier": "CriticalMultiplier=2",
+          "ExplosionFallOff": "ExplosionFallOff=0.60000002",
+          "DamageRadius": "DamageRadius=7",
+          "MaxLife": "MaxLife=20",
+          "SetLifeOnImpact": "SetLifeOnImpact=1",
+          "KinematicVelocityAccel": "KinematicVelocityAccel=-2",
+          "KinematicGravity": "KinematicGravity=1"
+        },
+        "crit_chance": 0.1,
+        "crit_multiplier": 2.0
+      },
+      "expected": {
+        "damage": {
+          "impact": 140.0,
+          "puncture": 30.0,
+          "slash": 29.999996
+        },
+        "radial_damage": {
+          "corrosive": 55.0
+        },
+        "crit_chance": 0.1,
+        "crit_multiplier": 2.0,
+        "status_chance": 0.3,
+        "radial_status_chance": 0.3,
+        "radius_m": 7.0,
+        "falloff_reduction": 0.6,
+        "fire_rate": 1.0,
+        "disposition": 1.2
+      },
+      "charged_candidate": {
+        "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeScourge/PrimeScourgeChargedProjectile",
+        "attack": {
+          "Amount": "300",
+          "DT_IMPACT": "0.69999999",
+          "DT_PUNCTURE": "0.15000001",
+          "DT_SLASH": "0.14999998",
+          "ProcChance": "0.30000001"
+        },
+        "explosion": {
+          "Type": "DT_CORROSIVE",
+          "Amount": "55",
+          "ProcChance": "0.30000001",
+          "ForcedProcs": "{\nPT_KNOCKBACK\n}"
+        },
+        "fields": {
+          "DealDamageThroughImpactBehavior": "DealDamageThroughImpactBehavior=1",
+          "KinematicInitialSpeed": "KinematicInitialSpeed=150",
+          "KinematicMaxSpeed": "KinematicMaxSpeed=150",
+          "ScriptInstance": "ScriptInstance={\nScript=/Lotus/Scripts/WeaponAttachments/SpearWeapons.lua\nFunction=ReleasePriestSpear\n_recallEffect=/Lotus/Fx/Weapons/Grineer/FlameSpear/FlameSpearRecall\n_embedFx=\"\"\n_pickupTrigger=TnPriestSpearEntity\n_projectorType=/Lotus/Fx/Projectors/WeaponProjector\n_specialTrigger=\"\"\n_equipBestWeapon=1\n_tetherSound2D=\"\"\n_tetherSound3D=\"\"\n_attractorType=TnPriestSpearBulletAttractor\n_attractorPulseTime=5\n_attractorRadius=14\n_attractorAttachBone=GAME_C1_HEAD1\n_pulseEffect=/Lotus/Fx/Weapons/Tenno/PriestSpear/PriestSpearPulse\n_attractorAttachFx=/Lotus/Fx/Weapons/Tenno/PriestSpear/PriestSpearAttractorAttach\n_explosionTimer=0\n_explosionEffect=\"\"\n_explosionDamageMultiplierUsingAmmo=0\n}",
+          "CriticalChance": "CriticalChance=0.1",
+          "CriticalMultiplier": "CriticalMultiplier=2",
+          "ExplosionFallOff": "ExplosionFallOff=0.60000002",
+          "DamageRadius": "DamageRadius=7",
+          "MaxLife": "MaxLife=20",
+          "SetLifeOnImpact": "SetLifeOnImpact=1",
+          "KinematicVelocityAccel": "KinematicVelocityAccel=-2",
+          "KinematicGravity": "KinematicGravity=1"
+        },
+        "crit_chance": 0.1,
+        "crit_multiplier": 2.0
+      },
+      "retained_conventions": {
+        "magazine": 1,
+        "reload_seconds": 0.6,
+        "attractor_seconds": 4.7,
+        "projectile_speed_mps": 150,
+        "sources": {
+          "cycle": "M43",
+          "attractor": "M42 and wiki effective-duration convention",
+          "projectile_speed_mps": "wiki throw stat; native selector unreviewed"
+        }
+      },
+      "accuracy": {
+        "aimed": {
+          "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowAimAccuracyInfo",
+          "raw": "Spread={\nSHOOTING={\nrange={0,12}\ntype=ST_EXPONENTIAL\nrate=8\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}",
+          "min": 0.0,
+          "max": 12.0
+        },
+        "hip": {
+          "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/HuntingBowHipAccuracyInfo",
+          "raw": "Spread={\nSHOOTING={\nrange={6,18}\ntype=ST_EXPONENTIAL\nrate=8\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}",
+          "min": 6.0,
+          "max": 18.0
+        }
+      },
+      "sampling": {
+        "horizontal_ratio": 0.5,
+        "uniform": false,
+        "hip_min_deg": 6.0,
+        "hip_max_deg": 18.0
+      }
+    }
+  ],
+  "attractor": {
+    "owner": "/Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearBulletAttractor",
+    "fields": {
+      "LifeSpan": "LifeSpan=5",
+      "Mesh": "Mesh=/Lotus/Fx/PowersuitAbilities/Priest/WarPactProtectMesh.fbx",
+      "OverrideMaterial": "OverrideMaterial={\n/EE/Materials/Hidden\n}",
+      "DistortionEffect": "DistortionEffect=1",
+      "DrawInTransparentPass": "DrawInTransparentPass=1",
+      "DistortionMaterial": "DistortionMaterial=/Lotus/Fx/PowersuitAbilities/Mag/BulletAttractorSphereMatDistortB",
+      "DissolveOverride": "DissolveOverride=/EE/Materials/Basic/White_d.png",
+      "IgnoreParentScale": "IgnoreParentScale=1",
+      "ReplicaRunScriptInstance": "ReplicaRunScriptInstance=1",
+      "ReplicationOverride": "ReplicationOverride=RO_NEVER",
+      "AttractRadius": "AttractRadius=1",
+      "TurnTowardSound": "TurnTowardSound=/Lotus/Sounds/Warframes/Mag/MagnetizeDeflect",
+      "AllowFriendlySelfDamage": "AllowFriendlySelfDamage=0",
+      "EnforceMinSpeed": "EnforceMinSpeed=1",
+      "UseDamageBuffer": "UseDamageBuffer=1"
+    }
+  },
+  "runtime_review": {
+    "projectile_selector_closed": false,
+    "attractor_consumers_closed": false
+  },
+  "wiki": "https://wiki.warframe.com/w/Scourge_Prime"
+}

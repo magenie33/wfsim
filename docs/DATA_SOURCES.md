@@ -86,6 +86,16 @@ Sampler vectors establish bounded geometry, with portable arithmetic rather
 than a claim of native instruction or random-sequence identity. Unimplemented
 live accuracy and per-target beam state remain declared weapon limitations.
 
+The Scourge family is independently bound by
+`scripts/import_client_scourge.py --exchange <exchange> --check` and
+`tests/fixtures/client/scourge-2026-10-28.json`. It merges damage members along
+projectile ancestry and preserves normal/charged candidates separately. M42/M43
+and the retained wiki travel convention are identified as such; package entity
+lifetimes and state reload values do not silently override measured timing.
+The fixture is not a claim that projectile selection or attractor steering is
+closed. The weapon-page primary CO claim conflicts with the catalog rule;
+`docs/UNMODELLED.md` records the unresolved consumer.
+
 ## INSIDE THE WIKI: THE PAGE'S PROSE FIRST, THE MODULE SECOND
 
 Read the weapon's own page BEFORE its module, and where the two disagree the

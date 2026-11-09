@@ -524,43 +524,46 @@ These are things the engine COULD do today and deliberately does not, because
 doing them means inventing a play pattern. The repo's rule is that a policy is
 the owner's call, not the model's (the 99-stack decision).
 
-### Bullet Attractor — OPEN, and it wants a MEASUREMENT (Scourge, Scourge Prime)
+### Scourge and Scourge Prime — source bindings and open consumers
 
-*"Alternate Fire throws the Scourge … causing a 2 meter Bullet Attractor field
-on the heads of enemies within 14 meters of the impact point, allowing easier
-headshots."*
+`tests/fixtures/client/scourge-2026-10-28.json` binds both behaviors, each direct
+and explosive damage component, native hip/aim profiles and package disposition.
+Primary fire uses its projectile's members rather than the behavior's placeholder
+impact damage. Primary RPM and thrown resting sampler inputs are applied.
+Primary collision remains a ray. The native wave projectile declares both
+InitialWidth and InitialRadius; their collision consumer is unreviewed, so
+neither is silently adopted as the engine's projectile width.
 
-**The CO half is DONE (M42): the throw plants the debuff.** `attractor_seconds:
-4.7` on both thrown entries, feeding `DebuffState::attractor` — the same debuff
-Xata's Whisper's Void instance lands, which is not an analogy but the same
-effect. It is worth exactly one line in the Condition
-Overload counter, and 4.7 s against a ≤1.6 s throw cycle means it is up
-continuously.
+The thrown entry retains the M43 cycle: 1.0 s of wind-up plus 0.6 s of reload,
+with one throw per magazine. `LotusSpearGunStateBehavior.reloadTime` is not a
+measurement of that whole sequence and does not replace it. M42 owns removal of
+the old field at the next throw's start and persistence of its applied debuff.
+The current target convention remains a 4.7 s CO status applied after the throw's
+pellets; it does not change the scenario's headshot rate.
 
-**What stays open is the other half**: what the field is worth as an AIMING
-AID. This arena has a headshot rate — `headshot_pct` on the fight — so the
-wiring is again three lines.
+The package declares separate normal and charged projectile records; those
+names do not establish two player-accessible attacks. Prime records
+contain 200 damage at 90 m/s and 300 damage at 150 m/s; their live selector is
+unreviewed. The wiki throw line supplies the retained 150 m/s travel convention,
+while the damage matches the normal candidate. Gravity, speed decay and the
+throw's `IgnoreFireIterations` consumer remain unmodelled; multishot currently
+uses separate damage instances. These limitations are `client_scourge_throw`.
 
-**What is missing is the number, and the wiki says so itself:** *"Bullets and
-projectiles fired at enemies will be drawn to the head. However, this does not
-guarantee a headshot."* Setting the rate to 100% would be inventing the figure
-the page refuses to give; leaving it at the scenario's own is what happens
-today. Either is a decision, and only a measurement settles it — fire a known
-number of shots into a field and count the heads (docs/MEASUREMENTS.md).
+`ReleasePriestSpear` declares a 14 m application area and 5 s pulse interval;
+the projectile lives 20 s after impact. The attached attractor record declares
+`AttractRadius=1`, `LifeSpan=5` and damage buffering. Those are configuration
+inputs, not a closed steering/initialization consumer or a measured effective
+headshot duration. The aiming aid, spatial application and persistent pulse
+entity remain unmodelled (`client_scourge_field`). A miss outside the field's
+actual reach can therefore still receive the target-only CO approximation.
 
-It is filed here rather than in the list above because nothing about the arena
-prevents it: no distance is involved (the field is on the target), no play
-pattern has to be invented (you throw, then you fire), and one weapon in the
-roster plants one on itself.
-
-**The UPTIME is measured too (M42), and the two clocks pull opposite ways.** The
-old FIELD dies when the next throw STARTS, not when the new spear lands, so its
-20 s life and every-5-s pulses are ceilings a throw build never reaches — one
-field there never lives long enough to pulse twice. But what a field already
-applied is NOT taken back with it, and 4.7 s on the target outlasts the 1.6 s
-cycle, so the debuff is continuous exactly where the field is shortest. When the
-headshot half is finally wired, it is the TARGET's clock it should read, not the
-field's.
+Primary CO follows the authoritative catalog's ordinary additive class, while
+the weapon page's Known Bugs describes multiplicative primary-fire Galvanized
+Aptitude. The conflict is disclosed as `client_scourge_primary_co`; a package
+component record does not settle its damage-upgrade consumer. The throw retains
+the catalog's independent class. The remaining facts needed are the active
+projectile selector, attractor/script consumers and scoped measurements, rather
+than another copy of the roster's source files.
 
 ### Dual Mode Chamber — OPEN (Felarx)
 

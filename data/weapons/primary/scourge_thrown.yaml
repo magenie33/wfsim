@@ -34,19 +34,24 @@ reload_seconds: 0.6
 # what makes it the throw's row and not the explosion's.
 co_behavior: independent
 
-# WHAT THIS ENTRY DOES NOT MODEL — see scourge_prime_thrown.yaml. The field is
-# applied and counted; the easier headshots it buys are the part that still
-# wants a measured rate.
+# Source/runtime limits are shared in client_scourge_inputs.
 unmodeled:
-  - "The Bullet Attractor's value as an aiming aid is not counted: its 4.7 s on the target is (one Condition Overload status), but easier headshots are not. The wiki says it does not guarantee a headshot, so the rate needs measuring first."
+  - reason: client_scourge_throw
+  - reason: client_scourge_field
+  - reason: client_accuracy_runtime
   - "It reloads 33% of its magazine a second while holstered or deployed; it is never holstered here."
 
 attack:
   extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 0.0
+    min_deg: 0
     max_deg: 12
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6
+      hip_max_deg: 18
   trigger: semi
   shot_type: projectile
   projectile_speed_mps: 150
@@ -59,9 +64,7 @@ attack:
   punch_through_m: 0.0
   damage: { impact: 105, puncture: 22.5, slash: 22.5 }   # total 150
 
-  # The Bullet Attractor the throw plants — 4.7 s on the enemy, one line in the
-  # Condition Overload counter. See scourge_prime_thrown.yaml for why the
-  # field's 5 s pulses never reach this arena.
+  # M42 retains the target debuff; spatial field/steering consumers are unmodelled.
   attractor_seconds: 4.7
 
   # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
@@ -106,3 +109,5 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Scourge
   # wiki module `Attacks[].AttackName`: "Spear Throw Impact" and "Spear Throw Explosion".
+
+# see notes: client_scourge_inputs

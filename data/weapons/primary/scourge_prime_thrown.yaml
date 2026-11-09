@@ -45,21 +45,24 @@ reload_seconds: 0.6
 # the 200 beside it (140 + 30 + 30).
 co_behavior: independent
 
-# WHAT THIS ENTRY DOES NOT MODEL. The Bullet Attractor itself is now applied
-# (`attractor_seconds` above) and counts its line in the Condition Overload
-# counter; what is still missing is what the field is FOR — "bullets are drawn
-# to the head" only pays where the player's aim decides the body part, and here
-# the headshot rate is a number the scenario sets.
+# Source/runtime limits are shared in client_scourge_inputs.
 unmodeled:
-  - "The Bullet Attractor's value as an aiming aid is not counted: its 4.7 s on the target is (one Condition Overload status), but easier headshots are not. The wiki says it does not guarantee a headshot, so the rate needs measuring first."
+  - reason: client_scourge_throw
+  - reason: client_scourge_field
+  - reason: client_accuracy_runtime
   - "It reloads 33% of its magazine a second while holstered or deployed; it is never holstered here."
 
 attack:
   extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 0.0
+    min_deg: 0
     max_deg: 12
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6
+      hip_max_deg: 18
   trigger: semi
   shot_type: projectile
   projectile_speed_mps: 150
@@ -72,17 +75,7 @@ attack:
   punch_through_m: 0.0
   damage: { impact: 140, puncture: 30, slash: 30 }   # total 200
 
-  # THE BULLET ATTRACTOR THE THROW PLANTS — "The Bullet Attractor stays on
-  # enemies for 4.7 seconds." It IS the Void effect, which
-  # is the debuff the engine already has, so it counts one line in the
-  # Condition Overload counter and nothing else.
-  #
-  # The field's OTHER clocks cannot reach this arena and are not an
-  # approximation: it pulses on impact and then every 5 s for 20 s, but a new
-  # throw destroys it at the moment the throw STARTS and the cycle is at most
-  # 1.6 s — so no field here ever lives to pulse twice. What a field already
-  # applied is NOT taken back with it, which is why the debuff outlives the
-  # field that planted it.
+  # M42 retains the target debuff; spatial field/steering consumers are unmodelled.
   attractor_seconds: 4.7
 
   # PRIMARY COMPRESSION's row, by column (docs/CATALOGS.md §2):
@@ -127,3 +120,5 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Scourge_Prime
   # wiki module `Attacks[].AttackName`: "Spear Throw" and "Spear Explosion".
+
+# see notes: client_scourge_inputs

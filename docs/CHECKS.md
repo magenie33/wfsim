@@ -2647,6 +2647,14 @@ rotated aim axes and targets on either side or behind the muzzle. Analytic
 space tests check closest approach, retained vertical scatter and forward-ray
 clamping; the wide-angle projection test must reject the transverse approximation.
 
+`scripts/import_client_scourge.py --exchange <exchange> --check` verifies the
+Scourge family archive/member hashes, primary nominal RPM and thrown native
+hip/aim sampler inputs. Rust source tests check all four component stat lines,
+primary economy, package disposition and preservation of the M42/M43 target
+and cycle conventions. Normal/charged records remain separate source candidates;
+remaining field and projectile consumers must stay disclosed. A corrupted hip
+range must be rejected by the importer.
+
 Engine source regressions bind imported refire rules and claw vectors to the
 closed client fixture and check native cadence vectors at their float32 nodes.
 Claw resolution covers ordinary damage/crit cards, physical conversion and
