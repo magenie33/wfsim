@@ -48,6 +48,12 @@ server (`scripts/ship_bot.py`, `bot.json`'s `live`). The data core's daemon is
 deployed with `python scripts/ship_factoryd.py` from the same source commit
 after changes to its worker or scripts; `--verify` checks its commit and heartbeat.
 
+An unchanged live board keeps its process and actual `VERSION`. Shipping compares
+both freshly built binaries and the complete runtime inventory, including witness
+packs and release fields other than `commit` and `release`. A stable active process
+must have started after every runtime, unit and environment-file change; missing,
+changed or unknown state uses the normal deployment path.
+
 ## Website host
 
 `WEBSITE_TARGET` enables `scripts/ship_website.py` in the release job. It is JSON

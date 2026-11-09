@@ -27,6 +27,7 @@ import hashlib
 import json
 import pathlib
 import re
+import shlex
 import subprocess
 import sys
 
@@ -148,10 +149,13 @@ LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/was
                 "scripts/board_meta.py", "scripts/fetch_library.sh", "scripts/library_array.mjs", "scripts/fetch_facts.sh",
                 "scripts/ship_facts.sh", "scripts/ship_builds.sh", "scripts/build_batches.mjs", "scripts/ship_family.mjs",
                 "scripts/ship_queue.sh", "scripts/retire_scores.mjs", "scripts/db.sh", "scripts/db.mjs", "scripts/pgq.mjs"]
+# Shell code reaches these outside the JavaScript import statements.
+LIVE_IMPORTS = ["worker/deadlines.js"]
+LIVE_READS = ["worker/board_tasks.js"]
 
 
 # A RELATIVE IMPORT, static or dynamic, in a script the live board runs.
-IMPORT = re.compile(r"""^\s*(?:import|export)\s[^;]*?from\s+["'](\.[^"']+)["']|import\(\s*["'](\.[^"']+)["']\s*\)""",
+IMPORT = re.compile(r"""^\s*(?:(?:import|export)\s[^;]*?from\s+|import\s*)["'](\.[^"']+)["']|import\(\s*["'](\.[^"']+)["']\s*\)""",
                     re.M | re.S)
 
 
@@ -202,6 +206,130 @@ def live_binaries(out: pathlib.Path) -> bool:
     return True
 
 
+def live_files(out: pathlib.Path, rel: dict) -> dict:
+    """The exact final directories and source files sent to the live board."""
+    reached = imported(LIVE_SCRIPTS + LIVE_IMPORTS)
+    missing = [p for p in reached if p.startswith("scripts/") and p not in LIVE_SCRIPTS]
+    if missing:
+        sys.exit(f"ship_bot: the live scripts import {missing}, which LIVE_SCRIPTS does not send")
+    files = {"bin": [out / n for n in ("wfsim-intake", "wfsim-board", "VERSION", "ENGINE")],
+             "scripts": LIVE_SCRIPTS,
+             "worker": sorted(set(p for p in reached if p.startswith("worker/")) | set(LIVE_READS)),
+             "mcp": [p for p in reached if p.startswith("mcp/")],
+             "scripts/pg": ["scripts/pg/package.json", "scripts/pg/package-lock.json"],
+             "bin/witness": ["site/release.json"],
+             "bin/witness/pkg": [f"site/pkg/wfsim_wasm.{rel['wasm']}.js", f"site/pkg/wfsim_wasm_bg.{rel['wasm']}.wasm",
+                                 *(f"site/pkg/{n}" for n in rel.get("packs", []))]}
+    delivered = {f"{directory}/{pathlib.Path(p).name}" for directory, sources in files.items() for p in sources}
+    unmapped = [p for p in reached + LIVE_READS if p not in delivered]
+    if unmapped:
+        sys.exit(f"ship_bot: live imports have no matching deployed path: {unmapped}")
+    return files
+
+
+def file_sha256(path: pathlib.Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+LIVE_PROBE = r'''
+import hashlib, json, pathlib, re, shlex, subprocess, sys
+request = json.load(sys.stdin)
+root = pathlib.Path(request["root"])
+assert root.is_absolute() and root.resolve(strict=True) == root
+def state():
+    fields = "ActiveState,MainPID,ExecMainStartTimestamp,WorkingDirectory,FragmentPath,DropInPaths,EnvironmentFiles,NeedDaemonReload"
+    text = subprocess.check_output(["systemctl", "show", "wfsim-live", "--timestamp=us", "--property=" + fields], text=True)
+    values = dict(line.split("=", 1) for line in text.splitlines())
+    assert values["ActiveState"] == "active" and values["NeedDaemonReload"] == "no" and int(values["MainPID"]) > 0
+    assert values["WorkingDirectory"] == str(root)
+    start = int(subprocess.check_output(["date", "-d", values["ExecMainStartTimestamp"], "+%s%N"], text=True))
+    assert start > 0
+    return values, int(values["MainPID"]), start
+first = state()
+process = pathlib.Path("/proc") / str(first[1])
+args = [item.decode() for item in (process / "cmdline").read_bytes().split(b"\0") if item]
+assert len(args) == 4 and pathlib.Path(args[0]).name == "bash"
+assert (process / "exe").resolve(strict=True).name == "bash"
+assert (root / args[1]) == root / "scripts/live_board.sh" and args[2:] == [str(root / "live"), str(root / "bin")]
+assert (process / "cwd").resolve(strict=True) == root / "live"
+hashes, latest, observed = {}, 0, {}
+def signature(stat):
+    return stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
+for name in [*request["files"], "bin/VERSION", "bin/witness/release.json"]:
+    path = root / name
+    assert path.resolve(strict=True) == path and path.is_file()
+    before = path.stat()
+    h = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            h.update(chunk)
+    after = path.stat()
+    assert signature(before) == signature(after)
+    if name in ("bin/wfsim-intake", "bin/wfsim-board"):
+        assert after.st_mode & 0o111 == 0o111
+    observed[str(path)] = signature(after)
+    latest = max(latest, after.st_ctime_ns)
+    if name in request["files"]:
+        hashes[name] = h.hexdigest()
+release = json.loads((root / "bin/witness/release.json").read_text())
+assert isinstance(release, dict)
+version = (root / "bin/VERSION").read_text().strip()
+unit = first[0]
+config = [unit["FragmentPath"], *shlex.split(unit["DropInPaths"])]
+environments = re.findall(r"(\S+) \(ignore_errors=(?:yes|no)\)", unit["EnvironmentFiles"])
+assert environments and unit["EnvironmentFiles"] == " ".join(
+    item.group(0) for item in re.finditer(r"\S+ \(ignore_errors=(?:yes|no)\)", unit["EnvironmentFiles"]))
+for name in config + environments:
+    path = pathlib.Path(name)
+    assert path.is_absolute() and path.resolve(strict=True) == path and path.is_file()
+    stat = path.stat()
+    observed[str(path)] = signature(stat)
+    latest = max(latest, stat.st_ctime_ns)
+for name, prior in observed.items():
+    path = pathlib.Path(name)
+    assert path.resolve(strict=True) == path and signature(path.stat()) == prior
+assert state() == first and latest <= first[2]
+print(json.dumps({"active": True, "pid": first[1], "started_ns": first[2], "latest_change_ns": latest,
+                  "files": hashes, "release": release, "version": version}))
+'''
+
+
+def live_unchanged(t: dict, files: dict, rel: dict, engine: str) -> str | None:
+    """Only a complete actual-file and loaded-service proof can preserve VERSION."""
+    wanted = {}
+    for directory, sources in files.items():
+        for source in sources:
+            dest = f"{directory}/{pathlib.Path(source).name}"
+            if dest in ("bin/VERSION", "bin/witness/release.json"):
+                continue
+            wanted[dest] = hashlib.sha256(f"{engine}\n".encode()).hexdigest() if dest == "bin/ENGINE" else file_sha256(ROOT / source)
+    wanted["scripts/pg/.installed-lock"] = wanted["scripts/pg/package-lock.json"]
+    try:
+        result = subprocess.run(["ssh", *ssh_opts(t), "-o", "ConnectTimeout=10", t["host"],
+                                 "python3 -c " + shlex.quote(LIVE_PROBE)],
+                                input=json.dumps({"root": t["root"], "files": list(wanted)}), cwd=ROOT,
+                                capture_output=True, text=True, timeout=45)
+        if result.returncode:
+            return None
+        current = json.loads(result.stdout)
+        runtime = lambda release: json.dumps({k: v for k, v in release.items() if k not in ("commit", "release")},
+                                             sort_keys=True, separators=(",", ":"), allow_nan=False)
+        if (isinstance(current, dict) and isinstance(current.get("release"), dict)
+                and current["active"] is True and type(current["pid"]) is int and current["pid"] > 0
+                and type(current["latest_change_ns"]) is int and type(current["started_ns"]) is int
+                and 0 < current["latest_change_ns"] <= current["started_ns"]
+                and current["files"] == wanted and runtime(current["release"]) == runtime(rel)
+                and re.fullmatch(r"[0-9a-f]{40}", current["version"])):
+            return current["version"]
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+        pass
+    return None
+
+
 def deploy_live(t: dict) -> None:
     out = ROOT / "target" / "live-linux"
     if not live_binaries(out):
@@ -209,41 +337,42 @@ def deploy_live(t: dict) -> None:
     root, host, o = t["root"], t["host"], ssh_opts(t)
     # WHICH COMMIT MEASURED A FACT THE SERVER SHIPS, and which engine it runs —
     # the page's `ENGINE_ID`: a claim of another engine settles nothing.
-    (out / "VERSION").write_bytes((run(["git", "rev-parse", "HEAD"]).strip() + "\n").encode())
     app = re.search(r'/asset/(app\.[0-9a-f]+\.js)', (ROOT / "site" / "index.html").read_text(encoding="utf-8")).group(1)
     engine = re.search(r'const ENGINE_ID = "([^"]+)"', (ROOT / "site" / "asset" / app).read_text(encoding="utf-8")).group(1)
+    rel = json.loads((ROOT / "site" / "release.json").read_text(encoding="utf-8"))
+    files = live_files(out, rel)
+    version = live_unchanged(t, files, rel, engine)
+    if version:
+        print(f"live board runtime unchanged — keeping the running service and actual VERSION {version}")
+        return
+    print("live board runtime not proven identical — deploying normally")
+    (out / "VERSION").write_bytes((run(["git", "rev-parse", "HEAD"]).strip() + "\n").encode())
     (out / "ENGINE").write_bytes(f"{engine}\n".encode())
     run(["ssh", *o, host, f"mkdir -p {root}/bin {root}/scripts {root}/live {root}/bin/incoming"])
     # INTO A SPARE DIRECTORY, THEN RENAMED: the live board may be running the
     # binary this replaces, and a running file cannot be written over — but it
     # can be renamed over, which also never leaves half a binary in place.
-    send(t, [out / "wfsim-intake", out / "wfsim-board", out / "VERSION", out / "ENGINE"], f"{root}/bin/incoming")
+    send(t, files["bin"], f"{root}/bin/incoming")
     run(["ssh", *o, host, f"chmod +x {root}/bin/incoming/wfsim-*; mv -f {root}/bin/incoming/* {root}/bin/"])
-    send(t, LIVE_SCRIPTS, f"{root}/scripts")
+    send(t, files["scripts"], f"{root}/scripts")
     # THE LIBRARY IN POSTGRES (scripts/db.mjs): its one shared piece of the
     # worker, and the client, installed there. /etc/wfsim-live.env's PG_URL
     # moves the live board onto it (deploy/wfsim-live.service).
     run(["ssh", *o, host, f"mkdir -p {root}/worker {root}/scripts/pg"])
-    missing = unshipped(LIVE_SCRIPTS)
-    if missing:
-        sys.exit(f"ship_bot: the live scripts import {missing}, which LIVE_SCRIPTS does not send")
-    send(t, [p for p in imported(LIVE_SCRIPTS) if p.startswith("worker/")], f"{root}/worker")
+    send(t, files["worker"], f"{root}/worker")
     # …AND THE PAGE'S OWN CODE a live script runs (`board_heads.mjs`).
     run(["ssh", *o, host, f"mkdir -p {root}/mcp"])
-    send(t, [p for p in imported(LIVE_SCRIPTS) if p.startswith("mcp/")], f"{root}/mcp")
-    send(t, ["scripts/pg/package.json", "scripts/pg/package-lock.json"], f"{root}/scripts/pg")
+    send(t, files["mcp"], f"{root}/mcp")
+    send(t, files["scripts/pg"], f"{root}/scripts/pg")
     # INSTALLED ONLY WHEN THE LOCK MOVED: the server has node and no npm, so an
     # install it does not need must not be what fails the deploy.
     run(["ssh", *o, host, f"cd {root}/scripts/pg && (cmp -s package-lock.json .installed-lock"
                           " || (npm ci --silent --omit=dev && cp package-lock.json .installed-lock))"])
     # THE WITNESS'S ENGINE IS THE SITE'S OWN WASM (scripts/wasm_witness.mjs): the
     # one that counts the volunteers' work, which no native build can.
-    rel = json.loads((ROOT / "site" / "release.json").read_text(encoding="utf-8"))
-    wasm = rel["wasm"]
     run(["ssh", *o, host, f"rm -rf {root}/bin/witness.next && mkdir -p {root}/bin/witness.next/pkg"])
-    send(t, ["site/release.json"], f"{root}/bin/witness.next")
-    send(t, [f"site/pkg/wfsim_wasm.{wasm}.js", f"site/pkg/wfsim_wasm_bg.{wasm}.wasm",
-             *(f"site/pkg/{n}" for n in rel.get("packs", []))], f"{root}/bin/witness.next/pkg")
+    send(t, files["bin/witness"], f"{root}/bin/witness.next")
+    send(t, files["bin/witness/pkg"], f"{root}/bin/witness.next/pkg")
     run(["ssh", *o, host, f"rm -rf {root}/bin/witness && mv {root}/bin/witness.next {root}/bin/witness"])
     # RESTARTED ONLY ONCE INSTALLED: the unit and its read token are put on the
     # server by hand (`deploy/wfsim-live.service`), and until then there is
@@ -341,6 +470,8 @@ def self_test() -> int:
     ]:
         bad += 0 if ok else 1
         print(f"  {'ok  ' if ok else 'FAIL'}  {what}")
+    from check_ship_bot_live import self_test as live_self_test
+    bad += live_self_test(sys.modules[__name__])
     print()
     print("a hand-run deploy is guarded" if not bad else f"{bad} failed")
     return 1 if bad else 0
