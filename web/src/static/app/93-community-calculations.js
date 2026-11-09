@@ -218,33 +218,14 @@ window.addEventListener("focus", () => {
 });
 setInterval(() => { calculationNameRequests.clear(); queueComputationNames(); }, 60_000);
 
-// Published membership and canonical identity are both checked, including the measurement clock.
-async function publishedComputationRows(candidates) {
-  const groups = new Map();
-  for (const entry of candidates) {
-    const dir = boardCellDir(entry.ruler), path = `/board/${dir ? dir + "/" : ""}${entry.weapon}.json`;
-    if (!groups.has(path)) groups.set(path, []);
-    groups.get(path).push(entry);
-  }
-  const matched = new Set();
-  await Promise.all([...groups].map(async ([path, entries]) => {
-    const response = await fetch(path, { cache: "no-store", signal: timeoutSignal(15000) });
-    if (!response.ok) throw new Error("The board is unavailable.");
-    const rows = await response.json();
-    if (!Array.isArray(rows)) throw new Error("The board is unavailable.");
-    const relevant = rows.filter(row => entries.some(entry => row.benchmark === entry.ruler && (row.mode || "base") === entry.mode
-      && computationMinute(row.measured_at) === computationMinute(entry.finished_at) && row.measured_by === entry.measured_by.replace(/^verified:/, "")
-      && Math.abs(row.score - entry.score) <= 1e-12 * Math.max(1, Math.abs(entry.score))));
-    for (let at = 0; at < relevant.length; at += 200) {
-      const part = relevant.slice(at, at + 200), value = await api("/api/build/keys", { kind: "build",
-        builds: part.map(row => ({ ...boardReviewRecord(entries[0].weapon, row), benchmark: row.benchmark })) });
-      if (!value?.ok || value.keys?.length !== part.length) throw new Error("The board is unavailable.");
-      part.forEach((row, i) => {
-        for (const entry of entries) if (entry.identity === value.keys[i] && row.benchmark === entry.ruler && (row.mode || "base") === entry.mode) matched.add(entry);
-      });
-    }
-  }));
-  return candidates.filter(entry => matched.has(entry));
+// The API supplies current accepted witnesses; publication is independent of participation.
+async function verifiedComputationRows(candidates) {
+  if (!candidates.length) return [];
+  const value = await api("/api/build/keys", { kind: "build", builds: candidates.map(entry => entry.record) });
+  if (!value?.ok || value.keys?.length !== candidates.length) throw new Error("Calculation records are unavailable. Try again.");
+  return Promise.all(candidates.filter((entry, i) => entry.identity === value.keys[i] && weaponInfo(entry.weapon)).map(async entry => ({
+    ...entry, buildLink: weaponPath(entry.weapon) + "?" + new URLSearchParams({ [SHARE_PARAM]: await shareCode(computationBuild(entry)) }),
+  })));
 }
 const computationPageKey = () => {
   const query = new URLSearchParams(location.search); query.delete("section");
@@ -252,7 +233,7 @@ const computationPageKey = () => {
 };
 function computationPage(main, kind) {
   if (kind === "profile") normalizeUserProfileAddress();
-  if (!META) { main.innerHTML = `<p role="status">${aT("Loading user profile…")}</p>`; return; }
+  if (!META) { main.innerHTML = `<p>${loadingHtml("Loading user profile…")}</p>`; return; }
   const key = computationPageKey();
   if (computationProfile?.key !== key) {
     const owner = location.pathname.split("/").filter(Boolean).at(-1) + ":" + (accountState.account?.id || "");
@@ -265,7 +246,7 @@ function computationPage(main, kind) {
   }
   const state = computationProfile, value = state.value;
   const status = state.error ? `<p role="status">${aT(state.error)} <button class="ghost-btn small" data-computation-retry>${aT("Retry")}</button></p>`
-    : state.loading ? `<p role="status">${aT(kind === "profile" ? "Loading user profile…" : "Loading calculation records…")}</p>` : "";
+    : state.loading ? `<p>${loadingHtml(kind === "profile" ? "Loading user profile…" : "Loading calculation records…")}</p>` : "";
   if (!value) {
     main.innerHTML = `<div class="auth-page"><div class="auth-card">${status}${location.pathname === userProfilePath() && !accountState.account ? `<a href="/login?return=${userProfilePath()}">${aT("Sign in")}</a>` : ""}</div></div>`;
     return;
@@ -283,9 +264,9 @@ function computationPage(main, kind) {
     return location.pathname + (q.size ? "?" + q : ""); };
   const total = field => p[field] == null ? "…" : Number(p[field]).toLocaleString(accountLocale());
   const stats = state.statsError ? `<p role="status">${aT(state.statsError)} <button class="ghost-btn small" data-computation-retry="summary">${aT("Retry")}</button></p>`
-    : state.statsLoading ? `<p class="muted profile-status" role="status">${aT("Loading contribution…")}</p>` : "";
+    : state.statsLoading ? `<p class="profile-status">${loadingHtml("Loading contribution…")}</p>` : "";
   const records = state.recordsError ? `<p role="status">${aT(state.recordsError)} <button class="ghost-btn small" data-computation-retry="records">${aT("Retry")}</button></p>`
-    : state.recordsLoading ? `<p class="muted profile-status" role="status">${aT("Loading calculation records…")}</p>` : "";
+    : state.recordsLoading ? `<p class="profile-status">${loadingHtml("Loading calculation records…")}</p>` : "";
   const weapon = (META.weapons || []).find(item => item.id === query.get("weapon"));
   const body = `<div class="profile-tools"><button class="profile-search" data-computation-weapon aria-haspopup="dialog" aria-expanded="${!!profileWeaponPicker}">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
@@ -312,9 +293,16 @@ function computationBuildHtml(entry, own = false) {
     <p class="fine">${escHtml(benchLabelOr(entry.ruler, entry.ruler))} · ${escHtml(modeLabel(w, entry.mode))}</p>
     <div class="computation-credits">${computationWitnessHtml(entry.witnesses)}</div>${recommendationHistoryCard(entry)}
     <details class="profile-calculation-info"><summary>${aT("Calculation details")}</summary><p class="fine">${escHtml(measuredText(entry.finished_at, pageSay().zone))} · ${aT("engine")} ${escHtml(entry.measured_by.replace(/^verified:/, ""))}</p></details>
-    <a class="ghost-btn small" href="${escHtml(computationBuildLink(entry))}">${aT("View build")}</a></article>`;
+    <a class="ghost-btn small" href="${escHtml(computationBuildLink(entry))}">${aT("View build")}</a>
+    <button class="ghost-btn small" data-profile-share="${escHtml(entry.identity)}" data-ruler="${escHtml(entry.ruler)}" data-mode="${escHtml(entry.mode)}">${aT("share")}</button></article>`;
 }
-const computationBuildLink = entry => weaponPath(entry.weapon) + "?" + new URLSearchParams({ view: "library", bench: entry.ruler, computed_build: entry.identity });
+const computationBuildLink = entry => entry.buildLink;
+function computationBuild(entry) {
+  const w = weaponInfo(entry.weapon), defs = {};
+  const state = { weapon: w.id, ...headlessBoardRowAxes(pageSay(), w, recommendationRow(entry), defs) };
+  const rivens = Object.fromEntries(Object.entries(defs).map(([id, spec]) => [id, { name: boardRivenName(spec), state: boardRivenState(spec) }]));
+  return { state, rivens };
+}
 function computationOptimizationHtml(entry, own = false) {
   const w = weaponInfo(entry.weapon);
   return `<article class="profile-build">${profileVerificationHtml(own)}<h3><a href="/calculations/${entry.question}">${aT("Optimization")}${w ? ` · ${escHtml(weaponEntryName(w))}` : ""}</a></h3>
@@ -349,7 +337,7 @@ async function loadProfileRecords(state, page = 0) {
     if (page && state.recordCursors[page]) query.set("before", JSON.stringify(state.recordCursors[page])); else query.delete("before");
     const value = await computationCall(state.api + "?" + query);
     if (state !== computationProfile || state.closed || generation !== state.recordsGeneration) return;
-    const rows = value.kind === "board" ? await publishedComputationRows(value.candidates) : value.candidates || [];
+    const rows = value.kind === "board" ? await verifiedComputationRows(value.candidates || []) : value.candidates || [];
     if (state !== computationProfile || state.closed || generation !== state.recordsGeneration) return;
     state.value.profile = { ...state.value.profile, ...value.profile };
     state.rows = rows; state.next = value.next; state.recordPage = page;
@@ -446,6 +434,11 @@ function openProfileWeaponPicker(context = "records") {
   render(); input.focus({ preventScroll: true });
 }
 document.addEventListener("click", event => {
+  const share = event.target.closest("[data-profile-share]");
+  if (share) {
+    const entry = computationProfile?.rows.find(row => row.identity === share.dataset.profileShare && row.ruler === share.dataset.ruler && row.mode === share.dataset.mode);
+    if (entry) openBuildShare("profile", share.closest(".profile-build"), computationBuild(entry));
+  }
   const search = event.target.closest("[data-computation-weapon]");
   if (search) openProfileWeaponPicker(search.dataset.computationWeapon || "records");
   const weapon = event.target.closest(".profile-filter[data-profile-weapon]");

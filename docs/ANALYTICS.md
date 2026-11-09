@@ -136,7 +136,7 @@ Weapon page kinds replace route hyphens with underscores, including
 | `optimizer.run` | a search finished (not cancelled) | weapon id | seconds |
 | `compute.background` | the page holding this browser's community work came back after 10 minutes or more out of sight | `kept` (a task finished meanwhile), `frozen` (none, and the browser froze the page), `stopped` (none, and at most one beat of work: held without a word), `idle` (it ran and was handed nothing) | minutes out of sight |
 | `share.create` | a build left the page | weapon id | how, the first way per load: 1 link, 2 text, 3 share sheet |
-| `share.entry` | a build left the page | where the panel was opened: `bar` (the build bar's button), `finder` (a board build in the finder), `optimizer` (a search's finalist), `simulator` (the result) | — |
+| `share.entry` | a build left the page | where the panel was opened: `bar` (the build bar's button), `finder` (a board build in the finder), `optimizer` (a search's finalist), `simulator` (the result), `profile` (a verified build on a user profile) | — |
 | `share.open` | a shared build landed in a reader's app | weapon id | — |
 | `board.open` | a board build was opened into the builder | weapon id | — |
 | `board.submit` | a build reached the board's inbox | weapon id | — |

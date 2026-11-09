@@ -61,7 +61,7 @@ function arbitrationsNow() {
 function arbitrationsWaitHtml() {
   return arbitrationsFailed
     ? `<div class="sim-empty">${escHtml(tr("The arbitration schedule could not be reached."))} <button type="button" class="ghost-btn small" data-arb-retry>${escHtml(tr("Retry"))}</button></div>`
-    : `<div class="sim-empty">${escHtml(tr("Loading…"))}</div>`;
+    : `<div class="sim-empty">${loadingHtml()}</div>`;
 }
 document.addEventListener("click", (e) => {
   if (e.target.closest("[data-arb-retry]")) { arbitrationsFailed = false; arbitrationsAt = 0; renderUtility(); }

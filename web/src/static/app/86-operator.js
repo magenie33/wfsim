@@ -551,7 +551,7 @@ function renderEquipmentLibrary(kind, id, box) {
     + (entry?.rows || []).map(row => `<article class="wf-library-entry"><div class="wf-library-build-head"><b>${escHtml(row.id.slice(0,8))}</b>`
       + `<button type="button" class="ghost-btn small" data-equipment-copy="${row.id}">${escHtml(tr("Copy to Builder"))}</button></div>`
       + `<div class="fd-card">${card(equipmentState(row))}</div></article>`).join("")
-    + (entry?.pending || !entry ? `<div class="sim-empty">${escHtml(tr("Loading…"))}</div>` : entry.error
+    + (entry?.pending || !entry ? `<div class="sim-empty">${loadingHtml()}</div>` : entry.error
       ? `<div class="sim-empty">${escHtml(tr("The public library is unavailable"))}</div>` : !entry.rows.length
         ? `<div class="sim-empty">${escHtml(tr("No public builds yet"))}</div>` : "")
     + (entry?.next ? `<button type="button" class="ghost-btn" data-equipment-more>${escHtml(tr("Load more"))}</button>` : "");

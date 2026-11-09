@@ -169,7 +169,7 @@ function cloudListHtml() {
   // THE PAGE CAN BE OPENED BEFORE THE ROSTER HAS LOADED — a link straight to
   // /account/sync — and the roster names every item's weapon. The route draws
   // the page again once it is here.
-  if (!META) return `<div class="bh"><h2>${aT("All items")}</h2></div><div class="bb"><p class="set-note">${aT("Loading…")}</p></div>`;
+  if (!META) return `<div class="bh"><h2>${aT("All items")}</h2></div><div class="bb"><p class="set-note">${loadingHtml()}</p></div>`;
   const all = cloudItems();
   const v = cloudView;
   const count = (st) => all.filter((x) => st === "all" || x.state === st).length;

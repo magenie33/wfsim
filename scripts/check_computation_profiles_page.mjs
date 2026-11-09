@@ -37,6 +37,11 @@ try {
   check("Legacy and own-profile aliases resolve to the same stable public user address", await app.evaluate("location.pathname === '/user/" + fixture.profileIds.aaa + "' && location.search === '?weapon=laetum' && location.hash === '#profile'"), await app.evaluate("location.href"));
   check("Identity appears while contribution totals are withheld", await app.evaluate("document.querySelector('.profile-heading h2').innerText.includes('aaa') && computationProfile.statsLoading && computationProfile.value.profile.points == null"));
   check("The default profile loads verified builds independently of identity", await app.evaluate("computationProfile.tab === 'board' && computationProfile.recordsLoading") && !requested.get("full"));
+  check("Profile loading reuses the site's three-dot animation without hiding identity", await app.evaluate("[...document.querySelectorAll('.profile-status .loading-status')].length === 2 && [...document.querySelectorAll('.profile-status .loading-status')].every(el => el.getAttribute('role') === 'status' && el.querySelectorAll('.bdot').length === 3 && [...el.querySelectorAll('.bdot')].every(dot => getComputedStyle(dot).animationName === 'bootdot'))"));
+  await app.send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "reduce" }] });
+  check("Shared loading indicators honor reduced motion", await app.evaluate("[...document.querySelectorAll('.loading-status .bdot')].every(dot => getComputedStyle(dot).animationName === 'none')"));
+  await app.send("Emulation.setEmulatedMedia", { features: [] });
+  await review("profile-loading");
   await release("summary");
   await until("computationProfile?.value && !computationProfile.statsLoading");
   check("The user card stays visible while records are withheld", await app.evaluate("document.querySelector('.profile-heading h2').innerText.includes('aaa') && document.querySelectorAll('.profile-builds .profile-build').length === 0"));
@@ -112,7 +117,19 @@ try {
   await app.send("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
   await app.send("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
   check("Keyboard user links retain a visible focus ring", await app.evaluate("(() => { const a=document.querySelector('.computation-credits a'); a.focus(); return a.matches(':focus-visible') && getComputedStyle(a).outlineStyle === 'solid'; })()"));
-  check("The build link includes the engine's canonical identity", await app.evaluate("document.querySelector('.profile-build h3 a').search.includes('computed_build=" + fixture.identity + "')"));
+  check("The build link carries the exact verified build including its riven", await app.evaluate(`(async () => {
+    const entry = computationProfile.rows[0], url = new URL(document.querySelector('.profile-build h3 a').href);
+    const d = await decodeShare(url.searchParams.get(SHARE_PARAM));
+    const ranked = s => s?.mod && (s.mod.startsWith('~') ? BOARD_RIVEN_SLOT : headlessRankedId(META, s.mod, s.rank));
+    const rv = d.rivens[0]?.s, prefix = evoPrefixFor(d.w);
+    const record = { weapon: d.w, mods: [...d.slots.slice(0,8), d.slots[HEADLESS_STANCE]].map(ranked).filter(Boolean),
+      exilus: ranked(d.slots[HEADLESS_EXILUS]) || '', arcanes: d.arcane,
+      evolutions: d.evos.map(e => prefix + e), valence: d.valence?.element || '',
+      ...(d.assembly ? {grip:d.assembly.grip,loader:d.assembly.loader,link:d.assembly.link} : {}),
+      ...(rv ? {riven_pos:rv.bonuses.map(b=>b.id),riven_neg:rv.malus?.id||'',riven_rolls:[...rv.bonuses.map(b=>b.roll),...(rv.malus?[rv.malus.roll]:[])]} : {}) };
+    const value = await api('/api/build/keys',{kind:'build',builds:[record]});
+    return value.keys[0] === entry.identity && (d.mode || defaultMode(d.w,null)) === entry.mode && d.sc === null && d.m === null;
+  })()`));
   await app.evaluate("document.querySelector('.profile-tabs a[href*=optimization]').click()");
   await until("computationProfile?.value?.kind === 'optimization' && !computationProfile.loading && !computationProfile.recordsLoading");
   check("Optimization tab shows the fourteen day rule", await app.evaluate("document.querySelector('.contributor-profile').innerText.includes('14') && document.querySelectorAll('.profile-build').length === 1"));
@@ -126,7 +143,29 @@ try {
   fixture.hideBoard(true);
   await app.evaluate("document.querySelector('[data-computation-retry]').click()");
   await until("computationProfile?.value && !computationProfile.loading && !computationProfile.statsLoading && !computationProfile.recordsLoading");
-  check("A row absent from publication disappears even while its score remains stored", await app.evaluate("!document.querySelector('.profile-build') && computationProfile.value.profile.signatures === 128"));
+  check("Accepted verification remains visible outside the published library", await app.evaluate("document.querySelectorAll('.profile-build').length === 1 && computationProfile.value.profile.signatures === 128"));
+  const inventory = await app.evaluate("JSON.stringify([loadPresetList(BUILDS),loadPresetList(RIVENS)])");
+  const inventoryStorage = await app.evaluate("[presetListKey(BUILDS),presetListKey(RIVENS)].map(key=>[key,localStorage.getItem(key)])");
+  await app.evaluate("document.querySelector('[data-profile-share]').click()");
+  await until("!!document.querySelector('.profile-build .sh-url')");
+  check("Unpublished verified builds use the existing working share panel", await app.evaluate("new URL(document.querySelector('.profile-build .sh-url').value).searchParams.get(SHARE_PARAM) === new URL(document.querySelector('.profile-build h3 a').href).searchParams.get(SHARE_PARAM)"));
+  check("Viewing and sharing verification history creates no presets or rivens", await app.evaluate("JSON.stringify([loadPresetList(BUILDS),loadPresetList(RIVENS)])") === inventory);
+  const buildUrl = await app.evaluate("document.querySelector('.profile-build h3 a').getAttribute('href')");
+  await app.load(buildUrl, 1800);
+  await until("slots.some(s => isRivenId(s.mod))");
+  check("An unpublished verification opens its exact build in Builder", await app.evaluate("document.querySelector('#module-tabs .mtab.sel')?.getAttribute('href') === '/weapons/Laetum/builder' && slots.slice(0,8).filter(s=>s.mod).length === " + fixture.row.mods.length + " && slots[HEADLESS_EXILUS].mod === '" + fixture.row.exilus + "' && !!rivenEntryFor(slots.find(s=>isRivenId(s.mod)).mod)"));
+  await fixture.retireBoard(true);
+  await app.load("/user/me?kind=board", 600);
+  await until("computationProfile?.value && !computationProfile.recordsLoading && !computationProfile.statsLoading");
+  await app.evaluate("for(const [key,value] of " + JSON.stringify(inventoryStorage) + "){if(value==null)localStorage.removeItem(key);else localStorage.setItem(key,value);}");
+  check("Explicitly retired measurements do not reappear as accepted verification", await app.evaluate("!document.querySelector('.profile-build') && computationProfile.value.profile.signatures === 128"));
+  await fixture.retireBoard(false);
+  const originalRecord = (await fixture.env.LIBRARY.get("SELECT record FROM builds WHERE id=?", fixture.identity)).record;
+  await fixture.env.LIBRARY.run("UPDATE builds SET record=? WHERE id=?", JSON.stringify({ weapon: "laetum", mods: [] }), fixture.identity);
+  await app.load("/user/me?kind=board", 600);
+  await until("computationProfile?.value && !computationProfile.recordsLoading && !computationProfile.statsLoading");
+  check("A stored record cannot borrow a different build's verification identity", await app.evaluate("!document.querySelector('.profile-build') && !computationProfile.recordsError"));
+  await fixture.env.LIBRARY.run("UPDATE builds SET record=? WHERE id=?", originalRecord, fixture.identity);
   fixture.hideBoard(false);
   await fixture.env.ACCOUNTS.run("UPDATE contribution_choice SET named=0 WHERE account=?", fixture.account);
   await app.load("/user/me?kind=board", 600);
@@ -142,10 +181,10 @@ try {
   await app.evaluate("window.dispatchEvent(new Event('focus'))");
   await until("[...document.querySelectorAll('[data-computation]')].some(node => node.innerText.includes('aaa_again'))");
   check("Returning to a page resolves the contributor's new name", await app.evaluate("![...document.querySelectorAll('[data-computation]')].some(node => node.innerText.includes('aaa_new'))"));
-  if (process.argv.includes("--negative-control")) fixture.hideBoard(true);
+  if (process.argv.includes("--negative-control")) await fixture.retireBoard(true);
   await app.load("/user/me?kind=board", 600);
   await until("computationProfile?.value && !computationProfile.loading && !computationProfile.statsLoading && !computationProfile.recordsLoading");
-  check("Restored publication restores the current signature", await app.evaluate("document.querySelectorAll('.profile-build').length === 1"));
+  check("Restoring an accepted measurement restores its current signature", await app.evaluate("document.querySelectorAll('.profile-build').length === 1"));
   await app.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await app.sleep(300);
   check("The profile fits a phone viewport", await app.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1"));

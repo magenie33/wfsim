@@ -462,7 +462,7 @@ let modeApl = null;
 /// Only the simulator's setup may supply code; a changed build waits for its own answer.
 function modeAplHtml() {
   if (!modeApl || modeApl.key !== JSON.stringify(buildPayload())) {
-    return `<div class="modedef-caption">${escHtml(tr("Loading…"))}</div>`;
+    return `<div class="modedef-caption">${loadingHtml()}</div>`;
   }
   const r = modeApl.response;
   if (r.apl_error || r.error || !Array.isArray(r.apl)) {

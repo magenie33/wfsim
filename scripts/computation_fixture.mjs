@@ -85,6 +85,16 @@ export async function computationFixture(upstream, port = 0, controls = false) {
   });
   await new Promise(resolve => server.listen(port, "127.0.0.1", resolve));
   return { base: "http://127.0.0.1:" + server.address().port, env, token, account, profileIds, identity, row, question,
+    async retireBoard(value) {
+      await env.LIBRARY.run(`INSERT INTO board_reviews (ref,id,round_at,identity,ruler,mode,engine,question,record,state,
+        baseline_score,baseline_metric,baseline_cost_seconds,baseline_by,baseline_started_at,baseline_finished_at,created_at)
+        SELECT 'profile-fixture','profile-fixture',finished_at,identity,ruler,mode,?,'profile-fixture',?,'succeeded',
+          score,metric,cost_seconds,measured_by,started_at,finished_at,finished_at FROM scores WHERE identity=? AND ruler=? AND mode=?
+        ON CONFLICT (id) DO NOTHING`, row.measured_by, JSON.stringify(record), identity, row.benchmark, row.mode || "base");
+      await env.LIBRARY.run("UPDATE board_reviews SET state='succeeded',invalidated_at=NULL WHERE id='profile-fixture'");
+      await env.LIBRARY.run("UPDATE scores SET review_id='profile-fixture' WHERE identity=? AND ruler=? AND mode=?", identity, row.benchmark, row.mode || "base");
+      if (value) await env.LIBRARY.run("UPDATE board_reviews SET state='failed',invalidated_at=? WHERE id='profile-fixture'", new Date().toISOString());
+    },
     hideBoard(value) { hidden = value; }, async close() { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); await env.ACCOUNTS.close(); await env.LIBRARY.close(); } };
 }
 export async function seedHomePages(fixture, count = 23) {

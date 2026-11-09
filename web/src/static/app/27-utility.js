@@ -56,7 +56,7 @@ function worldWaitHtml() {
   if (world) return null;
   return worldFailed
     ? `<div class="sim-empty">${escHtml(tr("The world state could not be reached."))} <button type="button" class="ghost-btn small" data-world-retry>${escHtml(tr("Retry"))}</button></div>`
-    : `<div class="sim-empty">${escHtml(tr("Loading…"))}</div>`;
+    : `<div class="sim-empty">${loadingHtml()}</div>`;
 }
 document.addEventListener("click", (e) => {
   if (e.target.closest("[data-world-retry]")) { worldFailed = false; renderUtility(); worldLoad().then(renderUtility); }

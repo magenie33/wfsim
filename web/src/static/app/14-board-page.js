@@ -422,7 +422,7 @@ function renderBenchBoard() {
   const leaders = benchIndexOf(cur);
   if (!leaders.index && (leaders.asking || leaders.lost)) {
     box.innerHTML = leaders.asking
-      ? `<div class="sim-empty">${escHtml(tr("Loading the board…"))}</div>`
+      ? `<div class="sim-empty">${loadingHtml("Loading the board…")}</div>`
       : `<div class="sim-empty">${escHtml(tr("The board could not be reached."))} <button type="button" class="ghost-btn small" id="bench-retry">${escHtml(tr("Retry"))}</button></div>`;
     const again = $("bench-retry");
     if (again) again.onclick = showBenchBoard;
