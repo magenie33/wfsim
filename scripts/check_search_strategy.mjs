@@ -211,6 +211,7 @@ console.log("  ok  fleet merging counts distinct original starts, sums branches 
 const workers = [];
 const fleet = createContext({
   performance, Date, poolSize: () => 2,
+  computeRun: async (_, work, live) => live() ? work() : { cancelled: true },
   watchSilence: () => ({ heard() {}, start() {}, done() {}, clear() {} }),
   spawnEngine: () => {
     const worker = { postMessage() {}, terminate() {} };
