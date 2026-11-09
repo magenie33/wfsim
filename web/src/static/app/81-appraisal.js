@@ -15,8 +15,7 @@ const appraisalActive = () => !!(appraisal && appraisal.job);
 
 /// THIS TAB KEEPS NOTHING: from here on its `localStorage` is a copy in memory,
 /// read through to the real one for what it has not written. The appraisal's
-/// riven, ruler and search live and die with the tab; the name to thank is the
-/// one thing kept, so the next appraisal can offer it.
+/// riven, ruler, search and other local writes live and die with the tab.
 function isolateAppraisalStorage() {
   if (isolateAppraisalStorage.done) return;
   isolateAppraisalStorage.done = true;
@@ -25,7 +24,7 @@ function isolateAppraisalStorage() {
   const ours = (st) => { try { return st === window.localStorage; } catch (_) { return false; } };
   Storage.prototype.getItem = function (k) { return ours(this) && mem.has(k) ? mem.get(k) : real.get.call(this, k); };
   Storage.prototype.setItem = function (k, v) {
-    if (ours(this) && k !== APPRAISAL_NAME) mem.set(k, String(v)); else real.set.call(this, k, v);
+    if (ours(this)) mem.set(k, String(v)); else real.set.call(this, k, v);
   };
   Storage.prototype.removeItem = function (k) { if (ours(this)) mem.set(k, null); else real.del.call(this, k); };
 }

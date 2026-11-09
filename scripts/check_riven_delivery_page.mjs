@@ -1,4 +1,5 @@
 import { openApp } from "./cdp.mjs";
+import { readFileSync } from "node:fs";
 const app = await openApp({ base: process.env.WFSIM_BASE, lang: "en", boot: 1000 });
 try {
   await app.load("/weapons/Torid/optimizer", 3000);
@@ -38,5 +39,20 @@ try {
     result.seen.length === 2 && result.seen[1].candidate === 2 && result.cursors.join(",") === "0,0,1,1");
   app.check("delivery preserves the accepted candidate's own source",
     result.value.accepted && result.value.delivery === "2".repeat(32) && result.progress.includes("Waiting for another calculation"));
+  const original = process.env.WFSIM_APPRAISAL_STORAGE_SOURCE
+    ? readFileSync(process.env.WFSIM_APPRAISAL_STORAGE_SOURCE, "utf8") : "";
+  const start = original.indexOf("function isolateAppraisalStorage()");
+  const isolate = original ? `(${original.slice(start, original.indexOf("\n/// THE LINK", start))})()`
+    : "isolateAppraisalStorage()";
+  const storage = await app.evaluate(`(() => {
+    const key = 'wfsim-appraisal-storage-check', savedGet = Storage.prototype.getItem;
+    localStorage.setItem(key, 'saved');
+    ${isolate};
+    localStorage.setItem(key, 'in-memory');
+    const isolated = localStorage.getItem(key) === 'in-memory' && savedGet.call(localStorage, key) === 'saved';
+    localStorage.removeItem(key);
+    return isolated && localStorage.getItem(key) === null && savedGet.call(localStorage, key) === 'saved';
+  })()`);
+  app.check("appraisal storage writes and removals preserve the reader's saved state", storage);
 } catch (error) { await app.close(); throw error; }
 await app.finish("Riven candidates deliver through replay independently of consensus.");

@@ -7,7 +7,9 @@ captured-account local delivery are checked separately. Importing the previous
 user-task module through `WFSIM_USER_TASK_MODULE` must fail the early-delivery
 assertion. `check_riven_delivery_page.mjs` verifies that a waiting candidate
 reaches replay, a rejected candidate advances the cursor, and delivery retains
-the accepted source. The private extension checks actual label eligibility and
+the accepted source. It also verifies isolated appraisal storage; the prior
+storage function supplied through `WFSIM_APPRAISAL_STORAGE_SOURCE` must fail.
+The private extension checks actual label eligibility and
 rendering.
 
 # The browser and node checks

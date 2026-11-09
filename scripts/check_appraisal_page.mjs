@@ -24,7 +24,7 @@ const STUB = `(() => {
       const body = JSON.parse(init.body);
       return ok({ ok: true, held: body.lease === "0".repeat(32) && body.verifier === "a".repeat(24) });
     }
-    if (/\\/api\\/appraise\\/TEST7\\?result=1$/i.test(u)) return ok({ ...job, result: { id: 1, build: JSON.parse(localStorage.getItem("__build") || "{}"), thanks: "Kai" } });
+    if (/\\/api\\/appraise\\/TEST7\\?result=1$/i.test(u)) return ok({ ...job, result: { id: 1, build: JSON.parse(localStorage.getItem("__build") || "{}"), calculator: { name: "Kai", mark: null } } });
     if (/\\/api\\/appraise\\/TEST7$/i.test(u)) return ok(job);
     if (/\\/api\\/board\\/submit$/.test(u)) window.__sent.board.push(JSON.parse(init.body));
     return real(url, init);
