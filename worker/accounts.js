@@ -16,7 +16,8 @@
 // so the page offers only the ways in that work.
 
 import { nameReason, hiddenWhy } from "./names.js";
-import { cloudEnd, cloudExport } from "./cloud.js";
+import { cloudEnd, cloudExport, cloudIdentity } from "./cloud.js";
+import { contributorAccounts } from "./contributor_identity.js";
 import { agentsOf } from "./agents.js";
 import { noticesExport } from "./notices.js";
 import { feedbackExport, feedbackPurge } from "./feedback.js";
@@ -493,14 +494,15 @@ async function passwordChange(request, env, account, b) {
 
 async function accountView(env, account) {
   const a = await env.ACCOUNTS.prepare(
-    "SELECT id, created_at, username, display_name, username_changed_at, delete_after FROM accounts WHERE id = ?1",
+    "SELECT id, profile_id, created_at, username, display_name, username_changed_at, delete_after FROM accounts WHERE id = ?1",
   ).bind(account).first();
   if (!a) return null;
+  if (!a.profile_id) a.profile_id = (await contributorAccounts(env, [account])).get(account)?.profile_id;
   const why = hiddenWhy(a.display_name, await heldName(env.ACCOUNTS, account));
   const { results } = await env.ACCOUNTS.prepare(
     "SELECT provider, label, linked_at, CASE WHEN password_hash IS NULL THEN 0 ELSE 1 END AS has_password FROM identities WHERE account = ?1",
   ).bind(account).all();
-  return { id: a.id, created_at: a.created_at, username: a.username, display_name: a.display_name, delete_after: a.delete_after || null,
+  return { id: a.id, profile_id: a.profile_id, created_at: a.created_at, username: a.username, display_name: a.display_name, delete_after: a.delete_after || null,
     display_name_hidden: !!why, display_name_why: why, rename_after: renameAfter(a),
     identities: SLOTS.map((s) => results.find((r) => r.provider === s)).filter(Boolean)
       .map(({ has_password, ...r }) => (r.provider === "email" ? { ...r, has_password: !!has_password } : r)) };
@@ -644,6 +646,30 @@ async function unlink(request, env, account, b) {
 
 /// The response for an account path, or null for a path that is not one.
 export async function accountRoute(request, env, path) {
+  if (path === "/api/account/identity") {
+    if (!env.ACCOUNTS) return no("unavailable", 503);
+    const account = await sessionAccount(env, request);
+    if (!account) return no("not_signed_in", 401);
+    const choice = await env.ACCOUNTS.prepare("SELECT named,label FROM contribution_choice WHERE account=?").bind(account).first();
+    if (request.method === "GET") {
+      const identity = await cloudIdentity(env, account);
+      return json({ ok: true, named: !!choice?.named, label: choice?.label || "none", labels: identity?.labels || [] }, 200, { "cache-control": "no-store" });
+    }
+    if (request.method !== "POST") return no("method", 405);
+    if (!sameSite(request)) return no("cross_site", 403);
+    let body;
+    try { body = await request.json(); } catch (_) { return no("not_json"); }
+    if (typeof body?.named !== "boolean" || typeof body.label !== "string" || body.label.length > 64) return no("bad_choice");
+    if (body.label !== "none" && (body.named || body.label !== choice?.label)) {
+      const identity = await cloudIdentity(env, account);
+      if (!identity) return no("unavailable", 503);
+      if (!identity.labels.some(label => label.id === body.label)) return no("bad_choice", 403);
+    }
+    await env.ACCOUNTS.prepare(`INSERT INTO contribution_choice (account,named,label,chosen_at) VALUES (?,?,?,?)
+      ON CONFLICT (account) DO UPDATE SET named=excluded.named,label=excluded.label,chosen_at=excluded.chosen_at`)
+      .bind(account, body.named ? 1 : 0, body.label, now()).run();
+    return json({ ok: true });
+  }
   const m = path.match(/^\/api\/auth\/(google|discord|github)\/(start|callback)$/);
   if (m) {
     if (request.method !== "GET") return no("method", 405);

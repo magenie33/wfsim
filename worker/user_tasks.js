@@ -7,6 +7,7 @@ import { json, servedRelease, netOf, unrecognised, ENGINE_ID, LEASE_ID, QUESTION
 import { dialsOf } from "./dials.js";
 import { iso } from "./instant.js";
 import { COMPUTATION_KEEP_MS, purgeComputationRecords } from "./computation_records.js";
+import { answerDeliverySource, localDeliverySource } from "./delivery_sources.js";
 
 export const USER_TASK_KEEP_MS = 30 * 86_400_000;
 const taskKeepMs = kind => kind === "simulation" ? USER_TASK_KEEP_MS : COMPUTATION_KEEP_MS;
@@ -86,6 +87,11 @@ export async function userTasksRoute(request, env, path) {
   if (path === "/api/user-tasks/answer") return answer(request, env, body);
   if (!OWNER.test(body.owner || "")) return json({ ok: false, error: "needs browser ownership" }, 401);
   const owner = await sha256(body.owner);
+  if (path === "/api/user-tasks/source") {
+    if (!UUID.test(body.task || "") || !ENGINE_ID.test(body.engine || "") || !/^[a-z0-9_]{1,100}$/.test(body.weapon || ""))
+      return json({ ok: false, error: "invalid source" }, 400);
+    return json({ ok: true, source: await localDeliverySource(env, request, body) });
+  }
   if (path === "/api/user-tasks/accept") {
     if (!UUID.test(body.id || "") || !UUID.test(body.task || "") || !VERBS[body.kind] || !ENGINE_ID.test(body.engine || "")
         || !body.request || typeof body.request !== "object" || !body.request.weapon)
@@ -117,6 +123,8 @@ export async function userTasksRoute(request, env, path) {
     const stored = await db.prepare("SELECT owner, question, task, engine FROM user_calculations WHERE id = ?").bind(body.id).first();
     if (stored.owner !== owner || stored.question !== question || stored.task !== body.task || stored.engine !== body.engine)
       return json({ ok: false, error: "This command already describes another request." }, 409);
+    if (body.kind === "appraisal" && old?.kind === "optimization")
+      await db.prepare("UPDATE user_calculations SET kind='appraisal' WHERE id=? AND owner=?").bind(body.id, owner).run();
     // Repeating a lost acceptance finishes its demand, without reopening a cancelled one.
     if (!old || old.state === "waiting") await facts().demand(env, { producer: "user_calculation", ref: body.id,
       verb: VERBS[body.kind], request: execution, due_in_ms: DEADLINE_MS.user_calculation,
@@ -135,21 +143,37 @@ export async function userTasksRoute(request, env, path) {
       if (changed.meta.changes) await facts().withdraw(env, "user_calculation", id, now);
     }
   } else if (path !== "/api/user-tasks/status") return json({ ok: false, error: "not found" }, 404);
+  const after = body.after || {};
+  if (!after || typeof after !== "object" || Array.isArray(after) || Object.keys(after).length > 100
+    || Object.entries(after).some(([id, n]) => !UUID.test(id) || !Number.isSafeInteger(n) || n < 0))
+    return json({ ok: false, error: "invalid cursor" }, 400);
   const currentEngine = (await servedRelease(env)).engine;
-  const { results } = await db.prepare(`SELECT t.id, t.task, t.question, t.state, t.engine, t.expires_at, t.completed_at, q.state AS question_state,
-      q.leased_to IS NOT NULL AND q.lease_until > ?3::text AS computing, r.result
+  const { results } = await db.prepare(`SELECT t.id, t.task, t.kind, t.question, t.state, t.engine, t.expires_at, t.completed_at, q.state AS question_state,
+      q.leased_to IS NOT NULL AND q.lease_until > ?3::text AS computing, r.result,
+      a.id AS candidate,a.device,a.owner AS calculator,a.official,a.at,
+      CASE WHEN ?5::boolean THEN a.result ELSE NULL END AS candidate_result
       FROM user_calculations t LEFT JOIN questions q ON q.id = t.question
       LEFT JOIN calculation_reports r ON r.question = t.question AND r.engine = t.engine
+      LEFT JOIN LATERAL (SELECT id,device,owner,official,at,result FROM answers
+        WHERE question=t.question AND engine=t.engine AND void=0 AND t.kind='appraisal'
+        AND id>COALESCE(((?4::text)::jsonb->>t.id)::bigint,0) ORDER BY at,id LIMIT 1) a ON true
       WHERE t.owner = ?1::text AND t.id IN (SELECT value FROM jsonb_array_elements_text((?2::text)::jsonb))`)
-    .bind(owner, JSON.stringify(ids), iso(now)).all();
-  return json({ ok: true, next_ms: 10_000, tasks: results.map((row) => ({ id: row.id, task: row.task,
+    .bind(owner, JSON.stringify(ids), iso(now), JSON.stringify(after), body.include_results === true).all();
+  return json({ ok: true, next_ms: 10_000, tasks: await Promise.all(results.map(async row => {
+    const available = ["waiting", "succeeded"].includes(row.state) && Date.parse(row.expires_at) > now && row.engine === currentEngine && row.question_state !== "withdrawn";
+    const candidate = available && row.candidate ? row.candidate : null;
+    const report = candidate && body.include_results === true ? calculationReport(JSON.parse(row.candidate_result).report) : null;
+    const source = report ? await answerDeliverySource(env, row.question, { engine: row.engine, owner: row.calculator,
+      device: row.device, official: row.official, at: row.at }, report.weapon || report.results?.[0]?.replay?.weapon) : null;
+    return { id: row.id, task: row.task, ...(candidate ? { candidate } : {}),
     state: row.state === "waiting" && currentEngine && row.engine !== currentEngine ? "failed" : Date.parse(row.expires_at) <= now ? "expired" : row.state === "waiting" && ["disputed", "nondeterministic", "withdrawn"].includes(row.question_state) ? "failed" : row.state,
     ...(row.state === "waiting" && currentEngine && row.engine !== currentEngine ? { error: "The engine changed. Run this calculation again from its page." } : {}),
     ...(row.state === "waiting" && row.question_state === "withdrawn" ? { error: "The engine refused this calculation." } : {}),
     execution_state: row.computing ? "running" : "queued",
     phase: row.computing ? "Computing and verifying" : "Waiting for community compute", engine: row.engine, keep_until: row.expires_at,
-    ...(body.include_results === true && row.state === "succeeded" && row.result && Date.parse(row.expires_at) > now
-      ? { result: JSON.parse(row.result), computation: { question: row.question, engine: row.engine, completed_at: row.completed_at } } : {}) })) });
+    ...(report ? { result: report, delivery: source } : body.include_results === true && row.state === "succeeded" && row.result && Date.parse(row.expires_at) > now
+      ? { result: JSON.parse(row.result), computation: { question: row.question, engine: row.engine, completed_at: row.completed_at } } : {}) };
+  })) });
 }
 async function answer(request, env, body) {
   const refused = unrecognised(body.verifier);

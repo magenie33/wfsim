@@ -1,6 +1,7 @@
 // One paced observation covers this browser's pending community requests.
 let communityTaskCapabilities = null, communityTaskPoll = null, communityTaskPollAt = 0;
 const communityTaskStates = new Map();
+const communityCandidateCursors = new Map();
 const communityTaskCapable = (task) => !!communityTaskCapabilities?.kinds.includes(USER_TASK_TYPES.get(task.kind)?.community?.kind);
 async function communityTaskOwner() {
   const queue = await initUserTasks();
@@ -33,7 +34,8 @@ async function communityTaskAccept(task, command) {
 async function observeCommunityTasks(id, signal) {
   if (!communityTaskPoll && (Date.now() >= communityTaskPollAt || !communityTaskStates.has(id))) {
     const ids = [...new Set([id, ...userTasks.rows.filter((row) => userTaskActive(row) && row.destination === "community").map((row) => row.remote_command || row.attempt).filter(Boolean)])].slice(0, 100);
-    communityTaskPoll = communityTaskCall("status", { ids, include_results: false }).then((response) => {
+    communityTaskPoll = communityTaskCall("status", { ids, include_results: false,
+      after: Object.fromEntries(ids.map(id => [id, communityCandidateCursors.get(id) || 0])) }).then((response) => {
       ids.forEach((id) => communityTaskStates.set(id, response.tasks.find((row) => row.id === id) || { id, state: "expired" }));
       communityTaskPollAt = Date.now() + Math.max(10_000, response.next_ms || 0);
     }).finally(() => { communityTaskPoll = null; });
@@ -81,9 +83,9 @@ USER_TASK_EXECUTORS.set("community", {
         execution.report({ phase: "Reconnecting to community compute", done: 0, total: 0 });
         await new Promise((resolve) => setTimeout(resolve, 10_000)); continue;
       }
-      if (observed?.state === "succeeded") {
+      if (observed?.state === "succeeded" || task.kind === "appraisal" && observed?.candidate) {
         let response;
-        try { response = await communityTaskCall("status", { ids: [id], include_results: true }); }
+        try { response = await communityTaskCall("status", { ids: [id], include_results: true, after: { [id]: communityCandidateCursors.get(id) || 0 } }); }
         catch (error) {
           if (error.status && error.status < 500 && error.status !== 429) throw error;
           execution.report({ phase: "Reconnecting to community compute", done: 0, total: 0 });
@@ -92,8 +94,15 @@ USER_TASK_EXECUTORS.set("community", {
         const observedResult = response.tasks[0], result = observedResult?.result;
         if (!result) throw new Error("This result is no longer available.");
         if (observedResult.computation) result.computation = observedResult.computation;
+        if (observedResult.delivery) result.delivery = observedResult.delivery;
         communityTaskStates.delete(id);
-        return type.community.finish ? type.community.finish(task, execution, result) : result;
+        try { return type.community.finish ? await type.community.finish(task, execution, result) : result; }
+        catch (error) {
+          if (!observedResult.candidate || !error.candidateRejected || execution.signal.aborted) throw error;
+          communityCandidateCursors.set(id, observedResult.candidate); communityTaskPollAt = 0;
+          execution.report({ phase: "Waiting for another calculation", done: 0, total: 0 });
+          continue;
+        }
       }
       if (["failed", "expired", "cancelled"].includes(observed?.state)) throw new Error(tr(observed.error || (observed.state === "failed" ? "The community reports disagreed. Retry this calculation." : "This community request has ended.")));
       execution.report({ phase: observed?.phase || "Waiting for community compute", done: 0, total: 0 });

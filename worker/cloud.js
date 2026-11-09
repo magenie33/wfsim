@@ -73,6 +73,16 @@ export async function cloudMarks(env, accounts) {
     return null;
   }
 }
+export async function cloudIdentity(env, account) {
+  if (!env.CLOUD) return { labels: [] };
+  try {
+    const response = await env.CLOUD.fetch(new Request("https://cloud.internal/internal/identity", {
+      method: "GET", headers: { "x-wfsim-account": account },
+    }));
+    const value = await response.json();
+    return response.ok && value.ok ? value : null;
+  } catch (_) { return null; }
+}
 
 /// What the paid half holds about an account, for its export — `{ billing,
 /// sync }` as it sends them; empty with none bound.

@@ -109,10 +109,15 @@ let computationSequence = 0, computationTimer = null, computationBusy = false;
 let computationProfile = null;
 let profileWeaponPicker = null;
 const computationMinute = value => String(value || "").slice(0, 16);
-const computationWitnessHtml = witnesses => witnesses.map(w => w.official
-  ? `<span>${aT("Official compute")}${w.name ? ` · ${escHtml(w.name)}` : ""}</span>`
-  : w.name && w.profile ? userProfileLink(w.profile, w.name)
-    : `<span class="muted">${aT("Anonymous contributor")}</span>`).join(`<span aria-hidden="true"> · </span>`);
+const computationWitnessHtml = (witnesses, roles = false) => witnesses.map((w, i) => {
+  const name = w.official ? `<span>${aT("Official compute")}${w.name ? ` · ${escHtml(w.name)}` : ""}</span>`
+    : w.name && w.profile ? userProfileLink(w.profile, w.name) + (extHookNow("contributorMark", w.mark) || "")
+      : `<span class="muted">${aT("Anonymous contributor")}</span>`;
+  return roles ? `<span class="computation-witness"><span class="muted">${aT(i ? "Verified by" : "Calculated by")}</span> ${name}</span>` : name;
+}).join(`<span aria-hidden="true"> · </span>`);
+function deliveryRecordHtml(source) {
+  return `<p class="calculation-record fine">${aT("Delivered by")} <span${/^[a-f0-9]{32}$/.test(source || "") ? ` data-delivery-source="${source}"` : ""}>${aT("Anonymous contributor")}</span></p>`;
+}
 function calculationRecordHtml(record) {
   if (!record) return "";
   const computation = record.computation || record.r?.computation;
@@ -127,9 +132,18 @@ async function refreshCalculationNames() {
     if (!node.getClientRects().length) continue;
     const id = node.dataset.calculationNames;
     if (!calculationNameRequests.has(id)) calculationNameRequests.set(id, computationCall("/api/computations/" + id)
-      .then(value => computationWitnessHtml(value.record.witnesses)).catch(() => ""));
+      .then(value => computationWitnessHtml(value.record.witnesses, value.record.kind === "optimization")).catch(() => ""));
     const html = await calculationNameRequests.get(id), wanted = html ? " · " + html : "";
     if (node.isConnected && node.innerHTML !== wanted) node.innerHTML = wanted;
+  }
+  for (const node of document.querySelectorAll("[data-delivery-source]")) {
+    if (!node.getClientRects().length) continue;
+    const id = node.dataset.deliverySource, key = "delivery:" + id;
+    if (!calculationNameRequests.has(key)) calculationNameRequests.set(key, computationCall("/api/computations/" + id)
+      .then(value => value.record.kind === "delivery" ? computationWitnessHtml(value.record.witnesses.slice(0, 1)) : aT("Anonymous contributor"))
+      .catch(() => aT("Anonymous contributor")));
+    const html = await calculationNameRequests.get(key);
+    if (node.isConnected && node.innerHTML !== html) node.innerHTML = html;
   }
 }
 
@@ -254,7 +268,7 @@ function computationPage(main, kind) {
     const r = value.record, w = weaponInfo(r.weapon);
     main.innerHTML = `<div class="auth-page"><article class="auth-card computation-record"><h2>${aT(r.kind === "simulation" ? "Simulation" : "Optimization")}${w ? ` · ${escHtml(weaponEntryName(w))}` : ""}</h2>
       <p>${escHtml(measuredText(r.completed_at, pageSay().zone))} · ${aT("engine")} ${escHtml(r.engine)}</p>
-      <p class="computation-credits">${computationWitnessHtml(r.witnesses)}</p><p class="fine">${aT("Calculation records are shown for 14 days. Lifetime signatures are kept.")}</p>${status}</article></div>`;
+      <p class="computation-credits">${computationWitnessHtml(r.witnesses, r.kind === "optimization")}</p><p class="fine">${aT("Calculation records are shown for 14 days. Lifetime signatures are kept.")}</p>${status}</article></div>`;
     return;
   }
   const p = value.profile, query = new URLSearchParams(location.search), tab = state.tab;
@@ -276,7 +290,7 @@ function computationPage(main, kind) {
     ${!state.recordsLoading && !state.rows.length && !state.recordsError && !state.next ? `<p class="muted">${aT("No calculation records here yet.")}</p>` : ""}${records}
     ${computePagerHtml({ page: state.recordPage, hasNext: !!state.next, loading: state.recordsLoading }, page => `data-profile-page="${page}"`)}`;
   main.innerHTML = `<div class="contributor-profile"><header class="profile-heading"><span class="avatar">${escHtml((p.name || "?").slice(0, 1).toUpperCase())}</span>
-    <div><span class="profile-eyebrow">${aT(p.you ? "My profile" : "User profile")}</span><h2>${escHtml(p.name)} ${p.contributor_rank == null ? "" : contributorRankBadge(p.contributor_rank)}</h2><span class="muted">@${escHtml(p.username || "")}</span></div>
+    <div><span class="profile-eyebrow">${aT(p.you ? "My profile" : "User profile")}</span><h2>${escHtml(p.name)}${extHookNow("contributorMark", p.mark) || ""} ${p.contributor_rank == null ? "" : contributorRankBadge(p.contributor_rank)}</h2><span class="muted">@${escHtml(p.username || "")}</span></div>
     <div class="profile-totals"><b>${total("signatures")}</b><span>${aT("Lifetime signatures")}</span></div>
     <div class="profile-totals"><b>${total("points")}</b><span>${aT("Contribution points")}</span></div></header>
     ${userHomeControlsHtml(p)}${stats}
@@ -321,7 +335,7 @@ function computationOptimizationHtml(entry, own = false) {
   return `<article class="profile-build">${homeRecordHtml("optimization:" + entry.question, {
     image: w?.image ? IMG(w.image) : "", name: `${aT("Optimization")}${w ? ` · ${escHtml(weaponEntryName(w))}` : ""}`,
     sub: escHtml(measuredText(entry.completed_at, pageSay().zone)),
-    result: `<span class="computation-credits">${computationWitnessHtml(entry.witnesses)}</span>`, side: profileVerificationHtml(own),
+    result: `<span class="computation-credits">${computationWitnessHtml(entry.witnesses, true)}</span>`, side: profileVerificationHtml(own),
   }, `<p class="fine">${aT("engine")} ${escHtml(entry.engine)}</p><a class="ghost-btn small" href="/calculations/${entry.question}">${aT("Calculation details")}</a>`)}</article>`;
 }
 function renderComputationState(state, kind = "profile") {
@@ -519,4 +533,42 @@ onTyped(document, event => {
   if (!["auth-username", "auth-display"].includes(event.target?.id) || authFlow.open !== "profile") return;
   const field = event.target.id === "auth-username" ? "username" : "display_name";
   authFlow.profileDraft = { ...(authFlow.profileDraft || accountState.account), [field]: event.target.value };
+});
+
+let accountIdentity = null;
+function identityControlsHtml(state) {
+  if (state.error) return `<p role="status">${aT(state.error)} <button class="ghost-btn small" data-auth="identity-retry">${aT("Retry")}</button></p>`;
+  const value = state.value;
+  if (!value) return `<p role="status">${aT("Loading…")}</p>`;
+  const labelText = item => typeof item.label === "string" ? tr(item.label) : item.label?.[LANG] || item.label?.en || "";
+  const selected = value.label || "none", available = value.labels.some(item => item.id === selected);
+  return `<div class="inline-form identity-settings"><h3>${aT("Public identity")}</h3>
+    <label><input type="checkbox" data-identity-anonymous${value.named ? "" : " checked"}> ${aT("Anonymous")}</label>
+    <div class="field" data-identity-label${value.named ? "" : " hidden"}><label>${aT("Identity label")}
+      <select data-identity-label-choice${value.named ? "" : " disabled"}><option value="none"${selected === "none" ? " selected" : ""}>${aT("No label")}</option>
+      ${selected !== "none" && !available ? `<option value="${escHtml(selected)}" selected disabled>${aT("Unavailable")}</option>` : ""}
+      ${value.labels.map(item => `<option value="${escHtml(item.id)}"${selected === item.id ? " selected" : ""}>${escHtml(labelText(item))}</option>`).join("")}</select></label></div>
+    <button class="ghost-btn small" data-auth="identity-save">${aT("Save identity settings")}</button>
+    <p class="set-note">${aT("Used wherever your contribution name appears.")}</p></div>`;
+}
+async function loadAccountIdentity(state) {
+  try {
+    const value = await accountCall("GET", "/api/account/identity");
+    if (!value?.ok) throw new Error(ACCOUNT_SAYS[value?.reason] || "Account settings are unavailable.");
+    state.value = value;
+  } catch (error) { state.error = error.message; }
+  if (state === accountIdentity && state.account === accountState.account?.id)
+    for (const box of document.querySelectorAll("[data-identity-settings]")) box.innerHTML = identityControlsHtml(state);
+}
+function accountIdentityHtml(a) {
+  if (accountIdentity?.account !== a.id) {
+    accountIdentity = { account: a.id, value: null, error: "" }; loadAccountIdentity(accountIdentity);
+  }
+  return `<section data-identity-settings>${identityControlsHtml(accountIdentity)}</section>`;
+}
+document.addEventListener("change", event => {
+  if (!event.target.matches("[data-identity-anonymous]")) return;
+  const box = event.target.closest("[data-identity-settings]"), select = box.querySelector("[data-identity-label-choice]");
+  box.querySelector("[data-identity-label]").hidden = event.target.checked; select.disabled = event.target.checked;
+  if (!event.target.checked && select.selectedOptions[0]?.disabled) select.value = "none";
 });

@@ -247,7 +247,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const card = `${SITE}${headless.headlessWeaponPath(meta.weapons || [], hit.w.id)}/card?kind=appraise&code=${opened.code}`;
     const say = headless.headlessSpeaker({}, { zh }, "zh");
     const line = slots.map((sl) => say.tf(resolved.stats.find((s) => s.slot === sl.slot).text)).join(" ");
-    return { line: t("Nona read it. The volunteers' devices are computing it together — usually a minute or two — and Nona will post the answer here. Can't wait? Scan the code to run it on your own device, riven gain {code}. (๑•̀ㅂ•́)و✧", { code: opened.code }),
+    return { line: t("Nona read it. The volunteers' devices are computing it together — usually a minute or two — and Nona will post the answer here. Riven gain {code}. (๑•̀ㅂ•́)و✧", { code: opened.code }),
       card, text: `${weaponName(hit.w)} · ${rulerShort(ruler)} · ${line}\n${SITE}/appraise/${opened.code}` };
   }
 
@@ -269,7 +269,7 @@ export function makeAnswer({ run, meta, zh, headless, host }) {
     const w = (meta.weapons || []).find((x) => x.id === item.weapon) || { id: item.weapon, name: item.weapon };
     const v = item.verdict || {};
     const gain = typeof v.gain === "number" ? `${v.gain >= 0 ? "+" : "−"}${Math.abs(v.gain * 100).toFixed(1)}%` : "—";
-    const who = item.thanks || (item.volunteer ? t("the volunteers' devices") : t("a kind someone in the chat"));
+    const who = headless.headlessContributorText(headless.headlessSpeaker({}, { zh }, "zh"), item.calculator);
     // GRADED BY THE REPLAY (45-card-page.js `rivenGrade`); an answer judged
     // before the grade existed carries none and is told without one.
     const said = typeof v.grade === "number"
