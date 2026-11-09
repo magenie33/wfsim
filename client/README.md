@@ -8,7 +8,7 @@ Download the native executable for your platform from the official CLI release,
 or use the npm launcher once that release has been published:
 
 ```sh
-npx @wfsim/cli@latest join
+npx wfsim@latest join
 ```
 
 The native download needs neither Node.js nor Rust. The npm launcher needs
