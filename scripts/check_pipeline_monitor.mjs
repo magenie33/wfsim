@@ -11,8 +11,10 @@ const options = { now: () => time, log: () => {}, limit: 1800 };
 const read = () => JSON.parse(readFileSync(join(directory, 'inventory.json'), 'utf8'));
 try {
   const monitor = pipelineMonitor(directory, 'inventory', { engine: 'engine', source: 'source' }, options);
-  monitor.report('capture', { rows: 123, epoch: '4', token: 'secret', query: 'secret' });
+  monitor.report('capture', { rows: 123, epoch: '4', page_rows: 123, page_bytes: 4567, fetch_ms: 89, next_rows: 20000, token: 'secret', query: 'secret' });
   const started = read(); time += 60000; monitor.heartbeat();
+  assert.equal(started.page_rows, 123); assert.equal(started.page_bytes, 4567);
+  assert.equal(started.fetch_ms, 89); assert.equal(started.next_rows, 20000);
   assert.equal(read().last_progress_at, started.last_progress_at);
   assert.notEqual(read().updated_at, started.updated_at);
   const restart = pipelineMonitor(directory, 'inventory', {}, options);

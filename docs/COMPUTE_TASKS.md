@@ -233,6 +233,13 @@ last publication manifest remain. SQLite uses a 16MiB page cache, bounded
 imports and no memory mapping; the coordinator reserves 8GiB of filesystem
 space and caps initial capture at 45 minutes and delta capture at 15 minutes.
 
+Dirty-token export retains one cursor page at a time, starting at 5,000 rows
+and growing at most fourfold to 80,000. The largest observed UTF-8 row sizes
+the next page toward 8MiB; this is a sizing target, not a hard byte limit for
+unseen rows. Cohort pages retain their 5,000-row ceiling. Each FETCH has its
+own statement timeout within the original capture budget and snapshot. Phase
+diagnostics record page rows, bytes, fetch time and the next requested size.
+
 Generation replacement and sealed-cut publication lock the generation state,
 not the dirty table. Source writers can commit during both operations: a cut
 owns its repeatable-read snapshot and later revisions remain pending. The

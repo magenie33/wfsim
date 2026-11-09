@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
 import postgres from './pg/node_modules/postgres/src/index.js';
+import { inventoryCursor } from './inventory_pipeline.mjs';
 
 const name = `wfsim-inventory-check-${randomUUID()}`;
 const docker = (...args) => execFileSync('docker', args, { encoding: 'utf8', timeout: 120000 });
@@ -75,6 +76,25 @@ try {
     await assert.rejects(call('inventory_begin', [engine, contract, previous]), /generation changed/);
     await assert.rejects(call('inventory_ack', [previous, []]), /generation changed/);
     await assert.rejects(call('inventory_publish_cut', [cut.epoch, { ...body(), generation: previous }]), /fence changed/);
+  });
+  await check('adaptive fetches preserve a frozen cursor across late writes and separate statement budgets', async () => {
+    await a.unsafe('CREATE TABLE capture_fixture(id integer PRIMARY KEY, value text)');
+    await a.unsafe("INSERT INTO capture_fixture SELECT i,'before' FROM generate_series(1,200001) i");
+    const pages = []; let count = 0;
+    await a.begin('isolation level repeatable read read only', async tx => {
+      await tx.unsafe("SET LOCAL statement_timeout='1s'");
+      for await (const row of inventoryCursor(tx, 'capture_fixture', 'SELECT id,value FROM capture_fixture ORDER BY id', [],
+        { maxRows: 80000, report: page => pages.push(page) })) {
+        assert.equal(row.id, ++count); assert.equal(row.value, 'before');
+        if (count === 5000) {
+          await b.unsafe("UPDATE capture_fixture SET value='after'; INSERT INTO capture_fixture VALUES (200002,'after')");
+          await pause(1100);
+        }
+      }
+    });
+    assert.equal(count, 200001); assert(pages.length <= 5);
+    assert(pages.some(page => page.page_rows === 80000));
+    assert.equal((await b.unsafe('SELECT count(*)::integer n FROM capture_fixture'))[0].n, 200002);
   });
   await check('health SQL reads real PostgreSQL activity without changing inventory', async () => {
     const sql = execFileSync('python3', ['-c', 'import sys; sys.path.insert(0,"scripts"); import pg_health; print(pg_health.SQL)'], { encoding: 'utf8' });

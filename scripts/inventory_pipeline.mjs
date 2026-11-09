@@ -73,13 +73,24 @@ async function* batches(input, limit = LIMIT) {
 async function* outputPaths(path) {
   if (existsSync(path)) for await (const row of readInventoryRows(path)) yield row.path;
 }
-async function* cursor(tx, name, query, args = []) {
+export async function* inventoryCursor(tx, name, query, args = [], { maxRows = 5000, report = () => {} } = {}) {
+  let limit = Math.min(5000, maxRows), largest = 1, total = 0;
   await tx.unsafe(`DECLARE ${name} NO SCROLL CURSOR FOR ${query}`, args);
   try {
     for (;;) {
-      const rows = await tx.unsafe(`FETCH FORWARD 5000 FROM ${name}`);
-      yield* rows;
-      if (rows.length < 5000) break;
+      const started = Date.now(), rows = await tx.unsafe(`FETCH FORWARD ${limit} FROM ${name}`);
+      const fetchMs = Date.now() - started; let bytes = 0;
+      for (const row of rows) {
+        const size = Buffer.byteLength(JSON.stringify(row)) + 1;
+        bytes += size; largest = Math.max(largest, size);
+        yield row;
+      }
+      total += rows.length;
+      // One page at a time; 8MiB is a sizing target, not a row-size guarantee.
+      const next = Math.max(1, Math.min(maxRows, limit * 4, Math.floor(8 * 1024 ** 2 / largest)));
+      report({ rows: total, page_rows: rows.length, page_bytes: bytes, fetch_ms: fetchMs, next_rows: next });
+      if (rows.length < limit) break;
+      limit = next;
     }
   } finally { await tx.unsafe(`CLOSE ${name}`); }
 }
@@ -117,8 +128,8 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
     const [{ receipt }] = await tx.unsafe('SELECT inventory_epoch_begin($1::text) receipt', [generation]);
     const changes = file('changes.ndjson');
     report('capture-changes', { epoch: receipt.epoch, rows: 0 });
-    const changeCount = await writeRows(changes, cursor(tx, 'inventory_tokens', 'SELECT * FROM inventory_epoch_changes($1::text)', [receipt.epoch]),
-      rows => report('capture-changes', { epoch: receipt.epoch, rows }));
+    const changeCount = await writeRows(changes, inventoryCursor(tx, 'inventory_tokens', 'SELECT * FROM inventory_epoch_changes($1::text)', [receipt.epoch],
+      { maxRows: 80000, report: fields => report('capture-changes', { epoch: receipt.epoch, ...fields }) }));
     report('captured-changes', { epoch: receipt.epoch, rows: changeCount });
     const result = { receipt, raw, changes, bootstrap, applies: [], scopes: [], engine_epoch: baseEpoch };
     let heartbeatError = null;
@@ -181,7 +192,7 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
             const counts = { builds: 0, facts: 0, queue: 0 }; let streamError = null;
             for (const stream of Object.values(streams)) stream.on('error', error => { streamError = error; });
             const collect = async specification => {
-              for await (const row of cursor(tx, 'inventory_scope', 'SELECT * FROM inventory_cohort_rows($1::text,$2::text,$3::text)', [receipt.engine, covers, JSON.stringify(specification)])) {
+              for await (const row of inventoryCursor(tx, 'inventory_scope', 'SELECT * FROM inventory_cohort_rows($1::text,$2::text,$3::text)', [receipt.engine, covers, JSON.stringify(specification)])) {
                 if (streamError) throw streamError;
                 if (!streams[row.kind]) throw new Error('unknown inventory cohort input');
                 if (!streams[row.kind].write(JSON.stringify(row.body) + '\n')) await once(streams[row.kind], 'drain');
