@@ -35,7 +35,7 @@ const [c, b, d] = canonical, alias = 'a'.repeat(32), future = await questionId('
 const pg = new PGlite();
 const q = (text, args = []) => pg.query(text, args).then(result => result.rows);
 const scalar = async (text, args = []) => Object.values((await q(text, args))[0])[0];
-let afterCapture = null, ackCalls = 0, failCohort = false, child, replies, reader, succeeded = false;
+let afterCapture = null, ackCalls = 0, failCohort = false, failAckReply = false, child, replies, reader, succeeded = false;
 const commandLog = [], ackEvidence = [];
 const statePath = join(work, 'inventory/state.json');
 const unsafe = async (text, args = []) => {
@@ -45,13 +45,16 @@ const unsafe = async (text, args = []) => {
       const meta = JSON.parse(db.prepare('SELECT body FROM meta WHERE id=1').get().body);
       assert.equal(meta.complete, true, 'ACK preceded a complete durable catalog');
       assert.equal(db.prepare('SELECT count(*) n FROM jobs').get().n, 0, 'ACK preceded all frozen cohort jobs');
-      for (const row of JSON.parse(args[1])) assert(db.prepare('SELECT 1 FROM receipts WHERE scope=? AND key=? AND revision=?')
+      const changes = JSON.parse(args[1]).flat();
+      for (const row of changes) assert(db.prepare('SELECT 1 FROM receipts WHERE scope=? AND key=? AND revision=?')
         .get(row.scope, row.key, row.revision), 'ACK preceded durable local receipt');
-      ackEvidence.push({ generation: args[0], rows: JSON.parse(args[1]).length }); ackCalls++;
+      ackEvidence.push({ generation: args[0], rows: changes.length }); ackCalls++;
     } finally { db.close(); }
   }
   if (!args.length && text.includes(';')) { await pg.exec(text); return []; }
-  return q(text, args);
+  const result = await q(text, args);
+  if (/\binventory_ack\(/.test(text) && failAckReply) { failAckReply = false; throw new Error('injected lost ACK reply'); }
+  return result;
 };
 const sql = { unsafe, begin: async (options, fn) => {
   await pg.exec(`BEGIN ${options}`);
@@ -146,6 +149,11 @@ try {
     bootstrapMeta = cut.meta; originalReceipt = cut.receipt; bootstrapCapture = dirname(cut.capture);
     await q("UPDATE questions SET state='fact' WHERE id=$1", [future]);
   };
+  failAckReply = true;
+  await assert.rejects(cycle(), /injected lost ACK reply/);
+  const interrupted = openCatalog(json(statePath).catalog);
+  try { assert(interrupted.pendingAcks().length > 0, 'lost reply must retain durable receipts'); }
+  finally { interrupted.close(); }
   const boot = await cycle(); assert.equal(boot.pending, false);
   assert.equal(boot.published.started_at, originalReceipt.started_at); assert.equal(boot.published.snapshot, originalReceipt.snapshot);
   assert.equal(Number(await scalar("SELECT count(*) FROM inventory_dirty WHERE scope='question' AND key=$1", [future])), 1);

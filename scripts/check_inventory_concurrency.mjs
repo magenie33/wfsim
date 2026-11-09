@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { randomUUID, createHash } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
 import postgres from './pg/node_modules/postgres/src/index.js';
-import { inventoryCursor } from './inventory_pipeline.mjs';
+import { inventoryCursor, acknowledgeInventory } from './inventory_pipeline.mjs';
 
 const name = `wfsim-inventory-check-${randomUUID()}`;
 const docker = (...args) => execFileSync('docker', args, { encoding: 'utf8', timeout: 120000 });
@@ -134,7 +134,18 @@ try {
     assert.equal(frozen.status, 'sealed');
     await assert.rejects(a.unsafe(`FETCH FORWARD 1 FROM ${portal}`), error => error.code === '34000');
     await assert.rejects(call('inventory_epoch_open', [frozen.epoch]), /does not own this snapshot/);
-    assert.equal(await call('inventory_ack', [generation, expected.filter(row => ['stream-100000','stream-100001'].includes(row.key))]), '1');
+    const selected = expected.find(row => row.key === 'stream-100001');
+    let acknowledged = 0;
+    const catalog = { recordReceipts() {}, acknowledge(rows) { acknowledged += rows.length; } };
+    await assert.rejects(acknowledgeInventory(a, catalog, generation, [[selected], [{ ...selected, revision: '0' }]]), /invalid inventory change key/);
+    assert.equal(acknowledged, 0);
+    assert.equal((await a.unsafe("SELECT count(*)::integer n FROM inventory_dirty WHERE key='stream-100001'"))[0].n, 1,
+      'one invalid chunk must roll back earlier deletions in the same ACK page');
+    const groups = [];
+    for (let i = 0; i < expected.length; i += 256) groups.push(expected.slice(i, i + 256));
+    await acknowledgeInventory(a, catalog, generation, groups);
+    assert.equal(acknowledged, expected.length);
+    assert.equal((await a.unsafe('SELECT count(*)::integer n FROM inventory_dirty'))[0].n, 2);
     assert.equal((await a.unsafe("SELECT count(*)::integer n FROM inventory_dirty WHERE key IN ('late-stream','stream-100000')"))[0].n, 2);
   });
   await check('health SQL reads real PostgreSQL activity without changing inventory', async () => {

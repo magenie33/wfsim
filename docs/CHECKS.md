@@ -149,6 +149,11 @@ set-returning function must fail before its first page, while the owned portal
 streams every ordered token, seals its complete digest and preserves later
 revisions during ACK. A restricted caller cannot read or alter private tables,
 open a foreign or sealed receipt, or reuse a cursor after its transaction.
+`check_inventory_ack.mjs` verifies complete ordered ACK input, row and UTF-8
+page bounds, and a request budget the original single-chunk transport fails.
+Real PostgreSQL checks retain late revisions and roll back a whole page when
+one chunk is invalid; the native pipeline reopens durable SQLite receipts
+after losing a successful database response and completes the same cut.
 `check_pg_health.py` rejects stale outputs behind active services, unknown
 probes, engine mismatches and prolonged settlement backlog; it checks incident
 recovery and bounded retention. `check_pipeline_monitor.mjs` keeps heartbeat
