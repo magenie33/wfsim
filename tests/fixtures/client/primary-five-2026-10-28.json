@@ -1,0 +1,4473 @@
+{
+  "source": {
+    "batch_id": "20261109T053558Z-weapon-roster-dossiers",
+    "manifest_sha256": "7b830c6730e20621029d67d9d26e9aa8a216c998c32de73e2e22fe187c979d91",
+    "archive": {
+      "path": "weapon-roster-dossiers.zip",
+      "bytes": 26610207,
+      "sha256": "0204e7947e3f45afd746b696e5405c90e80af6c1924795885be206ae05e5a18c"
+    },
+    "members": [
+      {
+        "path": "shared/objects.jsonl",
+        "bytes": 391622746,
+        "sha256": "ccd1260624914a56a4521f3382d2918e8986ffcf144fa1753ee99800425eece8"
+      },
+      {
+        "path": "weapons/torid/dossier.json",
+        "bytes": 38156,
+        "sha256": "719230d477962c62ef60011031b45995227a79d48f7073cefacc0f7833d569dd"
+      },
+      {
+        "path": "weapons/burston_prime/dossier.json",
+        "bytes": 46613,
+        "sha256": "2db4aba63bb944365a72e643564e5e734ce72dd50718d7a78a22a842bbf59c52"
+      },
+      {
+        "path": "weapons/burston/dossier.json",
+        "bytes": 38467,
+        "sha256": "c8f51b324a1ad0310c450f2e9a64b0c5c5cebe9697ca948a34e6e9cb7d4c3db2"
+      },
+      {
+        "path": "weapons/felarx/dossier.json",
+        "bytes": 47129,
+        "sha256": "41a03f06b998788bc9f50a86c086d5d2726c4ff4361c68a91818b5743d223f82"
+      },
+      {
+        "path": "weapons/boar_prime/dossier.json",
+        "bytes": 40592,
+        "sha256": "d5a1c48c69273a7b5fafb89f2f4a28d3a4b8d00babe501a803bb6392d49b56ba"
+      },
+      {
+        "path": "weapons/boar/dossier.json",
+        "bytes": 38794,
+        "sha256": "296d6e8d31a55b3f39ee2c593e7641e066fa86d9cd852a1b23bdedf380c60dee"
+      },
+      {
+        "path": "weapons/tenet_glaxion/dossier.json",
+        "bytes": 18781,
+        "sha256": "f52f2a8bbfa023f637b13bc91534a20d47bc77f48b24bf7717a375c0a00a7774"
+      }
+    ]
+  },
+  "sampler_source": {
+    "batch_id": "20261109T025857Z-spread-sampling",
+    "manifest_sha256": "e5351a0d64a5b31f5c3b3267184b30bbbe0d47e6ce63b78fd3fb388cb28ab70e",
+    "archive": {
+      "path": "spread-sampling-evidence.zip",
+      "bytes": 284348,
+      "sha256": "181287b9297a87b3ba75065fe737a5155e2f3075f427ffe716753a24aab6474e"
+    },
+    "members": [
+      {
+        "path": "native/vectors.json",
+        "bytes": 521535,
+        "sha256": "c9e26b6b0fe202cd9a4410884e04b3e1291ef8f1e06e5e19cfd76aaa822c0c11"
+      },
+      {
+        "path": "native/evidence.json",
+        "bytes": 27294,
+        "sha256": "15876e41f081903b860ef06933a0fd4c764b42e47752ed4e9a6345567445054f"
+      }
+    ]
+  },
+  "forms": [
+    {
+      "id": "torid",
+      "owner": "/Lotus/Weapons/ClanTech/Bio/BioWeapon",
+      "behavior_index": 0,
+      "role_types": {
+        "fire": "/Lotus/Types/Game/LotusWeaponProjectileFireBehavior",
+        "impact": "/EE/Types/Game/WeaponImpactBehavior",
+        "state": "/EE/Types/Game/WeaponSemiAutomaticStateBehavior"
+      },
+      "state": {
+        "fireRate": "90",
+        "reloadTime": "1.7",
+        "ModeSwitchTime": "1.4"
+      },
+      "fire": {
+        "fireIterations": "1",
+        "ammoRequirement": "1",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_POISON\nAmount=10\nProcChance=0.1\nForcedProcs={}\nForcedDeathProcs={}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0",
+        "criticalHitDamageMultiplier": "2"
+      },
+      "economy": {
+        "AmmoCapacity": "AmmoCapacity=60",
+        "AmmoClipSize": "AmmoClipSize=5",
+        "MaxCharges": "MaxCharges=170",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_DIRECT_HIT\n}\nNumCharges=34\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "projectile": {
+        "owner": "/Lotus/Weapons/ClanTech/Bio/BioGrenadeProjectile",
+        "fields": {
+          "AttackData": "AttackData={\nType=DT_POISON\nAmount=100\nProcChance=0.23\n}",
+          "CriticalChance": "CriticalChance=0.15000001",
+          "CriticalMultiplier": "CriticalMultiplier=2",
+          "KinematicInitialSpeed": "KinematicInitialSpeed=40",
+          "KinematicMaxSpeed": "KinematicMaxSpeed=40"
+        }
+      },
+      "expected": {
+        "damage": {
+          "toxin": 100.0
+        },
+        "crit_chance": 0.15,
+        "crit_multiplier": 2.0,
+        "status_chance": 0.23,
+        "fire_rate": 1.5,
+        "multishot": 1.0
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultAccuracyInfo",
+        "declared": {}
+      }
+    },
+    {
+      "id": "torid_incarnon",
+      "owner": "/Lotus/Weapons/ClanTech/Bio/BioWeapon",
+      "behavior_index": 1,
+      "role_types": {
+        "fire": "/Lotus/Types/Game/LotusBeamFireBehavior",
+        "impact": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+        "state": "/EE/Types/Game/WeaponBeamStateBehavior"
+      },
+      "state": {
+        "fireRate": "480",
+        "reloadTime": "2",
+        "ModeSwitchTime": "0.60000002"
+      },
+      "fire": {
+        "fireIterations": "1",
+        "ammoRequirement": "0",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_POISON\nAmount=51\nProcChance=0.38999999\nForcedProcs={}\nForcedDeathProcs={}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0.28999999",
+        "criticalHitDamageMultiplier": "3.0999999",
+        "ContinuousDamageAttenuationTime": "0.60000002",
+        "ContinuousDamageAttenuationCooldownTime": "2",
+        "ContinuousDamageAttenuationCooldownDelay": "0.80000001"
+      },
+      "economy": {
+        "AmmoCapacity": "AmmoCapacity=60",
+        "AmmoClipSize": "AmmoClipSize=5",
+        "MaxCharges": "MaxCharges=170",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_DIRECT_HIT\n}\nNumCharges=34\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "expected": {
+        "damage": {
+          "toxin": 51.0
+        },
+        "crit_chance": 0.29,
+        "crit_multiplier": 3.1,
+        "status_chance": 0.39,
+        "fire_rate": 8.0,
+        "multishot": 1.0
+      },
+      "transition": {
+        "entry_seconds": 1.4,
+        "exit_seconds": 0.6
+      },
+      "beam_expected": {
+        "range_m": 37.0,
+        "damage_radius_m": 2.3,
+        "chain_hops": 5,
+        "chain_range_m": 7.0,
+        "chain_damage_per_hop": 0.75,
+        "chain_compounds": true,
+        "per_target": true
+      },
+      "beam_ramp": {
+        "rise_seconds": 0.6,
+        "cooldown_delay_seconds": 0.8,
+        "cooldown_divisor": 2.0
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TnSMGAimAccuracyInfo",
+        "declared": {
+          "Spread": "Spread={\nSHOOTING={\nrange={1,1.5}\ntype=ST_EXPONENTIAL\nrate=2\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}"
+        }
+      },
+      "sampling": {
+        "horizontal_ratio": 0.5,
+        "uniform": false,
+        "hip_min_deg": 1.0,
+        "hip_max_deg": 1.5
+      }
+    },
+    {
+      "id": "burston_prime",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeBurston/PrimeBurston",
+      "behavior_index": 0,
+      "role_types": {
+        "fire": "/EE/Types/Game/WeaponTraceFireBehavior",
+        "impact": "/Lotus/Types/Weapon/LotusWeaponImpactBehavior",
+        "state": "/EE/Types/Game/WeaponBurstStateBehavior"
+      },
+      "state": {
+        "fireRate": "300",
+        "reloadTime": "2",
+        "ModeSwitchTime": "1.4"
+      },
+      "fire": {
+        "fireIterations": "1",
+        "ammoRequirement": "1",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonHipAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_PHYSICAL\nDT_IMPACT=0.30000001\nDT_PUNCTURE=0.30000001\nDT_SLASH=0.39999998\nAmount=46\nProcChance=0.30000001\nForcedProcs={}\nForcedDeathProcs={}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0.18000001",
+        "criticalHitDamageMultiplier": "1.8"
+      },
+      "economy": {
+        "AmmoClipSize": "AmmoClipSize=45",
+        "MaxCharges": "MaxCharges=600",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_HEADSHOT\n}\nNumCharges=30\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "expected": {
+        "damage": {
+          "impact": 13.799999999999999,
+          "puncture": 13.799999999999999,
+          "slash": 18.39999908
+        },
+        "crit_chance": 0.18,
+        "crit_multiplier": 1.8,
+        "status_chance": 0.3,
+        "fire_rate": 5.0,
+        "multishot": 1.0
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonAimAccuracyInfo",
+        "declared": {
+          "Spread": "Spread={\nSHOOTING={\nrange={0,8}\ntype=ST_EXPONENTIAL\nrate=2\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}"
+        }
+      },
+      "sampling": {
+        "horizontal_ratio": 0.5,
+        "uniform": false,
+        "hip_min_deg": 2.0,
+        "hip_max_deg": 10.0
+      }
+    },
+    {
+      "id": "burston_prime_incarnon",
+      "owner": "/Lotus/Weapons/Tenno/LongGuns/PrimeBurston/PrimeBurston",
+      "behavior_index": 1,
+      "role_types": {
+        "fire": "/Lotus/Types/Weapon/RadialOnMissTraceFireBehavior",
+        "impact": "/Lotus/Types/Weapon/RadialOnMissImpactBehavior",
+        "state": "/EE/Types/Game/WeaponAutomaticStateBehavior"
+      },
+      "state": {
+        "fireRate": "1200",
+        "reloadTime": "2",
+        "ModeSwitchTime": "0.60000002"
+      },
+      "fire": {
+        "fireIterations": "1",
+        "ammoRequirement": "0",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleHipAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_FIRE\nAmount=13\nProcChance=0.30000001\nForcedProcs={}\nForcedDeathProcs={}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0.28",
+        "criticalHitDamageMultiplier": "3"
+      },
+      "economy": {
+        "AmmoClipSize": "AmmoClipSize=45",
+        "MaxCharges": "MaxCharges=600",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_HEADSHOT\n}\nNumCharges=30\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "expected": {
+        "damage": {
+          "heat": 13.0
+        },
+        "crit_chance": 0.28,
+        "crit_multiplier": 3.0,
+        "status_chance": 0.3,
+        "fire_rate": 20.0,
+        "multishot": 1.0
+      },
+      "transition": {
+        "entry_seconds": 1.4,
+        "exit_seconds": 0.6
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleAimAccuracyInfo",
+        "declared": {
+          "Spread": "Spread={\nSHOOTING={\nrange={2,5}\ntype=ST_EXPONENTIAL\nrate=2\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}"
+        }
+      },
+      "sampling": {
+        "horizontal_ratio": 0.5,
+        "uniform": false,
+        "hip_min_deg": 8.0,
+        "hip_max_deg": 11.0
+      }
+    },
+    {
+      "id": "burston",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/BurstRifle",
+      "behavior_index": 0,
+      "role_types": {
+        "fire": "/EE/Types/Game/WeaponTraceFireBehavior",
+        "impact": "/Lotus/Types/Weapon/LotusWeaponImpactBehavior",
+        "state": "/EE/Types/Game/WeaponBurstStateBehavior"
+      },
+      "state": {
+        "fireRate": "300",
+        "reloadTime": "2",
+        "ModeSwitchTime": "1.4"
+      },
+      "fire": {
+        "fireIterations": "1",
+        "ammoRequirement": "1",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonHipAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_PHYSICAL\nDT_IMPACT=0.33333299\nDT_PUNCTURE=0.33333299\nDT_SLASH=0.33333403\nAmount=30\nProcChance=0.18000001\nForcedProcs={}\nForcedDeathProcs={}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0.059999999",
+        "criticalHitDamageMultiplier": "1.6"
+      },
+      "economy": {
+        "AmmoClipSize": "AmmoClipSize=45",
+        "MaxCharges": "MaxCharges=600",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_HEADSHOT\n}\nNumCharges=30\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "expected": {
+        "damage": {
+          "impact": 9.99999,
+          "puncture": 9.99999,
+          "slash": 10.0000209
+        },
+        "crit_chance": 0.06,
+        "crit_multiplier": 1.6,
+        "status_chance": 0.18,
+        "fire_rate": 5.0,
+        "multishot": 1.0
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/PrimeBurstonAimAccuracyInfo",
+        "declared": {
+          "Spread": "Spread={\nSHOOTING={\nrange={0,8}\ntype=ST_EXPONENTIAL\nrate=2\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}"
+        }
+      },
+      "sampling": {
+        "horizontal_ratio": 0.5,
+        "uniform": false,
+        "hip_min_deg": 2.0,
+        "hip_max_deg": 10.0
+      }
+    },
+    {
+      "id": "burston_incarnon",
+      "owner": "/Lotus/Weapons/Tenno/Rifle/BurstRifle",
+      "behavior_index": 1,
+      "role_types": {
+        "fire": "/Lotus/Types/Weapon/RadialOnMissTraceFireBehavior",
+        "impact": "/Lotus/Types/Weapon/RadialOnMissImpactBehavior",
+        "state": "/EE/Types/Game/WeaponAutomaticStateBehavior"
+      },
+      "state": {
+        "fireRate": "1200",
+        "reloadTime": "2",
+        "ModeSwitchTime": "0.60000002"
+      },
+      "fire": {
+        "fireIterations": "1",
+        "ammoRequirement": "0",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleHipAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_FIRE\nAmount=3\nProcChance=0.30000001\nForcedProcs={}\nForcedDeathProcs={}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0.30000001",
+        "criticalHitDamageMultiplier": "3"
+      },
+      "economy": {
+        "AmmoClipSize": "AmmoClipSize=45",
+        "MaxCharges": "MaxCharges=600",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_HEADSHOT\n}\nNumCharges=30\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "expected": {
+        "damage": {
+          "heat": 3.0
+        },
+        "crit_chance": 0.3,
+        "crit_multiplier": 3.0,
+        "status_chance": 0.3,
+        "fire_rate": 20.0,
+        "multishot": 1.0
+      },
+      "transition": {
+        "entry_seconds": 1.4,
+        "exit_seconds": 0.6
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/GrineerAssaultRifleAimAccuracyInfo",
+        "declared": {
+          "Spread": "Spread={\nSHOOTING={\nrange={2,5}\ntype=ST_EXPONENTIAL\nrate=2\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}"
+        }
+      },
+      "sampling": {
+        "horizontal_ratio": 0.5,
+        "uniform": false,
+        "hip_min_deg": 8.0,
+        "hip_max_deg": 11.0
+      }
+    },
+    {
+      "id": "felarx",
+      "owner": "/Lotus/Weapons/Tenno/Zariman/LongGuns/PumpShotgun/ZarimanPumpShotgun",
+      "behavior_index": 0,
+      "role_types": {
+        "fire": "/Lotus/Types/Game/LotusWeaponProjectileFireBehavior",
+        "impact": "/EE/Types/Game/WeaponImpactBehavior",
+        "state": "/EE/Types/Game/WeaponAutoShotgunStateBehavior"
+      },
+      "state": {
+        "fireRate": "180",
+        "reloadTime": "1.2",
+        "ModeSwitchTime": "3"
+      },
+      "fire": {
+        "fireIterations": "4",
+        "ammoRequirement": "1",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ZarimanShotgunAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ZarimanShotgunAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_PHYSICAL\nDT_IMPACT=0.28\nDT_PUNCTURE=0.41999999\nDT_SLASH=0.30000001\nAmount=90\nProcChance=0.36000001\nForcedProcs={}\nForcedDeathProcs={\nPT_RAGDOLL\n}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0.30000001",
+        "criticalHitDamageMultiplier": "2.8"
+      },
+      "economy": {
+        "AmmoCapacity": "AmmoCapacity=60",
+        "MaxCharges": "MaxCharges=60",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_HEADSHOT\n}\nNumCharges=2\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "projectile": {
+        "owner": "/Lotus/Weapons/Tenno/Zariman/LongGuns/PumpShotgun/ZarimanPumpShotgunProjectile",
+        "fields": {
+          "AttackData": "AttackData={\nDT_IMPACT=0.2\nDT_PUNCTURE=0.36000001\nDT_SLASH=0.44\nAmount=190\nProcChance=0.22\nForcedDeathProcs={\nPT_RAGDOLL\n}\n}",
+          "CriticalChance": "CriticalChance=0.2",
+          "CriticalMultiplier": "CriticalMultiplier=2",
+          "DamageFallOff": "DamageFallOff={14,28}",
+          "KinematicInitialSpeed": "KinematicInitialSpeed=100",
+          "KinematicMaxSpeed": "KinematicMaxSpeed=100"
+        }
+      },
+      "expected": {
+        "damage": {
+          "impact": 38.0,
+          "puncture": 68.39999999999999,
+          "slash": 83.6
+        },
+        "crit_chance": 0.2,
+        "crit_multiplier": 2.0,
+        "status_chance": 0.055,
+        "fire_rate": 3.0,
+        "multishot": 4.0
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/ZarimanShotgunAccuracyInfo",
+        "declared": {
+          "Spread": "Spread={\nSHOOTING={\nrange={12,14}\ntype=ST_EXPONENTIAL\nrate=12\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}"
+        }
+      },
+      "sampling": {
+        "horizontal_ratio": 0.5,
+        "uniform": false,
+        "hip_min_deg": 12.0,
+        "hip_max_deg": 14.0
+      }
+    },
+    {
+      "id": "felarx_incarnon",
+      "owner": "/Lotus/Weapons/Tenno/Zariman/LongGuns/PumpShotgun/ZarimanPumpShotgun",
+      "behavior_index": 1,
+      "role_types": {
+        "fire": "/Lotus/Types/Game/LotusWeaponProjectileFireBehavior",
+        "impact": "/Lotus/Types/Weapon/LotusWeaponImpactBehavior",
+        "state": "/Lotus/Types/Weapon/LotusSemiAutomaticStateBehavior"
+      },
+      "state": {
+        "fireRate": "90",
+        "reloadTime": "2",
+        "ModeSwitchTime": "1"
+      },
+      "fire": {
+        "fireIterations": "1",
+        "ammoRequirement": "1",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunHipAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_CORROSIVE\nAmount=3\nProcChance=0.30000001\nForcedProcs={}\nForcedDeathProcs={}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0",
+        "criticalHitDamageMultiplier": "2"
+      },
+      "economy": {
+        "AmmoCapacity": "AmmoCapacity=60",
+        "MaxCharges": "MaxCharges=60",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_HEADSHOT\n}\nNumCharges=2\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "projectile": {
+        "owner": "/Lotus/Weapons/Tenno/Zariman/LongGuns/PumpShotgun/ZarimanShotgunAltWaveProj",
+        "fields": {
+          "AttackData": "AttackData={\nUseNewFormat=1\nType=DT_RADIATION\nDT_IMPACT=200\nDT_PUNCTURE=0\nDT_SLASH=0\nDT_FIRE=0\nDT_FREEZE=0\nDT_ELECTRICITY=0\nDT_POISON=0\nDT_EXPLOSION=0\nDT_RADIATION=400\nDT_GAS=0\nDT_MAGNETIC=0\nDT_VIRAL=0\nDT_CORROSIVE=0\nDT_RADIANT=0\nAmount=600\nProcChance=0.2\nForcedProcs={\nPT_KNOCKBACK\n}\nForcedDeathProcs={\nPT_RAGDOLL\n}\nHitType=DHT_PROJECTILE\n}",
+          "CriticalChance": "CriticalChance=0.2",
+          "CriticalMultiplier": "CriticalMultiplier=3",
+          "KinematicInitialSpeed": "KinematicInitialSpeed=100",
+          "KinematicMaxSpeed": "KinematicMaxSpeed=100"
+        }
+      },
+      "expected": {
+        "damage": {
+          "impact": 200.0,
+          "puncture": 0.0,
+          "slash": 0.0,
+          "heat": 0.0,
+          "cold": 0.0,
+          "toxin": 0.0,
+          "radiation": 400.0,
+          "corrosive": 0.0
+        },
+        "crit_chance": 0.2,
+        "crit_multiplier": 3.0,
+        "status_chance": 0.2,
+        "fire_rate": 1.5,
+        "multishot": 1.0
+      },
+      "transition": {
+        "entry_seconds": 3.0,
+        "exit_seconds": 1.0
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/TennoDoubleBarrelShotgunAimAccuracyInfo",
+        "declared": {
+          "Spread": "Spread={\nSHOOTING={\nrange={6,16}\ntype=ST_EXPONENTIAL\nrate=12\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}"
+        }
+      },
+      "sampling": {
+        "horizontal_ratio": 0.5,
+        "uniform": false,
+        "hip_min_deg": 12.0,
+        "hip_max_deg": 22.0
+      }
+    },
+    {
+      "id": "boar_prime",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/PrimeBoar",
+      "behavior_index": 0,
+      "role_types": {
+        "fire": "/EE/Types/Game/WeaponTraceFireBehavior",
+        "impact": "/Lotus/Types/Weapon/LotusWeaponImpactBehavior",
+        "state": "/EE/Types/Game/WeaponAutomaticStateBehavior"
+      },
+      "state": {
+        "fireRate": "280",
+        "reloadTime": "2.75",
+        "ModeSwitchTime": "1.4"
+      },
+      "fire": {
+        "fireIterations": "8",
+        "ammoRequirement": "1",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/FullAutoShotgunAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/FullAutoShotgunHipAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "1"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_PHYSICAL\nDT_IMPACT=0.64999998\nDT_PUNCTURE=0.15000001\nDT_SLASH=0.20000005\nAmount=40\nProcChance=0.89999998\nForcedProcs={}\nForcedDeathProcs={\nPT_RAGDOLL\n}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0.15000001",
+        "criticalHitDamageMultiplier": "2"
+      },
+      "economy": {
+        "AmmoCapacity": "AmmoCapacity=120",
+        "AmmoClipSize": "AmmoClipSize=20",
+        "MaxCharges": "MaxCharges=150",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_HEADSHOT\n}\nNumCharges=3\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "expected": {
+        "damage": {
+          "impact": 26.0,
+          "puncture": 6.0,
+          "slash": 8.000002
+        },
+        "crit_chance": 0.15,
+        "crit_multiplier": 2.0,
+        "status_chance": 0.1125,
+        "fire_rate": 4.666666666666667,
+        "multishot": 8.0
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/FullAutoShotgunAimAccuracyInfo",
+        "declared": {
+          "Spread": "Spread={\nSHOOTING={\nrange={10,30}\ntype=ST_EXPONENTIAL\nrate=6\n}\nMOVEMENT={\nrate=1\n}\nROTATION={\ntype=ST_EXPONENTIAL\nrate=1\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}"
+        }
+      },
+      "sampling": {
+        "horizontal_ratio": 0.5,
+        "uniform": true,
+        "hip_min_deg": 16.0,
+        "hip_max_deg": 36.0
+      }
+    },
+    {
+      "id": "boar_prime_incarnon",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/PrimeBoar",
+      "behavior_index": 1,
+      "role_types": {
+        "fire": "/Lotus/Types/Game/LotusBeamFireBehavior",
+        "impact": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+        "state": "/EE/Types/Game/WeaponBeamStateBehavior"
+      },
+      "state": {
+        "fireRate": "480",
+        "reloadTime": "2",
+        "ModeSwitchTime": "0.60000002"
+      },
+      "fire": {
+        "fireIterations": "1",
+        "ammoRequirement": "0",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/IncarnonFullAutoShotgunAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/IncarnonFullAutoShotgunHipAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_FIRE\nAmount=30\nProcChance=0.23999999\nForcedProcs={}\nForcedDeathProcs={}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0.2",
+        "criticalHitDamageMultiplier": "2.2",
+        "ContinuousDamageAttenuationTime": "0.60000002",
+        "ContinuousDamageAttenuationCooldownTime": "2",
+        "ContinuousDamageAttenuationCooldownDelay": "0.80000001"
+      },
+      "economy": {
+        "AmmoCapacity": "AmmoCapacity=120",
+        "AmmoClipSize": "AmmoClipSize=20",
+        "MaxCharges": "MaxCharges=150",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_HEADSHOT\n}\nNumCharges=3\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "expected": {
+        "damage": {
+          "heat": 30.0
+        },
+        "crit_chance": 0.2,
+        "crit_multiplier": 2.2,
+        "status_chance": 0.24,
+        "fire_rate": 8.0,
+        "multishot": 1.0
+      },
+      "transition": {
+        "entry_seconds": 1.4,
+        "exit_seconds": 0.6
+      },
+      "beam_expected": {
+        "range_m": 20.0,
+        "damage_radius_m": 0.0,
+        "chain_hops": 2,
+        "chain_range_m": 10.0,
+        "chain_damage_per_hop": 0.8,
+        "chain_compounds": true,
+        "per_target": true
+      },
+      "beam_ramp": {
+        "rise_seconds": 0.6,
+        "cooldown_delay_seconds": 0.8,
+        "cooldown_divisor": 2.0
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/IncarnonFullAutoShotgunAimAccuracyInfo",
+        "declared": {
+          "Spread": "Spread={\nrecoveryRate=10\nrecoveryDelay=0.02\n}"
+        }
+      }
+    },
+    {
+      "id": "boar",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/FullAutoShotgun",
+      "behavior_index": 0,
+      "role_types": {
+        "fire": "/EE/Types/Game/WeaponTraceFireBehavior",
+        "impact": "/Lotus/Types/Weapon/LotusWeaponImpactBehavior",
+        "state": "/EE/Types/Game/WeaponAutomaticStateBehavior"
+      },
+      "state": {
+        "fireRate": "250",
+        "reloadTime": "2.7",
+        "ModeSwitchTime": "1.4"
+      },
+      "fire": {
+        "fireIterations": "8",
+        "ammoRequirement": "1",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/FullAutoShotgunAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/FullAutoShotgunHipAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "1"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_PHYSICAL\nDT_IMPACT=0.55000001\nDT_PUNCTURE=0.15000001\nDT_SLASH=0.29999995\nAmount=22\nProcChance=0.60000002\nForcedProcs={}\nForcedDeathProcs={\nPT_RAGDOLL\n}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0.1",
+        "criticalHitDamageMultiplier": "1.5"
+      },
+      "economy": {
+        "AmmoCapacity": "AmmoCapacity=120",
+        "AmmoClipSize": "AmmoClipSize=20",
+        "MaxCharges": "MaxCharges=150",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_HEADSHOT\n}\nNumCharges=3\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "expected": {
+        "damage": {
+          "impact": 12.100000000000001,
+          "puncture": 3.3,
+          "slash": 6.5999989
+        },
+        "crit_chance": 0.1,
+        "crit_multiplier": 1.5,
+        "status_chance": 0.075,
+        "fire_rate": 4.166666666666667,
+        "multishot": 8.0
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/FullAutoShotgunAimAccuracyInfo",
+        "declared": {
+          "Spread": "Spread={\nSHOOTING={\nrange={10,30}\ntype=ST_EXPONENTIAL\nrate=6\n}\nMOVEMENT={\nrate=1\n}\nROTATION={\ntype=ST_EXPONENTIAL\nrate=1\n}\nrecoveryRate=70\nrecoveryDelay=0.050000001\n}"
+        }
+      },
+      "sampling": {
+        "horizontal_ratio": 0.5,
+        "uniform": true,
+        "hip_min_deg": 16.0,
+        "hip_max_deg": 36.0
+      }
+    },
+    {
+      "id": "boar_incarnon",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/FullAutoShotgun",
+      "behavior_index": 1,
+      "role_types": {
+        "fire": "/Lotus/Types/Game/LotusBeamFireBehavior",
+        "impact": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+        "state": "/EE/Types/Game/WeaponBeamStateBehavior"
+      },
+      "state": {
+        "fireRate": "450",
+        "reloadTime": "2",
+        "ModeSwitchTime": "0.60000002"
+      },
+      "fire": {
+        "fireIterations": "1",
+        "ammoRequirement": "0",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/IncarnonFullAutoShotgunAimAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/IncarnonFullAutoShotgunHipAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_FIRE\nAmount=20\nProcChance=0.2\nForcedProcs={}\nForcedDeathProcs={}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0.18000001",
+        "criticalHitDamageMultiplier": "1.8",
+        "ContinuousDamageAttenuationTime": "0.60000002",
+        "ContinuousDamageAttenuationCooldownTime": "2",
+        "ContinuousDamageAttenuationCooldownDelay": "0.80000001"
+      },
+      "economy": {
+        "AmmoCapacity": "AmmoCapacity=120",
+        "AmmoClipSize": "AmmoClipSize=20",
+        "MaxCharges": "MaxCharges=150",
+        "AddCharges": "AddCharges={\n{\nConditions={\nPRIMARY_HEADSHOT\n}\nNumCharges=3\n}\n}",
+        "ConsumeChargeConditions": "ConsumeChargeConditions={\nSECONDARY_FIRE\n}"
+      },
+      "expected": {
+        "damage": {
+          "heat": 20.0
+        },
+        "crit_chance": 0.18,
+        "crit_multiplier": 1.8,
+        "status_chance": 0.2,
+        "fire_rate": 7.5,
+        "multishot": 1.0
+      },
+      "transition": {
+        "entry_seconds": 1.4,
+        "exit_seconds": 0.6
+      },
+      "beam_expected": {
+        "range_m": 20.0,
+        "damage_radius_m": 0.0,
+        "chain_hops": 2,
+        "chain_range_m": 10.0,
+        "chain_damage_per_hop": 0.8,
+        "chain_compounds": true,
+        "per_target": true
+      },
+      "beam_ramp": {
+        "rise_seconds": 0.6,
+        "cooldown_delay_seconds": 0.8,
+        "cooldown_divisor": 2.0
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/Weapon/IncarnonFullAutoShotgunAimAccuracyInfo",
+        "declared": {
+          "Spread": "Spread={\nrecoveryRate=10\nrecoveryDelay=0.02\n}"
+        }
+      }
+    },
+    {
+      "id": "tenet_glaxion",
+      "owner": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEGlaxion/CrpBEGlaxion",
+      "behavior_index": 0,
+      "role_types": {
+        "fire": "/Lotus/Types/Game/LotusBeamFireBehavior",
+        "impact": "/Lotus/Types/Game/LotusBeamImpactBehavior",
+        "state": "/EE/Types/Game/WeaponBeamStateBehavior"
+      },
+      "state": {
+        "fireRate": "720",
+        "reloadTime": "2",
+        "ModeSwitchTime": "0"
+      },
+      "fire": {
+        "fireIterations": "1",
+        "ammoRequirement": "0.5",
+        "AIMED_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultAccuracyInfo",
+        "HIP_FIRE_ACCURACY": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultAccuracyInfo",
+        "SpreadRatioHorizontal": "0.5",
+        "spreadUniform": "0"
+      },
+      "impact": {
+        "AttackData": "{\nUseNewFormat=0\nType=DT_FREEZE\nAmount=34\nProcChance=0.40000001\nForcedProcs={}\nForcedDeathProcs={}\nForcedProcCount=1\nHitType=DHT_NONE\nProcExtraTime=0\n}",
+        "criticalHitChance": "0.2",
+        "criticalHitDamageMultiplier": "2.2",
+        "ContinuousDamageAttenuationTime": "0.60000002",
+        "ContinuousDamageAttenuationCooldownTime": "2",
+        "ContinuousDamageAttenuationCooldownDelay": "0.80000001"
+      },
+      "economy": {
+        "AmmoCapacity": "AmmoCapacity=810",
+        "AmmoClipSize": "AmmoClipSize=90"
+      },
+      "expected": {
+        "damage": {
+          "cold": 34.0
+        },
+        "crit_chance": 0.2,
+        "crit_multiplier": 2.2,
+        "status_chance": 0.4,
+        "fire_rate": 12.0,
+        "multishot": 1.0
+      },
+      "beam_expected": {
+        "range_m": 30.0,
+        "damage_radius_m": 0.0,
+        "chain_hops": 3,
+        "chain_range_m": 8.0,
+        "chain_damage_per_hop": 0.5,
+        "chain_compounds": true,
+        "per_target": true
+      },
+      "beam_ramp": {
+        "rise_seconds": 0.6,
+        "cooldown_delay_seconds": 0.8,
+        "cooldown_divisor": 2.0
+      },
+      "accuracy": {
+        "owner": "/Lotus/Types/Game/WeaponProperties/Accuracy/DefaultAccuracyInfo",
+        "declared": {}
+      }
+    }
+  ],
+  "sampler_vectors": [
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.03371940925717354,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.016857264563441277,
+        -3.878129064105451e-05,
+        0.9998579025268555,
+        0.0
+      ],
+      "off_axis_degrees": 0.9658984224559578
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.017414409667253494,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.00015067102503962815,
+        0.008705571293830872,
+        0.9999620914459229,
+        0.0
+      ],
+      "off_axis_degrees": 0.4988734985544142
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.022804608568549156,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.01050196960568428,
+        0.0044389464892446995,
+        0.99993497133255,
+        0.0
+      ],
+      "off_axis_degrees": 0.6532755442602738
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.03371940925717354,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.016857264563441277,
+        -3.878129064105451e-05,
+        0.9998579025268555,
+        0.0
+      ],
+      "off_axis_degrees": 0.9658984224559578
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.017414409667253494,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.00015067102503962815,
+        0.008705571293830872,
+        0.9999620914459229,
+        0.0
+      ],
+      "off_axis_degrees": 0.4988734985544142
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.022804608568549156,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.01050196960568428,
+        0.0044389464892446995,
+        0.99993497133255,
+        0.0
+      ],
+      "off_axis_degrees": 0.6532755442602738
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.03371940925717354,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.016857264563441277,
+        -3.878129064105451e-05,
+        0.9998579025268555,
+        0.0
+      ],
+      "off_axis_degrees": 0.9658984224559578
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.017414409667253494,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.00015067102503962815,
+        0.008705571293830872,
+        0.9999620914459229,
+        0.0
+      ],
+      "off_axis_degrees": 0.4988734985544142
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.022804608568549156,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.01050196960568428,
+        0.0044389464892446995,
+        0.99993497133255,
+        0.0
+      ],
+      "off_axis_degrees": 0.6532755442602738
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.01888226717710495,
+        0.0,
+        0.9998217225074768,
+        0.0
+      ],
+      "off_axis_degrees": 1.0819385066824307
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.01923493668437004,
+        0.0,
+        0.9998149871826172,
+        0.0
+      ],
+      "off_axis_degrees": 1.1021486657626867
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.018704073503613472,
+        0.0,
+        0.9998250603675842,
+        0.0
+      ],
+      "off_axis_degrees": 1.0717269702780945
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -1.6507403222121297e-09,
+        0.0188822653144598,
+        0.9998217225074768,
+        0.0
+      ],
+      "off_axis_degrees": 1.081938399979757
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -1.6815715486728777e-09,
+        0.01923493482172489,
+        0.9998149871826172,
+        0.0
+      ],
+      "off_axis_degrees": 1.102148559060729
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -1.635162005797497e-09,
+        0.018704071640968323,
+        0.9998250603675842,
+        0.0
+      ],
+      "off_axis_degrees": 1.071726863575062
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.0188822653144598,
+        -1.6507403222121297e-09,
+        0.9998217225074768,
+        0.0
+      ],
+      "off_axis_degrees": 1.081938399979757
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.01923493482172489,
+        -1.6815715486728777e-09,
+        0.9998149871826172,
+        0.0
+      ],
+      "off_axis_degrees": 1.102148559060729
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.018704071640968323,
+        -1.635162005797497e-09,
+        0.9998250603675842,
+        0.0
+      ],
+      "off_axis_degrees": 1.071726863575062
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        3.3014806444242595e-09,
+        -0.0188822653144598,
+        0.9998217225074768,
+        0.0
+      ],
+      "off_axis_degrees": 1.0819383999797694
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        3.3631430973457555e-09,
+        -0.01923493482172489,
+        0.9998149871826172,
+        0.0
+      ],
+      "off_axis_degrees": 1.1021485590607416
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        3.270324011594994e-09,
+        -0.018704071640968323,
+        0.9998250603675842,
+        0.0
+      ],
+      "off_axis_degrees": 1.0717268635750743
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.03371940925717354,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.033700164407491684,
+        0.0,
+        0.9994319081306458,
+        0.0
+      ],
+      "off_axis_degrees": 1.9312430140667147
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.017414409667253494,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.00030135345878079534,
+        0.0,
+        0.9999999403953552,
+        0.0
+      ],
+      "off_axis_degrees": 0.01726628183628693
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.022804608568549156,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.02100067399442196,
+        0.0,
+        0.999779462814331,
+        0.0
+      ],
+      "off_axis_degrees": 1.2033384473704447
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.03371940925717354,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.033700164407491684,
+        0.0,
+        0.9994319081306458,
+        0.0
+      ],
+      "off_axis_degrees": 1.9312430140667147
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.017414409667253494,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.00030135345878079534,
+        0.0,
+        0.9999999403953552,
+        0.0
+      ],
+      "off_axis_degrees": 0.01726628183628693
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.022804608568549156,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.02100067399442196,
+        0.0,
+        0.999779462814331,
+        0.0
+      ],
+      "off_axis_degrees": 1.2033384473704447
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.03371940925717354,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.033700164407491684,
+        0.0,
+        0.9994319081306458,
+        0.0
+      ],
+      "off_axis_degrees": 1.9312430140667147
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.017414409667253494,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.00030135345878079534,
+        0.0,
+        0.9999999403953552,
+        0.0
+      ],
+      "off_axis_degrees": 0.01726628183628693
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.022804608568549156,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.02100067399442196,
+        0.0,
+        0.999779462814331,
+        0.0
+      ],
+      "off_axis_degrees": 1.2033384473704447
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.03774435445666313,
+        0.0,
+        0.9992874264717102,
+        0.0
+      ],
+      "off_axis_degrees": 2.1631060280870686
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.03844854235649109,
+        0.0,
+        0.9992606043815613,
+        0.0
+      ],
+      "off_axis_degrees": 2.203482280250515
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.037388529628515244,
+        0.0,
+        0.9993007779121399,
+        0.0
+      ],
+      "off_axis_degrees": 2.142704419886008
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -3.3020692846719157e-09,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 1.8919463367148356e-07
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -3.3637654883733603e-09,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 1.9272956575555573e-07
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -3.2708962205418857e-09,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 1.8740854866234216e-07
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.03774435073137283,
+        0.0,
+        0.9992874264717102,
+        0.0
+      ],
+      "off_axis_degrees": 2.1631058147957507
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.03844853863120079,
+        0.0,
+        0.9992606043815613,
+        0.0
+      ],
+      "off_axis_degrees": 2.203482066964932
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.037388525903224945,
+        0.0,
+        0.9993007779121399,
+        0.0
+      ],
+      "off_axis_degrees": 2.142704206591829
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        6.6041385693438315e-09,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 3.783892673429671e-07
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        6.727530976746721e-09,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 3.8545913151111147e-07
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        6.541792441083771e-09,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 3.748170973246843e-07
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.03371940925717354,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.006743710488080978,
+        -6.205747195053846e-05,
+        0.9999772310256958,
+        0.0
+      ],
+      "off_axis_degrees": 0.3864054487211725
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.017414409667253494,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -6.0264846979407594e-05,
+        0.01392809022217989,
+        0.9999029636383057,
+        0.0
+      ],
+      "off_axis_degrees": 0.7980540881929852
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.022804608568549156,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.004200918134301901,
+        0.007102534640580416,
+        0.9999659657478333,
+        0.0
+      ],
+      "off_axis_degrees": 0.47280390927524496
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.03371940925717354,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.006743710488080978,
+        -6.205747195053846e-05,
+        0.9999772310256958,
+        0.0
+      ],
+      "off_axis_degrees": 0.3864054487211725
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.017414409667253494,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -6.0264846979407594e-05,
+        0.01392809022217989,
+        0.9999029636383057,
+        0.0
+      ],
+      "off_axis_degrees": 0.7980540881929852
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.022804608568549156,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.004200918134301901,
+        0.007102534640580416,
+        0.9999659657478333,
+        0.0
+      ],
+      "off_axis_degrees": 0.47280390927524496
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.03371940925717354,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.006743710488080978,
+        -6.205747195053846e-05,
+        0.9999772310256958,
+        0.0
+      ],
+      "off_axis_degrees": 0.3864054487211725
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.017414409667253494,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -6.0264846979407594e-05,
+        0.01392809022217989,
+        0.9999029636383057,
+        0.0
+      ],
+      "off_axis_degrees": 0.7980540881929852
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.022804608568549156,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.004200918134301901,
+        0.007102534640580416,
+        0.9999659657478333,
+        0.0
+      ],
+      "off_axis_degrees": 0.47280390927524496
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.007554038427770138,
+        0.0,
+        0.9999714493751526,
+        0.0
+      ],
+      "off_axis_degrees": 0.4328186446087654
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.00769517058506608,
+        0.0,
+        0.9999703764915466,
+        0.0
+      ],
+      "off_axis_degrees": 0.4409051553662135
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.00748272892087698,
+        0.0,
+        0.9999719858169556,
+        0.0
+      ],
+      "off_axis_degrees": 0.42873279514189616
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -6.601125757121906e-10,
+        0.03020322509109974,
+        0.9995437264442444,
+        0.0
+      ],
+      "off_axis_degrees": 1.7307806299569573
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -6.724346635067491e-10,
+        0.03076701983809471,
+        0.9995266199111938,
+        0.0
+      ],
+      "off_axis_degrees": 1.763098555801175
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -6.538863894789415e-10,
+        0.029918352141976357,
+        0.999552309513092,
+        0.0
+      ],
+      "off_axis_degrees": 1.7144512047652676
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.007554037496447563,
+        -2.641580065798621e-09,
+        0.9999714493751526,
+        0.0
+      ],
+      "off_axis_degrees": 0.4328185912494605
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.0076951696537435055,
+        -2.690932809912283e-09,
+        0.9999703764915466,
+        0.0
+      ],
+      "off_axis_degrees": 0.44090510200696664
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.0074827284552156925,
+        -2.6166437905317252e-09,
+        0.9999719858169556,
+        0.0
+      ],
+      "off_axis_degrees": 0.42873276846224234
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 4.326211929321289,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.03777126967906952,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        1.3202251514243812e-09,
+        -0.03020322509109974,
+        0.9995437264442444,
+        0.0
+      ],
+      "off_axis_degrees": 1.7307806299569586
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 4.406964302062988,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.03847699239850044,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        1.3448693270134982e-09,
+        -0.03076701983809471,
+        0.9995266199111938,
+        0.0
+      ],
+      "off_axis_degrees": 1.763098555801176
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 7,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 4.285408973693848,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.03741469234228134,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        1.307772778957883e-09,
+        -0.029918352141976357,
+        0.999552309513092,
+        0.0
+      ],
+      "off_axis_degrees": 1.7144512047652687
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.14571689069271088,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.07266563922166824,
+        -0.00016717227117624134,
+        0.9973562955856323,
+        0.0
+      ],
+      "off_axis_degrees": 4.167118452311779
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.07527928799390793,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.0006508869701065123,
+        0.03760737553238869,
+        0.9992923736572266,
+        0.0
+      ],
+      "off_axis_degrees": 2.155575077034105
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.09853361546993256,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.04532464221119881,
+        0.019157705828547478,
+        0.998788595199585,
+        0.0
+      ],
+      "off_axis_degrees": 2.8204994446103644
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.14571689069271088,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.07266563922166824,
+        -0.00016717227117624134,
+        0.9973562955856323,
+        0.0
+      ],
+      "off_axis_degrees": 4.167118452311779
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.07527928799390793,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.0006508869701065123,
+        0.03760737553238869,
+        0.9992923736572266,
+        0.0
+      ],
+      "off_axis_degrees": 2.155575077034105
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.09853361546993256,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.04532464221119881,
+        0.019157705828547478,
+        0.998788595199585,
+        0.0
+      ],
+      "off_axis_degrees": 2.8204994446103644
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.14571689069271088,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.07266563922166824,
+        -0.00016717227117624134,
+        0.9973562955856323,
+        0.0
+      ],
+      "off_axis_degrees": 4.167118452311779
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.07527928799390793,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.0006508869701065123,
+        0.03760737553238869,
+        0.9992923736572266,
+        0.0
+      ],
+      "off_axis_degrees": 2.155575077034105
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.09853361546993256,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.04532464221119881,
+        0.019157705828547478,
+        0.998788595199585,
+        0.0
+      ],
+      "off_axis_degrees": 2.8204994446103644
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.08134295791387558,
+        0.0,
+        0.9966861605644226,
+        0.0
+      ],
+      "off_axis_degrees": 4.66576321639434
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.08287836611270905,
+        0.0,
+        0.9965596795082092,
+        0.0
+      ],
+      "off_axis_degrees": 4.754033613235098
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.08056749403476715,
+        0.0,
+        0.9967491626739502,
+        0.0
+      ],
+      "off_axis_degrees": 4.621186012737012
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -7.1112276067708535e-09,
+        0.08134295046329498,
+        0.9966861605644226,
+        0.0
+      ],
+      "off_axis_degrees": 4.66576279092216
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -7.245456679072504e-09,
+        0.08287835866212845,
+        0.9965596795082092,
+        0.0
+      ],
+      "off_axis_degrees": 4.754033187816928
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -7.043433836173563e-09,
+        0.08056748658418655,
+        0.9967491626739502,
+        0.0
+      ],
+      "off_axis_degrees": 4.621185587237953
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.08134295046329498,
+        -7.1112276067708535e-09,
+        0.9966861605644226,
+        0.0
+      ],
+      "off_axis_degrees": 4.66576279092216
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.08287835866212845,
+        -7.245456679072504e-09,
+        0.9965596795082092,
+        0.0
+      ],
+      "off_axis_degrees": 4.754033187816928
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.08056748658418655,
+        -7.043433836173563e-09,
+        0.9967491626739502,
+        0.0
+      ],
+      "off_axis_degrees": 4.621185587237953
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        1.4222455213541707e-08,
+        -0.08134295046329498,
+        0.9966861605644226,
+        0.0
+      ],
+      "off_axis_degrees": 4.665762790922214
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        1.4490913358145008e-08,
+        -0.08287835866212845,
+        0.9965596795082092,
+        0.0
+      ],
+      "off_axis_degrees": 4.754033187816981
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.5,
+      "vertical_scale": 0.5,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        1.4086867672347125e-08,
+        -0.08056748658418655,
+        0.9967491626739502,
+        0.0
+      ],
+      "off_axis_degrees": 4.621185587238005
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.14571689069271088,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.14419367909431458,
+        0.0,
+        0.989549458026886,
+        0.0
+      ],
+      "off_axis_degrees": 8.290589948361943
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.07527928799390793,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.0013026946689933538,
+        0.0,
+        0.9999991655349731,
+        0.0
+      ],
+      "off_axis_degrees": 0.07463892658998252
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.09853361546993256,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.09038771688938141,
+        0.0,
+        0.9959065914154053,
+        0.0
+      ],
+      "off_axis_degrees": 5.185912861056261
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.14571689069271088,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.14419367909431458,
+        0.0,
+        0.989549458026886,
+        0.0
+      ],
+      "off_axis_degrees": 8.290589948361943
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.07527928799390793,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.0013026946689933538,
+        0.0,
+        0.9999991655349731,
+        0.0
+      ],
+      "off_axis_degrees": 0.07463892658998252
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.09853361546993256,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.09038771688938141,
+        0.0,
+        0.9959065914154053,
+        0.0
+      ],
+      "off_axis_degrees": 5.185912861056261
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.14571689069271088,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.14419367909431458,
+        0.0,
+        0.989549458026886,
+        0.0
+      ],
+      "off_axis_degrees": 8.290589948361943
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.07527928799390793,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.0013026946689933538,
+        0.0,
+        0.9999991655349731,
+        0.0
+      ],
+      "off_axis_degrees": 0.07463892658998252
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.09853361546993256,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.09038771688938141,
+        0.0,
+        0.9959065914154053,
+        0.0
+      ],
+      "off_axis_degrees": 5.185912861056261
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.16109490394592285,
+        0.0,
+        0.9869388937950134,
+        0.0
+      ],
+      "off_axis_degrees": 9.270454306808341
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.1640748381614685,
+        0.0,
+        0.9864478707313538,
+        0.0
+      ],
+      "off_axis_degrees": 9.443494380862848
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.15958860516548157,
+        0.0,
+        0.9871835708618164,
+        0.0
+      ],
+      "off_axis_degrees": 9.183018554061558
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -1.4269742720784961e-08,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 8.175960326385065e-07
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -1.4540939119456198e-08,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 8.331344417015157e-07
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -1.4132811365641373e-08,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 8.097504439057719e-07
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.16109488904476166,
+        0.0,
+        0.9869388937950134,
+        0.0
+      ],
+      "off_axis_degrees": 9.270453464185877
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.1640748381614685,
+        0.0,
+        0.9864479303359985,
+        0.0
+      ],
+      "off_axis_degrees": 9.443493820531765
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.15958859026432037,
+        0.0,
+        0.9871835708618164,
+        0.0
+      ],
+      "off_axis_degrees": 9.183017711230177
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        2.8539485441569923e-08,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 1.6351920652770127e-06
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        2.9081878238912395e-08,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 1.6662688834030311e-06
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 1.0,
+      "vertical_scale": 0.0,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        2.8265622731282747e-08,
+        0.0,
+        1.0,
+        0.0
+      ],
+      "off_axis_degrees": 1.6195008878115436e-06
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.14571689069271088,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.029130931943655014,
+        -0.00026807081303559244,
+        0.9995755553245544,
+        0.0
+      ],
+      "off_axis_degrees": 1.6693863311301658
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.07527928799390793,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.00026006807456724346,
+        0.06010553985834122,
+        0.9981919527053833,
+        0.0
+      ],
+      "off_axis_degrees": 3.4459031257935857
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.09853361546993256,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.018140319734811783,
+        0.03067001700401306,
+        0.9993649125099182,
+        0.0
+      ],
+      "off_axis_degrees": 2.0420612647032303
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.14571689069271088,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.029130931943655014,
+        -0.00026807081303559244,
+        0.9995755553245544,
+        0.0
+      ],
+      "off_axis_degrees": 1.6693863311301658
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.07527928799390793,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.00026006807456724346,
+        0.06010553985834122,
+        0.9981919527053833,
+        0.0
+      ],
+      "off_axis_degrees": 3.4459031257935857
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": false,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.09853361546993256,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.018140319734811783,
+        0.03067001700401306,
+        0.9993649125099182,
+        0.0
+      ],
+      "off_axis_degrees": 2.0420612647032303
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x1",
+      "seed_after": "0xcc042811",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 6.280884742736816,
+        "radial_input": 0.7969603538513184,
+        "radius": 0.14571689069271088,
+        "sin_cos": [
+          -0.002300562337040901,
+          0.9999973177909851
+        ]
+      },
+      "direction": [
+        0.029130931943655014,
+        -0.00026807081303559244,
+        0.9995755553245544,
+        0.0
+      ],
+      "off_axis_degrees": 1.6693863311301658
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0x3039",
+      "seed_after": "0x34701bc9",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.588102102279663,
+        "radial_input": 0.20484024286270142,
+        "radius": 0.07527928799390793,
+        "sin_cos": [
+          0.9998502135276794,
+          -0.017304835841059685
+        ]
+      },
+      "direction": [
+        -0.00026006807456724346,
+        0.06010553985834122,
+        0.9981919527053833,
+        0.0
+      ],
+      "off_axis_degrees": 3.4459031257935857
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 1,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x5f1b05df",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 2.7416908740997314,
+        "radial_input": 0.3715018033981323,
+        "radius": 0.09853361546993256,
+        "sin_cos": [
+          0.38932788372039795,
+          -0.9210991859436035
+        ]
+      },
+      "direction": [
+        -0.018140319734811783,
+        0.03067001700401306,
+        0.9993649125099182,
+        0.0
+      ],
+      "off_axis_degrees": 2.0420612647032303
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.03262798488140106,
+        0.0,
+        0.9994675517082214,
+        0.0
+      ],
+      "off_axis_degrees": 1.8697777100722826
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.03324740007519722,
+        0.0,
+        0.9994471669197083,
+        0.0
+      ],
+      "off_axis_degrees": 1.9052868004252947
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 0,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 0.0,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          0.0,
+          1.0
+        ]
+      },
+      "direction": [
+        0.0323152169585228,
+        0.0,
+        0.999477744102478,
+        0.0
+      ],
+      "off_axis_degrees": 1.8518479153846774
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -2.829923406721946e-09,
+        0.1294821798801422,
+        0.9915817379951477,
+        0.0
+      ],
+      "off_axis_degrees": 7.439670588874277
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -2.8827789044783003e-09,
+        0.13190056383609772,
+        0.9912629127502441,
+        0.0
+      ],
+      "off_axis_degrees": 7.579432762310175
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 1,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 1.5707963705062866,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          0.9999999403953552,
+          -8.742277657347586e-08
+        ]
+      },
+      "direction": [
+        -2.803216547775378e-09,
+        0.12826023995876312,
+        0.9917405843734741,
+        0.0
+      ],
+      "off_axis_degrees": 7.36906950523791
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.032627981156110764,
+        -1.140971583879491e-08,
+        0.9994675517082214,
+        0.0
+      ],
+      "off_axis_degrees": 1.8697774967426273
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.03324739634990692,
+        -1.1626320350899277e-08,
+        0.9994471669197083,
+        0.0
+      ],
+      "off_axis_degrees": 1.9052865871000044
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 2,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 3.1415927410125732,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          -8.742277657347586e-08,
+          -0.9999999403953552
+        ]
+      },
+      "direction": [
+        -0.0323152169585228,
+        -1.1300344660014616e-08,
+        0.999477744102478,
+        0.0
+      ],
+      "off_axis_degrees": 1.8518479153847907
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x1",
+      "seed_after": "0x9e3779b1",
+      "sampled_spread": 18.540908813476562,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.16322682797908783,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        5.659846813443892e-09,
+        -0.1294821798801422,
+        0.9915817379951477,
+        0.0
+      ],
+      "off_axis_degrees": 7.439670588874282
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0x3039",
+      "seed_after": "0xa12b4869",
+      "sampled_spread": 18.88698959350586,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.16632895171642303,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        5.765557808956601e-09,
+        -0.13190056383609772,
+        0.9912629127502441,
+        0.0
+      ],
+      "off_axis_degrees": 7.579432762310181
+    },
+    {
+      "kind": "generic-sampler",
+      "incoming_spread": 30,
+      "horizontal_scale": 0.20000000298023224,
+      "vertical_scale": 0.800000011920929,
+      "spread_uniform": true,
+      "index": 3,
+      "count": 4,
+      "seed_before": "0xdeadbeef",
+      "seed_after": "0x9cb8fa3f",
+      "sampled_spread": 18.366037368774414,
+      "samples": {
+        "azimuth_radians": 4.71238899230957,
+        "radial_input": 1.0,
+        "radius": 0.16166052222251892,
+        "sin_cos": [
+          -0.9999999403953552,
+          1.7484555314695172e-07
+        ]
+      },
+      "direction": [
+        5.606433095550756e-09,
+        -0.12826023995876312,
+        0.9917405843734741,
+        0.0
+      ],
+      "off_axis_degrees": 7.369069505237914
+    }
+  ],
+  "accuracy_upgrades": [
+    {
+      "id": "felarx_attuned_accuracy",
+      "owner": "/Lotus/Upgrades/Evolutions/Shotgun/EvoShotgunAimAccuracy",
+      "raw": "Upgrades={\n{\nUpgradeType=WEAPON_SPREAD\nOperationType=STACKING_MULTIPLY\nValue=-0.40000001\nDamageType=DT_ANY\nAutoType=1\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={\nPM_AIM\n}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Upgrades/AccuracyWhileAimingModDesc\nLocKeyWordScript={\nScript=\"\"\n}\nDisplayAsMultiplier=0\nDisplayAsPercent=1\nReverseValueSymbol=1\nSmallerIsBetter=0\nRoundTo=0.1\nRoundingMode=RM_ROUND\n}\n}",
+      "value": -0.4,
+      "aiming": true
+    },
+    {
+      "id": "boar_prime_practiced_grip",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/BoarIncarnonEvolutions/BoarEvoTier2C",
+      "raw": "Upgrades={\n{\nUpgradeType=WEAPON_SPREAD\nOperationType=STACKING_MULTIPLY\nValue=-0.5\nDamageType=DT_ANY\nAutoType=1\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Upgrades/IncarnonAccuracyDesc\nLocKeyWordScript={\nScript=\"\"\n}\nDisplayAsMultiplier=0\nDisplayAsPercent=1\nReverseValueSymbol=1\nSmallerIsBetter=0\nRoundTo=0.1\nRoundingMode=RM_ROUND\n}\n}",
+      "value": -0.5,
+      "aiming": false
+    },
+    {
+      "id": "boar_practiced_grip",
+      "owner": "/Lotus/Weapons/Tenno/Shotgun/BoarIncarnonEvolutions/BoarEvoTier2C",
+      "raw": "Upgrades={\n{\nUpgradeType=WEAPON_SPREAD\nOperationType=STACKING_MULTIPLY\nValue=-0.5\nDamageType=DT_ANY\nAutoType=1\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Upgrades/IncarnonAccuracyDesc\nLocKeyWordScript={\nScript=\"\"\n}\nDisplayAsMultiplier=0\nDisplayAsPercent=1\nReverseValueSymbol=1\nSmallerIsBetter=0\nRoundTo=0.1\nRoundingMode=RM_ROUND\n}\n}",
+      "value": -0.5,
+      "aiming": false
+    }
+  ]
+}

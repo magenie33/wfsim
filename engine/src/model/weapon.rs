@@ -85,31 +85,36 @@ pub struct FalloffPoint {
     pub damage_multiplier: f64,
 }
 
-/// THE CONE AN ATTACK FIRES INTO — degrees from the reticle, per ATTACK.
-///
-/// **THE PRIMARY VALUE, and `accuracy` is the derived one.** The Arsenal's
-/// Accuracy is `100 / average spread in degrees`; the thing the game has is
-/// this cone — *"spread is internally represented as an angle in degrees from
-/// the reticle"*, with a minimum (**Deviation With Aim**) and a maximum (**Max
-/// Deviation**) per weapon (wiki `Accuracy` §Spread).
-///
-/// Deriving the cone back out of the scalar loses the min/max and the FORM:
-/// `Module:Weapons/data` carries these per ATTACK, so the Torid's grenade is
-/// `0 / 0` while its Incarnon beam is `1.0 / 1.5`. Transcribed by
-/// `scripts/intake_spread.py`, which refuses any attack it cannot identify by
-/// an exact multi-field match.
-///
-/// **WHAT IS NOT MODELLED IS THE BLOOM.** The min is the FIRST SHOT and the
-/// max is where sustained fire takes it — *"the faster a weapon fires, the
-/// larger the size of the 'cone'"* — and the ramp is published nowhere. A
-/// pellet draws uniformly across the window instead, which has the published
-/// average (`(min + max) / 2`) and invents no rate.
+/// Per-form resting and sustained spread parameters. Native profiles select
+/// hip/aimed ranges and emission geometry; live bloom timing is unmodelled.
+/// Legacy profiles interpret the resting value as an off-axis cone angle.
 #[derive(Debug, Clone, Copy, Deserialize)]
 pub struct SpreadSpec {
     /// Deviation With Aim — the first shot's cone.
     pub min_deg: f64,
     /// Max Deviation — where sustained fire takes it.
     pub max_deg: f64,
+    /// Native emission geometry; the range remains the current resting envelope.
+    #[serde(default)]
+    pub sampling: Option<SpreadSampling>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct SpreadSampling {
+    pub horizontal_ratio: f64,
+    pub uniform: bool,
+    #[serde(default)]
+    pub hip_min_deg: Option<f64>,
+    #[serde(default)]
+    pub hip_max_deg: Option<f64>,
+}
+
+/// Native attenuation stores elapsed ramp time; cooldown is its divisor.
+#[derive(Debug, Clone, Copy, Deserialize)]
+pub struct BeamRampSpec {
+    pub rise_seconds: f64,
+    pub cooldown_delay_seconds: f64,
+    pub cooldown_divisor: f64,
 }
 
 /// A TOME'S RECHARGE METER — a clock you spend, and the third way this roster

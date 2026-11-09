@@ -506,12 +506,10 @@ const benchRowHtml = (cur, { w, mode, row }, i) => `
         <span class="bname">${escHtml(weaponEntryName(w))}${
           // THE BOARD IS WHERE WEAPONS ARE COMPARED, so it is the one place a
           // weapon with unmodelled parts must not look like one without them.
-          // A Stug row is four admissions deep and a Torid row is exact; side
-          // by side and unmarked they read as the same kind of number.
           // The mark is the banner's own ◈ and carries the same sentences.
           (w.unmodeled || []).length
             ? ` <span class="bgap" title="${escHtml(
-                tr("not modelled on this weapon — the numbers below are a floor, not its full output")
+                tr("this weapon has unmodelled mechanics — see the limits below")
                 + ": " + gapsOf(w).map(trGap).join(" · "))}">◈</span>`
             : ""}</span>
         <span class="bscore">${row

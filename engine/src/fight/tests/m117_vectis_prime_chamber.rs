@@ -172,7 +172,7 @@ fn m117_a_scoped_miss_takes_one_point_and_a_hip_miss_takes_none() {
         let mut p = FightParams::from_panel(&panel, &arena, &ArcaneFx::none());
         p.projectile_speed_mps = None;
         // A CONE THAT MISSES: the Vectis Prime.s own first shot is pinpoint.
-        p.spread = Some(crate::model::Spread { min_deg: 5.0, max_deg: 5.0 });
+        p.spread = Some(crate::model::Spread { min_deg: 5.0, max_deg: 5.0, sampling: None });
         p.foe.base_health = 1e15;
         (p.combo_initial, p.combo_held) = (45, true);
         let rec = record(&p, 3, 0.0, f64::INFINITY, 100_000, 0);

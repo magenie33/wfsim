@@ -129,6 +129,7 @@ pub(super) struct RoundAim {
     phi: f64,
     /// A round a LOCK-ON put nowhere (`model::LockOn`).
     lock_miss: bool,
+    round: u32,
 }
 
 /// WHAT A WEAK-POINT KILL GRANTS — one site, because "headshot kill" has to
@@ -709,12 +710,17 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // choose — and zero is what makes the whole clause below collapse
     // to what it was.
     let off_axis = aim_off_axis;
+    if !follows && pellet_idx > 0 { round_aim.round += 1; }
     // THE DEVIATION AND ITS DIRECTION ARE KEPT, not collapsed into
     // one scalar. How far the pellet passed the aimed body is the only
     // thing ONE body can be asked; a crowd asks WHERE, so both survive
     // to build the epicentre below.
     let (dev, phi) = match active.spread {
         Some(s) if follows && !s.is_pinpoint() && range > 0.0 => (round_aim.dev, round_aim.phi),
+        Some(s) if s.sampling.is_some() && !s.is_pinpoint() && range > 0.0 => s.sample(
+            d.aim.next_f64(), d.blast_dir.next_f64(), d.aim.next_f64(),
+            round_aim.round, active.base_multishot.max(1.0) as u32,
+        ),
         Some(s) if !s.is_pinpoint() && range > 0.0 => {
             let dev = s.draw(d.aim.next_f64());
             // WHICH WAY IT WENT, drawn whenever the weapon points away

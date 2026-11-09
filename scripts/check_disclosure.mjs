@@ -305,20 +305,15 @@ for (const lang of ["en", "zh"]) {
     out.zoomFalsePositives = [...document.querySelectorAll('#stats-conditionals .scond')]
         .filter(e => /aim down sights/.test(e.textContent)).length;
 
-    // 8. NEGATIVE CONTROL: a weapon with nothing to admit, ANYWHERE in its
-    //    transform group. Opened EXPLICITLY: reading whatever page the block
-    //    above happens to leave behind is right only by accident of ordering,
-    //    and stops being so the moment a step is inserted.
-    //
-    //    THE TORID, and it is hand-written: no gaps, no inert perks, and both
-    //    of its forms carry a transcribed SPREAD (0/0 on the grenade, which is
-    //    the "Pinpoint accuracy" its page states in words, and 1/1.5 on the
-    //    Incarnon beam). It briefly stopped being clean while the aim model
-    //    read the weapon-level Accuracy stat, which no Incarnon form has —
-    //    fixed by reading the per-ATTACK spread the wiki module publishes
-    //    instead, which is the primary value anyway.
-    //    (No backticks in here: this block lives inside a template literal.)
-    history.pushState({}, '', '/weapons/Torid/builder'); route(); await sleep(3200);
+    // 8. Negative control: select a family whose data declares no gaps.
+    // The carrier can change when evidence adds a real limitation.
+    const clean = (META.weapons || []).find(w => !gapsOf(w).length
+      && !w.passive_unmodeled && !(w.live_bugs || []).length
+      && (w.evolutions || []).length
+      && (w.evolutions || []).every(t => (t.options || []).every(o => !(o.unmodeled || []).length)));
+    if (!clean) throw new Error('no gap-free weapon family for the negative control');
+    history.pushState({}, '', '/weapons/' + urlSlug(clean) + '/builder'); route(); await sleep(3200);
+    out.cleanWeapon = clean.id;
     out.cleanBanner = document.querySelector('.unmod-h') ? 'shown' : 'absent';
     out.cleanEvoChips = evoRows('.exchip.unmod').length;
     return out;

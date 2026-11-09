@@ -670,6 +670,8 @@ pub(super) fn stack() -> String {
 /// input, kept as values rather than prose per data/README.md.
 #[derive(Debug, Clone, Deserialize)]
 pub struct BeamSpec {
+    #[serde(default)]
+    pub ramp: Option<crate::model::BeamRampSpec>,
     pub range_m: f64,
     pub damage_radius_m: f64,
     /// The sphere does NOT take multishot; only the directly-hit target does.

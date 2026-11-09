@@ -1078,10 +1078,10 @@ fn torid_loads_both_forms_with_its_field_and_direct_hit_gauge() {
     assert_eq!(g.charge_on, ChargeOn::DirectHits);
     assert!((g.charges_to_fill - 5.0).abs() < 1e-9);
     assert!((g.max_charges - 170.0).abs() < 1e-9);
-    assert!((g.transmute_in - 1.7).abs() < 1e-9, "= the base reload");
+    assert!((g.transmute_in - 1.4).abs() < 1e-9, "native ModeSwitchTime");
     // Charge-backed magazine, so the pseudo-reload supplies the sim's.
     assert!((i.magazine_size - 170.0).abs() < 1e-9);
-    assert!((i.base_reload - 2.7).abs() < 1e-9);
+    assert!((i.base_reload - g.transmute_in - g.transmute_out).abs() < 1e-9);
     // CO class is per FORM, not per weapon — ✅ measured. The base form's two catalog rows are "Multiplying"
     // (asserted above); the Incarnon form is ordinary ADDITIVE. This used
     // to be inferred from those rows and the inference was wrong.

@@ -1860,6 +1860,13 @@ the ramp's interaction with status payloads is a modeling choice.
 
 #### A beam's GEOMETRY — sphere and chain (Torid Incarnon)
 
+An `attack.beam.ramp` binds native rise time, idle delay and cooldown divisor.
+The native state is elapsed ramp time: `c = max(c - dt / divisor, 0)`,
+`progress = c / rise_seconds`. Normalized decay therefore divides by
+`rise_seconds * cooldown_divisor`. Unbound beams retain the two-second
+normalized convention. First-tick scheduling and independent target ramp
+state remain unmodelled (`client_beam_target_ramp`).
+
 Shape, not a damage part. It lives in `attack.beam` and is deliberately **not**
 a `radial:`, because in this engine that word means *a second damage instance*
 and the wiki forbids that reading: *"The damage radius is not a separate damage
@@ -3360,6 +3367,22 @@ Ordnance."* So `ModEffect::AddedSpread` lands after the division and a Twitch on
 the same build narrows the weapon's own cone while leaving this alone. Filing it
 in the accuracy bucket would have been wrong twice — scaling instead of adding,
 and clawed back by exactly the mods the source says cannot touch it.
+
+Source-backed `spread.sampling` profiles use the client's emission geometry:
+randomize `A = clamp(u0 * S, 0, 179)`, sample azimuth and square-root disk
+radius, then scale the two axes by `horizontal_ratio` and its complement.
+The disk's radius is `tan(A * pi / 360)`. Uniform multi-iteration emission
+uses azimuth `2*pi*index/count` and unit radial input; each round still draws
+its own cone parameter. Multishot copies retain the round's sampled direction.
+The portable sampler reproduces bounded native vectors within float32
+rounding; native seed setup and cross-call correlations are uncalibrated.
+
+Those profiles select their declared hip or aimed resting range from the
+Tenno's aiming state. Native `WEAPON_SPREAD` upgrades reduce each endpoint by
+`max(1 - accuracy_bonus, 0)`; the added-spread term follows that scaling.
+Attuned Accuracy requires aiming. Live growth, recovery, smoothing, special
+emitters and camera transforms remain unmodelled. The fixed-reticle contract
+compensates camera recoil and retains intrinsic spread.
 
 ## 12. BEAM CHAINING — the mechanic a second target turns on
 

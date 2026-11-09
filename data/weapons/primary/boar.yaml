@@ -46,9 +46,14 @@ attack:
   spread:
     min_deg: 10
     max_deg: 30
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 16
+      hip_max_deg: 36
   trigger: auto
   shot_type: hit_scan
-  fire_rate: 4.17
+  fire_rate: 4.16666666666667
   # INNATE MULTISHOT — 8 pellets, and the damage below is PER PELLET. Same
   # convention as the Prime; see data/weapons/primary/boar_prime.yaml for why
   # the module's `Damage` block is one pellet's rather than the shot's total.
@@ -108,3 +113,8 @@ transforms_to: boar_incarnon
 
 source:
   url: https://wiki.warframe.com/w/Boar
+
+# see notes: client_primary_inputs
+
+unmodeled:
+  - reason: client_accuracy_runtime

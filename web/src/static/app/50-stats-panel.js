@@ -70,10 +70,7 @@ function renderPanel(r) {
     return;
   }
   $("stats-sub").textContent = `max-rank values · ${r.policy}`;
-  // A PASSIVE WE DO NOT MODEL makes every number below a FLOOR, and the reader
-  // has no way to know that from the numbers themselves. Gotva Prime is the
-  // first: its "15% chance to set the next hit's crit chance to 300%" is absent, so it scores like a weapon without a passive and looks simply
-  // weaker rather than partly unmodelled.
+  // Omitted mechanics can move the result in either direction.
   const wInfo = weaponInfo($("weapon").value) || {};
   const passiveNote = $("stats-passive");
   if (passiveNote) {
@@ -97,7 +94,7 @@ function renderPanel(r) {
     }
     passiveNote.hidden = !gaps.length;
     passiveNote.innerHTML = gaps.length
-      ? `<div class="unmod-h">◈ ${escHtml(tr("not modelled on this weapon — the numbers below are a floor, not its full output"))}</div>`
+      ? `<div class="unmod-h">◈ ${escHtml(tr("this weapon has unmodelled mechanics — see the limits below"))}</div>`
         // THROUGH `tr`, like the enemy card's gaps. These are OUR sentences,
         // not DE's, so they translate rather than being transcribed — and a
         // line with no entry falls through to the English it was written in,
@@ -180,7 +177,7 @@ function renderPanel(r) {
       <div class="shead"><span class="sk">${tr(row.label)}</span>
         <span class="sv">${row.base !== "—" && row.base !== row.final ? `<span class="sbase">${tr(row.base)}</span> → ` : ""}<b>${tr(row.final)}</b></span></div>
       ${row.rule ? `<div class="srowrule" title="${escHtml(tr("the rule this weapon is computed under: how the bonus combines, what base it reads, and which attack parts take it"))}">▸ ${escHtml(row.rule)}</div>` : ""}
-      ${row.note ? `<div class="srownote">⚙ ${row.note}</div>` : ""}
+      ${row.note ? `<div class="srownote">⚙ ${tr(row.note)}</div>` : ""}
       ${row.locked_by ? `<div class="srownote">🔒 ${escHtml(tr("locked at the weapon's default by"))} ${escHtml(row.locked_by)}</div>` : ""}
       ${bucketLine(row)}
       ${(row.sources || []).map(srcLine).join("")}
