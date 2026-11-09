@@ -890,6 +890,13 @@ the arrivals; build and family acknowledgments precede inbox deletion.
 The inbox reader's self-test holds the full-page boundary and repeated reads:
 a bounded prefix remains processable and replaces the previous output.
 
+`check_cancel_queue.mjs` also runs cancellation through the scripts' actual
+`postgres.js` transport when `WFSIM_CANCEL_QUEUE_PG_URL` names a local test
+database. CI requires this isolated-schema run and its PGlite counterpart.
+It covers escaped batch and ruler selectors, dry runs, one-row slices, first
+batch ownership, non-open questions, unrelated user demands and empty queues.
+Direct JSON parameter casts fail on the real driver.
+
 ## `check_settle`
 
 The official cycle and its CLI run against local transport fixtures. An empty
