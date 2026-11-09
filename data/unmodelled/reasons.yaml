@@ -23,6 +23,14 @@
 # repeat. A reason earns its place by being used more than twice OR by having
 # more than one numeric spelling.
 reasons:
+  client_scourge_primary_collision:
+    text: "Primary fire uses ray collision; the native projectile's collision width is not simulated."
+  client_scourge_field:
+    text: "Bullet Attractor is approximated as a CO status on the aimed target; spatial application, field pulses and bullet redirection are not simulated."
+  client_scourge_throw:
+    text: "The throw's projectile selection is unverified. Flight is straight, and multishot uses separate damage instances."
+  client_scourge_primary_co:
+    text: "Primary-fire Condition Overload uses the catalog's additive rule; its conflict with the weapon page's multiplicative claim is unresolved."
   client_accuracy_runtime:
     text: "Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady."
   client_beam_target_ramp:

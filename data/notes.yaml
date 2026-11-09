@@ -9,6 +9,18 @@
 # an entry from being orphaned.
 
 notes:
+  client_scourge_inputs: |
+    scripts/import_client_scourge.py binds the two weapon behaviors and actual
+    projectile members to tests/fixtures/client/scourge-2026-10-28.json.
+    Primary RPM and thrown hip/aim sampling use package inputs. OmegaAttenuation
+    owns disposition. Native wave width/radius consumers remain unreviewed.
+    Normal/charged projectile records are separate candidates;
+    their runtime selector, gravity, decay and IgnoreFireIterations consumer
+    remain unreviewed. M43 owns the 1.0 + 0.6 s throw cycle; M42 retains the
+    target debuff convention. Attractor LifeSpan is an entity lifetime, not a
+    measured effective headshot duration. Field geometry and projectile steering
+    remain unmodelled. Primary CO retains the catalog rule with the weapon-page
+    disagreement disclosed. docs/UNMODELLED.md owns the open consumers.
   client_primary_inputs: |
     scripts/import_client_primary.py binds form behaviors and projectile records
     to tests/fixtures/client/primary-five-2026-10-28.json. ModeSwitchTime owns

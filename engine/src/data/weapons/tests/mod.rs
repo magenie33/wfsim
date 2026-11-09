@@ -3,6 +3,7 @@ use super::*;
 mod battery;
 mod client_cadence;
 mod client_primary;
+mod client_scourge;
 mod burston_incarnon_radial;
 mod catalog;
 mod condition_overload_catalog;

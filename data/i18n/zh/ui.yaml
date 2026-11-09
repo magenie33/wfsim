@@ -17,6 +17,10 @@ ui:
   "This code has expired. Run login in your client again.": "验证码已过期，请在客户端重新运行 login。"
   "The device could not be loaded. Reload to try again.": "无法加载设备，请刷新重试。"
   "The device could not be claimed. Run login in your client again.": "无法认领设备，请在客户端重新运行 login。"
+  "Primary fire uses ray collision; the native projectile's collision width is not simulated.": "主射击按射线判定碰撞；尚未模拟原生弹体的碰撞宽度。"
+  "Bullet Attractor is approximated as a CO status on the aimed target; spatial application, field pulses and bullet redirection are not simulated.": "子弹吸附场目前近似为所瞄目标身上的一种 CO 状态；尚未模拟施加范围、场的脉冲和弹道吸附。"
+  "The throw's projectile selection is unverified. Flight is straight, and multishot uses separate damage instances.": "尚未核实投掷实际使用的弹体；目前按直线飞行、多重射击逐个结算伤害处理。"
+  "Primary-fire Condition Overload uses the catalog's additive rule; its conflict with the weapon page's multiplicative claim is unresolved.": "主射击的 CO 按专表的加算规则计算；武器页面写作乘算，这一冲突尚未解决。"
   "Maximum Deviation": "最大偏移角"
   "resting and sustained angular limits; sustained spread growth is not simulated": "静止与持续开火时的角度上限；尚未模拟持续开火时散布的增长"
   "Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.": "尚未模拟持续开火时散布的增长、恢复和平滑；射击使用所选瞄准状态下的静止散布。后坐力按压枪保持准星稳定处理。"
@@ -2239,7 +2243,6 @@ ui:
   uptime: 在场
   "weakpoint hits": 弱点命中
   "what a room-clear is paced by, as opposed to a long fight": 清房间的节奏，而不是一场长时间的战斗的节奏
-  "The Bullet Attractor's value as an aiming aid is not counted: its 4.7 s on the target is (one Condition Overload status), but easier headshots are not. The wiki says it does not guarantee a headshot, so the rate needs measuring first.": "子弹吸引力场作为瞄准辅助的价值未计入：它挂在目标身上的 4.7 秒已计入（一层异况超量），但「更容易爆头」没有。wiki 说它并不保证爆头，所以这个比例需要先实测。"
   "what the run is judged by — the headline number and the picker's gain scan both follow it": 这次模拟以什么为准 —— 主数字和选择器的提升排序都跟着它
   "what the search is allowed to assume": 这次搜索被允许做哪些假设
   "what this run is allowed to assume": 这次模拟被允许做哪些假设
