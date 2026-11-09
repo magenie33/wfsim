@@ -4,8 +4,9 @@ The official single-machine client for WFSim volunteer computing. It loads
 the site's signed native engine and data, follows engine updates and uses the
 same public work, verification and contribution rules as every other client.
 
-Download the native executable for your platform from the official CLI release,
-or use the npm launcher once that release has been published:
+Download the native executable for your platform from the official CLI release.
+Use the npm launcher when the CLI release manifest marks that release
+`npm: true`:
 
 ```sh
 npx wfsim@latest join

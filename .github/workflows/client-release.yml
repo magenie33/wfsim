@@ -143,18 +143,6 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           proof=$(node scripts/ci_runs.mjs ship "$EXPECTED_SHA")
           test -n "$proof"
-      - name: Preserve bucket CORS and enable website GET
-        env:
-          COS_SECRET_ID: ${{ secrets.COS_SECRET_ID }}
-          COS_SECRET_KEY: ${{ secrets.COS_SECRET_KEY }}
-          COS_BUCKET: ${{ secrets.COS_BUCKET }}
-          COS_REGION: ${{ secrets.COS_REGION }}
-        run: python3 scripts/client_cors.py --apply --configure-only
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: cli-cors-audit
-          path: target/client-cors/*
       - env:
           CLI_VERSION: ${{ needs.version.outputs.version }}
           CLI_NPM: ${{ inputs.npm }}
@@ -184,6 +172,4 @@ jobs:
           COS_BUCKET: ${{ secrets.COS_BUCKET }}
           COS_REGION: ${{ secrets.COS_REGION }}
           COS_ACCELERATE: '1'
-        run: |
-          python3 scripts/release_client.py target/client-release
-          python3 scripts/client_cors.py --verify-only
+        run: python3 scripts/release_client.py target/client-release

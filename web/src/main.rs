@@ -298,6 +298,21 @@ fn pinned_response(stream: &mut TcpStream, kind: &str, pins: &str, name: &str) -
 /// paths; the method is this transport's, and a wrong one falls through.
 const GET_ENDPOINTS: &[&str] = &["/api/meta", "/api/i18n"];
 
+/// The same public release pointer as the deployed gateway; no caller input travels upstream.
+fn cli_release_response(stream: &mut TcpStream) -> std::io::Result<()> {
+    let fetched = std::process::Command::new("curl").args([
+        "-q", "--fail", "--silent", "--max-time", "10", "--max-filesize", "65536",
+        "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com/cli/latest.json",
+    ]).output();
+    if let Ok(out) = fetched {
+        if out.status.success() && out.stdout.len() <= 65536
+            && serde_json::from_slice::<Value>(&out.stdout).is_ok_and(|v| v["v"] == 1 && v["files"].is_object()) {
+            return respond(stream, "200 OK", "application/json; charset=utf-8", &out.stdout);
+        }
+    }
+    respond(stream, "502 Bad Gateway", "application/json", b"{\"ok\":false,\"error\":\"cli_manifest_unavailable\"}")
+}
+
 fn endpoint_method(path: &str) -> &'static str {
     if GET_ENDPOINTS.contains(&path) {
         "GET"
@@ -320,6 +335,8 @@ fn handle(mut stream: TcpStream) -> std::io::Result<()> {
     }
 
     match (req.method.as_str(), path) {
+        ("GET", "/api/cli/latest") => cli_release_response(&mut stream),
+        (_, "/api/cli/latest") => respond(&mut stream, "405 Method Not Allowed", "application/json", b"{\"ok\":false,\"error\":\"method\"}"),
         ("GET", "/") => respond(&mut stream, "200 OK", "text/html; charset=utf-8", INDEX_HTML.as_bytes()),
         ("GET", "/app.js") => respond(
             &mut stream,

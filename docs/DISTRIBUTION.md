@@ -20,7 +20,10 @@ the existing COS mirror. The npm package carries their immutable hashes and
 starts the same executable. `scripts/build_client_release.mjs` prepares the
 manifest and package; `scripts/release_client.py --dry-run <directory>` verifies
 the files before an upload. The source archive and checksums travel beside
-the binaries. The public mirror's entry point is `cli/latest.json`.
+the binaries. The public mirror's entry point is `cli/latest.json`. The compute
+page reads that canonical pointer through `GET /api/cli/latest`; the gateway
+forwards no reader credentials and keeps no separate release state. Bucket
+management permissions and browser CORS are not publication prerequisites.
 Publication checks that the checked engine artifact matches the public release
 and exposes the native optimizer door before making CLI downloads discoverable.
 An unknown polling credential checks device-link route and schema readiness
