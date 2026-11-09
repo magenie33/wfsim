@@ -86,6 +86,22 @@ deletes its votes and their popularity contribution by cascade. Public heat
 contains no account or device identifiers. Apply `worker/pg/accounts.sql`
 before deploying these routes.
 
+## Public identity
+
+`GET /api/account/identity` returns the signed-in account's `named`, selected
+`label` and eligible opaque `labels`. Same-origin JSON `POST` accepts
+`{named, label}`. `none` hides the label. Other choices must be confirmed by
+the cloud binding; an unavailable binding cannot prevent turning anonymous.
+`contribution_choice` owns both preferences and exports them with account data.
+An anonymous contribution exposes no nickname, profile link or identity label.
+Public contribution names use the current account display-name rules.
+
+The account and owner profile editor share these controls. Ranking, witness
+records, delivery attribution and the cloud extension use the same preferences.
+Public code renders opaque label metadata; eligibility and label definitions
+belong to the private extension. Apply the additive `label` column in
+`worker/pg/accounts.sql` before deploying either worker.
+
 ## Names
 
 **EVERY ACCOUNT HAS A USERNAME**, the site's handle for it, and may have a

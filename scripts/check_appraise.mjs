@@ -45,7 +45,7 @@ const b1 = await call("POST", `/api/appraise/${code}/result`, { build, thanks: "
 const b2 = await call("POST", `/api/appraise/${code}/result`, { build: { ...build, mods: ["hornet_strike", "riven"] }, thanks: "B" });
 check("every build handed back is kept, each told it may be first", b1.body.ok && b1.body.first && b2.body.first);
 const thanked = (await db.all("SELECT thanks FROM appraisal_results ORDER BY id")).map((r) => r.thanks);
-check("a name to thank loses its links and its length", thanked[0] === "Kai see and" && !/https?:|evil/.test(thanked[0]), JSON.stringify(thanked));
+check("unverified typed names cannot become calculator attribution", thanked.every(name => name === ""), JSON.stringify(thanked));
 
 const c1 = (await call("POST", "/api/appraise/claim", { channel: "qq" }, bot)).body;
 check("the bot is handed both builds to judge, with the chat to answer", c1.judge.length === 2 && c1.judge[0].chat.msg_id === "m-a" && c1.judge[0].build.mods[0] === "serration");
@@ -55,7 +55,7 @@ check("another channel's bot sees none of them", (await call("POST", "/api/appra
 
 const [r1, r2] = c1.judge.map((j) => j.id);
 const c3 = (await call("POST", "/api/appraise/claim", { channel: "qq", judged: [{ id: r2, ok: true, verdict: { score: 87.3 } }] }, bot)).body;
-check("the first build the bot accepts wins", c3.tell.length === 1 && c3.tell[0].code === code && c3.tell[0].result_id === r2 && c3.tell[0].thanks === "B" && c3.tell[0].verdict.score === 87.3, JSON.stringify(c3.tell));
+check("the first build the bot accepts wins", c3.tell.length === 1 && c3.tell[0].code === code && c3.tell[0].result_id === r2 && c3.tell[0].calculator.name === null && c3.tell[0].verdict.score === 87.3, JSON.stringify(c3.tell));
 const c4 = (await call("POST", "/api/appraise/claim", { channel: "qq", judged: [{ id: r1, ok: true }], told: [code] }, bot)).body;
 const row = await db.get("SELECT winner, told_at FROM appraisals WHERE code = ?", code);
 check("…once: a later acceptance changes nothing", row.winner === r2, JSON.stringify(row));
@@ -64,10 +64,10 @@ const late = await call("POST", `/api/appraise/${code}/result`, { build, thanks:
 check("a build handed back after the win is still kept, and told it was not first", late.body.ok && late.body.first === false);
 const one = await call("GET", `/api/appraise/${code}?result=${r2}`);
 check("one handed-back build reads by its id, with whom to thank", one.body.result && one.body.result.id === r2
-  && one.body.result.build.mods[0] === "hornet_strike" && one.body.result.thanks === "B");
+  && one.body.result.build.mods[0] === "hornet_strike" && one.body.result.calculator.name === null && one.body.result.thanks === "");
 check("…and only under its own appraisal", !(await call("GET", `/api/appraise/${opened.code}?result=999`)).body.result);
 const done = await call("GET", `/api/appraise/${code}`);
-check("the page then reads it done, and whom it thanked", done.body.done === true && done.body.thanked === "B");
+check("the page reads completion without exposing an unverified typed name", done.body.done === true && done.body.thanked === "");
 
 const other = (await call("POST", "/api/appraise/new", ask("names"), bot)).body.code;
 await call("POST", `/api/appraise/${other}/result`, { build, thanks: "a 片达人" });

@@ -443,8 +443,10 @@ comparison. Executor disclosure and queue ownership are in `docs/TASKS.md`.
    built-in. The search is told nothing else, and the
    tab's storage lives in memory, so the reader's own builds, rivens and
    optimizer are untouched. Every finalist goes to the board unasked; the winner
-   goes back to the appraisal as a BUILD with an optional name to thank —
-   never a score.
+   goes back to the appraisal as a BUILD with its captured account reference,
+   never a typed attribution or a score. Public delivery attribution uses the
+   actual calculator and its current anonymity and selected-label settings.
+   FX cards keep their code and link, without a scan invitation.
    THE SEARCH IS ONE FUNCTION OF THE APPRAISAL, `headlessRivenGainRequest`
    (87-headless.js): the ruler's fight, the card, the built-in search, and
    `{ request, context }` back — the optimize request and what turns a

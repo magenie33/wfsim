@@ -4215,3 +4215,6 @@ body.on-build-library #quick-calc,body.on-build-library #share-by,body.on-build-
 }
 #riven-block.no-riven > :not(.no-riven-note){display:none}
 .no-riven-note{padding:16px}
+
+.identity-settings{border-top:1px solid var(--line);padding-top:16px;margin-top:16px}
+.identity-settings h3{margin:0}
