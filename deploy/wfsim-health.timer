@@ -1,0 +1,11 @@
+[Unit]
+Description=Record WFSim pipeline health each minute
+
+[Timer]
+OnBootSec=1min
+OnUnitInactiveSec=1min
+RandomizedDelaySec=5s
+Unit=wfsim-health.service
+
+[Install]
+WantedBy=timers.target

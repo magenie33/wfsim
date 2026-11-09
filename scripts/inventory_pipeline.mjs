@@ -16,6 +16,7 @@ import { inventoryWrite } from '../worker/task_inventory.js';
 import { captureInventory } from './capture_compute_inventory.mjs';
 import { openCatalog, readInventoryRows } from './incremental_inventory.mjs';
 import { shardInventory, auditInventoryInputs } from './inventory_inputs.mjs';
+import { pipelineMonitor } from './pipeline_monitor.mjs';
 
 const MAX_CAPTURE_MS = 45 * 60000, RESERVE = 8 * 1024 ** 3, LIMIT = 256;
 const progress = (stage, fields = {}) => console.error(JSON.stringify({ event: 'incremental_inventory', stage, ...fields }));
@@ -45,7 +46,7 @@ async function hashFile(path) {
   for await (const data of createReadStream(path)) hash.update(data);
   return hash.digest('hex');
 }
-async function writeRows(path, input) {
+async function writeRows(path, input, report = () => {}) {
   const stream = createWriteStream(path); let failed = null, count = 0;
   stream.on('error', error => { failed = error; });
   try {
@@ -53,6 +54,7 @@ async function writeRows(path, input) {
       if (failed) throw failed;
       if (!stream.write(JSON.stringify(row) + '\n')) await once(stream, 'drain');
       count++;
+      if (count % 20000 === 0) report(count);
     }
     if (failed) throw failed;
     stream.end(); await once(stream, 'finish');
@@ -100,7 +102,7 @@ export function rankerChannel() {
 const common = receipt => ({ v: 1, engine: receipt.engine, contract: receipt.contract,
   generation: receipt.generation, epoch: receipt.epoch, snapshot: receipt.snapshot });
 
-export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, call, baseEpoch, relational = false }) {
+export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, call, baseEpoch, relational = false, report = progress }) {
   mkdirSync(dir, { recursive: true }); disk(dir);
   const paths = [], started = Date.now(), covers = JSON.stringify(BOARD_KINDS), captureMs = bootstrap ? MAX_CAPTURE_MS : 15 * 60000;
   const check = () => { disk(dir); if (Date.now() - started > captureMs) throw new Error('inventory input capture exceeded its budget'); };
@@ -114,13 +116,16 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
     await tx.unsafe("SET LOCAL lock_timeout='3s'");
     const [{ receipt }] = await tx.unsafe('SELECT inventory_epoch_begin($1::text) receipt', [generation]);
     const changes = file('changes.ndjson');
-    const changeCount = await writeRows(changes, cursor(tx, 'inventory_tokens', 'SELECT * FROM inventory_epoch_changes($1::text)', [receipt.epoch]));
+    report('capture-changes', { epoch: receipt.epoch, rows: 0 });
+    const changeCount = await writeRows(changes, cursor(tx, 'inventory_tokens', 'SELECT * FROM inventory_epoch_changes($1::text)', [receipt.epoch]),
+      rows => report('capture-changes', { epoch: receipt.epoch, rows }));
+    report('captured-changes', { epoch: receipt.epoch, rows: changeCount });
     const result = { receipt, raw, changes, bootstrap, applies: [], scopes: [], engine_epoch: baseEpoch };
     let heartbeatError = null;
     const heartbeat = setInterval(() => { transaction.unsafe('SELECT 1').catch(error => { heartbeatError = error; }); }, 20000);
     try {
       if (bootstrap) {
-        const meta = await captureInventory({ begin: async (_options, fn) => fn(tx) }, raw, receipt.engine, BOARD_KINDS);
+        const meta = await captureInventory({ begin: async (_options, fn) => fn(tx) }, raw, receipt.engine, BOARD_KINDS, report);
         if (meta.snapshot !== receipt.snapshot || meta.started_at !== receipt.started_at) throw new Error('inventory bootstrap snapshot changed');
         result.meta = meta;
       } else if (relational) {
@@ -204,7 +209,7 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
       const manifestPath = join(dir, 'capture.json'); save(manifestPath, { ...result, files: manifest });
       const digest = await hashFile(manifestPath);
       const [{ sealed }] = await tx.unsafe('SELECT inventory_epoch_seal($1::text,$2::bigint,$3::text) sealed', [receipt.epoch, changeCount, digest]);
-      progress('captured', { epoch: sealed.epoch, changes: changeCount, scopes: result.scopes.length });
+      report('captured', { epoch: sealed.epoch, changes: changeCount, scopes: result.scopes.length });
       return { ...result, receipt: sealed, manifest_sha: digest, capture: manifestPath };
     } finally { clearInterval(heartbeat); }
   });
@@ -212,7 +217,7 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
 
 export { save as saveInventoryState, hashFile as hashInventoryFile, collect as collectInventoryFiles, disk as checkInventoryDisk };
 
-export async function runInventoryCycle({ work, bin, instance, sql, call, budgetMs = 15000 }) {
+export async function runInventoryCycle({ work, bin, instance, sql, call, budgetMs = 15000, report = progress }) {
   const root = join(work, 'inventory'); mkdirSync(root, { recursive: true }); disk(root);
   const statePath = join(root, 'state.json'), source = readFileSync(join(bin, 'VERSION'), 'utf8').trim();
   const engine = readFileSync(join(bin, 'ENGINE'), 'utf8').trim();
@@ -222,6 +227,7 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
   const contract = { v: 1, algorithm: 'board-inventory-v1', covers: BOARD_KINDS, adapter: await hashFile(join(bin, 'wfsim-board')),
     classifier: algorithm.digest('hex') };
   let state = existsSync(statePath) ? load(statePath) : null;
+  report('generation');
   const [{ status }] = await sql.unsafe('SELECT inventory_status() status');
   if (!state || state.instance !== instance || state.generation !== status?.generation || canon(status.contract) !== canon(contract) || status.engine !== engine) {
     const [{ generation }] = await sql.unsafe('SELECT inventory_begin($1::text,$2::text,$3::text) generation', [engine, JSON.stringify(contract), status?.generation || null]);
@@ -231,6 +237,7 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
     save(statePath, state);
   }
   collect(root, state);
+  report('catalog', { generation: state.generation });
   const catalog = openCatalog(state.catalog, { engine, contract, generation: state.generation, create: true });
   const started = Date.now();
   try {
@@ -238,7 +245,8 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
       return { pending: false, engine_epoch: state.engine_epoch };
     if (!state.pending) {
       const dir = join(root, `capture-${Date.now()}`);
-      state.pending = await captureEpoch({ sql, catalog, generation: state.generation, dir, bootstrap: !catalog.meta.complete, call, baseEpoch: state.engine_epoch });
+      report('capture');
+      state.pending = await captureEpoch({ sql, catalog, generation: state.generation, dir, bootstrap: !catalog.meta.complete, call, baseEpoch: state.engine_epoch, report });
       state.engine_epoch = state.pending.engine_epoch; state.pending.phase = 'preparing';
       save(statePath, state);
     }
@@ -246,6 +254,7 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
     catalog.beginEpoch(receipt);
     if (cut.phase === 'preparing' && catalog.meta.epoch.phase !== 'preparing') {
       if (cut.bootstrap) {
+        report('bootstrap', { epoch: receipt.epoch });
         const shards = load(join(dir, 'shards/manifest.json'));
         cut.scopes = shards.scopes.map(scope => ({ ...scope, scope: scope.scope || { weapon: scope.weapon, riven: scope.riven } }));
         cut.canonical = shards.canonical; state.engine_epoch = receipt.epoch;
@@ -254,6 +263,7 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
     }
     if (cut.phase === 'preparing') {
       if (cut.bootstrap) {
+        report('bootstrap', { epoch: receipt.epoch });
         await catalog.importRecords(cut.raw.builds); await catalog.importLifecycle(cut.raw.tasks, { bootstrap: true });
         const owners = join(dir, 'bootstrap.owners');
         await call({ ...common(receipt), op: 'bootstrap', builds: cut.raw.builds, facts: cut.raw.facts,
@@ -278,31 +288,35 @@ export async function runInventoryCycle({ work, bin, instance, sql, call, budget
       const job = catalog.jobs(1)[0], scope = cut.scopes.find(scope => scope.key === job.key);
       if (!scope) throw new Error('inventory cohort manifest is unavailable');
       const output = join(dir, `members-${job.key}-${job.after_owner || 'start'}.ndjson`);
+      report('cohort', { epoch: receipt.epoch, chunks });
       await call({ ...common(receipt), op: 'cohort', scope: job.scope, facts: scope.facts, queue: scope.queue,
         counts: { facts: scope.counts.facts, queue: scope.counts.queue }, after_owner: job.after_owner, limit: 64 }, output);
       appendFileSync(join(dir, 'outputs.ndjson'), JSON.stringify({ path: output }) + '\n'); sync(join(dir, 'outputs.ndjson'));
       await catalog.replaceOwners(output, { job, snapshot: receipt.snapshot }); chunks++;
     }
-    if (catalog.jobs(1).length) { progress('processing', { epoch: receipt.epoch, chunks }); return { pending: true, engine_epoch: state.engine_epoch }; }
+    if (catalog.jobs(1).length) { report('processing', { epoch: receipt.epoch, chunks }); return { pending: true, engine_epoch: state.engine_epoch }; }
     if (!catalog.meta.complete) {
+      report('audit', { epoch: receipt.epoch });
       const rulers = execFileSync(join(bin, 'wfsim-board'), ['--rulers'], { encoding: 'utf8' }).trim().split(/\s+/);
       const audit = await auditInventoryInputs({ ...cut.raw, meta: cut.meta, rulers, engineOutputs: outputPaths(join(dir, 'outputs.ndjson')),
         contract, generation: receipt.generation, epoch: receipt.epoch, out: join(dir, 'audit') });
       catalog.seal({ snapshot: receipt.snapshot, started_at: receipt.started_at, expected: { owners: cut.meta.counts.library,
         records: cut.meta.counts.library, tasks: cut.meta.counts.tasks, rows: audit.plan.rows, queued: audit.plan.queued, digest: audit.plan.question_digest } });
-      progress('audited', { epoch: receipt.epoch, rows: audit.plan.rows });
+      report('audited', { epoch: receipt.epoch, rows: audit.plan.rows });
     }
+    report('acknowledging', { epoch: receipt.epoch });
     for await (const changes of batches(cut.changes)) {
       catalog.recordReceipts(changes);
       await sql.unsafe('SELECT inventory_ack($1::text,$2::text)', [state.generation, JSON.stringify(changes)]);
       catalog.acknowledge(changes);
     }
     const plan = { ...catalog.finishEpoch(), source }, body = JSON.parse(inventoryWrite(plan).params[1]);
+    report('publishing', { epoch: receipt.epoch });
     const [{ published }] = await sql.unsafe('SELECT inventory_publish_cut($1::text,$2::text) published',
       [receipt.epoch, JSON.stringify({ ...body, generation: state.generation, contract })]);
     catalog.activate(published); save(join(root, 'last-publication.json'), { receipt: published, capture: load(cut.capture) });
     state.published_at = published.at; state.pending = null; save(statePath, state); collect(root, state);
-    progress('published', { epoch: receipt.epoch, total: published.total, started_at: published.started_at });
+    report('published', { epoch: receipt.epoch, total: published.total, started_at: published.started_at });
     return { pending: false, published, engine_epoch: state.engine_epoch };
   } finally { catalog.close(); }
 }
@@ -312,6 +326,11 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
   if (!work || !bin || !instance || /\s/.test(work + bin) || !process.env.PG_URL) throw new Error('usage: inventory_pipeline.mjs <work> <bin> <ranker-instance> (PG_URL required; paths without spaces)');
   const sql = postgres(process.env.PG_URL, { max: 1, fetch_types: false, connect_timeout: 15, onnotice: () => {}, connection: { application_name: 'wfsim-inventory-incremental' } });
   const engine = rankerChannel();
-  try { const result = await runInventoryCycle({ work: resolve(work), bin: resolve(bin), instance, sql, call: engine.call }); save(join(work, 'inventory/status.json'), result); }
+  const monitor = pipelineMonitor(join(work, 'diagnostics'), 'inventory', {
+    source: readFileSync(join(bin, 'VERSION'), 'utf8').trim(), engine: readFileSync(join(bin, 'ENGINE'), 'utf8').trim() });
+  try {
+    const result = await runInventoryCycle({ work: resolve(work), bin: resolve(bin), instance, sql, call: engine.call, report: monitor.report });
+    save(join(work, 'inventory/status.json'), result); monitor.finish(result.pending ? 'pending' : 'complete');
+  } catch (error) { monitor.finish('failed', error); process.exitCode = 1; }
   finally { engine.close(); await sql.end({ timeout: 5 }); }
 }
