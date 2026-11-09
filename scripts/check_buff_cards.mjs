@@ -26,9 +26,10 @@ const r = await evaluate(`(async () => {
   evoSel = {1:'laetum_evo1_incarnon_form',2:'laetum_rapid_wrath',3:'laetum_lethal_rearmament',
             4:'laetum_caput_mortuum',5:'laetum_overwhelming_attrition'};
   markPresetDirty(); renderEvo(); refreshPanel(); await sleep(2500);
-  document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
+  history.pushState({},'','/weapons/Laetum/simulator'); route();
   await sleep(1200);
-  const cards = [...document.querySelectorAll('#sim-buffs .buff-card')].map(e=>({
+  document.getElementById('sim-official-copy').click(); await sleep(1200);
+  const cards = [...document.querySelectorAll('#sim-buffs .buff-card:not(.off)')].map(e=>({
     name: e.querySelector('.bn').textContent.trim(),
     stacks: e.querySelector('input[data-f="stacks"]').value,
     cap: e.querySelector('.bmax').textContent.trim(),
@@ -52,7 +53,7 @@ const r = await evaluate(`(async () => {
   // must show an infinity rather than a number somebody invented.
   history.pushState({},'','/weapons/Dual_Toxocyst/builder'); route(); await sleep(3000);
   arcanes = ['secondary_enervate']; markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
-  document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
+  history.pushState({},'','/weapons/Dual_Toxocyst/simulator'); route();
   await sleep(1500);
   const un = [...document.querySelectorAll('#sim-buffs .buff-card')]
     .map(e=>({ name:e.querySelector('.bn').textContent.trim(),
@@ -68,7 +69,7 @@ const r = await evaluate(`(async () => {
   history.pushState({},'','/weapons/Ocucor/builder'); route(); await sleep(3000);
   slots[0] = { mod:'sentient_surge', pol:slots[0].pol, rank:null };
   markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
-  document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
+  history.pushState({},'','/weapons/Ocucor/simulator'); route();
   await sleep(1500);
   const tend = [...document.querySelectorAll('#sim-buffs .buff-card')].map(e=>({
     name: e.querySelector('.bn').textContent.trim(),
@@ -106,9 +107,9 @@ const r = await evaluate(`(async () => {
     slots[i] = { mod:id, pol:slots[i].pol, rank:null };
   });
   markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
-  document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
+  history.pushState({},'','/weapons/Vectis_Prime/simulator'); route();
   await sleep(1500);
-  const card = () => [...document.querySelectorAll('#sim-buffs .buff-card')].map(e=>({
+  const card = () => [...document.querySelectorAll('#sim-buffs .buff-card:not(.off)')].map(e=>({
     name: e.querySelector('.bn').textContent.trim(),
     id: e.querySelector('input[data-f="stacks"]').dataset.b,
     stacks: e.querySelector('input[data-f="stacks"]').value,
@@ -168,7 +169,7 @@ const r = await evaluate(`(async () => {
   slots[0] = { mod:'hata_satya', pol:slots[0].pol, rank:null };
   slots[1] = { mod:'galvanized_chamber', pol:slots[1].pol, rank:null };
   markPresetDirty(); renderMods(); refreshPanel(); await sleep(2500);
-  document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
+  history.pushState({},'','/weapons/Soma_Prime/simulator'); route();
   await sleep(1500);
   const hsCard = [...document.querySelectorAll('#sim-buffs .buff-card')].map(e=>({
     id: e.querySelector('input[data-f="stacks"]').dataset.b,
@@ -194,7 +195,7 @@ const r = await evaluate(`(async () => {
   evoSel = {1:'soma_prime_evo1_incarnon_form',2:'soma_prime_fortress_salvo',
             3:'soma_prime_rapid_reinforcement',4:'soma_prime_fresh_havoc'};
   markPresetDirty(); renderMods(); renderEvo(); refreshPanel(); await sleep(3000);
-  document.querySelectorAll('.tab').forEach(x=>{ if(/Sim|模拟/i.test(x.textContent)) x.click(); });
+  history.pushState({},'','/weapons/Soma_Prime/simulator'); route();
   await sleep(1500);
   const havoc = [...document.querySelectorAll('#sim-buffs .buff-card')].map(e=>({
     id: e.querySelector('input[data-f="stacks"]').dataset.b,
@@ -271,8 +272,8 @@ check("...and it is drawn as a curve in the replay",
 check("...holding it at 405 multiplies the fight",
   r.dpsHeld > r.dpsCold * 1.1, `${r.dpsCold} -> ${r.dpsHeld}`);
 // THE GATE. "Building combo and benefiting from its multiplier requires being
-// scoped in" — a hip-fired fight has no counter, so it must offer no card.
-check("a sniper fired from the HIP is offered no counter at all",
+// scoped in" — a hip-fired fight has no active counter.
+check("a sniper fired from the HIP has no active counter",
   !r.hipCombo, JSON.stringify(r.hipCombo));
 
 // A CEILING THAT IS A NUMBER IS DRAWN AS A NUMBER.
@@ -326,16 +327,18 @@ check("...while an ordinary earned buff beside it still opens at zero",
 // could not be found. It is a scenario term: it belongs beside Infinite ammo,
 // and a ruler does not change shape between weapons.
 //
-// THE OCUCOR IS THE CASE, because it has ONE mode and, bare, no buff cards —
-// everything that could hide a control is true of it at once.
+// The bare Ocucor has one mode and no active buffs; trigger controls still
+// belong to its scenario.
 //
 // AND A GROUP IS PRESENTATION. The header ticks its members and stores nothing,
 // so ticking `killing` and then unticking `kill` has to leave the OTHER two —
 // which is the whole reason the vocabulary is the data's triggers and not a
 // coarse set: a weak-point kill is not a kill.
+await evaluate('localStorage.clear()');
+await app.load('/weapons/Ocucor/simulator',6500);
 const bev = await evaluate(`(async () => {
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-  history.pushState({},'','/weapons/Ocucor/builder'); route(); await sleep(3500);
+  history.pushState({},'','/weapons/Ocucor/simulator'); route(); await sleep(3500);
   const at = (box, k) => [...document.querySelectorAll('#'+box+' ['+k+']')].map(x => x.dataset[k === 'data-bev' ? 'bev' : 'bevg']);
   const out = {
     vocab: (META.buff_triggers || []).map(t => t.id),
@@ -344,8 +347,7 @@ const bev = await evaluate(`(async () => {
     headers: at('sim-limits', 'data-bevg'),
     lockedUnderOfficial: [...document.querySelectorAll('#sim-limits [data-bev]')].every(x => x.disabled),
   };
-  const dup = document.querySelector('#preset-bar-simulator-scenarios .pchip.ro.sel .pop.dup');
-  if (dup) { dup.click(); await sleep(1200); }
+  document.getElementById('sim-official-copy').click(); await sleep(1200);
   const grp = document.querySelector('#sim-limits [data-bevg="kill"]');
   if (grp) { grp.click(); await sleep(700); }
   out.afterGroup = (sim.buff_triggers_off || []).slice();
