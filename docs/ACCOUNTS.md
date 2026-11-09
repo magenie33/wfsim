@@ -136,10 +136,14 @@ Legacy `/people/` addresses resolve to the corresponding `/user/` address,
 preserving the profile id, filters and fragment. User names share `user-link`
 styling across the ranking and calculation records: no underline, an accent
 hover state and a visible keyboard focus ring.
-The default overview loads identity independently of the library database,
-then contribution totals. Board and optimization lists load only when selected,
-in twelve-candidate pages checked against actual publication. Their loading or
-failure does not hide the user card. Public visibility is resolved on every
+The profile loads identity independently of the library database, then contribution
+totals and the selected record list independently. Current verified board builds
+are the default, in twelve-candidate pages checked against actual publication.
+Their loading or failure does not hide the user card. Weapon filtering opens a
+separate search panel with the site's shared localized equipment matcher;
+typing filters local equipment and selecting requests that weapon's records.
+The owner sees private shortcuts and a verification label on their own accepted
+records. Visitors see neither. Public visibility is resolved on every
 request; a registered anonymous owner still sees their own profile.
 Unregistered contributors earn anonymous credit without a contribution profile.
 The first device claim includes its unclaimed history. Deleting an account
@@ -187,7 +191,8 @@ other back, and because nothing personal may reach the public
 
 | surface | what it is |
 | --- | --- |
-| top bar | ONE always-visible entry, including on phones: "Sign in", or an avatar whose menu holds settings, the reader's builds and sign-out |
+| top bar | ONE always-visible entry, including on phones: "Sign in", or an avatar opening an independent personal panel with the profile, verified calculations, settings, sync and sign-out |
+| `/user/me` | identity, cumulative contribution and currently verified calculations; personal shortcuts appear only to the owner |
 | `/login` | third parties in one click, then an email and a password; "Forgot password?" beside the password |
 | `/signup` | the same ways in; an email and a password, then a page for the mailed code — six boxes, a paste fills them, the last digit submits, a resend after a minute |
 | `/reset` | an email, then the code and a new password |

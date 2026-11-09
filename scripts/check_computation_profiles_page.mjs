@@ -21,21 +21,64 @@ async function until(expression) {
   for (let n = 0; n < 80; n++) { if (await app.evaluate(expression)) return; await app.sleep(200); }
   throw new Error("Timed out: " + expression + "\n" + JSON.stringify(await app.evaluate("({url:location.href,text:document.querySelector('#auth-page')?.innerText.slice(0,1500),library:recommendationLibrary&&{error:recommendationLibrary.error,loading:recommendationLibrary.loading},names:[...computationRows.values()].slice(0,3).map(r=>({identity:r.identity,html:r.html,at:r.at})),nodes:document.querySelectorAll('[data-computation]').length,selected:recommendationRequested()})")));
 }
+async function review(name) {
+  if (!process.env.WFSIM_REVIEW_DIR) return;
+  await mkdir(process.env.WFSIM_REVIEW_DIR, { recursive: true });
+  const shot = await app.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false });
+  await writeFile(process.env.WFSIM_REVIEW_DIR + "/" + name + ".png", Buffer.from(shot.result.data, "base64"));
+}
 try {
   await app.load("/people/me?weapon=laetum#profile", 600);
   await until("!!document.querySelector('.profile-heading h2')");
   check("Legacy profile addresses preserve query and fragment on the canonical user route", await app.evaluate("location.pathname === '/user/me' && location.search === '?weapon=laetum' && location.hash === '#profile'"), await app.evaluate("location.href"));
   check("Identity appears while contribution totals are withheld", await app.evaluate("document.querySelector('.profile-heading h2').innerText.includes('aaa') && computationProfile.statsLoading && computationProfile.value.profile.points == null"));
-  check("Opening a user profile does not fetch record lists", !requested.get("records") && !requested.get("full"));
+  check("The default profile loads verified builds independently of identity", await app.evaluate("computationProfile.tab === 'board' && computationProfile.recordsLoading") && !requested.get("full"));
   await release("summary");
   await until("computationProfile?.value && !computationProfile.statsLoading");
-  await app.evaluate("document.querySelector('.profile-tabs a[href*=board]').click()");
-  await until("computationProfile?.recordsLoading");
   check("The user card stays visible while records are withheld", await app.evaluate("document.querySelector('.profile-heading h2').innerText.includes('aaa') && document.querySelectorAll('.profile-builds .profile-build').length === 0"));
   await release("records"); await release("full");
   await until("computationProfile?.value && !computationProfile.loading && !computationProfile.statsLoading && !computationProfile.recordsLoading");
   check("Own profile lists a real currently published build", await app.evaluate("document.querySelectorAll('.profile-build').length === 1"));
   check("Lifetime signatures and points are distinct", await app.evaluate("document.querySelector('.profile-heading').innerText.includes('128') && document.querySelector('.profile-heading').innerText.includes('128,640')"));
+  check("Owners see their verification role on actual published calculations", await app.evaluate("document.querySelector('.profile-verification')?.innerText.includes(tr('You verified this calculation')) && !!document.querySelector('.profile-private a[href=\"/account/sync\"]')"));
+  await app.evaluate("document.querySelector('#account-toggle').click()");
+  check("The avatar opens an independent personal dialog instead of a menu", await app.evaluate("!document.querySelector('#acct-menu').hidden && document.querySelector('#account-panel').getAttribute('role') === 'dialog' && document.querySelector('#account-toggle').getAttribute('aria-haspopup') === 'dialog' && !document.querySelector('#acct-menu [role=menuitem]')"));
+  check("The personal panel leads directly to verified builds and account tools", await app.evaluate("!!document.querySelector('#acct-menu a[href=\"/user/me?kind=board\"]') && !!document.querySelector('#acct-menu a[href=\"/account/sync\"]') && !!document.querySelector('#acct-menu a[href=\"/account\"]')"));
+  await review("personal-panel-desktop");
+  await app.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  check("The personal panel stays inside the phone viewport", await app.evaluate("(() => {const r=document.querySelector('#account-panel').getBoundingClientRect();return r.left>=0&&r.right<=document.documentElement.clientWidth&&r.top>=0&&r.bottom<=innerHeight;})()"));
+  await review("personal-panel-mobile");
+  await app.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+  await app.evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Tab',shiftKey:true,bubbles:true}))");
+  check("Keyboard focus stays inside the personal panel", await app.evaluate("document.activeElement.matches('#acct-menu [data-acct=logout]')"));
+  await app.evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',isComposing:true,bubbles:true}))");
+  check("An IME Escape does not close the personal panel", await app.evaluate("!document.querySelector('#acct-menu').hidden"));
+  await app.evaluate("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
+  check("Closing the personal panel restores the avatar focus", await app.evaluate("document.querySelector('#acct-menu').hidden && document.activeElement.id === 'account-toggle' && !document.body.classList.contains('account-panel-open')"));
+  await app.evaluate("document.querySelector('.profile-filter').click()");
+  await until("computationProfile?.value && computationProfile.key === computationPageKey() && !computationProfile.recordsLoading && !computationProfile.statsLoading && !document.querySelector('.profile-filter')");
+  await app.evaluate("document.querySelector('[data-computation-weapon]').click()");
+  check("Weapon filtering opens an independent searchable dialog", await app.evaluate("!!document.querySelector('.profile-weapon-dialog[role=dialog]') && !document.querySelector('select[data-computation-weapon]') && document.activeElement.matches('.profile-weapon-dialog input')"));
+  await review("weapon-panel-desktop");
+  await app.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  check("The weapon panel keeps its input and results inside the phone viewport", await app.evaluate("(() => {const r=document.querySelector('.profile-weapon-dialog').getBoundingClientRect();return r.left>=0&&r.right<=document.documentElement.clientWidth&&r.top>=0&&r.bottom<=innerHeight&&document.documentElement.scrollWidth<=document.documentElement.clientWidth+1;})()"));
+  await review("weapon-panel-mobile");
+  await app.send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
+  const beforeSearch = requested.get("records") || 0;
+  await app.evaluate("(() => {const input=document.querySelector('.profile-weapon-dialog input');input.value='Laetum';input.dispatchEvent(new Event('input',{bubbles:true}));})()");
+  check("The weapon panel searches English names on the Chinese page", await app.evaluate("document.querySelectorAll('.profile-picker-results [data-profile-weapon]').length === 1 && !!document.querySelector('.profile-picker-results [data-profile-weapon=laetum]')"));
+  await app.evaluate("(() => {const input=document.querySelector('.profile-weapon-dialog input');input.value='uncommitted-pinyin';input.dispatchEvent(new InputEvent('input',{bubbles:true,isComposing:true}));input.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,isComposing:true}));})()");
+  check("Composing text neither redraws the results nor closes the search panel", await app.evaluate("!!document.querySelector('.profile-picker-results [data-profile-weapon=laetum]') && !!document.querySelector('.profile-weapon-dialog')"));
+  await app.evaluate("(() => {const input=document.querySelector('.profile-weapon-dialog input');input.value=weaponEntryName(weaponInfo('laetum'));input.dispatchEvent(new CompositionEvent('compositionend',{bubbles:true}));})()");
+  check("Committed Chinese names use the shared equipment matcher without API requests", (requested.get("records") || 0) === beforeSearch && await app.evaluate("document.querySelectorAll('.profile-picker-results [data-profile-weapon]').length === 1 && !!document.querySelector('.profile-picker-results [data-profile-weapon=laetum]')"));
+  await app.evaluate("document.querySelector('.profile-weapon-dialog input').dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true}))");
+  check("Search results are reachable with arrow keys", await app.evaluate("document.activeElement.matches('.profile-picker-results [data-profile-weapon=laetum]')"));
+  await app.evaluate("document.activeElement.click()");
+  await until("computationProfile?.value && computationProfile.key === computationPageKey() && !computationProfile.recordsLoading && !computationProfile.statsLoading");
+  check("Selecting a result requests that weapon and closes its panel", (requested.get("records") || 0) > beforeSearch && await app.evaluate("new URLSearchParams(location.search).get('weapon') === 'laetum' && !document.querySelector('.profile-weapon-window') && !document.body.classList.contains('profile-picker-open')"));
+  await app.evaluate("document.querySelector('.profile-filter').click()");
+  await until("computationProfile?.value && computationProfile.key === computationPageKey() && !computationProfile.recordsLoading && !computationProfile.statsLoading");
+  check("The active weapon filter clears in one click", await app.evaluate("!new URLSearchParams(location.search).has('weapon') && !document.querySelector('.profile-filter')"));
   check("Names link to stable contributor profiles", await app.evaluate("document.querySelectorAll('.computation-credits a[href^=\"/user/\"]').length === 2"));
   check("User names share an un-underlined link style", await app.evaluate("[...document.querySelectorAll('.computation-credits a')].every(a => a.classList.contains('user-link') && getComputedStyle(a).textDecorationLine === 'none')"));
   const point = await app.evaluate("(() => { const a = document.querySelector('.computation-credits a'); a.scrollIntoView({block:'center'}); const r=a.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()");
@@ -65,6 +108,7 @@ try {
   await app.load("/user/me?kind=board", 600);
   await until("computationProfile?.value && !computationProfile.loading && !computationProfile.statsLoading && !computationProfile.recordsLoading");
   check("Anonymous owners retain their current builds and lifetime credit", await app.evaluate("computationProfile.value.profile.named === false && computationProfile.value.profile.signatures === 128 && document.querySelectorAll('.profile-build').length === 1"));
+  check("Anonymous owners still recognize their own verification", await app.evaluate("!!document.querySelector('.profile-verification')"));
   check("Anonymous calculations expose no link to their owner's profile", await app.evaluate("!document.querySelector('.computation-credits a[href=\"/user/" + fixture.profileIds.aaa + "\"]')"));
   await fixture.env.ACCOUNTS.run("UPDATE contribution_choice SET named=1 WHERE account=?", fixture.account);
   await app.load("/weapons/Laetum?view=library&bench=" + fixture.row.benchmark + "&computed_build=" + fixture.identity, 2000);
@@ -80,22 +124,26 @@ try {
   check("Restored publication restores the current signature", await app.evaluate("document.querySelectorAll('.profile-build').length === 1"));
   await app.send("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await app.sleep(300);
-  check("The profile fits a phone viewport", await app.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"));
+  check("The profile fits a phone viewport", await app.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1"));
   if (process.env.WFSIM_REVIEW_DIR) {
     await mkdir(process.env.WFSIM_REVIEW_DIR, { recursive: true });
     const shot = await app.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true });
     await writeFile(process.env.WFSIM_REVIEW_DIR + "/profile-mobile.png", Buffer.from(shot.result.data, "base64"));
   }
   blocked.add("summary");
-  const recordCalls = requested.get("records") || 0;
+  blocked.add("records");
   await app.evaluate("(() => { const row=document.createElement('div'); row.id='profile-ranking-entry-check'; row.className='rank-row'; row.innerHTML=contributorRowInner({key:'profile-fixture',name:'bbb',profile:" + JSON.stringify(fixture.profileIds.bbb) + ",contributor_rank:computationProfile.value.profile.contributor_rank},1,1); document.querySelector('#auth-page').append(row); })()");
   check("The ranking renderer uses the shared canonical user link", await app.evaluate("(() => { const a=document.querySelector('#profile-ranking-entry-check a'); return a.getAttribute('href') === '/user/" + fixture.profileIds.bbb + "' && a.classList.contains('user-link') && getComputedStyle(a).textDecorationLine === 'none'; })()"));
   await app.evaluate("document.querySelector('#profile-ranking-entry-check a').click()");
   await until("document.querySelector('.profile-heading h2')?.innerText.includes('bbb')");
-  check("Opening another user from a ranking row shows identity without loading their record lists", (requested.get("records") || 0) === recordCalls
-    && await app.evaluate("location.pathname === '/user/" + fixture.profileIds.bbb + "' && computationProfile.statsLoading && !computationProfile.value.profile.you"));
-  await release("summary");
-  await until("!computationProfile.statsLoading");
+  check("Another user's identity appears before their record list", await app.evaluate("location.pathname === '/user/" + fixture.profileIds.bbb + "' && computationProfile.statsLoading && computationProfile.recordsLoading && !computationProfile.value.profile.you"));
+  check("Public profiles expose neither personal tools nor the owner's verification label", await app.evaluate("!document.querySelector('.profile-private') && !document.querySelector('.profile-verification')"));
+  await release("summary"); await release("records");
+  await until("!computationProfile.statsLoading && !computationProfile.recordsLoading");
+  await app.send("Emulation.setDeviceMetricsOverride", { width: 360, height: 800, deviceScaleFactor: 1, mobile: true });
+  await app.evaluate("accountState={providers:['email'],account:null,loaded:true};renderAccountEntry()");
+  check("Public profiles fit a narrow phone with the real signed-out entry", await app.evaluate("document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1 && !!document.querySelector('#account .signin-btn')"));
+  check("The phone profile keeps a usable global search box", await app.evaluate("document.querySelector('.wsearch').getBoundingClientRect().width >= 120"));
   check("Profile request interception completed cleanly", interceptionErrors.length === 0);
   console.log(`\n${passed} computation profile page checks passed`);
 } finally {

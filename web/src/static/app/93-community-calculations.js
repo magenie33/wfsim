@@ -108,6 +108,7 @@ const computationRows = new Map();
 const computationTokens = new WeakMap();
 let computationSequence = 0, computationTimer = null, computationBusy = false;
 let computationProfile = null;
+let profileWeaponPicker = null;
 const computationMinute = value => String(value || "").slice(0, 16);
 const computationWitnessHtml = witnesses => witnesses.map(w => w.official
   ? `<span>${aT("Official compute")}${w.name ? ` · ${escHtml(w.name)}` : ""}</span>`
@@ -254,7 +255,7 @@ function computationPage(main, kind) {
     const owner = location.pathname.split("/").filter(Boolean).at(-1) + ":" + (accountState.account?.id || "");
     const prior = kind === "profile" && computationProfile?.owner === owner ? computationProfile.value : null;
     const selected = new URLSearchParams(location.search).get("kind");
-    const tab = ["board", "optimization"].includes(selected) ? selected : "overview";
+    const tab = selected === "optimization" ? selected : "board";
     computationProfile = { key, owner, tab, loading: true, statsLoading: false, recordsLoading: false, rows: [],
       value: prior ? { ...prior, kind: tab } : null, error: "", statsError: "", recordsError: "", next: null, closed: false };
     loadComputationProfile(computationProfile, kind);
@@ -275,43 +276,46 @@ function computationPage(main, kind) {
   }
   const p = value.profile, query = new URLSearchParams(location.search), tab = state.tab;
   const href = selected => { const q = new URLSearchParams(query); q.delete("before");
-    if (selected === "overview") { q.delete("kind"); q.delete("weapon"); } else q.set("kind", selected);
+    q.set("kind", selected);
     return location.pathname + (q.size ? "?" + q : ""); };
   const total = field => p[field] == null ? "…" : Number(p[field]).toLocaleString(accountLocale());
   const stats = state.statsError ? `<p role="status">${aT(state.statsError)} <button class="ghost-btn small" data-computation-retry="summary">${aT("Retry")}</button></p>`
     : state.statsLoading ? `<p class="muted profile-status" role="status">${aT("Loading contribution…")}</p>` : "";
   const records = state.recordsError ? `<p role="status">${aT(state.recordsError)} <button class="ghost-btn small" data-computation-retry="records">${aT("Retry")}</button></p>`
     : state.recordsLoading ? `<p class="muted profile-status" role="status">${aT("Loading calculation records…")}</p>` : "";
-  const weapons = (META.weapons || []).filter(w => !w.hidden).slice().sort((a, b) => weaponEntryName(a).localeCompare(weaponEntryName(b)));
-  const body = tab === "overview" ? `<div class="profile-overview">
-    <a class="profile-build" href="${escHtml(href("board"))}"><h3>${aT("Current board builds")}</h3><span class="muted">${aT("View")} →</span></a>
-    <a class="profile-build" href="${escHtml(href("optimization"))}"><h3>${aT("Optimizations · last 14 days")}</h3><span class="muted">${aT("View")} →</span></a></div>`
-    : `<div class="profile-tools"><label>${aT("Weapon")} <select data-computation-weapon><option value="">${aT("All weapons")}</option>${weapons.map(w => `<option value="${escHtml(w.id)}"${query.get("weapon") === w.id ? " selected" : ""}>${escHtml(weaponEntryName(w))}</option>`).join("")}</select></label>
+  const weapon = (META.weapons || []).find(item => item.id === query.get("weapon"));
+  const body = `<div class="profile-tools"><button class="profile-search" data-computation-weapon aria-haspopup="dialog" aria-expanded="${!!profileWeaponPicker}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+      <span>${escHtml(weapon ? weaponEntryName(weapon) : tr("Search weapons…"))}</span><span class="muted">${aT("Weapon")}</span></button>
       <button class="ghost-btn small" data-computation-retry="records">${aT("Refresh")}</button><span class="muted">${escHtml(trF("Showing {n}", { n: state.rows.length }))}</span></div>
-    <div class="profile-builds" aria-busy="${state.recordsLoading}">${state.rows.map(entry => tab === "board" ? computationBuildHtml(entry) : computationOptimizationHtml(entry)).join("")}</div>
+    ${weapon ? `<button class="ghost-btn small profile-filter" data-profile-weapon="" aria-label="${aT("All weapons")}">${escHtml(weaponEntryName(weapon))} <span aria-hidden="true">×</span></button>` : ""}
+    <div class="profile-builds" aria-busy="${state.recordsLoading}">${state.rows.map(entry => tab === "board" ? computationBuildHtml(entry, p.you) : computationOptimizationHtml(entry, p.you)).join("")}</div>
     ${!state.recordsLoading && !state.rows.length && !state.recordsError && !state.next ? `<p class="muted">${aT("No calculation records here yet.")}</p>` : ""}${records}
     ${state.next && !state.recordsLoading ? `<button class="ghost-btn" data-computation-more>${aT("Load more")}</button>` : ""}`;
   main.innerHTML = `<div class="contributor-profile"><header class="profile-heading"><span class="avatar">${escHtml((p.name || "?").slice(0, 1).toUpperCase())}</span>
-    <div><h2>${escHtml(p.name)} ${p.contributor_rank == null ? "" : contributorRankBadge(p.contributor_rank)}</h2><span class="muted">@${escHtml(p.username || "")}</span></div>
+    <div><span class="profile-eyebrow">${aT(p.you ? "My profile" : "User profile")}</span><h2>${escHtml(p.name)} ${p.contributor_rank == null ? "" : contributorRankBadge(p.contributor_rank)}</h2><span class="muted">@${escHtml(p.username || "")}</span></div>
     <div class="profile-totals"><b>${total("signatures")}</b><span>${aT("Lifetime signatures")}</span></div>
     <div class="profile-totals"><b>${total("points")}</b><span>${aT("Contribution points")}</span></div></header>
-    ${p.you ? `<p class="fine">${aT(p.named ? "Your name is public on calculations and the ranking." : "You are anonymous. Your calculation credit is kept.")} <a href="/contributors">${aT("Name visibility")}</a></p>` : ""}${stats}
-    <nav class="profile-tabs" aria-label="${aT("User profile")}"><a href="${escHtml(href("overview"))}" ${tab === "overview" ? 'aria-current="page"' : ""}>${aT("Overview")}</a>
-      <a href="${escHtml(href("board"))}" ${tab === "board" ? 'aria-current="page"' : ""}>${aT("Current board builds")}</a>
+    ${p.you ? `<nav class="profile-private" aria-label="${aT("Personal center")}"><a class="ghost-btn small" href="/account#profile">${aT("Edit profile")}</a><a class="ghost-btn small" href="/account/sync">${aT("My presets")}</a><a class="ghost-btn small" href="/account/recommendations">${aT("My recommendations")}</a><a class="ghost-btn small" href="/contributors">${aT("Name visibility")}</a></nav>
+      <p class="fine">${aT(p.named ? "Your name is public on calculations and the ranking." : "You are anonymous. Your calculation credit is kept.")}</p>` : ""}${stats}
+    <h2 class="profile-section-title">${aT("Verified calculations")}</h2>
+    <nav class="profile-tabs" aria-label="${aT("Verified calculations")}"><a href="${escHtml(href("board"))}" ${tab === "board" ? 'aria-current="page"' : ""}>${aT("Verified builds")}</a>
       <a href="${escHtml(href("optimization"))}" ${tab === "optimization" ? 'aria-current="page"' : ""}>${aT("Optimizations · last 14 days")}</a></nav>${body}</div>`;
 }
-function computationBuildHtml(entry) {
+const profileVerificationHtml = own => own ? `<p class="profile-verification"><span aria-hidden="true">✓</span> ${aT("You verified this calculation")}</p>` : "";
+function computationBuildHtml(entry, own = false) {
   const w = weaponInfo(entry.weapon);
   if (!w) return "";
-  return `<article class="profile-build"><h3><a href="${escHtml(computationBuildLink(entry))}">${escHtml(weaponEntryName(w))}</a><span>${escHtml(String(entry.score.toFixed(4)))}</span></h3>
-    <p class="fine">${escHtml(benchLabelOr(entry.ruler, entry.ruler))} · ${escHtml(modeLabel(w, entry.mode))} · ${escHtml(measuredText(entry.finished_at, pageSay().zone))} · ${aT("engine")} ${escHtml(entry.measured_by.replace(/^verified:/, ""))}</p>
+  return `<article class="profile-build">${profileVerificationHtml(own)}<h3>${imgTag(IMG(w.image), "mod")}<a href="${escHtml(computationBuildLink(entry))}">${escHtml(weaponEntryName(w))}</a><span>${escHtml(String(entry.score.toFixed(4)))}</span></h3>
+    <p class="fine">${escHtml(benchLabelOr(entry.ruler, entry.ruler))} · ${escHtml(modeLabel(w, entry.mode))}</p>
     <div class="computation-credits">${computationWitnessHtml(entry.witnesses)}</div>${recommendationHistoryCard(entry)}
+    <details class="profile-calculation-info"><summary>${aT("Calculation details")}</summary><p class="fine">${escHtml(measuredText(entry.finished_at, pageSay().zone))} · ${aT("engine")} ${escHtml(entry.measured_by.replace(/^verified:/, ""))}</p></details>
     <a class="ghost-btn small" href="${escHtml(computationBuildLink(entry))}">${aT("View build")}</a></article>`;
 }
 const computationBuildLink = entry => weaponPath(entry.weapon) + "?" + new URLSearchParams({ view: "library", bench: entry.ruler, computed_build: entry.identity });
-function computationOptimizationHtml(entry) {
+function computationOptimizationHtml(entry, own = false) {
   const w = weaponInfo(entry.weapon);
-  return `<article class="profile-build"><h3><a href="/calculations/${entry.question}">${aT("Optimization")}${w ? ` · ${escHtml(weaponEntryName(w))}` : ""}</a></h3>
+  return `<article class="profile-build">${profileVerificationHtml(own)}<h3><a href="/calculations/${entry.question}">${aT("Optimization")}${w ? ` · ${escHtml(weaponEntryName(w))}` : ""}</a></h3>
     <p class="fine">${escHtml(measuredText(entry.completed_at, pageSay().zone))} · ${aT("engine")} ${escHtml(entry.engine)}</p>
     <div class="computation-credits">${computationWitnessHtml(entry.witnesses)}</div></article>`;
 }
@@ -360,15 +364,74 @@ async function loadComputationProfile(state, kind, more = false) {
     if (state !== computationProfile) return;
     if (kind === "calculation") { state.value = value; return; }
     state.value = { profile: { ...state.value?.profile, ...value.profile }, kind: state.tab };
-    state.loading = false; state.statsLoading = true; state.recordsLoading = state.tab !== "overview";
+    state.loading = false; state.statsLoading = true; state.recordsLoading = true;
     renderComputationState(state);
-    await Promise.all([loadProfileSummary(state), ...(state.tab !== "overview" ? [loadProfileRecords(state)] : [])]);
+    await Promise.all([loadProfileSummary(state), loadProfileRecords(state)]);
   } catch (error) {
     if (state !== computationProfile) return;
     state.value = null; state.error = error.message;
   } finally { state.loading = false; renderComputationState(state, kind); }
 }
+function setProfileWeapon(id) {
+  closeProfileWeaponPicker(false);
+  const query = new URLSearchParams(location.search); query.delete("before");
+  if (id) query.set("weapon", id); else query.delete("weapon");
+  nav(location.pathname + (query.size ? "?" + query : "") + location.hash);
+}
+function closeProfileWeaponPicker(restore = true) {
+  if (!profileWeaponPicker) return;
+  profileWeaponPicker.remove(); profileWeaponPicker = null;
+  document.body.classList.remove("profile-picker-open");
+  const button = document.querySelector("[data-computation-weapon]");
+  button?.setAttribute("aria-expanded", "false");
+  if (restore) button?.focus({ preventScroll: true });
+}
+function openProfileWeaponPicker() {
+  if (profileWeaponPicker || authKindOf(location.pathname) !== "profile") return;
+  setAccountPanel(false, false); closePopovers();
+  const overlay = document.createElement("div"); overlay.className = "profile-weapon-window";
+  overlay.innerHTML = `<section class="profile-weapon-dialog" role="dialog" aria-modal="true" aria-labelledby="profile-weapon-title">
+    <header class="jump-head"><h2 id="profile-weapon-title">${aT("Search verified calculations")}</h2><button class="ghost-btn small" data-profile-picker-close>${aT("Close")} · Esc</button></header>
+    <div class="profile-picker-tools"><div class="addbar"><input type="search" aria-label="${aT("Search weapons…")}" placeholder="${aT("Search weapons…")}"></div><button class="ghost-btn small" data-profile-weapon="">${aT("All weapons")}</button><span class="muted" role="status" data-profile-picker-count></span></div>
+    <div class="combo-menu scroll-thin profile-picker-results"></div></section>`;
+  profileWeaponPicker = overlay; document.body.append(overlay); document.body.classList.add("profile-picker-open");
+  document.querySelector("[data-computation-weapon]")?.setAttribute("aria-expanded", "true");
+  const input = overlay.querySelector("input"), results = overlay.querySelector(".combo-menu");
+  const selected = new URLSearchParams(location.search).get("weapon");
+  const weapons = (META.weapons || []).filter(w => !w.hidden).slice().sort((a, b) => weaponEntryName(a).localeCompare(weaponEntryName(b), LANG));
+  const render = () => {
+    const query = input.value.trim().toLocaleLowerCase(), matches = weapons.filter(w => searchHit(w, query));
+    overlay.querySelector("[data-profile-picker-count]").textContent = trF("{n} results", { n: matches.length });
+    results.innerHTML = matches.map(w => `<button type="button" class="opt" data-profile-weapon="${escHtml(w.id)}" aria-pressed="${w.id === selected}">
+      ${imgTag(IMG(w.image), "mod")}<span class="info"><span class="mn">${escHtml(weaponEntryName(w))}</span><span class="me">${escHtml(tr(w.subtype || w.category || ""))}</span></span>${w.id === selected ? '<span aria-hidden="true">✓</span>' : ""}</button>`).join("") || `<p class="sim-empty">${aT("No matches")}</p>`;
+  };
+  onTyped(input, render);
+  overlay.addEventListener("click", event => {
+    if (event.target === overlay || event.target.closest("[data-profile-picker-close]")) closeProfileWeaponPicker();
+    const pick = event.target.closest("[data-profile-weapon]");
+    if (pick) setProfileWeapon(pick.dataset.profileWeapon);
+  });
+  overlay.addEventListener("keydown", event => {
+    if (imeComposing(event)) return;
+    if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeProfileWeaponPicker(); return; }
+    const rows = [...results.querySelectorAll("button")];
+    if (["ArrowDown", "ArrowUp"].includes(event.key) && (event.target === input || rows.includes(event.target))) {
+      event.preventDefault(); event.stopPropagation();
+      const index = rows.indexOf(event.target), next = index + (event.key === "ArrowDown" ? 1 : -1);
+      (next < 0 ? input : rows[Math.min(next, rows.length - 1)])?.focus(); return;
+    }
+    if (event.key === "Enter" && event.target === input) { event.preventDefault(); rows[0]?.click(); }
+    if (event.key !== "Tab") return;
+    const nodes = [...overlay.querySelectorAll("button,input")].filter(node => !node.disabled && node.getClientRects().length);
+    if (event.shiftKey && document.activeElement === nodes[0]) { event.preventDefault(); nodes.at(-1)?.focus(); }
+    else if (!event.shiftKey && document.activeElement === nodes.at(-1)) { event.preventDefault(); nodes[0]?.focus(); }
+  }, true);
+  render(); input.focus({ preventScroll: true });
+}
 document.addEventListener("click", event => {
+  if (event.target.closest("[data-computation-weapon]")) openProfileWeaponPicker();
+  const weapon = event.target.closest(".profile-filter[data-profile-weapon]");
+  if (weapon) setProfileWeapon(weapon.dataset.profileWeapon);
   const retry = event.target.closest("[data-computation-retry]");
   if (retry) {
     if (retry.dataset.computationRetry && computationProfile?.value) {
@@ -380,10 +443,4 @@ document.addEventListener("click", event => {
   if (event.target.closest("[data-computation-more]") && computationProfile && !computationProfile.recordsLoading) {
     loadComputationProfile(computationProfile, "profile", true); renderAuthPage("profile");
   }
-});
-document.addEventListener("change", event => {
-  if (!event.target.matches("[data-computation-weapon]")) return;
-  const query = new URLSearchParams(location.search); query.delete("before");
-  if (event.target.value) query.set("weapon", event.target.value); else query.delete("weapon");
-  nav(location.pathname + "?" + query);
 });
