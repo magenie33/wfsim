@@ -362,17 +362,21 @@ function simulateIntake(steps, intakeResult, { wired = true, rescore = "", cance
 for (const [name, job] of [["queue.yml", "take-in"], ["scores.yml", "submissions"]]) {
   const lines = jobLines(workflowText(name), job), steps = workflowSteps(lines);
   const intake = steps.find((text) => fieldOf(text, "name") === "take in what has arrived") ?? "";
-  const inventorySteps = steps.filter((text) => codeOf(text).includes("bash scripts/reconcile_queue.sh"));
+  const prepare = name === "queue.yml" ? "bash scripts/reconcile_queue.sh" : "node scripts/fetch_score_inputs.mjs";
+  const inventorySteps = steps.filter((text) => codeOf(text).includes(prepare));
+  if (name === "scores.yml") check(!lines.some(line => !line.trim().startsWith("#")
+    && /reconcile_queue|fetch_library|fetch_queue.sh queue|prepare_inventory_memory/.test(line)),
+    "scoring has no full library, inventory or queue read prerequisite");
   const intakeMinutes = Number(fieldOf(intake, "timeout-minutes"));
   check(fieldOf(intake, "id") === "intake" && fieldOf(intake, "continue-on-error") === "true",
     `${name} retains the intake outcome while continuing reconciliation`);
   check(Number.isInteger(intakeMinutes) && intakeMinutes > 0 && intakeMinutes <= 30,
     `${name} bounds intake before it can consume the inventory refresh budget`);
   check(inventorySteps.length === 1 && steps.indexOf(inventorySteps[0]) > steps.indexOf(intake),
-    `${name} reconciles exactly once after intake`);
+    `${name} prepares its inputs exactly once after intake`);
   for (const outcome of ["success", "failure", "timeout"]) {
     const result = simulateIntake(steps, outcome);
-    check(result.ran.includes(inventorySteps[0]), `${name} refreshes complete demand after intake ${outcome}`);
+    check(result.ran.includes(inventorySteps[0]), `${name} prepares its inputs after intake ${outcome}`);
     check(result.failed === (outcome !== "success"), `${name} reports intake ${outcome} after reconciliation`);
     if (outcome !== "success") check(result.sentinelRan, `${name} reaches its final failure sentinel after intake ${outcome}`);
   }
@@ -390,7 +394,7 @@ for (const [name, job] of [["queue.yml", "take-in"], ["scores.yml", "submissions
   if (name === "scores.yml") {
     const minutes = Number(lines.find((line) => /^ {4}timeout-minutes:/.test(line))?.split(":")[1]);
     check(minutes >= intakeMinutes + 60 && minutes * 60000 < INVENTORY_MAX_MS,
-      "scoring preparation leaves inventory time after intake within its freshness limit");
+      "scoring preparation retains its bounded intake and total timeout");
   }
 }
 

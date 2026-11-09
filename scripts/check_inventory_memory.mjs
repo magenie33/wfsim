@@ -98,7 +98,7 @@ const activated = result => result.calls.some(call => call[0] === 'swapon' && !c
 const refusedBeforeAllocation = result => result.status !== 0 && !allocated(result) && !activated(result);
 
 try {
-  const wired = [['queue.yml', 'take-in'], ['scores.yml', 'submissions']].map(([name, job]) => {
+  const wired = [['queue.yml', 'take-in']].map(([name, job]) => {
     const lines = readFileSync(join(WORKFLOWS, name), 'utf8').split('\n');
     const at = lines.indexOf(`  ${job}:`), next = lines.findIndex((line, i) => i > at && /^ {2}[A-Za-z0-9_-]+:/.test(line));
     const body = lines.slice(at, next < 0 ? lines.length : next).join('\n');
@@ -112,15 +112,15 @@ try {
       && steps.findIndex(step => step.includes('id: intake')) > index
       && steps.findIndex(step => step.includes('bash scripts/reconcile_queue.sh')) > index;
   });
-  check(wired.every(Boolean), 'queue and scores prepare hosted memory after wiring and before intake and complete capture');
-  const afterSetup = ['queue.yml', 'scores.yml'].map(name => {
+  check(wired.every(Boolean), 'full queue maintenance prepares hosted memory before its complete capture');
+  const afterSetup = ['queue.yml'].map(name => {
     const text = readFileSync(join(WORKFLOWS, name), 'utf8'), steps = text.split(/(?=^ {6}- )/m);
     const scan = steps.findIndex(step => step.includes('bash scripts/reconcile_queue.sh'));
     const guard = steps.findIndex(step => step.includes('- name: check complete inventory scratch'));
     return guard > 0 && guard === scan - 1 && steps[guard].includes('run: bash scripts/prepare_inventory_memory.sh --check')
       && steps.every((step, index) => !step.includes('cargo build') && !step.includes('actions/cache@') || index < guard || index > scan);
   });
-  check(afterSetup.every(Boolean), 'both full scans recheck scratch after cached builds and intake immediately before capture');
+  check(afterSetup.every(Boolean), 'full queue maintenance rechecks scratch immediately before capture');
   const success = run();
   const checked = recheck(success);
   check(checked.status === 0 && checked.calls.filter(call => call[0] === 'fallocate').length === 1

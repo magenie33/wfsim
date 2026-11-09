@@ -19,6 +19,25 @@ pub(crate) struct Who {
     pub(crate) riven: bool,
 }
 
+#[derive(Debug, PartialEq)]
+pub(crate) enum Earning {
+    Eligible,
+    Parked,
+    Waiting,
+}
+
+/// The admission decision after indexed aggregates resolve the scene and corner.
+pub(crate) fn earning(share: Option<f64>, default: Option<Option<f64>>, owed: bool) -> Earning {
+    let keeps = wfsim_engine::data::boards::keeps_earning;
+    if !keeps(share) || default.is_some_and(|value| !value.is_some_and(|s| keeps(Some(s)))) {
+        Earning::Parked
+    } else if share.is_none() && owed {
+        Earning::Waiting
+    } else {
+        Earning::Eligible
+    }
+}
+
 /// THE ENTRY LINE OVER THE ROWS THIS RULER MEASURED, and which builds it left
 /// with none. `kept` comes back holding only rows that clear it.
 ///
@@ -100,10 +119,6 @@ pub(crate) fn park_under_entry_line(
     let mut parked: std::collections::BTreeSet<String> = Default::default();
     pending.retain(|(id, _mode)| {
         let share = share_of(id.as_str());
-        if !wfsim_engine::data::boards::keeps_earning(share) {
-            parked.insert(id.clone());
-            return false;
-        }
         // AN ALTERNATIVE CORNER WAITS FOR ITS DEFAULT TO EARN ITS PLACE.
         //
         // A riven's shape is several builds and they differ only in which end
@@ -124,14 +139,8 @@ pub(crate) fn park_under_entry_line(
         // the corners were (the library held the winner and nothing else) has
         // no sibling to wait for, and parking it would retire a published row
         // by never measuring it again.
-        if let Some(def) = corner_of.get(id.as_str()).filter(|d| who.contains_key(d.as_str())) {
-            let cleared = share_of(def.as_str())
-                .is_some_and(|s| wfsim_engine::data::boards::keeps_earning(Some(s)));
-            if !cleared {
-                parked.insert(id.clone());
-                return false;
-            }
-        }
+        let default = corner_of.get(id.as_str()).filter(|d| who.contains_key(d.as_str()))
+            .map(|def| share_of(def.as_str()));
         // A BUILD WITH A FACT SOMEWHERE IS OWED EVERY ROW IT LACKS. One with
         // none is owed ONE, and if a row is already owed for it then that row
         // IS the one — intake asks for the fight its submitter ran, so the
@@ -141,7 +150,11 @@ pub(crate) fn park_under_entry_line(
         // a build whose arrival row was spent, dropped with its batch, or never
         // written is a build nobody would ever measure, and that is the failure
         // the reconciliation exists to make impossible.
-        share.is_some() || !already_owed.contains(id.as_str())
+        match earning(share, default, already_owed.contains(id.as_str())) {
+            Earning::Eligible => true,
+            Earning::Waiting => false,
+            Earning::Parked => { parked.insert(id.clone()); false }
+        }
     });
     parked
 }

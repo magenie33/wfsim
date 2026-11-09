@@ -37,6 +37,7 @@ use super::publish::{page_row, published, Row, RowRiven, INDEX_STEM};
 use super::state::{record_states, BOARD_STATE};
 
 mod inventory;
+pub(super) mod operator;
 
 /// One ruler of the roster and the directory its rows are written under (`""`
 /// is the board's own; a scene is `Benchmark::cell_dir`).
