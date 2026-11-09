@@ -304,6 +304,9 @@ input's size anyway.
   is for the checks that walk the whole catalog.
 - **Rare blocks of `AttackSpec` are boxed.** A handful of weapons fill them,
   and inline they put kilobytes on every one of two thousand entries.
+- Repeated weapon admissions borrow their immutable reason text. The English,
+  structured text and template retain the same fields without one copy per
+  form; parameterized and verbatim admissions retain their rendered values.
 - **Package melee inputs share immutable rows.** Weapons using the same tree
   and context retain one compiled sequence. A build copies its selected inputs
   before resolving weapon-specific charge, so one weapon cannot alter another.

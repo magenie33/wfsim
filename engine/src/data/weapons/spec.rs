@@ -1,4 +1,5 @@
 use super::*;
+use std::borrow::Cow;
 
 /// A perk definition — either a `data/perks/*.yaml` entry or an inline
 /// block in a weapon's `perks:` list. Both modes register the perk in the
@@ -142,7 +143,7 @@ pub struct WeaponSpec {
     /// value rather than a comment — the same exception `enemies/` already
     /// carries, for the same reason: it is shown to a reader verbatim.
     #[serde(default)]
-    pub unmodeled: Vec<String>,
+    pub unmodeled: Vec<Cow<'static, str>>,
     /// WHAT THIS ENTRY DOES THAT NOBODY CAN EXPLAIN, and the engine reproduces
     /// anyway — the weapon's half of the `live_bugs:` an arcane, an ability and
     /// an enemy already carry.
@@ -553,11 +554,11 @@ pub(super) fn one() -> f64 {
 /// sentence once rather than once per set of numbers.
 #[derive(Debug, Clone, Deserialize)]
 pub struct UnmodelledPart {
-    pub text: String,
+    pub text: Cow<'static, str>,
     #[serde(default)]
     pub reason: Option<String>,
     #[serde(default)]
-    pub template: Option<String>,
+    pub template: Option<Cow<'static, str>>,
     #[serde(default)]
     pub params: BTreeMap<String, String>,
 }

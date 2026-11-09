@@ -348,7 +348,7 @@ mod tests {
                     // A REASON wants its template; prose wants itself.
                     match part.template.as_deref() {
                         Some(tpl) => want.insert((w.id.as_str(), tpl.to_string())),
-                        None => want.insert((w.id.as_str(), part.text.clone())),
+                        None => want.insert((w.id.as_str(), part.text.to_string())),
                     };
                 }
             }

@@ -99,7 +99,7 @@ pub(crate) struct WeaponInfo {
     /// WHAT THIS WEAPON'S ENTRY DOES NOT MODEL, one sentence per gap, straight
     /// from the weapon file. Shown to the reader — a number that omits
     /// something owes them the sentence, not just the omission.
-    pub(crate) unmodeled: Vec<String>,
+    pub(crate) unmodeled: Vec<std::borrow::Cow<'static, str>>,
     /// WHAT THIS ENTRY DOES THAT NOBODY CAN EXPLAIN and the engine reproduces
     /// anyway. The OPPOSITE of `unmodeled` beside it: that says the number is a
     /// floor, this says the number is right and the reason is unknown — see
