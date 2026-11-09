@@ -9,7 +9,8 @@ export function computationWrites(db, q, witnesses, engine, at) {
   if (!["optimize", "optimize_report", "simulate_report"].includes(q.verb)) return writes;
   const completedAt = witnesses.map(w => w.completed_at).sort().at(-1) || at;
   const request = typeof q.request === "string" ? JSON.parse(q.request) : q.request;
-  const weapon = /^[a-z0-9_]{1,100}$/.test(request?.weapon || "") ? request.weapon : null;
+  const weaponId = request?.weapon || request?.request?.weapon || request?.context?.weapon;
+  const weapon = /^[a-z0-9_]{1,100}$/.test(weaponId || "") ? weaponId : null;
   writes.push(db.prepare(`INSERT INTO computation_records (question,kind,engine,weapon,completed_at,expires_at)
     SELECT ?1::text,?5::text,?3::text,?6::text,?8::text,?7::text FROM questions WHERE ${guard}
     ON CONFLICT (question) DO UPDATE SET engine=excluded.engine,weapon=excluded.weapon,

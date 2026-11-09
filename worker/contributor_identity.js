@@ -1,11 +1,42 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Public identity is stable; names and visibility are resolved from current account state.
 import { shownName } from "./names.js";
+import { cloudMarks } from "./cloud.js";
+
+const marksCache = new Map(), MARKS_KEEP_MS = 10 * 60_000;
+export async function contributorMarks(env, people, wait = false) {
+  const named = [...people.values()].filter(person => person.named && person.label && person.label !== "none");
+  const key = person => `${person.id}:${person.label}:${person.chosen_at || ""}`;
+  const marks = {}, missing = [];
+  for (const person of named) {
+    const cached = marksCache.get(key(person));
+    if (cached && Date.now() - cached.at < MARKS_KEEP_MS) { if (cached.mark) marks[person.id] = cached.mark; }
+    else missing.push(person);
+  }
+  if (!missing.length) return marks;
+  const asking = (async () => {
+    const parts = [];
+    for (let at = 0; at < missing.length; at += 100) parts.push(await cloudMarks(env, missing.slice(at, at + 100).map(person => person.id)));
+    if (parts.some(part => part === null)) return null;
+    const found = Object.assign({}, ...parts);
+    if (marksCache.size > 20_000) marksCache.clear();
+    for (const person of missing) {
+      const mark = found[person.id]?.kind === person.label ? found[person.id] : null;
+      marksCache.set(key(person), { at: Date.now(), mark });
+      if (mark) marks[person.id] = mark;
+    }
+    return marks;
+  })();
+  if (wait) return asking;
+  let timer;
+  const timeout = new Promise(resolve => { timer = setTimeout(() => resolve(marks), 4000); timer.unref?.(); });
+  try { return await Promise.race([asking, timeout]); } finally { clearTimeout(timer); }
+}
 
 export async function contributorAccounts(env, ids, byProfile = false) {
   if (!env.ACCOUNTS || !ids.length) return new Map();
   const wanted = JSON.stringify([...new Set(ids)]);
-  const { results } = await env.ACCOUNTS.prepare(`SELECT a.id,a.profile_id,a.username,a.display_name,c.named,
+  const { results } = await env.ACCOUNTS.prepare(`SELECT a.id,a.profile_id,a.username,a.display_name,c.named,c.label,c.chosen_at,
     h.display_name AS held_name,h.reason AS held_reason FROM accounts a LEFT JOIN contribution_choice c ON c.account=a.id
     LEFT JOIN display_name_holds h ON h.account=a.id WHERE a.${byProfile ? "profile_id" : "id"} IN (SELECT jsonb_array_elements_text((?::text)::jsonb))`)
     .bind(wanted).all();
@@ -29,14 +60,17 @@ export async function witnessNames(env, witnesses) {
     spans = results;
   }
   const ownerOf = w => {
+    if (w.device === "account:" + w.owner) return w.owner;
     const hour = (w.credited_at || w.completed_at).slice(0, 13);
     return spans.find(s => s.verifier === w.device && s.from_hour <= hour && (s.until_hour == null || hour < s.until_hour))?.account;
   };
   const accounts = await contributorAccounts(env, witnesses.filter(w => !w.official).map(ownerOf).filter(Boolean));
+  const marks = await contributorMarks(env, accounts);
   return witnesses.map(w => {
     if (w.official) return { official: true, name: w.device.replace(/^official:/, ""), completed_at: w.completed_at };
     const account = accounts.get(ownerOf(w));
     return { name: account?.named ? account.name : null, profile: account?.named ? account.profile_id : null,
+      ...(account?.named && marks[account.id] ? { mark: marks[account.id] } : {}),
       completed_at: w.completed_at };
   });
 }

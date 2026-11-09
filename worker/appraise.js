@@ -14,6 +14,7 @@ import { canon, questionId, witnessOf } from "./tasks.js";
 import { facts, DEADLINE_MS, VERBS } from "./factory.js";
 import { initiatorCode } from "./accounts.js";
 import { triggerBoardCalibration } from "./board_reviews.js";
+import { answerDeliverySource, localDeliverySource, deliveryName } from "./delivery_sources.js";
 
 const CODE_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // no 0/O, 1/I/L
 const CODE_LEN = 5;
@@ -124,15 +125,16 @@ async function read(request, env, code) {
   if (request.method !== "GET") return json({ ok: false, error: "GET only" }, 405);
   const a = await env.LIBRARY.prepare("SELECT * FROM appraisals WHERE code = ?").bind(code).first();
   if (!a || Date.parse(a.at) < Date.now() - KEEP_MS) return json({ ok: false, error: "no such appraisal" }, 404);
-  const won = a.winner && await env.LIBRARY.prepare("SELECT thanks FROM appraisal_results WHERE id = ?").bind(a.winner).first();
+  const won = a.winner && await env.LIBRARY.prepare("SELECT source,verifier,at FROM appraisal_results WHERE id = ?").bind(a.winner).first();
   // ONE BUILD HANDED BACK, by its id — what the bot's replay reads. A build is
   // board material and public; whose browser found it is not said.
   const rid = Number(new URL(request.url).searchParams.get("result"));
   const res = Number.isInteger(rid) && rid > 0
-    && await env.LIBRARY.prepare("SELECT id, build, thanks FROM appraisal_results WHERE id = ? AND code = ?").bind(rid, code).first();
+    && await env.LIBRARY.prepare("SELECT id,build,source,verifier,at FROM appraisal_results WHERE id = ? AND code = ?").bind(rid, code).first();
+  const [thanked, calculator] = await Promise.all([won ? deliveryName(env, won.source, won) : null, res ? deliveryName(env, res.source, res) : null]);
   return json({ ok: true, code, weapon: a.weapon, ruler: a.ruler, riven: JSON.parse(a.riven), at: msOf(a.at),
-    done: !!a.done_at, ...(won ? { thanked: won.thanks } : {}),
-    ...(res ? { result: { id: res.id, build: JSON.parse(res.build), thanks: res.thanks } } : {}) });
+    done: !!a.done_at, ...(won ? { thanked: thanked.name || "" } : {}),
+    ...(res ? { result: { id: res.id, build: JSON.parse(res.build), thanks: calculator.name || "", calculator, source: res.source } } : {}) });
 }
 
 /// THE BOT FREEZES THE QUESTION: `{ engine, request, context }`, the optimize
@@ -198,9 +200,10 @@ const rivenProducer = {
   },
   on_answer: async (env, d, x) => {
     if (x.official) return;
-    await env.LIBRARY.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, verifier, score, work, key, engine, net)
-        VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, ?)`)
-      .bind(d.ref, JSON.stringify(x.result.build), x.at, x.device, x.result.score, x.work, canon(x.result.build), x.engine, x.net).run();
+    const source = await answerDeliverySource(env, d.question, x, d.payload.weapon);
+    await env.LIBRARY.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, verifier, score, work, key, engine, net,source)
+        VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, ?,?)`)
+      .bind(d.ref, JSON.stringify(x.result.build), x.at, x.device, x.result.score, x.work, canon(x.result.build), x.engine, x.net, source).run();
   },
   on_fact: async (env, d, fact) => {
     const at = iso(Date.now());
@@ -209,9 +212,11 @@ const rivenProducer = {
     // AN ASK ANSWERED BY A FACT IT DID NOT WAIT FOR — the same question, agreed
     // for another — still hands the bot a build to judge and tell.
     if (won.meta.changes && fact.result) {
-      await env.LIBRARY.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, score, work, key)
-          SELECT ?, ?, '', ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM appraisal_results WHERE code = ? AND key = ?)`)
-        .bind(d.ref, JSON.stringify(fact.result.build), at, fact.result.score, fact.work, canon(fact.result.build),
+      const first = fact.witnesses?.[0];
+      const source = first ? await answerDeliverySource(env, d.question, { ...first, at: first.completed_at, engine: fact.engine }, d.payload.weapon) : null;
+      await env.LIBRARY.prepare(`INSERT INTO appraisal_results (code, build, thanks, at, score, work, key,source)
+          SELECT ?, ?, '', ?, ?, ?, ?,? WHERE NOT EXISTS (SELECT 1 FROM appraisal_results WHERE code = ? AND key = ?)`)
+        .bind(d.ref, JSON.stringify(fact.result.build), at, fact.result.score, fact.work, canon(fact.result.build), source,
           d.ref, canon(fact.result.build)).run();
     }
     // …AND THE AGREED BUILD GOES TO THE BOARD, through the reader's own door.
@@ -325,8 +330,9 @@ async function handBack(request, env, code) {
   const a = await db.prepare("SELECT code, channel, done_at, at FROM appraisals WHERE code = ?").bind(code).first();
   if (!appraisalKept(a, now)) return json({ ok: false, error: "no such appraisal" }, 404);
   if (b.lease !== undefined) return volunteerAnswer(request, env, b);
-  await db.prepare("INSERT INTO appraisal_results (code, build, thanks, at) VALUES (?, ?, ?, ?)")
-    .bind(code, JSON.stringify(b.build), cleanThanks(b.thanks), iso(now)).run();
+  const source = await localDeliverySource(env, request, b);
+  await db.prepare("INSERT INTO appraisal_results (code, build, thanks, at,source) VALUES (?, ?, '', ?,?)")
+    .bind(code, JSON.stringify(b.build), iso(now), source).run();
   return json({ ok: true, first: !a.done_at });
 }
 
@@ -410,7 +416,7 @@ async function claim(request, env) {
     await db.batch(toJudge.map((r) => db.prepare("UPDATE appraisal_results SET claimed_at = ? WHERE id = ?").bind(iso(now), r.id)));
   }
   const { results: toTell } = await db.prepare(`SELECT a.code, a.weapon, a.ruler, a.riven, a.chat, a.asker, a.at AS asked_at,
-      a.done_at, r.id AS result_id, r.thanks, r.verdict, CASE WHEN r.verifier IS NULL THEN 0 ELSE 1 END AS volunteer
+      a.done_at, r.id AS result_id, r.thanks, r.verdict, r.source,r.verifier,r.at, CASE WHEN r.verifier IS NULL THEN 0 ELSE 1 END AS volunteer
     FROM appraisals a JOIN appraisal_results r ON r.id = a.winner
     WHERE a.channel = ? AND a.done_at IS NOT NULL AND a.told_at IS NULL ORDER BY a.done_at LIMIT 20`).bind(channel).all();
   // A COMPUTER TOOK IT: the chat may be told so, once, while it waits.
@@ -423,6 +429,11 @@ async function claim(request, env) {
   const parse = (r) => ({ ...r, at: msOf(r.at), asked_at: msOf(r.asked_at), done_at: msOf(r.done_at), started_at: msOf(r.started_at),
     riven: JSON.parse(r.riven), chat: JSON.parse(r.chat),
     ...(r.build ? { build: JSON.parse(r.build) } : {}), ...(r.verdict ? { verdict: JSON.parse(r.verdict) } : {}) });
-  return json({ ok: true, judge: toJudge.map(parse), tell: toTell.map(parse), started: toStart.map(parse),
+  const tell = await Promise.all(toTell.map(async row => {
+    const calculator = await deliveryName(env, row.source, row);
+    const { verifier: _verifier, ...item } = row;
+    return parse({ ...item, calculator, thanks: calculator.name || "" });
+  }));
+  return json({ ok: true, judge: toJudge.map(parse), tell, started: toStart.map(parse),
     freeze: toFreeze.map((r) => r.code) });
 }

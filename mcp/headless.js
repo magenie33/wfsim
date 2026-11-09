@@ -93,6 +93,12 @@ function headlessSpeaker(meta, i18n, lang, zone) {
 /// Translate a template and fill its `{named}` holes.
 const headlessTrF = (say, template, params) => Object.entries(params || {}).reduce(
   (s, [k, v]) => s.split(`{${k}}`).join(v), say.t(template));
+function headlessContributorText(say, person) {
+  if (!person?.name) return say.t("Anonymous contributor");
+  const label = person.mark?.label;
+  const shown = typeof label === "string" ? say.t(label) : label?.[say.lang] || label?.en;
+  return person.name + (shown ? ` · ${shown}` : "");
+}
 
 /// ANY VALUE, NEVER A THROW: null and undefined are drawn as nothing.
 const headlessEsc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -610,7 +616,7 @@ function headlessLongCard(say, w, ask, got) {
   if (verdict) {
     title = trF("{w} · Riven gain", { w: w.name });
     link = `${origin}${path}/riven-analyst`;
-    const who = job.result.thanks || say.t("a kind someone in the chat");
+    const who = headlessContributorText(say, job.result.calculator);
     body = () => !verdict.ok ? `<p class="sim-empty">${esc(verdict.reason || "")}</p>`
       : headlessCardBox(`<b class="lc-score">${esc(verdict.shown)}</b><span class="sb-empty">${esc(metric)}</span>${
         verdict.gain == null ? "" : `<b class="lc-gain">${pct(verdict.gain)}</b>`}`, headlessCardOfState(say, verdict.state, w, rivenOf))
@@ -622,7 +628,7 @@ function headlessLongCard(say, w, ask, got) {
         + (verdict.of ? `<p class="lc-note">${esc(trF("Among the {n} rivens the board has measured (each at its best rolls), this card would rank #{k}.", { n: verdict.of, k: verdict.rank }))}</p>` : "")
         + `<p class="sb-empty">${esc(trF("Searched by {who}. Thank you!", { who }))}</p>`);
   } else if (kind === "appraise") {
-    // THE ASKER'S CARD AND THE WAY IN: whoever scans the code searches it.
+    // The submitted riven while the community search is running.
     title = trF("{w} · Riven gain", { w: w.name });
     link = `${origin}/appraise/${code}`;
     body = () => {
@@ -630,7 +636,7 @@ function headlessLongCard(say, w, ask, got) {
       const spec = { ...job.riven, polarity: job.riven.polarity || "madurai" };
       return headlessCardBox(`<span class="sb-h">${esc(say.t("Riven gain code"))}</span><b class="lc-score">${esc(code)}</b>`,
         headlessRivenSection(say, w, { name: "", spec }, got.riven(w, spec))
-        + `<p class="lc-note">${esc(say.t("Scan the code below: your own browser searches this riven's best build, and Nona posts the result in the chat."))}</p>`
+        + `<p class="lc-note">${esc(say.t("The volunteers' devices are computing this riven. Nona will post the result in the chat."))}</p>`
         + `<p class="sb-empty">${esc(link.replace(/^https?:\/\//, ""))}</p>`);
     };
   } else if (kind === "pz") {
@@ -661,7 +667,7 @@ function headlessLongCard(say, w, ask, got) {
     <div class="sb-empty lc-sub">${esc([bench ? headlessBenchmarkName(say.meta, bench.id, say.t) : "", updated ? trF("updated {t}", { t: updated }) : ""]
       .filter(Boolean).join(" · "))}</div>
     ${cards || `<p class="sim-empty">${esc(say.t("Nothing measured for this weapon yet."))}</p>`}
-    <footer class="lc-foot"><div class="lc-qr">${qrSvg ? qrSvg.replace(/^<\?xml[^>]*>/, "") : ""}</div>
+    <footer class="lc-foot">${kind === "appraise" ? "" : `<div class="lc-qr">${qrSvg ? qrSvg.replace(/^<\?xml[^>]*>/, "") : ""}</div>`}
       <div><b class="lc-slogan">${esc(say.t("The real Simulacrum Prime."))}</b><div class="sb-empty">wfsim.app</div></div></footer>`;
   };
   return { link, wayIn: kind === "appraise" && !verdict, draw };
@@ -2037,4 +2043,4 @@ const HEADLESS_QUERIES = [
 export { HEADLESS_ABOUT, HEADLESS_QUERIES, HEADLESS_RETIRED, headlessCheckArgs, headlessSchema, headlessNo, headlessToolName, headlessUnknown,
   headlessSeat, headlessStateAxes, headlessWeapon, headlessWeaponPath, headlessWeaponAt, rivenStatNames, rivenStatNameEn, ocrFold, rivenQuery, readRivenLines, boardMeasuredAt, measuredText, distinctTop, pooledRanking, pooledRivens,
   placed, placeAmong, tieGroups, boardRowParts, rankBoard, boardHeads, BOARD_HEADS_PLACES, headlessRivenGainRequest,
-  headlessSpeaker, headlessCardAsk, headlessLongCard, headlessRivenAnswer, headlessAppraisalReplay, headlessVerdictRecord, headlessLibraryFacts, headlessLibrarySummary };
+  headlessSpeaker, headlessContributorText, headlessCardAsk, headlessLongCard, headlessRivenAnswer, headlessAppraisalReplay, headlessVerdictRecord, headlessLibraryFacts, headlessLibrarySummary };

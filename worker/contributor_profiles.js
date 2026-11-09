@@ -3,7 +3,7 @@
 import { json, no, sessionAccount, sameSite, limited } from "./accounts.js";
 import { iso } from "./instant.js";
 import { contributionOf } from "./contribution.js";
-import { contributorAccounts, witnessNames } from "./contributor_identity.js";
+import { contributorAccounts, contributorMarks, witnessNames } from "./contributor_identity.js";
 
 const ID = /^[a-f0-9]{32}$/, SLUG = /^[a-z0-9_]{1,128}$/;
 const reply = (body, status = 200) => json(body, status, { "cache-control": "no-store" });
@@ -74,6 +74,8 @@ export async function contributorProfilesRoute(request, env, path) {
     || before.length !== (kind === "board" ? 4 : 2) || !before.every(bounded))) return no("bad_query");
   const identity = { id: person.profile_id, name: person.name, username: person.username, named: !!person.named, you: account === me };
   if (view === "identity") return reply({ ok: true, profile: identity });
+  const mark = (await contributorMarks(env, people))[account];
+  if (mark) identity.mark = mark;
   if (!env.LIBRARY) return no("unavailable", 503);
   const contribution = view === "records" ? {} : await contributionOf(env, account);
   if (view === "summary") return reply({ ok: true, profile: { ...identity, ...contribution }, keep_days: 14 });

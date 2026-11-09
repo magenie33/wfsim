@@ -194,6 +194,7 @@ CREATE TABLE IF NOT EXISTS contribution_choice (
   named     BIGINT NOT NULL,
   chosen_at TEXT COLLATE "C" NOT NULL
 );
+ALTER TABLE contribution_choice ADD COLUMN IF NOT EXISTS label TEXT COLLATE "C" NOT NULL DEFAULT 'none';
 
 -- MERIT (docs/BOARD.md §"Merit"): minted from an account's contribution points,
 -- spent on what community compute can give. `balance` never decays; `points_seen`

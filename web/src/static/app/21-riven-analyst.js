@@ -257,6 +257,7 @@ function renderRivenAnalysisReport(record) {
     + rivenSpecCardHtml(w, { spec: v.riven })
     + `<div class="analysis-metrics"><div><span>${escHtml(tr("Score"))} · ${escHtml(tr((META.metrics || []).find(metric => metric.id === v.metric)?.label || v.metric))}</span><b>${escHtml(v.shown)}</b></div><div><span>${escHtml(tr("vs the best riven-free build"))}</span><b>${v.gain == null ? "—" : escHtml(gainPct(v.gain))}</b></div><div><span>${escHtml(tr("The board's best riven-free build"))}</span><b>${v.top == null ? "—" : escHtml(v.top)}</b></div></div>`
     + `<p class="sim-hint">${escHtml(new Date(v.at).toLocaleString())} · ${escHtml(tr("Engine"))}: ${escHtml(record.engine)}${record.engine !== ENGINE_ID ? ` · ${escHtml(tr("Measured with a different engine version."))}` : ""}</p>`
+    + deliveryRecordHtml(record.result.delivery)
     + `<details class="analysis-standard"><summary>${escHtml(tr("Scoring standard (fx)"))}</summary>${notes.map(note => `<p>${escHtml(note)}</p>`).join("")}</details>`
     + `<div class="analysis-actions"><button class="ghost-btn" data-analysis-builder>${escHtml(tr("open in Builder"))}</button><a class="ghost-btn" href="${analysisOptimizerLink(record)}">${escHtml(tr("Optimizer record"))}</a><button class="cu-btn" data-analysis-share>${escHtml(tr("Share analysis"))}</button></div>`
     + `<div class="analysis-share" hidden></div><details class="analysis-build"><summary>${escHtml(tr("With this riven"))}</summary>${cardOfState(state, w)}</details></article>`;
