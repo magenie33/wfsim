@@ -6,8 +6,9 @@ import { mkdtempSync, openSync, writeFileSync, closeSync, renameSync, rmSync } f
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { BOARD_KINDS } from '../worker/board_kinds.js';
+import { pipelineMonitor } from './pipeline_monitor.mjs';
 
-export async function captureScoreInputs({ sql, claim, directory, engine, max = 40000 }) {
+export async function captureScoreInputs({ sql, claim, directory, engine, max = 40000, report = () => {} }) {
   if (!Number.isSafeInteger(max) || max < 1 || max > 40000) throw Error('invalid official claim budget');
   const scratch = mkdtempSync(join(directory, '.score-inputs-'));
   const db = new DatabaseSync(join(scratch, 'inputs.sqlite'));
@@ -20,6 +21,7 @@ export async function captureScoreInputs({ sql, claim, directory, engine, max = 
   let leased = 0;
   try {
     while (leased < max) {
+      report('claiming', { leased });
       const limit = Math.min(2000, max - leased), tasks = await claim({ witness: 'official:scorer', engine,
         states: ['open'], producers: BOARD_KINDS, max: limit, lease_ms: 43200000 });
       if (!Array.isArray(tasks) || tasks.length > limit) throw Error('invalid factory claim response');
@@ -35,12 +37,14 @@ export async function captureScoreInputs({ sql, claim, directory, engine, max = 
         }
       }
       leased += tasks.length;
+      report('claimed', { leased });
       if (tasks.length < limit) break;
     }
+    report('capture', { leased });
     const snapshot = await sql.begin('isolation level repeatable read read only', async tx => {
       await tx.unsafe("SET LOCAL statement_timeout='180s'");
       const [stamp] = await tx.unsafe('SELECT pg_current_snapshot()::text snapshot');
-      let after = ['', '', ''];
+      let after = ['', '', ''], processed = 0;
       for (;;) {
         const keys = db.prepare('SELECT * FROM wanted WHERE (build_id,ruler,mode)>(?,?,?) ORDER BY build_id,ruler,mode LIMIT 256').all(...after);
         if (!keys.length) break;
@@ -66,9 +70,11 @@ export async function captureScoreInputs({ sql, claim, directory, engine, max = 
           db.exec('COMMIT');
         } catch (error) { db.exec('ROLLBACK'); throw error; }
         const last = keys.at(-1); after = [last.build_id, last.ruler, last.mode];
+        processed += keys.length; report('capture', { leased, processed });
       }
       return stamp.snapshot;
     });
+    report('export', { snapshot });
     const emit = (name, query, render, prefix = '', suffix = '') => {
       const fd = openSync(join(scratch, name), 'w');
       try {
@@ -98,6 +104,10 @@ if (process.argv[1] && pathToFileURL(resolve(process.argv[1])).href === import.m
     const result = await response.json(); if (!result.ok) throw Error('official claim refused');
     return result.tasks;
   };
-  try { console.log(JSON.stringify(await captureScoreInputs({ sql, claim, directory: process.cwd(), engine: process.env.ENGINE }))); }
+  const monitor = pipelineMonitor(join(process.cwd(), 'diagnostics'), 'score-inputs', { source: process.env.GITHUB_SHA, engine: process.env.ENGINE });
+  try {
+    const result = await captureScoreInputs({ sql, claim, directory: process.cwd(), engine: process.env.ENGINE, report: monitor.report });
+    monitor.report('exported', result); monitor.finish(); console.log(JSON.stringify(result));
+  } catch (error) { monitor.finish('failed', error); process.exitCode = 1; }
   finally { await sql.end({ timeout: 5 }); }
 }

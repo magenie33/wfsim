@@ -10,7 +10,7 @@ import { BOARD_KINDS } from '../worker/board_kinds.js';
 
 const FETCH_ROWS = 20000;
 
-export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS) {
+export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS, report = () => {}) {
   const outputs = Object.fromEntries(Object.entries(paths).map(([k, p]) => [k, `${p}.partial-${process.pid}`]));
   const counts = {};
   try {
@@ -25,6 +25,7 @@ export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS)
         tasks: ['SELECT * FROM factory_inventory_rows($1::text,ARRAY(SELECT jsonb_array_elements_text(($2::text)::jsonb)))', [engine, JSON.stringify(covers)]],
       };
       for (const [name, [query, args]] of Object.entries(scans)) {
+        report(`capture-${name}`, { rows: 0 });
         const out = createWriteStream(outputs[name]); let failed = null, n = 0;
         const builds = name === 'library' ? createWriteStream(outputs.builds) : null;
         out.on('error', error => { failed = error; });
@@ -45,6 +46,7 @@ export async function captureInventory(sql, paths, engine, covers = BOARD_KINDS)
               } else await write(JSON.stringify(row) + '\n');
               n++;
             }
+            report(`capture-${name}`, { rows: n });
             if (rows.length < FETCH_ROWS) break;
           }
           await tx.unsafe('CLOSE inventory_scan');

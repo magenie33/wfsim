@@ -134,6 +134,31 @@ Move the active daemon by stopping the old service before starting the new one.
 
 ## Database storage
 
+`python scripts/ship_health.py` installs `wfsim-health.timer`, using the same
+explicit target options as the daemon deploy. It runs `scripts/pg_health.py`
+each minute on the data core.
+It uses bounded read-only SQL and one bounded board metadata read. It records
+daemon and inventory age, engine mismatch, actual board score age, settlement
+backlog, archive failure, lock holders, idle transactions and resource pressure.
+An unsuccessful probe is unknown and degraded, never an empty healthy result.
+The monitor neither repairs services nor changes work or credit.
+
+`/var/lib/wfsim-health/status.json` is the latest observation. Its
+`events.ndjson` and two rotated files retain at most 6 MiB; the system journal
+also receives each observation. An incident id ties repeated samples and the
+recovery together. Exit 1 means a completed degraded observation, accepted by
+the unit; `status` and `alerts` in the JSON are the health result. An active
+timer or service alone does not prove healthy work. A missing or older-than-
+three-minutes status file means monitoring itself is stale.
+
+For an incident, save the status and events, `journalctl -u wfsim-health
+-u wfsim-task-archive -u wfsim-factoryd --since '30 minutes ago'`, and the board
+host's `journalctl -u wfsim-live` plus its work directory's `diagnostics/`.
+Match source, engine, generation, epoch and run id before comparing samples.
+SQL statements, task bodies, credentials and connection URLs are excluded.
+`sudo -u postgres python3 /opt/wfsim-health/scripts/pg_health.py --once` prints
+a fresh observation without replacing the retained incident state.
+
 `python scripts/ship_work_calibration.py` installs the named calibration read
 before the work-price job uses it. The pipeline role can execute this bounded
 function without selecting factory tables. Its query is also the official

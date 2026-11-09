@@ -989,6 +989,9 @@ jobs:
           node scripts/check_library_array.mjs
           node scripts/check_incremental_inventory.mjs
           node scripts/check_incremental_inventory_pg.mjs
+          node scripts/check_inventory_concurrency.mjs
+          python3 scripts/check_pg_health.py
+          node scripts/check_pipeline_monitor.mjs
 
   mcp:
     needs: [plan, site]
