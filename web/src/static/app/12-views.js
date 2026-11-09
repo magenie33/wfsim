@@ -59,6 +59,8 @@ async function route() {
   // BOOT DRAWS THE FIRST PAGE, from whatever address a redirect left by then.
   if (!bootRouted) return;
   normalizeUserProfileAddress();
+  setAccountPanel(false, false);
+  closeProfileWeaponPicker(false);
   closeArenaEditor(false);
   libraryBeforeRoute();
   normalizeLibraryAddress();

@@ -18,8 +18,12 @@ with the score retained, renamed and anonymous signatures, the optimization
 record link, actual Library names and mobile layout. Its negative control
 removes the publication before the restoration assertion.
 It withholds summary and record responses to verify that identity renders first
-and the overview requests no list. Legacy addresses retain their filters and
-fragment under `/user/`. Name links retain their shared hover and keyboard styles.
+while the default verified-build list loads independently. Legacy addresses retain
+their filters and fragment under `/user/`. Name links retain their shared hover
+and keyboard styles. The avatar opens a personal dialog with direct contribution
+links; the weapon dialog shares localized search, defers filtering requests until
+selection, preserves IME composition and supports keyboard navigation. The owner
+gets their actual verification label and private shortcuts; visitors do not.
 
 `check_native_pgo.py` refuses changed numerical responses, missing timing cases,
 individual regressions and cross-target training. `check_native_pgo.mjs` checks

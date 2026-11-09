@@ -6,6 +6,14 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "Personal center": "个人中心"
+  "Verified calculations": "参与验证的计算"
+  "Verified builds": "验证过的配装"
+  "You verified this calculation": "你参与验证了这次计算"
+  "Search verified calculations": "查找参与验证的计算"
+  "Search weapons…": "搜索武器名称或类型…"
+  "Calculation details": "计算详情"
+  "Edit profile": "编辑资料"
   "Refresh": "刷新"
   "My profile": "我的主页"
   "Lifetime signatures": "累计署名"

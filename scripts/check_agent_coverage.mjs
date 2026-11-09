@@ -68,7 +68,7 @@ const SCAN = `(() => {
     // A DROPDOWN IS DELEGATED: one document listener serves every [data-dd], so
     // the attribute is the only mark it leaves on the control itself.
     if (!(seen.has(el) || el.onclick || el.onchange || el.oninput
-      || el.matches("[data-dd],[data-computation-weapon],[data-computation-retry],[data-computation-more]"))) continue;
+      || el.matches("[data-dd],[data-computation-weapon],[data-computation-retry],[data-computation-more],[data-profile-weapon]"))) continue;
     if (!visible(el)) continue;
     const door = Math.min(...anchors.map(a => depth(el, a)).filter(d => d >= 0), Infinity);
     const ex = AGENT_EXEMPT.map(e => ({ e, d: depth(el, e.sel) })).filter(x => x.d >= 0).sort((a, b) => a.d - b.d)[0];
@@ -142,6 +142,16 @@ try {
   profile.hit.forEach(s => hit.add(s));
   profile.uncovered.forEach(u => { if (!uncovered.has(u)) uncovered.set(u, "contributor-profile"); });
   check("the contribution profile renders its record controls", await evaluate("!!document.querySelector('[data-computation-weapon]')"));
+  await evaluate("document.querySelector('[data-computation-weapon]').click()");
+  check("the profile's weapon search panel is scanned", await evaluate("!!document.querySelector('.profile-weapon-dialog input')"));
+  const picker = await evaluate(SCAN);
+  picker.hit.forEach(s => hit.add(s));
+  picker.uncovered.forEach(u => { if (!uncovered.has(u)) uncovered.set(u, "profile-weapon-search"); });
+  await evaluate("document.querySelector('[data-profile-picker-close]').click(); document.querySelector('#account-toggle').click()");
+  check("the independent personal panel is scanned", await evaluate("!document.querySelector('#acct-menu').hidden"));
+  const personal = await evaluate(SCAN);
+  personal.hit.forEach(s => hit.add(s));
+  personal.uncovered.forEach(u => { if (!uncovered.has(u)) uncovered.set(u, "personal-panel"); });
 } finally { await profileFixture.close(); }
 
 const KINDS = ["outward", "view", "pref", "reader", "todo"];
