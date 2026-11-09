@@ -26,6 +26,11 @@ const toridTransition = JSON.parse(readFileSync(new URL("../tests/fixtures/clien
 const app = await openApp({ boot: 12000 });
 const { evaluate, check, send, sleep, BASE } = app;
 
+if (process.env.WFSIM_MODE_BOARD_ONLY) {
+  await checkBoardModes();
+  await app.finish("the overview preserves each winning build's mode");
+}
+
 async function cycleDetails(weapon) {
   return evaluate(`(async () => {
     history.pushState({}, '', '/weapons/${weapon}/builder'); route();
@@ -296,23 +301,63 @@ for (const w of ["Ocucor", "Ballistica_Prime"]) {
   }
 }
 
-// THE BOARD PAGE, where weapons are COMPARED. Every row, not a sample: the bug
-// was a conditional, so a sample would have hit the rows that still had it.
-const board = await evaluate(`(async () => {
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-  history.pushState({}, '', '/benchmark'); route(); await sleep(4500);
-  const rows = [...document.querySelectorAll('.bench-rows .brow')];
-  return {
-    total: rows.length,
-    noTag: rows.filter(a => !a.querySelector('.bmode')).length,
-    noParam: rows.filter(a => !/[?&]mode=/.test(a.getAttribute('href') || '')).length,
-    sample: rows.slice(0, 3).map(a => a.getAttribute('href')),
-  };
-})()`);
-check("the board lists rows at all", board.total > 50, `${board.total} rows`);
-check("every board row names its mode", board.noTag === 0,
-  `${board.noTag} of ${board.total} without a tag`);
-check("...and every link carries it", board.noParam === 0,
-  `${board.noParam} of ${board.total} without &mode=: ${(board.sample || []).join(" ")}`);
+// The overview names each weapon once; its link retains the winning build's
+// ruler, mode and riven group. WFSIM_BREAK=mode|link corrupts a real row.
+async function checkBoardModes() {
+  for (const lang of ["en", "zh"]) {
+    await evaluate(`localStorage.setItem('wfsim-lang', ${JSON.stringify(lang)})`);
+    await send("Page.navigate", { url: BASE + "/benchmark" });
+    await sleep(4500);
+    const board = await evaluate(`(async () => {
+      const cur = benchCurrent();
+      await benchIndexOf(cur).load();
+      renderBenchBoard();
+      const entries = new Map(benchEntries(cur, benchPool()).map(e =>
+        ['/weapons/' + urlSlug(e.w), e]));
+      const rows = [...document.querySelectorAll('.bench-rows .brow')];
+      const broken = ${JSON.stringify(process.env.WFSIM_BREAK || "")};
+      if (rows.length && ['mode', 'link'].includes(broken)) {
+        const target = rows.find(row => {
+          const entry = entries.get(new URL(row.href).pathname);
+          return entry?.w.modes.some(mode => mode !== entry.mode);
+        }) || rows[0];
+        const url = new URL(target.href), entry = entries.get(url.pathname);
+        if (broken === 'mode') url.searchParams.set('mode',
+          entry.w.modes.find(mode => mode !== entry.mode) || 'invalid_mode');
+        else url.searchParams.delete('mode');
+        target.setAttribute('href', url.pathname + url.search);
+      }
+      const paths = [], badLinks = [], badNames = [];
+      for (const row of rows) {
+        const url = new URL(row.href), entry = entries.get(url.pathname);
+        paths.push(url.pathname);
+        const name = row.querySelector('.bname')?.cloneNode(true);
+        name?.querySelectorAll('.bgap').forEach(e => e.remove());
+        if (!entry || !name || name.textContent.trim() !== weaponEntryName(entry.w)) {
+          badNames.push(url.pathname);
+        }
+        if (!entry || url.searchParams.get('mode') !== entry.mode
+            || url.searchParams.get('bench') !== cur.id
+            || url.searchParams.get('riven') !== (entry.row ? (entry.row.riven ? '1' : '0') : null)) {
+          badLinks.push(row.getAttribute('href'));
+        }
+      }
+      return { total: rows.length, unique: new Set(paths).size,
+        badges: rows.filter(row => row.querySelector('.bmode')).length,
+        measured: rows.filter(row => !row.classList.contains('none')).length,
+        badLinks, badNames };
+    })()`);
+    check(`${lang}: the overview lists measured weapons`, board.total > 50 && board.measured > 0,
+      `${board.measured} measured of ${board.total} rows`);
+    check(`${lang}: each visible weapon appears once`, board.unique === board.total,
+      `${board.unique} weapons in ${board.total} rows`);
+    check(`${lang}: weapon labels have no mode badges`, board.badges === 0 && board.badNames.length === 0,
+      `${board.badges} badges; labels: ${board.badNames.join(', ')}`);
+    check(`${lang}: winning links retain their ruler, mode and riven group`, board.badLinks.length === 0,
+      board.badLinks.slice(0, 3).join(' | '));
+  }
+}
+
+await checkBoardModes();
 
 await app.finish("what each mode is, on the page, in both languages");
