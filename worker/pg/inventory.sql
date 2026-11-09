@@ -153,7 +153,7 @@ BEGIN
   IF EXISTS(SELECT 1 FROM jsonb_array_elements(wanted->'covers') x WHERE jsonb_typeof(x)<>'string')
     THEN RAISE EXCEPTION 'invalid inventory covers'; END IF;
   PERFORM set_config('lock_timeout','1s',true);
-  LOCK TABLE inventory_dirty IN SHARE MODE;
+  -- Generation changes fence receipts, not source writers; dirty tokens span generations.
   LOCK TABLE inventory_state IN SHARE ROW EXCLUSIVE MODE;
   SELECT * INTO held FROM inventory_state WHERE id=1 FOR UPDATE;
   IF held.generation::text IS DISTINCT FROM $3 THEN RAISE EXCEPTION 'inventory generation changed'; END IF;
@@ -422,7 +422,7 @@ BEGIN
   IF current_setting('transaction_isolation')<>'read committed' THEN RAISE EXCEPTION 'inventory publication requires read committed'; END IF;
   body:=inventory_validate_body($2);
   PERFORM set_config('lock_timeout','1s',true);
-  LOCK TABLE inventory_dirty IN SHARE MODE;
+  -- A sealed MVCC cut has its own timestamp; later source writes remain dirty.
   SELECT * INTO held FROM inventory_state WHERE id=1 FOR UPDATE;
   SELECT * INTO cut FROM inventory_epochs WHERE epoch=$1::bigint;
   SELECT engine INTO current_engine FROM factory_snapshot WHERE id=1;
