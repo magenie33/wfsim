@@ -177,6 +177,8 @@ producer supplies no artifact; it cannot waive a required correctness job.
 Use `ci-required` as the required status check in branch protection. Selection
 does not skip the workflow itself. The run summary records each path's class,
 the selected jobs and any reused run.
+Job outputs carry execution fields; path classifications stay in the summary
+and logs so large release batches fit the process environment limit.
 
 A reusable run must be completed and successful, belong to this repository's
 CI workflow, name the exact same commit and contain unexpired `site-built` and

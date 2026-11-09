@@ -159,6 +159,11 @@ export function output(values) {
   }
 }
 
+export function jobPlan(plan) {
+  const { reasons, ...execution } = plan;
+  return execution;
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
   let paths = [];
@@ -184,7 +189,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     plan.jobs = fastJobs(plan.fast.paths);
     plan.deep = false;
   }
-  output({ plan, policy: policyDigest(), native: plan.jobs.includes('gas'), hotfix_matrix: plan.matrix || { group: [] },
+  output({ plan: jobPlan(plan), policy: policyDigest(), native: plan.jobs.includes('gas'), hotfix_matrix: plan.matrix || { group: [] },
     test_matrix: { suite: [...RUST_SUITES, ...(plan.deep ? Object.keys(DEEP_SCOPE_GROUPS) : [])] },
     ...Object.fromEntries(ALL_CI_JOBS.map(j => [j.replaceAll('-', '_'), plan.jobs.includes(j)])) });
   const summary = `## CI scope: ${plan.scope}\n\nSelected: ${plan.jobs.join(', ') || 'quick checks only'}.\n\n${plan.forced ? 'Full validation requested, baseline unverified, or no reliable diff available.\n' : ''}\n${plan.reasons.map(r => `- ${JSON.stringify(r.path)}: ${r.kind}`).join('\n')}\n`;

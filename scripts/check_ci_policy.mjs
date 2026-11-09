@@ -7,7 +7,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { ALL_CI_JOBS, assertGate, BROWSER_JOBS, browserCheckPaths, changedPaths, checkJobPaths,
-  classify, CONSUMER_JOBS, OPTIONAL_NATIVE_JOBS, PRODUCT_JOBS } from './ci_policy.mjs';
+  classify, CONSUMER_JOBS, jobPlan, OPTIONAL_NATIVE_JOBS, PRODUCT_JOBS } from './ci_policy.mjs';
 import { trustedRun, validProof, verifiedBase } from './ci_runs.mjs';
 
 for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/src/optimize.rs',
@@ -16,6 +16,25 @@ for (const path of ['engine/src/fight.rs', 'optimizer/src/search.rs', 'webapi/sr
   assert.equal(classify([path]).scope, 'full', path);
 }
 assert.deepEqual(classify([]).jobs, PRODUCT_JOBS);
+const largePlan = classify(Array.from({ length: 4096 }, (_, i) =>
+  `data/weapons/melee/${'weapon_'.repeat(10)}${i}.yaml`));
+const { reasons: largeReasons, ...executionPlan } = largePlan;
+assert.equal(largeReasons.length, 4096);
+assert(Buffer.byteLength(JSON.stringify(largePlan)) > 128 * 1024);
+assert.deepEqual(jobPlan(largePlan), executionPlan, 'only path explanations leave the job environment');
+const encodedPlan = JSON.stringify(jobPlan(largePlan));
+assert(Buffer.byteLength(encodedPlan) < 8192);
+if (process.platform === 'linux') {
+  assert.throws(() => execFileSync(process.execPath, ['-e', ''], {
+    env: { CI_PLAN: JSON.stringify(largePlan) }, stdio: 'pipe', timeout: 10000,
+  }), error => error.code === 'E2BIG', 'the old environment transport must reproduce the kernel failure');
+}
+const transportedPlan = execFileSync(process.execPath, ['-e', 'process.stdout.write(process.env.CI_PLAN)'], {
+  env: { ...process.env, CI_PLAN: encodedPlan }, encoding: 'utf8', timeout: 10000,
+});
+assert.deepEqual(JSON.parse(transportedPlan), executionPlan);
+assert.deepEqual(jobPlan({ ...largePlan, scope: 'hotfix', paths: ['worker/pg/sync.sql'], reason: 'incident' }),
+  { ...executionPlan, scope: 'hotfix', paths: ['worker/pg/sync.sql'], reason: 'incident' });
 assert.deepEqual(classify(['docs/UI.md'], true).jobs, PRODUCT_JOBS);
 assert.equal(classify(['docs/UI.md', 'README.md']).jobs.length, 0);
 for (const paths of [['docs/UI.md'], ['worker/index.js'], ['web/src/static/style.css'], ['site/release.json']]) {
