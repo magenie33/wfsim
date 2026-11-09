@@ -4,6 +4,7 @@ import hashlib
 import json
 import subprocess
 from unittest import TestCase, main
+from unittest.mock import patch
 
 import pg_task_archive as archive
 
@@ -46,6 +47,15 @@ class Database:
 
 
 class TaskArchiveCheck(TestCase):
+    def test_archive_cutoff_controls_the_candidate_plan(self):
+        result = subprocess.CompletedProcess(['psql'], 0, stdout='[]', stderr='')
+        with patch.object(archive.subprocess, 'run', return_value=result) as run:
+            self.assertEqual(archive.Postgres().candidates('2026-11-02T00:00:00.000Z', 100), [])
+        sql = run.call_args.kwargs['input']
+        self.assertIn('REPEATABLE READ READ ONLY', sql)
+        self.assertIn("plan_cache_mode='force_custom_plan'", sql)
+        self.assertIn("factory_archive_candidates('2026-11-02T00:00:00.000Z',100)", sql)
+
     def test_exact_roundtrip_and_manifest_before_prune(self):
         store, database = Store(), Database()
         original = database.prune

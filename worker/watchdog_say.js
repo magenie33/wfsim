@@ -26,7 +26,7 @@ function describe(f, now) {
   }
   if (f.kind.startsWith("stalled:")) {
     return ["act", `${f.producer} 类任务派不出去`,
-      `${f.questions} 个已过期的 ${f.producer} 题半小时内一个回答都没有，同时有 ${f.witnesses_active} 台机器在干别的活（最早到期已 ${fmtHours(hoursAgo(f.oldest_due, now))}）。` +
+      `${f.at_least ? "至少 " : ""}${f.questions} 个已过期的 ${f.producer} 题半小时内一个回答都没有，同时有 ${f.witnesses_active} 台机器在干别的活（${f.at_least ? "本次检查中" : ""}最早到期已 ${fmtHours(hoursAgo(f.oldest_due, now))}）。` +
       `\n异常：这类题没被派给任何人。叫 agent 查派发。`];
   }
   if (f.kind === "starved") {

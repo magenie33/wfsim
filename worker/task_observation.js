@@ -43,11 +43,14 @@ export function createObservation() {
         SELECT producer FROM silent`).bind(recent).all();
       // Each producer is a bound constant, so rare kinds use demands_live rather than a whole-table estimate.
       for (const p of producers) {
-        const row = await db.prepare(`SELECT count(DISTINCT d.question) AS questions, min(d.due_at) AS oldest_due
-          FROM demands d CROSS JOIN LATERAL (SELECT 1 FROM questions q WHERE q.id = d.question AND q.state = 'open'
-            AND factory_takeable(q.lease_until, q.leased_at, ?1::text, ?3::bigint) LIMIT 1) q
-          WHERE d.state = 'live' AND d.due_at < ?1::text AND d.producer = ?2::text`)
-          .bind(at, p.producer, ceiling).first();
+        const row = await db.prepare(`WITH sample AS MATERIALIZED (
+          SELECT d.question,d.due_at FROM demands d CROSS JOIN LATERAL (
+            SELECT 1 FROM questions q WHERE q.id=d.question AND q.state='open'
+              AND factory_takeable(q.lease_until,q.leased_at,?1::text,?3::bigint) LIMIT 1) q
+          WHERE d.state='live' AND d.due_at<?1::text AND d.producer=?2::text LIMIT ?4::bigint)
+          SELECT count(DISTINCT d.question) AS questions,min(d.due_at) AS oldest_due,
+            count(*)>=?4::bigint AS at_least FROM sample d`)
+          .bind(at, p.producer, ceiling, OVERDUE_MAX + 1).first();
         if (row.questions) out.push({ kind: `stalled:${p.producer}`, producer: p.producer, ...row, witnesses_active: active });
       }
     });
