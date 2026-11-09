@@ -17,15 +17,20 @@ attack:
   spread:
     min_deg: 24.0
     max_deg: 42.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 24.0
+      hip_max_deg: 42.0
   trigger: charged_auto
   shot_type: hit_scan
-  fire_rate: 7.8334
+  fire_rate: 7.83333333333333
   charge_seconds: 1
   multishot: 11.0
   ammo_cost: 15
   crit_chance: 0.21
   crit_multiplier: 2.1
-  status_chance: 0.0573
+  status_chance: 0.0572727272727273
   punch_through_m: 0.0
   # A GUARANTEED CORROSIVE PROC — the module's ForcedProcs.
   forced_procs: [corrosive]
@@ -33,8 +38,15 @@ attack:
   falloff:
     start_m: 5.0
     end_m: 10.0
-    reduction: 0.9921
+    reduction: 0.992125984252
   damage: { corrosive: 35, puncture: 57, slash: 35 }   # 127 a pellet, 1397 a shot
 
+  range_m: 300
 source:
   url: https://wiki.warframe.com/w/EFV-5_Jupiter
+reload_seconds: 2.1
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

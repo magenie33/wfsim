@@ -41,8 +41,13 @@ attack:
   extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 1
-    max_deg: 3
+    min_deg: 1.0
+    max_deg: 3.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 5.0
+      hip_max_deg: 9.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 120
@@ -70,3 +75,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Boltor_Prime
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

@@ -54,7 +54,7 @@ attack:
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 30
-  fire_rate: 2.08
+  fire_rate: 2.08333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.10
@@ -90,8 +90,11 @@ attack:
     stacking: stack
 
 unmodeled:
+  - reason: client_projectile_callbacks
   - "The throw is silent and the cloud is not; there is nobody to alert here."
   - "This weapon cannot equip Concealed Explosives, the thrown-exclusive mod, which is not offered here either way."
 
 source:
   url: https://wiki.warframe.com/w/Coda_Pox
+
+# see notes: client_secondary_calibration

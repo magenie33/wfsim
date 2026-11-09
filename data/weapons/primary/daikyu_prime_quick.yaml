@@ -16,6 +16,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 140
@@ -37,8 +42,11 @@ attack:
   damage: { impact: 112.5, puncture: 150, slash: 112.5 }   # total 375
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: bolt_corpse_ragdoll
   - reason: silent_weapon
 
 source:
   url: https://wiki.warframe.com/w/Daikyu_Prime
+
+# see notes: client_primary_calibration

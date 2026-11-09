@@ -24,11 +24,12 @@ gauge_form:
     resource: incarnon_charges
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
-  transmute_in_seconds: 1      # = base reload time, unmodded
+  # see notes: incarnon_package_transition_time
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 0.6
 
 pseudo_reload:
   magazine: 24
-  reload_seconds: 2.0
 
 # see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
@@ -64,8 +65,13 @@ cannot_zoom: true
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 15
-    max_deg: 35
+    min_deg: 15.0
+    max_deg: 35.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 15.0
+      hip_max_deg: 35.0
   trigger: burst
   # THE BURST. The listed `fire_rate` counts PULLS, not rounds — so reading it
   # as rounds per second understates this weapon by its burst count. Both
@@ -79,13 +85,13 @@ attack:
   ammo_cost: 1                  # of the 24-round charge pool
   crit_chance: 0.3
   crit_multiplier: 3.2
-  status_chance: 0.0667
+  status_chance: 0.0666666666666667
   punch_through_m: 0.0
   # see notes: falloff_feeds_the_riven_pool
   falloff:
-    start_m: 16
-    end_m: 32
-    reduction: 0.9857   # fraction REMOVED past end_m
+    start_m: 16.0
+    end_m: 32.0
+    reduction: 0.985714285714
   # see notes: wall_ramp_full_damage_4
   range_m: 300.0
   damage: { impact: 10.5, slash: 49, puncture: 10.5 }   # total 70.0
@@ -96,3 +102,7 @@ source:
   url: https://wiki.warframe.com/w/Vasto_Incarnon_Genesis
   # wiki module Attacks[].AttackName: "Incarnon Form"
 
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

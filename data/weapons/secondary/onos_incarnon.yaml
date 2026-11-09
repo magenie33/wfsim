@@ -17,6 +17,7 @@ transforms_from: onos
 # from the wiki's own attack rows: 8 beam ticks at 30 Radiation against 2,200
 # Heat direct plus 1,100 Heat radial — the beam is a ninth of it.
 unmodeled:
+  - reason: client_secondary_other_behavior
   - "The Incarnon Form's charged shot is not modelled, and it is most of the form: 2,200 Heat with guaranteed status, 38% crit and 3.2x, with the beam's 5 m punch through. It costs 50 of the 350 Incarnon rounds, so one gauge is seven charged shots. The number reads low."
   - "The charged shot's explosion is not modelled either: 1,100 Heat in 3 m at 38% crit and 3.2x, falling off to 70% at the rim, needing no line of sight."
   - "The beam's charge ramp is not modelled: its damage climbs to 2.5x the longer the trigger is held, resetting on release or on a charged shot. The beam here is scored at its lowest."
@@ -35,11 +36,12 @@ gauge_form:
     resource: incarnon_charges
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
-  transmute_in_seconds: 2      # = base reload time, unmodded
+  # see notes: incarnon_package_transition_time
+  transmute_in_seconds: 3.0
+  transmute_out_seconds: 1.0
 
 pseudo_reload:
   magazine: 350
-  reload_seconds: 3.0
 
 # see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
@@ -67,6 +69,9 @@ attack:
 
 # incarnon_evolutions: see data/weapons/secondary/onos.yaml (shared group)
 
+  range_m: 8
 source:
   url: https://wiki.warframe.com/w/Onos
   # wiki module Attacks[].AttackName: "Incarnon Form Held Damage"
+
+# see notes: client_secondary_calibration

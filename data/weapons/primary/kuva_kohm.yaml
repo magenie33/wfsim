@@ -45,11 +45,16 @@ attack:
   # Cone half-angle from the reticle, degrees — wiki
   # Module:Weapons/data. "Low accuracy when fully spooled" is this.
   spread:
-    min_deg: 5
-    max_deg: 20
+    min_deg: 5.0
+    max_deg: 20.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 10.0
+      hip_max_deg: 30.0
   trigger: auto
   shot_type: hit_scan
-  fire_rate: 4.17
+  fire_rate: 4.16666666666667
   # …AND IT NEVER FIRES AT THAT RATE FROM THE FIRST SHOT. "Fire rate ramps from
   # 20% baseline, increasing by 20% per shot", full from the 12th — the same
   # shape the Gorgon carries, and `over_shots` is the exact half.
@@ -59,7 +64,7 @@ attack:
     over_shots: 4.0
   # TWELVE PELLETS at full spool, and the damage below is PER PELLET. The
   # ramp from one is admitted below: this entry IS the spooled state.
-  multishot: 12.0
+  multishot: 12
   # FOUR SHELLS A SHOT once spooled — "Poor ammo efficiency at full spool".
   ammo_cost: 4
   crit_chance: 0.19
@@ -82,7 +87,12 @@ attack:
   damage: { impact: 4.0, puncture: 4.0, slash: 12.0 }   # 20 per pellet
 
 unmodeled:
+  - reason: client_rate_spool
+  - reason: client_spool_pellets
+  - reason: client_accuracy_runtime
   - "The pellet count spools from 1 to 12, and this entry fires 12 from the first shot. The fire-rate spool is modelled and the pellet spool is not, so a short burst reads high."
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Kohm
+
+# see notes: client_primary_calibration

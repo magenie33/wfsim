@@ -23,6 +23,54 @@
 # repeat. A reason earns its place by being used more than twice OR by having
 # more than one numeric spelling.
 reasons:
+  client_secondary_other_behavior:
+    text: "Native alternative behavior declarations are bound as evidence; their runtime availability and complete attack sequences are not simulated. Only the declared entry modes are used."
+  client_modular_secondary_assembly:
+    text: "Kitgun statistics use the published assembly tables; native secondary overrides are bound, but the runtime part-composition consumer is unverified."
+  client_secondary_charge_packet:
+    text: "Charge time and the selected projectile use parsed inputs. The native charge-cap multiplier consumer is unverified; damage uses the declared packet without multiplying it by that cap."
+  client_secondary_clip_charge:
+    text: "The full-magazine attack retains its fixed unmodded damage and recharge cycle; native clip-dependent scaling, explosion damage/status and alternate-fire recharge consumers are unverified."
+  client_secondary_return_ammo:
+    text: "Returning-projectile ammunition keeps its declared resource convention; the native reserve field does not establish a finite pickup-based ammo pool."
+  client_secondary_orb_packet:
+    text: "Orb strikes and the final explosion retain their measured damage. Native launch packets, chain attenuation, target selection, meter and animation consumers are unverified; their raw values do not replace the deployed orb sequence."
+  client_secondary_blob:
+    text: "Attached damage, fuse and explosion use separate native components. Unspecified base status, tick initialization, stack overflow and bounce consumers retain the declared measured or approximated rules."
+  client_secondary_reload_grenade:
+    text: "Reload grenade packets, count and fan use parsed inputs. Release, flight and impact clocks and Critical Mutation group ordering remain unmodelled; the declared mid-reload impact approximation remains in use."
+  client_secondary_toggle_reload:
+    text: "The alternate-fire state's short timer belongs to its toggle action; magazine reload uses the parsed primary-fire state. Toggle recovery and snare callback timing remain unmodelled."
+  client_beam_trace_punch:
+    text: "The native beam trace declares punch-through, but its target-selection consumer is unverified; the declared target-limited beam behavior remains in use."
+  client_ammo_runtime:
+    text: "The parsed fire packet's zero ammo requirement does not establish the state or script's resource debit; the declared ammo convention remains in use."
+  client_forced_reload:
+    text: "The native state requests a reload after every throw; its zero-ammo forced reload is not simulated, so this entry retains its declared cycle approximation."
+  client_falloff_runtime:
+    text: "The parsed falloff floor exceeds the direct packet's base damage; that falloff consumer is unverified and the declared falloff convention remains in use."
+  client_projectile_collision:
+    text: "Native projectile collision dimensions are bound as evidence; unverified width and sweep consumers retain the declared collision approximation."
+  client_rate_spool:
+    text: "Fire-rate ramp endpoints use parsed values; ramp length retains the declared shot-count convention because the native counter's update cadence is unverified."
+  client_projectile_acceleration:
+    text: "Flight uses the declared constant speed; native projectile acceleration is not simulated."
+  client_radial_critical:
+    text: "Radial critical statistics retain the published rule; the native radial packet's critical-upgrade consumer is unverified."
+  client_modular_assembly:
+    text: "Kitgun statistics use the published assembly tables; native primary overrides are bound, but the runtime part-composition consumer is unverified."
+  client_composite_attack:
+    text: "This attack uses the published beacon or orb component; native launch-packet statistics do not establish the scripted damage sequence."
+  client_spool_pellets:
+    text: "This entry uses the fully spooled pellet count; the initial pellet-count ramp and reset are not simulated."
+  client_clip_burst:
+    text: "The burst uses the base magazine's round count; its length does not grow with magazine capacity."
+  client_battery_defaults:
+    text: "Some battery defaults are absent from the parsed records; the published recharge convention remains in use."
+  client_special_spread:
+    text: "The native fan, first-pellet or charge-dependent spread override is not simulated; the declared spread approximation remains in use."
+  client_projectile_callbacks:
+    text: "Native projectile callbacks are bound as evidence; unverified callback timing, scaling and secondary effects are not simulated."
   client_scourge_primary_collision:
     text: "Primary fire uses ray collision; the native projectile's collision width is not simulated."
   client_scourge_field:

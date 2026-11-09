@@ -59,7 +59,10 @@ attack:
   damage: { impact: 351.45, puncture: 429.55 }   # total 781
 
 unmodeled:
+  - reason: client_projectile_collision
   - "An enemy killed directly by it leaves a Gas cloud whose ticks deal half the killing shot's damage (wiki). The engine has no hit that exists only after a kill, so against anything that dies the number reads low by roughly a third."
 
 source:
   url: https://wiki.warframe.com/w/Purgator_1
+
+# see notes: client_primary_calibration

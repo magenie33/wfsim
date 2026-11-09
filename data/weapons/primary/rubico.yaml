@@ -42,10 +42,15 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 15
+    max_deg: 15.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 15.0
+      hip_max_deg: 25.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 2.67
+  fire_rate: 2.66666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -57,10 +62,17 @@ attack:
   # wiki: "Range: 1000.0 m", Hit-Scan — a sniper reaches far further than a rifle, which is why there is no class rule to shortcut
   range_m: 1000.0
   damage: { impact: 144.0, puncture: 27.0, slash: 9.0 }   # 180 total
+  falloff:
+    start_m: 400.0
+    end_m: 600.0
+    reduction: 0.444444417778
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: sniper_combo_miss
     seconds: 2
   - reason: zoom_steps
 
 source:
   url: https://wiki.warframe.com/w/Rubico
+
+# see notes: client_primary_calibration

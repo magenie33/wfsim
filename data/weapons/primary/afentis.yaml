@@ -41,7 +41,7 @@ attack:
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 90
-  fire_rate: 0.833
+  fire_rate: 0.833333333333333
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -78,3 +78,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Afentis
+
+# see notes: client_primary_calibration

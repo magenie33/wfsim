@@ -30,6 +30,11 @@ attack:
   spread:
     min_deg: 1.2
     max_deg: 2.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 4.0
+      hip_max_deg: 6.0
   trigger: burst
   # "burst-fire 2 shots of seeking projectiles per target", at the module's own
   # 0.06 s between them.
@@ -37,7 +42,7 @@ attack:
     count: 2
     delay_seconds: 0.06
   shot_type: projectile
-  projectile_speed_mps: 200
+  projectile_speed_mps: 50
   fire_rate: 1.0
   multishot: 1.0
   # "Lock-on burst-fire consumes 4 ammo (2 per pistol) per target" — 2 a round
@@ -50,13 +55,17 @@ attack:
   # rounds have their own target and do not carry on through it.
   punch_through_m: 0.0
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
-  # wiki, Lock-on Mode: "Range: 60.0 m", Projectile at 200 m/s — and on this
+  # wiki, Lock-on Mode: "Range: 60.0 m" — and on this
   # attack the number is BOTH, since 60 m is also the distance inside which the
   # page says a target can be acquired.
   range_m: 60.0
-  damage: { impact: 11.2, puncture: 9.0, slash: 7.8 }   # total 28
+  damage:
+    impact: 11.2
+    puncture: 8.96
+    slash: 7.83999916
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The mode locks up to 8 enemies within 60 m and fires a 2-round burst at each; this entry fires the burst one enemy receives. Right against one enemy; against a crowd up to eight times low."
   - "The ~0.5 s delay before the mode can lock on again after a burst is not modelled."
   - "Lock-on homes on the body, making headshots hard unless aiming upward (page), so a headshot rate set on the scenario is optimistic for this form."
@@ -64,3 +73,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Diplos
+
+# see notes: client_secondary_calibration

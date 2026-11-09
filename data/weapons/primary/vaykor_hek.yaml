@@ -36,6 +36,11 @@ attack:
   spread:
     min_deg: 6.0
     max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 12.0
+      hip_max_deg: 22.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 3
@@ -44,18 +49,21 @@ attack:
   ammo_cost: 1
   crit_chance: 0.25
   crit_multiplier: 2.0
-  status_chance: 0.107
+  status_chance: 0.107142857142857
   punch_through_m: 0.0
   # see notes: wall_ramp_full_damage
   range_m: 300.0
   falloff:
     start_m: 10.0
     end_m: 25.0
-    reduction: 0.7333
+    reduction: 0.733333346667
   damage: { impact: 11.25, puncture: 48.75, slash: 15 }   # 75 a pellet, 525 a shot
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The Justice syndicate effect detonates a radial blast and heals the wielder (wiki). It runs on a syndicate meter the sim does not track; the blast is not counted."
 
 source:
   url: https://wiki.warframe.com/w/Vaykor_Hek
+
+# see notes: client_primary_calibration

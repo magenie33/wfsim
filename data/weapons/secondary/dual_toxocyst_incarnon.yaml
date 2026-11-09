@@ -27,7 +27,7 @@ gauge_form:
     # - Weakpoints on corpses or invulnerable targets build nothing.
   transmute:
     activation: alt_fire            # full gauge NOT required
-    animation_seconds: reload_speed # mode switch takes the reload time
+    animation_seconds: reload_speed
     auto_transmute_out: on_incarnon_ammo_empty
     # switch_back_penalty: expends all remaining charge
   incarnon_magazine:
@@ -44,13 +44,9 @@ gauge_form:
     survives: [holster, bleedout, disarm]
     cleared_on: [death]
   # side_effect: swapping either way fully reloads the normal form's magazine
-  # Transition animations (M9): both directions scale by the OFFICIAL
-  # reload formula (wiki Reload: time = base / (1 + reload speed bonus)).
-  #   transmute IN  = the weapon's reload time (2.35 s unmodded)
-  #   transmute OUT = ~1.0 s base (user ESTIMATE - measured 1.3 s under
-  #                   -30% reload speed; the formula strictly implies
-  #                   0.91 s; precise re-measurement deferred)
-  transmute_in_seconds: 2.35     # = base reload time, unmodded
+  # see notes: incarnon_package_transition_time
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 0.6
 
 # SIM CONVENIENCE: with the gauge LOCKED full (analogous
 # to buff locks), the Incarnon combat cycle reduces to a standard
@@ -58,7 +54,6 @@ gauge_form:
 # full charge economy is cycled:
 pseudo_reload:
   magazine: 270
-  reload_seconds: 3.35   # transmute out (1.0) + in (2.35), unmodded
   # note: excludes charge-rebuilding time (assumed locked); both components
   # scale with reload-speed bonuses
 
@@ -73,7 +68,12 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
-    max_deg: 12
+    max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.5
+      hip_max_deg: 18.0
   trigger: auto
   # DISPUTED: the wiki data module and the Ricochet page
   # (ricochet = hitscan-only, DT listed) imply hitscan, but the CO
@@ -131,3 +131,7 @@ source:
   # note: Stats from the wiki's structured Lua data module; economy from the
   # Incarnon Genesis page.
 
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

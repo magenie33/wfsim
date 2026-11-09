@@ -38,6 +38,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.0
+      hip_max_deg: 3.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 80
@@ -75,6 +80,7 @@ attack:
     damage: { impact: 11.2, puncture: 4, slash: 24.8 }   # total 40
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: empty_reload_is_faster
     seconds: 3
   - "The explosion arrives 0.6 s after the bolt lands, which lets an enemy walk out of it (page); here it resolves on impact, so nothing escapes."
@@ -84,3 +90,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Zhuge_Prime
+
+# see notes: client_primary_calibration

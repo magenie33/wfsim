@@ -78,3 +78,9 @@ source:
   # Horizontal/Vertical Shot" — the module's own name for this attack.
   # The module additionally carries MinSpread 0 / MaxSpread 12 for this attack
   # — the wide cone the page calls out — which nothing consumes single-target.
+
+unmodeled:
+  - reason: client_special_spread
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

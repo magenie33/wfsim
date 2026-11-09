@@ -16,10 +16,12 @@ transforms_to: stug_incarnon
 
 # see notes: bulk_intake_stats_are_2
 unmodeled:
+  - reason: client_secondary_other_behavior
+  - reason: client_secondary_blob
+  - reason: client_projectile_callbacks
   - "Bouncing Incarnon child projectiles are assumed to leave the fight and hit nobody, including crowds (M127). Their damage and parameters are recorded."
   - "Attachment is resolved per body part; separate nearby patches on one part are not modelled (M127)."
   - "Unmeasured: spawn-time projectile quantities beyond one full blob are capped here; the emitter's handling of the remainder is not traced (M109)."
-  - "Unmeasured: the explosion's falloff is read as 70%, from the page's bug note, rather than the 30% in its table."
 accuracy: 100
 disposition: 1.2
 polarities: [vazarin]
@@ -70,13 +72,13 @@ attack:
       damage: { corrosive: 75 }
       radius_m: 0.3
       falloff_start_m: 0
-      # THE PAGE'S BUG NOTE, not its table: "Despite the UI listing the weapon's
-      # radial damage falloff as only 30% (dealing 100% - 70% damage over its
-      # range), it is actually 70% (dealing 100% - 30% damage over its range)".
-      falloff_reduction: 0.7
+      # Parsed ExplosionFallOff; source receipt records the selected component.
+      falloff_reduction: 0.3
 
 # M126: installing the adapter removes charged alt-fire; only primary fire is modelled.
 # incarnon_evolutions: definitions live in data/evolutions/stug_*.yaml.
 
 source:
   url: https://wiki.warframe.com/w/Stug
+
+# see notes: client_secondary_calibration

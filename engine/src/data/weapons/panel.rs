@@ -216,7 +216,10 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
     // An Incarnon form's rounds are charge-backed; the locked-gauge
     // pseudo-reload supplies the sim's magazine/reload reduction.
     let (magazine_size, base_reload) = match &s.pseudo_reload {
-        Some(pr) => (pr.magazine, pr.reload_seconds),
+        Some(pr) => {
+            let gauge = s.gauge_form.as_ref().expect("pseudo_reload requires gauge_form");
+            (pr.magazine, gauge.transmute_in_seconds + gauge.transmute_out_seconds)
+        }
         // A WEAPON WITH NO MAGAZINE IS NOT ASKED FOR ONE.
         //
         // `no_magazine` is a flag an entry can carry while stating a magazine
@@ -575,11 +578,11 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
         // than re-derived from the class in the sim, which has no business
         // knowing what a bow is.
         burst: s.attack.burst,
-        charge_cadence: if s.class == "bow" {
+        charge_cadence: s.attack.charge_cadence.unwrap_or(if s.class == "bow" {
             ChargeCadence::DrawOnly
         } else {
             ChargeCadence::DrawThenRate
-        },
+        }),
         // Does a FIRE-RATE bonus shorten the draw as well as the interval?
         //
         // The wiki's general charge formula says yes — "Charge Time = Base

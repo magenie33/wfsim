@@ -78,11 +78,17 @@ attack:
       damage_per_hop: 0.0
       origin: radius_targets
 
-# THE RAMP FLOOR IS 30%, not the engine's 20% default: "Damage ramps 30% to 100%
-# over 0.6 seconds; decays to 30% over 2 seconds after 0.8-second firing pause."
-# The 0.6 and the 0.8 are the engine's own constants and match exactly; only the
-# floor differs, the same shape the Tenet Cycron and the Kuva Nukor have.
-beam_ramp_floor: 0.30
+# Parsed ramp and attenuation bounds; see client_primary_calibration.
+    ramp:
+      rise_seconds: 1.0
+      cooldown_delay_seconds: 2.0
+      cooldown_divisor: 2.0
+beam_ramp_floor: 0.5
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Quanta
+
+unmodeled:
+  - reason: client_beam_target_ramp
+
+# see notes: client_primary_calibration

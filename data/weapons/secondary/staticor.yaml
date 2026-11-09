@@ -37,7 +37,12 @@ attack:
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 0.0
-    max_deg: 0.0
+    max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 40
@@ -65,8 +70,13 @@ attack:
     damage: { radiation: 106 }   # total 106
 
 unmodeled:
+  - reason: client_secondary_charge_packet
+  - reason: client_ammo_runtime
+  - reason: client_accuracy_runtime
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Staticor
+
+# see notes: client_secondary_calibration

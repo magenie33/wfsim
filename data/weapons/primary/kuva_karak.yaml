@@ -57,10 +57,15 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.5
-    max_deg: 2
+    max_deg: 2.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 8.0
+      hip_max_deg: 11.0
   trigger: auto
   shot_type: hit_scan
-  fire_rate: 11.67
+  fire_rate: 11.6666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.23
@@ -78,3 +83,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Karak
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

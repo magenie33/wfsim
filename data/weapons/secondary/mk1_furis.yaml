@@ -59,11 +59,16 @@ co_behavior: additive_with_base_damage
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 1
-    max_deg: 8
+    min_deg: 1.0
+    max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 7.0
+      hip_max_deg: 18.0
   trigger: auto
   shot_type: hit_scan
-  fire_rate: 8.33
+  fire_rate: 8.33333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.05
@@ -83,3 +88,7 @@ attack:
 source:
   url: https://wiki.warframe.com/w/MK1-Furis
 
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

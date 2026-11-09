@@ -196,6 +196,11 @@ number's source.
 Disagreements are not rounding. Record which source you took and why, in the
 file — every existing weapon does.
 
+The whole-primary and whole-secondary calibrations use the parsed-input adoption rules in
+`DATA_SOURCES.md` §Whole-primary calibration and §Whole-secondary calibration. Each receipt binds every form and
+records unsupported consumers separately; a dossier's presence does not establish
+complete runtime coverage.
+
 **THE INFOBOX AGREEING IS NOT THE INTAKE BEING DONE**. The row
 above is not advice; it is the step that gets skipped, because a weapon whose
 every infobox field matches LOOKS finished. The Mausolon's did — both columns,

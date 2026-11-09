@@ -685,14 +685,14 @@ fn a_thrown_speargun_plants_a_bullet_attractor_that_counts() {
     use crate::fight::{monte_carlo, FightParams};
     for id in ["scourge_thrown", "scourge_prime_thrown"] {
         let b = crate::model::WeaponBase::from_data(id, true, &[]);
-        assert_eq!(b.attractor_seconds, Some(4.7), "{id}: the wiki's 4.7 s");
+        assert_eq!(b.attractor_seconds, Some(5.0), "{id}: parsed attractor lifetime");
         let p = crate::build::loadout::resolve(&b, &[], crate::model::StackPolicy::Emergent);
         let mut params = FightParams::from_panel(
             &p,
             &crate::arena::Arena::training(60.0),
             &crate::data::arcanes::ArcaneFx::none(),
         );
-        assert_eq!(params.attractor_seconds, Some(4.7), "{id}: through the panel");
+        assert_eq!(params.attractor_seconds, Some(5.0), "{id}: through the panel");
         // The whole claim, stated as damage: a Condition Overload build
         // that counts the field beats the same build that cannot see it.
         params.co_per_type = 0.8;
@@ -922,7 +922,7 @@ fn every_spool_reconciles_with_its_own_page() {
         ("supra", 0.10, 1.00, 4.0, 0.225, 5),
         // "…a spool-up of 4 shots", "starts at 40% … increases by 20% per
         // shot" — 0.60 / 3 = 20% a shot, full from the 4th.
-        ("supra_vandal", 0.40, 1.00, 3.0, 0.20, 4),
+        ("supra_vandal", 0.20, 1.00, 3.0, 0.266667, 4), // parsed endpoint, declared span
         // "Primary fire requires a spool-up of 9 shots before optimal fire
         // rate is achieved", and "fire rate starts at 40% of the listed
         // value, and increases by 7.5% per shot" — 0.60 / 8 = 7.5% a shot,

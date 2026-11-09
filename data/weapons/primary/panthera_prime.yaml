@@ -37,10 +37,15 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 1.5
+    sampling:
+      horizontal_ratio: 0.9
+      uniform: true
+      hip_min_deg: 2.0
+      hip_max_deg: 3.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 80
-  fire_rate: 3.67
+  fire_rate: 3.66666666666667
   multishot: 1.0
   ammo_cost: 2
   crit_chance: 0.18
@@ -70,9 +75,12 @@ attack:
     damage: { slash: 20 }   # total 20
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The blades ricochet off surfaces (wiki); there are no walls here."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Panthera_Prime
+
+# see notes: client_primary_calibration

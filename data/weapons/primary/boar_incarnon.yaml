@@ -59,12 +59,14 @@ gauge_form:
     # Munitions)".
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
+  # see notes: incarnon_package_transition_time
   transmute_in_seconds: 1.4
   transmute_out_seconds: 0.6
 
+# SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
+# magazine/reload model, with downtime derived from both state timers.
 pseudo_reload:
   magazine: 150
-  reload_seconds: 2
 
 # No CO catalog row for this form (nor for the base one, nor for either of the
 # Prime's), so the ADDITIVE class applies — absence from a table that lists
@@ -135,6 +137,7 @@ attack:
     # SELF-AIMING, and the aimed body is one of the three. ONLY THE BODY THE
     # PLAYER POINTED AT MAY HEADSHOT — measured (M85); the two the weapon took
     # for itself lock BODIES, which is what `rules::chain::Acquire` seeds.
+      compounds: true
     beams:
       count: 3
       acquire_deg: 10.0
@@ -155,3 +158,6 @@ source:
 unmodeled:
   - reason: client_beam_target_ramp
   - reason: client_accuracy_runtime
+beam_ramp_floor: 0.2
+
+# see notes: client_primary_calibration

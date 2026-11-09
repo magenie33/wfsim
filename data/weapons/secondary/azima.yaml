@@ -36,6 +36,11 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 7.0
+      hip_max_deg: 18.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 10
@@ -50,7 +55,11 @@ attack:
   damage: { impact: 2, puncture: 5, slash: 13 }   # total 20
 
 unmodeled:
+  - reason: client_secondary_other_behavior
+  - reason: client_accuracy_runtime
   - "The alt-fire spends the whole magazine to deploy a turret that shoots on its own, with a 75 Blast expiry blast (wiki, module). The engine has no deployed turret, so neither the turret nor the magazine it costs is counted."
 
 source:
   url: https://wiki.warframe.com/w/Azima
+
+# see notes: client_secondary_calibration

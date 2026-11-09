@@ -47,7 +47,7 @@ attack:
   shot_type: hit_scan
   fire_rate: 12
   multishot: 1.0
-  ammo_cost: 1
+  ammo_cost: 0.5
   crit_chance: 0.16
   crit_multiplier: 1.8
   status_chance: 0.32
@@ -58,6 +58,7 @@ attack:
   damage: { corrosive: 20, puncture: 8 }   # total 28
 
 unmodeled:
+  - reason: client_battery_defaults
   - "An Enkaus hit that leaves an ink-stained enemy below 35% health kills it outright, as one hit at 600% critical chance, 1x critical multiplier and a forced Corrosive status (wiki); the stain comes from the alternate fire or Follie's passive, and bosses and enemies with special states are spared. Nothing is ink-stained here, so every enemy is shot down to zero and the number reads low."
   - "Primary fire on an ink-stained enemy spends no ammo and restores 0.33 rounds per enemy hit (wiki). Nothing is ink-stained here, so every tick spends a round and the beam reloads on its usual schedule; the number reads low."
   - "Unmeasured: the page gives the beam a 30 m range and the weapon module 36 m. The sim uses 36 m, so a fight set between 30 m and 36 m reads high if the page is right."
@@ -65,3 +66,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Enkaus
+
+# see notes: client_primary_calibration

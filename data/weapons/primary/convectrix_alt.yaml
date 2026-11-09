@@ -34,7 +34,11 @@ attack:
   damage: { impact: 0.9, puncture: 0.9, slash: 7.2 }   # 9 a pellet, 18 a shot
 
 unmodeled:
+  - reason: client_special_spread
+  - reason: client_accuracy_runtime
   - "The alt-fire sweeps both beams across the front (wiki); the sim fires a fixed ray, so the number is the ceiling against one target and reads low against a line."
 
 source:
   url: https://wiki.warframe.com/w/Convectrix
+
+# see notes: client_primary_calibration

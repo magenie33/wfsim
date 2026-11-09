@@ -15,6 +15,7 @@ transforms_to: strun_prime_incarnon
 
 # see notes: bulk_intake_stats_are
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: reload_never_interrupted
 accuracy: 9.09
 disposition: 1.2
@@ -33,15 +34,11 @@ reload_seconds: 4.6
 
 # see notes: round_reload_shell_at
 #
-# the weapon's own page: 0.4 s a shell and a total 0.6 s of start-and-end
-# delay; the split between the two ends is not published and only their sum
-# reaches the number.
-# They add up to the published total at a full magazine, which is the
-# cross-check: 0.6 + 0.4 x 10 + 0 = 4.6.
+# Parsed phases: 0.4 s start + 10 * 0.4 s loop + 0.2 s end.
 reload_style: by_round
-reload_start_seconds: 0.6
+reload_start_seconds: 0.4
 reload_per_shell_seconds: 0.4
-reload_end_seconds: 0
+reload_end_seconds: 0.2
 
 # see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
@@ -49,21 +46,26 @@ co_behavior: additive_with_base_damage
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 7
-    max_deg: 15
+    min_deg: 7.0
+    max_deg: 15.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 9.0
+      hip_max_deg: 17.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   # see notes: falloff_feeds_the_riven_pool
   falloff:
-    start_m: 26
-    end_m: 52
-    reduction: 0.78   # fraction REMOVED past end_m
+    start_m: 26.0
+    end_m: 52.0
+    reduction: 0.777777773333
   multishot: 12.0
   ammo_cost: 1
   crit_chance: 0.24
   crit_multiplier: 2.2
-  status_chance: 0.0667
+  status_chance: 0.0666666666666667
   # "Innate 0.8 meter punch through" (wiki) — one of the two things the
   # Prime gained over the Strun.
   punch_through_m: 0.8
@@ -75,3 +77,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Strun_Prime
+
+# see notes: client_primary_calibration

@@ -43,12 +43,12 @@ gauge_form:
     # its status-chance grant still works.
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
+  # see notes: incarnon_package_transition_time
   transmute_in_seconds: 1.4
   transmute_out_seconds: 0.6
 
 pseudo_reload:
   magazine: 170
-  reload_seconds: 2
 
 # CO behavior: ADDITIVE — ✅ measured. The catalog has no row
 # for this form, and `independent` is NOT to be inferred from the weapon's
@@ -100,7 +100,7 @@ attack:
   crit_chance: 0.29
   crit_multiplier: 3.1
   status_chance: 0.39
-  punch_through_m: 0.0
+  punch_through_m: 0
   # …AND MODS DO NOT ADD ANY, verbatim: "Punch Through mods have no effect on
   # the behavior of the beam." Declared rather than derived, because this attack
   # is a BEAM with a damage radius — it carries no `radial:` and no `lingering:`,
@@ -218,6 +218,7 @@ attack:
 
 # incarnon_evolutions: see data/weapons/primary/torid.yaml (shared group)
 
+      compounds: true
 source:
   url: https://wiki.warframe.com/w/Torid_Incarnon_Genesis
   # note: wiki module `Module:Weapons/data/primary` attack 3, "Incarnon Form",
@@ -227,5 +228,9 @@ source:
 # see notes: client_primary_inputs
 
 unmodeled:
+  - reason: client_beam_trace_punch
   - reason: client_beam_target_ramp
   - reason: client_accuracy_runtime
+beam_ramp_floor: 0.2
+
+# see notes: client_primary_calibration

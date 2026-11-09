@@ -28,6 +28,11 @@ attack:
   spread:
     min_deg: 4.0
     max_deg: 6.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 10.0
+      hip_max_deg: 14.0
   trigger: burst
   # THE BURST COUNT IS THE MAGAZINE, which is the one thing this entry cannot
   # say properly: `count` is a constant and the real number is however many
@@ -59,6 +64,8 @@ attack:
   damage: { radiation: 26 }   # 26 a pellet, 10 pellets a round, 6 rounds a pull
 
 unmodeled:
+  - reason: client_clip_burst
+  - reason: client_accuracy_runtime
   - "The burst empties the magazine, and this entry fires a fixed 6 rounds, the unmodded magazine. Magazine mods lengthen the burst (page), so a build with one reads low."
   - "Aiming is disabled during the burst, so Acolyte mods do not apply to it; this entry does not apply that limit."
   - "The burst can be cancelled with a quick melee to spend less than a full magazine; the sim never does."
@@ -66,3 +73,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Detron
+
+# see notes: client_secondary_calibration

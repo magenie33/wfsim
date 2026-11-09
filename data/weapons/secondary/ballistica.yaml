@@ -15,6 +15,8 @@ transforms_to: ballistica_incarnon
 
 # see notes: bulk_intake_stats_are_2
 unmodeled:
+  - reason: client_secondary_other_behavior
+  - reason: client_accuracy_runtime
   - "The Burst Shot is not modelled; this entry carries only the Charged Shot."
 accuracy: 4
 disposition: 1.2
@@ -46,11 +48,16 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 50
+    max_deg: 50.0
+    sampling:
+      horizontal_ratio: 1.0
+      uniform: true
+      hip_min_deg: 2.5
+      hip_max_deg: 50.0
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 100
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   charge_seconds: 1
   charge_cadence: draw_then_rate
   multishot: 1.0
@@ -66,3 +73,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Ballistica
+
+# see notes: client_secondary_calibration

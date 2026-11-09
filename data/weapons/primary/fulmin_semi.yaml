@@ -33,10 +33,15 @@ attack:
   spread:
     min_deg: 6.0
     max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 12.0
+      hip_max_deg: 22.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 100
-  fire_rate: 2.17
+  fire_rate: 2.16666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 10
@@ -53,13 +58,18 @@ attack:
   falloff:
     start_m: 10.0
     end_m: 20.0
-    reduction: 0.6666
+    reduction: 0.63
   damage: { electricity: 400, impact: 100 }   # total 500
 
 unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_battery_defaults
+  - reason: client_accuracy_runtime
   - "The guaranteed Impact proc reaches only 9 m, scaling with Projectile Speed (wiki); it is applied at every range here, so further out the number reads high by one forced proc."
   - "The projectiles are 1 m thick (wiki); the sim fires a ray with no width."
   - reason: silent_weapon
 
 source:
   url: https://wiki.warframe.com/w/Fulmin
+
+# see notes: client_primary_calibration

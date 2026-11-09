@@ -41,12 +41,17 @@ attack:
   extra_hit_reads: even   # see notes: extra_hit_reads
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 2
-    max_deg: 6
+    min_deg: 2.0
+    max_deg: 6.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 8.0
+      hip_max_deg: 12.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 90
-  fire_rate: 9.33
+  fire_rate: 9.33333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.3
@@ -70,3 +75,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Telos_Boltor
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

@@ -16,7 +16,7 @@ transforms_to: furis_incarnon
 
 mod_pools: [pistol]
 grip_type: PISTOL
-mastery_rank: 2
+mastery_rank: 1
 max_rank: 30
 
 # Weapon-level metadata: wiki `Module:Weapons/data/secondary` (Mastery 2,
@@ -58,8 +58,13 @@ co_behavior: additive_with_base_damage
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 1
-    max_deg: 8
+    min_deg: 1.0
+    max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 7.0
+      hip_max_deg: 18.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 10.0
@@ -98,3 +103,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Furis
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

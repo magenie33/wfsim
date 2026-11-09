@@ -1,5 +1,5 @@
 //! A BURST IS PLAYED ROUND BY ROUND. The Akarius Prime: two rockets 0.12 s
-//! apart, then 1/3.667 s to the next pull — and a magazine of nine fires its
+//! apart, then 60/220 s to the next pull — and a magazine of nine fires its
 //! last rocket alone and reloads after that one pull's wait.
 use super::*;
 use crate::record::Kind;
@@ -24,7 +24,7 @@ fn trace(mag: f64) -> (Vec<f64>, Vec<f64>) {
 
 #[test]
 fn the_akarius_fires_its_pairs_on_the_burst_delay_and_a_lone_last_rocket_alone() {
-    let wait = 1.0 / 3.667;
+    let wait = 60.0 / 220.0;
     let (shots, reloads) = trace(8.0);
     for pull in 0..4 {
         let at = pull as f64 * (0.12 + wait);

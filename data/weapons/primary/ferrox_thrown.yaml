@@ -14,7 +14,6 @@ introduced: "19.13"
 # magazine is 1 and the 10 rounds belong to the primary-fire entry. The module
 # gives this attack its own Reload of 2.0 s.
 magazine: 1
-reload_seconds: 2.0
 
 # NOT INHERITED — the CO catalog gives a class per ATTACK. Neither this weapon's
 # throw nor its charged shot has a row, so both are ordinary Additive; the field
@@ -31,14 +30,18 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: semi
   shot_type: projectile
   projectile_speed_mps: 90
   fire_rate: 1.0
   multishot: 1.0
-  # "Throwing the spear consumes no ammo" — so the magazine of 1 above is what
-  # paces it rather than an ammo cost.
-  ammo_cost: 0
+  # Parsed ammo debit; one throw empties the declared single-shot magazine.
+  ammo_cost: 1
   crit_chance: 0.04
   crit_multiplier: 2.0
   # 33%, where the Tenet's throw carries 40% — the one number that differs
@@ -52,7 +55,10 @@ attack:
   # ITS FORCED PROC IS A KNOCKDOWN, which is not a damage type and so is not in
   # `forced_procs`: that field carries proc TYPES the damage model knows, and a
   # knockdown deals none. Admitted below instead.
-  damage: { impact: 35, puncture: 5, slash: 10 }   # total 50
+  damage:
+    impact: 105.0
+    puncture: 22.5
+    slash: 22.499997
 
   # PRIMARY COMPRESSION DOES NOT WORK ON THE THROW, and the catalog says so
   # outright rather than omitting the row — `Throw + AoE | 0% | Doesn't Work`,
@@ -78,9 +84,14 @@ attack:
     stacking: refresh
 
 unmodeled:
+  - reason: client_projectile_acceleration
+  - reason: client_projectile_callbacks
+  - reason: client_accuracy_runtime
   - "The field pulls enemies within 10 m toward it for 30 s, the reason it is thrown. Grouping enemies helps every area weapon in a real room; enemies here do not move, so it changes nothing."
   - "The throw's forced knockdown is crowd control, worth time and safety rather than damage; it changes nothing here."
   - "The spear must be picked up or waited out; here it is thrown and firing continues."
 
 source:
   url: https://wiki.warframe.com/w/Ferrox
+
+# see notes: client_primary_calibration

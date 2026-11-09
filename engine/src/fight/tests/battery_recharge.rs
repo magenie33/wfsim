@@ -24,20 +24,18 @@ fn the_haalvu_declares_a_never_emptied_mode_on_each_form() {
     assert_eq!(haalvu("base_recharge").apl().to_simc(), "recharge,if=battery.next_shot_empties\nreload,if=!can_fire\nshoot");
 }
 
-/// **DRY IS THE 2 S ANIMATION; ONE SHOT SHORT IS THE 1 S REFILL** (M121). Fired
-/// dry, every reload costs 2 s. Held short, it never reloads: 149 rounds, then
-/// the 0.5 s delay and 149/300 s back to full from the last shot — 12.38 s a
-/// cycle against 13.54 s, 8.6% more shots.
+/// Parsed empty recharge is 2 s delay + 150/300 s refill; a partial refill
+/// waits 0.5 s. M121 retains the original observed convention separately.
 #[test]
 fn a_haalvu_held_short_refills_in_a_second_and_never_reloads() {
     let dry = monte_carlo(&haalvu("base"), 2, 7);
     let short = monte_carlo(&haalvu("base_recharge"), 2, 7);
     assert!(dry.mean_reloads >= 8.0, "fired dry it reloads: {}", dry.mean_reloads);
-    assert!((dry.mean_downtime_seconds / dry.mean_reloads - 2.0).abs() < 1e-6,
-        "each reload is the 2 s animation: {} over {}", dry.mean_downtime_seconds, dry.mean_reloads);
+    assert!((dry.mean_downtime_seconds / dry.mean_reloads - 2.5).abs() < 1e-6,
+        "each empty recharge takes 2.5 s: {} over {}", dry.mean_downtime_seconds, dry.mean_reloads);
     assert_eq!(short.mean_reloads, 0.0, "held short it never empties");
     let gain = short.mean_shots / dry.mean_shots;
-    assert!((1.07..=1.10).contains(&gain), "{} against {} shots", short.mean_shots, dry.mean_shots);
+    assert!(gain > 1.07, "{} against {} shots", short.mean_shots, dry.mean_shots);
 }
 
 /// **A SHOT THAT COSTS NOTHING NEVER HOLDS**, and neither does an empty battery

@@ -317,9 +317,11 @@ the wiki quotes says it plainly: "To help with ammo economy, Beam Weapons
 consume 0.5 ammo per trace — unless they are Flamethrowers." Chained beams
 consume nothing extra.
 
-The engine does not model per-shot ammo COST at all: `ammo_cost` sits in every
-`data/weapons/` entry and no Rust code reads it; the sim spends a flat 1.0
-(minus ammo efficiency) per shot, beam ticks included.
+`ammo_cost` is spent per shot or continuous damage tick, after ammo efficiency.
+Primary calibration reads positive native `ammoRequirement` values; a scripted
+zero requirement does not establish the final resource debit. Such entries retain
+their declared convention and an explicit limitation. Incremented pellet stages
+retain their declared spool cost. The resource receipt is in `DATA_SOURCES.md`.
 
 **A charge pool is not ammo, and spends 1 per tick**. The Torid page had already put the Incarnon outside the
 ammo economy — "instead of drawing ammunition from its reserves, the Torid's
@@ -2938,6 +2940,12 @@ draw term set to zero (**MEASUREMENTS M16**). A non-bow charge weapon
 Modded Fire Rate)` — `data::weapons::ChargeCadence::DrawThenRate`.
 Epitaph is on the wiki's exception list for its RELOAD, not its draw: it takes
 this second formula and never reloads (`no_magazine`, **MEASUREMENTS M114**).
+
+An explicit `attack.charge_cadence` overrides the class default. Lanka's native
+refire is zero, so both its full and minimum draws use `draw_only`; the positive
+`fire_rate` anchor does not add a second wait. Parsed timing adoption and source
+bindings are in `DATA_SOURCES.md` §Whole-primary calibration. This source-backed
+cadence is not a new in-game measurement.
 
 ### Bow supply and the nock are independent of charge
 

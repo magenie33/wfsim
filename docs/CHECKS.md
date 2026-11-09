@@ -1,5 +1,20 @@
 # The browser and node checks
 
+`import_secondary_calibration.py --exchange <exchange> --check` verifies every
+secondary form binding, all pinned source hashes and adopted/retained components.
+`every_secondary_form_matches_its_adopted_client_fields` checks compiled data and
+its scoped limitations. Its negative control changes a nominal rate and forces
+a rebuild. Component checks distinguish Stug attachment from launch damage,
+Coda grenade fan, metered orbs and fixed full-clip attacks.
+
+`import_primary_calibration.py --exchange <exchange> --check` verifies all primary
+form bindings, pinned archive/member hashes and generated input receipts.
+`every_primary_form_matches_its_adopted_client_fields` compares compiled YAML
+with that receipt, including explicitly inherited timers and runtime limitations.
+Changing a nominal rate must fail the compiled check after forcing a data rebuild.
+The combat-model check covers charge-only cadence, shell-loop phases and battery
+delays. Existing native sampler vectors also exercise 3D-to-arena projection.
+
 `check_compute_attribution.mjs` verifies actual witness settlement, completion
 order, current name resolution, stable profiles, anonymous credit, native
 measurement replacement, private-input exclusion, exact 14-day expiry and

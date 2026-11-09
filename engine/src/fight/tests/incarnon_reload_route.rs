@@ -158,7 +158,7 @@ fn the_gauge_overshoots_and_transforms_at_the_end_of_the_shot() {
 
 /// ENTERING THE INCARNON FORM IS A RELOAD, and it pays a reload's stacks.
 ///
-/// The transmute animation IS the weapon's reload time, which is how you
+/// The transmute also reloads the base magazine, which is how you
 /// can tell. The whole reload runs across the cycle — one shell going in,
 /// the rest coming out — so nothing here is a rule about transforming: it
 /// is a rule about shells.

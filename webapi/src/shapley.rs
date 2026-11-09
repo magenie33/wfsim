@@ -255,11 +255,16 @@ mod tests {
                     (0..k).filter(|i| m >> i & 1 == 1).map(|i| mods[i]).collect();
                 let r = simulate_json(&json!({
                     "weapon": "braton_prime", "mods": on,
-                    "enemy": "corrupted_heavy_gunner", "level": 150,
+                    "enemy": "corrupted_heavy_gunner", "level": 9999,
                     "runs": 6, "seed": 0x5EED, "duration": 10,
                     "metric": metric, "run_series": true,
                 }));
                 assert!(r.get("error").is_none(), "{r}");
+                assert_eq!(r["kills_max"], 0, "the multiplier fixture must remain nonlethal: {r}");
+                let guard = r["target"]["overguard"].as_f64().unwrap();
+                assert!(r["dps_runs"].as_array().unwrap().iter()
+                    .all(|d| d.as_f64().unwrap() * 10.0 < guard),
+                    "the multiplier fixture must not cross the Overguard boundary: {r}");
                 r[if metric == "dps" { "dps_runs" } else { "score_runs" }].clone()
             })
             .collect();
@@ -270,7 +275,7 @@ mod tests {
     /// the crits: two separate multipliers, so under DPS the pair does not
     /// interact and each is worth what it is alone — to within the engine's
     /// damage quantization, which rounds each hit and so is not a product. The
-    /// target is out of reach of a kill, because a kill re-rolls the fight.
+    /// target keeps its Overguard: breaking a layer changes damage reduction.
     #[test]
     fn two_separate_buckets_on_the_simulator_do_not_interact() {
         let r = measure(&["serration", "vital_sense"], "dps");

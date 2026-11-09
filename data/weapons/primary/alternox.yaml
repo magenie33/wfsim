@@ -45,10 +45,15 @@ attack:
   spread:
     min_deg: 3.0
     max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 4.0
+      hip_max_deg: 10.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 60
-  fire_rate: 4.33
+  fire_rate: 4.33333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.14
@@ -63,3 +68,9 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Alternox
+
+unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

@@ -38,8 +38,13 @@ co_behavior: additive_with_base_damage
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 2
-    max_deg: 5
+    min_deg: 2.0
+    max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 8.0
+      hip_max_deg: 11.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 8.75
@@ -68,3 +73,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Braton
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

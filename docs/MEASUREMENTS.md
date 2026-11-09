@@ -112,7 +112,7 @@ path, so an entry may be renamed but never renumbered.
 | [M6](measurements/M06-frozen-exit-semantics.md) | Frozen exit semantics | ✅ 2026-07-24 (informal) |
 | [M7](measurements/M07-freeze-post-thaw-stacks.md) | Who owns the 3 fresh post-thaw Freeze stacks? | ✅ 2026-07-24 |
 | [M8](measurements/M08-magnetic-break-proc-attribution.md) | Magnetic break-proc attribution with mixed appliers | · |
-| [M9](measurements/M09-incarnon-transition-timings.md) | Incarnon transition timings | ✅ 2026-07-26 |
+| [M9](measurements/M09-incarnon-transition-timings.md) | Incarnon transition timings; per-profile package timer calibration | ✅ 2026-07-26 · package 2026-11-07 |
 | [M10](measurements/M10-incarnon-reload-buff-reach.md) | What does a reload-speed buff reach on an Incarnon weapon? | ✅ 2026-07-30 (informal) |
 | [M11](measurements/M11-on-hit-per-trigger-or-instance.md) | Is an "on hit" perk judged per trigger pull or per damage instance? | ✅ 2026-07-30 (informal) |
 | [M12](measurements/M12-torid-lingering-fields-stack.md) | Do overlapping lingering fields STACK on one target? (Torid) | ✅ 2026-07-30 |

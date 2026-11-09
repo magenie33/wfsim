@@ -36,10 +36,15 @@ attack:
   spread:
     min_deg: 23.0
     max_deg: 30.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 23.0
+      hip_max_deg: 30.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 40
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   multishot: 4.0
   ammo_cost: 1
   crit_chance: 0.16
@@ -63,9 +68,12 @@ attack:
     damage: { viral: 46 }   # total 46
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The bubbles explode 0.6-0.8 s after landing, which can let enemies leave the radius (page); here the blast resolves on impact, so nothing escapes."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Kompressa_Prime
+
+# see notes: client_secondary_calibration

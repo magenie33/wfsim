@@ -31,3 +31,10 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Afentis
+
+unmodeled:
+  - reason: client_projectile_acceleration
+  - reason: client_projectile_callbacks
+
+# see notes: client_primary_calibration
+magazine: 1

@@ -24,11 +24,12 @@ gauge_form:
     resource: incarnon_charges
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
-  transmute_in_seconds: 2      # = base reload time, unmodded
+  # see notes: incarnon_package_transition_time
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 0.6
 
 pseudo_reload:
   magazine: 21
-  reload_seconds: 3.0
 
 # see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
@@ -66,3 +67,4 @@ source:
   url: https://wiki.warframe.com/w/Atomos_Incarnon_Genesis
   # wiki module `Attacks[].AttackName`: "Incarnon Form" and "Incarnon Form Radial Attack"
 
+# see notes: client_secondary_calibration

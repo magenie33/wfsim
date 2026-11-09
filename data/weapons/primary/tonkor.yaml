@@ -40,7 +40,7 @@ attack:
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 40
-  fire_rate: 3.17
+  fire_rate: 3.16666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -82,3 +82,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Tonkor
+
+# see notes: client_primary_calibration

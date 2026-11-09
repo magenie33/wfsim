@@ -48,9 +48,14 @@ attack:
   spread:
     min_deg: 0.3
     max_deg: 0.7
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 0.8
+      hip_max_deg: 1.0
   trigger: auto
   shot_type: hit_scan
-  fire_rate: 4.67
+  fire_rate: 4.66666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.24
@@ -97,9 +102,13 @@ attack:
     takes_condition_overload: true
 
 unmodeled:
+  - reason: client_radial_critical
+  - reason: client_accuracy_runtime
   - "The wiki's Condition Overload catalog gives this weapon's radial its own row, 164% of its base; that row is not entered here yet, so the radial takes 100% and a status-stacking build reads low on it."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Trumna
+
+# see notes: client_primary_calibration

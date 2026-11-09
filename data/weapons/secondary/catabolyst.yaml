@@ -71,7 +71,7 @@ attack:
   falloff:
     start_m: 9.0
     end_m: 19.0
-    reduction: 0.9811
+    reduction: 0.981132075472
   damage: { corrosive: 53 }   # total 53
 
   # A BEAM THAT SPLASHES — "The zone of impact or maximum beam range has a
@@ -100,6 +100,10 @@ attack:
   # "Initial hit and explosion apply status separately", so the contact and the
   # blast are two instances. The blast falls off "from 100% to 50% from central
   # impact", takes no headshot, and its "Radius is not affected by Fulmination".
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
   reload_grenade:
     contact_co_behavior: independent
     count: 1
@@ -137,7 +141,11 @@ attack:
 # back to 20% over 2 seconds", which is BEAM_RAMP_SECONDS, BEAM_DECAY_DELAY and
 # the 20% floor exactly.
 
+    fan_deg: 0
 unmodeled:
+  - reason: client_secondary_reload_grenade
+  - reason: client_beam_target_ramp
+  - reason: client_accuracy_runtime
   - "Unmeasured: when in the reload the grenade lands. The page says it is thrown mid-reload without a time, so it lands halfway through; the throw itself takes no time."
   - "The explosion's self-stagger, which costs the wielder time when the target stands inside the blast, is not modelled."
   - "Galvanized Shot's bug on the grenade's direct hit (multiplicative with base damage; the Bugs section of the wiki's Catabolyst page) is not modelled."
@@ -146,3 +154,6 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Catabolyst
+beam_ramp_floor: 0.2
+
+# see notes: client_secondary_calibration

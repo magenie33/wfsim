@@ -42,10 +42,15 @@ attack:
   spread:
     min_deg: 5.0
     max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 5.0
+      hip_max_deg: 8.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 100
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": true}
   # "Innate multishot of 3 pellets", 540 apiece.
   multishot: 3.0
@@ -63,8 +68,13 @@ attack:
   falloff:
     start_m: 30.0
     end_m: 60.0
-    reduction: 0.508
+    reduction: 0.507407407407
   damage: { impact: 20, puncture: 120, radiation: 140, slash: 260 }   # 540 a pellet, 1620 a shot
 
 source:
   url: https://wiki.warframe.com/w/Exergis
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

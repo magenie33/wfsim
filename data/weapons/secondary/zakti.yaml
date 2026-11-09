@@ -37,6 +37,11 @@ attack:
   spread:
     min_deg: 2.5
     max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.5
+      hip_max_deg: 5.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 80
@@ -67,9 +72,12 @@ attack:
     damage: { gas: 80 }   # total 80
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The cloud arrives 1 s after the dart lands (wiki); here it resolves on impact, so nothing walks out of it."
   - "The explosion staggers enemies, opening them to finishers and stealth multipliers (wiki); there is no melee and no stealth here."
   - reason: explosion_ignores_cover
 
 source:
   url: https://wiki.warframe.com/w/Zakti
+
+# see notes: client_secondary_calibration

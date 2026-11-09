@@ -2,6 +2,13 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
+**Parsed-input adoption, 2026-11-09.** The owner requests parsed primary timing
+on conflicts. Haalvu's bound record configures `BatteryRegenDelayFromEmpty=2`
+and `BatteryRegenRate=300`; the calibrated empty refill is 2 + 150/300 = 2.5 s.
+Its 0.5 s partial delay remains separate, and the 2 s empty animation is a lower
+bound rather than a replacement for this configured refill. The original
+reported readiness below remains provenance; no new in-game timing was measured.
+
 ## The readings
 
 - **Firing stopped with rounds left:** regeneration starts 0.5 s after the last

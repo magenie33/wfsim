@@ -35,6 +35,11 @@ attack:
   spread:
     min_deg: 9.0
     max_deg: 22.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 15.0
+      hip_max_deg: 30.0
   trigger: duplex
   shot_type: hit_scan
   fire_rate: 2
@@ -50,11 +55,14 @@ attack:
   falloff:
     start_m: 8.0
     end_m: 20.0
-    reduction: 0.5714
+    reduction: 0.571428571429
   damage: { impact: 21, puncture: 21, slash: 168 }   # 210 a pellet, 1260 a shot
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The Purity syndicate effect heals and cleanses the wielder and nearby allies (wiki). There is no health and no ally here; the number is unaffected."
 
 source:
   url: https://wiki.warframe.com/w/Sancti_Tigris
+
+# see notes: client_primary_calibration

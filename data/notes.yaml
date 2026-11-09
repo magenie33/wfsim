@@ -9,6 +9,24 @@
 # an entry from being orphaned.
 
 notes:
+  client_secondary_calibration: |
+    scripts/import_secondary_calibration.py binds every secondary form to its
+    native behavior and selected damage component. Exact source hashes,
+    original tokens, adopted fields and retained composite conventions live in
+    tests/fixtures/client/secondary-calibration-2026-10-28.json. Parsed inputs
+    take priority, including timing, after identifying their consumer. Native
+    launch packets do not replace attached ticks, deployed orbs or full-clip
+    damage. Unsupported consumers remain explicit in docs/UNMODELLED.md.
+  client_primary_calibration: |
+    scripts/import_primary_calibration.py binds every primary form to its
+    native behavior and actual projectile, with source hashes and adopted
+    fields in tests/fixtures/client/primary-calibration-2026-10-28.json.
+    Parsed inputs take priority for this calibration, including timing;
+    source field semantics still distinguish refire, charge, looped reload,
+    battery recharge and mode switch. Runtime consumers not implemented by
+    the engine are registered as unmodelled. Native part overrides do not
+    establish final assembled Kitgun statistics. docs/DATA_SOURCES.md owns
+    the adoption policy and docs/UNMODELLED.md the remaining scope.
   client_scourge_inputs: |
     scripts/import_client_scourge.py binds the two weapon behaviors and actual
     projectile members to tests/fixtures/client/scourge-2026-10-28.json.
@@ -16,9 +34,10 @@ notes:
     owns disposition. Native wave width/radius consumers remain unreviewed.
     Normal/charged projectile records are separate candidates;
     their runtime selector, gravity, decay and IgnoreFireIterations consumer
-    remain unreviewed. M43 owns the 1.0 + 0.6 s throw cycle; M42 retains the
-    target debuff convention. Attractor LifeSpan is an entity lifetime, not a
-    measured effective headshot duration. Field geometry and projectile steering
+    remain unreviewed. Parsed calibration adopts each throw state's reload,
+    the default projectile's speed and attractor LifeSpan for the target debuff.
+    M42/M43 preserve their observations; effective headshot duration remains
+    unmeasured. Field geometry and projectile steering
     remain unmodelled. Primary CO retains the catalog rule with the weapon-page
     disagreement disclosed. docs/UNMODELLED.md owns the open consumers.
   client_primary_inputs: |
@@ -882,6 +901,13 @@ notes:
   incarnon_transformation_economy_wiki: |
     The Incarnon transformation economy (wiki Braton Incarnon Genesis), and it is
     the FAMILY's: all four Bratons share this gauge.
+  incarnon_package_transition_time: |
+    Entry and exit use the weapon profiles' ModeSwitchTime values from the
+    pinned client export in tests/fixtures/incarnon/switching-2026-10-28.json.
+    The exit profile is identified by its Incarnon behavior tag. Reload-speed
+    bonuses scale both state timers; their bases are independent of reloadTime.
+    The locked-gauge cycle duration is derived from their sum. INCARNON.md
+    documents source coverage and the remaining runtime-boundary limits.
   inherited_co_catalog_gives: |
     NOT INHERITED — the CO catalog gives a class PER ATTACK, and this weapon
     has no row for either of its two. Absence means ORDINARY.

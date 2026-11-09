@@ -52,8 +52,8 @@ attack:
     max_deg: 0.0
   trigger: auto
   shot_type: projectile
-  projectile_speed_mps: 50
-  fire_rate: 9.67
+  projectile_speed_mps: 200
+  fire_rate: 9.66666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.36
@@ -63,11 +63,14 @@ attack:
   # Diplos (1.0m)". Two body-thicknesses (`space::BODY_MATERIAL_M` is 0.5), so
   # it reaches the second enemy in a line. The LOCK-ON form has none.
   punch_through_m: 1.0
-  # NO RANGE ROW on this attack — Projectile at 50 m/s, and the page states no
+  # NO RANGE ROW on this attack — the page states no
   # reach. The 60 m belongs to the Lock-on Mode block and is that mode's
   # acquisition range. See data/surveys/weapon_range.yaml.
   # "This weapon primarily deals Impact damage" — and the split says so.
-  damage: { impact: 11.2, puncture: 9.0, slash: 7.8 }   # total 28
+  damage:
+    impact: 11.2
+    puncture: 8.96
+    slash: 7.83999916
 
 unmodeled:
   - reason: holstered_reload
@@ -76,3 +79,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Diplos
+
+# see notes: client_secondary_calibration

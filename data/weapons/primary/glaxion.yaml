@@ -71,5 +71,15 @@ attack:
 # exactly, so no `beam_ramp_floor` override. The VANDAL states 30% and carries
 # one; three floors now live in this family's three entries.
 
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
 source:
   url: https://wiki.warframe.com/w/Glaxion
+beam_ramp_floor: 0.2
+
+unmodeled:
+  - reason: client_beam_target_ramp
+
+# see notes: client_primary_calibration

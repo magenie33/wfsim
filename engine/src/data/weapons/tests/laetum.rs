@@ -73,7 +73,7 @@ fn direct_then_radial_lands_at_the_declared_ratio() {
 }
 
 /// The cycle economy is DATA, not a hardcoded weapon: Laetum fills in
-/// 12 weakpoint hits and both transitions cost its 2.0 s reload, while
+/// 12 weakpoint hits and transitions cost 2.0 s in and 1.0 s out, while
 /// Incarnon Efficiency (+50% charge) drops the fill to 8 hits.
 #[test]
 fn the_cycle_reads_its_economy_from_the_weapon_data() {
@@ -82,7 +82,6 @@ fn the_cycle_reads_its_economy_from_the_weapon_data() {
     assert_eq!(f.charges_to_fill, 12.0);
     assert_eq!(f.max_charges, 216.0);
     assert_eq!(f.transmute_in, 2.0);
-    // Reverts are a uniform 1 s across every weapon until measured.
     assert_eq!(f.transmute_out, 1.0);
     assert_eq!(f.charge_rate, 0.0);
 
@@ -96,7 +95,8 @@ fn the_cycle_reads_its_economy_from_the_weapon_data() {
     let frame_seconds = WeaponBase::from_data("dual_toxocyst_incarnon", true, &[]);
     let d = frame_seconds.gauge_form.expect("incarnon economy");
     assert_eq!(d.charges_to_fill, 9.0);
-    assert_eq!(d.transmute_in, 2.35);
+    assert_eq!(d.transmute_in, 1.4);
+    assert_eq!(d.transmute_out, 0.6);
 }
 
 /// Overwhelming Attrition earns its stacks in-run: a plain hit (no
@@ -283,8 +283,7 @@ fn overwhelming_attrition_is_diluted_by_base_damage_mods() {
 
 /// Rapid Wrath's +20% fire rate joins the ORDINARY fire-rate bucket —
 /// the same additive one the mods feed. Additive with
-/// Gunslinger's +72%: 6.67 x (1 + 0.72 + 0.20) = 12.81, NOT the
-/// multiplicative 6.67 x 1.72 x 1.20 = 13.77.
+/// Gunslinger's +72%: the combined factor is 1 + 0.72 + 0.20.
 #[test]
 fn rapid_wrath_is_additive_with_fire_rate_mods() {
     let pool = crate::data::mods::pistol_pool();
@@ -294,15 +293,16 @@ fn rapid_wrath_is_additive_with_fire_rate_mods() {
         let b = WeaponBase::from_data("laetum_incarnon", true, evos);
         crate::build::loadout::resolve(&b, mods, crate::model::StackPolicy::AssumedMax).fire_rate
     };
+    let nominal = 400.0 / 60.0;
     let base = fr(&[], &[]);
-    assert!((base - 6.67).abs() < 1e-9, "base fire rate {base}");
-    assert!((fr(&["laetum_rapid_wrath"], &[]) - 6.67 * 1.20).abs() < 1e-9);
-    assert!((fr(&[], &gunslinger) - 6.67 * 1.72).abs() < 1e-9);
+    assert!((base - nominal).abs() < 1e-9, "base fire rate {base}");
+    assert!((fr(&["laetum_rapid_wrath"], &[]) - nominal * 1.20).abs() < 1e-9);
+    assert!((fr(&[], &gunslinger) - nominal * 1.72).abs() < 1e-9);
     let both = fr(&["laetum_rapid_wrath"], &gunslinger);
     assert!(
-        (both - 6.67 * 1.92).abs() < 1e-9,
-        "must be ADDITIVE (12.81), got {both} — multiplicative would be {}",
-        6.67 * 1.72 * 1.20
+        (both - nominal * 1.92).abs() < 1e-9,
+        "must be additive, got {both} — multiplicative would be {}",
+        nominal * 1.72 * 1.20
     );
 }
 

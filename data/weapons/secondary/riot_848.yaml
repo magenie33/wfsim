@@ -27,7 +27,7 @@ ammo_type: secondary
 ammo_max: 0
 ammo_pickup: 0
 magazine: 16
-reload_seconds: 1.2
+reload_seconds: 1.24
 
 # see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
@@ -38,6 +38,11 @@ attack:
   spread:
     min_deg: 1.5
     max_deg: 7.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 4.0
+      hip_max_deg: 12.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 120
@@ -56,8 +61,12 @@ attack:
   damage: { puncture: 12 }   # total 12
 
 unmodeled:
+  - reason: client_secondary_return_ammo
+  - reason: client_accuracy_runtime
   - "The explosion comes on the reload: rounds lodge in surfaces and explode in 1.5 m when reloading, up to 32 at a time (wiki). The engine's explosions go off on impact, so the 48 Blast a round is not counted, and against anything that survives a magazine the number reads low by about four fifths."
   - "It uses no ammo pickups and has a reserve of zero (module); reserves are infinite here, so the limit it is built around does not apply."
 
 source:
   url: https://wiki.warframe.com/w/Riot-848
+
+# see notes: client_secondary_calibration

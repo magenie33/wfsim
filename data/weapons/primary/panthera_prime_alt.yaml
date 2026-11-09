@@ -26,11 +26,14 @@ attack:
   punch_through_m: 0.0
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
   # wiki: "Range: 6.0 m" on this attack.
-  range_m: 6.0
+  range_m: 8
   damage: { slash: 100 }   # total 100
 
 unmodeled:
+  - reason: client_ammo_runtime
   - "The sawblade is deployed 6 m in front of the wielder and stays there; the engine fires it like a beam at the target, so if the enemy is not on that spot the number reads high."
 
 source:
   url: https://wiki.warframe.com/w/Panthera_Prime
+
+# see notes: client_primary_calibration

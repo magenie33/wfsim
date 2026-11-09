@@ -36,6 +36,11 @@ attack:
   spread:
     min_deg: 5.0
     max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 12.0
+      hip_max_deg: 23.0
   trigger: burst
   # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 2 rounds
   # fired at once (the module gives a delay of zero), so the effective
@@ -57,3 +62,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Akjagara
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_secondary_calibration

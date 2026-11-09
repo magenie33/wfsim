@@ -98,9 +98,13 @@ attack:
     falloff_reduction: 0.4
     crit_chance: 0.40
     crit_multiplier: 3.0
-    status_chance: 0.50
+    status_chance: 0.2
 
 unmodeled:
+  - reason: client_secondary_clip_charge
+  - reason: client_projectile_callbacks
+  - reason: client_projectile_acceleration
+  - reason: client_battery_defaults
   - "Magazine capacity raises this alt-fire's damage, multiplicatively with base-damage mods (page), and this entry pins it at the unmodded 10. A build with a magazine mod reads low by exactly that ratio."
   - "The 0.8 s embed delay before the slug detonates, during which it pulls in enemies within 6 m, is not modelled."
   - "Fulmination reaches only the blast, not the pull radius; the pull is not modelled, so this changes nothing."
@@ -109,3 +113,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Plinx
+
+# see notes: client_secondary_calibration

@@ -24,11 +24,12 @@ gauge_form:
     resource: incarnon_charges
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
-  transmute_in_seconds: 1.8      # = base reload time, unmodded
+  # see notes: incarnon_package_transition_time
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 0.7
 
 pseudo_reload:
   magazine: 50
-  reload_seconds: 2.8
 
 # see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
@@ -37,7 +38,12 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.8
-    max_deg: 1
+    max_deg: 1.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 0.8
+      hip_max_deg: 1.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 2
@@ -59,3 +65,7 @@ source:
   url: https://wiki.warframe.com/w/Dera_Incarnon_Genesis
   # wiki module (private/scripts/wiki_weapons.py) `Attacks[].AttackName`: "Incarnon Form"
 
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

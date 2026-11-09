@@ -34,10 +34,15 @@ attack:
   spread:
     min_deg: 3.0
     max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 4.0
+      hip_max_deg: 10.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 60
-  fire_rate: 1.33
+  fire_rate: 1.33333333333333
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   # THE WHOLE MAGAZINE — 80 is the unmodded one, and "Consumes all remaining
@@ -85,6 +90,7 @@ attack:
     status_chance: 0.30
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The grenade's damage scales with how full the magazine is (page), and this entry always fires the full-magazine grenade. Every later shot in a magazine reads high unless the rifle is reloaded first, which is how it is played."
   - reason: explosion_ignores_cover
   - "The alt-fire cannot be reloaded early to skip its delay, and Kinetic Ricochet does not affect it; the sim does not interrupt reloads, so neither changes anything here."
@@ -92,3 +98,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Tetra
+
+# see notes: client_primary_calibration

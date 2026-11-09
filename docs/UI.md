@@ -61,9 +61,11 @@ limited to changed visible section bodies, with a full pass on resize.
   2. **Arena view** — a 2D top-down rendering of the simulated fight, so
      real environments and **AoE / multi-target damage** can be tested
      spatially instead of as scalar "assume N enemies in radius" checkboxes.
-- **Geometry**: every actor (Warframe, enemy) is a **circle, radius 0.25 m**
-  (assumption; refine later). The world is a plane — **the Z axis is dropped**
-  for now.
+- **Geometry**: the arena stores floor positions and actor collision radii.
+  Intrinsic spread samples a 3D direction and projects it into the floor plane
+  with height retained for hit testing. Camera recoil is compensated by a
+  fixed reticle; target silhouettes and spread-driven weak-point selection
+  remain unmodelled.
 - **"Feel" is probability**: aim wobble, headshot ratio, reaction time are
   modeled as probabilities (e.g. body-part aim weights), not simulated motor
   control.
@@ -79,14 +81,10 @@ limited to changed visible section bodies, with a full pass on resize.
 | the player | `data::tenno::Tenno` — stats, and a `state` every conditional mod is asked about |
 | target that never wastes DPS | `fight::TargetMode::InstantRespawn` |
 | aim quality / headshot feel | `fight::BodyPart::aim_weight` |
-| plane, positions, ranges | **nothing yet** — see below |
+| plane, positions, ranges | `arena::Arena`, formation and shared spatial rules |
 
-**The Arena VIEW has no engine behind it.** The sim fights one target and
-assumes it is in range, so a plane has nothing to decide; the decisions above
-live here and not in code.
-
-When positions become real they belong ON `arena::Arena`, beside the actors
-that would have them, not in a parallel module.
+The arena view displays the simulator's recorded fight. Target positions, range
+and collision decisions belong to the engine and are shared with the optimizer.
 
 ## Replay
 
