@@ -22,13 +22,14 @@ const r = await evaluate(`(async () => {
     && (w.mode_kinds || {})[w.modes[0]] === 'base');
   const plain = { weapon: flat.id, lines: await ran(flat.id, flat.modes[0]) };
   // …ONE PLAYED AS A CYCLE, which is the mode that was never just shooting…
-  const cyc = META.weapons.find((w) => (w.modes || []).some((m) => (w.mode_kinds || {})[m] === 'cycle'));
+  const cyc = META.weapons.find((w) => Object.values(w.mode_kinds || {}).includes('transformed')
+    && (w.modes || []).some((m) => (w.mode_kinds || {})[m] === 'cycle'));
   const cycMode = cyc.modes.find((m) => (cyc.mode_kinds || {})[m] === 'cycle');
   const cycle = { weapon: cyc.id, mode: cycMode, lines: await ran(cyc.id, cycMode) };
-  // …AND A MELEE ONE, whose press is the mode and whose flash outranks it.
-  const melee = { bare: await ran('praedos', 'slide'),
-                  flash: await ran('praedos', 'slide', ['dreamers_wrath']),
-                  heavy: await ran('praedos', 'heavy', ['dreamers_wrath']) };
+  // …AND A MELEE WITHOUT AN INCARNON, whose press is the mode and whose flash outranks it.
+  const melee = { bare: await ran('orthos', 'slide'),
+                  flash: await ran('orthos', 'slide', ['dreamers_wrath']),
+                  heavy: await ran('orthos', 'heavy', ['dreamers_wrath']) };
   // WHAT THE PAGE PRINTS, after a run of its own on the plain weapon.
   history.pushState({}, '', weaponPath(flat.id) + '/simulator'); route(); await sleep(4500);
   renderResults({ apl: plain.lines, target: {}, duration: 60 }, Date.now()); await sleep(600);
