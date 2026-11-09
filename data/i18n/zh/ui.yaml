@@ -6,6 +6,17 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "Official CLI": "官方 CLI"
+  "Run Together in a terminal or on a server.": "在终端或服务器上参与一起算。"
+  "Default CPU range: 0–50%. Sign in later with wfsim login to claim this device.": "默认 CPU 区间为 0–50%。之后可运行 wfsim login 登录并认领设备。"
+  "Claim a computing device": "认领计算设备"
+  "Sign in to claim this computing device.": "登录后认领这台计算设备。"
+  "Device claimed. Its unclaimed contribution is now in your account.": "设备已认领，尚未归属账户的贡献已归入你的账户。"
+  "Approve the code shown by the client you started.": "确认此验证码与你启动的客户端显示的一致。"
+  "Claim this device": "认领此设备"
+  "This code has expired. Run login in your client again.": "验证码已过期，请在客户端重新运行 login。"
+  "The device could not be loaded. Reload to try again.": "无法加载设备，请刷新重试。"
+  "The device could not be claimed. Run login in your client again.": "无法认领设备，请在客户端重新运行 login。"
   "Page {page}": "第 {page} 页"
   "Only you": "仅自己可见"
   "Personal center": "个人中心"

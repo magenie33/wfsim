@@ -1,0 +1,22 @@
+{
+  "kind": "riven_gain",
+  "request": {
+    "weapon": "braton_prime",
+    "mods": { "serration": "search", "split_chamber": "search", "point_strike": "search", "vital_sense": "search", "cryo_rounds": "search" },
+    "build_size": 3,
+    "build_min": 3,
+    "arcanes": { "none": "fixed" },
+    "enemy": "thrax_centurion",
+    "level": 200,
+    "steel_path": true,
+    "duration": 2,
+    "headshot_pct": 100,
+    "seed": 12648430,
+    "runs": 20,
+    "candidate_runs": 4,
+    "finalists": 1,
+    "strategy": "quick",
+    "starts": [{ "mods": ["serration", "split_chamber", "point_strike"], "locked": [] }]
+  },
+  "context": { "weapon": "braton_prime", "mode": "base", "valence": "", "grip": "", "loader": "", "link": "", "rivens": {} }
+}

@@ -213,6 +213,93 @@ function computeRedraw(tick) {
   renderAuthPage("compute");
 }
 
+let deviceLink = { code: "", account: null, loading: false, detail: null, error: "", done: false };
+
+function deviceLinkDraw(main) {
+  const raw = new URLSearchParams(location.search).get("device_code");
+  if (!raw) { main.querySelector("#compute-device-link")?.remove(); return; }
+  let block = main.querySelector("#compute-device-link");
+  if (!block) {
+    block = document.createElement("section");
+    block.id = "compute-device-link";
+    block.className = "block";
+    main.prepend(block);
+  }
+  const account = accountState.account?.id || null;
+  if (deviceLink.code !== raw || deviceLink.account !== account) {
+    deviceLink = { code: raw, account, loading: false, detail: null, error: "", done: false };
+  }
+  const code = escHtml(raw), detail = deviceLink.detail;
+  const content = !account ? `<p>${aT("Sign in to claim this computing device.")}</p>
+      <a class="run-btn" href="/login?return=${encodeURIComponent(`/compute?device_code=${raw}`)}">${aT("Sign in")}</a>`
+    : deviceLink.done || detail?.claimed ? `<p role="status">${aT("Device claimed. Its unclaimed contribution is now in your account.")}</p>`
+    : deviceLink.error ? `<p role="status">${aT(deviceLink.error)}</p>`
+    : detail ? `<p><b>${escHtml(detail.label)}</b> · ${escHtml(detail.id)}</p>
+      <p>${aT("Approve the code shown by the client you started.")}</p>
+      <button class="run-btn" data-auth="compute-device-link-approve"${deviceLink.loading ? " disabled" : ""}>${aT("Claim this device")}</button>`
+    : `<p role="status">${aT("Loading…")}</p>`;
+  block.innerHTML = `<div class="bh"><h2>${aT("Claim a computing device")}</h2></div><div class="bb"><p><code>${code}</code></p>${content}</div>`;
+  if (account && !detail && !deviceLink.error && !deviceLink.loading) {
+    deviceLink.loading = true;
+    const current = deviceLink;
+    accountCall("POST", "/api/account/devices/link/review", { user_code: raw }).then(r => {
+      if (deviceLink !== current) return;
+      current.loading = false;
+      if (r?.ok) current.detail = r;
+      else current.error = "This code has expired. Run login in your client again.";
+      if (location.pathname === "/compute") deviceLinkDraw(main);
+    }).catch(() => {
+      if (deviceLink !== current) return;
+      current.loading = false;
+      current.error = "The device could not be loaded. Reload to try again.";
+      if (location.pathname === "/compute") deviceLinkDraw(main);
+    });
+  }
+}
+
+async function deviceLinkApprove() {
+  if (!deviceLink.detail || deviceLink.loading || deviceLink.done) return;
+  const current = deviceLink;
+  current.loading = true;
+  deviceLinkDraw($("auth-page"));
+  const r = await accountCall("POST", "/api/account/devices/link/approve", { user_code: current.code }).catch(() => null);
+  if (current !== deviceLink) return;
+  current.loading = false;
+  if (r?.ok) { current.done = true; await loadDevices(); }
+  else current.error = "The device could not be claimed. Run login in your client again.";
+  if (location.pathname === "/compute") computeDraw($("auth-page"));
+}
+
+let computeCliRelease = null, computeCliAsked = false;
+const CLI_RELEASE_ORIGIN = "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com";
+async function loadComputeCli(main) {
+  if (computeCliAsked) return;
+  computeCliAsked = true;
+  const r = await fetchJson(`${CLI_RELEASE_ORIGIN}/cli/latest.json`).catch(() => null);
+  if (!(r?.v === 1 && /^[0-9A-Za-z.-]+$/.test(r.version || "") && r.files && typeof r.files === "object")) return;
+  computeCliRelease = r;
+  if (location.pathname === "/compute") computeDraw(main);
+}
+function computeCliHtml() {
+  const r = computeCliRelease;
+  if (!r) return "";
+  const names = { "x86_64-linux": "Linux x86-64", "x86_64-windows": "Windows x86-64", "aarch64-macos": "macOS Apple Silicon", "x86_64-macos": "macOS Intel" };
+  const links = Object.entries(names).flatMap(([target, label]) => {
+    const file = r.files[target], url = file?.urls?.[0];
+    if (typeof url !== "string" || !url.startsWith(`${CLI_RELEASE_ORIGIN}/cli/releases/`) || !/^[a-f0-9]{64}$/.test(file.sha256 || "")) return [];
+    return [`<a class="ghost-btn btn-sm" href="${escHtml(url)}">${escHtml(label)}</a>`];
+  }).join("");
+  if (!links) return "";
+  const base = `${CLI_RELEASE_ORIGIN}/cli/releases/${encodeURIComponent(r.version)}`;
+  return `<section class="block" id="compute-cli"><div class="bh"><h2>${aT("Official CLI")}</h2></div><div class="bb">
+    <p>${aT("Run Together in a terminal or on a server.")}</p><div class="compute-overview-controls">${links}</div>
+    <p><code>wfsim join</code></p>${r.npm === true ? `<p><code>npx @wfsim/cli@latest join</code></p>` : ""}
+    <p class="set-note">${aT("Default CPU range: 0–50%. Sign in later with wfsim login to claim this device.")}</p>
+    <p class="auth-foot"><a href="https://github.com/magenie33/wfsim/blob/main/client/README.md" target="_blank" rel="noopener">${aT("Instructions")}</a> ·
+      <a href="${base}/SHA256SUMS">SHA-256</a> · <a href="${base}/source.zip">${aT("Source code")}</a></p></div></section>`;
+}
+
+
 /// WHAT A DEVICE IS CALLED until its owner names it — the owner's own name
 /// always wins (`device-rename`). Read the way account pages everywhere read it:
 /// ua-parser-js (MIT, pinned and served same-origin, web/lib/pins.json) for the
@@ -497,6 +584,8 @@ function computeDraw(main) {
       if (el.classList.contains("block")) old.querySelector(":scope > .bb").replaceChildren(...el.querySelector(":scope > .bb").childNodes);
     }
   } else main.replaceChildren(t.content);
+  deviceLinkDraw(main);
+  loadComputeCli(main);
   // EVERY BLOCK FOLDS, as the rest of the site's do (70-result-panel.js `wireBlockFolds`).
   wireBlockFolds(main.querySelectorAll(".block[id]"));
   renderComputePicker();
@@ -872,7 +961,7 @@ setInterval(navComputing, COMPUTING_EVERY_MS);
 addEventListener("visibilitychange", navComputing);
 
 function computePage() {
-  const cards = [computeDemandHtml(), computeOverviewHtml(), computeCommunityHtml(), computeHereHtml(), computeDevicesHtml(), computeRecentHtml(), ledgerHereHtml(), ledgerAccountHtml()]
+  const cards = [computeDemandHtml(), computeOverviewHtml(), computeCommunityHtml(), computeHereHtml(), computeDevicesHtml(), computeCliHtml(), computeRecentHtml(), ledgerHereHtml(), ledgerAccountHtml()]
     .map((html, i) => html.replace('id="', `data-layout-order="${i}" id="`)).join("");
   return `<div id="compute-workspace" class="compute-workspace" data-card-layout data-lang="${escHtml(LANG)}">
     <div id="compute-intro" class="compute-intro" data-layout-header><div><h1 class="page">${aT("Compute together")}</h1>
@@ -922,6 +1011,7 @@ async function computeRefresh() {
 
 /// THE PAGE'S BUTTONS, through the account pages' one click handler.
 async function computeAct(el, what) {
+  if (what === "compute-device-link-approve") return deviceLinkApprove();
   const id = el.dataset.id;
   if (what === "compute-reload") return reloadForRelease();
   if (what === "compute-settings") {

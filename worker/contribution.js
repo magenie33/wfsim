@@ -398,7 +398,7 @@ async function accountLedger(env, account, from) {
 /// (§"Spans"), and what it earned before anyone held it comes with the first
 /// claim. ONLY THAT BROWSER CAN CLAIM IT: the full id is a secret it alone
 /// keeps, and no endpoint sends it back (an owner's list shows six characters).
-async function claim(env, account, b) {
+export async function claimDevice(env, account, b) {
   if (!VERIFIER_ID.test(b.verifier || "")) return no("bad_device");
   const v = b.verifier, db = env.ACCOUNTS;
   const owner = await db.prepare("SELECT account FROM devices WHERE verifier = ?1").bind(v).first();
@@ -943,7 +943,7 @@ export async function contributionRoute(request, env, path) {
     try { b = JSON.parse((await request.text()) || "{}"); } catch (_) { return no("not_json"); }
     return deviceLedger(request, env, b);
   }
-  const posts = { "/api/account/devices/claim": claim, "/api/account/devices/label": relabel,
+  const posts = { "/api/account/devices/claim": claimDevice, "/api/account/devices/label": relabel,
     "/api/account/devices/remove": release, "/api/account/contribution": choose, "/api/account/devices/ledger": ownLedger };
   const gets = ["/api/account/devices", "/api/account/ledger"];
   if (!gets.includes(path) && !posts[path]) return null;

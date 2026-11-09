@@ -43,6 +43,7 @@ import { verifyRoute } from "./verify.js";
 import { syncRoute } from "./sync.js";
 import { noteFactoryCall } from "./factory_calls.js";
 import { contributionRoute, publishContributors } from "./contribution.js";
+import { deviceLinkRoute } from "./device_link.js";
 import { meritRoute, mintMerit, settleMerit } from "./merit.js";
 import { clanRoute } from "./clan.js";
 import { feedbackRoute } from "./feedback.js";
@@ -789,6 +790,10 @@ async function serve(request, env, ctx) {
     }
     {
       const r = await contributorProfilesRoute(request, env, path);
+      if (r) return r;
+    }
+    {
+      const r = await deviceLinkRoute(request, env, path);
       if (r) return r;
     }
     {

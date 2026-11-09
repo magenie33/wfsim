@@ -38,9 +38,9 @@ use crate::payload::Manifest;
 /// outcome this client exists to remove. Rotation is: ship a shell accepting
 /// both, wait for it to spread, then publish under the new key and drop the old
 /// from this list.
-const PUBLIC_KEYS: &[&str] = &[
-    "b488481177cb0a459a685c5d66f646768e7f66c405b92ecde81025581419a95e",
-];
+#[path = "trust.rs"]
+mod trust;
+use trust::PUBLIC_KEYS;
 
 /// Tried in order until one answers. MEASURED 2026-08-26 from Shanghai:
 /// COS 9.73 MB/s, wfsim.app (Cloudflare) 2.11 MB/s — so the bucket leads and
@@ -50,10 +50,7 @@ const PUBLIC_KEYS: &[&str] = &[
 /// channel survive its own hosting: moving to another provider, or adding one,
 /// costs a manifest rather than a new installer. Hard-coding one origin would
 /// make that origin's bad day every reader's reinstall.
-pub(crate) const DEFAULT_SOURCES: &[&str] = &[
-    "https://wfsim-1388973035.cos.ap-shanghai.myqcloud.com",
-    "https://wfsim.app",
-];
+pub(crate) use trust::DEFAULT_SOURCES;
 
 const NET_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
 
