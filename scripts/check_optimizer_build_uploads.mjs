@@ -511,6 +511,7 @@ await check("saved-riven batches capture upload consent before asynchronous vali
   let consent = "yes", captured = null; const validating = gate(), entered = gate();
   const scope = vm.createContext({ crypto: webcrypto, console, TextEncoder, AbortController, setTimeout, clearTimeout,
     ENGINE_ID: "engine-a", boardConsent: () => consent, META: { search_presets: { presets: [{ riven: true, name: "Appraisal" }] } },
+    accountState: { account: { profile_id: "owner-profile" } },
     initUserTasks: async () => ({ createMany: async entries => { captured = plain(entries); return entries; } }),
     api: async () => { entered.resolve(); await validating.promise; return { illegal: [] }; },
     headlessRivenGainRequest: () => ({ request: { weapon: "braton_prime" }, context: { weapon: "braton_prime" } }),
@@ -520,6 +521,7 @@ await check("saved-riven batches capture upload consent before asynchronous vali
   const submitting = scope.submitBatch(["owned"], "ruler", "community", { weapon: "braton_prime", cards: [card] });
   await entered.promise; consent = "no"; validating.resolve(); await submitting;
   assert.equal(captured[0].origin.board_upload, true);
+  assert.equal(captured[0].origin.author_profile, "owner-profile");
 });
 
 assert.match(read("worker.js"), /payload\.kind === "builds"/);
