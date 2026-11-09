@@ -220,9 +220,9 @@ for (const c of cases) {
 
 const speaker = headless.headlessSpeaker({}, { zh }, "zh");
 check("delivery text uses the selected localized identity label", headless.headlessContributorText(speaker,
-  { name: "Calculator", mark: { kind: "creator", label: { en: "Creator", zh: "作者" } } }) === "Calculator · 作者");
+  { name: "Calculator", mark: { kind: "fixture", label: { en: "Fixture", zh: "测试身份" } } }) === "Calculator · 测试身份");
 check("anonymous delivery text cannot carry a supplied identity label", headless.headlessContributorText(speaker,
-  { name: null, mark: { label: { zh: "作者" } } }) === speaker.t("Anonymous contributor"));
+  { name: null, mark: { label: { zh: "测试身份" } } }) === speaker.t("Anonymous contributor"));
 check("official delivery is identified as official compute", headless.headlessContributorText(speaker,
   { official: true, name: "runner" }) === speaker.t("Official compute"));
 
