@@ -502,6 +502,10 @@ jobs:
           cargo build -p wfsim-cli --bin wfsim-board
           node scripts/check_default_parent.mjs
           node scripts/check_inventory_pipeline.mjs
+          node scripts/check_inventory_relations.mjs
+          node scripts/check_inventory_ranges.mjs
+          node scripts/check_inventory_relational_pipeline.mjs
+          node scripts/check_score_inputs.mjs
           node scripts/check_live_ranker.mjs
           node scripts/check_work_calibration.mjs
       - name: Maintenance preserves native board behavior and source checks

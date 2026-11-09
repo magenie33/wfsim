@@ -100,7 +100,7 @@ export function rankerChannel() {
 const common = receipt => ({ v: 1, engine: receipt.engine, contract: receipt.contract,
   generation: receipt.generation, epoch: receipt.epoch, snapshot: receipt.snapshot });
 
-export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, call, baseEpoch }) {
+export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, call, baseEpoch, relational = false }) {
   mkdirSync(dir, { recursive: true }); disk(dir);
   const paths = [], started = Date.now(), covers = JSON.stringify(BOARD_KINDS), captureMs = bootstrap ? MAX_CAPTURE_MS : 15 * 60000;
   const check = () => { disk(dir); if (Date.now() - started > captureMs) throw new Error('inventory input capture exceeded its budget'); };
@@ -123,6 +123,18 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
         const meta = await captureInventory({ begin: async (_options, fn) => fn(tx) }, raw, receipt.engine, BOARD_KINDS);
         if (meta.snapshot !== receipt.snapshot || meta.started_at !== receipt.started_at) throw new Error('inventory bootstrap snapshot changed');
         result.meta = meta;
+      } else if (relational) {
+        result.delta = file('delta.ndjson');
+        async function* changedInputs() {
+          for await (const chunk of batches(changes, 64)) {
+            const [{ input }] = await tx.unsafe('SELECT inventory_inputs($1::text,$2::text,$3::text) input',
+              [receipt.engine, covers, JSON.stringify(chunk)]);
+            if (input.snapshot !== receipt.snapshot || input.generation !== receipt.generation) throw new Error('inventory input fence changed');
+            for (const row of input.builds) yield { kind: 'reset', row: { id: row.id } };
+            for (const kind of ['builds', 'facts', 'queue', 'tasks']) for (const row of input[kind]) yield { kind, row };
+          }
+        }
+        await writeRows(result.delta, changedInputs());
       } else {
         const index = new DatabaseSync(join(dir, 'scopes.sqlite'));
         index.exec('PRAGMA cache_size=-16384;PRAGMA temp_store=FILE;CREATE TABLE scopes(weapon TEXT PRIMARY KEY);CREATE TABLE aliases(weapon TEXT,id TEXT,PRIMARY KEY(weapon,id)) WITHOUT ROWID;');
@@ -197,6 +209,8 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
     } finally { clearInterval(heartbeat); }
   });
 }
+
+export { save as saveInventoryState, hashFile as hashInventoryFile, collect as collectInventoryFiles, disk as checkInventoryDisk };
 
 export async function runInventoryCycle({ work, bin, instance, sql, call, budgetMs = 15000 }) {
   const root = join(work, 'inventory'); mkdirSync(root, { recursive: true }); disk(root);

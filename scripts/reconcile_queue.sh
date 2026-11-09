@@ -13,14 +13,8 @@
 # score, so the worst it can do is ask for something already owed — which the
 # queue's own primary key absorbs.
 #
-# ONE COPY, TWO TRIGGERS. `queue.yml` runs it on the clock and `scores.yml` runs
-# it before it scores, so a button press is self-sufficient and an hourly run
-# keeps the queue current. The same operation from two triggers is not two
-# sources: running it twice is running it once.
-#
-# THE QUEUE IS READ, RECONCILED, THEN READ AGAIN. The second read is what hands
-# a scoring run a queue that already holds this run's arrivals; without it a
-# build waits a whole run just to be asked for.
+# Queue maintenance owns complete repair. Official scoring independently reads
+# its leased calculations, so a repair pass cannot hold already requested work.
 set -euo pipefail
 
 LIB="${1:?usage: reconcile_queue.sh <library.json> <facts.ndjson> <queue.ndjson>}"
@@ -41,7 +35,7 @@ orphans=$(mktemp)
 : > "$orphans"
 parts=$(mktemp -d)
 # `--gate` IS WHAT MAKES THE ARRIVALS PATH OBEY THE ENTRY LINE. A build that
-# reaches a tenth of some group's leader keeps earning every row it lacks; one
+# reaches the engine's entry line keeps earning every row it lacks; one
 # that reaches it nowhere keeps the facts it has and is asked for nothing more.
 # The RESCORE button in `queue.yml` deliberately does NOT pass it — a model
 # correction is the case where a parked build may deserve another look.
