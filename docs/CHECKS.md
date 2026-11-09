@@ -143,6 +143,10 @@ request timeouts, lost replies, atomic checkpoints and corrupt-ledger refusal.
 owner replacement, bounded caches, shadow fencing and crash replay.
 `check_incremental_inventory_pg.mjs` tests the real schema, transactional dirty
 keys, permission boundaries and publication at the original sealed cut time.
+`check_inventory_concurrency.mjs` creates an isolated PostgreSQL 18 Docker
+container and exercises independent writers, late commits, exact-revision ACK
+and generation fences. Its original table-lock variants must time out under
+the same writers that the snapshot publisher permits.
 
 `check_library_array.mjs` verifies complete records and number precision,
 atomic failure, empty input and an 80MiB export under a 24MiB Node heap.

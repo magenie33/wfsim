@@ -233,6 +233,12 @@ last publication manifest remain. SQLite uses a 16MiB page cache, bounded
 imports and no memory mapping; the coordinator reserves 8GiB of filesystem
 space and caps initial capture at 45 minutes and delta capture at 15 minutes.
 
+Generation replacement and sealed-cut publication lock the generation state,
+not the dirty table. Source writers can commit during both operations: a cut
+owns its repeatable-read snapshot and later revisions remain pending. The
+legacy empty-dirty publisher retains its table barrier because it promises an
+empty current backlog rather than a sealed snapshot.
+
 ### Relational inventory runner
 
 `inventory_relational_pipeline.mjs` is an alternative, explicitly selected
