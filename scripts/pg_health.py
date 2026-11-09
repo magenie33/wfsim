@@ -30,6 +30,7 @@ SELECT json_build_object(
  'sessions',(SELECT coalesce(json_agg(s),'[]'::json) FROM (SELECT pid,left(application_name,60) application,
    state,wait_event_type,wait_event,query_id::text,
    round(extract(epoch FROM clock_timestamp()-xact_start)) transaction_seconds,
+   round(extract(epoch FROM clock_timestamp()-state_change)) idle_seconds,
    pg_blocking_pids(pid) blockers FROM pg_stat_activity WHERE datname=current_database()
    AND pid<>pg_backend_pid() AND (wait_event_type='Lock' OR (state LIKE 'idle in transaction%'
      AND xact_start<clock_timestamp()-interval '1 minute'))
@@ -127,7 +128,7 @@ def assess(probes, previous=None, now=None):
             alerts.append('inventory_engine_mismatch')
         if any(row.get('blockers') for row in db.get('sessions', [])):
             alerts.append('database_lock_wait')
-        if any((row.get('transaction_seconds') or 0) > 300 and row.get('state', '').startswith('idle in transaction')
+        if any((row.get('idle_seconds') or 0) > 300 and row.get('state', '').startswith('idle in transaction')
                for row in db.get('sessions', [])):
             alerts.append('idle_transaction')
     board = probes.get('board', {}).get('value') or {}
