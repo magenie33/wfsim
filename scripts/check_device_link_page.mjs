@@ -60,7 +60,7 @@ try{
   assert.equal((await env.ACCOUNTS.get('SELECT account FROM devices WHERE verifier=?',verifier)).account,'alice');
   app.check('unpublished npm commands are hidden',await app.evaluate(`!document.querySelector('#compute-cli').textContent.includes('npx')`));
   await app.evaluate(`computeCliRelease.npm=true;computeDraw($('auth-page'))`);
-  app.check('published npm entry is shown beside the native download',await app.evaluate(`document.querySelector('#compute-cli').textContent.includes('npx @wfsim/cli@latest join')`));
+  app.check('published npm entry is shown beside the native download',await app.evaluate(`document.querySelector('#compute-cli').textContent.includes('npx wfsim@latest join')`));
   await app.send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   app.check('the native download and approval fit a phone',await app.evaluate(`document.documentElement.scrollWidth<=innerWidth`));
   mkdirSync('target/official-cli',{recursive:true});
