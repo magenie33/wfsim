@@ -7,6 +7,8 @@ form: slide
 transform_group: keratinos
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_passive_unmodelled
     passive: "a heavy attack at 12x combo grants +2.8 m range to every melee attack for 180 s"
 attack:
@@ -21,7 +23,7 @@ attack:
   status_chance: 0.29
   punch_through_m: 0.0
   range_m: 1.7
-  follow_through: 1.0
+  follow_through: 1
   heavy:
     multiplier: 9.0
     windup_seconds: 0.75
@@ -35,3 +37,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Keratinos
+
+# see notes: client_melee_calibration

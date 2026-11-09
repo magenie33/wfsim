@@ -7,6 +7,9 @@ form_name: Charged Projectile
 transform_group: corufell
 co_behavior: independent
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - reason: corufell_projectile_timing
 - reason: corufell_projectile_width
 - reason: corufell_signature_windup
@@ -62,3 +65,5 @@ attack:
           combo_points: 0
 source:
   url: https://wiki.warframe.com/w/Corufell
+
+# see notes: client_melee_calibration

@@ -29,3 +29,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Shattered_Lash_(Weapon)
+
+unmodeled:
+  - reason: client_melee_ability
+
+# see notes: client_melee_calibration

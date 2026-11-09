@@ -57,3 +57,10 @@ attack:
     - impact
     takes_multishot: false
   combo_script: []
+
+unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
+  - reason: client_melee_assembly
+
+# see notes: client_melee_calibration

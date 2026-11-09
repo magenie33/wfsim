@@ -60,6 +60,10 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
+  - reason: client_melee_slam
+  - reason: client_melee_legacy
+  - reason: client_melee_geometry
+  - reason: client_melee_ability
   - "Hysteria drains 5 Energy a second while the claws are out; Energy is not modelled, so they stay out for the whole fight."
   - "Every hit restores 100 health; nothing damages the Tenno here, so it adds nothing."
   - "One attack input's animation length is unpublished: the wiki gives each combo's total at 1.0x attack speed, so totals are exact and inputs are split evenly. This shifts a status tick by fractions of a second and changes no total."
@@ -83,7 +87,9 @@ attack:
   follow_through: 1.0
   # THE CLASS HEAVY: the module's HeavyAttack 1250 is 5x the 250 swing, and its
   # WindUp is 0.5 s.
-  heavy: { multiplier: 5.0, windup_seconds: 0.1667 }
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.75
   # "Damage is distributed between 25% Puncture and 75% Slash" (W`Hysteria`).
   damage: { puncture: 62.5, slash: 187.5 }   # total 250
 
@@ -117,3 +123,6 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Valkyr_Talons
   # The combo table: https://wiki.warframe.com/w/Hysteria_(Stance)
+disposition: 1.2
+
+# see notes: client_melee_calibration

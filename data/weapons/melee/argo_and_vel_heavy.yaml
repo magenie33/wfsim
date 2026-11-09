@@ -6,6 +6,9 @@ form: heavy
 transform_group: argo_and_vel
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - The glaive's wall bounce, return path and one-enemy ricochet are not modelled. Direct impact and its explosion are modelled
   at the first enemy.
 - The close-range mace sweep before the glaive release is not modelled.
@@ -51,3 +54,5 @@ attack:
     falloff_reduction: 0.4
 source:
   url: https://wiki.warframe.com/w/Argo_&_Vel
+
+# see notes: client_melee_calibration

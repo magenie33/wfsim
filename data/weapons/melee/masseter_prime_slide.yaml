@@ -7,6 +7,8 @@ form: slide
 transform_group: masseter_prime
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_passive_unmodelled
     passive: "a stance's mini-slam, one without the full slam visual, is multiplied by the combo multiplier and can crit"
 attack:
@@ -21,7 +23,7 @@ attack:
   status_chance: 0.36
   punch_through_m: 0.0
   range_m: 2.9
-  follow_through: 1.0
+  follow_through: 1
   heavy:
     multiplier: 6.0
     windup_seconds: 1.2
@@ -33,3 +35,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Masseter_Prime
+
+# see notes: client_melee_calibration

@@ -50,3 +50,11 @@ multiplier rule (notes: `combo_points_from_multiplier`), and
 `hysteria_earns_its_measured_combo_points` holds each combo's round. Slam,
 Aerial, Wall and Finisher are not modes of this arena and are recorded for the
 day they are.
+
+### Current weapon clock adoption
+
+The client melee receipt binds `HeavyMeleeChargeTime=0.75` independently of
+these combo-point observations. Heavy inputs use that charge while retaining
+their declared legacy motion/recovery approximation. These readings do not
+measure charge, animation or accepted-next-input time. The fixed-stance damage,
+status and combo rows remain separate from the raw ability weapon packet.

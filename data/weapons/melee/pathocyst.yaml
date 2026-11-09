@@ -28,6 +28,9 @@ combo_duration_seconds: 5.0
 co_behavior: additive_with_base_damage
 
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_slam
+- reason: client_melee_geometry
 - 'Power Spike''s partial combo decay is a Warframe passive and is not modelled: the counter drops to zero when its timer runs out, so with that passive the number
   reads low.'
 - reason: glaive_heavy_is_a_throw
@@ -65,3 +68,5 @@ attack:
   throw_charge_seconds: 1.2
 source:
   url: https://wiki.warframe.com/w/Pathocyst
+
+# see notes: client_melee_calibration

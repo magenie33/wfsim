@@ -7,6 +7,8 @@ form: heavy
 transform_group: sibear
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_passive_unmodelled
   passive: a heavy attack grants +50% Status Chance, flat and after mods, for 4 s
 attack:
@@ -36,3 +38,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Sibear
+
+# see notes: client_melee_calibration

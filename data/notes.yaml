@@ -9,6 +9,16 @@
 # an entry from being orphaned.
 
 notes:
+  client_melee_calibration: |
+    scripts/import_client_melee.py binds every melee entry to its exact owner,
+    behavior and selected damage component. Current action properties and tree
+    references are checked against the pinned earlier action export; that export
+    still owns clocks absent from the current resource snapshots. Source hashes,
+    raw inputs, adopted fields and retained composite rules are recorded in
+    tests/fixtures/client/melee-calibration-2026-10-28.json. Parsed weapon inputs
+    take priority after identifying their consumer. Ordinary weapon charge is
+    independent of retained animation and recovery; ability overrides, modular
+    assembly, special packets and slam motion retain explicit limitations.
   client_scourge_inputs: |
     scripts/import_client_scourge.py binds the two weapon behaviors and actual
     projectile members to tests/fixtures/client/scourge-2026-10-28.json.
@@ -506,16 +516,6 @@ notes:
     Careen's frozen multiplier reaches both, and Melee Influence is opened by
     either and carries only the explosion's rolled statuses
     (W`Okina_Incarnon_Genesis`).
-  tonfa_heavy_timing: |
-    A HEAVY IS TWO CLOCKS AND EACH HAS ITS OWN BUCKET. Measured on a Tonfa at
-    1.0x attack speed: the CHARGE is 0.4 s and the swing after it 0.8 s, 1.2 s
-    in all. Only wind-up speed shortens the first and only attack speed the
-    second — at 180% wind-up the charge measured 0.14 s, which is 0.4/2.8, while
-    the swing stayed at 0.80.
-
-    THE PUBLISHED FIGURE IS THE SUM, NOT THE CHARGE. Reading it as charge alone
-    makes a wind-up build far faster than it is: 1.2/2.8 is 0.43 s against the
-    0.94 s that was measured.
   co_explosion_second_family: |
     CO ON AN EXPLOSION — the second family in the roster to do it, after the
     Burston. "Radial hit only receives CO bonus on target directly hit by

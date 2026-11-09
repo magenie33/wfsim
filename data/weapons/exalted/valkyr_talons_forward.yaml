@@ -19,7 +19,9 @@ attack:
   punch_through_m: 0.0
   range_m: 2.15
   follow_through: 1.0
-  heavy: { multiplier: 5.0, windup_seconds: 0.1667 }
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.75
   damage: { puncture: 62.5, slash: 187.5 }   # total 250
   slam:
     damage: { puncture: 62.5, slash: 187.5 }
@@ -40,3 +42,11 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Hysteria_(Stance)
+
+unmodeled:
+  - reason: client_melee_slam
+  - reason: client_melee_legacy
+  - reason: client_melee_geometry
+  - reason: client_melee_ability
+
+# see notes: client_melee_calibration

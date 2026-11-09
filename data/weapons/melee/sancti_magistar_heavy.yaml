@@ -19,7 +19,9 @@ inherits: sancti_magistar
 form: heavy
 transform_group: sancti_magistar
 co_behavior: additive_with_base_damage
-unmodeled: []
+unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -46,3 +48,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Sancti_Magistar
+
+# see notes: client_melee_calibration

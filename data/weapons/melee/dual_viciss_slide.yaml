@@ -7,6 +7,8 @@ form: slide
 transform_group: dual_viciss
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_passive_unmodelled
     passive: "each enemy it inflicts Gas on grants +7% attack speed and +8% movement speed for 10 s, up to 5 stacks, refreshed by each new stack"
 attack:
@@ -21,7 +23,7 @@ attack:
   status_chance: 0.29
   punch_through_m: 0.0
   range_m: 2.4
-  follow_through: 1.0
+  follow_through: 1
   heavy:
     multiplier: 5.0
     windup_seconds: 0.34999999
@@ -34,3 +36,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Dual_Viciss
+
+# see notes: client_melee_calibration

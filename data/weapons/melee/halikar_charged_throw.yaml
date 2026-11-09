@@ -7,6 +7,8 @@ form: charged_throw
 transform_group: halikar
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_special
+- reason: client_melee_timing
 - reason: glaive_bounce_count_assumed
 - reason: glaive_bounce_explosion_assumed
 - reason: glaive_detonation_ends_bounces
@@ -64,3 +66,5 @@ attack:
   - impact
 source:
   url: https://wiki.warframe.com/w/Halikar
+
+# see notes: client_melee_calibration

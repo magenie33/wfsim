@@ -7,6 +7,8 @@ form: heavy
 transform_group: sigma_and_octantis
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_attack_unmodelled
   attacks: Shield Throw and Shield Throw Explosion
 - reason: melee_own_combo_unmodelled
@@ -40,3 +42,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Sigma_&_Octantis
+
+# see notes: client_melee_calibration

@@ -6,7 +6,9 @@ inherits: sun_and_moon
 form: heavy
 transform_group: sun_and_moon
 co_behavior: additive_with_base_damage
-unmodeled: []
+unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
 attack:
   trigger: melee
   shot_type: hit_scan
@@ -19,7 +21,7 @@ attack:
   status_chance: 0.22
   punch_through_m: 0.0
   range_m: 2.6
-  follow_through: 0.6
+  follow_through: 0.55
   heavy:
     multiplier: 12.0
     windup_seconds: 2.0
@@ -33,3 +35,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Sun_&_Moon
+
+# see notes: client_melee_calibration

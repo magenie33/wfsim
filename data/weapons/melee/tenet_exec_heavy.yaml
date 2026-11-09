@@ -7,6 +7,8 @@ form: heavy
 transform_group: tenet_exec
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_own_combo_unmodelled
   combos: heavy slam and slam attack
 - reason: melee_valence_unmodelled
@@ -36,3 +38,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Tenet_Exec
+
+# see notes: client_melee_calibration

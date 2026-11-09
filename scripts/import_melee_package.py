@@ -246,7 +246,7 @@ def main():
             assert root["id"] not in seen, "weapon inheritance cycle"
             seen.add(root["id"])
             root = weapons[root["inherits"]]
-        if root.get("slot") != "melee":
+        if root.get("slot") != "melee" and not (root.get("slot") == "exalted" and not root.get("exalted")):
             continue
         if root.get("zaw"):
             hand = {"one_handed": "one", "two_handed": "two"}[root["zaw"]["handedness"]]

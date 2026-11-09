@@ -2038,6 +2038,18 @@
     }
   ],
   "migrated_weapon_modes": [
+    "garuda_prime_talons",
+    "garuda_prime_talons_block",
+    "garuda_prime_talons_block_forward",
+    "garuda_prime_talons_forward",
+    "garuda_prime_talons_heavy",
+    "garuda_prime_talons_slide",
+    "garuda_talons",
+    "garuda_talons_block",
+    "garuda_talons_block_forward",
+    "garuda_talons_forward",
+    "garuda_talons_heavy",
+    "garuda_talons_slide",
     "ack_and_brunt",
     "ack_and_brunt_block",
     "ack_and_brunt_block_forward",
@@ -3645,6 +3657,36 @@
     "vastilok_forward"
   ],
   "bare_input_aliases": [
+    [
+      "garuda_prime_talons_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "garuda_prime_talons_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "garuda_prime_talons_forward",
+      "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
+    [
+      "garuda_talons_block",
+      "CC_GROUND_BRANCH_C",
+      "CC_GROUND"
+    ],
+    [
+      "garuda_talons_block_forward",
+      "CC_GROUND_BRANCH_B",
+      "CC_GROUND"
+    ],
+    [
+      "garuda_talons_forward",
+      "CC_GROUND_BRANCH_A",
+      "CC_GROUND"
+    ],
     [
       "ack_and_brunt_block",
       "CC_GROUND_BRANCH_C",

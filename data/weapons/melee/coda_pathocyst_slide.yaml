@@ -7,6 +7,8 @@ form: slide
 transform_group: coda_pathocyst
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_valence_unmodelled
     family: Coda
   - reason: glaive_heavy_is_a_throw
@@ -22,7 +24,7 @@ attack:
   status_chance: 0.35
   punch_through_m: 0.0
   range_m: 1.3
-  follow_through: 1.0
+  follow_through: 1
   damage:
     impact: 58
     puncture: 55
@@ -34,3 +36,5 @@ attack:
   throw_charge_seconds: 1.2
 source:
   url: https://wiki.warframe.com/w/Coda_Pathocyst
+
+# see notes: client_melee_calibration

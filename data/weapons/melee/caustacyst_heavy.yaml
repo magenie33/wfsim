@@ -6,6 +6,9 @@ form: heavy
 transform_group: caustacyst
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - reason: melee_attack_unmodelled
   attacks: Corrosive Pool
 - The page's Notes give the wave a 3 m width and 37.5 m maximum travel, while Characteristics gives 5 m and 30 m. This model
@@ -76,7 +79,7 @@ attack:
   spends_combo: true
   heavy:
     multiplier: 6
-    windup_seconds: 2
+    windup_seconds: 0.5
   profiles:
     wave:
       trigger: melee
@@ -104,3 +107,5 @@ attack:
       combo_script: []
 source:
   url: https://wiki.warframe.com/w/Caustacyst
+
+# see notes: client_melee_calibration

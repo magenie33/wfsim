@@ -18,7 +18,7 @@ attack:
   status_chance: 0.16
   punch_through_m: 0.0
   range_m: 2.5
-  follow_through: 1.0
+  follow_through: 1
   heavy:
     multiplier: 5.0
     windup_seconds: 0.64999998
@@ -31,3 +31,9 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Nikana
+
+unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
+
+# see notes: client_melee_calibration

@@ -7,6 +7,8 @@ form: slide
 transform_group: vitrica
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_attack_unmodelled
     attacks: "Glass Explosion"
   - reason: melee_own_combo_unmodelled
@@ -25,7 +27,7 @@ attack:
   status_chance: 0.33
   punch_through_m: 0.0
   range_m: 2.9
-  follow_through: 1.0
+  follow_through: 1
   heavy:
     multiplier: 6.0
     windup_seconds: 0.64999998
@@ -38,3 +40,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Vitrica
+
+# see notes: client_melee_calibration

@@ -9,6 +9,8 @@ form: forward
 transform_group: okina_prime
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: spectral_dagger_orbit_and_target_assumed
   - reason: dual_daggers_heavy_unmeasured
 attack:
@@ -50,3 +52,5 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Okina_Prime
   # The combo table: https://wiki.warframe.com/w/Spinning_Needle
+
+# see notes: client_melee_calibration

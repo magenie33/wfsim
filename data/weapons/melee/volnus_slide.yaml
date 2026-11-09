@@ -7,6 +7,8 @@ form: slide
 transform_group: volnus
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_passive_unmodelled
     passive: "with Gara, its signature bonus: +100% slam radial damage"
 attack:
@@ -21,7 +23,7 @@ attack:
   status_chance: 0.3
   punch_through_m: 0.0
   range_m: 2.9
-  follow_through: 1.0
+  follow_through: 1
   heavy:
     multiplier: 6.0
     windup_seconds: 0.69999999
@@ -34,3 +36,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Volnus
+
+# see notes: client_melee_calibration

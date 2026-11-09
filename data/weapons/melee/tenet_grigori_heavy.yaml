@@ -6,6 +6,9 @@ form: heavy
 transform_group: tenet_grigori
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - reason: melee_valence_unmodelled
   family: Tenet
 - reason: melee_slide_unpublished
@@ -99,3 +102,5 @@ attack:
       combo_script: []
 source:
   url: https://wiki.warframe.com/w/Tenet_Grigori
+
+# see notes: client_melee_calibration

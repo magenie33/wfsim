@@ -23,6 +23,24 @@
 # repeat. A reason earns its place by being used more than twice OR by having
 # more than one numeric spelling.
 reasons:
+  client_melee_timing:
+    text: "Animation and event clocks use the pinned earlier package export. Current metadata verifies action references and properties, but does not re-establish every clip duration, playback fit, collision window or accepted-input boundary."
+  client_melee_legacy:
+    text: "This legacy sequence retains its declared motion and recovery approximation; current metadata does not establish a complete replacement event timeline. A verified weapon wind-up is applied independently."
+  client_melee_geometry:
+    text: "Melee reach, sweep/thrust arcs and bone motion retain the declared arena approximation. Native collision dimensions alone do not establish the animated contact surface."
+  client_melee_slam:
+    text: "Slam damage and critical rules retain the declared component model. Radius uses the maximum-height convention; ascent, descent, ground contact and recovery are not a calibrated physical cycle. Native attenuation and clip lengths do not establish that cycle."
+  client_melee_special:
+    text: "Special attack components retain their declared sequence and modifier rules where the native selector, intrinsic multiplier or callback consumer is unverified. Bound raw packets do not establish the complete attack."
+  client_melee_ability:
+    text: "Ability and cast overrides retain the declared damage/status profile and measured combo rules. The raw melee weapon packet does not establish final ability damage; verified weapon clock inputs apply separately."
+  client_melee_assembly:
+    text: "Zaw statistics use the declared assembly tables. Native strike and handedness records are bound, but the complete runtime part-composition consumer is unverified; unassembled placeholders do not replace the finished weapon."
+  client_melee_counter:
+    text: "Native initial-combo, tier-step or counter-cap differences are recorded. Unsupported counter rules retain the declared model and do not apply merely because their parameters are available."
+  client_melee_companion:
+    text: "Companion melee retains its separate weapon and AI cadence model. Player melee animation parameters do not establish companion target selection, attack completion or retrieval time."
   client_scourge_primary_collision:
     text: "Primary fire uses ray collision; the native projectile's collision width is not simulated."
   client_scourge_field:

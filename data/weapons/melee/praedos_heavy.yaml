@@ -44,3 +44,10 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Praedos
+
+unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_slam
+  - reason: client_melee_geometry
+
+# see notes: client_melee_calibration

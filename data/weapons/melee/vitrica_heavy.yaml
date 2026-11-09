@@ -7,6 +7,8 @@ form: heavy
 transform_group: vitrica
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_attack_unmodelled
   attacks: Glass Explosion
 - reason: melee_own_combo_unmodelled
@@ -39,3 +41,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Vitrica
+
+# see notes: client_melee_calibration

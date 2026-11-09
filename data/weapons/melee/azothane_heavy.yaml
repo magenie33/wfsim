@@ -7,6 +7,8 @@ form: heavy
 transform_group: azothane
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_own_combo_unmodelled
   combos: block combo
 - reason: melee_slide_unpublished
@@ -36,3 +38,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Azothane
+
+# see notes: client_melee_calibration

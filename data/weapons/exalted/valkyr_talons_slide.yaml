@@ -13,6 +13,10 @@ form: slide
 transform_group: valkyr_talons
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_slam
+  - reason: client_melee_legacy
+  - reason: client_melee_geometry
+  - reason: client_melee_ability
   - "The stance page gives this slide up to 5 hits on one target or 4 on several; the module and the ability page say 6. This entry lands 6, unmeasured."
 attack:
   # see notes: swing_trigger_pull_engine
@@ -28,8 +32,10 @@ attack:
   punch_through_m: 0.0
   range_m: 2.15
   # see notes: slide_ignores_follow_through
-  follow_through: 1.0
-  heavy: { multiplier: 5.0, windup_seconds: 0.1667 }
+  follow_through: 1
+  heavy:
+    multiplier: 5.0
+    windup_seconds: 0.75
   damage: { puncture: 62.5, slash: 187.5 }   # total 250
   slam:
     damage: { puncture: 62.5, slash: 187.5 }
@@ -47,3 +53,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Hysteria_(Stance)
+
+# see notes: client_melee_calibration

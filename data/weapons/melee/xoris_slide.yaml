@@ -7,6 +7,8 @@ form: slide
 transform_group: xoris
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: glaive_heavy_is_a_throw
 attack:
   trigger: melee
@@ -20,7 +22,7 @@ attack:
   status_chance: 0.18
   punch_through_m: 0.0
   range_m: 1.3
-  follow_through: 1.0
+  follow_through: 1
   damage:
     impact: 24
     puncture: 40.8
@@ -31,3 +33,5 @@ attack:
   throw_charge_seconds: 1.2
 source:
   url: https://wiki.warframe.com/w/Xoris
+
+# see notes: client_melee_calibration

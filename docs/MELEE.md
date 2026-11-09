@@ -851,6 +851,17 @@ and combo rules remain in the weapon data.
 | slide | the package slide animation and its individual events; spin geometry retains the class rule |
 | heavy_slam | `Heavy Slam Attack` as a slam sphere on the 2.0 s stand-in recovery |
 
+### Current client inputs and retained clocks
+
+The whole-melee source contract is in `DATA_SOURCES.md` §Whole-melee client
+calibration. Every entry has an exact owner/component binding. Current metadata
+checks the shared action properties and supported tree references; the earlier
+resource export supplies animation/event clocks absent from the newer snapshots.
+Weapon charge, cadence, follow-through and supported packet inputs are separate
+from those retained clocks. Non-ability talons use shared action trees; fixed
+ability combo observations remain declared. Source presence does not establish
+complete runtime coverage, and each unsupported consumer has a scoped admission.
+
 ### Input, action and event timelines
 
 Melee uses an input/action/event timeline. `MeleeCombo` accepts an inline

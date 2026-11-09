@@ -6,6 +6,8 @@ form: heavy
 transform_group: tak_and_lug
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - The shield and three explosions use the package's four timed hits. Their 7 m forward reach is modelled as a melee sweep;
   the separate 3 m circles around the shield and coverage between the shield and user are not modelled.
 - Turning or changing elevation during the shield throw and sliding heavy attacks are not modelled.
@@ -63,6 +65,8 @@ attack:
           forced_procs:
           - blast
   range_m: 7
-  follow_through: 1.0
+  follow_through: 0.6
 source:
   url: https://wiki.warframe.com/w/Tak_&_Lug
+
+# see notes: client_melee_calibration

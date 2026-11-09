@@ -7,6 +7,9 @@ form: heavy
 transform_group: fragor_prime
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
+- reason: client_melee_counter
 - reason: melee_passive_unmodelled
   passive: its combo counter starts at 30
 attack:
@@ -35,3 +38,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Fragor_Prime
+
+# see notes: client_melee_calibration

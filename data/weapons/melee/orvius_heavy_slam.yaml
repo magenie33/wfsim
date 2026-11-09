@@ -8,6 +8,7 @@ form: heavy_slam
 transform_group: orvius
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_slam
   - "The climb is not timed: this loop takes the 150% radius of a slam dropped from 15 m and spends no time getting up there. A player who hops instead gets less radius, down to the 2.5 m / listed floor; this fight has no vertical axis to tell the two apart."
   - "Not modelled: the quick throw, which hovers over the first enemy for 3 s, strikes it three times and explodes by itself (wiki); only the charged throw is played here."
   - reason: glaive_heavy_is_a_throw
@@ -46,3 +47,5 @@ attack:
   throw_charge_seconds: 1.2
 source:
   url: https://wiki.warframe.com/w/Orvius
+
+# see notes: client_melee_calibration

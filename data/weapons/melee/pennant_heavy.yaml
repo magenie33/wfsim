@@ -7,6 +7,8 @@ form: heavy
 transform_group: pennant
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_slide_unpublished
 - reason: melee_passive_unmodelled
   passive: each heavy attack kill grants +50% attack speed for 2 to 46 s, longer with the combo multiplier, and each kill's stack runs on its own clock
@@ -36,3 +38,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Pennant
+
+# see notes: client_melee_calibration

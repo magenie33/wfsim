@@ -6,6 +6,9 @@ form: heavy
 transform_group: syam
 co_behavior: independent
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_special
+- reason: client_melee_geometry
 - Shockwave flight speed is unpublished; damage lands at the package release event without travel time.
 - The first wave is about 8 m wide and horizontal, while the second is narrow and vertical. Both are traced as rays; terrain
   traversal and repeated contacts are not modelled.
@@ -58,3 +61,5 @@ attack:
   infinite_body_punch_through: true
 source:
   url: https://wiki.warframe.com/w/Syam
+
+# see notes: client_melee_calibration

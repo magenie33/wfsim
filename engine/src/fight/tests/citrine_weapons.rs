@@ -26,10 +26,10 @@ fn steflos_prime_keeps_the_family_projectile_and_its_own_falloff() {
 
 #[test]
 fn corufell_heavy_uses_projectile_stats_and_windup_mods() {
-    for (id, damage) in [("corufell_heavy", 600.0), ("corufell_prime_heavy", 650.0)] {
+    for (id, damage, status) in [("corufell_heavy", 600.0, 0.14), ("corufell_prime_heavy", 650.0, 0.2)] {
         let p = panel(id, &[]);
         assert_eq!(p.modified_base, damage);
-        assert_eq!(p.status_chance, 0.14);
+        assert_eq!(p.status_chance, status);
         assert!(p.spends_combo && p.infinite_body_punch_through);
         assert!(p.follow_through.is_none());
         assert_eq!(p.co_behavior, crate::model::CoBehavior::Independent);

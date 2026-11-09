@@ -7,6 +7,8 @@ form: slide
 transform_group: glaive_prime
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: glaive_heavy_is_a_throw
 attack:
   trigger: melee
@@ -20,7 +22,7 @@ attack:
   status_chance: 0.3
   punch_through_m: 0.0
   range_m: 1.25
-  follow_through: 1.0
+  follow_through: 1
   damage:
     impact: 24.6
     puncture: 24.6
@@ -31,3 +33,5 @@ attack:
   throw_charge_seconds: 1.2
 source:
   url: https://wiki.warframe.com/w/Glaive_Prime
+
+# see notes: client_melee_calibration

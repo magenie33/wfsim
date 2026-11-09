@@ -7,6 +7,8 @@ form: heavy
 transform_group: silva_and_aegis
 co_behavior: additive_with_base_damage
 unmodeled:
+- reason: client_melee_timing
+- reason: client_melee_geometry
 - reason: melee_slide_unpublished
 - reason: melee_passive_unmodelled
   passive: each blocked attack stores a charge of +15% Critical Chance and +15% Status Chance for the next attack, up to 4
@@ -34,3 +36,5 @@ attack:
     context: CC_GROUND_HEAVY
 source:
   url: https://wiki.warframe.com/w/Silva_&_Aegis
+
+# see notes: client_melee_calibration

@@ -8,6 +8,8 @@ form: heavy
 transform_group: sampotes
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_legacy
+  - reason: client_melee_geometry
   - reason: melee_own_combo_unmodelled
     combos: "heavy attack, heavy slam and slam attack"
   - reason: heavy_charge_share_assumed
@@ -54,3 +56,5 @@ attack:
     combo_points_base: 0
 source:
   url: https://wiki.warframe.com/w/Sampotes
+
+# see notes: client_melee_calibration

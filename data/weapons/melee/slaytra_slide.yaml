@@ -7,6 +7,8 @@ form: slide
 transform_group: slaytra
 co_behavior: additive_with_base_damage
 unmodeled:
+  - reason: client_melee_timing
+  - reason: client_melee_geometry
   - reason: melee_passive_unmodelled
     passive: "its innate +100% Slash status duration"
 attack:
@@ -21,7 +23,7 @@ attack:
   status_chance: 0.35
   punch_through_m: 0.0
   range_m: 2.5
-  follow_through: 1.0
+  follow_through: 1
   heavy:
     multiplier: 3.75
     windup_seconds: 0.69999999
@@ -34,3 +36,5 @@ attack:
     context: CC_SLIDING
 source:
   url: https://wiki.warframe.com/w/Slaytra
+
+# see notes: client_melee_calibration
