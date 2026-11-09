@@ -13,6 +13,7 @@ import { loadEngine } from "./wasm_engine.mjs";
 export async function computationFixture(upstream, port = 0, controls = false) {
   const env = { LIBRARY: await testDb("library"), ACCOUNTS: await testDb("accounts"), AUTH_SECRET: "local-attribution-fixture",
     EMAIL: { send: async () => ({ messageId: "local" }) } };
+  await env.ACCOUNTS.exec("SET TIME ZONE 'UTC'");
   const token = "local-computation-review", account = "local-aaa", engine = "123456789abc";
   const at = new Date().toISOString(), profileIds = {};
   for (const [i, name] of ["aaa", "bbb", "ccc"].entries()) {
