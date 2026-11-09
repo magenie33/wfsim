@@ -74,8 +74,9 @@ async function* outputPaths(path) {
   if (existsSync(path)) for await (const row of readInventoryRows(path)) yield row.path;
 }
 export async function* inventoryCursor(tx, name, query, args = [], { maxRows = 5000, report = () => {} } = {}) {
+  if (!/^[a-z][a-z0-9_]*$/.test(name)) throw new Error('invalid inventory cursor name');
   let limit = Math.min(5000, maxRows), largest = 1, total = 0;
-  await tx.unsafe(`DECLARE ${name} NO SCROLL CURSOR FOR ${query}`, args);
+  if (query !== null) await tx.unsafe(`DECLARE ${name} NO SCROLL CURSOR FOR ${query}`, args);
   try {
     for (;;) {
       const started = Date.now(), rows = await tx.unsafe(`FETCH FORWARD ${limit} FROM ${name}`);
@@ -128,7 +129,8 @@ export async function captureEpoch({ sql, catalog, generation, dir, bootstrap, c
     const [{ receipt }] = await tx.unsafe('SELECT inventory_epoch_begin($1::text) receipt', [generation]);
     const changes = file('changes.ndjson');
     report('capture-changes', { epoch: receipt.epoch, rows: 0 });
-    const changeCount = await writeRows(changes, inventoryCursor(tx, 'inventory_tokens', 'SELECT * FROM inventory_epoch_changes($1::text)', [receipt.epoch],
+    const [{ portal }] = await tx.unsafe('SELECT inventory_epoch_open($1::text) portal', [receipt.epoch]);
+    const changeCount = await writeRows(changes, inventoryCursor(tx, portal, null, [],
       { maxRows: 80000, report: fields => report('capture-changes', { epoch: receipt.epoch, ...fields }) }));
     report('captured-changes', { epoch: receipt.epoch, rows: changeCount });
     const result = { receipt, raw, changes, bootstrap, applies: [], scopes: [], engine_epoch: baseEpoch };

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { setTimeout as pause } from 'node:timers/promises';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import { inventoryCursor } from './inventory_pipeline.mjs';
@@ -95,6 +95,47 @@ try {
     assert.equal(count, 200001); assert(pages.length <= 5);
     assert(pages.some(page => page.page_rows === 80000));
     assert.equal((await b.unsafe('SELECT count(*)::integer n FROM capture_fixture'))[0].n, 200002);
+  });
+  await check('owned cursor streams without a whole-backlog spool and retains exact late-write ACK fences', async () => {
+    await a.unsafe("INSERT INTO inventory_dirty(scope,key) SELECT 'question','stream-'||lpad(i::text,6,'0') FROM generate_series(1,200001) i");
+    await a.unsafe('ANALYZE inventory_dirty');
+    const expected = await a.unsafe('SELECT scope,key,revision::text FROM inventory_dirty ORDER BY scope,key');
+    const digest = rows => { const hash = createHash('sha256'); for (const row of rows) hash.update(JSON.stringify(row)+'\n'); return hash.digest('hex'); };
+    const expectedHash = digest(expected), count = expected.length;
+    await assert.rejects(a.begin('isolation level repeatable read', async tx => {
+      await tx.unsafe("SET LOCAL work_mem='64kB'; SET LOCAL temp_file_limit='4MB'");
+      const [{ cut }] = await tx.unsafe('SELECT inventory_epoch_begin($1::text) cut', [generation]);
+      await tx.unsafe('DECLARE old_tokens NO SCROLL CURSOR FOR SELECT * FROM inventory_epoch_changes($1::text)', [cut.epoch]);
+      await tx.unsafe('FETCH FORWARD 5000 FROM old_tokens');
+    }), error => error.code === '53400');
+    await a.unsafe(`CREATE ROLE inventory_stream_reader;
+      GRANT EXECUTE ON FUNCTION inventory_epoch_begin(text),inventory_epoch_open(text),inventory_epoch_seal(text,bigint,text)
+      TO inventory_stream_reader`);
+    let frozen, portal; const hash = createHash('sha256'); let consumed = 0;
+    await a.begin('isolation level repeatable read', async tx => {
+      await tx.unsafe("SET LOCAL work_mem='64kB'; SET LOCAL temp_file_limit='4MB'; SET LOCAL ROLE inventory_stream_reader");
+      const refused = async (sql, args, pattern) => {
+        await assert.rejects(tx.savepoint(inner => inner.unsafe(sql, args)), pattern);
+      };
+      await refused('SELECT * FROM inventory_dirty', [], /permission denied/);
+      await refused("UPDATE inventory_epochs SET status='sealed'", [], /permission denied/);
+      await refused('SELECT inventory_epoch_open($1::text)', ['99999999'], /does not own this snapshot/);
+      const [{ cut }] = await tx.unsafe('SELECT inventory_epoch_begin($1::text) cut', [generation]);
+      [{ portal }] = await tx.unsafe('SELECT inventory_epoch_open($1::text) portal', [cut.epoch]);
+      for await (const row of inventoryCursor(tx, portal, null, [], { maxRows: 80000 })) {
+        consumed++; hash.update(JSON.stringify(row)+'\n');
+        if (consumed === 5000) await b.unsafe("UPDATE inventory_dirty SET revision=nextval('inventory_revision') WHERE key='stream-100000'; INSERT INTO inventory_dirty(scope,key) VALUES ('question','late-stream')");
+      }
+      assert.equal(consumed, count); assert.equal(hash.digest('hex'), expectedHash);
+      await refused('SELECT inventory_epoch_seal($1::text,$2::bigint,$3::text)', [cut.epoch, count-1, expectedHash], /changes incomplete/);
+      [{ frozen }] = await tx.unsafe('SELECT inventory_epoch_seal($1::text,$2::bigint,$3::text) frozen', [cut.epoch, count, expectedHash]);
+      await refused('SELECT inventory_epoch_open($1::text)', [cut.epoch], /does not own this snapshot/);
+    });
+    assert.equal(frozen.status, 'sealed');
+    await assert.rejects(a.unsafe(`FETCH FORWARD 1 FROM ${portal}`), error => error.code === '34000');
+    await assert.rejects(call('inventory_epoch_open', [frozen.epoch]), /does not own this snapshot/);
+    assert.equal(await call('inventory_ack', [generation, expected.filter(row => ['stream-100000','stream-100001'].includes(row.key))]), '1');
+    assert.equal((await a.unsafe("SELECT count(*)::integer n FROM inventory_dirty WHERE key IN ('late-stream','stream-100000')"))[0].n, 2);
   });
   await check('health SQL reads real PostgreSQL activity without changing inventory', async () => {
     const sql = execFileSync('python3', ['-c', 'import sys; sys.path.insert(0,"scripts"); import pg_health; print(pg_health.SQL)'], { encoding: 'utf8' });

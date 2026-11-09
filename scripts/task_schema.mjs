@@ -26,7 +26,7 @@ export function taskSchemaSql() {
       GRANT EXECUTE ON FUNCTION factory_inventory_rows(text,text[]) TO wfsim_pipeline;
       GRANT EXECUTE ON FUNCTION inventory_status(),inventory_begin(text,text,text),inventory_changes(bigint),
         inventory_inputs(text,text,text),inventory_cohort_rows(text,text,text),inventory_ack(text,text),inventory_publish(text),
-        inventory_epoch_begin(text),inventory_epoch_changes(text),inventory_epoch_seal(text,bigint,text),inventory_epoch_status(text),
+        inventory_epoch_begin(text),inventory_epoch_changes(text),inventory_epoch_open(text),inventory_epoch_seal(text,bigint,text),inventory_epoch_status(text),
         inventory_publish_cut(text,text) TO wfsim_pipeline;
     END IF;
   END $grant$;\n${computationSchemaSql()}`;
