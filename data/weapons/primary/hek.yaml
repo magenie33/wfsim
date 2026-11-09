@@ -36,15 +36,20 @@ attack:
   spread:
     min_deg: 6.0
     max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 12.0
+      hip_max_deg: 22.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 2.17
+  fire_rate: 2.16666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 7.0
   ammo_cost: 1
   crit_chance: 0.1
   crit_multiplier: 2.0
-  status_chance: 0.107
+  status_chance: 0.107142857142857
   punch_through_m: 0.0
   # see notes: wall_ramp_full_damage
   range_m: 300.0
@@ -56,3 +61,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Hek
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

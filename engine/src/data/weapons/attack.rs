@@ -166,6 +166,9 @@ pub struct AttackSpec {
     /// cadence rule rather than a tweak to this one.
     #[serde(default)]
     pub charge_seconds: Option<f64>,
+    /// An explicit cadence overrides the class default; zero native refire adds no interval.
+    #[serde(default)]
+    pub charge_cadence: Option<ChargeCadence>,
     /// A CHARGE THAT EATS THE MAGAZINE, in ammo per second (the Phantasma's
     /// 11). Present only where charging spends the magazine to buy damage.
     ///
@@ -1036,27 +1039,10 @@ pub struct GaugeFormSpec {
     #[serde(default)]
     pub single_shot: bool,
     pub gauge: GaugeSpec,
-    /// The transition INTO the form, unmodded. Per weapon: it is that
-    /// weapon's reload time, which the page states outright ("an animation
-    /// equal to the weapon's reload speed"). Scales by the reload formula.
+    /// The base profile's ModeSwitchTime, scaled by reload-speed bonuses.
     pub transmute_in_seconds: f64,
-    /// The transition OUT, unmodded — and this one is OUR STANDARD rather
-    /// than anyone's published number.
-    ///
-    /// One second, measured once on the Dual Toxocyst (MEASUREMENTS M9) and
-    /// applied to every form since. DE publishes nothing for it and no second
-    /// weapon has been measured, so restating it in sixty-nine weapon files
-    /// dressed a house convention as sixty-nine facts. It lives here, once,
-    /// and a weapon that is ever measured to differ says so by writing the
-    /// field.
-    #[serde(default = "standard_transmute_out")]
+    /// The transformed profile's ModeSwitchTime, with the same speed scaling.
     pub transmute_out_seconds: f64,
-}
-
-/// See [`GaugeFormSpec::transmute_out_seconds`]. Changing this changes every
-/// Incarnon cycle in the roster, which is the point of it being one number.
-pub(super) fn standard_transmute_out() -> f64 {
-    1.0
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -1077,7 +1063,7 @@ pub(super) fn weakpoint_hits() -> String {
 
 /// The locked-gauge magazine/reload reduction of an Incarnon form.
 #[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PseudoReloadSpec {
     pub magazine: f64,
-    pub reload_seconds: f64,
 }

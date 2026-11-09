@@ -67,3 +67,8 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Rattleguts
   module: https://wiki.warframe.com/w/Module:Weapons/data/modular
+
+unmodeled:
+  - reason: client_modular_assembly
+
+# see notes: client_primary_calibration

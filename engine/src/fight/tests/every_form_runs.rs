@@ -171,11 +171,11 @@ fn a_pinpoint_attack_never_misses_however_far_away() {
 /// roll is not even drawn there.
 #[test]
 fn spread_costs_more_the_further_away_the_target_stands() {
-    let (near, mid, far) = (landed("braton", 0.0), landed("braton", 20.0), landed("braton", 60.0));
+    let (near, mid, far) = (landed("braton", 0.0), landed("braton", 60.0), landed("braton", 200.0));
     assert!(near > 0, "the fixture fired nothing");
-    assert!(mid < near, "20 m landed {mid} of {near} — spread cost nothing");
-    assert!(far < mid, "60 m landed {far}, 20 m landed {mid} — no range dependence");
-    assert!(far > 0, "a 2 degree cone should still land something at 60 m");
+    assert!(mid < near, "60 m landed {mid} of {near} — spread cost nothing");
+    assert!(far < mid, "200 m landed {far}, 60 m landed {mid} — no range dependence");
+    assert!(far > 0, "the native resting cone should still land something at 200 m");
 }
 
 /// AN ENTRY WHOSE SPREAD NOBODY TRANSCRIBED CANNOT MISS, and says so.
@@ -278,13 +278,12 @@ fn a_card_that_grants_accuracy_narrows_the_cone() {
     };
     let (off, on) = (cone(false), cone(true));
     assert!(off.min_deg > 0.0, "the fixture has no cone to narrow");
-    // +40% accuracy divides the angle by 1.4 — the wiki's own direction
-    // ("bonuses that increase accuracy decrease the deviation").
+    // Native endpoint reduction: +40% accuracy retains 60% of the envelope.
     assert!(
-        (on.min_deg - off.min_deg / 1.4).abs() < 1e-9,
+        (on.min_deg - off.min_deg * 0.6).abs() < 1e-9,
         "{} against {}",
         on.min_deg,
-        off.min_deg / 1.4
+        off.min_deg * 0.6
     );
 }
 

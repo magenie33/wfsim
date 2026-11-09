@@ -517,10 +517,9 @@ pub struct GaugeForm {
     /// Hits of `charge_on` needed to fill the gauge, UNMODIFIED by evolutions
     /// (Dual Toxocyst 9, Laetum 12, Torid 5). `charge_rate` below shortens it.
     pub charges_to_fill: f64,
-    /// Transmute IN (enter the form) = the base form's reload time.
+    /// Unmodded entry ModeSwitchTime from the base profile.
     pub transmute_in: f64,
-    /// Transmute OUT (revert to the base form; officially unnamed) — an
-    /// estimate, also shortened by reload-speed bonuses.
+    /// Unmodded exit ModeSwitchTime from the transformed profile.
     pub transmute_out: f64,
     /// Extra gauge fill rate from evolutions (Incarnon Efficiency: +0.5).
     /// Weakpoint hits build `1 + charge_rate` times the charge, so the

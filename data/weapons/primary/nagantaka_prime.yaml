@@ -39,6 +39,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.0
+      hip_max_deg: 3.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 100
@@ -53,9 +58,13 @@ attack:
   # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
   forced_procs: [impact]
   # see notes: no_range_row_attack
-  damage: { impact: 1.7, puncture: 15.6, slash: 155.7 }   # total 173
+  damage:
+    impact: 1.73
+    puncture: 15.57
+    slash: 155.7
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Headshot kills from the bolt boost reload speed by 50% (wiki); a kill-triggered buff the engine does not model."
   - "Used by Garuda it gains 1 m of innate punch through (wiki), a Warframe-specific bonus not modelled here."
   - reason: bolt_corpse_ragdoll
@@ -63,3 +72,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Nagantaka_Prime
+
+# see notes: client_primary_calibration

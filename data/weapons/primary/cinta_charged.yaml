@@ -19,10 +19,15 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 120
-  fire_rate: 0.667
+  fire_rate: 0.666666666666667
   charge_seconds: 1.5
   multishot: 1.0
   ammo_cost: 1
@@ -34,8 +39,11 @@ attack:
   damage: { puncture: 640, slash: 160 }   # total 800
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The perfect shot is not carried: the module gives a third attack, an arrow released in a window at 1.05 s, for more damage than this full draw. The engine has no way to describe a timing window, so one weapon cannot carry both. A player who hits the window does better than this number."
   - reason: silent_weapon
 
 source:
   url: https://wiki.warframe.com/w/Cinta
+
+# see notes: client_primary_calibration

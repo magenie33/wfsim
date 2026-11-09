@@ -38,7 +38,12 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 12
+    max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 85
@@ -63,3 +68,7 @@ attack:
 source:
   url: https://wiki.warframe.com/w/MK1-Paris
 
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

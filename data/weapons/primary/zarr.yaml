@@ -42,7 +42,7 @@ attack:
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 40
-  fire_rate: 1.67
+  fire_rate: 1.66666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.17
@@ -106,3 +106,9 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Zarr
+reload_style: "by_round"
+reload_start_seconds: 0.5
+reload_per_shell_seconds: 0.5
+reload_end_seconds: 0.25
+
+# see notes: client_primary_calibration

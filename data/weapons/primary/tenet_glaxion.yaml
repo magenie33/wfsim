@@ -109,3 +109,6 @@ source:
   url: https://wiki.warframe.com/w/Tenet_Glaxion
 
 # see notes: client_primary_inputs
+beam_ramp_floor: 0.2
+
+# see notes: client_primary_calibration

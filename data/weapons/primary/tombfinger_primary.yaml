@@ -104,6 +104,7 @@ attack:
     # chance is the direct part's, so it is deliberately not restated.
 
 unmodeled:
+  - reason: client_modular_assembly
   - "The quick shot is not a form here: tapping fires a smaller explosion (1.7 m, 30-108 Radiation by grip, falloff to 75%) with the same total damage split differently, and that split is unpublished. One in-game reading would settle it."
   - reason: projectile_must_be_led
   - reason: self_stagger
@@ -111,3 +112,5 @@ unmodeled:
 source:
   url: https://wiki.warframe.com/w/Tombfinger
   module: https://wiki.warframe.com/w/Module:Modular/data
+
+# see notes: client_primary_calibration

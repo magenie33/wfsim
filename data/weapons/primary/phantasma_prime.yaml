@@ -87,15 +87,8 @@ attack:
   # splash nor chain; writing zeroes to satisfy a schema would be inventing two
   # facts to record none.
   #
-  # THE RANGE IS A WALL, NOT A RAMP, and the page states the two separately:
-  # "Range: 25.0 m" and "No Damage Falloff". So the beams deal FULL damage to the end
-  # of that range and literally nothing past it.
-  #
-  # MODELLED as of 2026-08-19 (player report: 射程直接影响可信度). It sat in
-  # this comment, unread, from the day the entry was written — and the comment
-  # was wrong as well as unread: BOTH Phantasma files said 25 m, which is the
-  # PRIME's number, copied across.
-  range_m: 25.0
+  # The parsed trace reach is a wall; full damage ends at that distance.
+  range_m: 23
 
 # TWO FORMS: this is the beam. The ALT-FIRE is a charged plasma bomb and is a
 # second weapon entry (phantasma_prime_charged), reached for free by the other
@@ -106,3 +99,5 @@ transform_group: phantasma_prime
 
 source:
   url: https://wiki.warframe.com/w/Phantasma_Prime
+
+# see notes: client_primary_calibration

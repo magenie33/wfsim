@@ -49,6 +49,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 140
@@ -66,9 +71,13 @@ attack:
   forced_procs: [impact]
   # NO RANGE ROW on this attack — Projectile at 140 m/s. See
   # data/surveys/weapon_range.yaml.
-  damage: { impact: 210, puncture: 280, slash: 210 }   # total 700
+  damage:
+    impact: 210.0
+    puncture: 280.0
+    slash: 209.999965
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Fires only at full charge; an early release fires nothing. The sim always charges fully, so the number is the ceiling."
   - "Not offered here: Spring-Loaded Broadhead, Amalgam Daikyu Target Acquired and the bow-exclusive Thunderbolt."
   - reason: bolt_corpse_ragdoll
@@ -77,3 +86,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Daikyu
+
+# see notes: client_primary_calibration

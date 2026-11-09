@@ -43,13 +43,16 @@ attack:
   falloff:
     start_m: 9.0
     end_m: 18.0
-    reduction: 0.6657
+    reduction: 0.665714285714
   damage: { cold: 800, impact: 600 }   # total 1400
 
 unmodeled:
+  - reason: client_projectile_collision
   - "The charged shot travels 26 m (wiki), which is not entered, so it reaches a target at any distance."
   - "The guaranteed Impact proc reaches only 18 m (wiki) but is applied at every range here, so further out the number reads high by one forced proc."
   - "It cannot hold a charge (wiki): the shot fires once charged, as in the sim."
 
 source:
   url: https://wiki.warframe.com/w/Quellor
+
+# see notes: client_primary_calibration

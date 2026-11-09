@@ -74,10 +74,15 @@ attack:
   spread:
     min_deg: 1.0
     max_deg: 7.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 1.0
+      hip_max_deg: 7.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 57
-  fire_rate: 5.33
+  fire_rate: 5.33333333333333
   # …AND IT NEVER FIRES AT THAT RATE UNTIL THE 7th SHOT. VERBATIM: "Requires a
   # spool-up of 7 shots before optimal fire rate is achieved", and "Fire rate
   # starts at 30% of the listed value, and increases by 11.67% per shot" — two
@@ -93,7 +98,7 @@ attack:
   ammo_cost: 1
   crit_chance: 0.27
   crit_multiplier: 2.3
-  status_chance: 0.1014
+  status_chance: 0.101428571428571
   # INNATE 1.9 m, from the attack block's own Punch Through row — "Innate punch
   # through allows hitting multiple targets in line", and at nearly four
   # body-thicknesses (`space::BODY_MATERIAL_M` is 0.5) it means it: this reaches
@@ -114,7 +119,12 @@ attack:
   damage: { impact: 2, puncture: 13, slash: 19, toxin: 7 }   # 41 a pellet, 287 a shot
 
 unmodeled:
+  - reason: client_rate_spool
+  - reason: client_spool_pellets
+  - reason: client_accuracy_runtime
   - reason: spool_rebuilds_after_reload
 
 source:
   url: https://wiki.warframe.com/w/Coda_Bubonico
+
+# see notes: client_primary_calibration

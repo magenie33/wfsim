@@ -35,7 +35,12 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 15
+    max_deg: 15.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 15.0
+      hip_max_deg: 25.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 2.0
@@ -49,9 +54,16 @@ attack:
   # see notes: wall_ramp_full_damage_5
   range_m: 1000.0
   damage: { impact: 18.0, puncture: 144.0, slash: 18.0 }   # 180 total
+  falloff:
+    start_m: 400.0
+    end_m: 600.0
+    reduction: 0.499999982
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: sniper_combo_miss
     seconds: 2
   - reason: zoom_steps
 source:
   url: https://wiki.warframe.com/w/Snipetron
+
+# see notes: client_primary_calibration

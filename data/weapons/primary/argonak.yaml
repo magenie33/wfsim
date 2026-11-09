@@ -38,9 +38,14 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 7.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 13.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 4.33
+  fire_rate: 4.33333333333333
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -53,7 +58,10 @@ attack:
   damage: { impact: 24.51, puncture: 6.27, slash: 26.22 }   # total 57
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Aiming highlights enemies within 100 m (wiki), an aiming aid the sim does not use."
 
 source:
   url: https://wiki.warframe.com/w/Argonak
+
+# see notes: client_primary_calibration

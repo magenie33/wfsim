@@ -67,13 +67,18 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: charged_auto
   # "Charge Time: 0.40 s", and the weapon "fires as soon as it has reached a
   # full charge" — it cannot be fired partially charged, so there is no tapped
   # entry beside this one the way a bow has.
   charge_seconds: 0.4
   shot_type: hit_scan
-  fire_rate: 2.67
+  fire_rate: 2.66666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.34
@@ -129,10 +134,12 @@ attack:
     # impact" — three tenths removed at the rim.
     falloff_reduction: 0.3
     crit_chance: 0.34
-    crit_multiplier: 3.0
+    crit_multiplier: 3
     status_chance: 0.26
 
 unmodeled:
+  - reason: client_radial_critical
+  - reason: client_accuracy_runtime
   - "The wiki's Condition Overload catalog gives this weapon's radial its own row, 333% of its base; that row is not entered here yet, so the radial takes 100% and a status-stacking build reads low on it."
   - "The catalog says the explosion takes Condition Overload computed on the direct hit's base, 200 against the radial's own 60. That base is not entered, so the radial takes none and a status-stacking build reads low on it."
   - reason: explosion_ignores_cover
@@ -142,3 +149,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Ferrox
+
+# see notes: client_primary_calibration

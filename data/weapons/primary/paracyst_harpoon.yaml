@@ -32,7 +32,7 @@ attack:
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.0
-  crit_multiplier: 1.0
+  crit_multiplier: 2
   status_chance: 0.3
   punch_through_m: 0.0
   # A WALL, NOT A RAMP: full damage to the end of it and nothing past.
@@ -41,8 +41,11 @@ attack:
   damage: { toxin: 15 }   # total 15
 
 unmodeled:
+  - reason: client_projectile_callbacks
   - "The harpoon reels the target in and holds it (wiki); enemies here are neither moved nor held, so the mode's purpose adds nothing."
   - "The module's third attack, 'Infested Harpoon Contact', is the damage dealt while the target is held, a state the engine does not track; it is not counted."
 
 source:
   url: https://wiki.warframe.com/w/Paracyst
+
+# see notes: client_primary_calibration

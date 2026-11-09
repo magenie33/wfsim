@@ -37,6 +37,11 @@ attack:
   spread:
     min_deg: 6.0
     max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 9.0
+      hip_max_deg: 18.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 100
@@ -59,7 +64,11 @@ attack:
   damage: { impact: 4, puncture: 30, slash: 6 }   # total 40
 
 unmodeled:
+  - reason: client_rate_spool
+  - reason: client_accuracy_runtime
   - reason: spool_rebuilds_after_reload
 
 source:
   url: https://wiki.warframe.com/w/Supra
+
+# see notes: client_primary_calibration

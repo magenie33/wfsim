@@ -27,8 +27,8 @@ attack:
     max_deg: 12.0
   trigger: charge
   shot_type: projectile
-  projectile_speed_mps: 70
-  fire_rate: 0.667
+  projectile_speed_mps: 80
+  fire_rate: 0.666666666666667
   charge_seconds: 0.7
   multishot: 1.0
   ammo_cost: 1
@@ -43,8 +43,14 @@ attack:
   damage: { puncture: 648, slash: 252 }   # total 900
 
 unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_ammo_runtime
+  - reason: client_special_spread
+  - reason: client_accuracy_runtime
   - "This is the perfect release, not the ordinary full draw: the arsenal shows it and this entry carries its numbers. A mistimed release gets the module's second attack instead, a one-second draw for less damage, which is not carried. The engine has no way to describe a timing window, so one weapon cannot carry both."
   - reason: silent_weapon
 
 source:
   url: https://wiki.warframe.com/w/Nataruk
+
+# see notes: client_primary_calibration

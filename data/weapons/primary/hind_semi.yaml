@@ -16,6 +16,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 7.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 13.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 2.5
@@ -29,5 +34,11 @@ attack:
   # see notes: no_range_row_attack
   damage: { impact: 12, puncture: 12, slash: 36 }   # total 60
 
+  range_m: 300
 source:
   url: https://wiki.warframe.com/w/Hind
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

@@ -35,9 +35,14 @@ attack:
   spread:
     min_deg: 1.5
     max_deg: 3.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 5.0
+      hip_max_deg: 15.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 1.67
+  fire_rate: 1.66666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -51,3 +56,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Grinlok
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

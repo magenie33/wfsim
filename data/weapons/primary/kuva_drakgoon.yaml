@@ -63,7 +63,7 @@ attack:
   trigger: charge
   charge_seconds: 0.3
   shot_type: projectile
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   # TEN PELLETS, and the damage below is PER PELLET.
   multishot: 10.0
   ammo_cost: 1
@@ -86,8 +86,12 @@ attack:
   damage: { impact: 4.6, puncture: 4.6, slash: 36.8 }   # 46 per pellet
 
 unmodeled:
+  - reason: client_special_spread
+  - reason: client_accuracy_runtime
   - reason: bounce_headshot_assumed
   - reason: ricochet_terrain
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Drakgoon
+
+# see notes: client_primary_calibration

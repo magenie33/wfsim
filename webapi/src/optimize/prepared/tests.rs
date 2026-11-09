@@ -102,6 +102,14 @@ fn cache_is_bounded_and_never_keeps_failed_or_large_requests() {
 
 #[test]
 fn prepared_plans_keep_independent_build_streams_after_cancel_and_concurrent_parse() {
+    // Each stream preserves its own cursor order; parallel encounters can arrive
+    // in a different order across invocations while retaining identical builds.
+    let batch = |stream: &super::BuildStream| {
+        let mut value = stream.batch(0);
+        assert_eq!(stream.batch(0), value, "a cursor read must be stable");
+        value["builds"].as_array_mut().unwrap().sort_by_key(Value::to_string);
+        value
+    };
     let ids = ["serration", "split_chamber", "point_strike", "vital_sense", "hellfire",
         "infected_clip", "stormbringer", "speed_trigger"];
     let req = json!({
@@ -120,7 +128,7 @@ fn prepared_plans_keep_independent_build_streams_after_cancel_and_concurrent_par
     assert!(stream1.has_pending());
     assert!(!stream2.has_pending(), "an unrun plan has no encountered builds");
     assert_eq!(run(second), expected);
-    assert_eq!(stream1.batch(0), stream2.batch(0));
+    assert_eq!(batch(&stream1), batch(&stream2));
     assert!(stream1.batch(0)["builds"].as_array().unwrap().len() > 1);
     let cancelled = parse_optimize(&req).unwrap();
     let state = FunnelState::default();
@@ -129,7 +137,7 @@ fn prepared_plans_keep_independent_build_streams_after_cancel_and_concurrent_par
     let restarted = parse_optimize(&req).unwrap();
     let stream3 = restarted.build_stream();
     assert_eq!(run(restarted), expected);
-    assert_eq!(stream3.batch(0), stream1.batch(0));
+    assert_eq!(batch(&stream3), batch(&stream1));
     let worker = std::thread::spawn(move || {
         assert!(LAST.with(|last| last.borrow().is_none()));
         run(parse_optimize(&req).unwrap())

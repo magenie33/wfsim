@@ -68,8 +68,11 @@ attack:
   damage: { heat: 285, impact: 195 }   # total 480
 
 unmodeled:
+  - reason: client_projectile_collision
   - reason: steflos_projectile_lifetime
   - reason: steflos_signature_speed
 
 source:
   url: https://wiki.warframe.com/w/Steflos_Prime
+
+# see notes: client_primary_calibration

@@ -102,10 +102,16 @@ def main():
             else:
                 row['charged_candidate'] = projectile(fire['chargedProjectileType'])
                 row['state'].update({k: state[k] for k in ('ReloadAfterEveryShot', 'DestroyActiveProjectiles', 'DetonateOnSwapToPrimary')})
-                row['retained_conventions'] = {'magazine': 1, 'reload_seconds': 0.6,
-                    'attractor_seconds': 4.7, 'projectile_speed_mps': 150,
-                    'sources': {'cycle': 'M43', 'attractor': 'M42 and wiki effective-duration convention',
-                        'projectile_speed_mps': 'wiki throw stat; native selector unreviewed'}}
+                attractor_path = '/Lotus/Weapons/Tenno/LongGuns/TnPriestSpear/TnPriestSpearBulletAttractor'
+                row['adopted_inputs'] = {'magazine': 1, 'reload_seconds': numeric(state['reloadTime']),
+                    'attractor_seconds': numeric(objects[attractor_path]['composed_fields']['LifeSpan'].partition('=')[2]),
+                    'projectile_speed_mps': numeric(selected['fields']['KinematicInitialSpeed'].partition('=')[2]),
+                    'source_policy': 'parsed primary calibration; M42/M43 retain original observations'}
+                for key in ('reload_seconds',):
+                    if re.search(r'(?m)^' + key + ':', text):
+                        text = replace_field(text, key, row['adopted_inputs'][key], 0)
+                for key in ('attractor_seconds', 'projectile_speed_mps'):
+                    text = replace_field(text, key, row['adopted_inputs'][key], 2)
                 profile = {}
                 for aim, key in [('aimed', 'AIMED_ACCURACY'), ('hip', 'HIP_FIRE_ACCURACY')]:
                     raw = objects[fire[key]]['composed_fields']['Spread']

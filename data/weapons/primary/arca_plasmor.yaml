@@ -60,6 +60,11 @@ attack:
   spread:
     min_deg: 6.0
     max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 12.0
+      hip_max_deg: 22.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 60
@@ -84,16 +89,20 @@ attack:
   falloff:
     start_m: 10.0
     end_m: 20.0
-    reduction: 0.6667
+    reduction: 0.666666666667
   # "Shots have a guaranteed Impact proc to enemies up to 14 meters" — less than
   # half the Tenet's 29 m, and the range limit is the part this cannot hold.
   forced_procs: [impact]
   damage: { radiation: 600 }   # total 600
 
 unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_accuracy_runtime
   - "The projectile is a wall 3 m thick (4.4 m on the Tenet variant) that sweeps everything in that band; the sim fires a ray, so only bodies on the line are hit and against a crowd the number reads low."
   - "The guaranteed Impact proc reaches only 14 m but is applied at every distance here, so past 14 m the number reads slightly high."
   - "Its innate punch through does not pass surfaces when the projectile's centre hits one; this fight has no surfaces, so this changes nothing here."
 
 source:
   url: https://wiki.warframe.com/w/Arca_Plasmor
+
+# see notes: client_primary_calibration

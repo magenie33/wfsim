@@ -1,6 +1,6 @@
 id: opticor_vandal_quick
 name: Opticor Vandal
-# THE QUICK SHOT: fired without charging, with the same 4.6 m blast.
+# Minimum permitted charge; its duration and damage follow parsed charge limits.
 inherits: opticor_vandal
 form: base
 transform_group: opticor_vandal
@@ -37,7 +37,10 @@ attack:
     effectiveness: 1.00
     stacking: adds
     radius_calculation: snapshot
-  damage: { impact: 20, puncture: 140, slash: 40 }   # total 200
+  damage:
+    impact: 16.0
+    puncture: 112.0
+    slash: 31.9999984
   # THE EXPLOSION — rules in MECHANICS §7.
   radial:
     radius_m: 4.6
@@ -48,11 +51,16 @@ attack:
     status_chance: 0.3
     takes_multishot: false
     takes_blast_radius_mods: true
-    damage: { magnetic: 100 }   # total 100
+    damage:
+      magnetic: 80.0
 
+  charge_seconds: 0.24
 unmodeled:
+  - reason: client_radial_critical
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Opticor_Vandal
+
+# see notes: client_primary_calibration

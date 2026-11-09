@@ -33,11 +33,8 @@ reload_seconds: 1.7
 # see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
-# WHERE THE RAMP STARTS. "Damage ramps up from 35% to 100% over 0.6 seconds when
-# firing. After firing stops for 0.8 seconds, the damage decays back to 35% over
-# 2 seconds" — the same floor as the ordinary Ignis, and a stated exception to
-# the 20% most beams get.
-beam_ramp_floor: 0.35
+# Parsed attenuation bounds; see client_primary_calibration.
+beam_ramp_floor: 0.2
 
 attack:
   # see notes: cone_half_angle_from
@@ -77,6 +74,10 @@ attack:
   #   Ignis (Ignis Wraith) | Primary Fire + AoE | 0% | Doesn't Work | N/A
   #
   # see notes: zero_row_omission_arcane
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
   compression:
     effectiveness: 0.00
     stacking: multiplies
@@ -84,8 +85,11 @@ attack:
   damage: { heat: 35 }   # total 35
 
 unmodeled:
+  - reason: client_beam_target_ramp
   - "The beam's 0.15 m thickness, the largest of any continuous weapon, is not modelled: the beam here is a ray, so a shot that would clip an enemy with its edge misses, and Heavy Caliber's accuracy penalty costs more than in game."
   - "The area damage can headshot, which the page marks as a bug; the sim applies headshots to the direct hit only, so the blast is never a headshot here."
 
 source:
   url: https://wiki.warframe.com/w/Ignis_Wraith
+
+# see notes: client_primary_calibration

@@ -15,6 +15,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.0
+      hip_max_deg: 3.0
   trigger: burst
   # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 9 rounds
   # spaced by the delay below.
@@ -33,11 +38,19 @@ attack:
   # A GUARANTEED IMPACT PROC — the module's ForcedProcs.
   forced_procs: [impact]
   # see notes: no_range_row_attack
-  damage: { impact: 1.6, puncture: 14.3, slash: 143.1 }   # total 159
+  damage:
+    impact: 1.59
+    puncture: 14.31
+    slash: 143.1
 
 unmodeled:
+  - reason: client_accuracy_runtime
+  - reason: client_clip_burst
   - "The burst empties the magazine, and this entry fires a fixed count, the unmodded magazine. Magazine mods lengthen the burst (page), so a build with one reads low."
   - reason: bolt_corpse_ragdoll
 
 source:
   url: https://wiki.warframe.com/w/Nagantaka
+reload_seconds: 2
+
+# see notes: client_primary_calibration

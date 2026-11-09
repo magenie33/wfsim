@@ -15,6 +15,8 @@ transforms_to: gorgon_incarnon
 
 # see notes: bulk_intake_stats_are
 unmodeled:
+  - reason: client_rate_spool
+  - reason: client_accuracy_runtime
   - reason: spool_rebuilds_after_reload
 accuracy: 12.5
 disposition: 1.2
@@ -37,8 +39,13 @@ co_behavior: additive_with_base_damage
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 7
-    max_deg: 9
+    min_deg: 7.0
+    max_deg: 9.0
+    sampling:
+      horizontal_ratio: 0.65
+      uniform: false
+      hip_min_deg: 9.0
+      hip_max_deg: 18.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 12.5
@@ -67,3 +74,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Gorgon
+
+# see notes: client_primary_calibration

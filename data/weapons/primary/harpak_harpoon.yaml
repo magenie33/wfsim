@@ -40,7 +40,10 @@ attack:
   damage: { impact: 40, puncture: 50, slash: 10 }   # total 100
 
 unmodeled:
+  - reason: client_projectile_callbacks
   - "The harpoon pulls enemies in, knocks them down, grounds flyers and interrupts casting (wiki); all crowd control, and enemies here are neither moved nor interrupted."
 
 source:
   url: https://wiki.warframe.com/w/Harpak
+
+# see notes: client_primary_calibration

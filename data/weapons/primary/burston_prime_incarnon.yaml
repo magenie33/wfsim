@@ -52,12 +52,14 @@ gauge_form:
     resource: incarnon_charges
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
+  # see notes: incarnon_package_transition_time
   transmute_in_seconds: 1.4
   transmute_out_seconds: 0.6
 
+# SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
+# magazine/reload model, with downtime derived from both state timers.
 pseudo_reload:
   magazine: 600
-  reload_seconds: 2
 
 # CONDITION OVERLOAD — the direct hit is ordinary; the RADIAL is not, and its
 # catalog row turned out to say something about the evolutions too.
@@ -135,7 +137,7 @@ attack:
     # a spatial model should re-check it rather than trust this line.)
     falloff_reduction: 1.0
     crit_chance: 0.28
-    crit_multiplier: 3.0
+    crit_multiplier: 3
     status_chance: 0.30
     # CO ON AN EXPLOSION — the exception, and this weapon is the roster's
     # first. "Radial hit only receives CO bonus on target directly hit by
@@ -162,4 +164,7 @@ source:
 # see notes: client_primary_inputs
 
 unmodeled:
+  - reason: client_radial_critical
   - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

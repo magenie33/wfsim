@@ -32,11 +32,12 @@ gauge_form:
     resource: incarnon_charges
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
-  transmute_in_seconds: 1      # = base reload time, unmodded
+  # see notes: incarnon_package_transition_time
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 0.6
 
 pseudo_reload:
   magazine: 45
-  reload_seconds: 2.0
 
 # see notes: no_co_catalog_row
 co_behavior: additive_with_base_damage
@@ -45,11 +46,16 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 15
+    max_deg: 15.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 15.0
+      hip_max_deg: 25.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 300
-  fire_rate: 1.333
+  fire_rate: 1.33333333333333
   multishot: 1.0
   ammo_cost: 1                  # of the 45-round charge pool
   crit_chance: 0.3
@@ -65,9 +71,9 @@ attack:
   # longer Punch Through"*, and Inciting Incident's channeled +2 *"applies only
   # in the base form"* (wiki Vectis_Incarnon_Genesis).
   punch_through_mods: false
-  # 150 COLD, the figure the Genesis page gives the form on both variants — only
-  # the base-damage evolutions differ between them.
-  damage: { cold: 150 }   # total 150
+  # The bound base-variant projectile supplies this component.
+  damage:
+    cold: 5.0
   # PRIMARY COMPRESSION's row (docs/CATALOGS.md §2): FOUR PER CENT, because it "uses embed radial instead of headshot explosion".
   # The row's 0.1 m -> +8% is NOT what the game pays: the Prime's measured +12%
   # (M118) is 0.15 m, and the row and the orb are one for both variants.
@@ -86,12 +92,11 @@ attack:
     # stays the transcribed column it is. 0.8 x 0.15 = the measured +12% (M118).
     reads_radius_m: 0.15
 
-  # THE ORB EVERY LANDED ROUND LEAVES IN THE BODY IT HIT — the Prime's, whose
-  # file carries the readings (M117); the Genesis page gives one set of numbers
-  # for both variants.
+  # Native embed components; unverified callbacks retain an admission.
   embed:
     hit:
-      damage: { cold: 25 }   # total 25
+      damage:
+        cold: 5.0
       radius_m: 0.5
       forced_procs: [cold]
       crit_chance: 0.3
@@ -102,7 +107,8 @@ attack:
     head_after_seconds: 0.4
     head_explosion_hits: 2
     explosion:
-      damage: { cold: 150 }   # total 150
+      damage:
+        cold: 5.0
       radius_m: 6.7
       falloff_start_m: 0
       falloff_reduction: 0.7
@@ -117,3 +123,9 @@ attack:
 source:
   url: https://wiki.warframe.com/w/Vectis_Incarnon_Genesis
   # wiki module `Attacks[].AttackName`: "Incarnon Form" and "Incarnon Form Headshot AoE"
+
+unmodeled:
+  - reason: client_projectile_callbacks
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

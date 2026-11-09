@@ -36,7 +36,12 @@ attack:
   # see notes: cone_half_angle_from_2
   spread:
     min_deg: 0.0
-    max_deg: 0.0
+    max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 80
@@ -73,14 +78,18 @@ attack:
     status_chance: 0.16
     takes_multishot: false
     takes_blast_radius_mods: true
-    damage: { blast: 740 }   # total 740
+    damage:
+      blast: 740.0
 
+    delay_seconds: 1.3
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The module gives this shot three attacks and the engine carries one explosion: the Blast collapse is modelled, and the initial blast is not - neither its Cold damage nor its guaranteed Cold status in 7.2 m, so a build that profits from Cold stacks or a status count reads low."
-  - "The collapse's 1.3 s delay after the initial blast is not modelled: the blast arrives with the arrow, so a short fight gets its damage early."
   - "The bubble holds what it catches until it collapses (wiki); crowd control, and enemies here neither move nor stop."
   - reason: self_stagger
   - reason: bolt_corpse_ragdoll
 
 source:
   url: https://wiki.warframe.com/w/Prisma_Lenz
+
+# see notes: client_primary_calibration

@@ -15,6 +15,11 @@ attack:
   spread:
     min_deg: 2.0
     max_deg: 6.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 8.0
+      hip_max_deg: 12.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 5
@@ -54,9 +59,16 @@ attack:
     damage: { toxin: 100 }   # total 100
 
 unmodeled:
+  - reason: client_projectile_acceleration
+  - reason: client_projectile_callbacks
+  - reason: client_accuracy_runtime
+  - reason: client_composite_attack
   - "The orb hangs in place and damages what walks into it, and shooting the primary fire through it adds damage (wiki). The engine fires each mode on its own, so this interaction is not modelled."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Mutalist_Quanta
+reload_seconds: 2.6
+
+# see notes: client_primary_calibration

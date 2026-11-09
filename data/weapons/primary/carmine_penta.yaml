@@ -40,7 +40,7 @@ attack:
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 20
-  fire_rate: 2.7
+  fire_rate: 2.66666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.1
@@ -80,3 +80,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Carmine_Penta
+
+# see notes: client_primary_calibration

@@ -15,6 +15,7 @@ transforms_to: vectis_incarnon
 
 # see notes: bulk_intake_stats_are
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: sniper_combo_miss
     seconds: 2
 # THE TWO SNIPER MECHANICS. Both are the WEAPON's rather than the build's, the
@@ -50,16 +51,21 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 15
+    max_deg: 15.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 15.0
+      hip_max_deg: 25.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 1.5
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": true}
   # see notes: falloff_feeds_the_riven_pool
   falloff:
-    start_m: 400
-    end_m: 600
-    reduction: 0.5   # fraction REMOVED past end_m
+    start_m: 400.0
+    end_m: 600.0
+    reduction: 0.444444444444
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.25
@@ -75,3 +81,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Vectis
+
+# see notes: client_primary_calibration

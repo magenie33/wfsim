@@ -69,7 +69,16 @@ attack:
 
 # THE RAMP FLOOR IS 30%, not the engine's 20% default: "Damage ramps up from 30%
 # to 100%". The same floor all three Quantas carry.
-beam_ramp_floor: 0.30
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
+beam_ramp_floor: 0.2
 
 source:
   url: https://wiki.warframe.com/w/Quanta
+
+unmodeled:
+  - reason: client_beam_target_ramp
+
+# see notes: client_primary_calibration

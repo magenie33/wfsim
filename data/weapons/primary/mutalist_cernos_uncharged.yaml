@@ -20,6 +20,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 70
@@ -38,7 +43,10 @@ attack:
   damage: { impact: 184.5, puncture: 10.25, slash: 10.25 }   # total 205
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: silent_weapon
 
 source:
   url: https://wiki.warframe.com/w/Mutalist_Cernos
+
+# see notes: client_primary_calibration

@@ -146,3 +146,5 @@ source:
   # Attack stats from the wiki `Module:Weapons/data/primary` ("Phantasma
   # Prime", attacks 2 "Plasma Bomb Impact" and 3 "Plasma Bomb Explosion").
   # Attacks 4 and 5 are the bomblets, recorded above.
+
+# see notes: client_primary_calibration

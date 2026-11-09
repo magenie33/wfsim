@@ -20,7 +20,7 @@ noise: alarming
 magazine: 16
 reload_seconds: 3.0
 ammo_type: primary
-ammo_max: 32
+ammo_max: 64
 ammo_pickup: 16
 
 # No CO catalog row, so the ordinary class (absence means ORDINARY).
@@ -36,6 +36,11 @@ attack:
   spread:
     min_deg: 0.1
     max_deg: 0.14
+    sampling:
+      horizontal_ratio: 1.0
+      uniform: false
+      hip_min_deg: 15.0
+      hip_max_deg: 25.0
   trigger: burst
   burst:
     count: 4
@@ -51,10 +56,17 @@ attack:
   # see notes: wall_ramp_full_damage_5
   range_m: 1000.0
   damage: { impact: 22.08, puncture: 103.04, slash: 58.88 }   # 184 total
+  falloff:
+    start_m: 300.0
+    end_m: 600.0
+    reduction: 0.663043478261
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: sniper_combo_miss
     seconds: 2
   - reason: zoom_steps
   - "Voruna's signature bonus is not modelled: carried by her, the ammo pool grows to 56."
 source:
   url: https://wiki.warframe.com/w/Perigale_Prime
+
+# see notes: client_primary_calibration

@@ -73,7 +73,7 @@ fn direct_then_radial_lands_at_the_declared_ratio() {
 }
 
 /// The cycle economy is DATA, not a hardcoded weapon: Laetum fills in
-/// 12 weakpoint hits and both transitions cost its 2.0 s reload, while
+/// 12 weakpoint hits and transitions cost 2.0 s in and 1.0 s out, while
 /// Incarnon Efficiency (+50% charge) drops the fill to 8 hits.
 #[test]
 fn the_cycle_reads_its_economy_from_the_weapon_data() {
@@ -82,7 +82,6 @@ fn the_cycle_reads_its_economy_from_the_weapon_data() {
     assert_eq!(f.charges_to_fill, 12.0);
     assert_eq!(f.max_charges, 216.0);
     assert_eq!(f.transmute_in, 2.0);
-    // Reverts are a uniform 1 s across every weapon until measured.
     assert_eq!(f.transmute_out, 1.0);
     assert_eq!(f.charge_rate, 0.0);
 
@@ -96,7 +95,8 @@ fn the_cycle_reads_its_economy_from_the_weapon_data() {
     let frame_seconds = WeaponBase::from_data("dual_toxocyst_incarnon", true, &[]);
     let d = frame_seconds.gauge_form.expect("incarnon economy");
     assert_eq!(d.charges_to_fill, 9.0);
-    assert_eq!(d.transmute_in, 2.35);
+    assert_eq!(d.transmute_in, 1.4);
+    assert_eq!(d.transmute_out, 0.6);
 }
 
 /// Overwhelming Attrition earns its stacks in-run: a plain hit (no

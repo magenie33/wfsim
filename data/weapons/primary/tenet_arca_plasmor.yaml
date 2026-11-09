@@ -74,6 +74,11 @@ attack:
   spread:
     min_deg: 6.0
     max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 12.0
+      hip_max_deg: 22.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 120
@@ -109,6 +114,8 @@ attack:
   damage: { radiation: 760 }   # total 760
 
 unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_accuracy_runtime
   - "The projectile is a wall 4.4 m thick that sweeps everything in that band; the sim fires a ray, so only bodies on the line are hit and against a crowd the number reads low."
   - "Shots bounce off surfaces up to 4 times, which can double a shot's hits off a wall behind the target (page); there are no surfaces here."
   - "The guaranteed Impact proc reaches only 29 m but is applied at every distance here; past 29 m the damage is already at its falloff floor."
@@ -116,3 +123,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Arca_Plasmor
+
+# see notes: client_primary_calibration

@@ -16,11 +16,16 @@ co_behavior: additive_with_base_damage
 
 attack:
   spread:
-    min_deg: 17
-    max_deg: 29
+    min_deg: 17.0
+    max_deg: 29.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 17.0
+      hip_max_deg: 29.0
   trigger: semi_auto
   shot_type: projectile
-  fire_rate: 2.17
+  fire_rate: 2.16666666666667
   # TEN PELLETS, and the damage below is PER PELLET.
   multishot: 10.0
   ammo_cost: 1
@@ -40,3 +45,12 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Zarr
+reload_style: "by_round"
+reload_start_seconds: 0.5
+reload_per_shell_seconds: 0.75
+reload_end_seconds: 0.55
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

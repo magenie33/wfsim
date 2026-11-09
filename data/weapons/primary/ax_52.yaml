@@ -38,6 +38,11 @@ attack:
   spread:
     min_deg: 0.5
     max_deg: 1.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 0.8
+      hip_max_deg: 3.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 10.0
@@ -54,8 +59,11 @@ attack:
   damage: { puncture: 40 }
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "While aiming, headshots get +400% critical chance, additive with Point Strike (wiki). The engine has no headshot-only crit bonus, so the crit chance here is the unaimed one. It is most of the weapon: in a headshot-heavy fight the number reads well low."
   - "The hip-fire half of the passive, +60% ammo efficiency: the sim aims, and reserves are infinite anyway."
 
 source:
   url: https://wiki.warframe.com/w/AX-52
+
+# see notes: client_primary_calibration

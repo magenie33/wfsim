@@ -17,6 +17,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 90
@@ -52,9 +57,16 @@ attack:
     damage: { heat: 300 }   # total 300
 
 unmodeled:
+  - reason: client_forced_reload
+  - reason: client_ammo_runtime
+  - reason: client_projectile_acceleration
+  - reason: client_projectile_callbacks
+  - reason: client_accuracy_runtime
   - "The spear must be retrieved before the weapon can be used again (wiki); the sim throws on a cadence and never retrieves it."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Javlok
+
+# see notes: client_primary_calibration

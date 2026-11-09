@@ -46,14 +46,19 @@ valence:
 attack:
   extra_hit_reads: even   # see notes: extra_hit_reads
   spread:
-    min_deg: 0
-    max_deg: 12
+    min_deg: 0.0
+    max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: charge
   # "Cannot fire unless fully charged", so there is no tapped shot to model —
   # this weapon has ONE entry where the other bows have two.
   charge_seconds: 0.4
   shot_type: projectile
-  fire_rate: 0.667
+  fire_rate: 0.666666666666667
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.35
@@ -109,9 +114,12 @@ attack:
       status_chance: 0.21
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: explosion_ignores_cover
   - reason: self_stagger
   - "The alt-fire detonates the arrow mid-flight; the sim lets it land, so choosing when to burst it is not modelled."
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Bramma
+
+# see notes: client_primary_calibration

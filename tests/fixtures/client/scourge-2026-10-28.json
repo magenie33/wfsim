@@ -201,16 +201,12 @@
         "crit_chance": 0.04,
         "crit_multiplier": 2.0
       },
-      "retained_conventions": {
+      "adopted_inputs": {
         "magazine": 1,
-        "reload_seconds": 0.6,
-        "attractor_seconds": 4.7,
-        "projectile_speed_mps": 150,
-        "sources": {
-          "cycle": "M43",
-          "attractor": "M42 and wiki effective-duration convention",
-          "projectile_speed_mps": "wiki throw stat; native selector unreviewed"
-        }
+        "reload_seconds": 2.5,
+        "attractor_seconds": 5.0,
+        "projectile_speed_mps": 150.0,
+        "source_policy": "parsed primary calibration; M42/M43 retain original observations"
       },
       "accuracy": {
         "aimed": {
@@ -408,16 +404,12 @@
         "crit_chance": 0.1,
         "crit_multiplier": 2.0
       },
-      "retained_conventions": {
+      "adopted_inputs": {
         "magazine": 1,
-        "reload_seconds": 0.6,
-        "attractor_seconds": 4.7,
-        "projectile_speed_mps": 150,
-        "sources": {
-          "cycle": "M43",
-          "attractor": "M42 and wiki effective-duration convention",
-          "projectile_speed_mps": "wiki throw stat; native selector unreviewed"
-        }
+        "reload_seconds": 2.2,
+        "attractor_seconds": 5.0,
+        "projectile_speed_mps": 90.0,
+        "source_policy": "parsed primary calibration; M42/M43 retain original observations"
       },
       "accuracy": {
         "aimed": {

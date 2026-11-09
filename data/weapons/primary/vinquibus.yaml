@@ -40,6 +40,11 @@ attack:
   spread:
     min_deg: 2.0
     max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 8.0
+      hip_max_deg: 11.0
   trigger: semi_auto
   shot_type: hit_scan
   fire_rate: 1.5
@@ -55,8 +60,11 @@ attack:
   damage: { puncture: 280, slash: 120 }   # total 400
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Equipping it also takes the melee slot, so a Vinquibus loadout has no melee weapon; this fight has no melee to give up."
   - "Headshots grant 2 stacks (max 16) of Vinquibus Precision, +250% melee damage; it lands on a weapon the sim does not fire, so it adds nothing here."
 
 source:
   url: https://wiki.warframe.com/w/Vinquibus
+
+# see notes: client_primary_calibration

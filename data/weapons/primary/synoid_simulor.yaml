@@ -36,9 +36,14 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 7.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 0.0
+      hip_max_deg: 7.0
   trigger: semi_auto
   shot_type: projectile
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.0
@@ -72,6 +77,8 @@ attack:
     damage: { magnetic: 240 }   # total 240
 
 unmodeled:
+  - reason: client_accuracy_runtime
+  - reason: client_composite_attack
   - "Orbs merge, and a full set collapses into a singularity dealing damage over time in 5 m (module). The engine resolves each shot on its own, so neither is counted; this is most of the weapon, and the number reads well low."
   - "The Entropy syndicate effect detonates enemies and restores the wielder's Energy (wiki). It runs on a syndicate meter the sim does not track; it is not counted."
   - reason: explosion_ignores_cover
@@ -79,3 +86,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Synoid_Simulor
+
+# see notes: client_primary_calibration
