@@ -152,6 +152,8 @@ try {
     const community = document.querySelector('[name="analysis-executor"][value="community"]');
     out.executorAvailability = community.disabled;
     communityTaskCapabilities = { kinds: ['optimization'] }; await refreshRivenAnalysis();
+    out.executorAvailability = out.executorAvailability && community.disabled;
+    communityTaskCapabilities = { kinds: ['appraisal'] }; await refreshRivenAnalysis();
     out.executorAvailability = out.executorAvailability && !community.disabled;
     communityTaskCapabilities = capability; await refreshRivenAnalysis();
     const prior = new Set(userTasks.list().map(task => task.id));
