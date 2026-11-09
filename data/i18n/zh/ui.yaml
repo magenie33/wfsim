@@ -3161,9 +3161,9 @@ ui:
   "{n} tasks still need cost samples · excluding new tasks": "另有 {n} 项任务待补耗时样本 · 未计新增任务"
   "Based on the last complete count and recent daily compute · excluding new tasks": 基于上次完整统计和近日日均算力 · 未计新增任务
   "under a minute": 不到 1 分钟
-  "{d} d {h} h {m} min": "{d} 天 {h} 小时 {m} 分"
-  "{h} h {m} min": "{h} 小时 {m} 分"
-  "{m} min": "{m} 分"
+  "{d} d {h} h {m} min": "{d} 天 {h} 小时 {m} 分钟"
+  "{h} h {m} min": "{h} 小时 {m} 分钟"
+  "{m} min": "{m} 分钟"
   "done in {t}": "{t}后完成"
   "the last 24 hours' average": 近 24 小时平均
   "at the last 24 hours' average compute": 按近 24 小时平均算力

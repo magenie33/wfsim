@@ -26,6 +26,9 @@ try {
   const updated = await app.evaluate(`new Date(${JSON.stringify(demand.at)}).toLocaleString(accountLocale())`);
   app.check("the queue reading supplies its update time and clearance estimate",
     state.note === 'Updated ' + updated && state.estimate?.includes('6 min'), JSON.stringify(state));
+  const minutes = await app.evaluate(`[0.4, 1, 59.6, 1439.6, 3064].map(m => demandHours(m / 60))`);
+  app.check("clearance uses whole minutes and carries hours and days",
+    minutes.join('|') === 'under a minute|1 min|1 h 0 min|1 d 0 h 0 min|2 d 3 h 4 min', JSON.stringify(minutes));
   state = await draw({ ...demand, orders: [{ kind: 'new_build', total: 200, dispatched: 100 }] });
   app.check("new queue entries increase the total", state.total === '200', JSON.stringify(state));
   state = await draw({ ...demand, orders: [{ kind: 'new_build', total: 15, dispatched: 10 }] });
@@ -68,10 +71,14 @@ try {
       computeDemand = ${JSON.stringify({ ...demand, goal: null })};
       const box = document.createElement('div'); box.innerHTML = computeDemandHtml();
       return { text: box.textContent, note: box.querySelector('.bh .set-note')?.textContent,
+        durations: [1, 60, 3064].map(m => demandHours(m / 60)),
         expected: '更新于 ' + new Date(${JSON.stringify(demand.at)}).toLocaleString(accountLocale()) };
     } finally { LANG = language; I18N = overlay; }
   })()`);
   app.check("the queue count and update time render in Chinese", localized.note === localized.expected
     && localized.text.includes('23') && localized.text.includes('future_scope 3'), JSON.stringify(localized));
+  app.check("Chinese clearance spells out days, hours and minutes",
+    localized.durations.join('|') === '1 分钟|1 小时 0 分钟|2 天 3 小时 4 分钟'
+    && localized.text.includes('6 分钟'), JSON.stringify(localized));
 } catch (error) { app.check("queue demand renders without errors", false, String(error)); }
 finally { await app.finish("total orders follows the current queue"); }
