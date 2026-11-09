@@ -9,12 +9,9 @@ description: "+40% Accuracy when Aiming."
 selection: choose_one
 
 effects:
-  # from: "+40% Accuracy when Aiming"
-  # The aim condition is dropped deliberately: accuracy is an INDIRECT stat
-  # here — it is reported and never reaches damage, because this arena has
-  # one target at no distance (UNMODELLED.md §2). Gating a number nothing
-  # reads would only make the card lie about being conditional.
-  - kind: accuracy_bonus
+  - kind: gated_by_tenno
+    condition: aiming
+    grants: accuracy
     value: 0.4
 
 source:

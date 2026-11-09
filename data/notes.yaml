@@ -9,6 +9,16 @@
 # an entry from being orphaned.
 
 notes:
+  client_primary_inputs: |
+    scripts/import_client_primary.py binds form behaviors and projectile records
+    to tests/fixtures/client/primary-five-2026-10-28.json. ModeSwitchTime owns
+    transition bases; RPM owns nominal fire rate. Native sampler 0x3b22b0
+    randomizes the cone parameter before its elliptical disk sample; uniform
+    fire iterations use equal azimuths. The resting envelope remains in use.
+    Dynamic envelope/emission ordering, native seed initialization, special
+    emitters, camera transforms and uncompensated recoil remain unmodelled.
+    Beam cooldown divides elapsed ramp time, so normalized decay divides by
+    rise_seconds times cooldown_divisor. Target-local ramp state is unmodelled.
   physical_mod_potency_wiki: |
     https://wiki.warframe.com/w/Coda_Motovore Characteristics and Notes:
     physical damage mods have sixfold potency; the dominant modded physical

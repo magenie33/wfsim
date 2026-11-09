@@ -2676,6 +2676,15 @@ page-rest views group; accepts `WFSIM_BASE`.
 
 ## Parsed firing cadence and claws
 
+`scripts/import_client_primary.py --exchange <exchange> --check` rebinds the
+selected primary forms to pinned roster and sampler members. Engine source
+tests check actual projectile/impact damage inputs, nominal RPM, entry/exit
+timers, hip/aimed profiles and native spread-upgrade gates. Bounded sampler
+vectors check angle and Cartesian direction within float32 rounding; they do
+not claim native seed identity. Beam tests distinguish time-state cooldown
+from normalized cooldown. Legacy cone sampling and display-rounded RPM fail
+the rebuilt source checks.
+
 Engine source regressions bind imported refire rules and claw vectors to the
 closed client fixture and check native cadence vectors at their float32 nodes.
 Claw resolution covers ordinary damage/crit cards, physical conversion and

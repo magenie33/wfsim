@@ -1006,7 +1006,7 @@ fn a_beams_dot_scales_with_multishot_squared() {
 fn a_beam_ramps_from_a_fifth_to_full_over_point_six_seconds() {
     let mut ramp = BeamRamp::default();
     let frame_seconds = 0.1; // 10 ticks/s
-    let mults: Vec<f64> = (0..8).map(|i| ramp.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR)).collect();
+    let mults: Vec<f64> = (0..8).map(|i| ramp.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR, None)).collect();
     assert!((mults[0] - 0.20).abs() < 1e-9, "first tick {}", mults[0]);
     // Each held tick adds 0.1/0.6 of the way from 20% to 100%.
     assert!((mults[1] - (0.2 + 0.8 / 6.0)).abs() < 1e-9, "second {}", mults[1]);
@@ -1019,16 +1019,16 @@ fn a_beam_ramps_from_a_fifth_to_full_over_point_six_seconds() {
     // 1.9 s gap is 1.8 s idle, 1.0 s of it past the delay = half the ramp.
     let mut r2 = BeamRamp::default();
     for i in 0..8 {
-        r2.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR);
+        r2.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR, None);
     }
-    let after = r2.tick(0.7 + 1.9, frame_seconds, crate::model::BEAM_RAMP_FLOOR);
+    let after = r2.tick(0.7 + 1.9, frame_seconds, crate::model::BEAM_RAMP_FLOOR, None);
     assert!((after - (0.2 + 0.8 * 0.5)).abs() < 1e-9, "after a gap {after}");
     // And a long enough gap returns it all the way to the floor.
     let mut r3 = BeamRamp::default();
     for i in 0..8 {
-        r3.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR);
+        r3.tick(i as f64 * frame_seconds, frame_seconds, crate::model::BEAM_RAMP_FLOOR, None);
     }
-    assert!((r3.tick(0.7 + 3.0, frame_seconds, crate::model::BEAM_RAMP_FLOOR) - 0.20).abs() < 1e-9);
+    assert!((r3.tick(0.7 + 3.0, frame_seconds, crate::model::BEAM_RAMP_FLOOR, None) - 0.20).abs() < 1e-9);
 }
 
 #[test]

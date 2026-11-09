@@ -33,7 +33,6 @@ gauge_form:
     # - Charges cannot be gained while already in Incarnon form (33.0.13).
   transmute:
     activation: alt_fire
-    # see notes: verbatim_mode_switching_instantaneous
     animation_seconds: reload_speed
     auto_transmute_out: on_incarnon_ammo_empty
   incarnon_magazine:
@@ -44,16 +43,12 @@ gauge_form:
     # its status-chance grant still works.
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
-  transmute_in_seconds: 1.7      # = the base form's reload time, unmodded
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 0.6
 
-# SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
-# magazine/reload model. 170 rounds at 1 per tick — ✅ measured: the beam "0.5 ammo per trace" rule does NOT reach a charge
-# pool, so a full gauge is 170 ticks, not 340 (MECHANICS "Continuous ammo
-# cost"; the difference is worth 7.8% DPS, so it is not a rounding choice).
-# Plus 1.0 + 1.7 s of transitions (both scale with reload speed).
 pseudo_reload:
   magazine: 170
-  reload_seconds: 2.7
+  reload_seconds: 2
 
 # CO behavior: ADDITIVE — ✅ measured. The catalog has no row
 # for this form, and `independent` is NOT to be inferred from the weapon's
@@ -91,9 +86,14 @@ attack:
   spread:
     min_deg: 1
     max_deg: 1.5
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 1
+      hip_max_deg: 1.5
   trigger: held                 # continuous: `fire_rate` is TICKS per second
   shot_type: beam
-  fire_rate: 8.0
+  fire_rate: 8
   multishot: 1.0
   # see notes: read_engine_nothing_engine
   ammo_cost: 1                  # of the separate 170-round charge magazine
@@ -134,6 +134,10 @@ attack:
     radius_calculation: doesnt_work
 
   beam:
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2
     range_m: 37.0
     # Firestorm (Primed) enlarges THIS — verbatim: "The 2.3 meter damage radius
     # from the point of impact CAN benefit from Firestorm (Primed)."
@@ -219,3 +223,9 @@ source:
   # note: wiki module `Module:Weapons/data/primary` attack 3, "Incarnon Form",
   # Trigger "Held": 51 Toxin / 29% / 3.1x / 39% at 8 ticks per second.
 
+
+# see notes: client_primary_inputs
+
+unmodeled:
+  - reason: client_beam_target_ramp
+  - reason: client_accuracy_runtime

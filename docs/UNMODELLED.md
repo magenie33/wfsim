@@ -96,12 +96,12 @@ What it turned on:
 
 What is still open here:
 
-- **THE BLOOM.** `min` is *"Deviation With Aim"* and `max` is where sustained
-  fire takes the cone; the ramp between them is published nowhere, so a pellet
-  draws inside the AIMED cone and `max` is carried unused. A weapon held on the
-  trigger is therefore more accurate here than in game, most visibly on the
-  widest windows — every sniper is `0 / 15`. Inventing a bloom rate for 224
-  entries is exactly the kind of thing this file exists to refuse;
+- **THE BLOOM.** Native growth, recovery and smoothing formulas are available,
+  but their per-form update/emission ordering remains unreviewed. Shots use
+  the resting range; the sustained limit is carried unused. Native profiles
+  select hip/aimed ranges and sample the client's elliptical emission geometry.
+  Camera recoil follows the fixed-reticle compensation assumption. The
+  `client_accuracy_runtime` admission states the remaining live-state gap;
 - **the model's one free parameter**, `space::BODY_RADIUS_M` — 0.2 m, a guess
   and stated as one. THE PLANE IS THE MODEL rather than an approximation of a
   solid to be corrected: the geometry answers only "did the

@@ -160,3 +160,8 @@ source:
   # note: every number from the wiki module `Module:Weapons/data/primary`,
   # which carries all three attacks, AmmoMax/AmmoPickup, the cloud's
   # EffectDuration and AttackParentIndex, and IncarnonChargeGain.
+
+# see notes: client_primary_inputs
+
+unmodeled:
+  - reason: client_accuracy_runtime

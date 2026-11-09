@@ -23,6 +23,10 @@
 # repeat. A reason earns its place by being used more than twice OR by having
 # more than one numeric spelling.
 reasons:
+  client_accuracy_runtime:
+    text: "Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady."
+  client_beam_target_ramp:
+    text: "Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated."
   heavy_slam_cycle_assumed:
     text: "The heavy-slam loop uses a {cycle} s recovery and the maximum-height radius; the time spent climbing is not simulated."
   blob_over_cap:

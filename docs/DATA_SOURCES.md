@@ -74,6 +74,18 @@ carries duplicates that share a display name (the /Beginner/ and /Intermediate/
 tiers of a card). WFCD's `warframe-items` is not a source: it is a second-hand
 copy of this export.
 
+## Pinned primary form and sampler inputs
+
+Primary form bindings and native sampler inputs live in
+`tests/fixtures/client/primary-five-2026-10-28.json`.
+`scripts/import_client_primary.py --exchange <exchange> --check` verifies the
+pinned roster and sampler archives, selected members, behavior indices,
+projectile damage records, nominal rates, mode timers and accuracy upgrades.
+Projectile damage overrides the fire behavior's placeholder impact data.
+Sampler vectors establish bounded geometry, with portable arithmetic rather
+than a claim of native instruction or random-sequence identity. Unimplemented
+live accuracy and per-target beam state remain declared weapon limitations.
+
 ## INSIDE THE WIKI: THE PAGE'S PROSE FIRST, THE MODULE SECOND
 
 Read the weapon's own page BEFORE its module, and where the two disagree the

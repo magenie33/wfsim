@@ -1565,30 +1565,25 @@ pub fn resolve_for(
         .map(|s| s.per_mod)
         .sum();
 
-    // DAMAGE FALLOFF, with Projectile Speed moving the whole window — see
-    // [`Falloff`] for the two wiki lines that make this the one bucket
-    // Projectile Speed pays into. A negative roll can only shorten the window,
-    // never invert it, so the scale is floored at zero.
-    // THE CONE, with the accuracy mods narrowing it. Wiki (`Accuracy`),
-    // verbatim: *"Bonuses that increase accuracy decrease the deviation
-    // (spread) of a shot"* — and accuracy is `100 / spread`, so a +30% accuracy
-    // card divides the angle by 1.3 rather than subtracting from it.
-    //
-    // A NEGATIVE roll widens the cone and cannot invert it: the divisor is
-    // floored just above zero, and a pinpoint attack (0 / 0) stays pinpoint
-    // under any bonus, which is the arithmetic agreeing with the weapon.
+    // Source-backed profiles use native WEAPON_SPREAD endpoint reductions.
+    // Wiki profiles retain the inverse-accuracy rule; docs/MECHANICS.md §11.
     let spread = base.spread.map(|s| {
         let bonus = indirect
             .iter()
             .find(|(st, _)| *st == IndirectStat::Accuracy)
             .map_or(0.0, |(_, v)| *v);
-        let k = (1.0 + bonus).max(0.05);
-        // ADDED SPREAD LANDS OUTSIDE THE DIVISOR, which is the whole of what
-        // "not affected by bonuses that increase accuracy" means: a Twitch on
-        // the same build narrows the weapon's own cone and leaves this alone.
+        // Native WEAPON_SPREAD applies a stacked reduction to each range endpoint.
+        let factor = if s.sampling.is_some() { (1.0 - bonus).max(0.0) }
+            else { 1.0 / (1.0 + bonus).max(0.05) };
+        let (min, max) = match s.sampling.filter(|_| !tenno.state.aiming) {
+            Some(profile) => (profile.hip_min_deg.unwrap_or(s.min_deg), profile.hip_max_deg.unwrap_or(s.max_deg)),
+            None => (s.min_deg, s.max_deg),
+        };
+        // Added spread is independent of the weapon's accuracy scaling.
         Spread {
-            min_deg: s.min_deg / k + added_spread,
-            max_deg: s.max_deg / k + added_spread,
+            min_deg: min * factor + added_spread,
+            max_deg: max * factor + added_spread,
+            sampling: s.sampling,
         }
     });
 

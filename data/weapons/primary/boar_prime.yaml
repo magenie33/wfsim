@@ -54,9 +54,14 @@ attack:
   spread:
     min_deg: 10
     max_deg: 30
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 16
+      hip_max_deg: 36
   trigger: auto
   shot_type: hit_scan
-  fire_rate: 4.67
+  fire_rate: 4.66666666666667
   # INNATE MULTISHOT — 8 pellets, and the damage below is PER PELLET, not the
   # shot's total. That is the convention the wiki module uses — the one this
   # repo already settled on the Cernos Prime (`multishot: 3.0` with
@@ -119,3 +124,8 @@ transforms_to: boar_prime_incarnon
 
 source:
   url: https://wiki.warframe.com/w/Boar_Prime
+
+# see notes: client_primary_inputs
+
+unmodeled:
+  - reason: client_accuracy_runtime

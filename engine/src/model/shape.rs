@@ -3,6 +3,7 @@
 //! ricochets, beams, gauges and the melee combo script.
 
 use super::*;
+use crate::rules::math::Portable;
 use crate::rules::damage::DamageVector;
 use serde::Deserialize;
 
@@ -318,15 +319,13 @@ impl RadialBase {
     }
 }
 
-/// THE CONE, resolved: degrees from the reticle, accuracy mods applied.
-///
-/// `min` is the first shot's and `max` is where sustained fire takes it — see
-/// [`crate::model::SpreadSpec`], which is also where the bloom between
-/// them is written down as unmodelled.
+/// Resolved resting spread and optional native emission geometry.
+/// Sustained envelope growth and recovery remain unmodelled.
 #[derive(Debug, Clone, Copy)]
 pub struct Spread {
     pub min_deg: f64,
     pub max_deg: f64,
+    pub sampling: Option<crate::model::SpreadSampling>,
 }
 
 #[wfsim_gas_macro::metered]
@@ -339,28 +338,34 @@ impl Spread {
         self.min_deg <= 0.0
     }
 
-    /// The deviation ONE pellet drew, in degrees, from a uniform `u` in [0,1).
-    ///
-    /// UNIFORM INSIDE THE AIMED CONE, i.e. `[0, min_deg)`. Two readings of the
-    /// wiki decide that and both are quoted at [`crate::data::weapons::
-    /// SpreadSpec`]: spread is *"an angle in degrees from the reticle"*, so the
-    /// stat is the cone's RADIUS and a shot lands somewhere inside it rather
-    /// than on its rim; and `min` is named *"Deviation With Aim"*, which is the
-    /// state this arena is permanently in (the rulers pin `aiming: true`).
-    ///
-    /// SO `max_deg` IS CARRIED AND NOT CONSUMED. It is where SUSTAINED FIRE
-    /// takes the cone — *"the faster a weapon fires, the larger the size of the
-    /// 'cone'"* — and the ramp between the two is published nowhere, so
-    /// modelling it would mean inventing a bloom rate for 224 entries. What
-    /// that costs is stated rather than hidden: a weapon held on the trigger
-    /// is more accurate here than in game, most visibly on the ones whose
-    /// window is widest (every sniper is `0 / 15`). docs/UNMODELLED.md §2.
-    ///
-    /// Drawing across `[min, max]` instead was tried first and is refutable
-    /// from the data: it makes a Rubico — pinpoint on its first shot, in a
-    /// weapon class defined by that — miss about half of them.
+    /// Legacy off-axis cone sampling; native profiles use `sample`.
+    /// Only the resting envelope is emitted.
     pub fn draw(&self, u: f64) -> f64 {
         self.min_deg * u
+    }
+
+    /// An angular bound for the displayed envelope, from the same sampler.
+    pub fn max_deviation_deg(&self, envelope: f64) -> f64 {
+        let Some(spec) = self.sampling else { return envelope; };
+        let phase = if spec.horizontal_ratio >= 0.5 { 0.0 } else { 0.25 };
+        Self { min_deg: envelope, ..*self }.sample(1.0, phase, 1.0, 0, 1).0
+    }
+
+    /// Client sampler 0x3b22b0: random cone parameter, then an elliptical disk.
+    /// RNG initialization, live envelope timing and special emitters are separate.
+    pub fn sample(&self, cone: f64, azimuth: f64, radius: f64, index: u32, count: u32) -> (f64, f64) {
+        let Some(spec) = self.sampling else { return (self.draw(cone), azimuth); };
+        let angle = (cone * self.min_deg).clamp(0.0, 179.0).to_radians() * 0.5;
+        let uniform = spec.uniform && count > 1;
+        let phase = if uniform { f64::from(index) / f64::from(count) } else { azimuth };
+        let phi = phase * std::f64::consts::TAU;
+        let disk = angle.sin_portable() / angle.cos_portable()
+            * if uniform { 1.0 } else { radius.sqrt() };
+        let x = spec.horizontal_ratio * disk * phi.cos_portable();
+        let y = (1.0 - spec.horizontal_ratio) * disk * phi.sin_portable();
+        let deviation = x.hypot_portable(y).atan2_portable(1.0).to_degrees();
+        let direction = y.atan2_portable(x).rem_euclid(std::f64::consts::TAU) / std::f64::consts::TAU;
+        (deviation, direction)
     }
 }
 
@@ -472,6 +477,7 @@ pub struct Ricochet {
 /// the single-target arena reads none of it.
 #[derive(Debug, Clone, Copy)]
 pub struct BeamGeometry {
+    pub ramp: Option<crate::model::BeamRampSpec>,
     pub range_m: f64,
     /// The impact sphere. Firestorm (Primed) enlarges it.
     pub damage_radius_m: f64,

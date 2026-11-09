@@ -56,7 +56,7 @@ attack:
     max_deg: 0.0
   trigger: held
   shot_type: hit_scan
-  fire_rate: 12.0
+  fire_rate: 12
   multishot: 1.0
   # "Consumes 0.5 ammo per tick of damage."
   ammo_cost: 0.5
@@ -79,6 +79,10 @@ attack:
   # seeds a chain. The conservative reading, and the same call the Atomos and
   # the Kuva Nukor make.
   beam:
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2
     range_m: 30.0
     damage_radius_m: 0.0
     radius_takes_multishot: false
@@ -97,7 +101,11 @@ attack:
 # down would be a second copy of a constant that could drift from it.
 
 unmodeled:
+  - reason: client_beam_target_ramp
+  - reason: client_accuracy_runtime
   - "In game the chain can pass through corpses (page); here a body that dies is removed, so a chain that would hop through a corpse to an enemy behind it finds nothing."
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Glaxion
+
+# see notes: client_primary_inputs

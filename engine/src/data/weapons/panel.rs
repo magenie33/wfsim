@@ -116,6 +116,7 @@ pub fn spec_assembled<'a>(
     out.attack.spread = Some(SpreadSpec {
         min_deg: built.spread.min_deg,
         max_deg: built.spread.max_deg,
+        sampling: None,
     });
     out.recharge_per_second = built.recharge_per_second;
     out.magazine = Some(built.magazine);
@@ -814,6 +815,7 @@ fn panel_for_spec(s: &WeaponSpec, metadata: &'static WeaponSpec, frenzy_active: 
             explosion: a_radial(&b.explosion),
         }),
         beam: s.attack.beam.as_ref().map(|b| crate::model::BeamGeometry {
+            ramp: b.ramp,
             range_m: b.range_m,
             damage_radius_m: b.damage_radius_m,
             radius_takes_multishot: b.radius_takes_multishot,

@@ -146,6 +146,7 @@ pub fn panel_json(v: &Value) -> Value {
     let arcane_fx = arcane_fx_for(v, info, &forms_list[0].2, policy);
     let inputs = SectionInputs {
         v, info, refs: &refs, policy, src, evo_src, evo_flat,
+        aiming: panel_tenno.state.aiming,
         compression_per_m: arcane_fx.compression_damage_per_m,
     };
 
@@ -303,6 +304,7 @@ struct SectionInputs<'a> {
     info: &'a WeaponInfo,
     refs: &'a [&'a ModDef],
     policy: StackPolicy,
+    aiming: bool,
     src: Vec<ModSource>,
     evo_src: Vec<OtherSource>,
     /// The flat base additions the evolutions make — base damage, crit chance,
@@ -1394,21 +1396,13 @@ fn form_section(
             secs(panel.reload_seconds),
         );
     }
-    // THE CONE, and what an accuracy mod does to it.
-    //
-    // It was on no card at all, which made Heavy Caliber's downside
-    // invisible on every weapon in the roster: a reader saw `+165% base
-    // damage` and nothing about the cost. The cost is real on a Braton and
-    // exactly ZERO on a launcher, and the difference decides whether that
-    // mod belongs in the build — so a panel that shows neither is hiding
-    // the more interesting half.
-    //
-    // ACCURACY IS NOT THE STAT. The weapon-level `accuracy` field is
-    // derived and fuzzy — the wiki prints it as a CATEGORY — and this
-    // engine does not read it; the aim model reads the CONE in degrees. An
-    // accuracy mod DIVIDES that cone, which is why a weapon whose cone is
-    // already zero pays nothing: `0 / 1.55` is still 0.
+    // Display emitted angular bounds; native sampler inputs are not angles.
+    // The weapon-level accuracy category is not an input to the aim model.
     if let (Some(sb), Some(sr)) = (base.spread, panel.spread) {
+        let (base_min, base_max) = match sb.sampling.filter(|_| !inputs.aiming || base.cannot_zoom) {
+            Some(profile) => (profile.hip_min_deg.unwrap_or(sb.min_deg), profile.hip_max_deg.unwrap_or(sb.max_deg)),
+            None => (sb.min_deg, sb.max_deg),
+        };
         let deg = |x: f64| format!("{}°", display_number(x));
         let pinpoint = sr.min_deg <= 0.0 && sr.max_deg <= 0.0;
         let cone = |a: f64, b: f64| {
@@ -1416,13 +1410,15 @@ fn form_section(
         };
         stats.push(json!({
             "key": "spread",
-            "label": "Cone",
-            "base": cone(sb.min_deg, sb.max_deg),
-            "final": cone(sr.min_deg, sr.max_deg),
+            "label": if sr.sampling.is_some() { "Maximum Deviation" } else { "Cone" },
+            "base": cone(sr.max_deviation_deg(base_min), sr.max_deviation_deg(base_max)),
+            "final": cone(sr.max_deviation_deg(sr.min_deg), sr.max_deviation_deg(sr.max_deg)),
             // THE NOTE IS THE POINT on a pinpoint weapon: it says the
             // accuracy penalty in the build above cost nothing, which is
             // not something a `0° -> 0°` row says by itself.
-            "note": if pinpoint {
+            "note": if sr.sampling.is_some() {
+                "resting and sustained angular limits; sustained spread growth is not simulated"
+            } else if pinpoint {
                 "this weapon fires exactly where the reticle is, so an accuracy                      penalty has no cone to widen and costs nothing here"
             } else {
                 "the first shot's cone and where sustained fire takes it — an                      accuracy mod divides both"
@@ -2369,6 +2365,18 @@ mod source_row_tests {
     fn row<'a>(p: &'a Value, form: &str, label: &str) -> &'a Value {
         rows(p, form).into_iter().find(|r| r["label"] == json!(label))
             .unwrap_or_else(|| panic!("no {label} row on {form}"))
+    }
+
+    #[test]
+    fn native_spread_panel_reports_emitted_angles_instead_of_sampler_inputs() {
+        let p = panel_json(&json!({"weapon": "felarx", "evolutions": [], "evolutions_as_given": true}));
+        let spread = row(&p, "Base Form", "Maximum Deviation");
+        assert_eq!(spread["base"], "3.008°–3.513°");
+        assert_eq!(spread["final"], "3.008°–3.513°");
+        let hip = panel_json(&json!({"weapon": "boar_prime", "aiming": false, "evolutions": [], "evolutions_as_given": true}));
+        let aim = panel_json(&json!({"weapon": "boar_prime", "aiming": true, "evolutions": [], "evolutions_as_given": true}));
+        assert_ne!(row(&hip, "Base Form", "Maximum Deviation")["base"],
+            row(&aim, "Base Form", "Maximum Deviation")["base"]);
     }
 
     #[test]

@@ -17,6 +17,10 @@ ui:
   "This code has expired. Run login in your client again.": "验证码已过期，请在客户端重新运行 login。"
   "The device could not be loaded. Reload to try again.": "无法加载设备，请刷新重试。"
   "The device could not be claimed. Run login in your client again.": "无法认领设备，请在客户端重新运行 login。"
+  "Maximum Deviation": "最大偏移角"
+  "resting and sustained angular limits; sustained spread growth is not simulated": "静止与持续开火时的角度上限；尚未模拟持续开火时散布的增长"
+  "Sustained-fire spread growth, recovery and smoothing are not simulated; shots use the resting spread for the selected aiming state. Camera recoil is compensated by holding the reticle steady.": "尚未模拟持续开火时散布的增长、恢复和平滑；射击使用所选瞄准状态下的静止散布。后坐力按压枪保持准星稳定处理。"
+  "Beam ramp progress is shared across targets; per-target ramp initialization and reacquisition are not simulated.": "光束伤害爬升进度由所有目标共用；尚未模拟各目标独立的爬升起点和重新锁定。"
   "Page {page}": "第 {page} 页"
   "Only you": "仅自己可见"
   "Personal center": "个人中心"
@@ -1721,7 +1725,7 @@ ui:
   "shots fired": 开火
   "not measured": 尚未测量
   "not modeled": 未建模
-  "not modelled on this weapon — the numbers below are a floor, not its full output": 这把武器有尚未建模的部分 —— 下面的数字是下限，不是它的完整输出
+  "this weapon has unmodelled mechanics — see the limits below": "这把武器有尚未建模的机制，具体限制见下方说明"
   "not modelled yet": 尚未建模
   "not simulated yet": 尚未模拟
   "nothing damages the player in this fight": 这场战斗里没有任何东西会伤到玩家

@@ -45,7 +45,6 @@ gauge_form:
     #   removes both.
   transmute:
     activation: alt_fire
-    # see notes: verbatim_mode_switching_instantaneous
     animation_seconds: reload_speed
     auto_transmute_out: on_incarnon_ammo_empty
     # "Swapping to and from Incarnon Form will fully reload the normal form's
@@ -62,13 +61,12 @@ gauge_form:
     # Munitions)".
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
-  transmute_in_seconds: 2.75     # = the base form's reload time, unmodded
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 0.6
 
-# SIM CONVENIENCE: with the gauge LOCKED full, the cycle reduces to a
-# magazine/reload model — 150 rounds, then 2.75 + 1.0 s of transitions.
 pseudo_reload:
   magazine: 150
-  reload_seconds: 3.75
+  reload_seconds: 2
 
 # No CO catalog row for this form (nor for the base one), so the ADDITIVE
 # class applies — the same answer boar_prime.yaml records, and for the same
@@ -99,7 +97,7 @@ attack:
     max_deg: 0.0
   trigger: held                 # continuous: `fire_rate` is TICKS per second
   shot_type: hit_scan            # module ShotType "Hit-Scan" for attack 2
-  fire_rate: 8.0
+  fire_rate: 8
   # ONE, not the base form's eight. The Genesis replaces a pellet spread with
   # a beam; see the note above for why the page's "3 beams" is not this number.
   multishot: 1.0
@@ -123,6 +121,10 @@ attack:
   # through, transcribed onto one that cannot.
   punch_through_mods: false
   beam:
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2
     range_m: 20.0
     damage_radius_m: 0.0
     radius_takes_multishot: false
@@ -148,3 +150,9 @@ source:
   # attack 2 "Incarnon Form", Trigger "Held"): 30 Heat / 20% / 2.2x / 24% at
   # 8 ticks per second, Hit-Scan. The module additionally carries Multishot
   # 1, Range 20, Accuracy 100 and IncarnonCharges 150.
+
+# see notes: client_primary_inputs
+
+unmodeled:
+  - reason: client_beam_target_ramp
+  - reason: client_accuracy_runtime
