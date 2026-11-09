@@ -194,12 +194,43 @@ impl AdaptiveElement {
     }
 }
 
+/// Target intent for an autonomous attack. Native scoring and travel are not
+/// reproduced; the arena chooses deterministically among its existing bodies.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum TargetPreference {
+    Free,
+    Same,
+    Different,
+    Eximus,
+    NearOwner(f64),
+    Avoid,
+}
+
+impl TargetPreference {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Free => "Free target choice",
+            Self::Same => "Keep the same target",
+            Self::Different => "Prefer a different target",
+            Self::Eximus => "Prefer Eximus targets",
+            Self::NearOwner(_) => "Prefer targets near the owner",
+            Self::Avoid => "Avoid ordinary attacks",
+        }
+    }
+}
+
 /// One resolved effect of a mod at its equipped rank.
 ///
 /// NOT `Copy`: [`ModEffect::WhileTenno`] nests an effect, which needs
 /// indirection. Structured effects borrow their payload when matched.
 #[derive(Debug, Clone, PartialEq)]
 pub enum ModEffect {
+    /// Source-selected target intent under the arena's contact assumption.
+    TargetPreference(TargetPreference),
+    /// Additive bonus to the Overguard-only damage multiplier.
+    OverguardDamage(f64),
+    /// Extra forced statuses on a surviving direct-hit recipient.
+    AdditionalForcedProcs(DamageType, u32),
     /// DOUBLE TAP: `(per stack, max stacks, seconds)` — a damage bonus that
     /// climbs with CONSECUTIVE HITS and stands on its own multiplier.
     ///

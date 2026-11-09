@@ -7,14 +7,24 @@ max_rank: 3
 internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastProtectorStance
 compat: beast_claws
 precept: true
-description: The companion will prioritize attacking enemies within 15m of the Warframe. Attacks inflict +X  Puncture Status Effects
+description: The companion will prioritize attacking enemies within 15m of the Warframe.
+  Attacks inflict +X  Puncture Status Effects
 effects:
-- kind: unmodelled
-  text: The companion will prioritize attacking enemies within 15m of the Warframe. Attacks inflict +4  Puncture Status Effects
+- kind: target_preference
+  preference: near_owner
+  range_m: 15.0
+- kind: additional_forced_procs
   rank0: 1.0
   rankMax: 4.0
+  rank_values:
+  - 1.0
+  - 2.0
+  - 3.0
+  - 4.0
+  element: puncture
 - kind: unmodelled
-  text: The companion will prioritize attacking enemies within 15m of the Warframe. Attacks inflict +4  Puncture Status Effects
+  clause: Native target scoring, other VIP classes, pathfinding, travel and retaliation
+    are not simulated. Target intent uses a deterministic contact model.
 source:
   url: https://wiki.warframe.com/w/Protector_Posture
 family: beast_posture

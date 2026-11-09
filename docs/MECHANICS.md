@@ -2854,6 +2854,31 @@ centered on that target. Intersections use the arena's body footprint.
 Bone motion, visibility, native selection order and the range consumer are
 unverified; these placement and ordering assumptions require calibration.
 
+### Beast Postures
+
+**Status: unverified in game.** The closed client batch and callback vectors
+are bound in `tests/fixtures/client/postures-2026-10-28.json`.
+At rank `r` (0..3), Assassin adds `0.75 × (r + 1)` to the damage-to-Overguard
+stat. The shared pool-capped Overguard consumer applies this to every direct
+hit and DoT recipient; bonus damage does not spill beyond that pool. Its
+consumer ordering follows M120 and still needs a Posture measurement.
+Persistent adds `float32(0.1f × (r + 1))` of total base damage as Impact,
+through the ordinary added-element calculation, even with zero innate Impact.
+Frenzied adds `float32(0.2f × (r + 1))` status duration. Protector forces
+`r + 1` Puncture procs on each surviving direct-hit recipient, separately from
+ordinary status rolls. This count comes from the weapon's damage callback.
+
+Target intent is evaluated before each attack: Assassin prefers Eximus,
+Persistent retains a living individual, Frenzied prefers another individual,
+Protector prefers enemies within 15m of the arena player position, Balanced
+acts freely, and Elusive disables ordinary attacks. Ties use distance from
+the previous contact and then body index; respawns are new individuals.
+Contact is assumed after approach, with no travel time. The chosen body is
+first in the claw sphere and nearby bodies fill its target cap. Native score
+weights, other VIP classifications, pathfinding and retaliation are not
+replayed. Balanced's moving stagger and Elusive's incoming-fire evasion are
+outside the static offensive arena and remain explicit unsupported clauses.
+
 ## 9. Temporal integration (pipeline layer [8])
 
 **Definition.** Advance along the time axis to produce a damage-vs-time series.

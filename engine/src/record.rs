@@ -234,7 +234,7 @@ pub enum Factor {
     ExtraHitShare,
     /// `field damage`
     FieldDamage,
-    /// `Secondary Fortifier`
+    /// Shared damage-to-Overguard stat; its wire identifier is frozen.
     SecondaryFortifier,
     /// `shield gate window`
     ShieldGateWindow,
@@ -365,7 +365,7 @@ impl Factor {
             Factor::ElementBracketQuantized => "element bracket + quantization",
             Factor::ExtraHitShare => "extra hit share",
             Factor::FieldDamage => "field damage",
-            Factor::SecondaryFortifier => "Secondary Fortifier",
+            Factor::SecondaryFortifier => "Damage to Overguard",
             Factor::ShieldGateWindow => "shield gate window",
             Factor::PoolShare => "pool share",
             Factor::DamageTypeColumn => "damage type column",

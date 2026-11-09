@@ -7,14 +7,19 @@ max_rank: 3
 internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastNeutralStance
 compat: beast_claws
 precept: true
-description: The companion acts freely as they see fit. Staggers enemies within Xm while moving.
+description: The companion acts freely as they see fit. Staggers enemies within Xm
+  while moving.
 effects:
+- kind: target_preference
+  preference: free
 - kind: unmodelled
-  text: The companion acts freely as they see fit. Staggers enemies within 2m while moving.
   rank0: 0.5
   rankMax: 2.0
+  clause: Moving-only stagger within 0.5..2m is not simulated; companion movement
+    is not run.
 - kind: unmodelled
-  text: The companion acts freely as they see fit. Staggers enemies within 2m while moving.
+  clause: Native target scoring, other VIP classes, pathfinding, travel and retaliation
+    are not simulated. Target intent uses a deterministic contact model.
 source:
   url: https://wiki.warframe.com/w/Balanced_Posture
 family: beast_posture

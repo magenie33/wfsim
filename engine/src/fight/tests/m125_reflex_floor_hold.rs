@@ -20,6 +20,7 @@ fn reflex() -> (FightParams, usize) {
 
 fn idle_counter() -> MeleeState {
     MeleeState {
+        last_contact_target: None,
         deployed_until: 0.0,
         combo_points: 0.0,
         rage_kill_mark: 0,

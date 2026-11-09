@@ -9,12 +9,16 @@ compat: beast_claws
 precept: true
 description: The companion will avoid attacking. +X% Evasion
 effects:
+- kind: target_preference
+  preference: avoid
 - kind: unmodelled
-  text: The companion will avoid attacking. +50% Evasion
   rank0: 0.125
   rankMax: 0.5
+  clause: Incoming NPC bullet evasion is not simulated; enemies do not attack the
+    companion.
 - kind: unmodelled
-  text: The companion will avoid attacking. +50% Evasion
+  clause: Native target scoring, other VIP classes, pathfinding, travel and retaliation
+    are not simulated. Target intent uses a deterministic contact model.
 source:
   url: https://wiki.warframe.com/w/Elusive_Posture
 family: beast_posture

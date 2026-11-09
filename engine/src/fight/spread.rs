@@ -67,6 +67,8 @@ pub(super) enum SpreadBy {
     FollowThrough,
     /// Other bodies caught by the same capped melee hit sphere.
     MeleeRadius,
+    /// The selected body's own contact hit.
+    Contact,
 }
 
 #[wfsim_gas_macro::metered]
@@ -214,7 +216,7 @@ pub(super) fn spread_from_influence(
                 tparams,
                 false,
                 &mit,
-                params.arcane.overguard_multiplier,
+                params.overguard_multiplier(),
                 watching(rec, &mut breakdown),
             );
             let (eff, killed) = (settled.effective, settled.killed);
@@ -423,7 +425,7 @@ pub(super) fn spread_hit(
         spec.params,
         false,
         &mit,
-        params.arcane.overguard_multiplier,
+        params.overguard_multiplier(),
         watching(rec, &mut breakdown),
     );
     let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
@@ -459,6 +461,7 @@ pub(super) fn spread_hit(
                 SpreadBy::PunchThrough => crate::record::Origin::PunchThrough,
                 SpreadBy::FollowThrough => crate::record::Origin::FollowThrough,
                 SpreadBy::MeleeRadius => crate::record::Origin::MeleeRadius,
+                SpreadBy::Contact => crate::record::Origin::Own,
             },
             // THE AIMED PELLET'S OWN NUMBER with its Condition Overload
             // bucket divided back out, so this body multiplies in its own —
@@ -685,9 +688,11 @@ pub(super) fn spread_from_melee(
     t: f64,
     tennokai_heavy: bool,
 ) {
-    let cap = active.melee_radius.map_or(usize::MAX, |r| r.max_targets);
-    let mut reached = 1;
-    for (n, &sidx) in struck.iter().enumerate().skip(1) {
+    let all_contacts = active.target_preference.is_some();
+    let cap = active.melee_radius.map_or(if all_contacts { 1 } else { usize::MAX }, |r| r.max_targets);
+    let skip = usize::from(!all_contacts);
+    let mut reached = skip;
+    for (n, &sidx) in struck.iter().enumerate().skip(skip) {
         if reached >= cap { break; }
         if by == SpreadBy::MeleeRadius
             && (bodies[sidx].fallen || bodies[sidx].state.phase != Phase::Physical) { continue; }
@@ -711,7 +716,7 @@ pub(super) fn spread_from_melee(
             w,
             &inst, foe, &spec, raw_per_bucket, shares, crit_multiplier, crit_tier, attrition,
             modded_base, status_chance, forced, status_vector, params, active, gal, arc, r, rec, d, t,
-            by,
+            if all_contacts && n == 0 { SpreadBy::Contact } else { by },
             tennokai_heavy,
             true,
         );
@@ -1565,7 +1570,7 @@ pub(super) fn fire_syndicate_radial(
         &params.foe,
         false,
         &mit,
-        params.arcane.overguard_multiplier,
+        params.overguard_multiplier(),
         watching(rec, &mut breakdown),
     );
     let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);

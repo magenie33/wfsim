@@ -109,7 +109,7 @@ struct RawMod {
     #[serde(default)]
     internal_name: Option<String>,
     description: crate::prose::Prose,
-    effects: Vec<RawEffect>,
+    effects: Vec<serde_norway::Value>,
     #[serde(default)]
     source: RawSource,
 }
@@ -168,10 +168,15 @@ pub fn companion_mods() -> &'static [CompanionMod] {
             .map(|(p, text)| {
                 let weapon_mod = p.starts_with("mods/beast_claws/");
                 let r: RawMod = serde_norway::from_str(text).unwrap_or_else(|e| panic!("{p}: {e}"));
+                // Weapon cards use the weapon loader's effect vocabulary.
+                let effects: Vec<RawEffect> = if weapon_mod { Vec::new() } else {
+                    r.effects.into_iter().map(|e| serde_norway::from_value(e)
+                        .unwrap_or_else(|e| panic!("{p}: {e}"))).collect()
+                };
                 // Body stats, weapon effects and explicitly unsupported lines are distinct.
                 let mut element_per_hit = None;
                 let mut stat_bonuses = Vec::new();
-                for e in &r.effects {
+                for e in &effects {
                     match e.kind.as_str() {
                         "unmodelled" => {}
                         "element_per_hit" => element_per_hit = Some(element_per_hit_of(p, e)),
@@ -184,11 +189,12 @@ pub fn companion_mods() -> &'static [CompanionMod] {
                         k => panic!("{p}: unknown companion effect `{k}`"),
                     }
                 }
-                let description = if weapon_mod {
-                    crate::data::mods::desc_info(&r.id)
-                        .map(|info| crate::prose::Prose::from(info.at(r.max_rank)))
-                        .unwrap_or(r.description)
-                } else { r.description };
+                let weapon_description = weapon_mod.then(|| crate::data::mods::desc_info(&r.id)
+                    .expect("weapon card description").at(r.max_rank));
+                let description = weapon_description.as_ref()
+                    .map_or(r.description, |d| crate::prose::Prose::from(d.clone()));
+                let effects = weapon_description.map_or_else(
+                    || effects.into_iter().map(|e| e.text).collect(), |d| vec![d]);
                 CompanionMod {
                     id: r.id,
                     name: r.name,
@@ -200,7 +206,7 @@ pub fn companion_mods() -> &'static [CompanionMod] {
                     precept: r.precept,
                     internal_name: r.internal_name,
                     description,
-                    effects: r.effects.into_iter().map(|e| e.text).collect(),
+                    effects,
                     element_per_hit,
                     stat_bonuses,
                     family: r.family,

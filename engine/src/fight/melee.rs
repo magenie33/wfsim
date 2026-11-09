@@ -244,6 +244,7 @@ pub(super) fn combo_points_for(multiplier: f64, instances: f64) -> f64 {
 /// THE MELEE COMBO COUNTER AND TENNOKAI — what one fight carries from swing to
 /// swing. A gun never reads it.
 pub(super) struct MeleeState {
+    pub(super) last_contact_target: Option<(usize, u32)>,
     pub(super) deployed_until: f64,
     /// POINTS, not tiers. *"Stance attacks add combo points, scaling with the
     /// attack's stance damage multiplier (100% stance damage multiplier = 1
@@ -848,7 +849,9 @@ pub(super) fn swing_this_shot(
     modded_base: f64,
     buff_stacks: &mut [LiveStacks],
     melee: &mut MeleeState,
-    r: &RunResult,) -> Swung {
+    r: &RunResult,
+    bodies: &[Body],
+) -> Swung {
     // ---- THE MELEE SWING THIS SHOT IS -------------------------------
     //
     // A gun's script is empty and every line below is a no-op for it: the
@@ -1004,6 +1007,9 @@ pub(super) fn swing_this_shot(
     // everything within the weapon's range; an ordinary one sweeps in
     // front. Empty for a gun, which never asks.
     let melee_struck = match &swing {
+        _ if active.target_preference.is_some() => super::targeting::contact_targets(
+            active, bodies, &mut melee.last_contact_target,
+            buff_total(active, crate::model::BuffGrant::MeleeRange, buff_stacks, t)),
         _ if active.melee_radius.is_some() => active.melee_radius_struck(
             buff_total(active, crate::model::BuffGrant::MeleeRange, buff_stacks, t)),
         Some(h) if active.follow_through.is_some() => active

@@ -41,6 +41,7 @@ mod m119_multishot_rides_the_round;
 mod m123_laetum_acuity;
 mod melee;
 mod swipe;
+mod postures;
 mod heavy_status;
 mod ceramic_dagger;
 mod okina;
@@ -236,6 +237,8 @@ impl Default for FightParams {
             melee_profiles: Default::default(),
             follow_through: None,
             melee_radius: None,
+            target_preference: None,
+            overguard_damage_bonus: 0.0,
             slam: None,
             shockwave: None,
             heavy: None,

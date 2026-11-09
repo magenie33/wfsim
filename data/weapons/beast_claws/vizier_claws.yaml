@@ -34,6 +34,6 @@ attack:
     corrosive: 150.0
 unmodeled:
 - The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.
-- Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.
+- Attacks are assumed to connect. Companion movement, contact geometry, native attack selection, target scoring and precepts are not simulated. Postures use deterministic target intent.
 source:
   url: https://wiki.warframe.com/w/Vizier_Claws

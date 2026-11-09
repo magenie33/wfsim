@@ -126,6 +126,20 @@ pub(super) fn effect(id: &str, v: &Value) -> Option<ModEffect> {
     // resolves to); every other kind wraps here.
     let tenno_cond = if kind == "buff" { None } else { cond.and_then(crate::model::TennoCondition::from_id) };
     let out = match kind {
+        "target_preference" => ModEffect::TargetPreference(match v.get("preference")?.as_str()? {
+            "free" => crate::model::TargetPreference::Free,
+            "same" => crate::model::TargetPreference::Same,
+            "different" => crate::model::TargetPreference::Different,
+            "eximus" => crate::model::TargetPreference::Eximus,
+            "near_owner" => crate::model::TargetPreference::NearOwner(max("range_m")),
+            "avoid" => crate::model::TargetPreference::Avoid,
+            _ => return None,
+        }),
+        "overguard_damage_bonus" => ModEffect::OverguardDamage(max("rankMax")),
+        "additional_forced_procs" => ModEffect::AdditionalForcedProcs(
+            element(v.get("element")?.as_str()?)?, max("rankMax").max(0.0) as u32),
+        "base_damage_added" => ModEffect::CombinedElement(
+            element(v.get("element")?.as_str()?)?, max("rankMax")),
         // A BONUS THE PLAYER DECIDES — Dreadful Killshot, and the mod-side twin
         // of the arcanes' `tenno_scaled`. The value is a step function of one of
         // the Tenno's stats, so it cannot be a number here: it is carried to
@@ -718,7 +732,10 @@ pub(super) fn effect_at_rank(e: &Value, rank: u32, max_rank: u32) -> Value {
             m.insert(Value::from(k), x);
         }
     };
-    if let (Some(a), Some(b)) = (n(e, "rank0"), n(e, "rankMax")) {
+    if let Some(values) = e.get("rank_values").and_then(Value::as_sequence) {
+        assert_eq!(values.len(), max_rank as usize + 1, "rank_values must cover every rank");
+        set("rankMax", values[rank.min(max_rank) as usize].clone());
+    } else if let (Some(a), Some(b)) = (n(e, "rank0"), n(e, "rankMax")) {
         set("rankMax", Value::from(lerp(a, b)));
     }
     if let Some(d0) = n(e, "duration_rank0") {

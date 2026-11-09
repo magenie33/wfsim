@@ -7,14 +7,22 @@ max_rank: 3
 internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastSpreadAttacksStance
 compat: beast_claws
 precept: true
-description: The companion prefers to change its target after each attack. +X% Status Duration
+description: The companion prefers to change its target after each attack. +X% Status
+  Duration
 effects:
+- kind: target_preference
+  preference: different
+- kind: status_duration_bonus
+  rank0: 0.20000000298023224
+  rankMax: 0.800000011920929
+  rank_values:
+  - 0.20000000298023224
+  - 0.4000000059604645
+  - 0.6000000238418579
+  - 0.800000011920929
 - kind: unmodelled
-  text: The companion prefers to change its target after each attack. +80% Status Duration
-  rank0: 0.2
-  rankMax: 0.8
-- kind: unmodelled
-  text: The companion prefers to change its target after each attack. +80% Status Duration
+  clause: Native target scoring, other VIP classes, pathfinding, travel and retaliation
+    are not simulated. Target intent uses a deterministic contact model.
 source:
   url: https://wiki.warframe.com/w/Frenzied_Posture
 family: beast_posture

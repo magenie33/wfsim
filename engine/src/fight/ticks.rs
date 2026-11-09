@@ -480,7 +480,7 @@ pub(super) fn process_ticks(
             p,
             ignores_armor,
             &mit,
-            params.arcane.overguard_multiplier,
+            params.overguard_multiplier(),
             watching(rec, &mut breakdown),
         );
         let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);

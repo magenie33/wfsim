@@ -389,12 +389,12 @@ def main():
                'polarities': [], 'internal_name': path, 'co_behavior': 'additive_with_base_damage',
                'attack': attack, 'unmodeled': [
                    'The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.',
-                   'Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.'],
+                   'Attacks are assumed to connect. Companion movement, contact geometry, native attack selection, target scoring and precepts are not simulated. Postures use deterministic target intent.'],
                'source': {'url': 'https://wiki.warframe.com/w/' + name.replace(' ', '_')}}
         contact = next((w for w in swipe['weapons'] if w['path'] == path), None)
         if contact:
             attack['melee_radius'] = contact['melee_radius']
-            doc['unmodeled'][1] = 'Companion movement, bone trajectories, visibility, attack selection, precepts and posture target selection are not simulated. The hit sphere is assumed centered on the aimed target; range bonuses enlarge its radius, and nearest intersecting bodies fill the target cap.'
+            doc['unmodeled'][1] = 'Companion movement, bone trajectories, visibility, native attack selection, target scoring and precepts are not simulated. The hit sphere is assumed centered on the selected contact target; range bonuses enlarge its radius, and nearest intersecting bodies fill the target cap. Postures use deterministic target intent.'
         output(weapon_dir / f'{identity}.yaml', dump(doc))
         fixture['claws'].append({'weapon': identity, 'name': name, 'name_zh': chinese.get(label, ''),
                                  'source': path, 'icon': f['Icon'], 'attack_data': damage, 'impact': {k: impact[k] for k in
@@ -414,6 +414,11 @@ def main():
         clean = lambda r: re.sub(r'<[^>]+>', '', '\n'.join(r['stats']))
         source_description = clean(card['levelStats'][-1])
         source_entries = [r for r in entries if r['owner'] == doc['internal_name']]
+        if doc['id'].endswith('_posture'):
+            fixture['mod_inputs'].append({'mod': doc['id'], 'source': doc['internal_name'],
+                'entries': [{k: r[k] for k in ['array', 'index', 'upgrade_type', 'operation', 'fields', 'base',
+                                              'unlock_rank', 'rank_transform'] if k in r} for r in source_entries]})
+            continue
         effects, supported = [], []
         for r in source_entries:
             typ, f = r['upgrade_type'], r['fields']
@@ -460,9 +465,6 @@ def main():
             doc['family'] = 'beast_conditioning'
         if doc['id'] in ['burning_claws', 'chilling_claws', 'shocking_claws', 'sepsis_claws']:
             doc['family'] = 'beast_element_conversion'
-        if doc['id'].endswith('_posture'):
-            doc['family'] = 'beast_posture'
-            doc['combos'] = {}
         if '/Sets/Hunter/' in doc['internal_name']:
             doc['set'] = 'hunter'
         low, high = clean(card['levelStats'][0]), clean(card['levelStats'][-1])
@@ -500,6 +502,8 @@ def main():
     out.parent.mkdir(parents=True, exist_ok=True)
     output(out, json.dumps(fixture, indent=2) + '\n')
     import_swipe(swipe)
+    from import_client_postures import import_postures
+    import_postures(args.exchange, CHECK)
     print(json.dumps({'refire_profiles': len(fixture['refire_profiles']), 'claws': len(fixture['claws']),
                       'claw_mods': len(fixture['mod_inputs']), 'fixture': str(out)}))
 

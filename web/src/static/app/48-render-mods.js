@@ -70,6 +70,10 @@ function renderMods() {
   // offer, and that reads as a broken picker rather than as missing data.
   const hasStance = weaponAxes().hasStance;
   show("stance-block", hasStance);
+  const posture = stancePool().some(m => m.family === 'beast_posture');
+  $("stance-label").textContent = tr(posture ? 'Posture' : 'Stance');
+  show("stance-combo-hint", !posture);
+  show("posture-hint", posture);
   const st = $("stance");
   st.innerHTML = "";
   if (hasStance) st.appendChild(buildSlot(STANCE));

@@ -7,14 +7,23 @@ max_rank: 3
 internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPersistentStance
 compat: beast_claws
 precept: true
-description: The companion will pick a target and then attack it relentlessly. +X% Impact Damage
+description: The companion will pick a target and then attack it relentlessly. +X%
+  Impact Damage
 effects:
+- kind: target_preference
+  preference: same
+- kind: base_damage_added
+  rank0: 0.10000000149011612
+  rankMax: 0.4000000059604645
+  rank_values:
+  - 0.10000000149011612
+  - 0.20000000298023224
+  - 0.30000001192092896
+  - 0.4000000059604645
+  element: impact
 - kind: unmodelled
-  text: The companion will pick a target and then attack it relentlessly. +40% Impact Damage
-  rank0: 0.1
-  rankMax: 0.4
-- kind: unmodelled
-  text: The companion will pick a target and then attack it relentlessly. +40% Impact Damage
+  clause: Native target scoring, other VIP classes, pathfinding, travel and retaliation
+    are not simulated. Target intent uses a deterministic contact model.
 source:
   url: https://wiki.warframe.com/w/Persistent_Posture
 family: beast_posture

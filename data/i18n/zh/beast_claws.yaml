@@ -17,11 +17,29 @@ weapons:
   venari_prime_claws: 薇娜丽 Prime 利爪
   vizier_claws: 宰相利爪
 ui:
+  Posture: 姿势
+  Postures guide companion targeting and may add combat bonuses. Equip one Posture; each card states its remaining modelling limits.: 姿势决定同伴的选敌偏好，并可能提供战斗加成。可装备一种姿势；各卡片会列出仍未模拟的部分。
   This weapon takes no riven.: 此武器无法装备裂罅 MOD。
   Estimated attack interval (s): 估算攻击间隔（秒）
   ? The complete attack cycle is not calibrated. Simulation estimates the interval from a representative ordinary action for this weapon family.
   : 完整攻击周期尚未校准。模拟会根据该武器族代表性的普通攻击动作估算间隔。
-  Attacks are assumed to connect. Companion movement, contact geometry, attack selection, precepts and posture target selection are not simulated.: 假定攻击命中目标。尚未模拟同伴移动、接触判定、攻击动作选择、指令和姿势的目标选择。
-  'Companion movement, bone trajectories, visibility, attack selection, precepts and posture target selection are not simulated. The hit sphere is assumed centered on the aimed target; range bonuses enlarge its radius, and nearest intersecting bodies fill the target cap.': 假设命中球以主目标为中心；范围加成增加半径，与命中区域相交的敌人按距离和目标上限结算。尚未模拟同伴移动、骨骼轨迹、视线、攻击动作选择、指令和姿势的目标选择。
+  Attacks are assumed to connect. Companion movement, contact geometry, native attack selection, target scoring and precepts are not simulated. Postures use deterministic target intent.: 假定攻击命中目标。尚未模拟同伴移动、接触判定、原生攻击动作选择、目标评分与指令；姿势使用确定性的选敌规则。
+  'Companion movement, bone trajectories, visibility, native attack selection, target scoring and precepts are not simulated. The hit sphere is assumed centered on the selected contact target; range bonuses enlarge its radius, and nearest intersecting bodies fill the target cap. Postures use deterministic target intent.': 假设命中球以选中的接敌目标为中心；范围加成增加半径，相交敌人按距离和目标上限结算。尚未模拟同伴移动、骨骼轨迹、视线、原生攻击动作选择、目标评分与指令；姿势使用确定性的选敌规则。
+  Native target scoring, other VIP classes, pathfinding, travel and retaliation are not simulated. Target intent uses a deterministic contact model.: 尚未模拟原生目标评分、其他高优先级敌人分类、寻路、移动耗时与反击；选敌使用确定性的接敌模型。
+  Moving-only stagger within 0.5..2m is not simulated; companion movement is not run.: 尚未模拟移动时对周围 0.5～2 米敌人的失衡效果；当前不运行同伴移动。
+  Incoming NPC bullet evasion is not simulated; enemies do not attack the companion.: 尚未模拟敌方子弹回避；当前敌人不会攻击同伴。
+  Target Preference: 选敌偏好
+  Damage to Overguard: 对超宏防护的伤害
+  Additional Forced Statuses: 额外强制异常状态
+  Free target choice: 自由选择目标
+  Keep the same target: 持续攻击同一目标
+  Prefer a different target: 优先更换目标
+  Prefer Eximus targets: 优先卓越者目标
+  Prefer targets near the owner: 优先主人附近的目标
+  Avoid ordinary attacks: 避免普通攻击
+  'Deterministic contact model: approach is assumed complete; native target scores and travel are not replayed.': 确定性接敌模型：假定已经接近目标；不重放原生目标评分与移动过程。
+  Applies to each recipient's Overguard pool; excess bonus does not spill into health or shields.: 分别作用于每个受击目标的超宏防护；超出该池的加成不溢出至生命或护盾。
+  On each surviving direct-hit recipient; ordinary status rolls remain separate.: 对每个直接命中后仍存活的目标生效；与普通异常状态判定分别结算。
+  Contact is assumed at the selected target; nearby intersecting enemies fill the target limit.: 假定已与选中目标接敌；附近相交的敌人按目标上限结算。
   The beast body and owner link are not modelled.: 尚未建模野兽本体与主人的关联。
   The active-projectile cap, recall and return availability are not simulated; the fire rate is the nominal refire timer.: 尚未模拟在途投射物数量上限、召回与返程后的可投掷时点；射速表示名义射击间隔。

@@ -297,6 +297,9 @@ pub fn resolve_for(
     let mut combo_duration_mult = 1.0f64;
     let mut melee_range_add = 0.0f64;
     let mut additional_targets = 0.0f64;
+    let mut target_preference = None;
+    let mut overguard_damage_bonus = 0.0;
+    let mut extra_forced_procs = Vec::new();
     let mut slam_damage = 0.0f64;
     let mut heavy_damage = 0.0f64;
     let mut combo_count_chance = base.evo_combo_count_chance;
@@ -506,6 +509,9 @@ pub fn resolve_for(
                 ModEffect::MeleeComboDurationMultiplier(v) => combo_duration_mult *= 1.0 + v,
                 ModEffect::MeleeRange(v) => melee_range_add += v,
                 ModEffect::AdditionalTargets(v) => additional_targets += v,
+                ModEffect::TargetPreference(p) => target_preference = Some(p),
+                ModEffect::OverguardDamage(v) => overguard_damage_bonus += v,
+                ModEffect::AdditionalForcedProcs(ty, n) => extra_forced_procs.extend(std::iter::repeat_n(ty, n as usize)),
                 ModEffect::SlamDamage(v) => slam_damage += v,
                 ModEffect::HeavyAttackDamage(v) => heavy_damage += v,
                 ModEffect::ComboCountChance(v) => combo_count_chance += v,
@@ -1849,6 +1855,8 @@ pub fn resolve_for(
         follow_through: base
             .follow_through
             .map(|f| f * (1.0 + base.evo_follow_through_bonus)),
+        target_preference,
+        overguard_damage_bonus,
         melee_radius: base.melee_radius.map(|r| crate::model::MeleeRadius {
             radius_m: (r.radius_m + melee_range_add + base.evo_melee_range_m).max(0.0),
             max_targets: (r.max_targets as f64 + additional_targets).max(0.0) as usize,
@@ -2162,7 +2170,7 @@ pub fn resolve_for(
         beam_ramp_floor: base.beam_ramp_floor,
         applies_microwave: base.applies_microwave,
         independent_procs: base.independent_procs,
-        forced_procs: base.forced_procs.clone(),
+        forced_procs: base.forced_procs.iter().copied().chain(extra_forced_procs).collect(),
         multishot_adds_damage: base.multishot_adds_damage,
         // ONE RESOLVE PER ELEMENT. The recursion terminates because the clone
         // clears `pellet_elements` — and it has to be a re-resolve rather than

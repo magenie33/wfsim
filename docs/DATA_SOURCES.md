@@ -994,6 +994,16 @@ rate is bound. The dog's two-second lunge gate does not set the ordinary cycle.
 
 ### Companion bodies and modular parts
 
+`scripts/import_client_postures.py --exchange <root> [--check]` verifies the
+closed companion category batch, posture apply/unapply contexts, all 23 script
+prototypes, 16 scalar vectors and the distinct weapon damage callback. Its
+fixture `tests/fixtures/client/postures-2026-10-28.json` retains raw declarations,
+bindings and model assumptions. Explicit rank vectors preserve the native
+float32 callback arguments rather than interpolating rounded endpoints.
+Persistent adds Impact from total base; Protector uses the weapon callback's
+coefficient and hit/living-recipient gates. Native target-score consumers and
+movement are not established by scalar replay.
+
 The cadence importer also verifies the closed companion category batch before
 importing Swipe. `tests/fixtures/client/swipe-2026-10-28.json` binds its two ADD
 upgrades, eight rank values and exact compatible weapon-parent chains. Native

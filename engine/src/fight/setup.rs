@@ -770,6 +770,12 @@ impl FightParams {
         self.aim_at.unwrap_or(self.target_at)
     }
 
+    /// Native WEAPON_DAMAGE_AMOUNT_TO_OVERGUARD shares one additive bucket.
+    #[inline]
+    pub fn overguard_multiplier(&self) -> f64 {
+        (self.arcane.overguard_multiplier + self.overguard_damage_bonus).max(0.0)
+    }
+
     /// HOW FAR THE TARGET SITS OFF THE AIM LINE, in degrees — 0 whenever the
     /// weapon points at it (`rules::space::off_axis_deg`).
     pub fn off_axis_deg(&self) -> f64 {
@@ -1500,6 +1506,8 @@ impl FightParams {
             melee_profiles,
             follow_through: panel.follow_through,
             melee_radius: panel.melee_radius,
+            target_preference: panel.target_preference,
+            overguard_damage_bonus: panel.overguard_damage_bonus,
             slam: panel.slam,
             shockwave: panel.shockwave,
             heavy: panel.heavy,

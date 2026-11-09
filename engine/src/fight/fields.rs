@@ -408,7 +408,7 @@ pub(super) fn field_tick_seeded(
         foe,
         false,
         &mit,
-        params.arcane.overguard_multiplier,
+        params.overguard_multiplier(),
         watching(rec, &mut breakdown),
     );
     let (effective, killed, broke) = (settled.effective, settled.killed, settled.broken);

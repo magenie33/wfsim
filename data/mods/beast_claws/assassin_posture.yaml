@@ -7,14 +7,22 @@ max_rank: 3
 internal_name: /Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance
 compat: beast_claws
 precept: true
-description: The companion will prioritize Eximus and other high-ranking enemies. +X% Overguard Damage
+description: The companion will prioritize Eximus and other high-ranking enemies.
+  +X% Overguard Damage
 effects:
-- kind: unmodelled
-  text: The companion will prioritize Eximus and other high-ranking enemies. +300% Overguard Damage
+- kind: target_preference
+  preference: eximus
+- kind: overguard_damage_bonus
   rank0: 0.75
   rankMax: 3.0
+  rank_values:
+  - 0.75
+  - 1.5
+  - 2.25
+  - 3.0
 - kind: unmodelled
-  text: The companion will prioritize Eximus and other high-ranking enemies. +300% Overguard Damage
+  clause: Native target scoring, other VIP classes, pathfinding, travel and retaliation
+    are not simulated. Target intent uses a deterministic contact model.
 source:
   url: https://wiki.warframe.com/w/Assassin_Posture
 family: beast_posture

@@ -386,6 +386,10 @@ fn mod_sources(
                 other => (other, None),
             };
             match *e {
+                TargetPreference(_) | AdditionalForcedProcs(_, _) | OverguardDamage(_) => {
+                    conditionals.push(json!({"mod":name, "desc":e.describe(), "active":true,
+                        "why":"Applied per target in the fight; target intent uses the documented contact model."}));
+                }
                 WhileTenno(..) => unreachable!("unwrapped above"),
                 // JAHU CANTICLE. Not a term in any bucket — it takes armour off
                 // OTHER bodies, so what it is worth is a property of the fight
@@ -1490,9 +1494,39 @@ fn form_section(
                 Some(json!({"mod": m.name, "value": amount}))
             })).collect();
             stats.push(json!({"key": key, "label": label, "base": before, "final": after,
-                "note": "Contact is assumed at the aimed target; nearby intersecting enemies fill the target limit.",
+                "note": "Contact is assumed at the selected target; nearby intersecting enemies fill the target limit.",
                 "sources": terms}));
         }
+    }
+    if let Some(preference) = panel.target_preference {
+        let terms: Vec<Value> = refs.iter().filter(|m| m.effects.iter().any(|e|
+            matches!(e, wfsim_engine::model::ModEffect::TargetPreference(_))))
+            .map(|m| json!({"mod":m.name, "value":preference.label()})).collect();
+        stats.push(json!({"key":"target_preference", "label":"Target Preference", "base":"Default",
+            "final":preference.label(), "sources":terms,
+            "note":"Deterministic contact model: approach is assumed complete; native target scores and travel are not replayed."}));
+    }
+    if panel.overguard_damage_bonus != 0.0 {
+        let terms: Vec<Value> = refs.iter().flat_map(|m| m.effects.iter().filter_map(move |e| {
+            let wfsim_engine::model::ModEffect::OverguardDamage(v) = e else { return None };
+            Some(json!({"mod":m.name, "value":format!("+{}%", num(v * 100.0))}))
+        })).collect();
+        let multiplier = format!("×{:.2}", 1.0 + panel.overguard_damage_bonus);
+        stats.push(json!({"key":"overguard_damage", "label":"Damage to Overguard", "base":"×1",
+            "final":multiplier.trim_end_matches('0').trim_end_matches('.'), "sources":terms,
+            "note":"Applies to each recipient's Overguard pool; excess bonus does not spill into health or shields."}));
+    }
+    let forced: Vec<Value> = refs.iter().flat_map(|m| m.effects.iter().filter_map(move |e| {
+        let wfsim_engine::model::ModEffect::AdditionalForcedProcs(ty, n) = e else { return None };
+        Some(json!({"mod":m.name, "value":format!("+{n} {ty:?}")}))
+    })).collect();
+    if !forced.is_empty() {
+        let count: u32 = refs.iter().flat_map(|m| &m.effects).filter_map(|e| match e {
+            wfsim_engine::model::ModEffect::AdditionalForcedProcs(_, n) => Some(*n), _ => None,
+        }).sum();
+        stats.push(json!({"key":"additional_forced_procs", "label":"Additional Forced Statuses", "base":"0",
+            "final":count.to_string(), "sources":forced,
+            "note":"On each surviving direct-hit recipient; ordinary status rolls remain separate."}));
     }
     // PER-WEAPON behavior: GunCO sources (Galvanized Strike, Carnage Reign,
     // Secondary Shiver) combine differently per weapon class, and their base

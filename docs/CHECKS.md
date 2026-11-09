@@ -2159,6 +2159,15 @@ panels report the resolved hit radius and target cap, with sources in metres
 and counts. The previous model without a weapon-pool entry fails all four
 assertions.
 
+## `check_postures`
+
+Six Postures occupy the stance slot, keep their unsupported clauses visible,
+and apply exact rank-resolved Overguard, Impact, status-duration and forced
+Puncture effects. The builder sends a selected lower rank to the simulator,
+Elusive suppresses attacks, and two Postures are refused. The page explains
+Postures separately from melee combos. The unmodelled baseline fails the
+combat-effect assertions.
+
 ## `check_companion_host`
 
 The fight refuses illegal Deconstructor/claw/Hound hosts and foreign modular

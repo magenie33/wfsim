@@ -765,8 +765,9 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
     // MEASURED TO THE SURFACE, like every distance a reader is shown:
     // `gap` is what the shot flies and what the arena prints, so "20 m"
     // is the number on the scene. `INFINITY` where none is declared.
-    let in_range = gap_m <= active.range_m;
-    let pellet_lands = aim_offset <= crate::rules::space::BODY_RADIUS_M && in_range && !round_aim.lock_miss;
+    let contact = active.target_preference.is_some();
+    let in_range = contact || gap_m <= active.range_m;
+    let pellet_lands = contact || (aim_offset <= crate::rules::space::BODY_RADIUS_M && in_range && !round_aim.lock_miss);
     // WHERE THE ROUND WENT OFF — ONE EPICENTRE FOR THE WHOLE
     // EXPLOSION.
     //
@@ -1561,6 +1562,16 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             crit_multiplier,
             attrition,
         };
+        if direct && contact {
+            let mut contact_seeds = Vec::new();
+            spread_from_melee(
+                seat, windows, bodies, params, active, melee_struck, &mut contact_seeds,
+                1.0, SpreadBy::MeleeRadius, raw / bucket, shares, crit_multiplier, tier,
+                attrition, spread_mb, status_chance, forced, &spread_composition,
+                &mut *gal, &mut *arc, &mut *r, rec, d, t, tennokai_heavy,
+            );
+            continue;
+        }
         if direct && bodies[0].fallen {
             if !follows && params.beam.is_none() && struck.len() > 1 {
                 spread_from_punch_through(
@@ -1586,7 +1597,7 @@ pub(super) fn settle_pellet(pellet_idx: u32, follows: bool, shot: &Strike, live:
             &params.foe,
             false,
             &mit,
-            params.arcane.overguard_multiplier,
+            params.overguard_multiplier(),
             watching(rec, &mut breakdown),
         );
         let (effective, killed, broke) =

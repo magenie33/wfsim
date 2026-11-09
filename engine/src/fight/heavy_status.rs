@@ -66,7 +66,7 @@ pub(super) fn detonate_heavy_status(
     let mut breakdown = Breakdown::default();
     let mut effective_types = DamageVector::new();
     let settled = body.state.apply_with_types(raw, shares, false, t, foe, false, &mit,
-        params.arcane.overguard_multiplier, watching(rec, &mut breakdown), &mut effective_types);
+        params.overguard_multiplier(), watching(rec, &mut breakdown), &mut effective_types);
     let killed = settled.killed;
     let broke = settled.broken;
     for ty in DamageType::ALL {

@@ -23,6 +23,8 @@ use wfsim_engine::rules::scaling;
 
 fn dual_toxocyst_baseline() -> FightParams {
     FightParams {
+        target_preference: None,
+        overguard_damage_bonus: 0.0,
         refire: wfsim_engine::model::RefireRule::Rate,
         heavy_damage_mods_apply: true,
         combo_damage_applies: true,

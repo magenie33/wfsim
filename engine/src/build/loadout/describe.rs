@@ -7,6 +7,9 @@ impl ModEffect {
     pub fn describe(&self) -> String {
         use ModEffect::*;
         match *self {
+            TargetPreference(p) => p.label().to_string(),
+            OverguardDamage(v) => format!("+{} damage to Overguard", pct(v)),
+            AdditionalForcedProcs(t, n) => format!("+{n} forced {} statuses per surviving direct-hit target", t.name()),
             // The gate is stated as a suffix so the inner line reads normally.
             WhileTenno(c, ref inner) => format!("{} ({})", inner.describe(), c.describe()),
             // WHAT THE MODEL ACTUALLY COMPUTES, which is the armour half of the

@@ -538,6 +538,8 @@ pub struct FightParams {
     /// `None` on anything that is not a melee swing.
     pub follow_through: Option<f64>,
     pub melee_radius: Option<crate::model::MeleeRadius>,
+    pub target_preference: Option<crate::model::TargetPreference>,
+    pub overguard_damage_bonus: f64,
     /// THE WEAPON'S OWN SLAM, fired by a combo swing that ends on one — three
     /// of Crushing Ruin's four combos do. `None` everywhere else.
     pub slam: Option<crate::build::loadout::ResolvedRadial>,

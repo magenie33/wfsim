@@ -905,7 +905,7 @@ have legal Hound carrier metadata but no combat weapon entries.
 ## Beast attack cycles
 
 Claw base stats and supported weapon cards resolve through the ordinary damage
-pipeline. Attack selection, movement, posture AI, contact markers and accepted
+pipeline. Native attack selection, movement, posture scoring, contact markers and accepted
 next-action times are unresolved. Default intervals are representative ordinary
 action proxies selected by inherited pet weapon family: Catbrow Melee01 base
 clip plus the reviewed 0.1-second AI reevaluation delay, or the Kubrow Melee
@@ -916,3 +916,20 @@ Catbrow-derived claws apply Swipe's extra targets and range to a capped sphere
 assumed centered on the aimed body. Native bone motion, visibility, contact
 pose, range-consumer details and target ordering remain uncalibrated. Pounce
 and Sharpened Claws precepts are not simulated.
+
+## Beast Postures
+
+All six Postures apply target intent under the contact assumption. Persistent
+holds an individual, Frenzied prefers another, Assassin prefers the arena's
+Eximus flag, Protector prefers bodies within 15 m of the owner, Balanced uses
+free contact choice and Elusive disables ordinary attacks. Candidate selection
+is deterministic: intent, distance from the last contact and body-index ties.
+Native weight magnitudes, other VIP classes, pathfinding, travel and retaliation
+are not replayed. These remain explicit partial-support notes on the cards.
+
+Assassin's Overguard-only damage, Persistent's added Impact from total base,
+Frenzied's status duration and Protector's extra forced Puncture are applied.
+Protector reads the weapon's damage callback, whose coefficient differs from
+the posture's apply script. Balanced's moving-only stagger and Elusive's
+incoming-bullet evasion remain unmodelled; the offensive arena has no companion
+movement or incoming attacks. The card descriptions state these limits.

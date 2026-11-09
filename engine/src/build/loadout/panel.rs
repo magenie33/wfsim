@@ -337,6 +337,8 @@ impl ResolvedRadial {
 #[derive(Debug, Clone)]
 pub struct ResolvedPanel {
     pub melee_radius: Option<crate::model::MeleeRadius>,
+    pub target_preference: Option<crate::model::TargetPreference>,
+    pub overguard_damage_bonus: f64,
     pub heavy_damage_mods_apply: bool,
     pub combo_damage_applies: bool,
     pub wait_for_lingering: bool,

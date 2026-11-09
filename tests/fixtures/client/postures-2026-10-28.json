@@ -1,0 +1,4556 @@
+{
+  "client_build": "2026.10.28.09.54",
+  "source": {
+    "batch_id": "20261108T111018Z-companion-category-source-review",
+    "manifest_sha256": "0abadf1692dfb7e1eeb5793533f3836abca68b6b15451bc239cb4212ba93a448",
+    "archive": {
+      "path": "companion-evidence.zip",
+      "bytes": 67760117,
+      "sha256": "db71c0b4bcca63bc75f2ba35f26711e375e0a7df5770c359cc07cb95171b8341"
+    },
+    "members": [
+      {
+        "path": "raw-ancestry.json",
+        "bytes": 2764770,
+        "sha256": "2acfef2de8e27923c520c59749e43d6919ba8147abd59a0e4bdb19be5972b2fa"
+      },
+      {
+        "path": "review/postures.json",
+        "bytes": 6883,
+        "sha256": "aee04459ec3fbc8102c48dbd51501829c4de406520c694aa29aa12bf89bb1ca8"
+      },
+      {
+        "path": "review/posture-formula-cases.json",
+        "bytes": 7791,
+        "sha256": "00b1013546eed25e98643993546e73509983fd9ce3c066eee5b961d23600bab3"
+      },
+      {
+        "path": "review/posture-callback-contexts.json",
+        "bytes": 165317,
+        "sha256": "fb3977c177f21bfdb2ca5a29ac1d56ce07a00dd580be60e78067f015218b4f67"
+      },
+      {
+        "path": "review/reviewed-script-slices.json",
+        "bytes": 888897,
+        "sha256": "d15ba962210d6bdd64e940c54e6731ac5f7ae20155ce8a80d3c25ca182aed8ab"
+      },
+      {
+        "path": "review/upgrade-enum-evidence.json",
+        "bytes": 23175,
+        "sha256": "f717f5b4c88c550a9adf8c59f3d308482d93087cdaee01899d2dea68ce8d8705"
+      }
+    ]
+  },
+  "cards": [
+    {
+      "id": "assassin_posture",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance",
+      "raw_own_text": "MarketMode=MM_HIDDEN\nLocalizeTag=/Lotus/Language/Pets/BeastVIPStanceName\nLocalizeDescTag=\"\"\nIcon=/Lotus/Interface/Cards/Images/Kubrow/BeastVIPStance.png\nUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=1\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Pets/BeastVIPStanceDesc\nLocKeyWordScript={\nScript=PostureMods.lua\nFunction=GetDescription\n_factor=2\n_range=15\n_amountPerLevel=0.75\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nSmallerIsBetter=0\nRoundTo=0.1\nRoundingMode=RM_ROUND\n}\n}\nScript={\nScript=PostureMods.lua\nFunction=EximusPosture\n_factor=5\n_range=15\n_amountPerLevel=0.75\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nUnappliedScript={\nScript=PostureMods.lua\nFunction=UnapplyEximusPosture\n_factor=2\n_range=15\n_amountPerLevel=0.75\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nTipTags={\nOVERGUARD\n}\n",
+      "apply": {
+        "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance",
+        "name_en": "Assassin Posture",
+        "apply_proto": 1,
+        "runtime_apply_parameters": {
+          "factor": 5.0,
+          "range": 15.0,
+          "amountPerLevel": 0.75,
+          "protectorTrainingWeak": "",
+          "magneticImpactWeak": "",
+          "lifestealWeak": "",
+          "reelingImpactWeak": "",
+          "chancePerLevel": 0.25,
+          "healPerLevel": 25.0,
+          "neutralPostureDamageTriggerType": ""
+        },
+        "apply_function": "EximusPosture",
+        "upgrade_enum_id": 255,
+        "upgrade_enum_name": "WEAPON_DAMAGE_AMOUNT_TO_OVERGUARD",
+        "operation_id": 3,
+        "explicit_damage_type_argument": null,
+        "interpretation": "Overguard damage; Eximus/VIP preference is independent",
+        "weapon_on_damage_parameters": "Use BeastPetMeleeWeaponBase.DamageDoneScript, NOT stance.Script parameters",
+        "removal": "Use the explicit UnappliedScript; restore defaults and remove the matching source key",
+        "remaining_review": "Exact target scoring and action scheduling; Elusive retaliation/blocker consumer; damage consumer ordering"
+      },
+      "effects": [
+        {
+          "kind": "target_preference",
+          "preference": "eximus"
+        },
+        {
+          "kind": "overguard_damage_bonus",
+          "rank0": 0.75,
+          "rankMax": 3.0,
+          "rank_values": [
+            0.75,
+            1.5,
+            2.25,
+            3.0
+          ]
+        },
+        {
+          "kind": "unmodelled",
+          "clause": "Native target scoring, other VIP classes, pathfinding, travel and retaliation are not simulated. Target intent uses a deterministic contact model."
+        }
+      ]
+    },
+    {
+      "id": "balanced_posture",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastNeutralStance",
+      "raw_own_text": "MarketMode=MM_HIDDEN\nLocalizeTag=/Lotus/Language/Pets/BeastNeutralStanceName\nLocalizeDescTag=\"\"\nIcon=/Lotus/Interface/Cards/Images/Kubrow/BeastNeutralStance.png\nUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=1\nValidType=\"\"\nCheckTypeOnInstall=0\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Pets/BeastNeutralStanceDesc\nLocKeyWordScript={\nScript=PostureMods.lua\nFunction=GetNeutralDescription\n_factor=2\n_range=15\n_amountPerLevel=0.5\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nSmallerIsBetter=0\nRoundTo=0.1\nRoundingMode=RM_ROUND\nAllowConditionalLocMerge=0\n}\n}\nScript={\nScript=PostureMods.lua\nFunction=NeutralPosture\n_factor=2\n_range=15\n_amountPerLevel=0.5\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=NeutralStanceStaggerDamageTrigger\n}\nUnappliedScript={\nScript=PostureMods.lua\nFunction=UnapplyNeutralPosture\n_factor=2\n_range=15\n_amountPerLevel=0\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=NeutralStanceStaggerDamageTrigger\n}\n",
+      "apply": {
+        "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastNeutralStance",
+        "name_en": "Balanced Posture",
+        "apply_proto": 12,
+        "runtime_apply_parameters": {
+          "factor": 2.0,
+          "range": 15.0,
+          "amountPerLevel": 0.5,
+          "protectorTrainingWeak": "",
+          "magneticImpactWeak": "",
+          "lifestealWeak": "",
+          "reelingImpactWeak": "",
+          "chancePerLevel": 0.25,
+          "healPerLevel": 25.0,
+          "neutralPostureDamageTriggerType": "NeutralStanceStaggerDamageTrigger"
+        },
+        "apply_function": "NeutralPosture",
+        "upgrade_enum_id": null,
+        "upgrade_enum_name": null,
+        "operation_id": null,
+        "explicit_damage_type_argument": null,
+        "interpretation": "moving-only stagger trigger; speed threshold 3",
+        "weapon_on_damage_parameters": "Use BeastPetMeleeWeaponBase.DamageDoneScript, NOT stance.Script parameters",
+        "removal": "Use the explicit UnappliedScript; restore defaults and remove the matching source key",
+        "remaining_review": "Exact target scoring and action scheduling; Elusive retaliation/blocker consumer; damage consumer ordering"
+      },
+      "effects": [
+        {
+          "kind": "target_preference",
+          "preference": "free"
+        },
+        {
+          "kind": "unmodelled",
+          "rank0": 0.5,
+          "rankMax": 2.0,
+          "clause": "Moving-only stagger within 0.5..2m is not simulated; companion movement is not run."
+        },
+        {
+          "kind": "unmodelled",
+          "clause": "Native target scoring, other VIP classes, pathfinding, travel and retaliation are not simulated. Target intent uses a deterministic contact model."
+        }
+      ]
+    },
+    {
+      "id": "elusive_posture",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPacifistStance",
+      "raw_own_text": "MarketMode=MM_HIDDEN\nLocalizeTag=/Lotus/Language/Pets/BeastPacifistStanceName\nLocalizeDescTag=\"\"\nIcon=/Lotus/Interface/Cards/Images/Kubrow/BeastPacifistStance.png\nUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=1\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Pets/BeastPacifistStanceDesc\nLocKeyWordScript={\nScript=PostureMods.lua\nFunction=GetDescription\n_factor=2\n_range=15\n_amountPerLevel=0.125\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nSmallerIsBetter=0\nRoundTo=0.1\nRoundingMode=RM_ROUND\n}\n}\nScript={\nScript=PostureMods.lua\nFunction=PassivePosture\n_factor=2\n_range=15\n_amountPerLevel=12.5\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nUnappliedScript={\nScript=PostureMods.lua\nFunction=UnapplyPassivePosture\n_factor=2\n_range=15\n_amountPerLevel=12.5\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\n",
+      "apply": {
+        "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPacifistStance",
+        "name_en": "Elusive Posture",
+        "apply_proto": 14,
+        "runtime_apply_parameters": {
+          "factor": 2.0,
+          "range": 15.0,
+          "amountPerLevel": 12.5,
+          "protectorTrainingWeak": "",
+          "magneticImpactWeak": "",
+          "lifestealWeak": "",
+          "reelingImpactWeak": "",
+          "chancePerLevel": 0.25,
+          "healPerLevel": 25.0,
+          "neutralPostureDamageTriggerType": ""
+        },
+        "apply_function": "PassivePosture",
+        "upgrade_enum_id": 65,
+        "upgrade_enum_name": "AVATAR_EVADE_NPC_BULLET",
+        "operation_id": 3,
+        "explicit_damage_type_argument": null,
+        "interpretation": "bullet-evasion upgrade and ordinary-AI attack blocker",
+        "weapon_on_damage_parameters": "Use BeastPetMeleeWeaponBase.DamageDoneScript, NOT stance.Script parameters",
+        "removal": "Use the explicit UnappliedScript; restore defaults and remove the matching source key",
+        "remaining_review": "Exact target scoring and action scheduling; Elusive retaliation/blocker consumer; damage consumer ordering"
+      },
+      "effects": [
+        {
+          "kind": "target_preference",
+          "preference": "avoid"
+        },
+        {
+          "kind": "unmodelled",
+          "rank0": 0.125,
+          "rankMax": 0.5,
+          "clause": "Incoming NPC bullet evasion is not simulated; enemies do not attack the companion."
+        },
+        {
+          "kind": "unmodelled",
+          "clause": "Native target scoring, other VIP classes, pathfinding, travel and retaliation are not simulated. Target intent uses a deterministic contact model."
+        }
+      ]
+    },
+    {
+      "id": "frenzied_posture",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastSpreadAttacksStance",
+      "raw_own_text": "MarketMode=MM_HIDDEN\nLocalizeTag=/Lotus/Language/Pets/BeastSpreadAttacksStanceName\nLocalizeDescTag=\"\"\nIcon=/Lotus/Interface/Cards/Images/Kubrow/BeastSpreadAttacksStance.png\nUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=1\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Pets/BeastSpreadAttacksStanceDesc\nLocKeyWordScript={\nScript=PostureMods.lua\nFunction=GetDescription\n_factor=2\n_range=15\n_amountPerLevel=0.2\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nSmallerIsBetter=0\nRoundTo=0.1\nRoundingMode=RM_ROUND\n}\n}\nScript={\nScript=PostureMods.lua\nFunction=DifferentTargetPosture\n_factor=5\n_range=15\n_amountPerLevel=0.2\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nUnappliedScript={\nScript=PostureMods.lua\nFunction=UnapplyDifferentTargetPosture\n_factor=20\n_range=15\n_amountPerLevel=0.2\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\n",
+      "apply": {
+        "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastSpreadAttacksStance",
+        "name_en": "Frenzied Posture",
+        "apply_proto": 5,
+        "runtime_apply_parameters": {
+          "factor": 5.0,
+          "range": 15.0,
+          "amountPerLevel": 0.20000000298023224,
+          "protectorTrainingWeak": "",
+          "magneticImpactWeak": "",
+          "lifestealWeak": "",
+          "reelingImpactWeak": "",
+          "chancePerLevel": 0.25,
+          "healPerLevel": 25.0,
+          "neutralPostureDamageTriggerType": ""
+        },
+        "apply_function": "DifferentTargetPosture",
+        "upgrade_enum_id": 370,
+        "upgrade_enum_name": "WEAPON_PROC_TIME",
+        "operation_id": 3,
+        "explicit_damage_type_argument": null,
+        "interpretation": "status duration plus different-target preference",
+        "weapon_on_damage_parameters": "Use BeastPetMeleeWeaponBase.DamageDoneScript, NOT stance.Script parameters",
+        "removal": "Use the explicit UnappliedScript; restore defaults and remove the matching source key",
+        "remaining_review": "Exact target scoring and action scheduling; Elusive retaliation/blocker consumer; damage consumer ordering"
+      },
+      "effects": [
+        {
+          "kind": "target_preference",
+          "preference": "different"
+        },
+        {
+          "kind": "status_duration_bonus",
+          "rank0": 0.20000000298023224,
+          "rankMax": 0.800000011920929,
+          "rank_values": [
+            0.20000000298023224,
+            0.4000000059604645,
+            0.6000000238418579,
+            0.800000011920929
+          ]
+        },
+        {
+          "kind": "unmodelled",
+          "clause": "Native target scoring, other VIP classes, pathfinding, travel and retaliation are not simulated. Target intent uses a deterministic contact model."
+        }
+      ]
+    },
+    {
+      "id": "persistent_posture",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPersistentStance",
+      "raw_own_text": "MarketMode=MM_HIDDEN\nLocalizeTag=/Lotus/Language/Pets/BeastPersistentStanceName\nLocalizeDescTag=\"\"\nIcon=/Lotus/Interface/Cards/Images/Kubrow/BeastPersistentStance.png\nUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=1\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Pets/BeastPersistentStanceDesc\nLocKeyWordScript={\nScript=PostureMods.lua\nFunction=GetDescription\n_factor=2\n_range=15\n_amountPerLevel=0.1\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nSmallerIsBetter=0\nRoundTo=0.1\nRoundingMode=RM_ROUND\n}\n}\nScript={\nScript=PostureMods.lua\nFunction=SameTargetPosture\n_factor=-4\n_range=15\n_amountPerLevel=0.1\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nUnappliedScript={\nScript=PostureMods.lua\nFunction=UnapplySameTargetPosture\n_factor=2\n_range=15\n_amountPerLevel=0.1\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\n",
+      "apply": {
+        "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPersistentStance",
+        "name_en": "Persistent Posture",
+        "apply_proto": 3,
+        "runtime_apply_parameters": {
+          "factor": -4.0,
+          "range": 15.0,
+          "amountPerLevel": 0.10000000149011612,
+          "protectorTrainingWeak": "",
+          "magneticImpactWeak": "",
+          "lifestealWeak": "",
+          "reelingImpactWeak": "",
+          "chancePerLevel": 0.25,
+          "healPerLevel": 25.0,
+          "neutralPostureDamageTriggerType": ""
+        },
+        "apply_function": "SameTargetPosture",
+        "upgrade_enum_id": 358,
+        "upgrade_enum_name": "WEAPON_PERCENT_BASE_DAMAGE_ADDED",
+        "operation_id": 0,
+        "explicit_damage_type_argument": 0,
+        "interpretation": "added base damage with explicit damage-type argument 0 (Impact), plus same-target preference",
+        "weapon_on_damage_parameters": "Use BeastPetMeleeWeaponBase.DamageDoneScript, NOT stance.Script parameters",
+        "removal": "Use the explicit UnappliedScript; restore defaults and remove the matching source key",
+        "remaining_review": "Exact target scoring and action scheduling; Elusive retaliation/blocker consumer; damage consumer ordering"
+      },
+      "effects": [
+        {
+          "kind": "target_preference",
+          "preference": "same"
+        },
+        {
+          "kind": "base_damage_added",
+          "rank0": 0.10000000149011612,
+          "rankMax": 0.4000000059604645,
+          "rank_values": [
+            0.10000000149011612,
+            0.20000000298023224,
+            0.30000001192092896,
+            0.4000000059604645
+          ],
+          "element": "impact"
+        },
+        {
+          "kind": "unmodelled",
+          "clause": "Native target scoring, other VIP classes, pathfinding, travel and retaliation are not simulated. Target intent uses a deterministic contact model."
+        }
+      ]
+    },
+    {
+      "id": "protector_posture",
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastProtectorStance",
+      "raw_own_text": "MarketMode=MM_HIDDEN\nLocalizeTag=/Lotus/Language/Pets/BeastProtectorStanceName\nLocalizeDescTag=\"\"\nIcon=/Lotus/Interface/Cards/Images/Kubrow/BeastProtectorStance.png\nUpgrades={\n{\nUpgradeType=NONE\nOperationType=ADD\nValue=0\nDamageType=DT_ANY\nAutoType=1\nValidType=\"\"\nSymbolFilter=\"\"\nUpgradeObject=\"\"\nValidPostures={}\nValidModifiers={}\nInvalidModifiers={}\nValidProcTypes={}\nOverrideLocalization=1\nLocTag=/Lotus/Language/Pets/BeastProtectorStanceDesc\nLocKeyWordScript={\nScript=PostureMods.lua\nFunction=GetProtectorDescription\n_factor=2\n_range=15\n_amountPerLevel=1\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nSmallerIsBetter=0\nRoundTo=0.1\nRoundingMode=RM_ROUND\n}\n}\nScript={\nScript=PostureMods.lua\nFunction=ProtectorPosture\n_factor=5\n_range=15\n_amountPerLevel=0.5\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\nUnappliedScript={\nScript=PostureMods.lua\nFunction=UnapplyProtectorPosture\n_factor=2\n_range=15\n_amountPerLevel=0\n_protectorTrainingWeak=\"\"\n_magneticImpactWeak=\"\"\n_lifestealWeak=\"\"\n_reelingImpactWeak=\"\"\n_chancePerLevel=0.25\n_healPerLevel=25\n_neutralPostureDamageTriggerType=\"\"\n}\n",
+      "apply": {
+        "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastProtectorStance",
+        "name_en": "Protector Posture",
+        "apply_proto": 8,
+        "runtime_apply_parameters": {
+          "factor": 5.0,
+          "range": 15.0,
+          "amountPerLevel": 0.5,
+          "protectorTrainingWeak": "",
+          "magneticImpactWeak": "",
+          "lifestealWeak": "",
+          "reelingImpactWeak": "",
+          "chancePerLevel": 0.25,
+          "healPerLevel": 25.0,
+          "neutralPostureDamageTriggerType": ""
+        },
+        "apply_function": "ProtectorPosture",
+        "upgrade_enum_id": null,
+        "upgrade_enum_name": null,
+        "operation_id": null,
+        "explicit_damage_type_argument": null,
+        "interpretation": "owner-proximity preference; weapon OnDamage callback applies Puncture",
+        "weapon_on_damage_parameters": "Use BeastPetMeleeWeaponBase.DamageDoneScript, NOT stance.Script parameters",
+        "removal": "Use the explicit UnappliedScript; restore defaults and remove the matching source key",
+        "remaining_review": "Exact target scoring and action scheduling; Elusive retaliation/blocker consumer; damage consumer ordering"
+      },
+      "effects": [
+        {
+          "kind": "target_preference",
+          "preference": "near_owner",
+          "range_m": 15.0
+        },
+        {
+          "kind": "additional_forced_procs",
+          "rank0": 1.0,
+          "rankMax": 4.0,
+          "rank_values": [
+            1.0,
+            2.0,
+            3.0,
+            4.0
+          ],
+          "element": "puncture"
+        },
+        {
+          "kind": "unmodelled",
+          "clause": "Native target scoring, other VIP classes, pathfinding, travel and retaliation are not simulated. Target intent uses a deterministic contact model."
+        }
+      ]
+    }
+  ],
+  "weapon_damage_callback": {
+    "owner": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+    "source_record": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+    "top_level_field": "DamageDoneScript",
+    "token": "BeastWeapons/Stances/PostureMods.lua",
+    "target": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+    "resolution": "exact-relative",
+    "nearest_explicit_member_view": {
+      "Script": "BeastWeapons/Stances/PostureMods.lua",
+      "Function": "OnDamage",
+      "_factor": "2",
+      "_range": "15",
+      "_amountPerLevel": "1",
+      "_protectorTrainingWeak": "BeastWeapons/Stances/BeastProtectorStance",
+      "_magneticImpactWeak": "/Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastMagneticImpactMod",
+      "_lifestealWeak": "/Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastDrainingBiteMod",
+      "_reelingImpactWeak": "/Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastKnockdownWeaponMod",
+      "_chancePerLevel": "0.25",
+      "_healPerLevel": "25",
+      "_neutralPostureDamageTriggerType": "\"\""
+    },
+    "member_provenance": {
+      "Script": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+      "Function": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+      "_factor": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+      "_range": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+      "_amountPerLevel": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+      "_protectorTrainingWeak": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+      "_magneticImpactWeak": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+      "_lifestealWeak": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+      "_reelingImpactWeak": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+      "_chancePerLevel": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+      "_healPerLevel": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase",
+      "_neutralPostureDamageTriggerType": "/Lotus/Types/Friendly/Pets/BeastPetMeleeWeaponBase"
+    },
+    "typed_parameters": {
+      "factor": {
+        "type": 1,
+        "array": false,
+        "header_default": 2.0,
+        "metadata_override_token": "2",
+        "value": 2.0
+      },
+      "range": {
+        "type": 1,
+        "array": false,
+        "header_default": 15.0,
+        "metadata_override_token": "15",
+        "value": 15.0
+      },
+      "amountPerLevel": {
+        "type": 1,
+        "array": false,
+        "header_default": 0.0,
+        "metadata_override_token": "1",
+        "value": 1.0
+      },
+      "protectorTrainingWeak": {
+        "type": 11,
+        "array": false,
+        "header_default": "",
+        "metadata_override_token": "BeastWeapons/Stances/BeastProtectorStance",
+        "value": "BeastWeapons/Stances/BeastProtectorStance"
+      },
+      "magneticImpactWeak": {
+        "type": 11,
+        "array": false,
+        "header_default": "",
+        "metadata_override_token": "/Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastMagneticImpactMod",
+        "value": "/Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastMagneticImpactMod"
+      },
+      "lifestealWeak": {
+        "type": 11,
+        "array": false,
+        "header_default": "",
+        "metadata_override_token": "/Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastDrainingBiteMod",
+        "value": "/Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastDrainingBiteMod"
+      },
+      "reelingImpactWeak": {
+        "type": 11,
+        "array": false,
+        "header_default": "",
+        "metadata_override_token": "/Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastKnockdownWeaponMod",
+        "value": "/Lotus/Upgrades/Mods/Sentinel/Kubrow/BeastWeapon/BeastKnockdownWeaponMod"
+      },
+      "chancePerLevel": {
+        "type": 1,
+        "array": false,
+        "header_default": 0.25,
+        "metadata_override_token": "0.25",
+        "value": 0.25
+      },
+      "healPerLevel": {
+        "type": 1,
+        "array": false,
+        "header_default": 25.0,
+        "metadata_override_token": "25",
+        "value": 25.0
+      },
+      "neutralPostureDamageTriggerType": {
+        "type": 10,
+        "array": false,
+        "header_default": "",
+        "metadata_override_token": "\"\"",
+        "value": ""
+      }
+    },
+    "member_view_semantics": "Nearest explicit member assignments with raw ancestry retained; not a complete native nested-object merger."
+  },
+  "script_slices": [
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 0,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 467,
+          "opcode": "DUPTABLE",
+          "annotation": "R1 <- table(K1)@0"
+        },
+        {
+          "pc": 1,
+          "offset": 471,
+          "opcode": "GETUPVAL",
+          "annotation": "R2 <- U0"
+        },
+        {
+          "pc": 2,
+          "offset": 475,
+          "opcode": "GETTABLEKS",
+          "annotation": "R2 <- U0[FormatNumber]"
+        },
+        {
+          "pc": 4,
+          "offset": 483,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- amountPerLevel"
+        },
+        {
+          "pc": 6,
+          "offset": 491,
+          "opcode": "MUL",
+          "annotation": "R4 <- (amountPerLevel * R0)"
+        },
+        {
+          "pc": 7,
+          "offset": 495,
+          "opcode": "MULK",
+          "annotation": "R3 <- ((amountPerLevel * R0) * 100.0)"
+        },
+        {
+          "pc": 8,
+          "offset": 499,
+          "opcode": "LOADN",
+          "annotation": "R4 <- 1"
+        },
+        {
+          "pc": 9,
+          "offset": 503,
+          "opcode": "LOADB",
+          "annotation": "R5 <- false"
+        },
+        {
+          "pc": 10,
+          "offset": 507,
+          "opcode": "CALL",
+          "annotation": "R2 <- U0[FormatNumber](((amountPerLevel * R0) * 100.0), 1, false)"
+        },
+        {
+          "pc": 11,
+          "offset": 511,
+          "opcode": "SETTABLEKS",
+          "annotation": "table(K1)@0[\"AMOUNT\"] <- v10"
+        },
+        {
+          "pc": 13,
+          "offset": 519,
+          "opcode": "GETIMPORT",
+          "annotation": "R2 <- cjson.encode"
+        },
+        {
+          "pc": 15,
+          "offset": 527,
+          "opcode": "MOVE",
+          "annotation": "R3 <- table(K1)@0"
+        },
+        {
+          "pc": 16,
+          "offset": 531,
+          "opcode": "CALL",
+          "annotation": "R2 <- cjson.encode(table(K1)@0)"
+        },
+        {
+          "pc": 17,
+          "offset": 535,
+          "opcode": "RETURN",
+          "annotation": "R2..TOP"
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 1,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 619,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- gLotusSentinelAvatarType"
+        },
+        {
+          "pc": 2,
+          "offset": 627,
+          "opcode": "FASTCALL2",
+          "annotation": ""
+        },
+        {
+          "pc": 4,
+          "offset": 635,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#2888fc5c"
+        },
+        {
+          "pc": 6,
+          "offset": 643,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#2888fc5c(R0, gLotusSentinelAvatarType)"
+        },
+        {
+          "pc": 7,
+          "offset": 647,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=27"
+        },
+        {
+          "pc": 8,
+          "offset": 651,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- factor"
+        },
+        {
+          "pc": 10,
+          "offset": 659,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#c00bd406"
+        },
+        {
+          "pc": 12,
+          "offset": 667,
+          "opcode": "CALL",
+          "annotation": "R0:#c00bd406(R0, factor)"
+        },
+        {
+          "pc": 13,
+          "offset": 671,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:InventoryControl"
+        },
+        {
+          "pc": 15,
+          "offset": 679,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:InventoryControl(R0)"
+        },
+        {
+          "pc": 16,
+          "offset": 683,
+          "opcode": "GETUPVAL",
+          "annotation": "R5 <- U0"
+        },
+        {
+          "pc": 17,
+          "offset": 687,
+          "opcode": "LOADN",
+          "annotation": "R6 <- 255"
+        },
+        {
+          "pc": 18,
+          "offset": 691,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 3"
+        },
+        {
+          "pc": 19,
+          "offset": 695,
+          "opcode": "GETIMPORT",
+          "annotation": "R9 <- amountPerLevel"
+        },
+        {
+          "pc": 21,
+          "offset": 703,
+          "opcode": "MUL",
+          "annotation": "R8 <- (amountPerLevel * R2)"
+        },
+        {
+          "pc": 22,
+          "offset": 707,
+          "opcode": "LOADNIL",
+          "annotation": "R9 <- nil"
+        },
+        {
+          "pc": 23,
+          "offset": 711,
+          "opcode": "MOVE",
+          "annotation": "R10 <- R1"
+        },
+        {
+          "pc": 24,
+          "offset": 715,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- v15:#56a2305f"
+        },
+        {
+          "pc": 26,
+          "offset": 723,
+          "opcode": "CALL",
+          "annotation": "v15:#56a2305f(v15, U0, 255, 3, (amountPerLevel * R2), nil, R1)"
+        },
+        {
+          "pc": 27,
+          "offset": 727,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 2,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 827,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 1,
+          "offset": 831,
+          "opcode": "MOVE",
+          "annotation": "R4 <- R0"
+        },
+        {
+          "pc": 2,
+          "offset": 835,
+          "opcode": "GETIMPORT",
+          "annotation": "R3 <- IsNull"
+        },
+        {
+          "pc": 4,
+          "offset": 843,
+          "opcode": "CALL",
+          "annotation": "R3 <- IsNull(R0)"
+        },
+        {
+          "pc": 5,
+          "offset": 847,
+          "opcode": "JUMPIF",
+          "annotation": "R3; target=32"
+        },
+        {
+          "pc": 6,
+          "offset": 851,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- gLotusSentinelAvatarType"
+        },
+        {
+          "pc": 8,
+          "offset": 859,
+          "opcode": "FASTCALL2",
+          "annotation": ""
+        },
+        {
+          "pc": 10,
+          "offset": 867,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#2888fc5c"
+        },
+        {
+          "pc": 12,
+          "offset": 875,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#2888fc5c(R0, gLotusSentinelAvatarType)"
+        },
+        {
+          "pc": 13,
+          "offset": 879,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=32"
+        },
+        {
+          "pc": 14,
+          "offset": 883,
+          "opcode": "LOADN",
+          "annotation": "R5 <- 0"
+        },
+        {
+          "pc": 15,
+          "offset": 887,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#c00bd406"
+        },
+        {
+          "pc": 17,
+          "offset": 895,
+          "opcode": "CALL",
+          "annotation": "R0:#c00bd406(R0, 0)"
+        },
+        {
+          "pc": 18,
+          "offset": 899,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:InventoryControl"
+        },
+        {
+          "pc": 20,
+          "offset": 907,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:InventoryControl(R0)"
+        },
+        {
+          "pc": 21,
+          "offset": 911,
+          "opcode": "GETUPVAL",
+          "annotation": "R5 <- U0"
+        },
+        {
+          "pc": 22,
+          "offset": 915,
+          "opcode": "LOADN",
+          "annotation": "R6 <- 255"
+        },
+        {
+          "pc": 23,
+          "offset": 919,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 3"
+        },
+        {
+          "pc": 24,
+          "offset": 923,
+          "opcode": "GETIMPORT",
+          "annotation": "R9 <- amountPerLevel"
+        },
+        {
+          "pc": 26,
+          "offset": 931,
+          "opcode": "MUL",
+          "annotation": "R8 <- (amountPerLevel * R2)"
+        },
+        {
+          "pc": 27,
+          "offset": 935,
+          "opcode": "LOADNIL",
+          "annotation": "R9 <- nil"
+        },
+        {
+          "pc": 28,
+          "offset": 939,
+          "opcode": "MOVE",
+          "annotation": "R10 <- R1"
+        },
+        {
+          "pc": 29,
+          "offset": 943,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- v20:#872cea58"
+        },
+        {
+          "pc": 31,
+          "offset": 951,
+          "opcode": "CALL",
+          "annotation": "v20:#872cea58(v20, U0, 255, 3, (amountPerLevel * R2), nil, R1)"
+        },
+        {
+          "pc": 32,
+          "offset": 955,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 3,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 1060,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- gLotusSentinelAvatarType"
+        },
+        {
+          "pc": 2,
+          "offset": 1068,
+          "opcode": "FASTCALL2",
+          "annotation": ""
+        },
+        {
+          "pc": 4,
+          "offset": 1076,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#2888fc5c"
+        },
+        {
+          "pc": 6,
+          "offset": 1084,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#2888fc5c(R0, gLotusSentinelAvatarType)"
+        },
+        {
+          "pc": 7,
+          "offset": 1088,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=28"
+        },
+        {
+          "pc": 8,
+          "offset": 1092,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- factor"
+        },
+        {
+          "pc": 10,
+          "offset": 1100,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#84654e0c"
+        },
+        {
+          "pc": 12,
+          "offset": 1108,
+          "opcode": "CALL",
+          "annotation": "R0:#84654e0c(R0, factor)"
+        },
+        {
+          "pc": 13,
+          "offset": 1112,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:InventoryControl"
+        },
+        {
+          "pc": 15,
+          "offset": 1120,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:InventoryControl(R0)"
+        },
+        {
+          "pc": 16,
+          "offset": 1124,
+          "opcode": "GETUPVAL",
+          "annotation": "R5 <- U0"
+        },
+        {
+          "pc": 17,
+          "offset": 1128,
+          "opcode": "LOADN",
+          "annotation": "R6 <- 358"
+        },
+        {
+          "pc": 18,
+          "offset": 1132,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 0"
+        },
+        {
+          "pc": 19,
+          "offset": 1136,
+          "opcode": "GETIMPORT",
+          "annotation": "R9 <- amountPerLevel"
+        },
+        {
+          "pc": 21,
+          "offset": 1144,
+          "opcode": "MUL",
+          "annotation": "R8 <- (amountPerLevel * R2)"
+        },
+        {
+          "pc": 22,
+          "offset": 1148,
+          "opcode": "LOADNIL",
+          "annotation": "R9 <- nil"
+        },
+        {
+          "pc": 23,
+          "offset": 1152,
+          "opcode": "MOVE",
+          "annotation": "R10 <- R1"
+        },
+        {
+          "pc": 24,
+          "offset": 1156,
+          "opcode": "LOADN",
+          "annotation": "R11 <- 0"
+        },
+        {
+          "pc": 25,
+          "offset": 1160,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- v15:#56a2305f"
+        },
+        {
+          "pc": 27,
+          "offset": 1168,
+          "opcode": "CALL",
+          "annotation": "v15:#56a2305f(v15, U0, 358, 0, (amountPerLevel * R2), nil, R1, 0)"
+        },
+        {
+          "pc": 28,
+          "offset": 1172,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 4,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 1273,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 1,
+          "offset": 1277,
+          "opcode": "MOVE",
+          "annotation": "R4 <- R0"
+        },
+        {
+          "pc": 2,
+          "offset": 1281,
+          "opcode": "GETIMPORT",
+          "annotation": "R3 <- IsNull"
+        },
+        {
+          "pc": 4,
+          "offset": 1289,
+          "opcode": "CALL",
+          "annotation": "R3 <- IsNull(R0)"
+        },
+        {
+          "pc": 5,
+          "offset": 1293,
+          "opcode": "JUMPIF",
+          "annotation": "R3; target=33"
+        },
+        {
+          "pc": 6,
+          "offset": 1297,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- gLotusSentinelAvatarType"
+        },
+        {
+          "pc": 8,
+          "offset": 1305,
+          "opcode": "FASTCALL2",
+          "annotation": ""
+        },
+        {
+          "pc": 10,
+          "offset": 1313,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#2888fc5c"
+        },
+        {
+          "pc": 12,
+          "offset": 1321,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#2888fc5c(R0, gLotusSentinelAvatarType)"
+        },
+        {
+          "pc": 13,
+          "offset": 1325,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=33"
+        },
+        {
+          "pc": 14,
+          "offset": 1329,
+          "opcode": "LOADN",
+          "annotation": "R5 <- 0"
+        },
+        {
+          "pc": 15,
+          "offset": 1333,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#84654e0c"
+        },
+        {
+          "pc": 17,
+          "offset": 1341,
+          "opcode": "CALL",
+          "annotation": "R0:#84654e0c(R0, 0)"
+        },
+        {
+          "pc": 18,
+          "offset": 1345,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:InventoryControl"
+        },
+        {
+          "pc": 20,
+          "offset": 1353,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:InventoryControl(R0)"
+        },
+        {
+          "pc": 21,
+          "offset": 1357,
+          "opcode": "GETUPVAL",
+          "annotation": "R5 <- U0"
+        },
+        {
+          "pc": 22,
+          "offset": 1361,
+          "opcode": "LOADN",
+          "annotation": "R6 <- 358"
+        },
+        {
+          "pc": 23,
+          "offset": 1365,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 0"
+        },
+        {
+          "pc": 24,
+          "offset": 1369,
+          "opcode": "GETIMPORT",
+          "annotation": "R9 <- amountPerLevel"
+        },
+        {
+          "pc": 26,
+          "offset": 1377,
+          "opcode": "MUL",
+          "annotation": "R8 <- (amountPerLevel * R2)"
+        },
+        {
+          "pc": 27,
+          "offset": 1381,
+          "opcode": "LOADNIL",
+          "annotation": "R9 <- nil"
+        },
+        {
+          "pc": 28,
+          "offset": 1385,
+          "opcode": "MOVE",
+          "annotation": "R10 <- R1"
+        },
+        {
+          "pc": 29,
+          "offset": 1389,
+          "opcode": "LOADN",
+          "annotation": "R11 <- 0"
+        },
+        {
+          "pc": 30,
+          "offset": 1393,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- v20:#872cea58"
+        },
+        {
+          "pc": 32,
+          "offset": 1401,
+          "opcode": "CALL",
+          "annotation": "v20:#872cea58(v20, U0, 358, 0, (amountPerLevel * R2), nil, R1, 0)"
+        },
+        {
+          "pc": 33,
+          "offset": 1405,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 5,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 1511,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- gLotusSentinelAvatarType"
+        },
+        {
+          "pc": 2,
+          "offset": 1519,
+          "opcode": "FASTCALL2",
+          "annotation": ""
+        },
+        {
+          "pc": 4,
+          "offset": 1527,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#2888fc5c"
+        },
+        {
+          "pc": 6,
+          "offset": 1535,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#2888fc5c(R0, gLotusSentinelAvatarType)"
+        },
+        {
+          "pc": 7,
+          "offset": 1539,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=27"
+        },
+        {
+          "pc": 8,
+          "offset": 1543,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- factor"
+        },
+        {
+          "pc": 10,
+          "offset": 1551,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#84654e0c"
+        },
+        {
+          "pc": 12,
+          "offset": 1559,
+          "opcode": "CALL",
+          "annotation": "R0:#84654e0c(R0, factor)"
+        },
+        {
+          "pc": 13,
+          "offset": 1563,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:InventoryControl"
+        },
+        {
+          "pc": 15,
+          "offset": 1571,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:InventoryControl(R0)"
+        },
+        {
+          "pc": 16,
+          "offset": 1575,
+          "opcode": "GETUPVAL",
+          "annotation": "R5 <- U0"
+        },
+        {
+          "pc": 17,
+          "offset": 1579,
+          "opcode": "LOADN",
+          "annotation": "R6 <- 370"
+        },
+        {
+          "pc": 18,
+          "offset": 1583,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 3"
+        },
+        {
+          "pc": 19,
+          "offset": 1587,
+          "opcode": "GETIMPORT",
+          "annotation": "R9 <- amountPerLevel"
+        },
+        {
+          "pc": 21,
+          "offset": 1595,
+          "opcode": "MUL",
+          "annotation": "R8 <- (amountPerLevel * R2)"
+        },
+        {
+          "pc": 22,
+          "offset": 1599,
+          "opcode": "LOADNIL",
+          "annotation": "R9 <- nil"
+        },
+        {
+          "pc": 23,
+          "offset": 1603,
+          "opcode": "MOVE",
+          "annotation": "R10 <- R1"
+        },
+        {
+          "pc": 24,
+          "offset": 1607,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- v15:#56a2305f"
+        },
+        {
+          "pc": 26,
+          "offset": 1615,
+          "opcode": "CALL",
+          "annotation": "v15:#56a2305f(v15, U0, 370, 3, (amountPerLevel * R2), nil, R1)"
+        },
+        {
+          "pc": 27,
+          "offset": 1619,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 6,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 1719,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 1,
+          "offset": 1723,
+          "opcode": "MOVE",
+          "annotation": "R4 <- R0"
+        },
+        {
+          "pc": 2,
+          "offset": 1727,
+          "opcode": "GETIMPORT",
+          "annotation": "R3 <- IsNull"
+        },
+        {
+          "pc": 4,
+          "offset": 1735,
+          "opcode": "CALL",
+          "annotation": "R3 <- IsNull(R0)"
+        },
+        {
+          "pc": 5,
+          "offset": 1739,
+          "opcode": "JUMPIF",
+          "annotation": "R3; target=32"
+        },
+        {
+          "pc": 6,
+          "offset": 1743,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- gLotusSentinelAvatarType"
+        },
+        {
+          "pc": 8,
+          "offset": 1751,
+          "opcode": "FASTCALL2",
+          "annotation": ""
+        },
+        {
+          "pc": 10,
+          "offset": 1759,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#2888fc5c"
+        },
+        {
+          "pc": 12,
+          "offset": 1767,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#2888fc5c(R0, gLotusSentinelAvatarType)"
+        },
+        {
+          "pc": 13,
+          "offset": 1771,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=32"
+        },
+        {
+          "pc": 14,
+          "offset": 1775,
+          "opcode": "LOADN",
+          "annotation": "R5 <- 0"
+        },
+        {
+          "pc": 15,
+          "offset": 1779,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#84654e0c"
+        },
+        {
+          "pc": 17,
+          "offset": 1787,
+          "opcode": "CALL",
+          "annotation": "R0:#84654e0c(R0, 0)"
+        },
+        {
+          "pc": 18,
+          "offset": 1791,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:InventoryControl"
+        },
+        {
+          "pc": 20,
+          "offset": 1799,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:InventoryControl(R0)"
+        },
+        {
+          "pc": 21,
+          "offset": 1803,
+          "opcode": "GETUPVAL",
+          "annotation": "R5 <- U0"
+        },
+        {
+          "pc": 22,
+          "offset": 1807,
+          "opcode": "LOADN",
+          "annotation": "R6 <- 370"
+        },
+        {
+          "pc": 23,
+          "offset": 1811,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 3"
+        },
+        {
+          "pc": 24,
+          "offset": 1815,
+          "opcode": "GETIMPORT",
+          "annotation": "R9 <- amountPerLevel"
+        },
+        {
+          "pc": 26,
+          "offset": 1823,
+          "opcode": "MUL",
+          "annotation": "R8 <- (amountPerLevel * R2)"
+        },
+        {
+          "pc": 27,
+          "offset": 1827,
+          "opcode": "LOADNIL",
+          "annotation": "R9 <- nil"
+        },
+        {
+          "pc": 28,
+          "offset": 1831,
+          "opcode": "MOVE",
+          "annotation": "R10 <- R1"
+        },
+        {
+          "pc": 29,
+          "offset": 1835,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- v20:#872cea58"
+        },
+        {
+          "pc": 31,
+          "offset": 1843,
+          "opcode": "CALL",
+          "annotation": "v20:#872cea58(v20, U0, 370, 3, (amountPerLevel * R2), nil, R1)"
+        },
+        {
+          "pc": 32,
+          "offset": 1847,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 7,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 1952,
+          "opcode": "DUPTABLE",
+          "annotation": "R1 <- table(K1)@0"
+        },
+        {
+          "pc": 1,
+          "offset": 1956,
+          "opcode": "GETIMPORT",
+          "annotation": "R4 <- amountPerLevel"
+        },
+        {
+          "pc": 3,
+          "offset": 1964,
+          "opcode": "MUL",
+          "annotation": "R3 <- (amountPerLevel * R0)"
+        },
+        {
+          "pc": 4,
+          "offset": 1968,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 5,
+          "offset": 1972,
+          "opcode": "GETIMPORT",
+          "annotation": "R2 <- math.floor"
+        },
+        {
+          "pc": 7,
+          "offset": 1980,
+          "opcode": "CALL",
+          "annotation": "R2 <- math.floor((amountPerLevel * R0))"
+        },
+        {
+          "pc": 8,
+          "offset": 1984,
+          "opcode": "SETTABLEKS",
+          "annotation": "table(K1)@0[\"AMOUNT\"] <- v7"
+        },
+        {
+          "pc": 10,
+          "offset": 1992,
+          "opcode": "GETIMPORT",
+          "annotation": "R2 <- cjson.encode"
+        },
+        {
+          "pc": 12,
+          "offset": 2000,
+          "opcode": "MOVE",
+          "annotation": "R3 <- table(K1)@0"
+        },
+        {
+          "pc": 13,
+          "offset": 2004,
+          "opcode": "CALL",
+          "annotation": "R2 <- cjson.encode(table(K1)@0)"
+        },
+        {
+          "pc": 14,
+          "offset": 2008,
+          "opcode": "RETURN",
+          "annotation": "R2..TOP"
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 8,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 2090,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- gLotusSentinelAvatarType"
+        },
+        {
+          "pc": 2,
+          "offset": 2098,
+          "opcode": "FASTCALL2",
+          "annotation": ""
+        },
+        {
+          "pc": 4,
+          "offset": 2106,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#2888fc5c"
+        },
+        {
+          "pc": 6,
+          "offset": 2114,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#2888fc5c(R0, gLotusSentinelAvatarType)"
+        },
+        {
+          "pc": 7,
+          "offset": 2118,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=18"
+        },
+        {
+          "pc": 8,
+          "offset": 2122,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- factor"
+        },
+        {
+          "pc": 10,
+          "offset": 2130,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#045054c4"
+        },
+        {
+          "pc": 12,
+          "offset": 2138,
+          "opcode": "CALL",
+          "annotation": "R0:#045054c4(R0, factor)"
+        },
+        {
+          "pc": 13,
+          "offset": 2142,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- range"
+        },
+        {
+          "pc": 15,
+          "offset": 2150,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#42bd238c"
+        },
+        {
+          "pc": 17,
+          "offset": 2158,
+          "opcode": "CALL",
+          "annotation": "R0:#42bd238c(R0, range)"
+        },
+        {
+          "pc": 18,
+          "offset": 2162,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 9,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 2248,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 1,
+          "offset": 2252,
+          "opcode": "MOVE",
+          "annotation": "R4 <- R0"
+        },
+        {
+          "pc": 2,
+          "offset": 2256,
+          "opcode": "GETIMPORT",
+          "annotation": "R3 <- IsNull"
+        },
+        {
+          "pc": 4,
+          "offset": 2264,
+          "opcode": "CALL",
+          "annotation": "R3 <- IsNull(R0)"
+        },
+        {
+          "pc": 5,
+          "offset": 2268,
+          "opcode": "JUMPIF",
+          "annotation": "R3; target=22"
+        },
+        {
+          "pc": 6,
+          "offset": 2272,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- gLotusSentinelAvatarType"
+        },
+        {
+          "pc": 8,
+          "offset": 2280,
+          "opcode": "FASTCALL2",
+          "annotation": ""
+        },
+        {
+          "pc": 10,
+          "offset": 2288,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#2888fc5c"
+        },
+        {
+          "pc": 12,
+          "offset": 2296,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#2888fc5c(R0, gLotusSentinelAvatarType)"
+        },
+        {
+          "pc": 13,
+          "offset": 2300,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=22"
+        },
+        {
+          "pc": 14,
+          "offset": 2304,
+          "opcode": "LOADN",
+          "annotation": "R5 <- 1"
+        },
+        {
+          "pc": 15,
+          "offset": 2308,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#045054c4"
+        },
+        {
+          "pc": 17,
+          "offset": 2316,
+          "opcode": "CALL",
+          "annotation": "R0:#045054c4(R0, 1)"
+        },
+        {
+          "pc": 18,
+          "offset": 2320,
+          "opcode": "LOADN",
+          "annotation": "R5 <- 25"
+        },
+        {
+          "pc": 19,
+          "offset": 2324,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#42bd238c"
+        },
+        {
+          "pc": 21,
+          "offset": 2332,
+          "opcode": "CALL",
+          "annotation": "R0:#42bd238c(R0, 25)"
+        },
+        {
+          "pc": 22,
+          "offset": 2336,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 10,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 2416,
+          "opcode": "GETIMPORT",
+          "annotation": "R3 <- neutralPostureDamageTriggerType"
+        },
+        {
+          "pc": 2,
+          "offset": 2424,
+          "opcode": "NAMECALL",
+          "annotation": "R1 <- R0:#efec1c81"
+        },
+        {
+          "pc": 4,
+          "offset": 2432,
+          "opcode": "CALL",
+          "annotation": "R1 <- R0:#efec1c81(R0, neutralPostureDamageTriggerType)"
+        },
+        {
+          "pc": 5,
+          "offset": 2436,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 6,
+          "offset": 2440,
+          "opcode": "MOVE",
+          "annotation": "R3 <- R1"
+        },
+        {
+          "pc": 7,
+          "offset": 2444,
+          "opcode": "GETIMPORT",
+          "annotation": "R2 <- IsNull"
+        },
+        {
+          "pc": 9,
+          "offset": 2452,
+          "opcode": "CALL",
+          "annotation": "R2 <- IsNull(R1)"
+        },
+        {
+          "pc": 10,
+          "offset": 2456,
+          "opcode": "JUMPIF",
+          "annotation": "R2; target=41"
+        },
+        {
+          "pc": 11,
+          "offset": 2460,
+          "opcode": "NAMECALL",
+          "annotation": "R2 <- R1:IsEnabled"
+        },
+        {
+          "pc": 13,
+          "offset": 2468,
+          "opcode": "CALL",
+          "annotation": "R2 <- R1:IsEnabled(R1)"
+        },
+        {
+          "pc": 14,
+          "offset": 2472,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#4eb1689d"
+        },
+        {
+          "pc": 16,
+          "offset": 2480,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#4eb1689d(R0)"
+        },
+        {
+          "pc": 17,
+          "offset": 2484,
+          "opcode": "GETIMPORT",
+          "annotation": "R4 <- Length"
+        },
+        {
+          "pc": 19,
+          "offset": 2492,
+          "opcode": "MOVE",
+          "annotation": "R5 <- v16"
+        },
+        {
+          "pc": 20,
+          "offset": 2496,
+          "opcode": "CALL",
+          "annotation": "R4 <- Length(v16)"
+        },
+        {
+          "pc": 21,
+          "offset": 2500,
+          "opcode": "JUMPIF",
+          "annotation": "R2; target=29"
+        },
+        {
+          "pc": 22,
+          "offset": 2504,
+          "opcode": "LOADN",
+          "annotation": "R5 <- 3"
+        },
+        {
+          "pc": 23,
+          "offset": 2508,
+          "opcode": "JUMPIFNOTLE",
+          "annotation": "R5; target=29; AUX=0x4"
+        },
+        {
+          "pc": 25,
+          "offset": 2516,
+          "opcode": "NAMECALL",
+          "annotation": "R5 <- R1:Enable"
+        },
+        {
+          "pc": 27,
+          "offset": 2524,
+          "opcode": "CALL",
+          "annotation": "R1:Enable(R1)"
+        },
+        {
+          "pc": 28,
+          "offset": 2528,
+          "opcode": "JUMP",
+          "annotation": "R0; target=36"
+        },
+        {
+          "pc": 29,
+          "offset": 2532,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R2; target=36"
+        },
+        {
+          "pc": 30,
+          "offset": 2536,
+          "opcode": "LOADN",
+          "annotation": "R5 <- 3"
+        },
+        {
+          "pc": 31,
+          "offset": 2540,
+          "opcode": "JUMPIFNOTLT",
+          "annotation": "R4; target=36; AUX=0x5"
+        },
+        {
+          "pc": 33,
+          "offset": 2548,
+          "opcode": "NAMECALL",
+          "annotation": "R5 <- R1:Disable"
+        },
+        {
+          "pc": 35,
+          "offset": 2556,
+          "opcode": "CALL",
+          "annotation": "R1:Disable(R1)"
+        },
+        {
+          "pc": 36,
+          "offset": 2560,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- Sleep"
+        },
+        {
+          "pc": 38,
+          "offset": 2568,
+          "opcode": "LOADN",
+          "annotation": "R6 <- 0"
+        },
+        {
+          "pc": 39,
+          "offset": 2572,
+          "opcode": "CALL",
+          "annotation": "Sleep(0)"
+        },
+        {
+          "pc": 40,
+          "offset": 2576,
+          "opcode": "JUMPBACK",
+          "annotation": "R0; target=5"
+        },
+        {
+          "pc": 41,
+          "offset": 2580,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 11,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 2709,
+          "opcode": "DUPTABLE",
+          "annotation": "R1 <- table(K1)@0"
+        },
+        {
+          "pc": 1,
+          "offset": 2713,
+          "opcode": "GETUPVAL",
+          "annotation": "R2 <- U0"
+        },
+        {
+          "pc": 2,
+          "offset": 2717,
+          "opcode": "GETTABLEKS",
+          "annotation": "R2 <- U0[FormatNumber]"
+        },
+        {
+          "pc": 4,
+          "offset": 2725,
+          "opcode": "GETIMPORT",
+          "annotation": "R4 <- amountPerLevel"
+        },
+        {
+          "pc": 6,
+          "offset": 2733,
+          "opcode": "MUL",
+          "annotation": "R3 <- (amountPerLevel * R0)"
+        },
+        {
+          "pc": 7,
+          "offset": 2737,
+          "opcode": "LOADN",
+          "annotation": "R4 <- 1"
+        },
+        {
+          "pc": 8,
+          "offset": 2741,
+          "opcode": "LOADB",
+          "annotation": "R5 <- false"
+        },
+        {
+          "pc": 9,
+          "offset": 2745,
+          "opcode": "CALL",
+          "annotation": "R2 <- U0[FormatNumber]((amountPerLevel * R0), 1, false)"
+        },
+        {
+          "pc": 10,
+          "offset": 2749,
+          "opcode": "SETTABLEKS",
+          "annotation": "table(K1)@0[\"RANGE\"] <- v9"
+        },
+        {
+          "pc": 12,
+          "offset": 2757,
+          "opcode": "GETIMPORT",
+          "annotation": "R2 <- cjson.encode"
+        },
+        {
+          "pc": 14,
+          "offset": 2765,
+          "opcode": "MOVE",
+          "annotation": "R3 <- table(K1)@0"
+        },
+        {
+          "pc": 15,
+          "offset": 2769,
+          "opcode": "CALL",
+          "annotation": "R2 <- cjson.encode(table(K1)@0)"
+        },
+        {
+          "pc": 16,
+          "offset": 2773,
+          "opcode": "RETURN",
+          "annotation": "R2..TOP"
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 12,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 2847,
+          "opcode": "GETIMPORT",
+          "annotation": "R3 <- gRegion"
+        },
+        {
+          "pc": 2,
+          "offset": 2855,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 3,
+          "offset": 2859,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- gRegion:IsMaster"
+        },
+        {
+          "pc": 5,
+          "offset": 2867,
+          "opcode": "CALL",
+          "annotation": "R3 <- gRegion:IsMaster(gRegion)"
+        },
+        {
+          "pc": 6,
+          "offset": 2871,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=42"
+        },
+        {
+          "pc": 7,
+          "offset": 2875,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- neutralPostureDamageTriggerType"
+        },
+        {
+          "pc": 9,
+          "offset": 2883,
+          "opcode": "GETIMPORT",
+          "annotation": "R6 <- EMPTY_SYMBOL"
+        },
+        {
+          "pc": 11,
+          "offset": 2891,
+          "opcode": "GETIMPORT",
+          "annotation": "R7 <- Vector"
+        },
+        {
+          "pc": 13,
+          "offset": 2899,
+          "opcode": "LOADN",
+          "annotation": "R8 <- 0"
+        },
+        {
+          "pc": 14,
+          "offset": 2903,
+          "opcode": "LOADN",
+          "annotation": "R9 <- 0"
+        },
+        {
+          "pc": 15,
+          "offset": 2907,
+          "opcode": "LOADN",
+          "annotation": "R10 <- -1"
+        },
+        {
+          "pc": 16,
+          "offset": 2911,
+          "opcode": "CALL",
+          "annotation": "R7 <- Vector(0, 0, -1)"
+        },
+        {
+          "pc": 17,
+          "offset": 2915,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:Attach"
+        },
+        {
+          "pc": 19,
+          "offset": 2923,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:Attach(R4..TOP)"
+        },
+        {
+          "pc": 20,
+          "offset": 2927,
+          "opcode": "MOVE",
+          "annotation": "R6 <- R0"
+        },
+        {
+          "pc": 21,
+          "offset": 2931,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- v19:#e4e8607c"
+        },
+        {
+          "pc": 23,
+          "offset": 2939,
+          "opcode": "CALL",
+          "annotation": "v19:#e4e8607c(v19, R0)"
+        },
+        {
+          "pc": 24,
+          "offset": 2943,
+          "opcode": "MOVE",
+          "annotation": "R6 <- R1"
+        },
+        {
+          "pc": 25,
+          "offset": 2947,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- v19:#47cb1af5"
+        },
+        {
+          "pc": 27,
+          "offset": 2955,
+          "opcode": "CALL",
+          "annotation": "v19:#47cb1af5(v19, R1)"
+        },
+        {
+          "pc": 28,
+          "offset": 2959,
+          "opcode": "GETIMPORT",
+          "annotation": "R7 <- amountPerLevel"
+        },
+        {
+          "pc": 30,
+          "offset": 2967,
+          "opcode": "MUL",
+          "annotation": "R6 <- (R2 * amountPerLevel)"
+        },
+        {
+          "pc": 31,
+          "offset": 2971,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- v19:#77b38e3a"
+        },
+        {
+          "pc": 33,
+          "offset": 2979,
+          "opcode": "CALL",
+          "annotation": "v19:#77b38e3a(v19, (R2 * amountPerLevel))"
+        },
+        {
+          "pc": 34,
+          "offset": 2983,
+          "opcode": "GETIMPORT",
+          "annotation": "R6 <- Symbol"
+        },
+        {
+          "pc": 36,
+          "offset": 2991,
+          "opcode": "LOADK",
+          "annotation": "R7 <- \"NeutralPostureTriggerMonitor\""
+        },
+        {
+          "pc": 37,
+          "offset": 2995,
+          "opcode": "CALL",
+          "annotation": "R6 <- Symbol(\"NeutralPostureTriggerMonitor\")"
+        },
+        {
+          "pc": 38,
+          "offset": 2999,
+          "opcode": "LOADB",
+          "annotation": "R7 <- false"
+        },
+        {
+          "pc": 39,
+          "offset": 3003,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R0:#55aca91b"
+        },
+        {
+          "pc": 41,
+          "offset": 3011,
+          "opcode": "CALL",
+          "annotation": "R0:#55aca91b(R0, v37, false)"
+        },
+        {
+          "pc": 42,
+          "offset": 3015,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 13,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 3172,
+          "opcode": "GETIMPORT",
+          "annotation": "R3 <- gRegion"
+        },
+        {
+          "pc": 2,
+          "offset": 3180,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 3,
+          "offset": 3184,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- gRegion:IsMaster"
+        },
+        {
+          "pc": 5,
+          "offset": 3192,
+          "opcode": "CALL",
+          "annotation": "R3 <- gRegion:IsMaster(gRegion)"
+        },
+        {
+          "pc": 6,
+          "offset": 3196,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=15"
+        },
+        {
+          "pc": 7,
+          "offset": 3200,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- neutralPostureDamageTriggerType"
+        },
+        {
+          "pc": 9,
+          "offset": 3208,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#efec1c81"
+        },
+        {
+          "pc": 11,
+          "offset": 3216,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#efec1c81(R0, neutralPostureDamageTriggerType)"
+        },
+        {
+          "pc": 12,
+          "offset": 3220,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- v11:Destroy"
+        },
+        {
+          "pc": 14,
+          "offset": 3228,
+          "opcode": "CALL",
+          "annotation": "v11:Destroy(v11)"
+        },
+        {
+          "pc": 15,
+          "offset": 3232,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 14,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 3305,
+          "opcode": "GETIMPORT",
+          "annotation": "R3 <- gRegion"
+        },
+        {
+          "pc": 2,
+          "offset": 3313,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 3,
+          "offset": 3317,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- gRegion:IsMaster"
+        },
+        {
+          "pc": 5,
+          "offset": 3325,
+          "opcode": "CALL",
+          "annotation": "R3 <- gRegion:IsMaster(gRegion)"
+        },
+        {
+          "pc": 6,
+          "offset": 3329,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=34"
+        },
+        {
+          "pc": 7,
+          "offset": 3333,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#b7f5db56"
+        },
+        {
+          "pc": 9,
+          "offset": 3341,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#b7f5db56(R0)"
+        },
+        {
+          "pc": 10,
+          "offset": 3345,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 11,
+          "offset": 3349,
+          "opcode": "MOVE",
+          "annotation": "R5 <- v9"
+        },
+        {
+          "pc": 12,
+          "offset": 3353,
+          "opcode": "GETIMPORT",
+          "annotation": "R4 <- IsNull"
+        },
+        {
+          "pc": 14,
+          "offset": 3361,
+          "opcode": "CALL",
+          "annotation": "R4 <- IsNull(v9)"
+        },
+        {
+          "pc": 15,
+          "offset": 3365,
+          "opcode": "JUMPIF",
+          "annotation": "R4; target=21"
+        },
+        {
+          "pc": 16,
+          "offset": 3369,
+          "opcode": "GETUPVAL",
+          "annotation": "R6 <- U0"
+        },
+        {
+          "pc": 17,
+          "offset": 3373,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 1"
+        },
+        {
+          "pc": 18,
+          "offset": 3377,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R3:#a95df5e5"
+        },
+        {
+          "pc": 20,
+          "offset": 3385,
+          "opcode": "CALL",
+          "annotation": "R3:#a95df5e5(R3, U0, 1)"
+        },
+        {
+          "pc": 21,
+          "offset": 3389,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R0:InventoryControl"
+        },
+        {
+          "pc": 23,
+          "offset": 3397,
+          "opcode": "CALL",
+          "annotation": "R4 <- R0:InventoryControl(R0)"
+        },
+        {
+          "pc": 24,
+          "offset": 3401,
+          "opcode": "GETUPVAL",
+          "annotation": "R6 <- U1"
+        },
+        {
+          "pc": 25,
+          "offset": 3405,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 65"
+        },
+        {
+          "pc": 26,
+          "offset": 3409,
+          "opcode": "LOADN",
+          "annotation": "R8 <- 3"
+        },
+        {
+          "pc": 27,
+          "offset": 3413,
+          "opcode": "GETIMPORT",
+          "annotation": "R11 <- amountPerLevel"
+        },
+        {
+          "pc": 29,
+          "offset": 3421,
+          "opcode": "MINUS",
+          "annotation": "R10 <- minus(amountPerLevel)"
+        },
+        {
+          "pc": 30,
+          "offset": 3425,
+          "opcode": "MUL",
+          "annotation": "R9 <- (minus(amountPerLevel) * R2)"
+        },
+        {
+          "pc": 31,
+          "offset": 3429,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- v23:#56a2305f"
+        },
+        {
+          "pc": 33,
+          "offset": 3437,
+          "opcode": "CALL",
+          "annotation": "v23:#56a2305f(v23, U1, 65, 3, (minus(amountPerLevel) * R2))"
+        },
+        {
+          "pc": 34,
+          "offset": 3441,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 15,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 3554,
+          "opcode": "GETIMPORT",
+          "annotation": "R3 <- gRegion"
+        },
+        {
+          "pc": 2,
+          "offset": 3562,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 3,
+          "offset": 3566,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- gRegion:IsMaster"
+        },
+        {
+          "pc": 5,
+          "offset": 3574,
+          "opcode": "CALL",
+          "annotation": "R3 <- gRegion:IsMaster(gRegion)"
+        },
+        {
+          "pc": 6,
+          "offset": 3578,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R3; target=39"
+        },
+        {
+          "pc": 7,
+          "offset": 3582,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 8,
+          "offset": 3586,
+          "opcode": "MOVE",
+          "annotation": "R4 <- R0"
+        },
+        {
+          "pc": 9,
+          "offset": 3590,
+          "opcode": "GETIMPORT",
+          "annotation": "R3 <- IsNull"
+        },
+        {
+          "pc": 11,
+          "offset": 3598,
+          "opcode": "CALL",
+          "annotation": "R3 <- IsNull(R0)"
+        },
+        {
+          "pc": 12,
+          "offset": 3602,
+          "opcode": "JUMPIF",
+          "annotation": "R3; target=39"
+        },
+        {
+          "pc": 13,
+          "offset": 3606,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R0:#b7f5db56"
+        },
+        {
+          "pc": 15,
+          "offset": 3614,
+          "opcode": "CALL",
+          "annotation": "R3 <- R0:#b7f5db56(R0)"
+        },
+        {
+          "pc": 16,
+          "offset": 3618,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 17,
+          "offset": 3622,
+          "opcode": "MOVE",
+          "annotation": "R5 <- v15"
+        },
+        {
+          "pc": 18,
+          "offset": 3626,
+          "opcode": "GETIMPORT",
+          "annotation": "R4 <- IsNull"
+        },
+        {
+          "pc": 20,
+          "offset": 3634,
+          "opcode": "CALL",
+          "annotation": "R4 <- IsNull(v15)"
+        },
+        {
+          "pc": 21,
+          "offset": 3638,
+          "opcode": "JUMPIF",
+          "annotation": "R4; target=26"
+        },
+        {
+          "pc": 22,
+          "offset": 3642,
+          "opcode": "GETUPVAL",
+          "annotation": "R6 <- U0"
+        },
+        {
+          "pc": 23,
+          "offset": 3646,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R3:#f71c7bfa"
+        },
+        {
+          "pc": 25,
+          "offset": 3654,
+          "opcode": "CALL",
+          "annotation": "R3:#f71c7bfa(R3, U0)"
+        },
+        {
+          "pc": 26,
+          "offset": 3658,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R0:InventoryControl"
+        },
+        {
+          "pc": 28,
+          "offset": 3666,
+          "opcode": "CALL",
+          "annotation": "R4 <- R0:InventoryControl(R0)"
+        },
+        {
+          "pc": 29,
+          "offset": 3670,
+          "opcode": "GETUPVAL",
+          "annotation": "R6 <- U1"
+        },
+        {
+          "pc": 30,
+          "offset": 3674,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 65"
+        },
+        {
+          "pc": 31,
+          "offset": 3678,
+          "opcode": "LOADN",
+          "annotation": "R8 <- 3"
+        },
+        {
+          "pc": 32,
+          "offset": 3682,
+          "opcode": "GETIMPORT",
+          "annotation": "R11 <- amountPerLevel"
+        },
+        {
+          "pc": 34,
+          "offset": 3690,
+          "opcode": "MINUS",
+          "annotation": "R10 <- minus(amountPerLevel)"
+        },
+        {
+          "pc": 35,
+          "offset": 3694,
+          "opcode": "MUL",
+          "annotation": "R9 <- (minus(amountPerLevel) * R2)"
+        },
+        {
+          "pc": 36,
+          "offset": 3698,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- v28:#872cea58"
+        },
+        {
+          "pc": 38,
+          "offset": 3706,
+          "opcode": "CALL",
+          "annotation": "v28:#872cea58(v28, U1, 65, 3, (minus(amountPerLevel) * R2))"
+        },
+        {
+          "pc": 39,
+          "offset": 3710,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 16,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 3828,
+          "opcode": "GETIMPORT",
+          "annotation": "R6 <- protectorTrainingWeak"
+        },
+        {
+          "pc": 2,
+          "offset": 3836,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R0:#7db4ef8d"
+        },
+        {
+          "pc": 4,
+          "offset": 3844,
+          "opcode": "CALL",
+          "annotation": "R4 <- R0:#7db4ef8d(R0, protectorTrainingWeak)"
+        },
+        {
+          "pc": 5,
+          "offset": 3848,
+          "opcode": "NAMECALL",
+          "annotation": "R8 <- v4:#61efc550"
+        },
+        {
+          "pc": 7,
+          "offset": 3856,
+          "opcode": "CALL",
+          "annotation": "R8 <- v4:#61efc550(v4)"
+        },
+        {
+          "pc": 8,
+          "offset": 3860,
+          "opcode": "NAMECALL",
+          "annotation": "R6 <- v4:#7f03f745"
+        },
+        {
+          "pc": 10,
+          "offset": 3868,
+          "opcode": "CALL",
+          "annotation": "R6 <- v4:#7f03f745(R7..TOP)"
+        },
+        {
+          "pc": 11,
+          "offset": 3872,
+          "opcode": "ADDK",
+          "annotation": "R5 <- (v10 + 1.0)"
+        },
+        {
+          "pc": 12,
+          "offset": 3876,
+          "opcode": "GETIMPORT",
+          "annotation": "R6 <- Engine.DamageData"
+        },
+        {
+          "pc": 14,
+          "offset": 3884,
+          "opcode": "CALL",
+          "annotation": "R6 <- Engine.DamageData()"
+        },
+        {
+          "pc": 15,
+          "offset": 3888,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 0"
+        },
+        {
+          "pc": 16,
+          "offset": 3892,
+          "opcode": "SETTABLEKS",
+          "annotation": "v14[\"baseAmount\"] <- 0"
+        },
+        {
+          "pc": 18,
+          "offset": 3900,
+          "opcode": "LOADN",
+          "annotation": "R9 <- 1"
+        },
+        {
+          "pc": 19,
+          "offset": 3904,
+          "opcode": "GETIMPORT",
+          "annotation": "R11 <- amountPerLevel"
+        },
+        {
+          "pc": 21,
+          "offset": 3912,
+          "opcode": "MUL",
+          "annotation": "R10 <- (amountPerLevel * (v10 + 1.0))"
+        },
+        {
+          "pc": 22,
+          "offset": 3916,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v14:#cb11565a"
+        },
+        {
+          "pc": 24,
+          "offset": 3924,
+          "opcode": "CALL",
+          "annotation": "v14:#cb11565a(v14, 1, (amountPerLevel * (v10 + 1.0)))"
+        },
+        {
+          "pc": 25,
+          "offset": 3928,
+          "opcode": "NAMECALL",
+          "annotation": "R9 <- R1:#2b2ed1e7"
+        },
+        {
+          "pc": 27,
+          "offset": 3936,
+          "opcode": "CALL",
+          "annotation": "R9 <- R1:#2b2ed1e7(R1)"
+        },
+        {
+          "pc": 28,
+          "offset": 3940,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v14:#a6366231"
+        },
+        {
+          "pc": 30,
+          "offset": 3948,
+          "opcode": "CALL",
+          "annotation": "v14:#a6366231(R8..TOP)"
+        },
+        {
+          "pc": 31,
+          "offset": 3952,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 5"
+        },
+        {
+          "pc": 32,
+          "offset": 3956,
+          "opcode": "SETTABLEKS",
+          "annotation": "v14[\"hitType\"] <- 5"
+        },
+        {
+          "pc": 34,
+          "offset": 3964,
+          "opcode": "MOVE",
+          "annotation": "R9 <- R0"
+        },
+        {
+          "pc": 35,
+          "offset": 3968,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v14:#47cb1af5"
+        },
+        {
+          "pc": 37,
+          "offset": 3976,
+          "opcode": "CALL",
+          "annotation": "v14:#47cb1af5(v14, R0)"
+        },
+        {
+          "pc": 38,
+          "offset": 3980,
+          "opcode": "MOVE",
+          "annotation": "R9 <- R3"
+        },
+        {
+          "pc": 39,
+          "offset": 3984,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v14:SetSource"
+        },
+        {
+          "pc": 41,
+          "offset": 3992,
+          "opcode": "CALL",
+          "annotation": "v14:SetSource(v14, R3)"
+        },
+        {
+          "pc": 42,
+          "offset": 3996,
+          "opcode": "MOVE",
+          "annotation": "R9 <- v14"
+        },
+        {
+          "pc": 43,
+          "offset": 4000,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- R2:#053d681d"
+        },
+        {
+          "pc": 45,
+          "offset": 4008,
+          "opcode": "CALL",
+          "annotation": "R2:#053d681d(R2, v14)"
+        },
+        {
+          "pc": 46,
+          "offset": 4012,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 17,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 4175,
+          "opcode": "MOVE",
+          "annotation": "R5 <- R4"
+        },
+        {
+          "pc": 1,
+          "offset": 4179,
+          "opcode": "LOADN",
+          "annotation": "R8 <- 0"
+        },
+        {
+          "pc": 2,
+          "offset": 4183,
+          "opcode": "NAMECALL",
+          "annotation": "R6 <- R1:#13dfb260"
+        },
+        {
+          "pc": 4,
+          "offset": 4191,
+          "opcode": "CALL",
+          "annotation": "R6 <- R1:#13dfb260(R1, 0)"
+        },
+        {
+          "pc": 5,
+          "offset": 4195,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R6; target=7"
+        },
+        {
+          "pc": 6,
+          "offset": 4199,
+          "opcode": "ADDK",
+          "annotation": "R5 <- (R5 + 1.0)"
+        },
+        {
+          "pc": 7,
+          "offset": 4203,
+          "opcode": "LOADN",
+          "annotation": "R6 <- 0"
+        },
+        {
+          "pc": 8,
+          "offset": 4207,
+          "opcode": "JUMPIFNOTLT",
+          "annotation": "R6; target=42; AUX=0x5"
+        },
+        {
+          "pc": 10,
+          "offset": 4215,
+          "opcode": "GETIMPORT",
+          "annotation": "R6 <- Engine.DamageData"
+        },
+        {
+          "pc": 12,
+          "offset": 4223,
+          "opcode": "CALL",
+          "annotation": "R6 <- Engine.DamageData()"
+        },
+        {
+          "pc": 13,
+          "offset": 4227,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 0"
+        },
+        {
+          "pc": 14,
+          "offset": 4231,
+          "opcode": "SETTABLEKS",
+          "annotation": "v12[\"baseAmount\"] <- 0"
+        },
+        {
+          "pc": 16,
+          "offset": 4239,
+          "opcode": "LOADN",
+          "annotation": "R9 <- 10"
+        },
+        {
+          "pc": 17,
+          "offset": 4243,
+          "opcode": "MOVE",
+          "annotation": "R10 <- R5"
+        },
+        {
+          "pc": 18,
+          "offset": 4247,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v12:#cb11565a"
+        },
+        {
+          "pc": 20,
+          "offset": 4255,
+          "opcode": "CALL",
+          "annotation": "v12:#cb11565a(v12, 10, R5)"
+        },
+        {
+          "pc": 21,
+          "offset": 4259,
+          "opcode": "NAMECALL",
+          "annotation": "R9 <- R1:#2b2ed1e7"
+        },
+        {
+          "pc": 23,
+          "offset": 4267,
+          "opcode": "CALL",
+          "annotation": "R9 <- R1:#2b2ed1e7(R1)"
+        },
+        {
+          "pc": 24,
+          "offset": 4271,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v12:#a6366231"
+        },
+        {
+          "pc": 26,
+          "offset": 4279,
+          "opcode": "CALL",
+          "annotation": "v12:#a6366231(R8..TOP)"
+        },
+        {
+          "pc": 27,
+          "offset": 4283,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 5"
+        },
+        {
+          "pc": 28,
+          "offset": 4287,
+          "opcode": "SETTABLEKS",
+          "annotation": "v12[\"hitType\"] <- 5"
+        },
+        {
+          "pc": 30,
+          "offset": 4295,
+          "opcode": "MOVE",
+          "annotation": "R9 <- R0"
+        },
+        {
+          "pc": 31,
+          "offset": 4299,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v12:#47cb1af5"
+        },
+        {
+          "pc": 33,
+          "offset": 4307,
+          "opcode": "CALL",
+          "annotation": "v12:#47cb1af5(v12, R0)"
+        },
+        {
+          "pc": 34,
+          "offset": 4311,
+          "opcode": "MOVE",
+          "annotation": "R9 <- R3"
+        },
+        {
+          "pc": 35,
+          "offset": 4315,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v12:SetSource"
+        },
+        {
+          "pc": 37,
+          "offset": 4323,
+          "opcode": "CALL",
+          "annotation": "v12:SetSource(v12, R3)"
+        },
+        {
+          "pc": 38,
+          "offset": 4327,
+          "opcode": "MOVE",
+          "annotation": "R9 <- v12"
+        },
+        {
+          "pc": 39,
+          "offset": 4331,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- R2:#053d681d"
+        },
+        {
+          "pc": 41,
+          "offset": 4339,
+          "opcode": "CALL",
+          "annotation": "R2:#053d681d(R2, v12)"
+        },
+        {
+          "pc": 42,
+          "offset": 4343,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 18,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 4472,
+          "opcode": "GETIMPORT",
+          "annotation": "R6 <- reelingImpactWeak"
+        },
+        {
+          "pc": 2,
+          "offset": 4480,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R0:#7db4ef8d"
+        },
+        {
+          "pc": 4,
+          "offset": 4488,
+          "opcode": "CALL",
+          "annotation": "R4 <- R0:#7db4ef8d(R0, reelingImpactWeak)"
+        },
+        {
+          "pc": 5,
+          "offset": 4492,
+          "opcode": "NAMECALL",
+          "annotation": "R8 <- v4:#61efc550"
+        },
+        {
+          "pc": 7,
+          "offset": 4500,
+          "opcode": "CALL",
+          "annotation": "R8 <- v4:#61efc550(v4)"
+        },
+        {
+          "pc": 8,
+          "offset": 4504,
+          "opcode": "NAMECALL",
+          "annotation": "R6 <- v4:#7f03f745"
+        },
+        {
+          "pc": 10,
+          "offset": 4512,
+          "opcode": "CALL",
+          "annotation": "R6 <- v4:#7f03f745(R7..TOP)"
+        },
+        {
+          "pc": 11,
+          "offset": 4516,
+          "opcode": "ADDK",
+          "annotation": "R5 <- (v10 + 1.0)"
+        },
+        {
+          "pc": 12,
+          "offset": 4520,
+          "opcode": "GETIMPORT",
+          "annotation": "R6 <- Engine.DamageData"
+        },
+        {
+          "pc": 14,
+          "offset": 4528,
+          "opcode": "CALL",
+          "annotation": "R6 <- Engine.DamageData()"
+        },
+        {
+          "pc": 15,
+          "offset": 4532,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 0"
+        },
+        {
+          "pc": 16,
+          "offset": 4536,
+          "opcode": "SETTABLEKS",
+          "annotation": "v14[\"baseAmount\"] <- 0"
+        },
+        {
+          "pc": 18,
+          "offset": 4544,
+          "opcode": "LOADN",
+          "annotation": "R9 <- 0"
+        },
+        {
+          "pc": 19,
+          "offset": 4548,
+          "opcode": "MOVE",
+          "annotation": "R10 <- (v10 + 1.0)"
+        },
+        {
+          "pc": 20,
+          "offset": 4552,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v14:#cb11565a"
+        },
+        {
+          "pc": 22,
+          "offset": 4560,
+          "opcode": "CALL",
+          "annotation": "v14:#cb11565a(v14, 0, (v10 + 1.0))"
+        },
+        {
+          "pc": 23,
+          "offset": 4564,
+          "opcode": "NAMECALL",
+          "annotation": "R9 <- R1:#2b2ed1e7"
+        },
+        {
+          "pc": 25,
+          "offset": 4572,
+          "opcode": "CALL",
+          "annotation": "R9 <- R1:#2b2ed1e7(R1)"
+        },
+        {
+          "pc": 26,
+          "offset": 4576,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v14:#a6366231"
+        },
+        {
+          "pc": 28,
+          "offset": 4584,
+          "opcode": "CALL",
+          "annotation": "v14:#a6366231(R8..TOP)"
+        },
+        {
+          "pc": 29,
+          "offset": 4588,
+          "opcode": "LOADN",
+          "annotation": "R7 <- 5"
+        },
+        {
+          "pc": 30,
+          "offset": 4592,
+          "opcode": "SETTABLEKS",
+          "annotation": "v14[\"hitType\"] <- 5"
+        },
+        {
+          "pc": 32,
+          "offset": 4600,
+          "opcode": "MOVE",
+          "annotation": "R9 <- R0"
+        },
+        {
+          "pc": 33,
+          "offset": 4604,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v14:#47cb1af5"
+        },
+        {
+          "pc": 35,
+          "offset": 4612,
+          "opcode": "CALL",
+          "annotation": "v14:#47cb1af5(v14, R0)"
+        },
+        {
+          "pc": 36,
+          "offset": 4616,
+          "opcode": "MOVE",
+          "annotation": "R9 <- R3"
+        },
+        {
+          "pc": 37,
+          "offset": 4620,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v14:SetSource"
+        },
+        {
+          "pc": 39,
+          "offset": 4628,
+          "opcode": "CALL",
+          "annotation": "v14:SetSource(v14, R3)"
+        },
+        {
+          "pc": 40,
+          "offset": 4632,
+          "opcode": "MOVE",
+          "annotation": "R9 <- v14"
+        },
+        {
+          "pc": 41,
+          "offset": 4636,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- R2:#053d681d"
+        },
+        {
+          "pc": 43,
+          "offset": 4644,
+          "opcode": "CALL",
+          "annotation": "R2:#053d681d(R2, v14)"
+        },
+        {
+          "pc": 44,
+          "offset": 4648,
+          "opcode": "RETURN",
+          "annotation": "(v10 + 1.0)"
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 19,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 4799,
+          "opcode": "DUPTABLE",
+          "annotation": "R1 <- table(K1)@0"
+        },
+        {
+          "pc": 1,
+          "offset": 4803,
+          "opcode": "GETIMPORT",
+          "annotation": "R5 <- chancePerLevel"
+        },
+        {
+          "pc": 3,
+          "offset": 4811,
+          "opcode": "MUL",
+          "annotation": "R4 <- (chancePerLevel * R0)"
+        },
+        {
+          "pc": 4,
+          "offset": 4815,
+          "opcode": "MULK",
+          "annotation": "R3 <- ((chancePerLevel * R0) * 100.0)"
+        },
+        {
+          "pc": 5,
+          "offset": 4819,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 6,
+          "offset": 4823,
+          "opcode": "GETIMPORT",
+          "annotation": "R2 <- math.floor"
+        },
+        {
+          "pc": 8,
+          "offset": 4831,
+          "opcode": "CALL",
+          "annotation": "R2 <- math.floor(((chancePerLevel * R0) * 100.0))"
+        },
+        {
+          "pc": 9,
+          "offset": 4835,
+          "opcode": "SETTABLEKS",
+          "annotation": "table(K1)@0[\"CHANCE\"] <- v8"
+        },
+        {
+          "pc": 11,
+          "offset": 4843,
+          "opcode": "GETIMPORT",
+          "annotation": "R2 <- cjson.encode"
+        },
+        {
+          "pc": 13,
+          "offset": 4851,
+          "opcode": "MOVE",
+          "annotation": "R3 <- table(K1)@0"
+        },
+        {
+          "pc": 14,
+          "offset": 4855,
+          "opcode": "CALL",
+          "annotation": "R2 <- cjson.encode(table(K1)@0)"
+        },
+        {
+          "pc": 15,
+          "offset": 4859,
+          "opcode": "RETURN",
+          "annotation": "R2..TOP"
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 20,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 4952,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R3:IsKilled"
+        },
+        {
+          "pc": 2,
+          "offset": 4960,
+          "opcode": "CALL",
+          "annotation": "R4 <- R3:IsKilled(R3)"
+        },
+        {
+          "pc": 3,
+          "offset": 4964,
+          "opcode": "JUMPIF",
+          "annotation": "R4; target=38"
+        },
+        {
+          "pc": 4,
+          "offset": 4968,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R3:#a10c08e1"
+        },
+        {
+          "pc": 6,
+          "offset": 4976,
+          "opcode": "CALL",
+          "annotation": "R4 <- R3:#a10c08e1(R3)"
+        },
+        {
+          "pc": 7,
+          "offset": 4980,
+          "opcode": "JUMPIF",
+          "annotation": "R4; target=38"
+        },
+        {
+          "pc": 8,
+          "offset": 4984,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R2:#402a3166"
+        },
+        {
+          "pc": 10,
+          "offset": 4992,
+          "opcode": "CALL",
+          "annotation": "R4 <- R2:#402a3166(R2)"
+        },
+        {
+          "pc": 11,
+          "offset": 4996,
+          "opcode": "LOADN",
+          "annotation": "R6 <- 2"
+        },
+        {
+          "pc": 12,
+          "offset": 5000,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- v10:#e6841eeb"
+        },
+        {
+          "pc": 14,
+          "offset": 5008,
+          "opcode": "CALL",
+          "annotation": "R4 <- v10:#e6841eeb(v10, 2)"
+        },
+        {
+          "pc": 15,
+          "offset": 5012,
+          "opcode": "LOADN",
+          "annotation": "R5 <- 0"
+        },
+        {
+          "pc": 16,
+          "offset": 5016,
+          "opcode": "JUMPIFNOTLT",
+          "annotation": "R5; target=38; AUX=0x4"
+        },
+        {
+          "pc": 18,
+          "offset": 5024,
+          "opcode": "GETIMPORT",
+          "annotation": "R7 <- lifestealWeak"
+        },
+        {
+          "pc": 20,
+          "offset": 5032,
+          "opcode": "NAMECALL",
+          "annotation": "R5 <- R0:#7db4ef8d"
+        },
+        {
+          "pc": 22,
+          "offset": 5040,
+          "opcode": "CALL",
+          "annotation": "R5 <- R0:#7db4ef8d(R0, lifestealWeak)"
+        },
+        {
+          "pc": 23,
+          "offset": 5044,
+          "opcode": "NAMECALL",
+          "annotation": "R9 <- v22:#61efc550"
+        },
+        {
+          "pc": 25,
+          "offset": 5052,
+          "opcode": "CALL",
+          "annotation": "R9 <- v22:#61efc550(v22)"
+        },
+        {
+          "pc": 26,
+          "offset": 5056,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- v22:#7f03f745"
+        },
+        {
+          "pc": 28,
+          "offset": 5064,
+          "opcode": "CALL",
+          "annotation": "R7 <- v22:#7f03f745(R8..TOP)"
+        },
+        {
+          "pc": 29,
+          "offset": 5068,
+          "opcode": "ADDK",
+          "annotation": "R6 <- (v28 + 1.0)"
+        },
+        {
+          "pc": 30,
+          "offset": 5072,
+          "opcode": "MOVE",
+          "annotation": "R9 <- R3"
+        },
+        {
+          "pc": 31,
+          "offset": 5076,
+          "opcode": "GETIMPORT",
+          "annotation": "R12 <- healPerLevel"
+        },
+        {
+          "pc": 33,
+          "offset": 5084,
+          "opcode": "MUL",
+          "annotation": "R11 <- (healPerLevel * R4)"
+        },
+        {
+          "pc": 34,
+          "offset": 5088,
+          "opcode": "MUL",
+          "annotation": "R10 <- ((healPerLevel * R4) * (v28 + 1.0))"
+        },
+        {
+          "pc": 35,
+          "offset": 5092,
+          "opcode": "NAMECALL",
+          "annotation": "R7 <- R3:Heal"
+        },
+        {
+          "pc": 37,
+          "offset": 5100,
+          "opcode": "CALL",
+          "annotation": "R3:Heal(R3, R3, ((healPerLevel * R4) * (v28 + 1.0)))"
+        },
+        {
+          "pc": 38,
+          "offset": 5104,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 21,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 5235,
+          "opcode": "NAMECALL",
+          "annotation": "R3 <- R1:#de8cd305"
+        },
+        {
+          "pc": 2,
+          "offset": 5243,
+          "opcode": "CALL",
+          "annotation": "R3 <- R1:#de8cd305(R1)"
+        },
+        {
+          "pc": 3,
+          "offset": 5247,
+          "opcode": "GETIMPORT",
+          "annotation": "R4 <- gRegion"
+        },
+        {
+          "pc": 5,
+          "offset": 5255,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 6,
+          "offset": 5259,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- gRegion:IsMaster"
+        },
+        {
+          "pc": 8,
+          "offset": 5267,
+          "opcode": "CALL",
+          "annotation": "R4 <- gRegion:IsMaster(gRegion)"
+        },
+        {
+          "pc": 9,
+          "offset": 5271,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R4; target=51"
+        },
+        {
+          "pc": 10,
+          "offset": 5275,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 11,
+          "offset": 5279,
+          "opcode": "MOVE",
+          "annotation": "R5 <- R2"
+        },
+        {
+          "pc": 12,
+          "offset": 5283,
+          "opcode": "GETIMPORT",
+          "annotation": "R4 <- IsNull"
+        },
+        {
+          "pc": 14,
+          "offset": 5291,
+          "opcode": "CALL",
+          "annotation": "R4 <- IsNull(R2)"
+        },
+        {
+          "pc": 15,
+          "offset": 5295,
+          "opcode": "JUMPIF",
+          "annotation": "R4; target=51"
+        },
+        {
+          "pc": 16,
+          "offset": 5299,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R2:IsKilled"
+        },
+        {
+          "pc": 18,
+          "offset": 5307,
+          "opcode": "CALL",
+          "annotation": "R4 <- R2:IsKilled(R2)"
+        },
+        {
+          "pc": 19,
+          "offset": 5311,
+          "opcode": "JUMPIF",
+          "annotation": "R4; target=51"
+        },
+        {
+          "pc": 20,
+          "offset": 5315,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 21,
+          "offset": 5319,
+          "opcode": "MOVE",
+          "annotation": "R5 <- R0"
+        },
+        {
+          "pc": 22,
+          "offset": 5323,
+          "opcode": "GETIMPORT",
+          "annotation": "R4 <- IsNull"
+        },
+        {
+          "pc": 24,
+          "offset": 5331,
+          "opcode": "CALL",
+          "annotation": "R4 <- IsNull(R0)"
+        },
+        {
+          "pc": 25,
+          "offset": 5335,
+          "opcode": "JUMPIF",
+          "annotation": "R4; target=51"
+        },
+        {
+          "pc": 26,
+          "offset": 5339,
+          "opcode": "FASTCALL1",
+          "annotation": ""
+        },
+        {
+          "pc": 27,
+          "offset": 5343,
+          "opcode": "MOVE",
+          "annotation": "R5 <- R3"
+        },
+        {
+          "pc": 28,
+          "offset": 5347,
+          "opcode": "GETIMPORT",
+          "annotation": "R4 <- IsNull"
+        },
+        {
+          "pc": 30,
+          "offset": 5355,
+          "opcode": "CALL",
+          "annotation": "R4 <- IsNull(R3)"
+        },
+        {
+          "pc": 31,
+          "offset": 5359,
+          "opcode": "JUMPIF",
+          "annotation": "R4; target=51"
+        },
+        {
+          "pc": 32,
+          "offset": 5363,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R1:#29ccb9ce"
+        },
+        {
+          "pc": 34,
+          "offset": 5371,
+          "opcode": "CALL",
+          "annotation": "R4 <- R1:#29ccb9ce(R1)"
+        },
+        {
+          "pc": 35,
+          "offset": 5375,
+          "opcode": "LOADN",
+          "annotation": "R5 <- 3"
+        },
+        {
+          "pc": 36,
+          "offset": 5379,
+          "opcode": "JUMPIFNOTEQ",
+          "annotation": "R4; target=51; AUX=0x5"
+        },
+        {
+          "pc": 38,
+          "offset": 5387,
+          "opcode": "MOVE",
+          "annotation": "R6 <- R2"
+        },
+        {
+          "pc": 39,
+          "offset": 5391,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R3:#b17a29c2"
+        },
+        {
+          "pc": 41,
+          "offset": 5399,
+          "opcode": "CALL",
+          "annotation": "R4 <- R3:#b17a29c2(R3, R2)"
+        },
+        {
+          "pc": 42,
+          "offset": 5403,
+          "opcode": "JUMPIF",
+          "annotation": "R4; target=51"
+        },
+        {
+          "pc": 43,
+          "offset": 5407,
+          "opcode": "GETIMPORT",
+          "annotation": "R6 <- gLotusAvatarType"
+        },
+        {
+          "pc": 45,
+          "offset": 5415,
+          "opcode": "FASTCALL2",
+          "annotation": ""
+        },
+        {
+          "pc": 47,
+          "offset": 5423,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R2:#2888fc5c"
+        },
+        {
+          "pc": 49,
+          "offset": 5431,
+          "opcode": "CALL",
+          "annotation": "R4 <- R2:#2888fc5c(R2, gLotusAvatarType)"
+        },
+        {
+          "pc": 50,
+          "offset": 5435,
+          "opcode": "JUMPIF",
+          "annotation": "R4; target=52"
+        },
+        {
+          "pc": 51,
+          "offset": 5439,
+          "opcode": "RETURN",
+          "annotation": ""
+        },
+        {
+          "pc": 52,
+          "offset": 5443,
+          "opcode": "GETIMPORT",
+          "annotation": "R6 <- protectorTrainingWeak"
+        },
+        {
+          "pc": 54,
+          "offset": 5451,
+          "opcode": "NAMECALL",
+          "annotation": "R4 <- R0:#60242dd4"
+        },
+        {
+          "pc": 56,
+          "offset": 5459,
+          "opcode": "CALL",
+          "annotation": "R4 <- R0:#60242dd4(R0, protectorTrainingWeak)"
+        },
+        {
+          "pc": 57,
+          "offset": 5463,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R4; target=64"
+        },
+        {
+          "pc": 58,
+          "offset": 5467,
+          "opcode": "GETUPVAL",
+          "annotation": "R4 <- U0"
+        },
+        {
+          "pc": 59,
+          "offset": 5471,
+          "opcode": "MOVE",
+          "annotation": "R5 <- R0"
+        },
+        {
+          "pc": 60,
+          "offset": 5475,
+          "opcode": "MOVE",
+          "annotation": "R6 <- R1"
+        },
+        {
+          "pc": 61,
+          "offset": 5479,
+          "opcode": "MOVE",
+          "annotation": "R7 <- R2"
+        },
+        {
+          "pc": 62,
+          "offset": 5483,
+          "opcode": "MOVE",
+          "annotation": "R8 <- R3"
+        },
+        {
+          "pc": 63,
+          "offset": 5487,
+          "opcode": "CALL",
+          "annotation": "U0(R0, R1, R2, R3)"
+        },
+        {
+          "pc": 64,
+          "offset": 5491,
+          "opcode": "LOADN",
+          "annotation": "R4 <- 0"
+        },
+        {
+          "pc": 65,
+          "offset": 5495,
+          "opcode": "GETIMPORT",
+          "annotation": "R7 <- reelingImpactWeak"
+        },
+        {
+          "pc": 67,
+          "offset": 5503,
+          "opcode": "NAMECALL",
+          "annotation": "R5 <- R0:#60242dd4"
+        },
+        {
+          "pc": 69,
+          "offset": 5511,
+          "opcode": "CALL",
+          "annotation": "R5 <- R0:#60242dd4(R0, reelingImpactWeak)"
+        },
+        {
+          "pc": 70,
+          "offset": 5515,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R5; target=78"
+        },
+        {
+          "pc": 71,
+          "offset": 5519,
+          "opcode": "GETUPVAL",
+          "annotation": "R5 <- U1"
+        },
+        {
+          "pc": 72,
+          "offset": 5523,
+          "opcode": "MOVE",
+          "annotation": "R6 <- R0"
+        },
+        {
+          "pc": 73,
+          "offset": 5527,
+          "opcode": "MOVE",
+          "annotation": "R7 <- R1"
+        },
+        {
+          "pc": 74,
+          "offset": 5531,
+          "opcode": "MOVE",
+          "annotation": "R8 <- R2"
+        },
+        {
+          "pc": 75,
+          "offset": 5535,
+          "opcode": "MOVE",
+          "annotation": "R9 <- R3"
+        },
+        {
+          "pc": 76,
+          "offset": 5539,
+          "opcode": "CALL",
+          "annotation": "R5 <- U1(R0, R1, R2, R3)"
+        },
+        {
+          "pc": 77,
+          "offset": 5543,
+          "opcode": "MOVE",
+          "annotation": "R4 <- v76"
+        },
+        {
+          "pc": 78,
+          "offset": 5547,
+          "opcode": "GETIMPORT",
+          "annotation": "R7 <- magneticImpactWeak"
+        },
+        {
+          "pc": 80,
+          "offset": 5555,
+          "opcode": "NAMECALL",
+          "annotation": "R5 <- R0:#60242dd4"
+        },
+        {
+          "pc": 82,
+          "offset": 5563,
+          "opcode": "CALL",
+          "annotation": "R5 <- R0:#60242dd4(R0, magneticImpactWeak)"
+        },
+        {
+          "pc": 83,
+          "offset": 5567,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R5; target=91"
+        },
+        {
+          "pc": 84,
+          "offset": 5571,
+          "opcode": "GETUPVAL",
+          "annotation": "R5 <- U2"
+        },
+        {
+          "pc": 85,
+          "offset": 5575,
+          "opcode": "MOVE",
+          "annotation": "R6 <- R0"
+        },
+        {
+          "pc": 86,
+          "offset": 5579,
+          "opcode": "MOVE",
+          "annotation": "R7 <- R1"
+        },
+        {
+          "pc": 87,
+          "offset": 5583,
+          "opcode": "MOVE",
+          "annotation": "R8 <- R2"
+        },
+        {
+          "pc": 88,
+          "offset": 5587,
+          "opcode": "MOVE",
+          "annotation": "R9 <- R3"
+        },
+        {
+          "pc": 89,
+          "offset": 5591,
+          "opcode": "MOVE",
+          "annotation": "R10 <- R4"
+        },
+        {
+          "pc": 90,
+          "offset": 5595,
+          "opcode": "CALL",
+          "annotation": "U2(R0, R1, R2, R3, R4)"
+        },
+        {
+          "pc": 91,
+          "offset": 5599,
+          "opcode": "GETIMPORT",
+          "annotation": "R7 <- lifestealWeak"
+        },
+        {
+          "pc": 93,
+          "offset": 5607,
+          "opcode": "NAMECALL",
+          "annotation": "R5 <- R0:#60242dd4"
+        },
+        {
+          "pc": 95,
+          "offset": 5615,
+          "opcode": "CALL",
+          "annotation": "R5 <- R0:#60242dd4(R0, lifestealWeak)"
+        },
+        {
+          "pc": 96,
+          "offset": 5619,
+          "opcode": "JUMPIFNOT",
+          "annotation": "R5; target=103"
+        },
+        {
+          "pc": 97,
+          "offset": 5623,
+          "opcode": "GETUPVAL",
+          "annotation": "R5 <- U3"
+        },
+        {
+          "pc": 98,
+          "offset": 5627,
+          "opcode": "MOVE",
+          "annotation": "R6 <- R0"
+        },
+        {
+          "pc": 99,
+          "offset": 5631,
+          "opcode": "MOVE",
+          "annotation": "R7 <- R1"
+        },
+        {
+          "pc": 100,
+          "offset": 5635,
+          "opcode": "MOVE",
+          "annotation": "R8 <- R2"
+        },
+        {
+          "pc": 101,
+          "offset": 5639,
+          "opcode": "MOVE",
+          "annotation": "R9 <- R3"
+        },
+        {
+          "pc": 102,
+          "offset": 5643,
+          "opcode": "CALL",
+          "annotation": "U3(R0, R1, R2, R3)"
+        },
+        {
+          "pc": 103,
+          "offset": 5647,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    },
+    {
+      "script": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/PostureMods.lua",
+      "stem": "B.Font--05a1e3a6a48628d9a466",
+      "proto": 22,
+      "lines": [
+        {
+          "pc": 0,
+          "offset": 5879,
+          "opcode": "PREPVARARGS",
+          "annotation": ""
+        },
+        {
+          "pc": 1,
+          "offset": 5883,
+          "opcode": "GETIMPORT",
+          "annotation": "R0 <- require"
+        },
+        {
+          "pc": 3,
+          "offset": 5891,
+          "opcode": "LOADK",
+          "annotation": "R1 <- \"EE.Interface.Utilities\""
+        },
+        {
+          "pc": 4,
+          "offset": 5895,
+          "opcode": "CALL",
+          "annotation": "R0 <- require(\"EE.Interface.Utilities\")"
+        },
+        {
+          "pc": 5,
+          "offset": 5899,
+          "opcode": "GETIMPORT",
+          "annotation": "R1 <- Symbol"
+        },
+        {
+          "pc": 7,
+          "offset": 5907,
+          "opcode": "LOADK",
+          "annotation": "R2 <- \"PostureExtraEffect\""
+        },
+        {
+          "pc": 8,
+          "offset": 5911,
+          "opcode": "CALL",
+          "annotation": "R1 <- Symbol(\"PostureExtraEffect\")"
+        },
+        {
+          "pc": 9,
+          "offset": 5915,
+          "opcode": "GETIMPORT",
+          "annotation": "R2 <- Symbol"
+        },
+        {
+          "pc": 11,
+          "offset": 5923,
+          "opcode": "LOADK",
+          "annotation": "R3 <- \"PassivePosture\""
+        },
+        {
+          "pc": 12,
+          "offset": 5927,
+          "opcode": "CALL",
+          "annotation": "R2 <- Symbol(\"PassivePosture\")"
+        },
+        {
+          "pc": 13,
+          "offset": 5931,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto0"
+        },
+        {
+          "pc": 14,
+          "offset": 5935,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 15,
+          "offset": 5939,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"GetDescription\" <- proto0"
+        },
+        {
+          "pc": 17,
+          "offset": 5947,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto1"
+        },
+        {
+          "pc": 18,
+          "offset": 5951,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 19,
+          "offset": 5955,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"EximusPosture\" <- proto1"
+        },
+        {
+          "pc": 21,
+          "offset": 5963,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto2"
+        },
+        {
+          "pc": 22,
+          "offset": 5967,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 23,
+          "offset": 5971,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"UnapplyEximusPosture\" <- proto2"
+        },
+        {
+          "pc": 25,
+          "offset": 5979,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto3"
+        },
+        {
+          "pc": 26,
+          "offset": 5983,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 27,
+          "offset": 5987,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"SameTargetPosture\" <- proto3"
+        },
+        {
+          "pc": 29,
+          "offset": 5995,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto4"
+        },
+        {
+          "pc": 30,
+          "offset": 5999,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 31,
+          "offset": 6003,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"UnapplySameTargetPosture\" <- proto4"
+        },
+        {
+          "pc": 33,
+          "offset": 6011,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto5"
+        },
+        {
+          "pc": 34,
+          "offset": 6015,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 35,
+          "offset": 6019,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"DifferentTargetPosture\" <- proto5"
+        },
+        {
+          "pc": 37,
+          "offset": 6027,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto6"
+        },
+        {
+          "pc": 38,
+          "offset": 6031,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 39,
+          "offset": 6035,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"UnapplyDifferentTargetPosture\" <- proto6"
+        },
+        {
+          "pc": 41,
+          "offset": 6043,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto7"
+        },
+        {
+          "pc": 42,
+          "offset": 6047,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"GetProtectorDescription\" <- proto7"
+        },
+        {
+          "pc": 44,
+          "offset": 6055,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto8"
+        },
+        {
+          "pc": 45,
+          "offset": 6059,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"ProtectorPosture\" <- proto8"
+        },
+        {
+          "pc": 47,
+          "offset": 6067,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto9"
+        },
+        {
+          "pc": 48,
+          "offset": 6071,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"UnapplyProtectorPosture\" <- proto9"
+        },
+        {
+          "pc": 50,
+          "offset": 6079,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto10"
+        },
+        {
+          "pc": 51,
+          "offset": 6083,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"NeutralPostureTriggerMonitor\" <- proto10"
+        },
+        {
+          "pc": 53,
+          "offset": 6091,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto11"
+        },
+        {
+          "pc": 54,
+          "offset": 6095,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 55,
+          "offset": 6099,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"GetNeutralDescription\" <- proto11"
+        },
+        {
+          "pc": 57,
+          "offset": 6107,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto12"
+        },
+        {
+          "pc": 58,
+          "offset": 6111,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"NeutralPosture\" <- proto12"
+        },
+        {
+          "pc": 60,
+          "offset": 6119,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto13"
+        },
+        {
+          "pc": 61,
+          "offset": 6123,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"UnapplyNeutralPosture\" <- proto13"
+        },
+        {
+          "pc": 63,
+          "offset": 6131,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto14"
+        },
+        {
+          "pc": 64,
+          "offset": 6135,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 65,
+          "offset": 6139,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 66,
+          "offset": 6143,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"PassivePosture\" <- proto14"
+        },
+        {
+          "pc": 68,
+          "offset": 6151,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto15"
+        },
+        {
+          "pc": 69,
+          "offset": 6155,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 70,
+          "offset": 6159,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 71,
+          "offset": 6163,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"UnapplyPassivePosture\" <- proto15"
+        },
+        {
+          "pc": 73,
+          "offset": 6171,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R3 <- proto16"
+        },
+        {
+          "pc": 74,
+          "offset": 6175,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R4 <- proto17"
+        },
+        {
+          "pc": 75,
+          "offset": 6179,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R5 <- proto18"
+        },
+        {
+          "pc": 76,
+          "offset": 6183,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R6 <- proto19"
+        },
+        {
+          "pc": 77,
+          "offset": 6187,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"GetMagneticImpactDescription\" <- proto19"
+        },
+        {
+          "pc": 79,
+          "offset": 6195,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R6 <- proto20"
+        },
+        {
+          "pc": 80,
+          "offset": 6199,
+          "opcode": "DUPCLOSURE",
+          "annotation": "R7 <- proto21"
+        },
+        {
+          "pc": 81,
+          "offset": 6203,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 82,
+          "offset": 6207,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 83,
+          "offset": 6211,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 84,
+          "offset": 6215,
+          "opcode": "CAPTURE",
+          "annotation": ""
+        },
+        {
+          "pc": 85,
+          "offset": 6219,
+          "opcode": "SETGLOBAL",
+          "annotation": "\"OnDamage\" <- proto21"
+        },
+        {
+          "pc": 87,
+          "offset": 6227,
+          "opcode": "RETURN",
+          "annotation": ""
+        }
+      ]
+    }
+  ],
+  "scalar_cases": [
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance",
+      "rank": 0,
+      "callback_level": 1,
+      "coefficient_float32": 0.75,
+      "coefficient_bits_le": "0000403f",
+      "lua_number_product": 0.75,
+      "native_scalar_argument_float32": 0.75,
+      "native_scalar_bits_le": "0000403f",
+      "enum": "WEAPON_DAMAGE_AMOUNT_TO_OVERGUARD",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance",
+      "rank": 1,
+      "callback_level": 2,
+      "coefficient_float32": 0.75,
+      "coefficient_bits_le": "0000403f",
+      "lua_number_product": 1.5,
+      "native_scalar_argument_float32": 1.5,
+      "native_scalar_bits_le": "0000c03f",
+      "enum": "WEAPON_DAMAGE_AMOUNT_TO_OVERGUARD",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance",
+      "rank": 2,
+      "callback_level": 3,
+      "coefficient_float32": 0.75,
+      "coefficient_bits_le": "0000403f",
+      "lua_number_product": 2.25,
+      "native_scalar_argument_float32": 2.25,
+      "native_scalar_bits_le": "00001040",
+      "enum": "WEAPON_DAMAGE_AMOUNT_TO_OVERGUARD",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastVIPStance",
+      "rank": 3,
+      "callback_level": 4,
+      "coefficient_float32": 0.75,
+      "coefficient_bits_le": "0000403f",
+      "lua_number_product": 3.0,
+      "native_scalar_argument_float32": 3.0,
+      "native_scalar_bits_le": "00004040",
+      "enum": "WEAPON_DAMAGE_AMOUNT_TO_OVERGUARD",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPacifistStance",
+      "rank": 0,
+      "callback_level": 1,
+      "coefficient_float32": 12.5,
+      "coefficient_bits_le": "00004841",
+      "lua_number_product": -12.5,
+      "native_scalar_argument_float32": -12.5,
+      "native_scalar_bits_le": "000048c1",
+      "enum": "AVATAR_EVADE_NPC_BULLET",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPacifistStance",
+      "rank": 1,
+      "callback_level": 2,
+      "coefficient_float32": 12.5,
+      "coefficient_bits_le": "00004841",
+      "lua_number_product": -25.0,
+      "native_scalar_argument_float32": -25.0,
+      "native_scalar_bits_le": "0000c8c1",
+      "enum": "AVATAR_EVADE_NPC_BULLET",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPacifistStance",
+      "rank": 2,
+      "callback_level": 3,
+      "coefficient_float32": 12.5,
+      "coefficient_bits_le": "00004841",
+      "lua_number_product": -37.5,
+      "native_scalar_argument_float32": -37.5,
+      "native_scalar_bits_le": "000016c2",
+      "enum": "AVATAR_EVADE_NPC_BULLET",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPacifistStance",
+      "rank": 3,
+      "callback_level": 4,
+      "coefficient_float32": 12.5,
+      "coefficient_bits_le": "00004841",
+      "lua_number_product": -50.0,
+      "native_scalar_argument_float32": -50.0,
+      "native_scalar_bits_le": "000048c2",
+      "enum": "AVATAR_EVADE_NPC_BULLET",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastSpreadAttacksStance",
+      "rank": 0,
+      "callback_level": 1,
+      "coefficient_float32": 0.20000000298023224,
+      "coefficient_bits_le": "cdcc4c3e",
+      "lua_number_product": 0.20000000298023224,
+      "native_scalar_argument_float32": 0.20000000298023224,
+      "native_scalar_bits_le": "cdcc4c3e",
+      "enum": "WEAPON_PROC_TIME",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastSpreadAttacksStance",
+      "rank": 1,
+      "callback_level": 2,
+      "coefficient_float32": 0.20000000298023224,
+      "coefficient_bits_le": "cdcc4c3e",
+      "lua_number_product": 0.4000000059604645,
+      "native_scalar_argument_float32": 0.4000000059604645,
+      "native_scalar_bits_le": "cdcccc3e",
+      "enum": "WEAPON_PROC_TIME",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastSpreadAttacksStance",
+      "rank": 2,
+      "callback_level": 3,
+      "coefficient_float32": 0.20000000298023224,
+      "coefficient_bits_le": "cdcc4c3e",
+      "lua_number_product": 0.6000000089406967,
+      "native_scalar_argument_float32": 0.6000000238418579,
+      "native_scalar_bits_le": "9a99193f",
+      "enum": "WEAPON_PROC_TIME",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastSpreadAttacksStance",
+      "rank": 3,
+      "callback_level": 4,
+      "coefficient_float32": 0.20000000298023224,
+      "coefficient_bits_le": "cdcc4c3e",
+      "lua_number_product": 0.800000011920929,
+      "native_scalar_argument_float32": 0.800000011920929,
+      "native_scalar_bits_le": "cdcc4c3f",
+      "enum": "WEAPON_PROC_TIME",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPersistentStance",
+      "rank": 0,
+      "callback_level": 1,
+      "coefficient_float32": 0.10000000149011612,
+      "coefficient_bits_le": "cdcccc3d",
+      "lua_number_product": 0.10000000149011612,
+      "native_scalar_argument_float32": 0.10000000149011612,
+      "native_scalar_bits_le": "cdcccc3d",
+      "enum": "WEAPON_PERCENT_BASE_DAMAGE_ADDED",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPersistentStance",
+      "rank": 1,
+      "callback_level": 2,
+      "coefficient_float32": 0.10000000149011612,
+      "coefficient_bits_le": "cdcccc3d",
+      "lua_number_product": 0.20000000298023224,
+      "native_scalar_argument_float32": 0.20000000298023224,
+      "native_scalar_bits_le": "cdcc4c3e",
+      "enum": "WEAPON_PERCENT_BASE_DAMAGE_ADDED",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPersistentStance",
+      "rank": 2,
+      "callback_level": 3,
+      "coefficient_float32": 0.10000000149011612,
+      "coefficient_bits_le": "cdcccc3d",
+      "lua_number_product": 0.30000000447034836,
+      "native_scalar_argument_float32": 0.30000001192092896,
+      "native_scalar_bits_le": "9a99993e",
+      "enum": "WEAPON_PERCENT_BASE_DAMAGE_ADDED",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    },
+    {
+      "path": "/Lotus/Types/Friendly/Pets/BeastWeapons/Stances/BeastPersistentStance",
+      "rank": 3,
+      "callback_level": 4,
+      "coefficient_float32": 0.10000000149011612,
+      "coefficient_bits_le": "cdcccc3d",
+      "lua_number_product": 0.4000000059604645,
+      "native_scalar_argument_float32": 0.4000000059604645,
+      "native_scalar_bits_le": "cdcccc3e",
+      "enum": "WEAPON_PERCENT_BASE_DAMAGE_ADDED",
+      "status": "script-formula evaluation; not original-native replay or complete damage"
+    }
+  ],
+  "assumptions": [
+    "Contact is assumed after approach; travel time is not added.",
+    "Target intent uses deterministic rank, nearest distance and body-index ties.",
+    "Protector uses the arena player position as the owner position.",
+    "Eximus preference recognizes the arena Eximus flag; other native VIP classes remain open.",
+    "Balanced moving stagger and Elusive incoming-fire evasion remain outside the static offensive fight."
+  ]
+}

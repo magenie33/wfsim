@@ -685,6 +685,7 @@ pub(super) fn open<'a>(
     };
     // ---- THE MELEE COMBO COUNTER AND TENNOKAI -- see `MeleeState` ----------
     let melee = MeleeState {
+        last_contact_target: None,
         deployed_until: 0.0,
         combo_points: f64::from(params.melee_combo_initial),
         rage_kill_mark: r.kills,
@@ -733,7 +734,9 @@ pub(super) fn open<'a>(
             // WHEN IT FIRST ACTS, which is not zero: a weapon with a wind-up
             // does not fire at the buzzer, and the engagement's own opening
             // time is what `t` was set to here.
-            next_t: t,
+            next_t: if params.target_preference == Some(crate::model::TargetPreference::Avoid) {
+                f64::INFINITY
+            } else { t },
             d,
             bar,
             enervate,

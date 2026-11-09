@@ -711,6 +711,9 @@ jobs:
       - name: Swipe exposes only eligible claws and applies its rank limits
         if: matrix.group == 'builder'
         run: node scripts/check_swipe.mjs
+      - name: Postures apply combat effects and disclose their partial limits
+        if: matrix.group == 'builder'
+        run: node scripts/check_postures.mjs
       - name: Read-only build rivens stay separate from owned customs
         if: matrix.group == 'account'
         run: node scripts/check_riven_board.mjs

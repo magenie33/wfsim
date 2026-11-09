@@ -236,7 +236,7 @@ pub(super) fn fire_extra_hits(
             &params.foe,
             false,
             mit,
-            params.arcane.overguard_multiplier,
+            params.overguard_multiplier(),
             watching(rec, &mut breakdown),
         );
         let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);
@@ -524,7 +524,7 @@ pub(super) fn drain_area_procs(
                 fp,
                 false,
                 &mit,
-                params.arcane.overguard_multiplier,
+                params.overguard_multiplier(),
                 watching(rec, &mut breakdown),
             );
             let (eff, killed, _broke) = (settled.effective, settled.killed, settled.broken);
@@ -1047,7 +1047,7 @@ pub(super) fn settle_procs(
                             foe,
                             false,
                             &mit,
-                            params.arcane.overguard_multiplier,
+                            params.overguard_multiplier(),
                             watching(rec, &mut breakdown),
                         );
                         let (eff, k, broke) = (settled.effective, settled.killed, settled.broken);
@@ -1221,7 +1221,7 @@ pub(super) fn settle_procs(
                 foe,
                 false,
                 mit,
-                params.arcane.overguard_multiplier,
+                params.overguard_multiplier(),
                 watching(rec, &mut breakdown),
             );
             let (eff, killed, broke) = (settled.effective, settled.killed, settled.broken);

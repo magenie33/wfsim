@@ -835,6 +835,7 @@ pub fn run_once_traced(
             &mut me.buff_stacks,
             &mut me.melee,
             &r,
+            &bodies,
         );
 
         // Status events scheduled before this shot land first.
