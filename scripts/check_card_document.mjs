@@ -11,6 +11,7 @@
 //   node scripts/check_card_document.mjs              serves site/ itself
 //   WFSIM_BASE=http://127.0.0.1:<port> node scripts/check_card_document.mjs
 import { createServer } from "node:http";
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, dirname } from "node:path";
@@ -50,6 +51,8 @@ const PAGE_TRIES = 3;
 const srv = process.env.WFSIM_BASE ? null : await serveSite(join(ROOT, "site"));
 const BASE = process.env.WFSIM_BASE || `http://127.0.0.1:${srv.address().port}`;
 const engine = await loadEngine({ site: BASE });
+if (process.env.WFSIM_SOURCE_I18N === "1") Object.assign(engine.i18n.zh.ui, JSON.parse(execFileSync("python3",
+  ["-c", "import yaml,json;print(json.dumps(yaml.safe_load(open('data/i18n/zh/ui.yaml'))['ui']))"], {cwd:ROOT,encoding:"utf8"})));
 
 // THE APPRAISAL, answered on the wire: the asker's card is a riven row of the
 // board under test, rolls and all, and the build that came back is that row's.

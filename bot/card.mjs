@@ -58,7 +58,7 @@ const appraisalAt = (engine) => (code, result) => fetch(`${engine.site}/api/appr
 /// `opts.css` and `opts.img` name the style and pictures (a check's own build),
 /// `opts.appraisal(code, result)` the appraisal's door and `opts.now` the clock
 /// a verdict is dated by.
-export async function cardDocument(engine, url, { lang = "zh", css = siteStyle(), img = IMG, appraisal = appraisalAt(engine), now } = {}) {
+export async function cardDocument(engine, url, { lang = "zh", css = siteStyle(), img = IMG, appraisal = appraisalAt(engine), now, rows: snapshotRows, witnesses: snapshotWitnesses } = {}) {
   const h = engine.headless;
   const u = new URL(url);
   const path = /^(\/weapons\/[^/]+)\/card\/?$/.exec(u.pathname);
@@ -71,14 +71,16 @@ export async function cardDocument(engine, url, { lang = "zh", css = siteStyle()
   const w = say.meta.weapons.find((x) => x.id === plain.id);
   const job = ask.kind === "appraise" ? await appraisal(ask.code, ask.result) : null;
   if (ask.kind === "appraise" && !job) throw new Error(`no appraisal ${ask.code}`);
-  const rows = ask.kind === "appraise" && !(job && job.result) ? [] : (await engine.host.board(w.id)) || [];
+  const rows = Array.isArray(snapshotRows) ? snapshotRows : ask.kind === "appraise" && !(job && job.result) ? [] : (await engine.host.board(w.id)) || [];
   // THE NUMBER A CHAT IS TOLD is this replay's, never the searcher's.
   const verdict = job && job.result ? await h.headlessAppraisalReplay(say, w, job, rows, {
     board: (id, ruler) => engine.host.boardNow(id, ruler),
     check: async (b) => engine.api("/api/board/check", b), simulate: (body) => simulateFleet(engine.wasm, body), now }) : null;
   // A RIVEN'S STATS FROM THE ENGINE, whole: the page fills them in afterwards.
   const riven = (wp, spec) => h.headlessRivenAnswer(say, engine.api("/api/riven", { weapon: wp.id, ...spec }));
-  const card = h.headlessLongCard(say, w, ask, { rows, job, verdict, origin: SITE, riven });
+  const selected = h.headlessCardBoard(say, w, ask, rows);
+  const witnesses = snapshotWitnesses instanceof Map ? snapshotWitnesses : ask.kind === "appraise" ? new Map() : await engine.host.computationNames(w.id, selected.rows);
+  const card = h.headlessLongCard(say, w, ask, { rows, job, verdict, witnesses, origin: SITE, riven });
   const qr = ask.kind === "appraise" ? null : engine.api("/api/qr", { text: card.link });
   // EVERY PICTURE EAGER, as the page sets them before its screenshot.
   const inside = card.draw(qr && qr.svg).replace(/ loading="lazy"/g, ' loading="eager"')

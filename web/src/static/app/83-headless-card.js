@@ -98,6 +98,46 @@ function headlessContributorText(say, person) {
   const shown = typeof label === "string" ? say.t(label) : label?.[say.lang] || label?.en;
   return person.name + (shown ? ` · ${shown}` : "");
 }
+function headlessWitnessesText(say, witnesses) {
+  if (!Array.isArray(witnesses)) return say.t("Attribution is unavailable.");
+  if (!witnesses.length) return say.t("Contributor not recorded");
+  return witnesses.map((person, i) => `${say.t(i ? "Verified by" : "Calculated by")}: ${headlessContributorText(say, person)}`).join(" · ");
+}
+function headlessWitnessesHtml(say, witnesses, origin) {
+  if (!Array.isArray(witnesses) || !witnesses.length) return headlessEsc(headlessWitnessesText(say, witnesses));
+  return witnesses.map((person, i) => {
+    const text = headlessEsc(headlessContributorText(say, person));
+    const who = person.name && /^[a-f0-9]{32}$/.test(person.profile || "")
+      ? `<a class="user-link" href="${headlessEsc(origin)}/user/${person.profile}">${text}</a>` : text;
+    return `${headlessEsc(say.t(i ? "Verified by" : "Calculated by"))}: ${who}`;
+  }).join(" · ");
+}
+function headlessBoardRecord(weapon, row) {
+  const riven = row.riven || (row.riven_pos?.length ? { bonuses: row.riven_pos, malus: row.riven_neg, rolls: row.riven_rolls } : null);
+  return { weapon, mods: row.mods || [], evolutions: row.evolutions || [], arcanes: row.arcanes || [],
+    valence: row.valence || "", exilus: row.exilus || "", grip: row.grip || "", loader: row.loader || "", link: row.link || "",
+    ...(row.wielder ? { wielder: JSON.parse(JSON.stringify(row.wielder)) } : {}),
+    ...(riven ? { riven_pos: riven.bonuses, riven_neg: riven.malus || "", riven_rolls: riven.rolls } : {}) };
+}
+async function headlessMeasurementWitnesses(weapon, rows, { api, names }) {
+  const found = new Map(rows.map(row => [row, []]));
+  const known = [...new Set(rows)].filter(row => row.measured_at && row.measured_by && row.benchmark && Number.isFinite(row.score));
+  if (!known.length) return found;
+  try {
+    const keys = await api("/api/build/keys", { kind: "build", builds: known.map(row => headlessBoardRecord(weapon, row)) });
+    if (!keys?.ok || keys.keys?.length !== known.length) throw new Error("identity unavailable");
+    const records = known.map((row, i) => ({ identity: keys.keys[i], ruler: row.benchmark, mode: row.mode || "base",
+      score: row.score, measured_at: row.measured_at, measured_by: row.measured_by }));
+    const response = await names({ rows: records.filter(row => /^[a-f0-9]{32}$/.test(row.identity || "")) });
+    if (!response?.ok || !Array.isArray(response.rows)) throw new Error("attribution unavailable");
+    known.forEach((row, i) => {
+      const ref = records[i], match = response.rows.find(item => item.identity === ref.identity && item.ruler === ref.ruler && item.mode === ref.mode
+        && String(item.measured_at).slice(0,16) === String(ref.measured_at).slice(0,16));
+      found.set(row, match?.witnesses || []);
+    });
+  } catch (_) { known.forEach(row => found.set(row, null)); }
+  return found;
+}
 
 /// ANY VALUE, NEVER A THROW: null and undefined are drawn as nothing.
 const headlessEsc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -576,6 +616,18 @@ const headlessVerdictRecord = ({ ok, score, shown, gain, top, of, rank, reason, 
   candidate_runs, board_at, at }) => ({ ok, score, shown, gain, top, of, rank, reason, grade, best, best_riven, runs, starts,
   candidate_runs, board_at, at });
 
+/// Display selection is shared by the image, text fallback and attribution batch.
+function headlessCardBoard(say, w, ask, rows) {
+  const benches = say.meta.benchmarks || [];
+  const bench = benches.find(b => b.id === ask.ruler) || benches.find(b => b.primary) || benches[0], ruler = bench?.id || "";
+  let entries = [], top = null, hasRivens = false;
+  if (ask.kind === "pz") entries = distinctTop(pooledRanking(rankBoard(rows.filter(r => r.benchmark === ruler && !r.riven === !ask.withRiven), [ruler], w.modes)), ask.n, () => "", say.meta);
+  else if (ask.kind !== "appraise") {
+    const group = pooledRivens(say.meta, w, rows, ruler); top = group.top; hasRivens = !!group.rivens.length;
+    entries = distinctTop(placed(group.rivens.filter(x => rivenMatches(x.row.riven, ask.riven)), x => x.row.score || 0), ask.n, () => "", say.meta);
+  }
+  return { bench, ruler, entries, top, hasRivens, rows: [...new Set([...(top ? [top.row] : []), ...entries.map(x => x.row)])] };
+}
 /// THE LONG IMAGE'S INSIDE for weapon `w` and `ask` (`headlessCardAsk`), in two
 /// steps because its QR code encodes its link: `{ link, wayIn, draw(qrSvg) }`,
 /// `draw` answering the HTML of `#card-page` and `wayIn` whether the appraisal's
@@ -587,17 +639,15 @@ const headlessVerdictRecord = ({ ok, score, shown, gain, top, of, rank, reason, 
 /// shape, or the placeholder a page draws while the engine answers).
 function headlessLongCard(say, w, ask, got) {
   const esc = headlessEsc, trF = (s, p) => headlessTrF(say, s, p);
-  const { kind, n, riven: rivenAsk, withRiven, code } = ask;
+  const { kind, withRiven, code } = ask;
   const { rows = [], job = null, verdict = null, origin } = got;
   const meta = say.meta;
-  const want = job ? job.ruler : ask.ruler;
-  const benches = meta.benchmarks || [];
-  const bench = benches.find((b) => b.id === want) || benches.find((b) => b.primary) || benches[0];
-  const ruler = bench ? bench.id : "";
+  const selected = headlessCardBoard(say, w, { ...ask, ruler: job ? job.ruler : ask.ruler }, rows);
+  const { bench, ruler } = selected;
   const metric = say.t((headlessMetricOf(meta, ((bench || {}).scenario || {}).metric) || {}).label || "");
   const pct = (x) => (x >= 0 ? "+" : "−") + Math.abs(x * 100).toFixed(1) + "%";
   const record = (row) => {
-    const t = headlessMeasuredRecord(say, row);
+    const t = headlessMeasuredRecord({ ...say, computationRecord: null }, row);
     return t ? `<span class="lc-when">${t}</span>` : "";
   };
   // A BOARD ROW'S RIVEN is registered by its row and named by its shape; a
@@ -609,7 +659,8 @@ function headlessLongCard(say, w, ask, got) {
     const r = rv ? { name: "", spec: headlessBoardRivenState(rv) } : verdict && verdict.riven ? { name: "", spec: verdict.riven } : null;
     return { name: r ? r.name : "", section: r ? headlessRivenSection(say, w, r, got.riven(w, r.spec)) : "" };
   };
-  const ofRow = (row) => headlessCardOfState(say, headlessBoardRowAxes(say, w, row, defs), w, rivenOf);
+  const ofRow = (row) => headlessCardOfState(say, headlessBoardRowAxes(say, w, row, defs), w, rivenOf)
+    + `<p class="lc-note">${headlessWitnessesHtml(say, got.witnesses?.get(row), origin)}</p>`;
   const path = headlessWeaponPath(meta.weapons || [], w.id);
   let title = "", link = "", body = () => "";
   if (verdict) {
@@ -625,7 +676,7 @@ function headlessLongCard(say, w, ask, got) {
         `<p class="lc-note">${esc(verdict.top == null ? say.t("The board has no riven-free build of this weapon yet.")
           : trF("The board's best riven-free build: {s}", { s: verdict.top }))}</p>`
         + (verdict.of ? `<p class="lc-note">${esc(trF("Among the {n} rivens the board has measured (each at its best rolls), this card would rank #{k}.", { n: verdict.of, k: verdict.rank }))}</p>` : "")
-        + `<p class="sb-empty">${esc(trF("Searched by {who}. Thank you!", { who }))}</p>`);
+        + `<p class="sb-empty">${esc(trF("Delivered by {who}. Thank you!", { who }))}</p>`);
   } else if (kind === "appraise") {
     // The submitted riven while the community search is running.
     title = trF("{w} · Riven gain", { w: w.name });
@@ -635,24 +686,23 @@ function headlessLongCard(say, w, ask, got) {
       const spec = { ...job.riven, polarity: job.riven.polarity || "madurai" };
       return headlessCardBox(`<span class="sb-h">${esc(say.t("Riven gain code"))}</span><b class="lc-score">${esc(code)}</b>`,
         headlessRivenSection(say, w, { name: "", spec }, got.riven(w, spec))
-        + `<p class="lc-note">${esc(say.t("The volunteers' devices are computing this riven. Nona will post the result in the chat."))}</p>`
+        + `<p class="lc-note">${esc(say.t("Riven submitted. Nona will post the result in the chat after replay."))}</p>`
         + `<p class="sb-empty">${esc(link.replace(/^https?:\/\//, ""))}</p>`);
     };
   } else if (kind === "pz") {
-    const ranked = pooledRanking(rankBoard(rows.filter((r) => r.benchmark === ruler && !r.riven === !withRiven), [ruler], w.modes));
-    const shown = distinctTop(ranked, n, () => "", meta);
+    const shown = selected.entries;
     const mode = (shown[0] || {}).mode;
     title = trF(withRiven ? "{w} · top {n} riven builds" : "{w} · top {n} builds", { w: w.name, n: shown.length });
     link = `${origin}${path}?bench=${encodeURIComponent(ruler)}&mode=${encodeURIComponent(mode || "base")}&riven=${withRiven ? 1 : 0}`;
     body = () => shown.map((x) => headlessCardBox(`<b class="lc-rank">#${x.rank}</b><b class="lc-score">${esc(headlessCardShown(x.row))}</b><span class="sb-empty">${esc(metric)}${
       x.tied > 1 ? ` · ${esc(trF("{n} builds tie", { n: x.tied }))}` : ""}</span>${record(x.row)}`, ofRow(x.row))).join("");
   } else {
-    const g = pooledRivens(meta, w, rows, ruler);
+    const g = selected;
     title = trF("{w} · Riven Analyst", { w: w.name });
     link = `${origin}${path}/riven-analyst`;
-    body = () => !g.rivens.length ? "" : (g.top ? headlessCardBox(`<span class="sb-h">${esc(say.t("The board's best riven-free build"))}</span><b class="lc-score">${esc(headlessCardShown(g.top.row))}</b>${record(g.top.row)}`,
+    body = () => !g.hasRivens ? "" : (g.top ? headlessCardBox(`<span class="sb-h">${esc(say.t("The board's best riven-free build"))}</span><b class="lc-score">${esc(headlessCardShown(g.top.row))}</b>${record(g.top.row)}`,
       ofRow(g.top.row)) : "")
-      + distinctTop(placed(g.rivens.filter((x) => rivenMatches(x.row.riven, rivenAsk)), (x) => x.row.score || 0), n, () => "", meta)
+      + g.entries
         .map((x) => headlessCardBox(`<b class="lc-rank">#${x.rank}</b><b class="lc-score">${esc(headlessCardShown(x.row))}</b>${
         x.gain == null ? "" : `<b class="lc-gain">${pct(x.gain)}</b>`}${record(x.row)}`, ofRow(x.row))).join("");
   }
