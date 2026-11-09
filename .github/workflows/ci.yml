@@ -508,6 +508,14 @@ jobs:
           node scripts/check_score_inputs.mjs
           node scripts/check_live_ranker.mjs
           node scripts/check_work_calibration.mjs
+      - name: Scoring inputs use the production Postgres driver
+        env:
+          WFSIM_SCORE_INPUTS_PG_URL: postgres://wfsim_score_test:fixture@127.0.0.1:5432/wfsim_score_inputs
+        run: |
+          sudo systemctl start postgresql.service
+          sudo -u postgres psql -v ON_ERROR_STOP=1 -c "CREATE ROLE wfsim_score_test LOGIN PASSWORD 'fixture'"
+          sudo -u postgres createdb --owner=wfsim_score_test wfsim_score_inputs
+          node scripts/check_score_inputs.mjs
       - name: Maintenance preserves native board behavior and source checks
         if: fromJSON(needs.plan.outputs.plan).fast
         run: |

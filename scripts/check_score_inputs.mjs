@@ -5,13 +5,27 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
+import postgres from './pg/node_modules/postgres/src/index.js';
 import { captureScoreInputs } from './fetch_score_inputs.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
 
-const directory = mkdtempSync(join(tmpdir(), 'score-inputs-')), pg = new PGlite();
+const connection = process.env.WFSIM_SCORE_INPUTS_PG_URL;
+if (connection) assert(['127.0.0.1', 'localhost'].includes(new URL(connection).hostname), 'use a local test database');
+const client = connection ? postgres(connection, { max: 1, fetch_types: false, onnotice: () => {} }) : null;
+const schema = 'score_inputs_' + randomUUID().replaceAll('-', '');
+if (client) await client.unsafe(`CREATE SCHEMA ${schema}; SET search_path TO ${schema}`).simple();
+const directory = mkdtempSync(join(tmpdir(), 'score-inputs-'));
+const pg = client ? {
+  exec: text => client.unsafe(text).simple(),
+  query: async (text, args) => ({ rows: await client.unsafe(text, args) }),
+  close: async () => { try { await client.unsafe(`DROP SCHEMA ${schema} CASCADE`); } finally { await client.end({ timeout: 5 }); } },
+} : new PGlite();
 const queries = [], query = async (text, args = []) => { queries.push([text, args]); return (await pg.query(text, args)).rows; };
-const sql = { begin: async (options, fn) => {
+const sql = client ? { begin: (options, fn) => client.begin(options, tx => fn({ unsafe: (text, args = []) => {
+  queries.push([text, args]); return tx.unsafe(text, args);
+} })) } : { begin: async (options, fn) => {
   await pg.exec(`BEGIN ${options}`);
   try { const result = await fn({ unsafe: query }); await pg.exec('COMMIT'); return result; }
   catch (error) { await pg.exec('ROLLBACK'); throw error; }
@@ -24,6 +38,7 @@ const tasks = [{ question: 'a', verb: 'simulate', demands: [row('a'), row('a')] 
 const load = name => readFileSync(join(directory, name), 'utf8');
 const lines = name => load(name).trim().split('\n').filter(Boolean).map(JSON.parse);
 try {
+  console.log(client ? 'score inputs: postgres.js TCP transport' : 'score inputs: PGlite transport');
   await pg.exec(['schema', 'library', 'sync'].map(n => readFileSync(new URL(`../worker/pg/${n}.sql`, import.meta.url), 'utf8')).join('\n'));
   await pg.exec(`INSERT INTO batches(id,at,total) VALUES('old','1',0),('new','2',0);
     INSERT INTO builds(id,at,record) SELECT 'unrelated-'||n,'day','{"weapon":"unrelated"}' FROM generate_series(1,20000) n;
