@@ -102,13 +102,14 @@ What is still open here:
   select hip/aimed ranges and sample the client's elliptical emission geometry.
   Camera recoil follows the fixed-reticle compensation assumption. The
   `client_accuracy_runtime` admission states the remaining live-state gap;
-- **the model's one free parameter**, `space::BODY_RADIUS_M` — 0.2 m, a guess
-  and stated as one. THE PLANE IS THE MODEL rather than an approximation of a
-  solid to be corrected: the geometry answers only "did the
-  pellet reach the target", and where a landed pellet went is `headshot_pct`'s
-  question, already pinned per pellet. So there is one circle and one number,
-  and one Simulacrum measurement settles it — a counted number of pellets, a
-  known range, a weapon of known spread, count what lands;
+- **the body proxy**, whose shared radius is `space::BODY_RADIUS_M`. Spread
+  retains a three-dimensional ray and projects its closest point to plane
+  coordinates plus height; vertical scatter still counts as a miss. Actual
+  enemy silhouettes and vertical placement are not simulated. Where a landed
+  pellet went remains `headshot_pct`'s question, pinned separately per pellet;
+- **missed explosive placement** uses the ray's closest approach to the target.
+  Terrain collisions and ballistic ground impacts are not simulated. A landed
+  hit uses the body's facing surface rather than a 3D silhouette intersection;
 - **18 entries have no transcribed spread**. Sixteen of them are
   SENTINEL weapons, and that one is a source gap rather than a matching one:
   the wiki's companion module carries no `MinSpread`/`MaxSpread` for any of
