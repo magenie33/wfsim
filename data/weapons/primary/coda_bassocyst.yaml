@@ -68,7 +68,7 @@ attack:
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 62
-  fire_rate: 1.17
+  fire_rate: 1.16666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -98,9 +98,12 @@ attack:
   damage: { blast: 789, radiation: 19 }   # total 808
 
 unmodeled:
+  - reason: client_projectile_collision
   - "The alt-fire is a finisher tool: it latches a mite onto up to 6 enemies, marking their heads for 5 s and dealing Impact and Magnetic damage each second for 10 s, and against an enemy open to a Mercy it teleports the player in. It is out of reach here: it needs a target within 25 m, its damage over time has no form in the engine, and this fight has no execution threshold. The catalog's row for it reads 'Does not apply'."
   - "A Mercy kill grants +100% damage and multishot for 20 s, refreshed on each Mercy, which doubles the weapon. This fight cannot perform a Mercy, so the number reads low."
   - "The projectile's thickness is left blank on the page; the sim fires a ray, so only bodies on the line are hit either way."
 
 source:
   url: https://wiki.warframe.com/w/Coda_Bassocyst
+
+# see notes: client_primary_calibration

@@ -41,8 +41,13 @@ valence:
 attack:
   # Cone half-angle from the reticle, degrees — wiki Module:Weapons/data.
   spread:
-    min_deg: 6
-    max_deg: 16
+    min_deg: 6.0
+    max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 12.0
+      hip_max_deg: 22.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 2.5
@@ -61,9 +66,14 @@ attack:
   falloff:
     start_m: 25.0
     end_m: 40.0
-    reduction: 0.4805
+    reduction: 0.480519480519
   # "Primarily deals Impact damage (75% of total)."
   damage: { impact: 57.75, puncture: 9.625, slash: 9.625 }   # 77 per pellet
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Sobek
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

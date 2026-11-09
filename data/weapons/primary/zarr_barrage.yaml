@@ -18,6 +18,11 @@ attack:
   spread:
     min_deg: 60.0
     max_deg: 80.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 60.0
+      hip_max_deg: 80.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 120
@@ -35,3 +40,12 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Zarr
+reload_style: "by_round"
+reload_start_seconds: 0.5
+reload_per_shell_seconds: 0.5
+reload_end_seconds: 0.25
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

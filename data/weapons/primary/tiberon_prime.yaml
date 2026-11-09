@@ -25,7 +25,7 @@ introduced: "22.16.4"
 internal_name: /Lotus/Weapons/Tenno/LongGuns/PrimeTiberon/PrimeTiberonRifle
 noise: alarming
 ammo_type: primary
-ammo_max: 540
+ammo_max: 546
 ammo_pickup: 80
 magazine: 42
 reload_seconds: 2
@@ -38,6 +38,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 6.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.0
+      hip_max_deg: 8.0
   trigger: auto
   # see notes: burst_listed_fire_rate_2
   burst:
@@ -57,3 +62,8 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Tiberon_Prime
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

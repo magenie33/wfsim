@@ -92,6 +92,8 @@ battery:
 co_behavior: independent
 
 unmodeled:
+  - reason: client_battery_defaults
+  - reason: client_accuracy_runtime
   - "The battery discharge when the magazine empties, a 20 m pulse for 100 Impact, is not built yet. Its rule is published: base damage, faction damage and Firestorm apply; elemental and multishot bonuses do not, and blast-radius mods reach it. Its status is a 100% chance, not a forced proc. The number reads low."
   - "The discharge also strips Sentient and Shadow Stalker damage resistances; no target here has any."
   - "+30% Movement Speed while aiming and the explosion's self-stagger are not read here."
@@ -101,7 +103,12 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 7
+    max_deg: 7.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 0.0
+      hip_max_deg: 7.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 200
@@ -187,3 +194,5 @@ source:
   # note: wiki module `Attacks[].AttackName`: "Normal Attack" / "Radial
   # Attack"; `Falloff` {start 0, end 6.6, reduction 0.6} — the fraction LOST,
   # 40% kept.
+
+# see notes: client_primary_calibration

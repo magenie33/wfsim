@@ -18,9 +18,14 @@ attack:
   spread:
     min_deg: 2.0
     max_deg: 4.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 10.0
+      hip_max_deg: 14.0
   trigger: auto
   shot_type: hit_scan
-  fire_rate: 10.83
+  fire_rate: 10.8333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.1
@@ -33,3 +38,9 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Zenith
+reload_seconds: 1.6
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

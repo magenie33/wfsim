@@ -20,7 +20,7 @@ attack:
   projectile_speed_mps: 60
   fire_rate: 1.5
   multishot: 1.0
-  ammo_cost: 4
+  ammo_cost: 6
   crit_chance: 0.02
   crit_multiplier: 2.0
   status_chance: 0.5
@@ -54,3 +54,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Alternox_Prime
+
+# see notes: client_primary_calibration

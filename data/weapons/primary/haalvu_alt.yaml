@@ -13,11 +13,11 @@ introduced: "43.0.7"
 # see notes: battery_restated_on_every_form
 battery:
   regen_per_second: 300.0
-  delay_empty_seconds: 0.5
+  delay_empty_seconds: 2.0
   delay_partial_seconds: 0.5
   empty_animation_seconds: 2.0
 
-# NEVER EMPTIED: an empty battery is the 2 s animation and one shot short of it
+# A parsed empty refill takes 2.5 s; stopping one shot short avoids that delay.
 # is a 1 s refill (0.5 s delay + 150/300 s, measured), so the most this form
 # deals is fired in runs that stop one shot short.
 modes:
@@ -61,3 +61,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Haalvu
+
+# see notes: client_primary_calibration

@@ -35,6 +35,11 @@ attack:
   spread:
     min_deg: 2.0
     max_deg: 8.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 4.0
+      hip_max_deg: 10.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 4.5
@@ -49,8 +54,13 @@ attack:
   falloff:
     start_m: 26.0
     end_m: 52.0
-    reduction: 0.9667
+    reduction: 0.96875
   damage: { puncture: 32 }   # 32 a pellet, 224 a shot
 
 source:
   url: https://wiki.warframe.com/w/Cedo_Prime
+
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

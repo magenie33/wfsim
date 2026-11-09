@@ -132,3 +132,8 @@ source:
   # attacks, the polarities, the exilus, mastery, magazine and
   # reload; the CO row is from Condition_Overload_(Mechanic).
 
+unmodeled:
+  - reason: client_special_spread
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

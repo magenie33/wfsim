@@ -33,10 +33,8 @@ reload_seconds: 2.6
 # see notes: condition_overload_no_row
 co_behavior: additive_with_base_damage
 
-# WHERE THE RAMP STARTS. "Damage ramps up from 30% to 100% over 0.6 seconds when
-# firing. After firing stops for 0.8 seconds, the damage decays back to 30% over
-# 2 seconds" — a stated exception to the 20% most beams get.
-beam_ramp_floor: 0.30
+# Parsed attenuation bounds; see client_primary_calibration.
+beam_ramp_floor: 0.2
 
 attack:
   # see notes: cone_half_angle_from
@@ -71,10 +69,19 @@ attack:
   # THE REACH IS THE BEAM'S and lives in the `beam:` block above —
   # wiki: "Range: 18.0 m". A continuous weapon carries it there rather
   # than on the attack, because the radius and the chain read it too.
+      compounds: true
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
   damage: { electricity: 22 }   # total 22
 
 unmodeled:
+  - reason: client_beam_target_ramp
+  - reason: client_accuracy_runtime
   - "In game the chain can route through corpses (wiki); here a body that dies leaves the formation, so in a long fight the chain reaches fewer enemies and the number reads low."
 
 source:
   url: https://wiki.warframe.com/w/Amprex
+
+# see notes: client_primary_calibration

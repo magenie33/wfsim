@@ -26,9 +26,14 @@ attack:
   spread:
     min_deg: 6.0
     max_deg: 16.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 12.0
+      hip_max_deg: 22.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 1.33
+  fire_rate: 1.33333333333333
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 0
@@ -53,9 +58,13 @@ attack:
     damage: { heat: 1150 }   # total 1150
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Primary Compression's row for this attack is not entered. The table reads '127% / Both / Merged': over 100% effectiveness, both stacking brackets at once, and a fourth kind of radius calculation. The engine has no place for that combination, so the arcane adds nothing on this form here, where in game it is worth more than on the primary fire."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Trumna_Prime
+reload_seconds: 5
+
+# see notes: client_primary_calibration

@@ -90,6 +90,7 @@ attack:
     falloff_reduction: 0.20
 
 unmodeled:
+  - reason: client_modular_assembly
   - "The sac bounces up to twice and explodes on each bounce (page); only the first explosion is fired here, because where a bounce lands depends on the room."
   - reason: projectile_must_be_led
   - reason: self_stagger
@@ -97,3 +98,5 @@ unmodeled:
 source:
   url: https://wiki.warframe.com/w/Sporelacer
   module: https://wiki.warframe.com/w/Module:Weapons/data/modular
+
+# see notes: client_primary_calibration

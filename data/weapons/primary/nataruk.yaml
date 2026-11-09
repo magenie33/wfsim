@@ -43,7 +43,7 @@ attack:
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 140
-  fire_rate: 0.667
+  fire_rate: 0.666666666666667
   # A BOW'S CADENCE IS DRAW + NOCK, so the draw is stated even when the
   # module gives none: a 0.0 draw paces on the nock, which is the one
   # arrow a bow's magazine holds.
@@ -60,7 +60,12 @@ attack:
   damage: { puncture: 405, slash: 45 }   # total 450
 
 unmodeled:
+  - reason: client_ammo_runtime
+  - reason: client_special_spread
+  - reason: client_accuracy_runtime
   - reason: silent_weapon
 
 source:
   url: https://wiki.warframe.com/w/Nataruk
+
+# see notes: client_primary_calibration

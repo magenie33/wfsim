@@ -2,6 +2,14 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
+**Parsed-input adoption, 2026-11-09.** The owner requests parsed primary timing
+on conflicts. The target-only approximation now uses the attractor record's
+`LifeSpan=5` rather than the 4.7 s published convention. The original observations
+below still establish field removal and persistent target debuffs; they do not
+measure initialization latency or effective headshot duration. Spatial application,
+pulses and steering remain unmodelled. The primary calibration fixture pins the
+adopted lifetime and the separate throw timers.
+
 **Question.** The wiki states the exclusivity and not its timing: *"Only one
 field can be deployed at a time. Throwing the spear will remove existing
 fields."* Removal at the new spear's IMPACT and removal at the throw's

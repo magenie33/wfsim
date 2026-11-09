@@ -45,6 +45,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: charge
   shot_type: projectile
   projectile_speed_mps: 100
@@ -60,8 +65,11 @@ attack:
   damage: { impact: 423, puncture: 23.5, slash: 23.5 }   # total 470
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "The Blight syndicate effect blinds enemies in a radius and opens them to finishers (wiki). It runs on a syndicate meter the sim does not track, and blindness is crowd control; it is not counted."
   - reason: silent_weapon
 
 source:
   url: https://wiki.warframe.com/w/Rakta_Cernos
+
+# see notes: client_primary_calibration

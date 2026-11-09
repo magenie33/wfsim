@@ -2,6 +2,14 @@
 
 *Protocol and setup: [MEASUREMENTS.md](../MEASUREMENTS.md). Cross-references `M<n>` are files in this folder.*
 
+**Parsed-input adoption, 2026-11-09.** The owner requests parsed values on primary
+conflicts, especially time. The calibrated throw keeps one throw per magazine
+and the reported wind-up/reload sequence, but adopts the bound state's
+`reloadTime`: 2.5 s for Scourge and 2.2 s for Prime. The source-derived cycles
+are therefore 3.5 s and 3.2 s before travel. The original report and model output
+below remain provenance, not a fresh measurement of these configured timers.
+`tests/fixtures/client/primary-calibration-2026-10-28.json` pins the adopted inputs.
+
 **Question.** The wiki gives the spear throw a fire rate and, separately, the
 sentence *"Throwing the spear consumes 1 ammo, then reloads the weapon."* The
 entry read the first as a cadence and the second as a note, so the sim threw 40

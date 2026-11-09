@@ -40,11 +40,11 @@ fn scourge_components_and_primary_economy_match_pinned_package_inputs() {
 }
 
 #[test]
-fn scourge_throw_uses_native_aim_profiles_and_retains_the_measured_cycle() {
+fn scourge_throw_uses_native_aim_profiles_and_adopted_timing_inputs() {
     for row in fixture()["forms"].as_array().unwrap().iter().filter(|r| r["behavior_index"] == 1) {
         let id = row["id"].as_str().unwrap();
         let w = spec(id).unwrap();
-        let conventions = &row["retained_conventions"];
+        let conventions = &row["adopted_inputs"];
         assert_eq!(w.magazine.unwrap(), conventions["magazine"].as_f64().unwrap());
         assert_eq!(w.reload_seconds.unwrap(), conventions["reload_seconds"].as_f64().unwrap());
         assert_eq!(w.attack.attractor_seconds.unwrap(), conventions["attractor_seconds"].as_f64().unwrap());

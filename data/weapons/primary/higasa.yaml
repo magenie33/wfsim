@@ -49,6 +49,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 2.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 2.0
+      hip_max_deg: 6.0
   trigger: burst
   # THE BURST. The listed `fire_rate` counts BURSTS: one pull is 5 rounds
   # spaced by the delay below.
@@ -68,7 +73,10 @@ attack:
   damage: { puncture: 15.6, slash: 10.4 }   # total 26
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - "Aiming raises a shield that blocks frontal projectiles, closing on a reload or a charge (wiki). Nothing shoots back here; the number is unaffected."
 
 source:
   url: https://wiki.warframe.com/w/Higasa
+
+# see notes: client_primary_calibration

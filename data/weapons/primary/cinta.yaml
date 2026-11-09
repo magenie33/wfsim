@@ -45,10 +45,15 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 80
-  fire_rate: 0.667
+  fire_rate: 0.666666666666667
   # A BOW'S CADENCE IS DRAW + NOCK, so the draw is stated even when the
   # module gives none: a 0.0 draw paces on the nock, which is the one
   # arrow a bow's magazine holds.
@@ -63,7 +68,10 @@ attack:
   damage: { puncture: 360, slash: 90 }   # total 450
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: silent_weapon
 
 source:
   url: https://wiki.warframe.com/w/Cinta
+
+# see notes: client_primary_calibration

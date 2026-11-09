@@ -15,6 +15,8 @@ transforms_to: soma_prime_incarnon
 
 # see notes: bulk_intake_stats_are
 unmodeled:
+  - reason: client_rate_spool
+  - reason: client_accuracy_runtime
   - reason: spool_rebuilds_after_reload
 accuracy: 28.57
 disposition: 1.2
@@ -37,8 +39,13 @@ co_behavior: additive_with_base_damage
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 2
-    max_deg: 5
+    min_deg: 2.0
+    max_deg: 5.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 8.0
+      hip_max_deg: 11.0
   trigger: auto
   shot_type: hit_scan
   fire_rate: 15
@@ -67,3 +74,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/Soma_Prime
+
+# see notes: client_primary_calibration

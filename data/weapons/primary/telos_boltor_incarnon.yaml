@@ -28,11 +28,12 @@ gauge_form:
     resource: incarnon_charges
     unaffected_by_mods: true
     unaffected_by_ammo_efficiency: true
-  transmute_in_seconds: 2.4      # = base reload time, unmodded
+  # see notes: incarnon_package_transition_time
+  transmute_in_seconds: 1.4
+  transmute_out_seconds: 1.0
 
 pseudo_reload:
   magazine: 160
-  reload_seconds: 3.4   # transmute out (1.0) + in (2.4), unmodded
 
 co_behavior: additive_with_base_damage
 
@@ -51,17 +52,22 @@ co_behavior: additive_with_base_damage
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 8
-    max_deg: 12
+    min_deg: 8.0
+    max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 20.0
+      hip_max_deg: 26.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 85
-  fire_rate: 10.33
+  fire_rate: 10.3333333333333
   multishot: 3.0
   ammo_cost: 1                  # of the separate 160-round charge pool
   crit_chance: 0.36
   crit_multiplier: 3.2
-  status_chance: 0.1067
+  status_chance: 0.106666666666667
   # see notes: module_weapons_data_form
   punch_through_m: 0.6
   damage: { impact: 2.0, puncture: 6.0, slash: 12.0 }   # total 20 per projectile
@@ -75,3 +81,7 @@ source:
   # Attack stats and the 3x multishot are the wiki module's own
   # `Attacks[1].Multishot`.
 
+unmodeled:
+  - reason: client_accuracy_runtime
+
+# see notes: client_primary_calibration

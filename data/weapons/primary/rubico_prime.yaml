@@ -38,10 +38,15 @@ attack:
   # see notes: cone_half_angle_from
   spread:
     min_deg: 0.0
-    max_deg: 15
+    max_deg: 15.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 15.0
+      hip_max_deg: 25.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 3.67
+  fire_rate: 3.66666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -51,11 +56,21 @@ attack:
   punch_through_m: 1.0
   # see notes: wall_ramp_full_damage_5
   range_m: 1000.0
-  damage: { impact: 149.6, puncture: 28.1, slash: 9.3 }   # 187 total
+  damage:
+    impact: 149.6
+    puncture: 28.05
+    slash: 9.349991024
+  falloff:
+    start_m: 400.0
+    end_m: 600.0
+    reduction: 0.465240616043
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: sniper_combo_miss
     seconds: 2
   - reason: zoom_steps
 
 source:
   url: https://wiki.warframe.com/w/Rubico_Prime
+
+# see notes: client_primary_calibration

@@ -5,8 +5,7 @@ weapon_type: primary
 # THE VANDAL IS NOT A BIGGER GLAXION — it gains a mechanic the other two do not
 # have: a 2 m COLD BLOTCH at the end of the beam, which is a damage radius and
 # makes this the only member of the family that hits more than one body without
-# punch through. It is also the family's third RAMP FLOOR (30%, against the
-# base's 20%).
+# punch through. Its damage-ramp bounds come from the parsed impact behavior.
 class: rifle
 form: base
 default_form: true          # the arsenal's form (module _TooltipAttackDisplay)
@@ -81,13 +80,18 @@ attack:
       damage_per_hop: 0.0
       origin: radius_targets
 
-# THE RAMP FLOOR IS 30%, not the engine's 20% default: "Damage ramps up from 30%
-# to 100%". The ordinary Glaxion states 20% and needs no override, so this
-# family alone carries two of the three floors the roster has seen.
-beam_ramp_floor: 0.30
+# Parsed ramp and attenuation bounds; see client_primary_calibration.
+    ramp:
+      rise_seconds: 0.6
+      cooldown_delay_seconds: 0.8
+      cooldown_divisor: 2.0
+beam_ramp_floor: 0.2
 
 unmodeled:
+  - reason: client_beam_target_ramp
   - "Kills leave an extra corpse, which the page notes for Nekros' Desecrate; it is a loot mechanic and changes nothing here."
 
 source:
   url: https://wiki.warframe.com/w/Glaxion_Vandal
+
+# see notes: client_primary_calibration

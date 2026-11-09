@@ -34,6 +34,12 @@ copies the card; a measurement outranks it because the package is the input
 and not the arithmetic on it. A line run by a script stores parameters, not
 the value, and is not read from it.
 
+**Incarnon transition times** come from each profile's `ModeSwitchTime`, not
+its magazine `reloadTime`. The pinned fixture and importer are documented in
+`INCARNON.md`; M9 records the source hashes and owner-directed calibration.
+The fixture's original tokens retain the float32 evidence, while YAML uses
+the shortest decimal that represents the same float32.
+
 **The export fills what the wiki does not state.** `scripts/de_export.py`
 downloads it (English and Chinese) into `vendor/public-export/`: `uniqueName`
 (every data file's `internal_name`), `baseDrain` / `fusionLimit`, polarity,
@@ -76,6 +82,42 @@ copy of this export.
 
 ## Pinned primary form and sampler inputs
 
+### Whole-primary calibration
+
+`scripts/import_primary_calibration.py --exchange <exchange> --check` verifies
+all primary bindings in `tests/fixtures/client/primary-bindings.json` against
+the immutable roster archive and supplemental effective records. The resulting
+`primary-calibration-2026-10-28.json` is the source receipt: exact package paths,
+behavior indices, projectile/component selection, original tokens, adopted YAML
+fields and scoped runtime limitations. A missing form or changed adopted field
+fails the compiled catalog check. Modular entries bind `PrimaryBehaviorOverrides`;
+their published assembly tables remain in use until the composition consumer is
+verified. `docs/UNMODELLED.md` owns the remaining mechanism coverage.
+
+For this primary calibration, parsed client inputs take priority over conflicting
+published values and prior timing conventions. This includes charge, reload,
+beam-ramp and form-transition parameters. A field's consumer still determines its
+meaning: `reloadTime` is not a shell-loop total or a battery refill; a launch
+packet is not an orb's merged damage; animation duration alone is not an input
+acceptance boundary. Missing defaults and unverified consumers retain an explicit
+limitation. M42/M43 preserve their original observations and identify the adopted
+Scourge inputs separately; source-derived checks are not new in-game measurements.
+
+Looped reload is `start + magazine * loop + end`; battery refill is
+`empty_delay + magazine / regen_rate`, bounded by a declared empty animation.
+The zero native refire on Lanka selects `charge_cadence: draw_only`; its positive
+rate anchor remains available to modifiers. Lenz's collapse binds
+`EmbedDeathAttack` and its fixed `EmbedTime`, separately from the immediate Cold
+component. Its omitted damage type falls back to the published Blast component.
+Unverified acceleration retains the declared constant-flight approximation.
+Radial critical-upgrade consumers retain the published rule and a limitation.
+Ordinary finite reserves, per-shot ammo, trace reach, beam shape and absolute
+damage-falloff floors use their bound records. Health conversion and battery
+reserves keep their resource semantics. Zero-ammo script/state debits and forced
+reloads have separate limitations. A falloff floor above the direct packet's
+base is recorded without inventing a decreasing curve. Unverified wave collision
+and target-limited beam trace consumers keep their declared approximation.
+
 Primary form bindings and native sampler inputs live in
 `tests/fixtures/client/primary-five-2026-10-28.json`.
 `scripts/import_client_primary.py --exchange <exchange> --check` verifies the
@@ -90,8 +132,8 @@ The Scourge family is independently bound by
 `scripts/import_client_scourge.py --exchange <exchange> --check` and
 `tests/fixtures/client/scourge-2026-10-28.json`. It merges damage members along
 projectile ancestry and preserves normal/charged candidates separately. M42/M43
-and the retained wiki travel convention are identified as such; package entity
-lifetimes and state reload values do not silently override measured timing.
+and the parsed-input adoption policy are identified as such; original measurement
+observations remain separate from configured entity lifetimes and state timers.
 The fixture is not a claim that projectile selection or attractor steering is
 closed. The weapon-page primary CO claim conflicts with the catalog rule;
 `docs/UNMODELLED.md` records the unresolved consumer.

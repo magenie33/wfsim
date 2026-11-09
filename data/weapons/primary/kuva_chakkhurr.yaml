@@ -58,7 +58,7 @@ attack:
     max_deg: 0
   trigger: semi_auto
   shot_type: projectile
-  fire_rate: 1.17
+  fire_rate: 1.16666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -100,7 +100,11 @@ attack:
     damage: { puncture: 52.0, slash: 29.0, blast: 25.0 }   # total 106
 
 unmodeled:
+  - reason: client_projectile_collision
+  - reason: client_accuracy_runtime
   - reason: explosion_ignores_cover
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Chakkhurr
+
+# see notes: client_primary_calibration

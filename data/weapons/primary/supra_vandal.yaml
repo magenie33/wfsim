@@ -37,6 +37,11 @@ attack:
   spread:
     min_deg: 3.0
     max_deg: 4.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 5.0
+      hip_max_deg: 10.0
   trigger: auto
   shot_type: projectile
   projectile_speed_mps: 100
@@ -47,19 +52,20 @@ attack:
   crit_multiplier: 2.0
   status_chance: 0.3
   punch_through_m: 0.0
-  # THE SPOOL, stated twice on its own page: "requires a spool-up of 4 shots
-  # before optimal fire rate is achieved" and "fire rate starts at 40% of the
-  # listed value, and increases by 20% per shot". 0.60 / 3 = 20% a shot, full
-  # from the 4th.
+  # Parsed 20% starting rate; the declared three-shot ramp span is retained.
   sustained_fire_rate:
-    start: 0.40
-    end: 1.00
+    start: 0.2
+    end: 1.0
     over_shots: 3.0
   # see notes: no_range_row_attack_3
   damage: { impact: 4, puncture: 30, slash: 6 }   # total 40
 
 unmodeled:
+  - reason: client_rate_spool
+  - reason: client_accuracy_runtime
   - reason: spool_rebuilds_after_reload
 
 source:
   url: https://wiki.warframe.com/w/Supra_Vandal
+
+# see notes: client_primary_calibration

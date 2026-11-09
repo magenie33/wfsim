@@ -30,9 +30,15 @@ def render(value):
     return format(value, '.15g')
 
 
+def render_time(value):
+    text = render(value)
+    return text if '.' in text or 'e' in text else text + '.0'
+
+
 def replace_field(text, key, value, indent):
     pattern = rf'(?m)^{{indent}}{re.escape(key)}: [^\n]*'.replace('{indent}', ' ' * indent)
-    text, count = re.subn(pattern, ' ' * indent + key + ': ' + render(value), text)
+    rendered = render_time(value) if key.startswith('transmute_') else render(value)
+    text, count = re.subn(pattern, ' ' * indent + key + ': ' + rendered, text)
     if count != 1:
         raise ValueError(f'{key}: expected one field, found {count}')
     return text
@@ -134,7 +140,7 @@ def main():
                 text = replace_field(text, 'transmute_in_seconds', entry_time, 2)
                 text = re.sub(r'(?m)^  transmute_out_seconds: [^\n]*\n', '', text)
                 text = re.sub(r'(?m)^(  transmute_in_seconds: [^\n]*\n)',
-                    lambda m: m[1] + '  transmute_out_seconds: ' + render(exit_time) + '\n', text)
+                    lambda m: m[1] + '  transmute_out_seconds: ' + render_time(exit_time) + '\n', text)
                 row['transition'] = {'entry_seconds': entry_time, 'exit_seconds': exit_time}
                 if 'pseudo_reload:' in text and re.search(r'(?m)^  reload_seconds:', text):
                     text = replace_field(text, 'reload_seconds', entry_time + exit_time, 2)

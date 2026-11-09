@@ -57,7 +57,11 @@ attack:
   damage: { impact: 1.2, puncture: 1.2, slash: 9.6 }   # 12 a pellet, 24 a shot
 
 unmodeled:
+  - reason: client_special_spread
+  - reason: client_accuracy_runtime
   - "The two beams converge on the crosshair and deal full damage only once aligned (wiki); here both land on the target from the first tick, so the number is the ceiling."
 
 source:
   url: https://wiki.warframe.com/w/Convectrix
+
+# see notes: client_primary_calibration

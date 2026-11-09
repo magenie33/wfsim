@@ -20,10 +20,15 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.0
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: semi_auto
   shot_type: projectile
   projectile_speed_mps: 200
-  fire_rate: 1.67
+  fire_rate: 1.66666666666667
   refire: {"kind": "semi_automatic", "skip_wait_on_empty": false}
   multishot: 1.0
   ammo_cost: 1
@@ -35,7 +40,12 @@ attack:
   damage: { puncture: 3 }   # total 3
 
 unmodeled:
+  - reason: client_projectile_callbacks
+  - reason: client_accuracy_runtime
+  - reason: client_composite_attack
   - "The beacon exists to grant the primary fire +50% absolute critical chance and homing, which the engine cannot carry from one mode to another. On its own it is a three-damage dart."
 
 source:
   url: https://wiki.warframe.com/w/Buzlok
+
+# see notes: client_primary_calibration

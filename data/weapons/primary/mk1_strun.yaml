@@ -15,6 +15,7 @@ transforms_to: mk1_strun_incarnon
 
 # see notes: bulk_intake_stats_are
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: reload_never_interrupted
 accuracy: 4
 disposition: 1.2
@@ -50,11 +51,16 @@ co_behavior: additive_with_base_damage
 attack:
   # see notes: cone_half_angle_from
   spread:
-    min_deg: 15
-    max_deg: 35
+    min_deg: 15.0
+    max_deg: 35.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: true
+      hip_min_deg: 21.0
+      hip_max_deg: 41.0
   trigger: semi_auto
   shot_type: hit_scan
-  fire_rate: 2.08
+  fire_rate: 2.08333333333333
   # see notes: falloff_feeds_the_riven_pool
   falloff:
     start_m: 15
@@ -74,3 +80,5 @@ attack:
 
 source:
   url: https://wiki.warframe.com/w/MK1-Strun
+
+# see notes: client_primary_calibration

@@ -42,12 +42,17 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: charged_auto
   # "Charge Time: 0.50 s", where the Tenet charges in 0.40 — and neither can
   # fire partially charged, so there is no tapped entry beside this one.
   charge_seconds: 0.5
   shot_type: hit_scan
-  fire_rate: 1.33
+  fire_rate: 1.33333333333333
   multishot: 1.0
   ammo_cost: 1
   crit_chance: 0.32
@@ -104,6 +109,8 @@ attack:
     status_chance: 0.10
 
 unmodeled:
+  - reason: client_radial_critical
+  - reason: client_accuracy_runtime
   - "The wiki's Condition Overload catalog gives this weapon's radial its own row, 350% of its base; that row is not entered here yet, so the radial takes 100% and a status-stacking build reads low on it."
   - reason: explosion_ignores_cover
   - reason: holstered_reload
@@ -112,3 +119,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Ferrox
+
+# see notes: client_primary_calibration

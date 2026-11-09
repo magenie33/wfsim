@@ -19,7 +19,7 @@ attack:
     max_deg: 80
   trigger: semi_auto
   shot_type: projectile
-  fire_rate: 3.33
+  fire_rate: 3.33333333333333
   multishot: 10.0
   ammo_cost: 1
   crit_chance: 0.19
@@ -34,8 +34,12 @@ attack:
   damage: { impact: 4.6, puncture: 4.6, slash: 13.8 }   # 23 per pellet
 
 unmodeled:
+  - reason: client_special_spread
+  - reason: client_accuracy_runtime
   - reason: bounce_headshot_assumed
   - reason: ricochet_terrain
 
 source:
   url: https://wiki.warframe.com/w/Kuva_Drakgoon
+
+# see notes: client_primary_calibration

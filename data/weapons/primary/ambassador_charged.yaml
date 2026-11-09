@@ -61,9 +61,12 @@ attack:
     takes_condition_overload: true
 
 unmodeled:
+  - reason: client_radial_critical
   - "The wiki's Condition Overload catalog gives this weapon's radial its own row, 75% of its base; that row is not entered here yet, so the radial takes 100% and a status-stacking build reads high on it."
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Ambassador
+
+# see notes: client_primary_calibration

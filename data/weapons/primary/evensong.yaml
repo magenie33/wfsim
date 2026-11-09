@@ -45,9 +45,14 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: charge
   shot_type: projectile
-  projectile_speed_mps: 100
+  projectile_speed_mps: 110
   fire_rate: 1
   charge_seconds: 1.2
   multishot: 1.0
@@ -71,7 +76,7 @@ attack:
     extra_hit_reads: even   # see notes: extra_hit_reads
     radius_m: 4.0
     falloff_start_m: 0.9
-    falloff_reduction: 0.7
+    falloff_reduction: 0.9
     crit_chance: 0.25
     crit_multiplier: 2.2
     status_chance: 0.38
@@ -80,8 +85,11 @@ attack:
     damage: { puncture: 45, slash: 105 }   # total 150
 
 unmodeled:
+  - reason: client_accuracy_runtime
   - reason: explosion_ignores_cover
   - reason: self_stagger
 
 source:
   url: https://wiki.warframe.com/w/Evensong
+
+# see notes: client_primary_calibration

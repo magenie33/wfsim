@@ -17,7 +17,6 @@ introduced: "32.2"
 # magazine is 1 and the 20 rounds belong to the primary-fire entry. The module
 # gives this attack its own Reload of 2.0 s.
 magazine: 1
-reload_seconds: 2.0
 
 # NOT INHERITED — the CO catalog gives a class per ATTACK, and its Tenet Ferrox
 # row names the "Hitscan AoE Direct", which is the PRIMARY fire's explosion. The
@@ -34,6 +33,11 @@ attack:
   spread:
     min_deg: 0.0
     max_deg: 12.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 6.0
+      hip_max_deg: 18.0
   trigger: semi
   shot_type: projectile
   projectile_speed_mps: 90
@@ -55,7 +59,10 @@ attack:
   # `forced_procs`: that field carries proc TYPES the damage model knows, and a
   # knockdown deals none. Admitted below instead.
   # "This weapon deals ... Impact damage on its alt-fire" — and the split says so.
-  damage: { impact: 35, puncture: 5, slash: 10 }   # total 50
+  damage:
+    impact: 140.0
+    puncture: 30.0
+    slash: 29.999996
 
   # PRIMARY COMPRESSION DOES NOT WORK ON THE THROW, and the catalog says so
   # outright rather than omitting the row (docs/CATALOGS.md §2):
@@ -87,6 +94,9 @@ attack:
     stacking: refresh
 
 unmodeled:
+  - reason: client_forced_reload
+  - reason: client_projectile_acceleration
+  - reason: client_accuracy_runtime
   - "The field pulls enemies within 10 m toward it for 30 s, the reason it is thrown. Grouping enemies helps every area weapon in a real room; enemies here do not move, so it changes nothing."
   - "The throw's forced knockdown is crowd control, worth time and safety rather than damage; it changes nothing here."
   - "The page lists as a bug that the field is disabled entirely against enemies with both shields and armor, or with Overguard. Against such a target the 2,250 above is zero."
@@ -94,3 +104,5 @@ unmodeled:
 
 source:
   url: https://wiki.warframe.com/w/Tenet_Ferrox
+
+# see notes: client_primary_calibration

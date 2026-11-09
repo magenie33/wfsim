@@ -26,6 +26,11 @@ attack:
   spread:
     min_deg: 2.0
     max_deg: 6.0
+    sampling:
+      horizontal_ratio: 0.5
+      uniform: false
+      hip_min_deg: 8.0
+      hip_max_deg: 12.0
   trigger: semi
   shot_type: projectile
   projectile_speed_mps: 25
@@ -73,9 +78,15 @@ attack:
     status_chance: 0.26
 
 unmodeled:
+  - reason: client_projectile_acceleration
+  - reason: client_projectile_callbacks
+  - reason: client_accuracy_runtime
   - "A cube that is shot explodes for 600 Blast in 6 m, four times this blast (wiki). The sim never shoots a cube, so the number reads low."
   - "A cube left alone detonates after 9 s, which needs a miss and a timer the sim does not run."
   - reason: explosion_ignores_cover
 
 source:
   url: https://wiki.warframe.com/w/Quanta_Vandal
+reload_seconds: 2
+
+# see notes: client_primary_calibration
