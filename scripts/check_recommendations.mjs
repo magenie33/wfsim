@@ -97,6 +97,18 @@ const oversized = await recommendationsRoute(new Request("https://wfsim.app/api/
 check("Streaming bodies are bounded before JSON parsing", oversized.status === 413);
 check("Histories are paginated and validate cursors", (await call("/api/account/recommendations?offset=-1")).status === 400);
 check("History rejects invalid calendar dates", (await call("/api/account/recommendations/votes?identity=" + identity + "&before=2026-02-30")).status === 400);
+await call("/api/recommendations", { ...vote, identity: other });
+const smallPage = await call("/api/account/recommendations?filter=all&limit=1");
+const smallNext = await call("/api/account/recommendations?filter=all&limit=1&offset=" + smallPage.next);
+check("History honors a bounded page size without repeating its next page", smallPage.builds.length === 1 && smallPage.next === 1
+  && smallNext.builds.length === 1 && smallPage.builds[0].identity !== smallNext.builds[0].identity && smallPage.count >= 2);
+const votePage = await call("/api/account/recommendations/votes?identity=" + identity + "&limit=1");
+const voteNext = await call("/api/account/recommendations/votes?identity=" + identity + "&limit=1&before=" + votePage.before);
+check("Vote-date pages honor their limit and exclusive cursor", votePage.votes.length === 1 && voteNext.votes.length === 1 && votePage.votes[0].day !== voteNext.votes[0].day);
+check("History page sizes reject zero, fractional and excessive limits", (await call("/api/account/recommendations?limit=0")).status === 400
+  && (await call("/api/account/recommendations?limit=51")).status === 400 && (await call("/api/account/recommendations?limit=1.5")).status === 400
+  && (await call("/api/account/recommendations/votes?identity=" + identity + "&limit=101")).status === 400);
+await call("/api/recommendations", { ...vote, identity: other, action: "withdraw" });
 check("The account export includes recommendation dates", (await recommendationExport(env, "reader")).recommendations.length === 3);
 const OriginalDate = Date, originalCache = globalThis.caches;
 try {

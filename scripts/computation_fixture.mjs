@@ -87,6 +87,35 @@ export async function computationFixture(upstream, port = 0, controls = false) {
   return { base: "http://127.0.0.1:" + server.address().port, env, token, account, profileIds, identity, row, question,
     hideBoard(value) { hidden = value; }, async close() { server.closeAllConnections(); await new Promise(resolve => server.close(resolve)); await env.ACCOUNTS.close(); await env.LIBRARY.close(); } };
 }
+export async function seedHomePages(fixture, count = 23) {
+  const rows = await fetch(fixture.base + "/board/laetum.json").then(response => response.json());
+  const records = rows.slice(0, 200).map(row => ({ weapon: "laetum", ...row,
+    ...(row.riven ? { riven_pos: row.riven.bonuses, riven_neg: row.riven.malus, riven_rolls: row.riven.rolls } : {}) }));
+  const keys = loadEngine().api("/api/build/keys", { kind: "build", builds: records }).keys;
+  const unique = new Map();
+  keys.forEach((key, index) => { if (key && !unique.has(key)) unique.set(key, records[index]); });
+  if (unique.size < count) throw new Error("Paging needs enough distinct canonical published builds.");
+  const selected = [...unique].slice(0, count), device = "1".repeat(24);
+  for (const [identity, record] of selected) {
+    const measured = new Date(record.measured_at).toISOString(), mode = record.mode || "base";
+    await fixture.env.LIBRARY.run("INSERT INTO builds (id,at,record) VALUES (?,?,?) ON CONFLICT DO NOTHING", identity, measured.slice(0, 10), JSON.stringify(record));
+    await fixture.env.LIBRARY.run("INSERT INTO scores (identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES (?,?,?,?,?,'kpm',0,?,?) ON CONFLICT DO NOTHING",
+      identity, record.benchmark, mode, "verified:" + record.measured_by, record.score, measured, measured);
+    await fixture.env.LIBRARY.run("INSERT INTO score_witnesses (identity,ruler,mode,measured_at,engine,owner,device,official,completed_at,credited_at,position) VALUES (?,?,?,?,?,?,?,0,?,?,0) ON CONFLICT DO NOTHING",
+      identity, record.benchmark, mode, measured, record.measured_by, "local-aaa", device, measured, measured);
+    await fixture.env.ACCOUNTS.run("INSERT INTO recommendation_targets (identity,weapon,record,ruler,mode) VALUES (?,'laetum',?,?,?) ON CONFLICT DO NOTHING", identity, JSON.stringify(record), record.benchmark, mode);
+    await fixture.env.ACCOUNTS.run("INSERT INTO recommendations (account,identity,day) VALUES (?,?,CURRENT_DATE-1) ON CONFLICT DO NOTHING", fixture.account, identity);
+  }
+  const identity = selected.map(([id]) => id).sort()[0];
+  for (let day = 2; day <= count; day++) await fixture.env.ACCOUNTS.run("INSERT INTO recommendations (account,identity,day) VALUES (?,?,CURRENT_DATE-?::integer) ON CONFLICT DO NOTHING", fixture.account, identity, day);
+  const record = await fixture.env.LIBRARY.prepare("SELECT * FROM computation_records WHERE question=?").bind(fixture.question).first();
+  for (let index = 1; index < count; index++) {
+    const question = "f" + index.toString(16).padStart(31, "0"), at = new Date(Date.parse(record.completed_at) - index * 1000).toISOString();
+    await fixture.env.LIBRARY.run("INSERT INTO computation_records (question,kind,engine,weapon,completed_at,expires_at) VALUES (?,'optimization',?,'laetum',?,?)", question, record.engine, at, record.expires_at);
+    await fixture.env.LIBRARY.run("INSERT INTO computation_witnesses (question,owner,device,official,completed_at,credited_at,position) VALUES (?,?,?,0,?,?,0)", question, "local-aaa", device, at, at);
+  }
+  return { count, identity };
+}
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const fixture = await computationFixture(process.env.WFSIM_BASE || "http://127.0.0.1:8934", 8935, true);
   console.log(fixture.base + "/people/me");

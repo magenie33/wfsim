@@ -439,8 +439,10 @@ section; it shares the public profile's address and keeps its public content in
 place. Recommendation and preset tabs switch that private region only. Names
 and attribution visibility are edited on the same page. Recommendation history
 reuses the exact Library build cards, dates, weights and filters; weapon selection
-uses the profile's equipment search panel. Six cards appear initially, with more
-available in place. Private presets reuse the browser inventory's search, grouping,
+uses the profile's equipment search panel. Public records, recommendations, private
+presets and expanded recommendation dates reuse the compute page's pager and show
+at most ten items per page. Previous and next replace the current rows; filters
+reset to the first page. Private presets reuse the browser inventory's search, grouping,
 sync controls and editor links. These regions are absent for visitors.
 
 The compatibility page (`/account/recommendations`) shows contribution points and permanent

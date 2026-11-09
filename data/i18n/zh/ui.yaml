@@ -6,6 +6,7 @@
 # localized strings in descriptions.yaml, whole sentences at a time.
 
 ui:
+  "Page {page}": "第 {page} 页"
   "Only you": "仅自己可见"
   "Personal center": "个人中心"
   "Verified calculations": "参与验证的计算"

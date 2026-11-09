@@ -68,7 +68,7 @@ const SCAN = `(() => {
     // A DROPDOWN IS DELEGATED: one document listener serves every [data-dd], so
     // the attribute is the only mark it leaves on the control itself.
     if (!(seen.has(el) || el.onclick || el.onchange || el.oninput
-      || el.matches("[data-dd],[data-computation-weapon],[data-computation-retry],[data-computation-more],[data-profile-weapon]"))) continue;
+      || el.matches("[data-dd],[data-computation-weapon],[data-computation-retry],[data-profile-page],[data-profile-weapon]"))) continue;
     if (!visible(el)) continue;
     const door = Math.min(...anchors.map(a => depth(el, a)).filter(d => d >= 0), Infinity);
     const ex = AGENT_EXEMPT.map(e => ({ e, d: depth(el, e.sel) })).filter(x => x.d >= 0).sort((a, b) => a.d - b.d)[0];

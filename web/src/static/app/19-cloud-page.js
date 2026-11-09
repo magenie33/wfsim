@@ -13,6 +13,7 @@ let cloudFor = null;
 function cloudForget(who) {
   if (cloudFor === who) return;
   cloudFor = who;
+  computePages["home-presets"] = 0;
   cloudDevices = null;
   cloudTrash = null;
 }
@@ -176,6 +177,8 @@ function cloudListHtml() {
   let rows = all.filter((x) => (v.status === "all" || x.state === v.status) && (v.kind === "all" || x.domain === v.kind)
     && (!q || `${x.name} ${x.owner}`.toLowerCase().includes(q)));
   rows.sort((x, y) => y.saved - x.saved);
+  const page = userHomeOwner("presets") ? computeSlice(rows, "home-presets") : null;
+  if (page) rows = page.rows;
   const seg = (st, label) => `<button type="button" data-cstatus="${st}" class="${v.status === st ? "on" : ""}">${aT(label)}<em>${count(st)}</em></button>`;
   const kinds = [...new Set(all.map((x) => x.domain))];
   const day = (t) => (t ? new Date(t).toLocaleString(accountLocale(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—");
@@ -213,7 +216,7 @@ function cloudListHtml() {
       <button class="ghost-btn btn-sm" data-cbulk="clear">${aT("Clear selection")}</button></div>` : ""}
     <div class="tbl-wrap"><table class="items"><thead><tr><th><input type="checkbox" data-cpick="*" aria-label="${aT("Select all")}"></th>
       <th>${aT("Name")}</th><th>${aT("Kind")}</th><th>${aT("About")}</th><th>${aT("Saved")}</th><th>${aT("Sync")}</th><th></th></tr></thead>
-      <tbody>${body || `<tr><td colspan="7" class="muted">${aT("Nothing here.")}</td></tr>`}</tbody></table></div>`;
+      <tbody>${body || `<tr><td colspan="7" class="muted">${aT("Nothing here.")}</td></tr>`}</tbody></table></div>${page ? computePagerHtml(page, to => `data-home-presets-page="${to}"`) : ""}`;
 }
 
 function renderCloudList() {
@@ -233,9 +236,11 @@ function cloudSwitch(id, on) {
 
 // ONE LISTENER EACH, on the page's own container, which outlives every render.
 document.addEventListener("click", (e) => {
+  const page = e.target.closest("[data-home-presets-page]");
+  if (page && userHomeOwner("presets")) { computePages["home-presets"] = Number(page.dataset.homePresetsPage); renderCloudList(); return; }
   const t = e.target && e.target.closest && e.target.closest("#cloud-items [data-ctoggle], #cloud-items [data-cstatus], #cloud-items [data-cbulk]");
   if (!t) return;
-  if (t.dataset.cstatus) cloudView.status = t.dataset.cstatus;
+  if (t.dataset.cstatus) { cloudView.status = t.dataset.cstatus; computePages["home-presets"] = 0; }
   else if (t.dataset.ctoggle) cloudSwitch(t.dataset.ctoggle, !t.classList.contains("on"));
   else if (t.dataset.cbulk === "clear") cloudPicked.clear();
   else {
@@ -254,8 +259,8 @@ document.addEventListener("click", (e) => {
 document.addEventListener("change", (e) => {
   const t = e.target;
   if (!t || !t.closest || !t.closest("#cloud-items")) return;
-  if (t.id === "cloud-kind") cloudView.kind = t.value;
-  else if (t.id === "cloud-by") cloudView.by = t.value;
+  if (t.id === "cloud-kind") { cloudView.kind = t.value; computePages["home-presets"] = 0; }
+  else if (t.id === "cloud-by") { cloudView.by = t.value; computePages["home-presets"] = 0; }
   else if (t.dataset.cpick === "*") {
     for (const b of document.querySelectorAll("#cloud-items [data-cpick]:not([data-cpick='*'])")) {
       if (t.checked) cloudPicked.add(b.dataset.cpick); else cloudPicked.delete(b.dataset.cpick);
@@ -268,5 +273,6 @@ document.addEventListener("change", (e) => {
 onTyped(document, (e) => {
   if (!e.target || e.target.id !== "cloud-q") return;
   cloudView.q = e.target.value;
+  computePages["home-presets"] = 0;
   renderCloudList();
 });

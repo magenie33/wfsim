@@ -431,18 +431,20 @@ const taskPts = (t) => Math.round(Number(t.work || 0) / 1e9);
 /// page changes in place".
 let computeOpenTask = null;
 const computePages = Object.create(null);
-function computeSlice(rows, key, size = 10) {
+const LIST_PAGE_SIZE = 10;
+function computeSlice(rows, key, size = LIST_PAGE_SIZE) {
   const pages = Math.max(1, Math.ceil(rows.length / size));
   const page = Math.max(0, Math.min(computePages[key] || 0, pages - 1));
   computePages[key] = page;
   return { rows: rows.slice(page * size, (page + 1) * size), key, page, pages, total: rows.length };
 }
-function computePagerHtml({ key, page, pages, total }) {
-  if (pages <= 1) return "";
-  const button = (to, label, disabled) => `<button type="button" class="ghost-btn btn-sm" data-auth="compute-page" data-page-key="${escHtml(key)}" data-page="${to}"${disabled ? " disabled" : ""}>${aT(label)}</button>`;
+function computePagerHtml({ key, page, pages = null, total, hasNext = page < pages - 1, loading = false }, attributes = null) {
+  if (pages != null ? pages <= 1 : page === 0 && !hasNext) return "";
+  const button = (to, label, disabled) => `<button type="button" class="ghost-btn btn-sm" ${attributes ? attributes(to) : `data-auth="compute-page" data-page-key="${escHtml(key)}" data-page="${to}"`}${disabled || loading ? " disabled" : ""}>${aT(label)}</button>`;
+  const label = pages == null ? trF("Page {page}", { page: page + 1 }) : trF("Page {page} of {pages} · {total} entries", { page: page + 1, pages, total });
   return `<nav class="compute-pager" aria-label="${escHtml(tr("Pagination"))}">${button(page - 1, "Previous page", page === 0)}
-    <span aria-live="polite">${escHtml(trF("Page {page} of {pages} · {total} entries", { page: page + 1, pages, total }))}</span>
-    ${button(page + 1, "Next page", page === pages - 1)}</nav>`;
+    <span aria-live="polite">${escHtml(label)}</span>
+    ${button(page + 1, "Next page", !hasNext)}</nav>`;
 }
 const computeStill = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const computeCount = (x) => Number(x || 0).toLocaleString(accountLocale());

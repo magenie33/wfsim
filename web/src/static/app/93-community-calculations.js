@@ -260,7 +260,7 @@ function computationPage(main, kind) {
     const selected = new URLSearchParams(location.search).get("kind");
     const tab = selected === "optimization" ? selected : "board";
     computationProfile = { key, owner, tab, loading: true, statsLoading: false, recordsLoading: false, rows: [],
-      value: prior ? { ...prior, kind: tab } : null, error: "", statsError: "", recordsError: "", next: null, closed: false };
+      value: prior ? { ...prior, kind: tab } : null, error: "", statsError: "", recordsError: "", next: null, recordPage: 0, recordCursors: [null], closed: false };
     loadComputationProfile(computationProfile, kind);
   }
   const state = computationProfile, value = state.value;
@@ -294,7 +294,7 @@ function computationPage(main, kind) {
     ${weapon ? `<button class="ghost-btn small profile-filter" data-profile-weapon="" aria-label="${aT("All weapons")}">${escHtml(weaponEntryName(weapon))} <span aria-hidden="true">×</span></button>` : ""}
     <div class="profile-builds" aria-busy="${state.recordsLoading}">${state.rows.map(entry => tab === "board" ? computationBuildHtml(entry, p.you) : computationOptimizationHtml(entry, p.you)).join("")}</div>
     ${!state.recordsLoading && !state.rows.length && !state.recordsError && !state.next ? `<p class="muted">${aT("No calculation records here yet.")}</p>` : ""}${records}
-    ${state.next && !state.recordsLoading ? `<button class="ghost-btn" data-computation-more>${aT("Load more")}</button>` : ""}`;
+    ${computePagerHtml({ page: state.recordPage, hasNext: !!state.next, loading: state.recordsLoading }, page => `data-profile-page="${page}"`)}`;
   main.innerHTML = `<div class="contributor-profile"><header class="profile-heading"><span class="avatar">${escHtml((p.name || "?").slice(0, 1).toUpperCase())}</span>
     <div><span class="profile-eyebrow">${aT(p.you ? "My profile" : "User profile")}</span><h2>${escHtml(p.name)} ${p.contributor_rank == null ? "" : contributorRankBadge(p.contributor_rank)}</h2><span class="muted">@${escHtml(p.username || "")}</span></div>
     <div class="profile-totals"><b>${total("signatures")}</b><span>${aT("Lifetime signatures")}</span></div>
@@ -339,26 +339,28 @@ async function loadProfileSummary(state) {
     rejectComputationProfile(state, error); state.statsError = error.message;
   } finally { state.statsLoading = false; renderComputationState(state); }
 }
-async function loadProfileRecords(state, more = false) {
+async function loadProfileRecords(state, page = 0) {
   const generation = state.recordsGeneration = (state.recordsGeneration || 0) + 1;
+  if (page === state.recordPage + 1) state.recordCursors[page] = state.next;
   state.recordsLoading = true; state.recordsError = "";
   try {
     const query = new URLSearchParams(state.query);
-    query.set("view", "records"); query.set("limit", "12"); query.set("kind", state.tab);
-    if (more && state.next) query.set("before", JSON.stringify(state.next)); else query.delete("before");
+    query.set("view", "records"); query.set("limit", String(LIST_PAGE_SIZE)); query.set("kind", state.tab);
+    if (page && state.recordCursors[page]) query.set("before", JSON.stringify(state.recordCursors[page])); else query.delete("before");
     const value = await computationCall(state.api + "?" + query);
     if (state !== computationProfile || state.closed || generation !== state.recordsGeneration) return;
     const rows = value.kind === "board" ? await publishedComputationRows(value.candidates) : value.candidates || [];
     if (state !== computationProfile || state.closed || generation !== state.recordsGeneration) return;
     state.value.profile = { ...state.value.profile, ...value.profile };
-    state.rows = more ? state.rows.concat(rows) : rows; state.next = value.next;
+    state.rows = rows; state.next = value.next; state.recordPage = page;
+    state.recordCursors.length = page + 1;
   } catch (error) {
     if (state !== computationProfile || generation !== state.recordsGeneration) return;
     rejectComputationProfile(state, error); state.recordsError = error.message;
   } finally { if (generation === state.recordsGeneration) { state.recordsLoading = false; renderComputationState(state); } }
 }
 async function loadComputationProfile(state, kind, more = false) {
-  if (more && kind === "profile") { await loadProfileRecords(state, true); return; }
+  if (more && kind === "profile") { await loadProfileRecords(state, state.recordPage + 1); return; }
   state.loading = true; state.error = "";
   const id = location.pathname.split("/").filter(Boolean).at(-1);
   state.api = kind === "calculation" ? "/api/computations/" + id : id === "me" ? "/api/account/contribution-profile" : "/api/contributors/profile/" + id;
@@ -456,8 +458,12 @@ document.addEventListener("click", event => {
       renderAuthPage("profile");
     } else { computationProfile = null; renderAuthPage(authKindOf(location.pathname)); }
   }
-  if (event.target.closest("[data-computation-more]") && computationProfile && !computationProfile.recordsLoading) {
-    loadComputationProfile(computationProfile, "profile", true); renderAuthPage("profile");
+  const page = event.target.closest("[data-profile-page]");
+  if (page && computationProfile && !computationProfile.recordsLoading) {
+    const to = Number(page.dataset.profilePage);
+    if (to >= 0 && Number.isInteger(to) && (to < computationProfile.recordPage || computationProfile.next)) {
+      loadProfileRecords(computationProfile, to); renderAuthPage("profile");
+    }
   }
 });
 // Public content is shared; account-owned controls and collections are rendered only for the owner.

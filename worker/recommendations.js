@@ -72,19 +72,21 @@ async function recommendationRoute(request, env, path, ctx) {
   if (path === "/api/account/recommendations/votes") {
     if (request.method !== "GET") return no("method", 405);
     const query = new URL(request.url).searchParams, identity = query.get("identity"), before = query.get("before") || "";
-    if (!validId(identity) || before && (before < "0001-01-01" || !/^\d{4}-\d\d-\d\d$/.test(before) || !Number.isFinite(Date.parse(before)) || new Date(before).toISOString().slice(0, 10) !== before)) return no("bad_query");
+    const limit = Number(query.get("limit") || 100);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !validId(identity) || before && (before < "0001-01-01" || !/^\d{4}-\d\d-\d\d$/.test(before) || !Number.isFinite(Date.parse(before)) || new Date(before).toISOString().slice(0, 10) !== before)) return no("bad_query");
     const { results } = await db.prepare(`SELECT day::text AS day, greatest(0, 11 - (?2::date - day)) AS tenths
       FROM recommendations WHERE account = ?1 AND identity = ?3 AND (?4::text = '' OR day < NULLIF(?4::text, '')::date)
-      ORDER BY day DESC LIMIT 100`).bind(account, time.day, identity, before).all();
+      ORDER BY day DESC LIMIT ?5::bigint`).bind(account, time.day, identity, before, limit).all();
     return result({ ok: true, ...time, votes: results.map(row => ({ day: row.day, weight: row.day === time.day ? null : Number(row.tenths) / 10 })),
-      before: results.length === 100 ? results.at(-1).day : null });
+      before: results.length === limit ? results.at(-1).day : null });
   }
   if (path === "/api/account/recommendations") {
     if (request.method !== "GET") return no("method", 405);
     const query = new URL(request.url).searchParams;
     const filter = query.get("filter") || "available", weapon = query.get("weapon") || "";
     const offset = Number(query.get("offset") || 0);
-    if (!["all", "available", "pending"].includes(filter) || weapon && !SLUG.test(weapon) || !Number.isSafeInteger(offset) || offset < 0 || offset > 1000000) return no("bad_query");
+    const limit = Number(query.get("limit") || 50);
+    if (!Number.isInteger(limit) || limit < 1 || limit > 50 || !["all", "available", "pending"].includes(filter) || weapon && !SLUG.test(weapon) || !Number.isSafeInteger(offset) || offset < 0 || offset > 1000000) return no("bad_query");
     const grouped = `SELECT identity, max(day) AS last_day, count(*) FILTER (WHERE day < ?2::date) AS points,
       bool_or(day = ?2::date) AS pending FROM recommendations WHERE account = ?1 GROUP BY identity`;
     const [totals, page, count] = await Promise.all([
@@ -94,8 +96,8 @@ async function recommendationRoute(request, env, path, ctx) {
       db.prepare(`WITH own AS (${grouped}) SELECT t.*, own.last_day::text, own.points, own.pending
         FROM own JOIN recommendation_targets t USING (identity)
         WHERE (?3::text = '' OR t.weapon = ?3::text) AND (?4::text = 'all' OR own.pending = (?4::text = 'pending'))
-        ORDER BY own.pending, own.last_day DESC, own.identity LIMIT 50 OFFSET ?5`)
-        .bind(account, time.day, weapon, filter, offset).all(),
+        ORDER BY own.pending, own.last_day DESC, own.identity LIMIT ?6::bigint OFFSET ?5`)
+        .bind(account, time.day, weapon, filter, offset, limit).all(),
       db.prepare(`WITH own AS (${grouped}) SELECT count(*) AS n FROM own JOIN recommendation_targets t USING (identity)
         WHERE (?3::text = '' OR t.weapon = ?3::text) AND (?4::text = 'all' OR own.pending = (?4::text = 'pending'))`)
         .bind(account, time.day, weapon, filter).first(),
@@ -109,7 +111,7 @@ async function recommendationRoute(request, env, path, ctx) {
       FROM recommendations WHERE account = ?1 AND identity = ANY((?3::text)::text[]) AND day >= ?2::date - 10 ORDER BY day DESC`)
       .bind(account, time.day, "{" + ids.join(",") + "}").all()).results : [];
     return result({ ok: true, ...time, points: Number(totals.points), weapons: (totals.weapons || "").split(",").filter(Boolean), total: Number(totals.total), pending: Number(totals.pending),
-      available: Number(totals.total) - Number(totals.pending), next: offset + page.results.length < Number(count.n) ? offset + page.results.length : null,
+      available: Number(totals.total) - Number(totals.pending), count: Number(count.n), next: offset + page.results.length < Number(count.n) ? offset + page.results.length : null,
       builds: page.results.map(row => ({ ...row, record: JSON.parse(row.record), points: Number(row.points),
         measurement: measured.find(score => score.identity === row.identity && score.ruler === row.ruler && score.mode === row.mode) || null,
         votes: recent.filter(vote => vote.identity === row.identity).map(vote => ({ day: vote.day, weight: vote.day === time.day ? null : Number(vote.tenths) / 10 })) })) });

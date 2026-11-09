@@ -61,8 +61,8 @@ Recommendation points do not enter compute points, contributor rank or Merit.
 | `GET /api/recommendations/heat/<weapon>` | public identity-to-popularity map, `day` and `next_settlement`; cached at most 30 seconds and never across a UTC boundary |
 | `POST /api/recommendations/state` | `{identities: [...]}` (at most 200); own pending identities and permanent points |
 | `POST /api/recommendations` | `{identity, day, action: "recommend"\|"withdraw", ruler?, mode?}`; `day` must match the service's current day; new targets also require their ruler and mode |
-| `GET /api/account/recommendations` | own history by `filter=available\|pending\|all`, optional `weapon` and `offset`; 50 builds per page, including expired recommendations |
-| `GET /api/account/recommendations/votes` | own vote dates and current weights for `identity`, optional exclusive `before` date; 100 dates per page |
+| `GET /api/account/recommendations` | own history by `filter=available\|pending\|all`, optional `weapon`, `offset` and `limit` (1–50, default 50); `count` is the filtered total, including expired recommendations |
+| `GET /api/account/recommendations/votes` | own vote dates and current weights for `identity`, optional exclusive `before` date and `limit` (1–100, default 100) |
 
 Cookie-authenticated writes require same-origin JSON. Claimed bearer keys act
 for the same account and share its daily allowance. Unclaimed keys cannot
@@ -140,7 +140,7 @@ styling across the ranking and calculation records: no underline, an accent
 hover state and a visible keyboard focus ring.
 The profile loads identity independently of the library database, then contribution
 totals and the selected record list independently. Current verified board builds
-are the default, in twelve-candidate pages checked against actual publication.
+are the default, in ten-candidate pages checked against actual publication.
 Their loading or failure does not hide the user card. Weapon filtering opens a
 separate search panel with the site's shared localized equipment matcher;
 typing filters local equipment and selecting requests that weapon's records.
@@ -153,6 +153,9 @@ existing browser-preset inventory. `section=recommendations|presets` selects thi
 region without reloading public records; visitors ignore it and never request the
 owner's private history. Preset contents retain their existing local/sync ownership
 and are not published by appearing on the owner's homepage.
+Homepage record, recommendation and preset lists use the compute page's shared
+pager, with at most ten items displayed. Pages replace rows; filtering resets the
+page. Nested recommendation dates also use ten-date pages and load when expanded.
 Unregistered contributors earn anonymous credit without a contribution profile.
 The first device claim includes its unclaimed history. Deleting an account
 removes its profile and name links while retaining anonymous calculation credit.

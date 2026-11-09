@@ -30,6 +30,10 @@ embeds exact recommendation history and searches private presets. Switching the
 private section must not reload public records. A signed-in visitor carrying
 `section=recommendations` cannot trigger private history reads or expose cached
 recommendations and browser presets from their own account on another profile.
+Its pagination fixture adds twenty-three engine-keyed published builds, stored
+recommendations, accepted optimization records and vote dates. The shared pager
+must cap each visible list at ten, replace rows, restore preceding identities,
+show the remaining final page and reset filtered presets to page one.
 
 `check_native_pgo.py` refuses changed numerical responses, missing timing cases,
 individual regressions and cross-target training. `check_native_pgo.mjs` checks
@@ -48,6 +52,8 @@ routes against Postgres semantics. It covers registered and claimed-client
 authentication, idempotence, withdrawal, midnight retries, settlement weights,
 expiry, permanent points, private history, limits, export and account deletion.
 Its first-settlement assertion rejects a new vote starting at 0.9.
+Explicit history/date limits must be bounded and preserve exclusive paging;
+default limits remain compatible with existing API clients.
 
 `check_recommendations_page.mjs` drives the page against the same account
 service with local fixture data: pending/withdrawn votes shared by Library and board

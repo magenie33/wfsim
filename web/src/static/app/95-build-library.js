@@ -297,7 +297,6 @@ addEventListener("scroll", () => { if (libraryActive) libraryScroll = scrollY; }
 // Recommendation identity comes from the engine; votes and periods come from the account service.
 let recommendationLibrary = null, recommendationHistory = null, recommendationHistoryLoading = false;
 let recommendationHistoryFilter = "available", recommendationHistoryWeapon = "", recommendationHistoryOffset = 0;
-let recommendationHomeVisible = 6;
 const recommendationHistoryVisible = () => authKindOf(location.pathname) === "recommendations" || userHomeOwner("recommendations");
 function renderRecommendationHistory() {
   if (userHomeEditing()) return;
@@ -614,11 +613,41 @@ function recommendationHistoryLink(entry) {
   return weaponPath(entry.weapon) + "?" + query;
 }
 const recommendationVoteRows = votes => votes.map(vote => `<tr><td>${escHtml(vote.day)}</td><td>${vote.weight == null ? aT("Pending settlement") : vote.weight.toFixed(1)}</td></tr>`).join("");
+const recommendationVotePages = new WeakMap();
+function recommendationVotePager(details, state) {
+  const total = Number(details.dataset.voteTotal);
+  details.querySelector("[data-vote-pager]").innerHTML = computePagerHtml({ page: state.page,
+    pages: Math.max(1, Math.ceil(total / LIST_PAGE_SIZE)), total, loading: state.loading }, page => `data-recommend-vote-page="${page}"`);
+}
+async function loadRecommendationVotePage(details, page = 0) {
+  const owner = recommendationOwner();
+  if (!owner) return;
+  let state = recommendationVotePages.get(details);
+  if (!state) { state = { page: 0, cursors: [null], loading: false, loaded: false }; recommendationVotePages.set(details, state); }
+  if (state.loading || page < 0 || page && !state.cursors[page]) return;
+  state.loading = true; recommendationVotePager(details, state);
+  const status = details.querySelector("[data-vote-status]"); status.textContent = tr("Loading…");
+  const query = new URLSearchParams({ identity: details.dataset.recommendVotes, limit: String(LIST_PAGE_SIZE) });
+  if (page) query.set("before", state.cursors[page]);
+  try {
+    const value = await recommendationCall("/api/account/recommendations/votes?" + query);
+    if (!details.isConnected || recommendationOwner() !== owner) return;
+    state.page = page; state.cursors[page + 1] = value.before; state.loaded = true;
+    state.cursors.length = page + 2;
+    details.querySelector("tbody").innerHTML = recommendationVoteRows(value.votes.slice(0, LIST_PAGE_SIZE)); status.textContent = "";
+  } catch (error) {
+    recommendationFailure(error, "history", "older");
+    if (details.isConnected && recommendationOwner() === owner) status.textContent = tr(error.message);
+  } finally { state.loading = false; if (details.isConnected) recommendationVotePager(details, state); }
+}
+document.addEventListener("toggle", event => {
+  if (event.target.matches("details[data-recommend-votes]") && event.target.open && !recommendationVotePages.get(event.target)?.loaded) loadRecommendationVotePage(event.target);
+}, true);
 async function loadRecommendationHistory() {
   const account = recommendationOwner();
   if (!account || recommendationHistoryLoading) return;
   recommendationHistoryLoading = true;
-  const query = new URLSearchParams({ filter: recommendationHistoryFilter, weapon: recommendationHistoryWeapon, offset: String(recommendationHistoryOffset) });
+  const query = new URLSearchParams({ filter: recommendationHistoryFilter, weapon: recommendationHistoryWeapon, offset: String(recommendationHistoryOffset), limit: String(LIST_PAGE_SIZE) });
   try {
     const value = await recommendationCall("/api/account/recommendations?" + query);
     if (recommendationOwner() !== account) return;
@@ -657,33 +686,25 @@ function recommendationsPage(account, embedded = false) {
     + (embedded ? `<button class="ghost-btn small" data-computation-weapon="recommendations" aria-haspopup="dialog">${escHtml(recommendationHistoryWeapon ? weaponEntryName(weaponInfo(recommendationHistoryWeapon)) : tr("All weapons"))}</button></div>`
     :
     `<label>${aT("Weapon")}<select id="recommendation-history-weapon"><option value="">${aT("All weapons")}</option>${(value.weapons || []).map(id => `<option value="${escHtml(id)}"${recommendationHistoryWeapon === id ? " selected" : ""}>${escHtml(weaponInfo(id)?.name || id)}</option>`).join("")}</select></label></div>`) : "";
-  const builds = (value?.builds || []).slice(0, embedded ? recommendationHomeVisible : 50).map(entry => {
+  const builds = (value?.builds || []).slice(0, LIST_PAGE_SIZE).map(entry => {
     const w = weaponInfo(entry.weapon), heat = value.heat?.[entry.identity];
     const date = entry.last_day + " UTC";
     return `<article class="recommendation-history-build"><header>${w?.image ? imgTag(IMG(w.image), "recommendation-weapon") : ""}<div><a href="${escHtml(recommendationHistoryLink(entry))}">${escHtml(w?.name || entry.weapon)}</a><p>${escHtml(trF("Last recommendation: {date}", { date }))}</p></div><div class="recommendation-heat"><b>${heat == null ? "—" : heat.toFixed(1)}</b> <span>${aT("Popularity score")}</span>`
       + (entry.measurement ? `<small class="recommendation-score" title="${escHtml(entry.measurement.finished_at)}">${escHtml(fmtScore(entry.measurement.score))} ${escHtml(rulerUnit(tr(benchList().find(bench => bench.id === entry.ruler)?.name || "")))}</small>` : "") + `</div></header>`
       + recommendationHistoryCard(entry) + `<footer><span>${aT(entry.pending ? "Recommended today" : "Available today")}${entry.pending ? ` · ${aT("Pending settlement")}` : ""}</span><a class="fd-open" href="${escHtml(recommendationHistoryLink(entry))}">${aT("Open Build Library")} →</a></footer>`
-      + `<details><summary>${aT("Recommendation history")} · ${entry.points + Number(entry.pending)}</summary><p class="set-note">${aT("Settled recommendations add permanent points. Heat decreases separately.")}</p>`
-      + `<table class="items"><thead><tr><th>${aT("Recommendation day")}</th><th>${aT("Current weight")}</th></tr></thead><tbody>${recommendationVoteRows(entry.votes)}</tbody></table>`
-      + (entry.points + Number(entry.pending) > entry.votes.length ? `<button type="button" class="ghost-btn small" data-recommend-older="${entry.identity}" data-before="${entry.votes.at(-1)?.day || ""}">${aT("Show older recommendations")}</button>` : "") + `</details></article>`;
+      + `<details data-recommend-votes="${entry.identity}" data-vote-total="${entry.points + Number(entry.pending)}"><summary>${aT("Recommendation history")} · ${entry.points + Number(entry.pending)}</summary><p class="set-note">${aT("Settled recommendations add permanent points. Heat decreases separately.")}</p>`
+      + `<table class="items"><thead><tr><th>${aT("Recommendation day")}</th><th>${aT("Current weight")}</th></tr></thead><tbody>${recommendationVoteRows(entry.votes.slice(0, LIST_PAGE_SIZE))}</tbody></table><p role="status" data-vote-status></p><div data-vote-pager></div></details></article>`;
   }).join("");
-  const more = embedded && value?.builds?.length > recommendationHomeVisible ? `<button class="ghost-btn" data-recommend-home-more>${aT("Show more")}</button>` : "";
+  const pager = value?.builds ? computePagerHtml({ page: Math.floor(recommendationHistoryOffset / LIST_PAGE_SIZE),
+    pages: value.count == null ? null : Math.max(1, Math.ceil(value.count / LIST_PAGE_SIZE)), total: value.count, hasNext: value.next != null,
+    loading: recommendationHistoryLoading }, page => `data-recommend-page="${page * LIST_PAGE_SIZE}"`) : "";
   const body = `<div class="block"><div class="bh"><h2>${aT("My recommendations")}</h2></div><div class="bb">${embedded ? `<p>${aT("Recommendation points")} · ${points == null ? "—" : escHtml(points.toLocaleString(accountLocale()))}</p>` : ""}${recommendationSettlement(value)}${counts}${status}</div>${builds || (value?.builds ? `<div class="bb"><p class="set-note">${aT("No recommendations in this view.")}</p></div>` : "")}`
-    + (value?.builds ? `<div class="bb recommendation-pages">${more}${recommendationHistoryOffset ? `<button type="button" class="ghost-btn" data-recommend-page="${Math.max(0, recommendationHistoryOffset - 50)}">${aT("Previous page")}</button>` : ""}${value.next != null && !more ? `<button type="button" class="ghost-btn" data-recommend-page="${value.next}">${aT("Next page")}</button>` : ""}</div>` : "") + `</div>`;
+    + (pager ? `<div class="bb">${pager}</div>` : "") + `</div>`;
   return embedded ? body : `<div class="settings">${settingsNav(account, "recommendations")}<div class="set-main"><div class="block"><div class="bh"><h2>${aT("Mine")}</h2></div><div class="bb">${stats}</div></div>${body}</div></div>`;
 }
 document.addEventListener("click", event => {
-  if (event.target.closest("[data-recommend-home-more]") && userHomeOwner("recommendations")) { recommendationHomeVisible += 6; renderRecommendationHistory(); return; }
-  const older = event.target.closest("[data-recommend-older]");
-  if (older) {
-    older.disabled = true;
-    const query = new URLSearchParams({ identity: older.dataset.recommendOlder, before: older.dataset.before });
-    recommendationCall("/api/account/recommendations/votes?" + query).then(value => {
-      older.closest("details").querySelector("tbody").insertAdjacentHTML("beforeend", recommendationVoteRows(value.votes));
-      if (value.before) { older.dataset.before = value.before; older.disabled = false; } else older.remove();
-    }).catch(error => { recommendationFailure(error, "history", "older"); older.disabled = false; older.textContent = tr(String(error.message || error)); });
-    return;
-  }
+  const votePage = event.target.closest("[data-recommend-vote-page]");
+  if (votePage) { loadRecommendationVotePage(votePage.closest("details"), Number(votePage.dataset.recommendVotePage)); return; }
   const filter = event.target.closest("[data-recommend-filter]"), page = event.target.closest("[data-recommend-page]");
   if (filter) { recommendationHistoryFilter = filter.dataset.recommendFilter; recommendationHistoryOffset = 0; }
   else if (page) recommendationHistoryOffset = Number(page.dataset.recommendPage);
