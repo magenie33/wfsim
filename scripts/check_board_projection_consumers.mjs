@@ -12,6 +12,7 @@ import { outputWriter, fileHash } from './inventory_publication_io.mjs';
 import { pushBoard } from './live_publish.mjs';
 import { boardDeliveryPending } from './inventory_board_pipeline.mjs';
 import { pushLive } from '../worker/live_board.js';
+import { boardHeads } from '../mcp/headless.js';
 
 const root = mkdtempSync(join(tmpdir(), 'projection-consumers-')), board = join(root, 'verified'); mkdirSync(board);
 const run = (program, args, options = {}) => { const out = spawnSync(program, args, { encoding: 'utf8', timeout: 120000, ...options });
@@ -39,6 +40,20 @@ try {
   writer = await outputWriter({}, output, receipt); writer.append(' complete'); await writer.finish();
   assert.equal(readFileSync(output, 'utf8'), 'durable complete');
   console.log('ok: Unicode/chunk/offset/EOF checks, incomplete rows and uncheckpointed tail recovery');
+
+  const rich = join(root, 'rich'); mkdirSync(join(rich, 'sp200'), { recursive: true }); const all = [];
+  for (const scene of ['', 'sp200']) {
+    const rows = [];
+    for (const mode of ['base','automatic']) for (const riven of [false,true]) for (let i = 0; i < 150; i++) rows.push({
+      benchmark: scene ? 'scene-ruler' : 'standard_single_target', mode, score: Math.floor(i / 5) * 0.123456789,
+      mods: ['serration@' + i % 10], measured_at: i === 0 ? '2026-11-09T01:00Z' : '2026-11-09T00:00Z',
+      ...(riven ? { riven: { bonuses: ['damage','critical_chance'], malus: null, rolls: [1.1,1.1] } } : {}),
+    });
+    writeFileSync(join(rich, scene, 'braton_prime.json'), JSON.stringify(rows)); all.push(...rows);
+  }
+  run(process.execPath, ['scripts/board_heads.mjs', rich]);
+  assert.deepEqual(JSON.parse(readFileSync(join(rich, 'heads/braton_prime.json'))), boardHeads(all),
+    'scene/mode/riven thresholds, all ties and newest below the cutoff must match the authoritative boardHeads');
 
   const path = join(board, 'braton_prime.json'), fd = openSync(path, 'w'); writeSync(fd, '[');
   const ids = ['serration','vital_sense','hellfire','speed_trigger','hammer_shot','vigilante_fervor','magazine_warp','fast_hands'];

@@ -12,6 +12,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import postgres from './pg/node_modules/postgres/src/index.js';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
 import { query, close } from './db.mjs';
+import { LiveMailbox } from './live_mailbox.mjs';
+import { liveIntake } from './live_intake.mjs';
 
 const { intakeBatches, runIntakeCommand } = await import(process.env.WFSIM_INTAKE_MODULE
   ? pathToFileURL(process.env.WFSIM_INTAKE_MODULE).href : './intake_batches.mjs');
@@ -161,6 +163,33 @@ try {
   assert.deepEqual((await owed()).map(({ batch, initiator }) => ({ batch, initiator })), [{ batch: 'existing', initiator: 'user:original' }]);
   assert.equal((await query('SELECT sum(total) AS n FROM batches'))[0].n, 1);
   console.log('ok: an existing calculation retains its FIFO batch and original initiator');
+
+  await clear();
+  const hooked = await seed([arrival('hooked', 'braton_prime', { initiator: 'user:hook' })]);
+  const mailboxWork = join(directory, 'mailbox'); const mailbox = new LiveMailbox(mailboxWork);
+  try {
+    await assert.rejects(execute(hooked, { onCommitted: async () => {
+      assert.equal((await saved()).length, 1); assert.equal((await owed()).length, 1);
+      assert.deepEqual(await pending(), ['hooked']);
+      assert(requests.some(row => row.path === '/api/board/ask' && row.body.rows.every(item => item.named)));
+      throw Error('mailbox unavailable');
+    } }), /mailbox unavailable/);
+    assert.deepEqual(await pending(), ['hooked']);
+    await assert.rejects(execute(hooked, { onCommitted: async builds => {
+      await mailbox.append(builds); throw Error('mailbox committed reply lost');
+    } }), /mailbox committed reply lost/);
+    assert.deepEqual(await pending(), ['hooked']);
+    const committed = readFileSync(join(mailboxWork, 'arrived-builds.ndjson'), 'utf8');
+    await execute(hooked, { onCommitted: builds => mailbox.append(builds) });
+    assert.deepEqual(await pending(), []); assert.equal(readFileSync(join(mailboxWork, 'arrived-builds.ndjson'), 'utf8'), committed);
+    assert.equal(committed.trim().split('\n').length, 1); assert.equal((await owed())[0].initiator, 'user:hook');
+    await mailbox.take(); assert.equal(readFileSync(join(mailboxWork, 'new-builds.ndjson'), 'utf8'), committed);
+  } finally { mailbox.close(); }
+  await clear(); const incremental = await seed([arrival('incremental')]); await close();
+  await liveIntake(incremental, { work: join(directory, 'incremental'), bin: join(intake, '..'), incremental: 1, maxRows: 1,
+    onCommitted: () => assert.fail('incremental intake must rely on the database dirty boundary') });
+  assert.deepEqual(await pending(), []);
+  console.log('ok: source/family and strict named ACK precede the durable legacy hook and inbox deletion; hook failure/lost reply/replay preserve one identity; incremental intake uses no mailbox');
 
   await clear();
   const boundRows = [arrival('byte-a'), arrival('byte-b'), arrival('byte-c')];

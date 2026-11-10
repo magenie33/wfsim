@@ -17,6 +17,7 @@ import { InventoryPublication } from './inventory_publication.mjs';
 import { captureEpoch, acknowledgeInventory, saveInventoryState as save, hashInventoryFile as hash,
   collectInventoryFiles as collect, checkInventoryDisk as disk } from './inventory_pipeline.mjs';
 import { pipelineMonitor } from './pipeline_monitor.mjs';
+import { inventoryDiskBudget } from './inventory_disk_budget.mjs';
 
 const load = path => JSON.parse(readFileSync(path, 'utf8'));
 const progress = (stage, fields = {}) => console.error(JSON.stringify({ event: 'board_inventory', stage, ...fields }));
@@ -24,7 +25,7 @@ const fingerprint = path => { const s = statSync(path); return [s.size, s.mtimeM
 const algorithmFiles = ['./inventory_board_pipeline.mjs','./inventory_pipeline.mjs','./inventory_projection.mjs',
   './inventory_publication.mjs','./inventory_publication_io.mjs','./json_array_stream.mjs','./inventory_relations.mjs',
   './incremental_inventory.mjs','./inventory_inputs.mjs','./inventory_operator.mjs','./capture_compute_inventory.mjs',
-  './classify_compute_inventory.mjs','./board_heads.mjs','./board_meta.py',
+  './classify_compute_inventory.mjs','./board_heads.mjs','./board_meta.py','./inventory_disk_budget.mjs',
   '../worker/task_contract.js','../worker/task_inventory.js','../worker/board_kinds.js'];
 
 async function verifyInputs(cut, sql, context) {
@@ -73,7 +74,7 @@ async function ackPage(sql, catalog, generation, cut, offset, fault, report) {
 }
 
 export async function runBoardInventoryCycle({ work, bin, sql, operator: supplied, context = {}, budgetMs = 15000,
-  report = progress, fault = async () => {}, onBoard, now = Date.now } = {}) {
+  report = progress, fault = async () => {}, onBoard, now = Date.now, diskBudgetBytes } = {}) {
   const root = join(work, 'inventory'), statePath = join(root, 'state.json'); mkdirSync(root, { recursive: true }); disk(root);
   const source = readFileSync(join(bin, 'VERSION'), 'utf8').trim(), engine = readFileSync(join(bin, 'ENGINE'), 'utf8').trim();
   const adapter = await hash(join(bin, 'wfsim-board'));
@@ -89,9 +90,11 @@ export async function runBoardInventoryCycle({ work, bin, sql, operator: supplie
     const contract = { v: 1, algorithm: 'board-inventory-disk-v1', covers: BOARD_KINDS, adapter,
       classifier: algorithm.digest('hex'), operator: operator.contract };
     let state = existsSync(statePath) ? load(statePath) : null;
+    const same = state && state.engine === engine && canon(state.contract) === canon(contract);
+    if (state) collect(root, state);
+    inventoryDiskBudget({ work, databasePath: same ? state.catalog : undefined, totalBytes: diskBudgetBytes });
     report('generation');
     const [{ status }] = await sql.unsafe('SELECT inventory_status() status');
-    const same = state && state.engine === engine && canon(state.contract) === canon(contract);
     if (same && state.generation !== status?.generation) throw Error('inventory coordinator generation was fenced');
     if (!same || canon(status?.contract) !== canon(contract) || status?.engine !== engine) {
       const [{ generation }] = await sql.unsafe('SELECT inventory_begin($1::text,$2::text,$3::text) generation',
@@ -101,7 +104,8 @@ export async function runBoardInventoryCycle({ work, bin, sql, operator: supplie
       save(statePath, state); context.verifiedInputs = null;
     }
     collect(root, state);
-    catalog = openCatalog(state.catalog, { engine, contract, generation: state.generation, create: true });
+    let space = inventoryDiskBudget({ work, databasePath: state.catalog, totalBytes: diskBudgetBytes });
+    catalog = openCatalog(state.catalog, { engine, contract, generation: state.generation, create: true, databaseBytes: space.databaseBytes });
     if (context.checkedCatalog !== state.catalog) {
       const check = catalog.db.prepare('PRAGMA quick_check').all();
       if (check.length !== 1 || check[0].quick_check !== 'ok') throw Error('inventory catalog integrity check failed');
@@ -114,8 +118,15 @@ export async function runBoardInventoryCycle({ work, bin, sql, operator: supplie
     if (!state.pending) {
       report('capture');
       state.pending = await captureEpoch({ sql, catalog, generation: state.generation, dir: join(root, `capture-${Date.now()}`),
-        bootstrap: !catalog.meta.complete, relational: true, report });
+        bootstrap: !catalog.meta.complete, relational: true, report: (stage, fields) => { space.check(); report(stage, fields); } });
       save(statePath, state); context.verifiedInputs = null;
+    }
+    if (diskBudgetBytes !== undefined) {
+      space = inventoryDiskBudget({ work, databasePath: state.catalog, totalBytes: diskBudgetBytes });
+      const pageSize = catalog.db.prepare('PRAGMA page_size').get().page_size, pages = Math.floor(space.databaseBytes / pageSize);
+      if (catalog.db.prepare('PRAGMA max_page_count=' + pages).get().max_page_count !== pages)
+        throw Error('inventory database already exceeds its explicit disk budget');
+      report('disk', space.report());
     }
     const cut = state.pending, receipt = cut.receipt;
     await verifyInputs(cut, sql, context);
@@ -124,6 +135,7 @@ export async function runBoardInventoryCycle({ work, bin, sql, operator: supplie
       let input = catalog.meta.input?.epoch === receipt.epoch ? catalog.meta.input : { epoch: receipt.epoch, file: 0, offset: 0, count: 0, limit: 16 };
       const files = cut.bootstrap ? ['builds','facts','queue','tasks'].map(kind => [kind, cut.raw[kind]]) : [['delta', cut.delta]];
       while (input.file < files.length) {
+        space.check();
         const [kind, path] = files[input.file], started = performance.now(), page = await readInventoryPage(path, input.offset, input.limit);
         const elapsed = Math.max(1, performance.now() - started);
         let next = { ...input, offset: page.offset, count: input.count + page.rows.length,
@@ -141,11 +153,13 @@ export async function runBoardInventoryCycle({ work, bin, sql, operator: supplie
       if (catalog.meta.epoch.phase === 'preparing') return { pending: true, stage: 'inputs', input };
     }
     if (index.pending()) {
+      space.check();
       const result = await index.step(operate, { budgetMs: Math.max(0, until - performance.now()) });
       report('processing', { epoch: receipt.epoch, ...result.metrics });
       if (result.pending) return { pending: true, stage: 'processing' };
     }
     const publication = new InventoryPublication(index, work, context, fault);
+    space.check();
     const board = await publication.step(receipt, operate, { budgetMs: Math.max(0, until - performance.now()) });
     report('board', { epoch: receipt.epoch });
     if (board.pending) return { pending: true, stage: 'board' };
@@ -210,6 +224,8 @@ export async function serveBoardInventory(work, bin) {
   let operator = null, stopping = false, push = null, pushOwed = false;
   const stop = () => { stopping = true; }; process.on('SIGTERM', stop); process.on('SIGINT', stop);
   const here = dirname(fileURLToPath(import.meta.url));
+  const configuredDisk = process.env.WFSIM_INVENTORY_DISK_BYTES;
+  const diskBudgetBytes = configuredDisk === undefined ? undefined : Number(configuredDisk);
   try {
     while (!stopping) {
       const monitor = pipelineMonitor(directory, 'inventory', { source: readFileSync(join(bin, 'VERSION'), 'utf8').trim(),
@@ -217,7 +233,7 @@ export async function serveBoardInventory(work, bin) {
       let pending = true;
       try {
         operator ||= await openInventoryOperator(join(bin, 'wfsim-board'));
-        const result = await runBoardInventoryCycle({ work, bin, sql, operator, context, report: monitor.report,
+        const result = await runBoardInventoryCycle({ work, bin, sql, operator, context, report: monitor.report, diskBudgetBytes,
           onBoard: async () => {
             await child(process.execPath, [join(here, 'board_heads.mjs'), join(work, 'verified')]).done;
             await child('python3', [join(here, 'board_meta.py'), join(work, 'verified'), join(work, 'pub/data/board_state.yaml'), join(work, 'verified/meta.json')]).done;

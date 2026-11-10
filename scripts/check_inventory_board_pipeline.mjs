@@ -6,6 +6,8 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, openSync, closeSync, 
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
+import postgres from './pg/node_modules/postgres/src/index.js';
+import { randomUUID } from 'node:crypto';
 import { openCatalog } from './incremental_inventory.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
 import { runInventoryCycle } from './inventory_pipeline.mjs';
@@ -19,10 +21,15 @@ mkdirSync(work); mkdirSync(bin); copyFileSync(binary, join(bin, 'wfsim-board'));
 const engine = '0ae1bf8edb0f';
 writeFileSync(join(bin, 'ENGINE'), engine); writeFileSync(join(bin, 'VERSION'), 'relational-test');
 const statePath = join(work, 'inventory/state.json'), load = p => JSON.parse(readFileSync(p, 'utf8'));
-const pg = new PGlite(), query = (sql, args = []) => pg.query(sql, args).then(r => r.rows);
+const connection = process.env.WFSIM_BOARD_PIPELINE_PG_URL;
+if (connection) assert(['127.0.0.1','localhost'].includes(new URL(connection).hostname), 'use a local fixture database');
+const tcp = connection ? postgres(connection, { max: 1, fetch_types: false, onnotice: () => {} }) : null;
+const pg = tcp ? null : new PGlite(), schema = 'board_pipeline_' + randomUUID().replaceAll('-', '');
+let active = tcp;
+const query = (sql, args = []) => tcp ? active.unsafe(sql, args) : pg.query(sql, args).then(r => r.rows);
 const err = openSync(join(root, 'engine.log'), 'w');
 let native, operator, afterCapture, acknowledgments = 0, fullCaptures = 0, failed = true, failGate = false;
-let context = {}, lostInput = true, boardBeforeAudit = 0, clockOffset = 0;
+let context = {}, lostInput = true, boardBeforeAudit = 0, clockOffset = 0, lostAck = false, closedConnection = false;
 const described = [];
 const open = async () => {
   context.writer?.close(); context = {};
@@ -38,6 +45,9 @@ const current = fn => {
   try { return fn(db); } finally { db.close(); }
 };
 const unsafe = async (sql, args = []) => {
+  if (closedConnection && sql.includes('SELECT inventory_inputs(')) {
+    closedConnection = false; throw Object.assign(Error('injected physical connection loss before seal'), { code: 'CONNECTION_CLOSED' });
+  }
   assert(!sql.includes('inventory_cohort_rows'), 'relational capture expanded changes to a weapon cohort');
   if (sql.includes('DECLARE inventory_scan') && sql.includes('FROM builds')) fullCaptures++;
   if (sql.includes('inventory_ack(')) {
@@ -52,17 +62,25 @@ const unsafe = async (sql, args = []) => {
   return query(sql, args);
 };
 const sql = { unsafe, begin: async (options, fn) => {
-  await pg.exec(`BEGIN ${options}`);
   let value;
-  try { value = await fn({ unsafe }); await pg.exec('COMMIT'); }
-  catch (error) { await pg.exec('ROLLBACK'); throw error; }
+  if (tcp) value = await tcp.begin(options, async transaction => {
+    active = transaction; try { return await fn({ unsafe }); } finally { active = tcp; }
+  });
+  else {
+    await pg.exec(`BEGIN ${options}`);
+    try { value = await fn({ unsafe }); await pg.exec('COMMIT'); }
+    catch (error) { await pg.exec('ROLLBACK'); throw error; }
+  }
   if (afterCapture && value?.receipt?.status === 'sealed') { const hook = afterCapture; afterCapture = null; await hook(value); }
   return value;
 } };
 const cycle = budgetMs => runInventoryCycle({ work, bin, sql, operator, context, budgetMs,
   now: () => Date.now() + clockOffset,
   onBoard: async () => current(db => { assert.equal(db.meta.publication.phase, 'complete'); if (!db.meta.complete) boardBeforeAudit++; }),
-  fault: async stage => { if (stage === 'after-input-commit-before-reply' && lostInput) { lostInput = false; throw Error('injected committed input reply loss'); } },
+  fault: async stage => {
+    if (stage === 'after-input-commit-before-reply' && lostInput) { lostInput = false; throw Error('injected committed input reply loss'); }
+    if (stage === 'after-ack-before-offset' && lostAck) { lostAck = false; throw Error('injected committed ACK reply loss'); }
+  },
 });
 const mature = () => { const state = load(statePath); state.published_at = '2000-01-01T00:00:00.000Z'; writeFileSync(statePath, JSON.stringify(state)); };
 async function finish() {
@@ -86,8 +104,14 @@ async function currentOracle(tag) {
   const meta = await captureInventory(sql, raw, engine); await oracle(raw, meta, tag);
 }
 try {
-  await pg.exec(['schema', 'library', 'sync', 'inventory'].map(n => readFileSync(new URL(`../worker/pg/${n}.sql`, import.meta.url), 'utf8')).join('\n'));
+  const ddl = ['schema', 'library', 'sync', 'inventory'].map(n => readFileSync(new URL(`../worker/pg/${n}.sql`, import.meta.url), 'utf8')).join('\n');
+  if (tcp) { await tcp.unsafe(`CREATE SCHEMA ${schema};SET search_path TO ${schema},pg_catalog,pg_temp`).simple(); await tcp.unsafe(ddl).simple(); }
+  else await pg.exec(ddl);
+  console.log('classic disk pipeline: ' + (tcp ? 'postgres.js TCP transport' : 'PGlite transport'));
   await open();
+  await assert.rejects(runInventoryCycle({ work, bin, sql, operator, context, diskBudgetBytes: 1 }), /cannot hold/);
+  assert.equal((await query('SELECT inventory_status() status'))[0].status?.generation ?? null, null);
+  assert.equal(existsSync(statePath), false, 'an invalid explicit disk budget must fail before generation writes');
   const seed = JSON.parse(readFileSync(new URL('../tests/gas/rows.json', import.meta.url))).slice(0, 3).map(r => r.record);
   const canonical = await native.call('describe', seed.map((record, i) => ({ id: String(i), record })));
   for (const row of canonical) await query('INSERT INTO builds(id,at,record) VALUES($1,\'day\',$2)', [row.candidate, JSON.stringify(row.record)]);
@@ -116,14 +140,21 @@ try {
   assert.equal(state.published.snapshot, captured.receipt.snapshot);
   assert.equal(state.published.started_at, captured.receipt.started_at);
   await oracle(captured.raw, captured.meta, 'bootstrap');
-  assert.equal((await query('SELECT count(*) n FROM inventory_dirty WHERE key=$1', [future]))[0].n, 1);
+  await runInventoryCycle({ work, bin, sql, operator, context, diskBudgetBytes: 9 * 1024 ** 3 });
+  assert.equal(load(statePath).generation, generation, 'a resource budget must not change the input generation');
+  assert.equal(Number((await query('SELECT count(*) n FROM inventory_dirty WHERE key=$1', [future]))[0].n), 1);
   console.log('ok: two process failures resume durable inputs without recapture/re-normalization; frozen cut remains exact; later writes stay pending');
 
-  mature(); const before = fullCaptures; await finish();
+  mature(); const before = fullCaptures, nativePid = native.pid; closedConnection = true;
+  await assert.rejects(cycle(15000), /physical connection loss before seal/);
+  assert.equal(load(statePath).generation, generation); assert.equal(load(statePath).pending, null);
+  current(db => assert.equal(db.meta.complete, true)); lostAck = true;
+  await assert.rejects(finish(), /committed ACK reply loss/);
+  await finish(); assert.equal(native.pid, nativePid, 'transient SQL failures must not restart the native operator');
   assert.equal(fullCaptures, before); assert.equal(described.length, 3);
   await currentOracle('lifecycle');
-  assert.equal((await query('SELECT count(*) n FROM inventory_dirty'))[0].n, 0);
-  console.log('ok: lifecycle-only delta reads no library/cohort and matches the independent full oracle');
+  assert.equal(Number((await query('SELECT count(*) n FROM inventory_dirty'))[0].n), 0);
+  console.log('ok: unsealed connection loss gets a new honest receipt without dropping the baseline/native operator; lost committed ACK replays safely; lifecycle-only delta matches every full-oracle tuple');
 
   const c = canonical[0];
   await query('INSERT INTO builds(id,at,record) VALUES(\'alias\',\'day\',$1)', [JSON.stringify(c.record)]);
@@ -148,6 +179,8 @@ try {
   failed = false;
 } catch (error) { console.error(`classic disk pipeline evidence: ${root}`); throw error; }
 finally {
-  await native?.close(); await pg.close(); closeSync(err);
+  await native?.close();
+  if (tcp) { try { await tcp.unsafe(`DROP SCHEMA IF EXISTS ${schema} CASCADE`).simple(); } finally { await tcp.end({ timeout: 5 }); } }
+  else await pg.close(); closeSync(err);
   if (!failed && !process.env.WFSIM_INVENTORY_RELATIONS_EVIDENCE) rmSync(root, { recursive: true, force: true });
 }

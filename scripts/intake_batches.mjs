@@ -31,9 +31,10 @@ export function runIntakeCommand(command, args, { input, output, signal } = {}) 
 }
 
 export async function intakeBatches(file, { intake = join(ROOT, 'target/release/wfsim-intake'), deadlineSeconds = 900,
-  maxRows = INTAKE_BATCH_ROWS, maxBytes = INTAKE_BATCH_BYTES, run = runIntakeCommand, signal } = {}) {
+  maxRows = INTAKE_BATCH_ROWS, maxBytes = INTAKE_BATCH_BYTES, run = runIntakeCommand, signal, onCommitted } = {}) {
   if (![maxRows, maxBytes].every(n => Number.isSafeInteger(n) && n > 0)
-      || !Number.isFinite(deadlineSeconds) || deadlineSeconds < 0) throw new Error('invalid intake batch bounds');
+      || !Number.isFinite(deadlineSeconds) || deadlineSeconds < 0
+      || onCommitted !== undefined && typeof onCommitted !== 'function') throw new Error('invalid intake batch bounds');
   const scratch = mkdtempSync(join(tmpdir(), 'wfsim-intake-batches-'));
   const path = name => join(scratch, name), started = Date.now(), end = started + deadlineSeconds * 1000;
   const batch = `arrivals-${new Date(started).toISOString().slice(0, 10)}`;
@@ -61,6 +62,7 @@ export async function intakeBatches(file, { intake = join(ROOT, 'target/release/
     // Source storage, family admission and the named calculation all precede deletion.
     await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('builds.ndjson'), path('empty')]);
     await execute('bash', [join(ROOT, 'scripts/ship_queue.sh'), '--require-asked', batch, 'the fight each arrival was run in', path('named.ndjson')]);
+    if (onCommitted) await onCommitted(path('builds.ndjson'));
     await execute('bash', [join(ROOT, 'scripts/ship_builds.sh'), path('empty'), path('done.txt')]);
     result.batches++; result.builds += builds.length;
     result.arrivals += readFileSync(path('done.txt'), 'utf8').split('\n').filter(Boolean).length;

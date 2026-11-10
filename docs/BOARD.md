@@ -747,9 +747,8 @@ current and writes its numbers on top.
 ## The live board
 
 **WHAT THE SITE SHOWS IS `scores`, RANKED THE MOMENT IT MOVES.** Every 20 s
-`scripts/live_board.sh` on the board server reads the rows `scores` gained
-(`live_publish.mjs delta` — a verification, the scorer, the server's own
-settling), hands them to the ranker, stamps the result with `board_meta.py`
+`scripts/live_board.sh` on the board server captures authoritative source
+changes, projects their verified facts, stamps the result with `board_meta.py`
 and pushes the files that changed through
 `PUT /api/board/live/<file>` (bearer `BOARD_PUSH_TOKEN`), the stamp last, into
 the bucket `wfsim-public` under their public paths, each kept thirty seconds.
@@ -763,28 +762,26 @@ names that address — a desktop shell in the field, the bots, the MCP server,
 the relay. Everything in that bucket is public, so nothing private is ever
 written to it.
 
-**THE RANKER HOLDS THE BOARD; A CYCLE COSTS WHAT IT MOVED.** `wfsim-board
---serve` (§"The assembly") reads the library and every fact once when it
-starts, writes the whole board, and then takes one command a line on stdin:
-the builds the cycle took in, the facts it read, `publish`. A publish re-ranks
-only the (ruler, weapon) pairs those moved and writes only the files whose
-bytes changed, so a cycle's cost follows the facts that arrived and never the
-size of the library. A new build moves a row only once it has a fact.
+With `INCREMENTAL_INVENTORY=1`, the classic coordinator holds complete sources,
+facts and classification in SQLite. A long-lived bounded native operator owns
+normalization, admission, shape/default keys, floor decisions and page-row
+serialization. Disk indexes resolve global ordering and maxima; no whole
+weapon partition is collected in memory. Original measurement authors, clocks,
+score precision and carried row bytes remain intact. A new build appears only
+after it has a fact.
 
-Incremental inventory calls `publish_step 8`, yielding between whole weapon
-files after eight files or a soft second. A round freezes its file list;
-later changes wait for another round. The reply carries files written,
-files removed, whether the round remains and whether later changes wait.
-The client stamps a finished round even when later changes remain, and
-continues those changes without waiting for a new inventory epoch. Legacy
-`publish` drains both the current round and later changes in one call.
+A publication round freezes its input cut. It checkpoints bounded output
+prefixes before advancing their SQLite cursor, then atomically replaces weapon
+files and indexes. Restart validates the sealed source and projection fences
+and resumes committed work. The stamp follows a completed round, and the
+durable upload ledger determines what still needs delivery. Count publication
+remains separate; a sealed input or count receipt does not establish delivery.
 
-**EVERYTHING IT WAS SENT IS ON DISK** (`library.json`, `new-builds.ndjson`,
-`facts-known.ndjson`), so a ranker that stops — a reply other than `ok`, a
-crash, a deploy — is started again from them on the next cycle and loses
-nothing.
+With `INCREMENTAL_INVENTORY=0`, `wfsim-board --serve` retains the library and
+facts in memory and reads rolling fact deltas. Its source files remain
+`library.json`, `new-builds.ndjson` and `facts-known.ndjson`.
 
-**THE HOURLY READ OF THE STORE RUNS BESIDE THE BOARD**, not in front of it: the
+**THE LEGACY HOURLY READ RUNS BESIDE THE BOARD**, not in front of it: the
 read takes most of an hour, into spares, and once both are whole the ranker
 rebuilds from them (`reload`), which is how a row `scores` lost leaves the
 board. The hour is counted from the end of the last read (`fetch-at.txt`), so a
@@ -822,6 +819,11 @@ whole snapshot. The heads are rows in the board file's own shape, so a reader
 changes the file it reads and nothing else. A weapon's heads are written again
 only when one of its files is newer. `heads/` is no scene (`board_meta.py`
 `HEADS`), and the daily snapshot carries none.
+
+The heads and stamp stream rows with disk grouping, preserving every tied
+place and source order. The stamp excludes its own output. Upload allocation
+rejects a file above the existing 32 MiB receiver limit before reading it;
+that refusal is a delivery limit, not a successful capacity result.
 
 ## The fact factory
 
