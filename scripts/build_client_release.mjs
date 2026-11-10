@@ -20,7 +20,7 @@ for (const target of ['x86_64-linux','x86_64-windows','aarch64-macos','x86_64-ma
   ] };
   copyFileSync(path.join(artifacts, name), path.join(out, name));
 }
-const manifest = { v: 1, version, npm: args.npm === 'true', files };
+const manifest = { v: 1, launch: 1, version, npm: args.npm === 'true', files };
 writeFileSync(path.join(out, 'release.json'), JSON.stringify(manifest, null, 2) + '\n');
 writeFileSync(path.join(out, 'SHA256SUMS'), Object.values(files).map(f => `${f.sha256}  ${f.name}\n`).join(''));
 const npm = path.join(out, 'npm');
