@@ -1,13 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // A sealed-source offline replay has no database epoch and resumes committed pages.
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, readdirSync, rmSync } from 'node:fs';
 import { join, resolve, basename } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { replayBoardProjection } from './replay_board_projection.mjs';
 import { openInventoryOperator } from './inventory_operator.mjs';
+import { fileURLToPath } from 'node:url';
+
+if (process.argv[2] === 'kill-replay') {
+  const [, , , capture, bin, work, manifestSha] = process.argv;
+  await replayBoardProjection({ capture, bin, work, manifestSha, fault: async stage => {
+    if (stage === 'after-input-commit-before-reply') process.kill(process.pid, 'SIGKILL');
+  } });
+  throw Error('process-death fixture never reached the committed page');
+}
 
 const binary = resolve(process.env.WFSIM_INVENTORY_BOARD_BIN || 'target/debug/wfsim-board');
 const root = mkdtempSync(join(tmpdir(), 'board-replay-')), capture = join(root, 'capture'), bin = join(root, 'bin');
@@ -47,7 +56,19 @@ try {
   for (const name of files(oracle)) assert.equal(readFileSync(join(work, 'verified', name), 'utf8'), readFileSync(join(oracle, name), 'utf8'), name);
   const clock = text => text.replace(/scored_at_epoch_seconds: \d+/g, 'scored_at_epoch_seconds: CLOCK');
   assert.equal(clock(readFileSync(join(work, 'pub/data/board_state.yaml'), 'utf8')), clock(readFileSync(state, 'utf8')));
+  const stamp = readFileSync(join(work, 'verified/meta.json'), 'utf8');
   const again = await replayBoardProjection({ capture, bin, work, manifestSha }); assert.equal(again.question_digest, report.question_digest);
+  assert.equal(readFileSync(join(work, 'verified/meta.json'), 'utf8'), stamp, 'the stamp must never digest/count itself');
+  const killedWork = join(root, 'killed');
+  const killed = spawnSync(process.execPath, [fileURLToPath(import.meta.url), 'kill-replay', capture, bin, killedWork, manifestSha], { timeout: 60000 });
+  assert.equal(killed.signal, 'SIGKILL', killed.stderr?.toString());
+  const recovered = await replayBoardProjection({ capture, bin, work: killedWork, manifestSha });
+  assert.equal(recovered.question_digest, report.question_digest);
+  for (const name of files(oracle)) assert.equal(readFileSync(join(killedWork, 'verified', name), 'utf8'), readFileSync(join(oracle, name), 'utf8'));
+  await assert.rejects(replayBoardProjection({ capture, bin, work: join(root, 'too-small'), manifestSha, diskBudgetBytes: 8 * 1024 ** 3 }), /cannot hold/);
+  const budgeted = await replayBoardProjection({ capture, bin, work: join(root, 'budgeted'), manifestSha, diskBudgetBytes: 9 * 1024 ** 3 });
+  assert.equal(budgeted.disk.explicit, true); assert(budgeted.disk.database_limit_bytes < 1024 ** 3);
+  assert.equal(budgeted.question_digest, report.question_digest);
   await assert.rejects(replayBoardProjection({ capture, bin, work: join(root, 'wrong-sha'), manifestSha: '0'.repeat(64) }), /manifest SHA256 mismatch/);
   writeFileSync(raw.tasks, '{}\n');
   await assert.rejects(replayBoardProjection({ capture, bin, work, manifestSha }), /source input SHA256 mismatch/);

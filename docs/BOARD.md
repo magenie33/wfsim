@@ -73,6 +73,14 @@ report separates complete import and classification from delivery eligibility:
 any final file above the existing 32 MiB receiver limit makes the command fail.
 The source capture remains unchanged.
 
+An optional fifth argument is the total offline disk budget in bytes, including
+the protected source files. The replay reserves 8 GiB within that budget for
+WAL, output and scratch, and gives the remaining bytes to SQLite's page limit.
+It also preserves 8 GiB of filesystem free space. Without an explicit budget,
+the catalog retains its 8 GiB database limit. The report records measured
+source and work bytes; transient SQLite sort space needs a filesystem quota
+for an absolute peak bound.
+
 ## Family candidates
 
 An arriving library build seeds one quick search for each other roster weapon
