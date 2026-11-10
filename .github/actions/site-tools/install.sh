@@ -6,7 +6,7 @@ llvm_version=${2:?LLVM version required}
 [[ "$llvm_version" =~ ^[0-9]+$ ]] && [ "$llvm_version" -ge 19 ] || exit 2
 packages=(fonts-noto-cjk "lld-$llvm_version")
 case "$build" in
-  true) ;;
+  true|publish) ;;
   false) packages+=(libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev) ;;
   *) echo "unknown site-tools mode: $build" >&2; exit 2 ;;
 esac

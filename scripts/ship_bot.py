@@ -100,44 +100,41 @@ def send(t: dict, files: list, dest: str) -> None:
 
 def deploy() -> None:
     t = target()
-    src = ENGINE.read_text(encoding="utf-8")
-    wasm = re.search(r'^import module from "\.\./site/pkg/([^"]+)";$', src, re.M).group(1)
-    packs = re.findall(r'^import pack[0-9]+ from "[.][.]/site/pkg/([^"]+)";$', src, re.M)
-    root, host, o = t["root"], t["host"], ssh_opts(t)
-    bot = sorted(str(p.relative_to(ROOT)) for p in (ROOT / "bot").glob("*.mjs"))
-    send(t, bot, f"{root}/bot")
-    send(t, ["mcp/engine.js", "mcp/headless.js"], f"{root}/mcp")
-    send(t, [f"site/pkg/{n}" for n in (wasm, *packs)], f"{root}/site/pkg")
-    # ONE WASM ON THE SERVER, and its packs: the engine names exactly those, and
-    # an old one left beside them is a file nothing reads that a later glance
-    # mistakes for live.
-    keep = " ".join(f"-e '{n}'" for n in (wasm, *packs))
-    card_assets(t)
-    run(["ssh", *o, host, f"cd {root}/site/pkg && ls | grep -vx {keep} | xargs -r rm -f; "
-                          f"sudo systemctl restart {t['service']}"])
+    files = bot_files()
+    # Probe live before any possibly co-hosted bot imports are replaced.
     deploy_live(live_target(t))
-
-
-def card_assets(t: dict) -> None:
-    """THE CARD'S STYLE AND PICTURES, which the bot draws its long image with
-    (bot/card.mjs): the stylesheet the site links, alone in its directory, and
-    `site/img` whenever its digest is not the server's — megabytes that move
-    only when the art does."""
-    root, host, o = t["root"], t["host"], ssh_opts(t)
-    index = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
-    css = re.search(r'href="/asset/(style\.[0-9a-f]+\.css)"', index).group(1)
-    run(["ssh", *o, host, f"mkdir -p {root}/site/asset {root}/site/img"])
-    send(t, [f"site/asset/{css}"], f"{root}/site/asset")
-    run(["ssh", *o, host, f"cd {root}/site/asset && ls | grep -vxF '{css}' | xargs -r rm -f"])
-    imgs = sorted(p for p in (ROOT / "site" / "img").iterdir() if p.is_file())
-    h = hashlib.sha256()
-    for p in imgs:
-        h.update(p.name.encode() + b"\0" + p.read_bytes())
-    digest = h.hexdigest()
-    if run(["ssh", *o, host, f"cat {root}/site/img/.digest 2>/dev/null || true"]).strip() == digest:
+    wanted = {name: file_sha256(ROOT / name) for name in files}
+    current = runtime_probe(t, wanted, "bot")
+    if current and current["files"] == wanted:
+        print("bot runtime and assets unchanged — keeping the loaded service")
         return
-    send(t, [p.relative_to(ROOT).as_posix() for p in imgs], f"{root}/site/img")
-    run(["ssh", *o, host, f"echo {digest} > {root}/site/img/.digest"])
+    root, host, o = t["root"], t["host"], ssh_opts(t)
+    for directory in sorted({str(pathlib.PurePosixPath(name).parent) for name in files}):
+        run(["ssh", *o, host, f"mkdir -p {root}/{directory}"])
+        send(t, [name for name in files if str(pathlib.PurePosixPath(name).parent) == directory], f"{root}/{directory}")
+    for directory in ("site/pkg", "site/asset"):
+        keep = " ".join("-e " + shlex.quote(pathlib.PurePosixPath(name).name) for name in files
+                        if str(pathlib.PurePosixPath(name).parent) == directory)
+        run(["ssh", *o, host, f"cd {root}/{directory} && ls -A | grep -vxF {keep} | xargs -r rm -f"])
+    run(["ssh", *o, host, f"sudo systemctl restart {t['service']}"])
+
+
+def bot_files() -> list:
+    roots = sorted(p.relative_to(ROOT).as_posix() for p in (ROOT / "bot").glob("*.mjs"))
+    reached = imported(roots + ["mcp/headless.js"])
+    src = ENGINE.read_text(encoding="utf-8")
+    names = re.findall(r'^import (?:module|pack[0-9]+) from "\.\./site/pkg/([^"]+)";$', src, re.M)
+    if not names:
+        raise ValueError("bot engine names no wasm or packs")
+    index = (ROOT / "site/index.html").read_text(encoding="utf-8")
+    css = re.search(r'href="/asset/(style\.[0-9a-f]+\.css)"', index).group(1)
+    images = [p.relative_to(ROOT).as_posix() for p in (ROOT / "site/img").rglob("*") if p.is_file()]
+    files = sorted(set([*roots, *reached, "mcp/engine.js", f"site/asset/{css}",
+                        *(f"site/pkg/{name}" for name in names), *images]))
+    for name in files:
+        if not name.startswith(("bot/", "mcp/", "worker/", "site/")) or (ROOT / name).resolve(strict=True) != ROOT / name:
+            raise ValueError("bot import is outside its deploy inventory: " + name)
+    return files
 
 
 LIVE_SCRIPTS = ["scripts/live_board.sh", "scripts/live_orders.mjs", "scripts/wasm_witness.mjs", "scripts/order_credit.mjs",
@@ -186,24 +183,8 @@ def toolchain() -> str:
 
 def live_binaries(out: pathlib.Path) -> bool:
     """`wfsim-intake` and `wfsim-board` for the server, or False with the reason."""
-    if subprocess.run(["docker", "version"], capture_output=True).returncode != 0:
-        print("LIVE BOARD NOT SHIPPED — Docker is not running, so no Linux binaries; "
-              "the server keeps the ones it has")
-        return False
-    out.mkdir(parents=True, exist_ok=True)
-    image = f"rust:{toolchain()}-bookworm"
-    # A FAILED BUILD IS SAID, NOT FATAL: by now the site is out, and stopping
-    # here would leave the bot unverified for the sake of the live board.
-    r = subprocess.run(["docker", "run", "--rm", "-v", f"{ROOT}:/src:ro", "-v", f"{out}:/out",
-                        "-v", "wfsim-lin-target:/target", "-v", "wfsim-cargo-reg:/usr/local/cargo/registry",
-                        "-e", "CARGO_TARGET_DIR=/target", "-w", "/src", image, "bash", "-c",
-                        "cargo build --release --locked --bin wfsim-intake --bin wfsim-board && "
-                        "cp /target/release/wfsim-intake /target/release/wfsim-board /out/"],
-                       cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
-    if r.returncode != 0:
-        print(f"LIVE BOARD NOT SHIPPED — the Linux build failed: {r.stderr.strip()[-400:]}")
-        return False
-    return True
+    import release_stage
+    return release_stage.promote("live", out) or release_stage.build_live(out)
 
 
 def live_files(out: pathlib.Path, rel: dict) -> dict:
@@ -238,11 +219,12 @@ def file_sha256(path: pathlib.Path) -> str:
 LIVE_PROBE = r'''
 import hashlib, json, pathlib, re, shlex, subprocess, sys
 request = json.load(sys.stdin)
+bot = request.get("kind") == "bot"
 root = pathlib.Path(request["root"])
 assert root.is_absolute() and root.resolve(strict=True) == root
 def state():
     fields = "ActiveState,MainPID,ExecMainStartTimestamp,WorkingDirectory,FragmentPath,DropInPaths,EnvironmentFiles,NeedDaemonReload"
-    text = subprocess.check_output(["systemctl", "show", "wfsim-live", "--timestamp=us+utc", "--property=" + fields], text=True)
+    text = subprocess.check_output(["systemctl", "show", request.get("service", "wfsim-live"), "--timestamp=us+utc", "--property=" + fields], text=True)
     values = dict(line.split("=", 1) for line in text.splitlines())
     assert values["ActiveState"] == "active" and values["NeedDaemonReload"] == "no" and int(values["MainPID"]) > 0
     assert values["WorkingDirectory"] == str(root)
@@ -252,14 +234,20 @@ def state():
 first = state()
 process = pathlib.Path("/proc") / str(first[1])
 args = [item.decode() for item in (process / "cmdline").read_bytes().split(b"\0") if item]
-assert len(args) == 4 and pathlib.Path(args[0]).name == "bash"
-assert (process / "exe").resolve(strict=True).name == "bash"
-assert (root / args[1]) == root / "scripts/live_board.sh" and args[2:] == [str(root / "live"), str(root / "bin")]
-assert (process / "cwd").resolve(strict=True) == root / "live"
+if bot:
+    assert len(args) == 2 and pathlib.Path(args[0]).name == "node"
+    assert (process / "exe").resolve(strict=True).name == "node"
+    assert (root / args[1]) == root / "bot/qq.mjs"
+    assert (process / "cwd").resolve(strict=True) == root
+else:
+    assert len(args) == 4 and pathlib.Path(args[0]).name == "bash"
+    assert (process / "exe").resolve(strict=True).name == "bash"
+    assert (root / args[1]) == root / "scripts/live_board.sh" and args[2:] == [str(root / "live"), str(root / "bin")]
+    assert (process / "cwd").resolve(strict=True) == root / "live"
 hashes, latest, observed = {}, 0, {}
 def signature(stat):
     return stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
-for name in [*request["files"], "bin/VERSION", "bin/witness/release.json"]:
+for name in [*request["files"], *([] if bot else ["bin/VERSION", "bin/witness/release.json"])]:
     path = root / name
     assert path.resolve(strict=True) == path and path.is_file()
     before = path.stat()
@@ -275,27 +263,62 @@ for name in [*request["files"], "bin/VERSION", "bin/witness/release.json"]:
     latest = max(latest, after.st_ctime_ns)
     if name in request["files"]:
         hashes[name] = h.hexdigest()
-release = json.loads((root / "bin/witness/release.json").read_text())
-assert isinstance(release, dict)
-version = (root / "bin/VERSION").read_text().strip()
+release = None if bot else json.loads((root / "bin/witness/release.json").read_text())
+assert bot or isinstance(release, dict)
+version = None if bot else (root / "bin/VERSION").read_text().strip()
 unit = first[0]
-config = [unit["FragmentPath"], *shlex.split(unit["DropInPaths"])]
+config = [unit["FragmentPath"], *shlex.split(unit["DropInPaths"]), str((process / "exe").resolve(strict=True))]
 environments = re.findall(r"(\S+) \(ignore_errors=(?:yes|no)\)", unit["EnvironmentFiles"])
-assert environments and unit["EnvironmentFiles"] == " ".join(
+assert (bot or environments) and unit["EnvironmentFiles"] == " ".join(
     item.group(0) for item in re.finditer(r"\S+ \(ignore_errors=(?:yes|no)\)", unit["EnvironmentFiles"]))
+if bot:
+    environment = (process / "environ").read_bytes().split(b"\0")
+    selected = [item.split(b"=", 1)[1].decode() for item in environment if item.startswith(b"BOT_ENV=")]
+    environments.append(selected[0] if selected else "/etc/wfsim-bot.env")
 for name in config + environments:
     path = pathlib.Path(name)
     assert path.is_absolute() and path.resolve(strict=True) == path and path.is_file()
     stat = path.stat()
     observed[str(path)] = signature(stat)
     latest = max(latest, stat.st_ctime_ns)
+directories = {}
+if bot:
+    for name in ("site/asset", "site/pkg"):
+        path = root / name
+        assert path.resolve(strict=True) == path
+        expected = {pathlib.PurePosixPath(item).name for item in request["files"] if str(pathlib.PurePosixPath(item).parent) == name}
+        assert {item.name for item in path.iterdir()} == expected
+        stat = path.stat()
+        directories[str(path)] = signature(stat)
+        latest = max(latest, stat.st_ctime_ns)
 for name, prior in observed.items():
     path = pathlib.Path(name)
     assert path.resolve(strict=True) == path and signature(path.stat()) == prior
+for name, prior in directories.items():
+    assert signature(pathlib.Path(name).stat()) == prior
 assert state() == first and latest <= first[2]
 print(json.dumps({"active": True, "pid": first[1], "started_ns": first[2], "latest_change_ns": latest,
                   "files": hashes, "release": release, "version": version}))
 '''
+
+
+def runtime_probe(t: dict, wanted: dict, kind: str = "live") -> dict | None:
+    try:
+        result = subprocess.run(["ssh", *ssh_opts(t), "-o", "ConnectTimeout=10", t["host"],
+                                 "python3 -c " + shlex.quote(LIVE_PROBE)],
+                                input=json.dumps({"root": t["root"], "files": list(wanted), "kind": kind,
+                                                  "service": t["service"] if kind == "bot" else "wfsim-live"}),
+                                cwd=ROOT, capture_output=True, text=True, timeout=45)
+        if result.returncode:
+            return None
+        current = json.loads(result.stdout)
+        if (current["active"] is True and type(current["pid"]) is int and current["pid"] > 0
+                and type(current["latest_change_ns"]) is int and type(current["started_ns"]) is int
+                and 0 < current["latest_change_ns"] <= current["started_ns"]):
+            return current
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+        pass
+    return None
 
 
 def live_unchanged(t: dict, files: dict, rel: dict, engine: str) -> str | None:
@@ -309,13 +332,7 @@ def live_unchanged(t: dict, files: dict, rel: dict, engine: str) -> str | None:
             wanted[dest] = hashlib.sha256(f"{engine}\n".encode()).hexdigest() if dest == "bin/ENGINE" else file_sha256(ROOT / source)
     wanted["scripts/pg/.installed-lock"] = wanted["scripts/pg/package-lock.json"]
     try:
-        result = subprocess.run(["ssh", *ssh_opts(t), "-o", "ConnectTimeout=10", t["host"],
-                                 "python3 -c " + shlex.quote(LIVE_PROBE)],
-                                input=json.dumps({"root": t["root"], "files": list(wanted)}), cwd=ROOT,
-                                capture_output=True, text=True, timeout=45)
-        if result.returncode:
-            return None
-        current = json.loads(result.stdout)
+        current = runtime_probe(t, wanted)
         runtime = lambda release: json.dumps({k: v for k, v in release.items() if k not in ("commit", "release")},
                                              sort_keys=True, separators=(",", ":"), allow_nan=False)
         if (isinstance(current, dict) and isinstance(current.get("release"), dict)

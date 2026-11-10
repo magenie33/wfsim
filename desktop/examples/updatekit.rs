@@ -80,7 +80,9 @@ fn keygen() {
 }
 
 fn sign(file: &str) {
-    let seed = unhex(&std::fs::read_to_string(key_path()).expect("read private key")).expect("bad key");
+    let path = std::env::var_os("WFSIM_UPDATE_KEY_PATH").map(PathBuf::from).unwrap_or_else(key_path);
+    assert!(path.is_absolute(), "signing key path must be absolute");
+    let seed = unhex(&std::fs::read_to_string(path).expect("read private key")).expect("bad key");
     let signing = SigningKey::from_bytes(&seed.try_into().expect("key is not 32 bytes"));
     let body = std::fs::read(file).expect("read file to sign");
     // OVER THE RAW BYTES, never over a re-serialized structure: two JSON

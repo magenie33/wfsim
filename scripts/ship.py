@@ -129,6 +129,22 @@ def verify_mcp() -> int:
     return 0
 
 
+def prepare_desktop() -> None:
+    import release_stage
+    import payload_manifest
+    prepared = release_stage.promote("desktop", BUILT_MANIFEST.parent)
+    # Validate every supplied component before any push or production write.
+    release_stage.promote("live", ROOT / "target/live-linux")
+    if not prepared:
+        os.environ.pop("WFSIM_UPDATEKIT", None)
+        run(cargo(), "build", "--locked", "--manifest-path", str(ROOT / "desktop/Cargo.toml"))
+    version = os.environ["WFSIM_RELEASE_SOURCE"][:8] if prepared else None
+    if not BUILT_MANIFEST.exists() or payload_manifest.build(version_override=version) != BUILT_MANIFEST.read_bytes():
+        sys.exit("ship: desktop/build.rs and Python describe different payloads")
+    if prepared:
+        os.environ["WFSIM_UPDATEKIT"] = str(BUILT_MANIFEST.parent / "updatekit")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
@@ -170,29 +186,16 @@ def main() -> None:
         run(sys.executable, str(ROOT / "scripts" / "build_site_app.py"), "--board-files")
     else:
         run(sys.executable, str(ROOT / "scripts" / "build_site_app.py"))
-    # The payload list is `desktop/build.rs`'s, and it is rebuilt HERE so the
-    # channel cannot describe a `site/` older than the one just built.
-    run(cargo(), "build", "--manifest-path", str(ROOT / "desktop" / "Cargo.toml"))
-    if not BUILT_MANIFEST.exists():
-        sys.exit(f"ship: {BUILT_MANIFEST} was not written — the shell did not build")
-
-    # TWO PRODUCERS OF ONE ARTEFACT, HELD AGAINST EACH OTHER. `build.rs` is the
-    # authority and `payload_manifest.py` is what a runner without a Tauri
-    # toolchain uses; they read one list (`desktop/payload.lst`), and this is
-    # what keeps them reading it the same way. A silent divergence here is a
-    # staged release that no promotion can verify.
-    import payload_manifest  # noqa: E402
-    if payload_manifest.build() != BUILT_MANIFEST.read_bytes():
-        sys.exit(
-            "ship: scripts/payload_manifest.py and desktop/build.rs describe "
-            "different payloads — they read desktop/payload.lst and must agree"
-        )
+    prepare_desktop()
 
     release = [sys.executable, str(ROOT / "scripts" / "release_desktop.py")]
     if args.dry_run:
         run(*release, "--dry-run")
         print("\n[DRY RUN] site/ built, payload rebuilt, nothing published or committed")
         return
+
+    import release_stage
+    release_stage.prerequisites()
 
     # THE ENGINE LIBRARY BEFORE THE SITE that serves its engine, so a client told
     # the new engine finds the library waiting (`release_engine_lib.py --stage`).
@@ -224,6 +227,8 @@ def main() -> None:
     # BOTH WORKERS USE THIS BUILD: routes passed to BACKEND also serve its HTML.
     # A failed backend deploy must stop before the channel and edge advance.
     run(shutil.which("npx") or "npx", "--yes", WRANGLER, "deploy", "-c", str(ROOT / "wrangler.jsonc"))
+    from release_readiness import wait_backend
+    wait_backend(json.loads((SITE / "release.json").read_text(encoding="utf-8")))
     run(*release)
     # …AND `latest.json` NAMES IT once the site serves it.
     subprocess.run([sys.executable, str(ROOT / "scripts" / "release_engine_lib.py")])

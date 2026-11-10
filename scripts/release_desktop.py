@@ -29,6 +29,7 @@ Usage:
 """
 import hashlib
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -59,9 +60,14 @@ def updatekit(*args: str) -> None:
     # raises inside the reader thread, so `stdout` and `stderr` arrive as None
     # and the failure below reports the word "None" instead of the error. An
     # error path that destroys the error is worse than no error path.
+    prepared = os.environ.get("WFSIM_UPDATEKIT")
+    command = [prepared, *args] if prepared else [exe, "run", "--quiet", "--manifest-path", str(ROOT / "desktop" / "Cargo.toml"),
+                                                "--example", "updatekit", "--", *args]
+    environment = dict(os.environ)
+    if prepared:
+        environment["WFSIM_UPDATE_KEY_PATH"] = str(ROOT / "private/wfsim_update_key")
     r = subprocess.run(
-        [exe, "run", "--quiet", "--manifest-path", str(ROOT / "desktop" / "Cargo.toml"),
-         "--example", "updatekit", "--", *args],
+        command, env=environment,
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if r.returncode != 0:

@@ -96,12 +96,12 @@ def source(rel: str) -> pathlib.Path:
     return added if added.is_file() else SITE / rel
 
 
-def build() -> bytes:
+def build(version_override: str | None = None) -> bytes:
     index = []
     for rel, p in files():
         body = p.read_bytes()
         index.append({"p": rel, "n": len(body), "h": hashlib.sha256(body).hexdigest()})
-    return json.dumps({"version": version(), "files": index},
+    return json.dumps({"version": version_override if version_override is not None else version(), "files": index},
                       separators=(",", ":"), sort_keys=True).encode("utf-8")
 
 
