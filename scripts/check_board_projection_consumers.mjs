@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { createHash } from 'node:crypto';
 import { jsonArrayRows } from './json_array_stream.mjs';
 import { readInventoryPage } from './inventory_projection.mjs';
+import { inventoryCursor } from './inventory_pipeline.mjs';
 import { outputWriter, fileHash } from './inventory_publication_io.mjs';
 import { pushBoard } from './live_publish.mjs';
 import { boardDeliveryPending } from './inventory_board_pipeline.mjs';
@@ -25,6 +26,12 @@ try {
   const offsets = []; for await (const row of jsonArrayRows(array, { withOffsets: true })) offsets.push(row);
   const resumed = []; for await (const row of jsonArrayRows(array, { offset: offsets[1].offset })) resumed.push(JSON.parse(row));
   assert.deepEqual(resumed, values.slice(2));
+  const large = '界'.repeat(3 * 1024 ** 2), events = []; let received = 0;
+  for await (const row of inventoryCursor({ unsafe: async sql => sql.startsWith('FETCH') ? [{ key: large }] : [] },
+    'large_row', 'SELECT fixture', [], { maxRows: 80000, report: event => events.push(event) })) {
+    assert.equal(row.key, large); received++;
+  }
+  assert.equal(received, 1); assert(events[0].page_bytes > 8 * 1024 ** 2); assert.equal(events[0].next_rows, 1);
   for (const broken of ['[1,]', '[{},{}]garbage', '[', '{}', '[1 2]', '[,1]']) {
     writeFileSync(array, broken); await assert.rejects(async () => { for await (const _ of jsonArrayRows(array)) { /* consume EOF */ } });
   }
