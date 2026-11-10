@@ -78,6 +78,11 @@ try {
   assert.match(publish.calls, /libwebkit2gtk-4.1-dev/);
   assert.match(publish.calls, /libayatana-appindicator3-dev/);
   assert.match(publish.calls, /librsvg2-dev/);
+  const prepared = run('publish');
+  assert.equal(prepared.status, 0, prepared.stderr);
+  assert.match(prepared.calls, /fonts-noto-cjk/);
+  assert.match(prepared.calls, /lld-22/);
+  assert.doesNotMatch(prepared.calls, /libwebkit|libayatana|librsvg/);
   const installed = run('true', 'yes');
   assert.equal(installed.status, 0);
   assert.equal(installed.calls, '', 'installed packages need no network or sudo');

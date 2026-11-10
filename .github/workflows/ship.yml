@@ -48,6 +48,7 @@ jobs:
       go: ${{ steps.due.outputs.go }}
       run: ${{ steps.due.outputs.run }}
       src: ${{ steps.due.outputs.src }}
+      base: ${{ steps.due.outputs.base }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -76,6 +77,7 @@ jobs:
           echo "go=true" >> "$GITHUB_OUTPUT"
           echo "run=$run" >> "$GITHUB_OUTPUT"
           echo "src=$src" >> "$GITHUB_OUTPUT"
+          echo "base=$built" >> "$GITHUB_OUTPUT"
 
   # ---- 2. lay the build, push, publish, deploy, verify ----------------------
   ship:
@@ -92,13 +94,6 @@ jobs:
         with:
           ref: main
           fetch-depth: 200
-      - uses: ./.github/actions/site-tools
-        with:
-          build: "false"
-          cos_secret_id: ${{ secrets.COS_SECRET_ID }}
-          cos_secret_key: ${{ secrets.COS_SECRET_KEY }}
-          cos_bucket: ${{ secrets.COS_BUCKET }}
-          cos_region: ${{ secrets.COS_REGION }}
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: site-built
@@ -113,6 +108,31 @@ jobs:
           path: target/engine-lib
           run-id: ${{ needs.due.outputs.run }}
           github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        continue-on-error: true
+        with:
+          name: release-desktop
+          path: target/release-stage/desktop
+          run-id: ${{ needs.due.outputs.run }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        continue-on-error: true
+        with:
+          name: release-live
+          path: target/release-stage/live
+          run-id: ${{ needs.due.outputs.run }}
+          github-token: ${{ github.token }}
+      - id: tools
+        run: |
+          if [ -f target/release-stage/desktop/prepared.json ]; then mode=publish; else mode=false; fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/site-tools
+        with:
+          build: ${{ steps.tools.outputs.mode }}
+          cos_secret_id: ${{ secrets.COS_SECRET_ID }}
+          cos_secret_key: ${{ secrets.COS_SECRET_KEY }}
+          cos_bucket: ${{ secrets.COS_BUCKET }}
+          cos_region: ${{ secrets.COS_REGION }}
       # THE BUILD, EXACTLY: what it holds replaces what main holds, a file it
       # dropped included — all but site/board/, the bots', which it never carried.
       - name: lay CI's build over main
@@ -154,6 +174,9 @@ jobs:
           WEBSITE_KNOWN_HOSTS: ${{ secrets.WEBSITE_KNOWN_HOSTS }}
           GH_TOKEN: ${{ github.token }}
           DRY_RUN: ${{ inputs.dry_run }}
+          WFSIM_RELEASE_SOURCE: ${{ needs.due.outputs.src }}
+          WFSIM_RELEASE_RUN: ${{ needs.due.outputs.run }}
+          WFSIM_RELEASE_BASE: ${{ needs.due.outputs.base }}
         run: |
           set -euo pipefail
           # THE KEYS AS ship.py READS THEM, under private/ (gitignored), for this step alone.

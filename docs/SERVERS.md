@@ -49,10 +49,24 @@ deployed with `python scripts/ship_factoryd.py` from the same source commit
 after changes to its worker or scripts; `--verify` checks its commit and heartbeat.
 
 An unchanged live board keeps its process and actual `VERSION`. Shipping compares
-both freshly built binaries and the complete runtime inventory, including witness
+both checked CI binaries and the complete runtime inventory, including witness
 packs and release fields other than `commit` and `release`. A stable active process
 must have started after every runtime, unit and environment-file change; missing,
 changed or unknown state uses the normal deployment path.
+
+The board/intake build runs in the pinned Linux container without deployment
+credentials. Shipping promotes the exact source/input/target-verified artifact;
+the legacy path builds only when no prepared artifact exists. An invalid prepared
+artifact stops the release. Compilation never establishes that a remote service
+already loaded its files; the remote byte and process-start proof still applies.
+
+An unchanged bot keeps its loaded process. Its single deploy inventory includes
+all bot modules, transitive relative imports, generated engine, WASM packs,
+stylesheet and images. The active Node process must use that root and have
+started after every runtime, unit and environment-file change. Style/package
+directory entries must match and remain stable throughout the probe. A file
+replaced without restarting, a missing import or an unknown probe cannot skip
+deployment. The live proof runs before any co-hosted bot upload.
 
 ## Website host
 

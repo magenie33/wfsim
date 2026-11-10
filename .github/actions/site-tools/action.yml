@@ -7,7 +7,7 @@ name: site tools
 description: the toolchain, tools and build cache scripts/build_site_app.py and scripts/ship.py run with
 inputs:
   build:
-    description: "'true': the wasm tools, cargo-xwin and web/cache too, for building site/"
+    description: "'true': site build; 'false': legacy desktop build; 'publish': verified prepared components"
     default: "true"
   cos_secret_id: { required: false }
   cos_secret_key: { required: false }

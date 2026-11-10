@@ -167,7 +167,8 @@ What the client leaves out of `site/` is declared once, in `desktop/payload.lst`
 and read by both
 `desktop/build.rs` (which packs it into the binary) and
 `scripts/payload_manifest.py` (which describes it to the channel without a Tauri
-toolchain). `ship.py` holds the two outputs against each other on every run.
+toolchain). CI's desktop preparation holds their outputs against each other;
+shipping verifies that exact manifest against every current payload byte.
 
 What the client ADDS is `desktop/payload/`, at the paths it is served under:
 `native/engine.json` and the library it names, `native/wfsim_engine.<hash>.dll`.
@@ -227,6 +228,11 @@ content-addressed and cacheable for ever.
    them as an artifact. Selected artifact, MCP, bot and browser jobs consume
    that build; source-only service and SQL jobs start independently. Native
    Linux and Mac producers run alongside validation, skipping published targets.
+   Secretless `release-desktop` and `release-live` producers prepare the desktop
+   manifest/signing executable and the Linux board/intake binaries. The desktop
+   producer checks both existing manifest implementations, using the checked
+   site artifact. Linux runtime preparation uses the pinned amd64 container in
+   `scripts/release_stage.py` and can start before the site build finishes.
 2. Once CI passes on main, `.github/workflows/ship.yml` lays that artifact over
    main — all but `site/board/`, the bots' — and runs `ship.py --built`:
    stage the engine library, commit and push, deploy the backend, stage and sign
@@ -237,6 +243,16 @@ content-addressed and cacheable for ever.
    Native artifacts come from that same CI run and must match its engine,
    module, data, source and byte digest. Missing optional slices retain WASM;
    an absent Linux artifact can be built in Docker during shipping.
+   Prepared release components come from the selected trusted CI run and exact
+   source. Their receipts bind the complete source inputs, target, Rust
+   toolchain, container digest and executable hashes. They add no client
+   manifest: `desktop/payload.lst` and the verified `payload-manifest.json`
+   remain authoritative. A present invalid component blocks publication; an
+   absent legacy component retains the original build path.
+   Main may contain a later generated board snapshot. The Linux input hash for
+   `data/board_state.yaml` is verified against the selected source's Git object;
+   every other source input must match the actual checkout. The runtime and
+   manifest promoted are CI's checked bytes, including their original source.
 3. What is due is decided by commit: the newest touching anything but the
    build's products and the board bots', against the commit
    `site/release.json` names. Equal, nothing ships — so any trigger may fire
@@ -252,6 +268,40 @@ by the server, deleted (`BOT_VIA_COS=1`, `scripts/ship_bot.py` `send`).
 The signing key, the bot's SSH key and its address live in the `release`
 environment, which only `main` may use and only the `ship` job asks for.
 `stage.yml` and `promote.py` remain for staging or signing by hand.
+
+### Preparing components
+
+The CI jobs use these commands on their exact source checkout, with no release
+environment or external credentials:
+
+```sh
+python scripts/release_stage.py prepare desktop --out target/release-stage/desktop --source "$GITHUB_SHA"
+python scripts/release_stage.py prepare live --out target/release-stage/live --source "$GITHUB_SHA"
+```
+
+Upload each output directory as `release-desktop` or `release-live` in that CI
+run. Desktop preparation needs the complete checked `site-built` artifact and
+`site-tools` with `build: "false"`. Live preparation needs Git, Python and
+Docker. Shipping downloads both from its already verified CI run; it compiles
+neither component when their receipts and bytes match. The prepared signing
+executable reads the current absolute key path only when asked to sign;
+preparation never receives that key. Key generation keeps its existing path.
+`site-tools`' `publish` mode skips desktop GUI build dependencies.
+
+An optional `--reuse <directory>` for live preparation accepts only identical
+complete inputs. It re-fetches that receipt from its successful non-PR repository
+CI run before trusting cached bytes. A missing, changed or unverifiable previous
+artifact builds normally. It does not use the engine id as a build cache key.
+
+SQL prerequisites are checked before any publication. No changed SQL means an
+empty prerequisite. Changed `worker/pg/*.sql` requires an operator receipt at
+`WFSIM_SCHEMA_READINESS_RECEIPT`: exact full `source` and `base`, a `sql` mapping
+from each changed path to its SHA-256 (or null for a deletion), and successful
+`checks` with retained owner, version/function and business-column evidence.
+This never applies schemas. An anonymous authentication refusal supplies no
+database readiness proof. After backend deployment, `release_readiness.py`
+checks the expected release and registered API readiness before the channel,
+edge or website can advance.
 
 When `WEBSITE_TARGET` is configured, the fixed website host receives the same
 checked `site/` after both Workers deploy. `scripts/ship_website.py` checks their
