@@ -23,7 +23,7 @@ BIN="${2:?usage: live_board.sh <work-dir> <bin-dir>}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 POLL_SECONDS="${POLL_SECONDS:-20}"
 REFRESH_SECONDS="${REFRESH_SECONDS:-3600}"
-INCREMENTAL_INVENTORY="${INCREMENTAL_INVENTORY:-0}"
+INCREMENTAL_INVENTORY="${INCREMENTAL_INVENTORY:-1}"
 case "$INCREMENTAL_INVENTORY" in 0|1) ;; *) echo "live: INCREMENTAL_INVENTORY must be 0 or 1" >&2; exit 1 ;; esac
 mkdir -p "$WORK"
 cd "$WORK"
@@ -187,6 +187,7 @@ consume_inventory_status() {
   if [ "$(jq -r '.blocked // false' "$status")" = true ]; then
     inventory_blocked=1
     inventory_pending=0
+    stop_push
     echo "live: inventory requires explicit action: $(jq -r '.stage' "$status")" >&2
     return 0
   fi
@@ -222,6 +223,7 @@ stop_push() {
     kill "$PUSH_PID" 2>/dev/null || true
     wait "$PUSH_PID" 2>/dev/null || true
   fi
+  PUSH_PID=""
 }
 
 # WHAT THE SITE READS BESIDE THE ROWS: each weapon's heads, and the stamp.
