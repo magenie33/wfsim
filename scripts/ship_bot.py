@@ -196,6 +196,7 @@ def live_files(out: pathlib.Path, rel: dict) -> dict:
     files = {"bin": [out / n for n in ("wfsim-intake", "wfsim-board", "VERSION", "ENGINE")],
              "scripts": LIVE_SCRIPTS,
              "worker": sorted(set(p for p in reached if p.startswith("worker/")) | set(LIVE_READS)),
+             "worker/pg": [f"worker/pg/{name}.sql" for name in ("schema", "library", "sync", "inventory")],
              "mcp": [p for p in reached if p.startswith("mcp/")],
              "scripts/pg": ["scripts/pg/package.json", "scripts/pg/package-lock.json"],
              "bin/witness": ["site/release.json"],
@@ -386,6 +387,8 @@ def deploy_live(t: dict) -> None:
     # moves the live board onto it (deploy/wfsim-live.service).
     run(["ssh", *o, host, f"mkdir -p {root}/worker {root}/scripts/pg"])
     send(t, files["worker"], f"{root}/worker")
+    run(["ssh", *o, host, f"mkdir -p {root}/worker/pg"])
+    send(t, files["worker/pg"], f"{root}/worker/pg")
     # …AND THE PAGE'S OWN CODE a live script runs (`board_heads.mjs`).
     run(["ssh", *o, host, f"mkdir -p {root}/mcp"])
     send(t, files["mcp"], f"{root}/mcp")
