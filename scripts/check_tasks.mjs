@@ -7,14 +7,38 @@
 //   node scripts/check_tasks.mjs [trials=400]
 import { factory, questionId, canon, nearAnswer } from "../worker/tasks.js";
 import { placeholders } from "../worker/placeholders.js";
-import { testDb } from "./pg/test_db.mjs";
+import { writeFileSync } from "node:fs";
+import { testDb, testDbTiming } from "./pg/test_db.mjs";
+import { factoryCases, factorySelection } from "./factory_shards.mjs";
 
-let failures = 0;
+const selection = factorySelection(process.argv.slice(2));
+const wanted = new Set(selection.cases.map(row => row.id)), known = new Set(factoryCases(selection.trials).map(row => row.id));
+const completed = [], seen = new Set(), started = performance.now();
+let failures = 0, checks = 0, finished = false;
 const check = (what, ok, detail = "") => {
+  checks++;
   console.log(`  ${ok ? "ok " : "FAIL"}  ${what}${ok || !detail ? "" : `   ${detail}`}`);
   if (!ok) failures++;
 };
-const TRIALS = Number((process.argv.find((a) => a.startsWith("trials=")) || "trials=400").slice(7));
+const TRIALS = selection.trials;
+const runCase = async (id, run) => {
+  if (!known.has(id)) throw Error(`unknown factory case: ${id}`);
+  if (!wanted.has(id)) return;
+  if (seen.has(id)) throw Error(`duplicate factory case: ${id}`);
+  seen.add(id);
+  const start = performance.now(), before = testDbTiming(), failed = failures, count = checks;
+  const outcome = await run();
+  const after = testDbTiming();
+  completed.push({ id, ok: failures === failed && outcome !== false, checks: checks - count, ms: performance.now() - start,
+    ...(after ? { phases: Object.fromEntries(Object.entries(after).map(([phase, value]) => [phase,
+      { calls: value.calls - before[phase].calls, ms: value.ms - before[phase].ms }])) } : {}) });
+};
+if (selection.receipt) process.on("exit", code => {
+  const { receipt, ...manifest } = selection;
+  writeFileSync(receipt, JSON.stringify({ ...manifest, completed, failures, checks, ms: performance.now() - started,
+    success: finished && code === 0 && failures === 0 && completed.length === wanted.size,
+    timing: testDbTiming(), transaction_timing_includes_queries: true }, null, 2) + "\n");
+});
 
 // A seeded generator, so a failing trial can be run again by its number.
 const rng = (seed) => () => {
@@ -40,131 +64,147 @@ const PRODUCERS = {
 console.log("liveness: handed nothing only when nothing may be answered, else the waited-on, then the earliest deadline");
 {
   let bad = 0, first = "", badPack = 0, firstPack = "";
-  for (let t = 0; t < TRIALS && bad < 3; t++) {
-    const r = rng(t + 1), db = await testDb("library"), env = { LIBRARY: db };
-    const f = factory({ verbs: VERBS, producers: PRODUCERS, random: r });
-    const engines = ["e1", "e0"], owners = ["o1", "o2", "o3", "o4"], nets = ["", "n1", "n2", "n3"];
-    const devices = Array.from({ length: 6 }, (_, i) => ({ device: `d${i}`, owner: pick(r, owners), net: pick(r, nets) }));
-    const n = 1 + Math.floor(r() * 14);
-    const qs = [];
-    for (let i = 0; i < n; i++) {
-      const id = `q${i}`, verb = pick(r, ["simulate", "optimize"]);
-      const state = pick(r, ["open", "open", "open", "fact", "withdrawn", "disputed", "spot", "nondeterministic"]);
-      const lanes = r() < 0.4 ? [{ lanes: 8, after_ms: 0 }, { lanes: 4, after_ms: 10_000 }, { lanes: 1, after_ms: 120_000 }] : null;
-      const opened = NOW - Math.floor(r() * 300_000), due = NOW + Math.floor((r() - 0.5) * 7_200_000);
-      const leased = r() < 0.2 ? pick(r, [NOW + 60_000, NOW - 60_000]) : null;
-      const waits = r() < 0.2 ? 1 : 0;
-      await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, lease, lease_until, leased_to, waits)
-        VALUES (?, ?, '{}', ?, ?, ?, ?, ?, ?, ?, ?)`, id, verb, state, iso(due), iso(opened), lanes && JSON.stringify(lanes),
-        leased ? "l" : null, leased ? iso(leased) : null, leased ? "dx" : null, waits);
-      await db.run("INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('p', ?, ?, 'live', ?, ?)", id, id, iso(opened), iso(due));
-      const answers = [];
-      for (let k = Math.floor(r() * 3); k > 0; k--) {
-        const w = pick(r, devices), a = { device: w.device, owner: w.owner, net: w.net, engine: pick(r, engines) };
-        // ONE ANSWER per question, device and engine (`answers_once`): a repeat is no book the factory can hold.
-        if (answers.some((b) => b.device === a.device && b.engine === a.engine)) continue;
-        await db.run(`INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, ?, ?, ?, ?, 'c', '{}', 1, ?)`, id, a.engine, a.device, a.owner, a.net, iso(NOW));
-        answers.push(a);
+  const trials = selection.cases.filter(row => row.family === "liveness");
+  for (const { index: t, id, seed } of trials) {
+    if (bad >= 3) break;
+    await runCase(id, async () => {
+      const priorProblems = bad + badPack;
+      const r = rng(seed), db = await testDb("library"), env = { LIBRARY: db };
+      const f = factory({ verbs: VERBS, producers: PRODUCERS, random: r });
+      const engines = ["e1", "e0"], owners = ["o1", "o2", "o3", "o4"], nets = ["", "n1", "n2", "n3"];
+      const devices = Array.from({ length: 6 }, (_, i) => ({ device: `d${i}`, owner: pick(r, owners), net: pick(r, nets) }));
+      const n = 1 + Math.floor(r() * 14);
+      const qs = [];
+      for (let i = 0; i < n; i++) {
+        const id = `q${i}`, verb = pick(r, ["simulate", "optimize"]);
+        const state = pick(r, ["open", "open", "open", "fact", "withdrawn", "disputed", "spot", "nondeterministic"]);
+        const lanes = r() < 0.4 ? [{ lanes: 8, after_ms: 0 }, { lanes: 4, after_ms: 10_000 }, { lanes: 1, after_ms: 120_000 }] : null;
+        const opened = NOW - Math.floor(r() * 300_000), due = NOW + Math.floor((r() - 0.5) * 7_200_000);
+        const leased = r() < 0.2 ? pick(r, [NOW + 60_000, NOW - 60_000]) : null;
+        const waits = r() < 0.2 ? 1 : 0;
+        await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, lease, lease_until, leased_to, waits)
+          VALUES (?, ?, '{}', ?, ?, ?, ?, ?, ?, ?, ?)`, id, verb, state, iso(due), iso(opened), lanes && JSON.stringify(lanes),
+          leased ? "l" : null, leased ? iso(leased) : null, leased ? "dx" : null, waits);
+        await db.run("INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('p', ?, ?, 'live', ?, ?)", id, id, iso(opened), iso(due));
+        const answers = [];
+        for (let k = Math.floor(r() * 3); k > 0; k--) {
+          const w = pick(r, devices), a = { device: w.device, owner: w.owner, net: w.net, engine: pick(r, engines) };
+          // ONE ANSWER per question, device and engine (`answers_once`): a repeat is no book the factory can hold.
+          if (answers.some((b) => b.device === a.device && b.engine === a.engine)) continue;
+          await db.run(`INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, ?, ?, ?, ?, 'c', '{}', 1, ?)`, id, a.engine, a.device, a.owner, a.net, iso(NOW));
+          answers.push(a);
+        }
+        qs.push({ id, verb, state, lanes, opened, due, leased, answers, waits });
       }
-      qs.push({ id, verb, state, lanes, opened, due, leased, answers, waits });
-    }
-    const me = pick(r, devices), lanes = pick(r, [0, 1, 2, 4, 8]), before = r() < 0.3 ? NOW + Math.floor((r() - 0.5) * 3_600_000) : null;
-    const siblings = devices.filter((d) => d.owner === me.owner).map((d) => d.device);
-    // THE RULE, said again the slow way.
-    const may = (q) => q.state === "open" && !(q.leased && q.leased > NOW)
-      && (!q.lanes || q.answers.length > 0
-        || lanes >= Math.min(...q.lanes.filter((x) => x.after_ms <= NOW - q.opened).map((x) => x.lanes)))
-      && (before === null || q.due < before)
-      && !q.answers.some((a) => a.engine === "e1" && (siblings.includes(a.device) || a.owner === me.owner || (me.net && a.net === me.net)));
-    const eligible = qs.filter(may).sort((a, b) => b.waits - a.waits || a.due - b.due || (a.id < b.id ? -1 : 1));
-    const w = { device: me.device, owner: me.owner, siblings, net: me.net, lanes, before: before === null ? null : iso(before) };
-    // A PACK, by the same rule: the first `size` it may answer of a packable
-    // verb that nobody waits on — read before `next` leases one of them — those
-    // another witness answered first, on whatever engine.
-    const size = 1 + Math.floor(r() * 5);
-    const packable = eligible.filter((q) => !q.waits && q.verb === "simulate"), led = (q) => q.answers.length > 0;
-    const packWant = [...packable.filter(led), ...packable.filter((q) => !led(q))].slice(0, size).map((q) => q.id);
-    const pack = await f.nextPack(env, w, "e1", { n: size, lease_ms: 60_000, most: 1 }, NOW);
-    const packGot = pack ? pack.questions.map((q) => q.question) : [];
-    const sameSet = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
-    if (!sameSet(packGot, packWant)) { badPack++; firstPack ||= `trial ${t}: got ${packGot}, want ${packWant}`; }
-    if (pack) await db.run("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE lease = ?", pack.lease);
-    const got = await f.next(env, { ...w, most: 99 }, "e1", NOW);
-    const want = eligible[0] ? eligible[0].id : null;
-    if ((got ? got.question : null) !== want) {
-      bad++;
-      first ||= `trial ${t}: got ${got && got.question}, want ${want}`;
-    }
-    await db.close();
+      const me = pick(r, devices), lanes = pick(r, [0, 1, 2, 4, 8]), before = r() < 0.3 ? NOW + Math.floor((r() - 0.5) * 3_600_000) : null;
+      const siblings = devices.filter((d) => d.owner === me.owner).map((d) => d.device);
+      // THE RULE, said again the slow way.
+      const may = (q) => q.state === "open" && !(q.leased && q.leased > NOW)
+        && (!q.lanes || q.answers.length > 0
+          || lanes >= Math.min(...q.lanes.filter((x) => x.after_ms <= NOW - q.opened).map((x) => x.lanes)))
+        && (before === null || q.due < before)
+        && !q.answers.some((a) => a.engine === "e1" && (siblings.includes(a.device) || a.owner === me.owner || (me.net && a.net === me.net)));
+      const eligible = qs.filter(may).sort((a, b) => b.waits - a.waits || a.due - b.due || (a.id < b.id ? -1 : 1));
+      const w = { device: me.device, owner: me.owner, siblings, net: me.net, lanes, before: before === null ? null : iso(before) };
+      // A PACK, by the same rule: the first `size` it may answer of a packable
+      // verb that nobody waits on — read before `next` leases one of them — those
+      // another witness answered first, on whatever engine.
+      const size = 1 + Math.floor(r() * 5);
+      const packable = eligible.filter((q) => !q.waits && q.verb === "simulate"), led = (q) => q.answers.length > 0;
+      const packWant = [...packable.filter(led), ...packable.filter((q) => !led(q))].slice(0, size).map((q) => q.id);
+      const pack = await f.nextPack(env, w, "e1", { n: size, lease_ms: 60_000, most: 1 }, NOW);
+      const packGot = pack ? pack.questions.map((q) => q.question) : [];
+      const sameSet = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+      if (!sameSet(packGot, packWant)) { badPack++; firstPack ||= `trial ${t}: got ${packGot}, want ${packWant}`; }
+      if (pack) await db.run("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE lease = ?", pack.lease);
+      const got = await f.next(env, { ...w, most: 99 }, "e1", NOW);
+      const want = eligible[0] ? eligible[0].id : null;
+      if ((got ? got.question : null) !== want) {
+        bad++;
+        first ||= `trial ${t}: got ${got && got.question}, want ${want}`;
+      }
+      await db.close();
+      return bad + badPack === priorProblems;
+    });
   }
-  check(`${TRIALS} random books: next() is exactly the first eligible question in order, or null when there is none`, !bad, first);
-  check(`...and nextPack(n) exactly the first n of them a pack may carry — none someone waits on`, !badPack, firstPack);
+  if (selection.group !== "regressions") {
+    check(`${trials.length} random books: next() is exactly the first eligible question in order, or null when there is none`, !bad, first);
+    check(`...and nextPack(n) exactly the first n of them a pack may carry — none someone waits on`, !badPack, firstPack);
+  }
 }
 
 console.log("\ntermination: every question ends a fact or withdrawn");
 {
   let bad = 0, first = "", liarsCredited = 0, refusedHonest = 0;
-  for (let t = 0; t < Math.ceil(TRIALS / 4) && bad < 3; t++) {
-    const r = rng(10_000 + t), db = await testDb("library"), env = { LIBRARY: db };
-    const disproved = [];
-    const f = factory({ verbs: VERBS, producers: PRODUCERS, random: r, spot: 0.2, recheck: 0.3,
-      on_disproved: async (_, a) => { disproved.push(a); } });
-    // Each question's true answer, and whether it is deterministic at all.
-    const truth = new Map(), odd = new Set();
-    const n = 1 + Math.floor(r() * 10);
-    for (let i = 0; i < n; i++) {
-      const verb = pick(r, ["simulate", "optimize"]);
-      const id = await f.demand(env, { producer: pick(r, ["p", "q"]), ref: `r${i}`, verb, request: { i },
-        due_in_ms: Math.floor(r() * 3_600_000), lanes: r() < 0.3 ? [{ lanes: 8, after_ms: 0 }, { lanes: 1, after_ms: 120_000 }] : null }, "e1", NOW);
-      truth.set(id, Math.floor(r() * 1000));
-      if (r() < 0.15) odd.add(id);
-    }
-    const owners = ["o1", "o2", "o3", "o4", "o5"];
-    const people = Array.from({ length: 8 }, (_, i) => ({ device: `d${i}`, owner: pick(r, owners), net: pick(r, ["", "n1", "n2", "n3", "n4"]),
-      liar: r() < 0.2, lanes: pick(r, [1, 4, 8]) }));
-    const answerFor = (w, q) => {
-      const v = truth.get(q.question);
-      const score = w.liar ? v + 1 : v;
-      const work = odd.has(q.question) && !w.official ? 100 + Math.floor(r() * 1e6) : 100;
-      return { result: { score, build: "b" }, work };
-    };
-    let now = NOW;
-    for (let step = 0; step < 2000; step++) {
-      now += 1000;
-      // Mostly volunteers; past every deadline, the official machines too.
-      const official = step > 200 && r() < 0.3;
-      const w = official ? { device: "official", owner: "official", official: true } : pick(r, people);
-      const siblings = official ? ["official"] : people.filter((p) => p.owner === w.owner).map((p) => p.device);
-      const q = await f.next(env, { ...w, siblings, most: 1 }, "e1", now);
-      if (!q) {
-        const open = (await db.get("SELECT count(*) AS n FROM questions WHERE state NOT IN ('fact', 'withdrawn')")).n;
-        if (!open) break;
-        if (step > 200) now += 3_600_000; // time passes; deadlines go by
-        continue;
+  const trials = selection.cases.filter(row => row.family === "termination");
+  for (const { index: t, id, seed } of trials) {
+    if (bad >= 3) break;
+    await runCase(id, async () => {
+      const priorProblems = bad + refusedHonest;
+      const r = rng(seed), db = await testDb("library"), env = { LIBRARY: db };
+      const disproved = [];
+      const f = factory({ verbs: VERBS, producers: PRODUCERS, random: r, spot: 0.2, recheck: 0.3,
+        on_disproved: async (_, a) => { disproved.push(a); } });
+      // Each question's true answer, and whether it is deterministic at all.
+      const truth = new Map(), odd = new Set();
+      const n = 1 + Math.floor(r() * 10);
+      for (let i = 0; i < n; i++) {
+        const verb = pick(r, ["simulate", "optimize"]);
+        const id = await f.demand(env, { producer: pick(r, ["p", "q"]), ref: `r${i}`, verb, request: { i },
+          due_in_ms: Math.floor(r() * 3_600_000), lanes: r() < 0.3 ? [{ lanes: 8, after_ms: 0 }, { lanes: 1, after_ms: 120_000 }] : null }, "e1", NOW);
+        truth.set(id, Math.floor(r() * 1000));
+        if (r() < 0.15) odd.add(id);
       }
-      const { result, work } = answerFor(w, q);
-      await f.answer(env, w, { lease: q.lease, engine: "e1", result, work }, now);
-    }
-    const left = await db.all("SELECT id, state FROM questions WHERE state NOT IN ('fact', 'withdrawn')");
-    if (left.length) { bad++; first ||= `trial ${t}: ${JSON.stringify(left)}`; }
-    for (const a of await db.all("SELECT device, credited FROM answers WHERE credited = 1")) {
-      if (people.find((p) => p.device === a.device && p.liar)) liarsCredited++;
-    }
-    for (const d of disproved) if (people.find((p) => p.device === d.device && !p.liar)) refusedHonest++;
-    // Nobody is refused for a question that was not deterministic.
-    for (const id of odd) {
-      const s = await db.get("SELECT state FROM questions WHERE id = ?", id);
-      if (s.state === "nondeterministic") { bad++; first ||= `trial ${t}: ${id} stayed nondeterministic`; }
-    }
-    await db.close();
+      const owners = ["o1", "o2", "o3", "o4", "o5"];
+      const people = Array.from({ length: 8 }, (_, i) => ({ device: `d${i}`, owner: pick(r, owners), net: pick(r, ["", "n1", "n2", "n3", "n4"]),
+        liar: r() < 0.2, lanes: pick(r, [1, 4, 8]) }));
+      const answerFor = (w, q) => {
+        const v = truth.get(q.question);
+        const score = w.liar ? v + 1 : v;
+        const work = odd.has(q.question) && !w.official ? 100 + Math.floor(r() * 1e6) : 100;
+        return { result: { score, build: "b" }, work };
+      };
+      let now = NOW;
+      for (let step = 0; step < 2000; step++) {
+        now += 1000;
+        // Mostly volunteers; past every deadline, the official machines too.
+        const official = step > 200 && r() < 0.3;
+        const w = official ? { device: "official", owner: "official", official: true } : pick(r, people);
+        const siblings = official ? ["official"] : people.filter((p) => p.owner === w.owner).map((p) => p.device);
+        const q = await f.next(env, { ...w, siblings, most: 1 }, "e1", now);
+        if (!q) {
+          const open = (await db.get("SELECT count(*) AS n FROM questions WHERE state NOT IN ('fact', 'withdrawn')")).n;
+          if (!open) break;
+          if (step > 200) now += 3_600_000; // time passes; deadlines go by
+          continue;
+        }
+        const { result, work } = answerFor(w, q);
+        await f.answer(env, w, { lease: q.lease, engine: "e1", result, work }, now);
+      }
+      const left = await db.all("SELECT id, state FROM questions WHERE state NOT IN ('fact', 'withdrawn')");
+      if (left.length) { bad++; first ||= `trial ${t}: ${JSON.stringify(left)}`; }
+      for (const a of await db.all("SELECT device, credited FROM answers WHERE credited = 1")) {
+        if (people.find((p) => p.device === a.device && p.liar)) liarsCredited++;
+      }
+      for (const d of disproved) if (people.find((p) => p.device === d.device && !p.liar)) refusedHonest++;
+      // Nobody is refused for a question that was not deterministic.
+      for (const id of odd) {
+        const s = await db.get("SELECT state FROM questions WHERE id = ?", id);
+        if (s.state === "nondeterministic") { bad++; first ||= `trial ${t}: ${id} stayed nondeterministic`; }
+      }
+      await db.close();
+      return bad + refusedHonest === priorProblems;
+    });
   }
-  check(`${Math.ceil(TRIALS / 4)} random populations: no question is left waiting`, !bad, first);
-  check("an honest witness is never refused", refusedHonest === 0, `${refusedHonest} refusals of honest witnesses`);
-  console.log(`  (liars credited by agreeing with each other before a spot check: ${liarsCredited} answers)`);
+  if (selection.group !== "regressions") {
+    check(`${trials.length} random populations: no question is left waiting`, !bad, first);
+    check("an honest witness is never refused", refusedHonest === 0, `${refusedHonest} refusals of honest witnesses`);
+    console.log(`  (liars credited by agreeing with each other before a spot check: ${liarsCredited} answers)`);
+  }
 }
 
 console.log("\nthe cases that failed in production");
-{
+await runCase("fixed:answered-out", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1, on_disproved: async (_, a) => { throw new Error(`refused ${a.device}`); } });
   // A WINDOW FULL OF ANSWERED-OUT QUESTIONS: nine optimize questions
@@ -183,8 +223,8 @@ console.log("\nthe cases that failed in production");
   const states = await db.all("SELECT state, count(*) AS n FROM questions WHERE request LIKE '%full%' GROUP BY state");
   check("...and three witnesses differing only in work is an engine fault, not three liars",
     states.length === 1 && states[0].state === "nondeterministic" && states[0].n === 9, JSON.stringify(states));
-}
-{
+});
+await runCase("fixed:shared-producers", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   told.length = 0;
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
@@ -210,8 +250,8 @@ console.log("\nthe cases that failed in production");
   await f.answer(env, { device: "c", owner: "oc", net: "nc" }, { lease: c.lease, engine: "e2", result: { build: "b", score: 5 }, work: 7 }, NOW);
   check("...where one answer of the new engine that reproduces the old bits makes the fact again",
     (await db.get("SELECT state, fact_engine FROM questions")).fact_engine === "e2");
-}
-{
+});
+await runCase("fixed:withdrawn", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS });
   await f.demand(env, { producer: "p", ref: "gone", verb: "simulate", request: { row: 1 }, due_in_ms: 1000 }, "e1", NOW);
@@ -246,8 +286,8 @@ console.log("\nthe cases that failed in production");
   check("an open question no demand asks for any more is withdrawn by the pack that picks it, which is the row behind",
     (await db.get("SELECT state FROM questions WHERE id = ?", orphan)).state === "withdrawn"
       && after && after.questions.length === 1 && after.questions[0].demands[0].ref === "behind", JSON.stringify(after));
-}
-{
+});
+await runCase("fixed:cancelled-head", async () => {
   // ORDERS CANCELLED AT THE HEAD (`DELETE FROM queue`): three packs' worth of
   // board rows no longer owed, and orphans with every demand withdrawn, ahead
   // of the live rows. One ask withdraws what its picks find and is handed a
@@ -283,8 +323,8 @@ console.log("\nthe cases that failed in production");
   check("the official machines' claim behind cancelled rows is the live ones, and the dead are withdrawn",
     JSON.stringify(refs) === JSON.stringify(asks.slice(5 * N).map((a) => a.ref))
       && (await db.get("SELECT count(*) AS n FROM questions WHERE state = 'withdrawn'")).n === 5 * N, JSON.stringify(refs));
-}
-{
+});
+await runCase("fixed:withdrawn-spot", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS });
   const id = await f.demand(env, { producer: "p", ref: "spotted", verb: "simulate", request: { row: 3 }, due_in_ms: 1000 }, "e1", NOW);
@@ -293,9 +333,9 @@ console.log("\nthe cases that failed in production");
   const [t] = await f.claim(env, { device: "official" }, { states: ["spot"], max: 1 }, "e1", NOW);
   check("a spot nobody asks for any more is still claimed with its demand, so the official machines can settle it",
     t && t.question === id && t.demands.length === 1 && t.demands[0].ref === "spotted", JSON.stringify(t));
-}
+});
 
-{
+await runCase("fixed:batch-asks", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   told.length = 0;
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
@@ -314,9 +354,9 @@ console.log("\nthe cases that failed in production");
     ids.length === 120 && ids[0] === known && (await db.get("SELECT count(*) AS n FROM demands WHERE producer = 'q'")).n === 120
       && (await db.get("SELECT count(*) AS n FROM questions")).n === 119);
   check("...and one whose fact on the served engine stands is told at once", told.some((t) => t.ref === "many0"), JSON.stringify(told));
-}
+});
 
-{
+await runCase("fixed:answer-held", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   // AN ANSWERED QUESTION IS NOBODY ELSE'S UNTIL IT IS SETTLED: it heads every
   // order, so a lease freed before the fact was handed out and answered for nothing.
@@ -332,9 +372,9 @@ console.log("\nthe cases that failed in production");
   check("a question being answered is handed to nobody else until it is settled", during.length === 2 && during.every((x) => x === null),
     JSON.stringify(during.map((x) => x && x.question)));
   check("...and is free once it is", (await db.get("SELECT count(*) AS n FROM questions WHERE lease IS NOT NULL")).n === 0);
-}
+});
 
-{
+await runCase("fixed:owner-claim", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   // A BROWSER CLAIMED BY AN OWNER AFTER IT TOOK A QUESTION answers as that
   // owner's second: the same answer twice from one owner is no dispute.
@@ -347,10 +387,10 @@ console.log("\nthe cases that failed in production");
   await f.answer(env, { ...d, owner: "oa" }, { lease: qd.lease, engine: "e1", result: { score: 2 }, work: 3 }, NOW);
   check("one owner's two answers fill no cap, and the question stays open for a second witness",
     (await db.get("SELECT state FROM questions WHERE id = ?", id)).state === "open");
-}
+});
 
 console.log("\npacks");
-{
+await runCase("fixed:pack-equivalence", async () => {
   // A PACK'S ANSWERS TOGETHER ARE THE SAME AS EACH ALONE: two witnesses answer
   // the same rows — agreeing on some, not on others — once by packs and once one
   // by one; every state, fact and credit comes out equal.
@@ -384,8 +424,8 @@ console.log("\npacks");
   check("a pack's answers together make every state, fact and credit that each alone makes", alone === together, `${alone}\n  ${together}`);
   check("...three disputes and six facts among them", (JSON.parse(together).questions.filter((q) => q.state === "disputed").length === 3)
     && JSON.parse(together).questions.filter((q) => q.state === "fact").length === 6);
-}
-{
+});
+await runCase("fixed:settlement-race", async () => {
   // TWO WITNESSES SETTLING ONE QUESTION AT THE SAME MOMENT pay once: both read
   // the two agreeing answers before either writes.
   const db = await testDb("library"), env = { LIBRARY: db };
@@ -399,10 +439,10 @@ console.log("\npacks");
   await Promise.all([f.settle(env, id, "e1", NOW), f.settle(env, id, "e1", NOW)]);
   const paid = await db.get("SELECT sum(work) AS w, sum(agreed) AS n FROM verifiers");
   check("two settlings of one question at once credit each witness once", paid.w === 10 && paid.n === 2, JSON.stringify(paid));
-}
+});
 
 console.log("\nthe watchdog");
-{
+await runCase("fixed:watchdog-stall", async () => {
   // A STALL: a survey's shapes overdue, volunteers at work on
   // other things, and not one answer to any shape for over an hour.
   const db = await testDb("library"), env = { LIBRARY: db };
@@ -445,8 +485,8 @@ console.log("\nthe watchdog");
   check("...a round is every finding, under one instant", latest.length === round.length && round.length > 0, JSON.stringify(latest));
   await watchdog(tell, later + 40 * 24 * 3_600_000);
   check("...each saying kept thirty days", (await said()).length === 1, JSON.stringify(await said()));
-}
-{
+});
+await runCase("fixed:overdue", async () => {
   // A BACKLOG PAST DUE: one question four hours late is said, one an hour late is not.
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS });
@@ -461,8 +501,8 @@ console.log("\nthe watchdog");
   const { watchdogText } = await import('../worker/watchdog_say.js');
   check('a bounded overdue observation says at least and limits its age claim', watchdogText(bounded, NOW).includes('至少 1001')
     && watchdogText(bounded, NOW).includes('本次检查中'));
-}
-{
+});
+await runCase("fixed:disagreeing", async () => {
   // CLIENTS DISAGREEING with the hour's facts on the served engine are said, by
   // whose; a few disagreeing answers among many are not.
   const db = await testDb("library"), env = { LIBRARY: db };
@@ -483,8 +523,8 @@ console.log("\nthe watchdog");
     d && d.differ === 50 && d.owners[0].owner === "odd" && d.owners[0].differ === 40, JSON.stringify(d));
   check("...on the served engine only", !(await f.audit(env, NOW, "e2")).some((x) => x.kind === "disagreeing"));
   check("...and only within the hour", !(await f.audit(env, NOW + 2 * 3_600_000, "e1")).some((x) => x.kind === "disagreeing"));
-}
-{
+});
+await runCase("fixed:cells-filling", async () => {
   // A SCENE STILL FILLING is said with its progress, and nothing once it is full.
   const db = await testDb("library");
   const { watchdog } = await import("../worker/factory.js");
@@ -510,10 +550,10 @@ console.log("\nthe watchdog");
       engine: "e", answers: 10, differ: 5, owners: [{ owner: "o", answers: 10, differ: 5, devices: 1 }] }, NOW).includes("没有这一类的说明")));
   await db.exec("DELETE FROM queue WHERE ruler = 'sst__sp200'");
   check("...and nothing once it is full", !(await watchdog(env, NOW + 7 * 3_600_000)).some((x) => x.kind === "cells_filling"));
-}
+});
 
 console.log("\na score a few ULP off, its work equal, is unpaid but never refused");
-{
+await runCase("fixed:ulp", async () => {
   const db = await testDb("library"), env = { LIBRARY: db }, refused = [];
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1, on_disproved: async (_, a) => { refused.push(a.device); } });
   const S = 6.785217593620141;
@@ -532,8 +572,8 @@ console.log("\na score a few ULP off, its work equal, is unpaid but never refuse
   check("the official score with other work agrees, never refused and paid the official work",
     !refused.includes("b-work") && (await db.get("SELECT sum(work) AS w FROM verifier_hours WHERE verifier = 'b-work'")).w === 100,
     JSON.stringify({ refused, v: await db.get("SELECT sum(work) AS w FROM verifier_hours WHERE verifier = 'b-work'") }));
-}
-{
+});
+await runCase("fixed:next-engine", async () => {
   // A DISPUTE OF ONE RELEASE SETTLED ON THE NEXT, whose work is in other units.
   const db = await testDb("library"), env = { LIBRARY: db }, refused = [];
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1, on_disproved: async (_, a) => { refused.push(a.device); } });
@@ -549,10 +589,10 @@ console.log("\na score a few ULP off, its work equal, is unpaid but never refuse
     !!(await db.get("SELECT credited FROM answers WHERE device = 'a-rel'")).credited
     && (await db.get("SELECT odd FROM questions WHERE id = ?", id)).odd === 0 && !refused.length,
     JSON.stringify({ refused, q: await db.get("SELECT state, odd FROM questions WHERE id = ?", id) }));
-}
+});
 
 console.log("\nan official answer without work witnesses the score alone");
-{
+await runCase("fixed:official-score-only", async () => {
   const db = await testDb("library"), env = { LIBRARY: db }, refused = [];
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1, on_disproved: async (_, a) => { refused.push(a.device); } });
   const S = 3.25, OFF = { device: "official", owner: "official" };
@@ -578,10 +618,10 @@ console.log("\nan official answer without work witnesses the score alone");
   await f.answerOfficial(env, OFF, { question: lied, engine: "e1", result: { score: S }, work: 100 }, NOW);
   check("...and one whose work it disproves is paid the official work, never refused", !refused.includes("v-lied") && (await paid("v-lied")),
     JSON.stringify(refused));
-}
+});
 
 console.log("\na recheck: one more independent volunteer before a fact");
-{
+await runCase("fixed:recheck", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   let roll = 0;
   const f = factory({ verbs: VERBS, producers: PRODUCERS, spot: 0, recheck: 0.5, random: () => roll, on_disproved: async () => {} });
@@ -627,10 +667,10 @@ console.log("\na recheck: one more independent volunteer before a fact");
   check("a rechecked row past its deadline is the official machines', and they credit the two who agreed",
     claimed.some((t) => t.question === late) && (await row(late)).needs === 3 && (await row(late)).state === "fact" && (await paid(late)) === "t1,t2",
     `${JSON.stringify(await row(late))} ${await paid(late)}`);
-}
+});
 
 console.log("\nan engine whose code moved joins the served one by its result, and is handed only what one leads");
-{
+await runCase("fixed:join-engine", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const who = (device, net = `n-${device}`) => ({ device, owner: device, siblings: [device], net });
@@ -659,10 +699,10 @@ console.log("\nan engine whose code moved joins the served one by its result, an
   await send(who("s3"), "e1", differs, 6, 100);
   await send(who("j4"), "e0", differs, 7, 100);
   check("...and a different result does not join, whatever its work", (await state(differs)) === "open");
-}
+});
 
 console.log("\nfair share between producers: the one that has used least, by compute, earliest deadline inside it");
-{
+await runCase("fixed:fair-share", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: { ...PRODUCERS, r: PRODUCERS.p }, random: () => 1 });
   let k = 0;
@@ -700,10 +740,10 @@ console.log("\nfair share between producers: the one that has used least, by com
   await db.run("UPDATE questions SET state = 'withdrawn' WHERE id <> 'stray'");
   const stray = await f.next(env, who(), "e1", NOW);
   check("a question whose producer has no row is still handed out", stray && stray.question === "stray");
-}
+});
 
 console.log("\nrefusals paused");
-{
+await runCase("fixed:refusals-paused", async () => {
   const db = await testDb("library"), env = { LIBRARY: db }, refused = [];
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1, refusing: false, on_disproved: async (_, a) => { refused.push(a.device); } });
   const id = await f.demand(env, { producer: "p", ref: "paused", verb: "simulate", request: { ref: "paused" }, due_in_ms: 3_600_000 }, "e1", NOW);
@@ -716,11 +756,11 @@ console.log("\nrefusals paused");
   check("with refusals paused a disproved client is unpaid and not refused, the agreeing one paid",
     !refused.length && !(await db.get("SELECT credited FROM answers WHERE device = 'p-wrong'")).credited
     && !!(await db.get("SELECT credited FROM answers WHERE device = 'p-right'")).credited, JSON.stringify(refused));
-}
+});
 
 
 console.log("\na fact whose asker was never told is told again");
-{
+await runCase("fixed:redeliver", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const old = new Date(NOW - 3_600_000).toISOString();
@@ -733,10 +773,10 @@ console.log("\na fact whose asker was never told is told again");
   check("a settled question with a live demand is delivered by the sweep", n === 1 && told.slice(before).some((t) => t.ref === "lost-ref")
     && (await db.get("SELECT state FROM demands WHERE ref = 'lost-ref'")).state === "served", JSON.stringify({ n, told: told.slice(before) }));
   check("...and once delivered it is not told again", (await f.redeliver(env, NOW)) === 0);
-}
+});
 
 console.log("\nthe sweep reads only the facts formed since it last ran, and holds at one it could not tell");
-{
+await runCase("fixed:redeliver-cursor", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   let fail = true;
   const f = factory({ verbs: VERBS, random: () => 1, producers: {
@@ -760,10 +800,10 @@ console.log("\nthe sweep reads only the facts formed since it last ran, and hold
   await fact("f-behind", 45, "p");
   check("a run reads only from its cursor on", (await f.redeliver(env, NOW + 120_000)) === 0
     && (await db.get("SELECT state FROM demands WHERE ref = 'f-behind-ref'")).state === "live");
-}
+});
 
 console.log("\na fact's witnesses never paid are paid, and a late answer never");
-{
+await runCase("fixed:unpaid-witnesses", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const t = (m) => new Date(NOW - m * 60_000).toISOString();
@@ -779,10 +819,10 @@ console.log("\na fact's witnesses never paid are paid, and a late answer never")
   check("the witnesses of a fact left unpaid are paid, the late answer and the disagreeing one not", n === 2 && paid.join() === "w1,w2"
     && (await db.get("SELECT work FROM verifiers WHERE id = 'w1'")).work === 100, JSON.stringify({ n, paid }));
   check("...and paid once", (await f.repay(env, NOW)) === 0);
-}
+});
 
 console.log("\nan answer its owner was already paid for never holds a place in the sweep");
-{
+await runCase("fixed:already-paid", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const t = (m) => new Date(NOW - m * 60_000).toISOString();
@@ -802,10 +842,10 @@ console.log("\nan answer its owner was already paid for never holds a place in t
   check("a sweep of one pays the fact still owed, behind one whose leftover answer is its owner's second, never paid",
     n === 2 && Number((await db.get("SELECT credited FROM answers WHERE device = 'a3'")).credited) !== 1
     && (await db.get("SELECT work FROM verifiers WHERE id = 'a3'")).work === 0, JSON.stringify({ n }));
-}
+});
 
 console.log("\nan agreeing answer outside the witnesses is marked covered, and read no more");
-{
+await runCase("fixed:covered-answer", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const t = (m) => new Date(NOW - m * 60_000).toISOString();
@@ -824,10 +864,10 @@ console.log("\nan agreeing answer outside the witnesses is marked covered, and r
   check("...and no sweep reads it again", (await f.repay(env, NOW)) === 0
     && Number((await db.get("SELECT credited FROM answers WHERE device = 'c3'")).credited) === 2
     && (await db.get("SELECT work FROM verifiers WHERE id = 'c3'")).work === 0);
-}
+});
 
 console.log("\nthe repay reads the facts from its cursor on, an hour of them a call");
-{
+await runCase("fixed:repay-cursor", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const t = (m) => new Date(NOW - m * 60_000).toISOString();
@@ -863,10 +903,10 @@ console.log("\nthe repay reads the facts from its cursor on, an hour of them a c
   fail = false;
   check("a credit that fails holds the cursor at its fact, and the next call pays it",
     held === t(100) && (await f.repay(env, NOW)) === 2 && await paidOf("flaky") === 2, JSON.stringify({ held, want: t(100) }));
-}
+});
 
 console.log("\na fact is no older than its last witness");
-{
+await runCase("fixed:last-witness", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at) VALUES ('late', 'simulate', '{}', 'open', ?, ?)`,
@@ -882,10 +922,10 @@ console.log("\na fact is no older than its last witness");
   const q = await db.get("SELECT state, fact_at FROM questions WHERE id = 'late'");
   check("a fact formed by an answer stamped after the pass's own time is dated no earlier than it",
     q.state === "fact" && q.fact_at >= later, JSON.stringify(q));
-}
+});
 
 console.log("\nwhat a refusal takes back goes to the official pool");
-{
+await runCase("fixed:official-pool", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   await db.run("INSERT INTO verifiers (id, work, seen) VALUES ('r-lied', 300, '2026-10-01T00:00:00.000Z')");
@@ -895,10 +935,10 @@ console.log("\nwhat a refusal takes back goes to the official pool");
   const pool = await db.all("SELECT source, SUM(work) AS w FROM points_pool GROUP BY source");
   check("the credit a refusal takes back is the pool's, not lost", pool.length === 1 && pool[0].source === "refused" && pool[0].w === 300,
     JSON.stringify(pool));
-}
+});
 
 console.log("many asks in two statements a chunk leave every table as one write a row did");
-{
+await runCase("fixed:demand-all-books", async () => {
   // ONE WRITE A ROW, as `demandAll` asked before it wrote a chunk at once: the
   // reference the set-based writes are held to, on the same random books.
   const oneAtATime = async (env, producers, asks, engine, now) => {
@@ -990,10 +1030,10 @@ console.log("many asks in two statements a chunk leave every table as one write 
     if (x !== y) { bad++; first ||= `trial ${t} (${asks.length} asks): ${x.slice(0, 200)} … vs … ${y.slice(0, 200)}`; }
   }
   check(`on ${trials} random books, asked a row at a time and asked at once leave the same questions, demands and tellings`, bad === 0, first);
-}
+});
 
 console.log("\na new engine before its first statistics refresh");
-{
+await runCase("fixed:eligibility-plan", async () => {
   const db = await testDb("library");
   // Statistics know only the old engine; the new one's answers arrive after
   // ANALYZE, mostly on questions outside the small open field.
@@ -1020,10 +1060,10 @@ console.log("\na new engine before its first statistics refresh");
   check("a new engine still offers every eligible open question", plan["Actual Rows"] === open, JSON.stringify(plan));
   check("eligibility reads answers for the open field, not the engine's other answers", read <= 4 * open, `${read} answers for ${open} questions`);
   await db.close();
-}
+});
 
 console.log("\nofficial claims keep bounded index plans when prepared statements are reused");
-{
+await runCase("fixed:official-claim-plans", async () => {
   const db = await testDb("library"), f = factory({ verbs: VERBS, producers: PRODUCERS });
   await db.exec(`INSERT INTO questions (id, verb, request, state, due_at, opened_at)
     SELECT 'claim-'||i, 'simulate', '{}', CASE WHEN i <= 1000 THEN 'open'
@@ -1088,10 +1128,10 @@ console.log("\nofficial claims keep bounded index plans when prepared statements
     await db.exec("DEALLOCATE official_claim; RESET plan_cache_mode");
   }
   await db.close();
-}
+});
 
 console.log("\nofficial producer constants are exact SQL text values");
-{
+await runCase("fixed:producer-literals", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const names = ["apostrophe'producer", "back\\slash", "both'\\\n雪"];
   const f = factory({ verbs: VERBS, producers: { ...PRODUCERS, ...Object.fromEntries(names.map(name => [name, PRODUCERS.p])) } });
@@ -1116,10 +1156,10 @@ console.log("\nofficial producer constants are exact SQL text values");
     check("an empty or malformed producer filter reaches no SQL", !(await f.claim(noSql, { device: "official" }, { producers, max: 1 }, "e1", NOW)).length);
   }
   await db.close();
-}
+});
 
 console.log("\nofficial claims follow the requested states, producers, deadlines and leases");
-{
+await runCase("fixed:official-claim-books", async () => {
   let bad = 0, first = "";
   for (let trial = 0; trial < 40; trial++) {
     const r = rng(9000 + trial), db = await testDb("library"), env = { LIBRARY: db };
@@ -1151,10 +1191,10 @@ console.log("\nofficial claims follow the requested states, producers, deadlines
   for (const max of [0, -1, NaN, Infinity, "1; SELECT 1"]) {
     check(`an invalid claim limit (${max}) reaches no SQL`, !(await f.claim(env, { device: "official" }, { max }, "e1", NOW)).length);
   }
-}
+});
 
 console.log("\nlocks: every statement that gives back many leases takes their rows in id order");
-{
+await runCase("fixed:lease-locks", async () => {
   // A DEADLOCK NEEDS TWO ORDERS: a lease given back over many rows, and a
   // settlement over the same rows, each in the order its scan met them. Read off
   // the source, since one PGlite connection cannot race two transactions.
@@ -1171,8 +1211,12 @@ console.log("\nlocks: every statement that gives back many leases takes their ro
     }
   }
   check("a lease given back over many rows locks them in id order (inIdOrder), one row by its id", !loose.length, loose.join(" | "));
-}
+});
 
+if (completed.length !== wanted.size) check("every selected factory case completed", false, `${completed.length}/${wanted.size}`);
+finished = true;
+if (testDbTiming()) console.log("factory timing: " + JSON.stringify({ phases: testDbTiming(),
+  slowest: [...completed].sort((a, b) => b.ms - a.ms).slice(0, 8).map(({ id, ms }) => ({ id, ms })) }));
 console.log(failures ? `\n${failures} failed` : "\nevery question becomes a fact, and nobody waits on one that cannot");
 process.exitCode = failures ? 1 : 0;
 
