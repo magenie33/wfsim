@@ -31,5 +31,13 @@ try {
   assert.deepEqual(JSON.parse(catalog.record('one').record), { weapon: 'braton' });
   assert.throws(() => catalog.record('large'), /unavailable/);
   assert.equal(catalog.db.prepare('PRAGMA quick_check').get().quick_check, 'ok');
+  const resumedBudget = inventoryDiskBudget({ work, databasePath: path, sources: [source], totalBytes });
+  assert(resumedBudget.report().existing_source_and_work_bytes > 15);
+  assert.equal(resumedBudget.report().additional_budget_bytes, totalBytes - resumedBudget.report().existing_source_and_work_bytes,
+    'restart reserves only capacity not already occupied by its durable database');
+  const inside = join(work, 'captured'); writeFileSync(inside, 'inside-source');
+  const insideBudget = inventoryDiskBudget({ work, databasePath: path, sources: [source, inside], totalBytes });
+  assert.equal(insideBudget.report().existing_source_and_work_bytes - resumedBudget.report().existing_source_and_work_bytes, 13,
+    'sources inside the live work directory must not be counted twice');
   console.log('ok: unchanged live disk default; explicit total budget includes protected source and scratch; SQLITE_FULL rolls back the whole page and restart preserves its prior checkpoint/record');
 } finally { catalog?.close(); rmSync(root, { recursive: true, force: true }); }

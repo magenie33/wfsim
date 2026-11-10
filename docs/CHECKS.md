@@ -151,6 +151,31 @@ worker gets from Hyperdrive; it needs `npm install --prefix scripts/pg`.
 
 ## Inventory checks
 
+`check_inventory_board_pipeline.mjs` drives the production classic disk
+coordinator against sealed cuts and an independent full native classifier.
+It covers committed input response loss, native restart, transaction loss
+before sealing, exact-revision ACK replay, later writes, aliases, deletion
+and expired or superseded cuts without losing the baseline.
+`WFSIM_BOARD_PIPELINE_PG_URL` selects an isolated localhost PostgreSQL schema
+through the actual production driver; the default backend is PGlite.
+`check_inventory_publication.mjs` compares every real board, index and state
+byte with the original full native renderer. It covers cross-batch same-weapon
+sorting, global shape/default ties, inclusive floors, carried bytes, metadata
+changes, and output/file/index/state interruption. A keep-all-floor mutant
+must fail that oracle.
+`check_board_projection_replay.mjs` validates the protected offline interface,
+actual SIGKILL recovery, source fences, original output bytes and disk budgets.
+`check_inventory_disk_budget.mjs` retains the live default and proves an actual
+SQLITE_FULL rolls back the entire page and checkpoint before restart.
+`check_board_projection_consumers.mjs` streams 60,000 tied weapon rows through
+heads, stamp, uploader and the unchanged receiver. The positive final files
+fit the receiver limit; the old whole-array consumer must fail under the same
+32 MiB heap. It also covers Unicode offsets, incomplete input, stamp stability,
+interrupted delivery and oversized-file refusal.
+`check_live_mailbox.mjs` covers durable legacy append/take intents, seven
+failure boundaries, duplicate replay, FIFO, native fan-out and truncated-prefix
+refusal. These native checks use `WFSIM_INVENTORY_BOARD_BIN` when applicable.
+
 `check_inventory_relations.mjs` compares every question/category/queued tuple
 with an independent native full walk. It covers aliases, deletion, threshold
 changes, retirement, scene fallback, old ruler families, queue withdrawal,
@@ -929,6 +954,10 @@ requests and unique queue totals. Build, family, queue, factory acknowledgment
 and deletion failures retain retryable arrivals; losing either the factory
 reply or the final delete reply does not duplicate calculations. Row, UTF-8
 byte and deadline bounds prevent new unbounded work.
+The optional committed-build hook runs after source/family and strict named
+acknowledgment, before deleting inbox rows. Hook failure, a committed mailbox
+reply loss and replay preserve one identity and the source. The live incremental
+consumer uses the same bounded intake without a legacy mailbox hook.
 
 ## `check_settle`
 

@@ -28,6 +28,12 @@ case "$INCREMENTAL_INVENTORY" in 0|1) ;; *) echo "live: INCREMENTAL_INVENTORY mu
 mkdir -p "$WORK"
 cd "$WORK"
 WORK="$(pwd)"
+if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
+  exec 8> "$WORK/inventory.lock"
+  flock -n 8 || { echo "live: another inventory coordinator owns this work directory" >&2; exit 1; }
+  mkdir -p "$WORK/tmp"
+  export TMPDIR="$WORK/tmp" SQLITE_TMPDIR="$WORK/tmp"
+fi
 touch new-builds.ndjson
 
 . "$HERE/db.sh"
@@ -43,29 +49,8 @@ intake_arrivals() {
     || { echo "live: inbox read refused [HTTP $DB_CODE]" >&2; return 1; }
   jq -c '.result[0].results[]' < "$DB_OUT" > inbox-new.ndjson
   [ -s inbox-new.ndjson ] || return 1
-  "$BIN/wfsim-intake" --done done.txt --orders orders-new.ndjson --asked asked-new.ndjson \
-    < inbox-new.ndjson > builds-new.ndjson 2>> intake.log
-  bash "$HERE/ship_builds.sh" builds-new.ndjson done.txt >&2 || return 1
-  # …INTO THE MAILBOX the main loop takes them from (`take_arrivals`).
-  if [ "$INCREMENTAL_INVENTORY" = 0 ]; then
-    { flock 9
-      jq -c 'select(.record.kind == null)' builds-new.ndjson >> arrived-builds.ndjson
-    } 9> mailbox.lock
-  fi
-  # THE FIGHT EACH ARRIVAL NAMED GOES FIRST, asked as waited on (`named`): the
-  # player just ran it and is looking for that row. The build's other rows
-  # follow as ordinary ones, the named row left out so it is asked once.
-  local day; day="arrivals-$(date -u +%Y-%m-%d)"
-  jq -c '. + {named: true}' < asked-new.ndjson > named-new.ndjson
-  jq -r '"\(.build_id)|\(.ruler)|\(.mode)"' < asked-new.ndjson > named-keys.txt
-  jq -n -c --rawfile named named-keys.txt \
-    '($named | split("\n") | map({key: ., value: true}) | from_entries) as $s
-     | inputs | select($s["\(.build_id)|\(.ruler)|\(.mode)"] | not)' < orders-new.ndjson > rest-new.ndjson
-  local f
-  for f in named-new.ndjson rest-new.ndjson; do
-    bash "$HERE/ship_queue.sh" "$day" "the rows a new build owes" "$f" >&2 \
-      || echo "live: the new rows were not queued; the hourly reconciliation asks for them" >&2
-  done
+  node --max-old-space-size=96 "$HERE/live_intake.mjs" "$WORK" "$BIN" "$INCREMENTAL_INVENTORY" inbox-new.ndjson \
+    >> intake.log 2>&1
 }
 
 # THE INTAKE LOOP: every `POLL_SECONDS`, whatever the main loop is doing. Its
@@ -82,14 +67,7 @@ intake_loop() {
 # `arrived-now.ndjson` for the ranker, and kept in `new-builds.ndjson` until a
 # read of the store holds it.
 take_arrivals() {
-  { flock 9
-    touch arrived-builds.ndjson
-    mv arrived-builds.ndjson arrived-now.ndjson
-    : > arrived-builds.ndjson
-  } 9> mailbox.lock
-  if [ "$INCREMENTAL_INVENTORY" = 0 ]; then
-    cat arrived-now.ndjson >> new-builds.ndjson
-  fi
+  flock "$WORK/mailbox.lock" node --max-old-space-size=64 "$HERE/live_mailbox.mjs" take "$WORK"
 }
 
 # THE STORE READ AFRESH, BESIDE THE BOARD: the read takes most of an hour and
@@ -222,6 +200,9 @@ stamp() {
 # ONE CYCLE AND OUT takes its arrivals in line; a service runs the intake loop
 # beside the main one, and starts it again if it ever stops.
 INTAKE_PID=""
+if [ "$INCREMENTAL_INVENTORY" = 0 ]; then
+  flock "$WORK/mailbox.lock" node --max-old-space-size=64 "$HERE/live_mailbox.mjs" recover "$WORK"
+fi
 start_intake() {
   intake_loop &
   INTAKE_PID=$!
@@ -235,7 +216,7 @@ trap 'exit 130' INT
 
 if [ "$INCREMENTAL_INVENTORY" = 1 ]; then
   if [ "${ONCE:-}" = 1 ]; then intake_arrivals || true; fi
-  flock -n "$WORK/inventory.lock" node --max-old-space-size=192 "$HERE/inventory_pipeline.mjs" "$WORK" "$BIN" --serve
+  node --max-old-space-size=192 "$HERE/inventory_pipeline.mjs" "$WORK" "$BIN" --serve
   exit $?
 fi
 

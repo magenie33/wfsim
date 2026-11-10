@@ -182,16 +182,19 @@ admission rules or ordered outputs. Library normalization retains its shared poo
 ### Incremental inventory
 
 `INCREMENTAL_INVENTORY=1` enables the inventory coordinator in `live_board.sh`.
-It uses the existing ranker command pipes, with one filesystem lock around a
-cycle. The ranker starts empty and derives the coherent bootstrap once. This
-path replaces the ranker's hourly library reload and rolling score
-read with authoritative source updates. Normal queue maintenance retains full
+One filesystem lock spans the coordinator's lifetime, including intake startup.
+A long-lived native `--inventory-operator` derives bounded pages and retains no
+library or fact collection. SQLite owns the complete source relationships,
+fact payloads, classification and board publication progress. This replaces
+the ranker's hourly library reload and rolling score read with authoritative
+source updates. Normal queue maintenance retains full
 reconciliation as a fallback. Official scoring reads only its leased inputs.
 
 Live board uploads run in one background process with a per-request timeout.
 Confirmed file hashes are flushed through an atomic checkpoint replacement;
 the captured board stamp is sent after its files. Uploads do not hold the
-inventory loop, and a failed uploader resumes from its confirmed checkpoint.
+inventory loop. Comparing the actual stamp with the durable upload ledger
+recovers interrupted delivery even after a coordinator restart.
 
 `worker/pg/inventory.sql` records coalesced build and question invalidations in
 the same transaction as source changes. Revisions are equality tokens, never a
@@ -200,16 +203,16 @@ materialize task records for inventory. Restricted functions expose source
 inputs; the pipeline receives no direct access to the inventory tables.
 
 Each update opens one repeatable-read receipt transaction. It captures every
-pending key, changed records and lifecycle states, and complete affected weapon
-cohorts. Canonical aliases join their source identities when reading facts and
+pending key, changed identities and lifecycle states. It does not expand changed
+identities into complete weapon cohorts. Canonical aliases join their source identities when reading facts and
 queue membership. The source files are flushed and hashed before the database
 seals the cut. Source writes are forbidden in this receipt transaction.
 
-The ranker normalizes changed sources through its existing library cache. Its
-cohort command uses the same admission and entry-line helpers as a full walk,
-including each target ruler's admitted identities, default corners and retired
-facts. It emits complete owner replacements in bounded chunks. New source
-changes remain pending for the next cut while the captured cut finishes.
+Native describe, fact-key and gate operations supply the same admission and
+entry-line decisions as a full walk, including target rulers, modes, default
+corners and retired facts. Indexed maxima, reverse dependencies and score ranges
+limit affected work. Every source, including unmeasured or refused records,
+remains on disk. New source changes wait for the next cut.
 
 The disposable SQLite catalog stores canonical 128-bit question ids and owner
 references. Stored records take precedence over normalized fallbacks. Aliases,
@@ -226,9 +229,13 @@ a lost response replays the durable receipts without counting them twice.
 
 A generation is fenced by engine, adapter and classifier contract. Bootstrap
 compares every effective question id, category and registration flag with the
-full classifier before activation. A ranker restart starts a shadow rebuild
-from source tables. The previous catalog remains available while a replacement
-is built; the published goal retains its normal engine and freshness checks.
+full classifier before activation. A process restart validates its engine,
+binary, contract and immutable input hashes, then resumes committed byte offsets,
+jobs and output prefixes. A transient SQL failure does not restart the native
+operator. A lost physical connection invalidates its unsealed transaction:
+the next attempt obtains a new receipt and retains the complete disk baseline.
+The previous catalog remains available while a replacement is built; the
+published goal retains its normal engine and freshness checks.
 Engine changes reuse legitimate score facts and never request a rescore.
 
 Publication uses the sealed cut's database time and snapshot, even if later
@@ -238,11 +245,23 @@ removed after publication; current and previous catalog generations and the
 last publication manifest remain. SQLite uses a 16MiB page cache, bounded
 imports and no memory mapping; the coordinator reserves 8GiB of filesystem
 space and caps initial capture at 45 minutes and delta capture at 15 minutes.
+The database retains its 8GiB default file ceiling. An explicit
+`WFSIM_INVENTORY_DISK_BYTES` declares the complete live work-directory budget,
+including captures, retained catalogs and publication files. Startup preflight
+accounts for already committed files, reserves 8GiB for scratch within that
+budget and 8GiB of filesystem free space, and caps the current SQLite database
+at the remainder. Capture and projection check actual use between bounded
+pages. Insufficient space or SQLITE_FULL preserves the prior committed page;
+increasing this resource budget does not change an input generation. A budget
+is eligible for deployment only after complete-source replay establishes its
+actual disk amplification and delivery-file sizes.
 
 Dirty-token export retains one cursor page at a time, starting at 5,000 rows
 and growing at most fourfold to 80,000. The largest observed UTF-8 row sizes
 the next page toward 8MiB; this is a sizing target, not a hard byte limit for
-unseen rows. Cohort pages retain their 5,000-row ceiling. Each FETCH has its
+unseen rows. Fetch latency also sizes the next page toward five seconds;
+missing or invalid timing cannot grow it. The same snapshot cursor consumes
+every row, including a single oversized row. Each FETCH has its
 own statement timeout within the original capture budget and snapshot. Phase
 diagnostics record page rows, bytes, fetch time and the next requested size.
 The restricted `inventory_epoch_open` function validates the owning receipt

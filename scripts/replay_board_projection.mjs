@@ -54,7 +54,8 @@ export async function replayBoardProjection({ capture, bin, work, manifestSha, d
   if (Object.values(raw).some(path => !names.has(basename(path)))) throw Error('capture input is not protected by its manifest');
   const snapshot = JSON.parse(readFileSync(raw.meta)), engine = readFileSync(join(bin, 'ENGINE'), 'utf8').trim();
   if (snapshot.engine !== engine || !manifest.bootstrap) throw Error('offline replay requires the matching complete source baseline');
-  const disk = inventoryDiskBudget({ work, sources: [manifestPath, ...manifest.files.map(file => join(capture, basename(file.path)))], totalBytes: diskBudgetBytes });
+  const disk = inventoryDiskBudget({ work, sources: [manifestPath, ...manifest.files.map(file => join(capture, basename(file.path)))],
+    databasePath: join(work, 'projection.sqlite'), totalBytes: diskBudgetBytes });
   const algorithm = createHash('sha256');
   for (const name of components) algorithm.update(readFileSync(new URL(name, import.meta.url)));
   const operator = await openInventoryOperator(join(bin, 'wfsim-board'));
