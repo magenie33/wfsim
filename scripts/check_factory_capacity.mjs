@@ -217,13 +217,16 @@ await A.exec(`PREPARE stalled_audit AS ${placeholders(auditSql)}`);
 for (const mode of ["force_generic_plan", "force_custom_plan"]) {
   await A.exec(`SET plan_cache_mode=${mode}`);
   const plan = await A.get(`EXPLAIN (ANALYZE,FORMAT JSON,TIMING OFF) EXECUTE stalled_audit(${auditArgs.map(literal).join(",")})`);
-  let readQuestions = 0;
+  let readQuestions = 0, questionScans = 0;
   const walk = node => {
-    if (node["Relation Name"] === "questions") readQuestions += (node["Actual Rows"] + (node["Rows Removed by Filter"] || 0)) * node["Actual Loops"];
+    if (node["Relation Name"] === "state_compute_scheduling") {
+      questionScans++;
+      readQuestions += (node["Actual Rows"] + (node["Rows Removed by Filter"] || 0)) * node["Actual Loops"];
+    }
     for (const child of node.Plans || []) walk(child);
   };
   walk(plan["QUERY PLAN"][0].Plan);
-  assert.ok(readQuestions <= 100, `${mode}: healthy producers must be excluded before their overdue questions are read (${readQuestions})`);
+  assert.ok(questionScans > 0 && readQuestions <= 100, `${mode}: healthy producers must be excluded before their overdue questions are read (${readQuestions})`);
 }
 await A.exec("DEALLOCATE stalled_audit; RESET plan_cache_mode");
 await A.run("DELETE FROM record_candidate_answers WHERE question='audit-1'");
@@ -235,13 +238,16 @@ const crowdedArgs = [...auditArgs]; crowdedArgs[1] = "busy";
 for (const mode of ["force_generic_plan", "force_custom_plan"]) {
   await A.exec(`SET plan_cache_mode=${mode}`);
   const plan = await A.get(`EXPLAIN (ANALYZE,FORMAT JSON,TIMING OFF) EXECUTE crowded_stall(${crowdedArgs.map(literal).join(",")})`);
-  let read = 0;
+  let read = 0, questionScans = 0;
   const walk = node => {
-    if (node["Relation Name"] === "questions") read += (node["Actual Rows"] + (node["Rows Removed by Filter"] || 0)) * node["Actual Loops"];
+    if (node["Relation Name"] === "state_compute_scheduling") {
+      questionScans++;
+      read += (node["Actual Rows"] + (node["Rows Removed by Filter"] || 0)) * node["Actual Loops"];
+    }
     for (const child of node.Plans || []) walk(child);
   };
   walk(plan["QUERY PLAN"][0].Plan);
-  assert(read <= 1100, `${mode}: a silent producer caused ${read} question reads`);
+  assert(questionScans > 0 && read <= 1100, `${mode}: a silent producer caused ${read} question reads`);
 }
 await A.exec("DEALLOCATE crowded_stall; RESET plan_cache_mode");
 console.log("ok: a large silent producer uses a bounded lower count under generic and custom plans");

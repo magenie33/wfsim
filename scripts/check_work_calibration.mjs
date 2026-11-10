@@ -1,4 +1,4 @@
-import { seedComputeWork } from "./pg/fixtures.mjs";
+import { seedComputeWork, seedComputeWorkMany } from "./pg/fixtures.mjs";
 // Scoped calibration reads and counter totals preserve the individual-payment oracle.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
@@ -28,7 +28,7 @@ try {
     '['||string_agg(to_json(a.device)::text,',' ORDER BY a.id)||']' devices
     FROM record_candidate_answers a JOIN state_compute_work q ON q.id=a.question
     WHERE a.credited=1 AND a.official=0 AND a.void=0 AND q.verb='simulate' AND a.at>?1 AND a.at<=?2
-    GROUP BY q.id ORDER BY q.id`, since, until);
+    GROUP BY q.id,q.request ORDER BY q.id`, since, until);
   const report = body => new Request('https://wfsim.test/api/tasks/official/report', { method: 'POST',
     headers: { 'content-type': 'application/json', authorization: 'Bearer calibration-check' },
     body: JSON.stringify({ witness: 'official:calibration', report: 'calibration', since, until, ...body }) });
@@ -62,10 +62,10 @@ try {
   assert.deepEqual(await page('', 2, true, false, 1), oracle.slice(1, 3));
   assert.deepEqual(await page('q2', 1, true, true), oracle.filter(q => q.id === 'q2'));
   assert.deepEqual(await page(oracle.at(-1).id), []);
-  await db.exec('DROP TABLE pg_temp.questions');
+  await db.exec('DROP TABLE pg_temp.state_compute_work');
   await db.exec('RESET ROLE');
-  await db.run(`INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at)
-    SELECT 'z'||lpad(i::text,5,'0'),'simulate','{}','open',?1,?1 FROM generate_series(1,2003)i`, at);
+  await seedComputeWorkMany(db, Array.from({ length: 2003 }, (_, i) => ({
+    id: 'z' + String(i + 1).padStart(5, '0'), verb: 'simulate', request: '{}', state: 'open', due_at: at, opened_at: at })));
   await db.run(`INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at,credited)
     SELECT 'z'||lpad(i::text,5,'0'),'e','d'||i,'o'||i,'c','{}',1,?1,1 FROM generate_series(1,2003)i`, at);
   const capped = await page('z', 100000);

@@ -73,7 +73,7 @@ try {
     const plan = await query('EXPLAIN (ANALYZE,FORMAT JSON) ' + text, args);
     const nodes = []; const walk = n => { nodes.push(n); for (const child of n.Plans || []) walk(child); };
     walk(plan[0]['QUERY PLAN'][0].Plan);
-    for (const table of ['queue', 'builds', 'scores']) {
+    for (const table of ['state_board_pending_work', 'entity_weapon_builds', 'state_board_measurement_selection']) {
       const scans = nodes.filter(n => n['Relation Name'] === table);
       assert(scans.length && scans.every(n => /Index/.test(n['Node Type']) && n['Actual Rows'] <= 1), `${mode}: ${table} scanned history`);
     }

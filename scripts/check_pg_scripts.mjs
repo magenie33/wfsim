@@ -10,6 +10,7 @@ import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync, rmSyn
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildBatches, BUILD_BATCH_ROWS, BUILD_BATCH_BYTES } from "./build_batches.mjs";
+import { seedComputeWork } from "./pg/fixtures.mjs";
 
 const dir = mkdtempSync(join(tmpdir(), "wfsim-pg-scripts-"));
 process.env.PG_URL = `pglite:${join(dir, "db")}`;
@@ -42,7 +43,7 @@ const schema = ["schema.sql", "library.sql", "sync.sql"].map((f) => readFileSync
 }
 const record = { weapon: "torid", mods: ["serration"] };
 const queueIndexes = await query(`SELECT indexname,indexdef FROM pg_indexes
-  WHERE schemaname='public' AND tablename='queue' AND indexname IN ('queue_row','queue_calculation')`);
+  WHERE schemaname='public' AND tablename='state_board_pending_work' AND indexname IN ('queue_row','queue_calculation')`);
 check("pending calculations use one covering unique index", queueIndexes.length === 1
   && queueIndexes[0].indexname === 'queue_calculation' && queueIndexes[0].indexdef.startsWith('CREATE UNIQUE INDEX'));
 await query("INSERT INTO record_build_submissions (id, at, record) VALUES (?, ?, ?), (?, ?, ?)",
@@ -212,7 +213,8 @@ check("a ruler the repo no longer has is purged", await run("purge_queue.sh") ==
   }
   for (const [q, b, producers, due] of [["q1", "b1", ["new_build", "sweep"], "2026-10-02T01"], ["q2", "b2", ["new_build", "refresh"], "2026-10-02T02"],
     ["q3", "b3", ["refresh"], "2026-10-02T03"]]) {
-    await query("INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', 'open', ?, ?)", [q, due, at]);
+    await seedComputeWork({ run: (sql, ...args) => query(sql, args), get: async (sql, ...args) => (await query(sql, args))[0] },
+      { id: q, verb: 'simulate', request: '{}', state: 'open', due_at: due, opened_at: at });
     for (const producer of producers) {
       await query("INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, payload) VALUES (?, ?, ?, 'live', ?, ?, ?)",
         [producer, `${b}|sst|base`, q, at, due, JSON.stringify({ identity: b, ruler: "sst", mode: "base" })]);

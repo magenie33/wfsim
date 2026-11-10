@@ -98,7 +98,7 @@ try {
   });
   await check('owned cursor streams without a whole-backlog spool and retains exact late-write ACK fences', async () => {
     await a.unsafe("INSERT INTO state_compute_inventory_invalidations(scope,key) SELECT 'question','stream-'||lpad(i::text,6,'0') FROM generate_series(1,200001) i");
-    await a.unsafe('ANALYZE inventory_dirty');
+  await a.unsafe('ANALYZE state_compute_inventory_invalidations');
     const expected = await a.unsafe('SELECT scope,key,revision::text FROM state_compute_inventory_invalidations ORDER BY scope,key');
     const digest = rows => { const hash = createHash('sha256'); for (const row of rows) hash.update(JSON.stringify(row)+'\n'); return hash.digest('hex'); };
     const expectedHash = digest(expected), count = expected.length;

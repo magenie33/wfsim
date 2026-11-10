@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { PGlite } from './pg/node_modules/@electric-sql/pglite/dist/index.js';
+import { seedComputeWork } from './pg/fixtures.mjs';
+import { placeholders } from '../worker/placeholders.js';
 
 const pg = new PGlite();
 const ddl = name => readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta.url), 'utf8');
@@ -14,8 +16,9 @@ const changes = () => query('SELECT * FROM inventory_changes(256)');
 let generation;
 const ack = async () => call('inventory_ack', [generation, await changes()]);
 const build = (id, weapon = 'torid') => query('INSERT INTO entity_weapon_builds(id,at,record) VALUES ($1,\'day\',$2)', [id, JSON.stringify({ weapon, mods: [] })]);
-const question = (id, state = 'open') => query(`INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at,fact_engine)
-  VALUES ($1,'simulate','{}',$2,'due','opened',$3)`, [id, state, engine]);
+const fixtureDb = { run: (sql, ...args) => query(placeholders(sql), args), get: async (sql, ...args) => (await query(placeholders(sql), args))[0] };
+const question = (id, state = 'open') => seedComputeWork(fixtureDb,
+  { id, verb: 'simulate', request: '{}', state, due_at: 'due', opened_at: 'opened', fact_engine: engine });
 const demand = (ref, id, producer = 'other') => query(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at)
   VALUES ($1,$2,$3,'live','at','due')`, [producer, ref, id]);
 const readInputs = async rows => {
@@ -73,10 +76,10 @@ try {
     await pg.exec('SAVEPOINT eligible_update');
     await assert.rejects(query("UPDATE state_compute_work SET state='spot' WHERE id='q'"), /eligible inventory update entered/);
     await pg.exec('ROLLBACK TO eligible_update');
-    await pg.exec(`DROP TRIGGER inventory_update ON state_compute_work;
+    await pg.exec(`DROP TRIGGER inventory_update ON state_compute_scheduling;
       CREATE OR REPLACE FUNCTION inventory_source_changed() RETURNS trigger LANGUAGE plpgsql AS $$
       BEGIN RAISE EXCEPTION 'eligible inventory update entered'; END $$;
-      CREATE TRIGGER inventory_update AFTER UPDATE ON state_compute_work REFERENCING OLD TABLE AS inventory_old NEW TABLE AS inventory_new
+      CREATE TRIGGER inventory_update AFTER UPDATE ON state_compute_scheduling REFERENCING OLD TABLE AS inventory_old NEW TABLE AS inventory_new
       FOR EACH STATEMENT EXECUTE FUNCTION inventory_source_changed()`);
     await assert.rejects(async () => assert.doesNotReject(query("UPDATE state_compute_work SET lease='old-transition' WHERE id='q'")), /eligible inventory update entered/);
     await pg.exec('ROLLBACK');
@@ -308,13 +311,13 @@ try {
     await assert.rejects(query("UPDATE record_inventory_captures SET status='sealed'"), /permission denied/);
     await assert.rejects(query('SELECT inventory_store_body(($1::text)::jsonb,$2::text,$3::text)', [JSON.stringify(body()), '2026-01-01', 'forged']), /permission denied/);
     await pg.exec(`CREATE TEMP TABLE state_compute_inventory_generation(generation bigint,engine text,contract jsonb,status text,id bigint);
-      INSERT INTO pg_temp.inventory_state VALUES (999,'forged','{}','active',1);
+      INSERT INTO pg_temp.state_compute_inventory_generation VALUES (999,'forged','{}','active',1);
       CREATE TEMP TABLE state_compute_inventory_invalidations(scope text,key text,revision bigint);
-      INSERT INTO pg_temp.inventory_dirty VALUES ('question','forged',999);
+      INSERT INTO pg_temp.state_compute_inventory_invalidations VALUES ('question','forged',999);
       SET search_path TO pg_temp,public`);
     assert.equal((await call('inventory_status')).generation, generation);
     assert.deepEqual(await changes(), []);
-    await pg.exec('DROP TABLE pg_temp.inventory_state,pg_temp.inventory_dirty; RESET search_path; RESET ROLE');
+    await pg.exec('DROP TABLE pg_temp.state_compute_inventory_generation,pg_temp.state_compute_inventory_invalidations; RESET search_path; RESET ROLE');
   });
   await check('the old post-seal source-write gap fails the same receipt-only assertion', async () => {
     const sourceGuard = inventorySql.match(/CREATE OR REPLACE FUNCTION inventory_check_source_write\(\)[^]*?END \$\$;/)[0];
@@ -327,7 +330,7 @@ try {
     await pg.exec('ROLLBACK');
   });
   await check('old missing invalidation fails the same source-mutation assertion', async () => {
-    await pg.exec('DROP TRIGGER inventory_update ON state_compute_work');
+    await pg.exec('DROP TRIGGER inventory_update ON state_compute_scheduling');
     await query("UPDATE state_compute_work SET state='spot' WHERE id='q'");
     const requireDirty = async () => assert((await changes()).some(r => r.scope === 'question' && r.key === 'q'), 'a lifecycle mutation disappeared');
     await assert.rejects(requireDirty(), /lifecycle mutation disappeared/);

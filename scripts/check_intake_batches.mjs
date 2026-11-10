@@ -51,7 +51,7 @@ const arrival = (id, weapon = 'braton_prime', extra = {}) => ({ id, at: new Date
     evolutions: ['braton_prime_evo1_incarnon_form', 'braton_prime_daring_reverie', 'braton_prime_voids_guidance', 'braton_prime_prelude_of_might'] }, ...extra });
 const family = id => arrival(id);
 async function seed(rows) {
-  for (const row of rows) await query(`INSERT INTO ${row.id.startsWith('equipment:') ? 'equipment_inbox' : 'inbox'}(id,at,record) VALUES(?,?,?)`,
+  for (const row of rows) await query(`INSERT INTO ${row.id.startsWith('equipment:') ? 'record_equipment_submissions' : 'record_build_submissions'}(id,at,record) VALUES(?,?,?)`,
     [row.id, row.at, JSON.stringify(row.record)]);
   return file('inbox.ndjson', rows.map(row => JSON.stringify(row)).join('\n') + '\n');
 }
@@ -72,7 +72,7 @@ async function trip(table, enabled) {
   await query(`DROP TRIGGER IF EXISTS reject_batch ON ${table}`);
   if (enabled) {
     await query(`CREATE OR REPLACE FUNCTION reject_batch_write() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'fixture write refused'; END $$`);
-    await query(`CREATE TRIGGER reject_batch BEFORE ${table === 'inbox' ? 'DELETE' : 'INSERT'} ON ${table} FOR EACH ROW EXECUTE FUNCTION reject_batch_write()`);
+    await query(`CREATE TRIGGER reject_batch BEFORE ${table === 'record_build_submissions' ? 'DELETE' : 'INSERT'} ON ${table} FOR EACH ROW EXECUTE FUNCTION reject_batch_write()`);
   }
 }
 try {
@@ -120,9 +120,9 @@ try {
   for (const fault of ['build', 'family', 'queue', 'ask', 'lost', 'partial', 'delete']) {
     await clear();
     const source = await seed([family('source')]);
-    if (fault === 'build') await trip('builds', true);
-    if (fault === 'queue') await trip('queue', true);
-    if (fault === 'delete') await trip('inbox', true);
+    if (fault === 'build') await trip('entity_weapon_builds', true);
+    if (fault === 'queue') await trip('state_board_pending_work', true);
+    if (fault === 'delete') await trip('record_build_submissions', true);
     if (fault === 'family') familyMode = 'refuse';
     if (fault === 'ask') askMode = 'refuse';
     if (['lost', 'partial'].includes(fault)) askMode = fault;
@@ -130,7 +130,7 @@ try {
     assert.deepEqual(await pending(), ['source'], `${fault} failure spent its source`);
     if (fault !== 'build') assert.equal((await saved()).length, 1);
     if (['ask', 'lost', 'partial', 'delete'].includes(fault)) assert.equal((await owed()).length, 1, 'pending work was lost');
-    for (const table of ['builds', 'queue', 'inbox']) await trip(table, false);
+    for (const table of ['entity_weapon_builds', 'state_board_pending_work', 'record_build_submissions']) await trip(table, false);
     familyMode = askMode = 'ok';
     await execute(source);
     assert.deepEqual(await pending(), []); assert.equal((await saved()).length, 1); assert.equal((await owed()).length, 1);

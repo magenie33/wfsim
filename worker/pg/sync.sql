@@ -468,7 +468,7 @@ BEGIN
      WHERE q.verb='simulate' AND q.id >= $3 AND (q.id > $3 OR $7)
        AND a.question >= $3
        AND a.credited=1 AND a.official=0 AND a.void=0 AND a.at>$1 AND a.at<=$2
-     GROUP BY q.id ORDER BY q.id
+     GROUP BY q.id,q.request ORDER BY q.id
      LIMIT LEAST(GREATEST($5,1),2000) OFFSET GREATEST($4,0)
   ) t);
 END;
