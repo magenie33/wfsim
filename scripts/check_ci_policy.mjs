@@ -73,6 +73,7 @@ const nonSearchTools = ['scripts/check_weapon_search.mjs', 'scripts/fetch_inbox.
   'scripts/build_batches.mjs', 'scripts/ship_family.mjs', 'scripts/ship_bot.py', '.github/workflows/scores.yml',
   'scripts/factoryd.mjs', 'scripts/pg_task_archive.py', 'scripts/ship_task_archive.py', 'scripts/check_task_archive.py',
   'scripts/ship.py', 'scripts/release_stage.py', 'scripts/check_release_stage.py', 'scripts/check_ship_bot_assets.py',
+  'scripts/check_ship_workers.py',
   'scripts/payload_manifest.py', 'scripts/release_desktop.py', 'scripts/pg/test_db.mjs', 'scripts/intake_batches.mjs',
   'deploy/wfsim-task-archive.service', 'deploy/wfsim-task-archive.timer'];
 for (const path of [...ciWiring, ...nonSearchTools]) {

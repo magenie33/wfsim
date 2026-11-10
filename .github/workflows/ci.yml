@@ -107,6 +107,7 @@ jobs:
       - run: node scripts/check_ci_partitions.mjs
       - run: node scripts/check_full_work.mjs
       - run: python3 scripts/check_release_readiness.py
+      - run: python3 scripts/check_ship_workers.py
       - run: python3 scripts/check_release_stage.py
       - run: python3 scripts/check_ship_bot_assets.py
       - run: node scripts/check_factory_shards.mjs

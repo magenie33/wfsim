@@ -38,6 +38,10 @@ fail each actual door; a broken fixture must fail the release smoke.
 manifest bytes, and rejects stale versions, redirects and oversized responses
 through a real local HTTP server. Anonymous authentication failure is not a
 database schema readiness test.
+`check_ship_workers.py` exercises the actual publication entry with isolated
+process and readiness dependencies. Prerequisites precede production writes;
+backend identity and API readiness precede client pointers. Backend deployment
+or readiness failure must leave every later channel unchanged.
 
 `import_secondary_calibration.py --exchange <exchange> --check` verifies every
 secondary form binding, all pinned source hashes and adopted/retained components.
