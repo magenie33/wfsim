@@ -126,8 +126,7 @@ jobs:
   # makes "shard by index" a split they agree on without talking.
   submissions:
     runs-on: ubuntu-latest
-    # Intake is bounded separately; leased input capture still runs after a
-    # failed intake, whose failure is restored before this job ends.
+    # Scoring reads already admitted work independently of intake and inventory.
     timeout-minutes: 105
     outputs:
       wired: ${{ steps.wired.outputs.yes }}
@@ -152,52 +151,6 @@ jobs:
           if [ -n "$PG_PIPELINE_URL" ]; then echo "yes=true" >> "$GITHUB_OUTPUT";
           else echo "yes=false" >> "$GITHUB_OUTPUT"; echo "::notice::board storage not configured — see docs/BOARD.md"; fi
 
-      # Intake and scoring share the compile cache. Inventory repair is an
-      # independent producer; leased calculations do not wait for its scan.
-      - uses: actions/cache@v4
-        if: steps.wired.outputs.yes == 'true'
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: board-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
-      - if: steps.wired.outputs.yes == 'true'
-        run: cargo build --release --bin wfsim-intake
-      - name: the databases
-        if: steps.wired.outputs.yes == 'true'
-        uses: ./.github/actions/databases
-        with:
-          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          pg_url: ${{ secrets.PG_PIPELINE_URL }}
-      - name: take in what has arrived
-        id: intake
-        if: steps.wired.outputs.yes == 'true'
-        timeout-minutes: 30
-        continue-on-error: true
-        env:
-          FACTORY_TOKEN: ${{ secrets.FACTORY_TOKEN }}
-        run: |
-          set -euo pipefail
-          bash scripts/fetch_inbox.sh inbox.ndjson
-          # A CLOCK ON THE PASS. A riven record costs FIGHTS — its shape has to
-          # become a build and only a fight says which corner is — so a full
-          # inbox is hours of work and an unbounded pass finishes none of it:
-          # `done` is written when the pass returns, so a killed one banks
-          # nothing and the next hour starts over. Fifteen minutes fits inside
-          # this job's cap, and what is left is still owed.
-          ./target/release/wfsim-intake --deadline 900 --done done.txt \
-            < inbox.ndjson > builds.ndjson
-          bash scripts/ship_builds.sh builds.ndjson done.txt
-
-      - name: the databases
-        if: steps.wired.outputs.yes == 'true'
-        uses: ./.github/actions/databases
-        with:
-          access_client_id: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-          access_client_secret: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-          pg_url: ${{ secrets.PG_PIPELINE_URL }}
       # THE SCORER, HERE TOO. One build against the shared cache, so the step
       # below can ask it what is left rather than guessing from a hash.
       - uses: actions/cache@v4
@@ -344,13 +297,6 @@ jobs:
           # scored. Nothing fails; the rows keep their old numbers.
           echo "count=$n" >> "$GITHUB_OUTPUT"
           N=$n python3 -c "import json,os;print('list='+json.dumps(list(range(int(os.environ['N'])))))" >> "$GITHUB_OUTPUT"
-
-      # Reconciliation runs after an intake failure; the run still reports it.
-      - name: keep intake failures visible
-        if: always() && (steps.intake.outcome == 'failure' || steps.intake.outcome == 'cancelled')
-        run: |
-          echo "::error::intake did not finish; see the intake step"
-          exit 1
 
   # ---- 2. score, N ways at once -----------------------------------------
   #

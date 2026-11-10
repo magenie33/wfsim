@@ -897,6 +897,19 @@ It covers escaped batch and ruler selectors, dry runs, one-row slices, first
 batch ownership, non-open questions, unrelated user demands and empty queues.
 Direct JSON parameter casts fail on the real driver.
 
+## `check_intake_batches`
+
+Run after `cargo build --bin wfsim-intake`. The real binary, Bash shippers and
+database driver process bounded batches against PGlite. Setting
+`WFSIM_INTAKE_PG_URL` to a localhost PostgreSQL URL exercises the actual TCP
+driver in an isolated schema. `WFSIM_INTAKE_BIN` selects a built binary.
+Completed batches survive interruption before a later batch. Replay retains
+canonical records, original timestamps, first nonempty initiators, family
+requests and unique queue totals. Build, family, queue, factory acknowledgment
+and deletion failures retain retryable arrivals; losing either the factory
+reply or the final delete reply does not duplicate calculations. Row, UTF-8
+byte and deadline bounds prevent new unbounded work.
+
 ## `check_settle`
 
 The official cycle and its CLI run against local transport fixtures. An empty
@@ -2592,10 +2605,12 @@ next push; a path list is a second answer to a question the database already
 answers; a bound naming a count without a clock is a bound that means nothing,
 because rows differ 79x in cost.
 
-Intake failure and timeout still reach one complete inventory scan, followed
+Queue intake failure and timeout still reach one complete inventory scan, followed
 by an explicit workflow failure. Successful intake stays successful, absent
 storage stays skipped, and manual rescore or cancellation requires successful
 intake. The intake deadline leaves a separate budget for reconciliation.
+Scoring has no intake dependency, failure sentinel or full inventory prerequisite;
+it captures its leased inputs exactly once.
 
 ## `check_submission_hop`
 

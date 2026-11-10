@@ -2,6 +2,7 @@
 # WHAT NOBODY HAS ASKED FOR YET, ASKED FOR.
 #
 #   scripts/ship_queue.sh <batch-id> <why> missing.ndjson
+#   scripts/ship_queue.sh --require-asked <batch-id> <why> missing.ndjson
 #   scripts/ship_queue.sh --backfill                  an order for every owed row that has none
 #   scripts/ship_queue.sh --self-test
 #
@@ -25,6 +26,7 @@ set -euo pipefail
 QUEUE_COLUMNS=5
 QUEUE_BATCH=1000
 PG_MAX_PARAMS=65535
+REQUIRE_ASKED=0
 
 . "$(dirname "${BASH_SOURCE[0]}")/db.sh"
 configured() { db_configured; }
@@ -208,7 +210,7 @@ ship() {
   # one chunk of those rather than everything after the write.
   # A ROW NOT ASKED COSTS SPEED, NEVER A ROW: the queue still owes it, the
   # backfill asks for it later, and the scorer measures it meanwhile.
-  local chunk statements=0 failed=0 refused=0 body
+  local chunk statements=0 failed=0 refused=0 body expected
   chunk=$(mktemp)
   for ((at = 1; at <= n; at += ASK_ROWS)); do
     sed -n "${at},$((at + ASK_ROWS - 1))p" "$file" > "$chunk"
@@ -217,12 +219,20 @@ ship() {
     statements=$((statements + $1)); failed=$((failed + $2))
     [ "$2" = "0" ] || break
     while IFS= read -r body; do
-      factory_ask "$body" || refused=$((refused + 1))
+      if ! factory_ask "$body"; then
+        refused=$((refused + 1))
+      elif [ "$REQUIRE_ASKED" = 1 ]; then
+        expected=$(printf '%s' "$body" | jq '.rows | length')
+        jq -se --argjson expected "$expected" 'length == 1 and (.[0] | .ok == true
+          and ([.asked,.skipped] | all(type == "number" and . >= 0 and floor == .))
+          and .asked + .skipped == $expected)' "$ASK_OUT" > /dev/null || refused=$((refused + 1))
+      fi
     done < <(ask_batches "$chunk" "$batch")
   done
   rm -f "$chunk"
   echo "queue: $n row(s) asked for in $statements statement(s), $failed refused"
   [ "$refused" = "0" ] || echo "::warning::queue: $refused ask(s) of the fact factory refused [HTTP $ASK_CODE] — the backfill asks again"
+  [ "$REQUIRE_ASKED" = 0 ] || [ "$refused" = 0 ] || return 1
   [ "$failed" = "0" ]
 }
 
@@ -438,7 +448,9 @@ if [ "${1:-}" = "--body" ]; then
   exit $?
 fi
 
+if [ "${1:-}" = "--require-asked" ]; then REQUIRE_ASKED=1; shift; fi
 if ! configured; then
+  [ "$REQUIRE_ASKED" = 0 ] || { echo "queue: required admission needs a database" >&2; exit 1; }
   echo "queue: no database configured, nothing asked for"
   exit 0
 fi

@@ -19,7 +19,6 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
-import { INVENTORY_MAX_MS } from "../worker/task_inventory.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WORKFLOWS = resolve(process.env.WFSIM_WORKFLOW_DIR || resolve(ROOT, ".github/workflows"));
@@ -282,17 +281,18 @@ check(rescore !== null && !passesGate(rescore),
 // be refused. The panel would still say "sent".
 const intakeStep = step("take in what has arrived") ?? "";
 const codeOf = (text) => text.split(NL).filter((l) => !l.trim().startsWith("#")).join(NL);
-check(/--asked(\s|\\|$)/m.test(codeOf(intakeStep)),
+const batchIntake = readFileSync(resolve(ROOT, 'scripts/intake_batches.mjs'), 'utf8');
+check(codeOf(intakeStep).includes('node scripts/intake_batches.mjs inbox.ndjson') && batchIntake.includes("'--asked'"),
   "an arrival asks for the fight it named",
   "intake is the only pass that knows it; after it, nothing does");
-check(codeOf(intakeStep).includes("ship_queue.sh"),
+check(batchIntake.includes("scripts/ship_queue.sh"),
   "…and the row reaches the queue",
   "a file written and never shipped is a fight nobody asked for, and the "
     + "submitter is told 'sent'");
 // AFTER THE BUILDS, because a queue row naming a build the library does not
 // hold is a row nothing can ever take.
-const asked = codeOf(intakeStep).indexOf("ship_queue.sh");
-const builds = codeOf(intakeStep).indexOf("ship_builds.sh");
+const asked = batchIntake.indexOf("scripts/ship_queue.sh");
+const builds = batchIntake.indexOf("scripts/ship_builds.sh");
 check(builds >= 0 && asked > builds, "…and the build lands before the row that asks for it",
   "a queue row naming a build the library does not hold is never taken");
 
@@ -364,9 +364,20 @@ for (const [name, job] of [["queue.yml", "take-in"], ["scores.yml", "submissions
   const intake = steps.find((text) => fieldOf(text, "name") === "take in what has arrived") ?? "";
   const prepare = name === "queue.yml" ? "bash scripts/reconcile_queue.sh" : "node scripts/fetch_score_inputs.mjs";
   const inventorySteps = steps.filter((text) => codeOf(text).includes(prepare));
-  if (name === "scores.yml") check(!lines.some(line => !line.trim().startsWith("#")
-    && /reconcile_queue|fetch_library|fetch_queue.sh queue|prepare_inventory_memory/.test(line)),
-    "scoring has no full library, inventory or queue read prerequisite");
+  if (name === "scores.yml") {
+    check(!lines.some(line => !line.trim().startsWith("#")
+      && /reconcile_queue|fetch_library|fetch_queue.sh queue|prepare_inventory_memory|intake|fetch_inbox|ship_builds/.test(line)),
+    "scoring has no intake, full library, inventory or queue read prerequisite");
+    check(inventorySteps.length === 1, 'scoring captures leased inputs exactly once');
+    for (const outcome of ['success', 'failure', 'timeout', 'cancelled']) {
+      const result = simulateIntake(steps, outcome);
+      check(result.ran.includes(inventorySteps[0]) && !result.failed,
+        `scoring input capture and fan-out are independent of intake ${outcome}`);
+    }
+    check(!simulateIntake(steps, 'success', { wired: false }).ran.includes(inventorySteps[0]),
+      'unconfigured scoring skips capture');
+    continue;
+  }
   const intakeMinutes = Number(fieldOf(intake, "timeout-minutes"));
   check(fieldOf(intake, "id") === "intake" && fieldOf(intake, "continue-on-error") === "true",
     `${name} retains the intake outcome while continuing reconciliation`);
@@ -390,11 +401,6 @@ for (const [name, job] of [["queue.yml", "take-in"], ["scores.yml", "submissions
       && ["failure", "timeout", "cancelled"].every((outcome) =>
         !simulateIntake(steps, outcome, requested).ran.some((text) => codeOf(text).includes(command))),
     `explicit ${command} requires successful intake`);
-  }
-  if (name === "scores.yml") {
-    const minutes = Number(lines.find((line) => /^ {4}timeout-minutes:/.test(line))?.split(":")[1]);
-    check(minutes >= intakeMinutes + 60 && minutes * 60000 < INVENTORY_MAX_MS,
-      "scoring preparation retains its bounded intake and total timeout");
   }
 }
 
