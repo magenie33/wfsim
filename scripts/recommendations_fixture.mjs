@@ -9,9 +9,9 @@ import { recommendationsRoute } from "../worker/recommendations.js";
 export async function recommendationFixture(base, port = 0, controls = false) {
   const env = { ACCOUNTS: await testDb("accounts"), LIBRARY: await testDb("library"), AUTH_SECRET: "local-feature-review", EMAIL: { send: async () => ({ messageId: "local" }) } };
   const token = "local-recommendation-review", account = "local-review";
-  await env.ACCOUNTS.run("INSERT INTO accounts (id, created_at, username) VALUES (?, ?, ?)", account, new Date().toISOString(), "review");
-  await env.ACCOUNTS.run("INSERT INTO identities (provider, subject, account, label, linked_at) VALUES (?, ?, ?, ?, ?)", "email", "review@example.invalid", account, "review@example.invalid", new Date().toISOString());
-  await env.ACCOUNTS.run("INSERT INTO sessions (token_hash, account, expires_at) VALUES (?, ?, ?)", await sha256(token), account, "2099-01-01T00:00:00.000Z");
+  await env.ACCOUNTS.run("INSERT INTO entity_accounts (id, created_at, username) VALUES (?, ?, ?)", account, new Date().toISOString(), "review");
+  await env.ACCOUNTS.run("INSERT INTO relation_account_login_identities (provider, subject, account, label, linked_at) VALUES (?, ?, ?, ?, ?)", "email", "review@example.invalid", account, "review@example.invalid", new Date().toISOString());
+  await env.ACCOUNTS.run("INSERT INTO state_login_sessions (token_hash, account, expires_at) VALUES (?, ?, ?)", await sha256(token), account, "2099-01-01T00:00:00.000Z");
   let greeted = false;
   const server = createServer(async (incoming, outgoing) => {
     try {
@@ -62,8 +62,8 @@ export async function recommendationFixture(base, port = 0, controls = false) {
   return {
     base: "http://127.0.0.1:" + server.address().port, env, token, account,
     async seed(identity, record, ruler, mode) {
-      await env.LIBRARY.run("INSERT INTO builds (id, at, record) VALUES (?, ?, ?) ON CONFLICT DO NOTHING", identity, new Date().toISOString().slice(0, 10), JSON.stringify(record));
-      await env.LIBRARY.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+      await env.LIBRARY.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES (?, ?, ?) ON CONFLICT DO NOTHING", identity, new Date().toISOString().slice(0, 10), JSON.stringify(record));
+      await env.LIBRARY.run(`INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`, identity, ruler, mode, "local-review", 100, "kpm", 0, "2026-11-04", "2026-11-04");
     },
     async day(day) {

@@ -103,7 +103,7 @@ async function statesOf(db, device, ids) {
 const WORK_PER_POINT = 1e9;
 const pointsOf = (x) => Math.floor(x / WORK_PER_POINT);
 async function spanOf(env, id) {
-  const last = env.ACCOUNTS && await env.ACCOUNTS.prepare("SELECT until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour DESC LIMIT 1")
+  const last = env.ACCOUNTS && await env.ACCOUNTS.prepare("SELECT until_hour FROM record_compute_device_ownership_intervals WHERE verifier = ?1 ORDER BY from_hour DESC LIMIT 1")
     .bind(id).first();
   return last ? last.until_hour ?? null : "";
 }
@@ -209,10 +209,10 @@ async function rest(x, { taken, dropped }) {
   const points = typeof b.since === "string" ? await devicePointsOf(env, id, b.since).catch(() => null) : null;
   const base = { release, kept: true, taken, dropped, held, states, ...(withdrawn.length ? { withdrawn } : {}), ...(points ? { points } : {}) };
 
-  const me = await db.prepare("SELECT banned, refused_until, last_at, next_at FROM verifiers WHERE id = ?").bind(id).first() || {};
+  const me = await db.prepare("SELECT banned, refused_until, last_at, next_at FROM entity_compute_devices WHERE id = ?").bind(id).first() || {};
   const idle = async (extra = {}) => {
     const next = now + ms(d.sync_idle_ms);
-    await db.prepare("UPDATE verifiers SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
+    await db.prepare("UPDATE entity_compute_devices SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
     return say({ ...base, ...extra, pack: null, work: null, next_ms: next - now });
   };
   if (stale) return idle({ stale: true });
@@ -222,7 +222,7 @@ async function rest(x, { taken, dropped }) {
   if (me.next_at && at < iso(Date.parse(me.next_at) - 2_000)) {
     return say({ ...base, early: true, pack: null, work: null, next_ms: Math.max(0, Date.parse(me.next_at) - now) });
   }
-  const holds = await db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM questions WHERE leased_to = ? AND lease_until > ?").bind(id, at).first();
+  const holds = await db.prepare("SELECT count(*) AS questions, count(DISTINCT lease) AS packs FROM state_compute_work WHERE leased_to = ? AND lease_until > ?").bind(id, at).first();
   if (want <= 0 || holds.packs >= d.packs_held) return say({ ...base, pack: null, work: null, next_ms: 0 });
 
   const engine = b.engine;
@@ -262,7 +262,7 @@ async function alone(x, base, idle) {
   // was given back unrun and went round.
   if (packTaskOf(leased)) return packed(x, base, idle, leased.lease, d.pack_lease_ms, [leased]);
   const next = now + ms(d.sync_floor_ms);
-  await db.prepare("UPDATE verifiers SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
+  await db.prepare("UPDATE entity_compute_devices SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
   return say({ ...base, pack: null, work: workOf(leased), next_ms: next - now });
 }
 
@@ -271,7 +271,7 @@ async function packed({ db, now, id, ms, say, d, grace, served, pace }, base, id
   const tasks = questions.map(packTaskOf).filter(Boolean);
   if (!tasks.length) return idle();
   const next = now + ms(Math.min(d.sync_floor_ms, Math.max(0, tasks.length * (pace || 0) - d.sync_low_ms)));
-  if (!wrote) await db.prepare("UPDATE verifiers SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
+  if (!wrote) await db.prepare("UPDATE entity_compute_devices SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
   // The gate must not outlast the pack's estimated refill threshold.
   return say({ ...base, work: null, pack: { lease, lease_ms, tasks }, next_ms: next - now,
     ...(grace ? { engine: served.engine, accepted_until: grace.until, ...(grace.join ? { join: true } : {}) } : {}) });
@@ -322,7 +322,7 @@ async function viaProcedure(x, given) {
     ...(r.withdrawn.length ? { withdrawn: r.withdrawn } : {}), ...(points ? { points } : {}) };
   const idle = async (extra = {}, wrote = true) => {
     const next = now + ms(d.sync_idle_ms);
-    if (!wrote) await db.prepare("UPDATE verifiers SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
+    if (!wrote) await db.prepare("UPDATE entity_compute_devices SET next_at = ? WHERE id = ?").bind(iso(next), id).run();
     return say({ ...base, ...extra, pack: null, work: null, next_ms: next - now });
   };
   switch (r.outcome) {

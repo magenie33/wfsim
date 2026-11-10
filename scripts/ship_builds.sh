@@ -73,7 +73,7 @@ send() {
       # statements".
       if [ "$failed" -eq 1 ]; then
         {
-          echo "::error::builds: the database refused a $what [HTTP $DB_CODE]"
+          echo "::error::entity_weapon_builds: the database refused a $what [HTTP $DB_CODE]"
           head -c 500 "$DB_OUT" || true
           echo
         } >&2
@@ -170,8 +170,8 @@ OK
     && say ok "a pass ships its builds and spends its queue" || say FAIL "$(cat out.txt)"
   # THE ORDER IS THE WHOLE SAFETY ARGUMENT. Stopped between the two, the queue
   # still holds what the library is missing.
-  grep -n "INSERT INTO builds" sent.log | head -1 | cut -d: -f1 > a.txt
-  grep -n "DELETE FROM inbox" sent.log | head -1 | cut -d: -f1 > b.txt
+  grep -n "INSERT INTO entity_weapon_builds" sent.log | head -1 | cut -d: -f1 > a.txt
+  grep -n "DELETE FROM record_build_submissions" sent.log | head -1 | cut -d: -f1 > b.txt
   [ "$(cat a.txt)" -lt "$(cat b.txt)" ] \
     && say ok "...with every build written before any queue row is spent" \
     || say FAIL "the delete went first"
@@ -180,8 +180,8 @@ OK
   : > sent.log
   ship builds.ndjson done.txt > out.txt 2>&1 || say FAIL "$(cat out.txt)"
   local before_family after_family
-  before_family=$(grep -n 'INSERT INTO builds' sent.log | head -1 | cut -d: -f1)
-  after_family=$(grep -n 'DELETE FROM inbox' sent.log | head -1 | cut -d: -f1)
+  before_family=$(grep -n 'INSERT INTO entity_weapon_builds' sent.log | head -1 | cut -d: -f1)
+  after_family=$(grep -n 'DELETE FROM record_build_submissions' sent.log | head -1 | cut -d: -f1)
   local family_at; family_at=$(grep -n 'family transfers' sent.log | head -1 | cut -d: -f1)
   [ "$before_family" -lt "$family_at" ] && [ "$family_at" -lt "$after_family" ] \
     && say ok "family admission is after source storage and before spending arrivals" \
@@ -191,7 +191,7 @@ OK
   if ship builds.ndjson done.txt > out.txt 2>&1; then
     say FAIL "a failed family admission spent its arrivals"
   else
-    grep -q 'DELETE FROM inbox' sent.log \
+    grep -q 'DELETE FROM record_build_submissions' sent.log \
       && say FAIL "arrivals were spent before family admission" \
       || say ok "an interrupted family admission leaves arrivals available for retry"
   fi
@@ -215,7 +215,7 @@ CUT
   if ship builds.ndjson done.txt > out.txt 2>&1; then
     local sent_first sent_second
     sent_first=$(sed -n '1p' sent.log); sent_second=$(sed -n '2p' sent.log)
-    [ "$sent_first" = "$sent_second" ] && [ "$(grep -c 'INSERT INTO builds' sent.log)" = 2 ] \
+    [ "$sent_first" = "$sent_second" ] && [ "$(grep -c 'INSERT INTO entity_weapon_builds' sent.log)" = 2 ] \
       && say ok "a committed write whose reply was lost is retried with identical bytes" \
       || say FAIL "an uncertain write changed during retry"
   else say FAIL "$(cat out.txt)"; fi
@@ -231,7 +231,7 @@ LOST
   : > sent.log
   if ship builds.ndjson done.txt > out.txt 2>&1; then say FAIL "repeated cuts passed";
   else
-    [ "$(grep -c 'INSERT INTO builds' sent.log)" = 3 ] && ! grep -q 'DELETE FROM' sent.log \
+    [ "$(grep -c 'INSERT INTO entity_weapon_builds' sent.log)" = 3 ] && ! grep -q 'DELETE FROM' sent.log \
       && say ok "transient cuts stop after three attempts without spending arrivals" \
       || say FAIL "retry attempts were unbounded or arrivals were spent"
   fi
@@ -250,10 +250,10 @@ DEAD
   else
     grep -q "does not exist" out.txt \
       && say ok "a refused write reports what the database said" || say FAIL "$(cat out.txt)"
-    grep -q "DELETE FROM inbox" sent.log \
+    grep -q "DELETE FROM record_build_submissions" sent.log \
       && say FAIL "the queue was spent after a refused write" \
       || say ok "...and nothing in the queue is spent"
-    [ "$(grep -c 'INSERT INTO builds' sent.log)" = 1 ] \
+    [ "$(grep -c 'INSERT INTO entity_weapon_builds' sent.log)" = 1 ] \
       && say ok "a permanent SQL refusal is never retried" \
       || say FAIL "a permanent refusal was replayed"
   fi

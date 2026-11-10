@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 // Settled task detail expires after KEPT_MS across engines and producers.
 // Live delivery, unpaid witnesses, recent activity and refusals remain protected.
 //   node scripts/check_forget_past.mjs
@@ -28,17 +29,15 @@ const prune = async (rows, db = L) => {
   return deleted;
 };
 
-const question = (id, state, { fact_engine = null, at = OLD } = {}) => L.run(
-  `INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at, withdrawn_at)
-   VALUES (?, 'simulate', '{}', ?, ?, ?, ?, ?, ?, ?)`, id, state, at, at, state === "fact" ? "c" : null, fact_engine, state === "fact" ? at : null, state === "withdrawn" ? at : null);
+const question = (id, state, { fact_engine = null, at = OLD } = {}) => (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:args[1],due_at:args[2],opened_at:args[3],canon:args[4],fact_engine:args[5],fact_at:args[6],withdrawn_at:args[7]});})(L,[id,state,at,at,state === "fact" ? "c" : null,fact_engine,state === "fact" ? at : null,state === "withdrawn" ? at : null]);
 const demand = (question, state, producer = "sweep", at = OLD) => L.run(
-  `INSERT INTO demands (producer, ref, question, state, asked_at, due_at, payload, served_at) VALUES (?, ?, ?, ?, ?, ?, '{}', ?)`,
+  `INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, payload, served_at) VALUES (?, ?, ?, ?, ?, ?, '{}', ?)`,
   producer, `ref-${question}-${producer}`, question, state, at, at, state === "served" ? at : null);
 const answer = (question, device, at = OLD, engine = "e0") => L.run(
-  `INSERT INTO answers (question, engine, device, owner, canon, result, work, at, credited) VALUES (?, ?, ?, ?, 'c', '{}', 100, ?, 1)`,
+  `INSERT INTO record_candidate_answers (question, engine, device, owner, canon, result, work, at, credited) VALUES (?, ?, ?, ?, 'c', '{}', 100, ?, 1)`,
   question, engine, device, `o-${device}`, at);
 const forget = async (limit = 1000) => prune(await capture(L, limit));
-const has = async (id) => !!(await L.get("SELECT 1 AS x FROM questions WHERE id = ?", id));
+const has = async (id) => !!(await L.get("SELECT 1 AS x FROM state_compute_work WHERE id = ?", id));
 const count = async (table, id) => Number((await L.get(`SELECT count(*) AS n FROM ${table} WHERE question = ?`, id)).n);
 
 // ---- what goes, what stays ----
@@ -49,7 +48,7 @@ await question("waited", "fact", { fact_engine: "e0" }); await demand("waited", 
 await question("survey", "fact", { fact_engine: "e0" }); await demand("survey", "served", "survey");
 await question("withdrawn", "withdrawn"); await demand("withdrawn", "withdrawn");
 await question("refused", "withdrawn");
-await L.run("INSERT INTO refusal_withdrawals (question, engine, owners, at) VALUES ('refused', 'e0', 2, ?)", OLD);
+await L.run("INSERT INTO record_refusal_withdrawals (question, engine, owners, at) VALUES ('refused', 'e0', 2, ?)", OLD);
 await question("open", "open"); await demand("open", "live");
 await question("disputed", "disputed");
 check("settled detail has a seven-day window", KEPT_MS === 7 * DAY);
@@ -60,65 +59,65 @@ check("an archive carries full input, canonical result and independent witness r
   snapshot.question.request === '{}' && snapshot.question.canon === 'c' && snapshot.answers.length === 2
   && snapshot.answers.every(a => a.owner && a.work === 100 && a.credited === 1) && snapshot.demands.length === 1);
 
-await L.run("INSERT INTO builds (id, at, record) VALUES ('published', '2026-10-01', '{}')");
-await L.run("INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES ('published', 'r', 'm', 'verified:e1', 42, 'dps', 1, ?, ?)", OLD, OLD);
+await L.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES ('published', '2026-10-01', '{}')");
+await L.run("INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES ('published', 'r', 'm', 'verified:e1', 42, 'dps', 1, ?, ?)", OLD, OLD);
 const gone = await forget();
 check("old facts of either engine and producer, and withdrawn questions expire", gone === 4, `forgot ${gone}`);
 check("…the fact with its answers and its served demand",
-  !(await has("stale")) && (await count("answers", "stale")) === 0 && (await count("demands", "stale")) === 0);
-check("…the withdrawn question with its withdrawn demand", !(await has("withdrawn")) && (await count("demands", "withdrawn")) === 0);
+  !(await has("stale")) && (await count("record_candidate_answers", "stale")) === 0 && (await count("relation_task_consumers", "stale")) === 0);
+check("…the withdrawn question with its withdrawn demand", !(await has("withdrawn")) && (await count("relation_task_consumers", "withdrawn")) === 0);
 check("current-engine facts and completed non-board demands expire", !(await has("served-engine")) && !(await has("survey")));
 for (const [id, why] of [["recent", "a fact inside the window"], ["waited", "a question a live demand waits on"],
   ["refused", "a question its engine refused, which must stay withdrawn"],
   ["open", "an open question"], ["disputed", "a disputed question"]]) {
   check(`stays: ${why}`, await has(id));
 }
-check("current-engine answer detail expires too", (await count("answers", "served-engine")) === 0);
+check("current-engine answer detail expires too", (await count("record_candidate_answers", "served-engine")) === 0);
 check("a second call finds nothing more", (await forget()) === 0);
 
 // ---- delivery, credit and recent activity survive the cleanup ----
 await question("unpaid", "fact", { fact_engine: "e1" }); await demand("unpaid", "served"); await answer("unpaid", "owed", OLD, "e1");
-await L.run("UPDATE answers SET credited = 0 WHERE question = 'unpaid'");
+await L.run("UPDATE record_candidate_answers SET credited = 0 WHERE question = 'unpaid'");
 await question("redeliver", "fact", { fact_engine: "e1" }); await demand("redeliver", "live", "chat");
 await question("touched", "fact", { fact_engine: "e1" }); await demand("touched", "served", "survey", RECENT);
 await question("late-detail", "fact", { fact_engine: "e1" }); await answer("late-detail", "late", RECENT, "e1");
 await question("cancelled-now", "open");
-await L.run("UPDATE questions SET state = 'withdrawn' WHERE id = 'cancelled-now'");
+await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id = 'cancelled-now'");
 await question("leased", "fact", { fact_engine: "e1" });
-await L.run("UPDATE questions SET lease = 'held', lease_until = ? WHERE id = 'leased'", RECENT);
+await L.run("UPDATE state_compute_work SET lease = 'held', lease_until = ? WHERE id = 'leased'", RECENT);
 await question("expired-lease", "fact", { fact_engine: "e1" });
-await L.run("UPDATE questions SET lease_prev = 'expired', lease_prev_until = ? WHERE id = 'expired-lease'", OLD);
+await L.run("UPDATE state_compute_work SET lease_prev = 'expired', lease_prev_until = ? WHERE id = 'expired-lease'", OLD);
 await question("queued", "fact", { fact_engine: "e1" });
-await L.run("INSERT INTO settle_queue (question, engine, peer, joined, queued_at) VALUES ('queued', 'e1', '', 0, ?)", OLD);
+await L.run("INSERT INTO state_pending_verifications (question, engine, peer, joined, queued_at) VALUES ('queued', 'e1', '', 0, ?)", OLD);
 await question("spot", "spot", { fact_engine: "e1" });
 await question("nondeterministic", "nondeterministic", { fact_engine: "e1" });
-await L.run("INSERT INTO verifiers (id, seen, work) VALUES ('owed', ?, 12345)", OLD);
-await L.run("INSERT INTO verifier_hours (verifier, hour, work) VALUES ('owed', '2026-10-01T00', 12345)");
+await L.run("INSERT INTO entity_compute_devices (id, seen, work) VALUES ('owed', ?, 12345)", OLD);
+await L.run("INSERT INTO record_hourly_compute_totals (verifier, hour, work) VALUES ('owed', '2026-10-01T00', 12345)");
 await forget();
 for (const id of ["unpaid", "redeliver", "touched", "late-detail", "queued", "spot", "nondeterministic", "leased", "cancelled-now"]) check(`protected: ${id}`, await has(id));
 check("expired historical leases do not retain completed detail forever", !(await has("expired-lease")));
-check("credit aggregates are preserved", (await L.get("SELECT work FROM verifiers WHERE id = 'owed'")).work === 12345
-  && (await L.get("SELECT work FROM verifier_hours WHERE verifier = 'owed'")).work === 12345);
-await L.run("UPDATE answers SET credited = 1 WHERE question = 'unpaid'");
+check("credit aggregates are preserved", (await L.get("SELECT work FROM entity_compute_devices WHERE id = 'owed'")).work === 12345
+  && (await L.get("SELECT work FROM record_hourly_compute_totals WHERE verifier = 'owed'")).work === 12345);
+await L.run("UPDATE record_candidate_answers SET credited = 1 WHERE question = 'unpaid'");
 check("paid task becomes eligible next pass", (await forget()) === 1 && !(await has("unpaid")));
 
-check("published scores and builds survive task expiry", (await L.get("SELECT score FROM scores WHERE identity = 'published'")).score === 42
-  && !!(await L.get("SELECT id FROM builds WHERE id = 'published'")));
+check("published scores and builds survive task expiry", (await L.get("SELECT score FROM state_board_measurement_selection WHERE identity = 'published'")).score === 42
+  && !!(await L.get("SELECT id FROM entity_weapon_builds WHERE id = 'published'")));
 await question("covered", "fact", { fact_engine: "e1" }); await answer("covered", "paid", OLD, "e1"); await answer("covered", "duplicate", OLD, "e1");
-await L.run("UPDATE answers SET credited = 0, owner = 'o-paid' WHERE question = 'covered' AND device = 'duplicate'");
+await L.run("UPDATE record_candidate_answers SET credited = 0, owner = 'o-paid' WHERE question = 'covered' AND device = 'duplicate'");
 await question("losing", "fact", { fact_engine: "e1" }); await answer("losing", "lost", OLD, "e1");
-await L.run("UPDATE answers SET credited = 0, canon = 'different' WHERE question = 'losing'");
+await L.run("UPDATE record_candidate_answers SET credited = 0, canon = 'different' WHERE question = 'losing'");
 await forget();
 check("covered and losing answers do not retain tasks forever", !(await has("covered")) && !(await has("losing")));
 
 await question("review-proof", "fact", { fact_engine: "e1" });
-await L.run(`INSERT INTO board_reviews (ref, id, round_at, identity, ruler, mode, engine, question, record, state,
+await L.run(`INSERT INTO entity_measurement_reviews (ref, id, round_at, identity, ruler, mode, engine, question, record, state,
   baseline_score, baseline_metric, baseline_cost_seconds, baseline_by, baseline_started_at, baseline_finished_at, created_at)
   VALUES ('published|r|m', 'review', ?, 'published', 'r', 'm', 'e1', 'review-proof', '{}', 'succeeded', 40, 'dps', 1, 'old', ?, ?, ?)`, OLD, OLD, OLD, OLD);
-await L.run("UPDATE scores SET review_id = 'review' WHERE identity = 'published'");
+await L.run("UPDATE state_board_measurement_selection SET review_id = 'review' WHERE identity = 'published'");
 await forget();
 check("the current score keeps its calibration proof against older writes", await has("review-proof"));
-await L.run("UPDATE scores SET review_id = NULL WHERE identity = 'published'");
+await L.run("UPDATE state_board_measurement_selection SET review_id = NULL WHERE identity = 'published'");
 await forget();
 check("superseded calibration proof can expire", !(await has("review-proof")));
 
@@ -132,31 +131,31 @@ check("…and the questions it may not take never fill a batch: the rest go in l
 // ---- asked again ----
 const ask = { producer: "sweep", ref: "again", verb: "simulate", request: { record: { weapon: "w" }, ruler: "r", mode: "m" }, due_in_ms: 3_600_000, payload: {} };
 const [qa] = await f.demandAll(env, [ask], "e0", NOW - 20 * DAY);
-await L.run("UPDATE questions SET state = 'fact', canon = 'c', fact_engine = 'e0', fact_at = ? WHERE id = ?", OLD, qa);
-await L.run("UPDATE demands SET state = 'served', served_at = ? WHERE ref = 'again'", OLD);
+const expiredTask=await L.get("SELECT task_id FROM state_compute_work WHERE id=?",qa);
+await L.run("SELECT compute_accept_result(?1::text,?2::bigint,'open','fact','c','e0',?3::text,0,'[]')",qa,expiredTask.task_id,OLD);
+await L.run("UPDATE relation_task_consumers SET state = 'served', served_at = ? WHERE ref = 'again'", OLD);
 await forget();
 await f.demandAll(env, [ask], "e1", NOW);
 check("a row forgotten is asked again as a new open question with a live demand",
-  (await L.get("SELECT state FROM questions WHERE id = ?", qa))?.state === "open"
-  && (await L.get("SELECT state FROM demands WHERE ref = 'again'"))?.state === "live");
+  (await L.get("SELECT state FROM state_compute_work WHERE id = ?", qa))?.state === "open"
+  && (await L.get("SELECT state FROM relation_task_consumers WHERE ref = 'again'"))?.state === "live");
 
 const oldPacket = { lease: "expired-old-lease", engine: "e0", late: true,
   answers: [{ question: qa, result: { score: 1, metric: "dps" }, work: 100 }] };
 const packet = await f.answerPack(env, { device: "owed", owner: "owed" }, oldPacket, NOW);
 check("a delayed old packet cannot earn credit after expiry and re-ask", packet.taken.length === 0
-  && (await count("answers", qa)) === 0 && (await L.get("SELECT work FROM verifiers WHERE id = 'owed'")).work === 12345);
+  && (await count("record_candidate_answers", qa)) === 0 && (await L.get("SELECT work FROM entity_compute_devices WHERE id = 'owed'")).work === 12345);
 
 // ---- a refusal reaches back the window ----
 await question("liar-old", "fact", { fact_engine: "e1" }); await demand("liar-old", "served"); await answer("liar-old", "liar", OLD, "e1");
 await question("liar-new", "fact", { fact_engine: "e1", at: RECENT }); await demand("liar-new", "served", "sweep", RECENT); await answer("liar-new", "liar", RECENT, "e1");
 const out = await f.refuse(env, "liar", NOW);
-check("a refusal reopens the fact it witnessed inside the window", (await L.get("SELECT state FROM questions WHERE id = 'liar-new'")).state === "open");
-check("…and leaves standing one it witnessed before it", (await L.get("SELECT state FROM questions WHERE id = 'liar-old'")).state === "fact");
+check("a refusal reopens the fact it witnessed inside the window", (await L.get("SELECT state FROM state_compute_work WHERE id = 'liar-new'")).state === "open");
+check("…and leaves standing one it witnessed before it", (await L.get("SELECT state FROM state_compute_work WHERE id = 'liar-old'")).state === "fact");
 check("…and takes back only the work of the window", out.taken_back === 100 && out.reopened === 1, JSON.stringify(out));
 
 const backlog = await testDb("library");
-await backlog.run(`INSERT INTO questions (id,verb,request,state,due_at,opened_at,canon,fact_engine,fact_at)
-  SELECT 'expired-'||i,'simulate','{}','fact',?1::text,?1::text,'c','e0',?1::text FROM generate_series(1,5107) i`, OLD);
+for (let i=1;i<=5107;i++) await seedComputeWork(backlog,{id:`expired-${i}`,verb:"simulate",request:{},state:"fact",due_at:OLD,opened_at:OLD,canon:"c",fact_engine:"e0",fact_at:OLD});
 const capped = async () => prune(await capture(backlog, 20000), backlog);
 const batches = [await capped(), await capped(), await capped()];
 check("capture bounds large requests while verified deletion stays in small transactions",
@@ -167,11 +166,11 @@ await question("eight-days", "fact", { fact_engine: "e1", at: iso(NOW - 8 * DAY)
 await question("seven-days", "fact", { fact_engine: "e1", at: BEFORE });
 await forget();
 check("eight-day detail expires while the exact seven-day boundary stays", !(await has("eight-days")) && await has("seven-days"));
-for (const change of ['request', 'answer', 'demand']) {
+for (const change of ['task', 'answer', 'demand']) {
   const id = `changed-${change}`;
   await question(id, "fact", { fact_engine: "e1" });
   const captured = (await capture()).filter(x => x.question.id === id);
-  if (change === 'request') await L.run("UPDATE questions SET request='changed' WHERE id=?", id);
+  if (change === 'task') await L.run("SELECT compute_open_task(?1::text,'correction','e1',?2::text,true)",id,RECENT);
   if (change === 'answer') await answer(id, 'new-witness', OLD);
   if (change === 'demand') await demand(id, 'live', 'chat', RECENT);
   check(`a ${change} changed after capture cannot be pruned`, await prune(captured) === 0 && await has(id));
@@ -182,15 +181,15 @@ catch { refused = true; }
 check("missing private manifest receipt is rejected", refused);
 
 const plans = await testDb('library');
-await plans.run(`INSERT INTO answers(question,engine,device,owner,canon,result,work,at,credited,credit_work)
+await plans.run(`INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at,credited,credit_work)
   SELECT 'plan-'||i,'e','d'||i,'o'||i,'c','{}',1,?1::text,0,1 FROM generate_series(1,20000)i`, OLD);
-await plans.run('UPDATE answers SET credited=1,credit_work=NULL');
-await plans.exec('ANALYZE answers; SET enable_seqscan=off; SET enable_bitmapscan=off;');
+await plans.run('UPDATE record_candidate_answers SET credited=1,credit_work=NULL');
+await plans.exec('ANALYZE record_candidate_answers; SET enable_seqscan=off; SET enable_bitmapscan=off;');
 const body = (await plans.get(`SELECT prosrc FROM pg_proc WHERE oid='factory_past_safe(text,text)'::regprocedure`)).prosrc;
 const guardSql = body.replace(/^\s*BEGIN\s+RETURN\b/, 'SELECT').replace(/;\s*END\s*$/, '')
   .replaceAll('$1', '?1::text').replaceAll('$2', '?2::text');
 const answerReads = value => Array.isArray(value) ? value.flatMap(answerReads)
-  : value && typeof value === 'object' ? [...(value['Relation Name'] === 'answers' ? [value] : []), ...Object.values(value).flatMap(answerReads)] : [];
+  : value && typeof value === 'object' ? [...(value['Relation Name'] === 'record_candidate_answers' ? [value] : []), ...Object.values(value).flatMap(answerReads)] : [];
 const boundedAnswers = plan => {
   const reads = answerReads(plan);
   return reads.length > 0 && reads.every(node => /question/.test(node['Index Cond'] || node['Recheck Cond'] || ''));

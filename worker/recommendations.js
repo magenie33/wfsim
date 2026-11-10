@@ -17,11 +17,11 @@ const result = (body, status = 200) => json(body, status, { "cache-control": "no
 const limited = async (env, key) => env.RECOMMENDATION_LIMIT && !(await env.RECOMMENDATION_LIMIT.limit({ key })).success;
 const throttled = () => json({ ok: false, reason: "rate_limited" }, 429, { "retry-after": "60", "cache-control": "no-store" });
 const heatMaxAge = time => Math.min(30, Math.max(0, Math.floor((Date.parse(time.next_settlement) - Date.now()) / 1000)));
-const points = async (db, account, day) => Number((await db.prepare("SELECT count(*) AS n FROM recommendations WHERE account = ? AND day < ?::date").bind(account, day).first()).n);
+const points = async (db, account, day) => Number((await db.prepare("SELECT count(*) AS n FROM record_recommendation_votes WHERE account = ? AND day < ?::date").bind(account, day).first()).n);
 
 export async function recommendationExport(env, account) {
   const { results } = await env.ACCOUNTS.prepare(`SELECT r.identity, r.day::text AS day, t.weapon, t.record, t.ruler, t.mode
-    FROM recommendations r JOIN recommendation_targets t USING (identity) WHERE r.account = ? ORDER BY r.day, r.identity`).bind(account).all();
+    FROM record_recommendation_votes r JOIN state_recommendation_target_snapshots t USING (identity) WHERE r.account = ? ORDER BY r.day, r.identity`).bind(account).all();
   return { recommendations: results.map(row => ({ ...row, record: JSON.parse(row.record) })) };
 }
 
@@ -53,7 +53,7 @@ async function recommendationRoute(request, env, path, ctx) {
     if (await limited(env, "heat:" + (request.headers.get("cf-connecting-ip") || "unknown"))) return throttled();
     time = await clock(db);
     const { results } = await db.prepare(`SELECT r.identity, sum(11 - (?::date - r.day)) AS tenths
-      FROM recommendation_targets t JOIN recommendations r USING (identity)
+      FROM state_recommendation_target_snapshots t JOIN record_recommendation_votes r USING (identity)
       WHERE t.weapon = ? AND r.day >= ?::date - 10 AND r.day < ?::date GROUP BY r.identity`)
       .bind(time.day, heat[1], time.day, time.day).all();
     const maxAge = heatMaxAge(time);
@@ -75,7 +75,7 @@ async function recommendationRoute(request, env, path, ctx) {
     const limit = Number(query.get("limit") || 100);
     if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !validId(identity) || before && (before < "0001-01-01" || !/^\d{4}-\d\d-\d\d$/.test(before) || !Number.isFinite(Date.parse(before)) || new Date(before).toISOString().slice(0, 10) !== before)) return no("bad_query");
     const { results } = await db.prepare(`SELECT day::text AS day, greatest(0, 11 - (?2::date - day)) AS tenths
-      FROM recommendations WHERE account = ?1 AND identity = ?3 AND (?4::text = '' OR day < NULLIF(?4::text, '')::date)
+      FROM record_recommendation_votes WHERE account = ?1 AND identity = ?3 AND (?4::text = '' OR day < NULLIF(?4::text, '')::date)
       ORDER BY day DESC LIMIT ?5::bigint`).bind(account, time.day, identity, before, limit).all();
     return result({ ok: true, ...time, votes: results.map(row => ({ day: row.day, weight: row.day === time.day ? null : Number(row.tenths) / 10 })),
       before: results.length === limit ? results.at(-1).day : null });
@@ -88,17 +88,17 @@ async function recommendationRoute(request, env, path, ctx) {
     const limit = Number(query.get("limit") || 50);
     if (!Number.isInteger(limit) || limit < 1 || limit > 50 || !["all", "available", "pending"].includes(filter) || weapon && !SLUG.test(weapon) || !Number.isSafeInteger(offset) || offset < 0 || offset > 1000000) return no("bad_query");
     const grouped = `SELECT identity, max(day) AS last_day, count(*) FILTER (WHERE day < ?2::date) AS points,
-      bool_or(day = ?2::date) AS pending FROM recommendations WHERE account = ?1 GROUP BY identity`;
+      bool_or(day = ?2::date) AS pending FROM record_recommendation_votes WHERE account = ?1 GROUP BY identity`;
     const [totals, page, count] = await Promise.all([
       db.prepare(`WITH own AS (${grouped}) SELECT count(*) AS total, count(*) FILTER (WHERE pending) AS pending,
         COALESCE(sum(points), 0) AS points, string_agg(DISTINCT t.weapon, ',') AS weapons
-        FROM own JOIN recommendation_targets t USING (identity)`).bind(account, time.day).first(),
+        FROM own JOIN state_recommendation_target_snapshots t USING (identity)`).bind(account, time.day).first(),
       db.prepare(`WITH own AS (${grouped}) SELECT t.*, own.last_day::text, own.points, own.pending
-        FROM own JOIN recommendation_targets t USING (identity)
+        FROM own JOIN state_recommendation_target_snapshots t USING (identity)
         WHERE (?3::text = '' OR t.weapon = ?3::text) AND (?4::text = 'all' OR own.pending = (?4::text = 'pending'))
         ORDER BY own.pending, own.last_day DESC, own.identity LIMIT ?6::bigint OFFSET ?5`)
         .bind(account, time.day, weapon, filter, offset, limit).all(),
-      db.prepare(`WITH own AS (${grouped}) SELECT count(*) AS n FROM own JOIN recommendation_targets t USING (identity)
+      db.prepare(`WITH own AS (${grouped}) SELECT count(*) AS n FROM own JOIN state_recommendation_target_snapshots t USING (identity)
         WHERE (?3::text = '' OR t.weapon = ?3::text) AND (?4::text = 'all' OR own.pending = (?4::text = 'pending'))`)
         .bind(account, time.day, weapon, filter).first(),
     ]);
@@ -108,7 +108,7 @@ async function recommendationRoute(request, env, path, ctx) {
       WHERE s.retired_at IS NULL`)
       .bind(JSON.stringify(page.results.map(({ identity, ruler, mode }) => ({ identity, ruler, mode })))).all()).results : [];
     const recent = ids.length ? (await db.prepare(`SELECT identity, day::text AS day, greatest(0, 11 - (?2::date - day)) AS tenths
-      FROM recommendations WHERE account = ?1 AND identity = ANY((?3::text)::text[]) AND day >= ?2::date - 10 ORDER BY day DESC`)
+      FROM record_recommendation_votes WHERE account = ?1 AND identity = ANY((?3::text)::text[]) AND day >= ?2::date - 10 ORDER BY day DESC`)
       .bind(account, time.day, "{" + ids.join(",") + "}").all()).results : [];
     return result({ ok: true, ...time, points: Number(totals.points), weapons: (totals.weapons || "").split(",").filter(Boolean), total: Number(totals.total), pending: Number(totals.pending),
       available: Number(totals.total) - Number(totals.pending), count: Number(count.n), next: offset + page.results.length < Number(count.n) ? offset + page.results.length : null,
@@ -134,27 +134,27 @@ async function recommendationRoute(request, env, path, ctx) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return no("bad_vote");
   if (path === "/api/recommendations/state") {
     if (!Array.isArray(body.identities) || body.identities.length > RECOMMENDATION_BATCH_MAX || !body.identities.every(validId)) return no("bad_identities");
-    const { results } = await db.prepare("SELECT identity FROM recommendations WHERE account = ? AND day = ?::date AND identity = ANY((?::text)::text[])")
+    const { results } = await db.prepare("SELECT identity FROM record_recommendation_votes WHERE account = ? AND day = ?::date AND identity = ANY((?::text)::text[])")
       .bind(account, time.day, "{" + body.identities.join(",") + "}").all();
     return result({ ok: true, ...time, points: await points(db, account, time.day), pending: results.map(row => row.identity) });
   }
   if (!validId(body.identity) || !["recommend", "withdraw"].includes(body.action)) return no("bad_vote");
   if (body.day !== time.day) return result({ ok: false, reason: "day_changed", ...time }, 409);
   if (body.action === "withdraw") {
-    await db.prepare("DELETE FROM recommendations WHERE account = ? AND identity = ? AND day = ?::date AND day = recommendation_day()")
+    await db.prepare("DELETE FROM record_recommendation_votes WHERE account = ? AND identity = ? AND day = ?::date AND day = recommendation_day()")
       .bind(account, body.identity, time.day).run();
   } else {
-    let target = await db.prepare("SELECT identity FROM recommendation_targets WHERE identity = ?").bind(body.identity).first();
+    let target = await db.prepare("SELECT identity FROM state_recommendation_target_snapshots WHERE identity = ?").bind(body.identity).first();
     if (!target) {
       if (!env.LIBRARY || typeof body.ruler !== "string" || typeof body.mode !== "string" || !SLUG.test(body.ruler) || !SLUG.test(body.mode)) return no("bad_target");
-      const build = await env.LIBRARY.prepare(`SELECT b.record, b.weapon FROM builds b WHERE b.id = ?
+      const build = await env.LIBRARY.prepare(`SELECT b.record, b.weapon FROM entity_weapon_builds b WHERE b.id = ?
         AND EXISTS (SELECT 1 FROM board_facts s WHERE s.identity = b.id AND s.ruler = ? AND s.mode = ? AND s.retired_at IS NULL)`)
         .bind(body.identity, body.ruler, body.mode).first();
       if (!build) return no("unknown_build", 404);
-      await db.prepare(`INSERT INTO recommendation_targets (identity, weapon, record, ruler, mode) VALUES (?, ?, ?, ?, ?)
+      await db.prepare(`INSERT INTO state_recommendation_target_snapshots (identity, weapon, record, ruler, mode) VALUES (?, ?, ?, ?, ?)
         ON CONFLICT DO NOTHING`).bind(body.identity, build.weapon, build.record, body.ruler, body.mode).run();
     }
-    await db.prepare("INSERT INTO recommendations (account, identity, day) SELECT ?, ?, ?::date WHERE ?::date = recommendation_day() ON CONFLICT DO NOTHING")
+    await db.prepare("INSERT INTO record_recommendation_votes (account, identity, day) SELECT ?, ?, ?::date WHERE ?::date = recommendation_day() ON CONFLICT DO NOTHING")
       .bind(account, body.identity, time.day, time.day).run();
   }
   const after = await clock(db);

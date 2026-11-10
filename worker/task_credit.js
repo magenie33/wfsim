@@ -9,7 +9,7 @@ export function createCredit() {
   /// never reconstructs adjusted work or witness selection from a later state.
   function prepareCredit(db, answers, now) {
     const owed = answers.filter(a => !a.official && !a.credited).map(a => ({ id: Number(a.id), work: a.work }));
-    return db.prepare(`UPDATE answers a SET credit_work=x.work,credit_at=?2::text
+    return db.prepare(`UPDATE record_candidate_answers a SET credit_work=x.work,credit_at=?2::text
       FROM jsonb_to_recordset((?1::text)::jsonb) AS x(id bigint,work bigint)
       WHERE a.id=x.id AND a.credited=0 AND a.credit_work IS NULL`).bind(JSON.stringify(owed), iso(now));
   }
@@ -26,19 +26,19 @@ export function createCredit() {
     if (!owed.length) return;
     const questions = JSON.stringify([...new Set(answers.map((a) => a.question).filter(Boolean))]);
     await db.batch([
-      db.prepare(`SELECT id FROM verifiers WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)) ORDER BY id FOR UPDATE`)
+      db.prepare(`SELECT id FROM entity_compute_devices WHERE id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)) ORDER BY id FOR UPDATE`)
         .bind(JSON.stringify([...new Set(owed.map((a) => a.device))])),
       db.prepare(`WITH owed AS (SELECT a.id,a.device,COALESCE(a.credit_work,(e->>'work')::bigint) AS work,
               COALESCE(a.credit_at,?3::text) AS at
-            FROM jsonb_array_elements((?1::text)::jsonb) e JOIN answers a ON a.id=(e->>'id')::bigint),
-          paid AS (UPDATE answers a SET credited = 1,credit_work=NULL,credit_at=NULL FROM owed
+            FROM jsonb_array_elements((?1::text)::jsonb) e JOIN record_candidate_answers a ON a.id=(e->>'id')::bigint),
+          paid AS (UPDATE record_candidate_answers a SET credited = 1,credit_work=NULL,credit_at=NULL FROM owed
             WHERE a.id = owed.id AND a.credited = 0 AND a.void=0 RETURNING owed.device, owed.work, owed.at),
           sums AS (SELECT device, sum(work)::bigint AS work, count(*)::bigint AS n FROM paid GROUP BY device),
-          v AS (UPDATE verifiers SET work = verifiers.work + sums.work, agreed = agreed + sums.n, signatures = signatures + sums.n,
+          v AS (UPDATE entity_compute_devices SET work = entity_compute_devices.work + sums.work, agreed = agreed + sums.n, signatures = signatures + sums.n,
               refusals = CASE WHEN refusals > 0 AND clean + sums.n >= refusals * ?2::bigint THEN refusals - 1 ELSE refusals END,
               clean = CASE WHEN refusals = 0 OR clean + sums.n >= refusals * ?2::bigint THEN 0 ELSE clean + sums.n END
-            FROM sums WHERE verifiers.id = sums.device RETURNING 1)
-        INSERT INTO verifier_hours AS h (verifier, hour, work, signatures)
+            FROM sums WHERE entity_compute_devices.id = sums.device RETURNING 1)
+        INSERT INTO record_hourly_compute_totals AS h (verifier, hour, work, signatures)
           SELECT device,left(at,13),sum(work)::bigint,count(*)::bigint FROM paid GROUP BY device,left(at,13)
           ON CONFLICT (verifier, hour) DO UPDATE SET work = h.work + excluded.work, signatures = h.signatures + excluded.signatures`)
         .bind(JSON.stringify(owed), FACTS_PER_REFUSAL_FORGIVEN, iso(now)),
@@ -50,7 +50,7 @@ export function createCredit() {
 
   async function repay(env, now = Date.now(), max = 200) {
     const db = env.LIBRARY, floor = iso(now - REDELIVER_BACK_MS);
-    const { results: pending } = await db.prepare(`SELECT a.*,a.credit_work AS work FROM answers a
+    const { results: pending } = await db.prepare(`SELECT a.*,a.credit_work AS work FROM record_candidate_answers a
       WHERE a.credit_work IS NOT NULL AND a.credited=0 AND a.void=0 AND a.official=0
       ORDER BY a.credit_at,a.id LIMIT ?::bigint`).bind(max).all();
     let recovered = 0;
@@ -58,20 +58,20 @@ export function createCredit() {
       const group = pending.filter(a => a.credit_at === at);
       await credit(db, group, Date.parse(at)); recovered += group.length;
     }
-    const kept = await db.prepare("SELECT through FROM factory_cursors WHERE name = 'repay'").first();
+    const kept = await db.prepare("SELECT through FROM state_factory_progress WHERE name = 'repay'").first();
     const from = kept ? (kept.through > floor ? kept.through : floor) : iso(now - 10 * 60_000 - REPAY_SLICE_MS);
     const until = iso(Math.min(now - 10 * 60_000, Date.parse(from) + REPAY_SLICE_MS));
-    const { results: qs } = await db.prepare(`SELECT q.id, q.canon, q.fact_engine, q.fact_at FROM questions q
+    const { results: qs } = await db.prepare(`SELECT q.id, q.canon, q.fact_engine, q.fact_at FROM state_compute_work q
         WHERE q.fact_at >= ?1::text AND q.fact_at < ?2::text AND q.state IN ('fact', 'spot')
-          AND EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.credited = 0 AND a.void = 0 AND a.official = 0
+          AND EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question = q.id AND a.credited = 0 AND a.void = 0 AND a.official = 0
                         AND a.canon = q.canon AND a.at <= q.fact_at
-                        AND NOT EXISTS (SELECT 1 FROM answers c WHERE c.question = a.question AND c.credited = 1 AND c.void = 0 AND c.official = 0
+                        AND NOT EXISTS (SELECT 1 FROM record_candidate_answers c WHERE c.question = a.question AND c.credited = 1 AND c.void = 0 AND c.official = 0
                                         AND (c.owner = a.owner OR (coalesce(a.net, '') <> '' AND c.net = a.net))))
         ORDER BY q.fact_at, q.id LIMIT ?3::bigint`)
       .bind(from, until, max).all();
     let paid = 0, stuck = null;
     for (const q of qs) {
-      const { results: all } = await db.prepare("SELECT * FROM answers WHERE question = ? AND void = 0 AND official = 0 AND canon = ? AND at <= ? ORDER BY id")
+      const { results: all } = await db.prepare("SELECT * FROM record_candidate_answers WHERE question = ? AND void = 0 AND official = 0 AND canon = ? AND at <= ? ORDER BY id")
         .bind(q.id, q.canon, q.fact_at).all();
       const group = independent([...all.filter((a) => a.engine === q.fact_engine), ...all.filter((a) => a.engine !== q.fact_engine)]);
       const owed = group.filter((a) => !a.credited);
@@ -80,7 +80,7 @@ export function createCredit() {
     }
     const through = stuck ?? (qs.length === max ? qs[qs.length - 1].fact_at : until);
     if (through > from || !kept) {
-      await db.prepare(`INSERT INTO factory_cursors (name, through) VALUES ('repay', ?1::text)
+      await db.prepare(`INSERT INTO state_factory_progress (name, through) VALUES ('repay', ?1::text)
           ON CONFLICT (name) DO UPDATE SET through = excluded.through`).bind(through).run();
     }
     return paid + recovered;

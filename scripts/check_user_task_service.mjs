@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { testDb } from "./pg/test_db.mjs";
-import { userTasksRoute, reportCanon, purgeUserCalculations, USER_TASK_PRODUCERS, USER_TASK_KEEP_MS } from "../worker/user_tasks.js";
+import { userTasksRoute, calculationReport, reportCanon, purgeUserCalculations, USER_TASK_PRODUCERS, USER_TASK_KEEP_MS } from "../worker/user_tasks.js";
 import { COMPUTATION_KEEP_MS } from "../worker/computation_records.js";
 import { syncRoute } from "../worker/sync.js";
 import { setDial } from "../worker/dials.js";
@@ -24,7 +24,35 @@ const first = accepted();
 await check("acceptance is durable and idempotent", async () => {
   const a = await call("accept", first), b = await call("accept", first);
   assert.equal(a.ok, true); assert.equal(a.id, b.id); assert.equal(a.question, b.question);
-  assert.equal((await db.get("SELECT count(*) AS n FROM user_calculations")).n, 1);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_user_calculation_requests")).n, 1);
+});
+await check("failed task admission rolls back its consumer request",async()=>{
+  const pending=accepted("simulation",{...request,unique:"atomic-admission"}),batch=db.batch;
+  db.batch=statements=>{
+    const index=statements.findIndex(statement=>statement.sql.includes("compute_register_tasks("));
+    return batch(index<0 ? statements : [...statements.slice(0,index),db.prepare("SELECT 1/0"),...statements.slice(index)]);
+  };
+  try { await assert.rejects(call("accept",pending)); }
+  finally { db.batch=batch; }
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_user_calculation_requests WHERE id=?",pending.id)).n,0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM relation_task_consumers WHERE ref=?",pending.id)).n,0);
+});
+await check("cancellation between validation and admission wins durably",async()=>{
+  const pending=accepted("simulation",{...request,unique:"cancel-admission-race"}),batch=db.batch;
+  let interrupted=false;
+  db.batch=async statements=>{
+    if (!interrupted && statements.some(statement=>statement.sql.includes("compute_register_tasks("))) {
+      interrupted=true;
+      await call("cancel",{owner,ids:[pending.id]});
+    }
+    return batch(statements);
+  };
+  let response;
+  try { response=await call("accept",pending); }
+  finally { db.batch=batch; }
+  assert.equal(response.status,410);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_user_calculation_requests WHERE id=?",pending.id)).n,0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM relation_task_consumers WHERE ref=?",pending.id)).n,0);
 });
 await check("an acceptance identity cannot change its inputs or owner", async () => {
   assert.equal((await call("accept", { ...first, request: { ...request, runs: 99 } })).status, 409);
@@ -78,6 +106,48 @@ await check("a later equal request adopts the existing complete report", async (
   assert.equal(state.computation.question, (await call('accept', next)).question);
   assert.equal(state.keep_until, (await call('status', { owner: another, ids: [shared.id] })).tasks[0].keep_until);
 });
+await check("removing task history preserves separately authorized reports", async () => {
+  const pending=accepted("simulation",{...request,unique:"report-history"}), got=await call("accept",pending);
+  await facts().answerOfficial(env,{device:"official:history",owner:"official:history",official:true},
+    {question:got.question,engine,work:100,result:{report}});
+  await db.run("DELETE FROM entity_user_calculation_requests WHERE id=?",pending.id);
+  await purgeUserCalculations(env);
+  const kept=(await call("status",{owner,ids:[pending.id],include_results:true})).tasks[0];
+  assert.equal(kept.state,"succeeded");
+  assert.deepEqual(kept.result,calculationReport(report));
+});
+await check("a corrected report selects the new output under the same engine",async()=>{
+  const pending=accepted("simulation",{...request,unique:"report-correction"}), got=await call("accept",pending);
+  await facts().answerOfficial(env,{device:"official:correction",owner:"official:correction",official:true},
+    {question:got.question,engine,work:100,result:{report}});
+  const old=await db.get("SELECT r.report_id,r.retained_from,q.task_id FROM state_current_calculation_reports r JOIN state_compute_work q ON q.id=r.question WHERE r.question=? AND r.engine=?",got.question,engine);
+  const corrected={...report,correction:"verified replacement"};
+  await facts().answerOfficial(env,{device:"official:corrected",owner:"official:corrected",official:true},
+    {question:got.question,engine,work:100,result:{report:corrected}});
+  const current=await db.get("SELECT r.report_id,r.retained_from,q.task_id FROM state_current_calculation_reports r JOIN state_compute_work q ON q.id=r.question WHERE r.question=? AND r.engine=?",got.question,engine);
+  assert.notEqual(current.task_id,old.task_id,"a changed official report must start a new execution round");
+  assert.notEqual(current.report_id,old.report_id);
+  assert.equal(current.retained_from,old.retained_from);
+  assert.deepEqual((await call("status",{owner,ids:[pending.id],include_results:true})).tasks[0].result,calculationReport(corrected));
+});
+await check("an imported report survives without invented task or input records",async()=>{
+  const id=randomUUID(),task=randomUUID(),question="f".repeat(32),at=new Date(Date.now()-10*86_400_000).toISOString();
+  const storedOwner=(await db.get("SELECT owner FROM entity_user_calculation_requests WHERE id=?",first.id)).owner;
+  const saved=await db.get("INSERT INTO entity_calculation_reports(question,engine,at,origin,body) VALUES(?1,?2,?3,'imported',?4) RETURNING id",
+    question,engine,at,JSON.stringify(calculationReport(report)));
+  await db.run("INSERT INTO state_calculation_report_selection(question,engine,report_id,at,retained_from) VALUES(?,?,?,?,?)",
+    question,engine,saved.id,at,at);
+  await db.run("INSERT INTO relation_calculation_report_access(id,owner,question,engine,task,kind,created_at,completed_at,expires_at) VALUES(?,?,?,?,?,'simulation',?,?,?)",
+    id,storedOwner,question,engine,task,at,at,new Date(Date.now()+86_400_000).toISOString());
+  await purgeUserCalculations(env);
+  const kept=(await call("status",{owner,ids:[id],include_results:true})).tasks[0];
+  assert.deepEqual(kept.result,calculationReport(report));
+  assert.equal(kept.computation.completed_at,at);
+  assert.equal(kept.computation.origin,"imported");
+  assert.equal((await call("status",{owner:another,ids:[id],include_results:true})).tasks.length,0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_compute_specs WHERE id=?",question)).n,0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_compute_tasks WHERE computation=?",question)).n,0);
+});
 await check('optimization requests expire after fourteen days and new windows cannot revive a report', async () => {
   const OriginalDate = Date;
   let clock = Math.ceil(OriginalDate.now() / COMPUTATION_KEEP_MS) * COMPUTATION_KEEP_MS + 1000;
@@ -89,7 +159,8 @@ await check('optimization requests expire after fourteen days and new windows ca
     await facts().answerOfficial(env, { device: 'official:retention', owner: 'official:retention', official: true },
       { question: got.question, engine, work: 100, result: { report } });
     clock += 5000;
-    await db.run('UPDATE questions SET fact_at=? WHERE id=?', new Date(clock).toISOString(), got.question);
+    await facts().answerOfficial(env, { device: 'official:retention', owner: 'official:retention', official: true },
+      { question: got.question, engine, work: 100, result: { report } });
     const next = accepted('optimization', pending.request), cached = await call('accept', next);
     assert.equal(cached.question, got.question);
     assert.equal(cached.keep_until, got.keep_until);
@@ -147,14 +218,19 @@ await check("engine refusals end an invalid request without publishing a number"
   assert.equal(status.state, 'failed'); assert.equal(status.result, undefined);
 });
 await check("expiry removes ownership and reports after retention", async () => {
-  await db.run("UPDATE user_calculations SET expires_at = '2000-01-01T00:00:00.000Z'");
+  await db.run("UPDATE entity_user_calculation_requests SET expires_at = '2000-01-01T00:00:00.000Z'");
+  await db.run("UPDATE relation_calculation_report_access SET expires_at = '2000-01-01T00:00:00.000Z'");
   await purgeUserCalculations(env); await purgeUserCalculations(env);
-  assert.equal((await db.get("SELECT count(*) AS n FROM user_calculations")).n, 0);
-  assert.equal((await db.get("SELECT count(*) AS n FROM calculation_reports")).n, 0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_user_calculation_requests")).n, 0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_calculation_reports")).n, 0);
 });
 await check("the deployed daemon role can deliver a completed calculation", async () => {
   const pending = accepted();
   const got = await call("accept", pending);
+  const task = await db.get("SELECT task_id FROM state_compute_work WHERE id=?",got.question);
+  const completedAt = new Date().toISOString();
+  await db.run("SELECT compute_accept_result(?1::text,?2::bigint,'open','fact',?3::text,?4::text,?5::text,0,'[]')",
+    got.question,task.task_id,reportCanon({report},100),engine,completedAt);
   const grants = readFileSync(new URL("../deploy/factoryd_grants.sql", import.meta.url), "utf8");
   const schema = (await db.get("SELECT current_schema() AS name")).name;
   await db.exec(`CREATE ROLE wfsim_factoryd; GRANT USAGE ON SCHEMA ${schema} TO wfsim_factoryd;`);
@@ -163,7 +239,7 @@ await check("the deployed daemon role can deliver a completed calculation", asyn
   try {
     const producer = USER_TASK_PRODUCERS.user_calculation;
     assert.equal(await producer.still_wanted(env, { ref: pending.id }), true);
-    await producer.on_fact(env, { ref: pending.id, question: got.question }, { engine, result: { report } });
+    await producer.on_fact(env, { ref: pending.id, question: got.question }, { engine, at:completedAt, result: { report } });
   } finally { await db.exec("RESET ROLE"); }
   assert.equal((await call("status", { owner, ids: [pending.id], include_results: true })).tasks[0].state, "succeeded");
 });

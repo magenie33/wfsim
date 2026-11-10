@@ -68,13 +68,13 @@ async function audit(index, cut, directory) {
     if (!out.write(JSON.stringify(row) + '\n')) await once(out, 'drain');
   };
   try {
-    for (const source of index.q('SELECT id,body FROM rel_candidates ORDER BY id').iterate()) {
+    for (const source of index.q("SELECT id,body FROM entity_catalog_candidates ORDER BY id").iterate()) {
       const candidate = JSON.parse(source.body);
-      const binding = index.q('SELECT id FROM rel_sources WHERE candidate=? ORDER BY seq LIMIT 1').get(source.id);
+      const binding = index.q("SELECT id FROM entity_catalog_sources WHERE candidate=? ORDER BY seq LIMIT 1").get(source.id);
       await write({ type: 'owner', owner: source.id, build_id: source.id, record: candidate.record, binding_owner: binding.id }); owners++;
-      for (const member of index.q(`SELECT r.build_id,ru.name ruler,mo.name mode,m.queued FROM members m
-        JOIN owners o ON o.id=m.owner JOIN records r ON r.id=m.candidate JOIN symbols ru ON ru.id=m.ruler
-        JOIN symbols mo ON mo.id=m.mode WHERE o.owner=? ORDER BY ru.name,mo.name`).iterate(source.id)) {
+      for (const member of index.q(`SELECT r.build_id,ru.name ruler,mo.name mode,m.queued FROM relation_inventory_owner_members m
+        JOIN relation_inventory_owners o ON o.id=m.owner JOIN entity_inventory_builds r ON r.id=m.candidate JOIN entity_inventory_symbols ru ON ru.id=m.ruler
+        JOIN entity_inventory_symbols mo ON mo.id=m.mode WHERE o.owner=? ORDER BY ru.name,mo.name`).iterate(source.id)) {
         await write({ type: 'row', owner: source.id, ...member }); rows++;
       }
     }
@@ -84,7 +84,7 @@ async function audit(index, cut, directory) {
   const result = await auditInventoryInputs({ ...cut.raw, meta: cut.meta, rulers: index.contract.rulers.map(r => r.id),
     engineOutputs: [path], contract: cut.receipt.contract, generation: cut.receipt.generation,
     epoch: cut.receipt.epoch, out: join(directory, 'audit') });
-  const sources = index.q('SELECT count(*) n FROM rel_sources').get().n;
+  const sources = index.q("SELECT count(*) n FROM entity_catalog_sources").get().n;
   if (sources !== cut.meta.counts.library) throw Error('incomplete relational source baseline');
   index.catalog.seal({ snapshot: cut.receipt.snapshot, started_at: cut.receipt.started_at, expected: {
     owners, records: cut.meta.counts.library, tasks: cut.meta.counts.tasks,

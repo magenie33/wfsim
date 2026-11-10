@@ -20,13 +20,13 @@ SET LOCAL temp_file_limit='16MB';
 SET LOCAL application_name='wfsim-health';
 SELECT json_build_object(
  'snapshot',(SELECT row_to_json(s) FROM (SELECT daemon_at,daemon_commit,engine,at,
-   open,computing,queue_rows,settle_queue_rows FROM factory_snapshot WHERE id=1)s),
+   open,computing,queue_rows,settle_queue_rows FROM state_factory_snapshot WHERE id=1)s),
  'inventory',(SELECT json_build_object('at',body::jsonb->>'at','started_at',body::jsonb->>'started_at',
    'expires_at',body::jsonb->>'expires_at','generation',body::jsonb->>'generation',
-   'epoch',body::jsonb->>'epoch','engine',body::jsonb->>'engine') FROM factory_findings WHERE kind='task_inventory'),
+   'epoch',body::jsonb->>'epoch','engine',body::jsonb->>'engine') FROM state_factory_findings WHERE kind='task_inventory'),
  'generation',inventory_status(),
  'dirty',(SELECT json_build_object('estimated',n_live_tup,'dead',n_dead_tup,'last_analyze',last_autoanalyze)
-   FROM pg_stat_user_tables WHERE relname='inventory_dirty'),
+   FROM pg_stat_user_tables WHERE relname='state_compute_inventory_invalidations'),
  'sessions',(SELECT coalesce(json_agg(s),'[]'::json) FROM (SELECT pid,left(application_name,60) application,
    state,wait_event_type,wait_event,query_id::text,
    round(extract(epoch FROM clock_timestamp()-xact_start)) transaction_seconds,
@@ -36,7 +36,7 @@ SELECT json_build_object(
      AND xact_start<clock_timestamp()-interval '1 minute'))
    ORDER BY xact_start NULLS LAST LIMIT 32)s),
  'dirty_locks',(SELECT coalesce(json_agg(l),'[]'::json) FROM (SELECT pid,mode,granted
-   FROM pg_locks WHERE relation='inventory_dirty'::regclass ORDER BY granted,pid LIMIT 32)l));
+   FROM pg_locks WHERE relation='state_compute_inventory_invalidations'::regclass ORDER BY granted,pid LIMIT 32)l));
 COMMIT;
 """
 

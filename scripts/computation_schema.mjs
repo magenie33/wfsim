@@ -12,20 +12,20 @@ export function computationSchemaSql(kind = "library") {
   };
   if (kind === "accounts") {
     const source = read("accounts");
-    return find(source, /ALTER TABLE accounts ADD COLUMN IF NOT EXISTS profile_id[^;]+;/) + "\n"
+    return find(source, /ALTER TABLE entity_accounts ADD COLUMN IF NOT EXISTS profile_id[^;]+;/) + "\n"
       + find(source, /CREATE UNIQUE INDEX IF NOT EXISTS accounts_profile_id[^;]+;/) + "\n";
   }
   if (kind !== "library") throw new Error("Choose library or accounts");
   const schema = read("schema"), library = read("library"), statements = [];
-  for (const [table, column] of [["questions", "witnesses"], ["verifiers", "signatures"], ["verifier_hours", "signatures"]]) {
+  for (const [table, column] of [["entity_compute_devices", "signatures"], ["record_hourly_compute_totals", "signatures"]]) {
     statements.push(find(schema, new RegExp(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column}[^;]+;`)));
   }
-  for (const table of ["computation_records", "computation_witnesses", "score_witnesses"]) {
-    statements.push(find(table === "score_witnesses" ? library : schema, new RegExp(`CREATE TABLE IF NOT EXISTS ${table} \\([^]*?\\n\\);`)));
+  for (const table of ["state_public_computation_summaries", "relation_computation_witnesses", "relation_measurement_witnesses"]) {
+    statements.push(find(table === "relation_measurement_witnesses" ? library : schema, new RegExp(`CREATE TABLE IF NOT EXISTS ${table} \\([^]*?\\n\\);`)));
   }
   statements.push(...[...(schema + library).matchAll(/CREATE INDEX IF NOT EXISTS (?:computation_records|computation_witnesses|score_witnesses)_[^;]+;/g)].map(match => match[0]));
   statements.push(find(library, /CREATE OR REPLACE FUNCTION score_witnesses_replaced\([^]*?EXECUTE FUNCTION score_witnesses_replaced\(\);/));
-  statements.push(find(schema, /UPDATE user_calculations SET expires_at=[^;]+;/));
+  statements.push(find(schema, /UPDATE entity_user_calculation_requests SET expires_at=[^;]+;/));
   statements.push(readFileSync(new URL("../deploy/computation_grants.sql", import.meta.url), "utf8"));
   return statements.join("\n") + "\n";
 }

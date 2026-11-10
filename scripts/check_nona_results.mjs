@@ -19,18 +19,18 @@ let checks = 0, batches = 0, requested = [], firstCardVersion;
 const check = async (name, fn) => {await fn();checks++;console.log("  ok  " + name);};
 try {
   for (const [i,id] of ["first","second"].entries()) {
-    await env.ACCOUNTS.run("INSERT INTO accounts(id,created_at,username,display_name,profile_id) VALUES (?,'2026-01-01',?,?,?)",id,id,id,String(i+1).repeat(32));
-    await env.ACCOUNTS.run("INSERT INTO contribution_choice(account,named,chosen_at) VALUES (?,1,'initial')",id);
-    await env.ACCOUNTS.run("INSERT INTO device_spans(verifier,account,from_hour) VALUES (?,?,'')",String(i+1).repeat(24),id);
+    await env.ACCOUNTS.run("INSERT INTO entity_accounts(id,created_at,username,display_name,profile_id) VALUES (?,'2026-01-01',?,?,?)",id,id,id,String(i+1).repeat(32));
+    await env.ACCOUNTS.run("INSERT INTO state_account_public_attribution(account,named,chosen_at) VALUES (?,1,'initial')",id);
+    await env.ACCOUNTS.run("INSERT INTO record_compute_device_ownership_intervals(verifier,account,from_hour) VALUES (?,?,'')",String(i+1).repeat(24),id);
   }
   const keys = engine.api("/api/build/keys",{kind:"build",builds:selected.rows.map(row=>h.headlessBoardRecord(weapon.id,row))}).keys;
   assert.ok(selected.entries.length === 2 && selected.top);
   for (const [i,row] of selected.rows.entries()) {
     const at = new Date(row.measured_at).toISOString(), identity = keys[i], mode = row.mode || "base";
-    await env.LIBRARY.run("INSERT INTO builds(id,at,record) VALUES (?,?,?) ON CONFLICT DO NOTHING",identity,at,JSON.stringify(h.headlessBoardRecord(weapon.id,row)));
-    await env.LIBRARY.run("INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES (?,?,?,?,?,'kpm',0,?,?)",
+    await env.LIBRARY.run("INSERT INTO entity_weapon_builds(id,at,record) VALUES (?,?,?) ON CONFLICT DO NOTHING",identity,at,JSON.stringify(h.headlessBoardRecord(weapon.id,row)));
+    await env.LIBRARY.run("INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES (?,?,?,?,?,'kpm',0,?,?)",
       identity,row.benchmark,mode,"verified:"+row.measured_by,row.score,at,at);
-    for (const [position,id] of ["first","second"].entries()) await env.LIBRARY.run(`INSERT INTO score_witnesses
+    for (const [position,id] of ["first","second"].entries()) await env.LIBRARY.run(`INSERT INTO relation_measurement_witnesses
       (identity,ruler,mode,measured_at,engine,owner,device,official,completed_at,credited_at,position)
       VALUES (?,?,?,?,?,?,?,0,?,?,?)`,identity,row.benchmark,mode,at,row.measured_by,id,String(position+1).repeat(24),at,at,position);
   }
@@ -93,10 +93,10 @@ try {
     assert.ok(answer.told({...item,calculator:{name:null}},true).includes(ui["Anonymous contributor"]));
   });
   await check("anonymity, renames and no-label selection apply to zk without changing the score",async()=>{
-    await env.ACCOUNTS.run("UPDATE contribution_choice SET named=0 WHERE account='first'");
+    await env.ACCOUNTS.run("UPDATE state_account_public_attribution SET named=0 WHERE account='first'");
     let changed=await lookup(selected.rows), one=changed.get(selected.entries[0].row)[0];
     assert.equal(one.name,null);assert.equal(one.profile,null);assert.ok(!one.mark);
-    await env.ACCOUNTS.run("UPDATE accounts SET display_name='second new' WHERE id='second'");
+    await env.ACCOUNTS.run("UPDATE entity_accounts SET display_name='second new' WHERE id='second'");
     changed=await lookup(selected.rows);assert.equal(changed.get(selected.entries[0].row)[1].name,"second new");
     assert.equal(requested[1].score,selected.entries[0].row.score);
     assert.notEqual((await answer("zk Laetum 2")).cardVersion,firstCardVersion);

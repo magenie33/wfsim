@@ -141,6 +141,29 @@ type nor the vendor is in the name: the type lives in the config key
 store's name must be DNS-compatible. An environment joins the name only when a
 second one exists.
 
+### Application storage
+
+Every application table or IndexedDB object store starts with its primary
+responsibility, followed by its business meaning:
+
+| prefix | responsibility | example |
+| --- | --- | --- |
+| `entity_` | an individually identified business object | `entity_user_documents` |
+| `record_` | an occurrence, observation or receipt that can happen repeatedly | `record_candidate_answers` |
+| `relation_` | an association between identified objects | `relation_account_compute_devices` |
+| `state_` | current selection, coordination, progress or a derived projection | `state_compute_scheduling` |
+
+These are responsibilities, not four mandatory tables for every object. A
+record may carry delivery metadata, and an entity may carry its lifecycle.
+Task requests and accepted output bodies have distinct authorities. A current
+selection names the output it selects; copied metadata has a consistency rule.
+Definitions and rules belong with code or versioned data. Runtime settings are
+state, and changes that need an audit trail are records.
+
+The same rule applies to working SQLite catalogs. Database engine catalogs and
+the development coordination tool have their own schemas. Migration checkpoints
+and source copies are operation evidence, never runtime aliases for old names.
+
 ## 9. A TIME IS STORED ONE WAY
 
 | what | stored as | column |

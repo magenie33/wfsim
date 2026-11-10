@@ -41,7 +41,7 @@ configured() { db_configured; }
 batch_body() {
   jq -n -c --arg id "$1" --arg why "$2" --argjson total "$3" '
     {
-      sql: ("INSERT INTO batches (id, at, why, total) VALUES (?,?,?,0)"
+      sql: ("INSERT INTO entity_compute_batches (id, at, why, total) VALUES (?,?,?,0)"
             + " ON CONFLICT(id) DO NOTHING"),
       params: [$id, $id, $why]
     }'
@@ -62,11 +62,11 @@ queue_batches() {
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
-        sql: ("WITH queued AS (INSERT INTO queue (batch, build_id, ruler, mode, initiator)"
+        sql: ("WITH queued AS (INSERT INTO state_board_pending_work (batch, build_id, ruler, mode, initiator)"
               + " SELECT v.column1, v.column2, v.column3, v.column4, v.column5::text FROM (VALUES "
               + ([$chunk[] | "(?,?,?,?,?)"] | join(",")) + ") AS v WHERE " + $owed
               + " ON CONFLICT DO NOTHING RETURNING batch)"
-              + " UPDATE batches SET total=total+(SELECT count(*) FROM queued) WHERE id=?"),
+              + " UPDATE entity_compute_batches SET total=total+(SELECT count(*) FROM queued) WHERE id=?"),
         params: ([$chunk[] | $batch, .build_id, .ruler, .mode, (.initiator // null)]
           + (if $cutoff == "" then [] else [$cutoff] end) + [$batch])
       }
@@ -105,7 +105,7 @@ factory_ask() {
 backfill_error() {
   local reason="$1" round="$2" asked="$3" after="$4" body
   {
-    echo "::error::queue: backfill incomplete: $reason [HTTP $ASK_CODE]; round=$round asked=$asked after=$after"
+    echo "::error::state_board_pending_work: backfill incomplete: $reason [HTTP $ASK_CODE]; round=$round asked=$asked after=$after"
     body=$(jq -Rs --arg secret "${FACTORY_TOKEN:-}" '
       if $secret == "" then . else split($secret) | join("[redacted]") end
       | .[0:500]' < "$ASK_OUT") || body='"unreadable response"'
@@ -145,8 +145,8 @@ backfill() {
 # rescore's batch asks for scored rows on purpose. Prints the SQL predicate.
 owed_only() {
   case "$1" in
-    arrivals-*|backfill-*) echo "NOT EXISTS (SELECT 1 FROM scores s WHERE s.identity = $2 AND s.ruler = $3 AND s.mode = $4)" ;;
-    refresh-*) echo "NOT EXISTS (SELECT 1 FROM scores s WHERE s.identity = $2 AND s.ruler = $3 AND s.mode = $4 AND s.finished_at > ?::text)" ;;
+    arrivals-*|backfill-*) echo "NOT EXISTS (SELECT 1 FROM state_board_measurement_selection s WHERE s.identity = $2 AND s.ruler = $3 AND s.mode = $4)" ;;
+    refresh-*) echo "NOT EXISTS (SELECT 1 FROM state_board_measurement_selection s WHERE s.identity = $2 AND s.ruler = $3 AND s.mode = $4 AND s.finished_at > ?::text)" ;;
     *) echo "true" ;;
   esac
 }
@@ -178,7 +178,7 @@ send() {
       # a count.
       if [ "$failed" -eq 1 ]; then
         {
-          echo "::error::queue: the database refused a $what [HTTP $DB_CODE]"
+          echo "::error::state_board_pending_work: the database refused a $what [HTTP $DB_CODE]"
           head -c 500 "$DB_OUT" || true
           echo
         } >&2
@@ -231,7 +231,7 @@ ship() {
   done
   rm -f "$chunk"
   echo "queue: $n row(s) asked for in $statements statement(s), $failed refused"
-  [ "$refused" = "0" ] || echo "::warning::queue: $refused ask(s) of the fact factory refused [HTTP $ASK_CODE] — the backfill asks again"
+  [ "$refused" = "0" ] || echo "::warning::state_board_pending_work: $refused ask(s) of the fact factory refused [HTTP $ASK_CODE] — the backfill asks again"
   [ "$REQUIRE_ASKED" = 0 ] || [ "$refused" = 0 ] || return 1
   [ "$failed" = "0" ]
 }
@@ -360,8 +360,8 @@ OK
     && say ok "a pass asks for what it was handed" || say FAIL "$(cat out.txt)"
   # THE BATCH FIRST, or its rows are invisible to `fetch_queue.sh`'s join for as
   # long as the write takes.
-  a=$(grep -n "INTO batches" sent.log | head -1 | cut -d: -f1)
-  b=$(grep -n "INTO queue" sent.log | head -1 | cut -d: -f1)
+  a=$(grep -n "INTO entity_compute_batches" sent.log | head -1 | cut -d: -f1)
+  b=$(grep -n "INTO state_board_pending_work" sent.log | head -1 | cut -d: -f1)
   [ -n "$a" ] && [ -n "$b" ] && [ "$a" -lt "$b" ] \
     && say ok "...naming the batch before the rows in it" || say FAIL "the rows went first"
   grep -q '"rows":\[{"identity":"h1"' sent.log     && say ok "...and asks the fact factory for each row" || say FAIL "no ask was sent"
@@ -369,8 +369,8 @@ OK
   # one chunk written and unasked — which the scorer would read as nobody's.
   : > sent.log
   ASK_ROWS=2 ship arrivals "what arrived" missing.ndjson > out.txt 2>&1
-  order=$(grep -o 'INTO queue\|"rows":' sent.log | tr '\n' ' ')
-  [ "$order" = 'INTO queue "rows": INTO queue "rows": ' ] \
+  order=$(grep -o 'INTO state_board_pending_work\|"rows":' sent.log | tr '\n' ' ')
+  [ "$order" = 'INTO state_board_pending_work "rows": INTO state_board_pending_work "rows": ' ] \
     && say ok "...a chunk at a time, each asked before the next is written" || say FAIL "order: $order"
 
   local mode

@@ -33,13 +33,13 @@ SELECT_ROW='(?1::text IS NULL OR starts_with(x.batch, ?1::text)) AND (?2::text I
 pick_body() {
   jq -n -c --argjson sel "$1" --argjson kinds "$BOARD_KINDS" --argjson n "$SLICE" --arg row "$SELECT_ROW" '{
     sql: ("WITH named AS (SELECT d.producer, d.ref, d.question, d.payload::jsonb ->> '"'"'identity'"'"' AS build_id,"
-      + " d.payload::jsonb ->> '"'"'ruler'"'"' AS ruler, d.payload::jsonb ->> '"'"'mode'"'"' AS mode FROM demands d"
+      + " d.payload::jsonb ->> '"'"'ruler'"'"' AS ruler, d.payload::jsonb ->> '"'"'mode'"'"' AS mode FROM relation_task_consumers d"
       + " WHERE d.state = '"'"'live'"'"' AND d.producer IN (SELECT jsonb_array_elements_text((?3::text)::jsonb)))"
-      + " SELECT n.* FROM (SELECT q.id, q.waits, q.due_at FROM questions q WHERE q.state = '"'"'open'"'"'"
-      + " AND EXISTS (SELECT 1 FROM named n WHERE n.question = q.id AND EXISTS (SELECT 1 FROM queue x"
+      + " SELECT n.* FROM (SELECT q.id, q.waits, q.due_at FROM state_compute_work q WHERE q.state = '"'"'open'"'"'"
+      + " AND EXISTS (SELECT 1 FROM named n WHERE n.question = q.id AND EXISTS (SELECT 1 FROM state_board_pending_work x"
       + " WHERE x.build_id = n.build_id AND x.ruler = n.ruler AND x.mode = n.mode AND " + $row + "))"
       + " ORDER BY q.waits DESC, q.due_at, q.id LIMIT ?4::bigint) q JOIN named n ON n.question = q.id"
-      + " WHERE EXISTS (SELECT 1 FROM queue x WHERE x.build_id = n.build_id AND x.ruler = n.ruler AND x.mode = n.mode AND " + $row + ")"
+      + " WHERE EXISTS (SELECT 1 FROM state_board_pending_work x WHERE x.build_id = n.build_id AND x.ruler = n.ruler AND x.mode = n.mode AND " + $row + ")"
       + " ORDER BY q.waits DESC, q.due_at, q.id, n.producer, n.ref"),
     params: [$sel.batch, $sel.ruler, ($kinds | tojson), $n] }'
 }
@@ -47,7 +47,7 @@ pick_body() {
 # THE SELECTED QUEUE ROWS OF THOSE KEYS ($2: [{ build_id, ruler, mode }]) deleted.
 delete_body() {
   jq -n -c --argjson sel "$1" --argjson keys "$2" --arg row "$SELECT_ROW" '{
-    sql: ("DELETE FROM queue WHERE (batch, build_id, ruler, mode) IN (SELECT x.batch, x.build_id, x.ruler, x.mode FROM queue x"
+    sql: ("DELETE FROM state_board_pending_work WHERE (batch, build_id, ruler, mode) IN (SELECT x.batch, x.build_id, x.ruler, x.mode FROM state_board_pending_work x"
       + " JOIN jsonb_to_recordset((?3::text)::jsonb) AS k(build_id text, ruler text, mode text)"
       + " ON x.build_id = k.build_id AND x.ruler = k.ruler AND x.mode = k.mode"
       + " WHERE " + $row + " ORDER BY x.batch, x.build_id, x.ruler, x.mode FOR UPDATE OF x SKIP LOCKED)"),
@@ -57,7 +57,7 @@ delete_body() {
 # EVERY SELECTED QUEUE ROW LEFT, a slice of them deleted, whatever asks for it.
 delete_rest_body() {
   jq -n -c --argjson sel "$1" --argjson n "$SLICE" --arg row "$SELECT_ROW" '{
-    sql: ("DELETE FROM queue WHERE (batch, build_id, ruler, mode) IN (SELECT x.batch, x.build_id, x.ruler, x.mode FROM queue x"
+    sql: ("DELETE FROM state_board_pending_work WHERE (batch, build_id, ruler, mode) IN (SELECT x.batch, x.build_id, x.ruler, x.mode FROM state_board_pending_work x"
       + " WHERE " + $row + " ORDER BY x.batch, x.build_id, x.ruler, x.mode LIMIT ?3::bigint FOR UPDATE OF x SKIP LOCKED)"
       + " RETURNING build_id, ruler, mode"),
     params: [$sel.batch, $sel.ruler, $n] }'
@@ -66,7 +66,7 @@ delete_rest_body() {
 # THE LIVE BOARD DEMANDS OF THESE ROWS ($1: [{ build_id, ruler, mode }]).
 demands_of_body() {
   jq -n -c --argjson keys "$1" --argjson kinds "$BOARD_KINDS" '{
-    sql: ("SELECT d.producer, d.ref, d.question FROM demands d"
+    sql: ("SELECT d.producer, d.ref, d.question FROM relation_task_consumers d"
       + " JOIN jsonb_to_recordset((?1::text)::jsonb) AS k(build_id text, ruler text, mode text) ON d.ref = k.build_id || '"'"'|'"'"' || k.ruler || '"'"'|'"'"' || k.mode"
       + " WHERE d.state = '"'"'live'"'"' AND d.producer IN (SELECT jsonb_array_elements_text((?2::text)::jsonb))"),
     params: [($keys | tojson), ($kinds | tojson)] }'
@@ -75,7 +75,7 @@ demands_of_body() {
 # THOSE DEMANDS ($1: [{ producer, ref }]) WITHDRAWN where their row is owed no more.
 withdraw_body() {
   jq -n -c --argjson ds "$1" '{
-    sql: ("UPDATE demands SET state = '"'"'withdrawn'"'"' WHERE (producer, ref) IN (SELECT d.producer, d.ref FROM demands d"
+    sql: ("UPDATE relation_task_consumers SET state = '"'"'withdrawn'"'"' WHERE (producer, ref) IN (SELECT d.producer, d.ref FROM relation_task_consumers d"
       + " JOIN jsonb_to_recordset((?1::text)::jsonb) AS k(producer text, ref text) ON d.producer = k.producer AND d.ref = k.ref"
       + " WHERE d.state = '"'"'live'"'"' AND NOT board_owed(d.payload::jsonb ->> '"'"'identity'"'"', d.payload::jsonb ->> '"'"'ruler'"'"',"
       + " d.payload::jsonb ->> '"'"'mode'"'"') ORDER BY d.producer, d.ref FOR UPDATE OF d SKIP LOCKED)"),
@@ -85,7 +85,7 @@ withdraw_body() {
 # THOSE QUESTIONS ($1: [id]) RESTATED, in id order; the ids it reached.
 restate_body() {
   jq -n -c --argjson ids "$1" '{
-    sql: ("SELECT g.id, factory_restate(g.id) FROM (SELECT id FROM questions"
+    sql: ("SELECT g.id, factory_restate(g.id) FROM (SELECT id FROM state_compute_work"
       + " WHERE id IN (SELECT jsonb_array_elements_text((?1::text)::jsonb)) ORDER BY id FOR UPDATE SKIP LOCKED) g"),
     params: [($ids | tojson)] }'
 }
@@ -93,7 +93,7 @@ restate_body() {
 # HOW MANY QUEUE ROWS THE SELECTOR NAMES.
 count_body() {
   jq -n -c --argjson sel "$1" --arg row "$SELECT_ROW" '{
-    sql: ("SELECT count(*) AS n FROM queue x WHERE " + $row), params: [$sel.batch, $sel.ruler] }'
+    sql: ("SELECT count(*) AS n FROM state_board_pending_work x WHERE " + $row), params: [$sel.batch, $sel.ruler] }'
 }
 
 # ---- the run ---------------------------------------------------------------
@@ -218,10 +218,10 @@ self_test() {
   ( selector --all --ruler x ) >/dev/null 2>&1 && say FAIL "--all with a ruler was taken" || say ok "--all names every row and nothing else"
   ( selector --batch "" ) >/dev/null 2>&1 && say FAIL "an empty prefix was taken" || say ok "an empty prefix is refused"
 
-  selector --batch "refresh-'; DROP TABLE queue; --" --ruler sst
+  selector --batch "refresh-'; DROP TABLE state_board_pending_work; --" --ruler sst
   local body
   body=$(pick_body "$SEL")
-  printf '%s' "$body" | jq -e '.params[0] == "refresh-'"'"'; DROP TABLE queue; --" and .params[1] == "sst"' >/dev/null \
+  printf '%s' "$body" | jq -e '.params[0] == "refresh-'"'"'; DROP TABLE state_board_pending_work; --" and .params[1] == "sst"' >/dev/null \
     && ! printf '%s' "$body" | jq -r .sql | grep -q "DROP TABLE" \
     && say ok "the selector is bound, not interpolated" || say FAIL "$body"
   printf '%s' "$body" | jq -e '.sql | test("ORDER BY q.waits DESC, q.due_at, q.id")' >/dev/null \

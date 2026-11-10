@@ -124,7 +124,7 @@ const count = async (sql, ...a) => (await env.ACCOUNTS.get(sql, ...a)).n;
 /// A DELETION ASKED FOR AND ITS WEEK OVER: the daily run carries it out.
 const deleteNow = async (b, id) => {
   const r = await (await b.post("/api/account/delete", { confirm: "DELETE" })).json();
-  await env.ACCOUNTS.run("UPDATE accounts SET delete_after = ? WHERE id = ?", new Date(Date.now() - 1000).toISOString(), id);
+  await env.ACCOUNTS.run("UPDATE entity_accounts SET delete_after = ? WHERE id = ?", new Date(Date.now() - 1000).toISOString(), id);
   await purgeDeleted(env);
   return r;
 };
@@ -143,7 +143,7 @@ const adaId = me.id;
 
 back = await browser().oauth("google", ada);
 check("the same Google person signs into the same account",
-  back.searchParams.get("auth") === "signed_in" && await count("SELECT COUNT(*) n FROM accounts") === 1, back);
+  back.searchParams.get("auth") === "signed_in" && await count("SELECT COUNT(*) n FROM entity_accounts") === 1, back);
 
 back = await a.oauth("discord", { id: "d-ada", name: "ada#1" }, "link");
 me = await a.me();
@@ -156,28 +156,28 @@ const bobId = (await b.me()).id;
 back = await b.oauth("discord", { id: "d-ada", name: "ada#1" }, "link");
 check("an identity on another account is refused, never moved",
   back.searchParams.get("auth_error") === "taken"
-    && await count("SELECT COUNT(*) n FROM identities WHERE account = ? AND provider = 'discord'", adaId) === 1
-    && await count("SELECT COUNT(*) n FROM identities WHERE account = ?", bobId) === 1, back);
+    && await count("SELECT COUNT(*) n FROM relation_account_login_identities WHERE account = ? AND provider = 'discord'", adaId) === 1
+    && await count("SELECT COUNT(*) n FROM relation_account_login_identities WHERE account = ?", bobId) === 1, back);
 
 const sameMail = await browser().email("ada@example.com");
 check("an email matching a Google address is its own account — nothing merges by address",
-  sameMail.ok && sameMail.outcome === "created" && await count("SELECT COUNT(*) n FROM accounts") === 3, JSON.stringify(sameMail));
+  sameMail.ok && sameMail.outcome === "created" && await count("SELECT COUNT(*) n FROM entity_accounts") === 3, JSON.stringify(sameMail));
 
 back = await a.oauth("google", { id: "g-ada-2", name: "ada2@example.com" }, "link");
 me = await a.me();
 check("a filled slot is replaced, not doubled",
   back.searchParams.get("auth") === "replaced" && me.identities.length === 2
-    && await count("SELECT COUNT(*) n FROM identities WHERE subject = 'g-ada'") === 0, JSON.stringify(me));
+    && await count("SELECT COUNT(*) n FROM relation_account_login_identities WHERE subject = 'g-ada'") === 0, JSON.stringify(me));
 
 const wrong = await a.email("ada.other@example.com", "link", { wrong: true });
 check("a wrong code fills nothing", wrong.ok === false && wrong.reason === "wrong_code"
-  && await count("SELECT COUNT(*) n FROM identities WHERE provider = 'email' AND account = ?", adaId) === 0, JSON.stringify(wrong));
+  && await count("SELECT COUNT(*) n FROM relation_account_login_identities WHERE provider = 'email' AND account = ?", adaId) === 0, JSON.stringify(wrong));
 const tooSoon = await (await a.post("/api/auth/email/link", { email: "ada.other@example.com", password: PASSWORD })).json();
 check("a second code inside a minute is refused", tooSoon.reason === "too_soon", JSON.stringify(tooSoon));
-await env.ACCOUNTS.run("UPDATE email_codes SET sent_at = '2000-01-01T00:00:00.000Z'");
+await env.ACCOUNTS.run("UPDATE state_email_verification_challenges SET sent_at = '2000-01-01T00:00:00.000Z'");
 const linked = await a.email("Ada.Other@Example.com", "link");
 check("an address links once its code is right, lowercased", linked.ok && linked.outcome === "linked"
-  && await count("SELECT COUNT(*) n FROM identities WHERE subject = 'ada.other@example.com' AND account = ?", adaId) === 1,
+  && await count("SELECT COUNT(*) n FROM relation_account_login_identities WHERE subject = 'ada.other@example.com' AND account = ?", adaId) === 1,
   JSON.stringify(linked));
 check("the mail carries the code and no link", mail.length > 0 && /^\d{6} /.test(mail.at(-1).subject)
   && !/https?:\/\//.test(mail.at(-1).text), JSON.stringify(mail.at(-1)));
@@ -193,7 +193,7 @@ const nobody = await browser().login("nobody@example.com", PASSWORD);
 check("a wrong password and an unknown address answer alike",
   badPw.reason === "wrong_credentials" && nobody.reason === "wrong_credentials", JSON.stringify([badPw, nobody]));
 check("a password is never kept as itself", !(await env.ACCOUNTS.all(
-  "SELECT password_hash FROM identities")).some((r) => String(r.password_hash).includes(PASSWORD)));
+  "SELECT password_hash FROM relation_account_login_identities")).some((r) => String(r.password_hash).includes(PASSWORD)));
 me = await a.me();
 check("the account page says the address has a password, and never shows it",
   me.identities.find((i) => i.provider === "email").has_password === true && !JSON.stringify(me).includes("pbkdf2"),
@@ -216,7 +216,7 @@ check("five wrong passwords close the address to passwords for a while", locked.
 const noMail = await browser().reset("nobody@example.com", "fresh-password");
 check("a reset for an address nobody holds answers the same, and mails nothing",
   noMail.ok === true && noMail.mailed === false, JSON.stringify(noMail));
-await env.ACCOUNTS.run("UPDATE email_codes SET sent_at = '2000-01-01T00:00:00.000Z'");
+await env.ACCOUNTS.run("UPDATE state_email_verification_challenges SET sent_at = '2000-01-01T00:00:00.000Z'");
 const reset = await browser().reset("carol@example.com", "a-new-password");
 check("a reset sets the new password and lifts the lock",
   reset.ok && reset.outcome === "password_reset" && (await browser().login("carol@example.com", "a-new-password")).ok,
@@ -233,7 +233,7 @@ const changed = await (await keep.post("/api/account/password", { current: "a-ne
 check("...and with it, changes it, keeps this browser and signs the others out",
   changed.ok && (await keep.me())?.id === carolId && (await second.me()) === null, JSON.stringify(changed));
 
-await env.ACCOUNTS.run("UPDATE identities SET password_hash = NULL WHERE subject = 'carol@example.com'");
+await env.ACCOUNTS.run("UPDATE relation_account_login_identities SET password_hash = NULL WHERE subject = 'carol@example.com'");
 check("an address linked before passwords cannot sign in with one",
   (await browser().login("carol@example.com", "third-password")).reason === "wrong_credentials");
 const set = await (await keep.post("/api/account/password", { password: "fourth-password" })).json();
@@ -245,18 +245,18 @@ check("a slot empties while another is filled", r.ok && r.deleted === false, JSO
 r = await (await a.post("/api/account/unlink", { provider: "email" })).json();
 r = await (await a.post("/api/account/unlink", { provider: "google" })).json();
 check("the last slot is not emptied by accident", r.ok === false && r.reason === "last_slot"
-  && await count("SELECT COUNT(*) n FROM accounts WHERE id = ?", adaId) === 1, JSON.stringify(r));
+  && await count("SELECT COUNT(*) n FROM entity_accounts WHERE id = ?", adaId) === 1, JSON.stringify(r));
 r = await (await a.post("/api/account/unlink", { provider: "google", delete_account: true, confirm: "DELETE" })).json();
 check("...and emptied on purpose, it asks for the account's deletion and ends its sessions",
-  r.ok && r.deleted === false && r.delete_after && await count("SELECT COUNT(*) n FROM accounts WHERE id = ?", adaId) === 1
-    && await count("SELECT COUNT(*) n FROM sessions WHERE account = ?", adaId) === 0 && (await a.me()) === null, JSON.stringify(r));
-await env.ACCOUNTS.run("UPDATE accounts SET delete_after = ? WHERE id = ?", new Date(Date.now() - 1000).toISOString(), adaId);
+  r.ok && r.deleted === false && r.delete_after && await count("SELECT COUNT(*) n FROM entity_accounts WHERE id = ?", adaId) === 1
+    && await count("SELECT COUNT(*) n FROM state_login_sessions WHERE account = ?", adaId) === 0 && (await a.me()) === null, JSON.stringify(r));
+await env.ACCOUNTS.run("UPDATE entity_accounts SET delete_after = ? WHERE id = ?", new Date(Date.now() - 1000).toISOString(), adaId);
 await purgeDeleted(env);
-check("...carried out once its week is over", await count("SELECT COUNT(*) n FROM accounts WHERE id = ?", adaId) === 0);
+check("...carried out once its week is over", await count("SELECT COUNT(*) n FROM entity_accounts WHERE id = ?", adaId) === 0);
 
-await env.ACCOUNTS.run("DELETE FROM identities WHERE account = ?", bobId);
+await env.ACCOUNTS.run("DELETE FROM relation_account_login_identities WHERE account = ?", bobId);
 check("the schema holds the rule too: a last slot deleted by hand takes its account",
-  await count("SELECT COUNT(*) n FROM accounts WHERE id = ?", bobId) === 0);
+  await count("SELECT COUNT(*) n FROM entity_accounts WHERE id = ?", bobId) === 0);
 
 // ---- the doors a stranger tries ---------------------------------------------------------
 
@@ -336,7 +336,7 @@ check("a clan invite asked from another site is refused",
 check("an empty or over-long in-game name is refused",
   (await clan(payer, { name: "  " })).reason === "bad_ign" && (await clan(payer, { name: "x".repeat(41) })).reason === "bad_ign"
     && told().length === clanBefore.told);
-const payerName = (await env.ACCOUNTS.get("SELECT username FROM accounts WHERE id = ?", payerId)).username;
+const payerName = (await env.ACCOUNTS.get("SELECT username FROM entity_accounts WHERE id = ?", payerId)).username;
 const asked = await clan(payer, { name: " Te`nno ", lang: "zh" });
 const said = told().at(-1) && JSON.parse(told().at(-1).body).text;
 check("a clan invite reaches the owner with the name and the username",
@@ -371,32 +371,32 @@ check("the account export carries what the paid half holds", exported.billing?.c
 // ---- deleting: typed, freshly signed in, a week to take it back -------------------------
 
 r = await (await payer.post("/api/account/delete", {})).json();
-check("a deletion not typed out is refused", r.reason === "confirm_required" && await count("SELECT (delete_after IS NULL)::int n FROM accounts WHERE id = ?", payerId) === 1, JSON.stringify(r));
+check("a deletion not typed out is refused", r.reason === "confirm_required" && await count("SELECT (delete_after IS NULL)::int n FROM entity_accounts WHERE id = ?", payerId) === 1, JSON.stringify(r));
 const SESSION_MS = 90 * 24 * 3600 * 1000;
-await env.ACCOUNTS.run("UPDATE sessions SET expires_at = ? WHERE account = ?", new Date(Date.now() + SESSION_MS - 11 * 60_000).toISOString(), payerId);
+await env.ACCOUNTS.run("UPDATE state_login_sessions SET expires_at = ? WHERE account = ?", new Date(Date.now() + SESSION_MS - 11 * 60_000).toISOString(), payerId);
 r = await (await payer.post("/api/account/delete", { confirm: "DELETE" })).json();
 check("...and so is one from a sign-in older than ten minutes", r.reason === "reauth_required"
-  && await count("SELECT (delete_after IS NULL)::int n FROM accounts WHERE id = ?", payerId) === 1, JSON.stringify(r));
-await env.ACCOUNTS.run("UPDATE sessions SET expires_at = ? WHERE account = ?", new Date(Date.now() + SESSION_MS).toISOString(), payerId);
+  && await count("SELECT (delete_after IS NULL)::int n FROM entity_accounts WHERE id = ?", payerId) === 1, JSON.stringify(r));
+await env.ACCOUNTS.run("UPDATE state_login_sessions SET expires_at = ? WHERE account = ?", new Date(Date.now() + SESSION_MS).toISOString(), payerId);
 r = await (await payer.post("/api/account/delete", { confirm: "DELETE" })).json();
 const due = Date.parse(r.delete_after || "") - Date.now();
 check("a deletion asked for waits seven days, every session ended", r.ok && Math.abs(due - 7 * 86_400_000) < 60_000
-  && await count("SELECT COUNT(*) n FROM sessions WHERE account = ?", payerId) === 0 && (await payer.me()) === null, JSON.stringify(r));
+  && await count("SELECT COUNT(*) n FROM state_login_sessions WHERE account = ?", payerId) === 0 && (await payer.me()) === null, JSON.stringify(r));
 await purgeDeleted(env);
-check("...and nothing happens before then", await count("SELECT COUNT(*) n FROM accounts WHERE id = ?", payerId) === 1);
+check("...and nothing happens before then", await count("SELECT COUNT(*) n FROM entity_accounts WHERE id = ?", payerId) === 1);
 await payer.oauth("github", { id: "99", name: "payer" });
 const pending = await payer.me();
 check("signed in again, the account says when", pending && pending.delete_after === r.delete_after, JSON.stringify(pending));
 r = await (await payer.post("/api/account/delete/cancel", {})).json();
 check("...and the deletion is cancelled", r.ok && r.account.delete_after === null
-  && await count("SELECT (delete_after IS NULL)::int n FROM accounts WHERE id = ?", payerId) === 1, JSON.stringify(r));
+  && await count("SELECT (delete_after IS NULL)::int n FROM entity_accounts WHERE id = ?", payerId) === 1, JSON.stringify(r));
 endAnswer = false;
 await deleteNow(payer, payerId);
 check("an account whose subscription the paid half cannot end is kept past its week",
-  await count("SELECT COUNT(*) n FROM accounts WHERE id = ?", payerId) === 1);
+  await count("SELECT COUNT(*) n FROM entity_accounts WHERE id = ?", payerId) === 1);
 endAnswer = true;
 await purgeDeleted(env);
-check("once it is ended the account goes", await count("SELECT COUNT(*) n FROM accounts WHERE id = ?", payerId) === 0
+check("once it is ended the account goes", await count("SELECT COUNT(*) n FROM entity_accounts WHERE id = ?", payerId) === 0
   && seen.filter((x) => x.path === "/internal/end" && x.account === payerId).length === 2);
 delete env.CLOUD;
 const off = await (await cloudRoute(new Request(SITE + "/api/billing"), env, "/api/billing")).json();
@@ -405,7 +405,7 @@ check("with no paid half bound, billing reads as off", off.ok && off.configured 
 // ---- the name an account goes by -----------------------------------------------------------
 
 const setName = async (b, body) => (await b.post("/api/account/profile", body)).json();
-const ago = (id, hours) => env.ACCOUNTS.run("UPDATE accounts SET username_changed_at = ? WHERE id = ?", new Date(Date.now() - hours * 3600e3).toISOString(), id);
+const ago = (id, hours) => env.ACCOUNTS.run("UPDATE entity_accounts SET username_changed_at = ? WHERE id = ?", new Date(Date.now() - hours * 3600e3).toISOString(), id);
 const n1 = browser(), n2 = browser();
 await n1.oauth("discord", { id: "d-name-1", name: "one" });
 await n2.oauth("discord", { id: "d-name-2", name: "two" });
@@ -433,7 +433,7 @@ nr = await setName(n1, { username: "tenno_ada" });
 check("...but its old owner may take it back", nr.ok && nr.account.username === "tenno_ada", JSON.stringify(nr));
 await ago(one.id, 25);
 await setName(n1, { username: "ada_three" });
-await env.ACCOUNTS.run("UPDATE username_holds SET held_until = ?", new Date(Date.now() - 1000).toISOString());
+await env.ACCOUNTS.run("UPDATE state_username_reservations SET held_until = ?", new Date(Date.now() - 1000).toISOString());
 nr = await setName(n2, { username: "tenno_ada" });
 check("once the hold lapses the name is free", nr.ok && nr.account.username === "tenno_ada", JSON.stringify(nr));
 nr = await setName(n2, { display_name: "  阿达 · Ada  " });
@@ -456,7 +456,7 @@ for (const good of ["B站-星空笨鱼鱼", "dna980560", "SG91", "J.P.", "暗海
   nr = await setName(n2, { display_name: good });
   check(`...while a handle passes: ${good}`, nr.ok && nr.account.display_name === good, JSON.stringify(nr));
 }
-await env.ACCOUNTS.run("UPDATE accounts SET display_name = 'wf.jiuuvd.cn' WHERE username = ?", nr.account.username);
+await env.ACCOUNTS.run("UPDATE entity_accounts SET display_name = 'wf.jiuuvd.cn' WHERE username = ?", nr.account.username);
 const hidden = await n2.me();
 check("a name set before the rule that refuses it is kept, and the account is told others do not see it",
   hidden.display_name === "wf.jiuuvd.cn" && hidden.display_name_hidden === true, JSON.stringify(hidden));
@@ -464,7 +464,7 @@ check("...and is told why", hidden.display_name_why === "link", JSON.stringify(h
 // A NAME HELD BY HAND: hidden while it is still the name, with the owner's reason.
 nr = await setName(n2, { display_name: "暗海之星 来玩" });
 const heldId = (await n2.me()).id;
-await env.ACCOUNTS.run("INSERT INTO display_name_holds (account, display_name, reason, held_at) VALUES (?, ?, 'advert', ?)",
+await env.ACCOUNTS.run("INSERT INTO state_account_name_holds (account, display_name, reason, held_at) VALUES (?, ?, 'advert', ?)",
   heldId, "暗海之星 来玩", new Date().toISOString());
 const held = await n2.me();
 check("a name held by hand is hidden, and its owner told the reason",
@@ -476,7 +476,7 @@ check("...the account's export carries the hold", heldExport.display_name_hold?.
 nr = await setName(n2, { display_name: "暗海之星" });
 check("...and a new name is shown, and the hold is deleted with the name it was about",
   nr.ok && nr.account.display_name_hidden === false
-  && !(await env.ACCOUNTS.prepare("SELECT 1 FROM display_name_holds WHERE account = ?1").bind(heldId).first()), JSON.stringify(nr));
+  && !(await env.ACCOUNTS.prepare("SELECT 1 FROM state_account_name_holds WHERE account = ?1").bind(heldId).first()), JSON.stringify(nr));
 nr = await setName(n2, { display_name: "" });
 check("...and an empty one shows the username again", nr.ok && nr.account.display_name === null, JSON.stringify(nr));
 const gone = (await n2.me()).username;
@@ -522,8 +522,8 @@ const key = reg.credential && reg.credential.api_key;
 check("registering gives a key at once, before any claim", reg.status === 201 && /^wfa_/.test(key)
   && JSON.stringify(reg.scopes) === JSON.stringify(["read"]), JSON.stringify(reg));
 check("...and only its hash is kept",
-  await count("SELECT COUNT(*) n FROM agent_keys WHERE key_hash = ? OR key_hash = ?", key, key) === 0
-    && await count("SELECT COUNT(*) n FROM agent_keys WHERE id = ?", reg.agent_id) === 1);
+  await count("SELECT COUNT(*) n FROM entity_agent_keys WHERE key_hash = ? OR key_hash = ?", key, key) === 0
+    && await count("SELECT COUNT(*) n FROM entity_agent_keys WHERE id = ?", reg.agent_id) === 1);
 let who = await agentJson("GET", "/api/agent/whoami", { key });
 check("the key says who it is, acting for nobody yet", who.ok && who.agent.name === "Test Agent" && who.account === null,
   JSON.stringify(who));
@@ -534,14 +534,14 @@ const before = mail.length;
 let cl = await agentJson("POST", "/api/agent/auth/claim", { key, body: { email: "nobody-here@example.com" } });
 check("a claim to an address no account holds answers as any other",
   cl.ok && cl.sent === true && mail.length === before + 1 && /No WFSim account/.test(mail.at(-1).subject), JSON.stringify(cl));
-await env.ACCOUNTS.run("UPDATE agent_keys SET claim_sent_at = NULL WHERE id = ?", reg.agent_id);
+await env.ACCOUNTS.run("UPDATE entity_agent_keys SET claim_sent_at = NULL WHERE id = ?", reg.agent_id);
 check("...and no code completes it",
   (await agentJson("POST", "/api/agent/auth/claim/complete", { key, body: { code: "000000" } })).reason === "wrong_code");
 
 const owner = browser();
 await owner.email("agent-owner@example.com");
 const ownerMe = await owner.me();
-await env.ACCOUNTS.run("UPDATE agent_keys SET claim_sent_at = NULL, claim_attempts = 0 WHERE id = ?", reg.agent_id);
+await env.ACCOUNTS.run("UPDATE entity_agent_keys SET claim_sent_at = NULL, claim_attempts = 0 WHERE id = ?", reg.agent_id);
 cl = await agentJson("POST", "/api/agent/auth/claim", { key, body: { email: "Agent-Owner@example.com" } });
 const code = mail.at(-1).subject.slice(0, 6);
 check("a claim to an account's address mails that address a code", cl.ok && /^\d{6}$/.test(code)
@@ -591,20 +591,20 @@ const self = await agentJson("POST", "/api/agent/auth/revoke", { key: reg2.crede
 check("an agent may revoke its own key", self.ok && (await agentJson("GET", "/api/agent/whoami", { key: reg2.credential.api_key })).reason === "bad_key");
 
 const reg3 = await agentJson("POST", "/api/agent/auth", { body: { name: "Doomed" } });
-await env.ACCOUNTS.run("UPDATE agent_keys SET account = ? WHERE id = ?", ownerMe.id, reg3.agent_id);
+await env.ACCOUNTS.run("UPDATE entity_agent_keys SET account = ? WHERE id = ?", ownerMe.id, reg3.agent_id);
 // A DELETED ACCOUNT'S POINTS GO TO THE OFFICIAL POOL, and its devices earn for
 // themselves again from the next hour.
 env.LIBRARY = await testDb("library");
 const dev = "a".repeat(24);
-await env.ACCOUNTS.run("INSERT INTO device_spans (verifier, account, from_hour) VALUES (?, ?, '2026-10-01T00')", dev, ownerMe.id);
-await env.LIBRARY.run("INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, '2026-09-30T00', 7), (?, '2026-10-02T00', 500), (?, '2026-10-03T05', 250)", dev, dev, dev);
+await env.ACCOUNTS.run("INSERT INTO record_compute_device_ownership_intervals (verifier, account, from_hour) VALUES (?, ?, '2026-10-01T00')", dev, ownerMe.id);
+await env.LIBRARY.run("INSERT INTO record_hourly_compute_totals (verifier, hour, work) VALUES (?, '2026-09-30T00', 7), (?, '2026-10-02T00', 500), (?, '2026-10-03T05', 250)", dev, dev, dev);
 await deleteNow(owner, ownerMe.id);
-const pooled = await env.LIBRARY.all("SELECT source, SUM(work) w FROM points_pool GROUP BY source");
+const pooled = await env.LIBRARY.all("SELECT source, SUM(work) w FROM record_unowned_credit_transfers GROUP BY source");
 check("a deleted account's points go to the official pool, and only what its spans held",
   pooled.length === 1 && pooled[0].source === "deleted_account" && pooled[0].w === 750, JSON.stringify(pooled));
-check("...and the device it held is let go", await count("SELECT COUNT(*) n FROM device_spans WHERE verifier = ? AND until_hour IS NULL", dev) === 0);
+check("...and the device it held is let go", await count("SELECT COUNT(*) n FROM record_compute_device_ownership_intervals WHERE verifier = ? AND until_hour IS NULL", dev) === 0);
 delete env.LIBRARY;
-check("deleting the account deletes its agents' keys", await count("SELECT COUNT(*) n FROM agent_keys WHERE id = ?", reg3.agent_id) === 0);
+check("deleting the account deletes its agents' keys", await count("SELECT COUNT(*) n FROM entity_agent_keys WHERE id = ?", reg3.agent_id) === 0);
 
 // THE ALLOWANCE STATED IS THE ALLOWANCE ENFORCED.
 const mcpConf = readFileSync(resolve(ROOT, "mcp/wrangler.jsonc"), "utf8");

@@ -36,10 +36,10 @@ check("visitor reports keep calendar windows, browser sets and shells distinct",
   const dir = mkdtempSync(join(tmpdir(), "wfsim-usage-report-"));
   try {
     const pg = new PGlite(dir);
-    await pg.exec(readFileSync("worker/pg/library.sql", "utf8").match(/CREATE TABLE IF NOT EXISTS usage_points \([\s\S]*?\n\);/)[0]);
+    await pg.exec(readFileSync("worker/pg/library.sql", "utf8").match(/CREATE TABLE IF NOT EXISTS record_usage_events \([\s\S]*?\n\);/)[0]);
     for (const [day, shell, event] of [["2026-11-04", "web", "app.boot"], ["2026-11-05", "web", "simulator.run"],
       ["2026-11-05", "desktop", "app.boot"], ["2026-11-06", "web", "app.boot"]]) {
-      await pg.query(`INSERT INTO usage_points (at, day, visitor, event, subject, route, lang, shell, release, country, n)
+      await pg.query(`INSERT INTO record_usage_events (at, day, visitor, event, subject, route, lang, shell, release, country, n)
         VALUES ($1, $2, $3, $4, 'direct', 'home', 'en', $5, 'r1', 'XX', 100)`,
       [day + "T12:00:00Z", day, shell === "web" ? "a".repeat(32) : "b".repeat(32), event, shell]);
     }
@@ -101,7 +101,7 @@ check("no dev or check host is live", live.length > 0
 
 const CTX = { waitUntil: () => {} };
 const env = { LIBRARY: await testDb("library") };
-const points = () => env.LIBRARY.all("SELECT * FROM usage_points ORDER BY at");
+const points = () => env.LIBRARY.all("SELECT * FROM record_usage_events ORDER BY at");
 const cid = "0123456789abcdef0123456789abcdef";
 const good = { v: USAGE_SCHEMA, e: "simulator.run", cid, subject: "torid", route: "weapons",
   lang: "zh", shell: "web", release: "r20260927.1", n: 1000 };
@@ -233,7 +233,7 @@ check("…and its kept marker is the last row written", tail.event === "visitors
   const logged = { LIBRARY };
   r = await post(good, logged);
   r = await post({ ...good, e: "app.boot", subject: "direct" }, logged);
-  const rows = await LIBRARY.all("SELECT * FROM usage_points");
+  const rows = await LIBRARY.all("SELECT * FROM record_usage_events");
   check("every point lands in the log", r.status === 204 && rows.length === 2, JSON.stringify(rows));
   const other = "f".repeat(32);
   await post({ ...good, cid: other }, logged);
@@ -243,7 +243,7 @@ check("…and its kept marker is the last row written", tail.event === "visitors
   check("a forget that names no id is refused", r.status === 400);
   r = await forget({ cid });
   const j = await r.json();
-  const left = await LIBRARY.all("SELECT visitor FROM usage_points");
+  const left = await LIBRARY.all("SELECT visitor FROM record_usage_events");
   check("a browser's forget deletes its rows and says how many", r.status === 200 && j.deleted === 2, JSON.stringify(j));
   check("…and nobody else's", left.length === 1 && left[0].visitor === await usageVisitor(other));
   check("…answering any origin, so the desktop shell can ask", r.headers.get("access-control-allow-origin") === "*");
@@ -251,9 +251,9 @@ check("…and its kept marker is the last row written", tail.event === "visitors
   check("no database bound is a 503", r.status === 503);
 
   // THE FIXTURE, WRITTEN AS POINTS, and kept from the log.
-  await LIBRARY.exec("DELETE FROM usage_points");
+  await LIBRARY.exec("DELETE FROM record_usage_events");
   for (const x of fixture) {
-    await LIBRARY.run(`INSERT INTO usage_points (at, day, visitor, event, subject, route, lang, shell, release, country, n)
+    await LIBRARY.run(`INSERT INTO record_usage_events (at, day, visitor, event, subject, route, lang, shell, release, country, n)
       VALUES (?, ?, ?, ?, ?, 'home', 'zh', 'web', 'r1', ?, 0)`, `${x.day}T12:00:00.000Z`, x.day, x.cid, x.e, x.subject, x.country);
   }
   const now = Date.parse(`${D3}T00:30:00Z`);
@@ -261,23 +261,23 @@ check("…and its kept marker is the last row written", tail.event === "visitors
   check("a run keeps every finished day it lacks, and not today",
     JSON.stringify(kept) === JSON.stringify([D1, D2]), JSON.stringify(kept));
   check("…and never a day before the log's first whole one, though the log holds part of it",
-    !(await LIBRARY.get("SELECT 1 AS x FROM usage_days WHERE day = ?", D0)));
+    !(await LIBRARY.get("SELECT 1 AS x FROM record_daily_usage_summaries WHERE day = ?", D0)));
   const cellOf = async (event, subject, market) => (await LIBRARY.get(
-    "SELECT visitors, sampled FROM usage_days WHERE day = ? AND event = ? AND subject = ? AND market = ?",
+    "SELECT visitors, sampled FROM record_daily_usage_summaries WHERE day = ? AND event = ? AND subject = ? AND market = ?",
     D2, event, subject, market)) || {};
   check("…counting what the day's points count",
     (await cellOf("visitors", "all", "china")).visitors === 2 && (await cellOf("visitors", "returning", "china")).visitors === 1
     && (await cellOf("tested", "torid", "china")).visitors === 1);
   check("…and marked unsampled", (await cellOf("visitors", "all", "china")).sampled === 0);
   check("…and a second run keeps nothing again", (await rollupUsage(logged, now)).length === 0);
-  await LIBRARY.exec(`DELETE FROM usage_days WHERE day = '${D2}' AND event = 'visitors' AND subject = 'all'`);
+  await LIBRARY.exec(`DELETE FROM record_daily_usage_summaries WHERE day = '${D2}' AND event = 'visitors' AND subject = 'all'`);
   const redo = await rollupUsage(logged, now);
   check("…but a day without its marker is written again", JSON.stringify(redo) === JSON.stringify([D2]),
     JSON.stringify(redo));
 
   // THE LOG KEEPS ITS DAYS AND NO MORE.
   await rollupUsage(logged, now + (USAGE_LOG_DAYS + 1) * 86400000);
-  check("a point past the log's days is dropped", (await LIBRARY.all("SELECT 1 FROM usage_points")).length === 0);
+  check("a point past the log's days is dropped", (await LIBRARY.all("SELECT 1 FROM record_usage_events")).length === 0);
 }
 
 // THE DAILY CRON: a job that throws stops none of the others. The databases
@@ -285,7 +285,7 @@ check("…and its kept marker is the last row written", tail.event === "visitors
 // rollup fails at once, and the slow accounts' purges must be done by then.
 {
   const real = await testDb("accounts");
-  await real.run("INSERT INTO notices (kind, created_at, expires_at) VALUES ('everyone', ?, ?)",
+  await real.run("INSERT INTO entity_notices (kind, created_at, expires_at) VALUES ('everyone', ?, ?)",
     "2026-01-01T00:00:00.000Z", "2026-01-02T00:00:00.000Z");
   let pending = 0;
   const slow = (f) => async (...a) => { pending++; await new Promise((ok) => setTimeout(ok, 50)); try { return await f(...a); } finally { pending--; } };
@@ -301,7 +301,7 @@ check("…and its kept marker is the last row written", tail.event === "visitors
   await new Promise((ok) => setTimeout(ok, 200));
   console.error = quiet;
   check("a daily cron job that throws stops none of the others, and the cron outlasts them all",
-    left === 0 && (await real.all("SELECT 1 FROM notices")).length === 0, `${left} statement(s) still running`);
+    left === 0 && (await real.all("SELECT 1 FROM entity_notices")).length === 0, `${left} statement(s) still running`);
 }
 
 if (failures) {

@@ -2,6 +2,7 @@
 import importlib.util
 import io
 import os
+import re
 from pathlib import Path
 import tarfile
 from unittest.mock import patch
@@ -26,8 +27,8 @@ with patch.dict(os.environ, {"R2_ACCESS_KEY_ID": "only-one-value"}, clear=True):
         pass
 sql = module.index_sql()
 assert sql.count("CREATE INDEX CONCURRENTLY IF NOT EXISTS") == 3
-assert "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS queue_calculation ON queue (build_id, ruler, mode);" in sql
-assert "INCLUDE (measured_by)" in sql and "WHERE odd = 1" in sql
+assert "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS queue_calculation ON state_board_pending_work (build_id, ruler, mode);" in sql
+assert "INCLUDE (measured_by)" in sql and re.search(r"WHERE\s+odd\s*=\s*1", sql)
 assert "BEGIN" not in sql and "DROP" not in sql
 with tarfile.open(fileobj=io.BytesIO(module.bundle("c0ffee")), mode="r:gz") as archive:
     names = archive.getnames()

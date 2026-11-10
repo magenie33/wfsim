@@ -31,25 +31,25 @@ for (const [name, value] of [["pack_ms", DIALS.pack_ms.max + 1], ["packs_held", 
   const r = await setDial(env, name, value, "check", T0);
   check(`${name} = ${value} is refused`, r.ok === false, JSON.stringify(r));
 }
-check("...and no row or log line was written", !(await L.get("SELECT 1 FROM factory_dials")) && !(await L.get("SELECT 1 FROM factory_dial_log")));
-await L.run("INSERT INTO factory_dials (name, value, set_by, set_at) VALUES ('pack_max', 100000, 'hand', 'x')");
+check("...and no row or log line was written", !(await L.get("SELECT 1 FROM state_factory_parameters")) && !(await L.get("SELECT 1 FROM record_factory_parameter_changes")));
+await L.run("INSERT INTO state_factory_parameters (name, value, set_by, set_at) VALUES ('pack_max', 100000, 'hand', 'x')");
 forgetDials();
 check("a row put out of bounds by hand is not used: the default is", (await dialsOf(env, T0)).pack_max === DIAL_DEFAULTS.pack_max);
-await L.run("DELETE FROM factory_dials");
+await L.run("DELETE FROM state_factory_parameters");
 
 console.log("\na change is in force within DIALS_FRESH_MS, and logged");
 forgetDials();
 await dialsOf(env, T0);
-await L.run("INSERT INTO factory_dials (name, value, set_by, set_at) VALUES ('pack_ms', 600000, 'hand', 'x')");
+await L.run("INSERT INTO state_factory_parameters (name, value, set_by, set_at) VALUES ('pack_ms', 600000, 'hand', 'x')");
 check("an isolate keeps what it read until DIALS_FRESH_MS has passed", (await dialsOf(env, T0 + DIALS_FRESH_MS - 1)).pack_ms === DIAL_DEFAULTS.pack_ms);
 check("...and reads the table after it", (await dialsOf(env, T0 + DIALS_FRESH_MS)).pack_ms === 600_000);
-await L.run("DELETE FROM factory_dials");
+await L.run("DELETE FROM state_factory_parameters");
 forgetDials();
 const set1 = await setDial(env, "pack_ms", 120_000, "owner", T0);
 const set2 = await setDial(env, "pack_ms", 300_000, "owner", T0 + 1000);
 check("a set in bounds is taken", set1.ok && set2.ok);
 check("...and in force at once in the isolate that set it", (await dialsOf(env, T0 + 1000)).pack_ms === 300_000);
-const log = await L.all("SELECT value_before, value_after, set_by FROM factory_dial_log WHERE name = 'pack_ms' ORDER BY id");
+const log = await L.all("SELECT value_before, value_after, set_by FROM record_factory_parameter_changes WHERE name = 'pack_ms' ORDER BY id");
 check("every change is logged with the value before and after, and who set it",
   log.length === 2 && log[0].value_before === null && log[0].value_after === 120_000 && log[1].value_before === 120_000
   && log[1].value_after === 300_000 && log.every((x) => x.set_by === "owner"), JSON.stringify(log));

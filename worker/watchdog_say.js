@@ -34,7 +34,7 @@ function describe(f, now) {
     return ["act", "机器在线却领不到活",
       `近 ${mins} 分钟 ${f.asking} 台机器来要活，只交回 ${f.answered} 个答案，正被领着的题 ${f.held} 个；服务器上还有 ${f.waiting} 行没派出去。` +
       `
-异常：派单卡住了。叫 agent 查 factory_take 和 board_sync 的耗时，以及 questions 表的统计是否过期。`];
+异常：派单卡住了。叫 agent 查 factory_take 和 board_sync 的耗时，以及 state_compute_scheduling 表的统计是否过期。`];
   }
   if (f.kind === "refused_rows") {
     const ids = f.sample.map((s) => s.question).join("，");

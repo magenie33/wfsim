@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { computationSchemaSql } from './computation_schema.mjs';
 import { testDb } from './pg/test_db.mjs';
+import { replaceComputeResult } from './pg/fixtures.mjs';
 import { factory } from '../worker/tasks.js';
 import { VERBS } from '../worker/factory.js';
 import { BOARD_PRODUCERS } from '../worker/board_tasks.js';
@@ -24,28 +25,28 @@ let passed = 0;
 const check = async (name, fn) => { await fn(); passed++; console.log('  ok  ' + name); };
 const pipelineSchema = (await library.get('SELECT current_schema() AS name')).name;
 await library.exec(`CREATE ROLE wfsim_pipeline; GRANT USAGE ON SCHEMA ${pipelineSchema} TO wfsim_pipeline;
-  GRANT SELECT, INSERT, UPDATE, DELETE ON scores TO wfsim_pipeline;`);
+  GRANT SELECT, INSERT, UPDATE, DELETE ON state_board_measurement_selection TO wfsim_pipeline;`);
 await check('the upgrade applies twice to a pre-attribution database and only shortens optimization details', async () => {
-  await library.exec('DROP TABLE score_witnesses,computation_witnesses,computation_records; DROP TRIGGER scores_replace_witnesses ON scores; DROP FUNCTION score_witnesses_replaced(); ALTER TABLE questions DROP COLUMN witnesses; ALTER TABLE verifiers DROP COLUMN signatures; ALTER TABLE verifier_hours DROP COLUMN signatures');
-  await accounts.exec('ALTER TABLE accounts DROP COLUMN profile_id');
-  for (const kind of ['simulation', 'optimization']) await library.run(`INSERT INTO user_calculations
+  await library.exec('DROP TABLE relation_measurement_witnesses,relation_computation_witnesses,state_public_computation_summaries; DROP TRIGGER scores_replace_witnesses ON state_board_measurement_selection; DROP FUNCTION score_witnesses_replaced(); ALTER TABLE entity_compute_devices DROP COLUMN signatures; ALTER TABLE record_hourly_compute_totals DROP COLUMN signatures');
+  await accounts.exec('ALTER TABLE entity_accounts DROP COLUMN profile_id');
+  for (const kind of ['simulation', 'optimization']) await library.run(`INSERT INTO entity_user_calculation_requests
     (id,task,owner,kind,engine,question,state,created_at,completed_at,expires_at) VALUES (?,?,?,?,'engine','question','succeeded','2026-01-01T00:00:00.000Z','2026-01-02T00:00:00.000Z','2026-02-01T00:00:00.000Z')`, kind, kind, 'owner', kind);
   for (let i = 0; i < 2; i++) { await library.exec(computationSchemaSql()); await accounts.exec(computationSchemaSql('accounts')); }
-  assert.equal((await library.get("SELECT expires_at FROM user_calculations WHERE kind='optimization'")).expires_at, '2026-01-16T00:00:00.000Z');
-  assert.equal((await library.get("SELECT expires_at FROM user_calculations WHERE kind='simulation'")).expires_at, '2026-02-01T00:00:00.000Z');
-  await library.run('DELETE FROM user_calculations');
+  assert.equal((await library.get("SELECT expires_at FROM entity_user_calculation_requests WHERE kind='optimization'")).expires_at, '2026-01-16T00:00:00.000Z');
+  assert.equal((await library.get("SELECT expires_at FROM entity_user_calculation_requests WHERE kind='simulation'")).expires_at, '2026-02-01T00:00:00.000Z');
+  await library.run('DELETE FROM entity_user_calculation_requests');
 });
 await check('the pipeline replaces a score and clears its old witnesses without reading private witness columns', async () => {
-  await library.exec(`INSERT INTO scores VALUES ('pipeline-check','ruler','base','engine',1,'kpm',1,'old','old',NULL);
-    INSERT INTO score_witnesses VALUES ('pipeline-check','ruler','base','old','engine','private-owner','private-device',0,'old','old',1);
+  await library.exec(`INSERT INTO state_board_measurement_selection VALUES ('pipeline-check','ruler','base','engine',1,'kpm',1,'old','old',NULL);
+    INSERT INTO relation_measurement_witnesses VALUES ('pipeline-check','ruler','base','old','engine','private-owner','private-device',0,'old','old',1);
     SET ROLE wfsim_pipeline;`);
   try {
-    await library.run("UPDATE scores SET finished_at='new' WHERE identity='pipeline-check'");
-    const privateColumn = await library.get("SELECT has_column_privilege(current_user,'score_witnesses','owner','SELECT') AS allowed");
+    await library.run("UPDATE state_board_measurement_selection SET finished_at='new' WHERE identity='pipeline-check'");
+    const privateColumn = await library.get("SELECT has_column_privilege(current_user,'relation_measurement_witnesses','owner','SELECT') AS allowed");
     assert.equal(privateColumn.allowed, false);
   } finally { await library.exec('RESET ROLE'); }
-  assert.equal((await library.get("SELECT count(*) AS n FROM score_witnesses WHERE identity='pipeline-check'")).n, 0);
-  await library.run("DELETE FROM scores WHERE identity='pipeline-check'");
+  assert.equal((await library.get("SELECT count(*) AS n FROM relation_measurement_witnesses WHERE identity='pipeline-check'")).n, 0);
+  await library.run("DELETE FROM state_board_measurement_selection WHERE identity='pipeline-check'");
 });
 const call = async (path, cookie = '', body) => {
   const request = new Request('https://wfsim.test' + path, { method: body ? 'POST' : 'GET', headers: { cookie, origin: 'https://wfsim.test', ...(body ? { 'content-type': 'application/json' } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}) });
@@ -70,18 +71,18 @@ const accept = async (verb, request, who, result) => {
   return q;
 };
 for (const user of users) {
-  await library.run("INSERT INTO verifiers (id,seen) VALUES (?,'2026-11-08')", devices[user]);
-  await accounts.run("INSERT INTO accounts (id,created_at,username,display_name) VALUES (?,'2026-01-01',?,?)", user, user, user.toUpperCase());
-  await accounts.run("INSERT INTO sessions (token_hash,account,expires_at) VALUES (?,?,'2999-01-01')", await sha256(user), user);
-  await accounts.run("INSERT INTO devices (verifier,account,claimed_at) VALUES (?,?,'2026-01-01')", devices[user], user);
-  await accounts.run("INSERT INTO device_spans (verifier,account,from_hour) VALUES (?,?,'')", devices[user], user);
+  await library.run("INSERT INTO entity_compute_devices (id,seen) VALUES (?,'2026-11-08')", devices[user]);
+  await accounts.run("INSERT INTO entity_accounts (id,created_at,username,display_name) VALUES (?,'2026-01-01',?,?)", user, user, user.toUpperCase());
+  await accounts.run("INSERT INTO state_login_sessions (token_hash,account,expires_at) VALUES (?,?,'2999-01-01')", await sha256(user), user);
+  await accounts.run("INSERT INTO relation_account_compute_devices (verifier,account,claimed_at) VALUES (?,?,'2026-01-01')", devices[user], user);
+  await accounts.run("INSERT INTO record_compute_device_ownership_intervals (verifier,account,from_hour) VALUES (?,?,'')", devices[user], user);
 }
 const build = { weapon: 'torid', mods: ['serration'], evolutions: [], arcanes: [], valence: '' };
-await library.run("INSERT INTO builds (id,at,record) VALUES (?,'2026-01-01',?)", identity, JSON.stringify(build));
-await library.run("INSERT INTO batches (id,at,total) VALUES ('batch','2026-01-01',1)");
-await library.run("INSERT INTO queue (batch,build_id,ruler,mode) VALUES ('batch',?,'standard_single_target','base')", identity);
+await library.run("INSERT INTO entity_weapon_builds (id,at,record) VALUES (?,'2026-01-01',?)", identity, JSON.stringify(build));
+await library.run("INSERT INTO entity_compute_batches (id,at,total) VALUES ('batch','2026-01-01',1)");
+await library.run("INSERT INTO state_board_pending_work (batch,build_id,ruler,mode) VALUES ('batch',?,'standard_single_target','base')", identity);
 await accept('simulate', { record: build, ruler: 'standard_single_target', mode: 'base' }, ['ann', 'bob'], { score: 42, metric: 'kpm' });
-const measured = await library.get('SELECT * FROM scores WHERE identity=?', identity);
+const measured = await library.get('SELECT * FROM state_board_measurement_selection WHERE identity=?', identity);
 const ask = [{ identity, ruler: measured.ruler, mode: measured.mode, score: measured.score, measured_at: measured.finished_at, measured_by: engine }];
 await check('public record lookups reject malformed rows and excessive batches', async () => {
   assert.equal((await call('/api/computations/names', '', { rows: [null] })).status, 400);
@@ -97,7 +98,7 @@ await check('anonymous work is credited and retained under the same stable accou
   assert.ok((await computationNames(env, ask))[0].witnesses.every(w => w.name === null && w.profile === null));
 });
 await choose('ann', true); await choose('bob', true);
-if (process.argv.includes('--negative-control')) await library.run('UPDATE score_witnesses SET position=-position');
+if (process.argv.includes('--negative-control')) await library.run('UPDATE relation_measurement_witnesses SET position=-position');
 await check('public names follow actual completion order and expose no private identifiers', async () => {
   const result = (await computationNames(env, ask))[0];
   assert.deepEqual(result.witnesses.map(w => w.name), ['ANN', 'BOB']);
@@ -112,7 +113,7 @@ await check('identity and summary avoid record scans while retaining current pri
   assert.equal(identityValue.profile.name, 'ANN');
   assert.ok(!('points' in identityValue.profile) && !('candidates' in identityValue));
   const noRecords = { ...env, LIBRARY: { prepare(sql) {
-    assert.ok(!/score_witnesses|computation_records/.test(sql), 'summary must not query record tables');
+    assert.ok(!/relation_measurement_witnesses|state_public_computation_summaries/.test(sql), 'summary must not query record tables');
     return library.prepare(sql);
   } } };
   const summaryResponse = await contributorProfilesRoute(request('summary'), noRecords, '/api/contributors/profile/' + publicId);
@@ -137,7 +138,7 @@ await check('record-only pages avoid contribution totals and enforce bounded pag
   for (const limit of ['0', '51', '1.5', 'bad']) assert.equal((await call(path + '?limit=' + limit)).status, 400);
 });
 await check('renaming changes existing signatures while preserving the profile address', async () => {
-  await accounts.run("UPDATE accounts SET display_name='New Ann' WHERE id='ann'");
+  await accounts.run("UPDATE entity_accounts SET display_name='New Ann' WHERE id='ann'");
   assert.equal((await computationNames(env, ask))[0].witnesses[0].name, 'New Ann');
   assert.equal((await mine('ann')).profile.id, publicId);
   assert.equal((await call('/api/contributors/profile/' + publicId)).profile.name, 'New Ann');
@@ -151,9 +152,9 @@ await check('visibility changes never remove lifetime credit', async () => {
 });
 await check('a later calculation replaces the displayed cohort without removing past signature credit', async () => {
   await choose('cy', true); await choose('dan', true);
-  await library.run("INSERT INTO queue (batch,build_id,ruler,mode) VALUES ('batch',?,'standard_single_target','base')", identity);
+  await library.run("INSERT INTO state_board_pending_work (batch,build_id,ruler,mode) VALUES ('batch',?,'standard_single_target','base')", identity);
   await accept('simulate', { record: build, ruler: 'standard_single_target', mode: 'base', refresh: true }, ['cy', 'dan'], { score: 43, metric: 'kpm' });
-  ask[0].measured_at = (await library.get('SELECT finished_at FROM scores WHERE identity=?', identity)).finished_at;
+  ask[0].measured_at = (await library.get('SELECT finished_at FROM state_board_measurement_selection WHERE identity=?', identity)).finished_at;
   ask[0].score = 43;
   assert.deepEqual((await computationNames(env, ask))[0].witnesses.map(w => w.name), ['CY', 'DAN']);
   assert.equal((await mine('ann')).candidates.length, 0);
@@ -161,14 +162,14 @@ await check('a later calculation replaces the displayed cohort without removing 
   assert.equal((await mine('cy')).candidates.length, 1);
 });
 await check('a changed score within the same published minute cannot inherit another result’s names', async () => {
-  await library.run('UPDATE scores SET score=44 WHERE identity=?', identity);
+  await library.run('UPDATE state_board_measurement_selection SET score=44 WHERE identity=?', identity);
   assert.equal((await computationNames(env, ask)).length, 0);
-  await library.run('UPDATE scores SET score=43 WHERE identity=?', identity);
+  await library.run('UPDATE state_board_measurement_selection SET score=43 WHERE identity=?', identity);
 });
 await check('a newer unrecorded official measurement never inherits old volunteer names', async () => {
-  await library.run('UPDATE scores SET finished_at=?,measured_by=? WHERE identity=?', new Date(Date.now() + 60000).toISOString(), engine, identity);
+  await library.run('UPDATE state_board_measurement_selection SET finished_at=?,measured_by=? WHERE identity=?', new Date(Date.now() + 60000).toISOString(), engine, identity);
   assert.equal((await computationNames(env, ask)).length, 0);
-  const newer = await library.get('SELECT * FROM scores WHERE identity=?', identity);
+  const newer = await library.get('SELECT * FROM state_board_measurement_selection WHERE identity=?', identity);
   const got = await computationNames(env, [{ ...ask[0], measured_at: newer.finished_at }]);
   assert.deepEqual(got[0].witnesses, [{ official: true, name: null }]);
   assert.equal((await mine('ann')).candidates.length, 0);
@@ -184,28 +185,28 @@ await check('optimization records preserve attribution without exposing private 
   assert.equal(own.candidates[0].question, optimization);
 });
 await check('settling an unchanged proof again does not renew its fourteen day detail window', async () => {
-  const original = await library.get('SELECT * FROM computation_records WHERE question=?', optimization);
+  const original = await library.get('SELECT * FROM state_public_computation_summaries WHERE question=?', optimization);
   const later = new Date(Date.now() + 60000).toISOString();
-  await library.run('UPDATE questions SET fact_at=? WHERE id=?', later, optimization);
-  const q = await library.get('SELECT * FROM questions WHERE id=?', optimization);
+  await replaceComputeResult(library,optimization,{fact_at:later});
+  const q = await library.get('SELECT * FROM state_compute_work WHERE id=?', optimization);
   await library.batch(computationWrites(library, q, JSON.parse(q.witnesses), engine, later));
-  const kept = await library.get('SELECT * FROM computation_records WHERE question=?', optimization);
+  const kept = await library.get('SELECT * FROM state_public_computation_summaries WHERE question=?', optimization);
   assert.equal(kept.completed_at, original.completed_at);
   assert.equal(kept.expires_at, original.expires_at);
 });
 await check('optimization display expires at fourteen days before physical cleanup', async () => {
-  const row = await library.get('SELECT * FROM computation_records WHERE question=?', optimization);
+  const row = await library.get('SELECT * FROM state_public_computation_summaries WHERE question=?', optimization);
   assert.equal(Date.parse(row.expires_at) - Date.parse(row.completed_at), COMPUTATION_KEEP_MS);
-  await library.run('UPDATE computation_records SET expires_at=? WHERE question=?', new Date(Date.now() - 1).toISOString(), optimization);
+  await library.run('UPDATE state_public_computation_summaries SET expires_at=? WHERE question=?', new Date(Date.now() - 1).toISOString(), optimization);
   assert.equal((await call('/api/computations/' + optimization)).status, 410);
   assert.equal((await call('/api/account/contribution-profile?kind=optimization', 'wfsim_session=ann')).candidates.length, 0);
 });
 await check('detail cleanup and current-board removal retain permanent aggregate signatures', async () => {
   await purgeComputationRecords(env);
-  assert.equal(await library.get('SELECT * FROM computation_records WHERE question=?', optimization), null);
-  assert.equal((await library.get('SELECT count(*) AS n FROM computation_witnesses WHERE question=?', optimization)).n, 0);
-  assert.equal((await library.get('SELECT witnesses FROM questions WHERE id=?', optimization)).witnesses, '[]');
-  await library.run('DELETE FROM scores WHERE identity=?', identity);
+  assert.equal(await library.get('SELECT * FROM state_public_computation_summaries WHERE question=?', optimization), null);
+  assert.equal((await library.get('SELECT count(*) AS n FROM relation_computation_witnesses WHERE question=?', optimization)).n, 0);
+  assert.equal((await library.get('SELECT witnesses FROM state_compute_work WHERE id=?', optimization)).witnesses, '[]');
+  await library.run('DELETE FROM state_board_measurement_selection WHERE identity=?', identity);
   assert.equal((await mine('ann')).profile.signatures, 2);
   assert.equal((await mine('ann')).candidates.length, 0);
 });
@@ -218,8 +219,8 @@ await check('official and volunteer witnesses settle under the deployed daemon p
   const witness = { device: devices.ann, owner: 'ann', net: 'ann', siblings: [devices.ann] }, leased = await f.next(env, witness, engine);
   await f.answer(env, witness, { lease: leased.lease, engine, work: 100, result: { build: { mods: [] }, score: 7 } });
   await f.answerOfficial(env, { device: 'official:reference', owner: 'official:reference', official: true }, { question: q, engine, work: 100, result: { build: { mods: [] }, score: 7 } });
-  const settled = await library.get('SELECT * FROM questions WHERE id=?', q);
-  await library.run('DELETE FROM computation_records WHERE question=?', q);
+  const settled = await library.get('SELECT * FROM state_compute_work WHERE id=?', q);
+  await library.run('DELETE FROM state_public_computation_summaries WHERE question=?', q);
   await library.exec('SET ROLE wfsim_factoryd');
   try {
     await library.batch(computationWrites(library, settled, JSON.parse(settled.witnesses), engine, settled.fact_at));
@@ -232,8 +233,8 @@ await check('official and volunteer witnesses settle under the deployed daemon p
 });
 await check('first claims and device transfers use the same credit hour as aggregate signatures', async () => {
   const device = '9'.repeat(24);
-  await accounts.run("INSERT INTO device_spans (verifier,account,from_hour,until_hour) VALUES (?,'ann','','2026-10-01T02')", device);
-  await accounts.run("INSERT INTO device_spans (verifier,account,from_hour,until_hour) VALUES (?,'cy','2026-10-01T02','2026-10-01T03')", device);
+  await accounts.run("INSERT INTO record_compute_device_ownership_intervals (verifier,account,from_hour,until_hour) VALUES (?,'ann','','2026-10-01T02')", device);
+  await accounts.run("INSERT INTO record_compute_device_ownership_intervals (verifier,account,from_hour,until_hour) VALUES (?,'cy','2026-10-01T02','2026-10-01T03')", device);
   const rows = ['01', '02', '03'].map(hour => ({ owner: device, device, official: 0,
     credited_at: '2026-10-01T' + hour + ':00:00.000Z', completed_at: '2026-10-01T01:00:00.000Z' }));
   assert.deepEqual((await witnessNames(env, rows)).map(w => w.name), ['New Ann', 'CY', null]);
@@ -241,8 +242,8 @@ await check('first claims and device transfers use the same credit hour as aggre
   const snapshot = acceptedWitnesses([answer], rows[0].credited_at);
   assert.equal(acceptedWitnesses([answer], rows[1].credited_at, snapshot)[0].credited_at, rows[0].credited_at);
   const question = '9'.repeat(32), now = new Date().toISOString();
-  await library.run("INSERT INTO computation_records (question,kind,engine,weapon,completed_at,expires_at) VALUES (?,'optimization',?,'torid',?,'2999-01-01')", question, engine, now);
-  await library.run("INSERT INTO computation_witnesses (question,owner,device,official,completed_at,credited_at,position) VALUES (?,?,?,0,?,?,0)", question, device, device, rows[1].completed_at, rows[1].credited_at);
+  await library.run("INSERT INTO state_public_computation_summaries (question,kind,engine,weapon,completed_at,expires_at) VALUES (?,'optimization',?,'torid',?,'2999-01-01')", question, engine, now);
+  await library.run("INSERT INTO relation_computation_witnesses (question,owner,device,official,completed_at,credited_at,position) VALUES (?,?,?,0,?,?,0)", question, device, device, rows[1].completed_at, rows[1].credited_at);
   assert.ok(!(await call('/api/account/contribution-profile?kind=optimization', 'wfsim_session=ann')).candidates.some(r => r.question === question));
   assert.ok((await call('/api/account/contribution-profile?kind=optimization', 'wfsim_session=cy')).candidates.some(r => r.question === question));
 });
@@ -250,8 +251,8 @@ await check('exclusive cursors paginate a contributor without repeating or skipp
   const at = new Date().toISOString();
   for (let i = 0; i < 51; i++) {
     const q = (1000 + i).toString(16).padStart(32, '0');
-    await library.run("INSERT INTO computation_records (question,kind,engine,weapon,completed_at,expires_at) VALUES (?,'optimization',?,'test_weapon',?,'2999-01-01')", q, engine, at);
-    await library.run("INSERT INTO computation_witnesses (question,owner,device,official,completed_at,credited_at,position) VALUES (?,'ann',?,0,?,?,0)", q, devices.ann, at, at);
+    await library.run("INSERT INTO state_public_computation_summaries (question,kind,engine,weapon,completed_at,expires_at) VALUES (?,'optimization',?,'test_weapon',?,'2999-01-01')", q, engine, at);
+    await library.run("INSERT INTO relation_computation_witnesses (question,owner,device,official,completed_at,credited_at,position) VALUES (?,'ann',?,0,?,?,0)", q, devices.ann, at, at);
   }
   const first = await call('/api/account/contribution-profile?kind=optimization&weapon=test_weapon', 'wfsim_session=ann');
   assert.equal(first.candidates.length, 50);
@@ -287,15 +288,15 @@ await check('unregistered work has no profile, first claims recover it and delet
     assert.equal(response.status, 200);
   };
   try {
-    await library.run('INSERT INTO verifiers (id,seen) VALUES (?,?)', guest, new Date().toISOString());
-    const question = await complete(1, guest), accountsBefore = (await accounts.get('SELECT count(*) AS n FROM accounts')).n;
+    await library.run('INSERT INTO entity_compute_devices (id,seen) VALUES (?,?)', guest, new Date().toISOString());
+    const question = await complete(1, guest), accountsBefore = (await accounts.get('SELECT count(*) AS n FROM entity_accounts')).n;
     assert.equal((await call('/api/account/contribution-profile')).status, 401);
-    assert.equal((await accounts.get('SELECT count(*) AS n FROM accounts')).n, accountsBefore);
-    assert.equal((await library.get('SELECT signatures FROM verifiers WHERE id=?', guest)).signatures, 1);
+    assert.equal((await accounts.get('SELECT count(*) AS n FROM entity_accounts')).n, accountsBefore);
+    assert.equal((await library.get('SELECT signatures FROM entity_compute_devices WHERE id=?', guest)).signatures, 1);
     assert.equal((await call('/api/computations/' + question)).record.witnesses[0].profile, null);
     for (const person of ['claimant', 'later_holder']) {
-      await accounts.run('INSERT INTO accounts (id,created_at,username,display_name) VALUES (?,?,?,?)', person, new Date().toISOString(), person, person.toUpperCase());
-      await accounts.run("INSERT INTO sessions (token_hash,account,expires_at) VALUES (?,?,'2999-01-01')", await sha256(person), person);
+      await accounts.run('INSERT INTO entity_accounts (id,created_at,username,display_name) VALUES (?,?,?,?)', person, new Date().toISOString(), person, person.toUpperCase());
+      await accounts.run("INSERT INTO state_login_sessions (token_hash,account,expires_at) VALUES (?,?,'2999-01-01')", await sha256(person), person);
     }
     await claim('claimant');
     const own = await call('/api/account/contribution-profile?kind=optimization', 'wfsim_session=claimant');
@@ -305,15 +306,15 @@ await check('unregistered work has no profile, first claims recover it and delet
     assert.equal((await call('/api/contributors/profile/' + own.profile.id)).status, 404);
     await choose('claimant', true);
     assert.equal((await call('/api/computations/' + question)).record.witnesses[0].name, 'CLAIMANT');
-    await accounts.run("UPDATE accounts SET delete_after='2000-01-01' WHERE id='claimant'");
+    await accounts.run("UPDATE entity_accounts SET delete_after='2000-01-01' WHERE id='claimant'");
     assert.equal(await purgeDeleted(env), 1);
     assert.equal((await call('/api/contributors/profile/' + own.profile.id)).status, 404);
     const anonymous = (await call('/api/computations/' + question)).record.witnesses[0];
     assert.equal(anonymous.name, null);
     assert.equal(anonymous.profile, null);
-    assert.equal((await library.get('SELECT signatures FROM verifiers WHERE id=?', guest)).signatures, 1);
-    assert.equal((await accounts.get('SELECT account FROM device_spans WHERE verifier=?', guest)).account, null);
-    if (process.argv.includes('--negative-control-claim')) await accounts.run('DELETE FROM device_spans WHERE verifier=?', guest);
+    assert.equal((await library.get('SELECT signatures FROM entity_compute_devices WHERE id=?', guest)).signatures, 1);
+    assert.equal((await accounts.get('SELECT account FROM record_compute_device_ownership_intervals WHERE verifier=?', guest)).account, null);
+    if (process.argv.includes('--negative-control-claim')) await accounts.run('DELETE FROM record_compute_device_ownership_intervals WHERE verifier=?', guest);
     await claim('later_holder');
     const later = await call('/api/account/contribution-profile?kind=optimization', 'wfsim_session=later_holder');
     assert.equal(later.profile.signatures, 0);

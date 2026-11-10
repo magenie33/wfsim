@@ -46,7 +46,7 @@ jobs:
         id: read
         run: |
           set -euo pipefail
-          echo "{\"sql\":\"SELECT code FROM appraisals WHERE channel = 'survey' AND request IS NULL ORDER BY code LIMIT $MAX_CODES\"}" \
+          echo "{\"sql\":\"SELECT code FROM entity_appraisal_requests WHERE channel = 'survey' AND request IS NULL ORDER BY code LIMIT $MAX_CODES\"}" \
             | node scripts/pgq.mjs | jq -er '.result[0].results[].code' > codes.txt || true
           count=$(grep -c . codes.txt || true)
           echo "count=$count" >> "$GITHUB_OUTPUT"

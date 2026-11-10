@@ -108,7 +108,7 @@ async function bornUsername(db) {
   for (;;) {
     const tail = Array.from(crypto.getRandomValues(new Uint8Array(6)), (b) => "abcdefghijklmnopqrstuvwxyz0123456789"[b % 36]).join("");
     const name = USERNAME_BORN + tail;
-    if (!(await db.prepare("SELECT 1 FROM accounts WHERE username = ?1").bind(name).first())) return name;
+    if (!(await db.prepare("SELECT 1 FROM entity_accounts WHERE username = ?1").bind(name).first())) return name;
   }
 }
 export const later = (seconds) => new Date(Date.now() + seconds * 1000).toISOString();
@@ -157,14 +157,14 @@ export async function sessionAccount(env, request) {
   const token = cookies(request)[SESSION_COOKIE];
   if (!token || !env.ACCOUNTS) return null;
   const row = await env.ACCOUNTS.prepare(
-    "SELECT account FROM sessions WHERE token_hash = ?1 AND expires_at > ?2",
+    "SELECT account FROM state_login_sessions WHERE token_hash = ?1 AND expires_at > ?2",
   ).bind(await sha256(token), now()).first();
   return row ? row.account : null;
 }
 
 async function newSession(env, account) {
   const token = random();
-  await env.ACCOUNTS.prepare("INSERT INTO sessions (token_hash, account, expires_at) VALUES (?1, ?2, ?3)")
+  await env.ACCOUNTS.prepare("INSERT INTO state_login_sessions (token_hash, account, expires_at) VALUES (?1, ?2, ?3)")
     .bind(await sha256(token), account, later(SESSION_SECONDS)).run();
   return setCookie(SESSION_COOKIE, token, SESSION_SECONDS);
 }
@@ -182,7 +182,7 @@ const endSession = () => setCookie(SESSION_COOKIE, "", 0);
 /// Returns `{ ok, outcome, account, cookie? }` or `{ ok: false, reason }`.
 export async function arrive(env, request, { provider, subject, label, password_hash = null }, intent) {
   const db = env.ACCOUNTS;
-  const holder = await db.prepare("SELECT account FROM identities WHERE provider = ?1 AND subject = ?2")
+  const holder = await db.prepare("SELECT account FROM relation_account_login_identities WHERE provider = ?1 AND subject = ?2")
     .bind(provider, subject).first();
   const signedIn = await sessionAccount(env, request);
 
@@ -191,26 +191,26 @@ export async function arrive(env, request, { provider, subject, label, password_
     if (holder && holder.account !== signedIn) return { ok: false, reason: "taken" };
     if (holder) {
       // The same address again: its password is the one just chosen.
-      await db.prepare("UPDATE identities SET label = ?1, password_hash = COALESCE(?2, password_hash) WHERE provider = ?3 AND subject = ?4")
+      await db.prepare("UPDATE relation_account_login_identities SET label = ?1, password_hash = COALESCE(?2, password_hash) WHERE provider = ?3 AND subject = ?4")
         .bind(label, password_hash, provider, subject).run();
       return { ok: true, outcome: "linked", account: signedIn };
     }
-    const slot = await db.prepare("SELECT subject FROM identities WHERE account = ?1 AND provider = ?2")
+    const slot = await db.prepare("SELECT subject FROM relation_account_login_identities WHERE account = ?1 AND provider = ?2")
       .bind(signedIn, provider).first();
     if (slot) {
       // A REPLACEMENT IS AN UPDATE, not a delete and an insert: the slot is
       // never empty, so the last-slot trigger can never fire half way through.
-      await db.prepare("UPDATE identities SET subject = ?1, label = ?2, linked_at = ?3, password_hash = ?4 WHERE account = ?5 AND provider = ?6")
+      await db.prepare("UPDATE relation_account_login_identities SET subject = ?1, label = ?2, linked_at = ?3, password_hash = ?4 WHERE account = ?5 AND provider = ?6")
         .bind(subject, label, now(), password_hash, signedIn, provider).run();
       return { ok: true, outcome: "replaced", account: signedIn };
     }
-    await db.prepare("INSERT INTO identities (provider, subject, account, label, linked_at, password_hash) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
+    await db.prepare("INSERT INTO relation_account_login_identities (provider, subject, account, label, linked_at, password_hash) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
       .bind(provider, subject, signedIn, label, now(), password_hash).run();
     return { ok: true, outcome: "linked", account: signedIn };
   }
 
   if (holder) {
-    await db.prepare("UPDATE identities SET label = ?1 WHERE provider = ?2 AND subject = ?3")
+    await db.prepare("UPDATE relation_account_login_identities SET label = ?1 WHERE provider = ?2 AND subject = ?3")
       .bind(label, provider, subject).run();
     return { ok: true, outcome: "signed_in", account: holder.account, cookie: await newSession(env, holder.account) };
   }
@@ -218,8 +218,8 @@ export async function arrive(env, request, { provider, subject, label, password_
   // at which a UUID exists with nothing to reach it by.
   const account = crypto.randomUUID();
   await db.batch([
-    db.prepare("INSERT INTO accounts (id, created_at, username) VALUES (?1, ?2, ?3)").bind(account, now(), await bornUsername(db)),
-    db.prepare("INSERT INTO identities (provider, subject, account, label, linked_at, password_hash) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
+    db.prepare("INSERT INTO entity_accounts (id, created_at, username) VALUES (?1, ?2, ?3)").bind(account, now(), await bornUsername(db)),
+    db.prepare("INSERT INTO relation_account_login_identities (provider, subject, account, label, linked_at, password_hash) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
       .bind(provider, subject, account, label, now(), password_hash),
   ]);
   return { ok: true, outcome: "created", account, cookie: await newSession(env, account) };
@@ -343,7 +343,7 @@ export const emailOf = (s) => {
   return /^[^\s@]{1,64}@[^\s@]{1,253}\.[^\s@]{2,}$/.test(e) && e.length <= 254 ? e : null;
 };
 export const emailSlot = (env, email) => env.ACCOUNTS.prepare(
-  "SELECT account, password_hash FROM identities WHERE provider = 'email' AND subject = ?1").bind(email).first();
+  "SELECT account, password_hash FROM relation_account_login_identities WHERE provider = 'email' AND subject = ?1").bind(email).first();
 
 const CODE_SUBJECTS = { register: "is your WFSim code", link: "is your WFSim code", reset: "resets your WFSim password" };
 
@@ -352,11 +352,11 @@ const CODE_SUBJECTS = { register: "is your WFSim code", link: "is your WFSim cod
 /// and, for a password chosen up front, that password's hash — neither in the
 /// clear.
 async function mailCode(env, email, purpose, { password_hash = null, account = null } = {}) {
-  const prior = await env.ACCOUNTS.prepare("SELECT sent_at FROM email_codes WHERE email = ?1").bind(email).first();
+  const prior = await env.ACCOUNTS.prepare("SELECT sent_at FROM state_email_verification_challenges WHERE email = ?1").bind(email).first();
   if (prior && Date.parse(prior.sent_at) > Date.now() - CODE_RESEND_SECONDS * 1000) return no("too_soon", 429);
   const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, "0");
   await env.ACCOUNTS.prepare(
-    `INSERT INTO email_codes (email, code_hash, expires_at, attempts, sent_at, purpose, password_hash, account)
+    `INSERT INTO state_email_verification_challenges (email, code_hash, expires_at, attempts, sent_at, purpose, password_hash, account)
      VALUES (?1, ?2, ?3, 0, ?4, ?5, ?6, ?7)
      ON CONFLICT (email) DO UPDATE SET code_hash = ?2, expires_at = ?3, attempts = 0, sent_at = ?4,
        purpose = ?5, password_hash = ?6, account = ?7`,
@@ -414,31 +414,31 @@ async function emailVerify(request, env, b) {
   if (!email || !/^\d{6}$/.test(code)) return no("bad_code");
   const db = env.ACCOUNTS;
   const row = await db.prepare(
-    "SELECT code_hash, expires_at, attempts, purpose, password_hash, account FROM email_codes WHERE email = ?1",
+    "SELECT code_hash, expires_at, attempts, purpose, password_hash, account FROM state_email_verification_challenges WHERE email = ?1",
   ).bind(email).first();
   if (!row || Date.parse(row.expires_at) < Date.now()) return no("expired");
   if (row.attempts >= CODE_ATTEMPTS) return no("too_many_attempts", 429);
   if (row.code_hash !== await hmac(env.AUTH_SECRET, `${email}:${code}`)) {
-    await db.prepare("UPDATE email_codes SET attempts = attempts + 1 WHERE email = ?1").bind(email).run();
+    await db.prepare("UPDATE state_email_verification_challenges SET attempts = attempts + 1 WHERE email = ?1").bind(email).run();
     return no("wrong_code");
   }
   if (row.purpose === "reset") {
     const password = passwordOf(b.password);
     if (!password) return no("bad_password");
     const slot = await emailSlot(env, email);
-    await db.prepare("DELETE FROM email_codes WHERE email = ?1").bind(email).run();
+    await db.prepare("DELETE FROM state_email_verification_challenges WHERE email = ?1").bind(email).run();
     if (!slot) return no("expired");
     // A NEW PASSWORD ENDS EVERY OTHER SIGN-IN: whoever knew the old one is out.
     await db.batch([
-      db.prepare("UPDATE identities SET password_hash = ?1 WHERE provider = 'email' AND subject = ?2")
+      db.prepare("UPDATE relation_account_login_identities SET password_hash = ?1 WHERE provider = 'email' AND subject = ?2")
         .bind(await hashPassword(env, password), email),
-      db.prepare("DELETE FROM sessions WHERE account = ?1").bind(slot.account),
-      db.prepare("DELETE FROM login_failures WHERE email = ?1").bind(email),
+      db.prepare("DELETE FROM state_login_sessions WHERE account = ?1").bind(slot.account),
+      db.prepare("DELETE FROM state_login_rate_limits WHERE email = ?1").bind(email),
     ]);
     return json({ ok: true, outcome: "password_reset" }, 200, { "set-cookie": await newSession(env, slot.account) });
   }
   if (row.purpose === "link" && row.account !== await sessionAccount(env, request)) return no("not_signed_in", 401);
-  await db.prepare("DELETE FROM email_codes WHERE email = ?1").bind(email).run();
+  await db.prepare("DELETE FROM state_email_verification_challenges WHERE email = ?1").bind(email).run();
   const r = await arrive(env, request, { provider: "email", subject: email, label: email, password_hash: row.password_hash },
     row.purpose === "link" ? "link" : "login");
   return r.ok ? json({ ok: true, outcome: r.outcome }, 200, r.cookie ? { "set-cookie": r.cookie } : {}) : no(r.reason, 409);
@@ -452,18 +452,18 @@ async function emailLogin(env, b) {
   const password = typeof b.password === "string" ? b.password : "";
   if (!email || !password) return no("wrong_credentials", 401);
   const db = env.ACCOUNTS;
-  const f = await db.prepare("SELECT failures, first_at FROM login_failures WHERE email = ?1").bind(email).first();
+  const f = await db.prepare("SELECT failures, first_at FROM state_login_rate_limits WHERE email = ?1").bind(email).first();
   const lapsed = !f || Date.parse(f.first_at) < Date.now() - LOGIN_WINDOW_SECONDS * 1000;
   if (!lapsed && f.failures >= LOGIN_FAILURES) return no("locked", 429);
   const slot = await emailSlot(env, email);
   if (slot && slot.password_hash && await passwordMatches(env, password, slot.password_hash)) {
-    await db.prepare("DELETE FROM login_failures WHERE email = ?1").bind(email).run();
+    await db.prepare("DELETE FROM state_login_rate_limits WHERE email = ?1").bind(email).run();
     return json({ ok: true, outcome: "signed_in" }, 200, { "set-cookie": await newSession(env, slot.account) });
   }
   await db.prepare(
-    `INSERT INTO login_failures (email, failures, first_at) VALUES (?1, 1, ?2)
-     ON CONFLICT (email) DO UPDATE SET failures = CASE WHEN ?3 = 1 THEN 1 ELSE login_failures.failures + 1 END,
-       first_at = CASE WHEN ?3 = 1 THEN ?2 ELSE login_failures.first_at END`,
+    `INSERT INTO state_login_rate_limits (email, failures, first_at) VALUES (?1, 1, ?2)
+     ON CONFLICT (email) DO UPDATE SET failures = CASE WHEN ?3 = 1 THEN 1 ELSE state_login_rate_limits.failures + 1 END,
+       first_at = CASE WHEN ?3 = 1 THEN ?2 ELSE state_login_rate_limits.first_at END`,
   ).bind(email, now(), lapsed ? 1 : 0).run();
   return no("wrong_credentials", 401);
 }
@@ -473,7 +473,7 @@ async function emailLogin(env, b) {
 /// Every other sign-in ends.
 async function passwordChange(request, env, account, b) {
   const db = env.ACCOUNTS;
-  const slot = await db.prepare("SELECT password_hash FROM identities WHERE account = ?1 AND provider = 'email'")
+  const slot = await db.prepare("SELECT password_hash FROM relation_account_login_identities WHERE account = ?1 AND provider = 'email'")
     .bind(account).first();
   if (!slot) return no("not_linked");
   const password = passwordOf(b.password);
@@ -483,9 +483,9 @@ async function passwordChange(request, env, account, b) {
   }
   const token = cookies(request)[SESSION_COOKIE] || "";
   await db.batch([
-    db.prepare("UPDATE identities SET password_hash = ?1 WHERE account = ?2 AND provider = 'email'")
+    db.prepare("UPDATE relation_account_login_identities SET password_hash = ?1 WHERE account = ?2 AND provider = 'email'")
       .bind(await hashPassword(env, password), account),
-    db.prepare("DELETE FROM sessions WHERE account = ?1 AND token_hash != ?2").bind(account, await sha256(token)),
+    db.prepare("DELETE FROM state_login_sessions WHERE account = ?1 AND token_hash != ?2").bind(account, await sha256(token)),
   ]);
   return json({ ok: true, outcome: "password_changed" });
 }
@@ -494,13 +494,13 @@ async function passwordChange(request, env, account, b) {
 
 async function accountView(env, account) {
   const a = await env.ACCOUNTS.prepare(
-    "SELECT id, profile_id, created_at, username, display_name, username_changed_at, delete_after FROM accounts WHERE id = ?1",
+    "SELECT id, profile_id, created_at, username, display_name, username_changed_at, delete_after FROM entity_accounts WHERE id = ?1",
   ).bind(account).first();
   if (!a) return null;
   if (!a.profile_id) a.profile_id = (await contributorAccounts(env, [account])).get(account)?.profile_id;
   const why = hiddenWhy(a.display_name, await heldName(env.ACCOUNTS, account));
   const { results } = await env.ACCOUNTS.prepare(
-    "SELECT provider, label, linked_at, CASE WHEN password_hash IS NULL THEN 0 ELSE 1 END AS has_password FROM identities WHERE account = ?1",
+    "SELECT provider, label, linked_at, CASE WHEN password_hash IS NULL THEN 0 ELSE 1 END AS has_password FROM relation_account_login_identities WHERE account = ?1",
   ).bind(account).all();
   return { id: a.id, profile_id: a.profile_id, created_at: a.created_at, username: a.username, display_name: a.display_name, delete_after: a.delete_after || null,
     display_name_hidden: !!why, display_name_why: why, rename_after: renameAfter(a),
@@ -509,7 +509,7 @@ async function accountView(env, account) {
 }
 
 /// THE HOLD ON THIS ACCOUNT'S DISPLAY NAME, `{ display_name, reason }`, or null.
-const heldName = (db, account) => db.prepare("SELECT display_name, reason FROM display_name_holds WHERE account = ?1").bind(account).first();
+const heldName = (db, account) => db.prepare("SELECT display_name, reason FROM state_account_name_holds WHERE account = ?1").bind(account).first();
 
 /// When this account may next change its username, or null for now: the first
 /// change is free, each later one waits a day after the last.
@@ -522,14 +522,14 @@ const renameAfter = (a) => {
 /// A GIVEN-UP NAME IS HELD for its old owner, so nobody takes it at once and
 /// passes as them. A `user_` name was never chosen and is not held.
 const holdUsername = (db, name, account) => (name.startsWith(USERNAME_BORN) ? null : db.prepare(
-  `INSERT INTO username_holds (username, account, held_until) VALUES (?1, ?2, ?3)
+  `INSERT INTO state_username_reservations (username, account, held_until) VALUES (?1, ?2, ?3)
    ON CONFLICT (username) DO UPDATE SET account = ?2, held_until = ?3`,
 ).bind(name, account, later(USERNAME_HOLD_SECONDS)));
 
 /// THE NAME THE ACCOUNT GOES BY: `username` and `display_name`, either or both.
 async function profile(env, account, b) {
   const db = env.ACCOUNTS;
-  const a = await db.prepare("SELECT username, username_changed_at FROM accounts WHERE id = ?1").bind(account).first();
+  const a = await db.prepare("SELECT username, username_changed_at FROM entity_accounts WHERE id = ?1").bind(account).first();
   if (!a) return no("not_signed_in", 401);
   const writes = [];
   if ("display_name" in b) {
@@ -538,8 +538,8 @@ async function profile(env, account, b) {
     const why = hiddenWhy(shown, await heldName(db, account));
     if (why) return no("name_not_allowed", 400, { why });
     // A NEW NAME ENDS A HOLD: the held name is not kept past the name it was about.
-    writes.push(db.prepare("UPDATE accounts SET display_name = ?1 WHERE id = ?2").bind(shown || null, account),
-      db.prepare("DELETE FROM display_name_holds WHERE account = ?1").bind(account));
+    writes.push(db.prepare("UPDATE entity_accounts SET display_name = ?1 WHERE id = ?2").bind(shown || null, account),
+      db.prepare("DELETE FROM state_account_name_holds WHERE account = ?1").bind(account));
   }
   if ("username" in b) {
     const name = String(b.username ?? "").trim().toLowerCase();
@@ -549,13 +549,13 @@ async function profile(env, account, b) {
       if (nameReason(name)) return no("name_not_allowed", 400, { why: nameReason(name) });
       const after = renameAfter(a);
       if (after) return no("rename_too_soon", 429, { rename_after: after });
-      const held = await db.prepare("SELECT account FROM username_holds WHERE username = ?1 AND held_until > ?2")
+      const held = await db.prepare("SELECT account FROM state_username_reservations WHERE username = ?1 AND held_until > ?2")
         .bind(name, now()).first();
       if (held && held.account !== account) return no("username_taken", 409);
-      if (await db.prepare("SELECT 1 FROM accounts WHERE username = ?1").bind(name).first()) return no("username_taken", 409);
+      if (await db.prepare("SELECT 1 FROM entity_accounts WHERE username = ?1").bind(name).first()) return no("username_taken", 409);
       writes.push(
-        db.prepare("UPDATE accounts SET username = ?1, username_changed_at = ?2 WHERE id = ?3").bind(name, now(), account),
-        db.prepare("DELETE FROM username_holds WHERE username = ?1 OR held_until <= ?2").bind(name, now()),
+        db.prepare("UPDATE entity_accounts SET username = ?1, username_changed_at = ?2 WHERE id = ?3").bind(name, now(), account),
+        db.prepare("DELETE FROM state_username_reservations WHERE username = ?1 OR held_until <= ?2").bind(name, now()),
       );
       const hold = holdUsername(db, a.username, account);
       if (hold) writes.push(hold);
@@ -568,7 +568,7 @@ async function profile(env, account, b) {
 
 /// A DELETED ACCOUNT'S NAME IS HELD like a given-up one.
 async function holdOnDelete(env, account) {
-  const a = await env.ACCOUNTS.prepare("SELECT username FROM accounts WHERE id = ?1").bind(account).first();
+  const a = await env.ACCOUNTS.prepare("SELECT username FROM entity_accounts WHERE id = ?1").bind(account).first();
   const hold = a && holdUsername(env.ACCOUNTS, a.username, account);
   if (hold) await hold.run();
 }
@@ -579,13 +579,13 @@ async function holdOnDelete(env, account) {
 async function askDelete(request, env, account, b) {
   if (b.confirm !== "DELETE") return no("confirm_required");
   const token = cookies(request)[SESSION_COOKIE];
-  const s = token && await env.ACCOUNTS.prepare("SELECT expires_at FROM sessions WHERE token_hash = ?1").bind(await sha256(token)).first();
+  const s = token && await env.ACCOUNTS.prepare("SELECT expires_at FROM state_login_sessions WHERE token_hash = ?1").bind(await sha256(token)).first();
   const signedInAt = s ? Date.parse(s.expires_at) - SESSION_SECONDS * 1000 : 0;
   if (signedInAt < Date.now() - DELETE_REAUTH_SECONDS * 1000) return no("reauth_required", 403);
   const at = later(DELETE_GRACE_SECONDS);
   await env.ACCOUNTS.batch([
-    env.ACCOUNTS.prepare("UPDATE accounts SET delete_after = ?1 WHERE id = ?2").bind(at, account),
-    env.ACCOUNTS.prepare("DELETE FROM sessions WHERE account = ?1").bind(account),
+    env.ACCOUNTS.prepare("UPDATE entity_accounts SET delete_after = ?1 WHERE id = ?2").bind(at, account),
+    env.ACCOUNTS.prepare("DELETE FROM state_login_sessions WHERE account = ?1").bind(account),
   ]);
   return json({ ok: true, deleted: false, delete_after: at }, 200, { "set-cookie": endSession() });
 }
@@ -596,7 +596,7 @@ async function askDelete(request, env, account, b) {
 /// again — and the account with its sessions, slots and data.
 export async function purgeDeleted(env) {
   if (!env.ACCOUNTS) return 0;
-  const { results } = await env.ACCOUNTS.prepare("SELECT id FROM accounts WHERE delete_after IS NOT NULL AND delete_after <= ?1")
+  const { results } = await env.ACCOUNTS.prepare("SELECT id FROM entity_accounts WHERE delete_after IS NOT NULL AND delete_after <= ?1")
     .bind(now()).all();
   const hour = new Date(Math.ceil(Date.now() / 3_600_000) * 3_600_000).toISOString().slice(0, 13);
   let n = 0;
@@ -606,21 +606,21 @@ export async function purgeDeleted(env) {
     await feedbackPurge(env, id);
     // ITS POINTS GO TO THE OFFICIAL POOL (`points_pool`): what its devices
     // earned in its spans, read before the spans lose their holder.
-    const { results: spans } = await env.ACCOUNTS.prepare("SELECT verifier, from_hour, until_hour FROM device_spans WHERE account = ?1").bind(id).all();
+    const { results: spans } = await env.ACCOUNTS.prepare("SELECT verifier, from_hour, until_hour FROM record_compute_device_ownership_intervals WHERE account = ?1").bind(id).all();
     let work = 0;
     for (const s of spans) {
       const fdb = env.LIBRARY;
-      const r = fdb && await fdb.prepare("SELECT SUM(work) AS w FROM verifier_hours WHERE verifier = ?1::text AND hour >= ?2::text AND (?3::text IS NULL OR hour < ?3::text)")
+      const r = fdb && await fdb.prepare("SELECT SUM(work) AS w FROM record_hourly_compute_totals WHERE verifier = ?1::text AND hour >= ?2::text AND (?3::text IS NULL OR hour < ?3::text)")
         .bind(s.verifier, s.from_hour, s.until_hour).first();
       work += (r && r.w) || 0;
     }
     if (work > 0 && env.LIBRARY) {
-      await env.LIBRARY.prepare("INSERT INTO points_pool (at, source, work) VALUES (?1, 'deleted_account', ?2)").bind(now(), work).run();
+      await env.LIBRARY.prepare("INSERT INTO record_unowned_credit_transfers (at, source, work) VALUES (?1, 'deleted_account', ?2)").bind(now(), work).run();
     }
     await env.ACCOUNTS.batch([
-      env.ACCOUNTS.prepare("UPDATE device_spans SET until_hour = ?1 WHERE account = ?2 AND until_hour IS NULL").bind(hour, id),
-      env.ACCOUNTS.prepare("DELETE FROM device_spans WHERE account = ?1 AND until_hour = from_hour").bind(id),
-      env.ACCOUNTS.prepare("DELETE FROM accounts WHERE id = ?1").bind(id),
+      env.ACCOUNTS.prepare("UPDATE record_compute_device_ownership_intervals SET until_hour = ?1 WHERE account = ?2 AND until_hour IS NULL").bind(hour, id),
+      env.ACCOUNTS.prepare("DELETE FROM record_compute_device_ownership_intervals WHERE account = ?1 AND until_hour = from_hour").bind(id),
+      env.ACCOUNTS.prepare("DELETE FROM entity_accounts WHERE id = ?1").bind(id),
     ]);
     n += 1;
   }
@@ -632,13 +632,13 @@ export async function purgeDeleted(env) {
 /// (`askDelete`), on the same terms.
 async function unlink(request, env, account, b) {
   if (!SLOTS.includes(b.provider)) return no("bad_provider");
-  const { n } = await env.ACCOUNTS.prepare("SELECT COUNT(*) AS n FROM identities WHERE account = ?1").bind(account).first();
-  const has = await env.ACCOUNTS.prepare("SELECT 1 FROM identities WHERE account = ?1 AND provider = ?2")
+  const { n } = await env.ACCOUNTS.prepare("SELECT COUNT(*) AS n FROM relation_account_login_identities WHERE account = ?1").bind(account).first();
+  const has = await env.ACCOUNTS.prepare("SELECT 1 FROM relation_account_login_identities WHERE account = ?1 AND provider = ?2")
     .bind(account, b.provider).first();
   if (!has) return no("not_linked");
   if (n <= 1 && b.delete_account !== true) return no("last_slot", 409);
   if (n <= 1) return askDelete(request, env, account, b);
-  await env.ACCOUNTS.prepare("DELETE FROM identities WHERE account = ?1 AND provider = ?2").bind(account, b.provider).run();
+  await env.ACCOUNTS.prepare("DELETE FROM relation_account_login_identities WHERE account = ?1 AND provider = ?2").bind(account, b.provider).run();
   return json({ ok: true, deleted: false });
 }
 
@@ -650,7 +650,7 @@ export async function accountRoute(request, env, path) {
     if (!env.ACCOUNTS) return no("unavailable", 503);
     const account = await sessionAccount(env, request);
     if (!account) return no("not_signed_in", 401);
-    const choice = await env.ACCOUNTS.prepare("SELECT named,label FROM contribution_choice WHERE account=?").bind(account).first();
+    const choice = await env.ACCOUNTS.prepare("SELECT named,label FROM state_account_public_attribution WHERE account=?").bind(account).first();
     if (request.method === "GET") {
       const identity = await cloudIdentity(env, account);
       return json({ ok: true, named: !!choice?.named, label: choice?.label || "none", labels: identity?.labels || [] }, 200, { "cache-control": "no-store" });
@@ -665,7 +665,7 @@ export async function accountRoute(request, env, path) {
       if (!identity) return no("unavailable", 503);
       if (!identity.labels.some(label => label.id === body.label)) return no("bad_choice", 403);
     }
-    await env.ACCOUNTS.prepare(`INSERT INTO contribution_choice (account,named,label,chosen_at) VALUES (?,?,?,?)
+    await env.ACCOUNTS.prepare(`INSERT INTO state_account_public_attribution (account,named,label,chosen_at) VALUES (?,?,?,?)
       ON CONFLICT (account) DO UPDATE SET named=excluded.named,label=excluded.label,chosen_at=excluded.chosen_at`)
       .bind(account, body.named ? 1 : 0, body.label, now()).run();
     return json({ ok: true });
@@ -706,7 +706,7 @@ export async function accountRoute(request, env, path) {
   }
   if (path === "/api/auth/logout") {
     const token = cookies(request)[SESSION_COOKIE];
-    if (token) await env.ACCOUNTS.prepare("DELETE FROM sessions WHERE token_hash = ?1").bind(await sha256(token)).run();
+    if (token) await env.ACCOUNTS.prepare("DELETE FROM state_login_sessions WHERE token_hash = ?1").bind(await sha256(token)).run();
     return json({ ok: true }, 200, { "set-cookie": endSession() });
   }
   const account = await sessionAccount(env, request);
@@ -716,16 +716,16 @@ export async function accountRoute(request, env, path) {
   if (path === "/api/account/profile") return profile(env, account, b);
   if (path === "/api/account/delete") return askDelete(request, env, account, b);
   if (path === "/api/account/delete/cancel") {
-    await env.ACCOUNTS.prepare("UPDATE accounts SET delete_after = NULL WHERE id = ?1").bind(account).run();
+    await env.ACCOUNTS.prepare("UPDATE entity_accounts SET delete_after = NULL WHERE id = ?1").bind(account).run();
     return json({ ok: true, account: await accountView(env, account) });
   }
   // EVERYTHING HELD ABOUT THIS ACCOUNT, as it is held — docs/ACCOUNTS.md.
-  const devices = (await env.ACCOUNTS.prepare("SELECT verifier, claimed_at FROM devices WHERE account = ?1")
+  const devices = (await env.ACCOUNTS.prepare("SELECT verifier, claimed_at FROM relation_account_compute_devices WHERE account = ?1")
     .bind(account).all()).results;
-  const choice = await env.ACCOUNTS.prepare("SELECT named, label, chosen_at FROM contribution_choice WHERE account = ?1").bind(account).first();
-  const merit = await env.ACCOUNTS.prepare("SELECT balance, points_seen, day, minted_today, auto_priority, since, granted_at FROM merit WHERE account = ?1")
+  const choice = await env.ACCOUNTS.prepare("SELECT named, label, chosen_at FROM state_account_public_attribution WHERE account = ?1").bind(account).first();
+  const merit = await env.ACCOUNTS.prepare("SELECT balance, points_seen, day, minted_today, auto_priority, since, granted_at FROM state_account_priority_credit WHERE account = ?1")
     .bind(account).first();
-  const meritLedger = (await env.ACCOUNTS.prepare("SELECT at, kind, amount, balance, note FROM merit_ledger WHERE account = ?1 ORDER BY id")
+  const meritLedger = (await env.ACCOUNTS.prepare("SELECT at, kind, amount, balance, note FROM record_priority_credit_entries WHERE account = ?1 ORDER BY id")
     .bind(account).all()).results;
   return json({ ok: true, account: await accountView(env, account), agents: await agentsOf(env, account), devices,
     contribution_choice: choice || null, display_name_hold: await heldName(env.ACCOUNTS, account), merit: merit || null, merit_ledger: meritLedger,

@@ -15,7 +15,7 @@ const failures = [];
 
 // THE ANONYMOUS STORE KEEPS THE DAY AND NOTHING FINER (docs/BOARD.md, the
 // upload consent): these hold a day under the name `at`.
-const DAY_EXEMPT = new Set(["builds.at", "inbox.at", "shares.at"]);
+const DAY_EXEMPT = new Set(["entity_weapon_builds.at", "record_build_submissions.at", "entity_short_shares.at"]);
 const instant = (name) => /(^at|_at|_until)$/.test(name);
 
 function schema(path) {

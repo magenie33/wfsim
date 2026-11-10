@@ -45,7 +45,7 @@ export async function authorizeHarvest(env, input, now = Date.now(), httpRequest
       const { success } = await env.OCR_LIMIT.limit({ key: "appraise" + (httpRequest?.headers.get("cf-connecting-ip") || "unknown") });
       if (!success) return failure("slow down", 429);
     }
-    const row = await env.LIBRARY.prepare("SELECT code, channel, asker, weapon, engine, request, at FROM appraisals WHERE code = ?")
+    const row = await env.LIBRARY.prepare("SELECT code, channel, asker, weapon, engine, request, at FROM entity_appraisal_requests WHERE code = ?")
       .bind(input.code.toUpperCase()).first();
     if (!appraisalKept(row, now)) return failure("no such appraisal", 404);
     if (!row.request) return failure("the appraisal is not frozen", 409);
@@ -63,7 +63,7 @@ export async function authorizeHarvest(env, input, now = Date.now(), httpRequest
   if (!LEASE_ID.test(input.lease || "")
       || (input.question !== undefined && !QUESTION_ID.test(input.question))) return failure("bad harvest lease", 400);
   const row = await env.LIBRARY.prepare(`SELECT q.id, q.verb, q.request, d.producer, d.ref, d.initiator
-      FROM questions q JOIN demands d ON d.question = q.id AND d.state = 'live'
+      FROM state_compute_work q JOIN relation_task_consumers d ON d.question = q.id AND d.state = 'live'
       WHERE q.lease = ?1::text AND q.leased_to = ?2::text AND q.lease_until >= ?3::text
         AND q.verb IN ('optimize', 'optimize_report') AND (?4::text = '' OR q.id = ?4::text)
         AND d.producer IN ('chat', 'survey', 'user_calculation', 'family_build')

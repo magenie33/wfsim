@@ -103,6 +103,17 @@ for (const path of ['worker/pg/schema.sql', 'scripts/check_board_verify.mjs', 's
   assert(p.jobs.includes('site') && p.jobs.includes('pipeline') && p.jobs.includes('parity'), path);
   assert(!p.jobs.includes('test') && !p.jobs.includes('gas'), path);
 }
+for (const path of ['scripts/check_compute_storage.mjs','worker/pg/library.sql']) {
+  assert(classify([path]).jobs.includes('services'),path+' runs the storage boundary checks');
+}
+for (const path of ['scripts/check_browser_db_migration.mjs','web/src/static/app/53-task-store.js',
+  'web/src/static/app/35-results.js','web/src/static/app/69-board-work.js','web/src/static/nona/runtime/store.js']) {
+  assert(existsSync(path),path+' is an actual migration check input');
+  assert(classify([path]).jobs.includes('page-rest'),path+' runs browser upgrade checks');
+}
+for (const path of ['scripts/check_sqlite_migration.mjs','scripts/sqlite_schema.mjs']) {
+  assert.equal(classify([path]).scope,'full',path+' retains conservative selection');
+}
 for (const [kind, paths] of Object.entries({ mcp: ['mcp/index.js', 'mcp/account.js', 'scripts/check_mcp_auth.mjs',
   'scripts/check_mcp_entry.mjs', 'scripts/mcp_test_loader.mjs'], bot: ['bot/engine.mjs', 'scripts/check_bot_auth.mjs'] })) {
   for (const path of paths) {

@@ -1,3 +1,4 @@
+import { seedComputeWork } from "./pg/fixtures.mjs";
 // AN OFFICIAL CHECK OF ANOTHER ENGINE IS NONE (worker/pg/sync.sql
 // `factory_moot_checks`, the settler's `moot` tick, worker/tasks.js
 // `demandAll`): a dispute or a non-deterministic question no answer of the
@@ -24,18 +25,15 @@ const NOW = Date.parse("2026-11-01T12:00:00.000Z"), iso = (ms) => new Date(ms).t
 VERBS.simulate.recheck = 0;
 const f = facts();
 
-const question = (id, state, { fact_engine = null, lease = false } = {}) => L.run(
-  `INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at, lease, lease_until, leased_to)
-   VALUES (?, 'simulate', '{}', ?, ?, ?, ?, ?, ?, ?, ?, ?)`, id, state, AT, AT, fact_engine ? "c1" : null, fact_engine, fact_engine ? AT : null,
-  lease ? "l" : null, lease ? iso(NOW + 6 * 3_600_000) : null, lease ? "official:settle-0" : null);
+const question = (id, state, { fact_engine = null, lease = false } = {}) => (async (fixtureDb,args)=>{await seedComputeWork(fixtureDb,{id:args[0],verb:"simulate",request:"{}",state:args[1],due_at:args[2],opened_at:args[3],canon:args[4],fact_engine:args[5],fact_at:args[6],lease:args[7],lease_until:args[8],leased_to:args[9]});})(L,[id,state,AT,AT,fact_engine ? "c1" : null,fact_engine,fact_engine ? AT : null,lease ? "l" : null,lease ? iso(NOW + 6 * 3_600_000) : null,lease ? "official:settle-0" : null]);
 const demand = (question, state) => L.run(
-  `INSERT INTO demands (producer, ref, question, state, asked_at, due_at, payload, served_at) VALUES ('sweep', ?, ?, ?, ?, ?, ?, ?)`,
+  `INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, payload, served_at) VALUES ('sweep', ?, ?, ?, ?, ?, ?, ?)`,
   `ref-${question}`, question, state, AT, AT, JSON.stringify({ identity: `b-${question}`, ruler: "r", mode: "m" }), state === "served" ? AT : null);
 let n = 0;
 const answer = (question, canon, engine, owner = `o${n}`) => L.run(
-  `INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, ?, ?, ?, ?, ?, '{"score":1,"metric":"dps"}', 100, ?)`,
+  `INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, ?, ?, ?, ?, ?, '{"score":1,"metric":"dps"}', 100, ?)`,
   question, engine, `d${++n}`, owner, `n${n}`, canon, AT);
-const stateOf = async (id) => (await L.get("SELECT state, lease, canon FROM questions WHERE id = ?", id)) || {};
+const stateOf = async (id) => (await L.get("SELECT state, lease, canon FROM state_compute_work WHERE id = ?", id)) || {};
 const moot = async () => Number((await L.get("SELECT factory_moot_checks('e1', 1000) AS n")).n);
 
 // ---- the settler's pass ----
@@ -49,7 +47,7 @@ await question("spot-served", "spot", { fact_engine: "e1" }); await demand("spot
 check("one pass moves the two disputes, the non-deterministic one and the old spot", (await moot()) === 4);
 const asked = await stateOf("asked");
 check("a dispute of another engine a live demand waits on is open again, its official lease gone", asked.state === "open" && asked.lease === null, JSON.stringify(asked));
-check("…its answers carried", Number((await L.get("SELECT count(*) AS n FROM answers WHERE question = 'asked'")).n) === 2);
+check("…its answers carried", Number((await L.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = 'asked'")).n) === 2);
 check("a dispute of another engine nobody asks for any more is withdrawn", (await stateOf("unasked")).state === "withdrawn");
 check("a non-deterministic question of another engine is open again", (await stateOf("odd")).state === "open");
 check("a dispute of the served engine stays the official machines'", (await stateOf("served")).state === "disputed");
@@ -75,11 +73,11 @@ check("one answer of the served engine reproducing an old one makes the fact wit
 // ---- asked again ----
 const ask = { producer: "sweep", ref: "again", verb: "simulate", request: { record: { weapon: "w" }, ruler: "r", mode: "m" }, due_in_ms: 3_600_000, payload: {} };
 const [qa] = await f.demandAll(env, [ask], "e0", NOW - 7_200_000);
-await L.run("UPDATE questions SET state = 'disputed' WHERE id = ?", qa);
+await L.run("UPDATE state_compute_work SET state = 'disputed' WHERE id = ?", qa);
 await answer(qa, "c1", "e0"); await answer(qa, "c2", "e0");
 await f.demandAll(env, [ask], "e1", NOW);
 check("a dispute of another engine asked again is open again at once", (await stateOf(qa)).state === "open");
-await L.run("UPDATE questions SET state = 'disputed' WHERE id = ?", qa);
+await L.run("UPDATE state_compute_work SET state = 'disputed' WHERE id = ?", qa);
 await answer(qa, "c1", "e1"); await answer(qa, "c2", "e1");
 await f.demandAll(env, [ask], "e1", NOW);
 check("…and a dispute of the served engine asked again stays a dispute", (await stateOf(qa)).state === "disputed");

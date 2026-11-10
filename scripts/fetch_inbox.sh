@@ -33,7 +33,7 @@ configured() { db_configured; }
 page_body() {
   jq -n -c --argjson limit "$1" --argjson offset "$2" '
     {
-      sql: ("SELECT id, at, record, initiator, family_source FROM (SELECT id, at, record, initiator, family_source FROM inbox UNION ALL SELECT id, at, record, NULL, NULL FROM equipment_inbox) AS arrivals ORDER BY id LIMIT ? OFFSET ?"),
+      sql: ("SELECT id, at, record, initiator, family_source FROM (SELECT id, at, record, initiator, family_source FROM record_build_submissions UNION ALL SELECT id, at, record, NULL, NULL FROM record_equipment_submissions) AS arrivals ORDER BY id LIMIT ? OFFSET ?"),
       params: [$limit, $offset]
     }'
 }
@@ -43,7 +43,7 @@ fetch() {
   : > "$out"
   for page in $(seq 1 "$MAX_PAGES"); do
     if ! db_query "$(page_body "$PAGE" "$offset")"; then
-      echo "::error::inbox: the database refused the read [HTTP $DB_CODE]"
+      echo "::error::record_build_submissions: the database refused the read [HTTP $DB_CODE]"
       [ -s "$DB_OUT" ] && { head -c 500 "$DB_OUT"; echo; }
       return 1
     fi
@@ -53,7 +53,7 @@ fetch() {
     [ "$got" -lt "$PAGE" ] && break
     offset=$((offset + PAGE))
     if [ "$page" -eq "$MAX_PAGES" ]; then
-      echo "::notice::inbox: read limit reached at $MAX_PAGES pages; any unread arrivals remain for the next pass"
+      echo "::notice::record_build_submissions: read limit reached at $MAX_PAGES pages; any unread arrivals remain for the next pass"
     fi
   done
   echo "inbox: read $total record(s)"
@@ -120,7 +120,7 @@ PAGES
 
   cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table scores"}]}'
+printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table state_board_measurement_selection"}]}'
 exit 1
 DEAD
   chmod +x "$DIR/bin/db"

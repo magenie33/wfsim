@@ -72,9 +72,12 @@ const db = (() => {
     if (!dbp) {
       dbp = new Promise((ok) => {
         try {
-          const req = indexedDB.open("wfsim-nona", 1);
-          req.onupgradeneeded = () => req.result.createObjectStore("conversations", { keyPath: "id" });
-          req.onsuccess = () => ok(req.result);
+          const req = indexedDB.open("wfsim-nona", 2);
+          req.onupgradeneeded = () => {
+            if(req.result.objectStoreNames.contains("conversations"))req.transaction.objectStore("conversations").name="entity_conversations";
+            if(!req.result.objectStoreNames.contains("entity_conversations"))req.result.createObjectStore("entity_conversations",{keyPath:"id"});
+          };
+          req.onsuccess = () => {req.result.onversionchange=()=>req.result.close();ok(req.result);};
           req.onerror = () => ok(null);
         } catch (_) { ok(null); }
       });
@@ -85,8 +88,8 @@ const db = (() => {
     const d = await open();
     if (!d) return fn(null);
     return new Promise((ok) => {
-      const t = d.transaction("conversations", mode);
-      const r = fn(t.objectStore("conversations"));
+      const t = d.transaction("entity_conversations", mode);
+      const r = fn(t.objectStore("entity_conversations"));
       t.oncomplete = () => ok(r && "result" in r ? r.result : undefined);
       t.onerror = () => ok(undefined);
     });

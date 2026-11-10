@@ -59,8 +59,8 @@ const SETUP = `
   const idle = () => wait(() => !!computeWake, 20000);
   const kick = async () => { await idle(); const w = computeWake; if (w) w(); await new Promise((r) => setTimeout(r, 50)); };
   const syncs = () => window.__calls.filter((c) => c.kind === "sync");
-  const idbResults = () => new Promise((ok) => { const rq = indexedDB.open("wfsim-compute", 1);
-    rq.onsuccess = () => { const g = rq.result.transaction("results").objectStore("results").getAll(); g.onsuccess = () => ok(g.result); g.onerror = () => ok([]); };
+  const idbResults = () => new Promise((ok) => { const rq = indexedDB.open("wfsim-compute", 2);
+    rq.onsuccess = () => { const g = rq.result.transaction("entity_client_compute_results").objectStore("entity_client_compute_results").getAll(); g.onsuccess = () => ok(g.result); g.onerror = () => ok([]); };
     rq.onerror = () => ok([]); });
   const fresh = (o = {}) => { heldPack = null; packQueue = []; refusedPending = []; lostRows = new Set(); syncNotBefore = 0; syncFailures = 0;
     lastSyncAt = Date.now(); bootSyncAt = 1; window.__calls.length = 0; window.__syncReply = null; window.__signal = null; Object.assign(window, o); };
@@ -199,7 +199,7 @@ check("told fallback: 7, the page speaks protocol 7 for the rest of the session"
 await evaluate(`(async () => {
   localStorage.setItem(CONSENT_KEY, JSON.stringify({v:COMPUTE_CONSENT_V,on:false,at:new Date().toISOString()}));
   const db=await openResults();
-  for(const store of ['results','pending']) {
+  for(const store of ['entity_client_compute_results','state_compute_credit_pending']) {
     let tx=db.transaction(store,'readwrite'),done=idbDone(tx);tx.objectStore(store).clear();await done;
     for(let from=0;from<50000;from+=500) {
       tx=db.transaction(store,'readwrite');done=idbDone(tx);
@@ -220,10 +220,12 @@ const reopened=await evaluate(`(async () => {
   let last=performance.now(),gap=0,beats=0;
   const timer=setInterval(()=>{const now=performance.now();gap=Math.max(gap,now-last-25);last=now;beats++;},25);
   const began=performance.now();setBoardVerify(true);if(computeWake)computeWake();
+  // Native previews have no background loop; exercise its real persistence and sync path directly.
+  if(!WASM){await openResults();boardProtocol=8;await boardSync(verifierId(),{want:0});}
   while(performance.now()-began<60000&&!(window.__calls.some(c=>c.kind==='sync')&&resultsMem.length===10&&pendingMem.length===10))await new Promise(r=>setTimeout(r,30));
   await new Promise(r=>setTimeout(r,100));clearInterval(timer);
   const db=await openResults();
-  const counts=await Promise.all(['results','pending'].map(store=>new Promise(ok=>{const r=db.transaction(store).objectStore(store).count();r.onsuccess=()=>ok(r.result);})));
+  const counts=await Promise.all(['entity_client_compute_results','state_compute_credit_pending'].map(store=>new Promise(ok=>{const r=db.transaction(store).objectStore(store).count();r.onsuccess=()=>ok(r.result);})));
   return {gap,beats,counts,results:resultsMem.length,pending:pendingMem.length,synced:window.__calls.some(c=>c.kind==='sync'),points:pendingPoints()};
 })()`);
 await app.send('Emulation.setCPUThrottlingRate',{rate:1});

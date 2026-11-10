@@ -27,9 +27,9 @@ export async function bindInventoryBuilds({ builds, canonical, missing, queue, o
   const values = [...bindings.values()];
   for (let i = 0; i < values.length; i += 500) {
     const batch = values.slice(i, i + 500);
-    await run(`INSERT INTO builds(id,at,record) SELECT id,at,record FROM jsonb_to_recordset(($1::text)::jsonb) x(id text,at text,record text)
+    await run(`INSERT INTO entity_weapon_builds(id,at,record) SELECT id,at,record FROM jsonb_to_recordset(($1::text)::jsonb) x(id text,at text,record text)
       ON CONFLICT(id) DO NOTHING`, [JSON.stringify(batch)]);
-    const got = await run('SELECT id FROM builds WHERE id IN (SELECT jsonb_array_elements_text(($1::text)::jsonb))', [JSON.stringify(batch.map(r => r.id))]);
+    const got = await run('SELECT id FROM entity_weapon_builds WHERE id IN (SELECT jsonb_array_elements_text(($1::text)::jsonb))', [JSON.stringify(batch.map(r => r.id))]);
     if (got.length !== batch.length) throw new Error('canonical build binding did not land');
   }
   return values.length;

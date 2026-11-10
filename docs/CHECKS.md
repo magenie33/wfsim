@@ -156,6 +156,26 @@ worker gets from Hyperdrive; it needs `npm install --prefix scripts/pg`.
 
 ## Inventory checks
 
+`check_compute_storage.mjs` verifies distinct immutable inputs, execution rounds
+and accepted outputs, explicit candidate membership, stale-round rejection and
+retention independent of scheduling cleanup. It runs in the service job with
+PGlite; `WFSIM_MIGRATION_TEST_URL` exercises the same assertions through the
+PostgreSQL driver in an isolated local schema.
+
+`check_browser_db_migration.mjs` runs real IndexedDB upgrades for reports,
+task commands and completion records, pending answers and conversations. It
+preserves raw documents and delivery identities and proves that a failed
+cross-store write aborts every earlier write. It runs in the account page group.
+`check_sqlite_migration.mjs` runs in quick checks and verifies transactional
+catalog renames, unchanged BLOBs/revisions/foreign keys, collision and future
+version refusal, and byte preservation of the source capture.
+
+`check_db_migration.mjs`, `check_db_library.mjs` and `check_db_fence.mjs` require
+an isolated local PostgreSQL administrator URL. They exercise bounded copy and
+restart, actual process interruption, real-role activation and recovery, and
+cross-database role/session fences. They create separate databases; production
+names and application-role fencing require additional explicit operation guards.
+
 `check_inventory_control.mjs` checks immutable explicit requests, single-use
 generation authorization, expected-generation fencing, disk admission and
 failed-capture retention. Actual competing processes and SIGKILL verify

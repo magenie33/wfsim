@@ -104,6 +104,10 @@ assert.throws(() => pageGroups(workflow.replace('fromJSON(\'["fast"]\')', 'fromJ
 assert.throws(() => pageGroups(workflow.replace('fromJSON(\'["fast"]\')', 'fromJSON(\'[]\')'), 'page'));
 const allPages = [...Object.values(pages).flat(), ...Object.values(mainPages).flat()];
 assert.equal(new Set(allPages).size, allPages.length, 'browser commands have one owner');
+assert(pages.account.includes('node scripts/check_browser_db_migration.mjs'),'browser upgrades run in the existing account group');
+for(const command of ['node scripts/check_sqlite_migration.mjs','node scripts/check_compute_storage.mjs']) {
+  assert.equal(workflow.split(command).length-1,1,command+' has one permanent CI entry');
+}
 const parity = workflow.split('\n  parity:')[1].split('\n  page-rest:')[0];
 assert.match(parity, /fail-fast: false/);
 const ship = readFileSync('.github/workflows/ship.yml', 'utf8');

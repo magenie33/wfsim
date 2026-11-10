@@ -103,7 +103,7 @@ export async function ownersOf(env, ids) {
   const out = new Map();
   if (!env.ACCOUNTS || !ids.length) return out;
   const { results } = await env.ACCOUNTS.prepare(
-    `SELECT verifier, account FROM devices WHERE verifier IN (${ids.map(() => "?").join(", ")})`).bind(...ids).all();
+    `SELECT verifier, account FROM relation_account_compute_devices WHERE verifier IN (${ids.map(() => "?").join(", ")})`).bind(...ids).all();
   for (const r of results) out.set(r.verifier, r.account);
   return out;
 }
@@ -122,10 +122,10 @@ async function workOf(env, ids) {
   // ONE STATEMENT for every id: the ranking asks for all of them, and ninety
   // at a time was a round trip each while a page waited.
   const { results } = await db.prepare(`SELECT v.id, v.work, v.consent_at, v.signatures,
-      (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?1::text) AS recent,
-      (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?2::text) AS week,
-      (SELECT SUM(d.work) FROM verifier_hours d WHERE d.verifier = v.id AND d.hour >= ?4::text AND d.hour < ?2::text) AS last_week
-    FROM verifiers v WHERE v.banned = 0 AND v.id IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))`)
+      (SELECT SUM(d.work) FROM record_hourly_compute_totals d WHERE d.verifier = v.id AND d.hour >= ?1::text) AS recent,
+      (SELECT SUM(d.work) FROM record_hourly_compute_totals d WHERE d.verifier = v.id AND d.hour >= ?2::text) AS week,
+      (SELECT SUM(d.work) FROM record_hourly_compute_totals d WHERE d.verifier = v.id AND d.hour >= ?4::text AND d.hour < ?2::text) AS last_week
+    FROM entity_compute_devices v WHERE v.banned = 0 AND v.id IN (SELECT jsonb_array_elements_text((?3::text)::jsonb))`)
     .bind(from, week, JSON.stringify(ids), last_week).all();
   for (const r of results) out.set(r.id, { work: r.work || 0, signatures: r.signatures || 0, recent: r.recent || 0, week: r.week || 0, last_week: r.last_week || 0, consent_at: r.consent_at || null });
   return out;
@@ -133,7 +133,7 @@ async function workOf(env, ids) {
 const NONE = { work: 0, signatures: 0, recent: 0, week: 0, last_week: 0, consent_at: null };
 
 export async function contributionOf(env, account) {
-  const { results } = await env.ACCOUNTS.prepare("SELECT verifier,from_hour,until_hour FROM device_spans WHERE account=?").bind(account).all();
+  const { results } = await env.ACCOUNTS.prepare("SELECT verifier,from_hour,until_hour FROM record_compute_device_ownership_intervals WHERE account=?").bind(account).all();
   const shares = await spanWork(env, results);
   const total = key => shares.reduce((sum, item) => sum + (item[key] || 0), 0);
   return { points: points(total("work")), signatures: total("signatures"), contributor_rank: contributorRank(points(total("work"))) };
@@ -167,7 +167,7 @@ async function spanWork(env, spans) {
       SUM(CASE WHEN h.hour >= ?2::text THEN h.work ELSE 0 END) AS week,
       SUM(CASE WHEN h.hour >= ?4::text AND h.hour < ?2::text THEN h.work ELSE 0 END) AS last_week
     FROM jsonb_to_recordset((?3::text)::jsonb) AS s(k bigint, v text, f text, u text)
-    LEFT JOIN verifier_hours h ON h.verifier = s.v COLLATE "C" AND h.hour >= s.f COLLATE "C" AND (s.u IS NULL OR h.hour < s.u COLLATE "C")
+    LEFT JOIN record_hourly_compute_totals h ON h.verifier = s.v COLLATE "C" AND h.hour >= s.f COLLATE "C" AND (s.u IS NULL OR h.hour < s.u COLLATE "C")
     GROUP BY s.k`).bind(from, week, JSON.stringify(list), last_week).all();
   for (const r of results) {
     const [sp, k] = cut[r.k];
@@ -181,7 +181,7 @@ async function spanWork(env, spans) {
 /// span, or all of it when it never had one; nothing while one is open.
 async function unheld(env, verifier) {
   const last = env.ACCOUNTS && await env.ACCOUNTS.prepare(
-    "SELECT until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour DESC LIMIT 1").bind(verifier).first();
+    "SELECT until_hour FROM record_compute_device_ownership_intervals WHERE verifier = ?1 ORDER BY from_hour DESC LIMIT 1").bind(verifier).first();
   if (last && last.until_hour == null) return { ...NONE, held: true };
   const [w] = await spanWork(env, [{ verifier, from_hour: last ? last.until_hour : "", until_hour: null }]);
   return { ...w, held: false };
@@ -189,8 +189,8 @@ async function unheld(env, verifier) {
 
 /// CLOSE `verifier`'S OPEN SPAN at `at`; one that closes empty is dropped.
 const closeSpan = (env, verifier, at) => env.ACCOUNTS.batch([
-  env.ACCOUNTS.prepare("UPDATE device_spans SET until_hour = ?1 WHERE verifier = ?2 AND until_hour IS NULL").bind(at, verifier),
-  env.ACCOUNTS.prepare("DELETE FROM device_spans WHERE verifier = ?1 AND until_hour = from_hour").bind(verifier),
+  env.ACCOUNTS.prepare("UPDATE record_compute_device_ownership_intervals SET until_hour = ?1 WHERE verifier = ?2 AND until_hour IS NULL").bind(at, verifier),
+  env.ACCOUNTS.prepare("DELETE FROM record_compute_device_ownership_intervals WHERE verifier = ?1 AND until_hour = from_hour").bind(verifier),
 ]);
 
 /// A VOLUNTEER: a device that said yes to computing and has had work credited
@@ -210,10 +210,10 @@ async function activityOf(env, ids) {
     const part = ids.slice(i, i + PER_STATEMENT);
     const marks = part.map(() => "?").join(", ");
     const [seen, held] = await db.batch([
-      db.prepare(`SELECT id, last_at FROM verifiers WHERE id IN (${marks})`).bind(...part),
+      db.prepare(`SELECT id, last_at FROM entity_compute_devices WHERE id IN (${marks})`).bind(...part),
       // A QUESTION OF THE FACT FACTORY, named by the producer that asked it.
-      db.prepare(`SELECT q.leased_to, q.request, d.producer, d.payload FROM questions q
-          JOIN demands d ON d.question = q.id AND d.state = 'live'
+      db.prepare(`SELECT q.leased_to, q.request, d.producer, d.payload FROM state_compute_work q
+          JOIN relation_task_consumers d ON d.question = q.id AND d.state = 'live'
           WHERE q.lease_until > ? AND q.leased_to IN (${marks})`).bind(iso(t), ...part),
     ]);
     for (const r of seen.results) out.set(r.id, { last_at: r.last_at || null, now: null });
@@ -234,7 +234,7 @@ async function activityOf(env, ids) {
 async function ownDevice(env, account, id) {
   if (!/^[a-z0-9]{6}$/.test(id || "")) return null;
   const { results } = await env.ACCOUNTS.prepare(
-    "SELECT verifier FROM devices WHERE account = ?1 AND substr(verifier, 1, 6) = ?2").bind(account, id).all();
+    "SELECT verifier FROM relation_account_compute_devices WHERE account = ?1 AND substr(verifier, 1, 6) = ?2").bind(account, id).all();
   return results.length === 1 ? results[0].verifier : null;
 }
 
@@ -242,9 +242,9 @@ export async function devices(request, env, account) {
   // ITS PLACES ARE READ OFF THE RANKING'S OWN MINUTE (`kept`), found by its row
   // key: worked out here, every open account page re-read every claimed device.
   const [{ results }, { results: spans }, choice, { everyone, day }] = await Promise.all([
-    env.ACCOUNTS.prepare("SELECT verifier, claimed_at, label FROM devices WHERE account = ?1 ORDER BY claimed_at").bind(account).all(),
-    env.ACCOUNTS.prepare("SELECT verifier, from_hour, until_hour FROM device_spans WHERE account = ?1").bind(account).all(),
-    env.ACCOUNTS.prepare("SELECT named FROM contribution_choice WHERE account = ?1").bind(account).first(),
+    env.ACCOUNTS.prepare("SELECT verifier, claimed_at, label FROM relation_account_compute_devices WHERE account = ?1 ORDER BY claimed_at").bind(account).all(),
+    env.ACCOUNTS.prepare("SELECT verifier, from_hour, until_hour FROM record_compute_device_ownership_intervals WHERE account = ?1").bind(account).all(),
+    env.ACCOUNTS.prepare("SELECT named FROM state_account_public_attribution WHERE account = ?1").bind(account).first(),
     kept(request, env),
   ]);
   const ids = results.map((d) => d.verifier);
@@ -291,7 +291,7 @@ export async function devicePointsOf(env, verifier, since) {
   // midnight — results sent, what they took, and the points credited in them.
   let today = null;
   if (/^\d{4}-\d\d-\d\dT\d\d$/.test(since || "") && env.LIBRARY) {
-    const t = await env.LIBRARY.prepare("SELECT SUM(tasks) AS tasks, SUM(ms) AS ms, SUM(work) AS work FROM verifier_hours WHERE verifier = ? AND hour >= ?")
+    const t = await env.LIBRARY.prepare("SELECT SUM(tasks) AS tasks, SUM(ms) AS ms, SUM(work) AS work FROM record_hourly_compute_totals WHERE verifier = ? AND hour >= ?")
       .bind(verifier, since).first();
     today = { tasks: (t && t.tasks) || 0, ms: (t && t.ms) || 0, points: points((t && t.work) || 0) };
   }
@@ -317,18 +317,18 @@ const ledgerFrom = (f) => (f === "" || HOUR.test(f || "") ? f : since(LEDGER_DAY
 async function ledgerOf(env, verifier, me, from) {
   const db = env.LIBRARY;
   const [spans, hours, v, u, adj] = await Promise.all([
-    env.ACCOUNTS ? env.ACCOUNTS.prepare("SELECT account, from_hour, until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour")
+    env.ACCOUNTS ? env.ACCOUNTS.prepare("SELECT account, from_hour, until_hour FROM record_compute_device_ownership_intervals WHERE verifier = ?1 ORDER BY from_hour")
       .bind(verifier).all().then((r) => r.results) : [],
-    db.prepare("SELECT hour, work, tasks FROM verifier_hours WHERE verifier = ? ORDER BY hour").bind(verifier).all().then((r) => r.results),
-    db.prepare("SELECT banned FROM verifiers WHERE id = ?").bind(verifier).first(),
+    db.prepare("SELECT hour, work, tasks FROM record_hourly_compute_totals WHERE verifier = ? ORDER BY hour").bind(verifier).all().then((r) => r.results),
+    db.prepare("SELECT banned FROM entity_compute_devices WHERE id = ?").bind(verifier).first(),
     db.prepare(`SELECT SUM(CASE WHEN a.void = 1 THEN 1 ELSE 0 END) AS refused,
         SUM(CASE WHEN a.void = 0 AND q.state = 'fact' THEN 1 ELSE 0 END) AS disagreed,
         SUM(CASE WHEN a.void = 0 AND q.state IN ('open', 'disputed', 'spot', 'nondeterministic') THEN 1 ELSE 0 END) AS waiting
-        FROM answers a JOIN questions q ON q.id = a.question
+        FROM record_candidate_answers a JOIN state_compute_work q ON q.id = a.question
         WHERE a.device = ? AND a.at >= ? AND a.credited = 0 AND a.official = 0`).bind(verifier, from).first(),
     // WHAT OF AN HOUR WAS GIVEN BY HAND (`adjustments`), already in its work and
     // named apart: compensation for an outage reads as that, not as computing.
-    db.prepare("SELECT hour, reason, SUM(work) AS work FROM adjustments WHERE verifier = ? AND hour >= ? GROUP BY hour, reason")
+    db.prepare("SELECT hour, reason, SUM(work) AS work FROM record_compute_credit_adjustments WHERE verifier = ? AND hour >= ? GROUP BY hour, reason")
       .bind(verifier, from).all().then((r) => r.results),
   ]);
   const given = new Map();
@@ -367,8 +367,8 @@ async function ownLedger(env, account, b) {
 /// hours alone, a removed device's included, each named by its six characters.
 async function accountLedger(env, account, from) {
   const [{ results: spans }, { results: listed }] = await Promise.all([
-    env.ACCOUNTS.prepare("SELECT verifier, from_hour, until_hour FROM device_spans WHERE account = ?1").bind(account).all(),
-    env.ACCOUNTS.prepare("SELECT verifier, label FROM devices WHERE account = ?1").bind(account).all(),
+    env.ACCOUNTS.prepare("SELECT verifier, from_hour, until_hour FROM record_compute_device_ownership_intervals WHERE account = ?1").bind(account).all(),
+    env.ACCOUNTS.prepare("SELECT verifier, label FROM relation_account_compute_devices WHERE account = ?1").bind(account).all(),
   ]);
   const hours = [];
   // ONE STATEMENT for every span (`spanWork`'s reason).
@@ -376,7 +376,7 @@ async function accountLedger(env, account, from) {
     const list = spans.map((sp, k) => ({ k, v: sp.verifier, f: sp.from_hour, u: sp.until_hour }));
     const { results } = await env.LIBRARY.prepare(`SELECT h.hour, s.v, h.work
         FROM jsonb_to_recordset((?1::text)::jsonb) AS s(k bigint, v text, f text, u text)
-        JOIN verifier_hours h ON h.verifier = s.v COLLATE "C" AND h.hour >= s.f COLLATE "C" AND h.hour >= ?2::text
+        JOIN record_hourly_compute_totals h ON h.verifier = s.v COLLATE "C" AND h.hour >= s.f COLLATE "C" AND h.hour >= ?2::text
           AND (s.u IS NULL OR h.hour < s.u COLLATE "C") ORDER BY s.k, h.hour`).bind(JSON.stringify(list), from).all();
     for (const r of results) hours.push({ hour: r.hour, id: r.v.slice(0, 6), points: points(r.work || 0) });
   }
@@ -384,7 +384,7 @@ async function accountLedger(env, account, from) {
   const banned = new Set();
   for (let i = 0; i < ids.length; i += PER_STATEMENT) {
     const part = ids.slice(i, i + PER_STATEMENT);
-    const { results } = await env.LIBRARY.prepare(`SELECT id FROM verifiers WHERE banned = 1 AND id IN (${part.map(() => "?").join(", ")})`)
+    const { results } = await env.LIBRARY.prepare(`SELECT id FROM entity_compute_devices WHERE banned = 1 AND id IN (${part.map(() => "?").join(", ")})`)
       .bind(...part).all();
     for (const r of results) banned.add(r.id);
   }
@@ -400,13 +400,13 @@ async function accountLedger(env, account, from) {
 export async function claimDevice(env, account, b) {
   if (!VERIFIER_ID.test(b.verifier || "")) return no("bad_device");
   const v = b.verifier, db = env.ACCOUNTS;
-  const owner = await db.prepare("SELECT account FROM devices WHERE verifier = ?1").bind(v).first();
+  const owner = await db.prepare("SELECT account FROM relation_account_compute_devices WHERE verifier = ?1").bind(v).first();
   if (owner && owner.account === account) return json({ ok: true });
   await closeSpan(env, v, nextHour());
-  const last = await db.prepare("SELECT until_hour FROM device_spans WHERE verifier = ?1 ORDER BY from_hour DESC LIMIT 1").bind(v).first();
+  const last = await db.prepare("SELECT until_hour FROM record_compute_device_ownership_intervals WHERE verifier = ?1 ORDER BY from_hour DESC LIMIT 1").bind(v).first();
   await db.batch([
-    db.prepare("INSERT INTO device_spans (verifier, account, from_hour) VALUES (?1, ?2, ?3) ON CONFLICT DO NOTHING").bind(v, account, last ? last.until_hour : ""),
-    db.prepare(`INSERT INTO devices (verifier, account, claimed_at, label) VALUES (?1, ?2, ?3, ?4)
+    db.prepare("INSERT INTO record_compute_device_ownership_intervals (verifier, account, from_hour) VALUES (?1, ?2, ?3) ON CONFLICT DO NOTHING").bind(v, account, last ? last.until_hour : ""),
+    db.prepare(`INSERT INTO relation_account_compute_devices (verifier, account, claimed_at, label) VALUES (?1, ?2, ?3, ?4)
       ON CONFLICT (verifier) DO UPDATE SET account = ?2, claimed_at = ?3, label = ?4`).bind(v, account, now(), labelOf(b.label)),
   ]);
   return json({ ok: true });
@@ -420,14 +420,14 @@ async function relabel(env, account, b) {
   if (!v) return no("not_your_device", 404);
   const label = labelOf(b.label);
   if (!label) return no("bad_label");
-  await env.ACCOUNTS.prepare("UPDATE devices SET label = ?1 WHERE verifier = ?2").bind(label, v).run();
+  await env.ACCOUNTS.prepare("UPDATE relation_account_compute_devices SET label = ?1 WHERE verifier = ?2").bind(label, v).run();
   return json({ ok: true });
 }
 async function release(env, account, b) {
   const v = await ownDevice(env, account, b.id);
   if (!v) return no("not_your_device", 404);
   await closeSpan(env, v, nextHour());
-  await env.ACCOUNTS.prepare("DELETE FROM devices WHERE verifier = ?1").bind(v).run();
+  await env.ACCOUNTS.prepare("DELETE FROM relation_account_compute_devices WHERE verifier = ?1").bind(v).run();
   return json({ ok: true });
 }
 
@@ -437,7 +437,7 @@ async function choose(env, account, b) {
   const named = typeof b.named === "boolean" ? b.named : b.shown;
   if (typeof named !== "boolean") return no("bad_choice");
   await env.ACCOUNTS.prepare(
-    `INSERT INTO contribution_choice (account, named, chosen_at) VALUES (?1, ?2, ?3)
+    `INSERT INTO state_account_public_attribution (account, named, chosen_at) VALUES (?1, ?2, ?3)
      ON CONFLICT (account) DO UPDATE SET named = ?2, chosen_at = ?3`).bind(account, named ? 1 : 0, now()).run();
   return json({ ok: true });
 }
@@ -451,8 +451,8 @@ const PERIODS = { all: "points", recent: "recent", week: "week" };
 export async function standings(env, day = keyDay()) {
   const { results } = await env.ACCOUNTS.prepare(
     `SELECT a.id, a.username, a.display_name, h.display_name AS held_name, h.reason AS held_reason, c.named, s.verifier, s.from_hour, s.until_hour
-       FROM device_spans s JOIN accounts a ON a.id = s.account LEFT JOIN contribution_choice c ON c.account = s.account
-       LEFT JOIN display_name_holds h ON h.account = s.account`).all();
+       FROM record_compute_device_ownership_intervals s JOIN entity_accounts a ON a.id = s.account LEFT JOIN state_account_public_attribution c ON c.account = s.account
+       LEFT JOIN state_account_name_holds h ON h.account = s.account`).all();
   const work = await spanWork(env, results);
   const by = new Map();
   for (const [i, r] of results.entries()) {
@@ -479,7 +479,7 @@ export const COMPUTING_MS = 10 * 60_000;
 async function computingNow(env) {
   if (!env.LIBRARY) return 0;
   const from = iso(Date.now() - COMPUTING_MS);
-  const r = await env.LIBRARY.prepare("SELECT COUNT(*) AS n FROM verifiers WHERE banned = 0 AND last_at >= ?").bind(from).first();
+  const r = await env.LIBRARY.prepare("SELECT COUNT(*) AS n FROM entity_compute_devices WHERE banned = 0 AND last_at >= ?").bind(from).first();
   return (r && r.n) || 0;
 }
 
@@ -506,7 +506,7 @@ async function person(request, env, name) {
 /// THE OFFICIAL POOL, in points and by where it came from (`points_pool`).
 async function poolOf(env) {
   if (!env.LIBRARY) return null;
-  const { results } = await env.LIBRARY.prepare("SELECT source, SUM(work) AS work FROM points_pool GROUP BY source").all();
+  const { results } = await env.LIBRARY.prepare("SELECT source, SUM(work) AS work FROM record_unowned_credit_transfers GROUP BY source").all();
   const by = Object.fromEntries(results.map((r) => [r.source, points(r.work || 0)]));
   return { points: points(results.reduce((t, r) => t + (r.work || 0), 0)),
     deleted_account: by.deleted_account || 0, refused: by.refused || 0 };
@@ -667,9 +667,9 @@ export function starvedOf(reading, orders) {
 async function nowOf(db, now) {
   const since = iso(now - NOW_WINDOW_MS);
   const [asking, held, answered] = await db.batch([
-    db.prepare("SELECT COUNT(*) AS n FROM verifiers WHERE asked_at > ? AND banned = 0").bind(since),
-    db.prepare("SELECT COUNT(*) AS n FROM questions WHERE leased_to IS NOT NULL AND lease_until > ?").bind(iso(now)),
-    db.prepare("SELECT COUNT(*) AS n FROM answers WHERE at > ? AND official = 0").bind(since),
+    db.prepare("SELECT COUNT(*) AS n FROM entity_compute_devices WHERE asked_at > ? AND banned = 0").bind(since),
+    db.prepare("SELECT COUNT(*) AS n FROM state_compute_work WHERE leased_to IS NOT NULL AND lease_until > ?").bind(iso(now)),
+    db.prepare("SELECT COUNT(*) AS n FROM record_candidate_answers WHERE at > ? AND official = 0").bind(since),
   ]);
   const n = (r) => Number((r.results[0] || {}).n || 0);
   return { window_seconds: NOW_WINDOW_MS / 1000, asking: n(asking), held: n(held), answered: n(answered) };
@@ -695,38 +695,38 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
   const began = performance.now();
   const reads = await db.batch([
     db.prepare(`SET LOCAL statement_timeout = ${counts && costs ? "DEFAULT" : DEMAND_COST_TIMEOUT_MS}`),
-    ...(options.pace ? [] : [db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000))]),
+    ...(options.pace ? [] : [db.prepare(`SELECT ${SPLIT} FROM state_board_measurement_selection WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000))]),
     db.prepare(`SELECT COUNT(*) AS n, SUM(CASE WHEN started_at IS NULL THEN 0 ELSE 1 END) AS started
-                FROM appraisals WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?`)
+                FROM entity_appraisal_requests WHERE done_at IS NULL AND request IS NOT NULL AND at > ? AND channel != ?`)
       .bind(iso(now - 86_400_000), SURVEY_CHANNEL),
     // EACH SURVEY AS A GOAL: every riven shape of one weapon on one ruler, how
     // many two owners have agreed on and how many anyone has begun. A survey
     // whose every shape is agreed is reached, and no longer a goal.
     db.prepare(`SELECT weapon, ruler, COUNT(*) AS shapes, SUM(CASE WHEN agreed_at IS NULL THEN 0 ELSE 1 END) AS agreed, SUM(CASE WHEN started_at IS NULL THEN 0 ELSE 1 END) AS started,
                 SUM(CASE WHEN agreed_at >= ?3::text THEN 1 ELSE 0 END) AS lately
-                FROM appraisals WHERE channel = ?1::text AND request IS NOT NULL AND at > ?2::text GROUP BY weapon, ruler
+                FROM entity_appraisal_requests WHERE channel = ?1::text AND request IS NOT NULL AND at > ?2::text GROUP BY weapon, ruler
                 HAVING SUM(CASE WHEN agreed_at IS NULL THEN 0 ELSE 1 END) < COUNT(*) ORDER BY MIN(at), weapon`)
       .bind(SURVEY_CHANNEL, iso(now - SURVEY_KEEP_MS), iso(now - PACE_HOURS * 3_600_000)),
     // THE LAST WHOLE HOURS, the one under way left out.
     db.prepare(`SELECT COALESCE(SUM(CASE WHEN hour >= ?1::text THEN ms ELSE 0 END), 0) AS ms,
                   COALESCE(SUM(CASE WHEN hour < ?1::text THEN ms ELSE 0 END), 0) AS previous_ms
-                FROM verifier_hours WHERE hour >= ?3::text AND hour < ?2::text`)
+                FROM record_hourly_compute_totals WHERE hour >= ?3::text AND hour < ?2::text`)
       .bind(iso(now - PACE_HOURS * 3_600_000).slice(0, 13), iso(now).slice(0, 13), iso(now - 2 * PACE_HOURS * 3_600_000).slice(0, 13)),
     ...(counts ? [] : [
       // A ROW A NEW BUILD'S DEMAND IS LIVE FOR counts as a new build's. Those
       // demands are read once and joined whole: looked up a queue row at a time,
       // every row cost an index walk for the few that have one.
-      db.prepare(`WITH d AS MATERIALIZED (SELECT ref FROM demands WHERE state = 'live' AND producer = 'new_build')
+      db.prepare(`WITH d AS MATERIALIZED (SELECT ref FROM relation_task_consumers WHERE state = 'live' AND producer = 'new_build')
                   SELECT k, COUNT(*) AS n FROM (SELECT MIN(CASE WHEN d.ref IS NOT NULL THEN 0 WHEN q.batch LIKE 'rescore%' THEN 1 WHEN q.batch LIKE 'refresh-%' THEN 3 ELSE 2 END) AS k
-                  FROM queue q JOIN batches b ON b.id = q.batch
+                  FROM state_board_pending_work q JOIN entity_compute_batches b ON b.id = q.batch
                   LEFT JOIN d ON d.ref = q.build_id || '|' || q.ruler || '|' || q.mode
                   GROUP BY q.build_id, q.ruler, q.mode) x GROUP BY k`),
-      db.prepare("SELECT verb, COUNT(*) AS n FROM questions WHERE state = 'open' GROUP BY verb"),
+      db.prepare("SELECT verb, COUNT(*) AS n FROM state_compute_work WHERE state = 'open' GROUP BY verb"),
     ]),
     ...(costs ? [] : [
       // Bounded samples and indexed lateral lookups avoid a full question-table
       // join chosen from an underestimated engine population.
-      db.prepare(`WITH s AS MATERIALIZED (SELECT question,compute_ms,at FROM answers
+      db.prepare(`WITH s AS MATERIALIZED (SELECT question,compute_ms,at FROM record_candidate_answers
                     WHERE at >= ?1::text AND official = 0 AND (?3::text IS NULL OR engine = ?3::text)
                     ORDER BY at DESC,id DESC LIMIT ?2::bigint),
                   sample AS (SELECT MIN(at) AS at FROM s)
@@ -734,7 +734,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
                     COUNT(DISTINCT CASE WHEN q.fact_at >= sample.at AND (?3::text IS NULL OR q.fact_engine = ?3::text)
                       THEN s.question END) AS facts
                   FROM s CROSS JOIN sample CROSS JOIN LATERAL
-                    (SELECT verb,fact_at,fact_engine FROM questions WHERE id=s.question OFFSET 0) q GROUP BY q.verb`)
+                    (SELECT verb,fact_at,fact_engine FROM state_compute_work WHERE id=s.question OFFSET 0) q GROUP BY q.verb`)
         .bind(iso(now - DEMAND_COST_MS), scan, engine),
     ]),
     ...(counts ? [] : [
@@ -742,7 +742,7 @@ export async function demandOf(env, now = Date.now(), scan = DEMAND_COST_SCAN, o
       // machine, now or before — is dispatched, by the kind `owed` counts it as.
       db.prepare(`SELECT k, COUNT(*) AS n FROM (SELECT x.id, MIN(CASE WHEN d.producer = 'new_build' THEN 0
                       WHEN d.payload::jsonb ->> 'batch' LIKE 'rescore%' THEN 1 WHEN d.producer = 'refresh' THEN 3 ELSE 2 END) AS k
-                    FROM questions x JOIN demands d ON d.question = x.id AND d.state = 'live' AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
+                    FROM state_compute_work x JOIN relation_task_consumers d ON d.question = x.id AND d.state = 'live' AND d.producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
                    WHERE x.state = 'open' AND x.verb = 'simulate' AND (x.leased_at IS NOT NULL OR x.lease IS NOT NULL)
                    GROUP BY x.id) y GROUP BY k`).bind(JSON.stringify(BOARD_KINDS)),
     ]),
@@ -826,12 +826,12 @@ export const TALLY_BASE_MS = 60 * 60_000;
 const SPLIT = `SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 1 ELSE 0 END) AS volunteers, SUM(CASE WHEN measured_by LIKE 'verified:%' THEN 0 ELSE 1 END) AS official`;
 const split = (r) => ({ volunteers: (r && r.volunteers) || 0, official: (r && r.official) || 0 });
 export async function scorePace(env, now = Date.now()) {
-  return split(await env.LIBRARY.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`)
+  return split(await env.LIBRARY.prepare(`SELECT ${SPLIT} FROM state_board_measurement_selection WHERE finished_at >= ?`)
     .bind(iso(now - PACE_HOURS * 3_600_000)).first());
 }
 /// THE BASE: every score by who computed it, as of `at`.
 export async function tallyBase(db, now = Date.now()) {
-  return { at: iso(now), ...split(await db.prepare(`SELECT ${SPLIT} FROM scores`).first()) };
+  return { at: iso(now), ...split(await db.prepare(`SELECT ${SPLIT} FROM state_board_measurement_selection`).first()) };
 }
 /// THE TALLY'S BODY from a base: the worker's answer and the settler's file
 /// (`TALLY_KEY`) are this one function.
@@ -840,8 +840,8 @@ export async function tallyOf(env, base, now = Date.now(), pace = null) {
   let totals = { volunteers: 0, official: 0 }, perHour = { volunteers: 0, official: 0 };
   if (db && base) {
     const reads = await db.batch([
-      db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at > ?`).bind(base.at),
-      ...(pace ? [] : [db.prepare(`SELECT ${SPLIT} FROM scores WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000))]),
+      db.prepare(`SELECT ${SPLIT} FROM state_board_measurement_selection WHERE finished_at > ?`).bind(base.at),
+      ...(pace ? [] : [db.prepare(`SELECT ${SPLIT} FROM state_board_measurement_selection WHERE finished_at >= ?`).bind(iso(now - PACE_HOURS * 3_600_000))]),
     ]);
     const [since, hour] = pace ? [reads[0], { results: [pace] }] : reads;
     const s = split(since.results[0]);

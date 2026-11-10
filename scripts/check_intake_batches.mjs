@@ -55,13 +55,13 @@ async function seed(rows) {
     [row.id, row.at, JSON.stringify(row.record)]);
   return file('inbox.ndjson', rows.map(row => JSON.stringify(row)).join('\n') + '\n');
 }
-const pending = async () => (await query('SELECT id FROM inbox UNION ALL SELECT id FROM equipment_inbox ORDER BY id')).map(row => row.id);
-const saved = () => query('SELECT id,at,record FROM builds ORDER BY id');
-const owed = () => query('SELECT batch,build_id,ruler,mode,initiator FROM queue ORDER BY build_id,ruler,mode');
+const pending = async () => (await query('SELECT id FROM record_build_submissions UNION ALL SELECT id FROM record_equipment_submissions ORDER BY id')).map(row => row.id);
+const saved = () => query('SELECT id,at,record FROM entity_weapon_builds ORDER BY id');
+const owed = () => query('SELECT batch,build_id,ruler,mode,initiator FROM state_board_pending_work ORDER BY build_id,ruler,mode');
 async function clear() {
-  await query('DELETE FROM inbox'); await query('DELETE FROM equipment_inbox');
-  await query('DELETE FROM builds'); await query('DELETE FROM equipment_builds');
-  await query('DELETE FROM queue'); await query('DELETE FROM batches');
+  await query('DELETE FROM record_build_submissions'); await query('DELETE FROM record_equipment_submissions');
+  await query('DELETE FROM entity_weapon_builds'); await query('DELETE FROM entity_equipment_builds');
+  await query('DELETE FROM state_board_pending_work'); await query('DELETE FROM entity_compute_batches');
   askMode = familyMode = 'ok'; requests.length = 0; admitted.clear();
 }
 async function execute(input, options = {}) {
@@ -113,7 +113,7 @@ try {
   assert.deepEqual(await saved(), expected, 'batching changed canonical records or original clocks');
   const queue = await owed(), torid = (await saved()).find(row => JSON.parse(row.record).mods.includes('speed_trigger'));
   assert.equal(queue.find(row => row.build_id === torid.id).initiator, 'user:first', 'first nonempty initiator changed');
-  assert.equal((await query('SELECT sum(total) AS n FROM batches'))[0].n, queue.length, 'replay counted existing work');
+  assert.equal((await query('SELECT sum(total) AS n FROM entity_compute_batches'))[0].n, queue.length, 'replay counted existing work');
   assert.deepEqual(admitted, expectedFamily); assert(requests.filter(row => row.path === '/api/board/ask').every(row => row.body.rows.every(item => item.named === true)));
   console.log('ok: a completed prefix survives a cut; replay matches full intake clocks, records, first initiator, family and unique work counts');
 
@@ -134,7 +134,7 @@ try {
     familyMode = askMode = 'ok';
     await execute(source);
     assert.deepEqual(await pending(), []); assert.equal((await saved()).length, 1); assert.equal((await owed()).length, 1);
-    assert.equal((await query('SELECT sum(total) AS n FROM batches'))[0].n, 1);
+    assert.equal((await query('SELECT sum(total) AS n FROM entity_compute_batches'))[0].n, 1);
     assert.equal(admitted.size, familyCount);
   }
   console.log('ok: build/family/queue/ask/partial ACK/lost reply/delete failures retain arrivals; retries admit one calculation');
@@ -147,7 +147,7 @@ try {
   } }), /delete reply lost/);
   assert.deepEqual(await pending(), []);
   const before = await owed(); await execute(source);
-  assert.deepEqual(await owed(), before); assert.equal((await query('SELECT sum(total) AS n FROM batches'))[0].n, 1);
+  assert.deepEqual(await owed(), before); assert.equal((await query('SELECT sum(total) AS n FROM entity_compute_batches'))[0].n, 1);
   console.log('ok: losing the final delete reply cannot duplicate work on replay');
 
   await clear();
@@ -155,11 +155,11 @@ try {
   const canonical = spawnSync(intake, [], { input: readFileSync(fifo), encoding: 'utf8' });
   assert.equal(canonical.status, 0, canonical.stderr);
   const identity = JSON.parse(canonical.stdout.split('\n')[0]).id;
-  await query("INSERT INTO batches(id,at,total) VALUES('existing','2000-01-01',1)");
-  await query("INSERT INTO queue(batch,build_id,ruler,mode,initiator) VALUES('existing',?,'standard_single_target','base','user:original')", [identity]);
+  await query("INSERT INTO entity_compute_batches(id,at,total) VALUES('existing','2000-01-01',1)");
+  await query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode,initiator) VALUES('existing',?,'standard_single_target','base','user:original')", [identity]);
   await execute(fifo);
   assert.deepEqual((await owed()).map(({ batch, initiator }) => ({ batch, initiator })), [{ batch: 'existing', initiator: 'user:original' }]);
-  assert.equal((await query('SELECT sum(total) AS n FROM batches'))[0].n, 1);
+  assert.equal((await query('SELECT sum(total) AS n FROM entity_compute_batches'))[0].n, 1);
   console.log('ok: an existing calculation retains its FIFO batch and original initiator');
 
   await clear();

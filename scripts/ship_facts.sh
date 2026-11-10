@@ -47,7 +47,7 @@ batches() {
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
-        sql: ("INSERT INTO scores (identity, ruler, mode,"
+        sql: ("INSERT INTO state_board_measurement_selection (identity, ruler, mode,"
               + " measured_by, score, metric, cost_seconds,"
               + " started_at, finished_at)"
               + " VALUES "
@@ -56,8 +56,8 @@ batches() {
               + " ON CONFLICT (identity, ruler, mode) DO UPDATE SET measured_by = excluded.measured_by,"
               + " score = excluded.score, metric = excluded.metric, cost_seconds = excluded.cost_seconds,"
               + " started_at = excluded.started_at, finished_at = excluded.finished_at, review_id = NULL"
-              + " WHERE NOT EXISTS (SELECT 1 FROM board_reviews r WHERE r.id=scores.review_id AND r.invalidated_at IS NOT NULL AND r.state <> '\''succeeded'\'')"
-              + " AND excluded.finished_at >= scores.finished_at"),
+              + " WHERE NOT EXISTS (SELECT 1 FROM entity_measurement_reviews r WHERE r.id=state_board_measurement_selection.review_id AND r.invalidated_at IS NOT NULL AND r.state <> '\''succeeded'\'')"
+              + " AND excluded.finished_at >= state_board_measurement_selection.finished_at"),
         params: [$chunk[]
                  | .identity, .ruler, .mode, (.measured_by // ""),
                    .score, .metric,
@@ -87,8 +87,8 @@ spends() {
     | . as $i
     | $all[$i : $i + $n] as $chunk
     | {
-        sql: ("DELETE FROM queue WHERE (build_id, ruler, mode) IN (VALUES "
-              + ([$chunk[] | "(?,?,?)"] | join(",")) + ") AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=queue.build_id AND f.ruler=queue.ruler AND f.mode=queue.mode AND f.retired_at IS NOT NULL)"),
+        sql: ("DELETE FROM state_board_pending_work WHERE (build_id, ruler, mode) IN (VALUES "
+              + ([$chunk[] | "(?,?,?)"] | join(",")) + ") AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=state_board_pending_work.build_id AND f.ruler=state_board_pending_work.ruler AND f.mode=state_board_pending_work.mode AND f.retired_at IS NOT NULL)"),
         params: [$chunk[] | .identity, .ruler, .mode]
       }
   ' "$src"
@@ -132,7 +132,7 @@ ship() {
     while IFS= read -r body; do
       [ -n "$body" ] || continue
       db_query "$body" && spent=$((spent + 1)) || {
-        echo "::warning::queue: a spent row would not delete [HTTP $DB_CODE] — it will be computed again"
+        echo "::warning::state_board_pending_work: a spent row would not delete [HTTP $DB_CODE] — it will be computed again"
       }
     done < <(spends "$pending2")
     rm -f "$pending2"
@@ -228,14 +228,14 @@ OK
   # THE QUEUE IS SPENT AFTER THE SCORE IS BANKED, never before. Stopped between
   # the two, the row is still owed and the next run computes it again — free,
   # because a score is a pure function. The other order loses work.
-  i=$(grep -n "INTO scores" sent.log | tail -1 | cut -d: -f1)
-  d=$(grep -n "DELETE FROM queue" sent.log | head -1 | cut -d: -f1)
+  i=$(grep -n "INTO state_board_measurement_selection" sent.log | tail -1 | cut -d: -f1)
+  d=$(grep -n "DELETE FROM state_board_pending_work" sent.log | head -1 | cut -d: -f1)
   [ -n "$i" ] && [ -n "$d" ] && [ "$i" -lt "$d" ] \
     && say ok "...and spends the queue row only after the score landed" \
     || say FAIL "the delete went first (insert $i, delete $d)"
   # NO `batch` IN THE `WHERE`: two groups can ask for one row, and computing it
   # answers both.
-  grep "DELETE FROM queue" sent.log | head -1 | jq -e '.sql | contains("batch") | not' >/dev/null \
+  grep "DELETE FROM state_board_pending_work" sent.log | head -1 | jq -e '.sql | contains("batch") | not' >/dev/null \
     && say ok "...for every group that asked for it, not one" \
     || say FAIL "the delete named a batch"
 
@@ -249,7 +249,7 @@ OK
 
   cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table scores"}]}'
+printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table state_board_measurement_selection"}]}'
 exit 1
 DEAD
   chmod +x "$DIR/bin/db"

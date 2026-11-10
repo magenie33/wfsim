@@ -31,11 +31,11 @@ const LIBRARY = {
   prepare: (sql) => ({
     bind: (...a) => ({
       run: async () => {
-        if (/INSERT INTO shares .*ON CONFLICT DO NOTHING/.test(sql) && !shares.has(a[0])) {
+        if (/INSERT INTO entity_short_shares .*ON CONFLICT DO NOTHING/.test(sql) && !shares.has(a[0])) {
           shares.set(a[0], { weapon: a[1], code: a[2], at: a[3], claim: a[4] ?? null });
         }
       },
-      first: async () => (/FROM shares/.test(sql) ? shares.get(a[0]) || null : null),
+      first: async () => (/FROM entity_short_shares/.test(sql) ? shares.get(a[0]) || null : null),
     }),
   }),
 };

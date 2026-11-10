@@ -9,10 +9,10 @@ const dir = mkdtempSync(join(tmpdir(), 'compute-capture-'));
 const pg = new PGlite();
 try {
   await pg.exec(['schema.sql', 'library.sql', 'sync.sql'].map(name => readFileSync(new URL(`../worker/pg/${name}`, import.meta.url), 'utf8')).join('\n'));
-  await pg.query("INSERT INTO builds(id,at,record) VALUES ('a','x','{\"weapon\":\"torid\"}')");
-  await pg.query("INSERT INTO builds(id,at,record) SELECT 'b'||i,'x','{\"weapon\":\"torid\"}' FROM generate_series(1,25000) i");
-  await pg.query("INSERT INTO batches(id,at,why,total) VALUES ('b','x','test',1)");
-  await pg.query("INSERT INTO queue(batch,build_id,ruler,mode) VALUES ('b','a','r','base')");
+  await pg.query("INSERT INTO entity_weapon_builds(id,at,record) VALUES ('a','x','{\"weapon\":\"torid\"}')");
+  await pg.query("INSERT INTO entity_weapon_builds(id,at,record) SELECT 'b'||i,'x','{\"weapon\":\"torid\"}' FROM generate_series(1,25000) i");
+  await pg.query("INSERT INTO entity_compute_batches(id,at,why,total) VALUES ('b','x','test',1)");
+  await pg.query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES ('b','a','r','base')");
   const paths = Object.fromEntries(['library', 'builds', 'facts', 'queue', 'tasks', 'meta'].map(k => [k, join(dir, k)]));
   let reads = 0, fail = false, libraryFetches = 0, libraryScan = false;
   const sql = { begin: async (options, fn) => {
@@ -23,7 +23,7 @@ try {
       assert.equal(settings.ro, 'on'); assert.equal(settings.isolation, 'repeatable read');
       return fn({ unsafe: (query, params = []) => {
         assert(params.every(value => !Array.isArray(value)), 'wire parameters must be scalar values');
-        if (query.startsWith('DECLARE')) libraryScan = query.includes('SELECT id,at,record FROM builds');
+        if (query.startsWith('DECLARE')) libraryScan = query.includes('SELECT id,at,record FROM entity_weapon_builds');
         if (query.startsWith('FETCH')) {
           const page = /^FETCH FORWARD ([0-9]+) FROM inventory_scan$/.exec(query);
           assert(page && Number(page[1]) > 0 && Number(page[1]) <= 20000, 'one result page stays bounded');
@@ -42,17 +42,17 @@ try {
   assert.equal(JSON.parse(readFileSync(paths.builds, 'utf8').split('\n')[0]).id, 'a');
   assert.equal(JSON.parse(readFileSync(paths.queue)).build_id, 'a');
   assert(JSON.parse(readFileSync(paths.meta)).snapshot);
-  await pg.query("INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES ('a','r','base','old',99,'kpm',0,'2026-10-18T00:00:00.000Z','2026-10-18T00:00:00.000Z')");
-  await pg.query(`INSERT INTO board_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
+  await pg.query("INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES ('a','r','base','old',99,'kpm',0,'2026-10-18T00:00:00.000Z','2026-10-18T00:00:00.000Z')");
+  await pg.query(`INSERT INTO entity_measurement_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
     baseline_score,baseline_metric,baseline_cost_seconds,baseline_by,baseline_started_at,baseline_finished_at,created_at,invalidated_at)
     VALUES ('a|r|base','capture-retired','2026-11-06T00:00:00.000Z','a','r','base','new','capture-question','{}','waiting',
       99,'kpm',0,'old','2026-10-18T00:00:00.000Z','2026-10-18T00:00:00.000Z','2026-11-06T00:00:00.000Z','2026-11-06T00:00:00.000Z')`);
-  await pg.query("UPDATE scores SET review_id='capture-retired' WHERE identity='a'");
+  await pg.query("UPDATE state_board_measurement_selection SET review_id='capture-retired' WHERE identity='a'");
   await captureInventory(sql,paths,'4393e1730621');
   assert.equal(JSON.parse(readFileSync(paths.facts)).retired_at,'2026-11-06T00:00:00.000Z',
     'a complete snapshot cannot turn a retired measurement back into an active entry-line fact');
-  await pg.query("UPDATE board_reviews SET state='succeeded' WHERE id='capture-retired'");
-  await pg.query("UPDATE scores SET score=25,finished_at='2026-11-06T00:01:00.000Z' WHERE identity='a'");
+  await pg.query("UPDATE entity_measurement_reviews SET state='succeeded' WHERE id='capture-retired'");
+  await pg.query("UPDATE state_board_measurement_selection SET score=25,finished_at='2026-11-06T00:01:00.000Z' WHERE identity='a'");
   await captureInventory(sql,paths,'4393e1730621');
   assert.equal(JSON.parse(readFileSync(paths.facts)).retired_at,null);
   assert.equal(JSON.parse(readFileSync(paths.facts)).score,25);

@@ -13,6 +13,8 @@ import { InventoryControl, InventoryActionRequired } from './inventory_control.m
 import { captureInventory } from './capture_compute_inventory.mjs';
 import { classifyInventory } from './classify_compute_inventory.mjs';
 import { questionId } from '../worker/task_contract.js';
+import { seedComputeWork,replaceComputeResult } from './pg/fixtures.mjs';
+import { placeholders } from '../worker/db.js';
 
 const binary = resolve(process.env.WFSIM_INVENTORY_BOARD_BIN || 'target/debug/wfsim-board');
 const root = mkdtempSync(join(tmpdir(), 'relational-pipeline-')), work = join(root, 'work'), bin = join(root, 'bin');
@@ -21,6 +23,7 @@ const engine = '0ae1bf8edb0f';
 writeFileSync(join(bin, 'ENGINE'), engine); writeFileSync(join(bin, 'VERSION'), 'relational-test');
 const statePath = join(work, 'inventory/state.json'), load = p => JSON.parse(readFileSync(p, 'utf8'));
 const pg = new PGlite(), query = (sql, args = []) => pg.query(sql, args).then(r => r.rows);
+const fixtureDb={run:(text,...args)=>query(placeholders(text),args),get:async(text,...args)=>(await query(placeholders(text),args))[0]};
 const err = openSync(join(root, 'engine.log'), 'w');
 let native, operator, afterCapture, acknowledgments = 0, fullCaptures = 0, failed = true, failGate = false;
 const described = [];
@@ -40,13 +43,13 @@ let generations = 0;
 const unsafe = async (sql, args = []) => {
   if (sql.includes('SELECT inventory_begin(')) generations++;
   assert(!sql.includes('inventory_cohort_rows'), 'relational capture expanded changes to a weapon cohort');
-  if (sql.includes('DECLARE inventory_scan') && sql.includes('FROM builds')) fullCaptures++;
+  if (sql.includes('DECLARE inventory_scan') && sql.includes('FROM entity_weapon_builds')) fullCaptures++;
   if (sql.includes('inventory_ack(')) {
     current(db => {
       assert.equal(db.meta.complete, true);
-      assert(!db.statement('SELECT 1 FROM rel_groups UNION ALL SELECT 1 FROM rel_ranges UNION ALL SELECT 1 FROM rel_jobs LIMIT 1').get());
-      for (const row of JSON.parse(args[1])) assert(db.statement('SELECT 1 FROM receipts WHERE scope=? AND key=? AND revision=?')
-        .get(row.scope, row.key, row.revision) || db.statement('SELECT processed FROM epoch_tokens WHERE scope=? AND key=?').get(row.scope, row.key)?.processed);
+      assert(!db.statement("SELECT 1 FROM state_catalog_groups UNION ALL SELECT 1 FROM state_catalog_ranges UNION ALL SELECT 1 FROM state_catalog_jobs LIMIT 1").get());
+      for (const row of JSON.parse(args[1])) assert(db.statement("SELECT 1 FROM record_inventory_applied_changes WHERE scope=? AND key=? AND revision=?")
+        .get(row.scope, row.key, row.revision) || db.statement("SELECT processed FROM state_inventory_epoch_tokens WHERE scope=? AND key=?").get(row.scope, row.key)?.processed);
     });
     acknowledgments++;
   }
@@ -87,10 +90,10 @@ try {
   await open();
   const seed = JSON.parse(readFileSync(new URL('../tests/gas/rows.json', import.meta.url))).slice(0, 3).map(r => r.record);
   const canonical = await native.call('describe', seed.map((record, i) => ({ id: String(i), record })));
-  for (const row of canonical) await query('INSERT INTO builds(id,at,record) VALUES($1,\'day\',$2)', [row.candidate, JSON.stringify(row.record)]);
+  for (const row of canonical) await query('INSERT INTO entity_weapon_builds(id,at,record) VALUES($1,\'day\',$2)', [row.candidate, JSON.stringify(row.record)]);
   const future = await questionId('future', { data: 'input' });
-  await query("INSERT INTO questions(id,verb,request,state,due_at,opened_at) VALUES($1,'future','{}','open','due','at')", [future]);
-  await query("INSERT INTO demands(producer,ref,question,state,asked_at,due_at) VALUES('future','future',$1,'live','at','due')", [future]);
+  await seedComputeWork(fixtureDb,{id:future,verb:'future',request:'{}',state:'open',due_at:'due',opened_at:'at'});
+  await query("INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at) VALUES('future','future',$1,'live','at','due')", [future]);
   const preserved = join(work, 'inventory/capture-1'); mkdirSync(preserved, { recursive: true });
   writeFileSync(join(preserved, 'protected'), 'original input');
   await assert.rejects(cycle(0), error => error instanceof InventoryActionRequired && error.stage === 'needs_bootstrap');
@@ -106,7 +109,7 @@ try {
     captured = { meta: cut.meta, receipt: cut.receipt, raw: Object.fromEntries(Object.entries(cut.raw).map(([key, path]) => {
       const copy = join(dir, key); copyFileSync(path, copy); return [key, copy];
     })) };
-    await query("UPDATE questions SET state='fact',fact_engine=$2 WHERE id=$1", [future, engine]);
+    await replaceComputeResult(fixtureDb,future,{state:'fact',canon:'{}',fact_engine:engine,fact_at:'2026-11-01T00:00:01.000Z'});
   };
   let state = await cycle(0); assert(state.pending); assert.equal(acknowledgments, 0);
   const originalBuilds = readFileSync(load(statePath).pending.raw.builds), buildsPath = load(statePath).pending.raw.builds;
@@ -127,25 +130,25 @@ try {
   assert.equal(state.published.snapshot, captured.receipt.snapshot);
   assert.equal(state.published.started_at, captured.receipt.started_at);
   await oracle(captured.raw, captured.meta, 'bootstrap');
-  assert.equal((await query('SELECT count(*) n FROM inventory_dirty WHERE key=$1', [future]))[0].n, 1);
+  assert.equal((await query('SELECT count(*) n FROM state_compute_inventory_invalidations WHERE key=$1', [future]))[0].n, 1);
   console.log('ok: two process failures resume durable inputs without recapture/re-normalization; frozen cut remains exact; later writes stay pending');
 
   mature(); const before = fullCaptures; await finish();
   assert.equal(fullCaptures, before); assert.equal(described.length, 3);
   await currentOracle('lifecycle');
-  assert.equal((await query('SELECT count(*) n FROM inventory_dirty'))[0].n, 0);
+  assert.equal((await query('SELECT count(*) n FROM state_compute_inventory_invalidations'))[0].n, 0);
   console.log('ok: lifecycle-only delta reads no library/cohort and matches the independent full oracle');
 
   const c = canonical[0];
-  await query('INSERT INTO builds(id,at,record) VALUES(\'alias\',\'day\',$1)', [JSON.stringify(c.record)]);
+  await query('INSERT INTO entity_weapon_builds(id,at,record) VALUES(\'alias\',\'day\',$1)', [JSON.stringify(c.record)]);
   mature(); const capturedBefore = fullCaptures; await finish(); assert.equal(fullCaptures, capturedBefore);
   await currentOracle('alias');
-  await query('DELETE FROM builds WHERE id=$1', [c.candidate]);
+  await query('DELETE FROM entity_weapon_builds WHERE id=$1', [c.candidate]);
   mature(); await finish(); await currentOracle('canonical-delete');
   console.log('ok: changed sources and canonical deletion maintain exact membership without complete inventory reads');
   for (const [kind, hook] of [
-    ['expired', async cut => query("UPDATE inventory_epochs SET started_at=to_char((clock_timestamp()-interval '4 hours') AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') WHERE epoch=$1", [cut.receipt.epoch])],
-    ['superseded', async () => query("UPDATE factory_findings SET body=jsonb_set(body::jsonb,'{started_at}',to_jsonb(to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"')))::text WHERE kind='task_inventory'")],
+    ['expired', async cut => query("UPDATE record_inventory_captures SET started_at=to_char((clock_timestamp()-interval '4 hours') AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"') WHERE epoch=$1", [cut.receipt.epoch])],
+    ['superseded', async () => query("UPDATE state_factory_findings SET body=jsonb_set(body::jsonb,'{started_at}',to_jsonb(to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD\"T\"HH24:MI:SS.MS\"Z\"')))::text WHERE kind='task_inventory'")],
   ]) {
     mature(); afterCapture = hook;
     const before = fullCaptures, derived = described.length;

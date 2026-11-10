@@ -110,8 +110,8 @@ class TaskArchiveCheck(TestCase):
         self.assertIn('RETURN 0;', sql)
         self.assertIn('factory_forget_archived', sql)
         self.assertNotIn('DROP TABLE', sql)
-        self.assertNotIn('DELETE FROM scores', sql)
-        self.assertNotIn('DELETE FROM verifiers', sql)
+        self.assertNotIn('DELETE FROM state_board_measurement_selection', sql)
+        self.assertNotIn('DELETE FROM entity_compute_devices', sql)
 
     def test_one_verified_object_precedes_every_small_prune(self):
         store, database = Store(), Database()

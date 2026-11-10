@@ -23,7 +23,7 @@ export async function usageVisitor(cid) {
 export async function logPoint(env, at, visitor, p) {
   if (!env.LIBRARY) return;
   try {
-    await env.LIBRARY.prepare(`INSERT INTO usage_points
+    await env.LIBRARY.prepare(`INSERT INTO record_usage_events
       (at, day, visitor, event, subject, route, lang, shell, release, country, n)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
       .bind(at, at.slice(0, 10), visitor, p.e, p.subject, p.route, p.lang, p.shell, p.release, p.country, p.n).run();
@@ -35,7 +35,7 @@ export async function logPoint(env, at, visitor, p) {
 /// EVERYTHING KEPT UNDER ONE BROWSER'S ID, deleted at its own request. The
 /// totals already kept in `usage_days` name nobody and stay.
 export async function forgetVisitor(env, cid) {
-  const { meta } = await env.LIBRARY.prepare("DELETE FROM usage_points WHERE visitor = ?")
+  const { meta } = await env.LIBRARY.prepare("DELETE FROM record_usage_events WHERE visitor = ?")
     .bind(await usageVisitor(cid)).run();
   return meta.changes;
 }
@@ -44,6 +44,6 @@ export async function forgetVisitor(env, cid) {
 export async function purgeUsageLog(env, now = Date.now()) {
   if (!env.LIBRARY) return 0;
   const before = new Date(now - USAGE_LOG_DAYS * DAY_MS).toISOString().slice(0, 10);
-  const { meta } = await env.LIBRARY.prepare("DELETE FROM usage_points WHERE day < ?").bind(before).run();
+  const { meta } = await env.LIBRARY.prepare("DELETE FROM record_usage_events WHERE day < ?").bind(before).run();
   return meta.changes;
 }

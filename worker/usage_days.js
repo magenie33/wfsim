@@ -43,7 +43,7 @@ export const usageMarket = (country) => country === "CN" ? "china"
 async function logRows(env, from, next) {
   const { results } = await env.LIBRARY.prepare(`
     SELECT day, visitor AS cid, event AS e, subject, country, COUNT(*) AS n
-    FROM usage_points WHERE day >= ? AND day < ? AND release != ?
+    FROM record_usage_events WHERE day >= ? AND day < ? AND release != ?
     GROUP BY day, visitor, event, subject, country`).bind(from, next, CHECK_RELEASE).all();
   return results;
 }
@@ -100,8 +100,8 @@ async function keepDays(env, now) {
   // A DAY IS KEPT ONCE ITS `visitors`/`all` ROW IS: written last, so a run that
   // stopped part way leaves the day to be written again whole.
   const kept = new Set((await env.LIBRARY.prepare(
-    "SELECT day FROM usage_days WHERE event = 'visitors' AND subject = 'all'").all()).results.map((r) => r.day));
-  const logged = (await env.LIBRARY.prepare("SELECT DISTINCT day FROM usage_points WHERE day >= ?")
+    "SELECT day FROM record_daily_usage_summaries WHERE event = 'visitors' AND subject = 'all'").all()).results.map((r) => r.day));
+  const logged = (await env.LIBRARY.prepare("SELECT DISTINCT day FROM record_usage_events WHERE day >= ?")
     .bind(USAGE_LOG_FROM).all()).results.map((r) => r.day);
   const days = logged.filter((d) => d < today && !kept.has(d)).sort().slice(0, DAYS_PER_RUN);
   const written = [];
@@ -110,7 +110,7 @@ async function keepDays(env, now) {
     const next = dayOf(Date.parse(day) + DAY_MS);
     const out = usageDayRows(day, await logRows(env, from, next));
     if (!out.length) continue;
-    const put = (part) => env.LIBRARY.prepare(`INSERT INTO usage_days
+    const put = (part) => env.LIBRARY.prepare(`INSERT INTO record_daily_usage_summaries
       (day, event, subject, market, visitors, points, sampled) VALUES ${part.map(() => "(?, ?, ?, ?, ?, ?, ?)").join(", ")}
       ON CONFLICT (day, event, subject, market) DO UPDATE SET
         visitors = excluded.visitors, points = excluded.points, sampled = excluded.sampled`)

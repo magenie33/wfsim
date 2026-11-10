@@ -29,7 +29,7 @@ const shape = (r) => ({ id: Number(r.id), kind: r.kind, audience: r.account ? "y
 
 /// WHAT IS SAID TO EVERY READER now: not expired, newest first.
 async function everyone(db, now) {
-  const { results } = await db.prepare(`SELECT * FROM notices WHERE account IS NULL
+  const { results } = await db.prepare(`SELECT * FROM entity_notices WHERE account IS NULL
       AND created_at > ?1 AND (expires_at IS NULL OR expires_at > ?2) ORDER BY created_at DESC LIMIT ?3`)
     .bind(iso(now - NOTICE_KEEP_MS), iso(now), NOTICES_SHOWN).all();
   return results.map(shape);
@@ -40,11 +40,11 @@ async function everyone(db, now) {
 /// a ban is not: it is for malice only, and malice is not told how it was seen.
 async function stateOf(env, account, now) {
   const out = [];
-  const { results: devices } = await env.ACCOUNTS.prepare("SELECT verifier FROM devices WHERE account = ?1").bind(account).all();
+  const { results: devices } = await env.ACCOUNTS.prepare("SELECT verifier FROM relation_account_compute_devices WHERE account = ?1").bind(account).all();
   if (devices.length && env.LIBRARY) {
     const ids = devices.map((d) => d.verifier);
     const marks = ids.map((_, i) => `?${i + 2}`).join(", ");
-    const { results } = await env.LIBRARY.prepare(`SELECT refused_until FROM verifiers
+    const { results } = await env.LIBRARY.prepare(`SELECT refused_until FROM entity_compute_devices
         WHERE banned = 0 AND refused_until > ?1 AND id IN (${marks})`).bind(iso(now), ...ids).all();
     if (results.length) {
       out.push({ kind: "device_cooling", params: { devices: results.length,
@@ -67,9 +67,9 @@ export async function noticesRoute(request, env, path) {
     if (request.method !== "GET") return no("method", 405);
     const account = await sessionAccount(env, request);
     if (!account) return no("not_signed_in", 401);
-    const { results } = await env.ACCOUNTS.prepare(`SELECT * FROM notices WHERE account = ?1 AND created_at > ?2
+    const { results } = await env.ACCOUNTS.prepare(`SELECT * FROM entity_notices WHERE account = ?1 AND created_at > ?2
         ORDER BY created_at DESC LIMIT ?3`).bind(account, iso(now - NOTICE_KEEP_MS), NOTICES_SHOWN).all();
-    const mark = await env.ACCOUNTS.prepare("SELECT read_at FROM notice_marks WHERE account = ?1").bind(account).first();
+    const mark = await env.ACCOUNTS.prepare("SELECT read_at FROM state_account_notice_reads WHERE account = ?1").bind(account).first();
     const notices = [...results.map(shape), ...(await everyone(env.ACCOUNTS, now))]
       .sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).slice(0, NOTICES_SHOWN);
     return json({ ok: true, notices, read_at: mark ? mark.read_at : null, state: await stateOf(env, account, now) }, 200,
@@ -85,8 +85,8 @@ export async function noticesRoute(request, env, path) {
     // NEVER PAST NOW, and never backwards: a clock ahead of the server's reads
     // nothing that has not been made, and a second tab cannot unread.
     const at = iso(Math.min(Date.parse(b.at) || now, now));
-    await env.ACCOUNTS.prepare(`INSERT INTO notice_marks (account, read_at) VALUES (?1, ?2)
-        ON CONFLICT (account) DO UPDATE SET read_at = GREATEST(notice_marks.read_at, EXCLUDED.read_at)`).bind(account, at).run();
+    await env.ACCOUNTS.prepare(`INSERT INTO state_account_notice_reads (account, read_at) VALUES (?1, ?2)
+        ON CONFLICT (account) DO UPDATE SET read_at = GREATEST(state_account_notice_reads.read_at, EXCLUDED.read_at)`).bind(account, at).run();
     return json({ ok: true, read_at: at });
   }
   return no("not_found", 404);
@@ -96,7 +96,7 @@ export async function noticesRoute(request, env, path) {
 /// is what makes it once: the same key for the same account writes nothing.
 export async function noticeWrite(db, { account, kind, params = null, link = null, dedupe_key = null, expires_at = null }) {
   if (!NOTICE_KINDS.includes(kind)) throw new Error(`unknown notice kind ${kind}`);
-  await db.prepare(`INSERT INTO notices (account, kind, params, link, dedupe_key, created_at, expires_at)
+  await db.prepare(`INSERT INTO entity_notices (account, kind, params, link, dedupe_key, created_at, expires_at)
       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7) ON CONFLICT DO NOTHING`)
     .bind(account, kind, params ? JSON.stringify(params) : null, link, dedupe_key, iso(Date.now()), expires_at).run();
 }
@@ -106,14 +106,14 @@ export async function noticeWrite(db, { account, kind, params = null, link = nul
 export async function purgeNotices(env) {
   if (!env.ACCOUNTS) return;
   const now = Date.now();
-  await env.ACCOUNTS.prepare("DELETE FROM notices WHERE created_at < ?1 OR (expires_at IS NOT NULL AND expires_at < ?2)")
+  await env.ACCOUNTS.prepare("DELETE FROM entity_notices WHERE created_at < ?1 OR (expires_at IS NOT NULL AND expires_at < ?2)")
     .bind(iso(now - NOTICE_KEEP_MS), iso(now)).run();
 }
 
 /// What an account's export holds of this: every notice to it, and its mark.
 export async function noticesExport(env, account) {
-  const { results } = await env.ACCOUNTS.prepare("SELECT kind, text_en, text_zh, params, link, created_at, expires_at FROM notices WHERE account = ?1 ORDER BY created_at")
+  const { results } = await env.ACCOUNTS.prepare("SELECT kind, text_en, text_zh, params, link, created_at, expires_at FROM entity_notices WHERE account = ?1 ORDER BY created_at")
     .bind(account).all();
-  const mark = await env.ACCOUNTS.prepare("SELECT read_at FROM notice_marks WHERE account = ?1").bind(account).first();
+  const mark = await env.ACCOUNTS.prepare("SELECT read_at FROM state_account_notice_reads WHERE account = ?1").bind(account).first();
   return { notices: results, notices_read_at: mark ? mark.read_at : null };
 }

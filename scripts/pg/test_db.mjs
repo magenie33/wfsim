@@ -78,13 +78,13 @@ export async function testDb(...kinds) {
   // `settle_async`), each settled by the settler's pass at once
   // (worker/tasks.js `recordMany`), so every check holds on both paths.
   if (process.env.WFSIM_SETTLE_ASYNC === "1" && kinds.includes("library")) {
-    await q("INSERT INTO factory_dials (name, value, set_by, set_at) VALUES ('settle_async', 1, 'check', '2026-01-01T00:00:00.000Z') ON CONFLICT DO NOTHING", []);
+    await q("INSERT INTO state_factory_parameters (name, value, set_by, set_at) VALUES ('settle_async', 1, 'check', '2026-01-01T00:00:00.000Z') ON CONFLICT DO NOTHING", []);
     db.settleAtOnce = true;
   }
   // WFSIM_SYNC_PROC=1 RUNS A CHECK WITH EACH PROTOCOL 8 SYNC ONE CALL (dial
   // `sync_proc`, worker/sync.js), so it holds on both paths.
   if (process.env.WFSIM_SYNC_PROC === "1" && kinds.includes("library")) {
-    await q("INSERT INTO factory_dials (name, value, set_by, set_at) VALUES ('sync_proc', 1, 'check', '2026-01-01T00:00:00.000Z') ON CONFLICT DO NOTHING", []);
+    await q("INSERT INTO state_factory_parameters (name, value, set_by, set_at) VALUES ('sync_proc', 1, 'check', '2026-01-01T00:00:00.000Z') ON CONFLICT DO NOTHING", []);
   }
   return Object.assign(db, {
     exec: (sql) => step(schema, () => timed("exec", () => pg.exec(sql))),
