@@ -142,19 +142,19 @@ console.log("ok: a blocked statistics pool does not consume the critical pool");
 
 const L = await testDb("library"), now = Date.now(), at = new Date(now).toISOString();
 for (const [id, by] of [["a", "verified:e1"], ["b", "official"]]) {
-  await L.run("INSERT INTO scores (identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES (?, 'r','m',?,1,'kpm',0,?,?)", id, by, at, at);
+  await L.run("INSERT INTO state_board_measurement_selection (identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at) VALUES (?, 'r','m',?,1,'kpm',0,?,?)", id, by, at, at);
 }
 const wanted = await demandOf({ LIBRARY: L }, now), base = await tallyBase(L, now), tally = await tallyOf({ LIBRARY: L }, base, now);
 let reads = 0;
-const db = { ...L, prepare(sql) { if (/FROM scores WHERE finished_at >=/.test(sql)) reads++; return L.prepare(sql); } };
+const db = { ...L, prepare(sql) { if (/FROM state_board_measurement_selection WHERE finished_at >=/.test(sql)) reads++; return L.prepare(sql); } };
 const env = { LIBRARY: db }, kept = await scorePace(env, now);
 assert.deepEqual(await demandOf(env, now, undefined, { pace: kept }), wanted);
 assert.deepEqual(await tallyOf(env, base, now, kept), tally);
 assert.equal(reads, 1, "demand and tally must share one rolling score read");
 console.log("ok: demand and tally stay byte-equivalent with one rolling score read");
 
-await L.run("INSERT INTO batches (id,at,why,total) VALUES ('rescore-capacity','x','x',2)");
-await L.run("INSERT INTO queue (batch,build_id,ruler,mode) VALUES ('rescore-capacity','one','r','m')");
+await L.run("INSERT INTO entity_compute_batches (id,at,why,total) VALUES ('rescore-capacity','x','x',2)");
+await L.run("INSERT INTO state_board_pending_work (batch,build_id,ruler,mode) VALUES ('rescore-capacity','one','r','m')");
 let samples = 0;
 const budgets = [];
 const sampled = { LIBRARY: { ...L,
@@ -170,7 +170,7 @@ assert.equal((await demandOf(sampled, now, undefined, options)).owed.rescores, 1
 assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = 120000", "cold demand reads need the full budget");
 await demandOf(sampled, now + 60_000, undefined, options);
 assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = DEFAULT", "both warm caches use the normal budget");
-await L.run("INSERT INTO queue (batch,build_id,ruler,mode) VALUES ('rescore-capacity','two','r','m')");
+await L.run("INSERT INTO state_board_pending_work (batch,build_id,ruler,mode) VALUES ('rescore-capacity','two','r','m')");
 assert.equal((await demandOf(sampled, now + 11 * 60_000, undefined, options)).owed.rescores, 2);
 assert.equal(budgets.at(-1), "SET LOCAL statement_timeout = 120000", "expired queue counts need the full budget while cost estimates stay cached");
 assert.equal(samples, 1, "slowing price estimates must not slow queue counts");
@@ -183,7 +183,7 @@ console.log("ok: either cache refresh keeps its full read budget; both warm cach
 
 for (const [id, state, odd, age] of [["both", "nondeterministic", 1, 0], ["recent", "fact", 1, 0],
   ["old", "fact", 1, 2 * 86_400_000], ["unsettled", "nondeterministic", 0, 2 * 86_400_000]]) {
-  await L.run("INSERT INTO questions (id,verb,request,state,due_at,opened_at,odd,fact_at) VALUES (?,'simulate','{}',?,'x','x',?,?)", id, state, odd, new Date(now - age).toISOString());
+  await L.run("INSERT INTO state_compute_work (id,verb,request,state,due_at,opened_at,odd,fact_at) VALUES (?,'simulate','{}',?,'x','x',?,?)", id, state, odd, new Date(now - age).toISOString());
 }
 const f = factory({ verbs: { simulate: { canon: () => "" } }, producers: {} });
 assert.equal((await f.audit({ LIBRARY: L }, now)).find((x) => x.kind === "nondeterministic").questions, 3);
@@ -192,20 +192,20 @@ console.log("ok: the watchdog counts overlapping disagreement states once and ex
 await L.close();
 
 const A = await testDb("library"), past = new Date(now - 3_600_000).toISOString();
-await A.exec(`INSERT INTO questions (id,verb,request,state,opened_at,due_at)
+await A.exec(`INSERT INTO state_compute_work (id,verb,request,state,opened_at,due_at)
   SELECT 'audit-' || i, 'simulate', '{}', 'open', '${past}', '${past}' FROM generate_series(1,20000) i;
-  INSERT INTO demands (producer,ref,question,state,asked_at,due_at)
+  INSERT INTO relation_task_consumers (producer,ref,question,state,asked_at,due_at)
   SELECT CASE WHEN id IN ('audit-19999','audit-20000') THEN 'silent' ELSE 'busy' END,
-    id,id,'live',opened_at,due_at FROM questions;
-  INSERT INTO answers (question,engine,device,owner,net,canon,result,work,at)
+    id,id,'live',opened_at,due_at FROM state_compute_work;
+  INSERT INTO record_candidate_answers (question,engine,device,owner,net,canon,result,work,at)
   VALUES ('audit-1','current','witness','owner','','c','{}',1,'${at}');
-  INSERT INTO verifiers (id,seen,last_at) VALUES ('witness','${at}','${at}');
+  INSERT INTO entity_compute_devices (id,seen,last_at) VALUES ('witness','${at}','${at}');
   ANALYZE questions; ANALYZE demands; ANALYZE answers;`);
 let auditSql, auditArgs, unsettledSql, unsettledArgs;
 const observed = { ...A, prepare(sql) {
   const statement = A.prepare(sql);
   if (/count\(DISTINCT d\.question\)/i.test(sql)) return { bind(...args) { auditSql = sql; auditArgs = args; return statement.bind(...args); } };
-  if (/SELECT count\(\*\) AS n FROM questions q WHERE q\.state IN/.test(sql)) return { bind(...args) { unsettledSql = sql; unsettledArgs = args; return statement.bind(...args); } };
+  if (/SELECT count\(\*\) AS n FROM state_compute_work q WHERE q\.state IN/.test(sql)) return { bind(...args) { unsettledSql = sql; unsettledArgs = args; return statement.bind(...args); } };
   return statement;
 } };
 const findings = await f.audit({ LIBRARY: observed }, now);
@@ -226,7 +226,7 @@ for (const mode of ["force_generic_plan", "force_custom_plan"]) {
   assert.ok(readQuestions <= 100, `${mode}: healthy producers must be excluded before their overdue questions are read (${readQuestions})`);
 }
 await A.exec("DEALLOCATE stalled_audit; RESET plan_cache_mode");
-await A.run("DELETE FROM answers WHERE question='audit-1'");
+await A.run("DELETE FROM record_candidate_answers WHERE question='audit-1'");
 const crowded = (await f.audit({ LIBRARY: observed }, now)).find(row => row.kind === "stalled:busy");
 assert.equal(crowded?.questions, 1001, "a large silent producer must stop at the observation bound");
 assert.equal(crowded?.at_least, true, "a bounded observation must not claim an exact total");
@@ -245,9 +245,9 @@ for (const mode of ["force_generic_plan", "force_custom_plan"]) {
 }
 await A.exec("DEALLOCATE crowded_stall; RESET plan_cache_mode");
 console.log("ok: a large silent producer uses a bounded lower count under generic and custom plans");
-await A.run("UPDATE questions SET state='spot', opened_at=? WHERE id='audit-20000'", new Date(now - 3 * 3_600_000).toISOString());
-await A.exec(`INSERT INTO answers (question,engine,device,owner,net,canon,result,work,at)
-  SELECT question,'fresh','new-witness','new-owner','','c','{}',1,'${at}' FROM demands WHERE producer='busy'`);
+await A.run("UPDATE state_compute_work SET state='spot', opened_at=? WHERE id='audit-20000'", new Date(now - 3 * 3_600_000).toISOString());
+await A.exec(`INSERT INTO record_candidate_answers (question,engine,device,owner,net,canon,result,work,at)
+  SELECT question,'fresh','new-witness','new-owner','','c','{}',1,'${at}' FROM relation_task_consumers WHERE producer='busy'`);
 const unsettledFindings = await f.audit({ LIBRARY: observed }, now);
 assert.equal(unsettledFindings.find(x => x.kind === "unsettled")?.questions, 1);
 assert.ok(unsettledSql, "capture the official settlement observation");
@@ -269,12 +269,12 @@ console.log("ok: the watchdog counts silent producers without reading healthy pr
 console.log("ok: official settlement observations read only their questions' answers");
 
 const C = await testDb("library");
-await C.exec(`INSERT INTO queue (batch,build_id,ruler,mode)
+await C.exec(`INSERT INTO state_board_pending_work (batch,build_id,ruler,mode)
   SELECT 'batch-' || ((i-1)/2000), 'queued-' || ((i-1)%1000), 'test__cell',
     CASE WHEN (i-1)%2000 < 1000 THEN 'base' ELSE 'cycle' END FROM generate_series(1,20000) i;
   ANALYZE queue;`);
 let cellsSql;
-const cellsDb = { ...C, prepare(sql) { if (/FROM queue WHERE ruler LIKE/.test(sql)) cellsSql=sql; return C.prepare(sql); } };
+const cellsDb = { ...C, prepare(sql) { if (/FROM state_board_pending_work WHERE ruler LIKE/.test(sql)) cellsSql=sql; return C.prepare(sql); } };
 const cells = await cellsFilling({ LIBRARY: cellsDb }, now);
 assert.equal(cells.find(x => x.ruler === "test__cell")?.owed, 2000);
 const cellPlan = await C.get(`EXPLAIN (ANALYZE,FORMAT JSON,TIMING OFF) ${cellsSql}`);

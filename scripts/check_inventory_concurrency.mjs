@@ -13,7 +13,7 @@ const ddl = name => readFileSync(new URL(`../worker/pg/${name}.sql`, import.meta
 const source = ddl('inventory');
 const definition = name => source.match(new RegExp(`CREATE OR REPLACE FUNCTION ${name}\\([\\s\\S]*?END \\$\\$;`))[0];
 const oldDefinition = name => definition(name).replace("PERFORM set_config('lock_timeout','1s',true);",
-  "PERFORM set_config('lock_timeout','1s',true); LOCK TABLE inventory_dirty IN SHARE MODE;");
+  "PERFORM set_config('lock_timeout','1s',true); LOCK TABLE state_compute_inventory_invalidations IN SHARE MODE;");
 const engine = '0123456789ab', contract = { v: 1, covers: ['board'] };
 let a, b, generation, checks = 0;
 const call = (name, args = []) => a.unsafe(`SELECT ${name}(${args.map((_, i) => `$${i + 1}::text`).join(',')}) value`,
@@ -34,7 +34,7 @@ try {
   await a.unsafe(['schema', 'library', 'sync'].map(ddl).join('\n') + '\n' + source);
   await check('old begin fails under a writer; new begin preserves its late dirty key', async () => {
     await a.unsafe(oldDefinition('inventory_begin'));
-    await b.unsafe("BEGIN; INSERT INTO builds(id,at,record) VALUES ('late','at','{}')");
+    await b.unsafe("BEGIN; INSERT INTO entity_weapon_builds(id,at,record) VALUES ('late','at','{}')");
     await assert.rejects(call('inventory_begin', [engine, contract, null]), lockTimeout);
     await a.unsafe(definition('inventory_begin'));
     generation = (await call('inventory_begin', [engine, contract, null])).generation;
@@ -48,7 +48,7 @@ try {
     const [{ value: rows }] = await a.unsafe('SELECT inventory_epoch_seal($1::text,1::bigint,$2::text) value', [cut.epoch, 'a'.repeat(64)]);
     assert.equal(rows.status, 'sealed');
     await a.unsafe('COMMIT');
-    await b.unsafe("BEGIN; INSERT INTO builds(id,at,record) VALUES ('after-cut','at','{}')");
+    await b.unsafe("BEGIN; INSERT INTO entity_weapon_builds(id,at,record) VALUES ('after-cut','at','{}')");
     await a.unsafe(oldDefinition('inventory_publish_cut'));
     await assert.rejects(call('inventory_publish_cut', [cut.epoch, body()]), lockTimeout);
     await a.unsafe(definition('inventory_publish_cut'));
@@ -59,7 +59,7 @@ try {
   });
   await check('acknowledgement rechecks the revision after a concurrent writer commits', async () => {
     const changes = await a.unsafe("SELECT * FROM inventory_changes(256) WHERE key='late'");
-    await b.unsafe("BEGIN; UPDATE builds SET at='changed' WHERE id='late'");
+    await b.unsafe("BEGIN; UPDATE entity_weapon_builds SET at='changed' WHERE id='late'");
     const acknowledged = call('inventory_ack', [generation, changes]);
     await pause(100); await b.unsafe('COMMIT');
     assert.equal(await acknowledged, '0');
@@ -97,9 +97,9 @@ try {
     assert.equal((await b.unsafe('SELECT count(*)::integer n FROM capture_fixture'))[0].n, 200002);
   });
   await check('owned cursor streams without a whole-backlog spool and retains exact late-write ACK fences', async () => {
-    await a.unsafe("INSERT INTO inventory_dirty(scope,key) SELECT 'question','stream-'||lpad(i::text,6,'0') FROM generate_series(1,200001) i");
+    await a.unsafe("INSERT INTO state_compute_inventory_invalidations(scope,key) SELECT 'question','stream-'||lpad(i::text,6,'0') FROM generate_series(1,200001) i");
     await a.unsafe('ANALYZE inventory_dirty');
-    const expected = await a.unsafe('SELECT scope,key,revision::text FROM inventory_dirty ORDER BY scope,key');
+    const expected = await a.unsafe('SELECT scope,key,revision::text FROM state_compute_inventory_invalidations ORDER BY scope,key');
     const digest = rows => { const hash = createHash('sha256'); for (const row of rows) hash.update(JSON.stringify(row)+'\n'); return hash.digest('hex'); };
     const expectedHash = digest(expected), count = expected.length;
     await assert.rejects(a.begin('isolation level repeatable read', async tx => {
@@ -117,14 +117,14 @@ try {
       const refused = async (sql, args, pattern) => {
         await assert.rejects(tx.savepoint(inner => inner.unsafe(sql, args)), pattern);
       };
-      await refused('SELECT * FROM inventory_dirty', [], /permission denied/);
-      await refused("UPDATE inventory_epochs SET status='sealed'", [], /permission denied/);
+      await refused('SELECT * FROM state_compute_inventory_invalidations', [], /permission denied/);
+      await refused("UPDATE record_inventory_captures SET status='sealed'", [], /permission denied/);
       await refused('SELECT inventory_epoch_open($1::text)', ['99999999'], /does not own this snapshot/);
       const [{ cut }] = await tx.unsafe('SELECT inventory_epoch_begin($1::text) cut', [generation]);
       [{ portal }] = await tx.unsafe('SELECT inventory_epoch_open($1::text) portal', [cut.epoch]);
       for await (const row of inventoryCursor(tx, portal, null, [], { maxRows: 80000 })) {
         consumed++; hash.update(JSON.stringify(row)+'\n');
-        if (consumed === 5000) await b.unsafe("UPDATE inventory_dirty SET revision=nextval('inventory_revision') WHERE key='stream-100000'; INSERT INTO inventory_dirty(scope,key) VALUES ('question','late-stream')");
+        if (consumed === 5000) await b.unsafe("UPDATE state_compute_inventory_invalidations SET revision=nextval('inventory_revision') WHERE key='stream-100000'; INSERT INTO state_compute_inventory_invalidations(scope,key) VALUES ('question','late-stream')");
       }
       assert.equal(consumed, count); assert.equal(hash.digest('hex'), expectedHash);
       await refused('SELECT inventory_epoch_seal($1::text,$2::bigint,$3::text)', [cut.epoch, count-1, expectedHash], /changes incomplete/);
@@ -139,14 +139,14 @@ try {
     const catalog = { recordReceipts() {}, acknowledge(rows) { acknowledged += rows.length; } };
     await assert.rejects(acknowledgeInventory(a, catalog, generation, [[selected], [{ ...selected, revision: '0' }]]), /invalid inventory change key/);
     assert.equal(acknowledged, 0);
-    assert.equal((await a.unsafe("SELECT count(*)::integer n FROM inventory_dirty WHERE key='stream-100001'"))[0].n, 1,
+    assert.equal((await a.unsafe("SELECT count(*)::integer n FROM state_compute_inventory_invalidations WHERE key='stream-100001'"))[0].n, 1,
       'one invalid chunk must roll back earlier deletions in the same ACK page');
     const groups = [];
     for (let i = 0; i < expected.length; i += 256) groups.push(expected.slice(i, i + 256));
     await acknowledgeInventory(a, catalog, generation, groups);
     assert.equal(acknowledged, expected.length);
-    assert.equal((await a.unsafe('SELECT count(*)::integer n FROM inventory_dirty'))[0].n, 2);
-    assert.equal((await a.unsafe("SELECT count(*)::integer n FROM inventory_dirty WHERE key IN ('late-stream','stream-100000')"))[0].n, 2);
+    assert.equal((await a.unsafe('SELECT count(*)::integer n FROM state_compute_inventory_invalidations'))[0].n, 2);
+    assert.equal((await a.unsafe("SELECT count(*)::integer n FROM state_compute_inventory_invalidations WHERE key IN ('late-stream','stream-100000')"))[0].n, 2);
   });
   await check('health SQL reads real PostgreSQL activity without changing inventory', async () => {
     const sql = execFileSync('python3', ['-c', 'import sys; sys.path.insert(0,"scripts"); import pg_health; print(pg_health.SQL)'], { encoding: 'utf8' });

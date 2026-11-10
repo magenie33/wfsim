@@ -6,17 +6,16 @@ import { GRACE_SHARE, sansWork, sameAs, newLease, independent, acceptedWitnesses
 
 export function createVerification({ verbs, producers, producerOf, threshold, spot, recheck, random, on_disproved, on_fact_writes, refusing, learnCost, prepareCredit, credit, deliver, deliverPlan, flush, commit, readyFact, release } = {}) {
   const listOf = (db, p) => `(SELECT value FROM jsonb_array_elements_text((${p}::text)::jsonb))`;
-  const factWrites = (env, q, witnesses, engine, at) => [
-    env.LIBRARY.prepare(`UPDATE questions SET witnesses=?5::text WHERE id=?1::text AND canon=?2::text AND fact_engine=?3::text
-      AND fact_at=?4::text AND state IN ('fact','spot')`).bind(q.id, q.canon, engine, at, JSON.stringify(witnesses)),
-    ...(on_fact_writes ? on_fact_writes(env, q, { witnesses, engine, at }) : []),
-  ];
+  const factWrites = (env, q, witnesses, engine, at) => on_fact_writes ? on_fact_writes(env, q, { witnesses, engine, at }) : [];
+  const acceptResult = (db, q, state, answer, engine, at, odd, witnesses) => db.prepare(
+    "SELECT compute_accept_result(?1::text,?2::bigint,?3::text,?4::text,?5::text,?6::text,?7::text,?8::bigint,?9::text)")
+    .bind(q.id,q.task_id,q.state,state,answer,engine,at,odd,JSON.stringify(witnesses));
   /// A WITNESS ANSWERS, under its lease. `w`: { device, owner, net, official }.
   /// `counts`, `lanes` and `compute_ms` are what the answer cost and on how many
   /// cores — kept beside it to fit what a point is worth, never credited.
   /// Returns `{ taken }`: whether the lease was still its own.
   async function answer(env, w, { lease, ...a }, now = Date.now()) {
-    const q = await env.LIBRARY.prepare("SELECT * FROM questions WHERE lease = ? AND leased_to = ? AND lease_until >= ?")
+    const q = await env.LIBRARY.prepare("SELECT * FROM state_compute_work WHERE lease = ? AND leased_to = ? AND lease_until >= ?")
       .bind(lease, w.device, iso(now)).first();
     if (!q) return { taken: false };
     await recordMany(env, w, [{ q, a }], now);
@@ -60,10 +59,10 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
   /// state after it, or null for a question that does not exist.
   async function answerOfficial(env, w, { question, ...a }, now = Date.now()) {
     const db = env.LIBRARY;
-    const q = await db.prepare("SELECT * FROM questions WHERE id = ?").bind(question).first();
+    const q = await db.prepare("SELECT * FROM state_compute_work WHERE id = ?").bind(question).first();
     if (!q) return null;
     await recordMany(env, { ...w, official: true }, [{ q, a }], now);
-    return (await db.prepare("SELECT state FROM questions WHERE id = ?").bind(question).first()).state;
+    return (await db.prepare("SELECT state FROM state_compute_work WHERE id = ?").bind(question).first()).state;
   }
 
 
@@ -76,9 +75,9 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     // in flight, both checked before either wrote, and both rows landed.
     const lock = db.prepare("SELECT pg_advisory_xact_lock(hashtextextended(?1::text, 0))").bind(w.device);
     const writes = items.map(({ q, a }) => db.prepare(`SELECT factory_answer(?1::text, ?2::text, ?3::text, ?4::text, ?5::text, ?6::bigint, ?7::text,
-        ?8::text, ?9::bigint, ?10::bigint, ?11::text, ?12::bigint, ?13::text)`)
+        ?8::text, ?9::bigint, ?10::bigint, ?11::text, ?12::bigint, ?13::text, ?14::bigint)`)
       .bind(q.id, a.engine, w.device, w.owner || w.device, w.net || "", official, verbs[q.verb].canon(a.result, a.work), JSON.stringify(a.result),
-        a.work ?? 0, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at));
+        a.work ?? 0, a.compute_ms ?? null, a.counts ? JSON.stringify(a.counts) : null, a.lanes ?? null, at, q.task_id));
     const learnt = official ? null : learnCost(db, items);
     // QUEUED FOR THE SETTLER (dial `settle_async`): a volunteer's answers to a
     // packable verb whose producer is not told each answer (`on_answer` runs in
@@ -111,7 +110,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     // write: the answered question heads every witness's order, so freed before
     // it became a fact it was taken at once and answered again for nothing.
     await settleMany(env, [...answered.keys()], engine, now, { answered, peer, after: [
-      db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+      db.prepare(`UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL
                    WHERE ${inIdOrder(`id IN ${listOf(db, "?")} AND leased_to = ?`)}`).bind(ids, w.device)] });
   }
 
@@ -124,8 +123,8 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
   /// every write in a settlement is guarded, so settling twice counts once.
   async function settleQueued(env, now = Date.now(), max = null) {
     const db = env.LIBRARY, claim = newLease(), n = max ?? (await dialsOf(env, now)).settle_batch;
-    const { results: rows } = await db.prepare(`UPDATE settle_queue SET claim = ?1::text, claimed_at = ?2::text
-        WHERE (question, engine, peer) IN (SELECT question, engine, peer FROM settle_queue
+    const { results: rows } = await db.prepare(`UPDATE state_pending_verifications SET claim = ?1::text, claimed_at = ?2::text
+        WHERE (question, engine, peer) IN (SELECT question, engine, peer FROM state_pending_verifications
           WHERE claim IS NULL OR claimed_at < ?3::text ORDER BY question, engine, peer LIMIT ?4::bigint FOR UPDATE SKIP LOCKED)
         RETURNING question, engine, peer`).bind(claim, iso(now), iso(now - CLAIM_STALE_MS), n).all();
     if (!rows.length) return 0;
@@ -138,11 +137,11 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     for (const g of [...groups.values()].sort((a, b) => (a.engine + a.peer < b.engine + b.peer ? -1 : 1))) {
       const ids = [...new Set(g.ids)].sort(), list = JSON.stringify(ids);
       await settleMany(env, ids, g.engine, now, { peer: g.peer, after: [
-        db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder(`id IN ${listOf(db, "?")}
-            AND leased_to IS NOT NULL AND EXISTS (SELECT 1 FROM answers a WHERE a.question = questions.id AND a.device = questions.leased_to)`)}`)
+        db.prepare(`UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder(`id IN ${listOf(db, "?")}
+            AND leased_to IS NOT NULL AND EXISTS (SELECT 1 FROM state_compute_candidate_answers a WHERE a.question = state_compute_work.id AND a.device = state_compute_work.leased_to)`)}`)
           .bind(list)] });
     }
-    await db.prepare("DELETE FROM settle_queue WHERE claim = ?").bind(claim).run();
+    await db.prepare("DELETE FROM state_pending_verifications WHERE claim = ?").bind(claim).run();
     return rows.length;
   }
 
@@ -161,9 +160,9 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
   async function settleMany(env, ids, engine, now, { answered = null, after = [], peer = null } = {}) {
     const db = env.LIBRARY, list = JSON.stringify([...new Set(ids)]), ids_ = listOf(db, "?");
     const [qs, as, ds] = await db.batch([
-      db.prepare(`SELECT * FROM questions WHERE id IN ${ids_}`).bind(list),
-      db.prepare(`SELECT * FROM answers WHERE question IN ${ids_} AND void = 0 ORDER BY id`).bind(list),
-      db.prepare(`SELECT * FROM demands WHERE question IN ${ids_} AND state = 'live'`).bind(list),
+      db.prepare(`SELECT * FROM state_compute_work WHERE id IN ${ids_}`).bind(list),
+      db.prepare(`SELECT * FROM state_compute_candidate_answers WHERE question IN ${ids_} AND void = 0 ORDER BY id`).bind(list),
+      db.prepare(`SELECT * FROM relation_task_consumers WHERE question IN ${ids_} AND state = 'live'`).bind(list),
     ]);
     const writes = [], later = [], credits = [], errors = [];
     for (const q of [...qs.results].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
@@ -194,7 +193,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     if (credits.length) writes.push(prepareCredit(db, credits, now));
     // …ITS QUESTIONS LOCKED FIRST, IN ID ORDER (`inIdOrder`): each write after
     // finds its row already held, so the commit never waits holding one.
-    if (writes.length) writes.unshift(db.prepare(`SELECT id FROM questions WHERE ${inIdOrder(`id IN ${ids_}`)}`).bind(list));
+    if (writes.length) writes.unshift(db.prepare(`SELECT id FROM state_compute_work WHERE ${inIdOrder(`id IN ${ids_}`)}`).bind(list));
     await commit(env, writes);
     try { await credit(db, credits, now); } catch (error) { errors.push(error); }
     try { await flush(env, later, now); } catch (error) { errors.push(error); }
@@ -224,7 +223,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
       // official machines settle and refuse the liar in — so a recheck catches
       // a pair agreeing on a lie whenever the third is honest.
       if (!q.needs && group.length === threshold && random() < (verbs[q.verb].recheck ?? recheck)) {
-        writes.push(db.prepare("UPDATE questions SET needs = ? WHERE id = ? AND state = 'open' AND needs IS NULL").bind(threshold + 1, q.id));
+        writes.push(db.prepare("UPDATE state_compute_work SET needs = ? WHERE id = ? AND state = 'open' AND needs IS NULL").bind(threshold + 1, q.id));
         return;
       }
       const state = random() < (verbs[q.verb].spot ?? spot) ? "spot" : "fact";
@@ -232,11 +231,10 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
       // can land after a settler pass took its time, and every reader of a fact
       // counts only the answers at or before `fact_at` (`repay`, the shadow).
       const formed = [iso(now), ...group.map((a) => a.at)].sort().pop();
-      writes.push(db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ? WHERE id = ? AND state = 'open'")
-        .bind(state, lead.canon, engine, formed, q.id));
-      writes.push(readyFact(db, q.id, lead.canon, engine, formed));
       const accepted = [...group, ...joinersParted(all, served, group, same, engine)];
       const witnesses = acceptedWitnesses(accepted, iso(now), JSON.parse(q.witnesses || "[]"));
+      writes.push(acceptResult(db,q,state,lead.canon,engine,formed,0,witnesses));
+      writes.push(readyFact(db, q.id, lead.canon, engine, formed));
       writes.push(...factWrites(env, { ...q, canon: lead.canon }, witnesses, engine, formed));
       credits.push(...accepted);
       deliverPlan(env, { ...q, canon: lead.canon, fact_at: formed, fact_engine: engine, witnesses }, now, lead, demands, writes, later);
@@ -247,7 +245,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     const cap = Math.max(verbs[q.verb].cap, needs), witnesses = independent(served);
     if (witnesses.length >= cap) {
       const distinct = new Set(witnesses.map((a) => a.canon)).size === witnesses.length;
-      writes.push(db.prepare("UPDATE questions SET state = ? WHERE id = ? AND state = 'open'")
+      writes.push(db.prepare("UPDATE state_compute_work SET state = ? WHERE id = ? AND state = 'open'")
         .bind(distinct && witnesses.length >= 3 ? "nondeterministic" : "disputed", q.id));
     }
   }
@@ -279,8 +277,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
       const owed = all.some((a) => !a.official && sansWork(a.canon) === sansWork(officialSays.canon));
       const witnesses = acceptedWitnesses([officialSays], iso(now), JSON.parse(q.witnesses || "[]"));
       await db.batch([
-        db.prepare("UPDATE questions SET state = ?, canon = ?, fact_engine = ?, fact_at = ?, odd = 0 WHERE id = ?")
-          .bind(owed ? "spot" : "fact", officialSays.canon, engine, iso(now), id),
+        acceptResult(db,q,owed ? "spot" : "fact",officialSays.canon,engine,iso(now),0,witnesses),
         readyFact(db, id, officialSays.canon, engine, iso(now)),
         ...factWrites(env, { ...q, canon: officialSays.canon }, witnesses, engine, iso(now)),
       ]);
@@ -310,8 +307,7 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
     const odd = q.state === "nondeterministic" || (q.state === "disputed" && !agree.length);
     const witnesses = acceptedWitnesses([...agree, officialSays], iso(now), JSON.parse(q.witnesses || "[]"));
     await db.batch([
-      db.prepare("UPDATE questions SET state = 'fact', canon = ?, fact_engine = ?, fact_at = ?, odd = ? WHERE id = ?")
-        .bind(officialSays.canon, engine, iso(now), odd ? 1 : 0, id),
+      acceptResult(db,q,"fact",officialSays.canon,engine,iso(now),odd ? 1 : 0,witnesses),
       readyFact(db, id, officialSays.canon, engine, iso(now)),
       prepareCredit(db, agree, now),
       ...factWrites(env, { ...q, canon: officialSays.canon }, witnesses, engine, iso(now)),
@@ -343,30 +339,30 @@ export function createVerification({ verbs, producers, producerOf, threshold, sp
   /// forgotten, and what it earned and witnessed stands.
   async function refuse(env, device, now = Date.now()) {
     const db = env.LIBRARY, at = iso(now), since = iso(now - KEPT_MS);
-    const v = await db.prepare("SELECT refusals FROM verifiers WHERE id = ?").bind(device).first();
+    const v = await db.prepare("SELECT refusals FROM entity_compute_devices WHERE id = ?").bind(device).first();
     const cool = coolDownMs(v && v.refusals);
-    const paid = (await db.prepare("SELECT coalesce(sum(work), 0) AS w FROM answers WHERE device = ? AND credited = 1 AND official = 0 AND at >= ?")
+    const paid = (await db.prepare("SELECT coalesce(sum(work), 0) AS w FROM record_candidate_answers WHERE device = ? AND credited = 1 AND official = 0 AND at >= ?")
       .bind(device, since).first()).w;
     const { results: touched } = await db.prepare(
-      `SELECT DISTINCT q.id, q.state FROM answers a JOIN questions q ON q.id = a.question
+      `SELECT DISTINCT q.id, q.state FROM state_compute_candidate_answers a JOIN state_compute_work q ON q.id = a.question
         WHERE a.device = ? AND a.at >= ? AND a.void = 0 AND a.official = 0 AND q.state IN ('fact', 'spot')
-          AND NOT EXISTS (SELECT 1 FROM answers o WHERE o.question = q.id AND o.official = 1 AND o.void = 0)`).bind(device, since).all();
+          AND NOT EXISTS (SELECT 1 FROM state_compute_candidate_answers o WHERE o.question = q.id AND o.official = 1 AND o.void = 0)`).bind(device, since).all();
     await db.batch([
-      db.prepare("UPDATE verifiers SET banned = 1, refusals = refusals + 1, clean = 0, refused_until = ? WHERE id = ?").bind(iso(now + cool), device),
-      db.prepare("UPDATE verifiers SET work = GREATEST(0, work - ?::bigint) WHERE id = ?::text").bind(paid, device),
-      db.prepare(`INSERT INTO verifier_hours AS h (verifier, hour, work) VALUES (?, ?, ?)
+      db.prepare("UPDATE entity_compute_devices SET banned = 1, refusals = refusals + 1, clean = 0, refused_until = ? WHERE id = ?").bind(iso(now + cool), device),
+      db.prepare("UPDATE entity_compute_devices SET work = GREATEST(0, work - ?::bigint) WHERE id = ?::text").bind(paid, device),
+      db.prepare(`INSERT INTO record_hourly_compute_totals AS h (verifier, hour, work) VALUES (?, ?, ?)
                   ON CONFLICT (verifier, hour) DO UPDATE SET work = h.work + excluded.work`).bind(device, at.slice(0, 13), -paid),
-      db.prepare("UPDATE answers SET void = 1, credited = 0 WHERE device = ? AND official = 0").bind(device),
+      db.prepare("UPDATE record_candidate_answers SET void = 1, credited = 0 WHERE device = ? AND official = 0").bind(device),
       // WHAT IT TAKES BACK GOES TO THE OFFICIAL POOL: compute is never uncounted.
-      db.prepare("INSERT INTO points_pool (at, source, work) SELECT ?::text, 'refused', ?::bigint WHERE ?::bigint > 0").bind(at, paid, paid),
+      db.prepare("INSERT INTO record_unowned_credit_transfers (at, source, work) SELECT ?::text, 'refused', ?::bigint WHERE ?::bigint > 0").bind(at, paid, paid),
     ]);
     for (const q of touched) {
-      await db.prepare("UPDATE questions SET state = 'open', canon = NULL, fact_engine = NULL, fact_at = NULL WHERE id = ?").bind(q.id).run();
-      const { results: served } = await db.prepare("SELECT * FROM demands WHERE question = ? AND state = 'served'").bind(q.id).all();
+      await db.prepare("SELECT compute_open_task(?1::text,'refused_evidence',NULL,?2::text,true)").bind(q.id,iso(now)).run();
+      const { results: served } = await db.prepare("SELECT * FROM relation_task_consumers WHERE question = ? AND state = 'served'").bind(q.id).all();
       for (const d of served) {
         const p = producerOf(d.producer);
         if (p.on_retract) await p.on_retract(env, { ...d, payload: JSON.parse(d.payload) });
-        await db.prepare("UPDATE demands SET state = 'live', served_at = NULL, delivery_at=NULL WHERE producer = ? AND ref = ?").bind(d.producer, d.ref).run();
+        await db.prepare("UPDATE relation_task_consumers SET state = 'live', served_at = NULL, delivery_at=NULL WHERE producer = ? AND ref = ?").bind(d.producer, d.ref).run();
       }
     }
     return { cool_ms: cool, taken_back: paid, reopened: touched.length };

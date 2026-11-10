@@ -117,7 +117,7 @@ def main():
     a = ap.parse_args()
     choice = [f"--{k}={v}" for k, v in (("bonus", a.bonus), ("malus", a.malus)) if v]
 
-    counts = {w: int(n) for w, n in psql(f"SELECT weapon, count(*) FROM appraisals WHERE channel = '{CHANNEL}' GROUP BY weapon")}
+    counts = {w: int(n) for w, n in psql(f"SELECT weapon, count(*) FROM entity_appraisal_requests WHERE channel = '{CHANNEL}' GROUP BY weapon")}
     if a.popular:
         weapons, found = popular(a.popular, counts)
     else:
@@ -131,13 +131,13 @@ def main():
         if not d:
             continue
         p = prefix(w)
-        clash = psql(f"SELECT DISTINCT weapon FROM appraisals WHERE code LIKE '{p}%' AND weapon <> {sql_text(w)}")
+        clash = psql(f"SELECT DISTINCT weapon FROM entity_appraisal_requests WHERE code LIKE '{p}%' AND weapon <> {sql_text(w)}")
         if clash:
             sys.exit(f"{w}: code prefix {p} is {clash[0][0]}'s")
         # A WEAPON SURVEYED ALREADY IS ASKED ONLY THE SHAPES IT LACKS, numbered
         # after its last code. A shape is its card IN ANY BONUS ORDER: cards opened
         # earlier list the same bonuses in another order.
-        held = psql(f"SELECT code, riven FROM appraisals WHERE channel = '{CHANNEL}' AND weapon = {sql_text(w)}")
+        held = psql(f"SELECT code, riven FROM entity_appraisal_requests WHERE channel = '{CHANNEL}' AND weapon = {sql_text(w)}")
         have = {card_key(json.loads(r)) for _, r in held}
         start = 1 + max((int(c[len(p):], 36) for c, _ in held if c.startswith(p)), default=-1)
         new = [json.dumps(s, separators=(",", ":")) for s in d["shapes"] if card_key(s) not in have]
@@ -149,11 +149,11 @@ def main():
             f"({sql_text(p + base36(start + i, 4))}, '{CHANNEL}', '{{}}', '{ASKER}', '', {sql_text(w)}, '{RULER}', "
             f"{sql_text(t)}, '{now}')"
             for i, t in enumerate(new))
-        psql(None, stdin="INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at) VALUES\n"
+        psql(None, stdin="INSERT INTO entity_appraisal_requests (code, channel, chat, asker, room, weapon, ruler, riven, at) VALUES\n"
              + rows + "\nON CONFLICT (code) DO NOTHING;\n")
 
     names = ", ".join(sql_text(w) for w in weapons)
-    codes = [r[0] for r in psql(f"SELECT code FROM appraisals WHERE channel = '{CHANNEL}' AND weapon IN ({names}) "
+    codes = [r[0] for r in psql(f"SELECT code FROM entity_appraisal_requests WHERE channel = '{CHANNEL}' AND weapon IN ({names}) "
                                 "AND request IS NULL ORDER BY code")]
     print(f"{len(codes)} shapes to freeze")
     if a.dry or not codes:

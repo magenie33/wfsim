@@ -217,10 +217,10 @@ const bearer = (request) => {
 export async function agentOf(env, request) {
   const key = bearer(request);
   if (!key || !env.ACCOUNTS) return null;
-  const row = await env.ACCOUNTS.prepare("SELECT * FROM agent_keys WHERE key_hash = ?1").bind(await sha256(key)).first();
+  const row = await env.ACCOUNTS.prepare("SELECT * FROM entity_agent_keys WHERE key_hash = ?1").bind(await sha256(key)).first();
   if (!row) return null;
   if (!row.last_used_at || Date.parse(row.last_used_at) < Date.now() - TOUCH_SECONDS * 1000) {
-    await env.ACCOUNTS.prepare("UPDATE agent_keys SET last_used_at = ?1 WHERE id = ?2").bind(now(), row.id).run();
+    await env.ACCOUNTS.prepare("UPDATE entity_agent_keys SET last_used_at = ?1 WHERE id = ?2").bind(now(), row.id).run();
   }
   return row;
 }
@@ -237,11 +237,11 @@ async function register(request, env, b) {
   const name = String(b.name ?? "").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, NAME_MAX) || "Unnamed agent";
   const db = env.ACCOUNTS;
   // AN UNCLAIMED KEY NOBODY USES IS DROPPED, here where keys are made.
-  await db.prepare("DELETE FROM agent_keys WHERE account IS NULL AND COALESCE(last_used_at, created_at) < ?1")
+  await db.prepare("DELETE FROM entity_agent_keys WHERE account IS NULL AND COALESCE(last_used_at, created_at) < ?1")
     .bind(new Date(Date.now() - IDLE_SECONDS * 1000).toISOString()).run();
   const id = crypto.randomUUID();
   const key = KEY_PREFIX + random(32);
-  await db.prepare("INSERT INTO agent_keys (id, key_hash, name, created_at) VALUES (?1, ?2, ?3, ?4)")
+  await db.prepare("INSERT INTO entity_agent_keys (id, key_hash, name, created_at) VALUES (?1, ?2, ?3, ?4)")
     .bind(id, await sha256(key), name, now()).run();
   return json({ ok: true, agent_id: id, credential: { type: "api_key", api_key: key },
     scopes: SCOPES_BEFORE_CLAIM, claim_uri: new URL(AGENT_PATHS.claim, request.url).toString() }, 201);
@@ -259,7 +259,7 @@ async function claim(request, env, agent, b) {
   const slot = await emailSlot(env, email);
   const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, "0");
   await env.ACCOUNTS.prepare(
-    `UPDATE agent_keys SET claim_email = ?1, claim_code_hash = ?2, claim_expires_at = ?3, claim_sent_at = ?4,
+    `UPDATE entity_agent_keys SET claim_email = ?1, claim_code_hash = ?2, claim_expires_at = ?3, claim_sent_at = ?4,
        claim_attempts = 0 WHERE id = ?5`,
   ).bind(email, slot ? await hmac(env.AUTH_SECRET, `agent:${agent.id}:${email}:${code}`) : null,
     later(CLAIM_SECONDS), now(), agent.id).run();
@@ -288,20 +288,20 @@ async function claimComplete(env, agent, b) {
   const slot = await emailSlot(env, agent.claim_email);
   if (!slot || !agent.claim_code_hash
       || agent.claim_code_hash !== await hmac(env.AUTH_SECRET, `agent:${agent.id}:${agent.claim_email}:${code}`)) {
-    await db.prepare("UPDATE agent_keys SET claim_attempts = claim_attempts + 1 WHERE id = ?1").bind(agent.id).run();
+    await db.prepare("UPDATE entity_agent_keys SET claim_attempts = claim_attempts + 1 WHERE id = ?1").bind(agent.id).run();
     return no("wrong_code");
   }
   await db.prepare(
-    `UPDATE agent_keys SET account = ?1, claimed_at = ?2, claim_email = NULL, claim_code_hash = NULL,
+    `UPDATE entity_agent_keys SET account = ?1, claimed_at = ?2, claim_email = NULL, claim_code_hash = NULL,
        claim_expires_at = NULL, claim_attempts = 0 WHERE id = ?3`,
   ).bind(slot.account, now(), agent.id).run();
-  const a = await db.prepare("SELECT username FROM accounts WHERE id = ?1").bind(slot.account).first();
+  const a = await db.prepare("SELECT username FROM entity_accounts WHERE id = ?1").bind(slot.account).first();
   return json({ ok: true, account: { username: a && a.username }, scopes: SCOPES_CLAIMED });
 }
 
 async function whoami(env, agent) {
   const a = agent.account
-    ? await env.ACCOUNTS.prepare("SELECT username, display_name FROM accounts WHERE id = ?1").bind(agent.account).first()
+    ? await env.ACCOUNTS.prepare("SELECT username, display_name FROM entity_accounts WHERE id = ?1").bind(agent.account).first()
     : null;
   return json({ ok: true, agent: { id: agent.id, name: agent.name, created_at: agent.created_at },
     account: a ? { username: a.username, display_name: a.display_name } : null,
@@ -311,7 +311,7 @@ async function whoami(env, agent) {
 /// An account's agents, as its page and its export show them.
 export async function agentsOf(env, account) {
   const { results } = await env.ACCOUNTS.prepare(
-    "SELECT id, name, created_at, claimed_at, last_used_at FROM agent_keys WHERE account = ?1 ORDER BY claimed_at",
+    "SELECT id, name, created_at, claimed_at, last_used_at FROM entity_agent_keys WHERE account = ?1 ORDER BY claimed_at",
   ).bind(account).all();
   return results;
 }
@@ -337,7 +337,7 @@ export async function agentRoute(request, env, path) {
     if (!sameSite(request)) return no("cross_site", 403);
     let b = {};
     try { b = JSON.parse((await request.text()) || "{}"); } catch (_) { return no("not_json"); }
-    await env.ACCOUNTS.prepare("DELETE FROM agent_keys WHERE id = ?1 AND account = ?2").bind(String(b.id || ""), account).run();
+    await env.ACCOUNTS.prepare("DELETE FROM entity_agent_keys WHERE id = ?1 AND account = ?2").bind(String(b.id || ""), account).run();
     return json({ ok: true });
   }
   if (!Object.values(AGENT_PATHS).includes(path)) return null;
@@ -354,7 +354,7 @@ export async function agentRoute(request, env, path) {
   const agent = await agentOf(env, request);
   if (!agent) return no("bad_key", 401);
   if (path === AGENT_PATHS.revoke) {
-    await env.ACCOUNTS.prepare("DELETE FROM agent_keys WHERE id = ?1").bind(agent.id).run();
+    await env.ACCOUNTS.prepare("DELETE FROM entity_agent_keys WHERE id = ?1").bind(agent.id).run();
     return json({ ok: true, revoked: true });
   }
   if (!env.EMAIL && path === AGENT_PATHS.claim) return no("unavailable", 503);

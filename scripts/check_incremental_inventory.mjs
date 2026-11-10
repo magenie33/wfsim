@@ -87,7 +87,7 @@ try {
   });
   check('stored records win over normalized fallbacks; aliases and repeated batches share one QID', () => {
     assert(db.record('stored').record.includes('original'));
-    assert.equal(db.statement('SELECT board_refs FROM questions WHERE id=?').get(Buffer.from(referenceRows.find(r => r.id === states[2].id).id, 'hex')).board_refs, 2);
+    assert.equal(db.statement('SELECT board_refs FROM state_compute_work WHERE id=?').get(Buffer.from(referenceRows.find(r => r.id === states[2].id).id, 'hex')).board_refs, 2);
     assert.equal(db.owner('stored').weapon, 'torid');
     assert.deepEqual(db.ownerRows(null, 2).map(row => row.id), ['a', 'alias']);
   });

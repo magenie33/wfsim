@@ -29,7 +29,7 @@ RETURNS TABLE (lease_prev text, leased_to_prev text, lease_prev_until text)
 LANGUAGE sql IMMUTABLE AS $$
   SELECT CASE WHEN $3 >= $7 THEN $1 WHEN $6 >= $7 THEN $4 END,
          CASE WHEN $3 >= $7 THEN $2 WHEN $6 >= $7 THEN $5 END,
-         CASE WHEN $3 >= $7 THEN $3 WHEN $6 >= $7 THEN $6 END
+         CASE WHEN $3 >= $7 THEN $3 WHEN $6 >= $7 THEN $6 END;
 $$;
 
 -- WHO HAS HAD THEIR SHARE (docs/BOARD.md §"Who asked"): each coded initiator
@@ -37,9 +37,9 @@ $$;
 -- and more than `initiator_floor_rows`. Off (none) while the share is 0; the
 -- dials are read here as worker/dials.js states them, an unset one its default.
 CREATE OR REPLACE FUNCTION factory_capped(text) RETURNS SETOF text LANGUAGE sql STABLE AS $$
-  WITH d AS (SELECT COALESCE((SELECT value FROM factory_dials WHERE name = 'initiator_share_pct'), 0) AS pct,
-                    COALESCE((SELECT value FROM factory_dials WHERE name = 'initiator_floor_rows'), 50) AS floor),
-  held AS MATERIALIZED (SELECT initiator FROM questions WHERE leased_to IS NOT NULL AND lease_until > $1)
+  WITH d AS (SELECT COALESCE((SELECT value FROM state_factory_parameters WHERE name = 'initiator_share_pct'), 0) AS pct,
+                    COALESCE((SELECT value FROM state_factory_parameters WHERE name = 'initiator_floor_rows'), 50) AS floor),
+  held AS MATERIALIZED (SELECT initiator FROM state_compute_work WHERE leased_to IS NOT NULL AND lease_until > $1)
   SELECT h.initiator FROM held h
   WHERE (SELECT pct FROM d) > 0 AND (h.initiator LIKE 'user:%' OR h.initiator LIKE 'bot:%')
   GROUP BY h.initiator
@@ -55,24 +55,24 @@ $$;
 -- $1 at, $2 official, $3 lanes, $4 engine, $5 siblings (json), $6 owner,
 -- $7 net, $8 before, $9 row ceiling and $10 settle grace in seconds.
 CREATE OR REPLACE FUNCTION factory_eligible(text, bigint, bigint, text, text, text, text, text, bigint, bigint)
-RETURNS SETOF questions LANGUAGE sql STABLE AS $$
-  SELECT q.* FROM questions q
+RETURNS SETOF state_compute_work LANGUAGE sql STABLE AS $$
+  SELECT q.* FROM state_compute_work q
   WHERE factory_takeable(q.lease_until, q.leased_at, $1, $9)
     AND (q.verb NOT IN ('simulate_report', 'optimize_report') OR $5::jsonb ? 'cap:calculation-reports-v1')
-    AND ($2 = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM answers x WHERE x.question = q.id)
+    AND ($2 = 1 OR q.lanes IS NULL OR EXISTS (SELECT 1 FROM state_compute_candidate_answers x WHERE x.question = q.id)
          OR $3 >= (SELECT min((t ->> 'lanes')::numeric) FROM jsonb_array_elements(q.lanes::jsonb) t
                    WHERE (t ->> 'after_ms')::numeric <= extract(epoch FROM ($1::timestamptz - q.opened_at::timestamptz)) * 1000))
     -- Read this question before filtering its engine: a newly released engine
     -- absent from ANALYZE can otherwise scan its whole day of answers per pick.
-    AND NOT EXISTS (SELECT 1 FROM (SELECT a.engine, a.device, a.owner, a.net FROM answers a
+    AND NOT EXISTS (SELECT 1 FROM (SELECT a.engine, a.device, a.owner, a.net FROM state_compute_candidate_answers a
           WHERE a.question = q.id OFFSET 0) a
           WHERE a.engine = $4
             AND (a.device IN (SELECT value FROM jsonb_array_elements_text($5::jsonb)) OR a.owner = $6 OR ($7 <> '' AND a.net = $7)))
-    AND NOT EXISTS (SELECT 1 FROM engine_refusals r WHERE r.question = q.id AND r.engine = $4
+    AND NOT EXISTS (SELECT 1 FROM record_engine_refusals r WHERE r.question = q.id AND r.engine = $4
           AND r.device IN (SELECT value FROM jsonb_array_elements_text($5::jsonb)))
     AND ($8 IS NULL OR q.due_at < $8)
     AND (q.initiator IS NULL OR q.initiator NOT IN (SELECT factory_capped($1)))
-    AND NOT EXISTS (SELECT 1 FROM settle_queue s WHERE s.question = q.id
+    AND NOT EXISTS (SELECT 1 FROM state_pending_verifications s WHERE s.question = q.id
           AND s.queued_at > to_char(($1::timestamptz AT TIME ZONE 'UTC') - make_interval(secs => $10), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
 $$;
 
@@ -88,7 +88,7 @@ LANGUAGE sql STABLE AS $$
     SELECT * FROM factory_eligible($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) q
     WHERE $12 IS NULL OR (q.waits = 0 AND q.verb IN (SELECT jsonb_array_elements_text($12::jsonb))))
   SELECT z.id, z.verb, z.request, z.state, z.due_at, z.waits, z.producer FROM (
-    (SELECT 0 AS fallback, x.* FROM producer_use u CROSS JOIN LATERAL (
+    (SELECT 0 AS fallback, x.* FROM state_producer_compute_usage u CROSS JOIN LATERAL (
        SELECT q.id, q.verb, q.request, q.state, q.due_at, q.waits, q.producer
        FROM eligible q
        WHERE q.state = 'open' AND q.producer = u.producer ORDER BY q.waits DESC, q.due_at, q.id LIMIT 1) x
@@ -137,8 +137,8 @@ DECLARE
 BEGIN
   IF $12 IS NULL THEN
     SELECT coalesce(array_agg(t.id), '{}') INTO v_led FROM (
-      SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
-      WHERE e.id IN (SELECT l.question FROM led_questions l)
+      SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN state_compute_work q ON q.id = e.id
+      WHERE e.id IN (SELECT l.question FROM state_task_answer_heads l)
         AND e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
         AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
         AND ($13 IS NULL OR e.producer = $13)
@@ -146,7 +146,7 @@ BEGIN
       ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 FOR UPDATE OF q SKIP LOCKED) t;
     RETURN QUERY SELECT unnest(v_led);
     IF cardinality(v_led) >= $14 THEN RETURN; END IF;
-    RETURN QUERY SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
+    RETURN QUERY SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN state_compute_work q ON q.id = e.id
     WHERE e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
       AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
       AND ($13 IS NULL OR e.producer = $13)
@@ -154,8 +154,8 @@ BEGIN
       AND NOT (q.id = ANY (v_led))
     ORDER BY e.waits DESC, e.due_at, e.id LIMIT $14 - cardinality(v_led) FOR UPDATE OF q SKIP LOCKED;
   ELSE
-    RETURN QUERY SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN questions q ON q.id = e.id
-    WHERE e.id IN (SELECT l.question FROM led_questions l WHERE l.engine = $12 AND EXISTS (SELECT 1 FROM answers s
+    RETURN QUERY SELECT q.id FROM factory_eligible($1, 0, $2, $3, $4, $5, $6, $7, $8, $9) e JOIN state_compute_work q ON q.id = e.id
+    WHERE e.id IN (SELECT l.question FROM state_task_answer_heads l WHERE l.engine = $12 AND EXISTS (SELECT 1 FROM state_compute_candidate_answers s
         WHERE s.question = l.question AND s.engine = $12 AND s.void = 0 AND s.owner <> $5 AND ($6 = '' OR s.net <> $6)))
       AND e.state = 'open' AND e.waits = 0 AND e.verb IN (SELECT jsonb_array_elements_text($10::jsonb))
       AND ($11 IS NULL OR (e.request::jsonb #>> '{record,weapon}') NOT IN (SELECT jsonb_array_elements_text($11::jsonb)))
@@ -168,10 +168,10 @@ END $$;
 -- A consumer transaction may apply only the fact and demand it read.
 CREATE OR REPLACE FUNCTION factory_delivery_guard(text,text,text,text,text,text,text) RETURNS void LANGUAGE plpgsql AS $$
 BEGIN
-  PERFORM 1 FROM questions WHERE id=$1 AND state IN ('fact','spot')
+  PERFORM 1 FROM state_compute_work WHERE id=$1 AND state IN ('fact','spot')
     AND canon IS NOT DISTINCT FROM $2 AND fact_engine IS NOT DISTINCT FROM $3 FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'stale task delivery' USING ERRCODE='WS002'; END IF;
-  PERFORM 1 FROM demands WHERE producer=$4 AND ref=$5 AND question=$1 AND asked_at=$6 AND payload=$7 AND state='live' FOR UPDATE;
+  PERFORM 1 FROM relation_task_consumers WHERE producer=$4 AND ref=$5 AND question=$1 AND asked_at=$6 AND payload=$7 AND state='live' FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'stale task delivery' USING ERRCODE='WS002'; END IF;
 END $$;
 
@@ -184,21 +184,21 @@ END $$;
 -- row, and the settler's role, denied the table, had every settlement refused.
 CREATE OR REPLACE FUNCTION led_answered() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  INSERT INTO led_questions (question, engine)
-    SELECT NEW.question, NEW.engine WHERE EXISTS (SELECT 1 FROM questions q WHERE q.id = NEW.question AND q.state = 'open')
+  INSERT INTO state_task_answer_heads (question, engine)
+    SELECT NEW.question, NEW.engine WHERE EXISTS (SELECT 1 FROM state_compute_work q WHERE q.id = NEW.question AND q.state = 'open')
     ON CONFLICT DO NOTHING;
   RETURN NULL;
 END $$;
-DROP TRIGGER IF EXISTS answers_led ON answers;
-CREATE TRIGGER answers_led AFTER INSERT ON answers
+DROP TRIGGER IF EXISTS answers_led ON record_candidate_answers;
+CREATE TRIGGER answers_led AFTER INSERT ON record_candidate_answers
   FOR EACH ROW WHEN (NEW.void = 0 AND NEW.official = 0) EXECUTE FUNCTION led_answered();
 CREATE OR REPLACE FUNCTION led_closed() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER AS $$
 BEGIN
-  DELETE FROM led_questions WHERE question = NEW.id;
+  DELETE FROM state_task_answer_heads WHERE question = NEW.id;
   RETURN NULL;
 END $$;
-DROP TRIGGER IF EXISTS questions_led ON questions;
-CREATE TRIGGER questions_led AFTER UPDATE OF state ON questions
+DROP TRIGGER IF EXISTS questions_led ON state_compute_scheduling;
+CREATE TRIGGER questions_led AFTER UPDATE OF state ON state_compute_scheduling
   FOR EACH ROW WHEN (OLD.state = 'open' AND NEW.state <> 'open') EXECUTE FUNCTION led_closed();
 
 -- …LEASED TOGETHER as $15 until $16 to device $17 — unless it holds $18 packs
@@ -206,18 +206,18 @@ CREATE TRIGGER questions_led AFTER UPDATE OF state ON questions
 CREATE OR REPLACE FUNCTION factory_take_pack(text, bigint, text, text, text, text, text, bigint, bigint, text, text, text, text, bigint,
   text, text, text, bigint)
 RETURNS TABLE (id text, verb text, request text, due_at text, producer text) LANGUAGE sql AS $$
-  UPDATE questions q SET (lease_prev, leased_to_prev, lease_prev_until) = (SELECT * FROM factory_supersede(q.lease_prev,
+  UPDATE state_compute_work q SET (lease_prev, leased_to_prev, lease_prev_until) = (SELECT * FROM factory_supersede(q.lease_prev,
       q.leased_to_prev, q.lease_prev_until, q.lease, q.leased_to, q.lease_until, $1)),
     lease = $15, lease_until = $16, leased_to = $17, leased_at = $1
   WHERE q.id IN (SELECT factory_take($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14))
-    AND (SELECT count(DISTINCT h.lease) FROM questions h WHERE h.leased_to = $17 AND h.lease_until > $1 AND h.lease <> $15) < $18
+    AND (SELECT count(DISTINCT h.lease) FROM state_compute_work h WHERE h.leased_to = $17 AND h.lease_until > $1 AND h.lease <> $15) < $18
   RETURNING q.id, q.verb, q.request, q.due_at, q.producer
 $$;
 
 -- …EACH PRODUCER CHARGED ITS ROWS at its mean fight over its weight ($1: [{ p, n }]).
 CREATE OR REPLACE FUNCTION factory_charge(text) RETURNS void LANGUAGE sql AS $$
-  SELECT 1 FROM producer_use WHERE producer IN (SELECT p FROM jsonb_to_recordset($1::jsonb) AS x(p text)) ORDER BY producer FOR UPDATE;
-  UPDATE producer_use u SET used = u.used + u.answer_ms * x.n / u.weight
+  SELECT 1 FROM state_producer_compute_usage WHERE producer IN (SELECT p FROM jsonb_to_recordset($1::jsonb) AS x(p text)) ORDER BY producer FOR UPDATE;
+  UPDATE state_producer_compute_usage u SET used = u.used + u.answer_ms * x.n / u.weight
   FROM jsonb_to_recordset($1::jsonb) AS x(p text, n bigint) WHERE u.producer = x.p
 $$;
 
@@ -235,8 +235,8 @@ $$;
 -- a protocol 8 client deep in a ten-minute pack asks only as it ends, and
 -- counting it out would hand its share of the last rows to the fast.
 CREATE OR REPLACE FUNCTION factory_asking(text, text) RETURNS SETOF text LANGUAGE sql STABLE AS $$
-  SELECT id FROM verifiers WHERE asked_at > $1
-  UNION SELECT leased_to FROM questions WHERE leased_to IS NOT NULL AND lease_until > $2
+  SELECT id FROM entity_compute_devices WHERE asked_at > $1
+  UNION SELECT leased_to FROM state_compute_work WHERE leased_to IS NOT NULL AND lease_until > $2
 $$;
 
 -- THE OPEN ROWS NOBODY WAITS ON and the computers asking, at $1: the settler's
@@ -247,12 +247,12 @@ $$;
 -- $2 is unused, kept so the procedure that calls this stays as it is.
 CREATE OR REPLACE FUNCTION factory_open(text, bigint, text, bigint) RETURNS TABLE (open bigint, asking bigint)
 LANGUAGE sql STABLE AS $$
-  WITH s AS (SELECT f.open, f.asking FROM factory_snapshot f WHERE f.id = 1
+  WITH s AS (SELECT f.open, f.asking FROM state_factory_snapshot f WHERE f.id = 1
       AND f.at >= to_char(($1::timestamptz AT TIME ZONE 'UTC') - interval '60 seconds', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
   a AS (SELECT count(*) AS n FROM factory_asking($3, $1) WHERE NOT EXISTS (SELECT 1 FROM s))
   SELECT s.open, s.asking FROM s
   UNION ALL
-  SELECT (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
+  SELECT (SELECT count(*) FROM (SELECT 1 FROM state_compute_work WHERE state = 'open' AND waits = 0
       AND (lease_until IS NULL OR lease_until < $1)
       LIMIT GREATEST(1, (SELECT n FROM a)) * $4) o), (SELECT n FROM a)
   WHERE NOT EXISTS (SELECT 1 FROM s)
@@ -261,23 +261,23 @@ $$;
 -- A QUESTION AFTER ITS DEMANDS MOVED: the earliest deadline still standing, the
 -- larger wait and that deadline's producer and initiator — or withdrawn, nobody asking.
 CREATE OR REPLACE FUNCTION factory_restate(text) RETURNS void LANGUAGE sql AS $$
-  UPDATE questions q SET due_at = l.due, waits = l.waits, producer = l.producer, initiator = l.initiator
+  UPDATE state_compute_work q SET due_at = l.due, waits = l.waits, producer = l.producer, initiator = l.initiator
     FROM (SELECT min(due_at) AS due, max(waits) AS waits, count(*) AS n, (array_agg(producer ORDER BY due_at, producer))[1] AS producer,
             (array_agg(initiator ORDER BY due_at, producer))[1] AS initiator
-          FROM demands WHERE question = $1 AND state = 'live') l
+          FROM relation_task_consumers WHERE question = $1 AND state = 'live') l
     WHERE q.id = $1 AND l.n > 0;
-  UPDATE questions SET state = 'withdrawn', lease = NULL, lease_until = NULL, leased_to = NULL
-    WHERE id = $1 AND state = 'open' AND NOT EXISTS (SELECT 1 FROM demands WHERE question = $1 AND state = 'live');
+  UPDATE state_compute_work SET state = 'withdrawn', lease = NULL, lease_until = NULL, leased_to = NULL
+    WHERE id = $1 AND state = 'open' AND NOT EXISTS (SELECT 1 FROM relation_task_consumers WHERE question = $1 AND state = 'live');
 $$;
 
--- COVERED (`answers.credited = 2`): on the questions $1 (json), an agreeing answer
+-- COVERED (`record_candidate_answers.credited = 2`): on the questions $1 (json), an agreeing answer
 -- still unpaid whose owner or network a paid witness of the same answer already
 -- is — no witness rule can ever pay it. Marked where the witnesses are paid
 -- (worker/tasks.js `credit`); returns how many.
 CREATE OR REPLACE FUNCTION factory_cover(text) RETURNS bigint LANGUAGE sql AS $$
-  WITH c AS (UPDATE answers a SET credited = 2
+  WITH c AS (UPDATE record_candidate_answers a SET credited = 2
       WHERE a.question IN (SELECT jsonb_array_elements_text($1::jsonb)) AND a.credited = 0 AND a.void = 0 AND a.official = 0
-        AND EXISTS (SELECT 1 FROM answers w WHERE w.question = a.question AND w.credited = 1 AND w.void = 0 AND w.official = 0
+        AND EXISTS (SELECT 1 FROM record_candidate_answers w WHERE w.question = a.question AND w.credited = 1 AND w.void = 0 AND w.official = 0
                     AND w.canon = a.canon AND (w.owner = a.owner OR (coalesce(a.net, '') <> '' AND w.net = a.net)))
       RETURNING 1)
   SELECT count(*) FROM c
@@ -289,19 +289,19 @@ $$;
 CREATE OR REPLACE FUNCTION factory_forget_codes() RETURNS bigint LANGUAGE sql AS $$
   -- Separate ranges skip the active state through the existing state indexes;
   -- a not-equal filter would walk active rows before reaching a bounded batch.
-  WITH d_before AS MATERIALIZED (SELECT producer,ref FROM demands
+  WITH d_before AS MATERIALIZED (SELECT producer,ref FROM relation_task_consumers
        WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state < 'live' FOR UPDATE SKIP LOCKED),
-  d_after AS MATERIALIZED (SELECT producer,ref FROM demands
+  d_after AS MATERIALIZED (SELECT producer,ref FROM relation_task_consumers
        WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state > 'live' FOR UPDATE SKIP LOCKED),
   ds AS MATERIALIZED (SELECT * FROM d_before UNION ALL SELECT * FROM d_after LIMIT 1000),
-  q_before AS MATERIALIZED (SELECT id FROM questions
+  q_before AS MATERIALIZED (SELECT id FROM state_compute_work
        WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state < 'open' FOR UPDATE SKIP LOCKED),
-  q_after AS MATERIALIZED (SELECT id FROM questions
+  q_after AS MATERIALIZED (SELECT id FROM state_compute_work
        WHERE (initiator LIKE 'user:%' OR initiator LIKE 'bot:%') AND state > 'open' FOR UPDATE SKIP LOCKED),
   qs AS MATERIALIZED (SELECT * FROM q_before UNION ALL SELECT * FROM q_after LIMIT 1000),
-  d AS (UPDATE demands x SET initiator = NULL FROM ds
+  d AS (UPDATE relation_task_consumers x SET initiator = NULL FROM ds
           WHERE x.producer=ds.producer AND x.ref=ds.ref AND x.state <> 'live' RETURNING 1),
-  q AS (UPDATE questions x SET initiator = NULL FROM qs
+  q AS (UPDATE state_compute_work x SET initiator = NULL FROM qs
           WHERE x.id=qs.id AND x.state <> 'open' RETURNING 1)
   SELECT (SELECT count(*) FROM d) + (SELECT count(*) FROM q)
 $$;
@@ -321,14 +321,13 @@ LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v text[]; n bigint; qid text;
 BEGIN
   SELECT coalesce(array_agg(t.id), '{}') INTO v FROM (
-    SELECT q.id FROM questions q WHERE q.state IN ('disputed', 'nondeterministic')
-       AND NOT EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = $1)
+    SELECT q.id FROM state_compute_work q WHERE q.state IN ('disputed', 'nondeterministic')
+       AND NOT EXISTS (SELECT 1 FROM state_compute_candidate_answers a WHERE a.question = q.id AND a.engine = $1)
      LIMIT $2 FOR UPDATE OF q SKIP LOCKED) t;
-  UPDATE questions SET state = 'open', lease = NULL, lease_until = NULL, leased_to = NULL
-    WHERE questions.id = ANY (v) AND state IN ('disputed', 'nondeterministic');
+  PERFORM compute_open_task(q.id,'engine_recalibration',$1,to_char(clock_timestamp() AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')) FROM state_compute_work q WHERE q.id=ANY(v) ORDER BY q.id;
   FOREACH qid IN ARRAY v LOOP PERFORM factory_restate(qid); END LOOP;
-  WITH back AS (UPDATE questions q SET state = 'fact', lease = NULL, lease_until = NULL, leased_to = NULL
-      WHERE q.id IN (SELECT p.id FROM questions p WHERE p.state = 'spot' AND p.fact_engine IS DISTINCT FROM $1
+  WITH back AS (UPDATE state_compute_work q SET state = 'fact', lease = NULL, lease_until = NULL, leased_to = NULL
+      WHERE q.id IN (SELECT p.id FROM state_compute_work p WHERE p.state = 'spot' AND p.fact_engine IS DISTINCT FROM $1
                       LIMIT $2 FOR UPDATE SKIP LOCKED)
       RETURNING 1)
   SELECT count(*) INTO n FROM back;
@@ -341,22 +340,22 @@ END $$;
 -- credit index can look empty to the planner while retaining many old entries.
 CREATE OR REPLACE FUNCTION factory_past_safe(text, text) RETURNS boolean LANGUAGE plpgsql STABLE AS $$
 BEGIN
-  RETURN NOT EXISTS (SELECT 1 FROM demands d WHERE d.question = $1
+  RETURN NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question = $1
                         AND (d.state = 'live' OR d.asked_at >= $2 OR d.served_at >= $2))
-     AND NOT EXISTS (SELECT 1 FROM (SELECT at FROM answers WHERE question=$1 OFFSET 0) a WHERE a.at >= $2)
+     AND NOT EXISTS (SELECT 1 FROM (SELECT at FROM record_candidate_answers WHERE question=$1 OFFSET 0) a WHERE a.at >= $2)
      AND NOT EXISTS (SELECT 1 FROM
-          (SELECT credit_work,credited,void,official FROM answers WHERE question=$1 OFFSET 0) a
+          (SELECT credit_work,credited,void,official FROM record_candidate_answers WHERE question=$1 OFFSET 0) a
           WHERE a.credit_work IS NOT NULL AND a.credited = 0 AND a.void = 0 AND a.official = 0)
-     AND NOT EXISTS (SELECT 1 FROM refusal_withdrawals r WHERE r.question = $1)
-     AND NOT EXISTS (SELECT 1 FROM settle_queue s WHERE s.question = $1)
-     AND NOT EXISTS (SELECT 1 FROM board_reviews r WHERE r.question = $1 AND EXISTS
-          (SELECT 1 FROM scores s WHERE s.identity = r.identity AND s.ruler = r.ruler AND s.mode = r.mode AND s.review_id = r.id))
-     AND NOT EXISTS (SELECT 1 FROM questions q WHERE q.id = $1 AND (q.lease_until >= $2 OR q.lease_prev_until >= $2))
-     AND NOT EXISTS (SELECT 1 FROM (SELECT * FROM answers WHERE question=$1 OFFSET 0) a
-          CROSS JOIN (SELECT state,canon,fact_at FROM questions WHERE id=$1 OFFSET 0) q
+     AND NOT EXISTS (SELECT 1 FROM record_refusal_withdrawals r WHERE r.question = $1)
+     AND NOT EXISTS (SELECT 1 FROM state_pending_verifications s WHERE s.question = $1)
+     AND NOT EXISTS (SELECT 1 FROM entity_measurement_reviews r WHERE r.question = $1 AND EXISTS
+          (SELECT 1 FROM state_board_measurement_selection s WHERE s.identity = r.identity AND s.ruler = r.ruler AND s.mode = r.mode AND s.review_id = r.id))
+     AND NOT EXISTS (SELECT 1 FROM state_compute_work q WHERE q.id = $1 AND (q.lease_until >= $2 OR q.lease_prev_until >= $2))
+     AND NOT EXISTS (SELECT 1 FROM (SELECT * FROM record_candidate_answers WHERE question=$1 OFFSET 0) a
+          CROSS JOIN (SELECT state,canon,fact_at FROM state_compute_work WHERE id=$1 OFFSET 0) q
           WHERE q.state = 'fact' AND a.credited = 0 AND a.void = 0 AND a.official = 0
             AND a.canon = q.canon AND a.at <= q.fact_at
-            AND NOT EXISTS (SELECT 1 FROM (SELECT * FROM answers WHERE question=a.question OFFSET 0) c
+            AND NOT EXISTS (SELECT 1 FROM (SELECT * FROM record_candidate_answers WHERE question=a.question OFFSET 0) c
                               WHERE c.credited = 1 AND c.void = 0 AND c.official = 0
                               AND (c.owner = a.owner OR (coalesce(a.net, '') <> '' AND c.net = a.net))));
 END $$;
@@ -373,16 +372,16 @@ END $$;
 CREATE OR REPLACE FUNCTION factory_task_detail(text) RETURNS jsonb LANGUAGE plpgsql STABLE AS $$
 BEGIN
   RETURN (SELECT jsonb_build_object('question',to_jsonb(q),
-    'answers',coalesce((SELECT jsonb_agg(to_jsonb(a) ORDER BY a.id) FROM answers a WHERE a.question=q.id),'[]'::jsonb),
-    'demands',coalesce((SELECT jsonb_agg(to_jsonb(d) ORDER BY d.producer,d.ref) FROM demands d WHERE d.question=q.id),'[]'::jsonb),
-    'engine_refusals',coalesce((SELECT jsonb_agg(to_jsonb(e) ORDER BY e.device,e.engine) FROM engine_refusals e WHERE e.question=q.id),'[]'::jsonb),
-    'led_questions',coalesce((SELECT jsonb_agg(to_jsonb(l) ORDER BY l.engine) FROM led_questions l WHERE l.question=q.id),'[]'::jsonb))
-  FROM questions q WHERE q.id=$1);
+    'answers',coalesce((SELECT jsonb_agg(to_jsonb(a) ORDER BY a.id) FROM record_candidate_answers a WHERE a.question=q.id),'[]'::jsonb),
+    'demands',coalesce((SELECT jsonb_agg(to_jsonb(d) ORDER BY d.producer,d.ref) FROM relation_task_consumers d WHERE d.question=q.id),'[]'::jsonb),
+    'engine_refusals',coalesce((SELECT jsonb_agg(to_jsonb(e) ORDER BY e.device,e.engine) FROM record_engine_refusals e WHERE e.question=q.id),'[]'::jsonb),
+    'led_questions',coalesce((SELECT jsonb_agg(to_jsonb(l) ORDER BY l.engine) FROM state_task_answer_heads l WHERE l.question=q.id),'[]'::jsonb))
+  FROM state_compute_work q WHERE q.id=$1);
 END $$;
 
 CREATE OR REPLACE FUNCTION factory_archive_candidates(text,bigint) RETURNS jsonb LANGUAGE sql STABLE AS $$
   SELECT coalesce(jsonb_agg(factory_task_detail(t.id)),'[]'::jsonb) FROM (
-    SELECT q.id FROM questions q
+    SELECT q.id FROM state_compute_work q
      WHERE ((q.state='fact' AND q.fact_at<$1) OR
        (q.state='withdrawn' AND q.opened_at<$1 AND coalesce(q.withdrawn_at,q.opened_at)<$1))
        AND factory_past_safe(q.id,$1)
@@ -399,21 +398,21 @@ BEGIN
     RAISE EXCEPTION 'invalid verified task archive';
   END IF;
   SELECT coalesce(array_agg(t.id), '{}') INTO v FROM (
-    SELECT q.id FROM questions q JOIN jsonb_array_elements($2) a ON q.id=a#>>'{question,id}'
+    SELECT q.id FROM state_compute_work q JOIN jsonb_array_elements($2) a ON q.id=a#>>'{question,id}'
      WHERE ((q.state = 'fact' AND q.fact_at < $1) OR (q.state = 'withdrawn' AND q.opened_at < $1 AND coalesce(q.withdrawn_at, q.opened_at) < $1))
        AND factory_past_safe(q.id, $1)
      ORDER BY q.id FOR UPDATE OF q SKIP LOCKED) t;
-  SELECT coalesce(array_agg(q.id), '{}') INTO v FROM questions q WHERE q.id = ANY (v)
+  SELECT coalesce(array_agg(q.id), '{}') INTO v FROM state_compute_work q WHERE q.id = ANY (v)
      AND ((q.state = 'fact' AND q.fact_at < $1) OR (q.state = 'withdrawn' AND q.opened_at < $1 AND coalesce(q.withdrawn_at, q.opened_at) < $1))
      AND factory_past_safe(q.id, $1)
      AND EXISTS (SELECT 1 FROM jsonb_array_elements($2) a WHERE a#>>'{question,id}'=q.id AND a=factory_task_detail(q.id));
   IF cardinality(v) = 0 THEN RETURN '[]'::jsonb; END IF;
-  DELETE FROM answers WHERE question = ANY (v);
-  DELETE FROM demands WHERE question = ANY (v) AND state <> 'live';
-  DELETE FROM engine_refusals WHERE question = ANY (v);
-  DELETE FROM settle_queue WHERE question = ANY (v);
-  DELETE FROM led_questions WHERE question = ANY (v);
-  DELETE FROM questions WHERE id = ANY (v) AND state IN ('fact', 'withdrawn');
+  DELETE FROM record_candidate_answers WHERE question = ANY (v);
+  DELETE FROM relation_task_consumers WHERE question = ANY (v) AND state <> 'live';
+  DELETE FROM record_engine_refusals WHERE question = ANY (v);
+  DELETE FROM state_pending_verifications WHERE question = ANY (v);
+  DELETE FROM state_task_answer_heads WHERE question = ANY (v);
+  DELETE FROM state_compute_work WHERE id = ANY (v) AND state IN ('fact', 'withdrawn');
   RETURN to_jsonb(v);
 END $$;
 REVOKE ALL ON FUNCTION factory_task_detail(text),factory_archive_candidates(text,bigint),
@@ -432,20 +431,20 @@ BEGIN
     SELECT q.id,CASE WHEN $6 THEN q.request ELSE NULL END AS request,
            max(a.work) AS work,max(a.counts) AS counts,
            '['||string_agg(to_json(a.device)::text,',' ORDER BY a.id)||']' AS devices
-      FROM questions q JOIN answers a ON a.question=q.id
+      FROM state_compute_work q JOIN record_candidate_answers a ON a.question=q.id
      WHERE q.verb='simulate' AND q.id >= $3 AND (q.id > $3 OR $7)
        AND a.question >= $3
        AND a.credited=1 AND a.official=0 AND a.void=0 AND a.at>$1 AND a.at<=$2
      GROUP BY q.id ORDER BY q.id
      LIMIT LEAST(GREATEST($5,1),2000) OFFSET GREATEST($4,0)
   ) t);
-END
+END;
 $$;
 REVOKE ALL ON FUNCTION factory_calibration_page(text,text,text,bigint,bigint,boolean,boolean) FROM PUBLIC;
 
 -- A BOARD ROW STILL OWED (worker/board_tasks.js): `queue` holds it.
 CREATE OR REPLACE FUNCTION board_owed(text, text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT EXISTS (SELECT 1 FROM queue WHERE build_id = $1 AND ruler = $2 AND mode = $3)
+  SELECT EXISTS (SELECT 1 FROM state_board_pending_work WHERE build_id = $1 AND ruler = $2 AND mode = $3)
 $$;
 
 -- Inventory exposes task identity and lifecycle, never requests or witnesses.
@@ -454,21 +453,21 @@ CREATE OR REPLACE FUNCTION factory_inventory_rows(text, text[])
 RETURNS TABLE(id text, verb text, state text, fact_engine text, kind text, served_answered boolean)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path FROM CURRENT AS $$
   WITH other_live AS MATERIALIZED (
-    SELECT d.question,min(d.producer) kind FROM demands d
+    SELECT d.question,min(d.producer) kind FROM relation_task_consumers d
     WHERE d.state='live' AND NOT (d.producer=ANY($2)) GROUP BY d.question)
   SELECT q.id,q.verb,q.state,q.fact_engine,l.kind,
     CASE WHEN q.state IN ('disputed','nondeterministic')
-      THEN EXISTS(SELECT 1 FROM answers a WHERE a.question=q.id AND a.engine=$1) ELSE false END
-  FROM questions q LEFT JOIN other_live l ON l.question=q.id
+      THEN EXISTS(SELECT 1 FROM record_candidate_answers a WHERE a.question=q.id AND a.engine=$1) ELSE false END
+  FROM state_compute_work q LEFT JOIN other_live l ON l.question=q.id
   WHERE q.state<>'withdrawn' AND ((q.state IN ('fact','spot') AND q.fact_engine=$1)
     OR q.state IN ('disputed','nondeterministic') OR l.question IS NOT NULL)
-  UNION ALL SELECT r.question,'','refused',r.engine,NULL,false FROM refusal_withdrawals r
-    WHERE r.engine=$1 AND NOT EXISTS(SELECT 1 FROM questions q WHERE q.id=r.question AND q.state<>'withdrawn')
+  UNION ALL SELECT r.question,'','refused',r.engine,NULL,false FROM record_refusal_withdrawals r
+    WHERE r.engine=$1 AND NOT EXISTS(SELECT 1 FROM state_compute_work q WHERE q.id=r.question AND q.state<>'withdrawn')
 $$;
 REVOKE ALL ON FUNCTION factory_inventory_rows(text,text[]) FROM PUBLIC;
 
 CREATE OR REPLACE FUNCTION board_review_wanted(text, text) RETURNS boolean LANGUAGE sql STABLE AS $$
-  SELECT EXISTS (SELECT 1 FROM board_reviews r JOIN scores s ON s.identity = r.identity AND s.ruler = r.ruler AND s.mode = r.mode
+  SELECT EXISTS (SELECT 1 FROM entity_measurement_reviews r JOIN state_board_measurement_selection s ON s.identity = r.identity AND s.ruler = r.ruler AND s.mode = r.mode
     WHERE r.ref = $1 AND r.question = $2 AND r.state = 'waiting')
 $$;
 
@@ -476,24 +475,24 @@ $$;
 -- its id, its yes kept when given ($4, $5), a refusal lifted once over at $3,
 -- its day ($2).
 CREATE OR REPLACE FUNCTION verifier_seen(text, text, text, bigint, text) RETURNS void LANGUAGE sql AS $$
-  INSERT INTO verifiers (id, seen) VALUES ($1, $2) ON CONFLICT DO NOTHING;
-  UPDATE verifiers SET consent_v = $4, consent_at = $5
+  INSERT INTO entity_compute_devices (id, seen) VALUES ($1, $2) ON CONFLICT DO NOTHING;
+  UPDATE entity_compute_devices SET consent_v = $4, consent_at = $5
     WHERE id = $1 AND $4 IS NOT NULL AND (consent_v IS DISTINCT FROM $4 OR consent_at IS DISTINCT FROM $5);
-  UPDATE verifiers SET banned = 0 WHERE id = $1 AND banned = 1 AND (refused_until IS NULL OR refused_until <= $3);
-  UPDATE verifiers SET seen = $2 WHERE id = $1 AND seen IS DISTINCT FROM $2;
+  UPDATE entity_compute_devices SET banned = 0 WHERE id = $1 AND banned = 1 AND (refused_until IS NULL OR refused_until <= $3);
+  UPDATE entity_compute_devices SET seen = $2 WHERE id = $1 AND seen IS DISTINCT FROM $2;
 $$;
 
 -- …ON, its engine and free cores ($3, $4) kept, written at $2 at most once
 -- since $5 unless they changed (worker/verify.js `askedOf`).
 CREATE OR REPLACE FUNCTION verifier_asked(text, text, text, bigint, text) RETURNS void LANGUAGE sql AS $$
-  UPDATE verifiers SET asked_at = $2, asked_engine = $3, asked_lanes = coalesce($4, asked_lanes)
+  UPDATE entity_compute_devices SET asked_at = $2, asked_engine = $3, asked_lanes = coalesce($4, asked_lanes)
     WHERE id = $1 AND (asked_at IS NULL OR asked_at < $5 OR asked_engine IS DISTINCT FROM $3
       OR ($4 IS NOT NULL AND asked_lanes IS DISTINCT FROM $4))
 $$;
 
 -- …AND WHAT IT ASKED FOR, by the hour (worker/verify.js `asksOf`), added to.
 CREATE OR REPLACE FUNCTION verifier_asks(text) RETURNS void LANGUAGE sql AS $$
-  INSERT INTO verifier_asks AS h (verifier, hour, asks, idle, idle_lanes, failed, relayed, relay_failed, direct_failed)
+  INSERT INTO record_hourly_work_requests AS h (verifier, hour, asks, idle, idle_lanes, failed, relayed, relay_failed, direct_failed)
   SELECT x.verifier, x.hour, x.asks, x.idle, x.idle_lanes, x.failed, x.relayed, x.relay_failed, x.direct_failed
   FROM jsonb_to_recordset($1::jsonb) AS x(verifier text, hour text, asks bigint, idle bigint, idle_lanes bigint, failed bigint,
     relayed bigint, relay_failed bigint, direct_failed bigint)
@@ -505,24 +504,31 @@ $$;
 
 -- THE ROWS OF $3 (json) A PACK'S LEASE $1 STILL HOLDS for device $2 at $4 — or,
 -- $5 = 1, held still though run out — or held before (worker/tasks.js `answerPack`).
-CREATE OR REPLACE FUNCTION factory_held(text, text, text, text, bigint) RETURNS SETOF questions LANGUAGE sql STABLE AS $$
-  SELECT * FROM questions WHERE id IN (SELECT value FROM jsonb_array_elements_text($3::jsonb))
+CREATE OR REPLACE FUNCTION factory_held(text, text, text, text, bigint) RETURNS SETOF state_compute_work LANGUAGE sql STABLE AS $$
+  SELECT * FROM state_compute_work WHERE id IN (SELECT value FROM jsonb_array_elements_text($3::jsonb))
     AND ((lease = $1 AND leased_to = $2 AND ($5 = 1 OR lease_until >= $4)) OR (lease_prev = $1 AND leased_to_prev = $2))
 $$;
 
 -- …AND THOSE DEVICE $1 ALREADY ANSWERED on engine $2: a send repeated is not a second witness.
 CREATE OR REPLACE FUNCTION factory_given(text, text, text) RETURNS SETOF text LANGUAGE sql STABLE AS $$
-  SELECT DISTINCT question FROM answers WHERE device = $1 AND engine = $2 AND question IN (SELECT jsonb_array_elements_text($3::jsonb))
+  SELECT DISTINCT question FROM state_compute_candidate_answers WHERE device = $1 AND engine = $2 AND question IN (SELECT jsonb_array_elements_text($3::jsonb))
 $$;
 
 -- ONE ANSWER WRITTEN, unless its device gave one on this engine already, the
 -- unique index `answers_once` the last word on a race. Columns in table order.
-CREATE OR REPLACE FUNCTION factory_answer(text, text, text, text, text, bigint, text, text, bigint, bigint, text, bigint, text)
-RETURNS void LANGUAGE sql AS $$
-  INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, counts, lanes, at)
-  SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
-  WHERE $6 = 1 OR NOT EXISTS (SELECT 1 FROM answers x WHERE x.question = $1 AND x.device = $3 AND x.engine = $2)
-  ON CONFLICT (question, device, engine) WHERE official = 0 DO NOTHING
+CREATE OR REPLACE FUNCTION factory_answer(text, text, text, text, text, bigint, text, text, bigint, bigint, text, bigint, text, bigint)
+RETURNS void LANGUAGE plpgsql AS $$
+DECLARE held bigint;
+BEGIN
+  SELECT task_id INTO held FROM state_compute_scheduling WHERE id=$1 FOR UPDATE;
+  IF held IS NULL OR $14 IS NULL OR held IS DISTINCT FROM $14 THEN
+    RAISE EXCEPTION 'compute task changed before candidate reception' USING ERRCODE='40001';
+  END IF;
+  INSERT INTO record_candidate_answers (question,engine,device,owner,net,official,canon,result,work,compute_ms,counts,lanes,at,task_id)
+  SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14
+  WHERE $6=1 OR NOT EXISTS(SELECT 1 FROM state_compute_candidate_answers x WHERE x.question=$1 AND x.device=$3 AND x.engine=$2)
+  ON CONFLICT (task_id,device,engine) WHERE official=0 DO NOTHING;
+END;
 $$;
 
 -- EVERY WRITER OF PRODUCER_USE LOCKS ITS ROWS IN PRODUCER ORDER first (this,
@@ -531,8 +537,8 @@ $$;
 -- WHAT ANSWERS COST, folded into each producer's mean: `n` answers of `ms` in
 -- all move it as `n` folds of share $2 would ($1: [{ p, ms, n }]).
 CREATE OR REPLACE FUNCTION factory_learn(text, double precision) RETURNS void LANGUAGE sql AS $$
-  SELECT 1 FROM producer_use WHERE producer IN (SELECT p FROM jsonb_to_recordset($1::jsonb) AS x(p text)) ORDER BY producer FOR UPDATE;
-  UPDATE producer_use u SET answer_ms = CASE WHEN u.answer_ms = 0 THEN x.ms / x.n
+  SELECT 1 FROM state_producer_compute_usage WHERE producer IN (SELECT p FROM jsonb_to_recordset($1::jsonb) AS x(p text)) ORDER BY producer FOR UPDATE;
+  UPDATE state_producer_compute_usage u SET answer_ms = CASE WHEN u.answer_ms = 0 THEN x.ms / x.n
       ELSE u.answer_ms * power(1 - $2, x.n) + x.ms / x.n * (1 - power(1 - $2, x.n)) END
   FROM jsonb_to_recordset($1::jsonb) AS x(p text, ms double precision, n double precision) WHERE u.producer = x.p
 $$;
@@ -540,15 +546,15 @@ $$;
 -- QUESTIONS $1 (json) QUEUED FOR THE SETTLER on engine $2 beside peer $3; an
 -- answer on a row a settler pass holds clears its claim.
 CREATE OR REPLACE FUNCTION factory_queue(text, text, text, bigint, text) RETURNS void LANGUAGE sql AS $$
-  INSERT INTO settle_queue (question, engine, peer, joined, queued_at)
+  INSERT INTO state_pending_verifications (question, engine, peer, joined, queued_at)
   SELECT value, $2, $3, $4, $5 FROM jsonb_array_elements_text($1::jsonb)
   ON CONFLICT (question, engine, peer) DO UPDATE SET claim = NULL, claimed_at = NULL
 $$;
 
 -- WHEN A VOLUNTEER LAST ANSWERED and what it spent ($2 ms on $3 tasks), in its hour.
 CREATE OR REPLACE FUNCTION verifier_worked(text, bigint, bigint, text) RETURNS void LANGUAGE sql AS $$
-  UPDATE verifiers SET compute_ms = compute_ms + $2, last_at = $4 WHERE id = $1;
-  INSERT INTO verifier_hours AS h (verifier, hour, tasks, ms) VALUES ($1, substr($4, 1, 13), $3, $2)
+  UPDATE entity_compute_devices SET compute_ms = compute_ms + $2, last_at = $4 WHERE id = $1;
+  INSERT INTO record_hourly_compute_totals AS h (verifier, hour, tasks, ms) VALUES ($1, substr($4, 1, 13), $3, $2)
     ON CONFLICT (verifier, hour) DO UPDATE SET tasks = h.tasks + excluded.tasks, ms = h.ms + excluded.ms;
 $$;
 
@@ -559,14 +565,14 @@ $$;
 CREATE OR REPLACE FUNCTION factory_renew(text, text, text) RETURNS SETOF text LANGUAGE plpgsql AS $$
 DECLARE x text;
 BEGIN
-  PERFORM 1 FROM questions q, jsonb_to_recordset($1::jsonb) AS r(lease text, question text)
+  PERFORM 1 FROM state_compute_work q, jsonb_to_recordset($1::jsonb) AS r(lease text, question text)
     WHERE q.id = r.question AND ((q.lease = r.lease AND q.leased_to = $2) OR (q.lease_prev = r.lease AND q.leased_to_prev = $2))
     ORDER BY q.id FOR UPDATE OF q;
-  FOR x IN UPDATE questions q SET lease_until = GREATEST(q.lease_until, $3) FROM jsonb_to_recordset($1::jsonb) AS r(lease text, question text)
+  FOR x IN UPDATE state_compute_work q SET lease_until = GREATEST(q.lease_until, $3) FROM jsonb_to_recordset($1::jsonb) AS r(lease text, question text)
       WHERE q.id = r.question AND q.lease = r.lease AND q.leased_to = $2 RETURNING q.id LOOP
     RETURN NEXT x;
   END LOOP;
-  FOR x IN UPDATE questions q SET lease_prev_until = GREATEST(q.lease_prev_until, $3) FROM jsonb_to_recordset($1::jsonb) AS r(lease text, question text)
+  FOR x IN UPDATE state_compute_work q SET lease_prev_until = GREATEST(q.lease_prev_until, $3) FROM jsonb_to_recordset($1::jsonb) AS r(lease text, question text)
       WHERE q.id = r.question AND q.lease_prev = r.lease AND q.leased_to_prev = $2 RETURNING q.id LOOP
     RETURN NEXT x;
   END LOOP;
@@ -574,8 +580,8 @@ END $$;
 
 -- …AND EVERY LIVE LEASE OF DEVICE $1 AT $2 ON A ROW IT NAMES NOWHERE ($3) goes back.
 CREATE OR REPLACE FUNCTION factory_release_unnamed(text, text, text) RETURNS void LANGUAGE sql AS $$
-  UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
-  WHERE id IN (SELECT id FROM questions WHERE leased_to = $1 AND lease_until > $2
+  UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL
+  WHERE id IN (SELECT id FROM state_compute_work WHERE leased_to = $1 AND lease_until > $2
     AND id NOT IN (SELECT value FROM jsonb_array_elements_text($3::jsonb)) ORDER BY id FOR UPDATE)
 $$;
 
@@ -585,17 +591,17 @@ $$;
 CREATE OR REPLACE FUNCTION factory_refuse(text, text, text, text, text, bigint, text) RETURNS SETOF text LANGUAGE plpgsql AS $$
 DECLARE x record;
 BEGIN
-  INSERT INTO engine_refusals (question, device, owner, engine, step, at)
+  INSERT INTO record_engine_refusals (question, device, owner, engine, step, at)
     SELECT r.question, $2, $3, $4, r.step, $7 FROM jsonb_to_recordset($1::jsonb) AS r(question text, step text) ON CONFLICT DO NOTHING;
-  UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
-    WHERE id IN (SELECT id FROM questions WHERE id IN (SELECT r.question FROM jsonb_to_recordset($1::jsonb) AS r(question text))
+  UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL
+    WHERE id IN (SELECT id FROM state_compute_work WHERE id IN (SELECT r.question FROM jsonb_to_recordset($1::jsonb) AS r(question text))
       AND leased_to = $2 ORDER BY id FOR UPDATE);
   IF $4 IS DISTINCT FROM $5 THEN RETURN; END IF;
-  FOR x IN SELECT e.question, count(DISTINCT e.owner) AS owners FROM engine_refusals e
+  FOR x IN SELECT e.question, count(DISTINCT e.owner) AS owners FROM record_engine_refusals e
       WHERE e.question IN (SELECT r.question FROM jsonb_to_recordset($1::jsonb) AS r(question text)) AND e.engine = $5
       GROUP BY e.question HAVING count(DISTINCT e.owner) >= $6 ORDER BY e.question LOOP
-    UPDATE demands SET state = 'withdrawn' WHERE question = x.question AND state = 'live';
-    INSERT INTO refusal_withdrawals (question, engine, owners, at) VALUES (x.question, $5, x.owners, $7) ON CONFLICT (question) DO NOTHING;
+    UPDATE relation_task_consumers SET state = 'withdrawn' WHERE question = x.question AND state = 'live';
+    INSERT INTO record_refusal_withdrawals (question, engine, owners, at) VALUES (x.question, $5, x.owners, $7) ON CONFLICT (question) DO NOTHING;
     PERFORM factory_restate(x.question);
     RETURN NEXT x.question;
   END LOOP;
@@ -605,9 +611,9 @@ END $$;
 CREATE OR REPLACE FUNCTION factory_states(text, text)
 RETURNS TABLE (id text, state text, fact_at text, credited bigint, mine bigint) LANGUAGE sql STABLE AS $$
   SELECT q.id, q.state, q.fact_at,
-    (SELECT max(a.credited) FROM answers a WHERE a.question = q.id AND a.device = $1 AND a.void = 0),
-    (SELECT count(*) FROM answers a WHERE a.question = q.id AND a.device = $1 AND a.void = 0)
-  FROM questions q WHERE q.id IN (SELECT value FROM jsonb_array_elements_text($2::jsonb)) ORDER BY q.id
+    (SELECT max(a.credited) FROM record_candidate_answers a WHERE a.question = q.id AND a.device = $1 AND a.void = 0),
+    (SELECT count(*) FROM record_candidate_answers a WHERE a.question = q.id AND a.device = $1 AND a.void = 0)
+  FROM state_compute_work q WHERE q.id IN (SELECT value FROM jsonb_array_elements_text($2::jsonb)) ORDER BY q.id
 $$;
 
 -- WHAT DEVICE $1 EARNED THAT NO ACCOUNT HOLDS, as worker/contribution.js
@@ -616,14 +622,14 @@ $$;
 CREATE OR REPLACE FUNCTION device_points(text, text, text, text, text) RETURNS jsonb LANGUAGE sql STABLE AS $$
   SELECT jsonb_build_object('held', $2 IS NULL,
     'work', CASE WHEN $2 IS NULL OR v.id IS NULL THEN 0 WHEN $2 = '' THEN v.work
-      ELSE COALESCE((SELECT sum(h.work) FROM verifier_hours h WHERE h.verifier = $1 AND h.hour >= $2), 0) END,
+      ELSE COALESCE((SELECT sum(h.work) FROM record_hourly_compute_totals h WHERE h.verifier = $1 AND h.hour >= $2), 0) END,
     'recent', CASE WHEN $2 IS NULL OR v.id IS NULL THEN 0
-      ELSE COALESCE((SELECT sum(h.work) FROM verifier_hours h WHERE h.verifier = $1 AND h.hour >= $2 AND h.hour >= $3), 0) END,
+      ELSE COALESCE((SELECT sum(h.work) FROM record_hourly_compute_totals h WHERE h.verifier = $1 AND h.hour >= $2 AND h.hour >= $3), 0) END,
     'week', CASE WHEN $2 IS NULL OR v.id IS NULL THEN 0
-      ELSE COALESCE((SELECT sum(h.work) FROM verifier_hours h WHERE h.verifier = $1 AND h.hour >= $2 AND h.hour >= $4), 0) END,
+      ELSE COALESCE((SELECT sum(h.work) FROM record_hourly_compute_totals h WHERE h.verifier = $1 AND h.hour >= $2 AND h.hour >= $4), 0) END,
     'today', CASE WHEN $5 IS NULL THEN NULL ELSE (SELECT jsonb_build_object('tasks', COALESCE(sum(h.tasks), 0),
-      'ms', COALESCE(sum(h.ms), 0), 'work', COALESCE(sum(h.work), 0)) FROM verifier_hours h WHERE h.verifier = $1 AND h.hour >= $5) END)
-  FROM (SELECT 1) one LEFT JOIN verifiers v ON v.id = $1 AND v.banned = 0
+      'ms', COALESCE(sum(h.ms), 0), 'work', COALESCE(sum(h.work), 0)) FROM record_hourly_compute_totals h WHERE h.verifier = $1 AND h.hour >= $5) END)
+  FROM (SELECT 1) one LEFT JOIN entity_compute_devices v ON v.id = $1 AND v.banned = 0
 $$;
 
 -- PROTOCOL 8'S SYNC, ONE CALL AND ONE TRANSACTION (worker/sync.js, which builds
@@ -692,7 +698,7 @@ BEGIN
   FOR v_group IN SELECT value FROM jsonb_array_elements(COALESCE(p -> 'groups', '[]'::jsonb)) LOOP
     v_ids := (SELECT jsonb_agg(a ->> 'question') FROM jsonb_array_elements(v_group -> 'rows') a);
     v_ok := COALESCE((SELECT jsonb_agg(g) FROM factory_given(v_dev, v_engine, v_ids::text) g), '[]'::jsonb);
-    v_rows := COALESCE((SELECT jsonb_agg(jsonb_build_object('a', x.a, 'id', q.id, 'verb', q.verb, 'producer', q.producer) ORDER BY x.k)
+    v_rows := COALESCE((SELECT jsonb_agg(jsonb_build_object('a', x.a, 'id', q.id, 'verb', q.verb, 'producer', q.producer,'task_id',q.task_id) ORDER BY x.k)
         FROM jsonb_array_elements(v_group -> 'rows') WITH ORDINALITY x(a, k)
         JOIN factory_held(v_group ->> 'lease', v_dev, v_ids::text, v_at, 1) q ON q.id = x.a ->> 'question'
         WHERE NOT v_ok ? q.id), '[]'::jsonb);
@@ -704,7 +710,7 @@ BEGIN
       FOR v_x IN SELECT value AS i FROM jsonb_array_elements(v_rows) LOOP
         PERFORM factory_answer(v_x.i ->> 'id', v_engine, v_dev, v_owner, v_net, 0, v_x.i #>> ARRAY['a', 'canons', v_x.i ->> 'verb'],
           v_x.i #>> '{a,result}', (v_x.i #>> '{a,work}')::bigint, (v_x.i #>> '{a,compute_ms}')::bigint, v_x.i #>> '{a,counts}',
-          (v_x.i #>> '{a,lanes}')::bigint, v_at);
+          (v_x.i #>> '{a,lanes}')::bigint, v_at,(v_x.i ->> 'task_id')::bigint);
       END LOOP;
       v_learn := v_learn || COALESCE((SELECT jsonb_build_array(y.x)
         FROM (SELECT jsonb_agg(jsonb_build_object('p', l.producer, 'ms', l.ms, 'n', l.n) ORDER BY l.producer) AS x
@@ -753,9 +759,9 @@ BEGIN
     'points', v_points, 'queued', v_queued, 'use', jsonb_build_object('learn', v_learn, 'charge', '[]'::jsonb));
 
   -- THE GATES, in worker/sync.js's order.
-  SELECT banned, refused_until, last_at, next_at INTO v_me FROM verifiers WHERE id = v_dev;
+  SELECT banned, refused_until, last_at, next_at INTO v_me FROM entity_compute_devices WHERE id = v_dev;
   IF v_stale THEN
-    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    UPDATE entity_compute_devices SET next_at = p ->> 'idle_at' WHERE id = v_dev;
     r := r || jsonb_build_object('outcome', 'stale');
     RETURN;
   END IF;
@@ -764,7 +770,7 @@ BEGIN
     RETURN;
   END IF;
   IF NOT (p ->> 'consented')::boolean THEN
-    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    UPDATE entity_compute_devices SET next_at = p ->> 'idle_at' WHERE id = v_dev;
     r := r || jsonb_build_object('outcome', 'idle');
     RETURN;
   END IF;
@@ -773,7 +779,7 @@ BEGIN
     r := r || jsonb_build_object('outcome', 'early', 'next_at', v_me.next_at);
     RETURN;
   END IF;
-  SELECT count(*) AS questions, count(DISTINCT lease) AS packs INTO v_holds FROM questions WHERE leased_to = v_dev AND lease_until > v_at;
+  SELECT count(*) AS questions, count(DISTINCT lease) AS packs INTO v_holds FROM state_compute_work WHERE leased_to = v_dev AND lease_until > v_at;
   IF (p ->> 'want')::bigint <= 0 OR v_holds.packs >= (p ->> 'packs_held')::bigint THEN
     r := r || jsonb_build_object('outcome', 'full');
     RETURN;
@@ -782,7 +788,7 @@ BEGIN
   v_has_head := FOUND;
   v_packable := v_has_head AND v_head.waits = 0 AND (p -> 'packable') ? v_head.verb;
   IF NOT v_has_head AND NOT v_grace THEN
-    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    UPDATE entity_compute_devices SET next_at = p ->> 'idle_at' WHERE id = v_dev;
     r := r || jsonb_build_object('outcome', 'idle');
     RETURN;
   END IF;
@@ -798,7 +804,7 @@ BEGIN
       v_ceiling, v_grace_s, p ->> 'official_states', (p -> 'packable')::text);
     v_packable := FOUND;
     IF NOT v_packable THEN
-      UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+      UPDATE entity_compute_devices SET next_at = p ->> 'idle_at' WHERE id = v_dev;
       r := r || jsonb_build_object('outcome', 'idle');
       RETURN;
     END IF;
@@ -806,14 +812,14 @@ BEGIN
   SELECT * INTO v_fair FROM factory_open(v_at, NULL, p #>> '{fair,asking_since}', (p #>> '{fair,per}')::bigint);
   IF (p #>> '{fair,cap}')::bigint <> 0 AND v_fair.asking > (p #>> '{fair,cap}')::bigint
       AND NOT (v_me.last_at IS NOT NULL AND v_me.last_at > p #>> '{fair,cap_since}') THEN
-    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    UPDATE entity_compute_devices SET next_at = p ->> 'idle_at' WHERE id = v_dev;
     r := r || jsonb_build_object('outcome', 'busy');
     RETURN;
   END IF;
   -- WHILE WORK IS SHORT an account past its fair share (the dice are JS's) is handed nothing.
   v_short := v_fair.open / GREATEST(1, v_fair.asking) < (p #>> '{fair,short_rows}')::bigint;
   IF v_short AND (p #>> '{fair,throttle}')::boolean THEN
-    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    UPDATE entity_compute_devices SET next_at = p ->> 'idle_at' WHERE id = v_dev;
     r := r || jsonb_build_object('outcome', 'idle');
     RETURN;
   END IF;
@@ -834,7 +840,7 @@ BEGIN
       FROM (SELECT t ->> 'producer' AS p, count(*) AS n FROM jsonb_array_elements(v_got) t GROUP BY 1) c));
     v_ds := COALESCE((SELECT jsonb_agg(to_jsonb(d) ORDER BY d.k) FROM (
         SELECT d.question, d.producer, d.ref, d.payload, row_number() OVER (ORDER BY d.question, d.producer, d.ref) AS k
-        FROM demands d JOIN questions q ON q.id = d.question WHERE q.lease = v_lease AND q.leased_to = v_dev AND d.state = 'live'
+        FROM relation_task_consumers d JOIN state_compute_work q ON q.id = d.question WHERE q.lease = v_lease AND q.leased_to = v_dev AND d.state = 'live'
           AND q.id IN (SELECT t ->> 'id' FROM jsonb_array_elements(v_got) t)) d), '[]'::jsonb);
     IF EXISTS (SELECT 1 FROM jsonb_array_elements(v_ds) e WHERE NOT (p -> 'owed') ? (e ->> 'producer')) THEN
       RAISE EXCEPTION 'board_sync: a pack demand of a producer not owed in sql' USING ERRCODE = 'WS001';
@@ -844,7 +850,7 @@ BEGIN
         ELSE board_owed((e ->> 'payload')::jsonb ->> 'identity', (e ->> 'payload')::jsonb ->> 'ruler', (e ->> 'payload')::jsonb ->> 'mode') END),
       '[]'::jsonb);
     IF jsonb_array_length(v_unwanted) > 0 THEN
-      UPDATE demands SET state = 'withdrawn' WHERE (producer, ref) IN (SELECT d.producer, d.ref FROM demands d
+      UPDATE relation_task_consumers SET state = 'withdrawn' WHERE (producer, ref) IN (SELECT d.producer, d.ref FROM relation_task_consumers d
         JOIN jsonb_array_elements(v_unwanted) u ON d.producer = u ->> 0 AND d.ref = u ->> 1 ORDER BY d.producer, d.ref FOR UPDATE OF d);
       PERFORM factory_restate(g.id) FROM (SELECT DISTINCT u ->> 2 AS id FROM jsonb_array_elements(v_unwanted) u ORDER BY 1) g;
     END IF;
@@ -853,8 +859,8 @@ BEGIN
     v_gone := COALESCE((SELECT jsonb_agg(t ->> 'id') FROM jsonb_array_elements(v_got) t
       WHERE NOT EXISTS (SELECT 1 FROM jsonb_array_elements(v_wanted) e WHERE e ->> 'question' = t ->> 'id')), '[]'::jsonb);
     IF jsonb_array_length(v_gone) > 0 THEN
-      UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
-        WHERE id IN (SELECT id FROM questions WHERE id IN (SELECT jsonb_array_elements_text(v_gone)) AND lease = v_lease ORDER BY id FOR UPDATE);
+      UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL
+        WHERE id IN (SELECT id FROM state_compute_work WHERE id IN (SELECT jsonb_array_elements_text(v_gone)) AND lease = v_lease ORDER BY id FOR UPDATE);
       -- A ROW LEFT WITH NO LIVE DEMAND is withdrawn, not only given back: still
       -- open, it heads every pack's pick again and every sync is handed nothing.
       PERFORM factory_restate(g.id) FROM (SELECT DISTINCT jsonb_array_elements_text(v_gone) AS id ORDER BY 1) g;
@@ -868,7 +874,7 @@ BEGIN
   r := jsonb_set(r, '{use,charge}', v_charges);
   v_got := COALESCE((SELECT jsonb_agg(t ORDER BY t ->> 'due_at' COLLATE "C", t ->> 'question' COLLATE "C") FROM jsonb_array_elements(v_have) t), '[]'::jsonb);
   IF jsonb_array_length(v_got) = 0 THEN
-    UPDATE verifiers SET next_at = p ->> 'idle_at' WHERE id = v_dev;
+    UPDATE entity_compute_devices SET next_at = p ->> 'idle_at' WHERE id = v_dev;
     r := r || jsonb_build_object('outcome', 'idle');
     RETURN;
   END IF;
@@ -880,7 +886,7 @@ BEGIN
         jsonb_array_length(v_got) * (p #>> '{pack,refill,pace}')::numeric - (p #>> '{pack,refill,low}')::numeric))
         * (p #>> '{pack,refill,scale}')::numeric / 100) / 1000)) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"');
   END IF;
-  UPDATE verifiers SET next_at = v_next WHERE id = v_dev;
+  UPDATE entity_compute_devices SET next_at = v_next WHERE id = v_dev;
   r := r || jsonb_build_object('outcome', 'pack', 'short', v_short, 'lease', v_lease, 'questions', v_got);
 END $$;
 
@@ -897,7 +903,7 @@ BEGIN
   v_use := r -> 'use';
   r := r - 'use';
   IF jsonb_array_length(v_use -> 'learn') + jsonb_array_length(v_use -> 'charge') = 0 THEN RETURN; END IF;
-  PERFORM 1 FROM producer_use ORDER BY producer FOR UPDATE;
+  PERFORM 1 FROM state_producer_compute_usage ORDER BY producer FOR UPDATE;
   FOR v_x IN SELECT l FROM jsonb_array_elements(v_use -> 'learn') WITH ORDINALITY x(l, k) ORDER BY k LOOP
     PERFORM factory_learn(v_x.l::text, (p ->> 'share')::double precision);
   END LOOP;

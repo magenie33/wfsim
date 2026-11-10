@@ -9,8 +9,8 @@ import { sha256 } from '../worker/accounts.js';
 import { clientRelease } from '../worker/client_release.js';
 
 const env={ACCOUNTS:await testDb('accounts'),AUTH_SECRET:'browser-device-link'};
-await env.ACCOUNTS.run("INSERT INTO accounts(id,created_at,username) VALUES('alice','2026-01-01','alice')");
-await env.ACCOUNTS.run("INSERT INTO sessions(token_hash,account,expires_at) VALUES(?,'alice','2999-01-01')",await sha256('alice'));
+await env.ACCOUNTS.run("INSERT INTO entity_accounts(id,created_at,username) VALUES('alice','2026-01-01','alice')");
+await env.ACCOUNTS.run("INSERT INTO state_login_sessions(token_hash,account,expires_at) VALUES(?,'alice','2999-01-01')",await sha256('alice'));
 const verifier='a'.repeat(24);
 const computeSource=readFileSync('web/src/static/app/73-compute.js','utf8');
 const widget=computeSource.slice(computeSource.indexOf('let deviceLink ='));
@@ -61,10 +61,10 @@ try{
   app.check('signed-out approval preserves the short code through sign-in',await app.evaluate(`document.querySelector('#compute-device-link a').getAttribute('href').includes(encodeURIComponent('/compute?device_code=${code}'))`));
   await app.evaluate(`accountState.account={id:'alice'};computeDraw($('auth-page'))`);await ready(`!!document.querySelector('[data-auth="compute-device-link-approve"]')`);
   app.check('the actual approval component reviews the device before claiming',await app.evaluate(`document.querySelector('#compute-device-link').textContent.includes('My server') && !!document.querySelector('[data-auth="compute-device-link-approve"]')`));
-  app.check('review never claims automatically',!(await env.ACCOUNTS.get('SELECT * FROM devices WHERE verifier=?',verifier)));
+  app.check('review never claims automatically',!(await env.ACCOUNTS.get('SELECT * FROM relation_account_compute_devices WHERE verifier=?',verifier)));
   await app.evaluate(`document.querySelector('[data-auth="compute-device-link-approve"]').click()`);await ready(`document.querySelector('#compute-device-link').textContent.includes('Device claimed.')`);
   app.check('the compute page action claims through the shared browser endpoint',await app.evaluate(`document.querySelector('#compute-device-link').textContent.includes('Device claimed.') && window.deviceLoads===1`));
-  assert.equal((await env.ACCOUNTS.get('SELECT account FROM devices WHERE verifier=?',verifier)).account,'alice');
+  assert.equal((await env.ACCOUNTS.get('SELECT account FROM relation_account_compute_devices WHERE verifier=?',verifier)).account,'alice');
   app.check('unpublished npm commands are hidden',await app.evaluate(`!document.querySelector('#compute-cli').textContent.includes('npx')`));
   await app.evaluate(`computeCliRelease.npm=true;computeDraw($('auth-page'))`);
   app.check('published npm entry is shown beside the native download',await app.evaluate(`document.querySelector('#compute-cli').textContent.includes('npx wfsim@latest join')`));

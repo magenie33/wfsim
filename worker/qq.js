@@ -70,7 +70,7 @@ async function qqCallback(request, env) {
     new TextEncoder().encode(ts + body));
   if (!ok) return json({ ok: false, error: "bad signature" }, 401);
   if (ev.op === 0 && qqAddressed(ev.t, ev.d)) {
-    await env.LIBRARY.prepare("INSERT INTO bot_inbox (id, channel, kind, body, at) VALUES (?, 'qq', ?, ?, ?) ON CONFLICT DO NOTHING")
+    await env.LIBRARY.prepare("INSERT INTO record_bot_messages (id, channel, kind, body, at) VALUES (?, 'qq', ?, ?, ?) ON CONFLICT DO NOTHING")
       .bind(String(ev.d.id), ev.t, JSON.stringify(ev.d), iso(Date.now())).run();
   }
   return json({ op: 12 });
@@ -87,14 +87,14 @@ async function qqClaim(request, env) {
   try { b = await request.json(); } catch (_) {}
   const done = Array.isArray(b.done) ? b.done.map(String).slice(0, 100) : [];
   const db = env.LIBRARY;
-  const writes = [db.prepare("DELETE FROM bot_inbox WHERE at < ?").bind(iso(now - KEEP_MS))];
-  for (const id of done) writes.push(db.prepare("UPDATE bot_inbox SET done_at = ? WHERE id = ?").bind(iso(now), id));
+  const writes = [db.prepare("DELETE FROM record_bot_messages WHERE at < ?").bind(iso(now - KEEP_MS))];
+  for (const id of done) writes.push(db.prepare("UPDATE record_bot_messages SET done_at = ? WHERE id = ?").bind(iso(now), id));
   await db.batch(writes);
-  const { results } = await db.prepare(`SELECT id, channel, kind, body, at FROM bot_inbox
+  const { results } = await db.prepare(`SELECT id, channel, kind, body, at FROM record_bot_messages
     WHERE done_at IS NULL AND (claimed_at IS NULL OR claimed_at < ?) ORDER BY at LIMIT ?`)
     .bind(iso(now - RECLAIM_MS), CLAIM_MAX).all();
   if (results.length) {
-    await db.batch(results.map((r) => db.prepare("UPDATE bot_inbox SET claimed_at = ? WHERE id = ?").bind(iso(now), r.id)));
+    await db.batch(results.map((r) => db.prepare("UPDATE record_bot_messages SET claimed_at = ? WHERE id = ?").bind(iso(now), r.id)));
   }
   return json({ ok: true, rows: results.map((r) => ({ ...r, at: msOf(r.at), body: JSON.parse(r.body) })) });
 }

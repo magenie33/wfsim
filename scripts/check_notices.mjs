@@ -22,10 +22,10 @@ const iso = (ms) => new Date(ms).toISOString();
 const now = Date.now();
 
 async function person(id) {
-  await A.prepare("INSERT INTO accounts (id, created_at, username) VALUES (?1, ?2, ?3)").bind(id, iso(now), id).run();
-  await A.prepare("INSERT INTO identities (provider, subject, account, label, linked_at) VALUES ('email', ?1, ?1, ?1, ?2)").bind(id, iso(now)).run();
+  await A.prepare("INSERT INTO entity_accounts (id, created_at, username) VALUES (?1, ?2, ?3)").bind(id, iso(now), id).run();
+  await A.prepare("INSERT INTO relation_account_login_identities (provider, subject, account, label, linked_at) VALUES ('email', ?1, ?1, ?1, ?2)").bind(id, iso(now)).run();
   const token = `token-${id}`;
-  await A.prepare("INSERT INTO sessions (token_hash, account, expires_at) VALUES (?1, ?2, ?3)")
+  await A.prepare("INSERT INTO state_login_sessions (token_hash, account, expires_at) VALUES (?1, ?2, ?3)")
     .bind(await sha256(token), id, iso(now + 86400_000)).run();
   const headers = { cookie: `wfsim_session=${token}`, "content-type": "application/json", origin: "https://wfsim.app" };
   const call = (path, body) => noticesRoute(new Request(`https://wfsim.app${path}`,
@@ -33,7 +33,7 @@ async function person(id) {
   return { get: (p) => call(p).then((r) => r.json()), post: (p, b) => call(p, b), raw: call };
 }
 const anon = (path) => noticesRoute(new Request(`https://wfsim.app${path}`), env, path);
-const write = (row) => A.prepare(`INSERT INTO notices (account, kind, text_en, text_zh, created_at, expires_at)
+const write = (row) => A.prepare(`INSERT INTO entity_notices (account, kind, text_en, text_zh, created_at, expires_at)
     VALUES (?1, ?2, ?3, ?4, ?5, ?6)`).bind(row.account ?? null, row.kind, row.en ?? null, row.zh ?? null, iso(row.at ?? now), row.until ?? null).run();
 
 const ann = await person("ann"), bob = await person("bob");
@@ -76,22 +76,22 @@ try { await noticeWrite(A, { account: "bob", kind: "made_up" }); } catch (_) { t
 check("…and a kind the page cannot word is refused", threw);
 
 // A DEVICE'S COOL-DOWN, from the library's verifiers through the account's devices.
-await A.prepare("INSERT INTO devices (verifier, account, claimed_at) VALUES ('dev1', 'bob', ?1), ('dev2', 'bob', ?1)").bind(iso(now)).run();
+await A.prepare("INSERT INTO relation_account_compute_devices (verifier, account, claimed_at) VALUES ('dev1', 'bob', ?1), ('dev2', 'bob', ?1)").bind(iso(now)).run();
 const L = env.LIBRARY;
 const until = iso(now + 3 * 3600_000);
-await L.prepare("INSERT INTO verifiers (id, seen, refused_until) VALUES ('dev1', ?1, ?2)").bind(iso(now), until).run();
-await L.prepare("INSERT INTO verifiers (id, seen, banned, refused_until) VALUES ('dev2', ?1, 1, ?2)").bind(iso(now), iso(now + 9e9)).run();
+await L.prepare("INSERT INTO entity_compute_devices (id, seen, refused_until) VALUES ('dev1', ?1, ?2)").bind(iso(now), until).run();
+await L.prepare("INSERT INTO entity_compute_devices (id, seen, banned, refused_until) VALUES ('dev2', ?1, 1, ?2)").bind(iso(now), iso(now + 9e9)).run();
 const st = (await bob.get("/api/notices")).state;
 check("a device in its cool-down is told, with when it ends", st.length === 1 && st[0].kind === "device_cooling"
   && st[0].params.until === until && st[0].params.devices === 1, JSON.stringify(st));
 check("…a banned one is not, and another account hears of neither", (await ann.get("/api/notices")).state.length === 0);
-await L.prepare("UPDATE verifiers SET refused_until = ?1 WHERE id = 'dev1'").bind(iso(now - 1000)).run();
+await L.prepare("UPDATE entity_compute_devices SET refused_until = ?1 WHERE id = 'dev1'").bind(iso(now - 1000)).run();
 check("…and once it ends, nothing is said", (await bob.get("/api/notices")).state.length === 0);
 
 // WHAT IS KEPT, AND FOR HOW LONG.
 await write({ account: "ann", kind: "message", en: "Old", at: now - 181 * 86400_000 });
 await purgeNotices(env);
-const left = (await A.prepare("SELECT text_en FROM notices ORDER BY id").all()).results.map((r) => r.text_en);
+const left = (await A.prepare("SELECT text_en FROM entity_notices ORDER BY id").all()).results.map((r) => r.text_en);
 check("a purge drops what passed 180 days and what expired, and keeps the rest", !left.includes("Old") && !left.includes("Over")
   && left.includes("Hi Ann") && left.includes("Hello all"), JSON.stringify(left));
 
@@ -99,8 +99,8 @@ const exp = await (await accountRoute(new Request("https://wfsim.app/api/account
   headers: { cookie: "wfsim_session=token-ann", "content-type": "application/json", origin: "https://wfsim.app" }, body: "{}" }), env, "/api/account/export")).json();
 check("an account's export carries its notices and its mark", exp.notices?.length === 1 && exp.notices[0].text_en === "Hi Ann"
   && typeof exp.notices_read_at === "string", JSON.stringify([exp.notices, exp.notices_read_at]));
-await A.prepare("DELETE FROM accounts WHERE id = 'ann'").run();
-const gone = await A.prepare("SELECT (SELECT COUNT(*) FROM notices WHERE account = 'ann') AS n, (SELECT COUNT(*) FROM notice_marks WHERE account = 'ann') AS m").first();
+await A.prepare("DELETE FROM entity_accounts WHERE id = 'ann'").run();
+const gone = await A.prepare("SELECT (SELECT COUNT(*) FROM entity_notices WHERE account = 'ann') AS n, (SELECT COUNT(*) FROM state_account_notice_reads WHERE account = 'ann') AS m").first();
 check("a deleted account takes its notices and its mark with it", Number(gone.n) === 0 && Number(gone.m) === 0, JSON.stringify(gone));
 check("…and what is said to everyone stays", (await (await anon("/api/notices/everyone")).json()).notices.length === 1);
 

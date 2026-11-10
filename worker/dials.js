@@ -126,7 +126,7 @@ export async function dialsOf(env, now = Date.now()) {
   if (held && now - held.at < DIALS_FRESH_MS) return held.values;
   const values = { ...DIAL_DEFAULTS };
   try {
-    const { results } = await env.LIBRARY.prepare("SELECT name, value FROM factory_dials").all();
+    const { results } = await env.LIBRARY.prepare("SELECT name, value FROM state_factory_parameters").all();
     for (const r of results) if (DIALS[r.name] && inBounds(r.name, Number(r.value))) values[r.name] = Number(r.value);
   } catch { /* defaults */ }
   held = { at: now, values: Object.freeze(values) };
@@ -143,10 +143,10 @@ export async function setDial(env, name, value, by, now = Date.now()) {
   if (typeof by !== "string" || !by) return { ok: false, error: "who set it is required" };
   const db = env.LIBRARY, at = iso(now);
   await db.batch([
-    db.prepare(`INSERT INTO factory_dial_log (name, value_before, value_after, set_by, set_at)
-        VALUES (?1::text, (SELECT value FROM factory_dials WHERE name = ?1::text), ?2::double precision, ?3::text, ?4::text)`)
+    db.prepare(`INSERT INTO record_factory_parameter_changes (name, value_before, value_after, set_by, set_at)
+        VALUES (?1::text, (SELECT value FROM state_factory_parameters WHERE name = ?1::text), ?2::double precision, ?3::text, ?4::text)`)
       .bind(name, value, by, at),
-    db.prepare(`INSERT INTO factory_dials (name, value, set_by, set_at) VALUES (?1::text, ?2::double precision, ?3::text, ?4::text)
+    db.prepare(`INSERT INTO state_factory_parameters (name, value, set_by, set_at) VALUES (?1::text, ?2::double precision, ?3::text, ?4::text)
         ON CONFLICT (name) DO UPDATE SET value = excluded.value, set_by = excluded.set_by, set_at = excluded.set_at`)
       .bind(name, value, by, at),
   ]);

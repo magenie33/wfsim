@@ -22,17 +22,17 @@ import { facts } from "./factory.js";
 export async function snapshotTick(env, { engine = null, release = null, commit = "" } = {}, now = Date.now()) {
   const db = env.LIBRARY, at = iso(now), d = await dialsOf(env, now);
   const n = await db.prepare(`WITH a AS (SELECT count(*) AS n FROM ${askingIds(3, 1)} x) SELECT
-      (SELECT count(*) FROM (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0
+      (SELECT count(*) FROM (SELECT 1 FROM state_compute_work WHERE state = 'open' AND waits = 0
          AND (lease_until IS NULL OR lease_until < ?1::text) LIMIT GREATEST(1, (SELECT n FROM a)) * ?2::bigint) o) AS open,
-      (SELECT count(*) FROM questions WHERE state = 'open' AND waits > 0) AS urgent,
+      (SELECT count(*) FROM state_compute_work WHERE state = 'open' AND waits > 0) AS urgent,
       (SELECT n FROM a) AS asking,
-      (SELECT count(*) FROM verifiers WHERE banned = 0 AND last_at >= ?4::text) AS computing,
-      (SELECT count(*) FROM queue) AS queue_rows,
-      (SELECT count(*) FROM settle_queue) AS settle_queue_rows`)
+      (SELECT count(*) FROM entity_compute_devices WHERE banned = 0 AND last_at >= ?4::text) AS computing,
+      (SELECT count(*) FROM state_board_pending_work) AS queue_rows,
+      (SELECT count(*) FROM state_pending_verifications) AS settle_queue_rows`)
     .bind(at, Math.max(d.pack8_max, d.pack_max), iso(now - 2 * d.asked_every_ms), iso(now - COMPUTING_MS)).first();
   const row = { at, engine, release, open: n.open, urgent: n.urgent, asking: n.asking, computing: n.computing,
     queue_rows: n.queue_rows, settle_queue_rows: n.settle_queue_rows, daemon_at: at, daemon_commit: commit };
-  await db.prepare(`INSERT INTO factory_snapshot (id, at, engine, release, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)
+  await db.prepare(`INSERT INTO state_factory_snapshot (id, at, engine, release, open, urgent, asking, computing, queue_rows, settle_queue_rows, daemon_at, daemon_commit)
       VALUES (1, ?1::text, ?2::text, ?3::text, ?4::bigint, ?5::bigint, ?6::bigint, ?7::bigint, ?8::bigint, ?9::bigint, ?1::text, ?10::text)
       ON CONFLICT (id) DO UPDATE SET at = excluded.at, engine = excluded.engine, release = excluded.release, open = excluded.open,
         urgent = excluded.urgent, asking = excluded.asking, computing = excluded.computing, queue_rows = excluded.queue_rows,
@@ -56,8 +56,8 @@ export function signalBody(snap, d, { protocol, protocols }) {
 /// ask every couple of seconds so a wave from nothing is signalled at once.
 export async function workWaiting(db, now = Date.now()) {
   const r = await db.prepare(`SELECT
-      EXISTS (SELECT 1 FROM questions WHERE state = 'open' AND waits = 0 AND (lease_until IS NULL OR lease_until < ?1::text)) AS open,
-      EXISTS (SELECT 1 FROM questions WHERE state = 'open' AND waits > 0) AS urgent`).bind(iso(now)).first();
+      EXISTS (SELECT 1 FROM state_compute_work WHERE state = 'open' AND waits = 0 AND (lease_until IS NULL OR lease_until < ?1::text)) AS open,
+      EXISTS (SELECT 1 FROM state_compute_work WHERE state = 'open' AND waits > 0) AS urgent`).bind(iso(now)).first();
   return { open: !!r.open, urgent: !!r.urgent };
 }
 
@@ -73,8 +73,8 @@ export async function fairTick(env, engine, now = Date.now()) {
   const table = await tableOf(env, engine, now), db = env.LIBRARY;
   const rows = Object.entries(table).map(([account, t]) => ({ account, target: t.target, share: t.share, ratio: asFloat(t.ratio) }));
   await db.batch([
-    db.prepare("DELETE FROM fair_shares WHERE engine = ?").bind(engine),
-    db.prepare(`INSERT INTO fair_shares (engine, account, target, share, ratio, at)
+    db.prepare("DELETE FROM state_compute_fair_shares WHERE engine = ?").bind(engine),
+    db.prepare(`INSERT INTO state_compute_fair_shares (engine, account, target, share, ratio, at)
         SELECT ?1::text, r.account, r.target, r.share, r.ratio, ?2::text
         FROM jsonb_to_recordset((?3::text)::jsonb) AS r(account text, target double precision, share double precision, ratio double precision)`)
       .bind(engine, iso(now), JSON.stringify(rows)),
@@ -84,7 +84,7 @@ export async function fairTick(env, engine, now = Date.now()) {
 
 /// `fair_shares` FOR `engine` as `tableOf`'s shape, and when it was written.
 export async function readFair(db, engine) {
-  const { results } = await db.prepare("SELECT account, target, share, ratio, at FROM fair_shares WHERE engine = ?").bind(engine).all();
+  const { results } = await db.prepare("SELECT account, target, share, ratio, at FROM state_compute_fair_shares WHERE engine = ?").bind(engine).all();
   const table = {};
   for (const r of results) table[r.account] = { target: Number(r.target), share: Number(r.share), ratio: Number(r.ratio) };
   return { table, at: results.length ? results[0].at : null };
@@ -159,12 +159,12 @@ export function judgeFact(q, answers, threshold) {
 /// every table the request path writes. Returns the next cursor and the counts.
 export async function settleShadow(env, { threshold, from, max = 200 }, now = Date.now()) {
   const db = env.LIBRARY, until = iso(now - SETTLE_SHADOW_LAG_MS);
-  const { results: qs } = await db.prepare(`SELECT id, state, canon, needs, fact_engine, fact_at FROM questions
+  const { results: qs } = await db.prepare(`SELECT id, state, canon, needs, fact_engine, fact_at FROM state_compute_work
       WHERE state IN ('fact', 'spot') AND fact_at <= ?1::text AND (fact_at, id) > (?2::text, ?3::text)
       ORDER BY fact_at, id LIMIT ?4::bigint`).bind(until, from.at, from.id, max).all();
   const out = { cursor: from, checked: 0, ok: 0, skipped: {}, differ: {}, samples: [] };
   if (!qs.length) return out;
-  const { results: as } = await db.prepare(`SELECT id, question, engine, owner, net, official, canon, credited, at FROM answers
+  const { results: as } = await db.prepare(`SELECT id, question, engine, owner, net, official, canon, credited, at FROM record_candidate_answers
       WHERE question IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)) AND void = 0 ORDER BY id`)
     .bind(JSON.stringify(qs.map((q) => q.id))).all();
   const byQ = new Map(qs.map((q) => [q.id, []]));
@@ -209,11 +209,11 @@ export async function settleBatch(env, now = Date.now(), until = Date.now() + SE
 
 /// ONE FINDING, its body folded from the one before (`fold(previous) → next`).
 export async function findingsTick(db, kind, fold, now = Date.now()) {
-  const had = await db.prepare("SELECT body FROM factory_findings WHERE kind = ?").bind(kind).first();
+  const had = await db.prepare("SELECT body FROM state_factory_findings WHERE kind = ?").bind(kind).first();
   let prev = {};
   try { prev = had ? JSON.parse(had.body) : {}; } catch { /* a body unread starts again */ }
   const body = JSON.stringify(fold(prev));
-  await db.prepare(`INSERT INTO factory_findings (kind, body, at) VALUES (?1::text, ?2::text, ?3::text)
+  await db.prepare(`INSERT INTO state_factory_findings (kind, body, at) VALUES (?1::text, ?2::text, ?3::text)
       ON CONFLICT (kind) DO UPDATE SET body = excluded.body, at = excluded.at`).bind(kind, body, iso(now)).run();
   return body;
 }

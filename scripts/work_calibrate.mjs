@@ -118,7 +118,7 @@ async function sample() {
       const devices = [...new Set(page.flatMap(q => JSON.parse(q.devices)))].filter(d => !owner.has(d));
       for (let i = 0; i < devices.length; i += 500) {
         const chunk = devices.slice(i, i + 500);
-        const got = await query("SELECT verifier, account FROM devices WHERE verifier IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb))", [JSON.stringify(chunk)], 'accounts');
+        const got = await query("SELECT verifier, account FROM relation_account_compute_devices WHERE verifier IN (SELECT value FROM jsonb_array_elements_text((?1::text)::jsonb))", [JSON.stringify(chunk)], 'accounts');
         chunk.forEach(device => owner.set(device, 'unclaimed'));
         got.forEach(device => owner.set(device.verifier, hidden(device.account)));
       }

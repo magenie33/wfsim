@@ -50,8 +50,8 @@ configured() { db_configured; }
 batches_body() {
   jq -n -c '
     {
-      sql: ("SELECT b.id AS batch FROM batches b"
-            + " WHERE EXISTS (SELECT 1 FROM queue q WHERE q.batch = b.id)"
+      sql: ("SELECT b.id AS batch FROM entity_compute_batches b"
+            + " WHERE EXISTS (SELECT 1 FROM state_board_pending_work q WHERE q.batch = b.id)"
             + " ORDER BY b.at, b.id"),
       params: []
     }'
@@ -59,8 +59,8 @@ batches_body() {
 page_body() {
   jq -n -c --argjson limit "$1" --arg batch "$2" --arg build "${3:-}" --arg ruler "${4:-}" --arg mode "${5:-}" '
     {
-      sql: ("SELECT q.batch, q.build_id, q.ruler, q.mode FROM queue q"
-            + " JOIN batches b ON b.id = q.batch"
+      sql: ("SELECT q.batch, q.build_id, q.ruler, q.mode FROM state_board_pending_work q"
+            + " JOIN entity_compute_batches b ON b.id = q.batch"
             + " WHERE q.batch = ? AND (q.batch, q.build_id, q.ruler, q.mode) > (?, ?, ?, ?)"
             + " ORDER BY q.batch, q.build_id, q.ruler, q.mode"
             + " LIMIT ?"),
@@ -103,7 +103,7 @@ release_body() { jq -n -c --arg witness "$WITNESS" '{ witness: $witness }'; }
 claim() {
   local total=0 got
   while [ "$total" -lt "$CLAIM_MAX" ]; do
-    factory claim "$(claim_body)" || { echo "::error::queue: the factory refused the claim [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo; return 1; }
+    factory claim "$(claim_body)" || { echo "::error::state_board_pending_work: the factory refused the claim [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo; return 1; }
     got=$(jq -r '.tasks | length' < "$F_OUT")
     total=$((total + got))
     [ "$got" -lt "$CLAIM_PAGE" ] && break
@@ -111,12 +111,12 @@ claim() {
   echo "queue: claimed $total question(s) past their deadline"
 }
 release() {
-  factory release "$(release_body)" || { echo "::error::queue: the factory refused the release [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo; return 1; }
+  factory release "$(release_body)" || { echo "::error::state_board_pending_work: the factory refused the release [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo; return 1; }
   echo "queue: released what $WITNESS held"
 }
 
 refused() {
-  echo "::error::queue: the database refused the read [HTTP $DB_CODE]"
+  echo "::error::state_board_pending_work: the database refused the read [HTTP $DB_CODE]"
   [ -s "$DB_OUT" ] && { head -c 500 "$DB_OUT"; echo; }
   return 1
 }
@@ -132,7 +132,7 @@ fetch() {
     build="" ruler="" mode=""
     while :; do
       if [ "$pages" -ge "$MAX_PAGES" ]; then
-        echo "::error::queue: stopped at $MAX_PAGES pages — more is owed than this reads"
+        echo "::error::state_board_pending_work: stopped at $MAX_PAGES pages — more is owed than this reads"
         return 1
       fi
       pages=$((pages + 1))
@@ -140,7 +140,7 @@ fetch() {
       got=$(jq -r '.result[0].results | length' < "$DB_OUT")
       if [ -n "${CLAIMED:-}" ]; then
         if ! factory report "$(jq -c --arg witness "$WITNESS" '{ witness: $witness, report: "claimed", rows: .result[0].results }' < "$DB_OUT")"; then
-          echo "::error::queue: the factory refused the claimed read [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo
+          echo "::error::state_board_pending_work: the factory refused the claimed read [HTTP $F_CODE]"; head -c 500 "$F_OUT"; echo
           return 1
         fi
         jq -c '.rows[]' < "$F_OUT" >> "$out"
@@ -172,7 +172,7 @@ self_test() {
     && batches_body | jq -e '.sql | contains("ORDER BY b.at, b.id")' >/dev/null \
     && say ok "the order is the batch's, then the key" \
     || say FAIL "$(printf '%s' "$body" | jq -r .sql)"
-  printf '%s' "$body" | jq -e '.sql | contains("JOIN batches")' >/dev/null \
+  printf '%s' "$body" | jq -e '.sql | contains("JOIN entity_compute_batches")' >/dev/null \
     && say ok "...and a row whose batch is gone is not read" \
     || say FAIL "no join — deleting a batch would leave its rows owed"
   printf '%s' "$body" | jq -e '.params == ["arrivals", "arrivals", "b1", "r", "m", 5000] and (.sql | contains("OFFSET") | not)' >/dev/null \
@@ -223,7 +223,7 @@ OK
 
   cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table queue"}]}'
+printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table state_board_pending_work"}]}'
 exit 1
 DEAD
   chmod +x "$DIR/bin/db"

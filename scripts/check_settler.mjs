@@ -24,33 +24,33 @@ const env = { LIBRARY, ACCOUNTS };
 
 console.log("the fair table");
 {
-  await ACCOUNTS.run("INSERT INTO accounts (id, created_at, username) VALUES ('acc-big', ?, 'big')", iso(now - 3 * 86_400_000));
+  await ACCOUNTS.run("INSERT INTO entity_accounts (id, created_at, username) VALUES ('acc-big', ?, 'big')", iso(now - 3 * 86_400_000));
   const BIG = "b".repeat(24), BIG2 = "e".repeat(24), WALKER = "c".repeat(24);
-  for (const v of [BIG, BIG2]) await ACCOUNTS.run("INSERT INTO devices (verifier, account, claimed_at) VALUES (?, 'acc-big', 'x')", v);
-  for (const v of [BIG, BIG2, WALKER]) await L.run("INSERT INTO verifiers (id, seen, asked_at, asked_engine, asked_lanes, work) VALUES (?, 'x', ?, 'e1', 4, 1)", v, iso(now - 30_000));
-  await L.run(`INSERT INTO answers (question, engine, device, owner, canon, result, work, compute_ms, at, credited) VALUES
+  for (const v of [BIG, BIG2]) await ACCOUNTS.run("INSERT INTO relation_account_compute_devices (verifier, account, claimed_at) VALUES (?, 'acc-big', 'x')", v);
+  for (const v of [BIG, BIG2, WALKER]) await L.run("INSERT INTO entity_compute_devices (id, seen, asked_at, asked_engine, asked_lanes, work) VALUES (?, 'x', ?, 'e1', 4, 1)", v, iso(now - 30_000));
+  await L.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, canon, result, work, compute_ms, at, credited) VALUES
       ('a1', 'e1', ?, 'acc-big', 'k', '{}', 3000, 1000, ?, 1), ('a2', 'e1', ?, ?, 'k', '{}', 1000, 1000, ?, 0)`,
     BIG, iso(now - 60_000), WALKER, WALKER, iso(now - 90_000));
   const table = await fairTick(env, "e1", now);
   const worker = await tableOf(env, "e1", now);
   const stored = await readFair(L, "e1");
   check("the daemon's table is the worker's tableOf, account by account", !compareFair(table, worker, 0).differ, JSON.stringify(compareFair(table, worker, 0)));
-  check("…and reads back from fair_shares to the last digit", !compareFair(worker, stored.table, 0).differ && Object.keys(worker).length === 2,
+  check("…and reads back from state_compute_fair_shares to the last digit", !compareFair(worker, stored.table, 0).differ && Object.keys(worker).length === 2,
     JSON.stringify({ worker, stored: stored.table }));
-  await L.run("UPDATE fair_shares SET target = target + 0.1 WHERE account = 'acc-big'");
+  await L.run("UPDATE state_compute_fair_shares SET target = target + 0.1 WHERE account = 'acc-big'");
   const moved = compareFair(worker, (await readFair(L, "e1")).table, 0.05);
   check("a target moved past the tolerance is a difference, on the account it moved", moved.differ && moved.worst.account === "acc-big", JSON.stringify(moved));
-  await L.run("DELETE FROM fair_shares WHERE account = 'walk-ins'");
+  await L.run("DELETE FROM state_compute_fair_shares WHERE account = 'walk-ins'");
   check("an account missing from one table is a difference", compareFair(worker, (await readFair(L, "e1")).table, 1).missing.includes("walk-ins"));
 }
 
 console.log("the snapshot");
 {
-  await L.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, waits) VALUES
+  await L.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, waits) VALUES
       ('o1', 'simulate', '{}', 'open', ?, ?, 0), ('o2', 'simulate', '{}', 'open', ?, ?, 0), ('u1', 'simulate', '{}', 'open', ?, ?, 1)`,
     iso(now + 1), iso(now), iso(now + 1), iso(now), iso(now + 1), iso(now));
-  await L.run("UPDATE questions SET lease = 'l', lease_until = ?, leased_to = 'x' WHERE id = 'o2'", iso(now + 60_000));
-  await L.run("UPDATE verifiers SET last_at = ? WHERE id = ?", iso(now - 60_000), "b".repeat(24));
+  await L.run("UPDATE state_compute_work SET lease = 'l', lease_until = ?, leased_to = 'x' WHERE id = 'o2'", iso(now + 60_000));
+  await L.run("UPDATE entity_compute_devices SET last_at = ? WHERE id = ?", iso(now - 60_000), "b".repeat(24));
   const s = await snapshotTick(env, { engine: "e1", release: "r1", commit: "abc" }, now);
   const served = await (await contributionRoute(new Request("https://x/api/board/computing"), env, "/api/board/computing")).json();
   check("computing is the count /api/board/computing serves", s.computing === served.computing && s.computing === 1, JSON.stringify({ s, served }));
@@ -58,7 +58,7 @@ console.log("the snapshot");
   // three asked, and 'x' holds o2 without having asked.
   check("open counts what may be taken now, urgent what someone waits on, asking who asked lately or holds a lease",
     s.open === 1 && s.urgent === 1 && s.asking === 4, JSON.stringify(s));
-  const row = await L.get("SELECT * FROM factory_snapshot WHERE id = 1");
+  const row = await L.get("SELECT * FROM state_factory_snapshot WHERE id = 1");
   check("the heartbeat names the commit the daemon runs", row && row.daemon_commit === "abc" && row.daemon_at === iso(now), JSON.stringify(row));
 }
 
@@ -68,17 +68,17 @@ console.log("settling, in shadow");
   const f = factory({ verbs: VERBS, producers: { p: { on_fact: async () => {} } }, random: () => 0.999 });
   const t0 = now - 10 * 60_000;
   const ask = async (id) => {
-    await L.run("INSERT INTO questions (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', 'open', ?, ?)", id, iso(t0 + 3_600_000), iso(t0));
-    await L.run("INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('p', ?, ?, 'live', ?, ?)", id, id, iso(t0), iso(t0 + 3_600_000));
+    await L.run("INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', 'open', ?, ?)", id, iso(t0 + 3_600_000), iso(t0));
+    await L.run("INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at) VALUES ('p', ?, ?, 'live', ?, ?)", id, id, iso(t0), iso(t0 + 3_600_000));
   };
   const give = async (id, device, owner, score) => {
-    await L.run("INSERT INTO verifiers (id, seen) VALUES (?, 'x') ON CONFLICT DO NOTHING", device);
-    await L.run("UPDATE questions SET lease = ?, lease_until = ?, leased_to = ? WHERE id = ?", `L-${device}`, iso(t0 + 600_000), device, id);
+    await L.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, 'x') ON CONFLICT DO NOTHING", device);
+    await L.run("UPDATE state_compute_work SET lease = ?, lease_until = ?, leased_to = ? WHERE id = ?", `L-${device}`, iso(t0 + 600_000), device, id);
     await f.answer(env, { device, owner }, { lease: `L-${device}`, engine: "e1", result: { score }, work: 7, compute_ms: 10 }, t0 + 1_000);
   };
   for (const id of ["s1", "s2", "s3"]) await ask(id);
   for (const id of ["s1", "s2", "s3"]) { await give(id, `${id}a`, "o1", 5); await give(id, `${id}b`, "o2", 5); }
-  const facts = await L.all("SELECT id, state, canon FROM questions WHERE id IN ('s1', 's2', 's3') ORDER BY id");
+  const facts = await L.all("SELECT id, state, canon FROM state_compute_work WHERE id IN ('s1', 's2', 's3') ORDER BY id");
   check("the request path made three facts", facts.every((q) => q.state === "fact"), JSON.stringify(facts));
   const from = { at: iso(t0 - 1), id: "" };
   let r = await settleShadow(env, { threshold: 2, from }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1);
@@ -86,12 +86,12 @@ console.log("settling, in shadow");
   check("…and goes on from its cursor, judging none twice",
     (await settleShadow(env, { threshold: 2, from: r.cursor }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1)).checked === 0);
   check("a question settled less than the lag ago waits", (await settleShadow(env, { threshold: 2, from }, t0 + 1_000)).checked === 0);
-  await L.run("UPDATE questions SET canon = 'x' WHERE id = 's1'");
-  await L.run("UPDATE answers SET credited = 0 WHERE question = 's2' AND device = 's2b'");
+  await L.run("UPDATE state_compute_work SET canon = 'x' WHERE id = 's1'");
+  await L.run("UPDATE record_candidate_answers SET credited = 0 WHERE question = 's2' AND device = 's2b'");
   r = await settleShadow(env, { threshold: 2, from }, t0 + 1_000 + SETTLE_SHADOW_LAG_MS + 1);
   check("a fact whose canon no group gave, and a witness left unpaid, are each a difference",
     r.differ.canon === 1 && r.differ.uncredited === 1 && r.ok === 1, JSON.stringify(r));
-  const finding = JSON.parse((await L.get("SELECT body FROM factory_findings WHERE kind = 'settle_shadow'")).body);
+  const finding = JSON.parse((await L.get("SELECT body FROM state_factory_findings WHERE kind = 'settle_shadow'")).body);
   check("the finding keeps the running count and the questions that differed", finding.checked === 6 && finding.samples.length === 2, JSON.stringify(finding));
   check("an official answer is the official path's to judge, an older engine's a peer's",
     judgeFact({ fact_engine: "e1", fact_at: "z", canon: "k" }, [{ engine: "e1", official: 1, canon: "k", at: "a" }], 2).skip === "official"
@@ -107,11 +107,11 @@ console.log("the daemon");
   const { run } = await import("./factoryd.mjs");
   process.env.DAEMON_COMMIT = "c0ffee";
   const code = await run({ once: true, opened: { env, close: async () => {} }, servedNow: async () => ({ engine: "e1", release: "r1" }), target: null });
-  const row = await L.get("SELECT daemon_commit, engine FROM factory_snapshot WHERE id = 1");
+  const row = await L.get("SELECT daemon_commit, engine FROM state_factory_snapshot WHERE id = 1");
   check("one pass of every tick runs clean and the heartbeat names its commit", code === 0 && row.daemon_commit === "c0ffee" && row.engine === "e1",
     JSON.stringify({ code, row }));
   check("without an R2 token the signal is skipped and said so, the other ticks unharmed",
-    code === 0 && !!(await L.get("SELECT 1 AS x FROM factory_findings WHERE kind = 'signal_unconfigured'")));
+    code === 0 && !!(await L.get("SELECT 1 AS x FROM state_factory_findings WHERE kind = 'signal_unconfigured'")));
 }
 
 console.log("the work signal");
@@ -138,7 +138,7 @@ console.log("the work signal");
   check("…as work.json, kept five seconds at the edge, as JSON",
     o.key === SIGNAL_KEY && SIGNAL_KEY === "work.json" && o.cacheControl === "public, max-age=5" && SIGNAL_CACHE === o.cacheControl && o.contentType === "application/json", JSON.stringify(o));
   const { PROTOCOL, PROTOCOLS_SERVED } = await import("../worker/verify.js");
-  const snap = await L.get("SELECT * FROM factory_snapshot WHERE id = 1");
+  const snap = await L.get("SELECT * FROM state_factory_snapshot WHERE id = 1");
   check("its fields are the snapshot's counts, the served engine and protocols, and the dials in force",
     body.v === 1 && body.at === snap.at && body.open === 1 && body.urgent === 1 && body.computing === Number(snap.computing)
     && body.engine === "e1" && body.release === "r1" && body.protocol === PROTOCOL && body.protocols.length === PROTOCOLS_SERVED.size
@@ -155,7 +155,7 @@ console.log("the work signal");
   const { workWaiting } = await import("../worker/settler.js");
   const w = await workWaiting(L);
   check("the wave probe sees open work and waited-on work", w.open === true && w.urgent === true, JSON.stringify(w));
-  await L.run("UPDATE questions SET state = 'withdrawn' WHERE id IN ('o1', 'u1')");
+  await L.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id IN ('o1', 'u1')");
   const none = await workWaiting(L);
   check("…and none when nothing may be taken", none.open === false && none.urgent === false, JSON.stringify(none));
 }

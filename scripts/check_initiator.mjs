@@ -31,16 +31,16 @@ const ask = (ref, initiator, due_in_ms = 3_600_000, producer = "sweep") => ({ pr
 // ---- carried ----
 const [q1] = await f.demandAll(env, [ask("r1", "user:aaaa")], "e1", NOW);
 check("a demand and its question carry who asked",
-  (await L.get("SELECT initiator FROM demands WHERE ref = 'r1'")).initiator === "user:aaaa"
-  && (await L.get("SELECT initiator FROM questions WHERE id = ?", q1)).initiator === "user:aaaa");
+  (await L.get("SELECT initiator FROM relation_task_consumers WHERE ref = 'r1'")).initiator === "user:aaaa"
+  && (await L.get("SELECT initiator FROM state_compute_work WHERE id = ?", q1)).initiator === "user:aaaa");
 // THE SAME QUESTION ASKED SOONER BY ANOTHER: the question is the earlier ask's.
 const shared = { record: { weapon: "braton_prime", mods: ["r1"] }, ruler: "standard_single_target", mode: "base" };
 await f.demandAll(env, [{ ...ask("r1b", "system", 60_000, "new_build"), request: shared }], "e1", NOW);
 check("a question asked again sooner takes the sooner ask's initiator, as it takes its producer",
-  (await L.get("SELECT initiator, producer FROM questions WHERE id = ?", q1)).initiator === "system");
+  (await L.get("SELECT initiator, producer FROM state_compute_work WHERE id = ?", q1)).initiator === "system");
 await f.withdraw(env, "new_build", "r1b", NOW);
 check("…and once that ask is withdrawn, the earliest-due live demand's again",
-  (await L.get("SELECT initiator FROM questions WHERE id = ?", q1)).initiator === "user:aaaa");
+  (await L.get("SELECT initiator FROM state_compute_work WHERE id = ?", q1)).initiator === "user:aaaa");
 
 // ---- the share ----
 // TEN ROWS OF ONE PERSON, TEN OF THE SYSTEM; the person holds six of eight leases.
@@ -49,12 +49,12 @@ for (let i = 0; i < 10; i++) rows.push(ask(`u${i}`, "user:heavy"), ask(`s${i}`, 
 const ids = await f.demandAll(env, rows, "e1", NOW);
 const userIds = ids.filter((_, k) => k % 2 === 0), sysIds = ids.filter((_, k) => k % 2 === 1);
 const lease = async (id, until = iso(NOW + 600_000)) =>
-  L.run("UPDATE questions SET lease = 'l', leased_to = 'dev', leased_at = ?, lease_until = ? WHERE id = ?", at, until, id);
+  L.run("UPDATE state_compute_work SET lease = 'l', leased_to = 'dev', leased_at = ?, lease_until = ? WHERE id = ?", at, until, id);
 for (const id of userIds.slice(0, 6)) await lease(id);
 for (const id of sysIds.slice(0, 2)) await lease(id);
 const eligible = async () => (await L.all(
   "SELECT initiator FROM factory_eligible(?::text, 0, 1, 'e1', '[\"x\"]', 'x', '', NULL, 7200, 120) e WHERE e.state = 'open'", at)).map((r) => r.initiator);
-const setDial = (name, value) => L.run(`INSERT INTO factory_dials (name, value, set_by, set_at) VALUES (?, ?, 'check', ?)
+const setDial = (name, value) => L.run(`INSERT INTO state_factory_parameters (name, value, set_by, set_at) VALUES (?, ?, 'check', ?)
   ON CONFLICT (name) DO UPDATE SET value = excluded.value`, name, value, at);
 check("with the share dial off, nobody is passed over", (await eligible()).includes("user:heavy"));
 await setDial("initiator_share_pct", 50);
@@ -68,34 +68,34 @@ await setDial("initiator_floor_rows", 1);
 for (const id of userIds.slice(0, 4)) await lease(id, iso(NOW - 1));
 check("a lease run out no longer counts against the share", (await eligible()).includes("user:heavy"));
 check("the SQL's unset floor is worker/dials.js's default",
-  /COALESCE\(\(SELECT value FROM factory_dials WHERE name = 'initiator_floor_rows'\), (\d+)\)/.exec(
+  /COALESCE\(\(SELECT value FROM state_factory_parameters WHERE name = 'initiator_floor_rows'\), (\d+)\)/.exec(
     (await L.get("SELECT prosrc FROM pg_proc WHERE proname = 'factory_capped'")).prosrc)?.[1] === String(DIAL_DEFAULTS.initiator_floor_rows)
   && DIAL_DEFAULTS.initiator_share_pct === 0);
 
 // ---- erased ----
 await f.demandAll(env, [ask("b1", "bot:cccc")], "e1", NOW);
-await L.run("UPDATE demands SET state = 'served' WHERE ref IN ('u0', 'b1')");
-await L.run("UPDATE questions SET state = 'fact' WHERE id IN (SELECT question FROM demands WHERE ref IN ('u0', 'b1'))");
-await L.run("UPDATE demands SET state = 'withdrawn' WHERE ref = 's0'");
+await L.run("UPDATE relation_task_consumers SET state = 'served' WHERE ref IN ('u0', 'b1')");
+await L.run("UPDATE state_compute_work SET state = 'fact' WHERE id IN (SELECT question FROM relation_task_consumers WHERE ref IN ('u0', 'b1'))");
+await L.run("UPDATE relation_task_consumers SET state = 'withdrawn' WHERE ref = 's0'");
 const n = (await L.get("SELECT factory_forget_codes() AS n")).n;
 check("an ask that is over loses its user or bot code, demand and question alike", n === 4
-  && (await L.all("SELECT initiator FROM demands WHERE ref IN ('u0', 'b1')")).every((r) => r.initiator === null), `erased ${n}`);
+  && (await L.all("SELECT initiator FROM relation_task_consumers WHERE ref IN ('u0', 'b1')")).every((r) => r.initiator === null), `erased ${n}`);
 check("…a live one keeps it, and the system's is never a code to erase",
-  (await L.get("SELECT initiator FROM demands WHERE ref = 'u1'")).initiator === "user:heavy"
-  && (await L.get("SELECT initiator FROM demands WHERE ref = 's0'")).initiator === "system");
+  (await L.get("SELECT initiator FROM relation_task_consumers WHERE ref = 'u1'")).initiator === "user:heavy"
+  && (await L.get("SELECT initiator FROM relation_task_consumers WHERE ref = 's0'")).initiator === "system");
 
 const backlog = await testDb("library");
-await backlog.exec(`INSERT INTO questions (id,verb,request,state,due_at,opened_at,initiator)
+await backlog.exec(`INSERT INTO state_compute_work (id,verb,request,state,due_at,opened_at,initiator)
   SELECT 'closed-'||i,'simulate','{}',CASE WHEN i%2=0 THEN 'fact' ELSE 'withdrawn' END,'x','x','user:old' FROM generate_series(1,1007) i;
-  INSERT INTO demands (producer,ref,question,state,asked_at,due_at,initiator)
+  INSERT INTO relation_task_consumers (producer,ref,question,state,asked_at,due_at,initiator)
   SELECT 'sweep','closed-'||i,'closed-'||i,CASE WHEN i%2=0 THEN 'served' ELSE 'withdrawn' END,'x','x','bot:old' FROM generate_series(1,1007) i;`);
 const drain = async () => Number((await backlog.get("SELECT factory_forget_codes() AS n")).n);
 const batches = [await drain(), await drain(), await drain()];
 check("code cleanup commits bounded batches and reaches the remaining rows on its next pass",
   JSON.stringify(batches) === '[2000,14,0]', JSON.stringify(batches));
 check("code cleanup changes no task state or task count",
-  Number((await backlog.get("SELECT count(*) AS n FROM questions WHERE state IN ('fact','withdrawn') AND initiator IS NULL")).n) === 1007
-  && Number((await backlog.get("SELECT count(*) AS n FROM demands WHERE state IN ('served','withdrawn') AND initiator IS NULL")).n) === 1007);
+  Number((await backlog.get("SELECT count(*) AS n FROM state_compute_work WHERE state IN ('fact','withdrawn') AND initiator IS NULL")).n) === 1007
+  && Number((await backlog.get("SELECT count(*) AS n FROM relation_task_consumers WHERE state IN ('served','withdrawn') AND initiator IS NULL")).n) === 1007);
 await backlog.close();
 
 // ---- where it comes from ----
@@ -105,8 +105,8 @@ check("a player's arrival is whoever its row names, every other batch WFSim's �
 
 // ---- a submission ----
 const A = await testDb("accounts");
-await A.run("INSERT INTO accounts (id, created_at, username) VALUES ('acc1', ?, 'p')", at);
-await A.run("INSERT INTO sessions (token_hash, account, expires_at) VALUES (?, 'acc1', '2099-01-01T00:00:00.000Z')", await sha256("tok"));
+await A.run("INSERT INTO entity_accounts (id, created_at, username) VALUES ('acc1', ?, 'p')", at);
+await A.run("INSERT INTO state_login_sessions (token_hash, account, expires_at) VALUES (?, 'acc1', '2099-01-01T00:00:00.000Z')", await sha256("tok"));
 const PAYLOAD = { benchmark: "standard_single_target_v1", weapon: "kuva_nukor", mode: "base",
   mods: ["hornet_strike", "barrel_diffusion", "primed_target_cracker", "primed_heated_charge", "convulsion", "pathogen_rounds",
     "galvanized_diffusion", "galvanized_shot"], evolutions: [], arcanes: ["secondary_deadhead"], valence: "magnetic" };
@@ -114,38 +114,38 @@ const submit = (cookie) => worker.fetch(new Request("https://wfsim.app/api/board
   headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}) }, body: JSON.stringify(PAYLOAD) }),
   { ...env, ACCOUNTS: A, ASSETS: { fetch: async () => new Response("site") } });
 const okIn = (await submit("wfsim_session=tok")).ok, okOut = (await submit(null)).ok;
-const inbox = (await L.all("SELECT initiator FROM inbox ORDER BY initiator")).map((r) => r.initiator);
+const inbox = (await L.all("SELECT initiator FROM record_build_submissions ORDER BY initiator")).map((r) => r.initiator);
 check("a submission signed in keeps its account's code, one signed out `anonymous`, and nothing else about either",
   okIn && okOut && inbox.length === 2 && inbox[0] === "anonymous" && inbox[1] === await initiatorCode(env, "user", "acc1")
-  && (await L.all("SELECT * FROM inbox")).every((r) => Object.keys(r).sort().join() === "at,family_source,id,initiator,record"
+  && (await L.all("SELECT * FROM record_build_submissions")).every((r) => Object.keys(r).sort().join() === "at,family_source,id,initiator,record"
     && r.family_source === null), JSON.stringify(inbox));
 
 // ---- an arrival asked ----
-await L.run("INSERT INTO batches (id, at, why, total) VALUES ('arrivals-2026-10-14', 'a', 't', 1), ('backfill-2026-10-14', 'b', 't', 1)");
-await L.run("INSERT INTO builds (id, at, record) VALUES ('bx', '2026-10-14', ?), ('by', '2026-10-14', ?)",
+await L.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES ('arrivals-2026-10-14', 'a', 't', 1), ('backfill-2026-10-14', 'b', 't', 1)");
+await L.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES ('bx', '2026-10-14', ?), ('by', '2026-10-14', ?)",
   JSON.stringify({ weapon: "braton_prime", mods: ["serration"] }), JSON.stringify({ weapon: "braton_prime", mods: ["split_chamber"] }));
-await L.run(`INSERT INTO queue (batch, build_id, ruler, mode, initiator) VALUES ('arrivals-2026-10-14', 'bx', 'standard_single_target', 'base', 'user:named'),
+await L.run(`INSERT INTO state_board_pending_work (batch, build_id, ruler, mode, initiator) VALUES ('arrivals-2026-10-14', 'bx', 'standard_single_target', 'base', 'user:named'),
   ('backfill-2026-10-14', 'by', 'standard_single_target', 'base', NULL)`);
 const askRows = (batch, identity, extra = {}) => boardTasksRoute(new Request("https://x/api/board/ask", { method: "POST",
   headers: { authorization: "Bearer ft" }, body: JSON.stringify({ batch, rows: [{ identity, ruler: "standard_single_target", mode: "base", ...extra }] }) }),
   { ...env, FACTORY_TOKEN: "ft" }, "/api/board/ask");
 await askRows("arrivals-2026-10-14", "bx", { initiator: "user:forged" });
 await askRows("backfill-2026-10-14", "by");
-const who = Object.fromEntries((await L.all("SELECT payload::jsonb ->> 'identity' AS id, initiator FROM demands WHERE payload::jsonb ->> 'identity' IN ('bx', 'by')")).map((r) => [r.id, r.initiator]));
+const who = Object.fromEntries((await L.all("SELECT payload::jsonb ->> 'identity' AS id, initiator FROM relation_task_consumers WHERE payload::jsonb ->> 'identity' IN ('bx', 'by')")).map((r) => [r.id, r.initiator]));
 check("an arrival is asked as its queue row names, never as the runner says; a backfill is the system's",
   who.bx === "user:named" && who.by === "system", JSON.stringify(who));
 // THE FIGHT AN ARRIVAL NAMED is waited on; the build's other rows, and a backfill's, are not.
-await L.run("INSERT INTO builds (id, at, record) VALUES ('bn', '2026-10-14', ?), ('bo', '2026-10-14', ?), ('bb', '2026-10-14', ?)",
+await L.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES ('bn', '2026-10-14', ?), ('bo', '2026-10-14', ?), ('bb', '2026-10-14', ?)",
   JSON.stringify({ weapon: "braton_prime", mods: ["hornet_strike"] }), JSON.stringify({ weapon: "braton_prime", mods: ["vital_sense"] }),
   JSON.stringify({ weapon: "braton_prime", mods: ["point_strike"] }));
-await L.run(`INSERT INTO queue (batch, build_id, ruler, mode, initiator) VALUES ('arrivals-2026-10-14', 'bn', 'standard_single_target', 'base', 'anonymous'),
+await L.run(`INSERT INTO state_board_pending_work (batch, build_id, ruler, mode, initiator) VALUES ('arrivals-2026-10-14', 'bn', 'standard_single_target', 'base', 'anonymous'),
   ('arrivals-2026-10-14', 'bo', 'standard_single_target', 'base', 'anonymous'), ('arrivals-2026-10-14', 'bs', 'standard_single_target', 'base', 'system')`);
-await L.run("INSERT INTO builds (id, at, record) VALUES ('bs', '2026-10-14', ?)", JSON.stringify({ weapon: "braton_prime", mods: ["heavy_caliber"] }));
+await L.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES ('bs', '2026-10-14', ?)", JSON.stringify({ weapon: "braton_prime", mods: ["heavy_caliber"] }));
 await askRows("arrivals-2026-10-14", "bn", { named: true });
 await askRows("arrivals-2026-10-14", "bo");
 await askRows("backfill-2026-10-14", "bb", { named: true });
 await askRows("arrivals-2026-10-14", "bs", { named: true });
-const waits = Object.fromEntries((await L.all(`SELECT d.payload::jsonb ->> 'identity' AS id, q.waits FROM demands d JOIN questions q ON q.id = d.question
+const waits = Object.fromEntries((await L.all(`SELECT d.payload::jsonb ->> 'identity' AS id, q.waits FROM relation_task_consumers d JOIN state_compute_work q ON q.id = d.question
     WHERE d.payload::jsonb ->> 'identity' IN ('bn', 'bo', 'bb', 'bs')`)).map((r) => [r.id, Number(r.waits)]));
 check("the fight a player's arrival named is asked as waited on; the build's other rows, a backfill's and a survey's are not",
   waits.bn === 1 && waits.bo === 0 && waits.bb === 0 && waits.bs === 0, JSON.stringify(waits));
@@ -157,8 +157,8 @@ check("a code is its kind and a keyed hash: the same asker the same code, anothe
 // A PIPELINE THAT READS THE INBOX WITHOUT IT hands intake a record with no
 // initiator, and every row it ships is unrecorded.
 const readers = ["scripts/fetch_inbox.sh", "scripts/live_board.sh"].map((p) => [p, fs.readFileSync(new URL(`../${p}`, import.meta.url), "utf8")]);
-const blind = readers.flatMap(([p, src]) => [...src.matchAll(/SELECT ([^"]*?) FROM inbox/g)].filter((m) => !/\binitiator\b/.test(m[1])).map((m) => `${p}: ${m[0]}`));
-check("every intake's read of the inbox takes who asked", readers.every(([, src]) => /FROM inbox/.test(src)) && !blind.length, blind.join("; "));
+const blind = readers.flatMap(([p, src]) => [...src.matchAll(/SELECT ([^"]*?) FROM record_build_submissions/g)].filter((m) => !/\binitiator\b/.test(m[1])).map((m) => `${p}: ${m[0]}`));
+check("every intake's read of the inbox takes who asked", readers.every(([, src]) => /FROM record_build_submissions/.test(src)) && !blind.length, blind.join("; "));
 
 if (failures) { console.log(`\ncheck_initiator: ${failures} failure(s)`); process.exit(1); }
 console.log("\ncheck_initiator: ok");

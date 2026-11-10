@@ -17,21 +17,21 @@ assert.equal(await questionId(original.verb, original.request), await questionId
 const db = await testDb('library');
 try {
   const put = (batch, ruler = 'r', mode = 'base', who = null) => db.run(
-    'INSERT INTO queue(batch,build_id,ruler,mode,initiator) VALUES (?,\'b\',?,?,?) ON CONFLICT DO NOTHING', batch, ruler, mode, who);
+    'INSERT INTO state_board_pending_work(batch,build_id,ruler,mode,initiator) VALUES (?,\'b\',?,?,?) ON CONFLICT DO NOTHING', batch, ruler, mode, who);
   await put('arrivals-first');
   await put('refresh-next-week', 'r', 'base', 'user:first');
   await put('rescore-later', 'r', 'base', 'user:second');
   await put('arrivals-first', 'r', 'base', 'user:third');
-  assert.deepEqual(await db.all('SELECT batch,initiator FROM queue'), [{ batch: 'arrivals-first', initiator: 'user:first' }]);
+  assert.deepEqual(await db.all('SELECT batch,initiator FROM state_board_pending_work'), [{ batch: 'arrivals-first', initiator: 'user:first' }]);
   await put('refresh-next-week', 'other');
   await put('refresh-next-week', 'r', 'other');
-  assert.equal((await db.get('SELECT count(*) n FROM queue')).n, 3, 'different rulers and modes must remain computable');
-  await db.run("ALTER TABLE queue DISABLE TRIGGER queue_once");
-  await assert.rejects(db.run("INSERT INTO queue(batch,build_id,ruler,mode) VALUES ('bypass','b','r','base')"), /duplicate key/);
-  await db.run("ALTER TABLE queue ENABLE TRIGGER queue_once");
-  await db.run("DELETE FROM queue WHERE build_id='b' AND ruler='r' AND mode='base'");
+  assert.equal((await db.get('SELECT count(*) n FROM state_board_pending_work')).n, 3, 'different rulers and modes must remain computable');
+  await db.run("ALTER TABLE state_board_pending_work DISABLE TRIGGER queue_once");
+  await assert.rejects(db.run("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES ('bypass','b','r','base')"), /duplicate key/);
+  await db.run("ALTER TABLE state_board_pending_work ENABLE TRIGGER queue_once");
+  await db.run("DELETE FROM state_board_pending_work WHERE build_id='b' AND ruler='r' AND mode='base'");
   await put('refresh-after-completion');
-  assert.equal((await db.get("SELECT count(*) n FROM queue WHERE ruler='r' AND mode='base'")).n, 1);
-  assert.equal((await db.get("SELECT batch FROM queue WHERE ruler='r' AND mode='base'")).batch, 'refresh-after-completion');
+  assert.equal((await db.get("SELECT count(*) n FROM state_board_pending_work WHERE ruler='r' AND mode='base'")).n, 1);
+  assert.equal((await db.get("SELECT batch FROM state_board_pending_work WHERE ruler='r' AND mode='base'")).batch, 'refresh-after-completion');
   console.log('Queue calculations coalesce across batches and refresh rounds, preserve initiators and other scenes, and can recur after completion; the unique index rejects a bypass.');
 } finally { await db.close(); }

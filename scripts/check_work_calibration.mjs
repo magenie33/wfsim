@@ -15,18 +15,18 @@ const db = await testDb('library');
 try {
   for (let i = 1; i <= 9; i++) {
     const id = 'q'+i;
-    await db.run("INSERT INTO questions(id,verb,request,state,due_at,opened_at) VALUES(?1,?2,?3,'open',?4,?4)",
+    await db.run("INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at) VALUES(?1,?2,?3,'open',?4,?4)",
       id, i === 4 ? 'optimize' : 'simulate', JSON.stringify({ record: { weapon: 'braton' }, fixture: i }), at);
-    await db.run(`INSERT INTO answers(question,engine,device,owner,canon,result,work,at,counts,credited,official,void)
+    await db.run(`INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at,counts,credited,official,void)
       VALUES(?1,'e',?2,?2,'c','{}',?3,?4,?5,?6,?7,?8)`, id, 'device-'+i, 100+i,
       i === 7 ? since : i === 8 ? '2026-11-08T00:00:00.000Z' : at,
       i === 3 ? null : JSON.stringify({ runs: i, shots: i+1 }), i === 9 ? 0 : 1, i === 6 ? 1 : 0, i === 5 ? 1 : 0);
   }
-  await db.run(`INSERT INTO answers(question,engine,device,owner,canon,result,work,at,counts,credited)
+  await db.run(`INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at,counts,credited)
     VALUES('q2','e','device-extra','owner-extra','c','{}',999,?1,'{"runs":99}',1)`, at);
   const oracle = await db.all(`SELECT q.id,q.request,max(a.work) work,max(a.counts) counts,
     '['||string_agg(to_json(a.device)::text,',' ORDER BY a.id)||']' devices
-    FROM answers a JOIN questions q ON q.id=a.question
+    FROM record_candidate_answers a JOIN state_compute_work q ON q.id=a.question
     WHERE a.credited=1 AND a.official=0 AND a.void=0 AND q.verb='simulate' AND a.at>?1 AND a.at<=?2
     GROUP BY q.id ORDER BY q.id`, since, until);
   const report = body => new Request('https://wfsim.test/api/tasks/official/report', { method: 'POST',
@@ -49,8 +49,8 @@ try {
   await db.exec('SET ROLE calibration_stranger');
   await assert.rejects(page(), /permission denied/);
   await db.exec('RESET ROLE; SET ROLE wfsim_pipeline');
-  await assert.rejects(db.all('SELECT * FROM answers'), /permission denied/);
-  await db.exec('CREATE TEMP TABLE questions(id text)');
+  await assert.rejects(db.all('SELECT * FROM record_candidate_answers'), /permission denied/);
+  await db.exec('CREATE TEMP TABLE state_compute_work(id text)');
   let after = '', actual = [];
   for (;;) {
     const rows = await page(after);
@@ -64,9 +64,9 @@ try {
   assert.deepEqual(await page(oracle.at(-1).id), []);
   await db.exec('DROP TABLE pg_temp.questions');
   await db.exec('RESET ROLE');
-  await db.run(`INSERT INTO questions(id,verb,request,state,due_at,opened_at)
+  await db.run(`INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at)
     SELECT 'z'||lpad(i::text,5,'0'),'simulate','{}','open',?1,?1 FROM generate_series(1,2003)i`, at);
-  await db.run(`INSERT INTO answers(question,engine,device,owner,canon,result,work,at,credited)
+  await db.run(`INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,at,credited)
     SELECT 'z'||lpad(i::text,5,'0'),'e','d'||i,'o'||i,'c','{}',1,?1,1 FROM generate_series(1,2003)i`, at);
   const capped = await page('z', 100000);
   assert.equal(capped.length, 2000); assert.equal((await page(capped.at(-1).id, 100000)).length, 3);

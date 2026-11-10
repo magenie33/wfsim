@@ -82,16 +82,16 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
         const opened = NOW - Math.floor(r() * 300_000), due = NOW + Math.floor((r() - 0.5) * 7_200_000);
         const leased = r() < 0.2 ? pick(r, [NOW + 60_000, NOW - 60_000]) : null;
         const waits = r() < 0.2 ? 1 : 0;
-        await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, lease, lease_until, leased_to, waits)
+        await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, lanes, lease, lease_until, leased_to, waits)
           VALUES (?, ?, '{}', ?, ?, ?, ?, ?, ?, ?, ?)`, id, verb, state, iso(due), iso(opened), lanes && JSON.stringify(lanes),
           leased ? "l" : null, leased ? iso(leased) : null, leased ? "dx" : null, waits);
-        await db.run("INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('p', ?, ?, 'live', ?, ?)", id, id, iso(opened), iso(due));
+        await db.run("INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at) VALUES ('p', ?, ?, 'live', ?, ?)", id, id, iso(opened), iso(due));
         const answers = [];
         for (let k = Math.floor(r() * 3); k > 0; k--) {
           const w = pick(r, devices), a = { device: w.device, owner: w.owner, net: w.net, engine: pick(r, engines) };
           // ONE ANSWER per question, device and engine (`answers_once`): a repeat is no book the factory can hold.
           if (answers.some((b) => b.device === a.device && b.engine === a.engine)) continue;
-          await db.run(`INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, ?, ?, ?, ?, 'c', '{}', 1, ?)`, id, a.engine, a.device, a.owner, a.net, iso(NOW));
+          await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, ?, ?, ?, ?, 'c', '{}', 1, ?)`, id, a.engine, a.device, a.owner, a.net, iso(NOW));
           answers.push(a);
         }
         qs.push({ id, verb, state, lanes, opened, due, leased, answers, waits });
@@ -116,7 +116,7 @@ console.log("liveness: handed nothing only when nothing may be answered, else th
       const packGot = pack ? pack.questions.map((q) => q.question) : [];
       const sameSet = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
       if (!sameSet(packGot, packWant)) { badPack++; firstPack ||= `trial ${t}: got ${packGot}, want ${packWant}`; }
-      if (pack) await db.run("UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE lease = ?", pack.lease);
+      if (pack) await db.run("UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE lease = ?", pack.lease);
       const got = await f.next(env, { ...w, most: 99 }, "e1", NOW);
       const want = eligible[0] ? eligible[0].id : null;
       if ((got ? got.question : null) !== want) {
@@ -173,7 +173,7 @@ console.log("\ntermination: every question ends a fact or withdrawn");
         const siblings = official ? ["official"] : people.filter((p) => p.owner === w.owner).map((p) => p.device);
         const q = await f.next(env, { ...w, siblings, most: 1 }, "e1", now);
         if (!q) {
-          const open = (await db.get("SELECT count(*) AS n FROM questions WHERE state NOT IN ('fact', 'withdrawn')")).n;
+          const open = (await db.get("SELECT count(*) AS n FROM state_compute_work WHERE state NOT IN ('fact', 'withdrawn')")).n;
           if (!open) break;
           if (step > 200) now += 3_600_000; // time passes; deadlines go by
           continue;
@@ -181,15 +181,15 @@ console.log("\ntermination: every question ends a fact or withdrawn");
         const { result, work } = answerFor(w, q);
         await f.answer(env, w, { lease: q.lease, engine: "e1", result, work }, now);
       }
-      const left = await db.all("SELECT id, state FROM questions WHERE state NOT IN ('fact', 'withdrawn')");
+      const left = await db.all("SELECT id, state FROM state_compute_work WHERE state NOT IN ('fact', 'withdrawn')");
       if (left.length) { bad++; first ||= `trial ${t}: ${JSON.stringify(left)}`; }
-      for (const a of await db.all("SELECT device, credited FROM answers WHERE credited = 1")) {
+      for (const a of await db.all("SELECT device, credited FROM record_candidate_answers WHERE credited = 1")) {
         if (people.find((p) => p.device === a.device && p.liar)) liarsCredited++;
       }
       for (const d of disproved) if (people.find((p) => p.device === d.device && !p.liar)) refusedHonest++;
       // Nobody is refused for a question that was not deterministic.
       for (const id of odd) {
-        const s = await db.get("SELECT state FROM questions WHERE id = ?", id);
+        const s = await db.get("SELECT state FROM state_compute_work WHERE id = ?", id);
         if (s.state === "nondeterministic") { bad++; first ||= `trial ${t}: ${id} stayed nondeterministic`; }
       }
       await db.close();
@@ -220,7 +220,7 @@ await runCase("fixed:answered-out", async () => {
   const late = await f.demand(env, { producer: "p", ref: "late", verb: "optimize", request: { late: 1 }, due_in_ms: 86_400_000 }, "e1", NOW);
   const g = await f.next(env, { device: "w1", owner: "w", net: "nw" }, "e1", NOW);
   check("nine answered-out questions ahead of it do not starve the tenth", g && g.question === late, JSON.stringify(g));
-  const states = await db.all("SELECT state, count(*) AS n FROM questions WHERE request LIKE '%full%' GROUP BY state");
+  const states = await db.all("SELECT state, count(*) AS n FROM state_compute_work WHERE request LIKE '%full%' GROUP BY state");
   check("...and three witnesses differing only in work is an engine fault, not three liars",
     states.length === 1 && states[0].state === "nondeterministic" && states[0].n === 9, JSON.stringify(states));
 });
@@ -228,28 +228,28 @@ await runCase("fixed:shared-producers", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   told.length = 0;
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
-  await db.exec("INSERT INTO verifiers (id, seen) VALUES ('a', 'x'), ('b', 'x')");
+  await db.exec("INSERT INTO entity_compute_devices (id, seen) VALUES ('a', 'x'), ('b', 'x')");
   // ONE COMPUTATION FOR TWO PRODUCERS: a survey shape and a chat asking the same.
   const one = await f.demand(env, { producer: "p", ref: "survey-shape", verb: "optimize", request: { riven: "x" }, due_in_ms: 86_400_000 }, "e1", NOW);
   const two = await f.demand(env, { producer: "q", ref: "chat-ask", verb: "optimize", request: { riven: "x" }, due_in_ms: 120_000 }, "e1", NOW);
-  check("two producers asking one thing share one question", one === two && (await db.get("SELECT count(*) AS n FROM questions")).n === 1);
-  check("...whose deadline is the earlier one", (await db.get("SELECT due_at FROM questions")).due_at === iso(NOW + 120_000));
+  check("two producers asking one thing share one question", one === two && (await db.get("SELECT count(*) AS n FROM state_compute_work")).n === 1);
+  check("...whose deadline is the earlier one", (await db.get("SELECT due_at FROM state_compute_work")).due_at === iso(NOW + 120_000));
   for (const w of [{ device: "a", owner: "oa", net: "na" }, { device: "b", owner: "ob", net: "nb" }]) {
     const q = await f.next(env, w, "e1", NOW);
     await f.answer(env, w, { lease: q.lease, engine: "e1", result: { build: "b", score: 5 }, work: 7 }, NOW);
   }
   check("...answered once, told to both", told.length === 2 && new Set(told.map((x) => x.ref)).size === 2, JSON.stringify(told));
-  const work = (await db.get("SELECT sum(work) AS w FROM verifiers")).w;
+  const work = (await db.get("SELECT sum(work) AS w FROM entity_compute_devices")).w;
   check("...and credited once: the work done, to each witness that did it", work === 14, String(work));
   told.length = 0;
   await f.demand(env, { producer: "p", ref: "asked-again", verb: "optimize", request: { riven: "x" }, due_in_ms: 1000 }, "e1", NOW);
   check("a question already a fact on the served engine is told at once, unfought", told.length === 1 && told[0].ref === "asked-again");
   await f.demand(env, { producer: "p", ref: "next-release", verb: "optimize", request: { riven: "x" }, due_in_ms: 1000 }, "e2", NOW);
-  check("...and on another engine it opens again", (await db.get("SELECT state FROM questions")).state === "open");
+  check("...and on another engine it opens again", (await db.get("SELECT state FROM state_compute_work")).state === "open");
   const c = await f.next(env, { device: "c", owner: "oc", net: "nc" }, "e2", NOW);
   await f.answer(env, { device: "c", owner: "oc", net: "nc" }, { lease: c.lease, engine: "e2", result: { build: "b", score: 5 }, work: 7 }, NOW);
   check("...where one answer of the new engine that reproduces the old bits makes the fact again",
-    (await db.get("SELECT state, fact_engine FROM questions")).fact_engine === "e2");
+    (await db.get("SELECT state, fact_engine FROM state_compute_work")).fact_engine === "e2");
 });
 await runCase("fixed:withdrawn", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
@@ -257,34 +257,34 @@ await runCase("fixed:withdrawn", async () => {
   await f.demand(env, { producer: "p", ref: "gone", verb: "simulate", request: { row: 1 }, due_in_ms: 1000 }, "e1", NOW);
   await f.withdraw(env, "p", "gone", NOW);
   check("a question nobody asks for any more is withdrawn and handed to nobody",
-    (await db.get("SELECT state FROM questions")).state === "withdrawn" && (await f.next(env, { device: "a" }, "e1", NOW)) === null);
+    (await db.get("SELECT state FROM state_compute_work")).state === "withdrawn" && (await f.next(env, { device: "a" }, "e1", NOW)) === null);
   const gone = { p: { ...PRODUCERS.p, still_wanted: async () => false } };
   const f2 = factory({ verbs: VERBS, producers: gone });
   await f2.demand(env, { producer: "p", ref: "settled-elsewhere", verb: "simulate", request: { row: 2 }, due_in_ms: 1000 }, "e1", NOW);
   check("...nor is one its producer no longer wants, found where it is picked",
     (await f2.next(env, { device: "a" }, "e1", NOW)) === null);
   const id = await questionId("simulate", { row: 2 });
-  check("...which is withdrawn there", (await db.get("SELECT state FROM questions WHERE id = ?", id)).state === "withdrawn");
+  check("...which is withdrawn there", (await db.get("SELECT state FROM state_compute_work WHERE id = ?", id)).state === "withdrawn");
   // AN OPEN QUESTION WITH NO LIVE DEMAND — its demands withdrawn, the question
   // left open — heads the order: the pack that picks it withdraws it and is
   // handed the row behind it, rather than nothing for ever.
   await f.demand(env, { producer: "p", ref: "orphan", verb: "simulate", request: { row: 4 }, due_in_ms: 1000 }, "e1", NOW);
   await f.demand(env, { producer: "p", ref: "behind", verb: "simulate", request: { row: 5 }, due_in_ms: 2000 }, "e1", NOW);
-  await db.run("UPDATE demands SET state = 'withdrawn' WHERE ref = 'orphan'");
+  await db.run("UPDATE relation_task_consumers SET state = 'withdrawn' WHERE ref = 'orphan'");
   const orphan = await questionId("simulate", { row: 4 });
   const after = await f.nextPack(env, { device: "a" }, "e1", { n: 1, lease_ms: 60_000 }, NOW);
   // A FACT A PLAYER WAITED ON, its demand served, asked again by a sweep on a
   // new engine: the question opens again, and nobody waits on it.
   await f.demand(env, { producer: "p", ref: "waited", verb: "simulate", request: { row: 6 }, due_in_ms: 1000, waits: true }, "e1", NOW);
   const waited = await questionId("simulate", { row: 6 });
-  await db.run("UPDATE questions SET state = 'fact', fact_engine = 'e1' WHERE id = ?", waited);
-  await db.run("UPDATE demands SET state = 'served' WHERE ref = 'waited'");
+  await db.run("UPDATE state_compute_work SET state = 'fact', fact_engine = 'e1' WHERE id = ?", waited);
+  await db.run("UPDATE relation_task_consumers SET state = 'served' WHERE ref = 'waited'");
   await f.demand(env, { producer: "p", ref: "swept", verb: "simulate", request: { row: 6 }, due_in_ms: 1000 }, "e2", NOW);
-  const reopened = await db.get("SELECT state, waits FROM questions WHERE id = ?", waited);
+  const reopened = await db.get("SELECT state, waits FROM state_compute_work WHERE id = ?", waited);
   check("a fact of another engine asked again opens waited on only if a live demand waits — a served one's wait is over",
     reopened.state === "open" && Number(reopened.waits) === 0, JSON.stringify(reopened));
   check("an open question no demand asks for any more is withdrawn by the pack that picks it, which is the row behind",
-    (await db.get("SELECT state FROM questions WHERE id = ?", orphan)).state === "withdrawn"
+    (await db.get("SELECT state FROM state_compute_work WHERE id = ?", orphan)).state === "withdrawn"
       && after && after.questions.length === 1 && after.questions[0].demands[0].ref === "behind", JSON.stringify(after));
 });
 await runCase("fixed:cancelled-head", async () => {
@@ -296,39 +296,39 @@ await runCase("fixed:cancelled-head", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: { ...PRODUCERS, ...BOARD_PRODUCERS } });
   const board = Object.keys(BOARD_PRODUCERS)[0], N = 5;
-  await db.run("INSERT INTO batches (id, at, why, total) VALUES ('b', 'x', 'test', 0)");
+  await db.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES ('b', 'x', 'test', 0)");
   const row = (i) => ({ identity: `r${String(i).padStart(3, "0")}`, ruler: "sst", mode: "base" });
   const asks = [];
   for (let i = 0; i < 4 * N + 2 * N; i++) {
     const r = row(i);
-    await db.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('b', ?, ?, ?)", r.identity, r.ruler, r.mode);
+    await db.run("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES ('b', ?, ?, ?)", r.identity, r.ruler, r.mode);
     asks.push({ producer: board, ref: calculationId(r.identity, r.ruler, r.mode), verb: "simulate", request: r, due_in_ms: 1000 + i, payload: r });
   }
   await f.demandAll(env, asks, "e1", NOW);
-  await db.run("DELETE FROM queue WHERE build_id < ?", row(3 * N).identity);
-  await db.run("UPDATE demands SET state = 'withdrawn' WHERE ref IN (SELECT ref FROM demands ORDER BY ref OFFSET ? LIMIT ?)", 3 * N, N);
+  await db.run("DELETE FROM state_board_pending_work WHERE build_id < ?", row(3 * N).identity);
+  await db.run("UPDATE relation_task_consumers SET state = 'withdrawn' WHERE ref IN (SELECT ref FROM relation_task_consumers ORDER BY ref OFFSET ? LIMIT ?)", 3 * N, N);
   const live = asks.slice(4 * N, 5 * N).map((a) => a.ref);
   const p = await f.nextPack(env, { device: "a" }, "e1", { n: N, lease_ms: 60_000 }, NOW);
   const got = p ? p.questions.map((q) => q.demands[0].ref) : [];
   check("a pack asked behind four packs' worth of cancelled rows is a full pack of the live ones",
     JSON.stringify(got) === JSON.stringify(live), JSON.stringify(got));
   check("...and every dead row its picks found is withdrawn",
-    (await db.get("SELECT count(*) AS n FROM questions WHERE state = 'withdrawn'")).n === 4 * N
-      && (await db.get("SELECT count(*) AS n FROM demands WHERE state = 'live'")).n === 2 * N);
+    (await db.get("SELECT count(*) AS n FROM state_compute_work WHERE state = 'withdrawn'")).n === 4 * N
+      && (await db.get("SELECT count(*) AS n FROM relation_task_consumers WHERE state = 'live'")).n === 2 * N);
   // …THE PACK'S ROWS CANCELLED TOO, its lease run out: the official machines'
   // claim past its deadline picks past them to the rows still owed.
-  await db.run("DELETE FROM queue WHERE build_id < ?", row(5 * N).identity);
+  await db.run("DELETE FROM state_board_pending_work WHERE build_id < ?", row(5 * N).identity);
   const claimed = await f.claim(env, { device: "official" }, { states: ["open"], max: N }, "e1", NOW + 3_600_000);
   const refs = claimed.map((t) => t.demands.map((x) => x.ref).join());
   check("the official machines' claim behind cancelled rows is the live ones, and the dead are withdrawn",
     JSON.stringify(refs) === JSON.stringify(asks.slice(5 * N).map((a) => a.ref))
-      && (await db.get("SELECT count(*) AS n FROM questions WHERE state = 'withdrawn'")).n === 5 * N, JSON.stringify(refs));
+      && (await db.get("SELECT count(*) AS n FROM state_compute_work WHERE state = 'withdrawn'")).n === 5 * N, JSON.stringify(refs));
 });
 await runCase("fixed:withdrawn-spot", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS });
   const id = await f.demand(env, { producer: "p", ref: "spotted", verb: "simulate", request: { row: 3 }, due_in_ms: 1000 }, "e1", NOW);
-  await db.run("UPDATE questions SET state = 'spot' WHERE id = ?", id);
+  await db.run("UPDATE state_compute_work SET state = 'spot' WHERE id = ?", id);
   await f.withdraw(env, "p", "spotted", NOW);
   const [t] = await f.claim(env, { device: "official" }, { states: ["spot"], max: 1 }, "e1", NOW);
   check("a spot nobody asks for any more is still claimed with its demand, so the official machines can settle it",
@@ -339,7 +339,7 @@ await runCase("fixed:batch-asks", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   told.length = 0;
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
-  await db.exec("INSERT INTO verifiers (id, seen) VALUES ('a', 'x'), ('b', 'x')");
+  await db.exec("INSERT INTO entity_compute_devices (id, seen) VALUES ('a', 'x'), ('b', 'x')");
   // MANY ASKS AT ONCE ARE THE SAME AS EACH ALONE: past a chunk, one asked
   // twice, and one whose fact on the served engine stands is delivered at once.
   const known = await f.demand(env, { producer: "p", ref: "known", verb: "simulate", request: { n: 0 }, due_in_ms: 1000 }, "e1", NOW);
@@ -351,8 +351,8 @@ await runCase("fixed:batch-asks", async () => {
   const asks = Array.from({ length: 120 }, (_, i) => ({ producer: "q", ref: `many${i}`, verb: "simulate", request: { n: i % 119 }, due_in_ms: 86_400_000 }));
   const ids = await f.demandAll(env, asks, "e1", NOW);
   check("a batch of asks is a demand each, past one chunk, and one request asked twice is one question",
-    ids.length === 120 && ids[0] === known && (await db.get("SELECT count(*) AS n FROM demands WHERE producer = 'q'")).n === 120
-      && (await db.get("SELECT count(*) AS n FROM questions")).n === 119);
+    ids.length === 120 && ids[0] === known && (await db.get("SELECT count(*) AS n FROM relation_task_consumers WHERE producer = 'q'")).n === 120
+      && (await db.get("SELECT count(*) AS n FROM state_compute_work")).n === 119);
   check("...and one whose fact on the served engine stands is told at once", told.some((t) => t.ref === "many0"), JSON.stringify(told));
 });
 
@@ -371,7 +371,7 @@ await runCase("fixed:answer-held", async () => {
   }
   check("a question being answered is handed to nobody else until it is settled", during.length === 2 && during.every((x) => x === null),
     JSON.stringify(during.map((x) => x && x.question)));
-  check("...and is free once it is", (await db.get("SELECT count(*) AS n FROM questions WHERE lease IS NOT NULL")).n === 0);
+  check("...and is free once it is", (await db.get("SELECT count(*) AS n FROM state_compute_work WHERE lease IS NOT NULL")).n === 0);
 });
 
 await runCase("fixed:owner-claim", async () => {
@@ -386,7 +386,7 @@ await runCase("fixed:owner-claim", async () => {
   const qd = await f.next(env, d, "e1", NOW);
   await f.answer(env, { ...d, owner: "oa" }, { lease: qd.lease, engine: "e1", result: { score: 2 }, work: 3 }, NOW);
   check("one owner's two answers fill no cap, and the question stays open for a second witness",
-    (await db.get("SELECT state FROM questions WHERE id = ?", id)).state === "open");
+    (await db.get("SELECT state FROM state_compute_work WHERE id = ?", id)).state === "open");
 });
 
 console.log("\npacks");
@@ -398,10 +398,10 @@ await runCase("fixed:pack-equivalence", async () => {
     const db = await testDb("library"), env = { LIBRARY: db };
     told.length = 0;
     const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
-    await db.exec("INSERT INTO verifiers (id, seen) VALUES ('a', 'x'), ('b', 'x')");
+    await db.exec("INSERT INTO entity_compute_devices (id, seen) VALUES ('a', 'x'), ('b', 'x')");
     for (let i = 0; i < 9; i++) await f.demand(env, { producer: "p", ref: `row${i}`, verb: "simulate", request: { row: i }, due_in_ms: 1000 + i }, "e1", NOW);
     for (const w of [{ device: "a", owner: "oa", net: "na" }, { device: "b", owner: "ob", net: "nb" }]) {
-      const score = async (q) => (w.device === "b" && JSON.parse((await db.get("SELECT request FROM questions WHERE id = ?", q)).request).row % 3 === 0 ? 2 : 1);
+      const score = async (q) => (w.device === "b" && JSON.parse((await db.get("SELECT request FROM state_compute_work WHERE id = ?", q)).request).row % 3 === 0 ? 2 : 1);
       if (packed) {
         // …SENT IN TWO PARTS, as a page sends them every half minute.
         const pack = await f.nextPack(env, w, "e1", { n: 9, lease_ms: 60_000 }, NOW);
@@ -414,9 +414,9 @@ await runCase("fixed:pack-equivalence", async () => {
       }
     }
     return JSON.stringify({
-      questions: await db.all("SELECT id, state, canon, lease FROM questions ORDER BY id"),
-      paid: await db.all("SELECT id, work, agreed FROM verifiers ORDER BY id"),
-      hours: await db.all("SELECT verifier, tasks, work FROM verifier_hours ORDER BY verifier"),
+      questions: await db.all("SELECT id, state, canon, lease FROM state_compute_work ORDER BY id"),
+      paid: await db.all("SELECT id, work, agreed FROM entity_compute_devices ORDER BY id"),
+      hours: await db.all("SELECT verifier, tasks, work FROM record_hourly_compute_totals ORDER BY verifier"),
       told: [...told].sort((x, y) => (x.ref < y.ref ? -1 : 1)),
     });
   };
@@ -430,14 +430,14 @@ await runCase("fixed:settlement-race", async () => {
   // the two agreeing answers before either writes.
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
-  await db.exec("INSERT INTO verifiers (id, seen) VALUES ('a', 'x'), ('b', 'x')");
+  await db.exec("INSERT INTO entity_compute_devices (id, seen) VALUES ('a', 'x'), ('b', 'x')");
   const id = await f.demand(env, { producer: "p", ref: "race", verb: "simulate", request: { race: 1 }, due_in_ms: 1000 }, "e1", NOW);
   for (const [d, o] of [["a", "oa"], ["b", "ob"]]) {
-    await db.run(`INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, 'e1', ?, ?, ?, ?, '{"score":1}', 5, ?)`, id, d, o, `n${d}`, canon({ score: 1, work: 5 }), iso(NOW));
+    await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, 'e1', ?, ?, ?, ?, '{"score":1}', 5, ?)`, id, d, o, `n${d}`, canon({ score: 1, work: 5 }), iso(NOW));
   }
   told.length = 0;
   await Promise.all([f.settle(env, id, "e1", NOW), f.settle(env, id, "e1", NOW)]);
-  const paid = await db.get("SELECT sum(work) AS w, sum(agreed) AS n FROM verifiers");
+  const paid = await db.get("SELECT sum(work) AS w, sum(agreed) AS n FROM entity_compute_devices");
   check("two settlings of one question at once credit each witness once", paid.w === 10 && paid.n === 2, JSON.stringify(paid));
 });
 
@@ -448,24 +448,24 @@ await runCase("fixed:watchdog-stall", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS });
   const later = NOW + 3_600_000;
-  await db.run("INSERT INTO verifiers (id, seen, last_at) VALUES ('busy', 'x', ?)", iso(later - 60_000));
+  await db.run("INSERT INTO entity_compute_devices (id, seen, last_at) VALUES ('busy', 'x', ?)", iso(later - 60_000));
   await f.demand(env, { producer: "p", ref: "shape", verb: "optimize", request: { shape: 1 }, due_in_ms: 1000 }, "e1", NOW);
   await f.demand(env, { producer: "q", ref: "row", verb: "simulate", request: { row: 1 }, due_in_ms: 10 * 3_600_000 }, "e1", NOW);
   const found = await f.audit(env, later);
   check("a kind whose overdue questions got no answer in half an hour, while witnesses worked, is a stall",
     found.length === 1 && found[0].kind === "stalled:p", JSON.stringify(found));
-  await db.run("UPDATE questions SET lease = 'l', leased_to = 'slow', leased_at = ?, lease_until = ? WHERE verb = 'optimize'", iso(later - 40 * 60_000), iso(later + 4 * 60_000));
+  await db.run("UPDATE state_compute_work SET lease = 'l', leased_to = 'slow', leased_at = ?, lease_until = ? WHERE verb = 'optimize'", iso(later - 40 * 60_000), iso(later + 4 * 60_000));
   check("...but not while a page computes one and renews it", !(await f.audit(env, later)).some((x) => x.kind === "stalled:p"));
   const pastCeiling = later + 2 * 3_600_000 - 40 * 60_000 + 60_000;
-  await db.run("UPDATE verifiers SET last_at = ? WHERE id = 'busy'", iso(pastCeiling - 60_000));
+  await db.run("UPDATE entity_compute_devices SET last_at = ? WHERE id = 'busy'", iso(pastCeiling - 60_000));
   check("...and is one again once it is held past the ceiling", (await f.audit(env, pastCeiling)).some((x) => x.kind === "stalled:p"));
-  await db.run("UPDATE verifiers SET last_at = ? WHERE id = 'busy'", iso(later - 60_000));
-  await db.run("UPDATE questions SET lease = NULL, leased_to = NULL, leased_at = NULL, lease_until = NULL");
+  await db.run("UPDATE entity_compute_devices SET last_at = ? WHERE id = 'busy'", iso(later - 60_000));
+  await db.run("UPDATE state_compute_work SET lease = NULL, leased_to = NULL, leased_at = NULL, lease_until = NULL");
   const q = await f.next(env, { device: "busy", owner: "o", net: "n" }, "e1", later - 5 * 60_000);
   await f.answer(env, { device: "busy", owner: "o", net: "n" }, { lease: q.lease, engine: "e1", result: { build: "b", score: 1 }, work: 1 }, later - 5 * 60_000);
   check("...and one answer to it is not", !(await f.audit(env, later)).some((x) => x.kind === "stalled:p"));
   check("a healthy factory has nothing to say", (await f.audit(env, later)).length === 0, JSON.stringify(await f.audit(env, later)));
-  await db.run("UPDATE questions SET state = 'disputed', opened_at = ?", iso(NOW - 2 * 3_600_000));
+  await db.run("UPDATE state_compute_work SET state = 'disputed', opened_at = ?", iso(NOW - 2 * 3_600_000));
   check("a spot opened long ago, its last answer minutes old, is not unsettled",
     (await f.audit(env, later)).find((x) => x.kind === "unsettled")?.questions === 1, JSON.stringify(await f.audit(env, later)));
   check("a dispute nobody settled in two hours since its last answer is said",
@@ -474,14 +474,14 @@ await runCase("fixed:watchdog-stall", async () => {
   const sent = [];
   const { watchdog } = await import("../worker/factory.js");
   const tell = { LIBRARY: db, CLOUD: { fetch: async (r) => { sent.push(await r.json()); return new Response('{"ok":true}'); } } };
-  const said = async () => (await db.all("SELECT cause, said FROM watchdog_said ORDER BY at")).filter((x) => x.cause === "unsettled");
+  const said = async () => (await db.all("SELECT cause, said FROM record_monitor_findings ORDER BY at")).filter((x) => x.cause === "unsettled");
   await watchdog(tell, later);
   await watchdog(tell, later + 600_000);
   check("the watchdog writes a round down, then nothing within the hour", (await said()).length === 1 && /unsettled/.test((await said())[0].said), JSON.stringify(await said()));
   check("...and sends nobody anything", sent.length === 0, JSON.stringify(sent));
   const round = await watchdog(tell, later + 3_600_000);
   check("...and the next round once the hour is up", (await said()).length === 2);
-  const latest = await db.all("SELECT cause FROM watchdog_said WHERE at = (SELECT max(at) FROM watchdog_said)");
+  const latest = await db.all("SELECT cause FROM record_monitor_findings WHERE at = (SELECT max(at) FROM record_monitor_findings)");
   check("...a round is every finding, under one instant", latest.length === round.length && round.length > 0, JSON.stringify(latest));
   await watchdog(tell, later + 40 * 24 * 3_600_000);
   check("...each saying kept thirty days", (await said()).length === 1, JSON.stringify(await said()));
@@ -511,8 +511,8 @@ await runCase("fixed:disagreeing", async () => {
   let k = 0;
   const put = async (n, owner, c) => {
     for (let i = 0; i < n; i++, k++) {
-      await db.run("INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon) VALUES (?, 'simulate', '{}', 'fact', ?, ?, ?)", `f${k}`, iso(NOW), iso(NOW), fact);
-      await db.run("INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, 'e1', ?, ?, '', ?, '{}', 5, ?)", `f${k}`, `${owner}-d`, owner, c, iso(NOW - 60_000));
+      await db.run("INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon) VALUES (?, 'simulate', '{}', 'fact', ?, ?, ?)", `f${k}`, iso(NOW), iso(NOW), fact);
+      await db.run("INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at) VALUES (?, 'e1', ?, ?, '', ?, '{}', 5, ?)", `f${k}`, `${owner}-d`, owner, c, iso(NOW - 60_000));
     }
   };
   await put(500, "fine", fact); await put(10, "fine", other);
@@ -529,12 +529,12 @@ await runCase("fixed:cells-filling", async () => {
   const db = await testDb("library");
   const { watchdog } = await import("../worker/factory.js");
   const env = { LIBRARY: db };
-  await db.exec(`INSERT INTO batches (id, at, why, total) VALUES ('b', 'x', 'test', 2);
-    INSERT INTO queue (batch, build_id, ruler, mode) VALUES ('b', 'x1', 'sst__sp200', 'base'), ('b', 'x2', 'sst__sp200', 'base'), ('b', 'x3', 'sst', 'base');
-    INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+  await db.exec(`INSERT INTO entity_compute_batches (id, at, why, total) VALUES ('b', 'x', 'test', 2);
+    INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES ('b', 'x1', 'sst__sp200', 'base'), ('b', 'x2', 'sst__sp200', 'base'), ('b', 'x3', 'sst', 'base');
+    INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
       VALUES ('x0', 'sst__sp200', 'base', 'v', 1, 'kpm', 0, 'x', '${iso(NOW - 7 * 3_600_000)}');`);
   const found = (await watchdog(env, NOW)).find((x) => x.kind === "cells_filling");
-  const said = (await db.all("SELECT said FROM watchdog_said")).map((x) => x.said);
+  const said = (await db.all("SELECT said FROM record_monitor_findings")).map((x) => x.said);
   check("a scene still filling is said: measured and owed, per cell ruler",
     found && JSON.stringify(found.cells) === JSON.stringify([{ ruler: "sst__sp200", measured: 1, recent: 0, recent_hours: 6, paced: 1, pace_hours: 24, owed: 2 }])
       && said.some((x) => /cells_filling/.test(x)), JSON.stringify(found));
@@ -548,7 +548,7 @@ await runCase("fixed:cells-filling", async () => {
     ["stalled:p", "nondeterministic", "unsettled", "overdue", "disagreeing"].every((kind) => !watchdogText({ kind, producer: "p", questions: 1,
       oldest_due: iso(NOW), witnesses_active: 1, producers: [{ producer: "p", questions: 1, oldest_due: iso(NOW) }],
       engine: "e", answers: 10, differ: 5, owners: [{ owner: "o", answers: 10, differ: 5, devices: 1 }] }, NOW).includes("没有这一类的说明")));
-  await db.exec("DELETE FROM queue WHERE ruler = 'sst__sp200'");
+  await db.exec("DELETE FROM state_board_pending_work WHERE ruler = 'sst__sp200'");
   check("...and nothing once it is full", !(await watchdog(env, NOW + 7 * 3_600_000)).some((x) => x.kind === "cells_filling"));
 });
 
@@ -567,11 +567,11 @@ await runCase("fixed:ulp", async () => {
     await f.answerOfficial(env, { device: "official", owner: "official" }, { question: id, engine: "e1", result: { score: S }, work: 100 }, NOW);
   }
   check("an ULP off with equal work is not refused", !refused.includes("b-ulp"), JSON.stringify(refused));
-  check("...nor paid", !(await db.get("SELECT credited FROM answers WHERE device = 'b-ulp'")).credited);
+  check("...nor paid", !(await db.get("SELECT credited FROM record_candidate_answers WHERE device = 'b-ulp'")).credited);
   check("...while a score further off is refused", refused.includes("b-far"), JSON.stringify(refused));
   check("the official score with other work agrees, never refused and paid the official work",
-    !refused.includes("b-work") && (await db.get("SELECT sum(work) AS w FROM verifier_hours WHERE verifier = 'b-work'")).w === 100,
-    JSON.stringify({ refused, v: await db.get("SELECT sum(work) AS w FROM verifier_hours WHERE verifier = 'b-work'") }));
+    !refused.includes("b-work") && (await db.get("SELECT sum(work) AS w FROM record_hourly_compute_totals WHERE verifier = 'b-work'")).w === 100,
+    JSON.stringify({ refused, v: await db.get("SELECT sum(work) AS w FROM record_hourly_compute_totals WHERE verifier = 'b-work'") }));
 });
 await runCase("fixed:next-engine", async () => {
   // A DISPUTE OF ONE RELEASE SETTLED ON THE NEXT, whose work is in other units.
@@ -586,9 +586,9 @@ await runCase("fixed:next-engine", async () => {
   }
   await f.answerOfficial(env, { device: "official", owner: "official" }, { question: id, engine: "e2", result: { score: S }, work: 140 }, NOW);
   check("a dispute settled on the next engine pays whoever gave its score, its work in the old units",
-    !!(await db.get("SELECT credited FROM answers WHERE device = 'a-rel'")).credited
-    && (await db.get("SELECT odd FROM questions WHERE id = ?", id)).odd === 0 && !refused.length,
-    JSON.stringify({ refused, q: await db.get("SELECT state, odd FROM questions WHERE id = ?", id) }));
+    !!(await db.get("SELECT credited FROM record_candidate_answers WHERE device = 'a-rel'")).credited
+    && (await db.get("SELECT odd FROM state_compute_work WHERE id = ?", id)).odd === 0 && !refused.length,
+    JSON.stringify({ refused, q: await db.get("SELECT state, odd FROM state_compute_work WHERE id = ?", id) }));
 });
 
 console.log("\nan official answer without work witnesses the score alone");
@@ -596,8 +596,8 @@ await runCase("fixed:official-score-only", async () => {
   const db = await testDb("library"), env = { LIBRARY: db }, refused = [];
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1, on_disproved: async (_, a) => { refused.push(a.device); } });
   const S = 3.25, OFF = { device: "official", owner: "official" };
-  const state = async (id) => (await db.get("SELECT state FROM questions WHERE id = ?", id)).state;
-  const paid = async (who) => !!(await db.get("SELECT credited FROM answers WHERE device = ?", who)).credited;
+  const state = async (id) => (await db.get("SELECT state FROM state_compute_work WHERE id = ?", id)).state;
+  const paid = async (who) => !!(await db.get("SELECT credited FROM record_candidate_answers WHERE device = ?", who)).credited;
   const ask = async (ref) => f.demand(env, { producer: "p", ref, verb: "simulate", request: { ref }, due_in_ms: 3_600_000 }, "e1", NOW);
   const volunteer = async (who, work) => {
     const w = { device: who, owner: who, net: `n${who}` };
@@ -626,8 +626,8 @@ await runCase("fixed:recheck", async () => {
   let roll = 0;
   const f = factory({ verbs: VERBS, producers: PRODUCERS, spot: 0, recheck: 0.5, random: () => roll, on_disproved: async () => {} });
   const ask = async (ref, due = 3_600_000) => f.demand(env, { producer: "p", ref, verb: "simulate", request: { ref }, due_in_ms: due }, "e1", NOW);
-  const row = (id) => db.get("SELECT * FROM questions WHERE id = ?", id);
-  const paid = async (id) => (await db.all("SELECT device FROM answers WHERE question = ? AND credited = 1 ORDER BY device", id)).map((a) => a.device).join();
+  const row = (id) => db.get("SELECT * FROM state_compute_work WHERE id = ?", id);
+  const paid = async (id) => (await db.all("SELECT device FROM record_candidate_answers WHERE question = ? AND credited = 1 ORDER BY device", id)).map((a) => a.device).join();
   const delivered = (ref) => told.filter((x) => x.ref === ref).length;
   const who = (device, owner = device, net = `n${device}`, siblings = [device]) => ({ device, owner, net, siblings });
   const volunteer = async (w, score, at = NOW) => {
@@ -651,7 +651,7 @@ await runCase("fixed:recheck", async () => {
   await f.answerPack(env, who("r4"), { lease: p.lease, engine: "e1", answers: [{ question: agreed, result: { score: 7 }, work: 100 }], done: true }, NOW);
   check("a third agreeing, from a pack, makes it a fact: all three credited once, delivered once",
     (await row(agreed)).state === "fact" && (await paid(agreed)) === "r1,r2,r4" && delivered("agreed") === 1
-      && (await db.get("SELECT count(*) AS n FROM answers WHERE credited = 1")).n === 3, `${JSON.stringify(await row(agreed))} ${await paid(agreed)}`);
+      && (await db.get("SELECT count(*) AS n FROM record_candidate_answers WHERE credited = 1")).n === 3, `${JSON.stringify(await row(agreed))} ${await paid(agreed)}`);
   roll = 0;
   const lied = await ask("lied");
   await volunteer(who("l1"), 5);
@@ -684,14 +684,14 @@ await runCase("fixed:join-engine", async () => {
     else if (p) await f.answerPack(env, w, { lease: p.lease, engine, answers: [], done: true }, NOW);
     return held;
   };
-  const state = async (id) => (await db.get("SELECT state FROM questions WHERE id = ?", id)).state;
+  const state = async (id) => (await db.get("SELECT state FROM state_compute_work WHERE id = ?", id)).state;
   const lone = await ask("lone"), led = await ask("led");
   check("a join device is handed no row a served answer does not lead", (await send(who("j1"), "e0", lone, 4, 70)).length === 0);
   await send(who("s1"), "e1", led, 4, 100);
   const held = await send(who("j2"), "e0", led, 4, 70);
   check("...and handed the one it does, its equal result with other work makes it a fact, both credited",
     held.join() === led && (await state(led)) === "fact"
-      && (await db.get("SELECT count(*) AS n FROM answers WHERE question = ? AND credited = 1", led)).n === 2, `${held} ${await state(led)}`);
+      && (await db.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = ? AND credited = 1", led)).n === 2, `${held} ${await state(led)}`);
   const mine = await ask("mine");
   await send(who("s2", "shared"), "e1", mine, 5, 100);
   check("...never one led by its own network", !(await send(who("j3", "shared"), "e0", mine, 5, 70)).includes(mine));
@@ -711,7 +711,7 @@ await runCase("fixed:fair-share", async () => {
   // p's rows are all due before any of q's: the plain order hands p every one first.
   for (let i = 0; i < 6; i++) await ask("p", `p${i}`, 60_000 + i);
   for (let i = 0; i < 6; i++) await ask("q", `q${i}`, 3_600_000 + i);
-  const use = async (p, used, ms) => db.run("UPDATE producer_use SET used = ?, answer_ms = ? WHERE producer = ?", used, ms, p);
+  const use = async (p, used, ms) => db.run("UPDATE state_producer_compute_usage SET used = ?, answer_ms = ? WHERE producer = ?", used, ms, p);
   await use("p", 0, 1000); await use("q", 0, 1000);
   const order = async (n) => { const out = []; for (let i = 0; i < n; i++) { const t = await f.next(env, who(), "e1", NOW); out.push(t && t.demands[0].producer); } return out.join(""); };
   check("two producers of equal cost take turns, whoever is due first", (await order(4)) === "pqpq");
@@ -722,22 +722,22 @@ await runCase("fixed:fair-share", async () => {
   const t = await f.next(env, who(), "e1", NOW);
   check("a question somebody waits on goes first, whatever its producer has used", t && t.question === waited);
   await ask("r", "r0", 7_200_000);
-  const { used: least } = await db.get("SELECT min(used) AS used FROM producer_use WHERE producer IN ('p', 'q')");
-  check("a producer never seen starts at the least any has used", (await db.get("SELECT used FROM producer_use WHERE producer = 'r'")).used === least);
-  await db.run("UPDATE questions SET state = 'withdrawn' WHERE producer = 'r'");
-  await db.run("UPDATE producer_use SET used = 0 WHERE producer = 'r'");
+  const { used: least } = await db.get("SELECT min(used) AS used FROM state_producer_compute_usage WHERE producer IN ('p', 'q')");
+  check("a producer never seen starts at the least any has used", (await db.get("SELECT used FROM state_producer_compute_usage WHERE producer = 'r'")).used === least);
+  await db.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE producer = 'r'");
+  await db.run("UPDATE state_producer_compute_usage SET used = 0 WHERE producer = 'r'");
   await f.liftIdle(env);
   check("...and one with nothing open is lifted to it, so it never comes back with a share banked",
-    (await db.get("SELECT used FROM producer_use WHERE producer = 'r'")).used === (await db.get("SELECT min(used) AS used FROM producer_use WHERE producer IN ('p', 'q')")).used);
+    (await db.get("SELECT used FROM state_producer_compute_usage WHERE producer = 'r'")).used === (await db.get("SELECT min(used) AS used FROM state_producer_compute_usage WHERE producer IN ('p', 'q')")).used);
   await use("p", 0, 0);
   const w = who(), pk = await f.nextPack(env, w, "e1", { n: 9, lease_ms: 60_000, producer: "p" }, NOW);
   check("a pack holds one producer's rows", pk && pk.questions.every((x) => x.demands.every((d) => d.producer === "p")), JSON.stringify(pk && pk.questions.map((x) => x.demands[0].producer)));
   await f.answerPack(env, w, { lease: pk.lease, engine: "e1", answers: pk.questions.slice(0, 2).map((x) => ({ question: x.question, result: { score: 1 }, work: 1, compute_ms: 600 })), done: true }, NOW);
   check("...and its answers' fights are its producer's mean, the first ones whole",
-    Math.abs((await db.get("SELECT answer_ms FROM producer_use WHERE producer = 'p'")).answer_ms - 600) < 1e-9);
-  await db.run("INSERT INTO questions (id, verb, request, state, due_at, opened_at, producer) VALUES ('stray', 'simulate', '{}', 'open', ?, ?, 'nobody')", iso(NOW - 1), iso(NOW));
-  await db.run("INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('p', 'stray', 'stray', 'live', ?, ?)", iso(NOW), iso(NOW - 1));
-  await db.run("UPDATE questions SET state = 'withdrawn' WHERE id <> 'stray'");
+    Math.abs((await db.get("SELECT answer_ms FROM state_producer_compute_usage WHERE producer = 'p'")).answer_ms - 600) < 1e-9);
+  await db.run("INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, producer) VALUES ('stray', 'simulate', '{}', 'open', ?, ?, 'nobody')", iso(NOW - 1), iso(NOW));
+  await db.run("INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at) VALUES ('p', 'stray', 'stray', 'live', ?, ?)", iso(NOW), iso(NOW - 1));
+  await db.run("UPDATE state_compute_work SET state = 'withdrawn' WHERE id <> 'stray'");
   const stray = await f.next(env, who(), "e1", NOW);
   check("a question whose producer has no row is still handed out", stray && stray.question === "stray");
 });
@@ -754,8 +754,8 @@ await runCase("fixed:refusals-paused", async () => {
   }
   await f.answerOfficial(env, { device: "official", owner: "official" }, { question: id, engine: "e1", result: { score: 2 }, work: 100 }, NOW);
   check("with refusals paused a disproved client is unpaid and not refused, the agreeing one paid",
-    !refused.length && !(await db.get("SELECT credited FROM answers WHERE device = 'p-wrong'")).credited
-    && !!(await db.get("SELECT credited FROM answers WHERE device = 'p-right'")).credited, JSON.stringify(refused));
+    !refused.length && !(await db.get("SELECT credited FROM record_candidate_answers WHERE device = 'p-wrong'")).credited
+    && !!(await db.get("SELECT credited FROM record_candidate_answers WHERE device = 'p-right'")).credited, JSON.stringify(refused));
 });
 
 
@@ -764,14 +764,14 @@ await runCase("fixed:redeliver", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const old = new Date(NOW - 3_600_000).toISOString();
-  await db.run("INSERT INTO factory_cursors (name, through) VALUES ('redeliver', ?)", old);
-  await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+  await db.run("INSERT INTO state_factory_progress (name, through) VALUES ('redeliver', ?)", old);
+  await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
     VALUES ('lost', 'simulate', '{}', 'fact', ?, ?, '{"score":1,"work":1}', 'e1', ?)`, old, old, old);
-  await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('p', 'lost-ref', 'lost', 'live', ?, ?)`, old, old);
+  await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at) VALUES ('p', 'lost-ref', 'lost', 'live', ?, ?)`, old, old);
   const before = told.length;
   const n = await f.redeliver(env, NOW);
   check("a settled question with a live demand is delivered by the sweep", n === 1 && told.slice(before).some((t) => t.ref === "lost-ref")
-    && (await db.get("SELECT state FROM demands WHERE ref = 'lost-ref'")).state === "served", JSON.stringify({ n, told: told.slice(before) }));
+    && (await db.get("SELECT state FROM relation_task_consumers WHERE ref = 'lost-ref'")).state === "served", JSON.stringify({ n, told: told.slice(before) }));
   check("...and once delivered it is not told again", (await f.redeliver(env, NOW)) === 0);
 });
 
@@ -783,23 +783,23 @@ await runCase("fixed:redeliver-cursor", async () => {
     flaky: { on_fact: async () => { if (fail) throw new Error("busy"); } },
     p: PRODUCERS.p } });
   const at = (m) => new Date(NOW - m * 60_000).toISOString();
-  await db.run("INSERT INTO factory_cursors (name, through) VALUES ('redeliver', ?)", at(60));
+  await db.run("INSERT INTO state_factory_progress (name, through) VALUES ('redeliver', ?)", at(60));
   const fact = async (id, m, producer) => {
-    await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+    await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
       VALUES (?, 'simulate', '{}', 'fact', ?, ?, '{"score":1,"work":1}', 'e1', ?)`, id, at(m), at(m), at(m));
-    await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES (?, ?, ?, 'live', ?, ?)`, producer, `${id}-ref`, id, at(m), at(m));
+    await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at) VALUES (?, ?, ?, 'live', ?, ?)`, producer, `${id}-ref`, id, at(m), at(m));
   };
   await fact("f-flaky", 50, "flaky");
   await fact("f-after", 40, "p");
   check("a fact it could not tell stops none behind it", (await f.redeliver(env, NOW)) === 1);
-  check("...and holds the cursor at that fact", (await db.get("SELECT through FROM factory_cursors WHERE name = 'redeliver'")).through === at(50));
+  check("...and holds the cursor at that fact", (await db.get("SELECT through FROM state_factory_progress WHERE name = 'redeliver'")).through === at(50));
   fail = false;
   check("...so the next run tells it", (await f.redeliver(env, NOW + 60_000)) === 1
-    && (await db.get("SELECT state FROM demands WHERE ref = 'f-flaky-ref'")).state === "served");
+    && (await db.get("SELECT state FROM relation_task_consumers WHERE ref = 'f-flaky-ref'")).state === "served");
   // A FACT FORMED BEFORE WHERE THE CURSOR NOW STANDS is not read again.
   await fact("f-behind", 45, "p");
   check("a run reads only from its cursor on", (await f.redeliver(env, NOW + 120_000)) === 0
-    && (await db.get("SELECT state FROM demands WHERE ref = 'f-behind-ref'")).state === "live");
+    && (await db.get("SELECT state FROM relation_task_consumers WHERE ref = 'f-behind-ref'")).state === "live");
 });
 
 console.log("\na fact's witnesses never paid are paid, and a late answer never");
@@ -807,17 +807,17 @@ await runCase("fixed:unpaid-witnesses", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const t = (m) => new Date(NOW - m * 60_000).toISOString();
-  await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+  await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
     VALUES ('unpaid', 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`, t(90), t(90), t(60));
   for (const [dev, at, canon] of [["w1", t(70), "c"], ["w2", t(65), "c"], ["late", t(50), "c"], ["wrong", t(66), "x"]]) {
-    await db.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-01')", dev);
-    await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+    await db.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-01')", dev);
+    await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
       VALUES ('unpaid', 'e1', ?, ?, ?, 0, ?, '{}', 100, 1, ?, 0, 0)`, dev, dev, dev, canon, at);
   }
   const n = await f.repay(env, NOW);
-  const paid = (await db.all("SELECT device FROM answers WHERE credited = 1 ORDER BY device")).map((r) => r.device);
+  const paid = (await db.all("SELECT device FROM record_candidate_answers WHERE credited = 1 ORDER BY device")).map((r) => r.device);
   check("the witnesses of a fact left unpaid are paid, the late answer and the disagreeing one not", n === 2 && paid.join() === "w1,w2"
-    && (await db.get("SELECT work FROM verifiers WHERE id = 'w1'")).work === 100, JSON.stringify({ n, paid }));
+    && (await db.get("SELECT work FROM entity_compute_devices WHERE id = 'w1'")).work === 100, JSON.stringify({ n, paid }));
   check("...and paid once", (await f.repay(env, NOW)) === 0);
 });
 
@@ -829,19 +829,19 @@ await runCase("fixed:already-paid", async () => {
   // THE OLDER FACT is settled and paid: o1's second device is no witness, and
   // never will be. THE NEWER ONE still owes both of its witnesses.
   for (const [id, fact] of [["covered", t(120)], ["owed", t(60)]]) {
-    await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+    await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
       VALUES (?, 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`, id, fact, fact, fact);
   }
   for (const [q, dev, owner, at, credited] of [["covered", "a1", "o1", t(130), 1], ["covered", "a2", "o2", t(125), 1],
     ["covered", "a3", "o1", t(124), 0], ["owed", "b1", "o3", t(70), 0], ["owed", "b2", "o4", t(65), 0]]) {
-    await db.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-01') ON CONFLICT DO NOTHING", dev);
-    await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+    await db.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-01') ON CONFLICT DO NOTHING", dev);
+    await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
       VALUES (?, 'e1', ?, ?, ?, 0, 'c', '{}', 100, 1, ?, ?, 0)`, q, dev, owner, dev, at, credited);
   }
   const n = await f.repay(env, NOW, 1);
   check("a sweep of one pays the fact still owed, behind one whose leftover answer is its owner's second, never paid",
-    n === 2 && Number((await db.get("SELECT credited FROM answers WHERE device = 'a3'")).credited) !== 1
-    && (await db.get("SELECT work FROM verifiers WHERE id = 'a3'")).work === 0, JSON.stringify({ n }));
+    n === 2 && Number((await db.get("SELECT credited FROM record_candidate_answers WHERE device = 'a3'")).credited) !== 1
+    && (await db.get("SELECT work FROM entity_compute_devices WHERE id = 'a3'")).work === 0, JSON.stringify({ n }));
 });
 
 console.log("\nan agreeing answer outside the witnesses is marked covered, and read no more");
@@ -849,21 +849,21 @@ await runCase("fixed:covered-answer", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const t = (m) => new Date(NOW - m * 60_000).toISOString();
-  await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+  await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
     VALUES ('twice', 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`, t(90), t(90), t(60));
   // c3 IS c1's OWNER AGAIN, after it: no witness while c1 is one.
   for (const [dev, owner, at] of [["c1", "o1", t(70)], ["c2", "o2", t(68)], ["c3", "o1", t(66)]]) {
-    await db.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-01')", dev);
-    await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+    await db.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-01')", dev);
+    await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
       VALUES ('twice', 'e1', ?, ?, ?, 0, 'c', '{}', 100, 1, ?, 0, 0)`, dev, owner, dev, at);
   }
   const n = await f.repay(env, NOW);
-  const state = Object.fromEntries((await db.all("SELECT device, credited FROM answers")).map((r) => [r.device, Number(r.credited)]));
+  const state = Object.fromEntries((await db.all("SELECT device, credited FROM record_candidate_answers")).map((r) => [r.device, Number(r.credited)]));
   check("the witnesses are paid (1) and the owner's second answer is covered (2)", n === 2 && state.c1 === 1 && state.c2 === 1 && state.c3 === 2,
     JSON.stringify({ n, state }));
   check("...and no sweep reads it again", (await f.repay(env, NOW)) === 0
-    && Number((await db.get("SELECT credited FROM answers WHERE device = 'c3'")).credited) === 2
-    && (await db.get("SELECT work FROM verifiers WHERE id = 'c3'")).work === 0);
+    && Number((await db.get("SELECT credited FROM record_candidate_answers WHERE device = 'c3'")).credited) === 2
+    && (await db.get("SELECT work FROM entity_compute_devices WHERE id = 'c3'")).work === 0);
 });
 
 console.log("\nthe repay reads the facts from its cursor on, an hour of them a call");
@@ -872,34 +872,34 @@ await runCase("fixed:repay-cursor", async () => {
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
   const t = (m) => new Date(NOW - m * 60_000).toISOString();
   const owe = async (id, m) => {
-    await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
+    await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, canon, fact_engine, fact_at)
       VALUES (?, 'simulate', '{}', 'fact', ?, ?, 'c', 'e1', ?)`, id, t(m + 30), t(m + 30), t(m));
     for (const dev of [`${id}-1`, `${id}-2`]) {
-      await db.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-01')", dev);
-      await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+      await db.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-01')", dev);
+      await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
         VALUES (?, 'e1', ?, ?, ?, 0, 'c', '{}', 100, 1, ?, 0, 0)`, id, dev, dev, dev, t(m + 5));
     }
   };
-  const paidOf = async (id) => Number((await db.get("SELECT count(*) AS n FROM answers WHERE question = ? AND credited = 1", id)).n);
+  const paidOf = async (id) => Number((await db.get("SELECT count(*) AS n FROM record_candidate_answers WHERE question = ? AND credited = 1", id)).n);
   // THE CURSOR STANDS FIVE HOURS BACK: one fact four and a half hours old, one
   // three hours old, one before the cursor.
-  await db.run("INSERT INTO factory_cursors (name, through) VALUES ('repay', ?)", t(300));
+  await db.run("INSERT INTO state_factory_progress (name, through) VALUES ('repay', ?)", t(300));
   await owe("first", 270); await owe("next", 180); await owe("behind", 330);
   check("a call reads an hour from its cursor: the fact in it paid, the one after not yet",
     (await f.repay(env, NOW)) === 2 && await paidOf("first") === 2 && await paidOf("next") === 0
-    && (await db.get("SELECT through FROM factory_cursors WHERE name = 'repay'")).through === t(240));
+    && (await db.get("SELECT through FROM state_factory_progress WHERE name = 'repay'")).through === t(240));
   check("...the next call the next hour, and nothing before the cursor ever",
     (await f.repay(env, NOW)) === 0 && (await f.repay(env, NOW)) === 2 && await paidOf("next") === 2 && await paidOf("behind") === 0);
   // A CREDIT THAT FAILS holds the cursor at its fact, and the next call pays it.
   await owe("flaky", 100);
-  await db.run("UPDATE factory_cursors SET through = ? WHERE name = 'repay'", t(110));
+  await db.run("UPDATE state_factory_progress SET through = ? WHERE name = 'repay'", t(110));
   const real = db.prepare.bind(db);
   let fail = true;
   const flaky = { ...env, LIBRARY: new Proxy(db, { get: (o, k) => k === "prepare"
-    ? (sql) => (fail && /UPDATE verifiers/.test(sql) ? { bind: () => ({ run: async () => { throw new Error("busy"); }, all: async () => { throw new Error("busy"); } }) } : real(sql))
+    ? (sql) => (fail && /UPDATE entity_compute_devices/.test(sql) ? { bind: () => ({ run: async () => { throw new Error("busy"); }, all: async () => { throw new Error("busy"); } }) } : real(sql))
     : typeof o[k] === "function" ? o[k].bind(o) : o[k] }) };
   await f.repay(flaky, NOW).catch(() => 0);
-  const held = (await db.get("SELECT through FROM factory_cursors WHERE name = 'repay'")).through;
+  const held = (await db.get("SELECT through FROM state_factory_progress WHERE name = 'repay'")).through;
   fail = false;
   check("a credit that fails holds the cursor at its fact, and the next call pays it",
     held === t(100) && (await f.repay(env, NOW)) === 2 && await paidOf("flaky") === 2, JSON.stringify({ held, want: t(100) }));
@@ -909,17 +909,17 @@ console.log("\na fact is no older than its last witness");
 await runCase("fixed:last-witness", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
-  await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at) VALUES ('late', 'simulate', '{}', 'open', ?, ?)`,
+  await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at) VALUES ('late', 'simulate', '{}', 'open', ?, ?)`,
     new Date(NOW + 3_600_000).toISOString(), new Date(NOW - 60_000).toISOString());
   // THE SECOND ANSWER'S REQUEST STAMPED IT after the settler took its time.
   const later = new Date(NOW + 500).toISOString();
   for (const [dev, at] of [["l1", new Date(NOW - 30_000).toISOString()], ["l2", later]]) {
-    await db.run("INSERT INTO verifiers (id, seen) VALUES (?, '2026-10-01')", dev);
-    await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+    await db.run("INSERT INTO entity_compute_devices (id, seen) VALUES (?, '2026-10-01')", dev);
+    await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
       VALUES ('late', 'e1', ?, ?, ?, 0, 'c', '{}', 100, 1, ?, 0, 0)`, dev, dev, dev, at);
   }
   await f.settle(env, "late", "e1", NOW);
-  const q = await db.get("SELECT state, fact_at FROM questions WHERE id = 'late'");
+  const q = await db.get("SELECT state, fact_at FROM state_compute_work WHERE id = 'late'");
   check("a fact formed by an answer stamped after the pass's own time is dated no earlier than it",
     q.state === "fact" && q.fact_at >= later, JSON.stringify(q));
 });
@@ -928,11 +928,11 @@ console.log("\nwhat a refusal takes back goes to the official pool");
 await runCase("fixed:official-pool", async () => {
   const db = await testDb("library"), env = { LIBRARY: db };
   const f = factory({ verbs: VERBS, producers: PRODUCERS, random: () => 1 });
-  await db.run("INSERT INTO verifiers (id, work, seen) VALUES ('r-lied', 300, '2026-10-01T00:00:00.000Z')");
-  await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
+  await db.run("INSERT INTO entity_compute_devices (id, work, seen) VALUES ('r-lied', 300, '2026-10-01T00:00:00.000Z')");
+  await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, official, canon, result, work, compute_ms, at, credited, void)
     VALUES ('q', 'e1', 'r-lied', 'r-lied', '', 0, '{}', '{}', 300, 1, ?, 1, 0)`, new Date(NOW).toISOString());
   await f.refuse(env, "r-lied", NOW);
-  const pool = await db.all("SELECT source, SUM(work) AS w FROM points_pool GROUP BY source");
+  const pool = await db.all("SELECT source, SUM(work) AS w FROM record_unowned_credit_transfers GROUP BY source");
   check("the credit a refusal takes back is the pool's, not lost", pool.length === 1 && pool[0].source === "refused" && pool[0].w === 300,
     JSON.stringify(pool));
 });
@@ -946,7 +946,7 @@ await runCase("fixed:demand-all-books", async () => {
     for (const a of asks) ids.push(await questionId(a.verb, a.request));
     for (const [k, { producer, ref, request, due_in_ms, payload = {}, lanes = null, waits = false }] of asks.entries()) {
       const due = iso(now + due_in_ms);
-      await db.run(`INSERT INTO questions AS t (id, verb, request, state, due_at, opened_at, lanes, waits, producer) VALUES (?, ?, ?, 'open', ?, ?, ?, ?, ?)
+      await db.run(`INSERT INTO state_compute_work AS t (id, verb, request, state, due_at, opened_at, lanes, waits, producer) VALUES (?, ?, ?, 'open', ?, ?, ?, ?, ?)
           ON CONFLICT (id) DO UPDATE SET
             state = CASE WHEN t.state = 'withdrawn' THEN 'open' ELSE t.state END,
             opened_at = CASE WHEN t.state = 'withdrawn' THEN excluded.opened_at ELSE t.opened_at END,
@@ -955,30 +955,30 @@ await runCase("fixed:demand-all-books", async () => {
             waits = CASE WHEN t.state = 'withdrawn' THEN excluded.waits ELSE GREATEST(t.waits, excluded.waits) END,
             lanes = COALESCE(t.lanes, excluded.lanes)`,
         ids[k], asks[k].verb, canon(request), due, at, lanes ? JSON.stringify(lanes) : null, waits ? 1 : 0, producer);
-      await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, 'live', ?, ?, ?, ?)
+      await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, 'live', ?, ?, ?, ?)
           ON CONFLICT (producer, ref) DO UPDATE SET question = excluded.question, state = 'live', asked_at = excluded.asked_at,
             due_at = excluded.due_at, waits = excluded.waits, payload = excluded.payload, served_at = NULL`,
         producer, ref, ids[k], at, due, waits ? 1 : 0, JSON.stringify(payload));
     }
-    const facts = await db.all(`SELECT q.*, EXISTS (SELECT 1 FROM answers a WHERE a.question = q.id AND a.engine = ?) AS served_answered
-        FROM questions q WHERE q.id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
+    const facts = await db.all(`SELECT q.*, EXISTS (SELECT 1 FROM record_candidate_answers a WHERE a.question = q.id AND a.engine = ?) AS served_answered
+        FROM state_compute_work q WHERE q.id IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
         AND q.state IN ('fact', 'spot', 'disputed', 'nondeterministic')`, engine, JSON.stringify([...new Set(ids)]));
     for (const q of facts) {
       const settled = q.state === "fact" || q.state === "spot";
       if (settled ? q.fact_engine !== engine : !q.served_answered) {
-        await db.run(`UPDATE questions SET state = 'open', opened_at = ?, lease = NULL, lease_until = NULL, leased_to = NULL,
-            waits = (SELECT COALESCE(max(l.waits), 0) FROM demands l WHERE l.question = questions.id AND l.state = 'live') WHERE id = ? AND state = ?`, at, q.id, q.state);
+        await db.run(`UPDATE state_compute_work SET state = 'open', opened_at = ?, lease = NULL, lease_until = NULL, leased_to = NULL,
+            waits = (SELECT COALESCE(max(l.waits), 0) FROM relation_task_consumers l WHERE l.question = state_compute_work.id AND l.state = 'live') WHERE id = ? AND state = ?`, at, q.id, q.state);
         continue;
       }
       if (!settled) continue;
-      const a = await db.get("SELECT * FROM answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1", q.id, q.canon);
+      const a = await db.get("SELECT * FROM record_candidate_answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1", q.id, q.canon);
       const fact = { question: q.id, verb: q.verb, request: JSON.parse(q.request), canon: q.canon, result: a ? JSON.parse(a.result) : null,
         work: a ? a.work : 0, engine: a ? a.engine : null, official: !!(a && a.official) };
-      for (const d of await db.all("SELECT * FROM demands WHERE question = ? AND state = 'live'", q.id)) {
+      for (const d of await db.all("SELECT * FROM relation_task_consumers WHERE question = ? AND state = 'live'", q.id)) {
         const p = producers[d.producer], told = { ...d, payload: JSON.parse(d.payload) };
         if (p.on_fact_writes) for (const s of p.on_fact_writes(env, told, fact)) await s.run();
         else await p.on_fact(env, told, fact);
-        await db.run("UPDATE demands SET state = 'served', served_at = ? WHERE producer = ? AND ref = ?", iso(now), d.producer, d.ref);
+        await db.run("UPDATE relation_task_consumers SET state = 'served', served_at = ? WHERE producer = ? AND ref = ?", iso(now), d.producer, d.ref);
       }
     }
     return ids;
@@ -989,18 +989,18 @@ await runCase("fixed:demand-all-books", async () => {
       if (r() < 0.4) continue;
       const id = await questionId("simulate", { n: k }), state = pick(r, ["open", "fact", "fact", "spot", "withdrawn", "disputed"]);
       const lanes = r() < 0.3 ? JSON.stringify([{ lanes: 4, after_ms: 0 }]) : null;
-      await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lanes, waits, canon, fact_engine, withdrawn_at)
+      await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, lanes, waits, canon, fact_engine, withdrawn_at)
           VALUES (?, 'simulate', ?, ?, ?, ?, ?, ?, ?, ?, ?)`, id, canon({ n: k }), state, iso(NOW + Math.floor((r() - 0.5) * 7_200_000)),
         iso(NOW - 600_000), lanes, r() < 0.2 ? 1 : 0, ["fact", "spot"].includes(state) ? "c" : null,
         ["fact", "spot"].includes(state) ? pick(r, ["e1", "e0", null]) : null, state === "withdrawn" ? iso(NOW - 600_000) : null);
       if (["fact", "spot"].includes(state)) {
         for (const official of r() < 0.5 ? [0] : [0, 1]) {
-          await db.run(`INSERT INTO answers (question, engine, device, owner, net, official, canon, result, work, at)
+          await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, official, canon, result, work, at)
               VALUES (?, 'e1', ?, 'o', '', ?, 'c', ?, 5, ?)`, id, `d${official}`, official, JSON.stringify({ score: k, official }), iso(NOW));
         }
       }
       if (r() < 0.5) {
-        await db.run("INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, ?, ?, ?, 0, '{}') ON CONFLICT DO NOTHING",
+        await db.run("INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES (?, ?, ?, ?, ?, ?, 0, '{}') ON CONFLICT DO NOTHING",
           pick(r, ["p", "w"]), `r${k % 40}`, id, pick(r, ["live", "served", "withdrawn"]), iso(NOW - 600_000), iso(NOW + 3_600_000));
       }
     }
@@ -1010,7 +1010,7 @@ await runCase("fixed:demand-all-books", async () => {
     due_in_ms: Math.floor(r() * 86_400_000), waits: r() < 0.15, lanes: r() < 0.3 ? pick(r, [[{ lanes: 8, after_ms: 0 }], [{ lanes: 2, after_ms: 0 }]]) : null,
     payload: r() < 0.5 ? { k: Math.floor(r() * 9) } : undefined }));
   const state = async (db, said) => JSON.stringify([
-    await db.all("SELECT * FROM questions ORDER BY id"), await db.all("SELECT * FROM demands ORDER BY producer, ref"),
+    await db.all("SELECT * FROM state_compute_work ORDER BY id"), await db.all("SELECT * FROM relation_task_consumers ORDER BY producer, ref"),
     await db.all("SELECT * FROM told_log ORDER BY ref, canon"), [...said].sort()]);
   let bad = 0, first = "";
   const trials = Math.max(20, Math.floor(TRIALS / 10));
@@ -1038,14 +1038,14 @@ await runCase("fixed:eligibility-plan", async () => {
   // Statistics know only the old engine; the new one's answers arrive after
   // ANALYZE, mostly on questions outside the small open field.
   const open = 32, cold = 2000;
-  await db.exec(`INSERT INTO questions (id, verb, request, state, due_at, opened_at)
+  await db.exec(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at)
     SELECT 'q'||i, 'simulate', '{}', CASE WHEN i <= ${open} THEN 'open' ELSE 'fact' END,
       '2026-10-29', '2026-10-28' FROM generate_series(1, ${open + cold}) i;
-    INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at)
+    INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)
     SELECT 'q'||i, 'old', 'other', 'other', '', 'c', '{}', 1, '2026-10-28' FROM generate_series(1, ${open + cold}) i;
     ANALYZE questions;
     ANALYZE answers;
-    INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at)
+    INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)
     SELECT 'q'||i, 'fresh', 'other', 'other', '', 'c', '{}', 1, '2026-10-29' FROM generate_series(${open + 1}, ${open + cold}) i;`);
   const row = await db.get(`EXPLAIN (ANALYZE, FORMAT JSON, TIMING OFF)
     SELECT id FROM factory_eligible('2026-10-29T12:00:00.000Z', 0, 16, 'fresh', '["me"]', 'me', '', NULL, 7200, 120)
@@ -1065,17 +1065,17 @@ await runCase("fixed:eligibility-plan", async () => {
 console.log("\nofficial claims keep bounded index plans when prepared statements are reused");
 await runCase("fixed:official-claim-plans", async () => {
   const db = await testDb("library"), f = factory({ verbs: VERBS, producers: PRODUCERS });
-  await db.exec(`INSERT INTO questions (id, verb, request, state, due_at, opened_at)
+  await db.exec(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at)
     SELECT 'claim-'||i, 'simulate', '{}', CASE WHEN i <= 1000 THEN 'open'
       WHEN i <= 1003 THEN (ARRAY['disputed','spot','nondeterministic'])[i-1000] ELSE 'fact' END,
       '2026-10-09', '2026-10-08' FROM generate_series(1, 20000) i;
-    INSERT INTO demands (producer, ref, question, state, asked_at, due_at)
-    SELECT 'p', id, id, 'live', opened_at, due_at FROM questions;
-    INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at, official)
-    SELECT id, 'old', 'other', 'other', '', 'c', '{}', 1, opened_at, 1 FROM questions;
+    INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at)
+    SELECT 'p', id, id, 'live', opened_at, due_at FROM state_compute_work;
+    INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at, official)
+    SELECT id, 'old', 'other', 'other', '', 'c', '{}', 1, opened_at, 1 FROM state_compute_work;
     ANALYZE questions; ANALYZE demands; ANALYZE answers;
-    INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at, official)
-    SELECT id, 'fresh', 'official', 'official', '', 'c', '{}', 1, opened_at, 1 FROM questions WHERE state = 'fact';`);
+    INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at, official)
+    SELECT id, 'fresh', 'official', 'official', '', 'c', '{}', 1, opened_at, 1 FROM state_compute_work WHERE state = 'fact';`);
   let sql, args;
   const capture = { prepare: (text) => ({ bind: (...values) => {
     sql = placeholders(text); args = values;
@@ -1104,7 +1104,7 @@ await runCase("fixed:official-claim-plans", async () => {
     }
     await db.exec("DEALLOCATE official_claim; RESET plan_cache_mode");
   }
-  await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at)
+  await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at)
     VALUES ('sparse', 'only-sparse', 'claim-1000', 'live', '2026-10-08', '2026-10-09')`);
   await db.exec("ANALYZE demands");
   for (const name of ["sparse", "absent"]) {
@@ -1136,9 +1136,9 @@ await runCase("fixed:producer-literals", async () => {
   const names = ["apostrophe'producer", "back\\slash", "both'\\\n雪"];
   const f = factory({ verbs: VERBS, producers: { ...PRODUCERS, ...Object.fromEntries(names.map(name => [name, PRODUCERS.p])) } });
   for (const [i, name] of ["p", ...names].entries()) {
-    await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at)
+    await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at)
       VALUES (?, 'simulate', '{}', 'open', ?, ?)`, `literal-${i}`, iso(NOW - 1000), iso(NOW - 2000));
-    await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at)
+    await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at)
       VALUES (?, ?, ?, 'live', ?, ?)`, name, `literal-${i}`, `literal-${i}`, iso(NOW - 2000), iso(NOW - 1000));
   }
   for (const [i, name] of names.entries()) {
@@ -1148,7 +1148,7 @@ await runCase("fixed:producer-literals", async () => {
   const attack = "missing') OR TRUE --";
   check("SQL punctuation in an unknown producer cannot claim a healthy row",
     !(await f.claim(env, { device: "official" }, { states: ["open"], producers: [attack], max: 1 }, "e1", NOW)).length
-    && !(await db.get("SELECT lease FROM questions WHERE id = 'literal-0'")).lease);
+    && !(await db.get("SELECT lease FROM state_compute_work WHERE id = 'literal-0'")).lease);
   const mixed = await f.claim(env, { device: "official" }, { states: ["open"], producers: ["p", attack], max: 1 }, "e1", NOW);
   check("a known producer mixed with SQL punctuation still claims that producer", mixed.length === 1 && mixed[0].question === "literal-0");
   const noSql = { LIBRARY: { prepare: () => { throw new Error("invalid producer reached SQL"); } } };
@@ -1169,11 +1169,11 @@ await runCase("fixed:official-claim-books", async () => {
         producer: pick(r, ["p", "q"]), waits: pick(r, [0, 1]), due: NOW + pick(r, [-1000, 1000]),
         held: r() < 0.25, answered: r() < 0.25, old: r() < 0.5 };
       rows.push(q);
-      await db.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, waits, lease_until)
+      await db.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, waits, lease_until)
         VALUES (?, 'simulate', '{}', ?, ?, ?, ?, ?)`, q.id, q.state, iso(q.due), iso(NOW - 2000), q.waits, q.held ? iso(NOW + 1000) : null);
-      await db.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at)
+      await db.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at)
         VALUES (?, ?, ?, 'live', ?, ?)`, q.producer, q.id, q.id, iso(NOW - 2000), iso(q.due));
-      if (q.answered) await db.run(`INSERT INTO answers (question, engine, device, owner, net, canon, result, work, at)
+      if (q.answered) await db.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, net, canon, result, work, at)
         VALUES (?, ?, 'official', 'official', '', 'c', '{}', 1, ?)`, q.id, q.old ? "e0" : "e1", iso(NOW));
     }
     const states = pick(r, [["open"], ["disputed", "spot", "nondeterministic"], ["open", "spot", "disputed"], [], ["fact", "spot", "spot", "'invalid"]]);
@@ -1203,10 +1203,10 @@ await runCase("fixed:lease-locks", async () => {
   const modules = readdirSync(new URL("../worker/", import.meta.url)).filter(f => /^task_.*\.js$/.test(f));
   for (const f of ["tasks.js", ...modules, "factory.js", "pg/sync.sql"]) {
     const src = readFileSync(new URL(`../worker/${f}`, import.meta.url), "utf8");
-    for (const m of src.matchAll(/UPDATE questions SET (?:state = 'withdrawn', )?lease = NULL[\s\S]{0,160}?WHERE([\s\S]{0,240})/g)) {
+    for (const m of src.matchAll(/UPDATE state_compute_work SET (?:state = 'withdrawn', )?lease = NULL[\s\S]{0,160}?WHERE([\s\S]{0,240})/g)) {
       const where = m[1];
       // IN SQL, `inIdOrder` written out: the rows picked in id order and locked first.
-      const ordered = /^\s*id IN \(SELECT id FROM questions WHERE [^;]*?ORDER BY id FOR UPDATE\)/.test(where);
+      const ordered = /^\s*id IN \(SELECT id FROM state_compute_work WHERE [^;]*?ORDER BY id FOR UPDATE\)/.test(where);
       if (!/inIdOrder\(/.test(where) && !ordered && !/^\s*id = (\?|\$1\b)/.test(where)) loose.push(`${f}: …${m[0].slice(0, 90).replace(/\s+/g, " ")}`);
     }
   }

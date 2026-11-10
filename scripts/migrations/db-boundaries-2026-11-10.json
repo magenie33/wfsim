@@ -1,0 +1,494 @@
+{
+  "version": 1,
+  "id": "db-boundaries-2026-11-10",
+  "status": "candidate_requires_full_rehearsal",
+  "classes": [
+    "entity",
+    "record",
+    "relation",
+    "state"
+  ],
+  "databases": [
+    {
+      "name": "wfsim",
+      "tables": [
+        {
+          "source": "adjustments",
+          "target": "record_compute_credit_adjustments",
+          "mode": "rename"
+        },
+        {
+          "source": "answers",
+          "target": "record_candidate_answers",
+          "mode": "rename_with_task_evidence"
+        },
+        {
+          "source": "answers_dup_backup_20261014",
+          "target": "record_archived_duplicate_answers",
+          "mode": "rename_operator_record"
+        },
+        {
+          "source": "appraisal_results",
+          "target": "record_appraisal_candidates",
+          "mode": "rename"
+        },
+        {
+          "source": "appraisals",
+          "target": "entity_appraisal_requests",
+          "mode": "rename"
+        },
+        {
+          "source": "batches",
+          "target": "entity_compute_batches",
+          "mode": "rename"
+        },
+        {
+          "source": "board_reviews",
+          "target": "entity_measurement_reviews",
+          "mode": "rename"
+        },
+        {
+          "source": "bot_inbox",
+          "target": "record_bot_messages",
+          "mode": "rename"
+        },
+        {
+          "source": "builds",
+          "target": "entity_weapon_builds",
+          "mode": "rename"
+        },
+        {
+          "source": "calculation_reports",
+          "target": "entity_calculation_reports",
+          "mode": "reference_accepted_report"
+        },
+        {
+          "source": "computation_records",
+          "target": "state_public_computation_summaries",
+          "mode": "rename"
+        },
+        {
+          "source": "computation_witnesses",
+          "target": "relation_computation_witnesses",
+          "mode": "rename"
+        },
+        {
+          "source": "demands",
+          "target": "relation_task_consumers",
+          "mode": "rename"
+        },
+        {
+          "source": "donations",
+          "target": "record_donation_payments",
+          "mode": "rename"
+        },
+        {
+          "source": "donors",
+          "target": "entity_donors",
+          "mode": "rename"
+        },
+        {
+          "source": "engine_refusals",
+          "target": "record_engine_refusals",
+          "mode": "rename"
+        },
+        {
+          "source": "equipment_builds",
+          "target": "entity_equipment_builds",
+          "mode": "rename"
+        },
+        {
+          "source": "equipment_inbox",
+          "target": "record_equipment_submissions",
+          "mode": "rename"
+        },
+        {
+          "source": "factory_cursors",
+          "target": "state_factory_progress",
+          "mode": "rename"
+        },
+        {
+          "source": "factory_dial_log",
+          "target": "record_factory_parameter_changes",
+          "mode": "rename"
+        },
+        {
+          "source": "factory_dials",
+          "target": "state_factory_parameters",
+          "mode": "rename"
+        },
+        {
+          "source": "factory_events",
+          "target": "record_factory_incidents",
+          "mode": "rename"
+        },
+        {
+          "source": "factory_findings",
+          "target": "state_factory_findings",
+          "mode": "rename"
+        },
+        {
+          "source": "factory_snapshot",
+          "target": "state_factory_snapshot",
+          "mode": "rename"
+        },
+        {
+          "source": "fair_shares",
+          "target": "state_compute_fair_shares",
+          "mode": "rename"
+        },
+        {
+          "source": "family_transfers",
+          "target": "entity_family_search_requests",
+          "mode": "rename"
+        },
+        {
+          "source": "fissures",
+          "target": "record_world_fissures",
+          "mode": "rename"
+        },
+        {
+          "source": "inbox",
+          "target": "record_build_submissions",
+          "mode": "rename"
+        },
+        {
+          "source": "inventory_dirty",
+          "target": "state_compute_inventory_invalidations",
+          "mode": "rename"
+        },
+        {
+          "source": "inventory_epochs",
+          "target": "record_inventory_captures",
+          "mode": "rename"
+        },
+        {
+          "source": "inventory_state",
+          "target": "state_compute_inventory_generation",
+          "mode": "rename"
+        },
+        {
+          "source": "led_questions",
+          "target": "state_task_answer_heads",
+          "mode": "rename"
+        },
+        {
+          "source": "merit_holds",
+          "target": "state_compute_priority_holds",
+          "mode": "rename"
+        },
+        {
+          "source": "orders",
+          "target": "entity_compute_orders",
+          "mode": "rename"
+        },
+        {
+          "source": "points_pool",
+          "target": "record_unowned_credit_transfers",
+          "mode": "rename"
+        },
+        {
+          "source": "producer_use",
+          "target": "state_producer_compute_usage",
+          "mode": "rename"
+        },
+        {
+          "source": "questions",
+          "target": "state_compute_scheduling",
+          "mode": "split_compute_input_task_result"
+        },
+        {
+          "source": "queue",
+          "target": "state_board_pending_work",
+          "mode": "rename"
+        },
+        {
+          "source": "rates",
+          "target": "state_exchange_rate_quotes",
+          "mode": "rename"
+        },
+        {
+          "source": "refusal_withdrawals",
+          "target": "record_refusal_withdrawals",
+          "mode": "rename"
+        },
+        {
+          "source": "score_witnesses",
+          "target": "relation_measurement_witnesses",
+          "mode": "rename"
+        },
+        {
+          "source": "scores",
+          "target": "state_board_measurement_selection",
+          "mode": "rename"
+        },
+        {
+          "source": "settle_queue",
+          "target": "state_pending_verifications",
+          "mode": "rename"
+        },
+        {
+          "source": "shares",
+          "target": "entity_short_shares",
+          "mode": "rename"
+        },
+        {
+          "source": "usage_days",
+          "target": "record_daily_usage_summaries",
+          "mode": "rename"
+        },
+        {
+          "source": "usage_points",
+          "target": "record_usage_events",
+          "mode": "rename"
+        },
+        {
+          "source": "user_calculation_cancellations",
+          "target": "state_request_cancellation_tombstones",
+          "mode": "rename"
+        },
+        {
+          "source": "user_calculations",
+          "target": "entity_user_calculation_requests",
+          "mode": "rename"
+        },
+        {
+          "source": "verifier_asks",
+          "target": "record_hourly_work_requests",
+          "mode": "rename"
+        },
+        {
+          "source": "verifier_hours",
+          "target": "record_hourly_compute_totals",
+          "mode": "rename"
+        },
+        {
+          "source": "verifiers",
+          "target": "entity_compute_devices",
+          "mode": "rename"
+        },
+        {
+          "source": "watchdog_said",
+          "target": "record_monitor_findings",
+          "mode": "rename"
+        },
+        {
+          "source": "watchdog_told",
+          "target": "state_monitor_notice_delivery",
+          "mode": "rename_operator_record"
+        }
+      ]
+    },
+    {
+      "name": "wfsim_accounts",
+      "tables": [
+        {
+          "source": "account_titles",
+          "target": "relation_account_titles",
+          "mode": "rename"
+        },
+        {
+          "source": "accounts",
+          "target": "entity_accounts",
+          "mode": "rename"
+        },
+        {
+          "source": "agent_keys",
+          "target": "entity_agent_keys",
+          "mode": "rename"
+        },
+        {
+          "source": "billing_attempts",
+          "target": "record_checkout_attempts",
+          "mode": "rename"
+        },
+        {
+          "source": "billing_card_refunds",
+          "target": "state_payment_refund_cooldowns",
+          "mode": "rename"
+        },
+        {
+          "source": "billing_codes",
+          "target": "entity_redemption_codes",
+          "mode": "rename"
+        },
+        {
+          "source": "billing_customers",
+          "target": "relation_account_payment_customers",
+          "mode": "rename"
+        },
+        {
+          "source": "billing_endings",
+          "target": "state_payment_refund_jobs",
+          "mode": "rename"
+        },
+        {
+          "source": "billing_events",
+          "target": "record_payment_event_receipts",
+          "mode": "rename"
+        },
+        {
+          "source": "billing_grants",
+          "target": "relation_account_offer_grants",
+          "mode": "rename"
+        },
+        {
+          "source": "billing_orders",
+          "target": "entity_payment_orders",
+          "mode": "rename"
+        },
+        {
+          "source": "billing_periods",
+          "target": "state_external_payment_periods",
+          "mode": "rename"
+        },
+        {
+          "source": "billing_subscriptions",
+          "target": "state_external_subscriptions",
+          "mode": "rename"
+        },
+        {
+          "source": "billing_usage",
+          "target": "record_meter_consumption",
+          "mode": "rename"
+        },
+        {
+          "source": "contribution_choice",
+          "target": "state_account_public_attribution",
+          "mode": "rename"
+        },
+        {
+          "source": "device_links",
+          "target": "state_device_claim_challenges",
+          "mode": "rename"
+        },
+        {
+          "source": "device_spans",
+          "target": "record_compute_device_ownership_intervals",
+          "mode": "rename"
+        },
+        {
+          "source": "devices",
+          "target": "relation_account_compute_devices",
+          "mode": "rename"
+        },
+        {
+          "source": "discord_grants",
+          "target": "state_discord_role_sync",
+          "mode": "rename"
+        },
+        {
+          "source": "display_name_holds",
+          "target": "state_account_name_holds",
+          "mode": "rename"
+        },
+        {
+          "source": "email_codes",
+          "target": "state_email_verification_challenges",
+          "mode": "rename"
+        },
+        {
+          "source": "feedback",
+          "target": "entity_feedback",
+          "mode": "rename"
+        },
+        {
+          "source": "identities",
+          "target": "relation_account_login_identities",
+          "mode": "rename"
+        },
+        {
+          "source": "login_failures",
+          "target": "state_login_rate_limits",
+          "mode": "rename"
+        },
+        {
+          "source": "merit",
+          "target": "state_account_priority_credit",
+          "mode": "rename"
+        },
+        {
+          "source": "merit_codes",
+          "target": "relation_account_priority_codes",
+          "mode": "rename"
+        },
+        {
+          "source": "merit_ledger",
+          "target": "record_priority_credit_entries",
+          "mode": "rename"
+        },
+        {
+          "source": "notice_marks",
+          "target": "state_account_notice_reads",
+          "mode": "rename"
+        },
+        {
+          "source": "notices",
+          "target": "entity_notices",
+          "mode": "rename"
+        },
+        {
+          "source": "patron_wall",
+          "target": "state_supporter_visibility",
+          "mode": "rename"
+        },
+        {
+          "source": "recommendation_targets",
+          "target": "state_recommendation_target_snapshots",
+          "mode": "rename"
+        },
+        {
+          "source": "recommendations",
+          "target": "record_recommendation_votes",
+          "mode": "rename"
+        },
+        {
+          "source": "sessions",
+          "target": "state_login_sessions",
+          "mode": "rename"
+        },
+        {
+          "source": "share_signatures",
+          "target": "entity_share_signatures",
+          "mode": "rename"
+        },
+        {
+          "source": "sync_devices",
+          "target": "entity_sync_clients",
+          "mode": "rename"
+        },
+        {
+          "source": "sync_entries",
+          "target": "entity_user_documents",
+          "mode": "rename"
+        },
+        {
+          "source": "username_holds",
+          "target": "state_username_reservations",
+          "mode": "rename"
+        }
+      ]
+    }
+  ],
+  "compute_authorities": {
+    "input": "entity_compute_specs",
+    "task_round": "entity_compute_tasks",
+    "accepted_output": "entity_compute_results",
+    "selection_history": "record_compute_result_selections",
+    "current_processing": "state_compute_scheduling",
+    "current_work_view": "state_compute_work",
+    "candidate_evidence": "relation_task_answer_evidence",
+    "typed_report": "entity_calculation_reports",
+    "current_report": "state_calculation_report_selection",
+    "report_access": "relation_calculation_report_access"
+  },
+  "legacy_runtime_aliases": false,
+  "preserve": [
+    "canonical build and computation ids",
+    "protocols 6, 7 and 8",
+    "original measurement and credit clocks",
+    "independent witness policy",
+    "account and payment identity",
+    "existing client identities and pending results"
+  ]
+}

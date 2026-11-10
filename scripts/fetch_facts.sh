@@ -162,7 +162,7 @@ NULL_PAGE
 
   cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table scores"}]}'
+printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table state_board_measurement_selection"}]}'
 exit 1
 DEAD
   chmod +x "$DIR/bin/db"

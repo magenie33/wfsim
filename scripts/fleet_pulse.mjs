@@ -14,16 +14,16 @@ const NOW = `(now() at time zone 'utc')`;
 const AGO = (span) => `to_char(${NOW} - interval '${span}', 'YYYY-MM-DD"T"HH24:MI:SS')`;
 export const PULSE = {
   facts_per_5_min: `SELECT to_char(date_trunc('hour', fact_at::timestamptz) + floor(extract(minute FROM fact_at::timestamptz) / 5) * interval '5 min', 'HH24:MI') AS at,
-      count(*) AS facts FROM questions WHERE fact_at >= ${AGO("2 hours")} GROUP BY 1 ORDER BY 1`,
+      count(*) AS facts FROM state_compute_work WHERE fact_at >= ${AGO("2 hours")} GROUP BY 1 ORDER BY 1`,
   waited_by_hour: `SELECT to_char(date_trunc('hour', d.asked_at::timestamptz), 'HH24:MI') AS hour, count(*) AS asked, count(q.fact_at) AS landed,
       round((percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM (q.fact_at::timestamptz - d.asked_at::timestamptz)) / 60))::numeric, 1) AS p50_min,
       round((percentile_cont(0.9) WITHIN GROUP (ORDER BY extract(epoch FROM (q.fact_at::timestamptz - d.asked_at::timestamptz)) / 60))::numeric, 1) AS p90_min
-    FROM demands d JOIN questions q ON q.id = d.question
+    FROM relation_task_consumers d JOIN state_compute_work q ON q.id = d.question
     WHERE d.waits > 0 AND d.asked_at >= ${AGO("2 hours")} GROUP BY 1 ORDER BY 1`,
   waited_open: `SELECT count(*) AS open, min(opened_at) AS oldest,
       count(*) FILTER (WHERE opened_at < ${AGO("10 minutes")}) AS older_than_10_min
-    FROM questions WHERE state = 'open' AND waits > 0`,
-  fleet: `SELECT at, open, urgent, asking, computing FROM factory_snapshot`,
+    FROM state_compute_work WHERE state = 'open' AND waits > 0`,
+  fleet: `SELECT at, open, urgent, asking, computing FROM state_factory_snapshot`,
 };
 
 async function run(q) {

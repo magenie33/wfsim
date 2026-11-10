@@ -10,7 +10,7 @@ const reply = (body, status = 200) => json(body, status, { "cache-control": "no-
 const bounded = value => typeof value === "string" && value.length <= 200;
 const minute = at => typeof at === "string" ? at.slice(0, 16) : "";
 async function ownershipSpans(env, account) {
-  const { results } = await env.ACCOUNTS.prepare("SELECT verifier,from_hour,until_hour FROM device_spans WHERE account=?").bind(account).all();
+  const { results } = await env.ACCOUNTS.prepare("SELECT verifier,from_hour,until_hour FROM record_compute_device_ownership_intervals WHERE account=?").bind(account).all();
   return JSON.stringify(results);
 }
 const OWNED_WITNESS_SQL = `EXISTS (SELECT 1 FROM jsonb_to_recordset((?1::text)::jsonb) o(verifier text,from_hour text,until_hour text)
@@ -29,7 +29,7 @@ async function namesForRows(env, rows, table, key) {
 export async function computationNames(env, rows) {
   if (!env.LIBRARY || !rows.length) return [];
   const { results } = await env.LIBRARY.prepare(`SELECT s.identity,s.ruler,s.mode,s.score,s.measured_by,s.finished_at
-    FROM scores s JOIN jsonb_to_recordset((?::text)::jsonb) x(identity text,ruler text,mode text)
+    FROM state_board_measurement_selection s JOIN jsonb_to_recordset((?::text)::jsonb) x(identity text,ruler text,mode text)
       ON x.identity=s.identity AND x.ruler=s.ruler AND x.mode=s.mode`).bind(JSON.stringify(rows)).all();
   const current = results.filter(s => rows.some(row => row.identity === s.identity && row.ruler === s.ruler && row.mode === s.mode
     && minute(row.measured_at) === minute(s.finished_at) && row.measured_by === s.measured_by.replace(/^verified:/, "")
@@ -56,7 +56,7 @@ export async function contributorProfilesRoute(request, env, path) {
   }
   if (request.method !== "GET") return no("method", 405);
   if (record) {
-    const row = await env.LIBRARY.prepare("SELECT * FROM computation_records WHERE question=? AND expires_at>?").bind(record[1], iso(Date.now())).first();
+    const row = await env.LIBRARY.prepare("SELECT * FROM state_public_computation_summaries WHERE question=? AND expires_at>?").bind(record[1], iso(Date.now())).first();
     if (!row) return no("unavailable", 410);
     return reply({ ok: true, record: (await namesForRows(env, [row], "computation_witnesses", "question"))[0] });
   }
@@ -83,8 +83,8 @@ export async function contributorProfilesRoute(request, env, path) {
   if (kind === "board") {
     const cursor = before || ["9999", "~", "~", "~"];
     ({ results: rows } = await env.LIBRARY.prepare(`SELECT DISTINCT s.identity,s.ruler,s.mode,s.score,s.metric,s.finished_at,s.measured_by,b.weapon,b.record
-      FROM score_witnesses w JOIN scores s ON s.identity=w.identity AND s.ruler=w.ruler AND s.mode=w.mode AND s.finished_at=w.measured_at
-      JOIN builds b ON b.id=s.identity WHERE ${OWNED_WITNESS_SQL}
+      FROM relation_measurement_witnesses w JOIN state_board_measurement_selection s ON s.identity=w.identity AND s.ruler=w.ruler AND s.mode=w.mode AND s.finished_at=w.measured_at
+      JOIN entity_weapon_builds b ON b.id=s.identity WHERE ${OWNED_WITNESS_SQL}
       AND (?2::text='' OR b.weapon=?2::text) AND (s.finished_at,s.identity,s.ruler,s.mode)<(?3::text,?4::text,?5::text,?6::text)
       AND NOT EXISTS (SELECT 1 FROM board_facts f WHERE f.identity=s.identity AND f.ruler=s.ruler AND f.mode=s.mode AND f.retired_at IS NOT NULL)
       ORDER BY s.finished_at DESC,s.identity DESC,s.ruler DESC,s.mode DESC LIMIT ?7::bigint`).bind(owners, weapon, ...cursor, size + 1).all());
@@ -93,7 +93,7 @@ export async function contributorProfilesRoute(request, env, path) {
     next = next ? [next.finished_at, next.identity, next.ruler, next.mode] : null;
   } else {
     const cursor = before || ["9999", "~"];
-    ({ results: rows } = await env.LIBRARY.prepare(`SELECT DISTINCT r.* FROM computation_records r JOIN computation_witnesses w ON w.question=r.question
+    ({ results: rows } = await env.LIBRARY.prepare(`SELECT DISTINCT r.* FROM state_public_computation_summaries r JOIN relation_computation_witnesses w ON w.question=r.question
       WHERE r.kind='optimization' AND ${OWNED_WITNESS_SQL} AND r.expires_at>?2::text
       AND (?3::text='' OR r.weapon=?3::text) AND (r.completed_at,r.question)<(?4::text,?5::text)
       ORDER BY r.completed_at DESC,r.question DESC LIMIT ?6::bigint`).bind(owners, iso(Date.now()), weapon, ...cursor, size + 1).all());

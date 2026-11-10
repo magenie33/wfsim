@@ -217,7 +217,7 @@ function record(b) {
 export async function submitRecord(env, build, initiator = null, origin = {}) {
   const built = record(build || {});
   if (built.err || !env.LIBRARY) return false;
-  await env.LIBRARY.prepare("INSERT INTO inbox (id, at, record, initiator, family_source) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING")
+  await env.LIBRARY.prepare("INSERT INTO record_build_submissions (id, at, record, initiator, family_source) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING")
     .bind(origin.id || crypto.randomUUID(), built.rec.at, JSON.stringify(built.rec), initiator, origin.family_source || null).run();
   return true;
 }
@@ -281,7 +281,7 @@ async function submit(request, env) {
     const columns = family ? "id, at, record, initiator, family_source" : "id, at, record, initiator";
     const values = records.map(() => family ? "(?, ?, ?, ?, ?)" : "(?, ?, ?, ?)").join(", ");
     await env.LIBRARY.prepare(
-      `INSERT INTO inbox (${columns}) VALUES ${values}`,
+      `INSERT INTO record_build_submissions (${columns}) VALUES ${values}`,
     ).bind(...records.flatMap(rec => [crypto.randomUUID(), rec.at, JSON.stringify(rec), initiator, ...(family ? [family] : [])])).run();
   } catch (e) {
     console.log("inbox write failed:", (e && e.message) || String(e));
@@ -311,7 +311,7 @@ async function pending(env) {
     // intake yet is in the library as far as the submitter is concerned, and
     // the sentence this feeds is "N have arrived since this board was scored".
     const r = await env.LIBRARY.prepare(
-      "SELECT (SELECT COUNT(*) FROM builds) + (SELECT COUNT(*) FROM inbox) AS n",
+      "SELECT (SELECT COUNT(*) FROM entity_weapon_builds) + (SELECT COUNT(*) FROM record_build_submissions) AS n",
     ).first();
     const n = Number(r && r.n);
     if (Number.isFinite(n)) count = n;
@@ -328,7 +328,7 @@ async function pending(env) {
     // BY RULER, because the page shows one at a time and the three differ
     // sixfold in what they have left.
     const q = await env.LIBRARY.prepare(
-      "SELECT ruler, COUNT(*) AS n FROM queue GROUP BY ruler",
+      "SELECT ruler, COUNT(*) AS n FROM state_board_pending_work GROUP BY ruler",
     ).all();
     owed = {};
     for (const row of (q && q.results) || []) owed[String(row.ruler)] = Number(row.n);
@@ -418,7 +418,7 @@ async function shareStore(request, env) {
   try {
     // THE DAY, and nothing finer — the same promise every table here makes.
     await env.LIBRARY.prepare(
-      "INSERT INTO shares (id, weapon, code, at, claim) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
+      "INSERT INTO entity_short_shares (id, weapon, code, at, claim) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING",
     ).bind(id, weapon, code, new Date().toISOString().slice(0, 10), claim && JSON.stringify(claim)).run();
   } catch (e) {
     console.log("share write failed:", (e && e.message) || String(e));
@@ -576,7 +576,7 @@ const SHARE_CARD_V = "1";
 
 /// The build a short id names, decoded, with its table and claim — or null.
 async function shareRowOf(id, env, url) {
-  const row = await env.LIBRARY.prepare("SELECT weapon, code, claim FROM shares WHERE id = ?").bind(id).first();
+  const row = await env.LIBRARY.prepare("SELECT weapon, code, claim FROM entity_short_shares WHERE id = ?").bind(id).first();
   const table = row && await shareNamesOf(env, url);
   if (!table) return null;
   const host = shareHostOf(table);
@@ -629,7 +629,7 @@ async function sharePreviewFor(id, env, url) {
 async function shareFetch(id, env) {
   if (!SHARE_ID.test(id)) return shareJson({ ok: false, error: "not a share id" }, 404);
   if (!env.LIBRARY) return shareJson({ ok: false, error: "not configured" }, 503);
-  const row = await env.LIBRARY.prepare("SELECT weapon, code, claim FROM shares WHERE id = ?")
+  const row = await env.LIBRARY.prepare("SELECT weapon, code, claim FROM entity_short_shares WHERE id = ?")
     .bind(id).first();
   if (!row) return shareJson({ ok: false, error: "no such link" }, 404);
   // FOREVER: the id is a hash of the row, so the row under it can never change.

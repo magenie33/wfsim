@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { testDb } from "./pg/test_db.mjs";
-import { userTasksRoute, reportCanon, purgeUserCalculations, USER_TASK_PRODUCERS, USER_TASK_KEEP_MS } from "../worker/user_tasks.js";
+import { userTasksRoute, calculationReport, reportCanon, purgeUserCalculations, USER_TASK_PRODUCERS, USER_TASK_KEEP_MS } from "../worker/user_tasks.js";
 import { COMPUTATION_KEEP_MS } from "../worker/computation_records.js";
 import { syncRoute } from "../worker/sync.js";
 import { setDial } from "../worker/dials.js";
@@ -24,7 +24,7 @@ const first = accepted();
 await check("acceptance is durable and idempotent", async () => {
   const a = await call("accept", first), b = await call("accept", first);
   assert.equal(a.ok, true); assert.equal(a.id, b.id); assert.equal(a.question, b.question);
-  assert.equal((await db.get("SELECT count(*) AS n FROM user_calculations")).n, 1);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_user_calculation_requests")).n, 1);
 });
 await check("an acceptance identity cannot change its inputs or owner", async () => {
   assert.equal((await call("accept", { ...first, request: { ...request, runs: 99 } })).status, 409);
@@ -78,6 +78,30 @@ await check("a later equal request adopts the existing complete report", async (
   assert.equal(state.computation.question, (await call('accept', next)).question);
   assert.equal(state.keep_until, (await call('status', { owner: another, ids: [shared.id] })).tasks[0].keep_until);
 });
+await check("removing task history preserves separately authorized reports", async () => {
+  const pending=accepted("simulation",{...request,unique:"report-history"}), got=await call("accept",pending);
+  await facts().answerOfficial(env,{device:"official:history",owner:"official:history",official:true},
+    {question:got.question,engine,work:100,result:{report}});
+  await db.run("DELETE FROM entity_user_calculation_requests WHERE id=?",pending.id);
+  await purgeUserCalculations(env);
+  const kept=(await call("status",{owner,ids:[pending.id],include_results:true})).tasks[0];
+  assert.equal(kept.state,"succeeded");
+  assert.deepEqual(kept.result,calculationReport(report));
+});
+await check("a corrected report selects the new output under the same engine",async()=>{
+  const pending=accepted("simulation",{...request,unique:"report-correction"}), got=await call("accept",pending);
+  await facts().answerOfficial(env,{device:"official:correction",owner:"official:correction",official:true},
+    {question:got.question,engine,work:100,result:{report}});
+  const old=await db.get("SELECT report_id,retained_from FROM state_current_calculation_reports WHERE question=? AND engine=?",got.question,engine);
+  await db.run("SELECT compute_open_task(?1::text,'correction',?2::text,?3::text,true)",got.question,engine,new Date().toISOString());
+  const corrected={...report,correction:"verified replacement"};
+  await facts().answerOfficial(env,{device:"official:corrected",owner:"official:corrected",official:true},
+    {question:got.question,engine,work:100,result:{report:corrected}});
+  const current=await db.get("SELECT report_id,retained_from FROM state_current_calculation_reports WHERE question=? AND engine=?",got.question,engine);
+  assert.notEqual(current.report_id,old.report_id);
+  assert.equal(current.retained_from,old.retained_from);
+  assert.deepEqual((await call("status",{owner,ids:[pending.id],include_results:true})).tasks[0].result,calculationReport(corrected));
+});
 await check('optimization requests expire after fourteen days and new windows cannot revive a report', async () => {
   const OriginalDate = Date;
   let clock = Math.ceil(OriginalDate.now() / COMPUTATION_KEEP_MS) * COMPUTATION_KEEP_MS + 1000;
@@ -89,7 +113,8 @@ await check('optimization requests expire after fourteen days and new windows ca
     await facts().answerOfficial(env, { device: 'official:retention', owner: 'official:retention', official: true },
       { question: got.question, engine, work: 100, result: { report } });
     clock += 5000;
-    await db.run('UPDATE questions SET fact_at=? WHERE id=?', new Date(clock).toISOString(), got.question);
+    await facts().answerOfficial(env, { device: 'official:retention', owner: 'official:retention', official: true },
+      { question: got.question, engine, work: 100, result: { report } });
     const next = accepted('optimization', pending.request), cached = await call('accept', next);
     assert.equal(cached.question, got.question);
     assert.equal(cached.keep_until, got.keep_until);
@@ -147,14 +172,19 @@ await check("engine refusals end an invalid request without publishing a number"
   assert.equal(status.state, 'failed'); assert.equal(status.result, undefined);
 });
 await check("expiry removes ownership and reports after retention", async () => {
-  await db.run("UPDATE user_calculations SET expires_at = '2000-01-01T00:00:00.000Z'");
+  await db.run("UPDATE entity_user_calculation_requests SET expires_at = '2000-01-01T00:00:00.000Z'");
+  await db.run("UPDATE relation_calculation_report_access SET expires_at = '2000-01-01T00:00:00.000Z'");
   await purgeUserCalculations(env); await purgeUserCalculations(env);
-  assert.equal((await db.get("SELECT count(*) AS n FROM user_calculations")).n, 0);
-  assert.equal((await db.get("SELECT count(*) AS n FROM calculation_reports")).n, 0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_user_calculation_requests")).n, 0);
+  assert.equal((await db.get("SELECT count(*) AS n FROM entity_calculation_reports")).n, 0);
 });
 await check("the deployed daemon role can deliver a completed calculation", async () => {
   const pending = accepted();
   const got = await call("accept", pending);
+  const task = await db.get("SELECT task_id FROM state_compute_work WHERE id=?",got.question);
+  const completedAt = new Date().toISOString();
+  await db.run("SELECT compute_accept_result(?1::text,?2::bigint,'open','fact',?3::text,?4::text,?5::text,0,'[]')",
+    got.question,task.task_id,reportCanon({report},100),engine,completedAt);
   const grants = readFileSync(new URL("../deploy/factoryd_grants.sql", import.meta.url), "utf8");
   const schema = (await db.get("SELECT current_schema() AS name")).name;
   await db.exec(`CREATE ROLE wfsim_factoryd; GRANT USAGE ON SCHEMA ${schema} TO wfsim_factoryd;`);
@@ -163,7 +193,7 @@ await check("the deployed daemon role can deliver a completed calculation", asyn
   try {
     const producer = USER_TASK_PRODUCERS.user_calculation;
     assert.equal(await producer.still_wanted(env, { ref: pending.id }), true);
-    await producer.on_fact(env, { ref: pending.id, question: got.question }, { engine, result: { report } });
+    await producer.on_fact(env, { ref: pending.id, question: got.question }, { engine, at:completedAt, result: { report } });
   } finally { await db.exec("RESET ROLE"); }
   assert.equal((await call("status", { owner, ids: [pending.id], include_results: true })).tasks[0].state, "succeeded");
 });

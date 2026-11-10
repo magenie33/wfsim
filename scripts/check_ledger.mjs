@@ -21,8 +21,8 @@ const env = { ACCOUNTS: accounts, LIBRARY: library, AUTH_SECRET: "x" };
 const POINT = 1e9;
 
 const person = async (id, username, display) => {
-  await accounts.run("INSERT INTO accounts (id, created_at, username, display_name) VALUES (?, '2026-01-01', ?, ?)", id, username, display);
-  await accounts.run("INSERT INTO sessions (token_hash, account, expires_at) VALUES (?, ?, '2999-01-01')", await sha256(`token-${id}`), id);
+  await accounts.run("INSERT INTO entity_accounts (id, created_at, username, display_name) VALUES (?, '2026-01-01', ?, ?)", id, username, display);
+  await accounts.run("INSERT INTO state_login_sessions (token_hash, account, expires_at) VALUES (?, ?, '2999-01-01')", await sha256(`token-${id}`), id);
   return `wfsim_session=token-${id}`;
 };
 const call = async (path, { cookie = "", body, method = body ? "POST" : "GET" } = {}) => {
@@ -34,21 +34,21 @@ const call = async (path, { cookie = "", body, method = body ? "POST" : "GET" } 
 
 const ann = await person("acct-ann", "annhandle", "Ann Example"), bob = await person("acct-bob", "bobhandle", "Bob Example");
 const D = "d".repeat(24), E = "e".repeat(24);
-for (const v of [D, E]) await library.run("INSERT INTO verifiers (id, seen, work) VALUES (?, '2026-01-01', 0)", v);
-const hour = (v, h, pts, tasks) => library.run("INSERT INTO verifier_hours (verifier, hour, work, tasks) VALUES (?, ?, ?, ?)", v, h, pts * POINT, tasks);
+for (const v of [D, E]) await library.run("INSERT INTO entity_compute_devices (id, seen, work) VALUES (?, '2026-01-01', 0)", v);
+const hour = (v, h, pts, tasks) => library.run("INSERT INTO record_hourly_compute_totals (verifier, hour, work, tasks) VALUES (?, ?, ?, ?)", v, h, pts * POINT, tasks);
 // D: Ann held it from its first hour until the 5th, Bob from then on, and Bob lists it now.
 await hour(D, "2026-10-01T10", 4, 2); await hour(D, "2026-10-04T10", 6, 3); await hour(D, "2026-10-06T10", 10, 5);
-await accounts.run("INSERT INTO device_spans (verifier, account, from_hour, until_hour) VALUES (?, 'acct-ann', '', '2026-10-05T00')", D);
-await accounts.run("INSERT INTO device_spans (verifier, account, from_hour, until_hour) VALUES (?, 'acct-bob', '2026-10-05T00', NULL)", D);
-await accounts.run("INSERT INTO devices (verifier, account, claimed_at, label) VALUES (?, 'acct-bob', '2026-10-05', 'Bob PC')", D);
+await accounts.run("INSERT INTO record_compute_device_ownership_intervals (verifier, account, from_hour, until_hour) VALUES (?, 'acct-ann', '', '2026-10-05T00')", D);
+await accounts.run("INSERT INTO record_compute_device_ownership_intervals (verifier, account, from_hour, until_hour) VALUES (?, 'acct-bob', '2026-10-05T00', NULL)", D);
+await accounts.run("INSERT INTO relation_account_compute_devices (verifier, account, claimed_at, label) VALUES (?, 'acct-bob', '2026-10-05', 'Bob PC')", D);
 // E: nobody ever claimed it.
 await hour(E, "2026-10-06T11", 7, 1);
 // D's results that earned nothing: one against an agreed fact, one still open, one set aside — and three that do not count.
-const q = (id, state) => library.run("INSERT INTO questions (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', ?, '2026-12-01', '2026-10-01')", id, state);
+const q = (id, state) => library.run("INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at) VALUES (?, 'simulate', '{}', ?, '2026-12-01', '2026-10-01')", id, state);
 await q("q-fact", "fact"); await q("q-open", "open"); await q("q-old", "fact");
 await q("q-void", "fact"); await q("q-paid", "fact");
 const answer = (question, at, { credited = 0, voided = 0, official = 0 } = {}) => library.run(
-  `INSERT INTO answers (question, engine, device, owner, official, canon, result, work, at, credited, void)
+  `INSERT INTO record_candidate_answers (question, engine, device, owner, official, canon, result, work, at, credited, void)
    VALUES (?, 'e', ?, ?, ?, '{}', '{}', 1, ?, ?, ?)`, question, D, D, official, at, credited, voided);
 await answer("q-fact", "2026-10-06T10:00:00.000Z"); await answer("q-open", "2026-10-06T10:01:00.000Z");
 await answer("q-void", "2026-10-06T10:02:00.000Z", { voided: 1 }); await answer("q-paid", "2026-10-06T10:03:00.000Z", { credited: 1 });

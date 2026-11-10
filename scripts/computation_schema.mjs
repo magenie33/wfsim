@@ -12,7 +12,7 @@ export function computationSchemaSql(kind = "library") {
   };
   if (kind === "accounts") {
     const source = read("accounts");
-    return find(source, /ALTER TABLE accounts ADD COLUMN IF NOT EXISTS profile_id[^;]+;/) + "\n"
+    return find(source, /ALTER TABLE entity_accounts ADD COLUMN IF NOT EXISTS profile_id[^;]+;/) + "\n"
       + find(source, /CREATE UNIQUE INDEX IF NOT EXISTS accounts_profile_id[^;]+;/) + "\n";
   }
   if (kind !== "library") throw new Error("Choose library or accounts");
@@ -25,7 +25,7 @@ export function computationSchemaSql(kind = "library") {
   }
   statements.push(...[...(schema + library).matchAll(/CREATE INDEX IF NOT EXISTS (?:computation_records|computation_witnesses|score_witnesses)_[^;]+;/g)].map(match => match[0]));
   statements.push(find(library, /CREATE OR REPLACE FUNCTION score_witnesses_replaced\([^]*?EXECUTE FUNCTION score_witnesses_replaced\(\);/));
-  statements.push(find(schema, /UPDATE user_calculations SET expires_at=[^;]+;/));
+  statements.push(find(schema, /UPDATE entity_user_calculation_requests SET expires_at=[^;]+;/));
   statements.push(readFileSync(new URL("../deploy/computation_grants.sql", import.meta.url), "utf8"));
   return statements.join("\n") + "\n";
 }

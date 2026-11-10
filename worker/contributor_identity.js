@@ -38,14 +38,14 @@ export async function contributorAccounts(env, ids, byProfile = false) {
   if (!env.ACCOUNTS || !ids.length) return new Map();
   const wanted = JSON.stringify([...new Set(ids)]);
   const { results } = await env.ACCOUNTS.prepare(`SELECT a.id,a.profile_id,a.username,a.display_name,c.named,c.label,c.chosen_at,
-    h.display_name AS held_name,h.reason AS held_reason FROM accounts a LEFT JOIN contribution_choice c ON c.account=a.id
-    LEFT JOIN display_name_holds h ON h.account=a.id WHERE a.${byProfile ? "profile_id" : "id"} IN (SELECT jsonb_array_elements_text((?::text)::jsonb))`)
+    h.display_name AS held_name,h.reason AS held_reason FROM entity_accounts a LEFT JOIN state_account_public_attribution c ON c.account=a.id
+    LEFT JOIN state_account_name_holds h ON h.account=a.id WHERE a.${byProfile ? "profile_id" : "id"} IN (SELECT jsonb_array_elements_text((?::text)::jsonb))`)
     .bind(wanted).all();
   const missing = results.filter(row => !row.profile_id).map(row => ({ id: row.id, profile: crypto.randomUUID().replaceAll("-", "") }));
   if (missing.length) {
-    await env.ACCOUNTS.prepare(`UPDATE accounts a SET profile_id=x.profile FROM
+    await env.ACCOUNTS.prepare(`UPDATE entity_accounts a SET profile_id=x.profile FROM
       jsonb_to_recordset((?::text)::jsonb) x(id text,profile text) WHERE a.id=x.id AND a.profile_id IS NULL`).bind(JSON.stringify(missing)).run();
-    const { results: assigned } = await env.ACCOUNTS.prepare(`SELECT id,profile_id FROM accounts WHERE id IN
+    const { results: assigned } = await env.ACCOUNTS.prepare(`SELECT id,profile_id FROM entity_accounts WHERE id IN
       (SELECT jsonb_array_elements_text((?::text)::jsonb))`).bind(wanted).all();
     for (const row of results) row.profile_id = assigned.find(item => item.id === row.id)?.profile_id;
   }
@@ -56,7 +56,7 @@ export async function witnessNames(env, witnesses) {
   const devices = [...new Set(witnesses.filter(w => !w.official).map(w => w.device))];
   let spans = [];
   if (env.ACCOUNTS && devices.length) {
-    const { results } = await env.ACCOUNTS.prepare(`SELECT verifier,account,from_hour,until_hour FROM device_spans
+    const { results } = await env.ACCOUNTS.prepare(`SELECT verifier,account,from_hour,until_hour FROM record_compute_device_ownership_intervals
       WHERE verifier IN (SELECT jsonb_array_elements_text((?::text)::jsonb))`).bind(JSON.stringify(devices)).all();
     spans = results;
   }

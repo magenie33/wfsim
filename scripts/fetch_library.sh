@@ -32,7 +32,7 @@ configured() { db_configured; }
 page_body() {
   jq -n -c --argjson limit "$1" --arg after "${2:-}" '
     {
-      sql: ("SELECT id, record FROM builds"
+      sql: ("SELECT id, record FROM entity_weapon_builds"
             + (if $after != "" then " WHERE id > ?" else "" end)
             + " ORDER BY id LIMIT ?"),
       params: ((if $after != "" then [$after] else [] end) + [$limit])
@@ -157,7 +157,7 @@ PAGES
 
   cat > "$DIR/bin/db" <<'DEAD'
 #!/usr/bin/env bash
-printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table builds"}]}'
+printf '{"success":false,"errors":[{"code":"42501","message":"permission denied for table entity_weapon_builds"}]}'
 exit 1
 DEAD
   chmod +x "$DIR/bin/db"

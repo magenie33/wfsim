@@ -31,9 +31,9 @@ async function success(...args) {
   return result.output;
 }
 const state = async () => ({
-  queue: await query('SELECT batch,build_id,ruler,mode FROM queue ORDER BY batch,build_id,ruler,mode'),
-  demands: await query('SELECT producer,ref,question,state FROM demands ORDER BY producer,ref'),
-  questions: await query('SELECT id,state FROM questions ORDER BY id'),
+  queue: await query('SELECT batch,build_id,ruler,mode FROM state_board_pending_work ORDER BY batch,build_id,ruler,mode'),
+  demands: await query('SELECT producer,ref,question,state FROM relation_task_consumers ORDER BY producer,ref'),
+  questions: await query('SELECT id,state FROM state_compute_work ORDER BY id'),
 });
 try {
   console.log(client ? 'cancel queue: postgres.js TCP transport' : 'cancel queue: PGlite transport');
@@ -51,12 +51,12 @@ try {
   const prefix = "arrival_'雪\\%", batch = prefix + '-day', odd = 'b1"雪\\';
   for (const [name, id, ruler] of [['refresh', 'b2', 'sst'], [batch, odd, 'sst'], [batch, 'b2', 'sst'], [batch, 'b4', 'sst'],
     [batch, 'b5', 'sst'], [batch, 'b6', 'sst'], [batch, 'b3', 'other'], ['refresh', 'b3', 'sst']]) {
-    await query("INSERT INTO queue(batch,build_id,ruler,mode) VALUES(?,?,?,'base')", [name, id, ruler]);
+    await query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES(?,?,?,'base')", [name, id, ruler]);
   }
   for (const [id, kind, producers] of [[odd, 'open', ['new_build', 'sweep']], ['b2', 'open', ['new_build', 'refresh']],
     ['b3', 'open', ['refresh']], ['b5', 'fact', ['survey_build']], ['b6', 'open', ['new_build', 'user']]]) {
-    await query("INSERT INTO questions(id,verb,request,state,due_at,opened_at) VALUES(?,'simulate','{}',?,'2026-10-02','2026-10-01')", [id, kind]);
-    for (const producer of producers) await query(`INSERT INTO demands(producer,ref,question,state,asked_at,due_at,payload)
+    await query("INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at) VALUES(?,'simulate','{}',?,'2026-10-02','2026-10-01')", [id, kind]);
+    for (const producer of producers) await query(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at,payload)
       VALUES(?,?,?,'live','2026-10-01','2026-10-02',?)`, [producer, `${id}|sst|base`, id, JSON.stringify({ identity: id, ruler: 'sst', mode: 'base' })]);
   }
   const before = await state();

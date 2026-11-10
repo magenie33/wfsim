@@ -13,10 +13,10 @@ const call = (name, args = []) => scalar(`SELECT ${name}(${args.map((_, i) => `$
 const changes = () => query('SELECT * FROM inventory_changes(256)');
 let generation;
 const ack = async () => call('inventory_ack', [generation, await changes()]);
-const build = (id, weapon = 'torid') => query('INSERT INTO builds(id,at,record) VALUES ($1,\'day\',$2)', [id, JSON.stringify({ weapon, mods: [] })]);
-const question = (id, state = 'open') => query(`INSERT INTO questions(id,verb,request,state,due_at,opened_at,fact_engine)
+const build = (id, weapon = 'torid') => query('INSERT INTO entity_weapon_builds(id,at,record) VALUES ($1,\'day\',$2)', [id, JSON.stringify({ weapon, mods: [] })]);
+const question = (id, state = 'open') => query(`INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at,fact_engine)
   VALUES ($1,'simulate','{}',$2,'due','opened',$3)`, [id, state, engine]);
-const demand = (ref, id, producer = 'other') => query(`INSERT INTO demands(producer,ref,question,state,asked_at,due_at)
+const demand = (ref, id, producer = 'other') => query(`INSERT INTO relation_task_consumers(producer,ref,question,state,asked_at,due_at)
   VALUES ($1,$2,$3,'live','at','due')`, [producer, ref, id]);
 const readInputs = async rows => {
   await pg.exec('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
@@ -49,42 +49,42 @@ try {
   });
   await check('changes coalesce per source statement and no-op writes retain their token', async () => {
     const prior = (await changes())[0];
-    await query("UPDATE builds SET record=record WHERE id='a'");
+    await query("UPDATE entity_weapon_builds SET record=record WHERE id='a'");
     assert.deepEqual(await changes(), [prior]);
-    await query("INSERT INTO batches(id,at,total) VALUES ('batch','at',1000)");
-    await query("INSERT INTO queue(batch,build_id,ruler,mode) SELECT 'batch','a','r'||i,'base' FROM generate_series(1,1000) i");
+    await query("INSERT INTO entity_compute_batches(id,at,total) VALUES ('batch','at',1000)");
+    await query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) SELECT 'batch','a','r'||i,'base' FROM generate_series(1,1000) i");
     const held = await changes(); assert.equal(held.length, 1); assert.notEqual(held[0].revision, prior.revision);
     assert.equal(await ack(), 1);
   });
   await check('lease, wait, heartbeat and credit updates do not invalidate counts', async () => {
     await question('q'); await ack();
-    await query("UPDATE questions SET lease='lease',lease_until='later',waits=1,due_at='later' WHERE id='q'");
+    await query("UPDATE state_compute_work SET lease='lease',lease_until='later',waits=1,due_at='later' WHERE id='q'");
     assert.deepEqual(await changes(), []);
-    await query("INSERT INTO answers(id,question,device,owner,engine,canon,result,official,work,at) VALUES (100,'q','d','d',$1,'{}','{}',0,1,'at')", [engine]);
+    await query("INSERT INTO record_candidate_answers(id,question,device,owner,engine,canon,result,official,work,at) VALUES (100,'q','d','d',$1,'{}','{}',0,1,'at')", [engine]);
     assert.deepEqual((await changes()).map(r => r.key), ['q']); await ack();
-    await query("UPDATE answers SET credited=1,credit_work=1,credit_at='at' WHERE id=100");
+    await query("UPDATE record_candidate_answers SET credited=1,credit_work=1,credit_at='at' WHERE id=100");
     assert.deepEqual(await changes(), []);
   });
   await check('lease-only SQL never dispatches the eligible-row trigger, while the old transition trigger does', async () => {
     await pg.exec(`BEGIN;
       CREATE OR REPLACE FUNCTION inventory_hot_changed() RETURNS trigger LANGUAGE plpgsql AS $$
       BEGIN RAISE EXCEPTION 'eligible inventory update entered'; END $$;`);
-    await query("UPDATE questions SET lease='lease-fast',lease_until='later' WHERE id='q'");
+    await query("UPDATE state_compute_work SET lease='lease-fast',lease_until='later' WHERE id='q'");
     await pg.exec('SAVEPOINT eligible_update');
-    await assert.rejects(query("UPDATE questions SET state='spot' WHERE id='q'"), /eligible inventory update entered/);
+    await assert.rejects(query("UPDATE state_compute_work SET state='spot' WHERE id='q'"), /eligible inventory update entered/);
     await pg.exec('ROLLBACK TO eligible_update');
-    await pg.exec(`DROP TRIGGER inventory_update ON questions;
+    await pg.exec(`DROP TRIGGER inventory_update ON state_compute_work;
       CREATE OR REPLACE FUNCTION inventory_source_changed() RETURNS trigger LANGUAGE plpgsql AS $$
       BEGIN RAISE EXCEPTION 'eligible inventory update entered'; END $$;
-      CREATE TRIGGER inventory_update AFTER UPDATE ON questions REFERENCING OLD TABLE AS inventory_old NEW TABLE AS inventory_new
+      CREATE TRIGGER inventory_update AFTER UPDATE ON state_compute_work REFERENCING OLD TABLE AS inventory_old NEW TABLE AS inventory_new
       FOR EACH STATEMENT EXECUTE FUNCTION inventory_source_changed()`);
-    await assert.rejects(async () => assert.doesNotReject(query("UPDATE questions SET lease='old-transition' WHERE id='q'")), /eligible inventory update entered/);
+    await assert.rejects(async () => assert.doesNotReject(query("UPDATE state_compute_work SET lease='old-transition' WHERE id='q'")), /eligible inventory update entered/);
     await pg.exec('ROLLBACK');
   });
   await check('a stale acknowledgement cannot erase a newer source mutation', async () => {
-    await query("UPDATE builds SET record='{\"weapon\":\"braton\"}' WHERE id='a'");
+    await query("UPDATE entity_weapon_builds SET record='{\"weapon\":\"braton\"}' WHERE id='a'");
     const old = await changes();
-    await query("UPDATE builds SET record='{\"weapon\":\"torid\"}' WHERE id='a'");
+    await query("UPDATE entity_weapon_builds SET record='{\"weapon\":\"torid\"}' WHERE id='a'");
     const newer = await changes();
     assert.notEqual(newer[0].revision, old[0].revision);
     assert.equal(await call('inventory_ack', [generation, old]), 0);
@@ -97,38 +97,38 @@ try {
     await build('after-rollback'); assert.notEqual((await changes())[0].revision, token); await ack();
   });
   await check('batch validity changes dirty every affected build while batch metadata does not', async () => {
-    await query("DELETE FROM batches WHERE id='batch'");
+    await query("DELETE FROM entity_compute_batches WHERE id='batch'");
     assert.deepEqual((await changes()).map(r => r.key), ['a']); await ack();
-    await query("INSERT INTO batches(id,at,total) VALUES ('batch','at',1000)");
+    await query("INSERT INTO entity_compute_batches(id,at,total) VALUES ('batch','at',1000)");
     assert.deepEqual((await changes()).map(r => r.key), ['a']); await ack();
-    await query("UPDATE batches SET total=2000,why='metadata' WHERE id='batch'"); assert.deepEqual(await changes(), []);
+    await query("UPDATE entity_compute_batches SET total=2000,why='metadata' WHERE id='batch'"); assert.deepEqual(await changes(), []);
   });
   await check('queue replacement dirties old and new identities; deletion dirties its payable source', async () => {
-    await query("INSERT INTO queue(batch,build_id,ruler,mode) VALUES ('batch','old-key','r','base')"); await ack();
-    await query("UPDATE queue SET build_id='new-key' WHERE build_id='old-key'");
+    await query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES ('batch','old-key','r','base')"); await ack();
+    await query("UPDATE state_board_pending_work SET build_id='new-key' WHERE build_id='old-key'");
     assert.deepEqual(new Set((await changes()).map(r => r.key)), new Set(['old-key', 'new-key'])); await ack();
-    await query("DELETE FROM queue WHERE build_id='new-key'"); assert.deepEqual((await changes()).map(r => r.key), ['new-key']); await ack();
+    await query("DELETE FROM state_board_pending_work WHERE build_id='new-key'"); assert.deepEqual((await changes()).map(r => r.key), ['new-key']); await ack();
   });
   await check('score and review-retirement changes invalidate the build and export its removal fact', async () => {
-    await query(`INSERT INTO scores(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at,review_id)
+    await query(`INSERT INTO state_board_measurement_selection(identity,ruler,mode,measured_by,score,metric,cost_seconds,started_at,finished_at,review_id)
       VALUES ('a','r','base','old',10,'kpm',1,'before','finished','review')`);
     assert.deepEqual((await changes()).map(r => r.key), ['a']); await ack();
-    await query(`INSERT INTO board_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
+    await query(`INSERT INTO entity_measurement_reviews(ref,id,round_at,identity,ruler,mode,engine,question,record,state,
       baseline_score,baseline_metric,baseline_cost_seconds,baseline_by,baseline_started_at,baseline_finished_at,created_at)
       VALUES ('ref','review','round','a','r','base',$1,'review-question','{}','waiting',10,'kpm',1,'old','before','finished','at')`, [engine]);
     assert.deepEqual((await changes()).map(r => r.key), ['a']); await ack();
-    await query("UPDATE board_reviews SET invalidated_at='retired' WHERE id='review'");
+    await query("UPDATE entity_measurement_reviews SET invalidated_at='retired' WHERE id='review'");
     const input = await readInputs(await changes()); assert.equal(input.facts[0].retired_at, 'retired'); await ack();
-    await query("UPDATE board_reviews SET state='succeeded' WHERE id='review'");
+    await query("UPDATE entity_measurement_reviews SET state='succeeded' WHERE id='review'");
     assert.equal((await readInputs(await changes())).facts[0].retired_at, null); await ack();
-    await query("DELETE FROM scores WHERE identity='a'"); assert.deepEqual((await changes()).map(r => r.key), ['a']); await ack();
+    await query("DELETE FROM state_board_measurement_selection WHERE identity='a'"); assert.deepEqual((await changes()).map(r => r.key), ['a']); await ack();
   });
   await check('keyed RR inputs clear missing builds and lifecycle states explicitly', async () => {
     await build('deleted'); await question('cached', 'fact'); await question('other'); await demand('other-ref', 'other');
     await question('covered'); await demand('covered-ref', 'covered', 'board');
     await question('disputed', 'disputed');
-    await query("INSERT INTO answers(id,question,device,owner,engine,canon,result,official,work,at) VALUES (101,'disputed','d','d',$1,'{}','{}',0,1,'at')", [engine]);
-    await query("DELETE FROM builds WHERE id='deleted'");
+    await query("INSERT INTO record_candidate_answers(id,question,device,owner,engine,canon,result,official,work,at) VALUES (101,'disputed','d','d',$1,'{}','{}',0,1,'at')", [engine]);
+    await query("DELETE FROM entity_weapon_builds WHERE id='deleted'");
     const keys = await changes(); const input = await readInputs(keys);
     assert.equal(input.generation, generation); assert.deepEqual(input.contract, contract); assert(input.snapshot);
     assert.deepEqual(input.builds.find(r => r.id === 'deleted'), { id: 'deleted', deleted: true });
@@ -136,22 +136,22 @@ try {
     assert.equal(input.tasks.find(r => r.id === 'other').kind, 'other');
     assert.deepEqual(input.tasks.find(r => r.id === 'covered'), { id: 'covered', deleted: true });
     assert.equal(input.tasks.find(r => r.id === 'disputed').served_answered, true);
-    await query("UPDATE demands SET state='withdrawn' WHERE ref='other-ref'");
+    await query("UPDATE relation_task_consumers SET state='withdrawn' WHERE ref='other-ref'");
     const cleared = await readInputs(await changes()); assert.deepEqual(cleared.tasks.find(r => r.id === 'other'), { id: 'other', deleted: true });
     await ack();
   });
   await check('refusals and deleted questions match the full lifecycle projection', async () => {
-    await query("INSERT INTO refusal_withdrawals(question,engine,owners,at) VALUES ('refused',$1,2,'at')", [engine]);
+    await query("INSERT INTO record_refusal_withdrawals(question,engine,owners,at) VALUES ('refused',$1,2,'at')", [engine]);
     const input = await readInputs(await changes());
     assert.equal(input.tasks[0].state, 'refused');
     await question('refused');
     const withdrawn = await readInputs(await changes()); assert.deepEqual(withdrawn.tasks[0], { id: 'refused', deleted: true });
-    await query("DELETE FROM questions WHERE id='refused'");
+    await query("DELETE FROM state_compute_work WHERE id='refused'");
     assert.equal((await readInputs(await changes())).tasks[0].state, 'refused'); await ack();
   });
   await check('cohorts include siblings, retired-ruler queue and explicit canonical aliases only', async () => {
     await build('sibling'); await build('unrelated', 'braton');
-    await query("INSERT INTO queue(batch,build_id,ruler,mode) VALUES ('batch','canonical-alias','retired-ruler','base'),('missing-batch','a','r','base')");
+    await query("INSERT INTO state_board_pending_work(batch,build_id,ruler,mode) VALUES ('batch','canonical-alias','retired-ruler','base'),('missing-batch','a','r','base')");
     const rows = await readCohort({ weapons: ['torid'], identities: ['canonical-alias'] });
     assert(rows.some(r => r.kind === 'builds' && r.body.id === 'sibling'));
     assert(!rows.some(r => r.kind === 'builds' && r.body.id === 'unrelated'));
@@ -173,21 +173,21 @@ try {
     assert.notEqual(saved.snapshot, 'untrusted'); assert.notEqual(saved.started_at, '1900-01-01');
     assert.equal(Date.parse(saved.expires_at) - Date.parse(saved.started_at), 3 * 60 * 60000);
     assert.equal((await call('inventory_status')).status, 'active');
-    assert.deepEqual(JSON.parse(await scalar("SELECT body FROM factory_findings WHERE kind='task_inventory'")), saved);
+    assert.deepEqual(JSON.parse(await scalar("SELECT body FROM state_factory_findings WHERE kind='task_inventory'")), saved);
     await pg.exec('BEGIN ISOLATION LEVEL REPEATABLE READ');
     await assert.rejects(publish(), /requires read committed/); await pg.exec('ROLLBACK');
   });
   await check('count validation fails closed before writing a finding', async () => {
-    const prior = await scalar("SELECT body FROM factory_findings WHERE kind='task_inventory'");
+    const prior = await scalar("SELECT body FROM state_factory_findings WHERE kind='task_inventory'");
     for (const bad of [{ ...body(), total: -1 }, { ...body(), total: '7' }, { ...body(), orders: [] },
       { ...body(), registered: 8 }, { ...body(), verbs: { simulate: 6 } }, { ...body(), verbs: null },
       Object.fromEntries(Object.entries(body()).filter(([k]) => k !== 'total'))]) {
       await assert.rejects(publish(bad), /invalid inventory|count mismatch/);
     }
-    assert.equal(await scalar("SELECT body FROM factory_findings WHERE kind='task_inventory'"), prior);
+    assert.equal(await scalar("SELECT body FROM state_factory_findings WHERE kind='task_inventory'"), prior);
   });
   await check('new generations fence old ACK/publication and preserve the last published value', async () => {
-    const oldGeneration = generation, prior = await scalar("SELECT body FROM factory_findings WHERE kind='task_inventory'");
+    const oldGeneration = generation, prior = await scalar("SELECT body FROM state_factory_findings WHERE kind='task_inventory'");
     await build('fenced');
     const pending = await changes();
     await assert.rejects(call('inventory_begin', [engine, contract, null]), /generation changed/);
@@ -195,13 +195,13 @@ try {
     assert.notEqual(generation, oldGeneration); assert.deepEqual(await changes(), pending);
     await assert.rejects(call('inventory_ack', [oldGeneration, pending]), /generation changed/);
     await assert.rejects(publish({ ...body(), generation: oldGeneration }), /fence changed/);
-    assert.equal(await scalar("SELECT body FROM factory_findings WHERE kind='task_inventory'"), prior);
+    assert.equal(await scalar("SELECT body FROM state_factory_findings WHERE kind='task_inventory'"), prior);
     await ack(); await publish();
   });
   await check('idempotent SQL installation preserves dirty keys, fences and revision sequences', async () => {
     await build('reinstall'); const prior = await changes(), state = await call('inventory_status');
     await pg.exec(inventorySql); assert.deepEqual(await changes(), prior); assert.deepEqual(await call('inventory_status'), state);
-    await query("UPDATE builds SET record='{\"weapon\":\"braton\"}' WHERE id='reinstall'");
+    await query("UPDATE entity_weapon_builds SET record='{\"weapon\":\"braton\"}' WHERE id='reinstall'");
     assert.notEqual((await changes())[0].revision, prior[0].revision); await ack();
   });
   await check('an unsealed epoch rolls back with its receipt and cannot resume in another transaction', async () => {
@@ -217,11 +217,11 @@ try {
     await pg.exec('BEGIN ISOLATION LEVEL REPEATABLE READ');
     await call('inventory_epoch_begin', [generation]);
     await assert.rejects(build('forbidden-epoch-write'), /may write receipts only/); await pg.exec('ROLLBACK');
-    assert.equal(await scalar("SELECT count(*) FROM builds WHERE id='forbidden-epoch-write'"), 0);
+    assert.equal(await scalar("SELECT count(*) FROM entity_weapon_builds WHERE id='forbidden-epoch-write'"), 0);
   });
   let frozen, captured;
   await check('one frozen RR epoch exports every token in bounded cursor pages and seals its durable manifest', async () => {
-    await query("INSERT INTO builds(id,at,record) SELECT 'epoch-'||i,'day','{\"weapon\":\"torid\"}' FROM generate_series(1,400) i");
+    await query("INSERT INTO entity_weapon_builds(id,at,record) SELECT 'epoch-'||i,'day','{\"weapon\":\"torid\"}' FROM generate_series(1,400) i");
     assert.equal((await changes()).length, 256);
     await pg.exec('BEGIN ISOLATION LEVEL REPEATABLE READ');
     const cut = await call('inventory_epoch_begin', [generation]);
@@ -242,14 +242,14 @@ try {
     assert.equal(frozen.change_count, 400); assert.equal(frozen.status, 'sealed');
     await pg.exec('SAVEPOINT sealed_business');
     await assert.rejects(build('write-after-seal'), /may write receipts only/); await pg.exec('ROLLBACK TO sealed_business');
-    await assert.rejects(query("UPDATE questions SET lease='after-seal' WHERE id='q'"), /may write receipts only/);
+    await assert.rejects(query("UPDATE state_compute_work SET lease='after-seal' WHERE id='q'"), /may write receipts only/);
     await pg.exec('ROLLBACK TO sealed_business');
     await pg.exec('COMMIT'); assert.deepEqual(await call('inventory_epoch_status', [cut.epoch]), frozen);
     await assert.rejects(call('inventory_epoch_changes', [cut.epoch]), /does not own this snapshot/);
     await assert.rejects(call('inventory_epoch_open', [cut.epoch]), /does not own this snapshot/);
   });
   await check('later writes survive frozen-token ACK and cannot starve publication of its original cut', async () => {
-    await query("UPDATE builds SET record='{\"weapon\":\"braton\"}' WHERE id='epoch-1'");
+    await query("UPDATE entity_weapon_builds SET record='{\"weapon\":\"braton\"}' WHERE id='epoch-1'");
     await question('later-question');
     let matched = 0;
     for (let i = 0; i < captured.length; i += 256) matched += await call('inventory_ack', [generation, captured.slice(i, i + 256)]);
@@ -267,10 +267,10 @@ try {
     await pg.exec('BEGIN ISOLATION LEVEL REPEATABLE READ');
     const unsealed = await call('inventory_epoch_begin', [generation]); await pg.exec('COMMIT');
     await assert.rejects(call('inventory_publish_cut', [unsealed.epoch, body()]), /fence changed/);
-    await query(`INSERT INTO factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit)
+    await query(`INSERT INTO state_factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit)
       VALUES (1,'at','ffffffffffff',0,0,0,0,0,0,'at','commit')`);
     await assert.rejects(call('inventory_publish_cut', [frozen.epoch, body()]), /fence changed/);
-    await query('DELETE FROM factory_snapshot');
+    await query('DELETE FROM state_factory_snapshot');
     generation = (await call('inventory_begin', [engine, contract, generation])).generation;
     await assert.rejects(call('inventory_publish_cut', [frozen.epoch, body()]), /fence changed/);
   });
@@ -278,7 +278,7 @@ try {
     await pg.exec('BEGIN ISOLATION LEVEL REPEATABLE READ');
     const cut = await call('inventory_epoch_begin', [generation]);
     await scalar('SELECT inventory_epoch_seal($1::text,0::bigint,$2::text)', [cut.epoch, 'b'.repeat(64)]); await pg.exec('COMMIT');
-    await query("UPDATE inventory_epochs SET started_at='2000-01-01T00:00:00.000Z' WHERE epoch::text=$1", [cut.epoch]);
+    await query("UPDATE record_inventory_captures SET started_at='2000-01-01T00:00:00.000Z' WHERE epoch::text=$1", [cut.epoch]);
     await assert.rejects(call('inventory_publish_cut', [cut.epoch, body()]), /cut expired/);
   });
   await check('older epochs cannot overwrite a newer cut when server timestamps tie', async () => {
@@ -289,7 +289,7 @@ try {
       cuts.push(await scalar('SELECT inventory_epoch_seal($1::text,0::bigint,$2::text)', [cut.epoch, 'd'.repeat(64)]));
       await pg.exec('COMMIT');
     }
-    await query('UPDATE inventory_epochs SET started_at=$1 WHERE epoch::text=ANY($2::text[])', [cuts[1].started_at, cuts.map(c => c.epoch)]);
+    await query('UPDATE record_inventory_captures SET started_at=$1 WHERE epoch::text=ANY($2::text[])', [cuts[1].started_at, cuts.map(c => c.epoch)]);
     await call('inventory_publish_cut', [cuts[1].epoch, body()]);
     await assert.rejects(call('inventory_publish_cut', [cuts[0].epoch, body()]), /newer inventory cut/);
     const fresh = await publish({ ...body(), epoch: 'forged', manifest_sha: 'forged' });
@@ -301,15 +301,15 @@ try {
       TO inventory_pipeline_check;
       SET ROLE inventory_pipeline_check`);
     assert.equal((await call('inventory_status')).generation, generation);
-    await assert.rejects(query('SELECT * FROM inventory_dirty'), /permission denied/);
+    await assert.rejects(query('SELECT * FROM state_compute_inventory_invalidations'), /permission denied/);
     await assert.rejects(call('inventory_epoch_open', ['1']), /permission denied/);
     await assert.rejects(query("SELECT nextval('inventory_revision')"), /permission denied/);
     await assert.rejects(build('forged-source'), /permission denied/);
-    await assert.rejects(query("UPDATE inventory_epochs SET status='sealed'"), /permission denied/);
+    await assert.rejects(query("UPDATE record_inventory_captures SET status='sealed'"), /permission denied/);
     await assert.rejects(query('SELECT inventory_store_body(($1::text)::jsonb,$2::text,$3::text)', [JSON.stringify(body()), '2026-01-01', 'forged']), /permission denied/);
-    await pg.exec(`CREATE TEMP TABLE inventory_state(generation bigint,engine text,contract jsonb,status text,id bigint);
+    await pg.exec(`CREATE TEMP TABLE state_compute_inventory_generation(generation bigint,engine text,contract jsonb,status text,id bigint);
       INSERT INTO pg_temp.inventory_state VALUES (999,'forged','{}','active',1);
-      CREATE TEMP TABLE inventory_dirty(scope text,key text,revision bigint);
+      CREATE TEMP TABLE state_compute_inventory_invalidations(scope text,key text,revision bigint);
       INSERT INTO pg_temp.inventory_dirty VALUES ('question','forged',999);
       SET search_path TO pg_temp,public`);
     assert.equal((await call('inventory_status')).generation, generation);
@@ -327,15 +327,15 @@ try {
     await pg.exec('ROLLBACK');
   });
   await check('old missing invalidation fails the same source-mutation assertion', async () => {
-    await pg.exec('DROP TRIGGER inventory_update ON questions');
-    await query("UPDATE questions SET state='spot' WHERE id='q'");
+    await pg.exec('DROP TRIGGER inventory_update ON state_compute_work');
+    await query("UPDATE state_compute_work SET state='spot' WHERE id='q'");
     const requireDirty = async () => assert((await changes()).some(r => r.scope === 'question' && r.key === 'q'), 'a lifecycle mutation disappeared');
     await assert.rejects(requireDirty(), /lifecycle mutation disappeared/);
     await pg.exec(inventorySql);
-    await query("UPDATE questions SET state='fact' WHERE id='q'"); await requireDirty(); await ack();
+    await query("UPDATE state_compute_work SET state='fact' WHERE id='q'"); await requireDirty(); await ack();
   });
   await check('old unchecked publisher fails the pending-change rejection', async () => {
-    const unchecked = inventorySql.replace("IF EXISTS(SELECT 1 FROM inventory_dirty) THEN RAISE EXCEPTION 'inventory changes remain'; END IF;", 'NULL;');
+    const unchecked = inventorySql.replace("IF EXISTS(SELECT 1 FROM state_compute_inventory_invalidations) THEN RAISE EXCEPTION 'inventory changes remain'; END IF;", 'NULL;');
     assert.notEqual(unchecked, inventorySql); await pg.exec(unchecked); await build('unchecked');
     await assert.rejects(async () => assert.rejects(publish(), /changes remain/), /Missing expected rejection/);
     await pg.exec(inventorySql); await assert.rejects(publish(), /changes remain/); await ack();

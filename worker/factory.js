@@ -100,7 +100,7 @@ export async function officialRoute(request, env, path) {
   const w = { device: b.witness, owner: b.witness, official: true };
   const db = env.LIBRARY;
   if (path === "/api/tasks/official/release") {
-    await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder("leased_to = ?")}`).bind(b.witness).run();
+    await db.prepare(`UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder("leased_to = ?")}`).bind(b.witness).run();
     return json({ ok: true });
   }
   if (path === "/api/tasks/official/report") return report(db, b);
@@ -118,7 +118,7 @@ export async function officialRoute(request, env, path) {
     const states = [];
     for (const a of answers) {
       // THE DEMAND IT ANSWERS, by its ref among the named producers — a live one first.
-      const d = a && typeof a.ref === "string" && await db.prepare(`SELECT question FROM demands WHERE ref = ?::text AND producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
+      const d = a && typeof a.ref === "string" && await db.prepare(`SELECT question FROM relation_task_consumers WHERE ref = ?::text AND producer IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb))
           ORDER BY state = 'live' DESC, asked_at DESC LIMIT 1`).bind(a.ref, producers).first();
       // `work: null` is a witness of the score alone (worker/tasks.js `settleOfficial`).
       if (!d || !(a.work === null || Number.isSafeInteger(a.work)) || !a.result || typeof a.result !== "object") { states.push(null); continue; }
@@ -141,7 +141,7 @@ async function report(db, b) {
   if (b.report === "claimed") {
     const rows = (Array.isArray(b.rows) ? b.rows : []).filter((r) => r && typeof r.build_id === "string").slice(0, 10_000);
     const refs = rows.map((r) => `${r.build_id}|${r.ruler}|${r.mode}`);
-    const { results } = await db.prepare(`SELECT d.ref, d.state, q.leased_to FROM demands d JOIN questions q ON q.id = d.question
+    const { results } = await db.prepare(`SELECT d.ref, d.state, q.leased_to FROM relation_task_consumers d JOIN state_compute_work q ON q.id = d.question
         WHERE d.ref IN (SELECT value FROM jsonb_array_elements_text((?::text)::jsonb)) AND d.producer IN (${kinds})`)
       .bind(JSON.stringify(refs)).all();
     const asked = new Set(results.map((r) => r.ref));
@@ -149,7 +149,7 @@ async function report(db, b) {
     return json({ ok: true, rows: rows.filter((r, i) => !asked.has(refs[i]) || mine.has(refs[i])) });
   }
   if (b.report === "refresh_live") {
-    return json({ ok: true, n: (await db.prepare("SELECT count(*) AS n FROM demands WHERE producer = 'refresh' AND state = 'live'").first()).n });
+    return json({ ok: true, n: (await db.prepare("SELECT count(*) AS n FROM relation_task_consumers WHERE producer = 'refresh' AND state = 'live'").first()).n });
   }
   if (b.report === "calibration") {
     const row = await db.prepare("SELECT factory_calibration_page(?1::text,?2::text,?3::text,?4::bigint,2000,true,false) AS rows")
@@ -165,10 +165,10 @@ async function report(db, b) {
 /// Never throws — what it records must not be what breaks.
 export async function noteEvent(db, kind, now, gap_ms) {
   try {
-    const r = await db.prepare("UPDATE factory_events SET last_at = ? WHERE kind = ? AND last_at >= ?")
+    const r = await db.prepare("UPDATE record_factory_incidents SET last_at = ? WHERE kind = ? AND last_at >= ?")
       .bind(iso(now), kind, iso(now - gap_ms)).run();
     if (!r.meta.changes) {
-      await db.prepare("INSERT INTO factory_events (kind, started_at, last_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")
+      await db.prepare("INSERT INTO record_factory_incidents (kind, started_at, last_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")
         .bind(kind, iso(now), iso(now)).run();
     }
   } catch (_) { /* the outage it records may be the database's own */ }
@@ -217,7 +217,7 @@ export async function watchdog(env, now = Date.now()) {
   // THE SETTLER'S QUEUE, emptied here when the daemon beside the database has
   // not beaten in `SETTLER_SILENT_MS` (dial `settle_async`): its rows are handed
   // to anyone again after the grace, but nobody else settles them.
-  const beat = await observe("heartbeat", () => db.prepare("SELECT daemon_at FROM factory_snapshot WHERE id = 1").first(), null);
+  const beat = await observe("heartbeat", () => db.prepare("SELECT daemon_at FROM state_factory_snapshot WHERE id = 1").first(), null);
   if (!beat || Date.parse(beat.daemon_at) <= now - SETTLER_SILENT_MS) await observe("settle", () => settleBatch(env, now, Date.now() + 20_000));
   // EACH REPAIR APART: one that throws never keeps the round from being found
   // and written down.
@@ -238,11 +238,11 @@ export async function watchdog(env, now = Date.now()) {
   if (engine) await observe("fair_shadow", () => fairShadow(env, engine, now));
   // EVERY ROUND IT STANDS, not only when it is said: the event's span is the outage's.
   for (const f of found) await noteEvent(db, `alert:${f.kind}`, now, 3 * 10 * 60_000);
-  const last = await db.prepare("SELECT max(at) AS at FROM watchdog_said").first();
+  const last = await db.prepare("SELECT max(at) AS at FROM record_monitor_findings").first();
   if (last?.at && Date.parse(last.at) > now - SAY_EVERY_MS) {
     const failed = found.filter((f) => f.kind.startsWith("watchdog_failed:"));
     if (!failed.length) return found;
-    const { results: said } = await db.prepare("SELECT cause FROM watchdog_said WHERE at = ?").bind(last.at).all();
+    const { results: said } = await db.prepare("SELECT cause FROM record_monitor_findings WHERE at = ?").bind(last.at).all();
     if (failed.every((f) => said.some((s) => s.cause === f.kind))) return found;
   }
   const cells = await observe("cells_filling", () => cellsFilling(env, now), []);
@@ -250,9 +250,9 @@ export async function watchdog(env, now = Date.now()) {
   if (engine) found.push(...await observe("idle", () => idleFindings(env, engine, now), []));
   for (const f of found) {
     const said = watchdogText(f, now);
-    await db.prepare("INSERT INTO watchdog_said (at, cause, said) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")
+    await db.prepare("INSERT INTO record_monitor_findings (at, cause, said) VALUES (?, ?, ?) ON CONFLICT DO NOTHING")
       .bind(iso(now), f.kind, said).run();
   }
-  await db.prepare("DELETE FROM watchdog_said WHERE at < ?").bind(iso(now - SAID_KEPT_MS)).run();
+  await db.prepare("DELETE FROM record_monitor_findings WHERE at < ?").bind(iso(now - SAID_KEPT_MS)).run();
   return found;
 }

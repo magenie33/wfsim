@@ -9,7 +9,7 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
   /// EVERY LIVE DEMAND IS TOLD THE FACT, once.
   async function deliver(env, q, now, by = null) {
     const db = env.LIBRARY;
-    const answerOf = by || await db.prepare("SELECT * FROM answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1")
+    const answerOf = by || await db.prepare("SELECT * FROM record_candidate_answers WHERE question = ? AND canon = ? ORDER BY official DESC, id LIMIT 1")
       .bind(q.id, q.canon).first();
     await deliverGroups(env, [{ q, answerOf, demands: await liveDemands(db, q.id) }], now);
   }
@@ -20,10 +20,10 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
   async function deliverMany(env, qs, now) {
     if (!qs.length) return;
     const db = env.LIBRARY, keys = JSON.stringify(qs.map((q) => ({ id: q.id, canon: q.canon })));
-    const { results: answers } = await db.prepare(`SELECT DISTINCT ON (a.question) a.* FROM answers a
+    const { results: answers } = await db.prepare(`SELECT DISTINCT ON (a.question) a.* FROM record_candidate_answers a
         JOIN jsonb_to_recordset((?::text)::jsonb) AS x(id text, canon text) ON a.question = x.id AND a.canon = x.canon
         ORDER BY a.question, a.official DESC, a.id`).bind(keys).all();
-    const { results: demands } = await db.prepare(`SELECT * FROM demands WHERE question IN ${listOf(db, "?")} AND state = 'live'`)
+    const { results: demands } = await db.prepare(`SELECT * FROM relation_task_consumers WHERE question IN ${listOf(db, "?")} AND state = 'live'`)
       .bind(JSON.stringify(qs.map((q) => q.id))).all();
     await deliverGroups(env, qs.map(q => ({ q, answerOf: answers.find(a => a.question === q.id) || null,
       demands: demands.filter(d => d.question === q.id) })), now);
@@ -37,7 +37,7 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
       if (error.code === "WS002") return;
       errors.push(error);
       try {
-        await env.LIBRARY.prepare("UPDATE demands SET delivery_at=? WHERE producer=? AND ref=? AND question=? AND asked_at=? AND payload=? AND state='live'")
+        await env.LIBRARY.prepare("UPDATE relation_task_consumers SET delivery_at=? WHERE producer=? AND ref=? AND question=? AND asked_at=? AND payload=? AND state='live'")
           .bind(iso(now + 60000), demand.producer, demand.ref, q.id, demand.asked_at, demand.payload).run();
       } catch (error) { errors.push(error); }
     };
@@ -76,7 +76,7 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
   async function flush(env, pending, now) {
     if (!pending.length) return;
     const keys = pending.map(({ q }) => ({ id: q.id, canon: q.canon, engine: q.fact_engine }));
-    const { results: live } = await env.LIBRARY.prepare(`SELECT d.*, q.fact_at, q.witnesses FROM demands d JOIN questions q ON q.id = d.question
+    const { results: live } = await env.LIBRARY.prepare(`SELECT d.*, q.fact_at, q.witnesses FROM relation_task_consumers d JOIN state_compute_work q ON q.id = d.question
       JOIN jsonb_to_recordset((?::text)::jsonb) AS x(id text, canon text, engine text)
         ON x.id = q.id AND x.canon = q.canon AND x.engine = q.fact_engine
       WHERE d.state = 'live' AND q.state IN ('fact', 'spot')`)
@@ -91,28 +91,28 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
   async function redeliver(env, now = Date.now(), max = 100) {
     const db = env.LIBRARY, latest = now - 10 * 60_000, floor = iso(now - REDELIVER_BACK_MS);
     const { results: ready } = await db.prepare(`WITH pending AS (
-      SELECT d.question,min(d.delivery_at) retry_at FROM demands d WHERE d.state='live' AND d.delivery_at<=?1::text
-        AND EXISTS (SELECT 1 FROM questions q WHERE q.id=d.question AND q.state IN ('fact','spot'))
+      SELECT d.question,min(d.delivery_at) retry_at FROM relation_task_consumers d WHERE d.state='live' AND d.delivery_at<=?1::text
+        AND EXISTS (SELECT 1 FROM state_compute_work q WHERE q.id=d.question AND q.state IN ('fact','spot'))
       GROUP BY d.question ORDER BY retry_at,d.question LIMIT ?2::bigint)
-      SELECT q.* FROM pending p JOIN questions q ON q.id=p.question ORDER BY p.retry_at,q.id`).bind(iso(now), max).all();
+      SELECT q.* FROM pending p JOIN state_compute_work q ON q.id=p.question ORDER BY p.retry_at,q.id`).bind(iso(now), max).all();
     let told = 0, stuck = null;
     for (const q of ready) {
       try { await deliver(env, q, now); told++; } catch (_) { /* demands retain their retry time */ }
     }
     if (ready.length >= max) return told;
     // Legacy facts advance at most an hour per pass; current retries use delivery_at.
-    const kept = await db.prepare("SELECT through FROM factory_cursors WHERE name = 'redeliver'").first();
+    const kept = await db.prepare("SELECT through FROM state_factory_progress WHERE name = 'redeliver'").first();
     const from = kept && kept.through > floor ? kept.through : floor;
     const until = iso(Math.min(latest, Date.parse(from) + REDELIVER_WINDOW_MS));
-    const { results } = await db.prepare(`SELECT q.* FROM questions q WHERE q.fact_at >= ?1::text AND q.fact_at < ?2::text
-        AND q.state IN ('fact', 'spot') AND EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id AND d.state = 'live')
-        AND NOT EXISTS (SELECT 1 FROM demands d WHERE d.question=q.id AND d.state='live' AND d.delivery_at IS NOT NULL)
+    const { results } = await db.prepare(`SELECT q.* FROM state_compute_work q WHERE q.fact_at >= ?1::text AND q.fact_at < ?2::text
+        AND q.state IN ('fact', 'spot') AND EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question = q.id AND d.state = 'live')
+        AND NOT EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question=q.id AND d.state='live' AND d.delivery_at IS NOT NULL)
         ORDER BY q.fact_at LIMIT ?3::bigint`).bind(from, until, max - ready.length).all();
     for (const q of results) {
       try { await deliver(env, q, now); told += 1; } catch (_) { stuck ??= q.fact_at; }
     }
     const through = stuck ?? (results.length === max - ready.length ? results[results.length - 1].fact_at : until);
-    await db.prepare(`INSERT INTO factory_cursors (name, through) VALUES ('redeliver', ?1::text)
+    await db.prepare(`INSERT INTO state_factory_progress (name, through) VALUES ('redeliver', ?1::text)
         ON CONFLICT (name) DO UPDATE SET through = excluded.through`).bind(through).run();
     return told;
   }
@@ -131,7 +131,7 @@ export function createDelivery({ producerOf, liveDemands, commit } = {}) {
       const p = producerOf(d.producer), told = { ...d, payload: JSON.parse(d.payload) };
       const guard = db.prepare("SELECT factory_delivery_guard(?::text,?::text,?::text,?::text,?::text,?::text,?::text)")
         .bind(q.id, q.canon, q.fact_engine, d.producer, d.ref, d.asked_at, d.payload);
-      const served = db.prepare("UPDATE demands SET state='served',served_at=?,delivery_at=NULL WHERE producer=? AND ref=? AND question=? AND asked_at=? AND payload=? AND state='live'")
+      const served = db.prepare("UPDATE relation_task_consumers SET state='served',served_at=?,delivery_at=NULL WHERE producer=? AND ref=? AND question=? AND asked_at=? AND payload=? AND state='live'")
         .bind(iso(now), d.producer, d.ref, q.id, d.asked_at, d.payload);
       if (p.on_fact_writes) writes.push(guard, ...p.on_fact_writes(env, told, fact).map((side) => ({ side })), served);
       else later.push(async () => { await guard.run(); await p.on_fact(env, told, fact); await served.run(); });

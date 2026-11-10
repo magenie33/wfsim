@@ -25,7 +25,7 @@ const date = (ms) => ({ $date: { $numberLong: String(ms) } });
 const fissure = (id, node, tier, mission, startMs) => ({ _id: { $oid: id }, Node: node, Modifier: tier, MissionType: mission,
   Activation: date(startMs), Expiry: date(now + 3600_000) });
 // An old fissure on the same node, logged straight to the table: outside the window.
-await LIBRARY.prepare("INSERT INTO fissures (id, list, tier, mission, node, started_at, ends_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
+await LIBRARY.prepare("INSERT INTO record_world_fissures (id, list, tier, mission, node, started_at, ends_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)")
   .bind("old", "normal", "VoidT3", "MT_CAPTURE", "SolNode1", new Date(now - 9 * 86400_000).toISOString(),
     new Date(now - 9 * 86400_000 + 3600_000).toISOString()).run();
 const ws = { ActiveMissions: [fissure("a", "SolNode1", "VoidT3", "MT_CAPTURE", now - 60_000)],
@@ -40,7 +40,7 @@ check("a fissure carries its node's planet", capture && capture.attributes.plane
   JSON.stringify(capture && capture.attributes));
 check("…and a Void Storm its Proxima's, not the planet's", storm && storm.attributes.planet === "/Lotus/Language/Locations/Earth_SPACE",
   JSON.stringify(storm && storm.attributes));
-const logged = await LIBRARY.prepare("SELECT count(*) AS n FROM fissures").first();
+const logged = await LIBRARY.prepare("SELECT count(*) AS n FROM record_world_fissures").first();
 check("a fissure relayed twice is logged once", Number(logged.n) === 3, logged.n);
 
 const names = await call("/api/world/names");

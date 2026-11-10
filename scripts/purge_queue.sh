@@ -43,7 +43,7 @@ purge_statement() {
   jq -R -s -c '
     [splits("\n")] | map(select(length > 0)) as $live
     | {
-        sql: ("DELETE FROM queue WHERE ruler NOT IN ("
+        sql: ("DELETE FROM state_board_pending_work WHERE ruler NOT IN ("
               + ([$live[] | "?"] | join(",")) + ")"),
         params: $live
       }'
@@ -67,7 +67,7 @@ purge() {
     gone=$(jq -r '.result[0].meta.changes // 0' "$DB_OUT" 2>/dev/null || echo 0)
     echo "queue: $gone row(s) owed under a retired ruler, forgotten ($count live)"
   else
-    echo "::error::queue: the database refused the purge [HTTP $DB_CODE]" >&2
+    echo "::error::state_board_pending_work: the database refused the purge [HTTP $DB_CODE]" >&2
     head -c 500 "$DB_OUT" || true
     return 1
   fi
@@ -90,7 +90,7 @@ self_test() {
     && say ok "one bound parameter per live ruler" \
     || say FAIL "$(printf '%s' "$body" | jq -r '.params | length') parameters"
 
-  printf '%s' "$body" | jq -e '.sql == "DELETE FROM queue WHERE ruler NOT IN (?,?)"' >/dev/null \
+  printf '%s' "$body" | jq -e '.sql == "DELETE FROM state_board_pending_work WHERE ruler NOT IN (?,?)"' >/dev/null \
     && say ok "…and the ids are bound, not interpolated" \
     || say FAIL "$(printf '%s' "$body" | jq -r .sql)"
 

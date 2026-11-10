@@ -10,10 +10,10 @@ import { ENGINE_ID } from "./verify.js";
 export const deliveryKey = (question, device, at) => questionId("delivery", { question, device, at });
 async function keepSource(env, { id, engine, weapon, owner, device, official = 0, at }) {
   await env.LIBRARY.batch([
-    env.LIBRARY.prepare(`INSERT INTO computation_records (question,kind,engine,weapon,completed_at,expires_at)
+    env.LIBRARY.prepare(`INSERT INTO state_public_computation_summaries (question,kind,engine,weapon,completed_at,expires_at)
       VALUES (?,'delivery',?,?,?,?) ON CONFLICT DO NOTHING`).bind(id, engine, weapon || null, at, iso(Date.parse(at) + COMPUTATION_KEEP_MS)),
-    env.LIBRARY.prepare(`INSERT INTO computation_witnesses (question,owner,device,official,completed_at,credited_at,position)
-      SELECT ?,?,?,?,?,?,0 FROM computation_records WHERE question=? AND kind='delivery' ON CONFLICT DO NOTHING`)
+    env.LIBRARY.prepare(`INSERT INTO relation_computation_witnesses (question,owner,device,official,completed_at,credited_at,position)
+      SELECT ?,?,?,?,?,?,0 FROM state_public_computation_summaries WHERE question=? AND kind='delivery' ON CONFLICT DO NOTHING`)
       .bind(id, owner || device, device, official ? 1 : 0, at, at, id),
   ]);
   return id;
@@ -36,7 +36,7 @@ export async function localDeliverySource(env, request, body) {
 }
 export async function deliveryName(env, source, fallback = null) {
   if (source) {
-    const { results } = await env.LIBRARY.prepare(`SELECT w.* FROM computation_witnesses w JOIN computation_records r
+    const { results } = await env.LIBRARY.prepare(`SELECT w.* FROM relation_computation_witnesses w JOIN state_public_computation_summaries r
       ON r.question=w.question WHERE r.question=? AND r.kind='delivery' AND r.expires_at>? ORDER BY w.position LIMIT 1`)
       .bind(source, iso(Date.now())).all();
     if (results.length) return (await witnessNames(env, results))[0];

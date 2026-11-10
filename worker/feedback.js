@@ -52,7 +52,7 @@ export async function feedbackRoute(request, env, path) {
   const release = line(b.release, 64);
   const lang = b.lang === "zh" ? "zh" : "en";
 
-  const row = await env.ACCOUNTS.prepare(`INSERT INTO feedback (account, created_at, text, route, share, release, lang, images)
+  const row = await env.ACCOUNTS.prepare(`INSERT INTO entity_feedback (account, created_at, text, route, share, release, lang, images)
       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8) RETURNING id`)
     .bind(account, now(), text, route, share, release, lang, images.length).first();
   const id = Number(row.id);
@@ -62,7 +62,7 @@ export async function feedbackRoute(request, env, path) {
 
   // STORED IS SENT: the row is the record, so a message that fails to go out
   // still answers ok and the owner reads it where it is kept.
-  const who = await env.ACCOUNTS.prepare("SELECT username FROM accounts WHERE id = ?1").bind(account).first();
+  const who = await env.ACCOUNTS.prepare("SELECT username FROM entity_accounts WHERE id = ?1").bind(account).first();
   const head = `Feedback #${id} from ${who ? who.username : "?"} (${lang})${route ? ` on ${route}` : ""}${release ? `, release ${release}` : ""}`;
   const quoted = text.split("\n").map((l) => `> ${l}`).join("\n");
   const link = share ? `\n${share.length <= 1000 ? share : "(share link in the record)"}` : "";
@@ -74,7 +74,7 @@ export async function feedbackRoute(request, env, path) {
 /// AN ACCOUNT'S OWN FEEDBACK, in its export: the words and where they were; the
 /// screenshots by count.
 export async function feedbackExport(env, account) {
-  const { results } = await env.ACCOUNTS.prepare("SELECT id, created_at, text, route, share, release, lang, images FROM feedback WHERE account = ?1 ORDER BY id")
+  const { results } = await env.ACCOUNTS.prepare("SELECT id, created_at, text, route, share, release, lang, images FROM entity_feedback WHERE account = ?1 ORDER BY id")
     .bind(account).all();
   return { feedback: results.map((r) => ({ ...r, id: Number(r.id), images: Number(r.images) })) };
 }
@@ -83,7 +83,7 @@ export async function feedbackExport(env, account) {
 /// with the account by cascade, and nothing else would ever reach these.
 export async function feedbackPurge(env, account) {
   if (!env.UPLOADS) return;
-  const { results } = await env.ACCOUNTS.prepare("SELECT id, images FROM feedback WHERE account = ?1 AND images > 0").bind(account).all();
+  const { results } = await env.ACCOUNTS.prepare("SELECT id, images FROM entity_feedback WHERE account = ?1 AND images > 0").bind(account).all();
   const keys = results.flatMap((r) => Array.from({ length: Number(r.images) }, (_, n) => feedbackImageKey(Number(r.id), n)));
   if (keys.length) await env.UPLOADS.delete(keys);
 }

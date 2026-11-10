@@ -67,7 +67,7 @@ def main():
     # device COMPUTED in an hour only if it sent tasks: work alone is credit for
     # results it sent earlier, and the totals carried in from before hours were kept.
     end = f" AND hour < '{args.before.isoformat()}'" if args.before else ""
-    rows = db(f"SELECT verifier v, hour h, tasks t, ms, work w FROM verifier_hours WHERE hour >= '{since}'{end}")
+    rows = db(f"SELECT verifier v, hour h, tasks t, ms, work w FROM record_hourly_compute_totals WHERE hour >= '{since}'{end}")
     if args.json:
         daily = defaultdict(lambda: {"devices": set(), "tasks": 0, "credited_work": 0, "client_elapsed_ms": 0})
         for r in rows:
@@ -157,7 +157,7 @@ def main():
     print("  " + "  ".join(f"{h:02}:{mean(h)}" for h in range(12, 24)))
 
     # WHO SAID YES, by the day of the statement they agreed to last.
-    agreed = db(f"SELECT substr(consent_at, 1, 10) d, COUNT(*) n FROM verifiers "
+    agreed = db(f"SELECT substr(consent_at, 1, 10) d, COUNT(*) n FROM entity_compute_devices "
                 f"WHERE consent_at >= '{since}' GROUP BY d ORDER BY d")
     print("\nconsents by day: " + ", ".join(f"{r['d']} {r['n']}" for r in agreed))
 

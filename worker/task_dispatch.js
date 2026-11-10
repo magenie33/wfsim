@@ -28,9 +28,9 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
       }
       const lease = newLease();
       // THE RACE IS THE DATABASE'S, and so is the cap on what one witness holds.
-      const took = await db.prepare(`UPDATE questions SET ${SUPERSEDE}, lease = ?2::text, lease_until = ?3::text, leased_to = ?4::text, leased_at = ?1::text
+      const took = await db.prepare(`UPDATE state_compute_work SET ${SUPERSEDE}, lease = ?2::text, lease_until = ?3::text, leased_to = ?4::text, leased_at = ?1::text
           WHERE id = ?5::text AND state = ?6::text AND factory_takeable(lease_until, leased_at, ?1::text, ?8::bigint)
-            AND (SELECT count(*) FROM questions h WHERE h.leased_to = ?4::text AND h.lease_until > ?1::text) < ?7::bigint`)
+            AND (SELECT count(*) FROM state_compute_work h WHERE h.leased_to = ?4::text AND h.lease_until > ?1::text) < ?7::bigint`)
         .bind(at, lease, iso(now + verbs[q.verb].lease_ms), w.device, q.id, q.state, most, ceilingS(d.row_ceiling_ms)).run();
       if (took.meta.changes) {
         if (!w.official) await charge(db, q);
@@ -38,7 +38,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
         return { lease, question: q.id, verb: q.verb, request: JSON.parse(q.request), due_at: q.due_at,
           demands: wanted.map((d) => ({ producer: d.producer, ref: d.ref, payload: JSON.parse(d.payload) })) };
       }
-      const held = await db.prepare("SELECT count(*) AS n FROM questions WHERE leased_to = ? AND lease_until > ?").bind(w.device, at).first();
+      const held = await db.prepare("SELECT count(*) AS n FROM state_compute_work WHERE leased_to = ? AND lease_until > ?").bind(w.device, at).first();
       if (held.n >= most) return null;
     }
     return null;
@@ -74,7 +74,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
           .bind(at, w.lanes ?? 1, engine, JSON.stringify(w.siblings || [w.device]), w.owner || w.device, w.net || "", w.before ?? null, ceiling, grace,
             PACKABLE, exclude ? JSON.stringify(exclude) : null, join, producer, n - kept.length, lease, iso(now + lease_ms), w.device, most),
         // IN ONE ORDER, which the sync's procedure walks too (`board_sync`).
-        db.prepare(`SELECT d.question, d.producer, d.ref, d.payload FROM demands d JOIN questions q ON q.id = d.question
+        db.prepare(`SELECT d.question, d.producer, d.ref, d.payload FROM relation_task_consumers d JOIN state_compute_work q ON q.id = d.question
             WHERE q.lease = ? AND q.leased_to = ? AND d.state = 'live' ORDER BY d.question, d.producer, d.ref`).bind(lease, w.device),
       ]);
       if (!taken.results.length) break;
@@ -82,7 +82,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
       const owed = await sift(env, ds.results.filter((x) => ids.has(x.question)).map((x) => ({ ...x, payload: JSON.parse(x.payload) })));
       const gone = taken.results.filter((q) => !owed.some((x) => x.question === q.id)).map((q) => q.id);
       if (gone.length) {
-        await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+        await db.prepare(`UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL
             WHERE ${inIdOrder(`id IN ${listOf(db, "?")} AND lease = ?`)}`).bind(JSON.stringify(gone), lease).run();
         // A ROW LEFT WITH NO LIVE DEMAND is withdrawn, not only given back: still
         // open, it heads every pack's pick again and every ask is handed nothing.
@@ -104,10 +104,10 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
   /// A LEASE KEPT while its witness is still at it, or given back.
   async function renew(env, device, lease, now = Date.now()) {
     const db = env.LIBRARY;
-    const q = await db.prepare("SELECT verb FROM questions WHERE lease = ? AND leased_to = ? AND lease_until >= ?")
+    const q = await db.prepare("SELECT verb FROM state_compute_work WHERE lease = ? AND leased_to = ? AND lease_until >= ?")
       .bind(lease, device, iso(now)).first();
     if (!q) return false;
-    await db.prepare("UPDATE questions SET lease_until = ? WHERE lease = ? AND leased_to = ?")
+    await db.prepare("UPDATE state_compute_work SET lease_until = ? WHERE lease = ? AND leased_to = ?")
       .bind(iso(now + verbs[q.verb].lease_ms), lease, device).run();
     return true;
   }
@@ -119,10 +119,10 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
   async function renewRow(env, device, lease, question, now = Date.now()) {
     const db = env.LIBRARY, most = "GREATEST", renewMs = (await dialsOf(env, now)).renew_ms;
     const [kept, before] = await db.batch([
-      db.prepare(`UPDATE questions SET lease_until = ${most}(lease_until, ?4)
+      db.prepare(`UPDATE state_compute_work SET lease_until = ${most}(lease_until, ?4)
                    WHERE id = ?1 AND lease = ?2 AND leased_to = ?3 RETURNING id`)
         .bind(question, lease, device, iso(now + renewMs)),
-      db.prepare(`UPDATE questions SET lease_prev_until = ${most}(lease_prev_until, ?4)
+      db.prepare(`UPDATE state_compute_work SET lease_prev_until = ${most}(lease_prev_until, ?4)
                    WHERE id = ?1 AND lease_prev = ?2 AND leased_to_prev = ?3 RETURNING id`)
         .bind(question, lease, device, iso(now + renewMs)),
     ]);
@@ -146,7 +146,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
   /// under the lease, which runs out unless the page comes back to renew it.
   async function release(env, device, lease, keep = null) {
     const db = env.LIBRARY;
-    await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+    await db.prepare(`UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL
         WHERE ${inIdOrder("lease = ?::text AND leased_to = ?::text AND id IS DISTINCT FROM ?::text")}`)
       .bind(lease, device, keep).run();
   }
@@ -201,21 +201,21 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
     // Producer constants let generic plans seek a sparse producer's demands;
     // a parameter's average selectivity can walk every overdue question.
     const literal = (text) => `E'${text.replaceAll("\\", "\\\\").replaceAll("'", "''")}'::text`;
-    const producer = selected ? `EXISTS (SELECT 1 FROM demands d WHERE d.question = q.id
+    const producer = selected ? `EXISTS (SELECT 1 FROM relation_task_consumers d WHERE d.question = q.id
               AND d.producer IN (${selected.map(literal).join(", ")}))` : "TRUE";
     // Read each question's answers before filtering its engine: a new engine
     // absent from statistics can otherwise read the closed field per candidate.
     const takeable = `q.verb NOT IN (SELECT value FROM jsonb_array_elements_text((?5::text)::jsonb))
             AND (q.lease_until IS NULL OR q.lease_until < ?3::text)
             AND ${producer}
-            AND NOT EXISTS (SELECT 1 FROM (SELECT a.device, a.engine FROM answers a
+            AND NOT EXISTS (SELECT 1 FROM (SELECT a.device, a.engine FROM state_compute_candidate_answers a
               WHERE a.question = q.id OFFSET 0) a WHERE a.device = ?2::text AND a.engine = ?4::text)`;
     const take = (n) => {
-      const candidates = wanted.map((state) => `(SELECT q.id FROM questions q WHERE ${stateOf(state)} AND ${takeable}
+      const candidates = wanted.map((state) => `(SELECT q.id FROM state_compute_work q WHERE ${stateOf(state)} AND ${takeable}
             ORDER BY q.waits DESC, q.due_at, q.id LIMIT ${n * CLAIM_SPARE})`).join(" UNION ALL ");
       return db.prepare(`WITH c AS (${candidates})
-        UPDATE questions SET lease = replace(gen_random_uuid()::text, '-', ''), lease_until = ?1::text, leased_to = ?2::text, leased_at = NULL
-        WHERE id IN (SELECT q.id FROM questions q
+        UPDATE state_compute_work SET lease = replace(gen_random_uuid()::text, '-', ''), lease_until = ?1::text, leased_to = ?2::text, leased_at = NULL
+        WHERE id IN (SELECT q.id FROM state_compute_work q
           WHERE q.id IN (SELECT id FROM c)
             AND (${wanted.map((state) => `(${stateOf(state)})`).join(" OR ")})
             AND ${takeable}
@@ -230,12 +230,12 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
       const { results: got } = await take(max - results.length);
       if (!got.length) break;
       const opened = got.filter((q) => q.state === "open").map((q) => q.id);
-      const { results: live } = opened.length ? await db.prepare(`SELECT question, producer, ref, payload FROM demands
+      const { results: live } = opened.length ? await db.prepare(`SELECT question, producer, ref, payload FROM relation_task_consumers
           WHERE question IN ${listOf(db, "?")} AND state = 'live' ORDER BY question, producer, ref`).bind(JSON.stringify(opened)).all() : { results: [] };
       const owed = await sift(env, live.map((x) => ({ ...x, payload: JSON.parse(x.payload) })));
       const gone = opened.filter((id) => !owed.some((x) => x.question === id));
       if (gone.length) {
-        await db.prepare(`UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL
+        await db.prepare(`UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL
             WHERE ${inIdOrder(`id IN ${listOf(db, "?")} AND leased_to = ?`)}`).bind(JSON.stringify(gone), w.device).run();
         await restateAll(db, gone);
       }
@@ -249,7 +249,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
     // comes with its withdrawn demands: without one it is claimed, skipped and
     // released forever, ahead of every question behind it.
     const { results: ds } = await db.prepare(
-      `SELECT question, producer, ref, payload, state FROM demands WHERE question IN ${listOf(db, "?")}
+      `SELECT question, producer, ref, payload, state FROM relation_task_consumers WHERE question IN ${listOf(db, "?")}
         ORDER BY state = 'live' DESC, state <> 'withdrawn' DESC, producer, ref`)
       .bind(JSON.stringify(results.map((q) => q.id))).all();
     return results.map((q) => {
@@ -262,7 +262,7 @@ export function createDispatch({ verbs, onLease, liveDemands, sift, restate, res
 
 
   const releaseAllOf = (env, device, now = Date.now()) => env.LIBRARY.prepare(
-    `UPDATE questions SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder("leased_to = ? AND lease_until > ?")}`).bind(device, iso(now));
+    `UPDATE state_compute_work SET lease = NULL, lease_until = NULL, leased_to = NULL WHERE ${inIdOrder("leased_to = ? AND lease_until > ?")}`).bind(device, iso(now));
   const headOf = (env, w, engine, now = Date.now(), d = DIAL_DEFAULTS, pack = false) => env.LIBRARY.prepare(pack ? PACK_HEAD : HEAD)
     .bind(...eligibleArgs(w, engine, iso(now), d), ...(pack ? [PACKABLE] : []));
   const packable = (q) => !q.waits && !!(verbs[q.verb] || {}).pack;

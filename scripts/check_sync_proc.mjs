@@ -53,13 +53,13 @@ async function world(proc, settle) {
     first: () => { CALLS.made++; return s.first().catch((e) => { if (e && e.code === "WS001") CALLS.js++; throw e; }); } });
   L.prepare = (sql) => (/^CALL board_sync/.test(sql) ? counted(prepare(sql)) : prepare(sql));
   for (const [name, v] of [["sync_proc", proc], ["settle_async", settle]]) {
-    await L.run("INSERT INTO factory_dials (name, value, set_by, set_at) VALUES (?, ?, 'check', '2026-01-01T00:00:00.000Z')", name, v);
+    await L.run("INSERT INTO state_factory_parameters (name, value, set_by, set_at) VALUES (?, ?, 'check', '2026-01-01T00:00:00.000Z')", name, v);
   }
-  await A.run("INSERT INTO accounts (id, created_at) VALUES ('acc1', '2026-01-01T00:00:00.000Z'), ('acc2', '2026-01-01T00:00:00.000Z')");
-  await A.run(`INSERT INTO devices (verifier, account, claimed_at) VALUES (?, 'acc1', '2026-01-01'), (?, 'acc1', '2026-01-01'), (?, 'acc2', '2026-01-01')`,
+  await A.run("INSERT INTO entity_accounts (id, created_at) VALUES ('acc1', '2026-01-01T00:00:00.000Z'), ('acc2', '2026-01-01T00:00:00.000Z')");
+  await A.run(`INSERT INTO relation_account_compute_devices (verifier, account, claimed_at) VALUES (?, 'acc1', '2026-01-01'), (?, 'acc1', '2026-01-01'), (?, 'acc2', '2026-01-01')`,
     DEVICES[0], DEVICES[1], DEVICES[2]);
   // A DEVICE AN ACCOUNT HOLDS NOW, and one an account held once.
-  await A.run(`INSERT INTO device_spans (verifier, account, from_hour, until_hour) VALUES (?, 'acc1', '2026-10-01T00', NULL),
+  await A.run(`INSERT INTO record_compute_device_ownership_intervals (verifier, account, from_hour, until_hour) VALUES (?, 'acc1', '2026-10-01T00', NULL),
     (?, 'acc2', '2026-10-01T00', '2026-10-14T03')`, DEVICES[0], DEVICES[2]);
   return { env, L };
 }
@@ -69,41 +69,44 @@ const post = (env, route, path, body, ip = "") => route(new Request(`https://x${
 /// THE SAME BOOKS IN EVERY WORLD: rows owed and asked, some waited on, one asked by a riven chat too.
 async function books(w, rand, n, dead = 0) {
   const batch = "arrivals-2026-10-14";
-  await w.L.run("INSERT INTO batches (id, at, why, total) VALUES (?, ?, 'test', 0)", batch, batch);
+  await w.L.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES (?, ?, 'test', 0)", batch, batch);
   const ids = [];
   for (let i = 0; i < n; i++) {
     const id = `b${String(i).padStart(3, "0")}`;
     ids.push(id);
-    await w.L.run("INSERT INTO builds (id, at, record) VALUES (?, '2026-10-14T00:00:00.000Z', ?)", id, JSON.stringify({ weapon: WEAPONS[i % 4], mods: [id] }));
+    await w.L.run("INSERT INTO entity_weapon_builds (id, at, record) VALUES (?, '2026-10-14T00:00:00.000Z', ?)", id, JSON.stringify({ weapon: WEAPONS[i % 4], mods: [id] }));
     for (const ruler of ["standard_single_target", "aoe"]) {
       if (ruler === "aoe" && rand() < 0.5) continue;
-      await w.L.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, ?, 'base')", batch, id, ruler);
+      await w.L.run("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES (?, ?, ?, 'base')", batch, id, ruler);
     }
   }
-  const rows = (await w.L.all("SELECT build_id, ruler, mode FROM queue ORDER BY build_id, ruler")).map((r) => ({ identity: r.build_id, ruler: r.ruler, mode: r.mode }));
+  const rows = (await w.L.all("SELECT build_id, ruler, mode FROM state_board_pending_work ORDER BY build_id, ruler")).map((r) => ({ identity: r.build_id, ruler: r.ruler, mode: r.mode }));
   await post(w.env, boardTasksRoute, "/api/board/ask", { batch, rows });
   // …AND A THIRD OF THEM ASKED AGAIN BY A REFRESH: one question, two producers' demands.
   const again = "refresh-2026-10-14";
-  await w.L.run("INSERT INTO batches (id, at, why, total) VALUES (?, ?, 'test', 0)", again, again);
+  await w.L.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES (?, ?, 'test', 0)", again, again);
   const some = rows.filter((_, i) => i % 3 === 0);
-  for (const r of some) await w.L.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, ?, 'base')", again, r.identity, r.ruler);
+  for (const r of some) await w.L.run("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES (?, ?, ?, 'base')", again, r.identity, r.ruler);
   await post(w.env, boardTasksRoute, "/api/board/ask", { batch: again, rows: some });
   // …AND A FEW LEFT OPEN WITH EVERY DEMAND WITHDRAWN, which a pack must withdraw.
-  await w.L.run("UPDATE demands SET state = 'withdrawn' WHERE ref IN (SELECT ref FROM demands ORDER BY ref LIMIT 3)");
+  await w.L.run("UPDATE relation_task_consumers SET state = 'withdrawn' WHERE ref IN (SELECT ref FROM relation_task_consumers ORDER BY ref LIMIT 3)");
   if (dead) await cancelHead(w, dead);
 }
 /// ORDERS CANCELLED AT THE HEAD: the queue rows of the first `n` open questions
 /// in the order deleted, their demands and questions left as they were.
 async function cancelHead(w, n) {
-  await w.L.run(`DELETE FROM queue WHERE (build_id, ruler, mode) IN (SELECT d.payload::jsonb ->> 'identity', d.payload::jsonb ->> 'ruler',
-      d.payload::jsonb ->> 'mode' FROM demands d WHERE d.state = 'live' AND d.question IN (SELECT id FROM questions WHERE state = 'open'
+  await w.L.run(`DELETE FROM state_board_pending_work WHERE (build_id, ruler, mode) IN (SELECT d.payload::jsonb ->> 'identity', d.payload::jsonb ->> 'ruler',
+      d.payload::jsonb ->> 'mode' FROM relation_task_consumers d WHERE d.state = 'live' AND d.question IN (SELECT id FROM state_compute_work WHERE state = 'open'
       ORDER BY waits DESC, due_at, id LIMIT ?))`, n);
 }
 
 const SORT = {
-  questions: "id", demands: "producer, ref", answers: "id", settle_queue: "question, engine, peer", verifiers: "id",
-  verifier_asks: "verifier, hour", verifier_hours: "verifier, hour", producer_use: "producer", engine_refusals: "question, device, engine",
-  refusal_withdrawals: "question", scores: "identity, ruler, mode", queue: "batch, build_id, ruler, mode",
+  state_compute_work: "id", relation_task_consumers: "producer, ref", record_candidate_answers: "id",
+  state_pending_verifications: "question, engine, peer", entity_compute_devices: "id",
+  record_hourly_work_requests: "verifier, hour", record_hourly_compute_totals: "verifier, hour",
+  state_producer_compute_usage: "producer", record_engine_refusals: "question, device, engine",
+  record_refusal_withdrawals: "question", state_board_measurement_selection: "identity, ruler, mode",
+  state_board_pending_work: "batch, build_id, ruler, mode",
 };
 /// EVERY LEASE NAMED by the order this world first handed it out; the client
 /// keeps the names, and each world is sent its own lease under each.
@@ -123,7 +126,7 @@ function namer() {
 // AN ANSWER'S ID IS ITS PLACE, not its number: a call handed back to the worker
 // used up the numbers it drew, as every rolled-back insert does.
 const tables = async (w, name) => Object.fromEntries(await Promise.all(Object.entries(SORT).map(async ([t, by]) =>
-  [t, name((await w.L.all(`SELECT * FROM ${t} ORDER BY ${by}`)).map(({ id, ...r }) => (t === "answers" ? r : { id, ...r })))])));
+  [t, name((await w.L.all(`SELECT * FROM ${t} ORDER BY ${by}`)).map(({ id, ...r }) => (t === "record_candidate_answers" ? r : { id, ...r })))])));
 const firstDiff = (a, b, path = "") => {
   if (JSON.stringify(a) === JSON.stringify(b)) return null;
   if (a && b && typeof a === "object" && typeof b === "object") {
@@ -143,11 +146,11 @@ async function run(seed, settle, steps) {
   for (const w of worlds) await books(w, rng(seed), 24, 12);
   // A ROW SOMEONE WAITS ON goes alone; a row a riven chat asks too is judged in JS.
   for (const w of worlds) {
-    await w.L.run("UPDATE questions SET waits = 1 WHERE id = (SELECT id FROM questions ORDER BY id OFFSET 3 LIMIT 1)");
-    const q = (await w.L.get("SELECT id, due_at FROM questions ORDER BY id OFFSET 7 LIMIT 1"));
-    await w.L.run("INSERT INTO demands (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES ('chat', 'riv1', ?, 'live', ?, ?, 0, '{}')",
+    await w.L.run("UPDATE state_compute_work SET waits = 1 WHERE id = (SELECT id FROM state_compute_work ORDER BY id OFFSET 3 LIMIT 1)");
+    const q = (await w.L.get("SELECT id, due_at FROM state_compute_work ORDER BY id OFFSET 7 LIMIT 1"));
+    await w.L.run("INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, waits, payload) VALUES ('chat', 'riv1', ?, 'live', ?, ?, 0, '{}')",
       q.id, iso(T), q.due_at);
-    await w.L.run("UPDATE questions SET producer = 'chat' WHERE id = ?", q.id);
+    await w.L.run("UPDATE state_compute_work SET producer = 'chat' WHERE id = ?", q.id);
   }
   const clients = new Map(DEVICES.map((v) => [v, { packs: new Map(), sent: [], given: [] }]));
   let syncs = 0, packs = 0, results = 0, refused = 0, dropped = 0, stale = 0, early = 0, idle = 0, alone = 0;
@@ -155,10 +158,10 @@ async function run(seed, settle, steps) {
     // THE WORLD MOVES: time, a device let back early, a row the scorer measured, a settler pass.
     T += Math.floor(rand() * 240_000);
     const k = Math.floor(rand() * DEVICES.length), v = DEVICES[k], me = clients.get(v);
-    if (rand() < 0.5) for (const w of worlds) await w.L.run("UPDATE verifiers SET next_at = NULL WHERE id = ?", v);
+    if (rand() < 0.5) for (const w of worlds) await w.L.run("UPDATE entity_compute_devices SET next_at = NULL WHERE id = ?", v);
     if (rand() < 0.12) {
-      const owed = await worlds[0].L.get("SELECT build_id, ruler FROM queue ORDER BY build_id, ruler OFFSET ? LIMIT 1", Math.floor(rand() * 10));
-      if (owed) for (const w of worlds) await w.L.run("DELETE FROM queue WHERE build_id = ? AND ruler = ?", owed.build_id, owed.ruler);
+      const owed = await worlds[0].L.get("SELECT build_id, ruler FROM state_board_pending_work ORDER BY build_id, ruler OFFSET ? LIMIT 1", Math.floor(rand() * 10));
+      if (owed) for (const w of worlds) await w.L.run("DELETE FROM state_board_pending_work WHERE build_id = ? AND ruler = ?", owed.build_id, owed.ruler);
     }
     if (settle && rand() < 0.3) for (const w of worlds) await facts().settleQueued(w.env, T);
     // WHAT THE CLIENT SAYS: results for some rows it holds, a refusal, the rest held, some forgotten.
@@ -233,7 +236,7 @@ for (const proc of [1, 0]) {
     forgetDials();
     const w = await world(proc, 1);
     await books(w, rng(5), 60);
-    const owedNow = async () => new Set((await w.L.all("SELECT build_id, ruler, mode FROM queue")).map((r) => `${r.build_id}|${r.ruler}|${r.mode}`));
+    const owedNow = async () => new Set((await w.L.all("SELECT build_id, ruler, mode FROM state_board_pending_work")).map((r) => `${r.build_id}|${r.ruler}|${r.mode}`));
     const before = (await owedNow()).size;
     await cancelHead(w, dead);
     const owed = await owedNow();
@@ -256,8 +259,8 @@ async function measured(proc) {
   const v = DEVICES[3], body = { verifier: v, engine: "e1", protocol: 8, consent: { v: 1, at: "2026-10-08T08:00:00.000Z" }, lanes: 4, want_ms: 600_000, pace_ms: 60_000 };
   const first = await post(w.env, syncRoute, "/api/board/sync", body, IPS[3]);
   const rows = first.pack.tasks.map((t) => t.question);
-  const lease = (await w.L.get("SELECT lease FROM questions WHERE id = ?", rows[0])).lease;
-  await w.L.run("UPDATE verifiers SET next_at = NULL WHERE id = ?", v);
+  const lease = (await w.L.get("SELECT lease FROM state_compute_work WHERE id = ?", rows[0])).lease;
+  await w.L.run("UPDATE entity_compute_devices SET next_at = NULL WHERE id = ?", v);
   T += 30_000;
   const before = w.env.LIBRARY.cost.calls + w.env.ACCOUNTS.cost.calls;
   const r = await post(w.env, syncRoute, "/api/board/sync", { ...body, since: "2026-10-15T00", states: rows.slice(0, 2),
@@ -286,7 +289,7 @@ const rollingReply = await post(rolling.env, syncRoute, "/api/board/sync", {
   verifier: DEVICES[3], engine: "e1", protocol: 8, lanes: 4, consent: { v: 1, at: iso(T) },
   held: [], results: [],
 }, IPS[3]);
-const rollingGate = await rolling.L.prepare("SELECT next_at FROM verifiers WHERE id = ?").bind(DEVICES[3]).first();
+const rollingGate = await rolling.L.prepare("SELECT next_at FROM entity_compute_devices WHERE id = ?").bind(DEVICES[3]).first();
 check("an older worker's pack parameters retain its floor gate during a SQL-first rollout",
   !!rollingReply.pack?.tasks.length && rollingGate?.next_at === iso(T + 60_000), JSON.stringify(rollingGate));
 
@@ -299,7 +302,7 @@ const reached = new Set(["board_sync_steps"]);
 for (const name of reached) {
   for (const other of Object.keys(bodies)) if (other !== name && new RegExp(`\\b${other}\\(`).test(bodies[name])) reached.add(other);
 }
-const writers = [...reached].filter((n) => /UPDATE producer_use|producer_use[^;]*FOR UPDATE/.test(bodies[n]));
+const writers = [...reached].filter((n) => /UPDATE state_producer_compute_usage|producer_use[^;]*FOR UPDATE/.test(bodies[n]));
 check(`a sync's steps (${reached.size} functions) neither lock nor write producer_use, which board_sync does last`,
   reached.size > 10 && writers.length === 0, writers.join(", "));
 // …AND A PACK PICKS AS OFTEN THROUGH EITHER PATH (worker/tasks.js `PICK_ROUNDS`).

@@ -93,9 +93,9 @@ export function acceptedWitnesses(answers, creditedAt, previous = []) {
 /// never comes from the same person's other computer.
 export async function witnessOf(env, device) {
   const row = env.ACCOUNTS
-    && await env.ACCOUNTS.prepare("SELECT account FROM devices WHERE verifier = ?").bind(device).first();
+    && await env.ACCOUNTS.prepare("SELECT account FROM relation_account_compute_devices WHERE verifier = ?").bind(device).first();
   if (!row) return { owner: device, siblings: [device] };
-  const { results } = await env.ACCOUNTS.prepare("SELECT verifier FROM devices WHERE account = ?").bind(row.account).all();
+  const { results } = await env.ACCOUNTS.prepare("SELECT verifier FROM relation_account_compute_devices WHERE account = ?").bind(row.account).all();
   return { owner: row.account, siblings: [...new Set([device, ...results.map((r) => r.verifier)])] };
 }
 
@@ -119,7 +119,7 @@ export const CLAIM_STALE_MS = 60_000;
 /// ROW LOCKS ON QUESTIONS ARE TAKEN IN ID ORDER by every statement that takes
 /// many: a lease given back and a settlement locked one set of rows in two
 /// orders, and deadlocked each other several times an hour.
-export const inIdOrder = (where) => `id IN (SELECT id FROM questions WHERE ${where} ORDER BY id FOR UPDATE)`;
+export const inIdOrder = (where) => `id IN (SELECT id FROM state_compute_work WHERE ${where} ORDER BY id FOR UPDATE)`;
 
 
 export const FACTS_PER_REFUSAL_FORGIVEN = 1000;

@@ -20,10 +20,10 @@ export async function popularity(request, env, ctx) {
   if (hit) return hit;
   // THE WINDOW ENDS AT THE NEWEST FINISHED DAY, not today: a day is written
   // after midnight UTC, so "today" would always be an empty day in the sum.
-  const last = (await env.LIBRARY.prepare("SELECT MAX(day) AS d FROM usage_days WHERE event = 'visitors' AND subject = 'all'").first() || {}).d;
+  const last = (await env.LIBRARY.prepare("SELECT MAX(day) AS d FROM record_daily_usage_summaries WHERE event = 'visitors' AND subject = 'all'").first() || {}).d;
   const after = last ? new Date(Date.parse(`${last}T00:00:00Z`) - DAYS * 86_400_000).toISOString().slice(0, 10) : null;
   const { results } = after ? await env.LIBRARY.prepare(
-    `SELECT subject, SUM(visitors) AS n, MIN(day) AS first FROM usage_days
+    `SELECT subject, SUM(visitors) AS n, MIN(day) AS first FROM record_daily_usage_summaries
      WHERE event IN (${EVENTS.map(() => "?").join(",")}) AND day > ? GROUP BY subject`).bind(...EVENTS, after).all() : { results: [] };
   const scores = Object.fromEntries(results.filter((r) => r.n > 0).map((r) => [r.subject, r.n]));
   const days = results.map((r) => r.first).sort();

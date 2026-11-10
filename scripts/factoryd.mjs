@@ -99,7 +99,7 @@ export async function run({ once = false, opened = null, servedNow = served, tar
   const pace = paceCache((now) => scorePace(backgroundEnv, now));
   const commit = commitOf();
   // THE SHADOW GOES ON WHERE IT STOPPED: its cursor is kept in its finding.
-  const kept = await env.LIBRARY.prepare("SELECT body FROM factory_findings WHERE kind = 'settle_shadow'").first().catch(() => null);
+  const kept = await env.LIBRARY.prepare("SELECT body FROM state_factory_findings WHERE kind = 'settle_shadow'").first().catch(() => null);
   let cursor = { at: iso(Date.now() - 10 * 60_000), id: "" };
   try { if (kept) cursor = JSON.parse(kept.body).cursor || cursor; } catch { /* from ten minutes ago */ }
   let release = await servedNow();

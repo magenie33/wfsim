@@ -18,13 +18,13 @@ console.log("ok: modules depend on common contracts; dispatch owns only selectio
 const now = Date.now(), db = await testDb("library"), env = { LIBRARY: db };
 const upgrade = taskSchemaSql();
 assert(upgrade.includes("CREATE INDEX CONCURRENTLY IF NOT EXISTS demands_delivery"));
-await db.exec("ALTER TABLE demands DROP COLUMN delivery_at; DROP FUNCTION factory_past_safe(text,text) CASCADE; ALTER TABLE answers DROP COLUMN credit_work; ALTER TABLE answers DROP COLUMN credit_at; DROP FUNCTION factory_delivery_guard(text,text,text,text,text,text,text)");
+await db.exec("ALTER TABLE relation_task_consumers DROP COLUMN delivery_at; DROP FUNCTION factory_past_safe(text,text) CASCADE; ALTER TABLE record_candidate_answers DROP COLUMN credit_work; ALTER TABLE record_candidate_answers DROP COLUMN credit_at; DROP FUNCTION factory_delivery_guard(text,text,text,text,text,text,text)");
 const localUpgrade = upgrade.replace("SET ROLE wfsim;", "").replaceAll("CREATE INDEX CONCURRENTLY", "CREATE INDEX");
 await db.exec(localUpgrade);
 await db.exec(localUpgrade);
 console.log("ok: the additive upgrade derives from the schema and can be applied twice before deployment");
 await db.exec("CREATE TABLE received(ref text PRIMARY KEY); CREATE TABLE delayed(ref text PRIMARY KEY)");
-for (const id of ["a", "b", "c"]) await db.run("INSERT INTO verifiers(id,seen,work) VALUES (?,'x',0)", id);
+for (const id of ["a", "b", "c"]) await db.run("INSERT INTO entity_compute_devices(id,seen,work) VALUES (?,'x',0)", id);
 let broken = true;
 const producers = {
   broken: { on_fact_writes: (env, d) => [env.LIBRARY.prepare(`INSERT INTO ${broken ? "missing_consumer_table" : "delayed"}(ref) VALUES (?) ON CONFLICT DO NOTHING`).bind(d.ref)] },
@@ -42,27 +42,27 @@ for (const id of ["a", "b"]) {
   try { await f.answer(env, w, { lease: lease.lease, engine: "e", result: { value: 49 }, work: 10 }, now); }
   catch (error) { if (id !== "b" || !String(error).includes("missing_consumer_table")) throw error; }
 }
-assert.equal((await db.get("SELECT state FROM questions WHERE id=?", ids[0])).state, "fact", "consumer failure rolled back verified work");
+assert.equal((await db.get("SELECT state FROM state_compute_work WHERE id=?", ids[0])).state, "fact", "consumer failure rolled back verified work");
 assert.equal(await f.next(env, witness("c"), "e", now), null, "failed delivery must not request another computation");
 assert.equal((await db.get("SELECT count(*) n FROM received")).n, 1, "one failing consumer blocked an independent consumer");
-assert.equal((await db.get("SELECT sum(work) n FROM verifiers")).n, 20);
+assert.equal((await db.get("SELECT sum(work) n FROM entity_compute_devices")).n, 20);
 broken = false;
 assert.equal(await f.redeliver(env, now + 11 * 60000), 1);
 assert.equal((await db.get("SELECT count(*) n FROM delayed")).n, 1);
 assert.equal(await f.redeliver(env, now + 12 * 60000), 0);
-assert.equal((await db.get("SELECT count(*) n FROM answers")).n, 2);
-assert.equal((await db.get("SELECT sum(work) n FROM verifiers")).n, 20, "delivery retry paid the computation twice");
+assert.equal((await db.get("SELECT count(*) n FROM record_candidate_answers")).n, 2);
+assert.equal((await db.get("SELECT sum(work) n FROM entity_compute_devices")).n, 20, "delivery retry paid the computation twice");
 console.log("ok: a new registered verb shares work; failed consumers retry independently without recomputation or duplicate credit");
 
 const cachedAt = now + 13 * 60000;
-await db.run("UPDATE questions SET fact_at=? WHERE id=?", new Date(cachedAt - 13 * 86400000).toISOString(), ids[0]);
+await db.run("UPDATE state_compute_work SET fact_at=? WHERE id=?", new Date(cachedAt - 13 * 86400000).toISOString(), ids[0]);
 broken = true;
 const cached = await f.demand(env, { ...asks[0], ref: "cached-retry" }, "e", cachedAt);
 assert.equal(cached, ids[0]);
-assert((await db.get("SELECT delivery_at FROM demands WHERE ref='cached-retry'")).delivery_at);
+assert((await db.get("SELECT delivery_at FROM relation_task_consumers WHERE ref='cached-retry'")).delivery_at);
 broken = false;
 assert.equal(await f.redeliver(env, cachedAt + 61000), 1, "a new delivery of an old fact was lost behind the fact-time cursor");
-assert.equal((await db.get("SELECT count(*) n FROM answers")).n, 2);
+assert.equal((await db.get("SELECT count(*) n FROM record_candidate_answers")).n, 2);
 assert.equal((await db.get("SELECT count(*) n FROM delayed")).n, 2);
 console.log("ok: a new consumer of a thirteen-day-old fact retries without creating or paying another computation");
 
@@ -89,7 +89,7 @@ console.log("ok: a dispatch strategy can be replaced without access to registrat
 for (const officialAnswer of [false, true]) {
   const L = await testDb("library");
   await L.exec("CREATE TABLE received(ref text PRIMARY KEY)");
-  for (const id of ["a", "b"]) await L.run("INSERT INTO verifiers(id,seen,work) VALUES (?,'x',0)", id);
+  for (const id of ["a", "b"]) await L.run("INSERT INTO entity_compute_devices(id,seen,work) VALUES (?,'x',0)", id);
   let failCredit = true;
   const E = { LIBRARY: { ...L, batch: async list => {
     if (failCredit && list.some(s => /WITH owed AS/.test(s.sql))) throw new Error("credit unavailable");
@@ -106,14 +106,14 @@ for (const officialAnswer of [false, true]) {
       await F.answer(E, witness("b"), { lease: two.lease, engine: "e", result: { value: 49 }, work: 10 }, now);
     }
   } catch (error) { assert.match(String(error), /credit unavailable/); }
-  assert.equal((await L.get("SELECT state FROM questions WHERE id=?", qid)).state, "fact");
+  assert.equal((await L.get("SELECT state FROM state_compute_work WHERE id=?", qid)).state, "fact");
   assert.equal((await L.get("SELECT count(*) n FROM received")).n, 1, "failed credit blocked result delivery");
   failCredit = false;
   await F.repay(E, now + 11 * 60000);
-  const paid = (await L.get("SELECT sum(work) n FROM verifiers")).n;
+  const paid = (await L.get("SELECT sum(work) n FROM entity_compute_devices")).n;
   assert.equal(paid, officialAnswer ? 10 : 20);
   await F.repay(E, now + 12 * 60000);
-  assert.equal((await L.get("SELECT sum(work) n FROM verifiers")).n, paid);
+  assert.equal((await L.get("SELECT sum(work) n FROM entity_compute_devices")).n, paid);
   await L.close();
 }
 console.log("ok: credit outages preserve volunteer and official facts, delivery continues, repayment is idempotent");
@@ -121,7 +121,7 @@ console.log("ok: credit outages preserve volunteer and official facts, delivery 
 {
   const L = await testDb("library");
   await L.exec("CREATE TABLE received(ref text PRIMARY KEY)");
-  await L.run("INSERT INTO verifiers(id,seen,work) VALUES ('a','x',0)");
+  await L.run("INSERT INTO entity_compute_devices(id,seen,work) VALUES ('a','x',0)");
   let failed = true;
   const E = { LIBRARY: { ...L, batch: list => {
     if (failed && list.some(s => /WITH owed AS/.test(s.sql))) throw new Error("credit unavailable");
@@ -133,16 +133,16 @@ console.log("ok: credit outages preserve volunteer and official facts, delivery 
   const lease = await F.next(E, witness("a"), "e", now);
   await F.answer(E, witness("a"), { lease: lease.lease, engine: "e", result: { score: 49 }, work: 999 }, now);
   await assert.rejects(F.answerOfficial(E, official, { question: qid, engine: "e", result: { score: 49 }, work: 10 }, now), /credit unavailable/);
-  assert.equal((await L.get("SELECT credit_work FROM answers WHERE official=0")).credit_work, 10);
+  assert.equal((await L.get("SELECT credit_work FROM record_candidate_answers WHERE official=0")).credit_work, 10);
   await L.run("SELECT factory_forget_past(?::text,'e','',200)", new Date(now + 86400000).toISOString());
-  assert(await L.get("SELECT id FROM questions WHERE id=?", qid), "retention discarded an unpaid corrected decision");
+  assert(await L.get("SELECT id FROM state_compute_work WHERE id=?", qid), "retention discarded an unpaid corrected decision");
   failed = false;
   await F.repay(E, now + 15 * 86400000);
-  assert.equal((await L.get("SELECT work FROM verifiers WHERE id='a'")).work, 10, "recovery ignored the official payment decision");
-  assert.equal((await L.get("SELECT work FROM verifier_hours WHERE verifier='a'")).work, 10);
-  assert.equal((await L.get("SELECT hour FROM verifier_hours WHERE verifier='a'")).hour, new Date(now).toISOString().slice(0, 13));
+  assert.equal((await L.get("SELECT work FROM entity_compute_devices WHERE id='a'")).work, 10, "recovery ignored the official payment decision");
+  assert.equal((await L.get("SELECT work FROM record_hourly_compute_totals WHERE verifier='a'")).work, 10);
+  assert.equal((await L.get("SELECT hour FROM record_hourly_compute_totals WHERE verifier='a'")).hour, new Date(now).toISOString().slice(0, 13));
   await F.repay(E, now + 16 * 86400000);
-  assert.equal((await L.get("SELECT work FROM verifiers WHERE id='a'")).work, 10);
+  assert.equal((await L.get("SELECT work FROM entity_compute_devices WHERE id='a'")).work, 10);
   await L.close();
 }
 console.log("ok: durable credit recovery preserves corrected work and its original hour beyond the legacy cursor window");
@@ -150,15 +150,15 @@ console.log("ok: durable credit recovery preserves corrected work and its origin
 for (const superseded of ["fact", "demand"]) {
   const L = await testDb("library");
   await L.exec("CREATE TABLE received(ref text PRIMARY KEY)");
-  for (const id of ["a", "b"]) await L.run("INSERT INTO verifiers(id,seen,work) VALUES (?,'x',0)", id);
+  for (const id of ["a", "b"]) await L.run("INSERT INTO entity_compute_devices(id,seen,work) VALUES (?,'x',0)", id);
   let supersede = true;
   const E = { LIBRARY: { ...L, batch: async list => {
     if (supersede && list.some(s => s.sql.includes("factory_delivery_guard"))) {
       supersede = false;
       if (superseded === "fact") {
-        await L.run("UPDATE questions SET state='open',canon=NULL,fact_engine=NULL");
-        await L.run("UPDATE demands SET delivery_at=NULL");
-      } else await L.run("UPDATE demands SET payload='{}',asked_at=?", new Date(now + 1).toISOString());
+        await L.run("UPDATE state_compute_work SET state='open',canon=NULL,fact_engine=NULL");
+        await L.run("UPDATE relation_task_consumers SET delivery_at=NULL");
+      } else await L.run("UPDATE relation_task_consumers SET payload='{}',asked_at=?", new Date(now + 1).toISOString());
     }
     return L.batch(list);
   } } };
@@ -169,7 +169,7 @@ for (const superseded of ["fact", "demand"]) {
     await F.answer(E, w, { lease: work.lease, engine: "e", result: { value: 49 }, work: 10 }, now);
   }
   assert.equal((await L.get("SELECT count(*) n FROM received")).n, 0, "a stale result reached its consumer");
-  assert.equal((await L.get("SELECT state FROM demands")).state, "live", "stale delivery acknowledged newer work");
+  assert.equal((await L.get("SELECT state FROM relation_task_consumers")).state, "live", "stale delivery acknowledged newer work");
   await L.close();
 }
 console.log("ok: superseded facts and demands cannot apply SQL consumer writes or acknowledge newer work");
@@ -178,7 +178,7 @@ const costs = [];
 for (const count of [1, 24]) {
   const L = await testDb("library"), E = { LIBRARY: L };
   await L.exec("CREATE TABLE received(ref text PRIMARY KEY)");
-  for (const id of ["a", "b"]) await L.run("INSERT INTO verifiers(id,seen,work) VALUES (?,'x',0)", id);
+  for (const id of ["a", "b"]) await L.run("INSERT INTO entity_compute_devices(id,seen,work) VALUES (?,'x',0)", id);
   const F = factory({ verbs, producers: { healthy: producers.healthy }, spot: 0, random: () => 1 });
   await F.demandAll(E, Array.from({ length: count }, (_, i) => ({ producer: "healthy", ref: String(i), verb: "future_compute",
     request: { value: i }, due_in_ms: 1000 })), "e", now);

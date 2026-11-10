@@ -18,12 +18,12 @@ export async function equipmentLibraryRoute(request, env, path) {
     const build = Object.fromEntries(["frame", "companion", "mods", "aura", "exilus", "arcanes", "shards", "helminth"]
       .filter(key => Object.hasOwn(input.build, key)).map(key => [key, input.build[key]]));
     const at = new Date().toISOString().slice(0, 10);
-    await env.LIBRARY.prepare("INSERT INTO equipment_inbox (id, at, record) VALUES (?, ?, ?)")
+    await env.LIBRARY.prepare("INSERT INTO record_equipment_submissions (id, at, record) VALUES (?, ?, ?)")
       .bind("equipment:" + crypto.randomUUID(), at, JSON.stringify({kind:input.kind, build, at})).run();
     return reply({ok:true, queued:true});
   }
   if (!ID.test(input.equipment || "") || (input.after && !KEY.test(input.after))) return reply({ok:false, error:"bad scope or cursor"}, 400);
-  const {results} = await env.LIBRARY.prepare("SELECT id, at, record FROM equipment_builds WHERE kind = ? AND equipment = ? AND id > ? ORDER BY id LIMIT 51")
+  const {results} = await env.LIBRARY.prepare("SELECT id, at, record FROM entity_equipment_builds WHERE kind = ? AND equipment = ? AND id > ? ORDER BY id LIMIT 51")
     .bind(input.kind, input.equipment, input.after || "").all();
   const rows = results.slice(0, 50).map(row => ({id:row.id, at:row.at, ...JSON.parse(row.record)}));
   return reply({ok:true, builds:rows, next:results.length > 50 ? rows.at(-1).id : null});

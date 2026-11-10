@@ -37,7 +37,7 @@ const CLOUD = { fetch: async (req) => {
   askedCloud.push(...ids);
   const marks = {};
   for (const id of ids) {
-    const choice = await accounts.get("SELECT named,label FROM contribution_choice WHERE account=?", id);
+    const choice = await accounts.get("SELECT named,label FROM state_account_public_attribution WHERE account=?", id);
     if (eligible.has(id) && choice?.named && choice.label === fixtureMark.kind) marks[id] = fixtureMark;
   }
   return Response.json({ ok: true, marks });
@@ -46,12 +46,12 @@ const env = { ACCOUNTS: accounts, LIBRARY: library, AUTH_SECRET: "x", CLOUD };
 
 const POINT = 1e9;
 const person = async (id, username, display = null) => {
-  await accounts.run("INSERT INTO accounts (id, created_at, username, display_name) VALUES (?, '2026-01-01', ?, ?)", id, username, display);
-  await accounts.run("INSERT INTO sessions (token_hash, account, expires_at) VALUES (?, ?, '2999-01-01')", await sha256(`token-${id}`), id);
+  await accounts.run("INSERT INTO entity_accounts (id, created_at, username, display_name) VALUES (?, '2026-01-01', ?, ?)", id, username, display);
+  await accounts.run("INSERT INTO state_login_sessions (token_hash, account, expires_at) VALUES (?, ?, '2999-01-01')", await sha256(`token-${id}`), id);
   return `wfsim_session=token-${id}`;
 };
 const device = (id, work, banned = 0) =>
-  library.run("INSERT INTO verifiers (id, seen, work, banned) VALUES (?, '2026-01-01', ?, ?)", id, work, banned);
+  library.run("INSERT INTO entity_compute_devices (id, seen, work, banned) VALUES (?, '2026-01-01', ?, ?)", id, work, banned);
 // THE CALENDAR IS PINNED to a Thursday mid-month while the rankings are read:
 // the week and the month are calendar periods, so "a week ago" is inside this
 // month only on some days of it, and a check must not pass on those alone.
@@ -62,7 +62,7 @@ globalThis.Date = class extends UnpinnedDate {
 };
 const daysAgo = (n) => new Date(Date.now() - n * 86_400_000).toISOString().slice(0, 10);
 const credit = (id, ago, work) =>
-  library.run("INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)", id, daysAgo(ago) + "T00", work);
+  library.run("INSERT INTO record_hourly_compute_totals (verifier, hour, work) VALUES (?, ?, ?)", id, daysAgo(ago) + "T00", work);
 const call = async (path, { cookie = "", body, method = body ? "POST" : "GET", origin } = {}) => {
   const headers = { cookie, ...(body ? { "content-type": "application/json" } : {}), ...(origin ? { origin } : {}) };
   const r = await contributionRoute(new Request(`https://wfsim.app${path}`,
@@ -117,15 +117,15 @@ check("signed in on someone's device, another account takes nothing it earned: t
   && annAfter.devices.length === 1 && annAfter.removed.count === 1 && annAfter.removed.points === 3,
   JSON.stringify({ ann: annAfter.points, bob: bobAfter.points, removed: annAfter.removed }));
 const nextHour = new Date(Date.now() + 3_600_000).toISOString().slice(0, 13);
-await library.run("INSERT INTO verifier_hours (verifier, hour, work) VALUES (?, ?, ?)", Y, nextHour, 2 * POINT);
-await library.run("UPDATE verifiers SET work = work + ? WHERE id = ?", 2 * POINT, Y);
+await library.run("INSERT INTO record_hourly_compute_totals (verifier, hour, work) VALUES (?, ?, ?)", Y, nextHour, 2 * POINT);
+await library.run("UPDATE entity_compute_devices SET work = work + ? WHERE id = ?", 2 * POINT, Y);
 check("...and what the device earns from the next hour is the new account's",
   (await mine(bob)).points === 2 && (await mine(ann)).points === 8, `${(await mine(bob)).points} ${(await mine(ann)).points}`);
-await library.run("DELETE FROM verifier_hours WHERE verifier = ? AND hour = ?", Y, nextHour);
-await library.run("UPDATE verifiers SET work = work - ? WHERE id = ?", 2 * POINT, Y);
+await library.run("DELETE FROM record_hourly_compute_totals WHERE verifier = ? AND hour = ?", Y, nextHour);
+await library.run("UPDATE entity_compute_devices SET work = work - ? WHERE id = ?", 2 * POINT, Y);
 // FROM HERE Y IS BOB'S OWN BROWSER, as though bob had claimed it first.
-await accounts.run("DELETE FROM device_spans WHERE verifier = ?", Y);
-await accounts.run("INSERT INTO device_spans (verifier, account, from_hour) VALUES (?, 'acct-bob', '')", Y);
+await accounts.run("DELETE FROM record_compute_device_ownership_intervals WHERE verifier = ?", Y);
+await accounts.run("INSERT INTO record_compute_device_ownership_intervals (verifier, account, from_hour) VALUES (?, 'acct-bob', '')", Y);
 
 await claim(cy, Z); await claim(cy, W);
 const r = await ranking();
@@ -153,16 +153,16 @@ check("...only a named row with a selected eligible label carries its opaque mar
   JSON.stringify(named[1].mark) === JSON.stringify(fixtureMark) && !("mark" in named[0]) && !("mark" in named[2])
   && !askedCloud.includes("acct-cy") && !askedCloud.includes("acct-bob"), `${JSON.stringify(named)} ${askedCloud}`);
 check("...and a no is kept, so it is not asked again", (await mine(cy)).decided === true && (await mine(cy)).named === false);
-await accounts.run("UPDATE accounts SET display_name = 'wf.jiuuvd.cn' WHERE id = 'acct-ann'");
+await accounts.run("UPDATE entity_accounts SET display_name = 'wf.jiuuvd.cn' WHERE id = 'acct-ann'");
 check("a display name set before the rule that refuses it is shown as the username, and kept",
   (await ranking()).some((e) => e.name === "ann") && !(await ranking()).some((e) => e.name === "wf.jiuuvd.cn")
-  && (await accounts.get("SELECT display_name FROM accounts WHERE id = 'acct-ann'")).display_name === "wf.jiuuvd.cn",
+  && (await accounts.get("SELECT display_name FROM entity_accounts WHERE id = 'acct-ann'")).display_name === "wf.jiuuvd.cn",
   JSON.stringify(await ranking()));
-await accounts.run("UPDATE accounts SET display_name = 'Ann' WHERE id = 'acct-ann'");
-await accounts.run("INSERT INTO display_name_holds (account, display_name, reason, held_at) VALUES ('acct-ann', 'Ann', 'advert', '2026-01-01')");
+await accounts.run("UPDATE entity_accounts SET display_name = 'Ann' WHERE id = 'acct-ann'");
+await accounts.run("INSERT INTO state_account_name_holds (account, display_name, reason, held_at) VALUES ('acct-ann', 'Ann', 'advert', '2026-01-01')");
 check("...and so is one held by hand",
   (await ranking()).some((e) => e.name === "ann") && !(await ranking()).some((e) => e.name === "Ann"), JSON.stringify(await ranking()));
-await accounts.run("DELETE FROM display_name_holds WHERE account = 'acct-ann'");
+await accounts.run("DELETE FROM state_account_name_holds WHERE account = 'acct-ann'");
 await choose(ann, false);
 check("taken back, the name leaves the ranking", !(await ranking()).some((e) => e.name === "Ann") && (await mine(ann)).named === false);
 check("an answer that is not one is refused", (await call("/api/account/contribution", { cookie: ann, body: { named: "yes" } })).reason === "bad_choice");
@@ -231,37 +231,37 @@ check("...and 147,500 a rank past 30, without end", crAt(23_975_000) === "31:239
 check("...carried on every ranking row and on the account's own answer",
   (await ranking()).every((e) => e.contributor_rank && e.contributor_rank.rank === 0) && (await mine(bob)).contributor_rank.xp_at_next === 2500);
 check("...never an anonymous one, by name or by handle", (await who("cy")).person === null && (await who("Ann")).person === null);
-await library.run("UPDATE verifiers SET last_at = ? WHERE id = ?", new Date().toISOString(), X);
-await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHERE id = ?", Y);
+await library.run("UPDATE entity_compute_devices SET last_at = ? WHERE id = ?", new Date().toISOString(), X);
+await library.run("UPDATE entity_compute_devices SET last_at = '2020-01-01T00:00:00.000Z' WHERE id = ?", Y);
 // THE DEMAND: owed rows by why — a new build's, a sweep's, a rescore's, a refresh's, one row
 // requested by two batches retained under its first owner — riven gains waiting, the pace window's
 // scores by who measured them, and the hours to clear.
 {
   const L = library, now = Date.now(), ago = (ms) => new Date(now - ms).toISOString();
-  await L.run("INSERT INTO batches (id, at, why, total) VALUES ('arrivals-2026-03-01', 'x', 'x', 3), ('rescore-x', 'x', 'x', 2), ('refresh-2026-03-01', 'x', 'x', 1)");
+  await L.run("INSERT INTO entity_compute_batches (id, at, why, total) VALUES ('arrivals-2026-03-01', 'x', 'x', 3), ('rescore-x', 'x', 'x', 2), ('refresh-2026-03-01', 'x', 'x', 1)");
   for (const [b, id] of [["arrivals-2026-03-01", "n1"], ["arrivals-2026-03-01", "s1"], ["arrivals-2026-03-01", "r1"], ["rescore-x", "r1"], ["rescore-x", "r2"], ["refresh-2026-03-01", "f1"]]) {
-    await L.run("INSERT INTO queue (batch, build_id, ruler, mode) VALUES (?, ?, 'heavy_gunner', 'base')", b, id);
+    await L.run("INSERT INTO state_board_pending_work (batch, build_id, ruler, mode) VALUES (?, ?, 'heavy_gunner', 'base')", b, id);
   }
   // n1 IS A NEW BUILD'S ROW, as the fact factory's `new_build` asks for it.
-  await L.run("INSERT INTO demands (producer, ref, question, state, asked_at, due_at) VALUES ('new_build', 'n1|heavy_gunner|base', 'qn1', 'live', 'x', 'x')");
-  await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES
+  await L.run("INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at) VALUES ('new_build', 'n1|heavy_gunner|base', 'qn1', 'live', 'x', 'x')");
+  await L.run(`INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at) VALUES
     ('a', 'r', 'base', 'verified:e1', 1, 'kpm', 0, 'T', ?), ('b', 'r', 'base', 'abc123', 1, 'kpm', 0, 'T', ?),
     ('c', 'r', 'base', 'abc123', 1, 'kpm', 0, 'T', ?), ('d', 'r', 'base', 'verified:e1', 1, 'kpm', 0, 'T', ?)`, ago(60_000), ago(120_000), ago(180_000), ago(7_200_000));
-  await L.run(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request) VALUES
+  await L.run(`INSERT INTO entity_appraisal_requests (code, channel, chat, asker, room, weapon, ruler, riven, at, request) VALUES
     ('A1', 'qq', 'c', 'a', 'r', 'torid', 'x', '{}', ?, '{}'), ('A2', 'qq', 'c', 'a', 'r', 'torid', 'x', '{}', ?, '{}')`, ago(60_000), ago(2 * 86_400_000));
-  await L.run(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request, started_at, agreed_at) VALUES
+  await L.run(`INSERT INTO entity_appraisal_requests (code, channel, chat, asker, room, weapon, ruler, riven, at, request, started_at, agreed_at) VALUES
     ('S1', 'survey', '{}', 'wfsim', '', 'furis', 'x', '{}', ?, '{}', ?, ?), ('S2', 'survey', '{}', 'wfsim', '', 'furis', 'x', '{}', ?, '{}', ?, NULL),
     ('S3', 'survey', '{}', 'wfsim', '', 'furis', 'x', '{}', ?, '{}', NULL, NULL), ('S4', 'survey', '{}', 'wfsim', '', 'furis', 'x', '{}', ?, '{}', NULL, NULL)`, ago(60_000), ago(0), ago(0), ago(60_000), ago(0), ago(60_000), ago(8 * 86_400_000));
   // …AND ONE WHOSE EVERY SHAPE IS AGREED, which is reached and no longer a goal.
-  await L.run(`INSERT INTO appraisals (code, channel, chat, asker, room, weapon, ruler, riven, at, request, started_at, agreed_at) VALUES
+  await L.run(`INSERT INTO entity_appraisal_requests (code, channel, chat, asker, room, weapon, ruler, riven, at, request, started_at, agreed_at) VALUES
     ('S5', 'survey', '{}', 'wfsim', '', 'torid', 'x', '{}', ?, '{}', ?, ?)`, ago(60_000), ago(0), ago(0));
   // MORE SCORES: 12 by volunteers and 6 by the official machines in the pace
   // window, one more by each before it.
-  for (let i = 0; i < 10; i++) await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+  for (let i = 0; i < 10; i++) await L.run(`INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
     VALUES (?, 'r', 'base', 'verified:e1', 1, 'kpm', 0, 'T', ?)`, `v${i}`, ago(3_600_000));
   for (const [id, by, ms] of [["o1", "abc", 3_600_000], ["o2", "abc", 3_600_000], ["o3", "abc", 3_600_000], ["o4", "abc", 3_600_000],
     ["late-v", "verified:e1", (PACE_HOURS + 1) * 3_600_000], ["late-o", "abc", (PACE_HOURS + 1) * 3_600_000]]) {
-    await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+    await L.run(`INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
       VALUES (?, 'r', 'base', ?, 1, 'kpm', 0, 'T', ?)`, id, by, ago(ms));
   }
   // THE HOME TALLY: the settler's file and the worker's answer are one body.
@@ -273,23 +273,23 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   check("...and the settler's file of it is the endpoint's answer, field for field",
     JSON.stringify({ status: 200, ...filed }) === JSON.stringify(told), JSON.stringify({ filed, told }));
   const base = await tallyBase(L, now - 1000);
-  await L.run(`INSERT INTO scores (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
+  await L.run(`INSERT INTO state_board_measurement_selection (identity, ruler, mode, measured_by, score, metric, cost_seconds, started_at, finished_at)
     VALUES ('t-new', 'r', 'base', 'verified:e1', 1, 'kpm', 0, 'T', ?)`, ago(0));
   check("...a score finished after its base counted on it", (await tallyOf(env, base, now)).totals.volunteers === 14);
-  await L.run("DELETE FROM scores WHERE identity = 't-new'");
+  await L.run("DELETE FROM state_board_measurement_selection WHERE identity = 't-new'");
   // WHAT A FACT COSTS over the day: a board row's two witnesses fought 1 s each
   // and a riven search's 30 s each; two searches are open, and the five rows the
   // queue owes with the refresh. 5 x 2 s + 2 x 60 s of work, and the volunteers
   // answered 372 s in the pace window's whole hours. The hour under way is not
   // one of them.
-  await L.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, fact_at) VALUES
+  await L.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, fact_at) VALUES
     ('fs', 'simulate', '{}', 'fact', 'x', 'x', ?), ('fo', 'optimize', '{}', 'fact', 'x', 'x', ?),
     ('oo1', 'optimize', '{}', 'open', 'x', 'x', NULL), ('oo2', 'optimize', '{}', 'open', 'x', 'x', NULL)`, ago(1_800_000), ago(1_800_000));
   for (const [q, d, ms, t] of [["fs", "d1", 1000, 3_600_000], ["fs", "d2", 1000, 0], ["fo", "d1", 30_000, 3_600_000], ["fo", "d2", 30_000, 0]]) {
-    await L.run(`INSERT INTO answers (question, engine, device, owner, canon, result, work, compute_ms, at) VALUES (?, 'e1', ?, ?, 'c', '{}', 1, ?, ?)`, q, d, d, ms, ago(t));
+    await L.run(`INSERT INTO record_candidate_answers (question, engine, device, owner, canon, result, work, compute_ms, at) VALUES (?, 'e1', ?, ?, 'c', '{}', 1, ?, ?)`, q, d, d, ms, ago(t));
   }
   const hourOf = (ms) => new Date(now - ms).toISOString().slice(0, 13);
-  await L.run("INSERT INTO verifier_hours (verifier, hour, ms) VALUES ('vh1', ?, 300000), ('vh2', ?, 72000), ('vh3', ?, 999000), ('vh4', ?, 999000)",
+  await L.run("INSERT INTO record_hourly_compute_totals (verifier, hour, ms) VALUES ('vh1', ?, 300000), ('vh2', ?, 72000), ('vh3', ?, 999000), ('vh4', ?, 999000)",
     hourOf(2 * 3_600_000), hourOf(5 * 3_600_000), hourOf(0), hourOf((PACE_HOURS + 1) * 3_600_000));
   const kept = { LIBRARY: L }, d = await demandOf(kept, now);
   check("each survey is a goal: its shapes, how many are agreed and begun, a lapsed one and a finished one gone, none counted as a chat's riven gain",
@@ -305,33 +305,33 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
     (await demandOf({ LIBRARY: L }, now, 1)).clear_hours === null);
   // THE ORDERS AS ONE LIST: each kind's rows, and those a device has taken —
   // r1's question leased once, by the kind its rows count as, a rescore's.
-  await L.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, leased_at) VALUES ('qr1', 'simulate', '{}', 'open', 'x', 'x', ?),
+  await L.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, leased_at) VALUES ('qr1', 'simulate', '{}', 'open', 'x', 'x', ?),
     ('qs1', 'simulate', '{}', 'open', 'x', 'x', NULL)`, ago(60_000));
-  await L.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, payload) VALUES
+  await L.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, payload) VALUES
     ('sweep', 'r1|heavy_gunner|base', 'qr1', 'live', 'x', 'x', '{"batch":"rescore-x"}'), ('sweep', 's1|heavy_gunner|base', 'qs1', 'live', 'x', 'x', '{"batch":"arrivals-2026-03-01"}')`);
   const listed = (await demandOf({ LIBRARY: L }, now)).orders;
   check("the orders are a list a kind a row, each with what a device has taken of it",
     JSON.stringify(listed) === JSON.stringify([{ kind: "rescore", total: 1, dispatched: 1 }, { kind: "sweep", total: 2, dispatched: 0 },
       { kind: "new_build", total: 1, dispatched: 0 }, { kind: "refresh", total: 1, dispatched: 0 }, { kind: "riven_gain", total: 1, dispatched: 0 }]),
     JSON.stringify(listed));
-  await L.run("DELETE FROM demands WHERE question IN ('qr1', 'qs1')");
-  await L.run("DELETE FROM questions WHERE id IN ('qr1', 'qs1')");
-  await L.run("UPDATE questions SET fact_at = NULL WHERE id = 'fo'");
+  await L.run("DELETE FROM relation_task_consumers WHERE question IN ('qr1', 'qs1')");
+  await L.run("DELETE FROM state_compute_work WHERE id IN ('qr1', 'qs1')");
+  await L.run("UPDATE state_compute_work SET fact_at = NULL WHERE id = 'fo'");
   // Kept, a price is a number although a verb has since no fact; the hour may turn meanwhile.
   check("...the day's price kept ten minutes, priced again after", (await demandOf(kept, now + 60_000)).clear_hours > 0
     && (await demandOf(kept, now + 11 * 60_000)).clear_hours === null);
   check("...and none where a verb formed no fact to price it by", (await demandOf({ LIBRARY: L }, now)).clear_hours === null);
   // THE FLEET THIS MOMENT: two ids asked in the window and one before it; one
   // lease runs and one has lapsed; the two answers of the last minute.
-  await L.run("INSERT INTO verifiers (id, seen, asked_at) VALUES ('ask1', 'x', ?), ('ask2', 'x', ?), ('ask0', 'x', ?)",
+  await L.run("INSERT INTO entity_compute_devices (id, seen, asked_at) VALUES ('ask1', 'x', ?), ('ask2', 'x', ?), ('ask0', 'x', ?)",
     ago(60_000), ago(60_000), ago(NOW_WINDOW_MS + 60_000));
-  await L.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, leased_to, lease_until) VALUES
+  await L.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, leased_to, lease_until) VALUES
     ('qh1', 'simulate', '{}', 'open', 'x', 'x', 'ask1', ?), ('qh2', 'simulate', '{}', 'open', 'x', 'x', 'ask2', ?)`, ago(-60_000), ago(60_000));
   const fleet = (await demandOf({ LIBRARY: L }, now)).now;
   check("the fleet this moment: ids that asked in the window, leases running, volunteer answers in it",
     JSON.stringify(fleet) === JSON.stringify({ window_seconds: NOW_WINDOW_MS / 1000, asking: 2, held: 1, answered: 2, starved: false }), JSON.stringify(fleet));
-  await L.run("DELETE FROM questions WHERE id IN ('qh1', 'qh2')");
-  await L.run("DELETE FROM verifiers WHERE id IN ('ask1', 'ask2', 'ask0')");
+  await L.run("DELETE FROM state_compute_work WHERE id IN ('qh1', 'qh2')");
+  await L.run("DELETE FROM entity_compute_devices WHERE id IN ('ask1', 'ask2', 'ask0')");
   const asked = (asking, answered) => ({ window_seconds: 600, asking, held: 0, answered });
   const waits = (n) => [{ kind: "sweep", total: n + 5, dispatched: 5 }, { kind: "riven_gain", total: 100_000, dispatched: 0 }];
   check("starved: rows wait for every asking device to take a pack, and they answer under the floor each",
@@ -343,12 +343,12 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   const saved = inventoryWrite({ v: 2, started_at: started, snapshot: '100:100:', engine, rows: 1000, queued: 20,
     orders: [{ kind: 'board', total: 1000 }], verbs: { simulate: 1000 } }, now);
   await L.run(saved.sql, ...saved.params);
-  await L.run("INSERT INTO factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x',?,0,0,0,0,0,0,'x','x')", engine);
-  await L.run("UPDATE questions SET fact_engine=? WHERE id='fs'", engine);
-  await L.run(`INSERT INTO answers (question,engine,device,owner,canon,result,work,compute_ms,at) VALUES
+  await L.run("INSERT INTO state_factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x',?,0,0,0,0,0,0,'x','x')", engine);
+  await L.run("UPDATE state_compute_work SET fact_engine=? WHERE id='fs'", engine);
+  await L.run(`INSERT INTO record_candidate_answers (question,engine,device,owner,canon,result,work,compute_ms,at) VALUES
     ('fs',?1::text,'current-s1','current-owner1','c','{}',1,1000,?2::text),
     ('fs',?1::text,'current-s2','current-owner2','c','{}',1,1000,?3::text)`, engine, ago(3_600_000), ago(0));
-  await L.run("INSERT INTO verifier_hours(verifier,hour,ms) VALUES ('x',?,744000)", ago(30*3_600_000).slice(0,13));
+  await L.run("INSERT INTO record_hourly_compute_totals(verifier,hour,ms) VALUES ('x',?,744000)", ago(30*3_600_000).slice(0,13));
   const fresh = await demandOf({ LIBRARY: L }, now), expired = await demandOf({ LIBRARY: L }, now + INVENTORY_MAX_MS);
   check("fresh demand also carries the complete snapshot for cached clients crossing expiry", fresh.goal?.total === 1000
     && fresh.last_complete?.total === 1000 && fresh.last_complete?.started_at === started);
@@ -360,12 +360,12 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
   check("an expired inventory keeps an explicitly based estimate without changing goal freshness or its cut",
     expired.clearance.state === 'ready' && expired.clearance.started_at === started
     && expired.clearance.snapshot === fresh.last_complete.snapshot, JSON.stringify(expired.clearance));
-  await L.run("UPDATE factory_snapshot SET engine='95d73da96acb' WHERE id=1");
+  await L.run("UPDATE state_factory_snapshot SET engine='95d73da96acb' WHERE id=1");
   const changed = await demandOf({ LIBRARY: L }, now + INVENTORY_MAX_MS);
   check("a changed engine hides both the fresh goal and retained display count", changed.goal === null && changed.last_complete === null);
   check("a changed engine cannot use old cached prices as a forecast", changed.clearance.state === 'unavailable');
-  await L.run("DELETE FROM factory_findings WHERE kind='task_inventory'");
-  await L.run("DELETE FROM factory_snapshot WHERE id=1");
+  await L.run("DELETE FROM state_factory_findings WHERE kind='task_inventory'");
+  await L.run("DELETE FROM state_factory_snapshot WHERE id=1");
   check("the endpoint serves the settler's object, worked out nowhere else",
     (await call("/api/board/demand")).error === "no_demand");
   env.PUBLIC = { get: async (k) => (k === DEMAND_KEY ? { body: JSON.stringify(d) } : null) };
@@ -377,17 +377,17 @@ await library.run("UPDATE verifiers SET last_at = '2020-01-01T00:00:00.000Z' WHE
 check("the nav asks the same count alone", (await call("/api/board/computing")).computing === 1);
 {
   const P = await testDb("library"), at = Date.now(), before = n => new Date(at-n).toISOString(), engine='d8787cb351c5';
-  await P.run("INSERT INTO factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x',?,0,0,0,0,0,0,'x','x')", engine);
+  await P.run("INSERT INTO state_factory_snapshot(id,at,engine,open,urgent,asking,computing,queue_rows,settle_queue_rows,daemon_at,daemon_commit) VALUES (1,'x',?,0,0,0,0,0,0,'x','x')", engine);
   const snapshot = inventoryWrite({v:2,started_at:before(3600000),snapshot:'price:price:',engine,rows:1000,queued:0,
     orders:[{kind:'board',total:1000}],verbs:{simulate:1000}},at);
   await P.run(snapshot.sql,...snapshot.params);
-  for (const id of ['sampled','outside-sample','official-only']) await P.run(`INSERT INTO questions(id,verb,request,state,due_at,opened_at,fact_at,fact_engine)
+  for (const id of ['sampled','outside-sample','official-only']) await P.run(`INSERT INTO state_compute_work(id,verb,request,state,due_at,opened_at,fact_at,fact_engine)
     VALUES (?,'simulate','{}','fact','x','x',?,?)`,id,before(60000),engine);
   for (const [id,device,ms,age,official] of [['sampled','one',1000,120000,0],['sampled','two',1000,120000,0],
     ['official-only','official',9000,60000,1],['outside-sample','later-id-older-time',500,180000,0]])
-    await P.run(`INSERT INTO answers(question,engine,device,owner,canon,result,work,compute_ms,at,official)
+    await P.run(`INSERT INTO record_candidate_answers(question,engine,device,owner,canon,result,work,compute_ms,at,official)
       VALUES (?,?,?,'owner','c','{}',1,?,?,?)`,id,engine,device,ms,before(age),official);
-  await P.run("INSERT INTO verifier_hours(verifier,hour,ms) VALUES ('worker',?,48000)",before(7200000).slice(0,13));
+  await P.run("INSERT INTO record_hourly_compute_totals(verifier,hour,ms) VALUES ('worker',?,48000)",before(7200000).slice(0,13));
   const result=await demandOf({LIBRARY:P},at,2);
   check("cost samples follow time and a hard row bound; unrelated and official-only facts cannot dilute their price",
     result.clearance.state==='ready' && result.clearance.hours===1000,JSON.stringify(result.clearance));
@@ -407,16 +407,16 @@ check("...and a claimed one holds nothing of its own, every point its account's"
 check("...an id nobody claimed or credited earns nothing", (await points("q".repeat(24))).points === 0
   && (await points("q".repeat(24))).claimed === false);
 check("...a refused one, nothing either", (await points(W)).points === 0 && (await points(W)).recent === 0);
-await library.run("INSERT INTO verifier_hours (verifier, hour, work, tasks, ms) VALUES (?, '2999-01-01T05', ?, 4, 6000)", X, 3 * POINT);
+await library.run("INSERT INTO record_hourly_compute_totals (verifier, hour, work, tasks, ms) VALUES (?, '2999-01-01T05', ?, 4, 6000)", X, 3 * POINT);
 const day = await call("/api/board/points", { body: { verifier: X, since: "2999-01-01T00" } });
 check("a browser asks its own today from the hour its midnight falls in: results, time and points credited",
   JSON.stringify(day.today) === JSON.stringify({ tasks: 4, ms: 6000, points: 3 }), JSON.stringify(day));
 check("...and a malformed id is refused", (await points("nope")).reason === "bad_device");
 
-await accounts.run("DELETE FROM accounts WHERE id = 'acct-cy'");
+await accounts.run("DELETE FROM entity_accounts WHERE id = 'acct-cy'");
 check("deleting an account releases its devices, its place and its answer",
-  !await accounts.get("SELECT 1 FROM devices WHERE account = 'acct-cy'")
-  && !await accounts.get("SELECT 1 FROM contribution_choice WHERE account = 'acct-cy'")
+  !await accounts.get("SELECT 1 FROM relation_account_compute_devices WHERE account = 'acct-cy'")
+  && !await accounts.get("SELECT 1 FROM state_account_public_attribution WHERE account = 'acct-cy'")
   && !(await ranking()).some((e) => e.points === 9));
 
 // AN OWNER'S DEVICES, each with its name, what it last did and what it holds now.
@@ -424,13 +424,13 @@ const ed = await person("acct-ed", "ed"), fay = await person("acct-fay", "fay");
 const P = "p".repeat(24), Q = "q2".repeat(12);
 await device(P, 4 * POINT); await device(Q, 1 * POINT); await credit(P, 60, 4 * POINT); await credit(Q, 60, 1 * POINT);
 await claim(ed, P, "Mac · Chrome"); await claim(ed, Q, "\u0007bell");
-await library.run("UPDATE verifiers SET last_at = '2026-10-08T06:00:00.000Z' WHERE id = ?", P);
+await library.run("UPDATE entity_compute_devices SET last_at = '2026-10-08T06:00:00.000Z' WHERE id = ?", P);
 // TWO BOARD ROWS OF THE FACT FACTORY, one leased now and one whose lease ran out.
 for (const [id, weapon, until, who] of [["b1", "torid", Date.now() + 60000, P], ["b2", "furis", Date.now() - 60000, Q]]) {
-  await library.run(`INSERT INTO questions (id, verb, request, state, due_at, opened_at, lease, lease_until, leased_to)
+  await library.run(`INSERT INTO state_compute_work (id, verb, request, state, due_at, opened_at, lease, lease_until, leased_to)
     VALUES (?, 'simulate', ?, 'open', 'x', 'x', 'l', ?, ?)`, id, JSON.stringify({ record: { weapon, mods: ["x"] }, ruler: "standard_single_target", mode: "base" }),
     new Date(until).toISOString(), who);
-  await library.run(`INSERT INTO demands (producer, ref, question, state, asked_at, due_at, payload) VALUES ('new_build', ?, ?, 'live', 'x', 'x', ?)`, `${id}|standard_single_target|base`, id, JSON.stringify({ identity: id, ruler: "standard_single_target", mode: "base" }));
+  await library.run(`INSERT INTO relation_task_consumers (producer, ref, question, state, asked_at, due_at, payload) VALUES ('new_build', ?, ?, 'live', 'x', 'x', ?)`, `${id}|standard_single_target|base`, id, JSON.stringify({ identity: id, ruler: "standard_single_target", mode: "base" }));
 }
 const eds = (await mine(ed)).devices;
 const p6 = P.slice(0, 6), q6 = Q.slice(0, 6);
@@ -447,12 +447,12 @@ check("nobody renames or removes another's device", (await relabel(fay, p6, "min
   && (await mine(ed)).devices.length === 2);
 // THE HONOUR: a device that said yes and has been credited makes its account a volunteer.
 check("no yes on record, no honour, however much was credited", (await mine(ed)).volunteer === null);
-await library.run("UPDATE verifiers SET consent_v = 1, consent_at = '2026-10-08T08:00:00.000Z' WHERE id = ?", P);
-await library.run("UPDATE verifiers SET consent_v = 1, consent_at = '2026-10-07T08:00:00.000Z' WHERE id = ?", Q);
-await library.run("UPDATE verifiers SET work = 0 WHERE id = ?", Q);
+await library.run("UPDATE entity_compute_devices SET consent_v = 1, consent_at = '2026-10-08T08:00:00.000Z' WHERE id = ?", P);
+await library.run("UPDATE entity_compute_devices SET consent_v = 1, consent_at = '2026-10-07T08:00:00.000Z' WHERE id = ?", Q);
+await library.run("UPDATE entity_compute_devices SET work = 0 WHERE id = ?", Q);
 check("a yes and work credited is the honour, since that yes — a yes with nothing computed is not",
   (await mine(ed)).volunteer === "2026-10-08T08:00:00.000Z", JSON.stringify((await mine(ed)).volunteer));
-await library.run("UPDATE verifiers SET work = ? WHERE id = ?", 1 * POINT, Q);
+await library.run("UPDATE entity_compute_devices SET work = ? WHERE id = ?", 1 * POINT, Q);
 await choose(ed, true);
 const withEd = await ranking();
 check("...carried by a named row on the ranking", withEd.some((e) => e.name === "ed" && e.volunteer === true), JSON.stringify(withEd));
@@ -481,7 +481,7 @@ const PUBLIC = {
 check("the named cron target explicitly selects its eligible identity label",
   (await selectIdentity(bob, true, fixtureMark.kind)).status === 200);
 const { results: holders } = await accounts.prepare(`SELECT a.id, a.username, a.display_name, COALESCE(c.named, 0) AS named
-  FROM accounts a LEFT JOIN contribution_choice c ON c.account = a.id`).all();
+  FROM entity_accounts a LEFT JOIN state_account_public_attribution c ON c.account = a.id`).all();
 const shown = new Set(holders.filter((r) => r.named).flatMap((r) => [r.username, r.display_name]).filter(Boolean));
 const unnamed = holders.filter((r) => !r.named).flatMap((r) => [r.username, r.display_name]).filter((n) => n && !shown.has(n));
 // WHAT A PUBLIC FILE MUST NEVER CARRY: an account id, a device's id, an anonymous account's
@@ -513,7 +513,7 @@ const published = bucket.get(CONTRIBUTORS_KEY);
 const cloudOf = (f) => ({ ...env, CLOUD: { fetch: f } });
 let revision = 0, slowCalls = 0, failedCalls = 0;
 // A new choice revision makes each transport probe independent of the marks cache.
-const coldChoice = () => accounts.run("UPDATE contribution_choice SET chosen_at=? WHERE account='acct-bob'",
+const coldChoice = () => accounts.run("UPDATE state_account_public_attribution SET chosen_at=? WHERE account='acct-bob'",
   new Date(Date.now() + ++revision).toISOString());
 const slow = cloudOf(async (req) => {
   slowCalls++;
