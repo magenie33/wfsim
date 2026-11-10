@@ -24,7 +24,8 @@ const fingerprint = path => { const s = statSync(path); return [s.size, s.mtimeM
 const algorithmFiles = ['./inventory_board_pipeline.mjs','./inventory_pipeline.mjs','./inventory_projection.mjs',
   './inventory_publication.mjs','./inventory_publication_io.mjs','./json_array_stream.mjs','./inventory_relations.mjs',
   './incremental_inventory.mjs','./inventory_inputs.mjs','./inventory_operator.mjs','./capture_compute_inventory.mjs',
-  './classify_compute_inventory.mjs','../worker/task_contract.js','../worker/task_inventory.js','../worker/board_kinds.js'];
+  './classify_compute_inventory.mjs','./board_heads.mjs','./board_meta.py',
+  '../worker/task_contract.js','../worker/task_inventory.js','../worker/board_kinds.js'];
 
 async function verifyInputs(cut, sql, context) {
   const keys = ['epoch','generation','engine','contract','snapshot','started_at','manifest_sha','change_count','status'];
@@ -193,6 +194,14 @@ function child(command, args, options = {}) {
   });
   return { process, done };
 }
+export async function boardDeliveryPending(work) {
+  const stamp = join(work, 'verified/meta.json'), ledger = join(work, 'pushed.json');
+  if (!existsSync(stamp)) return false;
+  if (!existsSync(ledger)) return true;
+  const pushed = load(ledger);
+  if (!pushed || Array.isArray(pushed) || typeof pushed !== 'object') throw Error('invalid pushed ledger');
+  return pushed['meta.json'] !== await hash(stamp);
+}
 export async function serveBoardInventory(work, bin) {
   if (!process.env.PG_URL) throw Error('PG_URL required');
   const sql = postgres(process.env.PG_URL, { max: 1, fetch_types: false, connect_timeout: 15, onnotice: () => {},
@@ -221,11 +230,14 @@ export async function serveBoardInventory(work, bin) {
           await operator?.close(); operator = null; context.operatorAdapter = null;
         }
       }
+      try { pushOwed ||= await boardDeliveryPending(work); }
+      catch (error) { console.error('live: delivery checkpoint refused: ' + error.message); }
       if (pushOwed && !push) {
         pushOwed = false;
         push = child(process.execPath, ['--max-old-space-size=64', join(here, 'live_publish.mjs'), 'push', work, join(work, 'verified')]);
         push.done.catch(() => { pushOwed = true; }).finally(() => { push = null; });
       }
+      if (process.env.ONCE === '1') break;
       if (!stopping) await new Promise(resolve => setTimeout(resolve, pending ? 1000 : 20000));
     }
   } finally {

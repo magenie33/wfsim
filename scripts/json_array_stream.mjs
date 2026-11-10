@@ -4,7 +4,7 @@ import { createReadStream } from 'node:fs';
 
 export async function* jsonArrayRows(path, { maxBytes = 8 * 1024 ** 2, offset = 0, withOffsets = false } = {}) {
   let opened = offset > 0, ended = false, active = false, quoted = false, escaped = false, depth = 0;
-  let allowEnd = !offset, parts = [], bytes = 0, chunkOffset = offset;
+  let allowEnd = !offset, parts = [], bytes = 0, chunkOffset = offset, last;
   const append = text => {
     parts.push(text); bytes += Buffer.byteLength(text);
     if (bytes > maxBytes) throw Error('JSON array value exceeds byte bound');
@@ -38,7 +38,8 @@ export async function* jsonArrayRows(path, { maxBytes = 8 * 1024 ** 2, offset = 
       else if (depth === 0 && (c === ',' || c === ']')) {
         append(chunk.slice(start, i));
         const raw = parts.join('').trim(); JSON.parse(raw);
-        yield withOffsets ? { raw, offset: chunkOffset + Buffer.byteLength(chunk.slice(0, i + 1)), done: c === ']' } : raw;
+        const row = withOffsets ? { raw, offset: chunkOffset + Buffer.byteLength(chunk.slice(0, i + 1)), done: c === ']' } : raw;
+        if (c === ']') last = row; else yield row;
         parts = []; bytes = 0; active = false; start = -1;
         allowEnd = c === ']'; ended = allowEnd;
       }
@@ -47,4 +48,5 @@ export async function* jsonArrayRows(path, { maxBytes = 8 * 1024 ** 2, offset = 
     chunkOffset += Buffer.byteLength(chunk);
   }
   if (!opened || !ended || active || quoted || depth) throw Error('incomplete JSON array');
+  if (last !== undefined) yield last;
 }
