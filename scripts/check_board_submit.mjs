@@ -529,40 +529,43 @@ function harvestFixture(producer = "user_calculation") {
   }
 }
 
-// ---- ...AND THE DEPLOYED ONE IS THIS ONE --------------------------------
-//
-// `site/` deploys on a push and the worker does NOT, so the code above can be
-// right while wfsim.app runs last month's. Probed WITHOUT WRITING: the shape
-// pass walks `AXES` in order and stops at the first bad field, so a payload
-// carrying a full mod list AND a deliberately malformed arcane answers "bad
-// mods" from a worker whose limit is too low and "bad arcanes" from one that
-// agrees with this file. Nothing is stored either way.
-//
-// SKIPPED WHEN THE NETWORK IS NOT THERE. It is a fact about the DEPLOYMENT,
-// not about the tree, so an offline run must not fail on it.
+// The shape check stops at the first invalid field. A malformed arcane makes
+// the mod limit observable without admitting a build to the inbox.
+const ids = Array.from({ length: MAX_MODS }, (_, i) => `probe_mod_${i}`);
+const tooMany = [...ids, "probe_mod_over"];
+const limitProbe = (mods) => ({ weapon: "praedos", mods, arcanes: ["NOT A VALID ID"] });
+const fullCandidate = await post(limitProbe(ids), database());
+const overCandidate = await post(limitProbe(tooMany), database());
+check("the candidate accepts the full mod count before checking arcanes",
+  fullCandidate.status === 400 && (await fullCandidate.json()).error === "bad arcanes");
+check("the candidate refuses an extra mod",
+  overCandidate.status === 400 && (await overCandidate.json()).error === "bad mods");
+
+// Production independently confirms the deployed limit when submissions are
+// available. A scheduled maintenance response precedes submission validation.
 if (process.env.WFSIM_SKIP_LIVE !== "1") {
-  const ids = Array.from({ length: MAX_MODS }, (_, i) => `probe_mod_${i}`);
   const ask = async (mods) => {
     const r = await fetch("https://wfsim.app/api/board/submit", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ weapon: "praedos", mods, arcanes: ["NOT A VALID ID"] }),
+      body: JSON.stringify(limitProbe(mods)),
     });
-    return (await r.json()).error;
+    const body = await r.json();
+    const maintenance = r.status === 503 && r.headers.get("cache-control") === "no-store"
+      && r.headers.get("retry-after") === "60" && body.maintenance === true && body.retryable === true;
+    return { status: r.status, error: body.error, maintenance };
   };
   try {
     const full = await ask(ids);
-    const over = await ask([...ids, "probe_mod_over"]);
-    check(
-      `the deployed worker takes ${MAX_MODS} mods`,
-      full === "bad arcanes",
-      `answered ${JSON.stringify(full)} - a worker limited below ${MAX_MODS} says "bad mods"`,
-    );
-    check(
-      `...and refuses ${MAX_MODS + 1}`,
-      over === "bad mods",
-      `answered ${JSON.stringify(over)}`,
-    );
+    const over = await ask(tooMany);
+    if (full.maintenance && over.maintenance) {
+      console.log("  --   deployed mod-limit probe deferred during scheduled maintenance");
+    } else {
+      check(`the deployed worker takes ${MAX_MODS} mods`, full.status === 400 && full.error === "bad arcanes",
+        `answered ${JSON.stringify(full)}`);
+      check(`...and refuses ${MAX_MODS + 1}`, over.status === 400 && over.error === "bad mods",
+        `answered ${JSON.stringify(over)}`);
+    }
   } catch (e) {
     console.log(`  --   the deployed worker was unreachable (${e.message}) - not asked`);
   }
