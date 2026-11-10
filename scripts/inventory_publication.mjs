@@ -41,6 +41,21 @@ export class InventoryPublication {
     this.q('UPDATE pub_files SET body=? WHERE dir=? AND weapon=?').run(JSON.stringify(state), file.dir, file.weapon);
     file.state = state;
   }
+  compatibility(key) {
+    if (this.catalog.meta.publication_compat === key) return false;
+    const initial = !this.catalog.meta.publication && !this.catalog.meta.publication_compat;
+    this.context.writer?.close(); this.context.writer = null; this.context.legacyPath = null;
+    this.index.transaction(() => {
+      if (!initial) {
+        for (const table of ['pub_files','pub_rows','pub_shapes','pub_max','pub_final','pub_leaders','pub_listed']) this.q(`DELETE FROM ${table}`).run();
+        this.q(`INSERT OR IGNORE INTO rel_publication_dirty SELECT DISTINCT weapon FROM rel_publication_sources
+          UNION SELECT weapon FROM pub_history`).run();
+      }
+      this.catalog.setMeta({ ...this.catalog.meta, publication_compat: key,
+        ...(!initial ? { publication: null, publication_refresh: { key, forceHeads: true } } : {}) });
+    });
+    return !initial;
+  }
   leader(file, page, metadata) {
     if (!metadata) return;
     const score = number(metadata.score);
